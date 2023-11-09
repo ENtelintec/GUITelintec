@@ -1,0 +1,18 @@
+{
+  "0": {
+    "name": "ReadOnly.DB",
+    "description": "Only read the db"
+  },
+  "1": {
+    "name": "Write.DB",
+    "description": "Write on the db"
+  },
+  "2": {
+    "name": "Administrator",
+    "description": "Administrator permissions"
+  },
+  "3": {
+    "name": "Access.Chatgpt",
+    "description": "Has access to chatgpt"
+  }
+}

@@ -1,0 +1,10 @@
+Flask-SQLAlchemy
+flask
+mysql-connector-python
+python-dotenv
+flask-restx
+pyjwt
+numpy
+requests
+flask-cors
+ttkbootstrap
