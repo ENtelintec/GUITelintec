@@ -1,0 +1,16 @@
+{
+  "Path_ESSITY" : "ESSITY",
+  "Path_CROWN" : "CROWN",
+  "Path_TotalPlay" : "8. TOTAL PLAY",
+  "Path_ORBIA" : "7. ORBIA",
+  "Path_LOGICALIS" : "6. LOGICALIS",
+  "Path_PROSERVICIO" : "PROSERVICIO",
+  "Path_UDEM" : "3. UDEM",
+  "Path_TERNIUM" : "2. TERNIUM",
+  "Path_CCTVANALOGO" : "CONTRATO CCTV ANALOGO II - GC3122",
+  "Path_CCTVLACA" : "CONTRATO CCTV LACA PESQ - GC4294",
+  "Path_GRUAS" : "CONTRATO DISPOSITIVOS ELECTRICOS GRUAS - GC8272",
+  "Path_RFIDIOT" : "CONTRATO RFID - IOT - GC0701",
+  "Path_SalaJuntas" : "CONTRATO SALA DE JUNTAS - GC9685",
+  "Path_reportes" : "reportes"
+}

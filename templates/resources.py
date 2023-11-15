@@ -15,5 +15,3 @@ from static.api_models import token_model, token_info_model, token_permissions_m
 
 ns = Namespace('GUI/api/v1')
 
-
-

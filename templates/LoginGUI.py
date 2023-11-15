@@ -7,9 +7,7 @@ import hashlib
 import requests
 import ttkbootstrap as ttk
 from dotenv import dotenv_values
-
-secrets = dotenv_values("../.env")
-url_api = "http://127.0.0.1:5000/AuthAPI/api/v1/auth/loginUP"
+from static.extensions import secrets,  url_api
 
 
 def call_authApi(user, pass_key, url=None):
