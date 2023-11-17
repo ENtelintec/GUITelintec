@@ -7,7 +7,7 @@ import os
 import pickle
 import re
 import time
-from tkinter import Misc
+from tkinter import Misc, Frame
 from tkinter.ttk import Treeview
 from typing import List, Union
 import ttkbootstrap as ttk
@@ -470,10 +470,10 @@ def create_visualizer_treeview(master: Misc, table: str, rows: int,
                                row: int = 0, column: int = 0,
                                style: str = 'primary',
                                headers=None, data=None) -> Treeview | None:
-
     match table:
         case "fichajes":
-            columns = headers if headers is not None else ["Timestamp", 'Puerta', 'Texto', 'Status', 'Name', 'Card', 'in_out']
+            columns = headers if headers is not None else ["Timestamp", 'Puerta', 'Texto', 'Status', 'Name', 'Card',
+                                                           'in_out']
             heading_width = [25, 100, 100, 100, 100, 100, 100, 200]
             data = data if data is not None else [None, None, None, None, None, None, None]
         case _:
@@ -492,6 +492,50 @@ def create_visualizer_treeview(master: Misc, table: str, rows: int,
     for entry in data:
         treeview.insert("", "end", values=entry)
     return treeview
+
+
+def validate_digits_numbers(new_value):
+    # Returning True allows the edit to happen, False prevents it.
+    return new_value.isdigit()
+
+
+def create_spinboxes_time(master: Misc, father, row: int, column: int,
+                          pad_x: int = 5, pad_y: int = 5,
+                          style: str = 'primary', title: str = "",
+                          mins_defaul=0, hours_default=8) -> Frame | None:
+    """ Creates a clock with two spinboxes for minutes and hours
+    :param title:
+    :param father:
+    :param master: <Misc> master where the object is created
+    :param row: <int> row to be placed
+    :param column: <int> column to be placed
+    :param pad_x: <int> pad in x for the group, not for individual object
+    :param pad_y: <int> pad in y for the group, not for individual object
+    :param style: <str> bootstrap style selected
+    :param mins_defaul: <int> default value for minutes
+    :param hours_default: <int> deafult value for hours
+    :return: Frame tkinter frame containing the spinboxes
+    """
+    clock = ttk.Frame(master)
+    clock.grid(row=row, column=column, padx=pad_x, pady=pad_y, sticky="w")
+    # minutes spinboxes
+    minutes_spinbox = ttk.Spinbox(clock, from_=0, to=59, bootstyle=style,
+                                  width=2, justify="center")
+    minutes_spinbox.grid(row=0, column=1, padx=1, pady=1, sticky="w")
+    # hours spinbox
+    hours_spinbox = ttk.Spinbox(clock, from_=0, to=23, bootstyle=style,
+                                width=2, justify="center")
+    hours_spinbox.grid(row=0, column=0, padx=1, pady=1, sticky="w")
+    # add valitation to spinbox
+    vcmd_mins = (master.register(validate_digits_numbers), '%P')
+    minutes_spinbox.configure(validate="key", validatecommand=vcmd_mins)
+    vcmd_hours = (master.register(validate_digits_numbers), '%P')
+    hours_spinbox.configure(validate="key", validatecommand=vcmd_hours)
+    # set default values
+    minutes_spinbox.set(mins_defaul)
+    hours_spinbox.set(hours_default)
+    father.clocks.append({title: [minutes_spinbox, hours_spinbox]})
+    return clock
 
 
 class DirectoryDbp:
