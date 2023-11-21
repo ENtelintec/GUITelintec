@@ -27,7 +27,8 @@ class FichajesFilesGUI(ttk.Frame):
         self.days_late = None
         self.days_extra = None
         # -------------------create title-----------------
-        self.label_title = ttk.Label(self, text='Telintec Software Fichajes')
+        self.label_title = ttk.Label(self, text='Telintec Software Fichajes',
+                                     font=('Helvetica', 32, 'bold'))
         self.label_title.grid(row=0, column=0, columnspan=3)
         # -------------------create entry for file selector-----------------
         self.label_file = ttk.Label(self, text='File: ')
@@ -38,11 +39,11 @@ class FichajesFilesGUI(ttk.Frame):
         self.label_filename.grid(row=1, column=2)
         # -------------------create tableview for data-----------------
         self.table = Tableview(self)
-        self.table.grid(row=2, column=0, columnspan=3, sticky='nsew')
         # -------------------create collapsing frame-----------------
         self.frame_collapse = CollapsingFrame(self)
-        self.frame_collapse.grid(row=3, column=0, columnspan=3)
+        self.frame_collapse.grid(row=3, column=0, columnspan=3, sticky='nsew')
         group_1 = ttk.Frame(self.frame_collapse, padding=5)
+        group_1.columnconfigure((0, 1, 2, 3, 4, 5), weight=1)
         # filter by name
         label_name = ttk.Label(group_1, text='Empleado: ')
         label_name.grid(row=0, column=0)
@@ -74,7 +75,11 @@ class FichajesFilesGUI(ttk.Frame):
         self.late_hours = StringVar()
         self.extra_hours = StringVar()
         self.late_hours_day = StringVar()
+        self.late_hours_day_out = StringVar()
         self.extra_hours_day = StringVar()
+        self.extra_hours_day_in = StringVar()
+        self.puerta_out = StringVar()
+        self.puerta_in = StringVar()
         self.init_string_vars()
 
         label_wd = ttk.Label(group_1, textvariable=self.wd)
@@ -90,6 +95,11 @@ class FichajesFilesGUI(ttk.Frame):
         self.days_late_selector.bind("<<ComboboxSelected>>", self.select_day_late)
         label_late_hours_day = ttk.Label(group_1, textvariable=self.late_hours_day)
         label_late_hours_day.grid(row=5, column=3)
+        label_puerta_in = ttk.Label(group_1, textvariable=self.puerta_in)
+        label_puerta_in.grid(row=5, column=4)
+        label_late_hours_day_out = ttk.Label(group_1, textvariable=self.late_hours_day_out)
+        label_late_hours_day_out.grid(row=5, column=5)
+
         label_extra = ttk.Label(group_1, textvariable=self.extra)
         label_extra.grid(row=6, column=0)
         label_tot_extra_hours = ttk.Label(group_1, textvariable=self.extra_hours)
@@ -99,6 +109,10 @@ class FichajesFilesGUI(ttk.Frame):
         self.days_extra_selector.bind("<<ComboboxSelected>>", self.select_day_extra)
         label_extra_hours_day = ttk.Label(group_1, textvariable=self.extra_hours_day)
         label_extra_hours_day.grid(row=6, column=3)
+        label_puerta_out = ttk.Label(group_1, textvariable=self.puerta_out)
+        label_puerta_out.grid(row=6, column=4)
+        label_extra_hours_day_in = ttk.Label(group_1, textvariable=self.extra_hours_day_in)
+        label_extra_hours_day_in.grid(row=6, column=5)
         self.frame_collapse.add(group_1, title="Filtrado por nombre")
 
     def init_string_vars(self):
@@ -110,6 +124,10 @@ class FichajesFilesGUI(ttk.Frame):
         self.extra_hours.set("")
         self.late_hours_day.set("")
         self.extra_hours_day.set("")
+        self.puerta_in.set("")
+        self.puerta_out.set("")
+        self.late_hours_day_out.set("")
+        self.extra_hours_day_in.set("")
 
     def update_string_vars(self, wd, late, extra, wd_w):
         self.wd.set(wd)
@@ -128,9 +146,30 @@ class FichajesFilesGUI(ttk.Frame):
     def select_day_late(self, event):
         if self.days_late_selector.get() != "no file selected":
             date = pd.Timestamp(self.days_late_selector.get())
-            aux = self.days_late[date].seconds
+            aux = self.days_late[date][0].seconds
             hours, minutes = divmod(aux / 60, 60)
-            self.late_hours_day.set(f'Horas tarde: {int(hours)} con {int(minutes)} minutos.')
+            self.late_hours_day.set(f'Horas tarde: \n{int(hours)} con {int(minutes)} minutos.')
+            self.puerta_in.set(f'Puerta de entrada: \n{self.days_late[date][1]}')
+            name = self.names.get()
+            df_name = self.df[self.df["name"] == name]
+            limit_hour_down = pd.Timestamp(year=date.year, month=date.month, day=date.day,
+                                           hour=0, minute=0, second=0)
+            limit_hour_up = pd.Timestamp(year=date.year, month=date.month, day=date.day,
+                                         hour=23, minute=59, second=59)
+            getawey = df_name[(df_name["Fecha/hora"] > limit_hour_down) &
+                               (df_name["Fecha/hora"] < limit_hour_up) &
+                               (df_name["in_out"] == "FUERA")]
+            self.late_hours_day_out.set(f'Hora de salida: \n{getawey["Fecha/hora"].to_list()[0]}\nPuerta: {getawey["Puerta"].to_list()[0]}')
+        else:
+            print("no file selected")
+
+    def select_day_extra(self, event):
+        if self.days_extra_selector.get() != "no file selected":
+            date = pd.Timestamp(self.days_extra_selector.get())
+            aux = self.days_extra[date][0].seconds
+            hours, minutes = divmod(aux / 60, 60)
+            self.extra_hours_day.set(f'Horas extras: \n{int(hours)} con {int(minutes)} minutos.')
+            self.puerta_out.set(f'Puerta de salida: \n{self.days_extra[date][1]}')
             name = self.names.get()
             df_name = self.df[self.df["name"] == name]
             limit_hour_down = pd.Timestamp(year=date.year, month=date.month, day=date.day,
@@ -139,16 +178,8 @@ class FichajesFilesGUI(ttk.Frame):
                                          hour=23, minute=59, second=59)
             entrance = df_name[(df_name["Fecha/hora"] > limit_hour_down) &
                                (df_name["Fecha/hora"] < limit_hour_up) &
-                               (df_name["in_out"] == "FUERA")]
-            print(entrance)
-        else:
-            print("no file selected")
-
-    def select_day_extra(self, event):
-        if self.days_extra_selector.get() != "no file selected":
-            aux = self.days_extra[pd.Timestamp(self.days_extra_selector.get())].seconds
-            hours, minutes = divmod(aux / 60, 60)
-            self.extra_hours_day.set(f'Horas extras: {int(hours)} con {int(minutes)} minutos.')
+                               (df_name["in_out"] == "DENTRO")]
+            self.extra_hours_day_in.set(f'Hora de entrada: \n{entrance["Fecha/hora"].to_list()[0]}\nPuerta: {entrance["Puerta"].to_list()[0]}')
         else:
             print("no file selected")
 
@@ -159,16 +190,16 @@ class FichajesFilesGUI(ttk.Frame):
         total_extra = 0
         for i in self.days_late.keys():
             late_keys.append(str(i))
-            total_late += self.days_late[i].seconds
+            total_late += self.days_late[i][0].seconds
         for i in self.days_extra.keys():
             extra_keys.append(str(i))
-            total_extra += self.days_extra[i].seconds
+            total_extra += self.days_extra[i][0].seconds
         self.days_late_selector.configure(values=late_keys)
         self.days_extra_selector.configure(values=extra_keys)
         self.days_late_selector.configure(state=ttk.NORMAL)
         self.days_extra_selector.configure(state=ttk.NORMAL)
-        self.update_extra_late_hours(f'Total horas tarde: {round(total_late / 3600, 2)}',
-                                     f'Total horas extras: {round(total_extra / 3600, 2)}')
+        self.update_extra_late_hours(f'Total horas tarde: \n{round(total_late / 3600, 2)}',
+                                     f'Total horas extras: \n{round(total_extra / 3600, 2)}')
 
     def select_name(self, event):
         if self.names.get() != "no file selected":
@@ -202,9 +233,18 @@ class FichajesFilesGUI(ttk.Frame):
             self.df.dropna(subset=['Fecha/hora'], inplace=True)
             self.df["status"], self.df["name"], self.df["card"], self.df["in_out"] = cb.clean_text(
                 self.df["Texto"].to_list())
+
+            coldata = []
             for i, col in enumerate(self.df.columns.tolist()):
-                self.table.insert_column(i, col)
-            self.table.insert_rows(0, self.df.values.tolist())
+                coldata.append(
+                    {"text": col, "stretch": True}
+                )
+            self.table = Tableview(self, bootstyle="primary",
+                                   coldata=coldata,
+                                   rowdata=self.df.values.tolist(),
+                                   paginated=False,
+                                   searchable=True)
+            self.table.grid(row=2, column=0, columnspan=3, sticky='nsew', padx=20, pady=10)
             self.names.configure(values=self.df["name"].unique().tolist())
 
     def get_days_worked_late_extra(self, name: str):
@@ -231,10 +271,10 @@ class FichajesFilesGUI(ttk.Frame):
             count = len(late_name)
             # calculate the time difference between the entrance hour and the late hour
             time_late = {}
-            for i in late_name["Fecha/hora"]:
-                time_str = pd.Timestamp(year=1, month=1, day=1, hour=i.hour, minute=i.minute, second=i.second)
+            for i in late_name[["Fecha/hora", "Puerta"]].values:
+                time_str = pd.Timestamp(year=1, month=1, day=1, hour=i[0].hour, minute=i[0].minute, second=i[0].second)
                 diff = time_str - limit_hour
-                time_late[i] = diff
+                time_late[i[0]] = (diff, i[1])
             # calculate the number of days when the person worked extra hours
             aux_hour = int(hour_out)
             aux_min = int(min_out)
@@ -242,18 +282,8 @@ class FichajesFilesGUI(ttk.Frame):
             extra_name = df_name_salida[df_name_salida["Fecha/hora"].dt.time > limit_hour2.time()]
             count2 = len(extra_name)
             extra_time = {}
-            for i in extra_name["Fecha/hora"]:
-                time_str = pd.Timestamp(year=1, month=1, day=1, hour=i.hour, minute=i.minute, second=i.second)
+            for i in extra_name[["Fecha/hora", "Puerta"]].values:
+                time_str = pd.Timestamp(year=1, month=1, day=1, hour=i[0].hour, minute=i[0].minute, second=i[0].second)
                 diff = time_str - limit_hour2
-                extra_time[i] = diff
-            print(f'The number of rows where the datetime is greater than {limit_hour.time()} is {count}.')
-            print(f'The number of rows where the datetime is greater than {limit_hour2.time()} is {count2}.')
-
+                extra_time[i[0]] = (diff, i[1])
             return worked_days, worked_intime, count, count2, time_late, extra_time
-
-
-if __name__ == '__main__':
-    app = ttk.Window()
-    main = FichajesFilesGUI(app)
-    main.pack()
-    app.mainloop()
