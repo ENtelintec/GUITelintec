@@ -2,20 +2,20 @@
 __author__ = 'Edisson Naula'
 __date__ = '$ 02/nov./2023  at 17:37 $'
 
-import json
+import csv
 import os
 import pickle
 import re
-import time
-from tkinter import Misc, Frame
+from tkinter import Misc, Frame, messagebox
 from tkinter.ttk import Treeview
-from typing import List, Union
-import ttkbootstrap as ttk
+
 import dropbox
-import jwt
 import mysql.connector
+import pandas as pd
+import ttkbootstrap as ttk
 
 from static.extensions import secrets
+from templates.TextFunctions import clean_accents
 
 
 def execute_sql(sql: str, values: tuple = None, type_sql=1):
@@ -314,6 +314,111 @@ def create_spinboxes_time(master: Misc, father, row: int, column: int,
     father.clocks.append({title: [minutes_spinbox, hours_spinbox]})
     return clock
 
+
+def extract_data_file_contracts(filename: str):
+
+    """
+    Extracts the data from a file
+    :param filename:
+    :return:
+    """
+    contracts = {}
+    try:
+        excel_file = pd.ExcelFile(filename)
+        sheet_names = excel_file.sheet_names
+        inital_skip_rows = 9
+        for sheet in sheet_names:
+            if sheet == "VEHICULOS":
+                continue
+            skip_rows = [i for i in range(0, 9)]
+            # skip_rows = [i for i in range(9)] + [i for i in range(13, 3142)]
+            rows = [i for i in range(3142) if i not in skip_rows]
+            cols = [0, 1, 2]
+            df = pd.read_excel(excel_file, skiprows=skip_rows, sheet_name=sheet)
+            df.to_csv('files/OCT_report_1.csv')
+            data = []
+            with open('files/OCT_report_1.csv', mode="r",
+                      encoding='utf-8') as csv_file:  # "r" represents the read mode
+                reader = csv.reader(csv_file)  # this is the reader object
+                for item in reader:
+                    data.append(item)
+            status = []
+            fechas = []
+            comments = []
+            extras = []
+            primas = []
+            in_door = []
+            out_door = []
+            employees = {}
+            indexes = range(len(data))
+            starting_indexes = [indexes[i] for i in range(0, len(indexes), 4)]
+            data_sliced = [data[i:i + 4] for i in starting_indexes]
+            for data_aux in data_sliced:
+                for i in range(len(data_aux)):
+                    if i == 1:
+                        name = clean_accents(data_aux[i][1])
+                        for j in range(2, len(data_aux[i])):
+                            if j % 2 != 1:
+                                in_door.append(data_aux[i][j])
+                            else:
+                                out_door.append(data_aux[i][j])
+                    elif i == 0:
+                        for j in range(2, len(data_aux[i])):
+                            if j % 2 != 1:
+                                fechas.append(data_aux[i][j])
+                            else:
+                                status.append(data_aux[i][j])
+                    elif i == 2:
+                        for j in range(2, len(data_aux[i])):
+                            if j % 2 != 1:
+                                comments.append(data_aux[i][j])
+                    elif i == 3:
+                        for j in range(2, len(data_aux[i])):
+                            if j % 2 != 1:
+                                extras.append(data_aux[i][j])
+                            else:
+                                primas.append(data_aux[i][j])
+                if name != "":
+                    employees[name] = {
+                        "fechas": fechas,
+                        "status": status,
+                        "comments": comments,
+                        "extras": extras,
+                        "primas": primas,
+                        "in_door": in_door,
+                        "out_door": out_door,
+                    }
+            contracts[sheet] = employees
+        print(contracts["ALMACEN"].keys())
+    except Exception as e:
+        print(e)
+        messagebox.showerror("Error",
+                             "Error al leer el archivo.\n Asegurese sea el archivo correcto, con el formato correcto.")
+    return contracts
+
+
+def extract_fichajes_file(filename: str):
+    """
+    Extracts the data from a file
+    :param filename:
+    :return:
+    """
+    try:
+        skip_rows = [0, 1, 2]
+        cols = [0, 1, 2]
+        df = pd.read_excel(filename, skiprows=skip_rows, usecols=cols)
+        df.dropna(inplace=True)
+        df["Fecha/hora"] = clean_date(df["Fecha/hora"].tolist())
+        df["Fecha/hora"] = pd.to_datetime(df["Fecha/hora"], format="mixed", dayfirst=True)
+        df.dropna(subset=['Fecha/hora'], inplace=True)
+        df["status"], df["name"], df["card"], df["in_out"] = clean_text(
+            df["Texto"].to_list())
+        return df
+    except Exception as e:
+        messagebox.showerror("Error",
+                             "Error al leer el archivo.\n Asegurese sea el archivo correcto, con el formato correcto.")
+        print(e)
+        return None
 
 class DirectoryDbp:
     def __init__(self, name: str, father: str, files: list, children=None):

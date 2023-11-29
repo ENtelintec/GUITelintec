@@ -7,7 +7,7 @@ from datetime import datetime
 
 from flask import request
 
-import templates.cb_functions as cbf
+import templates.cb_functions_sql_files as cbf
 
 from flask_restx import Resource, Namespace
 from static.api_models import token_model, token_info_model, token_permissions_model, expected_headers_per, \

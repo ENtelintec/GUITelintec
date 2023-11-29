@@ -2,30 +2,27 @@
 __author__ = 'Edisson Naula'
 __date__ = '$ 14/nov./2023  at 17:12 $'
 
-import hashlib
-import time
 from tkinter import StringVar
 from tkinter.filedialog import askopenfilename
 
 import pandas as pd
-import requests
 import ttkbootstrap as ttk
-from dotenv import dotenv_values
-from static.extensions import secrets, url_api
-import templates.cb_functions as cb
 from ttkbootstrap.tableview import Tableview
 
+import templates.cb_functions_sql_files as cb
 from templates.CollapsingFrame import CollapsingFrame
 
 
 class FichajesFilesGUI(ttk.Frame):
     def __init__(self, master=None):
         super().__init__(master)
-        self.columnconfigure((0, 1, 2), weight=1)
+        # noinspection PyTypeChecker
+        self.columnconfigure((0, 1, 2, 3, 4), weight=1)
         self.df = None
         self.file_selected = False
         self.days_late = None
         self.days_extra = None
+        self.contracts = {}
         # -------------------create title-----------------
         self.label_title = ttk.Label(self, text='Telintec Software Fichajes',
                                      font=('Helvetica', 32, 'bold'))
@@ -37,12 +34,20 @@ class FichajesFilesGUI(ttk.Frame):
         self.file_entry.grid(row=1, column=1)
         self.label_filename = ttk.Label(self, text='')
         self.label_filename.grid(row=1, column=2)
+        # other file selector
+        self.label_other_file = ttk.Label(self, text='Seleccione el otro archivo: ')
+        self.label_other_file.grid(row=1, column=2)
+        self.file_entry_2 = ttk.Button(self, text='Seleccione un archivo', command=self.button_file_2_click)
+        self.file_entry_2.grid(row=1, column=3)
+        self.label_filename_2 = ttk.Label(self, text='')
+        self.label_filename_2.grid(row=1, column=4)
         # -------------------create tableview for data-----------------
         self.table = Tableview(self)
         # -------------------create collapsing frame-----------------
         self.frame_collapse = CollapsingFrame(self)
-        self.frame_collapse.grid(row=3, column=0, columnspan=3, sticky='nsew')
+        self.frame_collapse.grid(row=3, column=0, columnspan=5, sticky='nsew')
         group_1 = ttk.Frame(self.frame_collapse, padding=5)
+        # noinspection PyTypeChecker
         group_1.columnconfigure((0, 1, 2, 3, 4, 5), weight=1)
         # filter by name
         label_name = ttk.Label(group_1, text='Empleado: ')
@@ -223,6 +228,19 @@ class FichajesFilesGUI(ttk.Frame):
         else:
             print("no file selected")
 
+    def button_file_2_click(self):
+        try:
+            filename = askopenfilename(filetypes=[('Excel Files', '*.xlsx'), ('Excel Files', '*.xls')])
+            print("Archivo: ", filename)
+        except Exception as e:
+            filename = e
+        self.label_filename_2.configure(text=filename)
+        self.file_entry_2.configure(text='File Selected')
+        if ".xls" in filename or ".xlsx" in filename:
+            self.contracts = cb.extract_data_file_contracts(filename)
+            if len(self.contracts) != 0:
+                print(self.contracts.keys())
+
     def button_file_click(self):
         try:
             filename = askopenfilename(filetypes=[('Excel Files', '*.xlsx'), ('Excel Files', '*.xls')])
@@ -232,16 +250,7 @@ class FichajesFilesGUI(ttk.Frame):
         self.label_filename.configure(text=filename)
         self.file_entry.configure(text='File Selected')
         if ".xls" in filename or ".xlsx" in filename:
-            # read excel
-            skip_rows = [0, 1, 2]
-            cols = [0, 1, 2]
-            self.df = pd.read_excel(filename, skiprows=skip_rows, usecols=cols)
-            self.df.dropna(inplace=True)
-            self.df["Fecha/hora"] = cb.clean_date(self.df["Fecha/hora"].tolist())
-            self.df["Fecha/hora"] = pd.to_datetime(self.df["Fecha/hora"], format="mixed", dayfirst=True)
-            self.df.dropna(subset=['Fecha/hora'], inplace=True)
-            self.df["status"], self.df["name"], self.df["card"], self.df["in_out"] = cb.clean_text(
-                self.df["Texto"].to_list())
+            self.df = cb.extract_fichajes_file(filename)
             coldata = []
             for i, col in enumerate(self.df.columns.tolist()):
                 coldata.append(
@@ -252,7 +261,7 @@ class FichajesFilesGUI(ttk.Frame):
                                    rowdata=self.df.values.tolist(),
                                    paginated=False,
                                    searchable=True)
-            self.table.grid(row=2, column=0, columnspan=3, sticky='nsew', padx=20, pady=10)
+            self.table.grid(row=2, column=0, columnspan=5, sticky='nsew', padx=20, pady=10)
             self.names.configure(values=self.df["name"].unique().tolist())
             # enables scales
             self.window_time_in.grid(row=0, column=3)
