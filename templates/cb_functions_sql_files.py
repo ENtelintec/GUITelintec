@@ -6,6 +6,7 @@ import csv
 import os
 import pickle
 import re
+import time
 from tkinter import Misc, Frame, messagebox
 from tkinter.ttk import Treeview
 
@@ -35,7 +36,7 @@ def execute_sql(sql: str, values: tuple = None, type_sql=1):
     )
     my_cursor = mydb.cursor()
     out = []
-    e = None
+    error = None
     try:
         match type_sql:
             case 2:
@@ -57,15 +58,107 @@ def execute_sql(sql: str, values: tuple = None, type_sql=1):
                 out = my_cursor.fetchall()
             case _:
                 out = []
-    except Exception as e:
-        print(e)
+    except Exception as error:
+        print(error)
         out = []
-        return out, e
+        return out, error
     finally:
         out = out if out is not None else []
         my_cursor.close()
         mydb.close()
-        return out, e
+        return out, error
+
+
+def execute_sql_multiple(sql: str, values_list: list = None, type_sql=1):
+    """
+    Execute the sql with the values provides (or not) and returns a value
+    depending on the type of query. In case of exception returns None
+    :param values_list: values for sql query
+    :param type_sql: type of query to execute
+    :param sql: sql query
+    :return:
+    """
+    mydb = mysql.connector.connect(
+        host=secrets["HOST_DB"],
+        user=secrets["USER_SQL"],
+        password=secrets["PASS_SQL"],
+        database="sql_telintec"
+    )
+    out = []
+    error = None
+    my_cursor = mydb.cursor(buffered=True)
+    for i in range(len(values_list[0])):
+        values = []
+        for j in range(len(values_list)):
+            values.append(values_list[j][i])
+        values = tuple(values)
+        try:
+            match type_sql:
+                case 2:
+                    my_cursor.execute(sql, values)
+                    out.append(my_cursor.fetchall())
+                case 1:
+                    my_cursor.execute(sql, values)
+                    out.append(my_cursor.fetchone())
+                case 3:
+                    my_cursor.execute(sql, values)
+                    mydb.commit()
+                    out.append(my_cursor.rowcount)
+                case 4:
+                    my_cursor.execute(sql, values)
+                    mydb.commit()
+                    out.append(my_cursor.lastrowid)
+                case 5:
+                    my_cursor.execute(sql)
+                    out.append(my_cursor.fetchall())
+                case _:
+                    out.append([])
+        except Exception as error:
+            print(error)
+            out.append([])
+    out = out if out is not None else []
+    my_cursor.close()
+    mydb.close()
+    return out, error
+
+
+def get_id_employee(name: str):
+    """
+    Get the id of the employee
+    :param name: name of the employee
+    :return: id of the employee
+    """
+    sql = ("SELECT employee_id FROM employees WHERE "
+           "MATCH(l_name) AGAINST (%s IN NATURAL LANGUAGE MODE ) and "
+           "MATCH(name) AGAINST (%s IN NATURAL LANGUAGE MODE )")
+    # lowercase names
+    name = name.lower()
+    values = (name, name)
+    out, e = execute_sql(sql, values, 1)
+    if e is not None:
+        return None
+    else:
+        return out
+
+
+def get_ids_employees(names: list):
+    """
+    Get the id of the employee
+    :param names: list name of the employee
+    :return: id of the employee
+    """
+    sql = ("SELECT employee_id FROM employees WHERE "
+           "MATCH(l_name) AGAINST (%s IN NATURAL LANGUAGE MODE ) and "
+           "MATCH(name) AGAINST (%s IN NATURAL LANGUAGE MODE )")
+    # lowercase names
+    for i, name in enumerate(names):
+        names[i] = name.lower()
+    values = [names, names]
+    out, e = execute_sql_multiple(sql, values, 1)
+    if e is not None:
+        return None
+    else:
+        return out
 
 
 def check_only_read_conflict(name: str):
@@ -259,6 +352,7 @@ def create_visualizer_treeview(master: Misc, table: str, rows: int,
             heading_width = []
             print("Error in create_visualizer_treeview")
     column_span = len(columns)
+    # noinspection PyArgumentList
     treeview = ttk.Treeview(master, columns=columns, show="headings",
                             height=rows, bootstyle=style)
     for i in range(column_span):
@@ -296,10 +390,12 @@ def create_spinboxes_time(master: Misc, father, row: int, column: int,
     clock = ttk.Frame(master)
     clock.grid(row=row, column=column, padx=pad_x, pady=pad_y, sticky="w")
     # minutes spinboxes
+    # noinspection PyArgumentList
     minutes_spinbox = ttk.Spinbox(clock, from_=0, to=59, bootstyle=style,
                                   width=2, justify="center")
     minutes_spinbox.grid(row=0, column=1, padx=1, pady=1, sticky="w")
     # hours spinbox
+    # noinspection PyArgumentList
     hours_spinbox = ttk.Spinbox(clock, from_=0, to=23, bootstyle=style,
                                 width=2, justify="center")
     hours_spinbox.grid(row=0, column=0, padx=1, pady=1, sticky="w")
@@ -313,6 +409,23 @@ def create_spinboxes_time(master: Misc, father, row: int, column: int,
     hours_spinbox.set(hours_default)
     father.clocks.append({title: [minutes_spinbox, hours_spinbox]})
     return clock
+
+
+def make_empy_zeros(txt: str):
+    """
+    Makes the string txt empty if it is empty or contains only zeros
+    :param txt:
+    :return:
+    """
+    return 0 if txt == "" or None else float(txt)
+
+
+def clean_data_contract(status, fechas, comments, extras, primas, in_door, out_door):
+    for i, item in enumerate(extras):
+        extras[i] = make_empy_zeros(item)
+    for i, item in enumerate(primas):
+        primas[i] = "NO" if item == "" or None else "SI"
+    return status, fechas, comments, extras, primas, in_door, out_door
 
 
 def extract_data_file_contracts(filename: str):
@@ -330,10 +443,8 @@ def extract_data_file_contracts(filename: str):
         for sheet in sheet_names:
             if sheet == "VEHICULOS":
                 continue
-            skip_rows = [i for i in range(0, 9)]
+            skip_rows = [i for i in range(0, inital_skip_rows)]
             # skip_rows = [i for i in range(9)] + [i for i in range(13, 3142)]
-            rows = [i for i in range(3142) if i not in skip_rows]
-            cols = [0, 1, 2]
             df = pd.read_excel(excel_file, skiprows=skip_rows, sheet_name=sheet)
             df.to_csv('files/OCT_report_1.csv')
             data = []
@@ -342,18 +453,19 @@ def extract_data_file_contracts(filename: str):
                 reader = csv.reader(csv_file)  # this is the reader object
                 for item in reader:
                     data.append(item)
-            status = []
-            fechas = []
-            comments = []
-            extras = []
-            primas = []
-            in_door = []
-            out_door = []
             employees = {}
+            name = ""
             indexes = range(len(data))
             starting_indexes = [indexes[i] for i in range(0, len(indexes), 4)]
             data_sliced = [data[i:i + 4] for i in starting_indexes]
             for data_aux in data_sliced:
+                status = []
+                fechas = []
+                comments = []
+                extras = []
+                primas = []
+                in_door = []
+                out_door = []
                 for i in range(len(data_aux)):
                     if i == 1:
                         name = clean_accents(data_aux[i][1])
@@ -379,6 +491,8 @@ def extract_data_file_contracts(filename: str):
                             else:
                                 primas.append(data_aux[i][j])
                 if name != "":
+                    status, fechas, comments, extras, primas, in_door, out_door = clean_data_contract(
+                        status, fechas, comments, extras, primas, in_door, out_door)
                     employees[name] = {
                         "fechas": fechas,
                         "status": status,
@@ -389,12 +503,34 @@ def extract_data_file_contracts(filename: str):
                         "out_door": out_door,
                     }
             contracts[sheet] = employees
-        print(contracts["ALMACEN"].keys())
     except Exception as e:
         print(e)
         messagebox.showerror("Error",
                              "Error al leer el archivo.\n Asegurese sea el archivo correcto, con el formato correcto.")
     return contracts
+
+
+def generate_table_from_dict_contracts(contracts: dict):
+    """
+    Generates a table from a dictionary
+    :param contracts:
+    :return:
+    """
+    table_data = []
+    for con_name in contracts.keys():
+        for emp_name in contracts[con_name].keys():
+            for i in range(len(contracts[con_name][emp_name]["status"])):
+                table_data.append([con_name, emp_name,
+                                   contracts[con_name][emp_name]["fechas"][i],
+                                   contracts[con_name][emp_name]["status"][i],
+                                   contracts[con_name][emp_name]["extras"][i],
+                                   contracts[con_name][emp_name]["primas"][i],
+                                   contracts[con_name][emp_name]["in_door"][i],
+                                   contracts[con_name][emp_name]["out_door"][i],
+                                   contracts[con_name][emp_name]["comments"][i]])
+    columns = ["Contrato", "Empleado", "Fecha", "Status", "Extras", "Primas", "Entrada",
+               "Salida", "Comentarios"]
+    return table_data, columns
 
 
 def extract_fichajes_file(filename: str):
@@ -406,6 +542,7 @@ def extract_fichajes_file(filename: str):
     try:
         skip_rows = [0, 1, 2]
         cols = [0, 1, 2]
+        # noinspection PyTypeChecker
         df = pd.read_excel(filename, skiprows=skip_rows, usecols=cols)
         df.dropna(inplace=True)
         df["Fecha/hora"] = clean_date(df["Fecha/hora"].tolist())
@@ -419,6 +556,7 @@ def extract_fichajes_file(filename: str):
                              "Error al leer el archivo.\n Asegurese sea el archivo correcto, con el formato correcto.")
         print(e)
         return None
+
 
 class DirectoryDbp:
     def __init__(self, name: str, father: str, files: list, children=None):

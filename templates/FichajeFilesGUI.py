@@ -8,25 +8,28 @@ from tkinter.filedialog import askopenfilename
 import pandas as pd
 import ttkbootstrap as ttk
 from ttkbootstrap.tableview import Tableview
+from ttkbootstrap.scrolled import ScrolledFrame
 
 import templates.cb_functions_sql_files as cb
 from templates.CollapsingFrame import CollapsingFrame
+from templates.TextFunctions import compare_employee_name
 
 
-class FichajesFilesGUI(ttk.Frame):
+class FichajesFilesGUI(ScrolledFrame):
     def __init__(self, master=None):
-        super().__init__(master)
+        super().__init__(master, autohide=True)
         # noinspection PyTypeChecker
         self.columnconfigure((0, 1, 2, 3, 4), weight=1)
         self.df = None
-        self.file_selected = False
+        self.file_selected_1 = False
+        self.file_selected_2 = False
         self.days_late = None
         self.days_extra = None
         self.contracts = {}
         # -------------------create title-----------------
         self.label_title = ttk.Label(self, text='Telintec Software Fichajes',
                                      font=('Helvetica', 32, 'bold'))
-        self.label_title.grid(row=0, column=0, columnspan=3)
+        self.label_title.grid(row=0, column=0, columnspan=5)
         # -------------------create entry for file selector-----------------
         self.label_file = ttk.Label(self, text='File: ')
         self.label_file.grid(row=1, column=0)
@@ -41,11 +44,17 @@ class FichajesFilesGUI(ttk.Frame):
         self.file_entry_2.grid(row=1, column=3)
         self.label_filename_2 = ttk.Label(self, text='')
         self.label_filename_2.grid(row=1, column=4)
-        # -------------------create tableview for data-----------------
-        self.table = Tableview(self)
+
         # -------------------create collapsing frame-----------------
         self.frame_collapse = CollapsingFrame(self)
-        self.frame_collapse.grid(row=3, column=0, columnspan=5, sticky='nsew')
+        self.frame_collapse.grid(row=4, column=0, columnspan=5, sticky='nsew')
+        # -------------------create tableview for data-----------------
+        self.group_2 = ttk.Frame(self.frame_collapse, padding=5)
+        self.group_2.columnconfigure(0, weight=1)
+        self.table_1 = Tableview(self.group_2)
+        self.table_2 = Tableview(self.group_2)
+        self.frame_collapse.add(self.group_2, title="Tablas")
+        # ----grupo filtrado por nombre
         group_1 = ttk.Frame(self.frame_collapse, padding=5)
         # noinspection PyTypeChecker
         group_1.columnconfigure((0, 1, 2, 3, 4, 5), weight=1)
@@ -64,7 +73,8 @@ class FichajesFilesGUI(ttk.Frame):
         self.window_time_in = ttk.Scale(group_1, from_=0, to=60, orient=ttk.HORIZONTAL, length=200,
                                         command=self.change_time_grace)
         self.window_time_in.set(15)
-        self.label_time_in = ttk.Label(group_1, text=f'Tiempo de gracia entrada: {int(self.window_time_in.get())} minutos')
+        self.label_time_in = ttk.Label(group_1,
+                                       text=f'Tiempo de gracia entrada: {int(self.window_time_in.get())} minutos')
         self.label_time_in.grid(row=1, column=3)
         label_out_time = ttk.Label(group_1, text='Hora de salida: ')
         label_out_time.grid(row=0, column=4, sticky="w")
@@ -73,7 +83,8 @@ class FichajesFilesGUI(ttk.Frame):
         self.window_time_out = ttk.Scale(group_1, from_=0, to=60, orient=ttk.HORIZONTAL, length=200,
                                          command=self.change_time_grace)
         self.window_time_out.set(15)
-        self.label_time_out = ttk.Label(group_1, text=f'Tiempo de gracia salida: {int(self.window_time_out.get())} minutos')
+        self.label_time_out = ttk.Label(group_1,
+                                        text=f'Tiempo de gracia salida: {int(self.window_time_out.get())} minutos')
         self.label_time_out.grid(row=1, column=5)
         # create display data employee
         label_subtitle = ttk.Label(group_1, text='Información resumida')
@@ -151,7 +162,7 @@ class FichajesFilesGUI(ttk.Frame):
         self.extra_hours.set(extra_hours)
 
     def change_time_grace(self, event):
-        if self.file_selected:
+        if self.file_selected_1:
             self.label_time_in.configure(text=f'Tiempo de gracia: {int(self.window_time_in.get())} minutos')
             self.label_time_out.configure(text=f'Tiempo de gracia: {int(self.window_time_out.get())} minutos')
 
@@ -220,6 +231,7 @@ class FichajesFilesGUI(ttk.Frame):
 
             (worked_days, worked_intime, count, count2,
              self.days_late, self.days_extra) = self.get_days_worked_late_extra(self.names.get())
+            data = self.get_data_from_name_contract(self.names.get())
             self.update_string_vars(f'Numero de dias trabajados: {worked_days}.',
                                     f'Numero de dias tarde: {count}.',
                                     f'Numero de dias con horas extras: {count2}.',
@@ -239,7 +251,14 @@ class FichajesFilesGUI(ttk.Frame):
         if ".xls" in filename or ".xlsx" in filename:
             self.contracts = cb.extract_data_file_contracts(filename)
             if len(self.contracts) != 0:
-                print(self.contracts.keys())
+                table_data, columns = cb.generate_table_from_dict_contracts(self.contracts)
+                self.table_2 = Tableview(self.group_2, bootstyle="primary",
+                                         coldata=columns,
+                                         rowdata=table_data,
+                                         paginated=False,
+                                         searchable=True)
+                self.table_2.grid(row=1, column=0, sticky='nsew', padx=50, pady=10)
+                self.file_selected_2 = True
 
     def button_file_click(self):
         try:
@@ -256,20 +275,20 @@ class FichajesFilesGUI(ttk.Frame):
                 coldata.append(
                     {"text": col, "stretch": True}
                 )
-            self.table = Tableview(self, bootstyle="primary",
-                                   coldata=coldata,
-                                   rowdata=self.df.values.tolist(),
-                                   paginated=False,
-                                   searchable=True)
-            self.table.grid(row=2, column=0, columnspan=5, sticky='nsew', padx=20, pady=10)
+            self.table_1 = Tableview(self.group_2, bootstyle="primary",
+                                     coldata=coldata,
+                                     rowdata=self.df.values.tolist(),
+                                     paginated=False,
+                                     searchable=True)
+            self.table_1.grid(row=0, column=0, sticky='nsew', padx=50, pady=10)
             self.names.configure(values=self.df["name"].unique().tolist())
             # enables scales
             self.window_time_in.grid(row=0, column=3)
             self.window_time_out.grid(row=0, column=5)
-            self.file_selected = True
+            self.file_selected_1 = True
 
     def get_days_worked_late_extra(self, name: str):
-        if self.file_selected:
+        if self.file_selected_1:
             df_name = self.df[self.df["name"] == name]
             df_name_entrada = df_name[df_name["in_out"] == "DENTRO"]
             df_name_salida = df_name[df_name["in_out"] == "FUERA"]
@@ -308,3 +327,20 @@ class FichajesFilesGUI(ttk.Frame):
                 diff = time_str - limit_hour2
                 extra_time[i[0]] = (diff, i[1])
             return worked_days, worked_intime, count, count2, time_late, extra_time
+
+    def get_data_from_name_contract(self, name):
+        if self.file_selected_2:
+            for contract in self.contracts.keys():
+                emp, flag = compare_employee_name(list(self.contracts[contract].keys()), name)
+                if flag:
+                    print(self.contracts[contract][emp]["extras"])
+                    print(self.contracts[contract][emp]["primas"])
+                    print(self.contracts[contract][emp]["fechas"])
+                    print(self.contracts[contract][emp]["status"])
+                    print(self.contracts[contract][emp]["comments"])
+                    print(self.contracts[contract][emp]["in_door"])
+                    print(self.contracts[contract][emp]["out_door"])
+                    return self.contracts[contract][emp]
+        else:
+            print("no file selected")
+            return None

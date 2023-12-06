@@ -1,0 +1,68 @@
+1 ,; Hola ,; 1 ,; [] ,; 2023-10-19  16:53:29
+2 ,; Hola ,;1,; [] ,; 2023-10-19  16:53:29
+3 ,; Hola ,; 1 ,; [] ,; 2023-10-19  16:53:29
+4 ,; Hola ,;1,; [] ,; 2023-10-19  16:53:29
+5 ,; Hola ,;1,; [] ,; 2023-10-19  16:53:29
+6 ,; Hola ,;1,; [] ,; 2023-10-19  16:53:29
+7 ,; Hola ,; 1 ,; [] ,; 2023-10-19  16:53:29
+8 ,; Hola ,; 1 ,; [] ,; 2023-10-19  16:53:29
+9 ,; Hola ,;1,; [] ,; 2023-10-19  16:53:29
+10 ,; Hola ,;1,; [] ,; 2023-10-19  16:53:29
+11 ,; Hola ,; 1 ,; [] ,; 2023-10-19  16:53:29
+12 ,; Hola ,;1,; [] ,; 2023-10-19  16:53:29
+0 ,; Hay 39 chats por revisar. ,;1,; [] ,; 2023-10-19 16:50:54 
+0 ,; Hay 39 chats por revisar. ,;1,; [] ,; 2023-10-19 17:07:21 
+0 ,; Hay 39 chats por revisar. ,;1,; [] ,; 2023-10-19 17:08:40 
+0 ,; Hay 39 chats por revisar. ,;1,; [] ,; 2023-10-19 17:11:34 
+353 ,; Hay pedidos del chat: 353 y se guardo en el archivo. ,;1,; ["{'role': 'user'", " 'content': 'Hola busco una barrera marca faac '}", " {'role': 'user'", " 'content': 'Hola busco una barrera marca faac '}", " {'role': 'assistant'", " 'content': '�Hola! Bienvenido a Telintec. Estoy aqu� para ayudarte. Entiendo que est�s buscando una barrera de la marca FAAC. Perm�teme buscarla para ti.\\n\\nGot it! Wait a moment while we search...\\n'}", " {'role': 'user'", " 'content': 'No me diste los resultados de la barrera faac '}", " {'role': 'assistant'", " 'content': 'Mis disculpas por la confusi�n. Perm�teme buscar la barrera de la marca FAAC para ti.\\n\\n'}", " {'role': 'assistant'", " 'content': 'No se encontraron  resultados'}", " {'role': 'user'", " 'content': '/end'}", " {'role': 'assistant'", " 'content': 'end'}"] ,; 2023-10-19 17:11:44
+0 ,; Hay 38 chats por revisar. ,;1,; [] ,; 2023-10-19 17:12:39
+0 ,; Hay 38 chats por revisar. ,;1,; [] ,; 2023-10-19 17:14:19
+355 ,; Hay pedidos del chat: 355 y se guardo en el archivo. ,;1,; ['Discos duros de cualquier marca'] ,; 2023-10-19 17:14:29
+0 ,; Hay 37 chats por revisar. ,;1,; [] ,; 2023-10-19 17:16:08
+0 ,; Hay 37 chats por revisar. ,;1,; [] ,; 2023-10-19 17:24:22
+0 ,; Hay 37 chats por revisar. ,;1,; [] ,; 2023-10-27 12:56:43 
+358 ,; Hay pedidos del chat: 358 y se guardo en el archivo. ,;1,; ["name='IP camera for outdoors'"] ,; 2023-10-27 12:56:47 
+359 ,; Hay pedidos del chat: 359 y se guardo en el archivo. ,;1,; [''] ,; 2023-10-27 12:56:51 
+360 ,; Hay pedidos del chat: 360 y se guardo en el archivo. ,;1,; ["name='C�mara Box IP 2 Megapixel / PoE / Detecci�n de movimiento / H.264 / MicroSD / Shutter Electronico'", " brand='HIKVISION'", " model='DS-2CD852MF-E'"] ,; 2023-10-27 12:56:56 
+361 ,; Hay pedidos del chat: 361 y se guardo en el archivo. ,;1,; [''] ,; 2023-10-27 12:57:06 
+365 ,; Hay pedidos del chat: 365 y se guardo en el archivo. ,;1,; [''] ,; 2023-10-27 12:57:32 
+366 ,; Hay pedidos del chat: 366 y se guardo en el archivo. ,;1,; [''] ,; 2023-10-27 12:57:38 
+367 ,; Hay pedidos del chat: 367 y se guardo en el archivo. ,;1,; ['["wrb.fr"', 'null', 'null', 'null', 'null', '[8'] ,; 2023-10-27 12:57:38 
+368 ,; Hay pedidos del chat: 368 y se guardo en el archivo. ,;1,; ['["wrb.fr"', 'null', 'null', 'null', 'null', '[8'] ,; 2023-10-27 12:57:38 
+369 ,; Hay pedidos del chat: 369 y se guardo en el archivo. ,;1,; ['["wrb.fr"', 'null', 'null', 'null', 'null', '[8'] ,; 2023-10-27 12:57:38 
+370 ,; Hay pedidos del chat: 370 y se guardo en el archivo. ,;1,; ['["wrb.fr"', 'null', 'null', 'null', 'null', '[8'] ,; 2023-10-27 12:57:38 
+371 ,; Hay pedidos del chat: 371 y se guardo en el archivo. ,;1,; ['["wrb.fr"', 'null', 'null', 'null', 'null', '[8'] ,; 2023-10-27 12:57:38 
+372 ,; Hay pedidos del chat: 372 y se guardo en el archivo. ,;1,; ['["wrb.fr"', 'null', 'null', 'null', 'null', '[8'] ,; 2023-10-27 12:57:38 
+373 ,; Hay pedidos del chat: 373 y se guardo en el archivo. ,;1,; ['["wrb.fr"', 'null', 'null', 'null', 'null', '[8'] ,; 2023-10-27 12:57:38 
+374 ,; Hay pedidos del chat: 374 y se guardo en el archivo. ,;1,; ['["wrb.fr"', 'null', 'null', 'null', 'null', '[8'] ,; 2023-10-27 12:57:38 
+375 ,; Hay pedidos del chat: 375 y se guardo en el archivo. ,;1,; ['["wrb.fr"', 'null', 'null', 'null', 'null', '[8'] ,; 2023-10-27 12:57:39 
+376 ,; Hay pedidos del chat: 376 y se guardo en el archivo. ,;1,; ['["wrb.fr"', 'null', 'null', 'null', 'null', '[8'] ,; 2023-10-27 12:57:39 
+377 ,; Hay pedidos del chat: 377 y se guardo en el archivo. ,;1,; ['["wrb.fr"', 'null', 'null', 'null', 'null', '[8'] ,; 2023-10-27 12:57:39 
+378 ,; Hay pedidos del chat: 378 y se guardo en el archivo. ,;1,; ['["wrb.fr"', 'null', 'null', 'null', 'null', '[8'] ,; 2023-10-27 12:57:39 
+379 ,; Hay pedidos del chat: 379 y se guardo en el archivo. ,;1,; ['["wrb.fr"', 'null', 'null', 'null', 'null', '[8'] ,; 2023-10-27 12:57:39 
+380 ,; Hay pedidos del chat: 380 y se guardo en el archivo. ,;1,; ['["wrb.fr"', 'null', 'null', 'null', 'null', '[8'] ,; 2023-10-27 12:57:40 
+381 ,; Hay pedidos del chat: 381 y se guardo en el archivo. ,;1,; ['["wrb.fr"', 'null', 'null', 'null', 'null', '[8'] ,; 2023-10-27 12:57:40 
+382 ,; Hay pedidos del chat: 382 y se guardo en el archivo. ,;1,; ['["wrb.fr"', 'null', 'null', 'null', 'null', '[8'] ,; 2023-10-27 12:57:40
+383 ,; Hay pedidos del chat: 383 y se guardo en el archivo. ,;1,; ['["wrb.fr"', 'null', 'null', 'null', 'null', '[8'] ,; 2023-10-27 12:57:40
+384 ,; Hay pedidos del chat: 384 y se guardo en el archivo. ,;1,; ['["wrb.fr"', 'null', 'null', 'null', 'null', '[8'] ,; 2023-10-27 12:57:40
+385 ,; Hay pedidos del chat: 385 y se guardo en el archivo. ,;1,; ['["wrb.fr"', 'null', 'null', 'null', 'null', '[8'] ,; 2023-10-27 12:57:40
+386 ,; Hay pedidos del chat: 386 y se guardo en el archivo. ,;1,; ['["wrb.fr"', 'null', 'null', 'null', 'null', '[8'] ,; 2023-10-27 12:57:40
+387 ,; Hay pedidos del chat: 387 y se guardo en el archivo. ,;1,; ['["wrb.fr"', 'null', 'null', 'null', 'null', '[8'] ,; 2023-10-27 12:57:40
+388 ,; Hay pedidos del chat: 388 y se guardo en el archivo. ,;1,; ['["wrb.fr"', 'null', 'null', 'null', 'null', '[8'] ,; 2023-10-27 12:57:40
+389 ,; Hay pedidos del chat: 389 y se guardo en el archivo. ,;1,; ['["wrb.fr"', 'null', 'null', 'null', 'null', '[8'] ,; 2023-10-27 12:57:41
+0 ,; Hay 422 chats por revisar. ,;1,; [] ,; 2023-11-01 17:10:06 
+0 ,; Hay 422 chats por revisar. ,;1,; [] ,; 2023-11-01 17:11:54 
+0 ,; Hay 422 chats por revisar. ,;1,; [] ,; 2023-11-01 17:15:15 
+0 ,; Hay 422 chats por revisar. ,;1,; [] ,; 2023-11-01 17:17:49 
+0 ,; Hay 422 chats por revisar. ,;1,; [] ,; 2023-11-01 17:18:38 
+0 ,; Hay 422 chats por revisar. ,;1,; [] ,; 2023-11-01 17:19:44 
+0 ,; Hay 422 chats por revisar. ,;1,; [] ,; 2023-11-01 17:23:16 
+0 ,; Hay 422 chats por revisar. ,;1,; [] ,; 2023-11-01 17:24:25 
+9 ,; Hay pedidos del chat: 9 y se guardo en el archivo. ,;1,; ["'chatbot'", " 'AV'"] ,; 2023-11-01 17:24:38 
+10 ,; Hay pedidos del chat: 10 y se guardo en el archivo. ,;1,; ["'chatbot'"] ,; 2023-11-01 17:24:48 
+0 ,; Hay 426 chats por revisar. ,; 0 ,; [] ,; 2023-11-02 16:14:22 
+13 ,; Hay pedidos del chat: 13 y se guardo en el archivo. ,; 0 ,; ['1', ' 2', ' 3'] ,; 2023-11-02 16:14:46 
+0 ,; Hay 425 chats por revisar. ,; 0 ,; [] ,; 2023-11-02 16:15:32 
+16 ,; Hay pedidos del chat: 16 y se guardo en el archivo. ,; 0 ,; ['12345', ' 67890'] ,; 2023-11-02 16:16:04 
+18 ,; Hay pedidos del chat: 18 y se guardo en el archivo. ,; 0 ,; ['12345', ' 67890'] ,; 2023-11-02 16:16:15 
+19 ,; Hay pedidos del chat: 19 y se guardo en el archivo. ,;1,; ['12345', ' 67890'] ,; 2023-11-02 16:16:25 

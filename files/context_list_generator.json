@@ -1,0 +1,6 @@
+{
+  "context":{
+    "role":"system",
+    "content":"Given an interaction between an assistant and a user, once the user confirmed the order, tell me the selected items by the user as a list. Consider the next line a example: \n  [product1 ID, product2 ID,...]. "
+  }
+}
