@@ -17,6 +17,7 @@ from templates.ScrollPedidosTicket import ScrollPedidosTicket
 from templates.notifications import Notifications
 from templates.settings import ChatSettingsApp
 from templates.DisplayPedidos import DisplayPedidos
+import templates.cb_functions as cb
 
 # from interface.VisualPedidos import VisualPedidos
 carpeta_principal = "./img"
@@ -34,16 +35,6 @@ value = [['Employees', 'Customers', 'Departments', 'heads', 'Suppliers', 'Produc
 
 ctk.set_appearance_mode("Light")  # Modes: "System" (standard), "Dark", "Light"
 ctk.set_default_color_theme("green")  # Themes: "blue" (standard), "green", "dark-blue"
-
-
-def create_button_side_menu(master, row, column, text, image=None, command=None):
-    button = ctk.CTkButton(master, corner_radius=0, height=40, border_spacing=10,
-                           text=text, fg_color="transparent",
-                           text_color=("#fff", "#fff"),
-                           hover_color=("gray70", "gray30"),
-                           image=image, anchor="w", command=command)
-    button.grid(row=row, column=column, sticky="nsew", pady=5, padx=30)
-    return button
 
 
 def read_file(filepath) -> list[tuple]:
@@ -103,13 +94,13 @@ def load_default_images():
 
 
 class GUIAsistente(ttk.Window):
-    def __init__(self, master=None, permissions=None, *args, **kwargs):
+    def __init__(self, master=None, *args, **kwargs):
         # -----------------------window setup------------------------------
-        super().__init__(master,  *args, **kwargs)
+        super().__init__(master, *args, **kwargs)
         self.master = master
-        self.permissions = None
+        self.permissions = {"1" : "App.Deparment.Default"}
         self.title("Admin-Chatbot.py")
-        p1 = PhotoImage(file=carpeta_principal+"/robot_1.png")
+        p1 = PhotoImage(file=carpeta_principal + "/robot_1.png")
         self.iconphoto(False, p1)
         self.after(0, lambda: self.state('zoomed'))
         # self.grid(row=0, column=0, sticky="nsew")
@@ -133,32 +124,31 @@ class GUIAsistente(ttk.Window):
         self.navigation_frame.grid_columnconfigure(0, weight=1)
         self.navigation_frame.grid_rowconfigure((0, 1, 2, 3, 4, 5), weight=1)
         # --------------------------------title-------------------------------
-        # self.navigation_frame_label = ctk.CTkLabel(self.navigation_frame, text="Telintec-ChatBot",
-        #                                            image=self.logo_image, compound="left",
-        #                                            font=ctk.CTkFont(size=15, weight="bold"))
-        # self.navigation_frame_label.grid(row=0, column=0, pady=20, padx=20)
-
         self.btnTeli = ctk.CTkButton(self.navigation_frame, image=self.logo_image,
                                      height=30, text="", hover=False,
                                      corner_radius=0, fg_color="transparent")
         self.btnTeli.grid(row=0, column=0, sticky="nsew")
         # --------------------widgets side menu -----------------------
-        self.btn_DB = create_button_side_menu(self.navigation_frame, 1, 0, text="DB", image=self.employees_img,
-                                              command=lambda: self.select_frame_by_name("btn1"))
-        self.btn_notification = create_button_side_menu(self.navigation_frame, 2, 0, text="Notifications",
-                                                        image=self.customers_img,
-                                                        command=lambda: self.select_frame_by_name("btn2"))
-        self.btn_chats = create_button_side_menu(self.navigation_frame, 3, 0, text="Chats", image=self.departments_img,
-                                                 command=lambda: self.select_frame_by_name("btn3"))
-        self.btn_settings = create_button_side_menu(self.navigation_frame, 4, 0, text="Settings",
-                                                    image=self.settings_img,
-                                                    command=lambda: self.select_frame_by_name("btn4"))
-        self.btn_ticket = create_button_side_menu(self.navigation_frame, 5, 0, text="Pedidos", image=self.pedido_img,
-                                                  command=lambda: self.select_frame_by_name("btn5"))
+        self.buttons_side_menu, self.names_side_menu = self.create_side_menu_widgets()
+        # self.btn_DB = cb.create_button_side_menu(self.navigation_frame, 1, 0, text="DB",
+        #                                          image=self.employees_img,
+        #                                          command=lambda: self.select_frame_by_name("btn1"))
+        # self.btn_notification = cb.create_button_side_menu(self.navigation_frame, 2, 0, text="Notifications",
+        #                                                    image=self.customers_img,
+        #                                                    command=lambda: self.select_frame_by_name("btn2"))
+        # self.btn_chats = cb.create_button_side_menu(self.navigation_frame, 3, 0, text="Chats",
+        #                                             image=self.departments_img,
+        #                                             command=lambda: self.select_frame_by_name("btn3"))
+        # self.btn_settings = cb.create_button_side_menu(self.navigation_frame, 4, 0, text="Settings",
+        #                                                image=self.settings_img,
+        #                                                command=lambda: self.select_frame_by_name("btn4"))
+        # self.btn_ticket = cb.create_button_side_menu(self.navigation_frame, 5, 0, text="Pedidos",
+        #                                              image=self.pedido_img,
+        #                                              command=lambda: self.select_frame_by_name("btn5"))
         print("side menu widgets created")
         # ------------------------login frame-------------------------------
         self.login_frame = Login.LoginGUI(self)
-        self.login_frame.grid(row=0, column=0, sticky="nsew",  pady=10, padx=5, columnspan=2)
+        self.login_frame.grid(row=0, column=0, sticky="nsew", pady=10, padx=5, columnspan=2)
         # -----------------------DBFrame-----------------------
         self.db_frame = DBFrame(self)
         print("DB frame created")
@@ -210,6 +200,8 @@ class GUIAsistente(ttk.Window):
         self.btn_process.grid(row=1, column=1, padx=10, pady=10, sticky="nsew")
         self.select_frame_by_name("none")
 
+    def update_side_menu(self):
+        self.buttons_side_menu, self.names_side_menu = self.create_side_menu_widgets()
 
     def checked_chat_event(self):
         checked_chat = self.chats_selections.get_checked_item()
@@ -224,26 +216,33 @@ class GUIAsistente(ttk.Window):
 
     def select_frame_by_name(self, name):
         # set button color for selected button
-        self.btn_DB.configure(fg_color=("gray75", "gray25") if name == "btn1" else "transparent")
-        self.btn_notification.configure(fg_color=("gray75", "gray25") if name == "btn2" else "transparent")
-        self.btn_chats.configure(fg_color=("gray75", "gray25") if name == "btn3" else "transparent")
-        self.btn_settings.configure(fg_color=("gray75", "gray25") if name == "btn4" else "transparent")
-        self.btn_ticket.configure(fg_color=("gray75", "gray25") if name == "btn5" else "transparent")
+        print("Button clicked", name)
+        for button in self.buttons_side_menu:
+            if button.cget("text") == name:
+                button.configure(fg_color=("gray75", "gray25"))
+            else:
+                button.configure(fg_color="transparent")
+        # self.btn_DB.configure(fg_color=("gray75", "gray25") if name == "btn1" else "transparent")
+        # self.btn_notification.configure(fg_color=("gray75", "gray25") if name == "btn2" else "transparent")
+        # self.btn_chats.configure(fg_color=("gray75", "gray25") if name == "btn3" else "transparent")
+        # self.btn_settings.configure(fg_color=("gray75", "gray25") if name == "btn4" else "transparent")
+        # self.btn_ticket.configure(fg_color=("gray75", "gray25") if name == "btn5" else "transparent")
         # show selected frame
         match name:
-            case "btn1":
+            case "DB":
                 self.hide_all_frame(1)
                 self.db_frame.grid(row=0, column=1, sticky="nsew", padx=1, pady=1)
-            case "btn2":
+            case "Notificaciones":
                 self.hide_all_frame(2)
                 self.main_frame_notifications.grid(row=0, column=1, sticky="nsew", padx=1, pady=1)
-            case "btn3":
+                print("Notifications showed")
+            case "Chats":
                 self.hide_all_frame(3)
                 self.main_frame_chat.grid(row=0, column=1, sticky="nsew", padx=1, pady=1)
-            case "btn4":
+            case "Settings":
                 self.hide_all_frame(4)
                 self.main_frame_settings.grid(row=0, column=1, sticky="nsew", padx=1, pady=1)
-            case "btn5":
+            case "Tickets":
                 self.hide_all_frame(5)
                 self.main_frame_ticket.grid(row=0, column=1, sticky="nsew", padx=1, pady=1)
             case _:
@@ -272,7 +271,32 @@ class GUIAsistente(ttk.Window):
                                          self.get_chat_id(chat_id))
         self.chat_display.grid(row=0, column=1, sticky="nsew")
 
+    def get_image_side_menu(self, name):
+        match name:
+            case "DB":
+                return self.employees_img
+            case "Notificaciones":
+                return self.customers_img
+            case "Chats":
+                return self.departments_img
+            case "Settings":
+                return self.settings_img
+            case "Tickets":
+                return self.pedido_img
+            case _:
+                return self.customers_img
 
-# if __name__ == "__main__":
-#     app = GUIAsistente()
-#     app.mainloop()
+    def create_side_menu_widgets(self):
+        flag, windows_names = cb.compare_permissions_windows(list(self.permissions.values()))
+        windows_names = windows_names if windows_names is not None else ["Notificaciones", "Settings"]
+        widgets = []
+        if flag or windows_names is not None:
+            for i, window in enumerate(windows_names):
+                widgets.append(cb.create_button_side_menu(
+                    self.navigation_frame,
+                    i, 0,
+                    text=window,
+                    image=self.get_image_side_menu(window),
+                    command=lambda x=window:  self.select_frame_by_name(x)))
+        return widgets, windows_names
+

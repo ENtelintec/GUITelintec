@@ -7,14 +7,16 @@ import os
 import re
 import threading
 import time
+import customtkinter as ctk
 from datetime import datetime, timezone
-from typing import List
+from typing import List, Tuple, Any
 import mysql.connector
 import openai
 import requests
 from bardapi.constants import SESSION_HEADERS
 from bardapi import Bard
 from dotenv import dotenv_values
+from static.extensions import ventanasApp
 
 secrets = dotenv_values(".env")
 openai.api_key = secrets["OPENAI_API_KEY"]
@@ -527,6 +529,37 @@ def get_last_chats(timestamp: str, time_wait):
         return result
     else:
         return []
+
+
+def create_button_side_menu(master, row, column, text, image=None, command=None):
+    """
+    This method is used to create a button in the side menu.
+    :param image: image for the button
+    :param command: command for the button
+    :param master: master for the button
+    :param row: row for the button
+    :param column: column for the button
+    :param text: text for the button
+    """
+    button = ctk.CTkButton(master, corner_radius=0, height=40, border_spacing=10,
+                           text=text, fg_color="transparent",
+                           text_color=("#fff", "#fff"),
+                           hover_color=("gray70", "gray30"),
+                           image=image, anchor="w", command=command)
+    button.grid(row=row, column=column, sticky="nsew", pady=5, padx=30)
+    return button
+
+
+def compare_permissions_windows(user_permissions: list) -> tuple[bool, Any] | tuple[bool, None]:
+    """
+    This method is used to compare the permissions of a user.
+    :param user_permissions: list of permissions of the user
+    :return: bool with the result of the comparison
+    """
+    for permission in user_permissions:
+        if permission in ventanasApp.keys():
+            return True, ventanasApp[permission]
+    return False, None
 
 
 class NotificationsUpdater(threading.Thread):

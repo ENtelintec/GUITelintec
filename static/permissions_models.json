@@ -14,5 +14,9 @@
   "3": {
     "name": "Access.Chatgpt",
     "description": "Has access to chatgpt"
+  },
+  "4": {
+    "name": "App.Deparment.RRHH",
+    "description": "Access for rrhh."
   }
 }

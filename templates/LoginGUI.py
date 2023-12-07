@@ -29,7 +29,7 @@ def call_authApi(user, pass_key, url=None):
     else:
         out = response.json()['verified']
         permissions = response.json()['permissions']
-    print(f"Verified: {out} with {permissions}")
+    # print(f"Verified: {out} with {permissions}")
     return out, permissions
 
 
@@ -70,6 +70,8 @@ class LoginGUI(ttk.Frame):
             self.message['text'] = 'Welcome!'
             self.message['foreground'] = 'green'
             self.master.permissions = permissions
+            self.master.update_side_menu()
+            # print(f"Permissions: {self.master.permissions}")
             self.destroy()
             # self.quit()
         else:
