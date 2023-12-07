@@ -13,13 +13,14 @@ filepath_settings = "../files/settings.json"
 IMG_PATH = Path('./img')
 
 
-class ChatSettingsApp(ctk.CTkFrame):
-    def __init__(self, master, father=None, filepath=filepath_settings, *args, **kwargs):
-        super().__init__(master, fg_color="#040546", *args, **kwargs)
+class ChatSettingsApp(ttk.Frame):
+    def __init__(self, master, filepath=filepath_settings, *args, **kwargs):
+        super().__init__(master, *args, **kwargs)
+        self.columnconfigure((0, 1, 2, 3), weight=1)
         self.filepath = filepath
-        self.master = father
+        self.master = master
         # Title label
-        cf = CollapsingFrame(master)
+        cf = CollapsingFrame(self)
         cf.grid(row=0, column=0, columnspan=6, padx=1, pady=1, sticky="nsew")
         group_1 = ttk.Frame(cf, padding=10)
         # Cantidad de chats
@@ -85,10 +86,10 @@ class ChatSettingsApp(ctk.CTkFrame):
         cf.add(group_3, title="Geometria")
 
         # Botón para guardar la configuración (opcional)
-        save_button = ctk.CTkButton(master, text="Guardar Configuración")
+        save_button = ctk.CTkButton(self, text="Guardar Configuración")
         save_button.grid(row=8, column=0, padx=10, pady=10)
         save_button.configure(command=self.save_settings)
-        load_button = ctk.CTkButton(master, text="Cargar Configuración")
+        load_button = ctk.CTkButton(self, text="Cargar Configuración")
         load_button.grid(row=8, column=2, padx=10, pady=10)
         load_button.configure(command=self.update_settings)
 

@@ -2,7 +2,13 @@
 __author__ = 'Edisson'
 __date__ = '$ October 12, 2023 09:17 $'
 
+import json
+import re
+
 import customtkinter as ctk
+import ttkbootstrap as ttk
+from templates.Functions_SQL import get_chats_w_limit
+from templates.DisplayChat import ChatsDisplay
 
 
 class ScrollableChats(ctk.CTkScrollableFrame):
@@ -91,3 +97,49 @@ class ScrollableLabelFrame(ctk.CTkScrollableFrame):
                 label.destroy()
                 self.label_list.remove(label)
                 return
+
+
+class ChatFrame(ttk.Frame):
+    def __init__(self, master, chats_to_show, images, chats=None, **kwargs):
+        # noinspection PyArgumentList
+        super().__init__(master, **kwargs)
+        # -------------variables and config----------------------------
+        self.columnconfigure(1, weight=1)
+        self.rowconfigure(0, weight=1)
+        self.chats_to_show = chats_to_show
+        self.images = images
+        # --------------widgets--------------
+        self.chats = get_chats_w_limit(limit=(0, self.chats_to_show)) if chats is None else chats
+        self.chats_selections = ScrollableChats(self,
+                                                chats=self.chats,
+                                                images=self.images,
+                                                command=self.checked_chat_event,
+                                                corner_radius=0,
+                                                width=220, height=685)
+        self.chats_selections.grid(row=0, column=0, padx=5, pady=5, sticky="nsew")
+        self.chats_selections.grid_columnconfigure(1, weight=1)
+        self.chats_selections.grid_rowconfigure(0, weight=1)
+        self.chat_display = ChatsDisplay(self,
+                                         self.get_chat_id(str(self.chats[0][0])))
+        self.chat_display.grid(row=0, column=1, padx=5, pady=5, sticky="nsew")
+        self.chat_display.grid_columnconfigure(1, weight=1)
+        self.chat_display.grid_rowconfigure(0, weight=1)
+
+    def checked_chat_event(self):
+        checked_chat = self.chats_selections.get_checked_item()
+        # print(checked_chat)
+        chat_id = re.findall(r'(\d+)', checked_chat)
+        chat_id = chat_id[0] if len(chat_id) > 0 else str(self.chats[0][0])
+        self.chat_display.grid_forget()
+        self.chat_display = ChatsDisplay(self,
+                                         self.get_chat_id(chat_id),
+                                         corner_radius=0, fg_color="#02021A")
+        self.chat_display.grid(row=0, column=1, padx=10, pady=10, sticky="nsew")
+
+    def get_chat_id(self, chat_id: str) -> list[dict | None]:
+        out = None
+        for item in self.chats:
+            if str(item[0]) == chat_id:
+                out = json.loads(item[2])
+                break
+        return out

@@ -71,6 +71,7 @@ class LoginGUI(ttk.Frame):
             self.message['foreground'] = 'green'
             self.master.permissions = permissions
             self.master.update_side_menu()
+            self.master.update_side_menu_windows()
             # print(f"Permissions: {self.master.permissions}")
             self.destroy()
             # self.quit()

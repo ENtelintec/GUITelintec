@@ -3,7 +3,6 @@ import tkinter as tk
 
 
 class ScrollPedidosTicket(ctk.CTkScrollableFrame):
-
     def __init__(self, master, chats=None, command=None, images=None, **kwargs):
         super().__init__(master, fg_color="#040546")
         self.rowconfigure(0, weight=1)
