@@ -9,6 +9,7 @@ import templates.LoginGUI as Login
 import templates.cb_functions as cb
 from templates.DBFrame import DBFrame
 from templates.DisplayPedidos import PedidosFrame
+from templates.FichajeFilesGUI import FichajesFilesGUI
 from templates.Functions_SQL import get_chats_w_limit
 from templates.ScrollabeChats import ChatFrame
 from templates.notifications import Notifications
@@ -171,6 +172,8 @@ class GUIAsistente(ttk.Window):
                 return self.settings_img
             case "Tickets":
                 return self.pedido_img
+            case "Horarios":
+                return self.suppliers_img
             case _:
                 return self.customers_img
 
@@ -207,6 +210,8 @@ class GUIAsistente(ttk.Window):
                     print("settings frame created")
                 case "Tickets":
                     windows[window] = PedidosFrame(self, self.images, self.chats)
+                case "Horarios":
+                    windows[window] = FichajesFilesGUI(self)
                 case _:
                     pass
         return windows
