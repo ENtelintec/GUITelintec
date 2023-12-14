@@ -1,10 +1,9 @@
 import customtkinter as ctk
-import tkinter as tk
 
 
 class ScrollPedidosTicket(ctk.CTkScrollableFrame):
     def __init__(self, master, chats=None, command=None, images=None, **kwargs):
-        super().__init__(master, fg_color="#040546")
+        super().__init__(master, fg_color="#040546", **kwargs)
         self.rowconfigure(0, weight=1)
         self.images = images
         self.command = command
@@ -28,7 +27,7 @@ class ScrollPedidosTicket(ctk.CTkScrollableFrame):
                              compound="left", padx=1,
                              width=5, height=30, anchor="w")
         radiobutton = ctk.CTkRadioButton(self, text=txt, text_color="#fff", value=txt,
-                                         radiobutton_height=1,radiobutton_width=1,
+                                         radiobutton_height=1, radiobutton_width=1,
                                          width=170, height=40,
                                          font=ctk.CTkFont(size=25, weight="normal"),
                                          variable=self.radiobutton_variable)
@@ -89,8 +88,3 @@ class ScrollableLabelFrame(ctk.CTkScrollableFrame):
                 label.destroy()
                 self.label_list.remove(label)
                 return
-
- 
-if __name__ == "__main__":
-    app = ScrollPedidosTicket()
-    app.mainloop()

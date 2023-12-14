@@ -60,12 +60,106 @@ def execute_sql(sql: str, values: tuple = None, type_sql=1):
         return flag, exception, out
 
 
+def execute_sql_multiple(sql: str, values_list: list = None, type_sql=1):
+    """
+    Execute the sql with the values provides (or not) and returns a value
+    depending on the type of query. In case of exception returns None
+    :param values_list: values for sql query
+    :param type_sql: type of query to execute
+    :param sql: sql query
+    :return:
+    """
+    mydb = mysql.connector.connect(
+        host=secrets["HOST_DB"],
+        user=secrets["USER_SQL"],
+        password=secrets["PASS_SQL"],
+        database="sql_telintec"
+    )
+    out = []
+    flag = True
+    error = None
+    my_cursor = mydb.cursor(buffered=True)
+    for i in range(len(values_list[0])):
+        values = []
+        for j in range(len(values_list)):
+            values.append(values_list[j][i])
+        values = tuple(values)
+        try:
+            match type_sql:
+                case 2:
+                    my_cursor.execute(sql, values)
+                    out.append(my_cursor.fetchall())
+                case 1:
+                    my_cursor.execute(sql, values)
+                    out.append(my_cursor.fetchone())
+                case 3:
+                    my_cursor.execute(sql, values)
+                    mydb.commit()
+                    out.append(my_cursor.rowcount)
+                case 4:
+                    my_cursor.execute(sql, values)
+                    mydb.commit()
+                    out.append(my_cursor.lastrowid)
+                case 5:
+                    my_cursor.execute(sql)
+                    out.append(my_cursor.fetchall())
+                case _:
+                    out.append([])
+        except Exception as error:
+            print(error)
+            out.append([])
+            flag = False
+    out = out if out is not None else []
+    my_cursor.close()
+    mydb.close()
+    return flag, error, out
+
+
 def get_employees(limit=(0, 100)) -> list[list]:
     sql = "SELECT * FROM sql_telintec.employees LIMIT %s, %s"
     val = (limit[0], limit[1])
     flag, e, my_result = execute_sql(sql, val, 2)
     out = my_result if my_result is not None else []
     return out
+
+
+def get_id_employee(name: str):
+    """
+    Get the id of the employee
+    :param name: name of the employee
+    :return: id of the employee
+    """
+    sql = ("SELECT employee_id FROM employees WHERE "
+           "MATCH(l_name) AGAINST (%s IN NATURAL LANGUAGE MODE ) and "
+           "MATCH(name) AGAINST (%s IN NATURAL LANGUAGE MODE )")
+    # lowercase names
+    name = name.lower()
+    values = (name, name)
+    flag, e, out = execute_sql(sql, values, 1)
+    if e is not None:
+        return None
+    else:
+        return out
+
+
+def get_ids_employees(names: list):
+    """
+    Get the id of the employee
+    :param names: list name of the employee
+    :return: id of the employee
+    """
+    sql = ("SELECT employee_id FROM employees WHERE "
+           "MATCH(l_name) AGAINST (%s IN NATURAL LANGUAGE MODE ) and "
+           "MATCH(name) AGAINST (%s IN NATURAL LANGUAGE MODE )")
+    # lowercase names
+    for i, name in enumerate(names):
+        names[i] = name.lower()
+    values = [names, names]
+    flag, e, out = execute_sql_multiple(sql, values, 1)
+    if e is not None:
+        return None
+    else:
+        return out
 
 
 def get_departments(limit=(0, 100)) -> list[list]:
@@ -167,8 +261,8 @@ def get_users(limit=(0, 100)):
 
 def insert_employee(name: str, lastname: str, dni: str, phone: str, email: str,
                     department: str, modality: str) -> tuple[bool, Exception | None, int | None]:
-    sql = ("INSERT INTO sql_telintec.employees (name, l_name, dni, phone_number, email, department_id, modality) "
-           "VALUES (%s, %s, %s, %s, %s, %s, %s)")
+    sql = ("INSERT INTO sql_telintec.employees (name, l_name, phone_number, email, department_id, modality) "
+           "VALUES (%s, %s, %s, %s, %s, %s)")
     val = (name, lastname, dni, phone, email, department, modality)
     flag, e, out = execute_sql(sql, val, 4)
     print(out, "record inserted.")
@@ -232,4 +326,53 @@ def check_last_id(old: str = None) -> list:
         sql = "SELECT chat_id FROM chats WHERE chat_id > %s"
         val = (old,)
         flag, e, out = execute_sql(sql, val, 2)
+    return out
+
+
+# --------------------------------Observer GUI--------------------------------
+def get_isAlive(chat_id: int, sender_id):
+    sql = "SELECT is_alive FROM chats WHERE chat_id = %s AND sender_id = %s"
+    val = (chat_id, sender_id)
+    flag, error, result = execute_sql(sql, val, 1)
+    return result
+
+
+def update_isAlive(chat_id: int, sender_id, is_alive):
+    sql = "UPDATE chats SET is_alive = %s WHERE chat_id = %s AND sender_id = %s"
+    val = (is_alive, chat_id, sender_id)
+    flag, error, result = execute_sql(sql, val, 3)
+    return result
+
+
+def get_only_context(chat_id: str):
+    sql = "SELECT context FROM chats WHERE chat_id = %s"
+    val = (chat_id,)
+    flag, error, result = execute_sql(sql, val, 1)
+    return result
+
+
+def set_finish_chat(chat_id: str):
+    sql = "UPDATE chats SET is_alive = 0, is_review = 1 WHERE chat_id = %s"
+    val = (chat_id,)
+    flag, error, result = execute_sql(sql, val, 3)
+    return result
+
+
+def get_username_data(username: str):
+    sql = ("select users_system.exp, users_system.timestamp_token, employees.name,"
+           " employees.l_name, employees.department_id, departments.name "
+           "from users_system "
+           "INNER JOIN employees ON (users_system.emp_id = employee_id and usernames=%s) "
+           "INNER JOIN departments on employees.department_id = departments.department_id")
+    val = (username,)
+    flag, error, result = execute_sql(sql, val)
+    if len(result) > 0:
+        out = {
+            "exp": result[0],
+            "timestamp": result[1],
+            "name": result[2],
+            "lastname": result[3],
+            "department_id": result[4],
+            "department_name": result[5]
+        }
     return out

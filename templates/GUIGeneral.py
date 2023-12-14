@@ -5,15 +5,15 @@ import customtkinter as ctk
 import ttkbootstrap as ttk
 from PIL import Image
 
-import templates.LoginGUI as Login
-import templates.cb_functions as cb
+import templates.LoginFrames as Login
+import templates.FunctionsObserver as cb
 from templates.DBFrame import DBFrame
-from templates.DisplayPedidos import PedidosFrame
-from templates.FichajeFilesGUI import FichajesFilesGUI
-from templates.Functions_SQL import get_chats_w_limit
-from templates.ScrollabeChats import ChatFrame
-from templates.notifications import Notifications
-from templates.settings import ChatSettingsApp
+from templates.PedidosFrame import PedidosFrame
+from templates.FichajeFilesFrames import FichajesFilesGUI
+from templates.FunctionsSQL import get_chats_w_limit, get_username_data
+from templates.ChatsFrame import ChatFrame
+from templates.NotificationsFrame import Notifications
+from templates.SettingsFrame import ChatSettingsApp
 
 # from interface.VisualPedidos import VisualPedidos
 carpeta_principal = "./img"
@@ -95,6 +95,8 @@ class GUIAsistente(ttk.Window):
         super().__init__(master, *args, **kwargs)
         self.master = master
         self.permissions = {"1": "App.Deparment.Default"}
+        self.username = "default"
+        self.username_data = None
         self.title("Admin-Chatbot.py")
         p1 = PhotoImage(file=carpeta_principal + "/robot_1.png")
         self.iconphoto(False, p1)
@@ -132,13 +134,15 @@ class GUIAsistente(ttk.Window):
         self.login_frame = Login.LoginGUI(self)
         self.login_frame.grid(row=0, column=0, sticky="nsew", pady=10, padx=5, columnspan=2)
         # create other frames
-        self.windows_frames = self.create_side_menu_windows()
-        self.select_frame_by_name("none")
+        # self.windows_frames = self.create_side_menu_windows()
+        # self.select_frame_by_name("none")
 
     def update_side_menu(self):
+        print(f"side menu for: {self.username} with {self.permissions}")
         self.buttons_side_menu, self.names_side_menu = self.create_side_menu_widgets()
 
     def update_side_menu_windows(self):
+        print(f"windows menu for: {self.username} with {self.permissions}")
         self.windows_frames = self.create_side_menu_windows()
 
     def select_frame_by_name(self, name):
@@ -174,6 +178,8 @@ class GUIAsistente(ttk.Window):
                 return self.pedido_img
             case "Horarios":
                 return self.suppliers_img
+            case "Cuenta":
+                return self.products_img
             case _:
                 return self.customers_img
 
@@ -185,7 +191,7 @@ class GUIAsistente(ttk.Window):
             for i, window in enumerate(windows_names):
                 widgets.append(cb.create_button_side_menu(
                     self.navigation_frame,
-                    i, 0,
+                    i+1, 0,
                     text=window,
                     image=self.get_image_side_menu(window),
                     command=lambda x=window: self.select_frame_by_name(x)))
@@ -210,8 +216,28 @@ class GUIAsistente(ttk.Window):
                     print("settings frame created")
                 case "Tickets":
                     windows[window] = PedidosFrame(self, self.images, self.chats)
+                    print("tickets frame created")
                 case "Horarios":
                     windows[window] = FichajesFilesGUI(self)
+                    print("horarios frame created")
+                case "Cuenta":
+                    windows[window] = Login.LogOptionsFrame(self)
+                    print("cuenta frame created")
                 case _:
                     pass
         return windows
+
+    def logOut(self):
+        self.select_frame_by_name("none")
+        self.destroy_side_menu_widgets()
+        self.login_frame = Login.LoginGUI(self)
+        self.login_frame.grid(row=0, column=0, sticky="nsew", pady=10, padx=5, columnspan=2)
+
+    def destroy_side_menu_widgets(self):
+        for widget in self.buttons_side_menu:
+            widget.destroy()
+        print("side menu widgets destroyed")
+
+    def get_username_data(self):
+        self.username_data = get_username_data(self.username)
+        print(self.username_data)

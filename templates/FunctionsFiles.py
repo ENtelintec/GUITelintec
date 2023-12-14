@@ -16,149 +16,110 @@ import pandas as pd
 import ttkbootstrap as ttk
 
 from static.extensions import secrets
-from templates.TextFunctions import clean_accents
+from templates.FunctionsText import clean_accents
 
 
-def execute_sql(sql: str, values: tuple = None, type_sql=1):
-    """
-    Execute the sql with the values provides (or not) and returns a value
-    depending on the type of query. In case of exception returns None
-    :param type_sql: type of query to execute
-    :param sql: sql query
-    :param values: values for sql query
-    :return:
-    """
-    mydb = mysql.connector.connect(
-        host=secrets["HOST_DB"],
-        user=secrets["USER_SQL"],
-        password=secrets["PASS_SQL"],
-        database="sql_telintec"
-    )
-    my_cursor = mydb.cursor()
-    out = []
-    error = None
-    try:
-        match type_sql:
-            case 2:
-                my_cursor.execute(sql, values)
-                out = my_cursor.fetchall()
-            case 1:
-                my_cursor.execute(sql, values)
-                out = my_cursor.fetchone()
-            case 3:
-                my_cursor.execute(sql, values)
-                mydb.commit()
-                out = my_cursor.rowcount
-            case 4:
-                my_cursor.execute(sql, values)
-                mydb.commit()
-                out = my_cursor.lastrowid
-            case 5:
-                my_cursor.execute(sql)
-                out = my_cursor.fetchall()
-            case _:
-                out = []
-    except Exception as error:
-        print(error)
-        out = []
-        return out, error
-    finally:
-        out = out if out is not None else []
-        my_cursor.close()
-        mydb.close()
-        return out, error
+# def execute_sql(sql: str, values: tuple = None, type_sql=1):
+#     """
+#     Execute the sql with the values provides (or not) and returns a value
+#     depending on the type of query. In case of exception returns None
+#     :param type_sql: type of query to execute
+#     :param sql: sql query
+#     :param values: values for sql query
+#     :return:
+#     """
+#     mydb = mysql.connector.connect(
+#         host=secrets["HOST_DB"],
+#         user=secrets["USER_SQL"],
+#         password=secrets["PASS_SQL"],
+#         database="sql_telintec"
+#     )
+#     my_cursor = mydb.cursor()
+#     out = []
+#     e = None
+#     try:
+#         match type_sql:
+#             case 2:
+#                 my_cursor.execute(sql, values)
+#                 out = my_cursor.fetchall()
+#             case 1:
+#                 my_cursor.execute(sql, values)
+#                 out = my_cursor.fetchone()
+#             case 3:
+#                 my_cursor.execute(sql, values)
+#                 mydb.commit()
+#                 out = my_cursor.rowcount
+#             case 4:
+#                 my_cursor.execute(sql, values)
+#                 mydb.commit()
+#                 out = my_cursor.lastrowid
+#             case 5:
+#                 my_cursor.execute(sql)
+#                 out = my_cursor.fetchall()
+#             case _:
+#                 out = []
+#     except Exception as error:
+#         print(error)
+#         e = error
+#         out = []
+#     finally:
+#         out = out if out is not None else []
+#         my_cursor.close()
+#         mydb.close()
+#         return out, e
 
 
-def execute_sql_multiple(sql: str, values_list: list = None, type_sql=1):
-    """
-    Execute the sql with the values provides (or not) and returns a value
-    depending on the type of query. In case of exception returns None
-    :param values_list: values for sql query
-    :param type_sql: type of query to execute
-    :param sql: sql query
-    :return:
-    """
-    mydb = mysql.connector.connect(
-        host=secrets["HOST_DB"],
-        user=secrets["USER_SQL"],
-        password=secrets["PASS_SQL"],
-        database="sql_telintec"
-    )
-    out = []
-    error = None
-    my_cursor = mydb.cursor(buffered=True)
-    for i in range(len(values_list[0])):
-        values = []
-        for j in range(len(values_list)):
-            values.append(values_list[j][i])
-        values = tuple(values)
-        try:
-            match type_sql:
-                case 2:
-                    my_cursor.execute(sql, values)
-                    out.append(my_cursor.fetchall())
-                case 1:
-                    my_cursor.execute(sql, values)
-                    out.append(my_cursor.fetchone())
-                case 3:
-                    my_cursor.execute(sql, values)
-                    mydb.commit()
-                    out.append(my_cursor.rowcount)
-                case 4:
-                    my_cursor.execute(sql, values)
-                    mydb.commit()
-                    out.append(my_cursor.lastrowid)
-                case 5:
-                    my_cursor.execute(sql)
-                    out.append(my_cursor.fetchall())
-                case _:
-                    out.append([])
-        except Exception as error:
-            print(error)
-            out.append([])
-    out = out if out is not None else []
-    my_cursor.close()
-    mydb.close()
-    return out, error
-
-
-def get_id_employee(name: str):
-    """
-    Get the id of the employee
-    :param name: name of the employee
-    :return: id of the employee
-    """
-    sql = ("SELECT employee_id FROM employees WHERE "
-           "MATCH(l_name) AGAINST (%s IN NATURAL LANGUAGE MODE ) and "
-           "MATCH(name) AGAINST (%s IN NATURAL LANGUAGE MODE )")
-    # lowercase names
-    name = name.lower()
-    values = (name, name)
-    out, e = execute_sql(sql, values, 1)
-    if e is not None:
-        return None
-    else:
-        return out
-
-
-def get_ids_employees(names: list):
-    """
-    Get the id of the employee
-    :param names: list name of the employee
-    :return: id of the employee
-    """
-    sql = ("SELECT employee_id FROM employees WHERE "
-           "MATCH(l_name) AGAINST (%s IN NATURAL LANGUAGE MODE ) and "
-           "MATCH(name) AGAINST (%s IN NATURAL LANGUAGE MODE )")
-    # lowercase names
-    for i, name in enumerate(names):
-        names[i] = name.lower()
-    values = [names, names]
-    out, e = execute_sql_multiple(sql, values, 1)
-    if e is not None:
-        return None
-    else:
-        return out
+# def execute_sql_multiple(sql: str, values_list: list = None, type_sql=1):
+#     """
+#     Execute the sql with the values provides (or not) and returns a value
+#     depending on the type of query. In case of exception returns None
+#     :param values_list: values for sql query
+#     :param type_sql: type of query to execute
+#     :param sql: sql query
+#     :return:
+#     """
+#     mydb = mysql.connector.connect(
+#         host=secrets["HOST_DB"],
+#         user=secrets["USER_SQL"],
+#         password=secrets["PASS_SQL"],
+#         database="sql_telintec"
+#     )
+#     out = []
+#     error = None
+#     my_cursor = mydb.cursor(buffered=True)
+#     for i in range(len(values_list[0])):
+#         values = []
+#         for j in range(len(values_list)):
+#             values.append(values_list[j][i])
+#         values = tuple(values)
+#         try:
+#             match type_sql:
+#                 case 2:
+#                     my_cursor.execute(sql, values)
+#                     out.append(my_cursor.fetchall())
+#                 case 1:
+#                     my_cursor.execute(sql, values)
+#                     out.append(my_cursor.fetchone())
+#                 case 3:
+#                     my_cursor.execute(sql, values)
+#                     mydb.commit()
+#                     out.append(my_cursor.rowcount)
+#                 case 4:
+#                     my_cursor.execute(sql, values)
+#                     mydb.commit()
+#                     out.append(my_cursor.lastrowid)
+#                 case 5:
+#                     my_cursor.execute(sql)
+#                     out.append(my_cursor.fetchall())
+#                 case _:
+#                     out.append([])
+#         except Exception as error:
+#             print(error)
+#             out.append([])
+#     out = out if out is not None else []
+#     my_cursor.close()
+#     mydb.close()
+#     return out, error
 
 
 def check_only_read_conflict(name: str):

@@ -11,7 +11,7 @@ import customtkinter as ctk
 import ttkbootstrap as ttk
 from PIL import Image
 
-import templates.Functions_SQL as fsql
+import templates.FunctionsSQL as fsql
 
 image_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "../img")
 

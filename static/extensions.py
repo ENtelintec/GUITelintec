@@ -15,8 +15,8 @@ api = Api(doc='/GUI/doc')
 url_api = "http://127.0.0.1:5000/AuthAPI/api/v1/auth/loginUP"
 IMG_PATH_COLLAPSING = Path('./img')
 ventanasApp = {
-    'App.Deparment.Director':  ["DB", "Notificaciones", "Chats", "Settings", "Tickets"],
-    'App.Deparment.RRHH':  ["Horarios", "Notificaciones", "Settings"],
-    'App.Deparment.Administrator':  ["DB", "Notificaciones", "Chats", "Settings", "Tickets"],
-    'App.Deparment.Default':  ["Notificaciones"]
+    'App.Deparment.Director': ["DB", "Notificaciones", "Chats", "Settings", "Tickets", "Cuenta"],
+    'App.Deparment.RRHH': ["Horarios", "Notificaciones", "Settings", "Cuenta"],
+    'App.Deparment.Administrator': ["DB", "Notificaciones", "Chats", "Horarios", "Tickets", "Settings", "Cuenta"],
+    'App.Deparment.Default': ["Notificaciones", "Cuenta"]
 }

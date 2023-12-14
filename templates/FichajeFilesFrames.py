@@ -10,9 +10,9 @@ import ttkbootstrap as ttk
 from ttkbootstrap.tableview import Tableview
 from ttkbootstrap.scrolled import ScrolledFrame
 
-import templates.cb_functions_sql_files as cb
+import templates.FunctionsFiles as cb
 from templates.CollapsingFrame import CollapsingFrame
-from templates.TextFunctions import compare_employee_name
+from templates.FunctionsText import compare_employee_name
 
 
 class FichajesFilesGUI(ScrolledFrame):

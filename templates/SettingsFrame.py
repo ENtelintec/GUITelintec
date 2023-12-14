@@ -1,11 +1,10 @@
 import json
 import tkinter as tk
-from tkinter import StringVar
+from pathlib import Path
 
 import customtkinter as ctk
 # from tkcalendar import DateEntry
 import ttkbootstrap as ttk
-from pathlib import Path
 from ttkbootstrap.constants import *
 from ttkbootstrap.style import Bootstyle
 
@@ -192,10 +191,12 @@ class CollapsingFrame(ttk.Frame):
             return
 
         style_color = Bootstyle.ttkstyle_widget_color(bootstyle)
+        # noinspection PyArgumentList
         frm = ttk.Frame(self, bootstyle=style_color)
         frm.grid(row=self.cumulative_rows, column=0, sticky=EW)
 
         # header title
+        # noinspection PyArgumentList
         header = ttk.Label(
             master=frm,
             text=title,
@@ -210,6 +211,7 @@ class CollapsingFrame(ttk.Frame):
         def _func(c=child):
             return self._toggle_open_close(c)
 
+        # noinspection PyArgumentList
         btn = ttk.Button(
             master=frm,
             image=self.images[0],
@@ -240,8 +242,3 @@ class CollapsingFrame(ttk.Frame):
         else:
             child.grid()
             child.btn.configure(image=self.images[0])
-
-
-if __name__ == "__main__":
-    app = ChatSettingsApp()
-    app.mainloop()

@@ -7,16 +7,18 @@ import os
 import re
 import threading
 import time
-import customtkinter as ctk
 from datetime import datetime, timezone
-from typing import List, Tuple, Any
-import mysql.connector
+from typing import List, Any
+
+import customtkinter as ctk
 import openai
 import requests
-from bardapi.constants import SESSION_HEADERS
 from bardapi import Bard
+from bardapi.constants import SESSION_HEADERS
 from dotenv import dotenv_values
+
 from static.extensions import ventanasApp
+from templates.FunctionsSQL import get_isAlive, update_isAlive, get_only_context, set_finish_chat
 
 secrets = dotenv_values(".env")
 openai.api_key = secrets["OPENAI_API_KEY"]
@@ -40,51 +42,6 @@ def get_response_bard(prompt: str) -> str:
         print(e)
         response = "Error in Bard API:  " + str(e)
     return response
-
-
-def execute_sql(sql: str, values: tuple = None, type_sql=1):
-    """
-    Execute the sql with the values provides (or not) and returns a value
-    depending on the type of query. In case of exception returns None
-    :param type_sql: type of query to execute
-    :param sql: sql query
-    :param values: values for sql query
-    :return:
-    """
-    mydb = mysql.connector.connect(
-        host=secrets["HOST"],
-        user=secrets["USER_SQL_AWS"],
-        password=secrets["PASS_SQL_AWS"],
-        database="sql_telintec"
-    )
-    my_cursor = mydb.cursor()
-    try:
-        match type_sql:
-            case 2:
-                my_cursor.execute(sql, values)
-                return my_cursor.fetchall()
-            case 1:
-                my_cursor.execute(sql, values)
-                return my_cursor.fetchone()
-            case 3:
-                my_cursor.execute(sql, values)
-                mydb.commit()
-                return my_cursor.rowcount
-            case 4:
-                my_cursor.execute(sql, values)
-                mydb.commit()
-                return my_cursor.lastrowid
-            case 5:
-                my_cursor.execute(sql)
-                return my_cursor.fetchall()
-            case _:
-                return None
-    except Exception as e:
-        print(e)
-        return None
-    finally:
-        my_cursor.close()
-        mydb.close()
 
 
 def normalize_command(s: str):
@@ -152,28 +109,6 @@ def clean_name(name: str) -> List:
     return msg_list
 
 
-def retrieve_context(chat_id: str, sender_id: str) -> list:
-    """
-    Retrieves the context of a conversation.
-    :param chat_id: <string> id of the conversation
-    :param sender_id: <string> id of the sender
-    :return: <list> list of dictionaries with the context of the conversation
-    """
-    sql = "SELECT context, is_alive FROM chats " \
-          "WHERE chat_id = %s AND sender_id = %s "
-    val = (chat_id, sender_id)
-    # my_cursor.execute(sql, val)
-    # result = my_cursor.fetchone()
-    result = execute_sql(sql, val)
-    if result is not None:
-        context = json.loads(result[0])
-        is_alive = bool(result[1])
-        data_out = [context, is_alive, 200]
-    else:
-        data_out = [[], [], 204]
-    return data_out
-
-
 def get_response(messages: list, temperature: float = 0.0) -> str:
     """
     Receives context and conversation with the bot and return a
@@ -220,11 +155,7 @@ def observer_chats_msg(chat_id, sender_id, time_start):
         if time_diff.seconds >= 60 + counter * 60:
             counter += 1
             print("Chat is still alive")
-            sql = "SELECT is_alive FROM chats WHERE chat_id = %s AND sender_id = %s"
-            val = (chat_id, sender_id)
-            # my_cursor.execute(sql, val)
-            # result = my_cursor.fetchone()
-            result = execute_sql(sql, val, 1)
+            result = get_isAlive(chat_id, sender_id)
             if result is None:
                 print("Chat not found")
                 break
@@ -239,11 +170,7 @@ def observer_chats_msg(chat_id, sender_id, time_start):
             time.sleep(diff_counter)
             continue
     if flag_checker:
-        sql = "UPDATE chats SET is_alive = %s WHERE chat_id = %s AND sender_id = %s"
-        val = (is_alive, chat_id, sender_id)
-        # my_cursor.execute(sql, val)
-        # mydb.commit()
-        execute_sql(sql, val, 3)
+        update_isAlive(chat_id, sender_id, is_alive)
     print("Observer finished")
     # run list and data generator
     t1 = threading.Thread(target=list_and_data_generator)
@@ -271,12 +198,7 @@ def follow_conversation(data: list) -> str:
     chat_id = data[0]
     sender_id = data[1]
     time_start = datetime.strptime(data[2], '%Y-%m-%d %H:%M:%S.%f')
-    sql = "SELECT is_alive FROM chats WHERE chat_id = %s AND sender_id = %s"
-    val = (chat_id, sender_id)
-    result = execute_sql(sql, val, 1)
-    # my_cursor.execute(sql, val)
-    # result = my_cursor.fetchone()
-
+    result = get_isAlive(chat_id, sender_id)
     if result is None:
         print("Chat not found")
         return "Chat not found"
@@ -315,10 +237,7 @@ def retrieve_content_chat_id(chat_id: str) -> tuple:
     :param chat_id: <string> id of the conversation
     :return: <list> list of dictionaries with the context of the conversation
     """
-    sql1 = ("SELECT context FROM sql_telintec.chats "
-            "WHERE chat_id = %s ")
-    val1 = (chat_id,)
-    result = execute_sql(sql1, val1, 1)
+    result = get_only_context(chat_id)
     if result is not None:
         context = json.loads(result[0])
     else:
@@ -331,11 +250,7 @@ def finish_chat(chat_id: str):
     This method is used to finish a conversation.
     :param chat_id: string with the id of the conversation
     """
-    sql1 = ("UPDATE sql_telintec.chats "
-            "SET is_alive = 0, is_review = 1 "
-            "WHERE chat_id = %s ")
-    val1 = (chat_id,)
-    execute_sql(sql1, val1, 3)
+    set_finish_chat(chat_id)
     print("Chat finished:  ", chat_id)
 
 
@@ -511,24 +426,6 @@ def get_timestamp_difference(timestamp_last: str, is_utc=True, scale="MINUTES") 
         case _:  # default
             factor = 1
     return (timestamp_now - timestamp_last).seconds / factor
-
-
-def get_last_chats(timestamp: str, time_wait):
-    """
-    This method is used to get the last chats from the database.
-    :param timestamp: timestamp for the last message
-    :param time_wait: time window for a chat to be alive
-    :return: list of tuples with the last chats
-    """
-    sql = ("SELECT is_alive, chat_id FROM chats "
-           "WHERE timestampdiff(MINUTE, %s, timestamp_end) >= %s  "
-           "OR is_review = 0 ")
-    val = (timestamp, str(-time_wait))
-    result = execute_sql(sql, val, 2)
-    if result is not None:
-        return result
-    else:
-        return []
 
 
 def create_button_side_menu(master, row, column, text, image=None, command=None):

@@ -4,8 +4,7 @@ import tkinter as tk
 from tkinter import ttk
 import customtkinter as ctk
 
-from templates.DisplayChat import ChatsDisplay
-from templates.VisualPedidos import VisualPedidos
+from templates.DisplayChatSubframe import ChatsDisplay
 
 
 class DisplayPedidos(ctk.CTkFrame):
@@ -172,3 +171,19 @@ class ScrollableLabelFrame(ctk.CTkScrollableFrame):
                 label.destroy()
                 self.label_list.remove(label)
                 return
+
+
+class VisualPedidos(ttk.Treeview):
+    def __init__(self, master, **kwargs):
+        super().__init__(master, **kwargs)
+        # tk.Frame.__init__(self, master, **kwargs)
+        # Crear el Treeview
+        self.tree = ttk.Treeview(self, columns=("Nombre", "Edad"))
+        self.tree.heading("#1", text="Nombre")
+        self.tree.heading("#2", text="Edad")
+
+        # Agregar algunos datos ficticios
+        self.tree.insert("", "end", values=("Juan", 30))
+        self.tree.insert("", "end", values=("María", 25))
+        self.tree.insert("", "end", values=("Carlos", 35))
+        self.tree.insert("", "end", values=("Laura", 28))
