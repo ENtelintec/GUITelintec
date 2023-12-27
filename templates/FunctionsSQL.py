@@ -3,9 +3,7 @@ __author__ = 'Edisson Naula'
 __date__ = '$ 27/jul./2023  at 16:41 $'
 
 import mysql.connector
-from dotenv import dotenv_values
-
-secrets = dotenv_values(".env")
+from static.extensions import secrets
 
 
 def execute_sql(sql: str, values: tuple = None, type_sql=1):
@@ -18,9 +16,9 @@ def execute_sql(sql: str, values: tuple = None, type_sql=1):
     :return:
     """
     mydb = mysql.connector.connect(
-        host=secrets["HOST_DB"],
-        user=secrets["USER_SQL"],
-        password=secrets["PASS_SQL"],
+        host=secrets["HOST_DB_AWS"],
+        user=secrets["USER_SQL_AWS"],
+        password=secrets["PASS_SQL_AWS"],
         database="sql_telintec"
     )
     my_cursor = mydb.cursor()
@@ -70,9 +68,9 @@ def execute_sql_multiple(sql: str, values_list: list = None, type_sql=1):
     :return:
     """
     mydb = mysql.connector.connect(
-        host=secrets["HOST_DB"],
-        user=secrets["USER_SQL"],
-        password=secrets["PASS_SQL"],
+        host=secrets["HOST_DB_AWS"],
+        user=secrets["USER_SQL_AWS"],
+        password=secrets["PASS_SQL_AWS"],
         database="sql_telintec"
     )
     out = []
@@ -134,8 +132,10 @@ def get_id_employee(name: str):
            "MATCH(name) AGAINST (%s IN NATURAL LANGUAGE MODE )")
     # lowercase names
     name = name.lower()
+
     values = (name, name)
     flag, e, out = execute_sql(sql, values, 1)
+    print(e, out)
     if e is not None:
         return None
     else:
@@ -366,6 +366,8 @@ def get_username_data(username: str):
            "INNER JOIN departments on employees.department_id = departments.department_id")
     val = (username,)
     flag, error, result = execute_sql(sql, val)
+    print(result, error, username)
+    out = None
     if len(result) > 0:
         out = {
             "exp": result[0],

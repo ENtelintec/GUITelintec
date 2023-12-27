@@ -12,7 +12,7 @@ from ttkbootstrap import Style
 import tkinter as tk
 
 secrets = dotenv_values(".env")
-url_api = "http://127.0.0.1:5000/AuthAPI/api/v1/auth/loginUP"
+url_api = "https://ec2-3-144-117-149.us-east-2.compute.amazonaws.com/AuthAPI/api/v1/auth/loginUP"
 
 
 def call_authApi(user, pass_key, url=None):
@@ -122,4 +122,3 @@ class LogOptionsFrame(ttk.Frame):
 
     def button_logout_click(self):
         self.master.logOut()
-

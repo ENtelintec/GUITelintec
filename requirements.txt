@@ -17,5 +17,5 @@ matplotlib~=3.8.1
 pyxlsb~=1.0.10
 customtkinter~=5.2.1
 Pillow~=10.1.0
-openai~=0.28.1
+openai
 bardapi~=0.1.38

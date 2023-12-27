@@ -262,6 +262,18 @@ def clean_date(dates: list):
     return dates
 
 
+def clean_in_out(in_out: list):
+    for i, str_in_out in enumerate(in_out):
+        if str_in_out is not None:
+            if "OUT" in str_in_out:
+                in_out[i] = "FUERA"
+            if "IN" in str_in_out:
+                in_out[i] = "IN"
+        else:
+            in_out[i] = ""
+    return in_out
+
+
 def clean_text(texts: list):
     status = []
     auth = []
@@ -471,6 +483,15 @@ def extract_data_file_contracts(filename: str):
     return contracts
 
 
+def clean_status_contracts(status: str):
+    """
+    Cleans the status of the contract
+    :param status:
+    :return:
+    """
+    return "" if "Unnamed" in status else status
+
+
 def generate_table_from_dict_contracts(contracts: dict):
     """
     Generates a table from a dictionary
@@ -483,7 +504,7 @@ def generate_table_from_dict_contracts(contracts: dict):
             for i in range(len(contracts[con_name][emp_name]["status"])):
                 table_data.append([con_name, emp_name,
                                    contracts[con_name][emp_name]["fechas"][i],
-                                   contracts[con_name][emp_name]["status"][i],
+                                   clean_status_contracts(contracts[con_name][emp_name]["status"][i]),
                                    contracts[con_name][emp_name]["extras"][i],
                                    contracts[con_name][emp_name]["primas"][i],
                                    contracts[con_name][emp_name]["in_door"][i],
@@ -511,6 +532,7 @@ def extract_fichajes_file(filename: str):
         df.dropna(subset=['Fecha/hora'], inplace=True)
         df["status"], df["name"], df["card"], df["in_out"] = clean_text(
             df["Texto"].to_list())
+        df["in_out"] = clean_in_out(df["in_out"].tolist())
         return df
     except Exception as e:
         messagebox.showerror("Error",

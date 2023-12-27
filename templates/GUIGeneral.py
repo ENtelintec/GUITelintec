@@ -14,6 +14,7 @@ from templates.FunctionsSQL import get_chats_w_limit, get_username_data
 from templates.ChatsFrame import ChatFrame
 from templates.NotificationsFrame import Notifications
 from templates.SettingsFrame import ChatSettingsApp
+from templates.vAssistantGUI import AssistantGUI
 
 # from interface.VisualPedidos import VisualPedidos
 carpeta_principal = "./img"
@@ -94,9 +95,6 @@ class GUIAsistente(ttk.Window):
         # -----------------------window setup------------------------------
         super().__init__(master, *args, **kwargs)
         self.master = master
-        self.permissions = {"1": "App.Deparment.Default"}
-        self.username = "default"
-        self.username_data = None
         self.title("Admin-Chatbot.py")
         p1 = PhotoImage(file=carpeta_principal + "/robot_1.png")
         self.iconphoto(False, p1)
@@ -105,11 +103,17 @@ class GUIAsistente(ttk.Window):
         self.columnconfigure(1, weight=1)
         self.rowconfigure(0, weight=1)
         # -----------------------Variables-----------------------
+        self.permissions = {"1": "App.Deparment.Default"}
+        self.username = "default"
+        self.username_data = None
+        self.windows_frames = None
         self.data_notifications = read_file(filepath_notifications)
         self.chats_to_show = int(default_values_settings["max_chats"])
         self.sample_time = default_values_settings["sampling_time"]
         self.time_window = 5
         self.chats = get_chats_w_limit(limit=(0, chats_to_show))
+        self.virtual_assistant_window = None
+        self.VA_frame = None
         # -----------------------load images -----------------------
         self.images = {}
         (self.logo_image, self.employees_img, self.customers_img, self.departments_img,
@@ -119,7 +123,7 @@ class GUIAsistente(ttk.Window):
         print("images and variables loaded")
         # -----------------------Create side menu frame-----------------------
         self.navigation_frame = ctk.CTkFrame(self, corner_radius=0, fg_color="#040530")
-        self.navigation_frame.grid(row=0, column=0, sticky="nsew", pady=10, padx=5)
+        self.navigation_frame.grid(row=0, column=0, sticky="nsew", pady=10, padx=5, rowspan=2)
         self.navigation_frame.grid_columnconfigure(0, weight=1)
         self.navigation_frame.grid_rowconfigure((0, 1, 2, 3, 4, 5), weight=1)
         # --------------------------------title-------------------------------
@@ -144,6 +148,17 @@ class GUIAsistente(ttk.Window):
     def update_side_menu_windows(self):
         print(f"windows menu for: {self.username} with {self.permissions}")
         self.windows_frames = self.create_side_menu_windows()
+        # create virtual assistant window
+        department = "default"  # default department if no department permissions are found
+        for k, v in self.permissions.items():
+            if "App.Deparment" in v:
+                department = v.split(".")[-1]
+                break
+        self.VA_frame = ttk.Frame(self, width=150)
+        self.VA_frame.rowconfigure(0, weight=1)
+        self.VA_frame.grid(row=0, column=2, sticky="nsew", pady=10, padx=5)
+        self.virtual_assistant_window = AssistantGUI(self.VA_frame, department=department, width=150)
+        self.virtual_assistant_window.grid(row=0, column=0)
 
     def select_frame_by_name(self, name):
         # set button color for selected button

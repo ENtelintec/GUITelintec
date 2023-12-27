@@ -15,6 +15,30 @@ from templates.CollapsingFrame import CollapsingFrame
 from templates.FunctionsText import compare_employee_name
 
 
+def create_stringvar(number: int):
+    """
+    Create a stringvar with the number provided
+    :param number: number to create the stringvar
+    :return: tuple
+    """
+    var_string = []
+    for i in range(number):
+        var_string.append(StringVar())
+    return tuple(var_string)
+
+
+def create_var_none(number: int):
+    """
+    Create a tuple with the number provided
+    :param number: number to create the tuple
+    :return: tuple
+    """
+    var_none = []
+    for i in range(number):
+        var_none.append(None)
+    return tuple(var_none)
+
+
 class FichajesFilesGUI(ScrolledFrame):
     def __init__(self, master=None):
         super().__init__(master, autohide=True)
@@ -26,6 +50,8 @@ class FichajesFilesGUI(ScrolledFrame):
         self.days_late = None
         self.days_extra = None
         self.contracts = {}
+        (self.days_falta, self.data_contract, self.days_late2, self.days_extra2,
+         self.total_extra2, self.days_prima) = create_var_none(6)
         # -------------------create title-----------------
         self.label_title = ttk.Label(self, text='Telintec Software Fichajes',
                                      font=('Helvetica', 32, 'bold'))
@@ -86,9 +112,7 @@ class FichajesFilesGUI(ScrolledFrame):
         self.label_time_out = ttk.Label(group_1,
                                         text=f'Tiempo de gracia salida: {int(self.window_time_out.get())} minutos')
         self.label_time_out.grid(row=1, column=5)
-        # create display data employee
-        label_subtitle = ttk.Label(group_1, text='Información resumida')
-        label_subtitle.grid(row=2, column=0)
+        # -------string vars-------
         self.wd = StringVar()
         self.late = StringVar()
         self.extra = StringVar()
@@ -101,10 +125,19 @@ class FichajesFilesGUI(ScrolledFrame):
         self.extra_hours_day_in = StringVar()
         self.puerta_out = StringVar()
         self.puerta_in = StringVar()
+        self.faltas = StringVar()
+        self.late_hours2 = StringVar()
+        self.extra_hours2 = StringVar()
+        self.primas = StringVar()
+        self.comment2 = StringVar()
         self.init_string_vars()
-        # labels result
-        label_wd = ttk.Label(group_1, textvariable=self.wd)
-        label_wd.grid(row=3, column=0)
+        # ------------------------create display data employee----------------
+        # -------labels result file 1-------
+        label_subtitle = ttk.Label(group_1, text='Información resumida archivo 1',
+                                   font=('Helvetica', 14, 'bold'))
+        label_subtitle.grid(row=2, column=0)
+        label_faltas = ttk.Label(group_1, textvariable=self.wd)
+        label_faltas.grid(row=3, column=0)
         label_wd_w = ttk.Label(group_1, textvariable=self.wd_w)
         label_wd_w.grid(row=4, column=0)
         # late hours
@@ -135,6 +168,27 @@ class FichajesFilesGUI(ScrolledFrame):
         label_puerta_out.grid(row=6, column=4)
         label_extra_hours_day_in = ttk.Label(group_1, textvariable=self.extra_hours_day_in)
         label_extra_hours_day_in.grid(row=6, column=5)
+        # -------labels result file 2-------
+        label_subtitle2 = ttk.Label(group_1, text='Información resumida archivo 2',
+                                    font=('Helvetica', 14, 'bold'))
+        label_subtitle2.grid(row=7, column=0)
+        label_faltas = ttk.Label(group_1, textvariable=self.faltas)
+        label_faltas.grid(row=8, column=0)
+        self.days_missing_selector2 = ttk.Combobox(group_1, values=["no file selected"], state=ttk.DISABLED)
+        self.days_missing_selector2.grid(row=8, column=1)
+        label_late2 = ttk.Label(group_1, textvariable=self.late_hours2)
+        label_late2.grid(row=9, column=0)
+        self.days_late_selector2 = ttk.Combobox(group_1, values=["no file selected"], state=ttk.DISABLED)
+        self.days_late_selector2.grid(row=9, column=1)
+        label_extra2 = ttk.Label(group_1, textvariable=self.extra_hours2)
+        label_extra2.grid(row=10, column=0)
+        self.days_extra_selector2 = ttk.Combobox(group_1, values=["no file selected"], state=ttk.DISABLED)
+        self.days_extra_selector2.grid(row=10, column=1)
+        label_primas = ttk.Label(group_1, textvariable=self.primas)
+        label_primas.grid(row=11, column=0)
+        self.days_primas_selector = ttk.Combobox(group_1, values=["no file selected"], state=ttk.DISABLED)
+        label_comments_2 = ttk.Label(group_1, textvariable=self.comment2)
+        label_comments_2.grid(row=12, column=0)
         self.frame_collapse.add(group_1, title="Filtrado por nombre")
 
     def init_string_vars(self):
@@ -150,12 +204,21 @@ class FichajesFilesGUI(ScrolledFrame):
         self.puerta_out.set("")
         self.late_hours_day_out.set("")
         self.extra_hours_day_in.set("")
+        self.faltas.set("")
+        self.late_hours2.set("")
+        self.extra_hours2.set("")
+        self.primas.set("")
+        self.comment2.set("")
 
-    def update_string_vars(self, wd, late, extra, wd_w):
+    def update_string_vars(self, wd, late, extra, wd_w, faltas, late2, extra2, primas):
         self.wd.set(wd)
         self.late.set(late)
         self.extra.set(extra)
         self.wd_w.set(wd_w)
+        self.faltas.set(faltas)
+        self.late_hours2.set(late2)
+        self.extra_hours2.set(extra2)
+        self.primas.set(primas)
 
     def update_extra_late_hours(self, late_hours, extra_hours):
         self.late_hours.set(late_hours)
@@ -223,19 +286,24 @@ class FichajesFilesGUI(ScrolledFrame):
         self.days_extra_selector.configure(values=extra_keys)
         self.days_late_selector.configure(state=ttk.NORMAL)
         self.days_extra_selector.configure(state=ttk.NORMAL)
+
         self.update_extra_late_hours(f'Total horas tarde: \n{round(total_late / 3600, 2)}',
                                      f'Total horas extras: \n{round(total_extra / 3600, 2)}')
 
     def select_name(self, event):
         if self.names.get() != "no file selected":
-
             (worked_days, worked_intime, count, count2,
              self.days_late, self.days_extra) = self.get_days_worked_late_extra(self.names.get())
-            data = self.get_data_from_name_contract(self.names.get())
+            (data, days_faltas, days_late2,
+             days_extra2, total_extra2, days_prima) = self.get_data_from_name_contract(self.names.get())
             self.update_string_vars(f'Numero de dias trabajados: {worked_days}.',
                                     f'Numero de dias tarde: {count}.',
                                     f'Numero de dias con horas extras: {count2}.',
-                                    f'Numero de dias dentro de horario: {worked_intime}.')
+                                    f'Numero de dias dentro de horario: {worked_intime}.',
+                                    f'Dias con falta: {len(days_faltas)}.',
+                                    f'Dias tarde: {len(days_late2)}.',
+                                    f'Dias con horas extra: {days_extra2}.\nTotal de horas extra: {total_extra2}',
+                                    f'Dias con prima: {len(days_prima)}.')
             self.update_late_extra_days()
         else:
             print("no file selected")
@@ -328,19 +396,34 @@ class FichajesFilesGUI(ScrolledFrame):
                 extra_time[i[0]] = (diff, i[1])
             return worked_days, worked_intime, count, count2, time_late, extra_time
 
-    def get_data_from_name_contract(self, name):
+    def get_data_from_name_contract(self, name: str) -> tuple[dict, list, list, list, float, list] | None:
         if self.file_selected_2:
             for contract in self.contracts.keys():
                 emp, flag = compare_employee_name(list(self.contracts[contract].keys()), name)
                 if flag:
-                    print(self.contracts[contract][emp]["extras"])
-                    print(self.contracts[contract][emp]["primas"])
-                    print(self.contracts[contract][emp]["fechas"])
-                    print(self.contracts[contract][emp]["status"])
-                    print(self.contracts[contract][emp]["comments"])
-                    print(self.contracts[contract][emp]["in_door"])
-                    print(self.contracts[contract][emp]["out_door"])
-                    return self.contracts[contract][emp]
+                    faltas = []
+                    retardos = []
+                    extras = []
+                    primas = []
+                    for i, state in enumerate(self.contracts[contract][emp]["status"]):
+                        if state == "FALTA":
+                            faltas.append((self.contracts[contract][emp]["fechas"][i],
+                                           self.contracts[contract][emp]["comments"][i]))
+                        elif state == "RETARDO":
+                            retardos.append((self.contracts[contract][emp]["fechas"][i],
+                                             self.contracts[contract][emp]["comments"][i]))
+                    total_extra = 0.0
+                    for i, val in enumerate(self.contracts[contract][emp]["extras"]):
+                        if val != 0 and i <= 31:
+                            extras.append((self.contracts[contract][emp]["fechas"][i],
+                                           self.contracts[contract][emp]["comments"][i],
+                                           val))
+                            total_extra += val
+                    for i, txt_prima in enumerate(self.contracts[contract][emp]["primas"]):
+                        if "PRIMA" in txt_prima:
+                            primas.append((self.contracts[contract][emp]["fechas"][i],
+                                           self.contracts[contract][emp]["comments"][i]))
+                    return self.contracts[contract][emp], faltas, retardos, extras, total_extra, primas
         else:
             print("no file selected")
             return None
