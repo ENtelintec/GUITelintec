@@ -2,13 +2,16 @@
 __author__ = 'Edisson Naula'
 __date__ = '$ 26/dic./2023  at 14:35 $'
 
+import openai
+
 from static.extensions import secrets
 from openai import OpenAI
 
 client = OpenAI(api_key=secrets.get("OPENAI_API_KEY_1"))
+openai.api_key = secrets["OPENAI_API_KEY_1"]
 
 
-def upload_file_openai(file_path, purpose="Assistant"):
+def upload_file_openai(file_path):
     e = None
     try:
         file = client.files.create(
@@ -21,12 +24,9 @@ def upload_file_openai(file_path, purpose="Assistant"):
     return file, e
 
 
-def create_assistant_openai(file_id, model="gpt-4-1106-preview", files=None):
+def create_assistant_openai(model="gpt-4-1106-preview", files=None):
     e = None
-    file_IDS = []
-    if files is not None:
-        for file in files:
-            file_IDS.append(file.id)
+    file_IDS = [item["file_openai"].id for item in files] if files is not None else []
     try:
         assistant = client.beta.assistants.create(
             name="Assistant",
@@ -41,7 +41,7 @@ def create_assistant_openai(file_id, model="gpt-4-1106-preview", files=None):
     return assistant, e
 
 
-def create_thread_openai(file_id, model="gpt-4-1106-preview", files=None):
+def create_thread_openai(model="gpt-4-1106-preview", files=None):
     e = None
     try:
         thread = client.beta.threads.create()
@@ -100,3 +100,63 @@ def retrieve_messages_openai(thread_id):
         print(e)
         messages = None
     return messages, e
+
+
+def get_response_chat_completion(messages: list) -> str:
+    """
+    Receives context and conversation with the bot and return a
+    message from the bot.
+
+    :param messages: chain of messages or context as a List[json].
+    :return: answer (string)
+    """
+    # while 1:
+    client_1 = OpenAI(api_key=secrets.get("OPENAI_API_KEY_1"))
+    try:
+        print(messages)
+        out = client_1.chat.completions.create(
+            # model="gpt-3.5-turbo",
+            model="gpt-4-0613",
+            messages=messages,
+        )
+        # break
+    except Exception as e:
+        print("Error at openAI: ", e)
+        return "Error at openAI"
+    return out.choices[0].message.content
+
+
+def get_response_assistant(message: str, files: list = None) -> tuple[list | None, str]:
+    """
+    Receives context and conversation with the bot and return a
+    message from the bot.
+
+    :param files: list of files to upload
+    :param message:message
+    :return: answer (string)
+    """
+    answer = ""
+    try:
+        if len(files) > 0:
+            for i, item in enumerate(files):
+                files[i]["file_openai"], error = upload_file_openai(item["path"])
+    except Exception as e:
+        print("Error at uploading files on openAI: ", e)
+        return files, "Error at uploading files on openAI"
+    try:
+        assistant, error = create_assistant_openai(files=files)
+    except Exception as e:
+        print("Error at creating assistant on openAI: ", e)
+        return files, "Error at creating assistant on openAI"
+    try:
+        thread, error = create_thread_openai()
+        message_obj, error = create_message_openai(thread.id, message, "user")
+        run, error = run_thread_openai(thread.id, assistant.id)
+        run, error = retrieve_runs_openai(thread.id, run.id)
+        msgs, error = retrieve_messages_openai(thread.id)
+        for msg in reversed(msgs.data):
+            answer += msg.content[0].text.value + "\n"
+    except Exception as e:
+        print("Error at getting response on openAI: ", e)
+        return files, "Error at creating getting response on openAI"
+    return files, answer

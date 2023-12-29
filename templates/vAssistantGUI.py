@@ -10,6 +10,8 @@ import tkinter as tk
 
 import os
 
+from templates.openAI_functions import get_response_chat_completion, get_response_assistant
+
 BG_GRAY = "#ABB2B9"
 BG_COLOR = "#17202A"
 TEXT_COLOR = "#EAECEE"
@@ -19,7 +21,7 @@ FONT_Title = "Helvetica 13 bold"
 
 
 class AssistantGUI(ttk.Frame):
-    def __init__(self, master=None, context=None, department=None, *args, **kwargs):
+    def __init__(self, master=None, context=None, department=None, language="spanish", *args, **kwargs):
         super().__init__(master, *args, **kwargs)
         self.master = master
         self.master.columnconfigure(0, weight=1)
@@ -29,9 +31,11 @@ class AssistantGUI(ttk.Frame):
         self.rowconfigure(2, weight=1)
         #  -------------------create variables-----------------
         self.department = department if department is not None else "IT"
+        self.language = language if language is not None else "spanish"
         self.context = [{"role": "system",
                         "content": f"Act as an Virtual Assistant, you work aiding in a telecomunications enterprise called Telintec. \n"
-                                   f"You help in the {self.department}"}
+                                   f"You help in the {self.department} and you answer are concise and precise.\n"
+                                   f"You answer in {self.language}."}
                         ] if context is None else context
         self.flag_context_init = True if context is not None else False
         self.files_AV = []
@@ -39,7 +43,7 @@ class AssistantGUI(ttk.Frame):
         lable1 = ttk.Label(self, text="Asistente Virtual", font=FONT_Title)
         lable1.grid(row=0, column=0, columnspan=2, sticky="n", padx=10, pady=10)
         #  -------------------create type selector checkbutton-----------------
-        self.var_type_AV = tk.BooleanVar(value=True)
+        self.var_type_AV = tk.BooleanVar(value=False)
         self.var_type_text = tk.StringVar(value="Permitir Archivos")
         self.type_AV = ttk.Checkbutton(self,
                                        textvariable=self.var_type_text,
@@ -53,6 +57,8 @@ class AssistantGUI(ttk.Frame):
         #   -------------------create message----------------
         self.txt = ttk.Text(self, width=15, state=tk.DISABLED)
         self.txt.grid(row=2, column=0, columnspan=2, sticky="nsew", padx=5, pady=5)
+        self.txt.tag_config("user", foreground="blue")
+        self.txt.delete(1.0, tk.END)
         #    -------------------create input----------------
         self.entry_msg = ttk.Entry(self, font=FONT_CHAT)
         self.entry_msg.grid(row=3, column=0, columnspan=2, sticky="nsew", padx=5, pady=5)
@@ -81,10 +87,13 @@ class AssistantGUI(ttk.Frame):
             self.flag_context_init = False
         msg = "User: " + self.entry_msg.get()
         self.txt.insert(END, msg + "\n")
-        response = self.get_response(msg)
+        last_line = float(self.txt.index(END))-2.0
+        self.txt.tag_add("user", last_line, f"{int(last_line)}.end+1c")
+        response = self.get_response(self.entry_msg.get())
         self.txt.insert(END, "AV: " + response + "\n")
         self.update_context(self.entry_msg.get(), response)
         self.txt.configure(state=tk.DISABLED)
+        self.txt.see(END)
         self.entry_msg.delete(0, END)
 
     def change_context(self, new_context):
@@ -95,18 +104,22 @@ class AssistantGUI(ttk.Frame):
         """
         self.context = new_context
 
-    @staticmethod
-    def get_response(msg):
-        if msg == "hello":
-            res = "Hi there, how can I help?"
+    def get_response(self, msg):
+        # return "dummy answer, dummy answer"
+        if self.var_type_AV.get():
+            # files supported
+            self.files_AV, res = get_response_assistant(msg, self.files_AV)
+            print("Responge assistant gpt: ", res)
         else:
-            res = "Sorry! I didn't understand that"
+            # files not supported
+            self.context.append({"role": "user", "content": msg})
+            res = get_response_chat_completion(self.context)
+            print("Responge gpt: ", res)
         return res
 
     def update_context(self, msg, response):
         self.context.append({"role": "user", "content": msg})
         self.context.append({"role": "assistant", "content": response})
-        print(self.context)
 
     def change_type_AV(self):
         if self.var_type_AV.get():
@@ -138,7 +151,7 @@ class AssistantGUI(ttk.Frame):
         self.files_AV.append(
             {"path": filepath,
              "name": os.path.basename(filepath),
-             "id_openai": None}
+             "file_openai": None}
         )
         files_names = [item["name"] for item in self.files_AV]
         self.files_cb.configure(values=files_names)

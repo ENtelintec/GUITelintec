@@ -21,7 +21,7 @@ def execute_sql(sql: str, values: tuple = None, type_sql=1):
         password=secrets["PASS_SQL_AWS"],
         database="sql_telintec"
     )
-    my_cursor = mydb.cursor()
+    my_cursor = mydb.cursor(buffered=True)
     out = []
     flag = True
     exception = None
@@ -132,14 +132,12 @@ def get_id_employee(name: str):
            "MATCH(name) AGAINST (%s IN NATURAL LANGUAGE MODE )")
     # lowercase names
     name = name.lower()
-
     values = (name, name)
     flag, e, out = execute_sql(sql, values, 1)
-    print(e, out)
-    if e is not None:
+    if e is not None or len(out) == 0:
         return None
     else:
-        return out
+        return out[0]
 
 
 def get_ids_employees(names: list):
@@ -269,7 +267,8 @@ def insert_employee(name: str, lastname: str, dni: str, phone: str, email: str,
     return flag, e, out
 
 
-def insert_customer(name: str, lastname: str, phone: str, city: str, email: str) -> tuple[bool, Exception | None, int | None]:
+def insert_customer(name: str, lastname: str, phone: str, city: str, email: str) -> tuple[
+    bool, Exception | None, int | None]:
     sql = ("INSERT INTO sql_telintec.customers (name, l_name, phone_number, city, email) "
            "VALUES (%s, %s, %s, %s, %s)")
     val = (name, lastname, phone, city, email)
@@ -366,7 +365,6 @@ def get_username_data(username: str):
            "INNER JOIN departments on employees.department_id = departments.department_id")
     val = (username,)
     flag, error, result = execute_sql(sql, val)
-    print(result, error, username)
     out = None
     if len(result) > 0:
         out = {

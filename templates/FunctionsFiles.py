@@ -16,110 +16,8 @@ import pandas as pd
 import ttkbootstrap as ttk
 
 from static.extensions import secrets
+from templates.FunctionsSQL import get_id_employee
 from templates.FunctionsText import clean_accents
-
-
-# def execute_sql(sql: str, values: tuple = None, type_sql=1):
-#     """
-#     Execute the sql with the values provides (or not) and returns a value
-#     depending on the type of query. In case of exception returns None
-#     :param type_sql: type of query to execute
-#     :param sql: sql query
-#     :param values: values for sql query
-#     :return:
-#     """
-#     mydb = mysql.connector.connect(
-#         host=secrets["HOST_DB"],
-#         user=secrets["USER_SQL"],
-#         password=secrets["PASS_SQL"],
-#         database="sql_telintec"
-#     )
-#     my_cursor = mydb.cursor()
-#     out = []
-#     e = None
-#     try:
-#         match type_sql:
-#             case 2:
-#                 my_cursor.execute(sql, values)
-#                 out = my_cursor.fetchall()
-#             case 1:
-#                 my_cursor.execute(sql, values)
-#                 out = my_cursor.fetchone()
-#             case 3:
-#                 my_cursor.execute(sql, values)
-#                 mydb.commit()
-#                 out = my_cursor.rowcount
-#             case 4:
-#                 my_cursor.execute(sql, values)
-#                 mydb.commit()
-#                 out = my_cursor.lastrowid
-#             case 5:
-#                 my_cursor.execute(sql)
-#                 out = my_cursor.fetchall()
-#             case _:
-#                 out = []
-#     except Exception as error:
-#         print(error)
-#         e = error
-#         out = []
-#     finally:
-#         out = out if out is not None else []
-#         my_cursor.close()
-#         mydb.close()
-#         return out, e
-
-
-# def execute_sql_multiple(sql: str, values_list: list = None, type_sql=1):
-#     """
-#     Execute the sql with the values provides (or not) and returns a value
-#     depending on the type of query. In case of exception returns None
-#     :param values_list: values for sql query
-#     :param type_sql: type of query to execute
-#     :param sql: sql query
-#     :return:
-#     """
-#     mydb = mysql.connector.connect(
-#         host=secrets["HOST_DB"],
-#         user=secrets["USER_SQL"],
-#         password=secrets["PASS_SQL"],
-#         database="sql_telintec"
-#     )
-#     out = []
-#     error = None
-#     my_cursor = mydb.cursor(buffered=True)
-#     for i in range(len(values_list[0])):
-#         values = []
-#         for j in range(len(values_list)):
-#             values.append(values_list[j][i])
-#         values = tuple(values)
-#         try:
-#             match type_sql:
-#                 case 2:
-#                     my_cursor.execute(sql, values)
-#                     out.append(my_cursor.fetchall())
-#                 case 1:
-#                     my_cursor.execute(sql, values)
-#                     out.append(my_cursor.fetchone())
-#                 case 3:
-#                     my_cursor.execute(sql, values)
-#                     mydb.commit()
-#                     out.append(my_cursor.rowcount)
-#                 case 4:
-#                     my_cursor.execute(sql, values)
-#                     mydb.commit()
-#                     out.append(my_cursor.lastrowid)
-#                 case 5:
-#                     my_cursor.execute(sql)
-#                     out.append(my_cursor.fetchall())
-#                 case _:
-#                     out.append([])
-#         except Exception as error:
-#             print(error)
-#             out.append([])
-#     out = out if out is not None else []
-#     my_cursor.close()
-#     mydb.close()
-#     return out, error
 
 
 def check_only_read_conflict(name: str):
@@ -401,14 +299,30 @@ def clean_data_contract(status, fechas, comments, extras, primas, in_door, out_d
     return status, fechas, comments, extras, primas, in_door, out_door
 
 
-def extract_data_file_contracts(filename: str):
+def clean_parenthesis_txt(name: str):
+    """
+    Removes parenthesis from the name
+    :param name:
+    :return:
+    """
+    match = re.findall("(\(.*\))", name)
+    if len(match) > 0:
+        name = name.replace(match[0], "")
+    return name
 
+
+def extract_data_file_contracts(filename: str):
     """
     Extracts the data from a file
     :param filename:
     :return:
     """
-    contracts = {}
+    try:
+        with open('files/contracts_cache.pkl', 'rb') as f:
+            contracts = pickle.load(f)
+    except Exception as e:
+        print(e)
+        contracts = {}
     try:
         excel_file = pd.ExcelFile(filename)
         sheet_names = excel_file.sheet_names
@@ -426,8 +340,9 @@ def extract_data_file_contracts(filename: str):
                 reader = csv.reader(csv_file)  # this is the reader object
                 for item in reader:
                     data.append(item)
-            employees = {}
+            contracts[sheet] = {} if sheet not in contracts.keys() else contracts[sheet]
             name = ""
+            emp_id = 0
             indexes = range(len(data))
             starting_indexes = [indexes[i] for i in range(0, len(indexes), 4)]
             data_sliced = [data[i:i + 4] for i in starting_indexes]
@@ -442,6 +357,7 @@ def extract_data_file_contracts(filename: str):
                 for i in range(len(data_aux)):
                     if i == 1:
                         name = clean_accents(data_aux[i][1])
+                        name = clean_parenthesis_txt(name)
                         for j in range(2, len(data_aux[i])):
                             if j % 2 != 1:
                                 in_door.append(data_aux[i][j])
@@ -466,20 +382,21 @@ def extract_data_file_contracts(filename: str):
                 if name != "":
                     status, fechas, comments, extras, primas, in_door, out_door = clean_data_contract(
                         status, fechas, comments, extras, primas, in_door, out_door)
-                    employees[name] = {
-                        "fechas": fechas,
-                        "status": status,
-                        "comments": comments,
-                        "extras": extras,
-                        "primas": primas,
-                        "in_door": in_door,
-                        "out_door": out_door,
-                    }
-            contracts[sheet] = employees
+                    if name not in contracts[sheet].keys():
+                        contracts[sheet][name]["id"] = emp_id = get_id_employee(name)
+                    contracts[sheet][name]["status"] = status
+                    contracts[sheet][name]["comments"] = comments
+                    contracts[sheet][name]["extras"] = extras
+                    contracts[sheet][name]["primas"] = primas
+                    contracts[sheet][name]["in_door"] = in_door
+                    contracts[sheet][name]["out_door"] = out_door
+
     except Exception as e:
         print(e)
         messagebox.showerror("Error",
                              "Error al leer el archivo.\n Asegurese sea el archivo correcto, con el formato correcto.")
+    with open('files/contracts_cache.pkl', 'wb') as file:
+        pickle.dump(contracts, file)
     return contracts
 
 
@@ -503,6 +420,7 @@ def generate_table_from_dict_contracts(contracts: dict):
         for emp_name in contracts[con_name].keys():
             for i in range(len(contracts[con_name][emp_name]["status"])):
                 table_data.append([con_name, emp_name,
+                                   contracts[con_name][emp_name]["id"],
                                    contracts[con_name][emp_name]["fechas"][i],
                                    clean_status_contracts(contracts[con_name][emp_name]["status"][i]),
                                    contracts[con_name][emp_name]["extras"][i],
@@ -510,7 +428,7 @@ def generate_table_from_dict_contracts(contracts: dict):
                                    contracts[con_name][emp_name]["in_door"][i],
                                    contracts[con_name][emp_name]["out_door"][i],
                                    contracts[con_name][emp_name]["comments"][i]])
-    columns = ["Contrato", "Empleado", "Fecha", "Status", "Extras", "Primas", "Entrada",
+    columns = ["Contrato", "Empleado", "ID", "Fecha", "Status", "Extras", "Primas", "Entrada",
                "Salida", "Comentarios"]
     return table_data, columns
 
@@ -563,3 +481,52 @@ class DirectoryDbp:
 
     def __repr__(self):
         return self.name
+
+
+def remove_extensions(files: list):
+    """
+    Removes the extensions from the files
+    :param files:
+    :return:
+    """
+    for i, file in enumerate(files):
+        files[i] = file.split(".")[0]
+    return files
+
+
+def get_metadata_file(path: str, file: str):
+    """
+    Gets the metadata from the file
+    :param path:
+    :param file:
+    :return:
+    """
+    out = {
+        "path": path + file,
+        "extension": file.split(".")[-1],
+        "size": os.path.getsize(os.path.join(path, file)),
+        "report": "",
+        "date": "",
+    }
+    file = remove_extensions([file])[0]
+    names = file.split("_")
+    if len(names) > 1:
+        out["report"] = names[0]
+        out["date"] = names[1]
+    return out
+
+
+def check_fichajes_files_in_directory(path: str, pattern1: str, pattern2: str):
+    """
+    Checks if the files in the directory are fichajes files
+    :param pattern2: pattern to detect in the name
+    :param pattern1: patter to detect in the name
+    :param path: path to the directory
+    :return:
+    """
+    files = os.listdir(path)
+    files_data = {}
+    for file in files:
+        if pattern1 in file or pattern2 in file:
+            files_data[file] = get_metadata_file(path, file)
+    return False if len(files_data) == 0 else True, files_data

@@ -255,4 +255,3 @@ class GUIAsistente(ttk.Window):
 
     def get_username_data(self):
         self.username_data = get_username_data(self.username)
-        print(self.username_data)
