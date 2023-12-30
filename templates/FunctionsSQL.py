@@ -376,3 +376,16 @@ def get_username_data(username: str):
             "department_name": result[5]
         }
     return out
+
+
+# --------------------------------Examenes medicos GUI--------------------------
+def insert_new_exam_med(name: str, blood: str, status: str, aptitud: list,
+                        renovaciones: list, apt_actual: int, last_date: str,
+                        emp_id: int) -> tuple[bool, Exception | None, int | None]:
+    sql = ("INSERT INTO sql_telintec.examenes_med "
+           "(name, blood, status, aptitud, renovacion, aptitude_actual, fecha_ultima_renovacion, empleado_id) "
+           "VALUES (%s, %s, %s, %s, %s, %s, %s, %s)")
+    val = (name, blood, status, aptitud, renovaciones, apt_actual, last_date, emp_id)
+    flag, e, out = execute_sql(sql, val, 4)
+    print(out, "record inserted.")
+    return flag, e, out
