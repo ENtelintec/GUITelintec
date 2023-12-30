@@ -6,7 +6,8 @@ from tkinter import BooleanVar
 
 import ttkbootstrap as ttk
 
-from templates.FunctionsSQL import insert_new_exam_med
+from templates.FunctionsSQL import insert_new_exam_med, get_id_employee, update_aptitu_renovacion, \
+    get_aptitud_renovacion
 
 
 def create_booleanvar(number: int):
@@ -31,6 +32,7 @@ class ExamenesMedicosFrame(ttk.Frame):
         # -------------------create varaibles-----------------
         (self.var_name, self.var_blood, self.var_status, self.var_aptitud, self.var_renovacion,
          self.var_apt_actual, self.var_last_date, self.emp_id) = create_booleanvar(8)
+        self.var_label_id_name = ttk.StringVar(value="")
         # -------------------create check btns-----------------
         btn_check_name = ttk.Checkbutton(self, text="Nombre: ", variable=self.var_name,
                                          bootstyle="round-toggle",
@@ -78,6 +80,26 @@ class ExamenesMedicosFrame(ttk.Frame):
         # -------------------create buttons-----------------
         btn_insert = ttk.Button(self, text="Insertar", bootstyle="info",  command=self.insert_data_to_db)
         btn_insert.grid(row=7, column=0, sticky="nswe", padx=5, pady=5)
+        # button for search id from name
+        btn_search_id = ttk.Button(self, text="Buscar ID", bootstyle="info", command=self.search_id_from_name)
+        btn_search_id.grid(row=1, column=2, sticky="nswe", padx=5, pady=5)
+        label_id_name = ttk.Label(self, textvariable=self.var_label_id_name)
+        label_id_name.grid(row=1, column=3, sticky="nswe", padx=5, pady=5)
+
+    def search_id_from_name(self):
+        """
+        Search the id from the name
+        :return:
+        """
+        name = self.entry_name.get() if self.var_name.get() else None
+        if name is None or name == "":
+            self.var_label_id_name.set("Por favor, ingrese el nombre")
+        else:
+            emp_id = get_id_employee(name)
+            if emp_id is None:
+                self.var_label_id_name.set("No se encontro el ID")
+            else:
+                self.var_label_id_name.set(f"Id: {emp_id}")
 
     def insert_data_to_db(self):
         """
@@ -94,10 +116,18 @@ class ExamenesMedicosFrame(ttk.Frame):
         # insert data to database
         if (name is not None and blood is not None and status is not None and aptitud is not None
                 and last_date is not None and emp_id is not None):
+            # new register
             apt_list = [aptitud]
             renovacion = [last_date]
             flag, error, out = insert_new_exam_med(name, blood, status, apt_list, renovacion,
                                                    aptitud, last_date, emp_id)
+        elif name is not None and aptitud is not None and last_date is not None and emp_id:
+            # update aptitude and renovacion
+            flag, error, out = get_aptitud_renovacion(emp_id)
+            apt_list, renovacion = out
+            apt_list.append(aptitud)
+            renovacion.append(last_date)
+            flag, error, out = update_aptitu_renovacion(apt_list, renovacion, aptitud, last_date, emp_id)
 
     def change_vars_inputs(self):
         """

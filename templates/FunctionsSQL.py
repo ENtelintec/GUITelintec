@@ -2,6 +2,9 @@
 __author__ = 'Edisson Naula'
 __date__ = '$ 27/jul./2023  at 16:41 $'
 
+import json
+from datetime import datetime
+
 import mysql.connector
 from static.extensions import secrets
 
@@ -121,7 +124,7 @@ def get_employees(limit=(0, 100)) -> list[list]:
     return out
 
 
-def get_id_employee(name: str):
+def get_id_employee(name: str)-> None | int:
     """
     Get the id of the employee
     :param name: name of the employee
@@ -385,7 +388,26 @@ def insert_new_exam_med(name: str, blood: str, status: str, aptitud: list,
     sql = ("INSERT INTO sql_telintec.examenes_med "
            "(name, blood, status, aptitud, renovacion, aptitude_actual, fecha_ultima_renovacion, empleado_id) "
            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s)")
-    val = (name, blood, status, aptitud, renovaciones, apt_actual, last_date, emp_id)
+    val = (name, blood, status, json.dumps(aptitud), json.dumps(renovaciones), apt_actual, datetime.strptime(last_date, "%d/%m/%Y"), emp_id)
     flag, e, out = execute_sql(sql, val, 4)
     print(out, "record inserted.")
+    return flag, e, out
+
+
+def update_aptitu_renovacion(aptitud: list, renovaciones: list, apt_actual: int, last_date: str, emp_id: int):
+    sql = ("UPDATE sql_telintec.examenes_med "
+           "SET aptitud = %s, renovacion = %s, aptitude_actual = %s, fecha_ultima_renovacion = %s "
+           "WHERE empleado_id = %s")
+    val = (json.dumps(aptitud), json.dumps(renovaciones), apt_actual, last_date, emp_id)
+    flag, e, out = execute_sql(sql, val, 4)
+    print(out, "record inserted.")
+    return flag, e, out
+
+
+def get_aptitud_renovacion(emp_id: int):
+    sql = ("SELECT aptitud, renovacion "
+           "FROM sql_telintec.examenes_med "
+           "WHERE empleado_id = %s")
+    val = (emp_id,)
+    flag, e, out = execute_sql(sql, val, 1)
     return flag, e, out
