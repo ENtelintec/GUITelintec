@@ -117,17 +117,26 @@ class ExamenesMedicosFrame(ttk.Frame):
         if (name is not None and blood is not None and status is not None and aptitud is not None
                 and last_date is not None and emp_id is not None):
             # new register
+            print("option 1")
             apt_list = [aptitud]
             renovacion = [last_date]
-            flag, error, out = insert_new_exam_med(name, blood, status, apt_list, renovacion,
-                                                   aptitud, last_date, emp_id)
+            # flag, error, out = insert_new_exam_med(name, blood, status, apt_list, renovacion,
+            #                                        aptitud, last_date, emp_id)
         elif name is not None and aptitud is not None and last_date is not None and emp_id:
             # update aptitude and renovacion
-            flag, error, out = get_aptitud_renovacion(emp_id)
-            apt_list, renovacion = out
-            apt_list.append(aptitud)
-            renovacion.append(last_date)
-            flag, error, out = update_aptitu_renovacion(apt_list, renovacion, aptitud, last_date, emp_id)
+            print("option 2")
+            # flag, error, out = get_aptitud_renovacion(emp_id)
+            # apt_list, renovacion = out
+            # apt_list.append(aptitud)
+            # renovacion.append(last_date)
+            # flag, error, out = update_aptitu_renovacion(apt_list, renovacion, aptitud, last_date, emp_id)
+        elif name is not None and aptitud is not None and emp_id:
+            print("option 3")
+        elif name is not None and last_date is not None and emp_id:
+            print("option 4")
+        else:
+            print("No valido")
+
 
     def change_vars_inputs(self):
         """
