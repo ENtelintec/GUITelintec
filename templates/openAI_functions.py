@@ -2,10 +2,14 @@
 __author__ = 'Edisson Naula'
 __date__ = '$ 26/dic./2023  at 14:35 $'
 
+import pickle
+
 import openai
 
 from static.extensions import secrets
 from openai import OpenAI
+
+import time
 
 client = OpenAI(api_key=secrets.get("OPENAI_API_KEY_1"))
 openai.api_key = secrets["OPENAI_API_KEY_1"]
@@ -24,13 +28,13 @@ def upload_file_openai(file_path):
     return file, e
 
 
-def create_assistant_openai(model="gpt-4-1106-preview", files=None):
+def create_assistant_openai(model="gpt-4-1106-preview", files=None, instructions=None):
     e = None
     file_IDS = [item["file_openai"].id for item in files] if files is not None else []
     try:
         assistant = client.beta.assistants.create(
             name="Assistant",
-            instructions="Create a conversation between the user and the assistant.",
+            instructions=instructions,
             model=model,
             tools=[{"type": "code_interpreter"}, {"type": "retrieval"}],
             file_ids=file_IDS
@@ -80,10 +84,14 @@ def run_thread_openai(thread_id, assistant_id):
 def retrieve_runs_openai(thread_id, run_id):
     e = None
     try:
-        runs = client.beta.threads.runs.retrieve(
-            thread_id=thread_id,
-            run_id=run_id
-        )
+        while True:
+            runs = client.beta.threads.runs.retrieve(
+                thread_id=thread_id,
+                run_id=run_id
+            )
+            if runs.status == "completed":
+                break
+            time.sleep(0.5)
     except Exception as e:
         print(e)
         runs = None
@@ -126,11 +134,13 @@ def get_response_chat_completion(messages: list) -> str:
     return out.choices[0].message.content
 
 
-def get_response_assistant(message: str, files: list = None) -> tuple[list | None, str]:
+def get_response_assistant(message: str, files: list = None, instructions: str = None, department=None) -> tuple[list | None, str]:
     """
     Receives context and conversation with the bot and return a
     message from the bot.
 
+    :param department:
+    :param instructions:
     :param files: list of files to upload
     :param message:message
     :return: answer (string)
@@ -139,12 +149,18 @@ def get_response_assistant(message: str, files: list = None) -> tuple[list | Non
     try:
         if len(files) > 0:
             for i, item in enumerate(files):
+                if files[i]["status"] == "upload":
+                    continue
                 files[i]["file_openai"], error = upload_file_openai(item["path"])
+                files[i]["file_id"] = files[i]["file_openai"].id
+                files[i]["status"] = "upload"
+            with open(f'files/files_{department}_openAI_cache.pkl', 'wb') as file:
+                pickle.dump(files, file)
     except Exception as e:
         print("Error at uploading files on openAI: ", e)
         return files, "Error at uploading files on openAI"
     try:
-        assistant, error = create_assistant_openai(files=files)
+        assistant, error = create_assistant_openai(files=files, instructions=instructions)
     except Exception as e:
         print("Error at creating assistant on openAI: ", e)
         return files, "Error at creating assistant on openAI"
@@ -154,8 +170,9 @@ def get_response_assistant(message: str, files: list = None) -> tuple[list | Non
         run, error = run_thread_openai(thread.id, assistant.id)
         run, error = retrieve_runs_openai(thread.id, run.id)
         msgs, error = retrieve_messages_openai(thread.id)
+        print(msgs)
         for msg in reversed(msgs.data):
-            answer += msg.content[0].text.value + "\n"
+            answer += msg.content[0].text.value + "\n" if msg.role == "assistant" else ""
     except Exception as e:
         print("Error at getting response on openAI: ", e)
         return files, "Error at creating getting response on openAI"

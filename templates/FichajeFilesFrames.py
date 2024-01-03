@@ -2,6 +2,7 @@
 __author__ = 'Edisson Naula'
 __date__ = '$ 14/nov./2023  at 17:12 $'
 
+from datetime import timedelta
 from tkinter import StringVar
 from tkinter.filedialog import askopenfilename, asksaveasfilename
 
@@ -9,6 +10,7 @@ import pandas as pd
 import ttkbootstrap as ttk
 from ttkbootstrap.tableview import Tableview
 from ttkbootstrap.scrolled import ScrolledFrame
+from ttkbootstrap.dialogs.dialogs import Messagebox
 
 import templates.FunctionsFiles as cb
 from templates.CollapsingFrame import CollapsingFrame
@@ -51,7 +53,8 @@ class FichajesFilesGUI(ScrolledFrame):
         self.contracts = {}
         (self.df, self.days_late, self.days_extra, self.days_faltas,
          self.data_contract_emp, self.days_late2, self.days_extra2,
-         self.total_extra2, self.days_prima, self.files) = create_var_none(10)
+         self.total_extra2, self.days_prima, self.files, self.max_date_g,
+         self.min_date_g) = create_var_none(12)
         self.files_names_t = []
         self.files_names_o = []
         # -------------------create title-----------------
@@ -63,16 +66,20 @@ class FichajesFilesGUI(ScrolledFrame):
         label1.grid(row=1, column=0)
         label2 = ttk.Label(self, text='Archivos de operaciones: ')
         label2.grid(row=1, column=2)
+        label3 = ttk.Label(self, text='Rango de fechas: ')
+        label3.grid(row=1, column=4)
         # -------------------create combobox for file selector-----------------
         self.files_ternium_cb = ttk.Combobox(self, values=self.files_names_t, state="readonly")
         self.files_ternium_cb.grid(row=1, column=1)
         self.files_operaciones_cb = ttk.Combobox(self, values=self.files_names_o, state="readonly")
         self.files_operaciones_cb.grid(row=1, column=3)
+        self.date_ranges = ttk.Combobox(self, values=[""], state="readonly")
+        self.date_ranges.grid(row=1, column=5)
         # self.files_ternium_cb.bind("<<ComboboxSelected>>", self.select_file)
         # self.files_operaciones_cb.bind("<<ComboboxSelected>>", self.select_file_2)
         # -------------------create collapsing frame-----------------
         self.frame_collapse = CollapsingFrame(self)
-        self.frame_collapse.grid(row=4, column=0, columnspan=5, sticky='nsew')
+        self.frame_collapse.grid(row=4, column=0, columnspan=6, sticky='nsew')
         # -------------------create tableview for data-----------------
         self.group_2 = ttk.Frame(self.frame_collapse, padding=5)
         self.group_2.columnconfigure(0, weight=1)
@@ -198,8 +205,31 @@ class FichajesFilesGUI(ScrolledFrame):
         self.btn_export = ttk.Button(group_1, text="Exportar",
                                      command=self.button_export_click)
         self.btn_export.grid(row=12, column=0, sticky="nsew", padx=5, pady=5)
+        self.btn_export_2 = ttk.Button(group_1, text="Exportar/empleado",
+                                       command=self.button_export_emp_click)
+        self.btn_export_2.grid(row=12, column=1, sticky="nsew", padx=5, pady=5)
+
         self.frame_collapse.add(group_1, title="Filtrado por nombre")
         self.frame_collapse.add(self.group_2, title="Tablas")
+
+    def button_export_emp_click(self):
+        table_data, columns = cb.generate_table_from_dict_contracts(self.contracts)
+        data_f = {}
+        for i, column in enumerate(columns):
+            data_f[column] = []
+            for row in table_data:
+                data_f[column].append(row[i])
+        df = pd.DataFrame.from_dict(data_f)
+        if self.names.get() != "no file selected" and self.names.get() != "":
+            id_n = get_id_employee(self.names.get())
+            df = df[df["ID"] == id_n]
+            # select path to save file
+            path = asksaveasfilename(defaultextension=".csv",
+                                     filetypes=[("CSV", "*.csv")])
+            df.to_csv(path, index=False)
+            Messagebox.show_info(title="Info", message="archivo exportado")
+        else:
+            Messagebox.show_error(title="Alert", message="primero seleccione un empleado")
 
     def button_export_click(self):
         table_data, columns = cb.generate_table_from_dict_contracts(self.contracts)
@@ -323,8 +353,6 @@ class FichajesFilesGUI(ScrolledFrame):
         self.update_extra_late_hours(f'Total horas tarde: \n{round(total_late / 3600, 2)}',
                                      f'Total horas extras: \n{round(total_extra / 3600, 2)}')
         # -------------file 2---------------
-        # days_faltas, days_late2,
-        # days_extra2, total_extra2, days_prima
         faltas_keys = []
         late_keys2 = []
         extra_keys2 = []
@@ -374,6 +402,54 @@ class FichajesFilesGUI(ScrolledFrame):
         self.files_operaciones_cb.set(self.files_names_o[0])
         self.button_file_click(self.files[self.files_names_t[0]]["path"])
         self.button_file_2_click(self.files[self.files_names_o[0]]["path"])
+        # check if date are the same
+        self.check_dates_ranges()
+
+    def check_dates_ranges(self):
+        # max and min dates from dataframe
+        df_dates = self.df.copy()
+        max_date = df_dates["Fecha/hora"].max()
+        min_date = df_dates["Fecha/hora"].min()
+        print(f"max date: {max_date}")
+        print(f"min date: {min_date}")
+        # max and min dates from contracts
+        table_data, columns = cb.generate_table_from_dict_contracts(self.contracts)
+        data_f = {}
+        for i, column in enumerate(columns):
+            data_f[column] = []
+            for row in table_data:
+                data_f[column].append(row[i])
+        df_contracts = pd.DataFrame.from_dict(data_f)
+        df_contracts["Fecha"] = pd.to_datetime(df_contracts["Fecha"], format='mixed')
+        max_date_c = df_contracts["Fecha"].max()
+        min_date_c = df_contracts["Fecha"].min()
+        print(f"max date c: {max_date_c}")
+        print(f"min date c: {min_date_c}")
+        # check the max and min dates general
+        self.max_date_g = max_date if max_date <= max_date_c else max_date_c
+        self.min_date_g = min_date if min_date >= min_date_c else min_date_c
+        fortnights = self.max_date_g - self.min_date_g
+        print(f"fortnights: {fortnights.days}")
+        print(f"max date g: {self.max_date_g}", f"day: {self.max_date_g.weekday()}")
+        print(f"min date g: {self.min_date_g}",  f"day: {self.min_date_g.weekday()}")
+        fort_options = fortnights.days / 15
+        list_fortnights = []
+        if fort_options >= 2:
+            for i in range(int(fort_options)):
+                if i == 0:
+                    list_fortnights.append((self.min_date_g, self.min_date_g + timedelta(days=15)))
+                elif i == int(fort_options) - 1:
+                    list_fortnights.append((self.min_date_g + timedelta(days=i*15), self.max_date_g))
+                else:
+                    list_fortnights.append((self.min_date_g + timedelta(days=i*15), self.min_date_g + timedelta(days=i*15) + timedelta(days=14)))
+        else:
+            list_fortnights.append((self.min_date_g, self.max_date_g))
+        print(list_fortnights)
+        list_display = []
+        for item in list_fortnights:
+            list_display.append(f"{item[0].date()} - {item[1].date()}")
+        self.date_ranges.configure(values=list_display)
+        # self.date_ranges.configure(values=list_fortnights)
 
     def button_file_2_click(self, filename):
         if ".xls" in filename or ".xlsx" in filename or ".csv" in filename:

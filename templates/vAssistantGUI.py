@@ -2,6 +2,8 @@
 __author__ = 'Edisson Naula'
 __date__ = '$ 25/dic./2023  at 13:30 $'
 
+import pickle
+
 import ttkbootstrap as ttk
 from tkinter import END, filedialog
 from ttkbootstrap.scrolled import ScrolledText
@@ -33,12 +35,12 @@ class AssistantGUI(ttk.Frame):
         self.department = department if department is not None else "IT"
         self.language = language if language is not None else "spanish"
         self.context = [{"role": "system",
-                        "content": f"Act as an Virtual Assistant, you work aiding in a telecomunications enterprise called Telintec. \n"
-                                   f"You help in the {self.department} and you answer are concise and precise.\n"
-                                   f"You answer in {self.language}."}
+                         "content": f"Act as an Virtual Assistant, you work aiding in a telecomunications enterprise called Telintec. \n"
+                                    f"You help in the {self.department} and you answer are concise and precise.\n"
+                                    f"You answer in {self.language}."}
                         ] if context is None else context
         self.flag_context_init = True if context is not None else False
-        self.files_AV = []
+        self.files_AV = self.get_files_openai()
         #  -------------------create title-----------------
         lable1 = ttk.Label(self, text="Asistente Virtual", font=FONT_Title)
         lable1.grid(row=0, column=0, columnspan=2, sticky="n", padx=10, pady=10)
@@ -63,7 +65,7 @@ class AssistantGUI(ttk.Frame):
         self.entry_msg = ttk.Entry(self, font=FONT_CHAT)
         self.entry_msg.grid(row=3, column=0, columnspan=2, sticky="nsew", padx=5, pady=5)
         send = ttk.Button(self, text="Send", command=self.send_txt)
-        send.grid(row=4, column=0,  sticky="nsew", padx=5, pady=5)
+        send.grid(row=4, column=0, sticky="nsew", padx=5, pady=5)
         #  -------------------create file selector btn----------------
         self.btn_file = ttk.Button(self, text="Upload File",
                                    command=self.button_file_click)
@@ -76,6 +78,20 @@ class AssistantGUI(ttk.Frame):
         self.files_cb = ttk.Combobox(self, values=["no file selected"], state="readonly")
         self.files_cb.grid(row=7, column=0, sticky="nsew", padx=5, pady=5, columnspan=2)
 
+    def get_files_openai(self):
+        try:
+            with open(f'files/files_{self.department}_openAI_cache.pkl', 'rb') as f:
+                files_openAI = pickle.load(f)
+            if len(files_openAI) > 0:
+                for file in files_openAI:
+                    if file["department"] != self.department:
+                        files_openAI.remove(file)
+        except Exception as e:
+            files_openAI = []
+            print(e)
+
+        return files_openAI
+
     def send_txt(self):
         self.txt.configure(state="normal")
         if self.flag_context_init:
@@ -87,7 +103,7 @@ class AssistantGUI(ttk.Frame):
             self.flag_context_init = False
         msg = "User: " + self.entry_msg.get()
         self.txt.insert(END, msg + "\n")
-        last_line = float(self.txt.index(END))-2.0
+        last_line = float(self.txt.index(END)) - 2.0
         self.txt.tag_add("user", last_line, f"{int(last_line)}.end+1c")
         response = self.get_response(self.entry_msg.get())
         self.txt.insert(END, "AV: " + response + "\n")
@@ -108,7 +124,11 @@ class AssistantGUI(ttk.Frame):
         # return "dummy answer, dummy answer"
         if self.var_type_AV.get():
             # files supported
-            self.files_AV, res = get_response_assistant(msg, self.files_AV)
+            instructions = (
+                f"Act as an Virtual Assistant, you work aiding in a telecomunications enterprise called Telintec. \n "
+                f"You help in the {self.department} and you answer are concise and precise.\n"
+                f"You answer in {self.language}.")
+            self.files_AV, res = get_response_assistant(msg, self.files_AV, instructions, self.department)
             print("Responge assistant gpt: ", res)
         else:
             # files not supported
@@ -140,8 +160,8 @@ class AssistantGUI(ttk.Frame):
         self.txt.delete(1.0, tk.END)
         self.txt.configure(state=tk.DISABLED)
         self.context = [{"role": "system",
-                        "content": f"Act as an Virtual Assistant, you work aiding in a telecomunications enterprise called Telintec. \n"
-                                   f"You help in the {self.department}"}
+                         "content": f"Act as an Virtual Assistant, you work aiding in a telecomunications enterprise called Telintec. \n"
+                                    f"You help in the {self.department}"}
                         ]
 
     def button_file_click(self):
@@ -151,7 +171,10 @@ class AssistantGUI(ttk.Frame):
         self.files_AV.append(
             {"path": filepath,
              "name": os.path.basename(filepath),
-             "file_openai": None}
+             "file_openai": None,
+             "file_id": None,
+             "department": self.department,
+             "status":  "pending"}
         )
         files_names = [item["name"] for item in self.files_AV]
         self.files_cb.configure(values=files_names)

@@ -308,14 +308,15 @@ def clean_parenthesis_txt(name: str):
     match = re.findall("(\(.*\))", name)
     if len(match) > 0:
         name = name.replace(match[0], "")
+    name = name.replace("  ", " ")
     return name
 
 
-def extract_data_file_contracts(filename: str):
+def extract_data_file_contracts(filename: str) -> dict:
     """
-    Extracts the data from a file
+    Extracts the data from a file from operations and from cache on a directory.
     :param filename:
-    :return:
+    :return: {contracts_name: {employee_name:  {status: [], fechas: [], comments: [], extras: [], primas: [], in_door: [], out_door: []}}}
     """
     try:
         with open('files/contracts_cache.pkl', 'rb') as f:
@@ -383,7 +384,9 @@ def extract_data_file_contracts(filename: str):
                     status, fechas, comments, extras, primas, in_door, out_door = clean_data_contract(
                         status, fechas, comments, extras, primas, in_door, out_door)
                     if name not in contracts[sheet].keys():
-                        contracts[sheet][name]["id"] = emp_id = get_id_employee(name)
+                        contracts[sheet][name] = {}
+                        contracts[sheet][name]["id"] = get_id_employee(name)
+                    contracts[sheet][name]["fechas"] = fechas
                     contracts[sheet][name]["status"] = status
                     contracts[sheet][name]["comments"] = comments
                     contracts[sheet][name]["extras"] = extras
@@ -394,7 +397,9 @@ def extract_data_file_contracts(filename: str):
     except Exception as e:
         print(e)
         messagebox.showerror("Error",
-                             "Error al leer el archivo.\n Asegurese sea el archivo correcto, con el formato correcto.")
+                             "Error al leer el archivo.\n"
+                             " Asegurese sea el archivo correcto, con el formato correcto.\n" + str(e)
+                             )
     with open('files/contracts_cache.pkl', 'wb') as file:
         pickle.dump(contracts, file)
     return contracts
@@ -411,7 +416,8 @@ def clean_status_contracts(status: str):
 
 def generate_table_from_dict_contracts(contracts: dict):
     """
-    Generates a table from a dictionary
+    Generates a table from a dictionary with column headers and data.
+    Columns are: Contrato, Empleado, ID, Fecha, Status, Extras, Primas, Entrada, Salida, Comentarios.
     :param contracts:
     :return:
     """
@@ -496,10 +502,17 @@ def remove_extensions(files: list):
 
 def get_metadata_file(path: str, file: str):
     """
-    Gets the metadata from the file
-    :param path:
-    :param file:
-    :return:
+    Gets the metadata from the file (empresa)_(date).ext.
+    The dictionary contains the path, extension, size, report, date.
+    The report and date are empty if the file is not a fichaje file.
+    The date is in the format yyyy-mm-dd.
+    The report is the first word before the date.
+    The date is the second word before the date.
+    The report and date are empty if the file is not a fichaje file.
+    :param path: parent path of the file
+    :param file: name of the file
+    :return: dictionary of the file. {path, extension, size, report, date}
+
     """
     out = {
         "path": path + file,

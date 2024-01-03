@@ -8,6 +8,7 @@ from PIL import Image
 import templates.LoginFrames as Login
 import templates.FunctionsObserver as cb
 from templates.DBFrame import DBFrame
+from templates.ExamenesMedicos import ExamenesMedicosFrame
 from templates.PedidosFrame import PedidosFrame
 from templates.FichajeFilesFrames import FichajesFilesGUI
 from templates.FunctionsSQL import get_chats_w_limit, get_username_data
@@ -172,6 +173,7 @@ class GUIAsistente(ttk.Window):
             case "none":
                 for txt in self.names_side_menu:
                     self.windows_frames[txt].grid_forget()
+                self.VA_frame.grid_forget()
             case _:
                 for txt in self.names_side_menu:
                     if txt == name:
@@ -191,10 +193,12 @@ class GUIAsistente(ttk.Window):
                 return self.settings_img
             case "Tickets":
                 return self.pedido_img
-            case "Horarios":
+            case "Fichajes":
                 return self.suppliers_img
             case "Cuenta":
                 return self.products_img
+            case "Examenes":
+                return self.customers_img
             case _:
                 return self.customers_img
 
@@ -232,12 +236,15 @@ class GUIAsistente(ttk.Window):
                 case "Tickets":
                     windows[window] = PedidosFrame(self, self.images, self.chats)
                     print("tickets frame created")
-                case "Horarios":
+                case "Fichajes":
                     windows[window] = FichajesFilesGUI(self)
-                    print("horarios frame created")
+                    print("Fichajes frame created")
                 case "Cuenta":
                     windows[window] = Login.LogOptionsFrame(self)
                     print("cuenta frame created")
+                case "Examenes":
+                    windows[window] = ExamenesMedicosFrame(self)
+                    print("examenes frame created")
                 case _:
                     pass
         return windows
