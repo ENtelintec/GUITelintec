@@ -40,6 +40,7 @@ class LoginGUI(ttk.Frame):
     def __init__(self, master=None, *args, **kwargs):
         super().__init__(master, *args, **kwargs)
         self.columnconfigure(1, weight=1)
+        
         # -------------------create title-----------------
         self.label_title = ttk.Label(self, text='Telintec Software',
                                      font=('Helvetica', 18))

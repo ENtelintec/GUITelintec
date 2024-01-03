@@ -11,8 +11,8 @@ from openai import OpenAI
 
 import time
 
-client = OpenAI(api_key=secrets.get("OPENAI_API_KEY_1"))
-openai.api_key = secrets["OPENAI_API_KEY_1"]
+client = OpenAI(api_key=secrets.get("OPENAI_API_KEY"))
+openai.api_key = secrets["OPENAI_API_KEY"]
 
 
 def upload_file_openai(file_path):
