@@ -22,7 +22,6 @@ def execute_sql(sql: str, values: tuple = None, type_sql=1):
         host=secrets["HOST_DB_AWS"],
         user=secrets["USER_SQL_AWS"],
         password=secrets["PASS_SQL_AWS"],
-        port=secrets["PORT_SQL_AWS"],
         database="sql_telintec"
     )
     my_cursor = mydb.cursor(buffered=True)
