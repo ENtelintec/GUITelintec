@@ -3,13 +3,16 @@ __author__ = 'Edisson Naula'
 __date__ = '$ 08/nov./2023  at 15:22 $'
 
 import hashlib
-
+import os
 import requests
 import ttkbootstrap as ttk
 from dotenv import dotenv_values
 from ttkbootstrap import Style
-
+import customtkinter as ctk
 import tkinter as tk
+from PIL import Image
+# from templates.GUIGeneral import load_default_images
+carpeta_principal = "./img"
 
 secrets = dotenv_values(".env")
 url_api = "https://ec2-3-144-117-149.us-east-2.compute.amazonaws.com/AuthAPI/api/v1/auth/loginUP"
@@ -35,33 +38,67 @@ def call_authApi(user, pass_key, url=None):
     # print(f"Verified: {out} with {permissions}")
     return out, permissions
 
+def image_load():
+    """
+    Load image from file
+    :return:
+    """
+    image_path = carpeta_principal
+    return (ctk.CTkImage(Image.open(os.path.join(image_path, "telintec-500.png")), size=(90, 90)),
+            ctk.CTkImage(light_image=Image.open(os.path.join(image_path, "bd_img_col_!.png")),
+                         size=(30, 30)),
+            ctk.CTkImage(dark_image=Image.open(os.path.join(image_path, "iso_claro.png")),size=(350, 180))
+            )
+
+
 
 class LoginGUI(ttk.Frame):
     def __init__(self, master=None, *args, **kwargs):
         super().__init__(master, *args, **kwargs)
         self.columnconfigure(1, weight=1)
+        
+        self.images = {}
+        self.load_default_images=image_load()
+        (self.logo_image, self.employees_img,self.iso_claro)= image_load()
+        
+        
+        self.frame_login = ttk.Frame(self)
+        self.frame_login.place(relx=0.5, rely=0.5, anchor="center")  # Centrar el nuevo frame
+        # self.frame_login.config(width=600, height=800)  # Puedes ajustar los valores según tus necesidades``
+        
         # -------------------create title-----------------
-        self.label_title = ttk.Label(self, text='Telintec Software',
-                                     font=('Helvetica', 18))
-        self.label_title.grid(row=0, column=0, columnspan=2, sticky="n", padx=10, pady=20)
+        # self.label_title = ttk.Label(self, text='Telintec Software',
+        #                              font=('Helvetica', 18))
+        # self.label_title.grid(row=0, column=0, columnspan=2, sticky="n", padx=50, pady=20)
+        
+        # ----------------Agregar imagen -----------------=
+        
+         
+        imagen= ctk.CTkButton(self.frame_login, image=self.iso_claro ,fg_color="transparent", text=None,hover=None)
+        imagen.grid(row=0, column=0, columnspan=2)
+        self.label_init=ttk.Label(self.frame_login, text='Bienvenido a Telintec Software')
+        self.label_init.grid(row=1, column=0, columnspan=2, sticky="n")
         # -------------------create entry for user and pass-----------------
-        self.label_user = ttk.Label(self, text='User:',
-                                    font=('Helvetica', 14))
-        self.label_user.grid(row=1, column=0, sticky="nsew", padx=10, pady=5)
-        self.label_pass = ttk.Label(self, text='Password: ',
-                                    font=('Helvetica', 14))
-        self.label_pass.grid(row=2, column=0, sticky="nsew", padx=10, pady=5)
-        self.user_entry = ttk.Entry(self)
-        self.user_entry.grid(row=1, column=1, sticky="nsew", padx=10, pady=5)
-        self.pass_entry = ttk.Entry(self, show='*')
-        self.pass_entry.grid(row=2, column=1, sticky="nsew", padx=10, pady=5)
+        self.label_user = ttk.Label(self.frame_login, text='User',
+                                    font=('Helvetica', 18), justify='center')
+        self.label_user.grid(row=2, column=0, sticky="nsew", padx=10, pady=10)
+        self.user_entry = ttk.Entry(self.frame_login,width=50)
+        self.user_entry.grid(row=3, column=0, sticky="nsew", padx=10, pady=5)
+        self.label_pass = ttk.Label(self.frame_login, text='Password ',
+                                    font=('Helvetica', 18),justify='center', width=len('Password: '))
+        self.label_pass.grid(row=4, column=0, sticky="nsew", padx=10, pady=10)
+        self.pass_entry = ttk.Entry(self.frame_login, show='*',width=50,)
+        self.pass_entry.grid(row=5, column=0, sticky="nsew", padx=10, pady=5)
         # -------------------create button for login-----------------
-        self.button = ttk.Button(self, text='Login', command=self.button_login_click)
-        self.button.grid(row=3, column=0, sticky="nsew", padx=10, pady=10)
+        self.button = ttk.Button(self.frame_login, text='Login', command=self.button_login_click, width=50)
+        self.button.grid(row=6, column=0, sticky="nsew", padx=50, pady=30)
         # -------------------create message----------------
         self.message = ttk.Label(self, text='')
-        self.message.grid(row=3, column=1)
+        self.message.grid(row=7, column=1)
+        
 
+
+      
     def button_login_click(self):
         username = self.user_entry.get()
         password = self.pass_entry.get()

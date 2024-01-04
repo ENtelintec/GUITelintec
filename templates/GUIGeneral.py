@@ -87,6 +87,8 @@ def load_default_images():
                          size=(30, 30)),
             ctk.CTkImage(light_image=Image.open(os.path.join(image_path, "pedido_img.png")),
                          size=(30, 30)),
+            ctk.CTkImage(light_image=Image.open(os.path.join(image_path, "iso_claro.png")),
+                         size=(30, 30))
 
             )
 
@@ -120,7 +122,7 @@ class GUIAsistente(ttk.Window):
         (self.logo_image, self.employees_img, self.customers_img, self.departments_img,
          self.settings_img, self.suppliers_img, self.products_img,
          self.images["facebook"], self.images["whatsapp"], self.images["telegram"],
-         self.images["webchat"], self.pedido_img) = load_default_images()
+         self.images["webchat"], self.pedido_img,self.iso_claro) = load_default_images()
         print("images and variables loaded")
         # -----------------------Create side menu frame-----------------------
         self.navigation_frame = ctk.CTkFrame(self, corner_radius=0, fg_color="#040530")
@@ -138,9 +140,7 @@ class GUIAsistente(ttk.Window):
         # ------------------------login frame-------------------------------
         self.login_frame = Login.LoginGUI(self)
         self.login_frame.grid(row=0, column=0, sticky="nsew", pady=10, padx=5, columnspan=2)
-        # create other frames
-        # self.windows_frames = self.create_side_menu_windows()
-        # self.select_frame_by_name("none")
+       
 
     def update_side_menu(self):
         print(f"side menu for: {self.username} with {self.permissions}")
