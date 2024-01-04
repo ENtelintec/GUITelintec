@@ -4,13 +4,13 @@ __date__ = '$ 14/nov./2023  at 17:12 $'
 
 from datetime import timedelta
 from tkinter import StringVar
-from tkinter.filedialog import askopenfilename, asksaveasfilename
+from tkinter.filedialog import asksaveasfilename
 
 import pandas as pd
 import ttkbootstrap as ttk
-from ttkbootstrap.tableview import Tableview
-from ttkbootstrap.scrolled import ScrolledFrame
 from ttkbootstrap.dialogs.dialogs import Messagebox
+from ttkbootstrap.scrolled import ScrolledFrame
+from ttkbootstrap.tableview import Tableview
 
 import templates.FunctionsFiles as cb
 from templates.CollapsingFrame import CollapsingFrame
@@ -398,8 +398,10 @@ class FichajesFilesGUI(ScrolledFrame):
                 self.files_names_o.append(k)
         self.files_ternium_cb.configure(values=self.files_names_t)
         self.files_operaciones_cb.configure(values=self.files_names_o)
-        self.files_ternium_cb.set(self.files_names_t[0])
-        self.files_operaciones_cb.set(self.files_names_o[0])
+        if len(self.files_names_t) > 0:
+            self.files_ternium_cb.set(self.files_names_t[0])
+        if len(self.files_names_o) > 0:
+            self.files_operaciones_cb.set(self.files_names_o[0])
         self.button_file_click(self.files[self.files_names_t[0]]["path"])
         self.button_file_2_click(self.files[self.files_names_o[0]]["path"])
         # check if date are the same
@@ -431,7 +433,7 @@ class FichajesFilesGUI(ScrolledFrame):
         fortnights = self.max_date_g - self.min_date_g
         print(f"fortnights: {fortnights.days}")
         print(f"max date g: {self.max_date_g}", f"day: {self.max_date_g.weekday()}")
-        print(f"min date g: {self.min_date_g}",  f"day: {self.min_date_g.weekday()}")
+        print(f"min date g: {self.min_date_g}", f"day: {self.min_date_g.weekday()}")
         fort_options = fortnights.days / 15
         list_fortnights = []
         if fort_options >= 2:
@@ -439,9 +441,10 @@ class FichajesFilesGUI(ScrolledFrame):
                 if i == 0:
                     list_fortnights.append((self.min_date_g, self.min_date_g + timedelta(days=15)))
                 elif i == int(fort_options) - 1:
-                    list_fortnights.append((self.min_date_g + timedelta(days=i*15), self.max_date_g))
+                    list_fortnights.append((self.min_date_g + timedelta(days=i * 15), self.max_date_g))
                 else:
-                    list_fortnights.append((self.min_date_g + timedelta(days=i*15), self.min_date_g + timedelta(days=i*15) + timedelta(days=14)))
+                    list_fortnights.append((self.min_date_g + timedelta(days=i * 15),
+                                            self.min_date_g + timedelta(days=i * 15) + timedelta(days=14)))
         else:
             list_fortnights.append((self.min_date_g, self.max_date_g))
         print(list_fortnights)
