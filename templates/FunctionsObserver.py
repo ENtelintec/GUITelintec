@@ -438,7 +438,7 @@ def create_button_side_menu(master, row, column, text, image=None, command=None)
     :param column: column for the button
     :param text: text for the button
     """
-    button = ctk.CTkButton(master, corner_radius=0, height=40, border_spacing=10,
+    button = ctk.CTkButton(master, corner_radius=0, border_spacing=10,
                            text=text, fg_color="transparent",
                            text_color=("#fff", "#fff"),
                            hover_color=("gray70", "gray30"),

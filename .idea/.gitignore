@@ -12,4 +12,5 @@
 /modules.xml
 /inspectionProfiles/profiles_settings.xml
 /inspectionProfiles/Project_Default.xml
-.env
+/.env
+/tester.py
