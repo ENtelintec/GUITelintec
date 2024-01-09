@@ -63,17 +63,17 @@ def load_default_images():
                          size=(30, 30)),
             ctk.CTkImage(light_image=Image.open(os.path.join(image_path, "not_img_col_re.png")),
                          size=(30, 30)),
-            ctk.CTkImage(light_image=Image.open(os.path.join(image_path, "departments_dark.png")),
-                         dark_image=Image.open(os.path.join(image_path, "departments_ligth.png")),
+            ctk.CTkImage(light_image=Image.open(os.path.join(image_path, "chat_light.png")),
+                         dark_image=Image.open(os.path.join(image_path, "chat_light.png")),
                          size=(20, 20)),
             ctk.CTkImage(light_image=Image.open(os.path.join(image_path, "settings.png")),
                          size=(40, 40)),
-            ctk.CTkImage(light_image=Image.open(os.path.join(image_path, "suppliers_dark.png")),
-                         dark_image=Image.open(os.path.join(image_path, "suppliers_ligth.png")),
-                         size=(20, 20)),
-            ctk.CTkImage(light_image=Image.open(os.path.join(image_path, "products_dark.png")),
-                         dark_image=Image.open(os.path.join(image_path, "products_ligth.png")),
-                         size=(20, 20)),
+            ctk.CTkImage(light_image=Image.open(os.path.join(image_path, "fichaje.png")),
+                         dark_image=Image.open(os.path.join(image_path, "fichaje.png")),
+                         size=(40, 40)),
+            ctk.CTkImage(light_image=Image.open(os.path.join(image_path, "user_robot.png")),
+                         dark_image=Image.open(os.path.join(image_path, "user_robot.png")),
+                         size=(40, 40)),
             ctk.CTkImage(light_image=Image.open(os.path.join(image_path, "messenger.png")),
                          dark_image=Image.open(os.path.join(image_path, "messenger.png")),
                          size=(30, 30)),
@@ -84,13 +84,15 @@ def load_default_images():
                          dark_image=Image.open(os.path.join(image_path, "telegram.png")),
                          size=(30, 30)),
             # revisar image webchat
-            ctk.CTkImage(light_image=Image.open(os.path.join(image_path, "chats_img.png")),
-                         dark_image=Image.open(os.path.join(image_path, "chats_img.png")),
+            ctk.CTkImage(light_image=Image.open(os.path.join(image_path, "webchat.png")),
                          size=(30, 30)),
             ctk.CTkImage(light_image=Image.open(os.path.join(image_path, "pedido_img.png")),
+                         dark_image=Image.open(os.path.join(image_path, "pedido_img.png")),
                          size=(30, 30)),
             ctk.CTkImage(light_image=Image.open(os.path.join(image_path, "iso_claro.png")),
-                         size=(30, 30))
+                         size=(30, 30)),
+            ctk.CTkImage(light_image=Image.open(os.path.join(image_path, "exam_medical.png")),
+                         size=(40, 40))
 
             )
 
@@ -121,10 +123,10 @@ class GUIAsistente(ttk.Window):
         self.VA_frame = None
         # -----------------------load images -----------------------
         self.images = {}
-        (self.logo_image, self.employees_img, self.customers_img, self.departments_img,
-         self.settings_img, self.suppliers_img, self.products_img,
+        (self.logo_image, self.bd_img, self.notification_img, self.chats_img,
+         self.settings_img, self.fichajes_img, self.cuenta_img, 
          self.images["facebook"], self.images["whatsapp"], self.images["telegram"],
-         self.images["webchat"], self.pedido_img,self.iso_claro) = load_default_images()
+         self.images["webchat"], self.pedido_img,self.iso_claro,self.exam_medical_img) = load_default_images()
         print("images and variables loaded")
         # -----------------------Create side menu frame-----------------------
         self.navigation_frame = ctk.CTkFrame(self, corner_radius=0, fg_color="#040530")
@@ -185,25 +187,25 @@ class GUIAsistente(ttk.Window):
     def get_image_side_menu(self, name):
         match name:
             case "DB":
-                return self.employees_img
+                return self.bd_img
             case "Notificaciones":
-                return self.customers_img
+                return self.notification_img
             case "Chats":
-                return self.departments_img
+                return self.chats_img
             case "Settings":
                 return self.settings_img
             case "Tickets":
                 return self.pedido_img
             case "Fichajes":
-                return self.suppliers_img
+                return self.fichajes_img
             case "Cuenta":
-                return self.products_img
+                return self.cuenta_img
             case "Examenes":
-                return self.customers_img
+                return self.exam_medical_img
             case "Almacen":
                 return self.customers_img
             case _:
-                return self.customers_img
+                return self.notification_img
 
     def create_side_menu_widgets(self):
         flag, windows_names = cb.compare_permissions_windows(list(self.permissions.values()))
