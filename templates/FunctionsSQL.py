@@ -22,7 +22,6 @@ def execute_sql(sql: str, values: tuple = None, type_sql=1):
         host=secrets["HOST_DB_AWS"],
         user=secrets["USER_SQL_AWS"],
         password=secrets["PASS_SQL_AWS"],
-        port=secrets["PORT_SQL_AWS"],
         database="sql_telintec"
     )
     my_cursor = mydb.cursor(buffered=True)
@@ -271,8 +270,7 @@ def insert_employee(name: str, lastname: str, dni: str, phone: str, email: str,
     return flag, e, out
 
 
-def insert_customer(name: str, lastname: str, phone: str, city: str, email: str) -> tuple[
-    bool, Exception | None, int | None]:
+def insert_customer(name: str, lastname: str, phone: str, city: str, email: str) -> tuple[bool, Exception | None, int | None]:
     sql = ("INSERT INTO sql_telintec.customers (name, l_name, phone_number, city, email) "
            "VALUES (%s, %s, %s, %s, %s)")
     val = (name, lastname, phone, city, email)

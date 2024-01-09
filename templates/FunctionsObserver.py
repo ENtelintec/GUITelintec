@@ -21,7 +21,7 @@ from static.extensions import ventanasApp
 from templates.FunctionsSQL import get_isAlive, update_isAlive, get_only_context, set_finish_chat
 
 secrets = dotenv_values(".env")
-openai.api_key = secrets["OPENAI_API_KEY"]
+openai.api_key = secrets["OPENAI_API_KEY_1"]
 session = requests.Session()
 session.headers = SESSION_HEADERS
 session.cookies.set("__Secure-1PSID", secrets["PSID"])

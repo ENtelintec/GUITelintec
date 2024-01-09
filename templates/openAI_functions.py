@@ -11,8 +11,8 @@ from openai import OpenAI
 
 import time
 
-client = OpenAI(api_key=secrets.get("OPENAI_API_KEY"))
-openai.api_key = secrets["OPENAI_API_KEY"]
+client = OpenAI(api_key=secrets.get("OPENAI_API_KEY_1"))
+openai.api_key = secrets["OPENAI_API_KEY_1"]
 
 
 def upload_file_openai(file_path):
@@ -45,7 +45,7 @@ def create_assistant_openai(model="gpt-4-1106-preview", files=None, instructions
     return assistant, e
 
 
-def create_thread_openai(model="gpt-4-1106-preview", files=None):
+def create_thread_openai():
     e = None
     try:
         thread = client.beta.threads.create()
@@ -145,9 +145,11 @@ def get_response_assistant(message: str, files: list = None, instructions: str =
     :param message:message
     :return: answer (string)
     """
+    e = None
     answer = ""
     try:
         if len(files) > 0:
+            print(files)
             for i, item in enumerate(files):
                 if files[i]["status"] == "upload":
                     continue
@@ -177,3 +179,27 @@ def get_response_assistant(message: str, files: list = None, instructions: str =
         print("Error at getting response on openAI: ", e)
         return files, "Error at creating getting response on openAI"
     return files, answer
+
+
+def get_files_list_openai(department):
+    files = []
+    e = None
+    try:
+        files_openai = client.files.list(purpose="assistants")
+        files = files_openai.data
+        if len(files) == 0:
+            files = []
+    except Exception as e:
+        print("Error at getting files list on openAI: ", e)
+    return files, e
+
+
+def delete_file_openai(file_id):
+    e = None
+    try:
+        res = client.files.delete(file_id=file_id)
+        flag = res.deleted
+    except Exception as e:
+        flag = False
+        print("Error at deleting file on openAI: ", e)
+    return flag, e

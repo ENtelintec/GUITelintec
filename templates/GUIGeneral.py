@@ -4,9 +4,11 @@ from tkinter import PhotoImage
 import customtkinter as ctk
 import ttkbootstrap as ttk
 from PIL import Image
+from ttkbootstrap.toast import ToastNotification
 
 import templates.LoginFrames as Login
 import templates.FunctionsObserver as cb
+from templates import AlmacenGUI
 from templates.DBFrame import DBFrame
 from templates.ExamenesMedicos import ExamenesMedicosFrame
 from templates.PedidosFrame import PedidosFrame
@@ -142,7 +144,6 @@ class GUIAsistente(ttk.Window):
         # ------------------------login frame-------------------------------
         self.login_frame = Login.LoginGUI(self)
         self.login_frame.grid(row=0, column=0, sticky="nsew", pady=10, padx=5, columnspan=2)
-       
 
     def update_side_menu(self):
         print(f"side menu for: {self.username} with {self.permissions}")
@@ -201,6 +202,8 @@ class GUIAsistente(ttk.Window):
                 return self.cuenta_img
             case "Examenes":
                 return self.exam_medical_img
+            case "Almacen":
+                return self.customers_img
             case _:
                 return self.notification_img
 
@@ -247,6 +250,9 @@ class GUIAsistente(ttk.Window):
                 case "Examenes":
                     windows[window] = ExamenesMedicosFrame(self)
                     print("examenes frame created")
+                case "Almacen":
+                    windows[window] = AlmacenGUI.App(self)
+                    print("almacen frame created")
                 case _:
                     pass
         return windows

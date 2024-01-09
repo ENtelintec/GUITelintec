@@ -14,6 +14,7 @@ import dropbox
 import mysql.connector
 import pandas as pd
 import ttkbootstrap as ttk
+from ttkbootstrap.toast import ToastNotification
 
 from static.extensions import secrets
 from templates.FunctionsSQL import get_id_employee
@@ -318,25 +319,27 @@ def extract_data_file_contracts(filename: str) -> dict:
     :param filename:
     :return: {contracts_name: {employee_name:  {status: [], fechas: [], comments: [], extras: [], primas: [], in_door: [], out_door: []}}}
     """
+    bad_names = []
     try:
         with open('files/contracts_cache.pkl', 'rb') as f:
             contracts = pickle.load(f)
     except Exception as e:
-        print(e)
+        print("Error at opening the file cache: ", e, "initialiaze as {}")
         contracts = {}
     try:
         excel_file = pd.ExcelFile(filename)
         sheet_names = excel_file.sheet_names
         inital_skip_rows = 9
+        bad_names = []
         for sheet in sheet_names:
             if sheet == "VEHICULOS":
                 continue
             skip_rows = [i for i in range(0, inital_skip_rows)]
             # skip_rows = [i for i in range(9)] + [i for i in range(13, 3142)]
             df = pd.read_excel(excel_file, skiprows=skip_rows, sheet_name=sheet)
-            df.to_csv('files/OCT_report_1.csv')
+            df.to_csv('files/OCT_cache.csv')
             data = []
-            with open('files/OCT_report_1.csv', mode="r",
+            with open('files/OCT_cache.csv', mode="r",
                       encoding='utf-8') as csv_file:  # "r" represents the read mode
                 reader = csv.reader(csv_file)  # this is the reader object
                 for item in reader:
@@ -386,6 +389,11 @@ def extract_data_file_contracts(filename: str) -> dict:
                     if name not in contracts[sheet].keys():
                         contracts[sheet][name] = {}
                         contracts[sheet][name]["id"] = get_id_employee(name)
+                    if contracts[sheet][name]["id"] is None:
+                        contracts[sheet][name]["id"] = get_id_employee(name)
+                        if contracts[sheet][name]["id"] is None:
+                            bad_names.append(name)
+                            continue
                     contracts[sheet][name]["fechas"] = fechas
                     contracts[sheet][name]["status"] = status
                     contracts[sheet][name]["comments"] = comments
@@ -393,7 +401,6 @@ def extract_data_file_contracts(filename: str) -> dict:
                     contracts[sheet][name]["primas"] = primas
                     contracts[sheet][name]["in_door"] = in_door
                     contracts[sheet][name]["out_door"] = out_door
-
     except Exception as e:
         print(e)
         messagebox.showerror("Error",
@@ -402,6 +409,17 @@ def extract_data_file_contracts(filename: str) -> dict:
                              )
     with open('files/contracts_cache.pkl', 'wb') as file:
         pickle.dump(contracts, file)
+    if len(bad_names) > 0:
+        msg = "Se han encontrado los siguientes empleados no registrados:\n"
+        for ename in bad_names:
+            msg += ename + "\n"
+        messagebox.showinfo("Error", msg)
+        toast = ToastNotification(
+            title="Error en nombres",
+            message=msg,
+            duration=8000,
+        )
+        toast.show_toast()
     return contracts
 
 
