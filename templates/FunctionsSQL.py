@@ -270,8 +270,7 @@ def insert_employee(name: str, lastname: str, dni: str, phone: str, email: str,
     return flag, e, out
 
 
-def insert_customer(name: str, lastname: str, phone: str, city: str, email: str) -> tuple[
-    bool, Exception | None, int | None]:
+def insert_customer(name: str, lastname: str, phone: str, city: str, email: str) -> tuple[bool, Exception | None, int | None]:
     sql = ("INSERT INTO sql_telintec.customers (name, l_name, phone_number, city, email) "
            "VALUES (%s, %s, %s, %s, %s)")
     val = (name, lastname, phone, city, email)

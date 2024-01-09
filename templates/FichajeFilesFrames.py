@@ -50,6 +50,7 @@ class FichajesFilesGUI(ScrolledFrame):
         # ----------------------variables-------------------------
         self.file_selected_1 = False
         self.file_selected_2 = False
+        self.master = master
         self.contracts = {}
         (self.df, self.days_late, self.days_extra, self.days_faltas,
          self.data_contract_emp, self.days_late2, self.days_extra2,
@@ -530,14 +531,18 @@ class FichajesFilesGUI(ScrolledFrame):
 
     def get_data_from_name_contract(self, name: str) -> tuple[dict, list, list, list, float, list] | None:
         if self.file_selected_2:
+            print("1")
             id_2 = get_id_employee(name)
             if id_2 is not None:
+                print("2")
                 for contract in self.contracts.keys():
                     ids = []
                     for emp_name in self.contracts[contract].keys():
                         ids.append((self.contracts[contract][emp_name]["id"], emp_name))
                     emp, id_emp, flag = compare_employee_name(ids, id_2)
+                    print(ids, id_2)
                     if flag:
+                        print("3")
                         faltas = []
                         retardos = []
                         extras = []
@@ -560,10 +565,11 @@ class FichajesFilesGUI(ScrolledFrame):
                             if "PRIMA" in txt_prima:
                                 primas.append((self.contracts[contract][emp]["fechas"][i],
                                                self.contracts[contract][emp]["comments"][i]))
+                        print(self.contracts[contract][emp])
                         return self.contracts[contract][emp], faltas, retardos, extras, total_extra, primas
             else:
                 print("user not registered")
-                return None
+                return None, None, None, None, None, None
         else:
             print("no file selected")
-            return None
+            return None, None, None, None, None, None

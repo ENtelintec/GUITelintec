@@ -33,7 +33,7 @@ class ExamenesMedicosFrame(ScrolledFrame):
     def __init__(self, master, *args, **kwargs):
         super().__init__(master, *args, **kwargs)
         # self.pack(fill=ttk.BOTH, expand=True)
-        self.columnconfigure((0, 1, 2), weight=1)
+        self.columnconfigure((0, 1, 2, 3), weight=1)
         # self.rowconfigure(0, weight=1)
 
         current_style = ttk.Style()
@@ -41,7 +41,7 @@ class ExamenesMedicosFrame(ScrolledFrame):
         theme = ttk.Style()
         theme.configure("Checkbutton.Color.Checbutton", background="#040530", foreground="#FFFFFF")
         # -------------------create title-----------------
-        ttk.Label(self, text='Examenes Medicos', font=("Helvetica", 32, "bold")).grid(row=0, column=0, columnspan=3,
+        ttk.Label(self, text='Examenes Medicos', font=("Helvetica", 32, "bold")).grid(row=0, column=0, columnspan=4,
                                                                                       padx=20, pady=50)
 
         # -------------------create varaibles-----------------
@@ -75,23 +75,23 @@ class ExamenesMedicosFrame(ScrolledFrame):
         btn_check_emp_id.grid(row=6, column=0, sticky="nswe", padx=5, pady=5)
         # -------------------create entrys-----------------
         self.entry_name = ttk.Entry(self, bootstyle="info")
-        self.entry_name.grid(row=1, column=1, sticky="nswe", padx=5, pady=5)
+        self.entry_name.grid(row=1, column=1, sticky="w", padx=5, pady=5)
         self.entry_blood = ttk.Combobox(self, bootstyle="info", state="readonly")
         self.entry_blood["values"] = ("A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-")
         self.entry_blood.current(0)
-        self.entry_blood.grid(row=2, column=1, sticky="nswe", padx=5, pady=5)
+        self.entry_blood.grid(row=2, column=1, sticky="w", padx=5, pady=5)
         self.entry_status = ttk.Combobox(self, bootstyle="info", state="readonly")
         self.entry_status["values"] = ("Activo", "Inactivo")
         self.entry_status.current(0)
-        self.entry_status.grid(row=3, column=1, sticky="nswe", padx=5, pady=5)
+        self.entry_status.grid(row=3, column=1, sticky="w", padx=5, pady=5)
         self.entry_aptitud = ttk.Combobox(self, bootstyle="info", state="readonly")
         self.entry_aptitud["values"] = ("1", "2", "3", "4")
         self.entry_aptitud.current(0)
-        self.entry_aptitud.grid(row=4, column=1, sticky="nswe", padx=5, pady=5)
+        self.entry_aptitud.grid(row=4, column=1, sticky="w", padx=5, pady=5)
         self.entry_last_date = ttk.DateEntry(self, bootstyle="info")
-        self.entry_last_date.grid(row=5, column=1, sticky="nswe", padx=5, pady=5)
+        self.entry_last_date.grid(row=5, column=1, sticky="w", padx=5, pady=5)
         self.entry_emp_id = ttk.Entry(self, bootstyle="info")
-        self.entry_emp_id.grid(row=6, column=1, sticky="nswe", padx=5, pady=5)
+        self.entry_emp_id.grid(row=6, column=1, sticky="w", padx=5, pady=5)
         # -------------------create buttons-----------------
         btn_insert = ttk.Button(self, text="Insertar", command=self.insert_data_to_db, style="TButton.Color.TButton")
         btn_insert.grid(row=8, column=0, columnspan=3, padx=5, pady=40, )
@@ -103,7 +103,7 @@ class ExamenesMedicosFrame(ScrolledFrame):
         label_id_name.grid(row=1, column=3, sticky="nsew", padx=5, pady=5)
         # -------------------export medical examination report-----------------
         self.all_medicalExam = ExamenesMedicosMain(self)
-        self.all_medicalExam.grid(row=9, column=0, columnspan=3, sticky='nsew')
+        self.all_medicalExam.grid(row=9, column=0, columnspan=4, sticky='nsew')
         self.all_medicalExam.loadTable()
         label_report = ttk.Label(self, text="Exportar reporte de los examenes medicos",
                                  font=("Helvetica", 16, "normal"))
@@ -304,14 +304,10 @@ class ExamenesMedicosMain(ttk.Frame):
         # sql = "SELECT * FROM sql_telintec.examenes_med LIMIT "
         sql = "SELECT * FROM sql_telintec.examenes_med "
         flag, e, resultados = execute_sql(sql, type_sql=5)  # type_sql=5 para obtener todos los resultados
-
         val = (limit[0], limit[1])
-
-        print(sql)
         try:
             # Ejecutar la consulta SQL
             flag, e, my_result = execute_sql(sql, val, 5)  # Cambia el type_sql a 5 para obtener todos los resultados
-            print(my_result)
             # Verificar si se obtuvieron resultados
             # if my_result is None:
             #     return
@@ -389,12 +385,9 @@ class ExamenesMedicosMain(ttk.Frame):
     def detalles_emp_medicalexam(self, event=None):
         # Obtener el nombre del empleado seleccionado
         selected_name = self.names.get()
-        print(selected_name)
-
         if not selected_name:
             messagebox.showwarning("Advertencia", "Por favor, selecciona un empleado.")
             return
-
         # Consulta MySQL para recuperar aptitude_actual y renovacion para el empleado seleccionado
         sql = "SELECT aptitude_actual,fecha_ultima_renovacion FROM sql_telintec.examenes_med WHERE name = %s"
         val = (selected_name,)
@@ -402,7 +395,6 @@ class ExamenesMedicosMain(ttk.Frame):
         try:
             # Ejecutar la consulta SQL
             flag, e, my_result = execute_sql(sql, val, 3)
-            print(my_result)
             if my_result:
                 # Actualizar las etiquetas con los datos recuperados
                 self.name_emp.set(selected_name)

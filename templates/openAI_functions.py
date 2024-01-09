@@ -145,9 +145,11 @@ def get_response_assistant(message: str, files: list = None, instructions: str =
     :param message:message
     :return: answer (string)
     """
+    e = None
     answer = ""
     try:
         if len(files) > 0:
+            print(files)
             for i, item in enumerate(files):
                 if files[i]["status"] == "upload":
                     continue

@@ -95,10 +95,7 @@ class LoginGUI(ttk.Frame):
         # -------------------create message----------------
         self.message = ttk.Label(self, text='')
         self.message.grid(row=7, column=1)
-        
 
-
-      
     def button_login_click(self):
         username = self.user_entry.get()
         password = self.pass_entry.get()

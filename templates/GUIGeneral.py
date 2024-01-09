@@ -4,6 +4,7 @@ from tkinter import PhotoImage
 import customtkinter as ctk
 import ttkbootstrap as ttk
 from PIL import Image
+from ttkbootstrap.toast import ToastNotification
 
 import templates.LoginFrames as Login
 import templates.FunctionsObserver as cb
@@ -140,7 +141,6 @@ class GUIAsistente(ttk.Window):
         # ------------------------login frame-------------------------------
         self.login_frame = Login.LoginGUI(self)
         self.login_frame.grid(row=0, column=0, sticky="nsew", pady=10, padx=5, columnspan=2)
-       
 
     def update_side_menu(self):
         print(f"side menu for: {self.username} with {self.permissions}")
