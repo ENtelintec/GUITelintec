@@ -19,5 +19,6 @@ ventanasApp = {
     'App.Deparment.Director': ["DB", "Notificaciones", "Chats", "Settings", "Tickets", "Cuenta"],
     'App.Deparment.RRHH': ["Fichajes", "Examenes", "Cuenta"],
     'App.Deparment.Administrator': ["DB", "Notificaciones", "Chats", "Fichajes", "Tickets", "Settings", "Cuenta"],
+    'App.Deparment.ALMACEN': ["Almacen", "Cuenta"],
     'App.Deparment.Default': ["Notificaciones", "Cuenta"]
 }

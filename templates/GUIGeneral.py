@@ -8,6 +8,7 @@ from ttkbootstrap.toast import ToastNotification
 
 import templates.LoginFrames as Login
 import templates.FunctionsObserver as cb
+from templates import AlmacenGUI
 from templates.DBFrame import DBFrame
 from templates.ExamenesMedicos import ExamenesMedicosFrame
 from templates.PedidosFrame import PedidosFrame
@@ -199,6 +200,8 @@ class GUIAsistente(ttk.Window):
                 return self.products_img
             case "Examenes":
                 return self.customers_img
+            case "Almacen":
+                return self.customers_img
             case _:
                 return self.customers_img
 
@@ -245,6 +248,9 @@ class GUIAsistente(ttk.Window):
                 case "Examenes":
                     windows[window] = ExamenesMedicosFrame(self)
                     print("examenes frame created")
+                case "Almacen":
+                    windows[window] = AlmacenGUI.App(self)
+                    print("almacen frame created")
                 case _:
                     pass
         return windows

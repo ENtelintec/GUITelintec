@@ -1,14 +1,5 @@
-import ttkbootstrap as ttk
-from ttkbootstrap.constants import *
-from widgets import *
+from templates.widgets import *
 from screens.Home import HomeScreen
-from screens.Clients import ClientsScreen
-from screens.Settings import SettingsScreen
-from screens.In import InScreen
-from screens.Out import OutScreen
-from screens.Inventory import InventoryScreen
-from screens.Orders import OrdersScreen
-from screens.Returns import ReturnsScreen
 
 
 class App(ttk.Frame):

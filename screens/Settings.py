@@ -1,10 +1,7 @@
-import time
 from tkinter import filedialog
 import pandas as pd
-import ttkbootstrap as ttk
-from ttkbootstrap.constants import *
 from ttkbootstrap.scrolled import ScrolledFrame
-from widgets import *
+from templates.widgets import *
 from controllers.index import DataHandler
 
 

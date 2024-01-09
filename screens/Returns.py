@@ -1,6 +1,4 @@
-import ttkbootstrap as ttk
-from ttkbootstrap.constants import *
-from widgets import *
+from templates.widgets import *
 
 
 class ReturnsScreen(ttk.Frame):

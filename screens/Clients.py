@@ -1,7 +1,5 @@
 import time
-import ttkbootstrap as ttk
-from ttkbootstrap.constants import *
-from widgets import *
+from templates.widgets import *
 from controllers.index import DataHandler
 from ttkbootstrap.tableview import Tableview
 from ttkbootstrap.scrolled import ScrolledFrame

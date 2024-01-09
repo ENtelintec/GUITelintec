@@ -1,7 +1,5 @@
 from PIL import Image
-import ttkbootstrap as ttk
-from ttkbootstrap.constants import *
-from widgets import *
+from templates.widgets import *
 from controllers.index import DataHandler
 Image.CUBIC = Image.BICUBIC
 from ttkbootstrap.scrolled import ScrolledFrame
