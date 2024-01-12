@@ -15,22 +15,9 @@ client = OpenAI(api_key=secrets.get("OPENAI_API_KEY_1"))
 openai.api_key = secrets["OPENAI_API_KEY_1"]
 
 
-def upload_file_openai(file_path):
-    e = None
-    try:
-        file = client.files.create(
-            file=open(file_path, "rb"),
-            purpose="assistants"
-        )
-    except Exception as e:
-        print(e)
-        file = None
-    return file, e
-
-
 def create_assistant_openai(model="gpt-4-1106-preview", files=None, instructions=None):
     e = None
-    file_IDS = [item["file_openai"].id for item in files] if files is not None else []
+    file_IDS = files if files is not None else []
     try:
         assistant = client.beta.assistants.create(
             name="Assistant",
@@ -134,11 +121,12 @@ def get_response_chat_completion(messages: list) -> str:
     return out.choices[0].message.content
 
 
-def get_response_assistant(message: str, files: list = None, instructions: str = None, department=None) -> tuple[list | None, str]:
+def get_response_assistant(message: str, filename: str, files: list = None, instructions: str = None, department=None) -> tuple[list | None, str]:
     """
     Receives context and conversation with the bot and return a
     message from the bot.
 
+    :param filename: file to use
     :param department:
     :param instructions:
     :param files: list of files to upload
@@ -147,22 +135,15 @@ def get_response_assistant(message: str, files: list = None, instructions: str =
     """
     e = None
     answer = ""
+    files_assistat_ids = []
+    if len(files) > 0:
+        for i, item in enumerate(files):
+            if item["name"] == filename:
+                files_assistat_ids.append(item["file_id"])
+                break
+
     try:
-        if len(files) > 0:
-            print(files)
-            for i, item in enumerate(files):
-                if files[i]["status"] == "upload":
-                    continue
-                files[i]["file_openai"], error = upload_file_openai(item["path"])
-                files[i]["file_id"] = files[i]["file_openai"].id
-                files[i]["status"] = "upload"
-            with open(f'files/files_{department}_openAI_cache.pkl', 'wb') as file:
-                pickle.dump(files, file)
-    except Exception as e:
-        print("Error at uploading files on openAI: ", e)
-        return files, "Error at uploading files on openAI"
-    try:
-        assistant, error = create_assistant_openai(files=files, instructions=instructions)
+        assistant, error = create_assistant_openai(files=files_assistat_ids, instructions=instructions)
     except Exception as e:
         print("Error at creating assistant on openAI: ", e)
         return files, "Error at creating assistant on openAI"
@@ -181,7 +162,7 @@ def get_response_assistant(message: str, files: list = None, instructions: str =
     return files, answer
 
 
-def get_files_list_openai(department):
+def get_files_list_openai():
     files = []
     e = None
     try:
@@ -203,3 +184,31 @@ def delete_file_openai(file_id):
         flag = False
         print("Error at deleting file on openAI: ", e)
     return flag, e
+
+
+def upload_file_openai(file_path: str):
+    e = None
+    try:
+        file = client.files.create(
+            file=open(file_path, "rb"),
+            purpose="assistants"
+        )
+        while True:
+            files, error = get_files_list_openai()
+            if len(files) > 0:
+                process = False
+                for item in files:
+                    if item.id == file.id:
+                        if item.status == "processed":
+                            print("File processed")
+                            process = True
+                            break
+                        else:
+                            print("File not processed yet")
+                if process:
+                    break
+            time.sleep(2)
+    except Exception as e:
+        print(e)
+        file = None
+    return file, e

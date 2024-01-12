@@ -5,14 +5,15 @@ __date__ = '$ 25/dic./2023  at 13:30 $'
 import pickle
 
 import ttkbootstrap as ttk
-from tkinter import END, filedialog
+from tkinter import END, filedialog, messagebox
 from ttkbootstrap.scrolled import ScrolledText
 
 import tkinter as tk
 
 import os
 
-from templates.openAI_functions import get_response_chat_completion, get_response_assistant
+from templates.openAI_functions import get_response_chat_completion, get_response_assistant, get_files_list_openai, \
+    upload_file_openai, delete_file_openai
 
 BG_GRAY = "#ABB2B9"
 BG_COLOR = "#17202A"
@@ -68,28 +69,43 @@ class AssistantGUI(ttk.Frame):
         send.grid(row=4, column=0, sticky="nsew", padx=5, pady=5)
         #  -------------------create file selector btn----------------
         self.btn_file = ttk.Button(self, text="Upload File",
-                                   command=self.button_file_click)
+                                   command=self.upload_btn_file_click)
         self.btn_file.grid(row=5, column=0, sticky="nsew", padx=5, pady=5)
         self.btn_file_erase = ttk.Button(self, text="Erase File",
-                                         command=self.button_file_erase)
+                                         command=self.btn_file_erase)
         self.btn_file_erase.grid(row=5, column=1, sticky="nsew", padx=5, pady=5)
         self.label_file = ttk.Label(self, text="Archivos subidos: ")
         self.label_file.grid(row=6, column=0, sticky="nsew", padx=5, pady=(5, 0))
         self.files_cb = ttk.Combobox(self, values=["no file selected"], state="readonly")
         self.files_cb.grid(row=7, column=0, sticky="nsew", padx=5, pady=5, columnspan=2)
+        self.update_files_cb()
+
+    def update_files_cb(self):
+        self.files_cb.configure(values=["no file selected"] + [file["name"] for file in self.files_AV])
+        self.files_cb.current(0)
 
     def get_files_openai(self):
         try:
             with open(f'files/files_{self.department}_openAI_cache.pkl', 'rb') as f:
                 files_openAI = pickle.load(f)
+            files_openAI_online, error = get_files_list_openai()
             if len(files_openAI) > 0:
                 for file in files_openAI:
                     if file["department"] != self.department:
                         files_openAI.remove(file)
         except Exception as e:
             files_openAI = []
+            files_openAI_online = []
             print(e)
-
+        for i, file in enumerate(files_openAI):
+            for file_online in files_openAI_online:
+                if file["name"] == file_online.filename:
+                    if file_online.status == "processed":
+                        files_openAI[i]["status"] = "uploaded"
+                    else:
+                        files_openAI[i]["status"] = "pending"
+                    print(file["name"])
+                    break
         return files_openAI
 
     def send_txt(self):
@@ -128,7 +144,7 @@ class AssistantGUI(ttk.Frame):
                 f"Act as an Virtual Assistant, you work aiding in a telecomunications enterprise called Telintec. \n "
                 f"You help in the {self.department} and you answer are concise and precise.\n"
                 f"You answer in {self.language}.")
-            self.files_AV, res = get_response_assistant(msg, self.files_AV, instructions, self.department)
+            self.files_AV, res = get_response_assistant(msg, self.files_cb.get(), self.files_AV, instructions, self.department)
             print("Responge assistant gpt: ", res)
         else:
             # files not supported
@@ -164,34 +180,67 @@ class AssistantGUI(ttk.Frame):
                                     f"You help in the {self.department}"}
                         ]
 
-    def button_file_click(self):
+    def upload_btn_file_click(self):
         # select filepath
         filepath = filedialog.askopenfilename(initialdir="/", title="Select file",
-                                              filetypes=(("text files", "*.txt"), ("all files", "*.*")))
-        self.files_AV.append(
-            {"path": filepath,
-             "name": os.path.basename(filepath),
-             "file_openai": None,
-             "file_id": None,
-             "department": self.department,
-             "status":  "pending"}
-        )
+                                              filetypes=(("csv files", "*.csv"), ("excel files", "*.xlsx"),
+                                                         ("pdf files", "*.pdf"), ("text files", "*.txt"),
+                                                         ("all files", "*.*")
+                                                         )
+                                              )
+        res = False
+        duplicated = False
+        index = 0
+        for i, item in enumerate(self.files_AV):
+            if item["name"] == os.path.basename(filepath):
+                # ask if re-upload same file
+                duplicated = True
+                index = i
+                res = messagebox.askyesno("File already uploaded",
+                                          f"The file {item['name']} is already uploaded, do you want to re-upload it?")
+                break
+        if not duplicated:
+            print("upload new file")
+            self.files_AV.append(
+                {"path": filepath,
+                 "name": os.path.basename(filepath),
+                 "file_openai": None,
+                 "file_id": None,
+                 "department": self.department,
+                 "status":  "pending"}
+            )
+        else:
+            if res:
+                print("upload again")
+                self.files_AV[index]["status"] = "pending"
+        # update combobox with files uploaded on openAI
         files_names = [item["name"] for item in self.files_AV]
         self.files_cb.configure(values=files_names)
-        self.files_cb.set(files_names[0])
-        # display filepath
+        self.files_cb.current(0)
+        # upload file on openAI
+        if self.files_AV[-1]["status"] == "pending":
+            file, error = upload_file_openai(filepath)
+            self.files_AV[-1]["file_openai"] = file
+            self.files_AV[-1]["file_id"] = file.id
+            self.files_AV[-1]["status"] = "processed"
         print(filepath)
 
-    def button_file_erase(self):
+    def btn_file_erase(self):
+        erased = False
         if self.files_cb.get() != "no file selected" and len(self.files_AV) > 0:
             for item in self.files_AV:
                 if item["name"] == self.files_cb.get():
-                    self.files_AV.remove(item)
-                    print(f"file erased: {item['name']}")
+                    erased, error = delete_file_openai(item["file_id"])
+                    if erased:
+                        self.files_AV.remove(item)
+                        print(f"file erased: {item['name']}")
+                        break
+                    else:
+                        print(f"file not erased: {item['name']}")
         files_names = [item["name"] for item in self.files_AV]
         files_names = ["no file selected"] if len(files_names) == 0 else files_names
         self.files_cb.configure(values=files_names)
-        self.files_cb.set(files_names[0])
+        self.files_cb.current(0)
 
 
 if __name__ == '__main__':
