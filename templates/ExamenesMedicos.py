@@ -1,19 +1,22 @@
 # -*- coding: utf-8 -*-
 __author__ = 'Edisson Naula'
 __date__ = '$ 29/dic./2023  at 17:12 $'
-
-from datetime import datetime
+import pandas as pd
+import tkinter as tk
+from datetime import datetime,date
 from tkinter import BooleanVar, messagebox
 from tkinter import filedialog
+from tkinter.filedialog import askopenfilename
 from tkinter.ttk import Style
+import json
+import time
 
-import pandas as pd
 import ttkbootstrap as ttk
 from ttkbootstrap.scrolled import ScrolledFrame
 from ttkbootstrap.tableview import Tableview
 
 from templates.FunctionsSQL import insert_new_exam_med, get_id_employee, update_aptitud_renovacion, \
-    get_aptitud_renovacion, update_aptitud, update_renovacion, get_renovacion, execute_sql
+    get_aptitud_renovacion, update_aptitud, update_renovacion, get_renovacion, execute_sql, loadDataMedicalExams, data_to_employee, loadLIstRenovacion
 
 
 def create_booleanvar(number: int):
@@ -302,16 +305,87 @@ class ExamenesMedicosMain(ttk.Frame):
     def loadTable(self, limit=(0, 100)):
         # Consulta SQL para obtener datos de la base de datos
         # sql = "SELECT * FROM sql_telintec.examenes_med LIMIT "
-        sql = "SELECT * FROM sql_telintec.examenes_med "
-        flag, e, resultados = execute_sql(sql, type_sql=5)  # type_sql=5 para obtener todos los resultados
-        val = (limit[0], limit[1])
+        
+        # sql = "SELECT * FROM sql_telintec.examenes_med "
+        # flag, e, resultados = execute_sql(sql, type_sql=5)  # type_sql=5 para obtener todos los resultados
+        # val = (limit[0], limit[1])
+        # print(sql)
+        
         try:
             # Ejecutar la consulta SQL
-            flag, e, my_result = execute_sql(sql, val, 5)  # Cambia el type_sql a 5 para obtener todos los resultados
+            # flag, e, my_result = execute_sql(sql, val, 5)  # Cambia el type_sql a 5 para obtener todos los resultados
+            # print(my_result)
             # Verificar si se obtuvieron resultados
             # if my_result is None:
             #     return
-            my_result = my_result
+            # my_result = my_result
+            
+            # Obtener datos de la base de datos utilizando la función loadDataMedicalExams
+            my_result = loadDataMedicalExams()
+            print("DATOS CARGADOS DE LA BD")
+            print("\nMY_RESULT",my_result)
+            # Transponer la tabla para obtener listas separadas para cada columna
+            # columns = list(zip(*my_result))
+          
+            # lista_name=columns[1]
+            # # print("lista_name: ", lista_name)
+            # lista_blood=columns[2]
+            # # print("lista_blood: ", lista_blood)
+            
+            # lista_status=columns[3]
+            # lista_aptitud=columns[4]
+            # # print("lista_aptitud: ", lista_aptitud)
+            # lista_renovacion=columns[5]
+            # # print("lista_renovacion: ", lista_renovacion)
+            # lista_aptitude_actual=columns[6]
+            # lista_fecha_ultima_renovacion=columns[7]
+            # lista_empleado_id=columns[8]
+            # Verificar si se obtuvieron resultados
+            if my_result is None:
+                return
+                    
+           
+           
+        
+            
+
+            
+            # Iterar sobre las filas de resultados
+            # for row in my_result: 
+            #         # Imprimir toda la fila
+            #         print(row)
+
+            #         # Obtener la primera fecha de renovación (asumiendo que la columna es una lista)
+            #         renovacion_list = row[5]  # Índice 5 representa la columna RENOVACION
+            #         if renovacion_list:
+            #             primera_fecha_renovacion = renovacion_list[0]
+            #             print("Primera Fecha de Renovación:", primera_fecha_renovacion)
+            #         else:
+            #             print("La lista de renovación está vacía.")
+            
+            # option 2
+            # for i , col, in enumerate(self.df.columns.tolist()):
+            #     if i == 5:
+            #         fechas.append(self.df[col].tolist())
+            #     else:
+            #         print("No hay fechas")
+            
+            # fechas_list=[]
+            # for j , col_renovacion, in enumerate(fechas):
+            #     fechas_list.append(col_renovacion[j])
+            
+            # for fecha_f in fechas_list:
+            #   if isinstance(fecha_f, pd.Timestamp):
+            #       primera_fecha_renovacion = fecha_f.to_pydatetime()
+            #   elif fecha_f != '':
+            #         primera_fecha_renovacion = datetime.strptime(str(fecha_f), "%Y-%m-%d %H:%M:%S")
+            #   else:
+            #       break
+              
+            # print("Primera Fecha de Renovación:", primera_fecha_renovacion)
+
+
+       
 
             # Transformar los resultados en un formato adecuado para Tableview
             data_for_tableview = {
@@ -321,6 +395,7 @@ class ExamenesMedicosMain(ttk.Frame):
                 "STATUS": [],
                 "APTITUD": [],
                 "RENOVACION": [],
+                "EXAMEN_MEDICO_INICIAL": [],
                 "APTITUDE_ACTUAL": [],
                 "FECHA_ULTIMA_RENOVACION": [],
                 "EMPLEADO_ID": []
@@ -335,9 +410,120 @@ class ExamenesMedicosMain(ttk.Frame):
                 data_for_tableview["STATUS"].append(row[3])
                 data_for_tableview["APTITUD"].append(row[4])
                 data_for_tableview["RENOVACION"].append(row[5])
+                # data_for_tableview["EXAMEN_MEDICO_INICIAL"].append(row[6])
                 data_for_tableview["APTITUDE_ACTUAL"].append(row[6])
                 data_for_tableview["FECHA_ULTIMA_RENOVACION"].append(row[7])
                 data_for_tableview["EMPLEADO_ID"].append(row[8])
+                
+  
+       
+                a=[]
+                b=[]
+                a=data_for_tableview["APTITUD"]
+                b=data_for_tableview["RENOVACION"]
+                print(a, len(a))
+                print(b, len(b))
+               # remove empty items vacios "" (puedo ser ceros, unos o lo que quieras)
+                a = [x for x in a if x != ""]
+                b = [x for x in b if x != ""]
+                print(a, len(a))
+                print(b, len(b))
+                # busco el maximo de longitu y agrego items vacios
+                max_len = 0 
+                lista_list = [a, b]
+                for lista in lista_list:
+                    if len(lista) > max_len:
+                        max_len = len(lista)
+                        print(max_len)
+                for i in range(max_len):
+                    for lista in lista_list:
+                        if i >= len(lista):
+                            lista.append("")
+                print(a, len(a))
+                print(b, len(b))    
+                
+                primera_fecha_renovacion = []
+                
+                # firts code
+                # for i in range(len(data_for_tableview["RENOVACION"])):  
+                #     if isinstance(data_for_tableview["RENOVACION"][i], pd.Timestamp):
+                #         primera_fecha_renovacion = data_for_tableview["RENOVACION"][i].to_datetime(format="mixed")
+                #     elif data_for_tableview["RENOVACION"][i] != '':
+                #         primera_fecha_renovacion = datetime.strptime(str(data_for_tableview["RENOVACION"][i]), "%Y-%m-%d %H:%M:%S")
+                #         break
+                
+                for i in range(len(data_for_tableview["RENOVACION"])):
+                        if isinstance(data_for_tableview["RENOVACION"][i], (pd.Timestamp,datetime)):
+                            primera_fecha_renovacion.append(data_for_tableview["RENOVACION"][i].strftime("%Y-%m-%d %H:%M:%S"))
+                        elif data_for_tableview["RENOVACION"][i] != '':
+                            primera_fecha_renovacion.append(datetime.strptime(str(data_for_tableview["RENOVACION"][i]), "%Y-%m-%d %H:%M:%S").strftime("%Y-%m-%d %H:%M:%S"))
+                        else:
+                            primera_fecha_renovacion.append('')
+
+                    
+                for i in range(len (primera_fecha_renovacion)):
+                    data_for_tableview["EXAMEN_MEDICO_INICIAL"].append(primera_fecha_renovacion[i])
+                    print("Primera Fecha de Renovación:", data_for_tableview["EXAMEN_MEDICO_INICIAL"][i])
+                    
+                    #         if data_for_tableview["RENOVACION"][i]:
+                    #                 # Convertir el Timestamp a un string con el formato deseado
+                    #                 timestamp = data_for_tableview["RENOVACION"][i][0] 
+                    #                 formatted_date = datetime.strftime(str(timestamp), "%Y-%m-%d %H:%M:%S")
+                    #                 data_for_tableview["EXAMEN_MEDICO_INICIAL"].append(formatted_date)
+                    #         else:
+                    #              # Si la lista está vacía, agregar una cadena vacía
+                    #                data_for_tableview["EXAMEN_MEDICO_INICIAL"].append("")
+                    # else:
+                    #     # data_for_tableview["EXAMEN_MEDICO_INICIAL"].append(data_for_tableview["RENOVACION"][i])
+                    #     # Si no es una lista, simplemente agregar el elemento a EXAMEN_MEDICO_INICIAL
+                    #         timestamp = data_for_tableview["RENOVACION"][i]
+                    #         formatted_date = datetime.strftime(str(timestamp), "%Y-%m-%d %H:%M:%S")
+                    #         data_for_tableview["EXAMEN_MEDICO_INICIAL"].append(formatted_date)
+  
+
+                
+                # recorro RENOVACION para obtener la primera fecha de renovacion de cada empleado
+                # for i in range(len(data_for_tableview["RENOVACION"])):
+                #     if isinstance(data_for_tableview["RENOVACION"][i], list):
+                #         # data_for_tableview["EXAMEN_MEDICO_INICIAL"].append(data_for_tableview["RENOVACION"][i][0])
+                #          # Verificar si la lista contiene elementos antes de acceder al primero
+                #             if data_for_tableview["RENOVACION"][i]:
+                #                     # Convertir el Timestamp a un string con el formato deseado
+                #                     timestamp = data_for_tableview["RENOVACION"][i][0]
+                #                     formatted_date = datetime.strftime(timestamp, "%Y-%m-%d %H:%M:%S")
+                #                     data_for_tableview["EXAMEN_MEDICO_INICIAL"].append(formatted_date)
+                #             else:
+                #                  # Si la lista está vacía, agregar una cadena vacía
+                #                    data_for_tableview["EXAMEN_MEDICO_INICIAL"].append("")
+                #     else:
+                #         # data_for_tableview["EXAMEN_MEDICO_INICIAL"].append(data_for_tableview["RENOVACION"][i])
+                #         # Si no es una lista, simplemente agregar el elemento a EXAMEN_MEDICO_INICIAL
+                #             timestamp = data_for_tableview["RENOVACION"][i]
+                #             formatted_date = datetime.strftime(timestamp, "%Y-%m-%d %H:%M:%S")
+                #             data_for_tableview["EXAMEN_MEDICO_INICIAL"].append(formatted_date)
+                
+                # obtener la primera fecha de renovacion de cada empleado despues de quitar los vacios
+                # for i , col_renovacion, in enumerate():
+                #     if isinstance(col_renovacion, pd.Timestamp):
+                #         primera_fecha_renovacion = col_renovacion.to_pydatetime()
+                #     elif col_renovacion != '':
+                #         primera_fecha_renovacion = datetime.strptime(str(col_renovacion), "%Y-%m-%d %H:%M:%S")
+                #         print("Primera Fecha de Renovación:", primera_fecha_renovacion)
+                #     else:
+                #         break
+                    
+    
+                     
+
+
+                
+                       
+            # data_for_tableview["EXAMEN_MEDICO_INICIAL"].remove("")
+            # imprimir a data_for_tableview["EXAMEN_MEDICO_INICIAL"]
+            # for i in range(len(data_for_tableview["EXAMEN_MEDICO_INICIAL"])):
+            #     print("data_for_tableview examen_medico_inicial: ", data_for_tableview["EXAMEN_MEDICO_INICIAL"][i])
+            
+          
 
             # Destruir el Tableview existente si existe
             if hasattr(self, 'grouped_table'):
@@ -351,6 +537,7 @@ class ExamenesMedicosMain(ttk.Frame):
                 {"text": "STATUS", "stretch": True},
                 {"text": "APTITUD", "stretch": True},
                 {"text": "RENOVACION", "stretch": True},
+                {"text": "EXAMEN_MEDICO_INICIAL", "stretch": True},
                 {"text": "APTITUDE_ACTUAL", "stretch": True},
                 {"text": "FECHA_ULTIMA_RENOVACION", "stretch": True},
                 {"text": "EMPLEADO_ID", "stretch": True}
@@ -361,6 +548,7 @@ class ExamenesMedicosMain(ttk.Frame):
                 data_for_tableview["STATUS"],
                 data_for_tableview["APTITUD"],
                 data_for_tableview["RENOVACION"],
+                data_for_tableview["EXAMEN_MEDICO_INICIAL"],
                 data_for_tableview["APTITUDE_ACTUAL"],
                 data_for_tableview["FECHA_ULTIMA_RENOVACION"],
                 data_for_tableview["EMPLEADO_ID"]
@@ -388,18 +576,22 @@ class ExamenesMedicosMain(ttk.Frame):
         if not selected_name:
             messagebox.showwarning("Advertencia", "Por favor, selecciona un empleado.")
             return
+        
+
         # Consulta MySQL para recuperar aptitude_actual y renovacion para el empleado seleccionado
-        sql = "SELECT aptitude_actual,fecha_ultima_renovacion FROM sql_telintec.examenes_med WHERE name = %s"
-        val = (selected_name,)
-        flag, e, my_result = execute_sql(sql, val, type_sql=3)
+        # sql = "SELECT aptitude_actual,fecha_ultima_renovacion FROM sql_telintec.examenes_med WHERE name = %s"
+        # val = (selected_name,)
+        # flag, e, my_result = execute_sql(sql, val, type_sql=3)
         try:
             # Ejecutar la consulta SQL
-            flag, e, my_result = execute_sql(sql, val, 3)
-            if my_result:
+            # flag, e, my_result = execute_sql(sql, val, 3)
+            # print(my_result)
+            detalles_empleado = data_to_employee(selected_name)
+            if detalles_empleado and isinstance(detalles_empleado, (list, tuple)):
                 # Actualizar las etiquetas con los datos recuperados
                 self.name_emp.set(selected_name)
-                self.aptitud_act.set(my_result)
-                self.examen_prox.set(my_result)
+                self.aptitud_act.set(detalles_empleado)
+                self.examen_prox.set(detalles_empleado)
                 # self.examen_prox.set(my_result[0][1])
             else:
                 # Manejar el caso en el que no se encuentran datos para el empleado seleccionado

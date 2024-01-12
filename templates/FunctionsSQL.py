@@ -22,6 +22,7 @@ def execute_sql(sql: str, values: tuple = None, type_sql=1):
         host=secrets["HOST_DB_AWS"],
         user=secrets["USER_SQL_AWS"],
         password=secrets["PASS_SQL_AWS"],
+        port=secrets["PORT_SQL_AWS"],
         database="sql_telintec"
     )
     my_cursor = mydb.cursor(buffered=True)
@@ -453,3 +454,25 @@ def get_renovacion(emp_id: int):
     val = (emp_id,)
     flag, e, out = execute_sql(sql, val, 1)
     return flag, e, out
+# 
+# --------------------------------funtions for data medical exams--------------------------
+def loadDataMedicalExams():
+    sql = ("SELECT * FROM sql_telintec.examenes_med")
+    flag, e, out = execute_sql(sql, type_sql=5)
+    return out
+def loadLIstRenovacion():
+    sql = ("SELECT renovacion FROM sql_telintec.examenes_med")
+    flag, e, out = execute_sql(sql, type_sql=5)
+    return out
+
+def data_to_employee(name:str):
+    print(name)
+    sql = ("SELECT aptitude_actual,fecha_ultima_renovacion  FROM sql_telintec.examenes_med  WHERE name = %s")
+    print(sql)
+    val = (name,)
+    flag, e, out = execute_sql(sql, val, type_sql=3)
+    if out:
+        return out[0]  # Devuelve la primera fila de resultados (aptitude_actual, fecha_ultima_renovacion)
+    else:
+      
+        return out 
