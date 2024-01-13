@@ -2,6 +2,7 @@
 __author__ = 'Edisson Naula'
 __date__ = '$ 29/dic./2023  at 17:12 $'
 
+import json
 from datetime import datetime
 from tkinter import BooleanVar, messagebox
 from tkinter import filedialog
@@ -13,7 +14,7 @@ from ttkbootstrap.scrolled import ScrolledFrame
 from ttkbootstrap.tableview import Tableview
 
 from templates.FunctionsSQL import insert_new_exam_med, get_id_employee, update_aptitud_renovacion, \
-    get_aptitud_renovacion, update_aptitud, update_renovacion, get_renovacion, execute_sql
+    get_aptitud_renovacion, update_aptitud, update_renovacion, get_renovacion, execute_sql, get_all_examenes
 
 
 def create_booleanvar(number: int):
@@ -31,7 +32,7 @@ def create_booleanvar(number: int):
 class ExamenesMedicosFrame(ScrolledFrame):
 
     def __init__(self, master, *args, **kwargs):
-        super().__init__(master, *args, **kwargs)
+        super().__init__(master, autohide=True, *args, **kwargs)
         # self.pack(fill=ttk.BOTH, expand=True)
         self.columnconfigure((0, 1, 2, 3), weight=1)
         # self.rowconfigure(0, weight=1)
@@ -42,8 +43,7 @@ class ExamenesMedicosFrame(ScrolledFrame):
         theme.configure("Checkbutton.Color.Checbutton", background="#040530", foreground="#FFFFFF")
         # -------------------create title-----------------
         ttk.Label(self, text='Examenes Medicos', font=("Helvetica", 32, "bold")).grid(row=0, column=0, columnspan=4,
-                                                                                      padx=20, pady=50)
-
+                                                                                      padx=20, pady=30)
         # -------------------create varaibles-----------------
         (self.var_name, self.var_blood, self.var_status, self.var_aptitud, self.var_renovacion,
          self.var_apt_actual, self.var_last_date, self.emp_id) = create_booleanvar(8)
@@ -52,27 +52,27 @@ class ExamenesMedicosFrame(ScrolledFrame):
         btn_check_name = ttk.Checkbutton(self, text="Nombre: ", variable=self.var_name,
                                          bootstyle="round-toggle",
                                          command=self.change_vars_inputs)
-        btn_check_name.grid(row=1, column=0, sticky="nswe", padx=5, pady=5)
+        btn_check_name.grid(row=1, column=0, sticky="w", padx=2, pady=5)
         btn_check_blood = ttk.Checkbutton(self, text="Tipo Sangre: ", variable=self.var_blood,
                                           bootstyle="round-toggle",
                                           command=self.change_vars_inputs)
-        btn_check_blood.grid(row=2, column=0, sticky="nswe", padx=5, pady=5)
+        btn_check_blood.grid(row=2, column=0, sticky="w", padx=2, pady=5)
         btn_check_status = ttk.Checkbutton(self, text="Estado: ", variable=self.var_status,
                                            bootstyle="round-toggle",
                                            command=self.change_vars_inputs)
-        btn_check_status.grid(row=3, column=0, sticky="nswe", padx=5, pady=5)
+        btn_check_status.grid(row=3, column=0, sticky="w", padx=2, pady=5)
         btn_check_aptitud = ttk.Checkbutton(self, text="Aptitud actual: ", variable=self.var_aptitud,
                                             bootstyle="round-toggle",
                                             command=self.change_vars_inputs)
-        btn_check_aptitud.grid(row=4, column=0, sticky="nswe", padx=5, pady=5)
+        btn_check_aptitud.grid(row=4, column=0, sticky="w", padx=2, pady=5)
         btn_check_last_date = ttk.Checkbutton(self, text="Ultima Fecha: ", variable=self.var_last_date,
                                               bootstyle="round-toggle",
                                               command=self.change_vars_inputs)
-        btn_check_last_date.grid(row=5, column=0, sticky="nswe", padx=5, pady=5)
+        btn_check_last_date.grid(row=5, column=0, sticky="w", padx=2, pady=5)
         btn_check_emp_id = ttk.Checkbutton(self, text="ID Empleado: ", variable=self.emp_id,
                                            bootstyle="round-toggle",
                                            command=self.change_vars_inputs)
-        btn_check_emp_id.grid(row=6, column=0, sticky="nswe", padx=5, pady=5)
+        btn_check_emp_id.grid(row=6, column=0, sticky="w", padx=2, pady=5)
         # -------------------create entrys-----------------
         self.entry_name = ttk.Entry(self, bootstyle="info")
         self.entry_name.grid(row=1, column=1, sticky="w", padx=5, pady=5)
@@ -94,7 +94,7 @@ class ExamenesMedicosFrame(ScrolledFrame):
         self.entry_emp_id.grid(row=6, column=1, sticky="w", padx=5, pady=5)
         # -------------------create buttons-----------------
         btn_insert = ttk.Button(self, text="Insertar", command=self.insert_data_to_db, style="TButton.Color.TButton")
-        btn_insert.grid(row=8, column=0, columnspan=3, padx=5, pady=40, )
+        btn_insert.grid(row=8, column=0, padx=5, pady=40)
         # button for search id from name
         btn_search_id = ttk.Button(self, text="Buscar ID", command=self.search_id_from_name,
                                    style="TButton.Color.TButton")
@@ -107,9 +107,9 @@ class ExamenesMedicosFrame(ScrolledFrame):
         self.all_medicalExam.loadTable()
         label_report = ttk.Label(self, text="Exportar reporte de los examenes medicos",
                                  font=("Helvetica", 16, "normal"))
-        label_report.grid(row=10, column=0, sticky="nswe", padx=5, pady=50)
+        label_report.grid(row=10, column=0, columnspan=4, padx=10, pady=10)
         btn_export = ttk.Button(self, text="Exportar", style="TButton.Color.TButton", command=self.export_medical_exam)
-        btn_export.grid(row=10, column=1, columnspan=3, padx=5, pady=40, )
+        btn_export.grid(row=11, column=0, columnspan=4, padx=10, pady=10)
 
     def search_id_from_name(self):
         """
@@ -268,143 +268,89 @@ class ExamenesMedicosFrame(ScrolledFrame):
 class ExamenesMedicosMain(ttk.Frame):
     def __init__(self, master=None):
         super().__init__(master)
-        self.columnconfigure((0, 1, 2), weight=1)
+        self.columnconfigure(0, weight=1)
         self.style = Style()
+        self.table_data = None
+        self.names_emp = []
+        self.df = None
         # Crear un estilo con un borde azul
         self.style.configure("Blue.TFrame", borderwidth=5, relief="solid", bordercolor="#040530")
-        # Marco principal
-        frame_all = ttk.Frame(self, style="Blue.TFrame", padding=10)
-        frame_all.grid(row=1, column=0, columnspan=3, sticky="nsew")
-
         self.label_1 = ttk.Label(self, text="Empleados con examenes medicos", font=("Helvetica", 18, "normal"))
-        self.label_1.grid(row=0, column=0, columnspan=3)
-        data_for_tableview = None
-        self.df = None
+        self.label_1.grid(row=0, column=0, columnspan=4)
         # -------------------create tableview for data-----------------
         self.grouped_table = Tableview(self)
         self.loadTable()
 
-        self.names = ttk.Combobox(self, values=self.get_names())
-        self.names.grid(row=5, column=1)
+        self.names = ttk.Combobox(self, values=self.names_emp,
+                                  state="readonly")
+        self.names.grid(row=2, column=0,  padx=50, pady=10, sticky="nsew")
         self.names.bind("<<ComboboxSelected>>", self.detalles_emp_medicalexam)
         self.detalles_emp = ttk.LabelFrame(self, text="Detalles del Examen medico del empleado")
-        self.detalles_emp.grid(row=6, column=0, columnspan=3)
+        self.detalles_emp.grid(row=3, column=0,  padx=10, pady=10, sticky="ew")
         self.name_emp = ttk.StringVar()
         self.aptitud_act = ttk.StringVar()
         self.examen_prox = ttk.StringVar()
-        self.label_name_emp = ttk.Label(self.detalles_emp, textvariable=self.name_emp)
-        self.label_name_emp.grid(row=7, column=0)
-        self.label_aptitud_act = ttk.Label(self.detalles_emp, textvariable=self.aptitud_act)
-        self.label_aptitud_act.grid(row=7, column=1)
-        self.examen_prox_label = ttk.Label(self.detalles_emp, textvariable=self.examen_prox)
-        self.examen_prox_label.grid(row=7, column=2)
+        label_name_emp = ttk.Label(self.detalles_emp, textvariable=self.name_emp)
+        label_name_emp.grid(row=4, column=0, sticky="w")
+        label_aptitud_act = ttk.Label(self.detalles_emp, textvariable=self.aptitud_act)
+        label_aptitud_act.grid(row=5, column=0,  sticky="w")
+        examen_prox_label = ttk.Label(self.detalles_emp, textvariable=self.examen_prox)
+        examen_prox_label.grid(row=6, column=0,   sticky="w")
 
-    def loadTable(self, limit=(0, 100)):
-        # Consulta SQL para obtener datos de la base de datos
-        # sql = "SELECT * FROM sql_telintec.examenes_med LIMIT "
-        sql = "SELECT * FROM sql_telintec.examenes_med "
-        flag, e, resultados = execute_sql(sql, type_sql=5)  # type_sql=5 para obtener todos los resultados
-        val = (limit[0], limit[1])
-        try:
-            # Ejecutar la consulta SQL
-            flag, e, my_result = execute_sql(sql, val, 5)  # Cambia el type_sql a 5 para obtener todos los resultados
-            # Verificar si se obtuvieron resultados
-            # if my_result is None:
-            #     return
-            my_result = my_result
-
-            # Transformar los resultados en un formato adecuado para Tableview
-            data_for_tableview = {
-                "ID": [],
-                "EMPLEADOS": [],
-                "BLOOD": [],
-                "STATUS": [],
-                "APTITUD": [],
-                "RENOVACION": [],
-                "APTITUDE_ACTUAL": [],
-                "FECHA_ULTIMA_RENOVACION": [],
-                "EMPLEADO_ID": []
-
+    def loadTable(self):
+        dict_employees = {}
+        flag, error, result = get_all_examenes()
+        max_len_fechas = 0
+        max_len_aptitud = 0
+        for row in result:
+            id_exam, nombre, sangre, status, aptitud, fechas, apt_actual, emp_id = row
+            self.names_emp.append(nombre)
+            aptitud = json.loads(aptitud)
+            fechas = json.loads(fechas)
+            max_len_fechas = len(fechas) if len(fechas) > max_len_fechas else max_len_fechas
+            max_len_aptitud = len(aptitud) if len(aptitud) > max_len_aptitud else max_len_aptitud
+            dict_employees[nombre] = {
+                "id_exam": id_exam,
+                "nombre": nombre,
+                "sangre": sangre,
+                "status": status,
+                "aptitudes": aptitud,
+                "fechas": fechas,
+                "emp_id": emp_id
             }
-
-            for row in my_result:
-                # Asegúrate de que los índices numéricos coincidan con el orden de las columnas en tu consulta SQL
-                data_for_tableview["ID"].append(row[0])
-                data_for_tableview["EMPLEADOS"].append(row[1])
-                data_for_tableview["BLOOD"].append(row[2])
-                data_for_tableview["STATUS"].append(row[3])
-                data_for_tableview["APTITUD"].append(row[4])
-                data_for_tableview["RENOVACION"].append(row[5])
-                data_for_tableview["APTITUDE_ACTUAL"].append(row[6])
-                data_for_tableview["FECHA_ULTIMA_RENOVACION"].append(row[7])
-                data_for_tableview["EMPLEADO_ID"].append(row[8])
-
-            # Destruir el Tableview existente si existe
-            if hasattr(self, 'grouped_table'):
-                self.grouped_table.destroy()
-
-            # Crear y mostrar el nuevo Tableview
-            self.grouped_table = Tableview(self, searchable=True, bootstyle="primary", coldata=[
-                {"text": "ID", "stretch": True},
-                {"text": "EMPLEADOS", "stretch": True},
-                {"text": "BLOOD", "stretch": True},
-                {"text": "STATUS", "stretch": True},
-                {"text": "APTITUD", "stretch": True},
-                {"text": "RENOVACION", "stretch": True},
-                {"text": "APTITUDE_ACTUAL", "stretch": True},
-                {"text": "FECHA_ULTIMA_RENOVACION", "stretch": True},
-                {"text": "EMPLEADO_ID", "stretch": True}
-            ], rowdata=list(zip(
-                data_for_tableview["ID"],
-                data_for_tableview["EMPLEADOS"],
-                data_for_tableview["BLOOD"],
-                data_for_tableview["STATUS"],
-                data_for_tableview["APTITUD"],
-                data_for_tableview["RENOVACION"],
-                data_for_tableview["APTITUDE_ACTUAL"],
-                data_for_tableview["FECHA_ULTIMA_RENOVACION"],
-                data_for_tableview["EMPLEADO_ID"]
-            )))
-
-            self.grouped_table.grid(row=1, column=0, columnspan=3, sticky='nsew', padx=20, pady=10)
-            # Vincular el evento de selección a la función get_selected_employee_id
-            # self.grouped_table.bind('<<TreeviewSelect>>', self.get_selected_employee_id)
-
-        except Exception as e:
-            print(f"Error al cargar la tabla: {e}")
-            my_result = []
-        return my_result
-
-    def get_names(self):
-        # Llamada a loadTable para obtener los nombres
-        names_result = self.loadTable()
-        # Asumiendo que el resultado es una lista de nombres (ajusta según tu lógica)
-        names = [row[1] for row in names_result] if names_result else []
-        return names
+        self.df = dict_employees
+        self.table_data = []
+        columns = ["ID", "ID Empleado", "Nombre", "Sangre", "Status"]
+        for i in range(max_len_fechas):
+            columns.append(f"Fecha {i + 1}")
+            columns.append(f"Aptitud {i + 1}")
+        for row in result:
+            id_exam, nombre, sangre, status, aptitud, fechas, apt_actual, emp_id = row
+            aptitud = json.loads(aptitud)
+            fechas = json.loads(fechas)
+            aux = [id_exam, emp_id, nombre, sangre, status]
+            for i in range(max_len_fechas):
+                if i < len(fechas):
+                    aux.append(fechas[i])
+                    aux.append(aptitud[i])
+                else:
+                    aux.append("")
+                    aux.append("")
+            self.table_data.append(aux)
+        # update tableview
+        self.grouped_table = Tableview(self,
+                                       coldata=columns,
+                                       rowdata=self.table_data,
+                                       paginated=False,
+                                       searchable=True)
+        self.grouped_table.grid(row=1, column=0, sticky="nsew",
+                                padx=25, pady=5)
 
     def detalles_emp_medicalexam(self, event=None):
         # Obtener el nombre del empleado seleccionado
         selected_name = self.names.get()
-        if not selected_name:
-            messagebox.showwarning("Advertencia", "Por favor, selecciona un empleado.")
-            return
-        # Consulta MySQL para recuperar aptitude_actual y renovacion para el empleado seleccionado
-        sql = "SELECT aptitude_actual,fecha_ultima_renovacion FROM sql_telintec.examenes_med WHERE name = %s"
-        val = (selected_name,)
-        flag, e, my_result = execute_sql(sql, val, type_sql=3)
-        try:
-            # Ejecutar la consulta SQL
-            flag, e, my_result = execute_sql(sql, val, 3)
-            if my_result:
-                # Actualizar las etiquetas con los datos recuperados
-                self.name_emp.set(selected_name)
-                self.aptitud_act.set(my_result)
-                self.examen_prox.set(my_result)
-                # self.examen_prox.set(my_result[0][1])
-            else:
-                # Manejar el caso en el que no se encuentran datos para el empleado seleccionado
-                messagebox.showwarning("Advertencia", f"No se encontraron datos para {selected_name}")
-
-        except Exception as e:
-            print(f"Error al obtener detalles: {e}")
-            messagebox.showerror("Error", f"Error al obtener detalles: {e}")
+        aptitudes = self.df[selected_name]["aptitudes"]
+        fechas = self.df[selected_name]["fechas"]
+        self.name_emp.set(f"Nombre: {selected_name}")
+        self.aptitud_act.set(f"Aptitud actual: {aptitudes[-1]}")
+        self.examen_prox.set(f"Ultima fecha: {fechas[-1]}")

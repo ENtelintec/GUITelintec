@@ -453,3 +453,9 @@ def get_renovacion(emp_id: int):
     val = (emp_id,)
     flag, e, out = execute_sql(sql, val, 1)
     return flag, e, out
+
+
+def get_all_examenes():
+    sql = "SELECT * FROM sql_telintec.examenes_med"
+    flag, e, out = execute_sql(sql, type_sql=5)
+    return flag, e, out
