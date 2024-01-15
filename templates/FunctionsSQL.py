@@ -380,6 +380,16 @@ def get_username_data(username: str):
     return out
 
 
+def get_all_data_employees(status: str):
+    sql = ("SELECT sql_telintec.employees.*, departments.name, examen_id FROM sql_telintec.employees "
+           "left join departments on sql_telintec.employees.department_id = departments.department_id "
+           "left join examenes_med on "
+           "(sql_telintec.employees.employee_id = examenes_med.empleado_id and examenes_med.status like %s )")
+    val = (status,)
+    flag, error, result = execute_sql(sql, val, type_sql=2)
+    return flag, error, result
+
+
 # --------------------------------Examenes medicos GUI--------------------------
 def insert_new_exam_med(name: str, blood: str, status: str, aptitud: list,
                         renovaciones: list, apt_actual: int, last_date: str,
