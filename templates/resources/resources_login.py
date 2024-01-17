@@ -5,8 +5,8 @@ __date__ = '$ 16/ene./2024  at 18:49 $'
 from flask_restx import Resource, Namespace
 
 from static.api_models import token_model
-from templates.FunctionsSQL import verify_user_DB, get_permissions_user_password
-from templates.FunctionsText import parse_data
+from templates.Functions_SQL import verify_user_DB, get_permissions_user_password
+from templates.Functions_Text import parse_data
 
 ns = Namespace('GUI/api/v1/auth')
 

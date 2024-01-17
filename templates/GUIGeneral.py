@@ -4,20 +4,19 @@ from tkinter import PhotoImage
 import customtkinter as ctk
 import ttkbootstrap as ttk
 from PIL import Image
-from ttkbootstrap.toast import ToastNotification
 
-import templates.LoginFrames as Login
-import templates.FunctionsObserver as cb
+import templates.frames.Frame_LoginFrames as Login
+import templates.Functions_Observer as cb
 from templates import AlmacenGUI
-from templates.DBFrame import DBFrame
-from templates.ExamenesMedicos import ExamenesMedicosFrame
-from templates.PedidosFrame import PedidosFrame
-from templates.FichajeFilesFrames import FichajesFilesGUI
-from templates.FunctionsSQL import get_chats_w_limit, get_username_data
-from templates.ChatsFrame import ChatFrame
-from templates.NotificationsFrame import Notifications
-from templates.SettingsFrame import ChatSettingsApp
-from templates.vAssistantGUI import AssistantGUI
+from templates.frames.Frame_DBFrame import DBFrame
+from templates.frames.Frame_ExamenesMedicos import ExamenesMedicosFrame
+from templates.frames.Frame_PedidosFrame import PedidosFrame
+from templates.frames.Frame_FichajeFilesFrames import FichajesFilesGUI
+from templates.Functions_SQL import get_chats_w_limit, get_username_data
+from templates.frames.Frame_ChatsFrame import ChatFrame
+from templates.frames.Frame_NotificationsFrame import Notifications
+from templates.frames.Frame_SettingsFrame import ChatSettingsApp
+from templates.frames.Frame_vAssistantGUI import AssistantGUI
 
 # from interface.VisualPedidos import VisualPedidos
 carpeta_principal = "./img"

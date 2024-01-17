@@ -6,8 +6,8 @@ from flask_restx import Namespace, Resource
 
 from static.api_models import employees_info_model, employees_resume_model, resume_model, examenes_medicos_model, \
     employes_examenes_model
-from templates.FunctionsFiles import get_fichajes_resume_cache
-from templates.FunctionsSQL import get_all_data_employees, get_all_examenes
+from templates.Functions_Files import get_fichajes_resume_cache
+from templates.Functions_SQL import get_all_data_employees, get_all_examenes
 
 ns = Namespace('GUI/api/rrhh')
 

@@ -12,10 +12,10 @@ from ttkbootstrap.dialogs.dialogs import Messagebox
 from ttkbootstrap.scrolled import ScrolledFrame
 from ttkbootstrap.tableview import Tableview
 
-import templates.FunctionsFiles as cb
-from templates.CollapsingFrame import CollapsingFrame
-from templates.FunctionsSQL import get_id_employee
-from templates.FunctionsText import compare_employee_name
+import templates.Functions_Files as cb
+from templates.frames.Frame_CollapsingFrame import CollapsingFrame
+from templates.Functions_SQL import get_id_employee
+from templates.Functions_Text import compare_employee_name
 
 
 def create_stringvar(number: int):

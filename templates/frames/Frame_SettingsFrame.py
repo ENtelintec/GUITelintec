@@ -8,7 +8,7 @@ import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
 from ttkbootstrap.style import Bootstyle
 
-filepath_settings = "../files/settings.json"
+filepath_settings = "../../files/settings.json"
 IMG_PATH = Path('./img')
 
 

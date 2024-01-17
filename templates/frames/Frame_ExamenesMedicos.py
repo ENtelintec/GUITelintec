@@ -13,7 +13,7 @@ import ttkbootstrap as ttk
 from ttkbootstrap.scrolled import ScrolledFrame
 from ttkbootstrap.tableview import Tableview
 
-from templates.FunctionsSQL import insert_new_exam_med, get_id_employee, update_aptitud_renovacion, \
+from templates.Functions_SQL import insert_new_exam_med, get_id_employee, update_aptitud_renovacion, \
     get_aptitud_renovacion, update_aptitud, update_renovacion, get_renovacion, execute_sql, get_all_examenes
 
 

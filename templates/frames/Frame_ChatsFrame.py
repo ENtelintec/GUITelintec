@@ -7,8 +7,8 @@ import re
 
 import customtkinter as ctk
 import ttkbootstrap as ttk
-from templates.FunctionsSQL import get_chats_w_limit
-from templates.DisplayChatSubframe import ChatsDisplay
+from templates.Functions_SQL import get_chats_w_limit
+from templates.frames.SubFrame_DisplayChatSubframe import ChatsDisplay
 
 
 class ScrollableChats(ctk.CTkScrollableFrame):

@@ -12,7 +12,7 @@ import tkinter as tk
 
 import os
 
-from templates.openAI_functions import get_response_chat_completion, get_response_assistant, get_files_list_openai, \
+from templates.Functions_openAI import get_response_chat_completion, get_response_assistant, get_files_list_openai, \
     upload_file_openai, delete_file_openai
 
 BG_GRAY = "#ABB2B9"

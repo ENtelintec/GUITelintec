@@ -18,8 +18,8 @@ import ttkbootstrap as ttk
 from ttkbootstrap.toast import ToastNotification
 
 from static.extensions import secrets
-from templates.FunctionsSQL import get_id_employee
-from templates.FunctionsText import clean_accents
+from templates.Functions_SQL import get_id_employee
+from templates.Functions_Text import clean_accents
 
 
 def check_only_read_conflict(name: str):

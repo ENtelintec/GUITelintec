@@ -18,7 +18,7 @@ from bardapi.constants import SESSION_HEADERS
 from dotenv import dotenv_values
 
 from static.extensions import ventanasApp
-from templates.FunctionsSQL import get_isAlive, update_isAlive, get_only_context, set_finish_chat
+from templates.Functions_SQL import get_isAlive, update_isAlive, get_only_context, set_finish_chat
 
 secrets = dotenv_values(".env")
 openai.api_key = secrets["OPENAI_API_KEY_1"]

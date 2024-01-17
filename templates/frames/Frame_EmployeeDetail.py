@@ -5,8 +5,8 @@ __date__ = '$ 15/ene./2024  at 11:06 $'
 import ttkbootstrap as ttk
 from ttkbootstrap.tableview import Tableview
 
-from templates.FunctionsFiles import get_fichajes_resume_cache
-from templates.FunctionsSQL import get_all_data_employees
+from templates.Functions_Files import get_fichajes_resume_cache
+from templates.Functions_SQL import get_all_data_employees
 
 
 def create_stringvar(number: int, value: str):
