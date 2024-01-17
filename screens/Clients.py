@@ -5,119 +5,161 @@ from ttkbootstrap.tableview import Tableview
 from ttkbootstrap.scrolled import ScrolledFrame
 
 
-class ClientsScreen(ttk.Frame):
-    def __init__(self):
-        ttk.Frame.__init__(self, style="bg.TFrame")
-        self.pack(side="top", fill="both", expand=True)
+class ClientsScreen(ScrolledFrame):
+    def __init__(self, master):
+        ttk.Frame.__init__(self, master, style="bg.TFrame")
+        self.master = master
+        self.grid(row=0, column=1, sticky="nsew")
+        self.columnconfigure(0, weight=1)
         self._data = DataHandler()
         self._clients = self._data._customer.get_all_customers()
         self._table = Tableview(self)
         self.create_content(self)
 
     def create_content(self, parent):
-        '''Creates the content of the Clients screen, includes the table of clients and the inputs to add a new client'''
+        """Creates the content of the Clients screen, includes the table of clients and the inputs to add a new client"""
         content = ttk.Frame(parent, style="bg.TFrame")
-        content.pack(side="left", fill="both", expand=True)
-        ttk.Label(content, text="Clientes", style="bg.TLabel", font=(
-            "Arial Black", 25)).pack(
-            side="top", fill="x", anchor="center", ipady=5, pady=(16, 0), padx=10)
+        content.grid(row=0, column=0, sticky="nswe")
+        ttk.Label(
+            content, text="Clientes", style="bg.TLabel", font=("Arial Black", 25)
+        ).grid(row=0, column=0, sticky="w")
 
         # Table
-        table = ScrolledFrame(content, style="bg.TFrame", autohide=True)
-        table.pack(side="top", fill="both", expand=True)
-        ttk.Label(table, text="Tabla de clientes", style="bg.TLabel", font=(
-            "Arial", 20)).pack(
-            side="top", fill="x", anchor="center", ipady=5, pady=(16, 0), padx=10)
+        table = ttk.Frame(content, style="bg.TFrame")
+        table.grid(row=1, column=0, sticky="nswe")
+        ttk.Label(
+            table, text="Tabla de clientes", style="bg.TLabel", font=("Arial", 20)
+        ).grid(row=0, column=0, sticky="w")
 
-        self.col_data = [{"text": "ID Cliente", "stretch": False},
-                         {"text": "Nombre", "stretch": True},
-                         {"text": "Email", "stretch": True},
-                         {"text": "Telefono", "stretch": False},
-                         {"text": "Calle", "stretch": False},
-                         {"text": "Ciudad", "stretch": False},
-                         {"text": "Codigo Postal", "stretch": False}]
+        self.col_data = [
+            {"text": "ID Cliente", "stretch": True},
+            {"text": "Nombre", "stretch": False},
+            {"text": "Email", "stretch": True},
+            {"text": "Telefono", "stretch": True},
+            {"text": "Calle", "stretch": True},
+            {"text": "Ciudad", "stretch": True},
+            {"text": "Codigo Postal", "stretch": True},
+        ]
 
-        self.table = Tableview(master=table, bootstyle="primary",
-                               coldata=self.col_data,
-                               rowdata=self._clients,
-                               paginated=True,
-                               pagesize=10,
-                               searchable=True)
+        self.table = Tableview(
+            master=table,
+            bootstyle="primary",
+            paginated=True,
+            pagesize=10,
+            searchable=True,
+        )
+        self.table.build_table_data(self.col_data, self._clients)
         self.table.autofit_columns()
-        self.table.pack()
+        self.table.grid(row=1, column=0, sticky="nswe")
         self.table.view.bind("<Double-1>", self.events)
 
         # Inputs
         inputs = ttk.Frame(content, style="bg.TFrame")
-        inputs.pack(side="top", fill="both", expand=True)
-        ttk.Label(inputs, text="Agregar nuevo cliente",
-                  style="bg.TLabel", font=(
-                      "Arial", 20)).pack(side="top", fill="x", anchor="center", ipady=5, pady=(16, 0), padx=10)
+        inputs.grid(row=2, column=0, sticky="nswe")
+        ttk.Label(
+            inputs, text="Agregar nuevo cliente", style="bg.TLabel", font=("Arial", 20)
+        ).grid(row=0, column=0, sticky="w")
 
         # dividir el frame en 2, izq y derecha para los inputs
         inputs_left = ttk.Frame(inputs, style="bg.TFrame")
-        inputs_left.pack(side="left", fill="both", expand=True)
+        inputs_left.grid(row=1, column=0, sticky="nswe")
         inputs_right = ttk.Frame(inputs, style="bg.TFrame")
-        inputs_right.pack(side="right", fill="both", expand=True)
+        inputs_right.grid(row=1, column=1, sticky="nswe")
 
         # Inputs left
-        ttk.Label(inputs_left, text="ID Cliente", style="bg.TLabel").pack(
-            side="top", fill="x", anchor="center", ipady=5, pady=(16, 0), padx=10)
+        ttk.Label(inputs_left, text="ID Cliente", style="bg.TLabel").grid(
+            row=0, column=0, sticky="w"
+        )
+
         self.input_client_id = ttk.Entry(inputs_left, style="bg.TEntry")
-        self.input_client_id.pack(side="top", fill="x", anchor="center",
-                                  ipady=5, pady=(16, 0), padx=10)
 
-        ttk.Label(inputs_left, text="Nombre", style="bg.TLabel").pack(
-            side="top", fill="x", anchor="center", ipady=5, pady=(16, 0), padx=10)
+        self.input_client_id.grid(row=0, column=1, sticky="w", padx=5, pady=5)
+
+        ttk.Label(inputs_left, text="Nombre", style="bg.TLabel").grid(
+            row=1, column=0, sticky="w", padx=5, pady=5
+        )
+
         self.input_client_name = ttk.Entry(inputs_left, style="bg.TEntry")
-        self.input_client_name.pack(side="top", fill="x", anchor="center",
-                                    ipady=5, pady=(16, 0), padx=10)
 
-        ttk.Label(inputs_left, text="Email", style="bg.TLabel").pack(
-            side="top", fill="x", anchor="center", ipady=5, pady=(16, 0), padx=10)
+        self.input_client_name.grid(row=1, column=1, sticky="w", padx=5, pady=5)
+
+        ttk.Label(inputs_left, text="Email", style="bg.TLabel").grid(
+            row=2, column=0, sticky="w", padx=5, pady=5
+        )
+
         self.input_client_email = ttk.Entry(inputs_left, style="bg.TEntry")
-        self.input_client_email.pack(side="top", fill="x", anchor="center",
-                                     ipady=5, pady=(16, 0), padx=10)
 
-        ttk.Label(inputs_left, text="Telefono", style="bg.TLabel").pack(
-            side="top", fill="x", anchor="center", ipady=5, pady=(16, 0), padx=10)
+        self.input_client_email.grid(row=2, column=1, sticky="w", padx=5, pady=5)
+
+        ttk.Label(inputs_left, text="Telefono", style="bg.TLabel").grid(
+            row=3, column=0, sticky="w", padx=5, pady=5
+        )
+
         self.input_client_phone = ttk.Entry(inputs_left, style="bg.TEntry")
-        self.input_client_phone.pack(side="top", fill="x", anchor="center",
-                                     ipady=5, pady=(16, 0), padx=10)
+
+        self.input_client_phone.grid(row=3, column=1, sticky="w", padx=5, pady=5)
 
         # Inputs right
-        ttk.Label(inputs_right, text="Calle", style="bg.TLabel").pack(
-            side="top", fill="x", anchor="center", ipady=5, pady=(16, 0), padx=10)
+        ttk.Label(inputs_right, text="Calle", style="bg.TLabel").grid(
+            row=0, column=0, sticky="w", padx=5, pady=5
+        )
+
         self.input_client_street = ttk.Entry(inputs_right, style="bg.TEntry")
-        self.input_client_street.pack(side="top", fill="x", anchor="center",
-                                      ipady=5, pady=(16, 0), padx=10)
 
-        ttk.Label(inputs_right, text="Ciudad", style="bg.TLabel").pack(
-            side="top", fill="x", anchor="center", ipady=5, pady=(16, 0), padx=10)
+        self.input_client_street.grid(row=0, column=1, sticky="w", padx=5, pady=5)
+
+        ttk.Label(inputs_right, text="Ciudad", style="bg.TLabel").grid(
+            row=1, column=0, sticky="w", padx=5, pady=5
+        )
+
         self.input_client_city = ttk.Entry(inputs_right, style="bg.TEntry")
-        self.input_client_city.pack(side="top", fill="x", anchor="center",
-                                    ipady=5, pady=(16, 0), padx=10)
 
-        ttk.Label(inputs_right, text="Codigo Postal", style="bg.TLabel").pack(
-            side="top", fill="x", anchor="center", ipady=5, pady=(16, 0), padx=10)
+        self.input_client_city.grid(row=1, column=1, sticky="w", padx=5, pady=5)
+
+        ttk.Label(inputs_right, text="Codigo Postal", style="bg.TLabel").grid(
+            row=2, column=0, sticky="w", padx=5, pady=5
+        )
+
         self.input_client_zip = ttk.Entry(inputs_right, style="bg.TEntry")
-        self.input_client_zip.pack(side="top", fill="x", anchor="center",
-                                   ipady=5, pady=(16, 0), padx=10)
+
+        self.input_client_zip.grid(row=2, column=1, sticky="w", padx=5, pady=5)
 
         # Buttons
         buttons = ttk.Frame(content, style="bg.TFrame")
-        buttons.pack(side="top", fill="y", expand=True)
-        ttk.Button(buttons, text="Agregar", style="bg.TButton", width=25, command=self.create_client).pack(
-            side="left", fill="x", anchor="center", ipady=5, pady=(16, 0), padx=10)
-        ttk.Button(buttons, text="Editar", style="bg.TButton", width=25, command=self.update_client).pack(
-            side="left", fill="x", anchor="center", ipady=5, pady=(16, 0), padx=10)
-        ttk.Button(buttons, text="Eliminar", style="bg.TButton", width=25, command=self.delete_client).pack(
-            side="left", fill="x", anchor="center", ipady=5, pady=(16, 0), padx=10)
-        ttk.Button(buttons, text="Limpiar", style="bg.TButton", width=25, command=self.clear_fields).pack(
-            side="left", fill="x", anchor="center", ipady=5, pady=(16, 0), padx=10)
+        buttons.grid(row=3, column=0, sticky="nswe")
+
+        ttk.Button(
+            buttons,
+            text="Agregar",
+            style="bg.TButton",
+            width=25,
+            command=self.create_client,
+        ).grid(row=0, column=0, sticky="w", padx=5, pady=5)
+        ttk.Button(
+            buttons,
+            text="Editar",
+            style="bg.TButton",
+            width=25,
+            command=self.update_client,
+        ).grid(row=0, column=1, sticky="w", padx=5, pady=5)
+        ttk.Button(
+            buttons,
+            text="Eliminar",
+            style="bg.TButton",
+            width=25,
+            command=self.delete_client,
+        ).grid(row=0, column=2, sticky="w", padx=5, pady=5)
+        ttk.Button(
+            buttons,
+            text="Limpiar",
+            style="bg.TButton",
+            width=25,
+            command=self.clear_fields,
+        ).grid(row=0, column=3, sticky="w", padx=5, pady=5)
 
     def events(self, event):
-        data = self.table.view.item(self.table.view.focus())['values']
+        data = self.table.view.item(self.table.view.focus())["values"]
+        print(data)
         self.input_client_id.delete(0, "end")
         self.input_client_name.delete(0, "end")
         self.input_client_email.delete(0, "end")
@@ -157,7 +199,8 @@ class ClientsScreen(ttk.Frame):
         city = self.input_client_city.get()
         postal_code = self.input_client_zip.get()
         self._data._customer.create_customer(
-            name, email, phone, street, city, postal_code)
+            name, email, phone, street, city, postal_code
+        )
         self.update_table()
         self.clear_fields()
 
@@ -170,7 +213,8 @@ class ClientsScreen(ttk.Frame):
         city = self.input_client_city.get()
         postal_code = self.input_client_zip.get()
         self._data._customer.update_customer(
-            id_customer, name, email, phone, street, city, postal_code)
+            id_customer, name, email, phone, street, city, postal_code
+        )
         self.update_table()
         self.clear_fields()
 
