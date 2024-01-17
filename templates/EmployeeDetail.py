@@ -14,17 +14,13 @@ def create_stringvar(number: int, value: str):
 
 
 def get_data_employees(status="ACTIVO"):
-    flag, error, result = get_all_data_employees(status)
-    columns = ("ID", "Nombre", "Apellido", "Telefono",
-               "Dep_Id", "Modalidad", "Email", "Contrato", "Admision",
-               "RFC", "CURP", "NSS", "C. Emergencia", " Departamento",
-               "Exam_id")
-    fichajes_resume = get_fichajes_resume_cache("files/fichajes_resume_cache.pkl")
-    print(fichajes_resume)
+    columns = ("Nombre", "Contrato", "Faltas", "Tardanzas", "Dias Extra", "Total", "Primas",
+               "Detalles Faltas", "Detalles Tardanzas", "Detalles Extras", "Detalles Primas")
+    fichajes_resume, flag = get_fichajes_resume_cache("files/fichajes_resume_cache.pkl")
     if flag:
-        return result, columns
+        return fichajes_resume, columns
     else:
-        print(error)
+        print("error at getting data resume")
         return None, None
 
 
@@ -70,9 +66,6 @@ class EmployeeDetails(ttk.Frame):
                              f"Department: {emp_department}\t Dep. ID: {emp_dep_id}\t Contrato: {emp_contract}\n"
                              f"Modalidad: {emp_modality}\t Telefono: {emp_phone}\t email: {emp_email}\n"
                              f"C. Emergencia: {emp_emergency}\t Examen medico: {emp_exam_id}")
-
-
-
 
 if __name__ == '__main__':
     print('Hello World')

@@ -663,11 +663,14 @@ def update_fichajes_resume_cache(filepath: str, data):
 
 
 def get_fichajes_resume_cache(filepath):
+    flag = True
     try:
         print("opening: ", filepath)
         with open(filepath, 'rb') as file:
             fichajes_resume = pickle.load(file)
+        flag = False if len(fichajes_resume) == 0 else True
     except Exception as e:
         print("Error at getting cache file: ", e)
         fichajes_resume = {}
-    return fichajes_resume
+        flag = False
+    return fichajes_resume, flag

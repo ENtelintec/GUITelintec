@@ -16,9 +16,42 @@ token_model = api.model('Token', {
     })
 
 
-employees_indo_model = api.model('EmployeeInfo', {
+employees_info_model = api.model('EmployeeInfo', {
     "columns": fields.List(fields.String(required=True, description="The columns")),
     "data": fields.List(fields.List(fields.String))
+    })
+
+resume_model = api.model('Resume', {
+    "id": fields.Integer(required=True, description="The id"),
+    "name": fields.String(required=True, description="The name"),
+    "contract": fields.String(required=True, description="The contract"),
+    "absences": fields.Integer(required=True, description="The absences"),
+    "late": fields.Integer(required=True, description="The late"),
+    "extra": fields.Integer(required=True, description="The extra"),
+    "total_h_extra": fields.Integer(required=True, description="The total"),
+    "primes": fields.Integer(required=True, description="The primes"),
+    "absences_details": fields.String(required=True, description="The absences details"),
+    "late_details": fields.String(required=True, description="The late details"),
+    "extra_details": fields.String(required=True, description="The extra details"),
+    "primes_details": fields.String(required=True, description="The primes details")
+    })
+examenes_medicos_model = api.model('ExamenesMedicos', {
+    "exist":  fields.Boolean(required=True, description="The exist"),
+    "id_exam": fields.Integer(required=True, description="The id"),
+    "name": fields.String(required=True, description="The name"),
+    "blood": fields.String(required=True, description="The date"),
+    "status": fields.String(required=True, description="The status"),
+    "aptitudes": fields.String(required=True, description="The aptitud"),
+    "dates": fields.String(required=True, description="The date"),
+    "emp_id": fields.Integer(required=True, description="The id")
+    })
+
+employes_examenes_model = api.model('EmployesExamenes', {
+    "data": fields.List(fields.Nested(examenes_medicos_model))
+    })
+
+employees_resume_model = api.model('EmployeesResume', {
+    "data": fields.List(fields.Nested(resume_model)),
     })
 
 token_info_model = api.model('TokenInfo', {
