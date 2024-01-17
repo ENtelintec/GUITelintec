@@ -228,22 +228,39 @@ class FichajesFilesGUI(ScrolledFrame):
             path = asksaveasfilename(defaultextension=".csv",
                                      filetypes=[("CSV", "*.csv")])
             df.to_csv(path, index=False)
-            Messagebox.show_info(title="Info", message="archivo exportado")
+            Messagebox.show_info(title="Info", message=f"Archivo exportado:\n{path}")
         else:
             Messagebox.show_error(title="Alert", message="primero seleccione un empleado")
 
     def button_export_click(self):
-        table_data, columns = cb.generate_table_from_dict_contracts(self.contracts)
+        columns = ["Nombre", "Contrato", "Faltas", "Tardanzas", "Dias Extra", "Total", "Primas",
+                   "Detalles Faltas", "Detalles Tardanzas", "Detalles Extras", "Detalles Primas"]
+        data_resume = []
+        for con_name in self.contracts.keys():
+            for emp_name in self.contracts[con_name].keys():
+                if self.contracts[con_name][emp_name]["id"] is None:
+                    continue
+                (data_contract_emp, days_faltas, days_late2,
+                 days_extra2, total_extra2, days_prima) = self.get_data_from_name_contract(emp_name, id_2=self.contracts[con_name][emp_name]["id"])
+                dict_faltas, dict_late2, dict_extra2, dict_prima = cb.get_dic_from_list_fichajes([days_faltas, days_late2, days_extra2, days_prima])
+                row = (self.contracts[con_name][emp_name]["id"],
+                       emp_name, con_name, len(days_faltas), len(days_late2), len(days_extra2), total_extra2, len(days_prima),
+                       dict_faltas, dict_late2, dict_extra2, dict_prima)
+                data_resume.append(row)
+        columns = ["ID", "Nombre", "Contrato", "Faltas", "Tardanzas", "Dias Extra", "Total horas extras", "Primas",
+                   "Detalles Faltas", "Detalles Tardanzas", "Detalles Extras", "Detalles Primas"]
         data_f = {}
         for i, column in enumerate(columns):
             data_f[column] = []
-            for row in table_data:
+            for row in data_resume:
                 data_f[column].append(row[i])
         df = pd.DataFrame.from_dict(data_f)
-        # select path to save file
+        # export csv
         path = asksaveasfilename(defaultextension=".csv",
                                  filetypes=[("CSV", "*.csv")])
         df.to_csv(path, index=False)
+        cb.update_fichajes_resume_cache('files/fichajes_resume_cache.pkl', data_resume)
+        Messagebox.show_info(title="Info", message=f"Archivo exportado:\n{path}")
 
     def select_day_faltas(self, event):
         date = self.days_missing_selector2.get()
@@ -529,20 +546,16 @@ class FichajesFilesGUI(ScrolledFrame):
                 extra_time[i[0]] = (diff, i[1])
             return worked_days, worked_intime, count, count2, time_late, extra_time
 
-    def get_data_from_name_contract(self, name: str) -> tuple[dict, list, list, list, float, list] | None:
+    def get_data_from_name_contract(self, name: str, id_2=None) -> tuple[dict, list, list, list, float, list] | tuple[None, None, None, None, None, None]:
         if self.file_selected_2:
-            print("1")
-            id_2 = get_id_employee(name)
+            id_2 = get_id_employee(name) if id_2 is None else id_2
             if id_2 is not None:
-                print("2")
                 for contract in self.contracts.keys():
                     ids = []
                     for emp_name in self.contracts[contract].keys():
                         ids.append((self.contracts[contract][emp_name]["id"], emp_name))
                     emp, id_emp, flag = compare_employee_name(ids, id_2)
-                    print(ids, id_2)
                     if flag:
-                        print("3")
                         faltas = []
                         retardos = []
                         extras = []
@@ -565,7 +578,6 @@ class FichajesFilesGUI(ScrolledFrame):
                             if "PRIMA" in txt_prima:
                                 primas.append((self.contracts[contract][emp]["fechas"][i],
                                                self.contracts[contract][emp]["comments"][i]))
-                        print(self.contracts[contract][emp])
                         return self.contracts[contract][emp], faltas, retardos, extras, total_extra, primas
             else:
                 print("user not registered")
@@ -573,3 +585,7 @@ class FichajesFilesGUI(ScrolledFrame):
         else:
             print("no file selected")
             return None, None, None, None, None, None
+
+    def update_cache_resume(self, data_resume):
+
+        pass

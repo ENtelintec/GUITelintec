@@ -7,6 +7,7 @@ import os
 import pickle
 import re
 import time
+from datetime import datetime
 from tkinter import Misc, Frame, messagebox
 from tkinter.ttk import Treeview
 
@@ -561,3 +562,112 @@ def check_fichajes_files_in_directory(path: str, pattern1: str, pattern2: str):
         if pattern1 in file or pattern2 in file:
             files_data[file] = get_metadata_file(path, file)
     return False if len(files_data) == 0 else True, files_data
+
+
+def get_dic_from_list_fichajes(lists_data: list):
+    """
+    Gets a dictionary from a list of data from fichajes files
+    :param lists_data:
+    :return:
+    """
+    dic_list = []
+    for item in lists_data:
+        if len(item) > 0:
+            aux_dic = {}
+            if len(item[0]) == 2:
+                for timestamp, comment in item:
+                    timestamp = datetime.strptime(timestamp, '%Y-%m-%d %H:%M:%S')
+                    year = timestamp.year
+                    aux_dic[year] = {}
+                    month = timestamp.month
+                    aux_dic[year][month] = {}
+                    day = timestamp.day
+                    aux_dic[year][month][day] = {}
+                    aux_dic[year][month][day]["timestamp"] = str(timestamp)
+                    aux_dic[year][month][day]["comment"] = comment
+                    aux_dic[year][month][day]["value"] = None
+            else:
+                for timestamp, comment, value in item:
+                    timestamp = datetime.strptime(timestamp, '%Y-%m-%d %H:%M:%S')
+                    year = timestamp.year
+                    aux_dic[year] = {}
+                    month = timestamp.month
+                    aux_dic[year][month] = {}
+                    day = timestamp.day
+                    aux_dic[year][month][day] = {}
+                    aux_dic[year][month][day]["timestamp"] = str(timestamp)
+                    aux_dic[year][month][day]["comment"] = comment
+                    aux_dic[year][month][day]["value"] = value
+            dic_list.append(aux_dic)
+        else:
+            dic_list.append({})
+    return tuple(dic_list)
+
+
+def get_cumulative_data_fichajes_dict(dic_data: dict):
+    """
+    Gets the cumulative data from a dictionary of data from fichajes files
+    :param dic_data:
+    :return:
+    """
+    total_days = 0
+    total_value = 0
+    for year in dic_data.keys():
+        for month in dic_data[year].keys():
+            total_days += len(dic_data[year][month].keys())
+            for day in dic_data[year][month].keys():
+                value = dic_data[year][month][day]["value"]
+                if value is not None:
+                    total_value += value
+    return total_days, total_value
+
+
+def update_fichajes_resume_cache(filepath: str, data):
+    """
+    Updates the fichajes resume cache
+    :param filepath:
+    :param data:
+    :return:
+    """
+    update = True
+    try:
+        with open(filepath, 'rb') as file:
+            fichajes_resume = pickle.load(file)
+    except Exception as e:
+        print("Error at getting cache file: ", e)
+        update = False
+        fichajes_resume = data
+    if update:
+        for i, row in enumerate(fichajes_resume):
+            (id_emp, name, contract, faltas, lates, extras, total_extra, primas,
+             faltas_dic, lates_dic, extras_dic, primas_dic) = row
+            for row2 in data:
+                (id_emp2, name2, contract2, faltas2, lates2, extras2, total_extra2, primas2,
+                 faltas_dic2, lates_dic2, extras_dic2, primas_dic2) = row2
+                if id_emp == id_emp2:
+                    faltas_dic.update(faltas_dic2)
+                    lates_dic.update(lates_dic2)
+                    extras_dic.update(extras_dic2)
+                    primas_dic.update(primas_dic2)
+                    break
+            new_faltas, new_faltas_value = get_cumulative_data_fichajes_dict(faltas_dic)
+            new_lates, new_lates_value = get_cumulative_data_fichajes_dict(lates_dic)
+            new_extras, new_extras_value = get_cumulative_data_fichajes_dict(extras_dic)
+            new_primas, new_primas_value = get_cumulative_data_fichajes_dict(primas_dic)
+            aux = (id_emp, name, contract, new_faltas, new_lates, new_extras, new_extras_value, new_primas,
+                   faltas_dic, lates_dic, extras_dic, primas_dic)
+            fichajes_resume[i] = aux
+    with open(filepath, 'wb') as file:
+        pickle.dump(fichajes_resume, file)
+    print(data)
+
+
+def get_fichajes_resume_cache(filepath):
+    try:
+        print("opening: ", filepath)
+        with open(filepath, 'rb') as file:
+            fichajes_resume = pickle.load(file)
+    except Exception as e:
+        print("Error at getting cache file: ", e)
+        fichajes_resume = {}
+    return fichajes_resume

@@ -5,11 +5,27 @@ __date__ = '$ 15/ene./2024  at 11:06 $'
 import ttkbootstrap as ttk
 from ttkbootstrap.tableview import Tableview
 
+from templates.FunctionsFiles import get_fichajes_resume_cache
 from templates.FunctionsSQL import get_all_data_employees
 
 
 def create_stringvar(number: int, value: str):
     return [ttk.StringVar(value=value) for _ in range(number)]
+
+
+def get_data_employees(status="ACTIVO"):
+    flag, error, result = get_all_data_employees(status)
+    columns = ("ID", "Nombre", "Apellido", "Telefono",
+               "Dep_Id", "Modalidad", "Email", "Contrato", "Admision",
+               "RFC", "CURP", "NSS", "C. Emergencia", " Departamento",
+               "Exam_id")
+    fichajes_resume = get_fichajes_resume_cache("files/fichajes_resume_cache.pkl")
+    print(fichajes_resume)
+    if flag:
+        return result, columns
+    else:
+        print(error)
+        return None, None
 
 
 class EmployeeDetails(ttk.Frame):
@@ -27,7 +43,7 @@ class EmployeeDetails(ttk.Frame):
                   font=("Helvetica", 32, "bold")).grid(row=0, column=0,
                                                        columnspan=4,
                                                        padx=10, pady=10)
-        self.data_emp, columns = self.get_data_employees(status="ACTIVO")
+        self.data_emp, columns = get_data_employees(status="ACTIVO")
         # tableview de empleados
         self.table = Tableview(self,
                                coldata=columns,
@@ -55,17 +71,7 @@ class EmployeeDetails(ttk.Frame):
                              f"Modalidad: {emp_modality}\t Telefono: {emp_phone}\t email: {emp_email}\n"
                              f"C. Emergencia: {emp_emergency}\t Examen medico: {emp_exam_id}")
 
-    def get_data_employees(self, status="ACTIVO"):
-        flag, error, result = get_all_data_employees(status)
-        columns = ("ID", "Nombre", "Apellido", "Telefono",
-                   "Dep_Id", "Modalidad", "Email", "Contrato", "Admision",
-                   "RFC", "CURP", "NSS", "C. Emergencia", " Departamento",
-                   "Exam_id")
-        if flag:
-            return result, columns
-        else:
-            print(error)
-            return None, None
+
 
 
 if __name__ == '__main__':

@@ -26,7 +26,7 @@ def call_authApi(user, pass_key, url=None):
     :param pass_key:
     :return:
     """
-    url = url if url is not None else secrets.get("API_AUTH_UP_URL")
+    url = url if url is not None else url_api
     data = {"username": user, "password": pass_key}
     response = requests.post(url, json=data)
     permissions = None
@@ -37,6 +37,7 @@ def call_authApi(user, pass_key, url=None):
         permissions = response.json()['permissions']
     # print(f"Verified: {out} with {permissions}")
     return out, permissions
+
 
 def image_load():
     """

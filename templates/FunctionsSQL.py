@@ -270,7 +270,8 @@ def insert_employee(name: str, lastname: str, dni: str, phone: str, email: str,
     return flag, e, out
 
 
-def insert_customer(name: str, lastname: str, phone: str, city: str, email: str) -> tuple[bool, Exception | None, int | None]:
+def insert_customer(name: str, lastname: str, phone: str, city: str, email: str) -> tuple[
+    bool, Exception | None, int | None]:
     sql = ("INSERT INTO sql_telintec.customers (name, l_name, phone_number, city, email) "
            "VALUES (%s, %s, %s, %s, %s)")
     val = (name, lastname, phone, city, email)
@@ -381,6 +382,12 @@ def get_username_data(username: str):
 
 
 def get_all_data_employees(status: str):
+    if "all" in status.lower():
+        status = "%"
+    elif "inactivo" in status.lower():
+        status = "INACTIVO"
+    else:
+        status = "ACTIVO"
     sql = ("SELECT sql_telintec.employees.*, departments.name, examen_id FROM sql_telintec.employees "
            "left join departments on sql_telintec.employees.department_id = departments.department_id "
            "left join examenes_med on "
@@ -469,3 +476,39 @@ def get_all_examenes():
     sql = "SELECT * FROM sql_telintec.examenes_med"
     flag, e, out = execute_sql(sql, type_sql=5)
     return flag, e, out
+
+
+# ---------------------------Login API-----------------------
+def verify_user_DB(user: str, password: str) -> bool:
+    """
+    Verifies if the user and password are correct.
+    :param password: <string>
+    :param user: <string>
+    :return: <boolean>
+    """
+    sql = "SELECT usernames FROM users_system " \
+          "WHERE usernames = %s AND password = %s"
+    val = (user, password)
+    flag, error, result = execute_sql(sql, val)
+    return True if len(result) > 0 else False
+
+
+def get_permissions_user_password(user: str, password: str):
+    """
+    Gets the permissions for the user.
+    :param user: <string>
+    :param password: <string>
+    :return: <list> [<permissions>, <code>
+        <permissions>: <list>
+        <code>: <int>
+    """
+    sql = "SELECT permissions FROM users_system " \
+          "WHERE usernames = %s AND password = %s"
+    val = (user, password)
+    flag, error, result = execute_sql(sql, val, 1)
+    if len(result) > 0:
+        permissions = json.loads(result[0])
+    else:
+        print("User not found")
+        permissions = None
+    return permissions
