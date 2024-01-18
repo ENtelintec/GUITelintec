@@ -3,10 +3,12 @@ __author__ = 'Edisson Naula'
 __date__ = '$ 15/ene./2024  at 11:06 $'
 
 import ttkbootstrap as ttk
+from ttkbootstrap.scrolled import ScrolledFrame
 from ttkbootstrap.tableview import Tableview
 
 from templates.Functions_Files import get_fichajes_resume_cache
 from templates.Functions_SQL import get_all_data_employees
+from templates.frames.SubFrame_Plots import FramePlot
 
 
 def create_stringvar(number: int, value: str):
@@ -14,9 +16,10 @@ def create_stringvar(number: int, value: str):
 
 
 def get_data_employees(status="ACTIVO"):
-    columns = ("Nombre", "Contrato", "Faltas", "Tardanzas", "Dias Extra", "Total", "Primas",
+    columns = ("ID", "Nombre", "Contrato", "Faltas", "Tardanzas", "Dias Extra", "Total", "Primas",
                "Detalles Faltas", "Detalles Tardanzas", "Detalles Extras", "Detalles Primas")
     fichajes_resume, flag = get_fichajes_resume_cache("files/fichajes_resume_cache.pkl")
+    print(fichajes_resume)
     if flag:
         return fichajes_resume, columns
     else:
@@ -24,9 +27,9 @@ def get_data_employees(status="ACTIVO"):
         return None, None
 
 
-class EmployeeDetails(ttk.Frame):
+class EmployeeDetails(ScrolledFrame):
     def __init__(self, master=None, *args, **kwargs):
-        super().__init__(master, *args, **kwargs)
+        super().__init__(master, autohide=True, *args, **kwargs)
         self.columnconfigure(0, weight=1)
         # variables
         (self.emp_details, self.emp_lastname, self.emp_phone,
@@ -54,18 +57,29 @@ class EmployeeDetails(ttk.Frame):
                                                        columnspan=4, padx=20, pady=10)
         ttk.Label(self, textvariable=self.emp_details,
                   font=("Helvetica", 12, "normal")).grid(row=3, column=0, sticky="w", padx=20, pady=5)
+        self.frame_plot = ttk.Frame(self)
 
     def on_double_click(self, event):
-        print("selected", event.widget.selection())
-        print(self.table.view.item(event.widget.selection()[0], "values"))
-        (emp_id, emp_name, emp_lastname, emp_phone, emp_dep_id, emp_modality,
-         emp_email, emp_contract, emp_admission, emp_rfc, emp_curp, emp_nss,
-         emp_emergency, emp_department, emp_exam_id) = self.table.view.item(
-            event.widget.selection()[0], "values")
-        self.emp_details.set(f"ID: {emp_id} - {emp_name.title()} {emp_lastname.title()}\n"
-                             f"Department: {emp_department}\t Dep. ID: {emp_dep_id}\t Contrato: {emp_contract}\n"
-                             f"Modalidad: {emp_modality}\t Telefono: {emp_phone}\t email: {emp_email}\n"
-                             f"C. Emergencia: {emp_emergency}\t Examen medico: {emp_exam_id}")
+        (emp_id, emp_name, emp_contract, emp_absense, emp_late, emp_extra, emp_tot_extra,
+         emp_primes, emp_det_abs, emp_det_late, emp_det_extra,
+         emp_det_primes) = self.table.view.item(event.widget.selection()[0], "values")
+        self.emp_details.set(f"ID: {emp_id} \n{emp_name.title()} \n"
+                             f"Contrato: {emp_contract}\n"
+                             f"Faltas: {emp_absense}\t Tardanzas: {emp_late}\n"
+                             f"Dias Extra: {emp_extra}\t Total Extra: {emp_tot_extra}\n"
+                             f"Primas: {emp_primes}\n")
+        data = {
+            "data": {"Faltas": emp_absense,
+                     "Tardanzas": emp_late,
+                     "Extra": emp_extra,
+                     "Primas": emp_primes
+                     },
+            "title": f"Historial {emp_name.title()}",
+            "ylabel": "Dias"
+        }
+        self.frame_plot = FramePlot(self, data, type_chart="bar")
+        self.frame_plot.grid(row=3, column=1, columnspan=3, padx=20, pady=10)
+
 
 if __name__ == '__main__':
     print('Hello World')

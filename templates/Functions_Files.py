@@ -653,7 +653,7 @@ def update_fichajes_resume_cache(filepath: str, data):
         with open(filepath, 'rb') as file:
             fichajes_resume = pickle.load(file)
     except Exception as e:
-        print("Error at getting cache file: ", e)
+        print("Error at getting cache file to update: ", e)
         update = False
         fichajes_resume = data
     if update:
@@ -676,6 +676,7 @@ def update_fichajes_resume_cache(filepath: str, data):
             aux = (id_emp, name, contract, new_faltas, new_lates, new_extras, new_extras_value, new_primas,
                    faltas_dic, lates_dic, extras_dic, primas_dic)
             fichajes_resume[i] = aux
+    print(fichajes_resume)
     with open(filepath, 'wb') as file:
         pickle.dump(fichajes_resume, file)
 
@@ -705,7 +706,7 @@ def get_fichajes_resume_cache(filepath):
                            new_extras, new_extras_value, new_primas, json.loads(absences),
                            json.loads(lates), json.loads(extras), json.loads(primes))
                 fichajes_resume.append(new_row)
-                update_fichajes_resume_cache(filepath, fichajes_resume)
+            update_fichajes_resume_cache(filepath, fichajes_resume)
         else:
             fichajes_resume = []
             print("Error at getting fichajes from sql: ", error)
