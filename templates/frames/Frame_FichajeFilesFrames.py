@@ -241,8 +241,10 @@ class FichajesFilesGUI(ScrolledFrame):
                 if self.contracts[con_name][emp_name]["id"] is None:
                     continue
                 (data_contract_emp, days_faltas, days_late2,
-                 days_extra2, total_extra2, days_prima) = self.get_data_from_name_contract(emp_name, id_2=self.contracts[con_name][emp_name]["id"])
-                dict_faltas, dict_late2, dict_extra2, dict_prima = cb.get_dic_from_list_fichajes([days_faltas, days_late2, days_extra2, days_prima])
+                 days_extra2, total_extra2, days_prima) = self.get_data_from_name_contract(
+                    emp_name, id_2=self.contracts[con_name][emp_name]["id"])
+                dict_faltas, dict_late2, dict_extra2, dict_prima = cb.get_dic_from_list_fichajes(
+                    [days_faltas, days_late2, days_extra2, days_prima])
                 row = (self.contracts[con_name][emp_name]["id"],
                        emp_name, con_name, len(days_faltas), len(days_late2), len(days_extra2), total_extra2, len(days_prima),
                        dict_faltas, dict_late2, dict_extra2, dict_prima)

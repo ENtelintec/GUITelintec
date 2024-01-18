@@ -397,6 +397,13 @@ def get_all_data_employees(status: str):
     return flag, error, result
 
 
+def get_all_fichajes():
+    sql = ("SELECT employees.name, employees.l_name,fichajes.* "
+           "FROM sql_telintec.fichajes "
+           "INNER JOIN employees ON (fichajes.emp_id = employees.employee_id)")
+    flag, error, result = execute_sql(sql, type_sql=2)
+    return flag, error, result
+
 # --------------------------------Examenes medicos GUI--------------------------
 def insert_new_exam_med(name: str, blood: str, status: str, aptitud: list,
                         renovaciones: list, apt_actual: int, last_date: str,

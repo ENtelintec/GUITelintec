@@ -3,6 +3,7 @@ __author__ = 'Edisson Naula'
 __date__ = '$ 02/nov./2023  at 17:37 $'
 
 import csv
+import json
 import os
 import pickle
 import re
@@ -18,7 +19,7 @@ import ttkbootstrap as ttk
 from ttkbootstrap.toast import ToastNotification
 
 from static.extensions import secrets
-from templates.Functions_SQL import get_id_employee
+from templates.Functions_SQL import get_id_employee, get_all_fichajes
 from templates.Functions_Text import clean_accents
 
 
@@ -578,14 +579,32 @@ def get_dic_from_list_fichajes(lists_data: list):
                 for timestamp, comment in item:
                     timestamp = datetime.strptime(timestamp, '%Y-%m-%d %H:%M:%S')
                     year = timestamp.year
-                    aux_dic[year] = {}
                     month = timestamp.month
-                    aux_dic[year][month] = {}
                     day = timestamp.day
-                    aux_dic[year][month][day] = {}
-                    aux_dic[year][month][day]["timestamp"] = str(timestamp)
-                    aux_dic[year][month][day]["comment"] = comment
-                    aux_dic[year][month][day]["value"] = None
+                    if year not in aux_dic.keys():
+                        aux_dic[year] = {}
+                        aux_dic[year][month] = {}
+                        aux_dic[year][month][day] = {}
+                        aux_dic[year][month][day]["timestamp"] = str(timestamp)
+                        aux_dic[year][month][day]["comment"] = comment
+                        aux_dic[year][month][day]["value"] = None
+                    else:
+                        if month not in aux_dic[year].keys():
+                            aux_dic[year][month] = {}
+                            aux_dic[year][month][day] = {}
+                            aux_dic[year][month][day]["timestamp"] = str(timestamp)
+                            aux_dic[year][month][day]["comment"] = comment
+                            aux_dic[year][month][day]["value"] = None
+                        else:
+                            if day not in aux_dic[year][month].keys():
+                                aux_dic[year][month][day] = {}
+                                aux_dic[year][month][day]["timestamp"] = str(timestamp)
+                                aux_dic[year][month][day]["comment"] = comment
+                                aux_dic[year][month][day]["value"] = None
+                            else:
+                                aux_dic[year][month][day]["timestamp"] = str(timestamp)
+                                aux_dic[year][month][day]["comment"] = comment
+                                aux_dic[year][month][day]["value"] = None
             else:
                 for timestamp, comment, value in item:
                     timestamp = datetime.strptime(timestamp, '%Y-%m-%d %H:%M:%S')
@@ -659,7 +678,6 @@ def update_fichajes_resume_cache(filepath: str, data):
             fichajes_resume[i] = aux
     with open(filepath, 'wb') as file:
         pickle.dump(fichajes_resume, file)
-    print(data)
 
 
 def get_fichajes_resume_cache(filepath):
@@ -671,6 +689,26 @@ def get_fichajes_resume_cache(filepath):
         flag = False if len(fichajes_resume) == 0 else True
     except Exception as e:
         print("Error at getting cache file: ", e)
-        fichajes_resume = {}
+        fichajes_resume = []
         flag = False
+    if not flag:
+        flag, error, result = get_all_fichajes()
+        if flag and len(result) > 0:
+            fichajes_resume = []
+            for row in result:
+                (name, lastname, id_fich, id_emp, contract, absences, lates, extras, primes) = row
+                new_faltas, new_faltas_value = get_cumulative_data_fichajes_dict(json.loads(absences))
+                new_tardanzas, new_tardanzas_value = get_cumulative_data_fichajes_dict(json.loads(lates))
+                new_extras, new_extras_value = get_cumulative_data_fichajes_dict(json.loads(extras))
+                new_primas, new_primas_value = get_cumulative_data_fichajes_dict(json.loads(primes))
+                new_row = (id_emp, name.title() + lastname.title(), contract, new_faltas, new_tardanzas,
+                           new_extras, new_extras_value, new_primas, json.loads(absences),
+                           json.loads(lates), json.loads(extras), json.loads(primes))
+                fichajes_resume.append(new_row)
+                update_fichajes_resume_cache(filepath, fichajes_resume)
+        else:
+            fichajes_resume = []
+            print("Error at getting fichajes from sql: ", error)
+            flag = False
     return fichajes_resume, flag
+
