@@ -6,6 +6,7 @@ from screens.Inventory import InventoryScreen
 from screens.Orders import OrdersScreen
 from screens.Out import OutScreen
 from screens.Returns import ReturnsScreen
+from screens.Providers import ProvidersScreen
 from screens.Settings import SettingsScreen
 
 
@@ -23,6 +24,7 @@ class App(ttk.Frame):
         self._out = OutScreen
         self._returns = ReturnsScreen
         self._orders = OrdersScreen
+        self._providers = ProvidersScreen
 
         ttk.Style().configure(
             "primary.TFrame",

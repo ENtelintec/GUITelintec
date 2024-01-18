@@ -55,10 +55,17 @@ def create_menu(parent):
 
     ttk.Button(
         menu,
+        text="Proveedores",
+        style="bg.TButton",
+        command=lambda: parent.switch_screen(parent._providers),
+    ).grid(row=6, column=0, sticky="nsew", pady=(16, 0), padx=10)
+
+    ttk.Button(
+        menu,
         text="Configuracion",
         style="bg.TButton",
         command=lambda: parent.switch_screen(parent._settings),
-    ).grid(row=6, column=0, sticky="nsew", pady=(16, 0), padx=10)
+    ).grid(row=7, column=0, sticky="nsew", pady=(16, 0), padx=10)
 
     return menu
 

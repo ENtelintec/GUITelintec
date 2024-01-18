@@ -25,14 +25,14 @@ class OutScreen(ttk.Frame):
         content.grid(row=0, column=0, sticky="nswe")
         ttk.Label(
             content, text="Entradas", style="bg.TLabel", font=("Arial Black", 25)
-        ).grid(row=0, column=0, sticky="w")
+        ).grid(row=0, column=0, sticky="w", padx=5, pady=10)
 
         # Table
         table = ttk.Frame(content, style="bg.TFrame")
         table.grid(row=1, column=0, sticky="nswe")
         ttk.Label(
             table, text="Tabla de Entradas", style="bg.TLabel", font=("Arial", 20)
-        ).grid(row=0, column=0, sticky="w")
+        ).grid(row=0, column=0, sticky="w", padx=5, pady=10)
 
         self.col_data = [
             {"text": "ID Movimiento", "stretch": True},
@@ -61,7 +61,7 @@ class OutScreen(ttk.Frame):
         inputs.grid(row=2, column=0, sticky="nswe")
         ttk.Label(
             inputs, text="Agregar nueva salida", style="bg.TLabel", font=("Arial", 20)
-        ).grid(row=0, column=0, sticky="w")
+        ).grid(row=0, column=0, sticky="w", padx=5, pady=10)
 
         ttk.Label(inputs, text="Producto", style="bg.TLabel").grid(
             row=1, column=0, sticky="w", padx=5, pady=5

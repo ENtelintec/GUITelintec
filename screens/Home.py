@@ -29,6 +29,7 @@ class HomeScreen(ScrolledFrame):
         ttk.Label(
             content, text="Inicio", style="bg.TLabel", font=("Arial Black", 25)
         ).grid(row=0, column=0, sticky="w")
+
         # chart 1
         chart_profit = ttk.Meter(
             content,

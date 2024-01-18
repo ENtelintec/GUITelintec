@@ -66,12 +66,12 @@ class SettingsScreen(ScrolledFrame):
         ).grid(row=1, column=1, sticky="w", pady=(16, 0), padx=10)
 
         # Button for upload orders
-        ttk.Label(upload_file, text="Insertar Ordenes", style="bg.TLabel").grid(
-            row=0, column=2, sticky="w", pady=(16, 0), padx=10
-        )
-        ttk.Button(
-            upload_file, text="Seleccionar archivo", command=self.load_orders
-        ).grid(row=1, column=2, sticky="w", pady=(16, 0), padx=10)
+        # ttk.Label(upload_file, text="Insertar Ordenes", style="bg.TLabel").grid(
+        #     row=0, column=2, sticky="w", pady=(16, 0), padx=10
+        # )
+        # ttk.Button(
+        #     upload_file, text="Seleccionar archivo", command=self.load_orders
+        # ).grid(row=1, column=2, sticky="w", pady=(16, 0), padx=10)
 
         # Frame for message box
         message_box = ttk.Frame(content, style="bg.TFrame")
@@ -196,17 +196,17 @@ class SettingsScreen(ScrolledFrame):
             )
         self._message_box("Productos", "Productos cargados correctamente")
 
-    def load_orders(self):
-        file = filedialog.askopenfilename(
-            parent=self, initialdir="/", title="Please select a directory"
-        )
-        if not file:
-            return
-        df = pd.read_csv(file, header=None)
-        for indice, fila in enumerate(df.values):
-            if indice == 0:
-                continue
-            # self.fetching_data.orders.create_order(
-            #     fila[0], fila[1], fila[2], fila[3], fila[4], fila[5])
-            # self.fetching_data.order.close_connection()
-            print(fila)
+    # def load_orders(self):
+    #     file = filedialog.askopenfilename(
+    #         parent=self, initialdir="/", title="Please select a directory"
+    #     )
+    #     if not file:
+    #         return
+    #     df = pd.read_csv(file, header=None)
+    #     for indice, fila in enumerate(df.values):
+    #         if indice == 0:
+    #             continue
+    #         # self.fetching_data.orders.create_order(
+    #         #     fila[0], fila[1], fila[2], fila[3], fila[4], fila[5])
+    #         # self.fetching_data.order.close_connection()
+    #         print(fila)

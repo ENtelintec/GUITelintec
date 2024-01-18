@@ -22,14 +22,14 @@ class ClientsScreen(ScrolledFrame):
         content.grid(row=0, column=0, sticky="nswe")
         ttk.Label(
             content, text="Clientes", style="bg.TLabel", font=("Arial Black", 25)
-        ).grid(row=0, column=0, sticky="w")
+        ).grid(row=0, column=0, sticky="w", padx=5, pady=10)
 
         # Table
         table = ttk.Frame(content, style="bg.TFrame")
         table.grid(row=1, column=0, sticky="nswe")
         ttk.Label(
             table, text="Tabla de clientes", style="bg.TLabel", font=("Arial", 20)
-        ).grid(row=0, column=0, sticky="w")
+        ).grid(row=0, column=0, sticky="w", padx=5, pady=10)
 
         self.col_data = [
             {"text": "ID Cliente", "stretch": True},
@@ -58,7 +58,7 @@ class ClientsScreen(ScrolledFrame):
         inputs.grid(row=2, column=0, sticky="nswe")
         ttk.Label(
             inputs, text="Agregar nuevo cliente", style="bg.TLabel", font=("Arial", 20)
-        ).grid(row=0, column=0, sticky="w")
+        ).grid(row=0, column=0, sticky="w", padx=5, pady=10)
 
         # dividir el frame en 2, izq y derecha para los inputs
         inputs_left = ttk.Frame(inputs, style="bg.TFrame")
@@ -159,7 +159,6 @@ class ClientsScreen(ScrolledFrame):
 
     def events(self, event):
         data = self.table.view.item(self.table.view.focus())["values"]
-        print(data)
         self.input_client_id.delete(0, "end")
         self.input_client_name.delete(0, "end")
         self.input_client_email.delete(0, "end")
