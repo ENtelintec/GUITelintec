@@ -6,6 +6,7 @@ from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg, NavigationToolbar2Tk)
 import tkinter as tk
 import matplotlib
+
 matplotlib.use('TkAgg')
 
 
@@ -75,15 +76,18 @@ class FramePlot(tk.Frame):
 
 
 if __name__ == '__main__':
-    # window = tk.Tk()
-    # window.title('Matplotlib Demo')
-    # window.columnconfigure(0, weight=1)
-    # label = tk.Label(window, text='Matplotlib Demo')
-    # label.grid(row=0, column=0)
-    # data_plot = {'Python': 11.27, 'C': 11.16, 'Java': 10.46, 'C++': 7.5, 'C#': 5.26}
-    # app = FramePlot(window,  data_plot, type_chart='bar')
-    # app.grid(row=1, column=0)
-    # label2 = tk.Label(window, text='Matplotlib Demo label 2')
-    # label2.grid(row=2, column=0)
-    # app.mainloop()
+    window = tk.Tk()
+    window.title('Matplotlib Demo')
+    window.columnconfigure(0, weight=1)
+    label = tk.Label(window, text='Matplotlib Demo')
+    label.grid(row=0, column=0)
+    data_plot = {"data": {'Python': 11.27, 'C': 11.16, 'Java': 10.46, 'C++': 7.5, 'C#': 5.26},
+                 "title": "Language Popularity",
+                 "ylabel": "Popularity"
+                 }
+    app = FramePlot(window, data_plot, type_chart='bar', width=300)
+    app.grid(row=1, column=0)
+    label2 = tk.Label(window, text='Matplotlib Demo label 2')
+    label2.grid(row=2, column=0)
+    app.mainloop()
     print("Hecho por Edisson Naula, 2023-1-18, version 1.0")

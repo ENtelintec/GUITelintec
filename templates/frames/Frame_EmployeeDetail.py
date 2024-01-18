@@ -50,13 +50,13 @@ class EmployeeDetails(ScrolledFrame):
                                paginated=False,
                                searchable=True,
                                autofit=True)
-        self.table.grid(row=1, column=0, columnspan=4, padx=20, pady=10)
+        self.table.grid(row=1, column=0, columnspan=10, padx=20, pady=10)
         self.table.view.bind("<Double-1>", self.on_double_click)
         ttk.Label(self, text="Detalles de empleado",
                   font=("Helvetica", 16, "bold")).grid(row=2, column=0,
                                                        columnspan=4, padx=20, pady=10)
         ttk.Label(self, textvariable=self.emp_details,
-                  font=("Helvetica", 12, "normal")).grid(row=3, column=0, sticky="w", padx=20, pady=5)
+                  font=("Helvetica", 12, "normal")).grid(row=3, column=0, sticky="ew", padx=20, pady=5)
         self.frame_plot = ttk.Frame(self)
 
     def on_double_click(self, event):
@@ -78,7 +78,7 @@ class EmployeeDetails(ScrolledFrame):
             "ylabel": "Dias"
         }
         self.frame_plot = FramePlot(self, data, type_chart="bar")
-        self.frame_plot.grid(row=3, column=1, columnspan=3, padx=20, pady=10)
+        self.frame_plot.grid(row=4, column=0, columnspan=4, padx=20, pady=10)
 
 
 if __name__ == '__main__':
