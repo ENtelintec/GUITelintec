@@ -6,13 +6,24 @@ class Product:
         self.connection = None
         self.cursor = None
 
-    def create_product(self, name, description, price, stock, id_category, id_supplier):
+    def create_product(
+        self,
+        name,
+        description,
+        price,
+        stock,
+        minStock,
+        maxStock,
+        reorderPoint,
+        id_category,
+        id_supplier,
+    ):
         try:
             self.connection = db()
             self.cursor = self.connection.cursor()
             sql = (
                 f"INSERT INTO products_amc (name, description, price, stock, id_category) "
-                f"VALUES ('{name}', '{description}', {price}, {stock}, {id_category})"
+                f"VALUES ('{name}', '{description}', {price}, {stock}, {minStock}, {maxStock}, {reorderPoint}, {id_category})"
             )
             self.cursor.execute(sql)
             self.connection.commit()
@@ -37,8 +48,15 @@ class Product:
             self.connection = db()
             self.cursor = self.connection.cursor()
             sql = """
-            SELECT products_amc.id_product, products_amc.name AS product_name, products_amc.description,
-                products_amc.price, products_amc.stock, product_categories_amc.name AS category_name,
+            SELECT products_amc.id_product,
+                products_amc.name AS product_name,
+                products_amc.description,
+                products_amc.price,
+                products_amc.stock,
+                products_amc.minStock,
+                products_amc.maxStock,
+                products_amc.reorderPoint,
+                product_categories_amc.name AS category_name,
                 suppliers_amc.name AS supplier_name
             FROM products_amc
             LEFT JOIN product_categories_amc ON products_amc.id_category = product_categories_amc.id_category
@@ -56,13 +74,23 @@ class Product:
                 self.cursor = None
 
     def update_product(
-        self, id_product, name, description, price, stock, id_category, id_supplier
+        self,
+        id_product,
+        name,
+        description,
+        price,
+        stock,
+        minStock,
+        maxStock,
+        reorderPoint,
+        id_category,
+        id_supplier,
     ):
         try:
             self.connection = db()
             self.cursor = self.connection.cursor()
             sql = (
-                f"UPDATE products_amc SET name = '{name}', description = '{description}', price = {price}, stock = {stock}, id_category = {id_category} "
+                f"UPDATE products_amc SET name = '{name}', description = '{description}', price = {price}, stock = {stock}, minStock= {minStock}, maxStock = {maxStock}, reorderPoint = {reorderPoint}, id_category = {id_category} "
                 f"WHERE id_product = {id_product}"
             )
             self.cursor.execute(sql)

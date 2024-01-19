@@ -70,33 +70,25 @@ class ClientsScreen(ScrolledFrame):
         ttk.Label(inputs_left, text="ID Cliente", style="bg.TLabel").grid(
             row=0, column=0, sticky="w"
         )
-
         self.input_client_id = ttk.Entry(inputs_left, style="bg.TEntry")
-
         self.input_client_id.grid(row=0, column=1, sticky="w", padx=5, pady=5)
 
         ttk.Label(inputs_left, text="Nombre", style="bg.TLabel").grid(
             row=1, column=0, sticky="w", padx=5, pady=5
         )
-
         self.input_client_name = ttk.Entry(inputs_left, style="bg.TEntry")
-
         self.input_client_name.grid(row=1, column=1, sticky="w", padx=5, pady=5)
 
         ttk.Label(inputs_left, text="Email", style="bg.TLabel").grid(
             row=2, column=0, sticky="w", padx=5, pady=5
         )
-
         self.input_client_email = ttk.Entry(inputs_left, style="bg.TEntry")
-
         self.input_client_email.grid(row=2, column=1, sticky="w", padx=5, pady=5)
 
         ttk.Label(inputs_left, text="Telefono", style="bg.TLabel").grid(
             row=3, column=0, sticky="w", padx=5, pady=5
         )
-
         self.input_client_phone = ttk.Entry(inputs_left, style="bg.TEntry")
-
         self.input_client_phone.grid(row=3, column=1, sticky="w", padx=5, pady=5)
 
         # Inputs right
