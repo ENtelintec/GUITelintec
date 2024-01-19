@@ -1,9 +1,7 @@
--- Verificar si la base de datos existe y eliminarla si es necesario
-DROP DATABASE IF EXISTS sql_telintec;
-
--- Crear la base de datos
-CREATE DATABASE sql_telintec;
-
+-- -- Verificar si la base de datos existe y eliminarla si es necesario
+-- DROP DATABASE IF EXISTS sql_telintec;
+-- -- Crear la base de datos
+-- CREATE DATABASE sql_telintec;
 -- Usar la base de datos
 USE sql_telintec;
 
