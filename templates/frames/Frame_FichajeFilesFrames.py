@@ -42,9 +42,70 @@ def create_var_none(number: int):
     return tuple(var_none)
 
 
+def create_Combobox(master, values, width=None, row=0, column=0,
+                    state="readonly", padx=5, pady=5):
+    """
+    Create a combobox with the values provided
+    :param master: parent of the combobox
+    :param values: values of the combobox
+    :param row: row to place the widget
+    :param column: Column to place the widget
+    :param state: state of the combobox
+    :param padx:
+    :param pady:
+    :param width:
+    :return: Placed combobox in the grid
+    """
+    combobox = ttk.Combobox(master, values=values, state=state)
+    combobox.current(0)
+    combobox.grid(row=row, column=column, padx=padx, pady=pady)
+    return combobox
+
+
+def create_label(master, row, column, padx=5, pady=5, text=None, textvariable=None,
+                 font=('Helvetica', 10, 'bold'), columnspan=1, sticky=None):
+    """
+    Create a label with the text-provided
+    :param sticky:
+    :param columnspan:
+    :param text: If None, a label with textvariable is created
+    :param font:
+    :param master: Parent of the label
+    :param textvariable: textvariable of the label
+    :param row: row to place the widget
+    :param column: Column to place the widget
+    :param padx:
+    :param pady:
+    :return: Placed label in the grid
+    """
+    if text is not None:
+        label = ttk.Label(master, text=text, font=font)
+    else:
+        label = ttk.Label(master, textvariable=textvariable, font=font)
+    if sticky is None:
+        label.grid(row=row, column=column, padx=padx, pady=pady, columnspan=columnspan)
+    else:
+        label.grid(row=row, column=column, padx=padx, pady=pady, columnspan=columnspan, sticky=sticky)
+    return label
+
+
 class FichajesFilesGUI(ScrolledFrame):
     def __init__(self, master=None):
         super().__init__(master, autohide=True)
+        # noinspection PyTypeChecker
+        self.columnconfigure(0, weight=1)
+        # ----------------------variables-------------------------
+        nb = ttk.Notebook(self)
+        frame_1 = FichajesAuto(nb)
+        frame_2 = FichajesManual(nb)
+        nb.add(frame_1, text='Automatico')
+        nb.add(frame_2, text='Manual')
+        nb.grid(row=0, column=0, sticky="nsew", padx=15, pady=5)
+
+
+class FichajesAuto(ttk.Frame):
+    def __init__(self, master=None):
+        super().__init__(master)
         # noinspection PyTypeChecker
         self.columnconfigure((0, 1, 2, 3, 4), weight=1)
         # ----------------------variables-------------------------
@@ -59,23 +120,20 @@ class FichajesFilesGUI(ScrolledFrame):
         self.files_names_t = []
         self.files_names_o = []
         # -------------------create title-----------------
-        self.label_title = ttk.Label(self, text='Telintec Software Fichajes',
-                                     font=('Helvetica', 32, 'bold'))
-        self.label_title.grid(row=0, column=0, columnspan=5)
+        label_title = create_label(self, text='Telintec Software Fichajes',
+                                   row=0, column=0, columnspan=5, padx=0, pady=0,
+                                   font=('Helvetica', 32, 'bold'))
         # -------------------create entry for file selector-----------------
-        label1 = ttk.Label(self, text='Archivos de ternium: ')
-        label1.grid(row=1, column=0)
-        label2 = ttk.Label(self, text='Archivos de operaciones: ')
-        label2.grid(row=1, column=2)
-        label3 = ttk.Label(self, text='Rango de fechas: ')
-        label3.grid(row=1, column=4)
+        label1 = create_label(self, text='Archivos de ternium: ', row=1, column=0)
+        label2 = create_label(self, text='Archivos de operaciones: ', row=1, column=2)
+        label3 = create_label(self, text='Rango de fechas: ', row=1, column=4)
         # -------------------create combobox for file selector-----------------
-        self.files_ternium_cb = ttk.Combobox(self, values=self.files_names_t, state="readonly")
-        self.files_ternium_cb.grid(row=1, column=1)
-        self.files_operaciones_cb = ttk.Combobox(self, values=self.files_names_o, state="readonly")
-        self.files_operaciones_cb.grid(row=1, column=3)
-        self.date_ranges = ttk.Combobox(self, values=[""], state="readonly")
-        self.date_ranges.grid(row=1, column=5)
+        self.files_ternium_cb = create_Combobox(
+            self, values=self.files_names_t, state="readonly", row=1, column=1, padx=0, pady=0)
+        self.files_operaciones_cb = create_Combobox(
+            self, values=self.files_names_o, state="readonly", row=1, column=3, padx=0, pady=0)
+        self.date_ranges = create_Combobox(
+            self, values=[""], state="readonly", row=1, column=5, padx=0, pady=0)
         # self.files_ternium_cb.bind("<<ComboboxSelected>>", self.select_file)
         # self.files_operaciones_cb.bind("<<ComboboxSelected>>", self.select_file_2)
         # -------------------create collapsing frame-----------------
@@ -91,33 +149,26 @@ class FichajesFilesGUI(ScrolledFrame):
         # noinspection PyTypeChecker
         group_1.columnconfigure((0, 1, 2, 3, 4, 5), weight=1)
         # ---------------filter by name widgets-------------
-        label_name = ttk.Label(group_1, text='Empleado: ')
-        label_name.grid(row=0, column=0)
-        self.names = ttk.Combobox(group_1, values=["no file selected"], state="readonly")
-        self.names.grid(row=0, column=1)
+        label_name = create_label(group_1, text='Empleado: ', row=0, column=0)
+        self.names = create_Combobox(group_1, values=["no file selected"], state="readonly", row=0, column=1)
         self.names.bind("<<ComboboxSelected>>", self.select_name)
-        label_in_time = ttk.Label(group_1, text='Hora de entrada: ')
-        label_in_time.grid(row=0, column=2, sticky="w")
+        label_in_time = create_label(group_1, text='Hora de entrada: ', row=0, column=2, sticky="w")
         self.clocks = []
         self.clock1 = cb.create_spinboxes_time(group_1, self, 1, 2,
                                                mins_defaul=0, hours_default=8, title="entrada")
-
         self.window_time_in = ttk.Scale(group_1, from_=0, to=60, orient=ttk.HORIZONTAL, length=100,
                                         command=self.change_time_grace)
         self.window_time_in.set(15)
-        self.label_time_in = ttk.Label(group_1,
-                                       text=f'Gracia entrada: {int(self.window_time_in.get())} mins')
-        self.label_time_in.grid(row=1, column=3)
-        label_out_time = ttk.Label(group_1, text='Hora de salida: ')
-        label_out_time.grid(row=0, column=4, sticky="w")
+        self.label_time_in = create_label(
+            group_1, text=f'Gracia entrada: {int(self.window_time_in.get())} mins', row=1, column=3)
+        label_out_time = create_label(group_1, text='Hora de salida: ', row=0, column=4, sticky="w")
         self.clock2 = cb.create_spinboxes_time(group_1, self, 1, 4,
                                                mins_defaul=0, hours_default=18, title="salida")
         self.window_time_out = ttk.Scale(group_1, from_=0, to=60, orient=ttk.HORIZONTAL, length=100,
                                          command=self.change_time_grace)
         self.window_time_out.set(15)
-        self.label_time_out = ttk.Label(group_1,
-                                        text=f'Gracia salida: {int(self.window_time_out.get())} mins')
-        self.label_time_out.grid(row=1, column=5)
+        self.label_time_out = create_label(
+            group_1, text=f'Gracia salida: {int(self.window_time_out.get())} mins', row=1, column=5)
         # ----------------string vars-------------
         (self.wd, self.late, self.extra, self.wd_w, self.late_hours,
          self.extra_hours, self.late_hours_day, self.late_hours_day_out,
@@ -129,79 +180,27 @@ class FichajesFilesGUI(ScrolledFrame):
         self.read_files()
         # ------------------------create display data employee----------------
         # -------labels result file 1-------
-        label_subtitle = ttk.Label(group_1, text='Información resumida archivo 1',
-                                   font=('Helvetica', 10, 'bold'))
-        label_subtitle.grid(row=2, column=0)
-        label_faltas = ttk.Label(group_1, textvariable=self.wd)
-        label_faltas.grid(row=3, column=0)
-        label_wd_w = ttk.Label(group_1, textvariable=self.wd_w)
-        label_wd_w.grid(row=4, column=0)
-        # late hours
-        label_late = ttk.Label(group_1, textvariable=self.late)
-        label_late.grid(row=5, column=0)
-        label_tot_late_hours = ttk.Label(group_1, textvariable=self.late_hours)
-        label_tot_late_hours.grid(row=5, column=1)
-        self.days_late_selector = ttk.Combobox(group_1, values=["no file selected"], state=ttk.DISABLED)
-        self.days_late_selector.grid(row=5, column=2)
+        self.create_info_display_file1(group_1)
+        self.days_late_selector = create_Combobox(
+            group_1, values=["no file selected"], state="readonly", row=5, column=2)
         self.days_late_selector.bind("<<ComboboxSelected>>", self.select_day_late)
-        label_late_hours_day = ttk.Label(group_1, textvariable=self.late_hours_day)
-        label_late_hours_day.grid(row=5, column=3)
-        label_puerta_in = ttk.Label(group_1, textvariable=self.puerta_in)
-        label_puerta_in.grid(row=5, column=4)
-        label_late_hours_day_out = ttk.Label(group_1, textvariable=self.late_hours_day_out)
-        label_late_hours_day_out.grid(row=5, column=5)
-        # extra hours
-        label_extra = ttk.Label(group_1, textvariable=self.extra)
-        label_extra.grid(row=6, column=0)
-        label_tot_extra_hours = ttk.Label(group_1, textvariable=self.extra_hours)
-        label_tot_extra_hours.grid(row=6, column=1)
-        self.days_extra_selector = ttk.Combobox(group_1, values=["no file selected"], state=ttk.DISABLED)
-        self.days_extra_selector.grid(row=6, column=2)
+        self.days_extra_selector = create_Combobox(
+            group_1, values=["no file selected"], state=ttk.DISABLED, row=6, column=2)
         self.days_extra_selector.bind("<<ComboboxSelected>>", self.select_day_extra)
-        label_extra_hours_day = ttk.Label(group_1, textvariable=self.extra_hours_day)
-        label_extra_hours_day.grid(row=6, column=3)
-        label_puerta_out = ttk.Label(group_1, textvariable=self.puerta_out)
-        label_puerta_out.grid(row=6, column=4)
-        label_extra_hours_day_in = ttk.Label(group_1, textvariable=self.extra_hours_day_in)
-        label_extra_hours_day_in.grid(row=6, column=5)
         # -------labels result file 2-------
-        label_subtitle2 = ttk.Label(group_1, text='Información resumida archivo 2',
-                                    font=('Helvetica', 10, 'bold'))
-        label_subtitle2.grid(row=7, column=0)
-        label_faltas = ttk.Label(group_1, textvariable=self.faltas)
-        label_faltas.grid(row=8, column=0)
-        self.days_missing_selector2 = ttk.Combobox(group_1, values=["no file selected"], state="readonly")
-        self.days_missing_selector2.grid(row=8, column=1)
+        self.create_info_display_file2(group_1)
+        self.days_missing_selector2 = create_Combobox(
+            group_1, values=["no file selected"], state="readonly", row=8, column=1)
         self.days_missing_selector2.bind("<<ComboboxSelected>>", self.select_day_faltas)
-        label_late2 = ttk.Label(group_1, textvariable=self.late_hours2)
-        label_late2.grid(row=9, column=0)
-        self.days_late_selector2 = ttk.Combobox(group_1, values=["no file selected"], state="readonly")
-        self.days_late_selector2.grid(row=9, column=1)
+        self.days_late_selector2 = create_Combobox(
+            group_1, values=["no file selected"], state="readonly", row=9, column=1)
         self.days_late_selector2.bind("<<ComboboxSelected>>", self.select_day_late2)
-        label_extra2 = ttk.Label(group_1, textvariable=self.extra_hours2)
-        label_extra2.grid(row=10, column=0)
-        self.days_extra_selector2 = ttk.Combobox(group_1, values=["no file selected"], state="readonly")
-        self.days_extra_selector2.grid(row=10, column=1)
+        self.days_extra_selector2 = create_Combobox(
+            group_1, values=["no file selected"], state="readonly", row=10, column=1)
         self.days_extra_selector2.bind("<<ComboboxSelected>>", self.select_day_extra2)
-        label_primas = ttk.Label(group_1, textvariable=self.primas)
-        label_primas.grid(row=11, column=0)
-        self.days_primas_selector = ttk.Combobox(group_1, values=["no file selected"], state="readonly")
-        self.days_primas_selector.grid(row=11, column=1)
+        self.days_primas_selector = create_Combobox(
+            group_1, values=["no file selected"], state="readonly", row=11, column=1)
         self.days_primas_selector.bind("<<ComboboxSelected>>", self.select_day_primas)
-        # coments label
-        label_comments_1 = ttk.Label(group_1, textvariable=self.comment_f,
-                                     font=('Helvetica', 8))
-        label_comments_1.grid(row=8, column=2, columnspan=4)
-        label_comments_2 = ttk.Label(group_1, textvariable=self.comment_t,
-                                     font=('Helvetica', 8))
-        label_comments_2.grid(row=9, column=2, columnspan=4)
-        label_comments_3 = ttk.Label(group_1, textvariable=self.comment_e,
-                                     font=('Helvetica', 8))
-        label_comments_3.grid(row=10, column=2, columnspan=4)
-        label_comments_4 = ttk.Label(group_1, textvariable=self.comment_p,
-                                     font=('Helvetica', 8))
-        label_comments_4.grid(row=11, column=2, columnspan=4)
-
         # ------------------------create expor button----------------
         self.btn_export = ttk.Button(group_1, text="Exportar",
                                      command=self.button_export_click)
@@ -212,6 +211,44 @@ class FichajesFilesGUI(ScrolledFrame):
 
         self.frame_collapse.add(group_1, title="Filtrado por nombre")
         self.frame_collapse.add(self.group_2, title="Tablas")
+
+    def create_info_display_file1(self, master):
+        label_subtitle = create_label(
+            master, text='Información resumida archivo 1', row=2, column=0)
+        label_faltas = create_label(master, textvariable=self.wd, row=3, column=0)
+        label_wd_w = create_label(master, textvariable=self.wd_w, row=4, column=0)
+        # late hours
+        label_late = create_label(master, textvariable=self.late, row=5, column=0)
+        label_tot_late_hours = create_label(master, textvariable=self.late_hours, row=5, column=1)
+        label_late_hours_day = create_label(master, textvariable=self.late_hours_day, row=5, column=3)
+        label_puerta_in = create_label(master, textvariable=self.puerta_in, row=5, column=4)
+        label_late_hours_day_out = create_label(master, textvariable=self.late_hours_day_out, row=5, column=5)
+        # extra hours
+        label_extra = create_label(master, textvariable=self.extra, row=6, column=0)
+        label_tot_extra_hours = create_label(master, textvariable=self.extra_hours, row=6, column=1)
+        label_extra_hours_day = create_label(master, textvariable=self.extra_hours_day, row=6, column=3)
+        label_puerta_out = create_label(master, textvariable=self.puerta_out, row=6, column=4)
+        label_extra_hours_day_in = create_label(master, textvariable=self.extra_hours_day_in, row=6, column=5)
+
+    def create_info_display_file2(self, master):
+        label_subtitle2 = create_label(
+            master, text='Información resumida archivo 2', row=7, column=0)
+        label_faltas = create_label(master, textvariable=self.faltas, row=8, column=0)
+        label_extra2 = create_label(master, textvariable=self.extra_hours2, row=10, column=0)
+        label_primas = create_label(master, textvariable=self.primas, row=11, column=0)
+        # coments label
+        label_comments_1 = create_label(
+            master, textvariable=self.comment_f, row=8, column=2, font=('Helvetica', 8),
+            columnspan=4)
+        label_comments_2 = create_label(
+            master, textvariable=self.comment_t, row=9, column=2, font=('Helvetica', 8),
+            columnspan=4)
+        label_comments_3 = create_label(
+            master, textvariable=self.comment_e, row=10, column=2, font=('Helvetica', 8),
+            columnspan=4)
+        label_comments_4 = create_label(
+            master, textvariable=self.comment_p, row=11, column=2, font=('Helvetica', 8),
+            columnspan=4)
 
     def button_export_emp_click(self):
         table_data, columns = cb.generate_table_from_dict_contracts(self.contracts)
@@ -224,7 +261,7 @@ class FichajesFilesGUI(ScrolledFrame):
         if self.names.get() != "no file selected" and self.names.get() != "":
             id_n = get_id_employee(self.names.get())
             df = df[df["ID"] == id_n]
-            # select path to save file
+            # select a path to save file
             path = asksaveasfilename(defaultextension=".csv",
                                      filetypes=[("CSV", "*.csv")])
             df.to_csv(path, index=False)
@@ -233,8 +270,6 @@ class FichajesFilesGUI(ScrolledFrame):
             Messagebox.show_error(title="Alert", message="primero seleccione un empleado")
 
     def button_export_click(self):
-        columns = ["Nombre", "Contrato", "Faltas", "Tardanzas", "Dias Extra", "Total", "Primas",
-                   "Detalles Faltas", "Detalles Tardanzas", "Detalles Extras", "Detalles Primas"]
         data_resume = []
         for con_name in self.contracts.keys():
             for emp_name in self.contracts[con_name].keys():
@@ -246,7 +281,8 @@ class FichajesFilesGUI(ScrolledFrame):
                 dict_faltas, dict_late2, dict_extra2, dict_prima = cb.get_dic_from_list_fichajes(
                     [days_faltas, days_late2, days_extra2, days_prima])
                 row = (self.contracts[con_name][emp_name]["id"],
-                       emp_name, con_name, len(days_faltas), len(days_late2), len(days_extra2), total_extra2, len(days_prima),
+                       emp_name, con_name, len(days_faltas), len(days_late2), len(days_extra2), total_extra2,
+                       len(days_prima),
                        dict_faltas, dict_late2, dict_extra2, dict_prima)
                 data_resume.append(row)
         columns = ["ID", "Nombre", "Contrato", "Faltas", "Tardanzas", "Dias Extra", "Total horas extras", "Primas",
@@ -424,7 +460,7 @@ class FichajesFilesGUI(ScrolledFrame):
             self.files_operaciones_cb.set(self.files_names_o[0])
         self.button_file_click(self.files[self.files_names_t[0]]["path"])
         self.button_file_2_click(self.files[self.files_names_o[0]]["path"])
-        # check if date are the same
+        # check if the date is the same
         self.check_dates_ranges()
 
     def check_dates_ranges(self):
@@ -483,7 +519,8 @@ class FichajesFilesGUI(ScrolledFrame):
                                          coldata=columns,
                                          rowdata=table_data,
                                          paginated=False,
-                                         searchable=True)
+                                         searchable=True,
+                                         autofit=True)
                 self.table_2.grid(row=1, column=0, sticky='nsew', padx=50, pady=10)
                 self.file_selected_2 = True
 
@@ -499,7 +536,8 @@ class FichajesFilesGUI(ScrolledFrame):
                                      coldata=coldata,
                                      rowdata=self.df.values.tolist(),
                                      paginated=False,
-                                     searchable=True)
+                                     searchable=True,
+                                     autofit=True)
             self.table_1.grid(row=0, column=0, sticky='nsew', padx=50, pady=10)
             self.names.configure(values=self.df["name"].unique().tolist())
             # enables scales
@@ -588,6 +626,8 @@ class FichajesFilesGUI(ScrolledFrame):
             print("no file selected")
             return None, None, None, None, None, None
 
-    def update_cache_resume(self, data_resume):
 
-        pass
+class FichajesManual(ttk.Frame):
+    def __init__(self, master=None, *args, **kwargs):
+        super().__init__(master, **kwargs)
+        self.master = master
