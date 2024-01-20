@@ -1,8 +1,9 @@
+from ttkbootstrap.scrolled import ScrolledFrame
 from PIL import Image
 from templates.widgets import *
 from controllers.index import DataHandler
+
 Image.CUBIC = Image.BICUBIC
-from ttkbootstrap.scrolled import ScrolledFrame
 
 
 class HomeScreen(ScrolledFrame):
@@ -25,19 +26,21 @@ class HomeScreen(ScrolledFrame):
         content.grid(row=0, column=0, sticky="nswe")
         content.columnconfigure((0, 1, 2, 3), weight=1)
         content.rowconfigure(1, weight=1)
-        ttk.Label(content, text="Inicio", style="bg.TLabel", font=(
-            "Arial Black", 25)).grid(row=0, column=0, sticky="w")
+        ttk.Label(
+            content, text="Inicio", style="bg.TLabel", font=("Arial Black", 25)
+        ).grid(row=0, column=0, sticky="w")
+
         # chart 1
         chart_profit = ttk.Meter(
             content,
             bootstyle="success",
-            amountused=int(0),
-            amounttotal=int('500000'),
-            textleft='$',
+            amountused=int(self._total_profit[0][0]),
+            amounttotal=int("500000"),
+            textleft="$",
             metertype="full",
             padding=10,
             stripethickness=10,
-            subtext="Ingresos"
+            subtext="Ingresos",
         )
         chart_profit.grid(row=1, column=0, sticky="nsew")
 
@@ -46,12 +49,12 @@ class HomeScreen(ScrolledFrame):
             content,
             bootstyle="info",
             amountused=int(self._total_orders),
-            amounttotal=int('500000'),
-            textleft='$',
+            amounttotal=int("500000"),
+            textleft="$",
             metertype="full",
             padding=10,
             stripethickness=10,
-            subtext="Pedidos"
+            subtext="Pedidos",
         )
         chart_orders.grid(row=1, column=1, sticky="nsew")
 
@@ -60,12 +63,12 @@ class HomeScreen(ScrolledFrame):
             content,
             bootstyle="danger",
             amountused=0,
-            amounttotal=int('500000'),
-            textleft='$',
+            amounttotal=int("500000"),
+            textleft="$",
             metertype="full",
             padding=10,
             stripethickness=10,
-            subtext="Devoluciones"
+            subtext="Devoluciones",
         )
         chart_returns.grid(row=1, column=2, sticky="nsew")
 
@@ -74,11 +77,11 @@ class HomeScreen(ScrolledFrame):
             content,
             bootstyle="success",
             amountused=0,
-            amounttotal=int('500000'),
-            textleft='$',
+            amounttotal=int("500000"),
+            textleft="$",
             metertype="full",
             padding=10,
             stripethickness=10,
-            subtext="Ingresos"
+            subtext="Ingresos",
         )
         chart_profit.grid(row=1, column=3, sticky="nsew")

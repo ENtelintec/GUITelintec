@@ -8,7 +8,7 @@ def connectionDB():
             host=secrets["HOST_DB_AWS"],
             user=secrets["USER_SQL_AWS"],
             password=secrets["PASS_SQL_AWS"],
-            database="sql_telintec"
+            database="sql_telintec",
         )
         if connection.is_connected():
             return connection
