@@ -540,6 +540,7 @@ def get_metadata_file(path: str, file: str):
         "size": os.path.getsize(os.path.join(path, file)),
         "report": "",
         "date": "",
+        "pairs": None
     }
     file = remove_extensions([file])[0]
     names = file.split("_")
@@ -549,9 +550,25 @@ def get_metadata_file(path: str, file: str):
     return out
 
 
+def check_files_pairs_date(files_data: dict):
+    for k in files_data.keys():
+        pairs = []
+        date1 = files_data[k]["date"]
+        date1 = datetime.strptime(date1, '%d-%m-%Y')
+        for k2 in files_data.keys():
+            if k2 != k:
+                date2 = files_data[k2]["date"]
+                date2 = datetime.strptime(date2, '%d-%m-%Y')
+                diff_dates = date2 - date1
+                if diff_dates.days <= 31 and date1 <= date2:
+                    pairs.append(k2)
+        files_data[k]["pairs"] = pairs if len(pairs) > 0 else None
+    return files_data
+
+
 def check_fichajes_files_in_directory(path: str, pattern1: str, pattern2: str):
     """
-    Checks if the files in the directory are fichajes files
+    Checks if the files in the directory are a fichajes files
     :param pattern2: pattern to detect in the name
     :param pattern1: patter to detect in the name
     :param path: path to the directory
@@ -562,6 +579,8 @@ def check_fichajes_files_in_directory(path: str, pattern1: str, pattern2: str):
     for file in files:
         if pattern1 in file or pattern2 in file:
             files_data[file] = get_metadata_file(path, file)
+    if len(files_data) > 0:
+        files_data = check_files_pairs_date(files_data)
     return False if len(files_data) == 0 else True, files_data
 
 
