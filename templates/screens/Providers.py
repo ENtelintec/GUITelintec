@@ -1,15 +1,14 @@
 import time
 from templates.widgets import *
-from controllers.index import DataHandler
+from templates.controllers.index import DataHandler
 from ttkbootstrap.tableview import Tableview
 from ttkbootstrap.scrolled import ScrolledFrame
 
 
-class ProvidersScreen(ScrolledFrame):
-    def __init__(self, master):
-        ttk.Frame.__init__(self, master, style="bg.TFrame")
+class ProvidersScreen(ttk.Frame):
+    def __init__(self, master, *args, **kwargs):
+        super().__init__(master, *args, **kwargs)
         self.master = master
-        self.grid(row=0, column=1, sticky="nsew")
         self.columnconfigure(0, weight=1)
         self._data = DataHandler()
         self._providers = self._data._supplier.get_all_suppliers()
@@ -20,6 +19,7 @@ class ProvidersScreen(ScrolledFrame):
         """Creates the content of the providers screen, includes the table of providers and the inputs to add a new client"""
         content = ttk.Frame(parent, style="bg.TFrame")
         content.grid(row=0, column=0, sticky="nswe")
+        content.columnconfigure(0, weight=1)
         ttk.Label(
             content, text="Proveedores", style="bg.TLabel", font=("Arial Black", 25)
         ).grid(row=0, column=0, sticky="w", padx=5, pady=10)
@@ -27,6 +27,7 @@ class ProvidersScreen(ScrolledFrame):
         # Table
         table = ttk.Frame(content, style="bg.TFrame")
         table.grid(row=1, column=0, sticky="nswe")
+        table.columnconfigure(0, weight=1)
         ttk.Label(
             table, text="Tabla de Proveedores", style="bg.TLabel", font=("Arial", 20)
         ).grid(row=0, column=0, sticky="w", padx=5, pady=10)
@@ -44,15 +45,16 @@ class ProvidersScreen(ScrolledFrame):
             paginated=True,
             pagesize=10,
             searchable=True,
+            autofit=True
         )
         self.table.build_table_data(self.col_data, self._providers)
-        self.table.autofit_columns()
-        self.table.grid(row=1, column=0, sticky="nswe")
+        self.table.grid(row=1, column=0, sticky="nswe",  padx=15, pady=5)
         self.table.view.bind("<Double-1>", self.events)
 
         # Inputs
         inputs = ttk.Frame(content, style="bg.TFrame")
         inputs.grid(row=2, column=0, sticky="nswe")
+        inputs.columnconfigure((0, 1, 2, 3), weight=1)
         ttk.Label(
             inputs,
             text="Agregar nuevo proveedor",
@@ -104,6 +106,7 @@ class ProvidersScreen(ScrolledFrame):
         # Buttons
         buttons = ttk.Frame(content, style="bg.TFrame")
         buttons.grid(row=3, column=0, sticky="nswe")
+        buttons.columnconfigure((0, 1, 2, 3), weight=1)
 
         ttk.Button(
             buttons,

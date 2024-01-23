@@ -1,15 +1,14 @@
 import time
 from ttkbootstrap.scrolled import ScrolledFrame
 from templates.widgets import *
-from controllers.index import DataHandler
+from templates.controllers.index import DataHandler
 from ttkbootstrap.tableview import Tableview
 
 
-class InventoryScreen(ScrolledFrame):
-    def __init__(self, master):
-        ttk.Frame.__init__(self, master, style="bg.TFrame")
+class InventoryScreen(ttk.Frame):
+    def __init__(self, master, *args, **kwargs):
+        super().__init__(master, *args, **kwargs)
         self.master = master
-        self.grid(row=0, column=1, sticky="nsew")
         self.columnconfigure(0, weight=1)
         self._data = DataHandler()
         self._products = self.fetch_products()
@@ -20,6 +19,7 @@ class InventoryScreen(ScrolledFrame):
         """Creates the content of the Inventory screen, includes the table of products and the inputs to add a new product"""
         content = ttk.Frame(parent, style="bg.TFrame")
         content.grid(row=0, column=0, sticky="nswe")
+        content.columnconfigure(0, weight=1)
         ttk.Label(
             content, text="Productos", style="bg.TLabel", font=("Arial Black", 25)
         ).grid(row=0, column=0, sticky="w", padx=5, pady=10)
@@ -27,6 +27,7 @@ class InventoryScreen(ScrolledFrame):
         # Table
         table = ttk.Frame(content, style="bg.TFrame")
         table.grid(row=1, column=0, sticky="nswe")
+        table.columnconfigure(0, weight=1)
         ttk.Label(
             table, text="Tabla de Productos", style="bg.TLabel", font=("Arial", 20)
         ).grid(row=0, column=0, sticky="w", padx=5, pady=10)
@@ -50,15 +51,16 @@ class InventoryScreen(ScrolledFrame):
             paginated=True,
             pagesize=10,
             searchable=True,
+            autofit=True
         )
         self.table.build_table_data(self.col_data, self._products)
-        self.table.autofit_columns()
-        self.table.grid(row=1, column=0, sticky="nswe")
+        self.table.grid(row=1, column=0, sticky="nswe", padx=15, pady=5)
         self.table.view.bind("<Double-1>", self.events)
 
         # Inputs
         inputs = ttk.Frame(content, style="bg.TFrame")
         inputs.grid(row=2, column=0, sticky="nswe")
+        inputs.columnconfigure((0, 1), weight=1)
         ttk.Label(
             inputs, text="Agregar nuevo cliente", style="bg.TLabel", font=("Arial", 20)
         ).grid(row=0, column=0, sticky="w", ipady=5, pady=(16, 0), padx=10)
@@ -151,7 +153,7 @@ class InventoryScreen(ScrolledFrame):
         # Buttons
         buttons = ttk.Frame(content, style="bg.TFrame")
         buttons.grid(row=3, column=0, sticky="nswe")
-
+        buttons.columnconfigure((0, 1, 2, 3), weight=1)
         ttk.Button(
             buttons,
             text="Agregar",

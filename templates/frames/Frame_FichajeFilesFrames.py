@@ -328,6 +328,7 @@ class FichajesAuto(ttk.Frame):
         label_subtitle2 = create_label(
             master, text='Información resumida archivo 2', row=7, column=0)
         label_faltas = create_label(master, textvariable=self.faltas, row=8, column=0)
+        label_late2 = create_label(master, textvariable=self.late2, row=9, column=0)
         label_extra2 = create_label(master, textvariable=self.extra_hours2, row=10, column=0)
         label_primas = create_label(master, textvariable=self.primas, row=11, column=0)
         # coments label
@@ -838,6 +839,7 @@ class FichajesManual(ttk.Frame):
         label_subtitle2 = create_label(
             master, text='Información resumida archivo 2', row=3, column=0)
         label_faltas = create_label(master, textvariable=self.faltas, row=4, column=0)
+        label_late2 = create_label(master, textvariable=self.late_hours2, row=5, column=0)
         label_extra2 = create_label(master, textvariable=self.extra_hours2, row=6, column=0)
         label_primas = create_label(master, textvariable=self.primas, row=7, column=0)
         # coments label

@@ -2,16 +2,15 @@ import time
 from datetime import datetime
 from ttkbootstrap.scrolled import ScrolledFrame
 from templates.widgets import *
-from controllers.index import DataHandler
+from templates.controllers.index import DataHandler
 from ttkbootstrap.tableview import Tableview
 
 
-class InScreen(ScrolledFrame):
-    def __init__(self, master):
-        ttk.Frame.__init__(self, master, style="bg.TFrame")
+class InScreen(ttk.Frame):
+    def __init__(self, master, *args, **kwargs):
+        super().__init__(master, *args, **kwargs)
         self.master = master
-        self.grid(row=0, column=1, sticky="nsew")
-        self.columnconfigure(0, weight=1)
+        self.columnconfigure((0, 1), weight=1)
         self._data = DataHandler()
         self._products = self._data._product.get_all_products()
         self._ins = self._data._product_movements.get_ins()
@@ -21,19 +20,14 @@ class InScreen(ScrolledFrame):
 
     def create_content(self, parent):
         """Creates the content of the Inputs screen, includes the table of inputs and the inputs to add a new entrs"""
-        content = ttk.Frame(parent, style="bg.TFrame")
-        content.grid(row=0, column=0, sticky="nswe")
         ttk.Label(
-            content, text="Entradas", style="bg.TLabel", font=("Arial Black", 25)
-        ).grid(row=0, column=0, sticky="w", padx=5, pady=10)
+            self, text="Entradas", style="bg.TLabel", font=("Arial Black", 25)
+        ).grid(row=0, column=0, sticky="w", padx=5, pady=10, columnspan=2)
 
         # Table
-        table = ttk.Frame(content, style="bg.TFrame")
-        table.grid(row=1, column=0, sticky="nswe")
         ttk.Label(
-            table, text="Tabla de Entradas", style="bg.TLabel", font=("Arial", 20)
-        ).grid(row=0, column=0, sticky="w", padx=5, pady=10)
-
+            self, text="Tabla de Entradas", style="bg.TLabel", font=("Arial", 20)
+        ).grid(row=1, column=0, sticky="w", padx=5, pady=10)
         self.col_data = [
             {"text": "ID Movimiento", "stretch": True},
             {"text": "ID Producto", "stretch": True},
@@ -42,84 +36,66 @@ class InScreen(ScrolledFrame):
             {"text": "Fecha", "stretch": False},
             {"text": "Nombre producto", "stretch": False},
         ]
-
         self.table = Tableview(
-            master=table,
+            master=self,
             bootstyle="primary",
             paginated=True,
             pagesize=10,
             searchable=True,
+            autofit=True
         )
         self.table.build_table_data(self.col_data, self._ins)
-        self.table.autofit_columns()
-        self.table.grid(row=1, column=0, sticky="nswe")
+        self.table.grid(row=2, column=0, sticky="nswe",  padx=15, pady=5, columnspan=2)
         self.table.view.bind("<Double-1>", self.events)
 
         # Inputs
-        inputs = ttk.Frame(content, style="bg.TFrame")
-        inputs.grid(row=2, column=0, sticky="nswe")
         ttk.Label(
-            inputs, text="Agregar nueva entrada", style="bg.TLabel", font=("Arial", 20)
-        ).grid(row=0, column=0, sticky="w", padx=5, pady=10)
-
-        ttk.Label(inputs, text="Producto", style="bg.TLabel").grid(
-            row=1, column=0, sticky="w", padx=5, pady=5
+            self, text="Agregar nueva entrada", style="bg.TLabel", font=("Arial", 20)
+        ).grid(row=3, column=0, sticky="w", padx=5, pady=10, columnspan=2)
+        ttk.Label(self, text="Producto", style="bg.TLabel").grid(
+            row=4, column=0, sticky="w", padx=5, pady=5
         )
-
-        self.products_selector = ttk.Combobox(inputs, values=self._products)
-
-        self.products_selector.grid(row=1, column=1, sticky="w", padx=5, pady=5)
-
-        ttk.Label(inputs, text="Cantidad", style="bg.TLabel").grid(
-            row=2, column=0, sticky="w", padx=5, pady=5
+        self.products_selector = ttk.Combobox(self, values=self._products)
+        self.products_selector.grid(row=4, column=1, sticky="w", padx=5, pady=5)
+        ttk.Label(self, text="Cantidad", style="bg.TLabel").grid(
+            row=5, column=0, sticky="w", padx=5, pady=5
         )
-
-        self.quantity = ttk.Entry(inputs)
-
-        self.quantity.grid(row=2, column=1, sticky="w", padx=5, pady=5)
-
-        ttk.Label(inputs, text="Fecha de entrada", style="bg.TLabel").grid(
-            row=3, column=0, sticky="w", padx=5, pady=5
+        self.quantity = ttk.Entry(self)
+        self.quantity.grid(row=5, column=1, sticky="w", padx=5, pady=5)
+        ttk.Label(self, text="Fecha de entrada", style="bg.TLabel").grid(
+            row=6, column=0, sticky="w", padx=5, pady=5
         )
-
-        self.date = ttk.Entry(inputs)
-
-        self.date.grid(row=3, column=1, sticky="w", padx=5, pady=5)
-
+        self.date = ttk.Entry(self)
+        self.date.grid(row=6, column=1, sticky="w", padx=5, pady=5)
         current_date = datetime.now()
-
         self.date.insert(0, current_date)
-
         # Buttons
-        buttons = ttk.Frame(content, style="bg.TFrame")
-        buttons.grid(row=3, column=0, sticky="nswe")
-
+        button_frame = ttk.Frame(self, style="bg.TFrame")
+        button_frame.grid(row=7, column=0, sticky="w", padx=5, pady=5,  columnspan=2)
+        button_frame.columnconfigure((0, 1, 2, 3), weight=1)
         ttk.Button(
-            buttons,
+            button_frame,
             text="Agregar",
             style="bg.TButton",
             width=25,
             command=self.add_in_item,
         ).grid(row=0, column=0, sticky="w", padx=5, pady=5)
-
         ttk.Button(
-            buttons,
+            button_frame,
             text="Editar",
             style="bg.TButton",
             width=25,
             command=self.update_in_item,
         ).grid(row=0, column=1, sticky="w", padx=5, pady=5)
-
         ttk.Button(
-            buttons,
+            button_frame,
             text="Eliminar",
             style="bg.TButton",
             width=25,
             command=self.delete_in_item,
         ).grid(row=0, column=2, sticky="w", padx=5, pady=5)
-
         ttk.Button(
-            buttons,
+            button_frame,
             text="Limpiar",
             style="bg.TButton",
             width=25,

@@ -7,7 +7,6 @@ from ttkbootstrap.scrolled import ScrolledFrame
 from ttkbootstrap.tableview import Tableview
 
 from templates.Functions_Files import get_fichajes_resume_cache
-from templates.Functions_SQL import get_all_data_employees
 from templates.frames.SubFrame_Plots import FramePlot
 
 
@@ -47,7 +46,7 @@ class EmployeeDetails(ScrolledFrame):
         self.table = Tableview(self,
                                coldata=columns,
                                rowdata=self.data_emp,
-                               paginated=False,
+                               paginated=True,
                                searchable=True,
                                autofit=True)
         self.table.grid(row=1, column=0, columnspan=10, padx=20, pady=10)

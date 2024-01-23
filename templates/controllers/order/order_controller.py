@@ -1,5 +1,4 @@
-from database.connection import connectionDB as db
-from templates.Functions_SQL import execute_sql
+from templates.database.connection import connectionDB as db
 
 
 class Order:

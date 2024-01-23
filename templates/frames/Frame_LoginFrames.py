@@ -94,7 +94,7 @@ class LoginGUI(ttk.Frame):
         self.button = ttk.Button(self.frame_login, text='Login', command=self.button_login_click, width=50)
         self.button.grid(row=6, column=0, sticky="nsew", padx=50, pady=30)
         # -------------------create message----------------
-        self.message = ttk.Label(self, text='')
+        self.message = ttk.Label(self, text='',  font=('Helvetica', 36))
         self.message.grid(row=7, column=1)
 
     def button_login_click(self):

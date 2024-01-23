@@ -17,8 +17,9 @@ url_api = "https://ec2-3-144-117-149.us-east-2.compute.amazonaws.com/AuthAPI/api
 IMG_PATH_COLLAPSING = Path('./img')
 ventanasApp = {
     'App.Deparment.Director': ["DB", "Notificaciones", "Chats", "Settings", "Tickets", "Cuenta"],
-    'App.Deparment.RRHH': ["Fichajes", "Examenes", "Cuenta"],
+    'App.Deparment.RRHH': ["Fichajes", "Examenes", "Emp. Detalles", "Cuenta"],
     'App.Deparment.Administrator': ["DB", "Notificaciones", "Chats", "Fichajes", "Tickets", "Settings", "Cuenta"],
-    'App.Deparment.ALMACEN': ["Almacen", "Cuenta"],
+    'App.Deparment.ALMACEN': ["Home", "Clients (A)", "Inventario","Entradas", "Salidas",  "Devoluciones", "Ordenes (A)",
+                              "Proveedores (A)", "Configuraciones (A)", "Cuenta"],
     'App.Deparment.Default': ["Notificaciones", "Cuenta"]
 }

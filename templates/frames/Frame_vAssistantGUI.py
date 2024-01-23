@@ -78,6 +78,8 @@ class AssistantGUI(ttk.Frame):
         self.label_file.grid(row=6, column=0, sticky="nsew", padx=5, pady=(5, 0))
         self.files_cb = ttk.Combobox(self, values=["no file selected"], state="readonly")
         self.files_cb.grid(row=7, column=0, sticky="nsew", padx=5, pady=5, columnspan=2)
+        self.btn_file_erase.configure(state="disabled") if not self.var_type_AV.get() else self.btn_file_erase.configure(state="normal")
+        self.btn_file.configure(state="disabled") if not self.var_type_AV.get() else self.btn_file.configure(state="normal")
         self.update_files_cb()
 
     def update_files_cb(self):

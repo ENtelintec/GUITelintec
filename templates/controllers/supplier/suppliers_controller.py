@@ -1,16 +1,16 @@
-from database.connection import connectionDB as db
+from templates.database.connection import connectionDB as db
 
 
-class Product:
+class Supplier:
     def __init__(self):
         self.connection = None
         self.cursor = None
 
-    def get_all_products(self):
+    def get_all_suppliers(self):
         try:
             self.connection = db()
             self.cursor = self.connection.cursor()
-            self.cursor.execute("SELECT * FROM supplier_products")
+            self.cursor.execute("SELECT * FROM suppliers_amc")
             result = self.cursor.fetchall()
             return result
         except Exception as e:
@@ -21,13 +21,9 @@ class Product:
                 self.connection.close()
                 self.cursor = None
 
-    def get_single_product(self, id_product):
+    def get_single_supplier(self, id_supplier):
         try:
-            self.connection = db()
-            self.cursor = self.connection.cursor()
-            self.cursor.execute(
-                f"SELECT * FROM supplier_products WHERE id = {id_product}"
-            )
+            self.cursor.execute(f"SELECT * FROM suppliers_amc WHERE id = {id_supplier}")
             result = self.cursor.fetchone()
             return result
         except Exception as e:
@@ -38,11 +34,12 @@ class Product:
                 self.connection.close()
                 self.cursor = None
 
-    def update_product(self, id_product, name, id_category, id_supplier, price, stock):
+    def update_supplier(self, id_supplier, name, address, phone, email):
         try:
-            self.connection = db()
-            self.cursor = self.connection.cursor()
-            sql = f"UPDATE supplier_products SET name = '{name}', id_category = '{id_category}', id_supplier = '{id_supplier}', price = '{price}', stock = '{stock}' WHERE id = {id_product}"
+            sql = (
+                f"UPDATE suppliers_amc SET name = '{name}', address = '{address}', phone = '{phone}', email = '{email}' "
+                f"WHERE id = {id_supplier}"
+            )
             self.cursor.execute(sql)
             self.connection.commit()
             return True
@@ -54,11 +51,9 @@ class Product:
                 self.connection.close()
                 self.cursor = None
 
-    def delete_product(self, id_product):
+    def delete_supplier(self, id_supplier):
         try:
-            self.connection = db()
-            self.cursor = self.connection.cursor()
-            sql = f"DELETE FROM supplier_products WHERE id = {id_product}"
+            sql = f"DELETE FROM suppliers_amc WHERE id = {id_supplier}"
             self.cursor.execute(sql)
             self.connection.commit()
             return True

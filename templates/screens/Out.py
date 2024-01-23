@@ -2,15 +2,14 @@ import time
 from datetime import datetime
 from ttkbootstrap.scrolled import ScrolledFrame
 from templates.widgets import *
-from controllers.index import DataHandler
+from templates.controllers.index import DataHandler
 from ttkbootstrap.tableview import Tableview
 
 
 class OutScreen(ttk.Frame):
-    def __init__(self, master):
-        ttk.Frame.__init__(self, master, style="bg.TFrame")
+    def __init__(self, master, *args, **kwargs):
+        super().__init__(master, *args, **kwargs)
         self.master = master
-        self.grid(row=0, column=1, sticky="nsew")
         self.columnconfigure(0, weight=1)
         self._data = DataHandler()
         self._products = self._data._product.get_all_products()
@@ -23,15 +22,17 @@ class OutScreen(ttk.Frame):
         """Creates the content of the outputs screen, includes the table of outputs and the inputs to add a new entrs"""
         content = ttk.Frame(parent, style="bg.TFrame")
         content.grid(row=0, column=0, sticky="nswe")
+        content.columnconfigure(0, weight=1)
         ttk.Label(
-            content, text="Entradas", style="bg.TLabel", font=("Arial Black", 25)
-        ).grid(row=0, column=0, sticky="w", padx=5, pady=10)
+            content, text="Salidas", font=("Arial Black", 25)
+        ).grid(row=0, column=0, sticky="nswe", padx=5, pady=10)
 
         # Table
-        table = ttk.Frame(content, style="bg.TFrame")
-        table.grid(row=1, column=0, sticky="nswe")
+        table = ttk.Frame(content)
+        table.grid(row=1, column=0,  sticky="nswe")
+        table.columnconfigure(0, weight=1)
         ttk.Label(
-            table, text="Tabla de Entradas", style="bg.TLabel", font=("Arial", 20)
+            table, text="Tabla de Salidas", font=("Arial", 20)
         ).grid(row=0, column=0, sticky="w", padx=5, pady=10)
 
         self.col_data = [
@@ -51,14 +52,16 @@ class OutScreen(ttk.Frame):
             paginated=True,
             pagesize=10,
             searchable=True,
+            autofit=True
         )
         self.table.autofit_columns()
-        self.table.grid(row=1, column=0, sticky="nswe")
+        self.table.grid(row=1, column=0, sticky="nswe",  padx=15, pady=5)
         self.table.view.bind("<Double-1>", self.events)
 
         # Inputs
         inputs = ttk.Frame(content, style="bg.TFrame")
         inputs.grid(row=2, column=0, sticky="nswe")
+        inputs.columnconfigure((0, 1), weight=1)
         ttk.Label(
             inputs, text="Agregar nueva salida", style="bg.TLabel", font=("Arial", 20)
         ).grid(row=0, column=0, sticky="w", padx=5, pady=10)
@@ -94,7 +97,7 @@ class OutScreen(ttk.Frame):
         # Buttons
         buttons = ttk.Frame(content, style="bg.TFrame")
         buttons.grid(row=3, column=0, sticky="nswe")
-
+        buttons.columnconfigure((0, 1, 2, 3), weight=1)
         ttk.Button(
             buttons,
             text="Agregar",

@@ -732,3 +732,16 @@ def get_fichajes_resume_cache(filepath):
             flag = False
     return fichajes_resume, flag
 
+
+def read_file_not(filepath) -> list[tuple]:
+    """
+    Read the file and return a list of tuples with the data of the file.
+    :return: list of tuples with the data of the file.
+    :rtype: list of tuples.
+    """
+    out = []
+    with open(filepath, 'r') as file:
+        content = file.readlines()
+        for item in content:
+            out.append(tuple(item.split(',;')))
+    return out

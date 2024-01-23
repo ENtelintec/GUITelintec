@@ -1,4 +1,4 @@
-from database.connection import connectionDB as db
+from templates.database.connection import connectionDB as db
 
 
 class Customer:

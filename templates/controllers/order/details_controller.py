@@ -1,16 +1,16 @@
-from database.connection import connectionDB as db
+from templates.database.connection import connectionDB as db
 
 
-class Category:
+class Details:
     def __init__(self):
         self.connection = None
         self.cursor = None
 
-    def get_all_categories(self):
+    def get_all_details(self):
         try:
             self.connection = db()
             self.cursor = self.connection.cursor()
-            self.cursor.execute("SELECT * FROM product_categories_amc")
+            self.cursor.execute("SELECT * FROM order_details_amc")
             result = self.cursor.fetchall()
             return result
         except Exception as e:
@@ -21,13 +21,11 @@ class Category:
                 self.connection.close()
                 self.cursor = None
 
-    def get_single_category(self, id_category):
+    def get_single_detail(self, id_detail):
         try:
             self.connection = db()
             self.cursor = self.connection.cursor()
-            self.cursor.execute(
-                f"SELECT * FROM product_categories_amc WHERE id = {id_category}"
-            )
+            self.cursor.execute(f"SELECT * FROM order_details WHERE id = {id_detail}")
             result = self.cursor.fetchone()
             return result
         except Exception as e:
@@ -38,13 +36,13 @@ class Category:
                 self.connection.close()
                 self.cursor = None
 
-    def update_category(self, id_category, name):
+    def update_detail(self, id_detail, id_order, id_product, quantity, price):
         try:
             self.connection = db()
             self.cursor = self.connection.cursor()
             sql = (
-                f"UPDATE product_categories_amc SET name = '{name}' "
-                f"WHERE id = {id_category}"
+                f"UPDATE order_details SET id_order = '{id_order}', id_product = '{id_product}', quantity = '{quantity}', price = '{price}' "
+                f"WHERE id = {id_detail}"
             )
             self.cursor.execute(sql)
             self.connection.commit()
@@ -57,11 +55,11 @@ class Category:
                 self.connection.close()
                 self.cursor = None
 
-    def delete_category(self, id_category):
+    def delete_detail(self, id_detail):
         try:
             self.connection = db()
             self.cursor = self.connection.cursor()
-            sql = f"DELETE FROM product_categories_amc WHERE id = {id_category}"
+            sql = f"DELETE FROM order_details WHERE id = {id_detail}"
             self.cursor.execute(sql)
             self.connection.commit()
             return True

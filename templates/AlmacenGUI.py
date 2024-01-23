@@ -1,20 +1,21 @@
 from templates.widgets import *
-from screens.Clients import ClientsScreen
-from screens.Home import HomeScreen
-from screens.In import InScreen
-from screens.Inventory import InventoryScreen
-from screens.Orders import OrdersScreen
-from screens.Out import OutScreen
-from screens.Returns import ReturnsScreen
-from screens.Providers import ProvidersScreen
-from screens.Settings import SettingsScreen
+from templates.screens.Clients import ClientsScreen
+from templates.screens.Home import HomeScreen
+from templates.screens.In import InScreen
+from templates.screens.Inventory import InventoryScreen
+from templates.screens.Orders import OrdersScreen
+from templates.screens.Out import OutScreen
+from templates.screens.Returns import ReturnsScreen
+from templates.screens.Providers import ProvidersScreen
+from templates.screens.Settings import SettingsScreen
 
 
 class App(ttk.Frame):
     def __init__(self, master):
         super().__init__(master)
         self.master = master
-        self.columnconfigure((0, 1), weight=1)
+        self.columnconfigure(1, weight=1)
+        self.rowconfigure(0, weight=1)
         self._current_frame = None
         self._home = HomeScreen
         self._clients = ClientsScreen
@@ -51,5 +52,5 @@ class App(ttk.Frame):
     def switch_screen(self, new_frame):
         if self._current_frame:
             self._current_frame.grid_forget()
-        self._current_frame = new_frame(self.master)
-        self._current_frame.grid(row=0, column=1, sticky="nsew")
+        self._current_frame = new_frame(self)
+        self._current_frame.grid(row=0, column=1,  sticky="nsew")

@@ -2,23 +2,22 @@ from tkinter import filedialog
 import pandas as pd
 from ttkbootstrap.scrolled import ScrolledFrame
 from templates.widgets import *
-from controllers.index import DataHandler
+from templates.controllers.index import DataHandler
 
 
-class SettingsScreen(ScrolledFrame):
-    def __init__(self, master):
-        ttk.Frame.__init__(self, master, style="bg.TFrame")
+class SettingsScreen(ttk.Frame):
+    def __init__(self, master, *args, **kwargs):
+        super().__init__(master, *args, **kwargs)
         self.master = master
-        self.grid(row=0, column=1, sticky="nsew")
         self.columnconfigure(0, weight=1)
         self._data = DataHandler()
         self.create_content()
 
     def create_content(self):
         content = ttk.Frame(self, style="bg.TFrame")
-        content.columnconfigure((0, 1, 2, 3), weight=1)
+        content.columnconfigure(0, weight=1)
         content.grid(row=0, column=0, sticky="nswe")
-        content.rowconfigure(1, weight=1)
+
         ttk.Label(
             content, text="Configuracion", style="bg.TLabel", font=("Arial Black", 25)
         ).grid(row=0, column=0, sticky="w")
@@ -40,14 +39,15 @@ class SettingsScreen(ScrolledFrame):
         # )
         ttk.Label(
             content,
-            text="Cargar archivos con registros multiples",
+            text="Importar registros multiples",
             style="bg.TLabel",
-            font=("Arial", 20),
-        ).grid(row=2, column=0, sticky="w", pady=(16, 0), padx=10)
+            font=("Arial", 18),
+        ).grid(row=2, column=0, sticky="nswe", pady=(16, 0), padx=10)
 
         # Grid for upload files
         upload_file = ttk.Frame(content, style="bg.TFrame")
         upload_file.grid(row=3, column=0, sticky="nsew")
+        upload_file.columnconfigure((0, 1), weight=1)
 
         # Button for upload clients
         ttk.Label(upload_file, text="Insertar Clientes", style="bg.TLabel").grid(
@@ -76,6 +76,7 @@ class SettingsScreen(ScrolledFrame):
         # Frame for message box
         message_box = ttk.Frame(content, style="bg.TFrame")
         message_box.grid(row=4, column=0, sticky="nsew")
+        message_box.columnconfigure(0, weight=1)
         ttk.Label(message_box, text="Mensajes", style="bg.TLabel").grid(
             row=0, column=0, sticky="w", pady=(16, 0), padx=10
         )

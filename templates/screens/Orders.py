@@ -2,15 +2,14 @@ import time
 import re
 from ttkbootstrap.scrolled import ScrolledFrame
 from templates.widgets import *
-from controllers.index import DataHandler
+from templates.controllers.index import DataHandler
 from ttkbootstrap.tableview import Tableview
 
 
-class OrdersScreen(ScrolledFrame):
+class OrdersScreen(ttk.Frame):
     def __init__(self, master):
-        ttk.Frame.__init__(self, master, style="bg.TFrame")
+        super().__init__(master, style="bg.TFrame")
         self.master = master
-        self.grid(row=0, column=1, sticky="nsew")
         self.columnconfigure(0, weight=1)
         self._data = DataHandler()
         self._table = Tableview(self)

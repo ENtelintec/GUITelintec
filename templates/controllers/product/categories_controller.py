@@ -1,16 +1,16 @@
-from database.connection import connectionDB as db
+from templates.database.connection import connectionDB as db
 
 
-class Supplier:
+class Category:
     def __init__(self):
         self.connection = None
         self.cursor = None
 
-    def get_all_suppliers(self):
+    def get_all_categories(self):
         try:
             self.connection = db()
             self.cursor = self.connection.cursor()
-            self.cursor.execute("SELECT * FROM suppliers_amc")
+            self.cursor.execute("SELECT * FROM product_categories_amc")
             result = self.cursor.fetchall()
             return result
         except Exception as e:
@@ -21,9 +21,13 @@ class Supplier:
                 self.connection.close()
                 self.cursor = None
 
-    def get_single_supplier(self, id_supplier):
+    def get_single_category(self, id_category):
         try:
-            self.cursor.execute(f"SELECT * FROM suppliers_amc WHERE id = {id_supplier}")
+            self.connection = db()
+            self.cursor = self.connection.cursor()
+            self.cursor.execute(
+                f"SELECT * FROM product_categories_amc WHERE id = {id_category}"
+            )
             result = self.cursor.fetchone()
             return result
         except Exception as e:
@@ -34,11 +38,13 @@ class Supplier:
                 self.connection.close()
                 self.cursor = None
 
-    def update_supplier(self, id_supplier, name, address, phone, email):
+    def update_category(self, id_category, name):
         try:
+            self.connection = db()
+            self.cursor = self.connection.cursor()
             sql = (
-                f"UPDATE suppliers_amc SET name = '{name}', address = '{address}', phone = '{phone}', email = '{email}' "
-                f"WHERE id = {id_supplier}"
+                f"UPDATE product_categories_amc SET name = '{name}' "
+                f"WHERE id = {id_category}"
             )
             self.cursor.execute(sql)
             self.connection.commit()
@@ -51,9 +57,11 @@ class Supplier:
                 self.connection.close()
                 self.cursor = None
 
-    def delete_supplier(self, id_supplier):
+    def delete_category(self, id_category):
         try:
-            sql = f"DELETE FROM suppliers_amc WHERE id = {id_supplier}"
+            self.connection = db()
+            self.cursor = self.connection.cursor()
+            sql = f"DELETE FROM product_categories_amc WHERE id = {id_category}"
             self.cursor.execute(sql)
             self.connection.commit()
             return True

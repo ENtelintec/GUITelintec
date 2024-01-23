@@ -341,8 +341,9 @@ class ExamenesMedicosMain(ttk.Frame):
         self.grouped_table = Tableview(self,
                                        coldata=columns,
                                        rowdata=self.table_data,
-                                       paginated=False,
-                                       searchable=True)
+                                       paginated=True,
+                                       searchable=True,
+                                       autofit=True)
         self.grouped_table.grid(row=1, column=0, sticky="nsew",
                                 padx=25, pady=5)
 
