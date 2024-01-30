@@ -124,6 +124,45 @@ def get_employees(limit=(0, 100)) -> list[list]:
     return out
 
 
+def new_employee(name, lastname, curp, phone, email, department, contract, entry_date, rfc, nss, emergency, modality):
+    sql = ("INSERT INTO employees (name, l_name, curp, phone_number, email, department_id,"
+           " contrato, date_admission, rfc, nss, emergency_contact, modality) "
+           "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)")
+    values = (name, lastname, curp, phone, email, department,
+              contract, entry_date, rfc, nss, emergency, modality)
+    flag, e, out = execute_sql(sql, values, 4)
+    return flag, e, out
+
+
+def update_employee(employee_id, name, lastname, curp, phone, email, department, contract, entry_date, rfc, nss, emergency, modality):
+    sql = ("UPDATE employees SET name = %s, l_name = %s, curp = %s, phone_number = %s, email = %s, department_id = %s,"
+           "contrato = %s, date_admission = %s, rfc = %s, nss = %s, emergency_contact = %s, modality = %s "
+           "WHERE employee_id = %s")
+    values = (name, lastname, curp, phone, email, department,
+              contract, entry_date, rfc, nss, emergency, modality, employee_id)
+    flag, e, out = execute_sql(sql, values, 3)
+    return flag, e, out
+
+
+def get_employee_id_name(name: str) -> tuple[None, None] | tuple[int, str]:
+    """
+        Get the id of the employee
+        :param name: name of the employee
+        :return: id of the employee
+        """
+    sql = ("SELECT employee_id, name, l_name FROM employees WHERE "
+           "MATCH(l_name) AGAINST (%s IN NATURAL LANGUAGE MODE ) and "
+           "MATCH(name) AGAINST (%s IN NATURAL LANGUAGE MODE )")
+    # lowercase names
+    name = name.lower()
+    values = (name, name)
+    flag, e, out = execute_sql(sql, values, 1)
+    if e is not None or len(out) == 0:
+        return None, None
+    else:
+        return out[0], f"{out[1].title()} {out[2].title()}"
+
+
 def get_id_employee(name: str) -> None | int:
     """
     Get the id of the employee
@@ -270,8 +309,7 @@ def insert_employee(name: str, lastname: str, dni: str, phone: str, email: str,
     return flag, e, out
 
 
-def insert_customer(name: str, lastname: str, phone: str, city: str, email: str) -> tuple[
-    bool, Exception | None, int | None]:
+def insert_customer(name: str, lastname: str, phone: str, city: str, email: str) -> tuple[bool, Exception | None, int | None]:
     sql = ("INSERT INTO sql_telintec.customers (name, l_name, phone_number, city, email) "
            "VALUES (%s, %s, %s, %s, %s)")
     val = (name, lastname, phone, city, email)
@@ -404,6 +442,7 @@ def get_all_fichajes():
     flag, error, result = execute_sql(sql, type_sql=2)
     return flag, error, result
 
+
 # --------------------------------Examenes medicos GUI--------------------------
 def insert_new_exam_med(name: str, blood: str, status: str, aptitud: list,
                         renovaciones: list, apt_actual: int, last_date: str,
@@ -489,9 +528,9 @@ def get_all_examenes():
 def verify_user_DB(user: str, password: str) -> bool:
     """
     Verifies if the user and password are correct.
-    :param password: <string>
-    :param user: <string>
-    :return: <boolean>
+    :param password: <String>
+    :param user: <String>
+    :return: <Boolean>
     """
     sql = "SELECT usernames FROM users_system " \
           "WHERE usernames = %s AND password = %s"

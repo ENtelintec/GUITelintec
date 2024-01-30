@@ -11,68 +11,69 @@ matplotlib.use('TkAgg')
 
 
 class FramePlot(tk.Frame):
-    def __init__(self, master, data, type_chart, *args, **kwargs):
+    def __init__(self, master, data=None, type_chart=None, *args, **kwargs):
         super().__init__(master, *args, **kwargs)
         self.master = master
-        match type_chart:
-            case 'bar':
-                labels_x = data["data"].keys()
-                values = data["data"].values()
-                figure = Figure(figsize=(6, 4), dpi=100)
-                figure_canvas = FigureCanvasTkAgg(figure, self)
-                NavigationToolbar2Tk(figure_canvas, self)
-                axes = figure.add_subplot()
-                axes.bar(labels_x, values)
-                axes.set_title(data["title"])
-                axes.set_ylabel(data["ylabel"])
-                figure_canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1, padx=10, pady=10)
-            case 'scatter':
-                x_values = data["val_x"]
-                y_values = data["val_y"]
-                figure = Figure(figsize=(6, 4), dpi=100)
-                figure_canvas = FigureCanvasTkAgg(figure, self)
-                NavigationToolbar2Tk(figure_canvas, self)
-                axes = figure.add_subplot()
-                axes.scatter(x_values, y_values)
-                axes.set_title('Scatter Plot')
-                axes.set_xlabel('X Values')
-                axes.set_ylabel('Y Values')
-                figure_canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1, padx=10, pady=10)
-            case 'histogram':
-                n_bins = data["n_bins"]
-                values = data["values"]
-                figure = Figure(figsize=(6, 4), dpi=100)
-                figure_canvas = FigureCanvasTkAgg(figure, self)
-                NavigationToolbar2Tk(figure_canvas, self)
-                axes = figure.add_subplot()
-                axes.hist(values, n_bins)
-                axes.set_title('Histogram')
-                axes.set_xlabel('Values')
-                axes.set_ylabel('Frequency')
-                figure_canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1, padx=10, pady=10)
-            case 'boxplot':
-                data_box = data["data"]
-                labels = data["labels"]
-                figure = Figure(figsize=(6, 4), dpi=100)
-                figure_canvas = FigureCanvasTkAgg(figure, self)
-                NavigationToolbar2Tk(figure_canvas, self)
-                axes = figure.add_subplot()
-                axes.boxplot(data_box, labels=labels)
-                axes.set_title('Box Plot')
-                axes.set_ylabel('Values')
-                figure_canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1, padx=10, pady=10)
-            case _:
-                x_values = data["val_x"]
-                y_values = data["val_y"]
-                figure = Figure(figsize=(6, 4), dpi=100)
-                figure_canvas = FigureCanvasTkAgg(figure, self)
-                NavigationToolbar2Tk(figure_canvas, self)
-                axes = figure.add_subplot()
-                axes.plot(x_values, y_values)
-                axes.set_title('Plot')
-                axes.set_xlabel('X Values')
-                axes.set_ylabel('Y Values')
-                figure_canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1, padx=10, pady=10)
+        if data is not None:
+            match type_chart:
+                case 'bar':
+                    labels_x = data["data"].keys()
+                    values = data["data"].values()
+                    figure = Figure(figsize=(6, 4), dpi=100)
+                    figure_canvas = FigureCanvasTkAgg(figure, self)
+                    NavigationToolbar2Tk(figure_canvas, self)
+                    axes = figure.add_subplot()
+                    axes.bar(labels_x, values)
+                    axes.set_title(data["title"])
+                    axes.set_ylabel(data["ylabel"])
+                    figure_canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1, padx=10, pady=10)
+                case 'scatter':
+                    x_values = data["val_x"]
+                    y_values = data["val_y"]
+                    figure = Figure(figsize=(6, 4), dpi=100)
+                    figure_canvas = FigureCanvasTkAgg(figure, self)
+                    NavigationToolbar2Tk(figure_canvas, self)
+                    axes = figure.add_subplot()
+                    axes.scatter(x_values, y_values)
+                    axes.set_title('Scatter Plot')
+                    axes.set_xlabel('X Values')
+                    axes.set_ylabel('Y Values')
+                    figure_canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1, padx=10, pady=10)
+                case 'histogram':
+                    n_bins = data["n_bins"]
+                    values = data["values"]
+                    figure = Figure(figsize=(6, 4), dpi=100)
+                    figure_canvas = FigureCanvasTkAgg(figure, self)
+                    NavigationToolbar2Tk(figure_canvas, self)
+                    axes = figure.add_subplot()
+                    axes.hist(values, n_bins)
+                    axes.set_title('Histogram')
+                    axes.set_xlabel('Values')
+                    axes.set_ylabel('Frequency')
+                    figure_canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1, padx=10, pady=10)
+                case 'boxplot':
+                    data_box = data["data"]
+                    labels = data["labels"]
+                    figure = Figure(figsize=(6, 4), dpi=100)
+                    figure_canvas = FigureCanvasTkAgg(figure, self)
+                    NavigationToolbar2Tk(figure_canvas, self)
+                    axes = figure.add_subplot()
+                    axes.boxplot(data_box, labels=labels)
+                    axes.set_title('Box Plot')
+                    axes.set_ylabel('Values')
+                    figure_canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1, padx=10, pady=10)
+                case _:
+                    x_values = data["val_x"]
+                    y_values = data["val_y"]
+                    figure = Figure(figsize=(6, 4), dpi=100)
+                    figure_canvas = FigureCanvasTkAgg(figure, self)
+                    NavigationToolbar2Tk(figure_canvas, self)
+                    axes = figure.add_subplot()
+                    axes.plot(x_values, y_values)
+                    axes.set_title('Plot')
+                    axes.set_xlabel('X Values')
+                    axes.set_ylabel('Y Values')
+                    figure_canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1, padx=10, pady=10)
 
 
 if __name__ == '__main__':

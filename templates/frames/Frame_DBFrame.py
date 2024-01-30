@@ -4,88 +4,86 @@ __date__ = '$ 18/oct./2023  at 10:25 $'
 
 import os
 import tkinter as tk
+from datetime import datetime
 from tkinter import Misc
-from tkinter.ttk import Treeview
+from tkinter.ttk import Treeview, Style
 
 import customtkinter as ctk
 import ttkbootstrap as ttk
 from PIL import Image
+from ttkbootstrap.dialogs import Messagebox
+from ttkbootstrap.scrolled import ScrolledFrame
+from ttkbootstrap.tableview import Tableview
 
 import templates.Functions_SQL as fsql
 
-image_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "../img")
+from static.extensions import IMG_PATH_COLLAPSING
+from templates.Functions_AuxFiles import get_image_side_menu
+
+
+def set_entry_value(entry1_emp, param: str):
+    entry1_emp.delete(0, tk.END)
+    entry1_emp.insert(0, param)
 
 
 def create_visualizer_treeview(master: Misc, table: str, rows: int,
                                pad_x: int = 5, pad_y: int = 10,
                                row: int = 0, column: int = 0,
-                               style: str = 'primary') -> Treeview | None:
+                               style: str = 'primary') -> Tableview | None:
     match table:
         case "employees":
-            columns = ["Id", "DNI", "Name", "Lastname", "Phone", "Department", "Modality", "Email"]
-            heading_width = [25, 100, 100, 100, 100, 100, 100, 200]
+            columns = ["Id", "Name", "Lastname", "Phone", "Dep.", "Modality", "Email", "Contrato",
+                       "Ingreso", "RFC", "CURP", "NSS", "Emg. Info."]
             data = fsql.get_employees()
         case "customers":
             columns = ["Id", "Name", "Lastname", "Phone", "City", "Email"]
-            heading_width = [100, 100, 100, 100, 100, 200]
             data = fsql.get_customers()
         case "departments":
             columns = ["Id", "Name", "Location"]
-            heading_width = [25, 100, 100]
             data = fsql.get_departments()
         case "heads":
             columns = ["Name", "Lastname", "Phone", "City", "Email"]
-            heading_width = [100, 100, 100, 100, 200]
             data = fsql.get_heads()
         case "supplier":
             columns = ["Id", "Name", "Location"]
-            heading_width = [25, 300, 300]
             data = fsql.get_supplier()
         case "p_and_s":
             columns = ["ID", "Name", "Model", "Brand", "Description", "Price retail",
                        "Quantity", "Price Provider", "Support", "Is_service", "Category",
                        "Img URL"]
-            heading_width = [40, 100, 100, 100, 300, 75, 50, 75, 50, 50, 100, 50]
             data = fsql.get_p_and_s()
         case "orders":
             columns = ["Id", "Product ID", "Quantity", "Date", "Customer", "Employee"]
-            heading_width = [25, 100, 100, 100, 100, 100]
             data = fsql.get_orders()
         case "v_orders":
             columns = ["Id", "Products", "Date", "Customer", "Employee", "Chat ID"]
-            heading_width = [50, 300, 100, 100, 100, 80]
             data = fsql.get_v_orders()
         case "purchases":
             columns = ["Id", "Product ID", "Quantity", "Date", "Supplier"]
-            heading_width = [25, 100, 100, 100, 100]
             data = fsql.get_purchases()
         case "tickets":
             columns = ["Id", "Content", "Is review?", "Is answered?", "Timestamp"]
-            heading_width = [35, 450, 60, 60, 150]
             data = fsql.get_tickets()
         case "users":
             columns = ["Id", "Username", "Permissions", "Expiration", "Timestamp"]
-            heading_width = [25, 100, 375, 100, 150]
             data = fsql.get_users()
         case "chats":
             columns = ["ID", "Context", "Start", "End", "Receiver", "Sender", "Platform", "Is alive?", "Is reviewed?"]
-            heading_width = [25, 350, 120, 120, 70, 70, 90, 70, 70]
             data = fsql.get_chats()
         case _:
             columns = []
             data = []
-            heading_width = []
             print("Error in create_visualizer_treeview")
     column_span = len(columns)
-    treeview = ttk.Treeview(master, columns=columns, show="headings",
-                            height=rows, bootstyle=style)
-    for i in range(column_span):
-        treeview.column(columns[i], width=heading_width[i])
-        treeview.heading(columns[i], text=columns[i])
+    treeview = Tableview(master,
+                         coldata=columns,
+                         rowdata=data,
+                         paginated=True,
+                         searchable=True,
+                         autofit=True,
+                         bootstyle=style)
     treeview.grid(row=row, column=column, padx=pad_x, pady=pad_y,
-                  columnspan=column_span, sticky="w")
-    for entry in data:
-        treeview.insert("", "end", values=entry)
+                  columnspan=column_span, sticky="nswe")
     return treeview
 
 
@@ -99,7 +97,7 @@ def create_button_side_menu(master, row, column, text, image=None, command=None)
     return button
 
 
-def load_default_images(path=image_path):
+def load_default_images(path=IMG_PATH_COLLAPSING):
     """
         Load the default images for the buttons.
         :return: a list of images.
@@ -172,11 +170,20 @@ def load_data_tables(names: list[str]):
     return out
 
 
+def set_dateEntry_new_value(master, entry, value, row, column, padx, pady):
+    entry.destroy()
+    entry = ttk.DateEntry(master,
+                          startdate=value)
+    entry.grid(row=row, column=column, padx=padx, pady=pady)
+    return entry
+
+
 class EmployeesFrame(ctk.CTkFrame):
     def __init__(self, master, **kwargs):
         super().__init__(master, **kwargs, fg_color="#02021A")
-        self.columnconfigure(0, weight=1)
-        self.rowconfigure(3, weight=1)
+        self.columnconfigure((0, 1), weight=1)
+        self.rowconfigure(5, weight=1)
+        self._id_emp_update = None
         # -----------------------label-----------------------
         self.label = ctk.CTkLabel(self, text="Employees Table",
                                   font=ctk.CTkFont(size=30, weight="bold"),
@@ -184,14 +191,14 @@ class EmployeesFrame(ctk.CTkFrame):
         self.label.grid(row=0, column=0, padx=5, pady=5, sticky="nsew")
         # -----------------------subframe insert-----------------------
         self.insert_frame = ctk.CTkFrame(self, fg_color="#02021A")
-        self.insert_frame.grid(row=1, column=0, pady=10, sticky="nsew")
+        self.insert_frame.grid(row=1, column=0, pady=10, sticky="nsew", columnspan=2)
         self.insert_frame.columnconfigure((0, 1, 2, 3), weight=1)
         # -----------------widgets on left_frame----------------------
         self.label1_emp = ctk.CTkLabel(self.insert_frame, text="Name", font=ctk.CTkFont(size=12, weight="bold"),
                                        text_color="#fff")
         self.label2_emp = ctk.CTkLabel(self.insert_frame, text="LastName", font=ctk.CTkFont(size=12, weight="bold"),
                                        text_color="#fff")
-        self.label3_emp = ctk.CTkLabel(self.insert_frame, text="DNI", font=ctk.CTkFont(size=12, weight="bold"),
+        self.label3_emp = ctk.CTkLabel(self.insert_frame, text="CURP", font=ctk.CTkFont(size=12, weight="bold"),
                                        text_color="#fff")
         self.label4_emp = ctk.CTkLabel(self.insert_frame, text="Phone", font=ctk.CTkFont(size=12, weight="bold"),
                                        text_color="#fff")
@@ -201,58 +208,158 @@ class EmployeesFrame(ctk.CTkFrame):
                                        text_color="#fff")
         self.label7_emp = ctk.CTkLabel(self.insert_frame, text="Modality", font=ctk.CTkFont(size=12, weight="bold"),
                                        text_color="#fff")
+        self.label8_emp = ctk.CTkLabel(self.insert_frame, text="Contrato", font=ctk.CTkFont(size=12, weight="bold"),
+                                       text_color="#fff")
+        self.label9_emp = ctk.CTkLabel(self.insert_frame, text="Ingreso", font=ctk.CTkFont(size=12, weight="bold"),
+                                       text_color="#fff")
+        self.label10_emp = ctk.CTkLabel(self.insert_frame, text="RFC", font=ctk.CTkFont(size=12, weight="bold"),
+                                        text_color="#fff")
+        self.label11_emp = ctk.CTkLabel(self.insert_frame, text="Emg. Info.", font=ctk.CTkFont(size=12, weight="bold"),
+                                        text_color="#fff")
+        self.label12_emp = ctk.CTkLabel(self.insert_frame, text="NSS", font=ctk.CTkFont(size=12, weight="bold"),
+                                        text_color="#fff")
         self.label1_emp.grid(row=0, column=0, padx=1, pady=1, sticky="nsew")
         self.label2_emp.grid(row=0, column=1, padx=1, pady=1, sticky="nsew")
         self.label3_emp.grid(row=0, column=2, padx=1, pady=1, sticky="nsew")
         self.label4_emp.grid(row=0, column=3, padx=1, pady=1, sticky="nsew")
-        self.label5_emp.grid(row=2, column=2, padx=1, pady=1, sticky="nsew", columnspan=2)
+        self.label5_emp.grid(row=2, column=2, padx=1, pady=1, sticky="nsew")
         self.label6_emp.grid(row=2, column=1, padx=1, pady=1, sticky="nsew")
         self.label7_emp.grid(row=2, column=0, padx=1, pady=1, sticky="nsew")
+        self.label8_emp.grid(row=2, column=3, padx=1, pady=1, sticky="nsew")
+        self.label9_emp.grid(row=4, column=0, padx=1, pady=1, sticky="nsew")
+        self.label10_emp.grid(row=4, column=1, padx=1, pady=1, sticky="nsew")
+        self.label11_emp.grid(row=4, column=2, padx=1, pady=1, sticky="nsew")
+        self.label12_emp.grid(row=4, column=3, padx=1, pady=1, sticky="nsew")
         # -----------------------inputs-----------------------
         self.entry1_emp = ctk.CTkEntry(self.insert_frame, placeholder_text="name",
                                        height=25, width=150)
         self.entry2_emp = ctk.CTkEntry(self.insert_frame, placeholder_text="lastname",
-                                       height=25, width=150)
-        self.entry3_emp = ctk.CTkEntry(self.insert_frame, placeholder_text="dni",
-                                       height=25, width=130)
+                                       height=25, width=160)
+        self.entry3_emp = ctk.CTkEntry(self.insert_frame, placeholder_text="CURP",
+                                       height=25, width=210)
         self.entry4_emp = ctk.CTkEntry(self.insert_frame, placeholder_text="81xxxxxxxx",
-                                       height=25, width=90)
+                                       height=25, width=100)
         self.entry5_emp = ctk.CTkEntry(self.insert_frame, placeholder_text="xxxx@telintec.com.mx",
                                        height=25, width=210)
         self.entry6_emp = ctk.CTkEntry(self.insert_frame, placeholder_text="1",
                                        height=25, width=50)
+        self.entry8_emp = ctk.CTkEntry(self.insert_frame, placeholder_text="contrato",
+                                       height=25, width=100)
+        self.entry9_emp = ttk.DateEntry(self.insert_frame)
+        self.entry10_emp = ctk.CTkEntry(self.insert_frame, placeholder_text="rfc",
+                                        height=25, width=130)
+        self.entry11_emp = ctk.CTkEntry(self.insert_frame, placeholder_text="emergency",
+                                        height=25, width=210)
+        self.entry12_emp = ctk.CTkEntry(self.insert_frame, placeholder_text="nss",
+                                        height=25, width=100)
         self.entry1_emp.grid(row=1, column=0, padx=5, pady=1)
         self.entry2_emp.grid(row=1, column=1, padx=5, pady=1)
         self.entry3_emp.grid(row=1, column=2, padx=5, pady=1)
         self.entry4_emp.grid(row=1, column=3, padx=5, pady=1)
-        self.entry5_emp.grid(row=3, column=2, padx=5, pady=1, columnspan=2)
+        self.entry5_emp.grid(row=3, column=2, padx=5, pady=1)
         self.entry6_emp.grid(row=3, column=1, padx=5, pady=1)
+        self.entry8_emp.grid(row=3, column=3, padx=5, pady=1)
+        self.entry9_emp.grid(row=5, column=0, padx=5, pady=1)
+        self.entry10_emp.grid(row=5, column=1, padx=5, pady=1)
+        self.entry11_emp.grid(row=5, column=2, padx=5, pady=1)
+        self.entry12_emp.grid(row=5, column=3, padx=5, pady=1)
         # combobox
-        self.combobox_1 = ctk.CTkComboBox(self.insert_frame, values=["In person", "Online", "Hybrid"])
+        self.combobox_1 = ctk.CTkComboBox(self.insert_frame, values=["In person", "Online", "Hybrid", "normal", "externo"])
         self.combobox_1.grid(row=3, column=0, pady=1, padx=1)
         # -----------------------insert button-----------------------
-        self.btn_insert = ctk.CTkButton(self, text="Insert", width=200)
+        self.btn_insert = ctk.CTkButton(self, text="Insertar", width=200, command=self._insert_employee)
         self.btn_insert.grid(row=2, column=0, pady=10, padx=1)
+        self.btn_update = ctk.CTkButton(self, text="Actualizar", width=200, command=self._update_employee)
+        self.btn_update.grid(row=2, column=1, pady=10, padx=1)
+        # self.btn_delete = ctk.CTkButton(self, text="Eliminar", width=200, command=self._delete_employee)
+        # self.btn_delete.grid(row=4, column=0, pady=10, padx=1)
         # -----------------------subframe visual-----------------------
         self.visual_frame = ctk.CTkScrollableFrame(self, fg_color="transparent",
                                                    border_color="#656565",
                                                    border_width=2)
-        self.visual_frame.grid(row=3, column=0, sticky="nsew", padx=5, pady=5)
+        self.visual_frame.grid(row=5, column=0, sticky="nsew", padx=5, pady=5, columnspan=2)
         self.visual_frame.columnconfigure(0, weight=1)
         self.label_table1 = ctk.CTkLabel(self.visual_frame,
                                          text="Table Employees", text_color="#fff")
         self.label_table1.grid(row=0, column=0, padx=10, pady=10, sticky="w")
-        self.subframe_table1 = ctk.CTkScrollableFrame(self.visual_frame, fg_color="transparent",
-                                                      orientation="horizontal")
-        self.subframe_table1.grid(row=1, column=0, sticky="nsew")
-        employee_insert = create_visualizer_treeview(self.subframe_table1,
+        employee_insert = create_visualizer_treeview(self.visual_frame,
                                                      "employees", 10,
-                                                     row=0, column=0, style="success")
+                                                     row=1, column=0, style="primary",
+                                                     pad_x=25, pad_y=10)
+        employee_insert.view.bind("<Double-1>", self._emp_selected)
         self.label_table_show = ctk.CTkLabel(self.visual_frame,
                                              text="See the next table for available departments", text_color="#fff")
         self.label_table_show.grid(row=2, column=0, padx=10, pady=10, sticky="w")
-        dep_tab_v = create_visualizer_treeview(self.visual_frame, "departments", 7,
-                                               row=3, column=0, style="info")
+        create_visualizer_treeview(self.visual_frame, "departments", 7,
+                                   row=3, column=0, style="info", pad_x=25, pad_y=10)
+
+    def _emp_selected(self, event):
+        data = event.widget.item(event.widget.selection()[0], "values")
+        (id_emp, name, lastname, phone, department, modality, email,
+         contract, entry_date, rfc, curp, nss, emergency) = data
+        self._id_emp_update = id_emp
+        set_entry_value(self.entry1_emp, name.title())
+        set_entry_value(self.entry2_emp, lastname.title())
+        set_entry_value(self.entry3_emp, curp)
+        set_entry_value(self.entry4_emp, phone)
+        set_entry_value(self.entry5_emp, email)
+        set_entry_value(self.entry6_emp, department)
+        self.combobox_1.set(modality)
+        set_entry_value(self.entry8_emp, contract)
+        entry_date = datetime.strptime(entry_date, "%Y-%m-%d %H:%M:%S")
+        self.entry9_emp = set_dateEntry_new_value(
+            self.insert_frame, self.entry9_emp, entry_date.date(),
+            row=5, column=0, padx=5, pady=1)
+        set_entry_value(self.entry10_emp, rfc)
+        set_entry_value(self.entry12_emp, nss)
+        set_entry_value(self.entry11_emp, emergency)
+
+    def _insert_employee(self):
+        name = self.entry1_emp.get()
+        lastname = self.entry2_emp.get()
+        curp = self.entry3_emp.get()
+        phone = self.entry4_emp.get()
+        email = self.entry5_emp.get()
+        department = self.entry6_emp.get()
+        contract = self.entry8_emp.get()
+        entry_date = self.entry9_emp.entry.get()
+        rfc = self.entry10_emp.get()
+        nss = self.entry12_emp.get()
+        emergency = self.entry11_emp.get()
+        modality = self.combobox_1.get()
+        print(name, lastname, curp, phone, email, department,
+              contract, entry_date, rfc, nss, emergency, modality)
+        flag, e, out = fsql.new_employee(name, lastname, curp, phone, email, department,
+                                         contract, entry_date, rfc, nss, emergency, modality)
+        if flag:
+            Messagebox.show_info(title="Informacion", message=f"New employee created:\n{out}")
+        else:
+            Messagebox.show_error(title="Error", message=f"Error creating employee:\n{e}")
+
+    def _update_employee(self):
+        name = self.entry1_emp.get().lower()
+        lastname = self.entry2_emp.get().lower()
+        curp = self.entry3_emp.get()
+        phone = self.entry4_emp.get()
+        email = self.entry5_emp.get()
+        department = self.entry6_emp.get()
+        contract = self.entry8_emp.get()
+        entry_date = self.entry9_emp.entry.get()
+        rfc = self.entry10_emp.get()
+        nss = self.entry12_emp.get()
+        emergency = self.entry11_emp.get()
+        modality = self.combobox_1.get()
+        flag, e, out = fsql.update_employee(
+            name, lastname, curp, phone, email, department,
+            contract, entry_date, rfc, nss, emergency, modality, self._id_emp_update)
+        if flag:
+            Messagebox.show_info(title="Informacion", message=f"Employee updated:\n{out}")
+        else:
+            Messagebox.show_error(title="Error", message=f"Error updating employee:\n{e}")
+
+    def _delete_employee(self):
+        res = Messagebox.yesno(title="Esta seguro que desea borrar el empleado?")
+        print(res)
 
 
 class CustomersFrame(ctk.CTkFrame):
@@ -928,108 +1035,106 @@ class ChatsFrame(ctk.CTkFrame):
 
 
 class DBFrame(ttk.Frame):
-    def __init__(self, master, data_tables=None, images=None, *args, **kwargs):
+    def __init__(self, master, *args, **kwargs):
         super().__init__(master, *args, **kwargs)
         self.columnconfigure(1, weight=1)
         self.rowconfigure(0, weight=1)
         # --------------------------variables-----------------------------------
-        (self.employees_img, self.customers_img, self.departments_img,
-         self.heads_img, self.suppliers_img,
-         self.products_img, self.orders_img, self.purchases_img, self.ticket_img, self.chats_img, self.v_orders_img,
-         self.add_user_light) = images if images is not None else load_default_images()
         (self.data_costumers, self.data_employees, self.data_departments,
          self.data_heads, self.data_suppliers, self.data_products) = (
             load_data_tables(['customers', 'employees', 'departments',
                               'heads', 'suppliers', 'products']))
         print("data db loaded")
         # -------------------frame selector table------------------------
-        self.table_frame = ctk.CTkFrame(self, fg_color="#02021A")
-        self.table_frame.grid(row=0, column=0, pady=10, padx=10)
+        self.table_frame = ctk.CTkScrollableFrame(self, fg_color="#02021A",
+                                                  scrollbar_fg_color="transparent",
+                                                  scrollbar_button_color="#02021A")
+        self.table_frame.grid(row=0, column=0, pady=10, padx=10, sticky="nswe")
         self.btn_employees = (
             create_button_side_menu(self.table_frame, 0, 0,
-                                    text="Employees", image=self.employees_img,
+                                    text="Employees", image=get_image_side_menu("Empleados"),
                                     command=lambda: self.select_frame_by_name("btn1")))
         self.btn_customers = (
             create_button_side_menu(self.table_frame, 1, 0,
-                                    text="Customers", image=self.customers_img,
+                                    text="Customers", image=get_image_side_menu("Clientes"),
                                     command=lambda: self.select_frame_by_name("btn2")))
         self.btn_departments = (
             create_button_side_menu(self.table_frame, 2, 0,
-                                    text="Departments", image=self.departments_img,
+                                    text="Departments", image=get_image_side_menu("Departamentos"),
                                     command=lambda: self.select_frame_by_name("btn3")))
         self.btn_heads = (
             create_button_side_menu(self.table_frame, 3, 0,
-                                    text="Heads", image=self.heads_img,
+                                    text="Heads", image=get_image_side_menu("Encargados"),
                                     command=lambda: self.select_frame_by_name("btn4")))
         self.btn_suppliers = (
             create_button_side_menu(self.table_frame, 4, 0,
-                                    text="Suppliers", image=self.suppliers_img,
+                                    text="Suppliers", image=get_image_side_menu("Proveedores"),
                                     command=lambda: self.select_frame_by_name("btn5")))
         self.btn_products = (
             create_button_side_menu(self.table_frame, 5, 0,
-                                    text="Products and services", image=self.products_img,
+                                    text="Products and services", image=get_image_side_menu("Productos"),
                                     command=lambda: self.select_frame_by_name("btn6")))
         self.btn_orders = (
             create_button_side_menu(self.table_frame, 6, 0,
-                                    text="Orders", image=self.orders_img,
+                                    text="Orders", image=get_image_side_menu("Ordenes"),
                                     command=lambda: self.select_frame_by_name("btn7")))
         self.btn_purchases = (
             create_button_side_menu(self.table_frame, 7, 0,
-                                    text="Purchases", image=self.purchases_img,
+                                    text="Purchases", image=get_image_side_menu("Compras"),
                                     command=lambda: self.select_frame_by_name("btn8")))
         self.btn_users = (
             create_button_side_menu(self.table_frame, 8, 0,
-                                    text="Users", image=self.add_user_light,
+                                    text="Users", image=get_image_side_menu("Usuarios"),
                                     command=lambda: self.select_frame_by_name("btn9")))
         self.btn_tickets = (
             create_button_side_menu(self.table_frame, 9, 0,
-                                    text="Tickets", image=self.ticket_img,
+                                    text="Tickets", image=get_image_side_menu("Tickets"),
                                     command=lambda: self.select_frame_by_name("btn10")))
         self.btn_chats = (
             create_button_side_menu(self.table_frame, 10, 0,
-                                    text="Chats", image=self.chats_img,
+                                    text="Chats", image=get_image_side_menu("Chats"),
                                     command=lambda: self.select_frame_by_name("btn11")))
         self.btn_v_orders = (
             create_button_side_menu(self.table_frame, 11, 0,
-                                    text="V_Orders", image=self.v_orders_img,
+                                    text="V_Orders", image=get_image_side_menu("O. Virtuales"),
                                     command=lambda: self.select_frame_by_name("btn12")))
         print("side menu widgets created")
         # -------------------------Frame Employees--------------------------
         self.employees = ctk.CTkFrame(self)
-        print("employees frame created")
+        print("employees frame DB created")
         # -------------------------Frame  Customers-------------------------
         self.customers_frame = ctk.CTkFrame(self)
-        print("customers frame created")
+        print("customers frame DB created")
         # -------------------------Frame  departments-------------------------
         self.departments_frame = ctk.CTkFrame(self)
-        print("departments frame created")
+        print("departments frame DB created")
         # -------------------------Frame heads-------------------------
         self.heads_frame = ctk.CTkFrame(self)
-        print("heads frame created")
+        print("heads frame DB created")
         # -------------------------Frame  suppliers-------------------------
         self.suppliers_frame = ctk.CTkFrame(self)
-        print("suppliers frame created")
+        print("suppliers frame DB created")
         # -------------------------Frame  p and s-------------------------
         self.products_frame = ctk.CTkFrame(self)
-        print("products frame created")
+        print("products frame DB created")
         # -------------------------Frame Orders-------------------------
         self.orders_frame = ctk.CTkFrame(self)
-        print("orders frame created")
+        print("orders frame DB created")
         # -------------------------Frame V_Orders-------------------------
         self.v_orders_frame = ctk.CTkFrame(self)
-        print("v_orders frame created")
+        print("v_orders frame DB created")
         # -------------------------Frame purchases-------------------------
         self.purchases_frame = ctk.CTkFrame(self)
-        print("purchases frame created")
+        print("purchases frame DB created")
         # -------------------------Frame UsersS-------------------------
         self.users_frame = ctk.CTkFrame(self)
-        print("users frame created")
+        print("users frame DB created")
         # -------------------------Frame Tickets------------------------
         self.tickets_frame = ctk.CTkFrame(self)
-        print("tickets frame created")
+        print("tickets frame DB created")
         # -------------------------Frame  Chats-------------------------
         self.chats_frame = ctk.CTkFrame(self)
-        print("chats frame created")
+        print("chats frame DB created")
         self.select_frame_by_name("none")
 
     def select_frame_by_name(self, name):

@@ -5,7 +5,6 @@ class ReturnsScreen(ttk.Frame):
     def __init__(self, master):
         ttk.Frame.__init__(self, master, style="bg.TFrame")
         self.master = master
-        self.grid(row=0, column=1, sticky="nsew")
         self.columnconfigure(0, weight=1)
         self.create_content(self)
 

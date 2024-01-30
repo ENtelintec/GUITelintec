@@ -6,24 +6,9 @@ import ttkbootstrap as ttk
 from ttkbootstrap.scrolled import ScrolledFrame
 from ttkbootstrap.tableview import Tableview
 
-from templates.Functions_Files import get_fichajes_resume_cache
+from templates.Functions_AuxFiles import get_data_employees
+from templates.Funtions_Utils import create_stringvar
 from templates.frames.SubFrame_Plots import FramePlot
-
-
-def create_stringvar(number: int, value: str):
-    return [ttk.StringVar(value=value) for _ in range(number)]
-
-
-def get_data_employees(status="ACTIVO"):
-    columns = ("ID", "Nombre", "Contrato", "Faltas", "Tardanzas", "Dias Extra", "Total", "Primas",
-               "Detalles Faltas", "Detalles Tardanzas", "Detalles Extras", "Detalles Primas")
-    fichajes_resume, flag = get_fichajes_resume_cache("files/fichajes_resume_cache.pkl")
-    print(fichajes_resume)
-    if flag:
-        return fichajes_resume, columns
-    else:
-        print("error at getting data resume")
-        return None, None
 
 
 class EmployeeDetails(ScrolledFrame):
@@ -68,10 +53,10 @@ class EmployeeDetails(ScrolledFrame):
                              f"Dias Extra: {emp_extra}\t Total Extra: {emp_tot_extra}\n"
                              f"Primas: {emp_primes}\n")
         data = {
-            "data": {"Faltas": emp_absense,
-                     "Tardanzas": emp_late,
-                     "Extra": emp_extra,
-                     "Primas": emp_primes
+            "data": {"Faltas": float(emp_absense),
+                     "Tardanzas": float(emp_late),
+                     "Extra": float(emp_extra),
+                     "Primas": float(emp_primes)
                      },
             "title": f"Historial {emp_name.title()}",
             "ylabel": "Dias"

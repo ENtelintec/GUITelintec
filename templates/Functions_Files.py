@@ -7,13 +7,11 @@ import json
 import os
 import pickle
 import re
-import time
 from datetime import datetime
 from tkinter import Misc, Frame, messagebox
 from tkinter.ttk import Treeview
 
 import dropbox
-import mysql.connector
 import pandas as pd
 import ttkbootstrap as ttk
 from ttkbootstrap.toast import ToastNotification
@@ -23,9 +21,9 @@ from templates.Functions_SQL import get_id_employee, get_all_fichajes
 from templates.Functions_Text import clean_accents
 
 
-def check_only_read_conflict(name: str):
+def check_only_read_conflict(name: str) -> bool:
     """
-    Check if the file is read only
+    Check if the file is read-only
     :param name: name of the file
     :return: True if the file is read only, False otherwise
     """
@@ -36,11 +34,11 @@ def check_only_read_conflict(name: str):
     return False
 
 
-def get_files_foldes_dropbox(fname: str, online=False):
+def get_files_foldes_dropbox(fname: str, online=False) -> tuple[list[str], list[str]]:
     """
     Gets the files and folders from dropbox
     :param online:
-    :param fname: name of the folder
+    :param fname: Name of the folder
     :return: files and folders
     """
     folders = []
@@ -77,7 +75,7 @@ def map_dropbox_folders(fname: str, father=None, online=False):
     Maps the dropbox folders and subfolders
     :param online:
     :param father:
-    :param fname: name of the folder
+    :param fname: Name of the folder-mapped
     :return: mapped folder
     """
     if father is None:
@@ -94,9 +92,9 @@ def save_directory_index(rpaths: dict, exclude: list = None, online=False, fathe
     """
     Saves the directory to a file
     :param father:
-    :param online: read in online dropbox or local files
+    :param online: Read in online dropbox or local files
     :param rpaths: directory to save
-    :param exclude: list of folders to exclude
+    :param exclude: a list of folders to exclude
     :return:
     """
     local_name = "_local" if not online else ""
@@ -110,11 +108,11 @@ def save_directory_index(rpaths: dict, exclude: list = None, online=False, fathe
                 pickle.dump(directory, f)
 
 
-def load_directory_file(paths: dict, exclude: list = None, local=False):
+def load_directory_file(paths: dict, exclude: list = None, local=False) -> list:
     """
     Loads the directory from a file
     :param local:
-    :param exclude: list of folders to exclude
+    :param exclude: List of folders to exclude
     :param paths: directory to load
     :return:
     """
@@ -134,7 +132,7 @@ def save_directory_dbp(paths, dir_list, local=False):
     """
     Saves the directory to a file
     :param local:
-    :param paths: directory to save
+    :param paths: Directory to save
     :param dir_list: directory to save
     :return:
     """
@@ -145,7 +143,12 @@ def save_directory_dbp(paths, dir_list, local=False):
             pickle.dump(dir_list[index], f)
 
 
-def clean_date(dates: list):
+def clean_date(dates: list) -> list:
+    """
+    Clean dates p. m. -> PM, a. m. -> AM, Fecha/hora -> None, # Contrato:: -> None
+    :param dates: list of dates
+    :return: cleaned dates
+    """
     pattern1 = "p. m."
     pattern2 = "a. m."
     pattern3 = "Fecha/hora"
@@ -163,7 +166,12 @@ def clean_date(dates: list):
     return dates
 
 
-def clean_in_out(in_out: list):
+def clean_in_out(in_out: list) -> list:
+    """
+    Clean IN/OUT -> IN, OUT -> FUERA, None -> None
+    :param in_out: list of IN/OUT
+    :return: cleaned IN/OUT
+    """
     for i, str_in_out in enumerate(in_out):
         if str_in_out is not None:
             if "OUT" in str_in_out:
@@ -175,7 +183,13 @@ def clean_in_out(in_out: list):
     return in_out
 
 
-def clean_text(texts: list):
+def clean_text(texts: list) -> tuple[list, list, list, list]:
+    """
+    Clean text -> None, Admitido -> Admitido, Rechazado -> Rechazado,
+    Admitido (Card: #) -> Admitido, Rechazado (Card: #) -> Rechazado
+    :param texts: list of texts
+    :return: cleaned text
+    """
     status = []
     auth = []
     name = []
@@ -214,6 +228,20 @@ def create_visualizer_treeview(master: Misc, table: str, rows: int,
                                row: int = 0, column: int = 0,
                                style: str = 'primary',
                                headers=None, data=None) -> Treeview | None:
+    """
+    Creates a treeview with the given table and data
+    :param style: ttkbootstrap style
+    :param data: data for the rows
+    :param headers: column headers
+    :param table: Type of table to be created (fichajes, etc.)
+    :param column: <int> column to be placed
+    :param row: <int> row to be placed
+    :param pad_x: <int> pad in x for the group, not the treeview
+    :param pad_y: <int> pad in y for the group, not the treeview
+    :param rows: <int> number of rows for the treeview
+    :param master: <Misc> father instance where the object is created
+    :return: treeview
+    """
     match table:
         case "fichajes":
             columns = headers if headers is not None else ["Timestamp", 'Puerta', 'Texto', 'Status', 'Name', 'Card',
@@ -239,8 +267,16 @@ def create_visualizer_treeview(master: Misc, table: str, rows: int,
     return treeview
 
 
-def validate_digits_numbers(new_value):
-    # Returning True allows the edit to happen, False prevents it.
+def validate_digits_numbers(new_value) -> bool:
+    """
+    Validates that the new value is a number.
+    This function is called when the user types in a new value in the
+    spinbox.
+    It checks if the new value is a number and returns True or
+    False accordingly.
+    :param new_value: New value to be validated
+    :return: True if the new value is a number, False otherwise
+    """
     return new_value.isdigit()
 
 
@@ -251,7 +287,7 @@ def create_spinboxes_time(master: Misc, father, row: int, column: int,
     """ Creates a clock with two spinboxes for minutes and hours
     :param title:
     :param father:
-    :param master: <Misc> master where the object is created
+    :param master: <Misc> father instance where the object is created
     :param row: <int> row to be placed
     :param column: <int> column to be placed
     :param pad_x: <int> pad in x for the group, not for individual object
@@ -285,24 +321,44 @@ def create_spinboxes_time(master: Misc, father, row: int, column: int,
     return clock
 
 
-def make_empy_zeros(txt: str):
+def make_empty_zeros(txt: str) -> float:
     """
-    Makes the string txt empty if it is empty or contains only zeros
+    Makes empty strings into 0.0
     :param txt:
     :return:
     """
-    return 0 if txt == "" or None else float(txt)
+    try:
+        out = float(txt) if txt != "" and txt != " " else 0.0
+    except Exception as e:
+        print("Error at make_empy_zeros: ", e, txt)
+        out = 0.0
+    return out
 
 
-def clean_data_contract(status, fechas, comments, extras, primas, in_door, out_door):
+def clean_data_contract(status, fechas, comments, extras, primas, in_door, out_door) -> tuple[
+    list, list, list, list, list, list, list]:
+    """
+    Cleans data from contract.csv
+
+    :param status:
+    :param fechas:
+    :param comments:
+    :param extras:
+    :param primas:
+    :param in_door:
+    :param out_door:
+    :return:
+    """
     for i, item in enumerate(extras):
-        extras[i] = make_empy_zeros(item)
+        extras[i] = make_empty_zeros(item)
     for i, item in enumerate(primas):
         primas[i] = "NO" if item == "" or None else "SI"
+    for i, item in enumerate(fechas):
+        fechas[i] = "" if "Unnamed" in item else item
     return status, fechas, comments, extras, primas, in_door, out_door
 
 
-def clean_parenthesis_txt(name: str):
+def clean_parenthesis_txt(name: str) -> str:
     """
     Removes parenthesis from the name
     :param name:
@@ -315,94 +371,135 @@ def clean_parenthesis_txt(name: str):
     return name
 
 
-def extract_data_file_contracts(filename: str) -> dict:
+def get_data_from_cache_sheet(filepath: str, excel_file, sheet: str, inital_skip_rows) -> list | None:
     """
-    Extracts the data from a file from operations and from cache on a directory.
-    :param filename:
-    :return: {contracts_name: {employee_name:  {status: [], fechas: [], comments: [], extras: [], primas: [], in_door: [], out_door: []}}}
+    Gets data from cache
+    :param filepath:
+    :param excel_file:
+    :param sheet:
+    :param inital_skip_rows:
+    :return: List with data in the file
     """
-    bad_names = []
+    if sheet == "VEHICULOS":
+        return None
+    skip_rows = [i for i in range(0, inital_skip_rows)]
+    # skip_rows = [i for i in range(9)] + [i for i in range(13, 3142)]
+    df = pd.read_excel(excel_file, skiprows=skip_rows, sheet_name=sheet)
+    df.to_csv(filepath)
+    data = []
+    with open(filepath, mode="r",
+              encoding='utf-8') as csv_file:  # "r" represents the read mode
+        reader = csv.reader(csv_file)  # this is the reader object
+        for item in reader:
+            data.append(item)
+    return data
+
+
+def get_data_from_sliced(data_aux) -> tuple[list, list, list, list, list, list, list, str]:
+    """
+    Gets data from sliced file
+    :param data_aux:
+    :return:
+    """
+    status = []
+    fechas = []
+    comments = []
+    extras = []
+    primas = []
+    in_door = []
+    out_door = []
+    name = ""
+    for i in range(len(data_aux)):
+        if i == 1:
+            name = clean_accents(data_aux[i][1])
+            name = clean_parenthesis_txt(name)
+            for j in range(2, len(data_aux[i])):
+                if j % 2 != 1:
+                    in_door.append(data_aux[i][j])
+                else:
+                    out_door.append(data_aux[i][j])
+        elif i == 0:
+            for j in range(2, len(data_aux[i])):
+                if j % 2 != 1:
+                    fechas.append(data_aux[i][j])
+                else:
+                    status.append(data_aux[i][j])
+        elif i == 2:
+            for j in range(2, len(data_aux[i])):
+                if j % 2 != 1:
+                    comments.append(data_aux[i][j])
+        elif i == 3:
+            for j in range(2, len(data_aux[i])):
+                if j % 2 != 1:
+                    extras.append(data_aux[i][j])
+                else:
+                    primas.append(data_aux[i][j])
+    return status, fechas, comments, extras, primas, in_door, out_door, name
+
+
+def open_cache_file_contracts(filepath: str) -> dict:
+    """
+    Opens the cache file.
+    If the file does not exist, returns an empty dictionary.
+    :param filepath:
+    :return:
+    """
     try:
-        with open('files/contracts_cache.pkl', 'rb') as f:
+        with open(filepath, 'rb') as f:
             contracts = pickle.load(f)
     except Exception as e:
         print("Error at opening the file cache: ", e, "initialiaze as {}")
         contracts = {}
+    return contracts
+
+
+def extract_data_file_contracts(filename: str) -> dict:
+    """
+    Extracts the data from a file from operations and from cache on a directory.
+    :param filename:
+    :return: {Contracts_name: {employee_name: {status: [], fechas: [],
+    comments: [], extras: [], primas: [], in_door: [], out_door: []}}}
+    """
+    bad_names = []
+    contracts = open_cache_file_contracts('files/contracts_cache.pkl')
     try:
         excel_file = pd.ExcelFile(filename)
         sheet_names = excel_file.sheet_names
         inital_skip_rows = 9
         bad_names = []
         for sheet in sheet_names:
-            if sheet == "VEHICULOS":
+            data = get_data_from_cache_sheet('files/OCT_cache.csv', excel_file, sheet, inital_skip_rows)
+            if data is None:
                 continue
-            skip_rows = [i for i in range(0, inital_skip_rows)]
-            # skip_rows = [i for i in range(9)] + [i for i in range(13, 3142)]
-            df = pd.read_excel(excel_file, skiprows=skip_rows, sheet_name=sheet)
-            df.to_csv('files/OCT_cache.csv')
-            data = []
-            with open('files/OCT_cache.csv', mode="r",
-                      encoding='utf-8') as csv_file:  # "r" represents the read mode
-                reader = csv.reader(csv_file)  # this is the reader object
-                for item in reader:
-                    data.append(item)
             contracts[sheet] = {} if sheet not in contracts.keys() else contracts[sheet]
-            name = ""
-            emp_id = 0
             indexes = range(len(data))
             starting_indexes = [indexes[i] for i in range(0, len(indexes), 4)]
             data_sliced = [data[i:i + 4] for i in starting_indexes]
-            for data_aux in data_sliced:
-                status = []
-                fechas = []
-                comments = []
-                extras = []
-                primas = []
-                in_door = []
-                out_door = []
-                for i in range(len(data_aux)):
-                    if i == 1:
-                        name = clean_accents(data_aux[i][1])
-                        name = clean_parenthesis_txt(name)
-                        for j in range(2, len(data_aux[i])):
-                            if j % 2 != 1:
-                                in_door.append(data_aux[i][j])
-                            else:
-                                out_door.append(data_aux[i][j])
-                    elif i == 0:
-                        for j in range(2, len(data_aux[i])):
-                            if j % 2 != 1:
-                                fechas.append(data_aux[i][j])
-                            else:
-                                status.append(data_aux[i][j])
-                    elif i == 2:
-                        for j in range(2, len(data_aux[i])):
-                            if j % 2 != 1:
-                                comments.append(data_aux[i][j])
-                    elif i == 3:
-                        for j in range(2, len(data_aux[i])):
-                            if j % 2 != 1:
-                                extras.append(data_aux[i][j])
-                            else:
-                                primas.append(data_aux[i][j])
-                if name != "":
-                    status, fechas, comments, extras, primas, in_door, out_door = clean_data_contract(
-                        status, fechas, comments, extras, primas, in_door, out_door)
-                    if name not in contracts[sheet].keys():
-                        contracts[sheet][name] = {}
-                        contracts[sheet][name]["id"] = get_id_employee(name)
-                    if contracts[sheet][name]["id"] is None:
-                        contracts[sheet][name]["id"] = get_id_employee(name)
+            try:
+                for data_aux in data_sliced:
+                    status, fechas, comments, extras, primas, in_door, out_door, name = get_data_from_sliced(data_aux)
+                    if name != "":
+                        status, fechas, comments, extras, primas, in_door, out_door = clean_data_contract(
+                            status, fechas, comments, extras, primas, in_door, out_door)
+                        if name not in contracts[sheet].keys():
+                            contracts[sheet][name] = {}
+                            contracts[sheet][name]["id"] = get_id_employee(name)
                         if contracts[sheet][name]["id"] is None:
                             bad_names.append(name)
                             continue
-                    contracts[sheet][name]["fechas"] = fechas
-                    contracts[sheet][name]["status"] = status
-                    contracts[sheet][name]["comments"] = comments
-                    contracts[sheet][name]["extras"] = extras
-                    contracts[sheet][name]["primas"] = primas
-                    contracts[sheet][name]["in_door"] = in_door
-                    contracts[sheet][name]["out_door"] = out_door
+                        contracts[sheet][name]["fechas"] = fechas
+                        contracts[sheet][name]["status"] = status
+                        contracts[sheet][name]["comments"] = comments
+                        contracts[sheet][name]["extras"] = extras
+                        contracts[sheet][name]["primas"] = primas
+                        contracts[sheet][name]["in_door"] = in_door
+                        contracts[sheet][name]["out_door"] = out_door
+            except Exception as e:
+                print(e)
+                messagebox.showerror(
+                    "Error", f"Error al leer la pagina. {sheet}\n"
+                             " Asegurese sea el archivo correcto, con el formato correcto.\n" + str(e))
+                continue
     except Exception as e:
         print(e)
         messagebox.showerror("Error",
@@ -444,16 +541,17 @@ def generate_table_from_dict_contracts(contracts: dict):
     table_data = []
     for con_name in contracts.keys():
         for emp_name in contracts[con_name].keys():
-            for i in range(len(contracts[con_name][emp_name]["status"])):
-                table_data.append([con_name, emp_name,
-                                   contracts[con_name][emp_name]["id"],
-                                   contracts[con_name][emp_name]["fechas"][i],
-                                   clean_status_contracts(contracts[con_name][emp_name]["status"][i]),
-                                   contracts[con_name][emp_name]["extras"][i],
-                                   contracts[con_name][emp_name]["primas"][i],
-                                   contracts[con_name][emp_name]["in_door"][i],
-                                   contracts[con_name][emp_name]["out_door"][i],
-                                   contracts[con_name][emp_name]["comments"][i]])
+            if contracts[con_name][emp_name]["id"] is not None:
+                for i in range(len(contracts[con_name][emp_name]["status"])):
+                    table_data.append([con_name, emp_name,
+                                       contracts[con_name][emp_name]["id"],
+                                       contracts[con_name][emp_name]["fechas"][i],
+                                       clean_status_contracts(contracts[con_name][emp_name]["status"][i]),
+                                       contracts[con_name][emp_name]["extras"][i],
+                                       contracts[con_name][emp_name]["primas"][i],
+                                       contracts[con_name][emp_name]["in_door"][i],
+                                       contracts[con_name][emp_name]["out_door"][i],
+                                       contracts[con_name][emp_name]["comments"][i]])
     columns = ["Contrato", "Empleado", "ID", "Fecha", "Status", "Extras", "Primas", "Entrada",
                "Salida", "Comentarios"]
     return table_data, columns
@@ -529,9 +627,10 @@ def get_metadata_file(path: str, file: str):
     The report is the first word before the date.
     The date is the second word before the date.
     The report and date are empty if the file is not a fichaje file.
-    :param path: parent path of the file
-    :param file: name of the file
-    :return: dictionary of the file. {path, extension, size, report, date}
+    :param path: Parent path of the file
+    :param file: Name of the file
+    :return: dictionary of the file.
+    {Path, extension, size, report, date}
 
     """
     out = {
@@ -550,29 +649,52 @@ def get_metadata_file(path: str, file: str):
     return out
 
 
-def check_files_pairs_date(files_data: dict):
+def check_files_pairs_date(files_data: dict) -> dict:
+    """
+    Checks if the files are pairs and if they are in the same month.
+    :param files_data: Dictionary with the metadata of the files.
+    :return: Dictionary update with the possible pairs.
+    """
     for k in files_data.keys():
+        if "OCTreport" not in k:
+            continue
         pairs = []
         date1 = files_data[k]["date"]
         date1 = datetime.strptime(date1, '%d-%m-%Y')
         for k2 in files_data.keys():
+            if "OCTreport" in k2:
+                continue
             if k2 != k:
                 date2 = files_data[k2]["date"]
                 date2 = datetime.strptime(date2, '%d-%m-%Y')
-                diff_dates = date2 - date1
-                if diff_dates.days <= 31 and date1 <= date2:
+                diff_dates = date1 - date2
+                if 0 <= diff_dates.days <= 31 and date2 <= date1:
                     pairs.append(k2)
         files_data[k]["pairs"] = pairs if len(pairs) > 0 else None
     return files_data
 
 
-def check_fichajes_files_in_directory(path: str, pattern1: str, pattern2: str):
+def check_fichajes_files_in_directory(path: str, pattern1: str, pattern2: str) -> tuple[bool, dict]:
     """
     Checks if the files in the directory are a fichajes files
-    :param pattern2: pattern to detect in the name
-    :param pattern1: patter to detect in the name
+    The dictionary contains the path, extension, size, report, date.
+    The report and date are empty if the file is not a fichaje file.
+    The date is in the format yyyy-mm-dd.
+    The report is the first word before the date.
+    The date is the second word before the date.
+    The report and date are empty if the file is not a fichaje file.
+    The dictionary is empty if the files are not fichajes files.
+    The boolean is False if the files are not fichajes files.
+    The boolean is True if the files are a fichajes files.
+    The dictionary is empty if the files are not fichajes files.
+    The boolean is False if the files are not fichajes files.
+    The boolean is True if the files are a fichajes files.
+    The dictionary is empty if the files are not fichajes files.
+    The boolean is False if the files are not fichajes files.
+    :param pattern2: Pattern to detect in the name
+    :param pattern1: Patter to detect in the name
     :param path: path to the directory
-    :return:
+    :return: tuple with the boolean and the dictionary with the metadata of the files.
     """
     files = os.listdir(path)
     files_data = {}
@@ -584,7 +706,7 @@ def check_fichajes_files_in_directory(path: str, pattern1: str, pattern2: str):
     return False if len(files_data) == 0 else True, files_data
 
 
-def get_dic_from_list_fichajes(lists_data: list):
+def get_dic_from_list_fichajes(lists_data: list) -> tuple:
     """
     Gets a dictionary from a list of data from fichajes files
     :param lists_data:
@@ -642,7 +764,7 @@ def get_dic_from_list_fichajes(lists_data: list):
     return tuple(dic_list)
 
 
-def get_cumulative_data_fichajes_dict(dic_data: dict):
+def get_cumulative_data_fichajes_dict(dic_data: dict) -> tuple[int, int]:
     """
     Gets the cumulative data from a dictionary of data from fichajes files
     :param dic_data:
@@ -700,10 +822,15 @@ def update_fichajes_resume_cache(filepath: str, data):
         pickle.dump(fichajes_resume, file)
 
 
-def get_fichajes_resume_cache(filepath):
-    flag = True
+def get_fichajes_resume_cache(filepath) -> tuple[list, bool]:
+    """
+    Gets the fichajes resume cache if exists else the data is obtained from the
+    db, and then the cumulative values of absences, delays, extra hours and primes
+    are calculated.
+    :param filepath:
+    :return:
+    """
     try:
-        print("opening: ", filepath)
         with open(filepath, 'rb') as file:
             fichajes_resume = pickle.load(file)
         flag = False if len(fichajes_resume) == 0 else True
@@ -736,8 +863,8 @@ def get_fichajes_resume_cache(filepath):
 def read_file_not(filepath) -> list[tuple]:
     """
     Read the file and return a list of tuples with the data of the file.
-    :return: list of tuples with the data of the file.
-    :rtype: list of tuples.
+    :return: List of tuples with the data of the file.
+    :rtype: List of tuples.
     """
     out = []
     with open(filepath, 'r') as file:
@@ -745,3 +872,32 @@ def read_file_not(filepath) -> list[tuple]:
         for item in content:
             out.append(tuple(item.split(',;')))
     return out
+
+
+def get_ExMed_cache_file(filepath: str) -> tuple[bool, dict]:
+    """
+    Gets the ExMed cache file if exists.
+    :param filepath:
+    :return:
+    """
+    try:
+        with open(filepath, 'rb') as file:
+            exmed_cache = pickle.load(file)
+        flag = False if len(exmed_cache) == 0 else True
+    except Exception as e:
+        print("Error at getting cache file: ", e)
+        exmed_cache = None
+        flag = False
+    return flag, exmed_cache
+
+
+def update_ExMed_cache_file(filepath: str, data: list):
+    """
+    Updates the ExMed cache file.
+    :param filepath:
+    :param data:
+    :return:
+    """
+    with open(filepath, 'wb') as file:
+        pickle.dump(data, file)
+    return True, None

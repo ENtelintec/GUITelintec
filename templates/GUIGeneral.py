@@ -2,6 +2,7 @@ from tkinter import PhotoImage
 
 import customtkinter as ctk
 import ttkbootstrap as ttk
+from ttkbootstrap.scrolled import ScrolledFrame
 
 import templates.Functions_Observer as cb
 import templates.frames.Frame_LoginFrames as Login
@@ -19,17 +20,14 @@ from templates.Functions_AuxFiles import carpeta_principal, get_image_side_menu
 from templates.Functions_Files import read_file_not
 from templates.Functions_SQL import get_chats_w_limit, get_username_data
 from templates.frames.Frame_ChatsFrame import ChatFrame
-from templates.frames.Frame_DBFrame import DBFrame
+from templates.frames.Frame_DBFrame import DBFrame, EmployeesFrame
 from templates.frames.Frame_EmployeeDetail import EmployeeDetails
-from templates.frames.Frame_ExamenesMedicos import ExamenesMedicosFrame
+from templates.frames.Frame_ExamenesMedicos import ExamenesMedicos
 from templates.frames.Frame_FichajeFilesFrames import FichajesFilesGUI
 from templates.frames.Frame_NotificationsFrame import Notifications
 from templates.frames.Frame_PedidosFrame import PedidosFrame
 from templates.frames.Frame_SettingsFrame import ChatSettingsApp
 from templates.frames.Frame_vAssistantGUI import AssistantGUI
-
-# from interface.VisualPedidos import VisualPedidos
-
 
 filepath_notifications = 'files/notifications.txt'
 default_values_settings = {"max_chats": "40", "start_date": "19/oct./2023", "end_date": "19/oct./2023",
@@ -70,7 +68,9 @@ class GUIAsistente(ttk.Window):
         }
         print("images and variables loaded")
         # -----------------------Create side menu frame-----------------------
-        self.navigation_frame = ctk.CTkFrame(self, corner_radius=0, fg_color="#040530")
+        self.navigation_frame = ctk.CTkScrollableFrame(self, corner_radius=0, fg_color="#040530",
+                                                       scrollbar_fg_color="transparent",
+                                                       scrollbar_button_color="#02021A")
         self.navigation_frame.grid(row=0, column=0, sticky="nsew", pady=10, padx=5, rowspan=2)
         self.navigation_frame.grid_columnconfigure(0, weight=1)
         self.navigation_frame.grid_rowconfigure((0, 1, 2, 3, 4, 5), weight=1)
@@ -174,7 +174,7 @@ class GUIAsistente(ttk.Window):
                     windows[window] = Login.LogOptionsFrame(self)
                     print("cuenta frame created")
                 case "Examenes":
-                    windows[window] = ExamenesMedicosFrame(self)
+                    windows[window] = ExamenesMedicos(self)
                     print("examenes frame created")
                 case "Almacen":
                     windows[window] = AlmacenGUI.App(self)
@@ -209,6 +209,9 @@ class GUIAsistente(ttk.Window):
                 case "Proveedores (A)":
                     windows[window] = ProvidersScreen(self)
                     print("providers frame created")
+                case "Empleados":
+                    windows[window] = EmployeesFrame(self)
+                    print("employees frame created")
                 case _:
                     pass
         return windows

@@ -5,3 +5,9 @@ tester.py
 __pycache__/
 *.py[cod]
 *$py.class
+/files/dpb_chache/
+/files/Ternium*
+/files/*cache.pkl
+/fill_exams.py
+/fill_fichajes.py
+/files/OCT*
