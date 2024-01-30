@@ -450,7 +450,8 @@ def insert_new_exam_med(name: str, blood: str, status: str, aptitud: list,
     sql = ("INSERT INTO sql_telintec.examenes_med "
            "(name, blood, status, aptitud, renovacion, aptitude_actual, fecha_ultima_renovacion, empleado_id) "
            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s)")
-    val = (name, blood, status, json.dumps(aptitud), json.dumps(renovaciones), apt_actual,
+    val = (name.upper(), blood, status.upper(), json.dumps(aptitud),
+           json.dumps(renovaciones), apt_actual,
            datetime.strptime(last_date, "%d/%m/%Y"), emp_id)
     flag, e, out = execute_sql(sql, val, 4)
     print(out, "record inserted.")
@@ -523,6 +524,12 @@ def get_all_examenes():
     flag, e, out = execute_sql(sql, type_sql=5)
     return flag, e, out
 
+
+def update_status_EM(status, emp_id):
+    sql = "UPDATE sql_telintec.examenes_med SET status = %s WHERE empleado_id = %s"
+    val = (status, emp_id)
+    flag, e, out = execute_sql(sql, val, 4)
+    return flag, e, out
 
 # ---------------------------Login API-----------------------
 def verify_user_DB(user: str, password: str) -> bool:

@@ -11,3 +11,6 @@ __pycache__/
 /fill_exams.py
 /fill_fichajes.py
 /files/OCT*
+/files/*cache*
+/files/*.csv
+*csv
