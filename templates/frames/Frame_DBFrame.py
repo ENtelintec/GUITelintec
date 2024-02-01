@@ -218,6 +218,8 @@ class EmployeesFrame(ctk.CTkFrame):
                                         text_color="#fff")
         self.label12_emp = ctk.CTkLabel(self.insert_frame, text="NSS", font=ctk.CTkFont(size=12, weight="bold"),
                                         text_color="#fff")
+        self.label13_emp = ctk.CTkLabel(self.insert_frame, text="Puesto", font=ctk.CTkFont(size=12, weight="bold"),
+                                        text_color="#fff")
         self.label1_emp.grid(row=0, column=0, padx=1, pady=1, sticky="nsew")
         self.label2_emp.grid(row=0, column=1, padx=1, pady=1, sticky="nsew")
         self.label3_emp.grid(row=0, column=2, padx=1, pady=1, sticky="nsew")
@@ -230,6 +232,7 @@ class EmployeesFrame(ctk.CTkFrame):
         self.label10_emp.grid(row=4, column=1, padx=1, pady=1, sticky="nsew")
         self.label11_emp.grid(row=4, column=2, padx=1, pady=1, sticky="nsew")
         self.label12_emp.grid(row=4, column=3, padx=1, pady=1, sticky="nsew")
+        self.label13_emp.grid(row=6, column=0, padx=1, pady=1, sticky="nsew")
         # -----------------------inputs-----------------------
         self.entry1_emp = ctk.CTkEntry(self.insert_frame, placeholder_text="name",
                                        height=25, width=150)
@@ -252,6 +255,8 @@ class EmployeesFrame(ctk.CTkFrame):
                                         height=25, width=210)
         self.entry12_emp = ctk.CTkEntry(self.insert_frame, placeholder_text="nss",
                                         height=25, width=100)
+        self.entry13_emp = ctk.CTkEntry(self.insert_frame, placeholder_text="Puesto",
+                                        height=25, width=100)
         self.entry1_emp.grid(row=1, column=0, padx=5, pady=1)
         self.entry2_emp.grid(row=1, column=1, padx=5, pady=1)
         self.entry3_emp.grid(row=1, column=2, padx=5, pady=1)
@@ -263,6 +268,7 @@ class EmployeesFrame(ctk.CTkFrame):
         self.entry10_emp.grid(row=5, column=1, padx=5, pady=1)
         self.entry11_emp.grid(row=5, column=2, padx=5, pady=1)
         self.entry12_emp.grid(row=5, column=3, padx=5, pady=1)
+        self.entry13_emp.grid(row=7, column=0, padx=5, pady=1)
         # combobox
         self.combobox_1 = ctk.CTkComboBox(self.insert_frame, values=["In person", "Online", "Hybrid", "normal", "externo"])
         self.combobox_1.grid(row=3, column=0, pady=1, padx=1)
@@ -296,7 +302,7 @@ class EmployeesFrame(ctk.CTkFrame):
     def _emp_selected(self, event):
         data = event.widget.item(event.widget.selection()[0], "values")
         (id_emp, name, lastname, phone, department, modality, email,
-         contract, entry_date, rfc, curp, nss, emergency) = data
+         contract, entry_date, rfc, curp, nss, emergency, puesto) = data
         self._id_emp_update = id_emp
         set_entry_value(self.entry1_emp, name.title())
         set_entry_value(self.entry2_emp, lastname.title())
@@ -327,10 +333,10 @@ class EmployeesFrame(ctk.CTkFrame):
         nss = self.entry12_emp.get()
         emergency = self.entry11_emp.get()
         modality = self.combobox_1.get()
-        print(name, lastname, curp, phone, email, department,
-              contract, entry_date, rfc, nss, emergency, modality)
+        puesto = self.entry13_emp.get()
         flag, e, out = fsql.new_employee(name, lastname, curp, phone, email, department,
-                                         contract, entry_date, rfc, nss, emergency, modality)
+                                         contract, entry_date, rfc, nss, emergency,
+                                         modality, puesto)
         if flag:
             Messagebox.show_info(title="Informacion", message=f"New employee created:\n{out}")
         else:
@@ -349,9 +355,10 @@ class EmployeesFrame(ctk.CTkFrame):
         nss = self.entry12_emp.get()
         emergency = self.entry11_emp.get()
         modality = self.combobox_1.get()
+        puesto = self.entry13_emp.get()
         flag, e, out = fsql.update_employee(
-            name, lastname, curp, phone, email, department,
-            contract, entry_date, rfc, nss, emergency, modality, self._id_emp_update)
+            self._id_emp_update, name, lastname, curp, phone, email, department,
+            contract, entry_date, rfc, nss, emergency, modality, puesto)
         if flag:
             Messagebox.show_info(title="Informacion", message=f"Employee updated:\n{out}")
         else:

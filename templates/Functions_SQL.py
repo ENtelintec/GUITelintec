@@ -19,9 +19,9 @@ def execute_sql(sql: str, values: tuple = None, type_sql=1):
     :return:
     """
     mydb = mysql.connector.connect(
-        host=secrets["HOST_DB_AWS"],
-        user=secrets["USER_SQL_AWS"],
-        password=secrets["PASS_SQL_AWS"],
+        host=secrets["HOST_DB"],
+        user=secrets["USER_SQL"],
+        password=secrets["PASS_SQL"],
         database="sql_telintec"
     )
     my_cursor = mydb.cursor(buffered=True)
@@ -124,17 +124,19 @@ def get_employees(limit=(0, 100)) -> list[list]:
     return out
 
 
-def new_employee(name, lastname, curp, phone, email, department, contract, entry_date, rfc, nss, emergency, modality):
+def new_employee(name, lastname, curp, phone, email, department, contract, entry_date, rfc, nss, emergency, modality,
+                 puesto, contrato):
     sql = ("INSERT INTO employees (name, l_name, curp, phone_number, email, department_id,"
-           " contrato, date_admission, rfc, nss, emergency_contact, modality) "
-           "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)")
+           " contrato, date_admission, rfc, nss, emergency_contact, modality, puesto) "
+           "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)")
     values = (name, lastname, curp, phone, email, department,
               contract, entry_date, rfc, nss, emergency, modality)
     flag, e, out = execute_sql(sql, values, 4)
     return flag, e, out
 
 
-def update_employee(employee_id, name, lastname, curp, phone, email, department, contract, entry_date, rfc, nss, emergency, modality):
+def update_employee(employee_id, name, lastname, curp, phone, email, department, contract, entry_date, rfc, nss,
+                    emergency, modality, puesto):
     sql = ("UPDATE employees SET name = %s, l_name = %s, curp = %s, phone_number = %s, email = %s, department_id = %s,"
            "contrato = %s, date_admission = %s, rfc = %s, nss = %s, emergency_contact = %s, modality = %s "
            "WHERE employee_id = %s")
@@ -173,13 +175,29 @@ def get_id_employee(name: str) -> None | int:
            "MATCH(l_name) AGAINST (%s IN NATURAL LANGUAGE MODE ) and "
            "MATCH(name) AGAINST (%s IN NATURAL LANGUAGE MODE )")
     # lowercase names
-    name = name.lower()
+    name = name.upper()
     values = (name, name)
     flag, e, out = execute_sql(sql, values, 1)
+    # print(name, flag, e, out)
     if e is not None or len(out) == 0:
         return None
     else:
         return out[0]
+
+
+def get_name_employee(id_employee: int) -> None | str:
+    """
+    Get the name of the employee
+    :param id_employee: id of the employee
+    :return: name of the employee
+    """
+    sql = "SELECT name, l_name FROM employees WHERE employee_id = %s"
+    values = (id_employee,)
+    flag, e, out = execute_sql(sql, values, 1)
+    if e is not None or len(out) == 0:
+        return None
+    else:
+        return f"{out[0].upper()} {out[1].upper()}"
 
 
 def get_ids_employees(names: list):
@@ -309,7 +327,8 @@ def insert_employee(name: str, lastname: str, dni: str, phone: str, email: str,
     return flag, e, out
 
 
-def insert_customer(name: str, lastname: str, phone: str, city: str, email: str) -> tuple[bool, Exception | None, int | None]:
+def insert_customer(name: str, lastname: str, phone: str, city: str, email: str) -> tuple[
+    bool, Exception | None, int | None]:
     sql = ("INSERT INTO sql_telintec.customers (name, l_name, phone_number, city, email) "
            "VALUES (%s, %s, %s, %s, %s)")
     val = (name, lastname, phone, city, email)
@@ -448,8 +467,8 @@ def insert_new_exam_med(name: str, blood: str, status: str, aptitud: list,
                         renovaciones: list, apt_actual: int, last_date: str,
                         emp_id: int) -> tuple[bool, Exception | None, int | None]:
     sql = ("INSERT INTO sql_telintec.examenes_med "
-           "(name, blood, status, aptitud, renovacion, aptitude_actual, fecha_ultima_renovacion, empleado_id) "
-           "VALUES (%s, %s, %s, %s, %s, %s, %s, %s)")
+           "(name, blood, status, aptitud, renovacion, aptitude_actual, empleado_id) "
+           "VALUES (%s, %s, %s, %s, %s, %s, %s)")
     val = (name.upper(), blood, status.upper(), json.dumps(aptitud),
            json.dumps(renovaciones), apt_actual,
            datetime.strptime(last_date, "%d/%m/%Y"), emp_id)
@@ -461,7 +480,7 @@ def insert_new_exam_med(name: str, blood: str, status: str, aptitud: list,
 # option 1
 def update_aptitud_renovacion(aptitud: list, renovaciones: list, apt_actual: int, last_date: str, emp_id: int):
     sql = ("UPDATE sql_telintec.examenes_med "
-           "SET aptitud = %s, renovacion = %s, aptitude_actual = %s, fecha_ultima_renovacion = %s "
+           "SET aptitud = %s, renovacion = %s, aptitude_actual = %s "
            "WHERE empleado_id = %s")
     val = (json.dumps(aptitud), json.dumps(renovaciones), apt_actual, last_date, emp_id)
     flag, e, out = execute_sql(sql, val, 4)
@@ -502,7 +521,7 @@ def get_aptitud(emp_id: int):
 # option 3
 def update_renovacion(renovaciones: list, last_date: str, emp_id: int):
     sql = ("UPDATE sql_telintec.examenes_med "
-           "SET renovacion = %s, fecha_ultima_renovacion = %s "
+           "SET renovacion = %s "
            "WHERE empleado_id = %s")
     val = (json.dumps(renovaciones), last_date, emp_id)
     flag, e, out = execute_sql(sql, val, 4)
@@ -530,6 +549,7 @@ def update_status_EM(status, emp_id):
     val = (status, emp_id)
     flag, e, out = execute_sql(sql, val, 4)
     return flag, e, out
+
 
 # ---------------------------Login API-----------------------
 def verify_user_DB(user: str, password: str) -> bool:
@@ -565,3 +585,19 @@ def get_permissions_user_password(user: str, password: str):
         print("User not found")
         permissions = None
     return permissions
+
+
+# ---------------------------Vacations table-----------------------
+def insert_vacation(emp_id: int, seniority: dict):
+    sql = "INSERT INTO vacations (emp_id, seniority) VALUES (%s, %s)"
+    val = (emp_id, json.dumps(seniority))
+    flag, error, result = execute_sql(sql, val, 4)
+    return flag, error, result
+
+
+def get_vacations_data():
+    sql = ("SELECT emp_id, name, l_name, date_admission, seniority  "
+           "FROM vacations "
+           "inner join employees on vacations.emp_id = employees.employee_id")
+    flag, error, result = execute_sql(sql, type_sql=5)
+    return flag, error, result

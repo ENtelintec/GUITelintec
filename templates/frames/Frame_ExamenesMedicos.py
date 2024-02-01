@@ -306,8 +306,8 @@ class ExamenesMedicos(ScrolledFrame):
                         f"Status: {status}\n"
                         f"Aptitud: {aptitud}\n"
                         f"Fecha de renovacion: {last_date}\n"
-                        f"Esta accion no se puede deshacer."
-                        f"\nEsta accion es irreversible.",
+                        f"Esta accion no se puede deshacer.\n"
+                        f"Esta accion es irreversible.",
                 buttons=["No:secondary", "Yes:primary"]
             )
             if answer == "No" or None:
