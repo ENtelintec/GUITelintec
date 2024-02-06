@@ -3,12 +3,12 @@ __author__ = 'Edisson Naula'
 __date__ = '$ 22/ene./2024  at 16:09 $'
 
 import os
-from PIL import Image
+from PIL import Image, ImageTk
 from customtkinter import CTkImage
 
 from templates.Functions_Files import get_fichajes_resume_cache
 
-carpeta_principal = "./img"
+carpeta_principal = "img"
 
 
 def get_image_side_menu(wname, image_path=carpeta_principal):
@@ -59,13 +59,25 @@ def get_image_side_menu(wname, image_path=carpeta_principal):
     }
     if wname in images.keys():
         if wname == "logo":
-            return CTkImage(light_image=Image.open(os.path.join(image_path, images[wname])),
-                            size=(80, 60))
-        return CTkImage(light_image=Image.open(os.path.join(image_path, images[wname])),
-                        size=(30, 30))
+            image = Image.open(image_path + "/" + images[wname])
+            resize_img = image.resize((100, 80))
+            out_img = ImageTk.PhotoImage(resize_img)
+            return out_img
+            # return CTkImage(light_image=Image.open(os.path.join(image_path, images[wname])),
+            #                 size=(80, 60))
+        image = Image.open(image_path + "/" + images[wname])
+        resize_img = image.resize((30, 30))
+        out_img = ImageTk.PhotoImage(resize_img)
+        return out_img
+        # return CTkImage(light_image=Image.open(os.path.join(image_path, images[wname])),
+        #                 size=(30, 30))
     else:
-        return CTkImage(light_image=Image.open(os.path.join(image_path, images["DB"])),
-                        size=(30, 30))
+        image = Image.open(image_path + "/" + images["DB"])
+        resize_img = image.resize((30, 30))
+        out_img = ImageTk.PhotoImage(resize_img)
+        return out_img
+        # return CTkImage(light_image=Image.open(os.path.join(image_path, images["DB"])),
+        #                 size=(30, 30))
 
 
 def get_data_employees(status="ACTIVO"):

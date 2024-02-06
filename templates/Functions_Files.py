@@ -817,7 +817,6 @@ def update_fichajes_resume_cache(filepath: str, data):
             aux = (id_emp, name, contract, new_faltas, new_lates, new_extras, new_extras_value, new_primas,
                    faltas_dic, lates_dic, extras_dic, primas_dic)
             fichajes_resume[i] = aux
-    print(fichajes_resume)
     with open(filepath, 'wb') as file:
         pickle.dump(fichajes_resume, file)
 

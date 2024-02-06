@@ -2,8 +2,12 @@
 __author__ = 'Edisson Naula'
 __date__ = '$ 29/ene./2024  at 15:31 $'
 
+from typing import Any
+
 import ttkbootstrap as ttk
 from tkinter import StringVar
+
+from static.extensions import ventanasApp
 
 
 def create_label(master, row, column, padx=5, pady=5, text=None, textvariable=None,
@@ -56,6 +60,38 @@ def create_Combobox(master, values, width=None, row=0, column=0,
             combobox.grid(row=row, column=column, padx=padx, pady=pady, columnspan=columnspan, sticky=v)
     combobox.grid(row=row, column=column, padx=padx, pady=pady, columnspan=columnspan)
     return combobox
+
+
+def compare_permissions_windows(user_permissions: list) -> tuple[bool, Any] | tuple[bool, None]:
+    """
+    This method is used to compare the permissions of a user.
+    :param user_permissions: list of permissions of the user
+    :return: bool with the result of the comparison
+    """
+    for permission in user_permissions:
+        if permission in ventanasApp.keys():
+            return True, ventanasApp[permission]
+    return False, None
+
+
+def create_button_side_menu(master, row, column, text, image=None, command=None, columnspan=1):
+    """
+    This method is used to create a button in the side menu.
+    :param columnspan:
+    :param image: image for the button
+    :param command: command for the button
+    :param master: father for the button
+    :param row: row for the button
+    :param column: column for the button
+    :param text: text for the button
+    """
+    button = ttk.Button(master,
+                        text=text,
+                        image=image, compound="left", command=command)
+    button.grid(row=row, column=column, sticky="nsew", pady=5, padx=5, columnspan=columnspan)
+    button.image = image
+    # button.configure(text=text, command=command)
+    return button
 
 
 def update_stringvars(stringvar_list: list[tuple[StringVar, str]]):

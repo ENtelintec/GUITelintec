@@ -23,7 +23,7 @@ class CollapsingFrame(ttk.Frame):
             ttk.PhotoImage(file=IMG_PATH / 'arrow_2_b.png')
         ]
 
-    def add(self, child, title="", bootstyle=DARK, **kwargs):
+    def add(self, child, title="", bootstyle=INFO, **kwargs):
         """Add a child to the collapsible frame
 
         Parameters:

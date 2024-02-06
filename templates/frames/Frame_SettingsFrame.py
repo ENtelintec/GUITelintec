@@ -93,13 +93,13 @@ class ChatSettingsApp(ttk.Frame):
         load_button.configure(command=self.update_settings)
 
     def update_var(self, e):
-        print("sampling time: ", int(self.sampling_time.get()))
+        print("sampling time: ", int(e.widget.get()))
         if self.master is not None:
             self.master.update_variable(self.sampling_time.get(), 1,
                                         self.entry_chats_max.get())
 
     def update_val(self, e):
-        self.label_ts_val.configure(text=int(self.sampling_time.get()))
+        self.label_ts_val.configure(text=int(e.widget.get()))
 
     def save_settings(self):
         max_chats = self.max_chats_entry.get()

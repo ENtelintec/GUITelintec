@@ -19,9 +19,9 @@ def execute_sql(sql: str, values: tuple = None, type_sql=1):
     :return:
     """
     mydb = mysql.connector.connect(
-        host=secrets["HOST_DB"],
-        user=secrets["USER_SQL"],
-        password=secrets["PASS_SQL"],
+        host=secrets["HOST_DB_AWS"],
+        user=secrets["USER_SQL_AWS"],
+        password=secrets["PASS_SQL_AWS"],
         database="sql_telintec"
     )
     my_cursor = mydb.cursor(buffered=True)
@@ -125,23 +125,24 @@ def get_employees(limit=(0, 100)) -> list[list]:
 
 
 def new_employee(name, lastname, curp, phone, email, department, contract, entry_date, rfc, nss, emergency, modality,
-                 puesto, contrato):
+                 puesto, estatus):
     sql = ("INSERT INTO employees (name, l_name, curp, phone_number, email, department_id,"
-           " contrato, date_admission, rfc, nss, emergency_contact, modality, puesto) "
-           "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)")
+           " contrato, date_admission, rfc, nss, emergency_contact, modality, puesto, status) "
+           "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)")
     values = (name, lastname, curp, phone, email, department,
-              contract, entry_date, rfc, nss, emergency, modality)
+              contract, entry_date, rfc, nss, emergency, modality, puesto, estatus)
     flag, e, out = execute_sql(sql, values, 4)
     return flag, e, out
 
 
 def update_employee(employee_id, name, lastname, curp, phone, email, department, contract, entry_date, rfc, nss,
-                    emergency, modality, puesto):
+                    emergency, modality, puesto, estatus):
     sql = ("UPDATE employees SET name = %s, l_name = %s, curp = %s, phone_number = %s, email = %s, department_id = %s,"
-           "contrato = %s, date_admission = %s, rfc = %s, nss = %s, emergency_contact = %s, modality = %s "
+           "contrato = %s, date_admission = %s, rfc = %s, nss = %s, emergency_contact = %s, modality = %s , puesto = %s,"
+           "status = %s"
            "WHERE employee_id = %s")
     values = (name, lastname, curp, phone, email, department,
-              contract, entry_date, rfc, nss, emergency, modality, employee_id)
+              contract, entry_date, rfc, nss, emergency, modality, puesto, estatus, employee_id)
     flag, e, out = execute_sql(sql, values, 3)
     return flag, e, out
 
@@ -165,6 +166,17 @@ def get_employee_id_name(name: str) -> tuple[None, None] | tuple[int, str]:
         return out[0], f"{out[1].title()} {out[2].title()}"
 
 
+def delete_employee(employee_id: int):
+    try:
+        employee_id = int(employee_id)
+    except ValueError:
+        return False, None, None
+    sql = "DELETE FROM employees WHERE employee_id = %s"
+    values = (employee_id,)
+    flag, e, out = execute_sql(sql, values, 3)
+    return flag, e, out
+
+
 def get_id_employee(name: str) -> None | int:
     """
     Get the id of the employee
@@ -175,7 +187,7 @@ def get_id_employee(name: str) -> None | int:
            "MATCH(l_name) AGAINST (%s IN NATURAL LANGUAGE MODE ) and "
            "MATCH(name) AGAINST (%s IN NATURAL LANGUAGE MODE )")
     # lowercase names
-    name = name.upper()
+    name = name.lower()
     values = (name, name)
     flag, e, out = execute_sql(sql, values, 1)
     # print(name, flag, e, out)
@@ -599,5 +611,19 @@ def get_vacations_data():
     sql = ("SELECT emp_id, name, l_name, date_admission, seniority  "
            "FROM vacations "
            "inner join employees on vacations.emp_id = employees.employee_id")
+    flag, error, result = execute_sql(sql, type_sql=5)
+    return flag, error, result
+
+
+def update_registry_vac(emp_id: int, seniority: dict):
+    sql = "UPDATE vacations SET seniority = %s WHERE emp_id = %s"
+    val = (json.dumps(seniority), emp_id)
+    flag, error, result = execute_sql(sql, val, 4)
+    return flag, error, result
+
+
+def get_all_employees_active():
+    sql = ("SELECT employee_id, name, l_name, date_admission "
+           "FROM employees WHERE status = 'activo'")
     flag, error, result = execute_sql(sql, type_sql=5)
     return flag, error, result

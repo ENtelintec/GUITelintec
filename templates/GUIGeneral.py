@@ -1,11 +1,24 @@
+import tkinter as tk
 from tkinter import PhotoImage
 
-import customtkinter as ctk
 import ttkbootstrap as ttk
-from ttkbootstrap.scrolled import ScrolledFrame
 
-import templates.Functions_Observer as cb
 import templates.frames.Frame_LoginFrames as Login
+from templates import AlmacenGUI
+from templates.Functions_AuxFiles import carpeta_principal, get_image_side_menu
+from templates.Functions_Files import read_file_not
+from templates.Functions_SQL import get_chats_w_limit, get_username_data
+from templates.Funtions_Utils import create_button_side_menu, compare_permissions_windows
+from templates.frames.Frame_ChatsFrame import ChatFrame
+from templates.frames.Frame_DBFrame import DBFrame, EmployeesFrame
+from templates.frames.Frame_EmployeeDetail import EmployeeDetails
+from templates.frames.Frame_ExamenesMedicos import ExamenesMedicos
+from templates.frames.Frame_FichajeFilesFrames import FichajesFilesGUI
+from templates.frames.Frame_NotificationsFrame import Notifications
+from templates.frames.Frame_PedidosFrame import PedidosFrame
+from templates.frames.Frame_SettingsFrame import ChatSettingsApp
+from templates.frames.Frame_Vacations import VacationsFrame
+from templates.frames.Frame_vAssistantGUI import AssistantGUI
 from templates.screens.Clients import ClientsScreen
 from templates.screens.Home import HomeScreen
 from templates.screens.In import InScreen
@@ -15,19 +28,6 @@ from templates.screens.Out import OutScreen
 from templates.screens.Providers import ProvidersScreen
 from templates.screens.Returns import ReturnsScreen
 from templates.screens.Settings import SettingsScreen
-from templates import AlmacenGUI
-from templates.Functions_AuxFiles import carpeta_principal, get_image_side_menu
-from templates.Functions_Files import read_file_not
-from templates.Functions_SQL import get_chats_w_limit, get_username_data
-from templates.frames.Frame_ChatsFrame import ChatFrame
-from templates.frames.Frame_DBFrame import DBFrame, EmployeesFrame
-from templates.frames.Frame_EmployeeDetail import EmployeeDetails
-from templates.frames.Frame_ExamenesMedicos import ExamenesMedicos
-from templates.frames.Frame_FichajeFilesFrames import FichajesFilesGUI
-from templates.frames.Frame_NotificationsFrame import Notifications
-from templates.frames.Frame_PedidosFrame import PedidosFrame
-from templates.frames.Frame_SettingsFrame import ChatSettingsApp
-from templates.frames.Frame_vAssistantGUI import AssistantGUI
 
 filepath_notifications = 'files/notifications.txt'
 default_values_settings = {"max_chats": "40", "start_date": "19/oct./2023", "end_date": "19/oct./2023",
@@ -40,6 +40,8 @@ class GUIAsistente(ttk.Window):
         # -----------------------window setup------------------------------
         super().__init__(master, *args, **kwargs)
         self.master = master
+        style = ttk.Style()
+        style.theme_use("vapor")
         self.title("Admin-Chatbot.py")
         p1 = PhotoImage(file=carpeta_principal + "/robot_1.png")
         self.iconphoto(False, p1)
@@ -68,19 +70,26 @@ class GUIAsistente(ttk.Window):
         }
         print("images and variables loaded")
         # -----------------------Create side menu frame-----------------------
-        self.navigation_frame = ctk.CTkScrollableFrame(self, corner_radius=0, fg_color="#040530",
-                                                       scrollbar_fg_color="transparent",
-                                                       scrollbar_button_color="#02021A")
-        self.navigation_frame.grid(row=0, column=0, sticky="nsew", pady=10, padx=5, rowspan=2)
-        self.navigation_frame.grid_columnconfigure(0, weight=1)
-        self.navigation_frame.grid_rowconfigure((0, 1, 2, 3, 4, 5), weight=1)
+        self.navigation_frame = ttk.Frame(self)
+        self.navigation_frame.grid(row=0, column=0, sticky="nswe", pady=10, padx=5)
+        self.navigation_frame.columnconfigure((0, 1), weight=1)
+        self.navigation_frame.rowconfigure(2, weight=1)
         # --------------------------------title-------------------------------
-        self.btnTeli = ctk.CTkButton(self.navigation_frame, image=get_image_side_menu("logo"),
-                                     height=30, text="", hover=False,
-                                     corner_radius=0, fg_color="transparent")
-        self.btnTeli.grid(row=0, column=0, sticky="nsew")
+        self.btnTeli = LogoFrame(self.navigation_frame)
+        self.btnTeli.grid(row=0, column=0, sticky="we", columnspan=2)
+        theme_names = style.theme_names()
+        ttk.Label(self.navigation_frame, text="Theme:").grid(row=1, column=0, sticky="nsew")
+        self.theme_selector = ttk.Combobox(self.navigation_frame, values=theme_names,
+                                           state="readonly")
+        self.theme_selector.current(theme_names.index('vapor'))
+        self.theme_selector.grid(row=1, column=1, sticky="nsew")
+        self.theme_selector.bind('<<ComboboxSelected>>', lambda event: style.theme_use(self.theme_selector.get()))
         # --------------------widgets side menu -----------------------
-        self.buttons_side_menu, self.names_side_menu = self._create_side_menu_widgets()
+        self.side_menu_frame = ttk.Frame(self.navigation_frame)
+        self.side_menu_frame.grid(row=2, column=0, sticky="nsew", pady=5, padx=1,
+                                  columnspan=2)
+        self.side_menu_frame.columnconfigure(0, weight=1)
+        self.buttons_side_menu, self.names_side_menu = self._create_side_menu_widgets(self.side_menu_frame)
         print("side menu widgets created")
         # ------------------------login frame-------------------------------
         self.login_frame = Login.LoginGUI(self)
@@ -97,7 +106,7 @@ class GUIAsistente(ttk.Window):
 
     def update_side_menu(self):
         print(f"side menu for: {self.username} with {self.permissions}")
-        self.buttons_side_menu, self.names_side_menu = self._create_side_menu_widgets()
+        self.buttons_side_menu, self.names_side_menu = self._create_side_menu_widgets(self.side_menu_frame)
 
     def update_side_menu_windows(self):
         print(f"windows menu for: {self.username} with {self.permissions}")
@@ -114,13 +123,6 @@ class GUIAsistente(ttk.Window):
         self.virtual_assistant_window.grid(row=0, column=0)
 
     def _select_frame_by_name(self, name):
-        # set button color for selected button
-        print("Button clicked", name)
-        for button in self.buttons_side_menu:
-            if button.cget("text") == name:
-                button.configure(fg_color=("gray75", "gray25"))
-            else:
-                button.configure(fg_color="transparent")
         match name:
             case "none":
                 for txt in self.names_side_menu:
@@ -133,18 +135,23 @@ class GUIAsistente(ttk.Window):
                     else:
                         self.windows_frames[txt].grid_forget()
 
-    def _create_side_menu_widgets(self):
-        flag, windows_names = cb.compare_permissions_windows(list(self.permissions.values()))
+    def _create_side_menu_widgets(self, master):
+        flag, windows_names = compare_permissions_windows(list(self.permissions.values()))
         windows_names = windows_names if windows_names is not None else ["Notificaciones", "Settings"]
         widgets = []
         if flag or windows_names is not None:
+            if len(windows_names) >= 10:
+                scrollbar = ttk.Scrollbar(master, orient="vertical")
+                scrollbar.grid(row=0, column=2, sticky="ns")
             for i, window in enumerate(windows_names):
-                widgets.append(cb.create_button_side_menu(
-                    self.navigation_frame,
-                    i + 1, 0,
-                    text=window,
-                    image=get_image_side_menu(window),
-                    command=lambda x=window: self._select_frame_by_name(x)))
+                widgets.append(
+                    create_button_side_menu(
+                        master, i, 0,
+                        text=window,
+                        image=get_image_side_menu(window),
+                        command=lambda x=window: self._select_frame_by_name(x),
+                        columnspan=1)
+                )
         return widgets, windows_names
 
     def _create_side_menu_windows(self):
@@ -212,6 +219,9 @@ class GUIAsistente(ttk.Window):
                 case "Empleados":
                     windows[window] = EmployeesFrame(self)
                     print("employees frame created")
+                case "Vacaciones":
+                    windows[window] = VacationsFrame(self)
+                    print("vacations frame created")
                 case _:
                     pass
         return windows
@@ -219,3 +229,16 @@ class GUIAsistente(ttk.Window):
     def _destroy_side_menu_widgets(self):
         for widget in self.buttons_side_menu:
             widget.destroy()
+
+
+class LogoFrame(tk.Frame):
+    def __init__(self, master):
+        super().__init__(master)
+        self.columnconfigure(0, weight=1)
+        img_logo = get_image_side_menu("logo")
+        width = 100
+        height = 80
+        canva = tk.Canvas(self, width=width, height=height)
+        canva.grid(row=0, column=0, sticky="nswe", columnspan=2, padx=20)
+        canva.create_image(width / 2, height / 2, anchor='center', image=img_logo)
+        canva.image = img_logo
