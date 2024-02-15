@@ -16,7 +16,7 @@ from templates.frames.Frame_ExamenesMedicos import ExamenesMedicos
 from templates.frames.Frame_FichajeFilesFrames import FichajesFilesGUI
 from templates.frames.Frame_NotificationsFrame import Notifications
 from templates.frames.Frame_PedidosFrame import PedidosFrame
-from templates.frames.Frame_SettingsFrame import ChatSettingsApp
+from templates.frames.Frame_SettingsFrame import SettingsFrameGUI
 from templates.frames.Frame_Vacations import VacationsFrame
 from templates.frames.Frame_vAssistantGUI import AssistantGUI
 from templates.screens.Clients import ClientsScreen
@@ -120,7 +120,7 @@ class GUIAsistente(ttk.Window):
         self.VA_frame.rowconfigure(0, weight=1)
         self.VA_frame.grid(row=0, column=2, sticky="nsew", pady=10, padx=5)
         self.virtual_assistant_window = AssistantGUI(self.VA_frame, department=department, width=150)
-        self.virtual_assistant_window.grid(row=0, column=0)
+        self.virtual_assistant_window.grid(row=0, column=0, sticky="nsew")
 
     def _select_frame_by_name(self, name):
         match name:
@@ -169,7 +169,7 @@ class GUIAsistente(ttk.Window):
                     windows[window] = ChatFrame(self, self.chats_to_show, self.images, self.chats)
                     print("chats frame created")
                 case "Settings":
-                    windows[window] = ChatSettingsApp(self)
+                    windows[window] = SettingsFrameGUI(self)
                     print("settings frame created")
                 case "Tickets":
                     windows[window] = PedidosFrame(self, self.images, self.chats)

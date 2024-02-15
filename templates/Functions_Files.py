@@ -9,7 +9,6 @@ import pickle
 import re
 from datetime import datetime
 from tkinter import Misc, Frame, messagebox
-from tkinter.ttk import Treeview
 
 import dropbox
 import pandas as pd
@@ -223,50 +222,6 @@ def clean_text(texts: list) -> tuple[list, list, list, list]:
     return status, name, card, in_out
 
 
-def create_visualizer_treeview(master: Misc, table: str, rows: int,
-                               pad_x: int = 5, pad_y: int = 10,
-                               row: int = 0, column: int = 0,
-                               style: str = 'primary',
-                               headers=None, data=None) -> Treeview | None:
-    """
-    Creates a treeview with the given table and data
-    :param style: ttkbootstrap style
-    :param data: data for the rows
-    :param headers: column headers
-    :param table: Type of table to be created (fichajes, etc.)
-    :param column: <int> column to be placed
-    :param row: <int> row to be placed
-    :param pad_x: <int> pad in x for the group, not the treeview
-    :param pad_y: <int> pad in y for the group, not the treeview
-    :param rows: <int> number of rows for the treeview
-    :param master: <Misc> father instance where the object is created
-    :return: treeview
-    """
-    match table:
-        case "fichajes":
-            columns = headers if headers is not None else ["Timestamp", 'Puerta', 'Texto', 'Status', 'Name', 'Card',
-                                                           'in_out']
-            heading_width = [25, 100, 100, 100, 100, 100, 100, 200]
-            data = data if data is not None else [None, None, None, None, None, None, None]
-        case _:
-            columns = []
-            data = []
-            heading_width = []
-            print("Error in create_visualizer_treeview")
-    column_span = len(columns)
-    # noinspection PyArgumentList
-    treeview = ttk.Treeview(master, columns=columns, show="headings",
-                            height=rows, bootstyle=style)
-    for i in range(column_span):
-        treeview.column(columns[i], width=heading_width[i])
-        treeview.heading(columns[i], text=columns[i])
-    treeview.grid(row=row, column=column, padx=pad_x, pady=pad_y,
-                  columnspan=column_span, sticky="w")
-    for entry in data:
-        treeview.insert("", "end", values=entry)
-    return treeview
-
-
 def validate_digits_numbers(new_value) -> bool:
     """
     Validates that the new value is a number.
@@ -335,8 +290,9 @@ def make_empty_zeros(txt: str) -> float:
     return out
 
 
-def clean_data_contract(status, fechas, comments, extras, primas, in_door, out_door) -> tuple[
-    list, list, list, list, list, list, list]:
+def clean_data_contract(
+        status, fechas, comments, extras, primas, in_door,
+        out_door) -> tuple[list, list, list, list, list, list, list]:
     """
     Cleans data from contract.csv
 
@@ -899,4 +855,43 @@ def update_ExMed_cache_file(filepath: str, data: list):
     """
     with open(filepath, 'wb') as file:
         pickle.dump(data, file)
+    return True, None
+
+
+def open_file_settings(filepath: str) -> tuple[bool, dict]:
+    """
+    Opens the json settings file.
+    :param filepath:
+    :return:
+    """
+    flag = False
+    settings = {}
+    if not os.path.exists(filepath):
+        return flag, settings
+    # Open the file and read the data.
+    with open(filepath, 'r') as file:
+        settings = json.load(file)
+    flag = True
+    return flag, settings
+
+
+def update_file_settings(filepath: str, settings: dict):
+    """
+    Updates the json settings file.
+    :param filepath:
+    :param settings:
+    :return:
+    """
+    # Open the file and read the data.
+    if not os.path.exists(filepath):
+        with open(filepath, 'w') as file:
+            json.dump(settings, file)
+        return True, None
+    # Open the file and read the data.
+    with open(filepath, 'r') as file:
+        data = json.load(file)
+    data.update(settings)
+    # Open the file and write the data.
+    with open(filepath, 'w') as file:
+        json.dump(data, file)
     return True, None

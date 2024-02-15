@@ -2,9 +2,7 @@
 __author__ = 'Edisson Naula'
 __date__ = '$ 22/ene./2024  at 16:09 $'
 
-import os
 from PIL import Image, ImageTk
-from customtkinter import CTkImage
 
 from templates.Functions_Files import get_fichajes_resume_cache
 

@@ -8,17 +8,14 @@ import re
 import threading
 import time
 from datetime import datetime, timezone
-from typing import List, Any
+from typing import List
 
-import customtkinter as ctk
-import ttkbootstrap as ttk
 import openai
 import requests
 from bardapi import Bard
 from bardapi.constants import SESSION_HEADERS
 from dotenv import dotenv_values
 
-from static.extensions import ventanasApp
 from templates.Functions_SQL import get_isAlive, update_isAlive, get_only_context, set_finish_chat
 
 secrets = dotenv_values(".env")
@@ -28,7 +25,7 @@ session.headers = SESSION_HEADERS
 session.cookies.set("__Secure-1PSID", secrets["PSID"])
 session.cookies.set("__Secure-1PSIDTS", secrets["PSIDTS"])
 session.cookies.set("__Secure-1PSIDCC", secrets["PSIDCC"])
-# bard = Bard(token=secrets["PSID"], session=session)
+bard = Bard(token=secrets["PSID"], session=session)
 
 
 def get_response_bard(prompt: str) -> str:
@@ -427,9 +424,6 @@ def get_timestamp_difference(timestamp_last: str, is_utc=True, scale="MINUTES") 
         case _:  # default
             factor = 1
     return (timestamp_now - timestamp_last).seconds / factor
-
-
-
 
 
 class NotificationsUpdater(threading.Thread):

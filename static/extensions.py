@@ -7,7 +7,7 @@ import json
 from dotenv import dotenv_values
 from flask_restx import Api
 from pathlib import Path
-
+import ttkbootstrap as ttk
 paths_dpb_folders = json.load(open('files/paths_general.json'))
 local_father_path_dpb = 'C:/Users/Edisson/Telintec Dropbox/SOFTWARE TELINTEC'
 secrets = dotenv_values(".env")
@@ -29,3 +29,10 @@ cache_file_Fichajes_path = "files/Fichajes_cache.pkl"
 cache_file_Tickets_path = "files/Tickets_cache.pkl"
 cache_file_Chats_path = "files/Chats_cache.pkl"
 cache_file_Notificaciones_path = "files/Notificaciones_cache.pkl"
+filepath_settings = "files/settings.json"
+quizzes_RRHH = {
+    "0": {
+        "name": "Encuesta de Salida",
+        "path": "files/quizz_salida.json"
+    }
+}

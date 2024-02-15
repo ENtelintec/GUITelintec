@@ -125,24 +125,26 @@ def get_employees(limit=(0, 100)) -> list[list]:
 
 
 def new_employee(name, lastname, curp, phone, email, department, contract, entry_date, rfc, nss, emergency, modality,
-                 puesto, estatus):
+                 puesto, estatus, departure):
     sql = ("INSERT INTO employees (name, l_name, curp, phone_number, email, department_id,"
-           " contrato, date_admission, rfc, nss, emergency_contact, modality, puesto, status) "
-           "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)")
+           " contrato, date_admission, rfc, nss, emergency_contact, modality, puesto, status, departure) "
+           "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)")
     values = (name, lastname, curp, phone, email, department,
-              contract, entry_date, rfc, nss, emergency, modality, puesto, estatus)
+              contract, entry_date, rfc, nss, emergency, modality, puesto, estatus,
+              json.dumps(departure))
     flag, e, out = execute_sql(sql, values, 4)
     return flag, e, out
 
 
 def update_employee(employee_id, name, lastname, curp, phone, email, department, contract, entry_date, rfc, nss,
-                    emergency, modality, puesto, estatus):
+                    emergency, modality, puesto, estatus, departure):
     sql = ("UPDATE employees SET name = %s, l_name = %s, curp = %s, phone_number = %s, email = %s, department_id = %s,"
            "contrato = %s, date_admission = %s, rfc = %s, nss = %s, emergency_contact = %s, modality = %s , puesto = %s,"
-           "status = %s"
+           "status = %s, departure = %s "
            "WHERE employee_id = %s")
     values = (name, lastname, curp, phone, email, department,
-              contract, entry_date, rfc, nss, emergency, modality, puesto, estatus, employee_id)
+              contract, entry_date, rfc, nss, emergency, modality, puesto,
+              estatus, json.dumps(departure), employee_id)
     flag, e, out = execute_sql(sql, values, 3)
     return flag, e, out
 
@@ -339,13 +341,30 @@ def insert_employee(name: str, lastname: str, dni: str, phone: str, email: str,
     return flag, e, out
 
 
-def insert_customer(name: str, lastname: str, phone: str, city: str, email: str) -> tuple[
-    bool, Exception | None, int | None]:
+def insert_customer(
+        name: str, lastname: str, phone: str, city: str,
+        email: str) -> tuple[bool, Exception | None, int | None]:
     sql = ("INSERT INTO sql_telintec.customers (name, l_name, phone_number, city, email) "
            "VALUES (%s, %s, %s, %s, %s)")
     val = (name, lastname, phone, city, email)
     flag, e, out = execute_sql(sql, val, 3)
-    print(out, "record inserted.")
+    return flag, e, out
+
+
+def update_customer_DB(
+        name: str, lastname: str, phone: str, city: str,
+        email: str, customer_id: int) -> tuple[bool, Exception | None, int | None]:
+    sql = ("UPDATE sql_telintec.customers SET name = %s, l_name = %s, phone_number = %s, "
+           "city = %s, email = %s WHERE customer_id = %s")
+    val = (name, lastname, phone, city, email, customer_id)
+    flag, e, out = execute_sql(sql, val, 3)
+    return flag, e, out
+
+
+def delete_customer_DB(customer_id: int) -> tuple[bool, Exception | None, int | None]:
+    sql = "DELETE FROM sql_telintec.customers WHERE customer_id = %s"
+    val = (customer_id,)
+    flag, e, out = execute_sql(sql, val, 3)
     return flag, e, out
 
 
@@ -355,6 +374,21 @@ def insert_department(name: str, location: str) -> tuple[bool, Exception | None,
     flag, e, out = execute_sql(sql, val, 4)
     print(out, "record inserted.")
     return flag, None, out
+
+
+def update_department_DB(name: str, location: str, department_id: int) -> tuple[bool, Exception | None, int | None]:
+    sql = ("UPDATE sql_telintec.departments SET name = %s, location = %s "
+           "WHERE department_id = %s")
+    val = (name, location, department_id)
+    flag, e, out = execute_sql(sql, val, 3)
+    return flag, e, out
+
+
+def delete_department_DB(department_id: int) -> tuple[bool, Exception | None, int | None]:
+    sql = "DELETE FROM sql_telintec.departments WHERE department_id = %s"
+    val = (department_id,)
+    flag, e, out = execute_sql(sql, val, 3)
+    return flag, e, out
 
 
 def insert_head(position_name: str, department: str,
@@ -367,6 +401,22 @@ def insert_head(position_name: str, department: str,
     return flag, e, out
 
 
+def update_head_DB(position_name: str, department: str,
+                   employee: str, head_id: int) -> tuple[bool, Exception | None, int | None]:
+    sql = ("UPDATE sql_telintec.heads SET name = %s, department = %s, employee = %s "
+           "WHERE position_id = %s")
+    val = (position_name, department, employee, head_id)
+    flag, e, out = execute_sql(sql, val, 3)
+    return flag, e, out
+
+
+def delete_head_DB(head_id: int) -> tuple[bool, Exception | None, int | None]:
+    sql = "DELETE FROM sql_telintec.heads WHERE position_id = %s"
+    val = (head_id,)
+    flag, e, out = execute_sql(sql, val, 3)
+    return flag, e, out
+
+
 def insert_supplier(name: str, location: str) -> tuple[bool, Exception | None, int | None]:
     sql = "INSERT INTO sql_telintec.suppliers (name, location) VALUES (%s, %s)"
     val = (name, location)
@@ -375,6 +425,22 @@ def insert_supplier(name: str, location: str) -> tuple[bool, Exception | None, i
     return flag, None, out
 
 
+def update_supplier_DB(name: str, location: str, supplier_id: int) -> tuple[bool, Exception | None, int | None]:
+    sql = ("UPDATE sql_telintec.suppliers SET name = %s, location = %s "
+           "WHERE supplier_id = %s")
+    val = (name, location, supplier_id)
+    flag, e, out = execute_sql(sql, val, 3)
+    return flag, e, out
+
+
+def delete_supplier_DB(supplier_id: int) -> tuple[bool, Exception | None, int | None]:
+    sql = "DELETE FROM sql_telintec.suppliers WHERE supplier_id = %s"
+    val = (supplier_id,)
+    flag, e, out = execute_sql(sql, val, 3)
+    return flag, e, out
+
+
+# --------------------------------Products and Services--------------------------------
 def insert_product_and_service(product_id: str, name: str, model: str, brand: str,
                                description: str, price_retail: str, quantity: str,
                                price_provider: str,
@@ -436,7 +502,9 @@ def get_username_data(username: str):
            "INNER JOIN employees ON (users_system.emp_id = employee_id and usernames=%s) "
            "INNER JOIN departments on employees.department_id = departments.department_id")
     val = (username,)
+    print(sql, val)
     flag, error, result = execute_sql(sql, val)
+    print(flag, error, result)
     out = None
     if len(result) > 0:
         out = {

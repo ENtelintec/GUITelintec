@@ -2,15 +2,12 @@
 __author__ = 'Edisson Naula'
 __date__ = '$ 25/dic./2023  at 13:30 $'
 
+import os
 import pickle
+import tkinter as tk
+from tkinter import END, filedialog, messagebox
 
 import ttkbootstrap as ttk
-from tkinter import END, filedialog, messagebox
-from ttkbootstrap.scrolled import ScrolledText
-
-import tkinter as tk
-
-import os
 
 from templates.Functions_openAI import get_response_chat_completion, get_response_assistant, get_files_list_openai, \
     upload_file_openai, delete_file_openai
