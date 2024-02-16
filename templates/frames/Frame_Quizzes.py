@@ -10,6 +10,7 @@ from ttkbootstrap.dialogs import Messagebox
 
 from static.extensions import quizzes_RRHH
 from templates.Funtions_Utils import create_Combobox
+from templates.PDFGenerator import create_pdf_quizz_salida
 
 
 class QuizMaker(ttk.Frame):
@@ -63,6 +64,7 @@ class QuizMaker(ttk.Frame):
         self.q_no += 1
         if self.q_no == self.data_size:
             self.display_result()
+            self.master.update_dict_quizz(self.dict_quizz)
             self.destroy()
         else:
             self.recreate_frames()
@@ -74,10 +76,6 @@ class QuizMaker(ttk.Frame):
             self.frame_buttons, text="Next", command=self.next_btn,
             width=10, bootstyle="primary")
         next_btn.grid(row=0, column=0, padx=10, pady=10, sticky="n")
-        quit_btn = ttk.Button(
-            self.frame_buttons, text="Quit", command=self.destroy,
-            width=5, bootstyle="danger")
-        quit_btn.grid(row=0, column=1, padx=10, pady=10, sticky="n")
 
     def display_question(self):
         if self.questions_label is not None:
@@ -151,6 +149,7 @@ class QuizMaker(ttk.Frame):
 
             case _:
                 self.opt_selected.append(self.entries[0].get("1.0", "end-1c"))
+        self.dict_quizz[str(self.q_no)]["answer"] = self.opt_selected[-1]
 
 
 class FrameEncuestas(ttk.Frame):
@@ -200,6 +199,21 @@ class FrameEncuestas(ttk.Frame):
         self.dict_quizz = json.load(open(self.filepath, encoding="utf-8"))
         self.quizz = QuizMaker(self, self.dict_quizz, title=name)
         self.quizz.grid(row=2, column=0, padx=10, pady=10, sticky="nswe")
+
+    def update_dict_quizz(self, new_dict: dict):
+        self.dict_quizz = new_dict
+        name_emp = "employee 1"
+        job = "position 1"
+        terminal = "terminal"
+        date_start = "01/01/2021"
+        date_end = "31/12/2021"
+        date_inteview = "01/01/2021"
+        name_interviewer = "Interviewer"
+        file_out = f"C:/Users/Edisson/Documents/sample.pdf"
+        create_pdf_quizz_salida(self.dict_quizz, None, file_out,
+                                name_emp, job, terminal, date_start, date_end, date_inteview,
+                                name_interviewer)
+        print(f"quizz update and pdf generated at {file_out}")
 
 
 class QuizzResultPDF(ttk.Frame):

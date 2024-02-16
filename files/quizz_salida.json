@@ -31,7 +31,7 @@
     "type": 2
     },
   "2": {
-    "question": "Q3. Cuál es su grado de satisfacción con los siguientes \naspectos de la compañía y sobre su puesto de trabajo en ella?",
+    "question": "Q3. Cuál es su grado de satisfacción con los siguientes aspectos de la compañía y sobre su puesto \nde trabajo en ella?",
     "subquestions": [
       "Salario",
       "Formación",
@@ -50,7 +50,7 @@
       "Totalmente insatisfecho",
       "No aplicable"
     ],
-    "answer": 0,
+    "answer": "",
     "type": 3
     },
   "3": {
@@ -59,7 +59,7 @@
       "Le gusto el puesto que desempeño en la empresa",
       "Se cumplió con lo que usted esperaba de la empresa",
       "Se sintió satisfecho con los logros y el desarrollo que alcanzó en la empresa",
-      "¿La empresa le proporcionó oportunamente todo lo necesario para trabajar?\n(herramientas, equipo, materiales, equipo de seguridad, etc.)"
+      "¿La empresa le proporcionó oportunamente todo lo necesario para trabajar?\n(herramientas, equipo, materiales,equipo de seguridad, etc.)"
     ],
     "options": [
       "Nunca",
@@ -68,11 +68,11 @@
       "Casi siempre",
       "Siempre"
     ],
-    "answer": 0,
+    "answer": "",
     "type": 3
     },
   "4": {
-    "question": "Q5. Como califica el trato que le brindaron las personas \nde los siguientes puestos/áreas:",
+    "question": "Q5. Como califica el trato que le brindaron las personas de los siguientes puestos/áreas:",
     "subquestions": [
       "Dirección/Gerente",
       "Jefe o Supervisor de Departamento",
@@ -87,7 +87,7 @@
       "Bueno",
       "Excelente"
     ],
-    "answer": 0,
+    "answer": "",
     "type": 3
     },
   "5": {
@@ -130,7 +130,7 @@
     "type": 2
     },
   "8": {
-    "question": "Q9. ¿Considera que mientras laboró con nosotros, \nnuestra empresa le respetó sus derechos? \n(horarios, vacaciones, descansos, pagos, etc.)",
+    "question": "Q9. ¿Considera que mientras laboró con nosotros, nuestra empresa le respetó sus derechos? \n(horarios, vacaciones, descansos, pagos, etc.)",
     "subquestions": [],
     "options": [
       "Nunca",
@@ -143,10 +143,10 @@
     "type": 2
     },
   "9": {
-    "question": "Q10. ¿Tiene alguna observación o sugerencia que considere \nque la empresa deba de atender?",
+    "question": "Q10. ¿Tiene alguna observación o sugerencia que considere que la empresa deba de atender?",
     "subquestions": [],
     "options": [],
-    "answer": 1,
+    "answer": "esto es una texto de pruebaesto es una texto de pruebaesto es una texto de pruebaesto es una texto de pruebaesto es una texto de pruebaesto es una texto de pruebaesto es una texto de pruebaesto es una texto de pruebaesto es una texto de pruebaesto es una texto de pruebaesto es una texto de pruebaesto es una texto de pruebaesto es una texto de prueba",
     "type": 4
     }
 }
