@@ -34,12 +34,11 @@ class ClientsScreen(ttk.Frame):
 
         self.col_data = [
             {"text": "ID Cliente", "stretch": True},
-            {"text": "Nombre", "stretch": False},
+            {"text": "Nombre", "stretch": True},
             {"text": "Email", "stretch": True},
             {"text": "Telefono", "stretch": True},
-            {"text": "Calle", "stretch": True},
-            {"text": "Ciudad", "stretch": True},
-            {"text": "Codigo Postal", "stretch": True},
+            {"text": "RFC", "stretch": True},
+            {"text": "Direccion", "stretch": True},
         ]
 
         self.table = Tableview(
@@ -51,13 +50,13 @@ class ClientsScreen(ttk.Frame):
             autofit=True,
         )
         self.table.build_table_data(self.col_data, self._clients)
-        self.table.grid(row=1, column=0, sticky="nswe",  padx=15, pady=5)
+        self.table.grid(row=1, column=0, sticky="nswe", padx=15, pady=5)
         self.table.view.bind("<Double-1>", self.events)
 
         # Inputs
         inputs = ttk.Frame(content, style="bg.TFrame")
         inputs.grid(row=2, column=0, sticky="nswe")
-        inputs.columnconfigure((0, 1), weight=1)
+        inputs.columnconfigure((0, 1, 2, 3), weight=1)
         ttk.Label(
             inputs, text="Agregar nuevo cliente", style="bg.TLabel", font=("Arial", 20)
         ).grid(row=0, column=0, sticky="w", padx=5, pady=10)
@@ -65,6 +64,7 @@ class ClientsScreen(ttk.Frame):
         # dividir el frame en 2, izq y derecha para los inputs
         inputs_left = ttk.Frame(inputs, style="bg.TFrame")
         inputs_left.grid(row=1, column=0, sticky="nswe")
+
         inputs_right = ttk.Frame(inputs, style="bg.TFrame")
         inputs_right.grid(row=1, column=1, sticky="nswe")
 
@@ -87,41 +87,30 @@ class ClientsScreen(ttk.Frame):
         self.input_client_email = ttk.Entry(inputs_left, style="bg.TEntry")
         self.input_client_email.grid(row=2, column=1, sticky="w", padx=5, pady=5)
 
-        ttk.Label(inputs_left, text="Telefono", style="bg.TLabel").grid(
-            row=3, column=0, sticky="w", padx=5, pady=5
-        )
-        self.input_client_phone = ttk.Entry(inputs_left, style="bg.TEntry")
-        self.input_client_phone.grid(row=3, column=1, sticky="w", padx=5, pady=5)
-
         # Inputs right
-        ttk.Label(inputs_right, text="Calle", style="bg.TLabel").grid(
+        ttk.Label(inputs_right, text="Telefono", style="bg.TLabel").grid(
             row=0, column=0, sticky="w", padx=5, pady=5
         )
+        self.input_client_phone = ttk.Entry(inputs_right, style="bg.TEntry")
+        self.input_client_phone.grid(row=0, column=1, sticky="w", padx=5, pady=5)
 
-        self.input_client_street = ttk.Entry(inputs_right, style="bg.TEntry")
-
-        self.input_client_street.grid(row=0, column=1, sticky="w", padx=5, pady=5)
-
-        ttk.Label(inputs_right, text="Ciudad", style="bg.TLabel").grid(
+        ttk.Label(inputs_right, text="RFC", style="bg.TLabel").grid(
             row=1, column=0, sticky="w", padx=5, pady=5
         )
+        self.input_client_rfc = ttk.Entry(inputs_right, style="bg.TEntry")
+        self.input_client_rfc.grid(row=1, column=1, sticky="w", padx=5, pady=5)
 
-        self.input_client_city = ttk.Entry(inputs_right, style="bg.TEntry")
-
-        self.input_client_city.grid(row=1, column=1, sticky="w", padx=5, pady=5)
-
-        ttk.Label(inputs_right, text="Codigo Postal", style="bg.TLabel").grid(
+        ttk.Label(inputs_right, text="Direccion", style="bg.TLabel").grid(
             row=2, column=0, sticky="w", padx=5, pady=5
         )
-
-        self.input_client_zip = ttk.Entry(inputs_right, style="bg.TEntry")
-
-        self.input_client_zip.grid(row=2, column=1, sticky="w", padx=5, pady=5)
+        self.input_client_address = ttk.Entry(inputs_right, style="bg.TEntry")
+        self.input_client_address.grid(row=2, column=1, sticky="w", padx=5, pady=5)
 
         # Buttons
-        buttons = ttk.Frame(content, style="bg.TFrame")
-        buttons.grid(row=3, column=0, sticky="nswe")
+        buttons = ttk.Frame(content, style="bg.TFrame", padding=10)
+        buttons.grid(row=3, column=0, sticky="w")
         buttons.columnconfigure((0, 1, 2, 3), weight=1)
+
         ttk.Button(
             buttons,
             text="Agregar",
@@ -157,16 +146,14 @@ class ClientsScreen(ttk.Frame):
         self.input_client_name.delete(0, "end")
         self.input_client_email.delete(0, "end")
         self.input_client_phone.delete(0, "end")
-        self.input_client_street.delete(0, "end")
-        self.input_client_city.delete(0, "end")
-        self.input_client_zip.delete(0, "end")
+        self.input_client_rfc.delete(0, "end")
+        self.input_client_address.delete(0, "end")
         self.input_client_id.insert(0, data[0])
         self.input_client_name.insert(0, data[1])
         self.input_client_email.insert(0, data[2])
         self.input_client_phone.insert(0, data[3])
-        self.input_client_street.insert(0, data[4])
-        self.input_client_city.insert(0, data[5])
-        self.input_client_zip.insert(0, data[6])
+        self.input_client_rfc.insert(0, data[4])
+        self.input_client_address.insert(0, data[5])
 
     def update_table(self):
         self._clients = self._data._customer.get_all_customers()
@@ -180,20 +167,16 @@ class ClientsScreen(ttk.Frame):
         self.input_client_name.delete(0, "end")
         self.input_client_email.delete(0, "end")
         self.input_client_phone.delete(0, "end")
-        self.input_client_street.delete(0, "end")
-        self.input_client_city.delete(0, "end")
-        self.input_client_zip.delete(0, "end")
+        self.input_client_rfc.delete(0, "end")
+        self.input_client_address.delete(0, "end")
 
     def create_client(self):
         name = self.input_client_name.get()
         email = self.input_client_email.get()
         phone = self.input_client_phone.get()
-        street = self.input_client_street.get()
-        city = self.input_client_city.get()
-        postal_code = self.input_client_zip.get()
-        self._data._customer.create_customer(
-            name, email, phone, street, city, postal_code
-        )
+        rfc = self.input_client_rfc.get()
+        address = self.input_client_address.get()
+        self._data._customer.create_customer(name, email, phone, rfc, address)
         self.update_table()
         self.clear_fields()
 
@@ -202,11 +185,10 @@ class ClientsScreen(ttk.Frame):
         name = self.input_client_name.get()
         email = self.input_client_email.get()
         phone = self.input_client_phone.get()
-        street = self.input_client_street.get()
-        city = self.input_client_city.get()
-        postal_code = self.input_client_zip.get()
+        rfc = self.input_client_rfc.get()
+        address = self.input_client_address.get()
         self._data._customer.update_customer(
-            id_customer, name, email, phone, street, city, postal_code
+            id_customer, name, email, phone, rfc, address
         )
         self.update_table()
         self.clear_fields()

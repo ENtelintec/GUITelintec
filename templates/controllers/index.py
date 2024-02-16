@@ -5,8 +5,11 @@ from templates.controllers.order.order_controller import Order
 from templates.controllers.product.categories_controller import Category
 from templates.controllers.product.movements_controller import Movement
 from templates.controllers.product.product_controller import Product
-from templates.controllers.supplier.products_controller import Product as SupplierProduct
+from templates.controllers.supplier.products_controller import (
+    Product as SupplierProduct,
+)
 from templates.controllers.supplier.suppliers_controller import Supplier
+from templates.controllers.internal.internal_stock import InternalStock
 
 
 class DataHandler:
@@ -20,3 +23,4 @@ class DataHandler:
         self._product_movements = Movement()
         self._supplier = Supplier()
         self._supplier_product = SupplierProduct()
+        self._internal_stock = InternalStock()

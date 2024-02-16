@@ -21,7 +21,7 @@ class InventoryScreen(ttk.Frame):
         content.grid(row=0, column=0, sticky="nswe")
         content.columnconfigure(0, weight=1)
         ttk.Label(
-            content, text="Productos", style="bg.TLabel", font=("Arial Black", 25)
+            content, text="Inventario", style="bg.TLabel", font=("Arial Black", 25)
         ).grid(row=0, column=0, sticky="w", padx=5, pady=10)
 
         # Table
@@ -34,15 +34,15 @@ class InventoryScreen(ttk.Frame):
 
         self.col_data = [
             {"text": "ID Producto", "stretch": True},
+            {"text": "SKU", "stretch": True},
             {"text": "Nombre", "stretch": True},
-            {"text": "Descripción", "stretch": False},
-            {"text": "Precio", "stretch": True},
+            {"text": "UDM", "stretch": True},
             {"text": "Stock", "stretch": True},
             {"text": "MinStock", "stretch": True},
             {"text": "MaxStock", "stretch": True},
             {"text": "ReorderPoint", "stretch": True},
-            {"text": "Categoría", "stretch": False},
-            {"text": "Proveedor", "stretch": False},
+            {"text": "Categoría", "stretch": True},
+            {"text": "Proveedor", "stretch": True},
         ]
 
         self.table = Tableview(
@@ -51,7 +51,7 @@ class InventoryScreen(ttk.Frame):
             paginated=True,
             pagesize=10,
             searchable=True,
-            autofit=True
+            autofit=True,
         )
         self.table.build_table_data(self.col_data, self._products)
         self.table.grid(row=1, column=0, sticky="nswe", padx=15, pady=5)
@@ -60,9 +60,9 @@ class InventoryScreen(ttk.Frame):
         # Inputs
         inputs = ttk.Frame(content, style="bg.TFrame")
         inputs.grid(row=2, column=0, sticky="nswe")
-        inputs.columnconfigure((0, 1), weight=1)
+        inputs.columnconfigure((0, 1, 2, 3), weight=1)
         ttk.Label(
-            inputs, text="Agregar nuevo cliente", style="bg.TLabel", font=("Arial", 20)
+            inputs, text="Agregar nuevo producto", style="bg.TLabel", font=("Arial", 20)
         ).grid(row=0, column=0, sticky="w", ipady=5, pady=(16, 0), padx=10)
 
         # dividir el frame en 2, izq y derecha para los inputs
@@ -76,7 +76,6 @@ class InventoryScreen(ttk.Frame):
         extra_inputs.grid(row=1, column=2, sticky="nswe")
 
         # Inputs left
-
         ttk.Label(inputs_left, text="ID", style="bg.TLabel").grid(
             row=0, column=0, sticky="w", padx=5, pady=5
         )
@@ -132,6 +131,7 @@ class InventoryScreen(ttk.Frame):
             row=0, column=0, sticky="w", padx=5, pady=5
         )
         self.values_cat = self._data._product_categories.get_all_categories()
+        # self.values_cat_filter = [name for _, name in self.values_cat]
         self.dropdown_category_selector = ttk.Combobox(
             extra_inputs, values=self.values_cat, style="bg.TCombobox"
         )
@@ -152,7 +152,7 @@ class InventoryScreen(ttk.Frame):
 
         # Buttons
         buttons = ttk.Frame(content, style="bg.TFrame")
-        buttons.grid(row=3, column=0, sticky="nswe")
+        buttons.grid(row=3, column=0, sticky="w")
         buttons.columnconfigure((0, 1, 2, 3), weight=1)
         ttk.Button(
             buttons,
@@ -232,9 +232,8 @@ class InventoryScreen(ttk.Frame):
         product_minStock = self.input_product_minStock.get()
         product_maxStock = self.input_product_maxStock.get()
         product_reorderPoint = self.input_product_reorderPoint.get()
-        product_category = self.dropdown_category_selector.get()
-        product_supplier = self.dropdown_supplier_selector.get()
-
+        product_category = self.dropdown_category_selector.get().split(" ")[0]
+        product_supplier = self.dropdown_supplier_selector.get().split(" ")[0]
         if product_category.__contains__(" "):
             product_category = product_category.split(" ")[0]
         else:
@@ -287,8 +286,8 @@ class InventoryScreen(ttk.Frame):
         product_minStock = self.input_product_minStock.get()
         product_maxStock = self.input_product_maxStock.get()
         product_reorderPoint = self.input_product_reorderPoint.get()
-        product_category = self.dropdown_category_selector.get()
-        product_supplier = self.dropdown_supplier_selector.get()
+        product_category = self.dropdown_category_selector.get().split(" ")[0]
+        product_supplier = self.dropdown_supplier_selector.get().split(" ")[0]
 
         if (
             product_name == ""

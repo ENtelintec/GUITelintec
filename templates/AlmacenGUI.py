@@ -3,9 +3,10 @@ from templates.screens.Clients import ClientsScreen
 from templates.screens.Home import HomeScreen
 from templates.screens.In import InScreen
 from templates.screens.Inventory import InventoryScreen
+from templates.screens.Supplies import SuppliesScreen
+from templates.screens.InternalInventory import InternalInventoryScreen
 from templates.screens.Orders import OrdersScreen
 from templates.screens.Out import OutScreen
-from templates.screens.Returns import ReturnsScreen
 from templates.screens.Providers import ProvidersScreen
 from templates.screens.Settings import SettingsScreen
 
@@ -20,10 +21,11 @@ class App(ttk.Frame):
         self._home = HomeScreen
         self._clients = ClientsScreen
         self._inventory = InventoryScreen
+        self._daily_supplies = SuppliesScreen
+        self._internal_inventory = InternalInventoryScreen
         self._settings = SettingsScreen
         self._in = InScreen
         self._out = OutScreen
-        self._returns = ReturnsScreen
         self._orders = OrdersScreen
         self._providers = ProvidersScreen
 
@@ -53,4 +55,4 @@ class App(ttk.Frame):
         if self._current_frame:
             self._current_frame.grid_forget()
         self._current_frame = new_frame(self)
-        self._current_frame.grid(row=0, column=1,  sticky="nsew")
+        self._current_frame.grid(row=0, column=1, sticky="nsew")

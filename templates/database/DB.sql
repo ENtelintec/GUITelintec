@@ -14,9 +14,10 @@ CREATE TABLE IF NOT EXISTS product_categories_amc (
 -- Crear tabla de productos
 CREATE TABLE IF NOT EXISTS products_amc (
     id_product INT PRIMARY KEY AUTO_INCREMENT,
+    sku VARCHAR(50) NOT NULL,
     name VARCHAR(100) NOT NULL,
-    description TEXT,
-    price DECIMAL(10, 2) NOT NULL,
+    udm VARCHAR(20) NOT NULL,
+    -- price DECIMAL(10, 2) NOT NULL,
     stock INT NOT NULL,
     minStock INT,
     maxStock INT,
@@ -25,7 +26,8 @@ CREATE TABLE IF NOT EXISTS products_amc (
     FOREIGN KEY (id_category) REFERENCES product_categories_amc(id_category) ON DELETE
     SET
         NULL ON UPDATE CASCADE,
-        INDEX idx_category (id_category)
+        INDEX idx_category (id_category),
+        INDEX idx_sku (sku)
 );
 
 -- Crear tabla de clientes
@@ -34,26 +36,22 @@ CREATE TABLE IF NOT EXISTS customers_amc (
     name VARCHAR(100) NOT NULL,
     email VARCHAR(100),
     phone VARCHAR(20),
-    INDEX idx_name (name),
-    INDEX idx_email (email)
-);
-
--- Crear tabla de dirección de envío de los clientes
-CREATE TABLE IF NOT EXISTS customer_addresses_amc (
-    id_address INT PRIMARY KEY AUTO_INCREMENT,
-    id_customer INT,
-    address VARCHAR(255) NOT NULL,
-    city VARCHAR(100),
-    postal_code VARCHAR(20),
-    FOREIGN KEY (id_customer) REFERENCES customers_amc(id_customer) ON DELETE CASCADE ON UPDATE CASCADE
+    rfc VARCHAR(20),
+    address VARCHAR(255),
+    INDEX idx_name (name)
 );
 
 -- Crear tabla de proveedores
 CREATE TABLE IF NOT EXISTS suppliers_amc (
     id_supplier INT PRIMARY KEY AUTO_INCREMENT,
     name VARCHAR(100) NOT NULL,
+    seller_name VARCHAR(100),
+    seller_email VARCHAR(100),
+    phone VARCHAR(20),
     address VARCHAR(255),
-    phone VARCHAR(20)
+    web_url VARCHAR(255),
+    type ENUM('materiales', 'EPP', 'linea') DEFAULT 'materiales',
+    INDEX idx_name (name)
 );
 
 -- Crear tabla de órdenes
@@ -61,7 +59,7 @@ CREATE TABLE IF NOT EXISTS orders_amc (
     id_order INT PRIMARY KEY AUTO_INCREMENT,
     id_customer INT,
     date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    return_status ENUM('pending', 'processing', 'complete') DEFAULT 'pending',
+    return_status ENUM('pending', 'urgent', 'processing', 'complete') DEFAULT 'pending',
     FOREIGN KEY (id_customer) REFERENCES customers_amc(id_customer) ON DELETE
     SET
         NULL ON UPDATE CASCADE,
@@ -103,3 +101,66 @@ CREATE TABLE IF NOT EXISTS product_movements_amc (
     INDEX idx_product_movement (id_product),
     INDEX idx_movement_date (movement_date)
 );
+
+-- Agregar tabla de herramientas internas
+CREATE TABLE IF NOT EXISTS internal_tools_amc (
+    id_tool INT PRIMARY KEY AUTO_INCREMENT,
+    sku VARCHAR(50) NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    contract_assigned VARCHAR(100),
+    stock INT NOT NULL
+);
+
+-- Agregar tabla de inventario de suministros
+CREATE TABLE IF NOT EXISTS supply_inventory_amc (
+    id_supply INT PRIMARY KEY AUTO_INCREMENT,
+    sku VARCHAR(50) NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    stock INT NOT NULL
+);
+
+-- Agregar vista para obtener todos los productos
+CREATE VIEW get_all_products AS
+SELECT
+    products_amc.id_product,
+    products_amc.sku,
+    products_amc.name,
+    products_amc.udm,
+    products_amc.stock,
+    products_amc.minStock,
+    products_amc.maxStock,
+    products_amc.reorderPoint,
+    product_categories_amc.name AS category_name,
+    suppliers_amc.name AS supplier_name
+FROM
+    products_amc
+    LEFT JOIN supplier_product_amc ON products_amc.id_product = supplier_product_amc.id_product
+    LEFT JOIN product_categories_amc ON products_amc.id_category = product_categories_amc.id_category
+    LEFT JOIN suppliers_amc ON supplier_product_amc.id_supplier = suppliers_amc.id_supplier;
+
+-- Agregar vista para obtener todas las órdenes
+CREATE VIEW get_all_orders AS
+SELECT
+    orders_amc.id_order,
+    orders_amc.id_customer,
+    customers_amc.name AS customer_name,
+    orders_amc.date,
+    orders_amc.return_status,
+    GROUP_CONCAT(
+        CONCAT(
+            products_amc.id_product,
+            ' : ',
+            products_amc.name,
+            ' : ',
+            order_details_amc.quantity
+        )
+        ORDER BY
+            order_details_amc.id_order_detail SEPARATOR '; '
+    ) AS products_info
+FROM
+    orders_amc
+    JOIN order_details_amc ON orders_amc.id_order = order_details_amc.id_order
+    JOIN customers_amc ON orders_amc.id_customer = customers_amc.id_customer
+    JOIN products_amc ON order_details_amc.id_product = products_amc.id_product
+GROUP BY
+    orders_amc.id_order;
