@@ -22,12 +22,13 @@ from templates.frames.Frame_vAssistantGUI import AssistantGUI
 from templates.screens.Clients import ClientsScreen
 from templates.screens.Home import HomeScreen
 from templates.screens.In import InScreen
+from templates.screens.InternalInventory import InternalInventoryScreen
 from templates.screens.Inventory import InventoryScreen
 from templates.screens.Orders import OrdersScreen
 from templates.screens.Out import OutScreen
 from templates.screens.Providers import ProvidersScreen
-from templates.screens.Returns import ReturnsScreen
 from templates.screens.Settings import SettingsScreen
+from templates.screens.Supplies import SuppliesScreen
 
 filepath_notifications = 'files/notifications.txt'
 default_values_settings = {"max_chats": "40", "start_date": "19/oct./2023", "end_date": "19/oct./2023",
@@ -140,7 +141,7 @@ class GUIAsistente(ttk.Window):
         windows_names = windows_names if windows_names is not None else ["Notificaciones", "Settings"]
         widgets = []
         if flag or windows_names is not None:
-            if len(windows_names) >= 10:
+            if len(windows_names) >= 12:
                 scrollbar = ttk.Scrollbar(master, orient="vertical")
                 scrollbar.grid(row=0, column=2, sticky="ns")
             for i, window in enumerate(windows_names):
@@ -198,6 +199,9 @@ class GUIAsistente(ttk.Window):
                 case "Inventario":
                     windows[window] = InventoryScreen(self)
                     print("inventory frame created")
+                case "Suministros Diarios":
+                    windows[window] = SuppliesScreen(self)
+                    print("diary supplies frame created")
                 case "Configuraciones (A)":
                     windows[window] = SettingsScreen(self)
                     print("settings frame created")
@@ -207,15 +211,15 @@ class GUIAsistente(ttk.Window):
                 case "Salidas":
                     windows[window] = OutScreen(self)
                     print("out frame created")
-                case "Devoluciones":
-                    windows[window] = ReturnsScreen(self)
-                    print("returns frame created")
                 case "Ordenes (A)":
                     windows[window] = OrdersScreen(self)
                     print("orders frame created")
                 case "Proveedores (A)":
                     windows[window] = ProvidersScreen(self)
                     print("providers frame created")
+                case "Inventario Int.":
+                    windows[window] = InternalInventoryScreen(self)
+                    print("inventory internal frame created")
                 case "Empleados":
                     windows[window] = EmployeesFrame(self)
                     print("employees frame created")

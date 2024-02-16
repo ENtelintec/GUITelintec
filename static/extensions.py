@@ -20,7 +20,7 @@ ventanasApp = {
     'App.Deparment.RRHH': ["Fichajes", "Examenes", "Emp. Detalles", "Vacaciones", "Empleados", "Cuenta"],
     # 'App.Deparment.RRHH': ["Cuenta"],
     'App.Deparment.Administrator': ["DB", "Notificaciones", "Chats", "Fichajes", "Tickets", "Settings", "Cuenta"],
-    'App.Deparment.ALMACEN': ["Home", "Clients (A)", "Inventario", "Entradas", "Salidas",  "Devoluciones", "Ordenes (A)",
+    'App.Deparment.ALMACEN': ["Home", "Entradas", "Salidas", "Inventario",  "Suministros Diarios", "Inventario Int.", "Clients (A)",
                               "Proveedores (A)", "Configuraciones (A)", "Cuenta"],
     'App.Deparment.Default': ["Cuenta"]
 }
