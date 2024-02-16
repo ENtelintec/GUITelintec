@@ -158,9 +158,9 @@ def set_dateEntry_new_value(master, entry, value, row, column, padx, pady, stick
     return entry
 
 
-def set_entry_value(entry1_emp, param: str):
-    entry1_emp.delete(0, ttk.END)
-    entry1_emp.insert(0, param)
+def set_entry_value(entry, param: str):
+    entry.delete(0, ttk.END)
+    entry.insert(0, param)
 
 
 def clean_entries(entries: list[ttk.Entry]):

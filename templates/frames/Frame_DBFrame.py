@@ -116,7 +116,7 @@ class EmployeesFrame(ttk.Frame):
         set_entry_value(self.entries[5], department)
         set_entry_value(self.entries[12], puesto)
         self.entries[6].set(modality)
-        set_entry_value(self.entries[8], contract)
+        set_entry_value(self.entries[7], contract)
         entry_date = datetime.strptime(entry_date, "%Y-%m-%d %H:%M:%S") if entry_date != "None" else datetime.now()
         self.entries[8] = set_dateEntry_new_value(
             self.insert_frame, self.entries[8], entry_date.date(),
