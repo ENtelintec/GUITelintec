@@ -10,7 +10,7 @@ class InScreen(ttk.Frame):
     def __init__(self, master, *args, **kwargs):
         super().__init__(master, *args, **kwargs)
         self.master = master
-        self.columnconfigure((0, 1), weight=1)
+        self.columnconfigure(0, weight=1)
         self._data = DataHandler()
         self._products = self._data._product.get_all_products()
         self._ins = self._data._product_movements.get_ins()
@@ -20,14 +20,19 @@ class InScreen(ttk.Frame):
 
     def create_content(self, parent):
         """Creates the content of the Inputs screen, includes the table of inputs and the inputs to add a new entrs"""
-        ttk.Label(
-            self, text="Entradas", style="bg.TLabel", font=("Arial Black", 25)
-        ).grid(row=0, column=0, sticky="w", padx=5, pady=10, columnspan=2)
+        content = ttk.Frame(parent, style="bg.TFrame")
+        content.grid(row=0, column=0, sticky="nswe")
+        content.columnconfigure(0, weight=1)
+        ttk.Label(content, text="Entradas", font=("Arial Black", 25)).grid(
+            row=0, column=0, sticky="nswe", padx=5, pady=10
+        )
 
         # Table
-        ttk.Label(
-            self, text="Tabla de Entradas", style="bg.TLabel", font=("Arial", 20)
-        ).grid(row=1, column=0, sticky="w", padx=5, pady=10)
+        table = ttk.Frame(content, style="bg.TFrame")
+        table.grid(row=1, column=0, sticky="nswe")
+        table.columnconfigure(0, weight=1)
+        ttk.Label(table, text="Tabla de Entradas", style="bg.TLabel", font=("Arial", 20)
+        ).grid(row=0, column=0, sticky="w", padx=5, pady=10)
         self.col_data = [
             {"text": "ID Movimiento", "stretch": True},
             {"text": "ID Producto", "stretch": True},
@@ -37,41 +42,53 @@ class InScreen(ttk.Frame):
             {"text": "Nombre producto", "stretch": False},
         ]
         self.table = Tableview(
-            master=self,
+            master=table,
             bootstyle="primary",
             paginated=True,
             pagesize=10,
             searchable=True,
-            autofit=True
+            autofit=True,
         )
         self.table.build_table_data(self.col_data, self._ins)
-        self.table.grid(row=2, column=0, sticky="nswe",  padx=15, pady=5, columnspan=2)
+        self.table.grid(row=1, column=0, sticky="nswe", padx=15, pady=5, columnspan=2)
         self.table.view.bind("<Double-1>", self.events)
 
         # Inputs
+        inputs = ttk.Frame(content, style="bg.TFrame")
+        inputs.grid(row=2, column=0, sticky="nswe")
+        inputs.columnconfigure((0, 1, 2, 3), weight=1)
+
         ttk.Label(
-            self, text="Agregar nueva entrada", style="bg.TLabel", font=("Arial", 20)
-        ).grid(row=3, column=0, sticky="w", padx=5, pady=10, columnspan=2)
-        ttk.Label(self, text="Producto", style="bg.TLabel").grid(
-            row=4, column=0, sticky="w", padx=5, pady=5
+            inputs, text="Agregar nueva entrada", style="bg.TLabel", font=("Arial", 20)
+        ).grid(row=0, column=0, sticky="w", padx=5, pady=10)
+
+        inputs_left = ttk.Frame(inputs, style="bg.TFrame")
+        inputs_left.grid(row=1, column=0, sticky="nswe")
+
+        # Inputs left
+        ttk.Label(inputs_left, text="Producto", style="bg.TLabel").grid(
+            row=0, column=0, sticky="w", padx=5, pady=5
         )
-        self.products_selector = ttk.Combobox(self, values=self._products)
-        self.products_selector.grid(row=4, column=1, sticky="w", padx=5, pady=5)
-        ttk.Label(self, text="Cantidad", style="bg.TLabel").grid(
-            row=5, column=0, sticky="w", padx=5, pady=5
+        self.products_selector = ttk.Combobox(inputs_left, values=self._products)
+        self.products_selector.grid(row=0, column=1, sticky="w", padx=5, pady=5)
+
+        ttk.Label(inputs_left, text="Cantidad", style="bg.TLabel").grid(
+            row=1, column=0, sticky="w", padx=5, pady=5
         )
-        self.quantity = ttk.Entry(self)
-        self.quantity.grid(row=5, column=1, sticky="w", padx=5, pady=5)
-        ttk.Label(self, text="Fecha de entrada", style="bg.TLabel").grid(
-            row=6, column=0, sticky="w", padx=5, pady=5
+        self.quantity = ttk.Entry(inputs_left)
+        self.quantity.grid(row=1, column=1, sticky="w", padx=5, pady=5)
+
+        ttk.Label(inputs_left, text="Fecha de entrada", style="bg.TLabel").grid(
+            row=2, column=0, sticky="w", padx=5, pady=5
         )
-        self.date = ttk.Entry(self)
-        self.date.grid(row=6, column=1, sticky="w", padx=5, pady=5)
+        self.date = ttk.Entry(inputs_left)
+        self.date.grid(row=2, column=1, sticky="w", padx=5, pady=5)
         current_date = datetime.now()
         self.date.insert(0, current_date)
+
         # Buttons
         button_frame = ttk.Frame(self, style="bg.TFrame")
-        button_frame.grid(row=7, column=0, sticky="w", padx=5, pady=5,  columnspan=2)
+        button_frame.grid(row=7, column=0, sticky="w", padx=5, pady=5, columnspan=2)
         button_frame.columnconfigure((0, 1, 2, 3), weight=1)
         ttk.Button(
             button_frame,

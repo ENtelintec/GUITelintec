@@ -32,13 +32,6 @@ def create_menu(parent):
         command=lambda: parent.switch_screen(parent._orders),
     ).grid(row=3, column=0, sticky="nsew", pady=(16, 0), padx=10)
 
-    # ttk.Button(
-    #     menu,
-    #     text="Devoluciones",
-    #     style="bg.TButton",
-    #     command=lambda: parent.switch_screen(parent._returns),
-    # ).grid(row=4, column=0, sticky="nsew", pady=(16, 0), padx=10)
-
     ttk.Button(
         menu,
         text="Inventario",
@@ -48,24 +41,38 @@ def create_menu(parent):
 
     ttk.Button(
         menu,
+        text="Suministros Diarios",
+        style="bg.TButton",
+        command=lambda: parent.switch_screen(parent._daily_supplies),
+    ).grid(row=5, column=0, sticky="nsew", pady=(16, 0), padx=10)
+
+    ttk.Button(
+        menu,
+        text="Inventario Interno",
+        style="bg.TButton",
+        command=lambda: parent.switch_screen(parent._internal_inventory),
+    ).grid(row=6, column=0, sticky="nsew", pady=(16, 0), padx=10)
+
+    ttk.Button(
+        menu,
         text="Clientes",
         style="bg.TButton",
         command=lambda: parent.switch_screen(parent._clients),
-    ).grid(row=5, column=0, sticky="nsew", pady=(16, 0), padx=10)
+    ).grid(row=7, column=0, sticky="nsew", pady=(16, 0), padx=10)
 
     ttk.Button(
         menu,
         text="Proveedores",
         style="bg.TButton",
         command=lambda: parent.switch_screen(parent._providers),
-    ).grid(row=6, column=0, sticky="nsew", pady=(16, 0), padx=10)
+    ).grid(row=8, column=0, sticky="nsew", pady=(16, 0), padx=10)
 
     ttk.Button(
         menu,
         text="Configuracion",
         style="bg.TButton",
         command=lambda: parent.switch_screen(parent._settings),
-    ).grid(row=7, column=0, sticky="nsew", pady=(16, 0), padx=10)
+    ).grid(row=9, column=0, sticky="nsew", pady=(16, 0), padx=10)
 
     return menu
 
