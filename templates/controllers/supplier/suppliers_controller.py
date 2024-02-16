@@ -10,7 +10,7 @@ class Supplier:
         try:
             self.connection = db()
             self.cursor = self.connection.cursor()
-            self.cursor.execute("SELECT * FROM suppliers_amc")
+            self.cursor.execute("SELECT * FROM suppliers_amc;")
             result = self.cursor.fetchall()
             return result
         except Exception as e:
@@ -21,11 +21,23 @@ class Supplier:
                 self.connection.close()
                 self.cursor = None
 
-    def get_single_supplier(self, id_supplier):
+    def create_supplier(
+        self,
+        name_provider,
+        seller_provider,
+        email_provider,
+        phone_provider,
+        address_provider,
+        web_provider,
+        type_provider,
+    ):
         try:
-            self.cursor.execute(f"SELECT * FROM suppliers_amc WHERE id = {id_supplier}")
-            result = self.cursor.fetchone()
-            return result
+            self.connection = db()
+            self.cursor = self.connection.cursor()
+            sql = f"INSERT INTO suppliers_amc (name, seller_name, seller_email, phone, address, web_url, type) VALUES ('{name_provider}', '{seller_provider}', '{email_provider}', '{phone_provider}', '{address_provider}', '{web_provider}', '{type_provider}')"
+            self.cursor.execute(sql)
+            self.connection.commit()
+            return True
         except Exception as e:
             return f"Error: {e}"
         finally:
@@ -34,12 +46,21 @@ class Supplier:
                 self.connection.close()
                 self.cursor = None
 
-    def update_supplier(self, id_supplier, name, address, phone, email):
+    def update_supplier(
+        self,
+        id_provider,
+        name_provider,
+        seller_provider,
+        email_provider,
+        phone_provider,
+        address_provider,
+        web_provider,
+        type_provider,
+    ):
         try:
-            sql = (
-                f"UPDATE suppliers_amc SET name = '{name}', address = '{address}', phone = '{phone}', email = '{email}' "
-                f"WHERE id = {id_supplier}"
-            )
+            self.connection = db()
+            self.cursor = self.connection.cursor()
+            sql = f"UPDATE suppliers_amc SET name = '{name_provider}', seller_name = '{seller_provider}', seller_email = '{email_provider}', phone = '{phone_provider}', address = '{address_provider}', web_url = '{web_provider}', type = '{type_provider}' WHERE id_supplier = {id_provider}"
             self.cursor.execute(sql)
             self.connection.commit()
             return True

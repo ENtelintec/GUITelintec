@@ -8,9 +8,9 @@ class Product:
 
     def create_product(
         self,
+        sku,
         name,
-        description,
-        price,
+        udm,
         stock,
         minStock,
         maxStock,
@@ -21,17 +21,11 @@ class Product:
         try:
             self.connection = db()
             self.cursor = self.connection.cursor()
-            sql = (
-                f"INSERT INTO products_amc (name, description, price, stock, id_category) "
-                f"VALUES ('{name}', '{description}', {price}, {stock}, {minStock}, {maxStock}, {reorderPoint}, {id_category})"
-            )
+            sql = f"INSERT INTO products_amc (sku, name, udm, stock, minStock, maxStock, reorderPoint, id_category) VALUES ('{sku}', '{name}', '{udm}', {stock}, {minStock}, {maxStock}, {reorderPoint}, {id_category})"
             self.cursor.execute(sql)
             self.connection.commit()
 
-            sql2 = (
-                f"INSERT INTO supplier_product_amc (id_supplier, id_product) "
-                f"VALUES ({id_supplier}, {self.cursor.lastrowid})"
-            )
+            sql2 = f"INSERT INTO supplier_product_amc (id_supplier, id_product) VALUES ({id_supplier}, {self.cursor.lastrowid})"
             self.cursor.execute(sql2)
             self.connection.commit()
             return True
@@ -47,21 +41,7 @@ class Product:
         try:
             self.connection = db()
             self.cursor = self.connection.cursor()
-            sql = """
-            SELECT products_amc.id_product,
-                products_amc.name AS product_name,
-                products_amc.description,
-                products_amc.price,
-                products_amc.stock,
-                products_amc.minStock,
-                products_amc.maxStock,
-                products_amc.reorderPoint,
-                product_categories_amc.name AS category_name,
-                suppliers_amc.name AS supplier_name
-            FROM products_amc
-            LEFT JOIN product_categories_amc ON products_amc.id_category = product_categories_amc.id_category
-            LEFT JOIN supplier_product_amc ON products_amc.id_product = supplier_product_amc.id_product
-            LEFT JOIN suppliers_amc ON supplier_product_amc.id_supplier = suppliers_amc.id_supplier"""
+            sql = f"SELECT * from get_all_products"
             self.cursor.execute(sql)
             result = self.cursor.fetchall()
             return result
@@ -76,9 +56,9 @@ class Product:
     def update_product(
         self,
         id_product,
+        sku,
         name,
-        description,
-        price,
+        udm,
         stock,
         minStock,
         maxStock,
@@ -89,16 +69,11 @@ class Product:
         try:
             self.connection = db()
             self.cursor = self.connection.cursor()
-            sql = (
-                f"UPDATE products_amc SET name = '{name}', description = '{description}', price = {price}, stock = {stock}, minStock= {minStock}, maxStock = {maxStock}, reorderPoint = {reorderPoint}, id_category = {id_category} "
-                f"WHERE id_product = {id_product}"
-            )
+            sql = f"UPDATE products_amc SET sku = '{sku}', name = '{name}', udm = '{udm}', stock = {stock}, minStock = {minStock}, maxStock = {maxStock}, reorderPoint = {reorderPoint}, id_category = {id_category} WHERE id_product = {id_product}"
             self.cursor.execute(sql)
             self.connection.commit()
-            sql2 = (
-                f"UPDATE supplier_product_amc SET id_supplier = {id_supplier} "
-                f"WHERE id_product = {id_product}"
-            )
+
+            sql2 = f"UPDATE supplier_product_amc SET id_supplier = {id_supplier} WHERE id_product = {id_product}"
             self.cursor.execute(sql2)
             self.connection.commit()
             return True

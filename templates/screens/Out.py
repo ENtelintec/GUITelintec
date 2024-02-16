@@ -23,17 +23,17 @@ class OutScreen(ttk.Frame):
         content = ttk.Frame(parent, style="bg.TFrame")
         content.grid(row=0, column=0, sticky="nswe")
         content.columnconfigure(0, weight=1)
-        ttk.Label(
-            content, text="Salidas", font=("Arial Black", 25)
-        ).grid(row=0, column=0, sticky="nswe", padx=5, pady=10)
+        ttk.Label(content, text="Salidas", font=("Arial Black", 25)).grid(
+            row=0, column=0, sticky="nswe", padx=5, pady=10
+        )
 
         # Table
-        table = ttk.Frame(content)
-        table.grid(row=1, column=0,  sticky="nswe")
+        table = ttk.Frame(content, style="bg.TFrame")
+        table.grid(row=1, column=0, sticky="nswe")
         table.columnconfigure(0, weight=1)
-        ttk.Label(
-            table, text="Tabla de Salidas", font=("Arial", 20)
-        ).grid(row=0, column=0, sticky="w", padx=5, pady=10)
+        ttk.Label(table, text="Tabla de Salidas", font=("Arial", 20)).grid(
+            row=0, column=0, sticky="w", padx=5, pady=10
+        )
 
         self.col_data = [
             {"text": "ID Movimiento", "stretch": True},
@@ -47,56 +47,51 @@ class OutScreen(ttk.Frame):
         self.table = Tableview(
             master=table,
             bootstyle="primary",
-            coldata=self.col_data,
-            rowdata=self._outs,
             paginated=True,
             pagesize=10,
             searchable=True,
-            autofit=True
+            autofit=True,
         )
-        self.table.autofit_columns()
-        self.table.grid(row=1, column=0, sticky="nswe",  padx=15, pady=5)
+        self.table.build_table_data(self.col_data, self._outs)
+        self.table.grid(row=1, column=0, sticky="nswe", padx=15, pady=5, columnspan=2)
         self.table.view.bind("<Double-1>", self.events)
 
         # Inputs
         inputs = ttk.Frame(content, style="bg.TFrame")
         inputs.grid(row=2, column=0, sticky="nswe")
-        inputs.columnconfigure((0, 1), weight=1)
+        inputs.columnconfigure((0, 1, 2, 3), weight=1)
+
         ttk.Label(
             inputs, text="Agregar nueva salida", style="bg.TLabel", font=("Arial", 20)
-        ).grid(row=0, column=0, sticky="w", padx=5, pady=10)
+        ).grid(row=0, column=0, sticky="nswe", padx=5, pady=10)
 
-        ttk.Label(inputs, text="Producto", style="bg.TLabel").grid(
+        inputs_left = ttk.Frame(inputs, style="bg.TFrame")
+        inputs_left.grid(row=1, column=0, sticky="nswe")
+
+        # Inputs left
+        ttk.Label(inputs_left, text="Producto", style="bg.TLabel").grid(
+            row=0, column=0, sticky="w", padx=5, pady=5
+        )
+        self.products_selector = ttk.Combobox(inputs_left, values=self._products)
+        self.products_selector.grid(row=0, column=1, sticky="w", padx=5, pady=5)
+
+        ttk.Label(inputs_left, text="Cantidad", style="bg.TLabel").grid(
             row=1, column=0, sticky="w", padx=5, pady=5
         )
+        self.quantity = ttk.Entry(inputs_left)
+        self.quantity.grid(row=1, column=1, sticky="w", padx=5, pady=5)
 
-        self.products_selector = ttk.Combobox(inputs, values=self._products)
-
-        self.products_selector.grid(row=1, column=1, sticky="w", padx=5, pady=5)
-
-        ttk.Label(inputs, text="Cantidad", style="bg.TLabel").grid(
+        ttk.Label(inputs_left, text="Fecha de salida", style="bg.TLabel").grid(
             row=2, column=0, sticky="w", padx=5, pady=5
         )
-
-        self.quantity = ttk.Entry(inputs)
-
-        self.quantity.grid(row=2, column=1, sticky="w", padx=5, pady=5)
-
-        ttk.Label(inputs, text="Fecha de salida", style="bg.TLabel").grid(
-            row=3, column=0, sticky="w", padx=5, pady=5
-        )
-
-        self.date = ttk.Entry(inputs)
-
-        self.date.grid(row=3, column=1, sticky="w", padx=5, pady=5)
-
+        self.date = ttk.Entry(inputs_left)
+        self.date.grid(row=2, column=1, sticky="w", padx=5, pady=5)
         current_date = datetime.now()
-
         self.date.insert(0, current_date)
 
         # Buttons
         buttons = ttk.Frame(content, style="bg.TFrame")
-        buttons.grid(row=3, column=0, sticky="nswe")
+        buttons.grid(row=3, column=0, sticky="w")
         buttons.columnconfigure((0, 1, 2, 3), weight=1)
         ttk.Button(
             buttons,

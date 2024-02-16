@@ -17,6 +17,13 @@ class HomeScreen(ttk.Frame):
         self._total_returns = 0
         self.create_content(self)
 
+    def verify_profit(self):
+        if self._total_profit[0][0] == None:
+            return 0
+        else:
+            # return int(self._total_profit[0][0])
+            return 0
+
     def create_content(self, parent):
         """
         Creates the content of the home screen, includes only graphics charts
@@ -29,7 +36,7 @@ class HomeScreen(ttk.Frame):
         chart_profit = ttk.Meter(
             self,
             bootstyle="success",
-            amountused=int(self._total_profit[0][0]),
+            amountused=self.verify_profit(),
             amounttotal=int("500000"),
             textleft="$",
             metertype="full",
