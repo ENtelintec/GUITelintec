@@ -259,13 +259,13 @@ class OrdersScreen(ttk.Frame):
         self.update_table()
 
     def update_order(self):
-        # order_id = self.input_order_id.get()
-        # customer_id = self.input_client_id.get().split(" ")[0]
-        # status = self.input_order_status.get()
-        # self._data._order.update_order(order_id, customer_id, status)
-        # self.clear_fields()
-        # self.update_table()
-        pass
+        order_id = self.input_order_id.get()
+        customer_id = self.input_client_id.get().split(" ")[0]
+        status = self.input_order_status.get()
+        products_list = self.get_product_entries()
+        self._data._order.update_order(order_id, customer_id, status, products_list)
+        self.clear_fields()
+        self.update_table()
 
     def delete_order(self):
         order_id = self.input_order_id.get()

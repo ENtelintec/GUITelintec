@@ -31,6 +31,37 @@ class Order:
                 self.connection.close()
                 self.cursor = None
 
+    def update_order(
+        self,
+        id_order,
+        id_customer,
+        return_status,
+        products_list,
+    ):
+        try:
+            self.connection = db()
+            self.cursor = self.connection.cursor()
+            sql = (
+                f"UPDATE orders_amc SET id_customer = {id_customer}, return_status = '{return_status}' "
+                f"WHERE id_order = {id_order}"
+            )
+            self.cursor.execute(sql)
+            self.connection.commit()
+            for product in products_list:
+                product_id = product[0].split()[0]
+                product_quantity = product[1]
+                sql2 = f"UPDATE order_details_amc SET id_product = {product_id}, quantity = {product_quantity} WHERE id_order_detail = {id_order}"
+                self.cursor.execute(sql2)
+                self.connection.commit()
+
+        except Exception as e:
+            return f"Error: {e}"
+        finally:
+            if self.connection.is_connected():
+                self.cursor.close()
+                self.connection.close()
+                self.cursor = None
+
     def get_profit(self):
         try:
             self.connection = db()
@@ -58,39 +89,6 @@ class Order:
             self.cursor.execute(sql)
             result = self.cursor.fetchall()
             return result
-        except Exception as e:
-            return f"Error: {e}"
-        finally:
-            if self.connection.is_connected():
-                self.cursor.close()
-                self.connection.close()
-                self.cursor = None
-
-    def update_order(
-        self,
-        id_order,
-        id_customer,
-        return_status,
-        id_order_detail,
-        id_product,
-        quantity,
-    ):
-        try:
-            self.connection = db()
-            self.cursor = self.connection.cursor()
-            sql = (
-                f"UPDATE orders SET id_customer = {id_customer}, return_status = '{return_status}' "
-                f"WHERE id_order = {id_order}"
-            )
-            self.cursor.execute(sql)
-            self.connection.commit()
-            sql2 = (
-                f"UPDATE order_details SET id_product = {id_product}, quantity = {quantity} "
-                f"WHERE id_order_detail = {id_order_detail}"
-            )
-            self.cursor.execute(sql2)
-            self.connection.commit()
-            return True
         except Exception as e:
             return f"Error: {e}"
         finally:
