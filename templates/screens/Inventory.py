@@ -82,19 +82,19 @@ class InventoryScreen(ttk.Frame):
         self.input_product_id = ttk.Entry(inputs_left, style="bg.TEntry")
         self.input_product_id.grid(row=0, column=1, sticky="w", padx=5, pady=5)
 
-        ttk.Label(inputs_left, text="Nombre", style="bg.TLabel").grid(
+        ttk.Label(inputs_left, text="SKU", style="bg.TLabel").grid(
             row=1, column=0, sticky="w", padx=5, pady=5
         )
         self.input_product_name = ttk.Entry(inputs_left, style="bg.TEntry")
         self.input_product_name.grid(row=1, column=1, sticky="w", padx=5, pady=5)
 
-        ttk.Label(inputs_left, text="Descripción", style="bg.TLabel").grid(
+        ttk.Label(inputs_left, text="Nombre", style="bg.TLabel").grid(
             row=2, column=0, sticky="w", padx=5, pady=5
         )
         self.input_produt_description = ttk.Entry(inputs_left, style="bg.TEntry")
         self.input_produt_description.grid(row=2, column=1, sticky="w", padx=5, pady=5)
 
-        ttk.Label(inputs_left, text="Precio", style="bg.TLabel").grid(
+        ttk.Label(inputs_left, text="UDM", style="bg.TLabel").grid(
             row=3, column=0, sticky="w", padx=5, pady=5
         )
         self.input_product_price = ttk.Entry(inputs_left, style="bg.TEntry")
