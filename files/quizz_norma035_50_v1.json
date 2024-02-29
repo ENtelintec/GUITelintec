@@ -1,0 +1,255 @@
+{
+    "0": {
+        "question": " I.- Acontecimiento traumático severo (en el período laborado de su actual empresa)",
+        "subquestions": [
+            "Ha presenciado o sufrido alguna vez, durante o con motivo en su trabajo actual, un acontecimiento como los siguientes:",
+            "*Accidente que tenga como consecuencia la muerte, pérdida de un miembro corporal o una lesión grave",
+            "*Asaltos",
+            " *Actos violentos que derivaron en lesiones graves.",
+            " *Secuestro",
+            " *Amenazas",
+            " *Cualquier otro que ponga en riesgo su vida o salud y/o la de otras personas.",
+            "  *",
+            "  NOTA: Si en esta SECCIÓN  I.- Acontecimiento traumático severo  tu respuesta es NO, en las siguientes secciones de esta HOJA vas a seleccionar NO a TODAS."
+        ],
+        "options": [
+            "SI",
+            "NO"
+        ],
+        "answer": "",
+        "type": 3
+    },
+    "1": {
+        "question": "II.- Recuerdos persistentes sobre el acontecimiento (durante el último mes):*",
+        "subquestions": [
+            "¿Ha tenido recuerdos recurrentes sobre el acontecimiento que le provocan malestares?",
+            "¿Ha tenido sueños de carácter recurrente sobre el acontecimiento, que le producen malestar?"
+        ],
+        "options": [
+            "SI",
+            "NO"
+        ],
+        "answer": 0,
+        "type": 0
+    },
+    "2": {
+        "question": "III.- Esfuerzo por evitar circunstancias parecidas o asociadas al acontecimiento (durante el último mes):",
+        "subquestions": [
+            "¿Se ha esforzado para evitar todo tipo de sentimientos, conversaciones o situaciones que le pueden recordar el acontecimiento?",
+            "¿Se ha esforzado por evitar todo tipo de actividades, lugares o personas que motivan recuerdos del acontecimiento?",
+            "¿Ha tenido dificultad para recordar alguna parte importante del evento?",
+            "¿Ha disminuido su interés en sus actividades cotidianas?",
+            "¿Se ha sentido usted alejado o distante de los demás?",
+            "¿Ha notado que tiene dificultad para expresar sus sentimientos?",
+            "¿Ha tenido la impresión de que su vida se va a acortar, que va a morir antes que otras personas o que tiene un futuro limitado?"
+        ],
+        "options": [
+            "SI",
+            "NO"
+        ],
+        "answer": "",
+        "type": 3
+    },
+    "3": {
+        "question": "IV.- Afectación (durante el último mes):*",
+        "subquestions": [
+            "¿Ha tenido usted dificultades para dormir?",
+            "¿Ha estado particularmente irritable o le han dado arranques de coraje?",
+            "¿Ha tenido dificultad para concentrarse?",
+            "¿Ha estado nervioso o constantemente en alerta?",
+            "¿Se ha sobresaltado fácilmente por cualquier cosa?"
+        ],
+        "options": [
+            "SI",
+            "NO"
+        ],
+        "answer": "",
+        "type": 3
+    },
+
+    "4": {
+        "question": "Para responder las preguntas siguientes considere las condiciones de su centro de trabajo, así como la cantidad y ritmo de trabajo.*",
+        "subquestions": [
+            "Q1.Mi trabajo me exige hacer mucho esfuerzo físico.",
+            "Q2.Me preocupa sufrir un accidente en mi trabajo.",
+            "Q3.Considero que las actividades que realizo son peligrosas.",
+            "Q4.Por la cantidad de trabajo que tengo debo quedarme tiempo adicional a mi turno.",
+            "Q5.Por la cantidad de trabajo que tengo debo trabajar sin parar.",
+            "Q6.Considero que es necesario mantener un ritmo de trabajo acelerado.",
+            "Q7.Mi trabajo exige que esté muy concentrado.",
+            "Q8.Mi trabajo requiere que memorice mucha información.",
+            "Q9.Mi trabajo exige que atienda varios asuntos al mismo tiempo."
+        ],
+        "options": [
+            "Siempre",
+            "Casi siempre",
+            "Algunas veces",
+            "Casi Nunca",
+            "Nunca"
+        ],
+        "answer": "",
+        "type": 3
+    },
+    "5": {
+        "question": "Las preguntas siguientes están relacionadas con las actividades que realiza en su trabajo y las responsabilidades que tiene.*",
+        "subquestions": [
+            "Q10.En mi trabajo soy responsable de cosas de mucho valor.",
+            "Q11.Respondo ante mi jefe por los resultados de toda mi área de trabajo.",
+            "Q12.En mi trabajo me dan órdenes contradictorias.",
+            "Q13.Considero que en mi trabajo me piden hacer cosas innecesarias."
+        ],
+        "options": [
+            "Siempre",
+            "Casi siempre",
+            "Algunas veces",
+            "Casi Nunca",
+            "Nunca"
+        ],
+        "answer": "",
+        "type": 3
+    },
+    "6": {
+        "question": "Las preguntas siguientes están relacionadas con el tiempo destinado a su trabajo y sus responsabilidades familiares.*",
+        "subquestions": [
+            "Q14.Trabajo horas extras más de tres veces a la semana.",
+            "Q15.Mi trabajo me exige laborar en días de descanso, festivos o fines de semana.",
+            "Q16.Considero que el tiempo en el trabajo es mucho y perjudica mis actividades familiares o personales.",
+            "Q17.Pienso en las actividades familiares o personales cuando estoy en mi trabajo."
+        ],
+        "options": [
+            "Siempre",
+            "Casi siempre",
+            "Algunas veces",
+            "Casi Nunca",
+            "Nunca"
+        ],
+        "answer": "",
+        "type": 3
+    },
+    "7": {
+        "question": "Las preguntas siguientes están relacionadas con las decisiones que puede tomar en su trabajo.*",
+        "subquestions": [
+            "Q18.Mi trabajo permite que desarrolle nuevas habilidades.",
+            "Q19.En mi trabajo puedo aspirar a un mejor puesto.",
+            "Q20.Durante mi jornada de trabajo puedo tomar pausas cuando las necesito.",
+            "Q21.Puedo decidir la velocidad a la que realizo mis actividades en mi trabajo.",
+            "Q22.Puedo cambiar el orden de las actividades que realizo en mi trabajo."
+        ],
+        "options": [
+            "Siempre",
+            "Casi siempre",
+            "Algunas veces",
+            "Casi Nunca",
+            "Nunca"
+        ],
+        "answer": "",
+        "type": 3
+    },
+    "8": {
+        "question": "Las preguntas siguientes están relacionadas con la capacitación e información que recibe sobre su trabajo.*",
+        "subquestions": [
+            "Q23.Me informan con claridad cuáles son mis funciones.",
+            "Q24.Me explican claramente los resultados que debo obtener en mi trabajo.",
+            "Q25.Me informan con quién puedo resolver problemas o asuntos de trabajo.",
+            "Q26.Me permiten asistir a capacitaciones relacionadas con mi trabajo.",
+            "Q27.Recibo capacitación útil para hacer mi trabajo."
+        ],
+        "options": [
+            "Siempre",
+            "Casi siempre",
+            "Algunas veces",
+            "Casi Nunca",
+            "Nunca"
+        ],
+        "answer": "",
+        "type": 3
+    },
+    "9": {
+        "question": "Las preguntas siguientes se refieren a las relaciones con sus compañeros de trabajo y su jefe.*",
+        "subquestions": [
+            "Q28.Mi jefe tiene en cuenta mis puntos de vista y opiniones.",
+            "Q29.Mi jefe ayuda a solucionar los problemas que se presentan en el trabajo.",
+            "Q30.Puedo confiar en mis compañeros de trabajo.",
+            "Q31.Cuando tenemos que realizar trabajo de equipo los compañeros colaboran.",
+            "Q32.Mis compañeros de trabajo me ayudan cuando tengo dificultades.",
+            "Q33.En mi trabajo puedo expresarme libremente sin interrupciones.",
+            "Q34.Recibo críticas constantes a mi persona y/o trabajo.",
+            "Q35.Recibo burlas, calumnias, difamaciones, humillaciones o ridiculizaciones.",
+            "Q36.Se ignora mi presencia o se me excluye de las reuniones de trabajo y en la toma de decisiones.",
+            "Q37.Se manipulan las situaciones de trabajo para hacerme parecer un mal trabajador.",
+            "Q38.Se ignoran mis éxitos laborales y se atribuyen a otros trabajadores.",
+            "Q39.Me bloquean o impiden las oportunidades que tengo para obtener ascenso o mejora en mi trabajo.",
+            "Q40.He presenciado actos de violencia en mi centro de trabajo."
+        ],
+        "options": [
+            "Siempre",
+            "Casi siempre",
+            "Algunas veces",
+            "Casi Nunca",
+            "Nunca"
+        ],
+        "answer": "",
+        "type": 3
+    },
+    "10": {
+        "question": "Las preguntas siguientes están relacionadas con la atención a clientes y usuarios.*",
+        "subquestions": [
+            "En mi trabajo debo brindar servicio a clientes o usuarios."
+        ],
+        "options": [
+            "SI",
+            "NO"
+        ],
+        "answer": "",
+        "type": 3
+    },
+    "11": {
+        "question": "Si su respuesta fue “SÍ”, responda las preguntas siguientes./Si su respuesta fue “NO” seleccione la opción (NO APLICA)*",
+        "subquestions": [
+            "Q41.Atiendo clientes o usuarios muy enojados.",
+            "Q42.Mi trabajo me exige atender personas muy necesitadas de ayuda o enfermas.",
+            "Q43.Para hacer mi trabajo debo demostrar sentimientos distintos a los míos."
+        ],
+        "options": [
+            "Siempre",
+            "Casi siempre",
+            "Algunas veces",
+            "Casi Nunca",
+            "Nunca",
+            "NO APLICA"
+        ],
+        "answer": "",
+        "type": 3
+    },
+    "12": {
+        "question": "Soy jefe de otros trabajadores:*",
+        "subquestions": [
+            "Soy jefe de otros trabajadores."
+        ],
+        "options": [
+            "SI",
+            "NO"
+
+        ],
+        "answer": "",
+        "type": 3
+    },
+    "13": {
+        "question": "Si su respuesta fue “SÍ”, responda las preguntas siguientes./Si su respuesta fue “NO” seleccione la opción (NO APLICA)*",
+        "subquestions": [
+            "Q44.Comunican tarde los asuntos de trabajo.",
+            "Q45.Dificultan el logro de los resultados del trabajo.",
+            "Q46.Ignoran las sugerencias para mejorar su trabajo."
+        ],
+        "options": [
+            "Siempre",
+            "Casi siempre",
+            "Algunas veces",
+            "Casi Nunca",
+            "Nunca",
+            "NO APLICA"
+        ],
+        "answer": "",
+        "type": 3
+    }
+}
