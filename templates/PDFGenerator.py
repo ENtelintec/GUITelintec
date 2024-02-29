@@ -1,47 +1,44 @@
 # -*- coding: utf-8 -*-
-__author__ = 'Edisson Naula'
-__date__ = '$ 14/feb./2024  at 15:54 $'
+__author__ = "Edisson Naula"
+__date__ = "$ 14/feb./2024  at 15:54 $"
 
 from datetime import datetime
+import textwrap
 
 from reportlab.pdfgen import canvas
 
 
-def create_datos_personales(master: canvas.Canvas,
-                            emp, puesto, term, start, end,
-                            interview, interviewer,
-                            dim_x, dim_y):
+def create_datos_personales(
+    master: canvas.Canvas,
+    emp,
+    puesto,
+    term,
+    start,
+    end,
+    interview,
+    interviewer,
+    dim_x,
+    dim_y,
+):
     pady = 0
     master.setFont("Courier-Bold", 10)
-    master.drawString(dim_x + 10, dim_y - 25 - pady,
-                      "Nombre y firma del empleado:")
-    master.drawString(dim_x + 10, dim_y - 40 - pady,
-                      "Puesto:")
-    master.drawString(dim_x + 10, dim_y - 55 - pady,
-                      "Terminal:")
-    master.drawString(dim_x + 10, dim_y - 70 - pady,
-                      "Fecha de inicio:")
-    master.drawString(dim_x + 10, dim_y - 85 - pady,
-                      "Fecha de fin:")
-    master.drawString(dim_x + 10, dim_y - 100 - pady,
-                      "De entrevista:")
-    master.drawString(dim_x + 10, dim_y - 115 - pady,
-                      "Nombre y firma del entrevistador:")
+    master.drawString(dim_x + 10, dim_y - 25 - pady, "Nombre y firma del empleado:")
+    master.drawString(dim_x + 10, dim_y - 40 - pady, "Puesto:")
+    master.drawString(dim_x + 10, dim_y - 55 - pady, "Terminal:")
+    master.drawString(dim_x + 10, dim_y - 70 - pady, "Fecha de inicio:")
+    master.drawString(dim_x + 10, dim_y - 85 - pady, "Fecha de fin:")
+    master.drawString(dim_x + 10, dim_y - 100 - pady, "De entrevista:")
+    master.drawString(
+        dim_x + 10, dim_y - 115 - pady, "Nombre y firma del entrevistador:"
+    )
     master.setFont("Courier", 10)
-    master.drawString(dim_x + 180, dim_y - 25 - pady,
-                      emp)
-    master.drawString(dim_x + 60, dim_y - 40 - pady,
-                      puesto)
-    master.drawString(dim_x + 70, dim_y - 55 - pady,
-                      term)
-    master.drawString(dim_x + 110, dim_y - 70 - pady,
-                      start)
-    master.drawString(dim_x + 95, dim_y - 85 - pady,
-                      end)
-    master.drawString(dim_x + 105, dim_y - 100 - pady,
-                      interview)
-    master.drawString(dim_x + 215, dim_y - 115 - pady,
-                      interviewer)
+    master.drawString(dim_x + 180, dim_y - 25 - pady, emp)
+    master.drawString(dim_x + 60, dim_y - 40 - pady, puesto)
+    master.drawString(dim_x + 70, dim_y - 55 - pady, term)
+    master.drawString(dim_x + 110, dim_y - 70 - pady, start)
+    master.drawString(dim_x + 95, dim_y - 85 - pady, end)
+    master.drawString(dim_x + 105, dim_y - 100 - pady, interview)
+    master.drawString(dim_x + 215, dim_y - 115 - pady, interviewer)
 
 
 def create_header(master: canvas.Canvas, img, title, page_x, date_int):
@@ -57,47 +54,91 @@ def create_header(master: canvas.Canvas, img, title, page_x, date_int):
     padx = 15
     width_logo = 106.6
     # header
-    master.line(start_box_x, position_header_y + height_box - pady,
-                page_x - start_box_x, position_header_y + height_box - pady)
-    master.line(start_box_x, position_header_y + height_box - pady,
-                start_box_x, position_header_y - pady)
-    master.line(page_x - start_box_x, position_header_y + height_box - pady,
-                page_x - start_box_x, position_header_y - pady)
-    master.line(start_box_x, position_header_y - pady,
-                page_x - start_box_x, position_header_y - pady)
-    master.line(start_box_x + (position_header_x - start_box_x) + width_logo + padx,
-                position_header_y + height_box - pady,
-                start_box_x + (position_header_x - start_box_x) + width_logo + padx, position_header_y - pady)
-    master.line(page_x - start_box_x - codes_width - padx, position_header_y + height_box - pady,
-                page_x - start_box_x - codes_width - padx, position_header_y - pady)
-    master.drawInlineImage(img, position_header_x, position_header_y,
-                           height=30, width=106.6,
-                           preserveAspectRatio=False, showBoundary=False)
+    master.line(
+        start_box_x,
+        position_header_y + height_box - pady,
+        page_x - start_box_x,
+        position_header_y + height_box - pady,
+    )
+    master.line(
+        start_box_x,
+        position_header_y + height_box - pady,
+        start_box_x,
+        position_header_y - pady,
+    )
+    master.line(
+        page_x - start_box_x,
+        position_header_y + height_box - pady,
+        page_x - start_box_x,
+        position_header_y - pady,
+    )
+    master.line(
+        start_box_x,
+        position_header_y - pady,
+        page_x - start_box_x,
+        position_header_y - pady,
+    )
+    master.line(
+        start_box_x + (position_header_x - start_box_x) + width_logo + padx,
+        position_header_y + height_box - pady,
+        start_box_x + (position_header_x - start_box_x) + width_logo + padx,
+        position_header_y - pady,
+    )
+    master.line(
+        page_x - start_box_x - codes_width - padx,
+        position_header_y + height_box - pady,
+        page_x - start_box_x - codes_width - padx,
+        position_header_y - pady,
+    )
+    master.drawInlineImage(
+        img,
+        position_header_x,
+        position_header_y,
+        height=30,
+        width=106.6,
+        preserveAspectRatio=False,
+        showBoundary=False,
+    )
     master.setFont("Courier-Bold", title_height)
     master.drawCentredString(
-        page_x / 2, position_header_y + height_logo / 2 - title_height / 2, title.upper())
+        page_x / 2,
+        position_header_y + height_logo / 2 - title_height / 2,
+        title.upper(),
+    )
     master.setFont("Courier", codes_h_height)
-    master.drawString(page_x - codes_width - padx, position_header_y + height_logo - codes_h_height,
-                      'Codigo: FO-GRH-08 R0')
-    master.drawString(page_x - codes_width - padx, position_header_y, f'Emisión: {date_int}')
+    master.drawString(
+        page_x - codes_width - padx,
+        position_header_y + height_logo - codes_h_height,
+        "Codigo: FO-GRH-08 R0",
+    )
+    master.drawString(
+        page_x - codes_width - padx, position_header_y, f"Emisión: {date_int}"
+    )
 
 
 # dict_quizz = json.load(open('../files/quizz_salida.json', encoding="utf-8"))
 
 
-def create_pdf_quizz_salida(dict_quizz, image_logo=None, filepath_out=None,
-                            name_emp="Ejemplo1",
-                            job="position 1",
-                            terminal="terminal",
-                            date_start="01/01/2021",
-                            date_end="31/12/2021",
-                            date_inteview="01/01/2021",
-                            name_interviewer="Interviewer"
-                            ):
+def create_pdf_quizz_salida(
+    dict_quizz,
+    image_logo=None,
+    filepath_out=None,
+    name_emp="Ejemplo1",
+    job="position 1",
+    terminal="terminal",
+    date_start="01/01/2021",
+    date_end="31/12/2021",
+    date_inteview="01/01/2021",
+    name_interviewer="Interviewer",
+):
     # initializing variables with values
-    file_name = 'C:/Users/Edisson/Documents/sample.pdf' if filepath_out is None else filepath_out
-    image_logo = 'img/logo_docs.png' if image_logo is None else image_logo
-    name_quizz = 'Encuesta de Salida'
+    file_name = (
+        "C:/Users/eugen/OneDrive/Escritorio/pdfs/samplev2.pdf"
+        if filepath_out is None
+        else filepath_out
+    )
+    image_logo = "img/logo_docs.png" if image_logo is None else image_logo
+    name_quizz = "Encuesta de Salida"
     n_questions = len(dict_quizz)
     # creating a pdf object
     a4_x = 595.27
@@ -109,22 +150,24 @@ def create_pdf_quizz_salida(dict_quizz, image_logo=None, filepath_out=None,
     # create header
     create_header(pdf, image_logo, name_quizz, a4_x, date_inteview)
     # information text
-    txt_lines = ["Por favor, dedique unos minutos a completar esta encuesta. La información que nos",
-                 "proporcione será utilizada para entender los motivos de su baja en la empresa.",
-                 "Sus respuestas serán tratadas de forma CONFIDENCIAL y analizada proactivamente."]
+    txt_lines = [
+        "Por favor, dedique unos minutos a completar esta encuesta. La información que nos",
+        "proporcione será utilizada para entender los motivos de su baja en la empresa.",
+        "Sus respuestas serán tratadas de forma CONFIDENCIAL y analizada proactivamente.",
+    ]
     font_size = 12
     pdf.setFont("Times-Roman", font_size)
     for i, line in enumerate(txt_lines):
         pdf.drawString(80, 730 - i * font_size, line)
     # ----------------------question1----------------------
-    question = dict_quizz["0"]['question']
+    question = dict_quizz["0"]["question"]
     question = question.split("\n")
     font_size = 12
     pdf.setFont("Times-Roman", font_size)
     for i, line in enumerate(question):
         pdf.drawString(80, 680 - i * font_size, line)
-    options = dict_quizz["0"]['options']
-    answers = dict_quizz["0"]['answers'] if 'answers' in dict_quizz["0"] else [0, 2]
+    options = dict_quizz["0"]["options"]
+    answers = dict_quizz["0"]["answers"] if "answers" in dict_quizz["0"] else [0, 2]
     cols = 3
     for i, option in enumerate(options):
         index_x = i % cols
@@ -135,14 +178,14 @@ def create_pdf_quizz_salida(dict_quizz, image_logo=None, filepath_out=None,
             pdf.setFillColorRGB(0, 0, 0)
         pdf.drawString(100 + index_x * 140, 640 - index_y * font_size * 1.5, option)
     # ------------------question 2-------------------------
-    question = dict_quizz["1"]['question']
+    question = dict_quizz["1"]["question"]
     question = question.split("\n")
     font_size = 12
     pdf.setFont("Times-Roman", font_size)
     for i, line in enumerate(question):
         pdf.drawString(80, 555 - i * font_size, line)
-    options = dict_quizz["1"]['options']
-    answers = [dict_quizz["1"]['answer']] if 'answer' in dict_quizz["1"] else [2]
+    options = dict_quizz["1"]["options"]
+    answers = [dict_quizz["1"]["answer"]] if "answer" in dict_quizz["1"] else [2]
     cols = 3
     for i, option in enumerate(options):
         index_x = i % cols
@@ -153,17 +196,19 @@ def create_pdf_quizz_salida(dict_quizz, image_logo=None, filepath_out=None,
             pdf.setFillColorRGB(0, 0, 0)
         pdf.drawString(100 + index_x * 140, 525 - index_y * font_size * 1.5, option)
     # --------------------question 3-------------------------------
-    question = dict_quizz["2"]['question']
+    question = dict_quizz["2"]["question"]
     question = question.split("\n")
     font_size = 12
     pdf.setFont("Times-Roman", font_size)
     for i, line in enumerate(question):
         pdf.drawString(80, 490 - i * font_size, line)
-    options = dict_quizz["2"]['options']
-    subquestions = dict_quizz["2"]['subquestions']
-    answers = dict_quizz["2"]['answer'] if dict_quizz["2"]["answer"] != "" else [(0, 0), (1, 0), (2, 0), (3, 0),
-                                                                                   (4, 0),
-                                                                                   (5, 0), (6, 0), (7, 0), (8, 0)]
+    options = dict_quizz["2"]["options"]
+    subquestions = dict_quizz["2"]["subquestions"]
+    answers = (
+        dict_quizz["2"]["answer"]
+        if dict_quizz["2"]["answer"] != ""
+        else [(0, 0), (1, 0), (2, 0), (3, 0), (4, 0), (5, 0), (6, 0), (7, 0), (8, 0)]
+    )
     cols = len(options)
     font_size = 8
     pdf.setFont("Times-Roman", font_size)
@@ -185,15 +230,19 @@ def create_pdf_quizz_salida(dict_quizz, image_logo=None, filepath_out=None,
                 pdf.drawString(250 + j * 70, 425 - i * font_size * 1.25, "O")
 
     # ----------------------question 4-----------------------------------
-    question = dict_quizz["3"]['question']
+    question = dict_quizz["3"]["question"]
     question = question.split("\n")
     font_size = 12
     pdf.setFont("Times-Roman", font_size)
     for i, line in enumerate(question):
         pdf.drawString(80, 280 - i * font_size, line)
-    options = dict_quizz["3"]['options']
-    answers = dict_quizz["3"]['answer'] if dict_quizz["3"]["answer"] != "" else [(0, 0), (1, 0), (2, 0), (3, 0)]
-    subquestions = dict_quizz["3"]['subquestions']
+    options = dict_quizz["3"]["options"]
+    answers = (
+        dict_quizz["3"]["answer"]
+        if dict_quizz["3"]["answer"] != ""
+        else [(0, 0), (1, 0), (2, 0), (3, 0)]
+    )
+    subquestions = dict_quizz["3"]["subquestions"]
     cols = len(options)
     font_size = 8
     pdf.setFont("Times-Roman", font_size)
@@ -219,15 +268,19 @@ def create_pdf_quizz_salida(dict_quizz, image_logo=None, filepath_out=None,
                 pdf.setFillColorRGB(0, 0, 0)
                 pdf.drawString(330 + j * 50, 225 - i * font_size * 1.35, "O")
     # ------------------------question 5------------------------------
-    question = dict_quizz["4"]['question']
+    question = dict_quizz["4"]["question"]
     question = question.split("\n")
     font_size = 12
     pdf.setFont("Times-Roman", font_size)
     for i, line in enumerate(question):
         pdf.drawString(80, 150 - i * font_size, line)
-    options = dict_quizz["4"]['options']
-    answers = dict_quizz["4"]['answer'] if dict_quizz["4"]["answer"] != "" else [(0, 0), (1, 0), (2, 0), (3, 0), (4, 0)]
-    subquestions = dict_quizz["4"]['subquestions']
+    options = dict_quizz["4"]["options"]
+    answers = (
+        dict_quizz["4"]["answer"]
+        if dict_quizz["4"]["answer"] != ""
+        else [(0, 0), (1, 0), (2, 0), (3, 0), (4, 0)]
+    )
+    subquestions = dict_quizz["4"]["subquestions"]
     cols = len(options)
     font_size = 8
     pdf.setFont("Times-Roman", font_size)
@@ -253,14 +306,14 @@ def create_pdf_quizz_salida(dict_quizz, image_logo=None, filepath_out=None,
     pdf.showPage()
     create_header(pdf, image_logo, name_quizz, a4_x, date_inteview)
     # ------------------------question 6-------------------
-    question = dict_quizz["5"]['question']
+    question = dict_quizz["5"]["question"]
     question = question.split("\n")
     font_size = 12
     pdf.setFont("Times-Roman", font_size)
     for i, line in enumerate(question):
         pdf.drawString(80, 730 - i * font_size, line)
-    options = dict_quizz["5"]['options']
-    answers = [dict_quizz["5"]['answer']] if 'answer' in dict_quizz["5"] else [2]
+    options = dict_quizz["5"]["options"]
+    answers = [dict_quizz["5"]["answer"]] if "answer" in dict_quizz["5"] else [2]
     cols = 3
     for i, option in enumerate(options):
         index_x = i % cols
@@ -270,20 +323,28 @@ def create_pdf_quizz_salida(dict_quizz, image_logo=None, filepath_out=None,
         else:
             pdf.setFillColorRGB(0, 0, 0)
 
-        option = option.split("\n") if i != 3 else ["Aprendi en el curso", "de entrenamiento"]
+        option = (
+            option.split("\n")
+            if i != 3
+            else ["Aprendi en el curso", "de entrenamiento"]
+        )
 
         for j, word in enumerate(option):
-            pdf.drawString(100 + index_x * 140, 700 - index_y * font_size * 1.5 - j * font_size, word)
+            pdf.drawString(
+                100 + index_x * 140,
+                700 - index_y * font_size * 1.5 - j * font_size,
+                word,
+            )
 
     #  ------------------------question 7-------------------
-    question = dict_quizz["6"]['question']
+    question = dict_quizz["6"]["question"]
     question = question.split("\n")
     font_size = 12
     pdf.setFont("Times-Roman", font_size)
     for i, line in enumerate(question):
         pdf.drawString(80, 645 - i * font_size, line)
-    options = dict_quizz["6"]['options']
-    answers = [dict_quizz["6"]['answer']] if 'answer' in dict_quizz["6"] else [2]
+    options = dict_quizz["6"]["options"]
+    answers = [dict_quizz["6"]["answer"]] if "answer" in dict_quizz["6"] else [2]
     cols = 1
     for i, option in enumerate(options):
         index_x = i % cols
@@ -295,14 +356,14 @@ def create_pdf_quizz_salida(dict_quizz, image_logo=None, filepath_out=None,
         pdf.drawString(120 + index_x * 140, 620 - index_y * font_size * 1.5, option)
 
     # ------------------------question 8-------------------
-    question = dict_quizz["7"]['question']
+    question = dict_quizz["7"]["question"]
     question = question.split("\n")
     font_size = 12
     pdf.setFont("Times-Roman", font_size)
     for i, line in enumerate(question):
         pdf.drawString(80, 520 - i * font_size, line)
-    options = dict_quizz["7"]['options']
-    answers = [dict_quizz["7"]['answer']] if 'answer' in dict_quizz["7"] else [2]
+    options = dict_quizz["7"]["options"]
+    answers = [dict_quizz["7"]["answer"]] if "answer" in dict_quizz["7"] else [2]
     cols = 5
     for i, option in enumerate(options):
         index_x = i % cols
@@ -314,14 +375,14 @@ def create_pdf_quizz_salida(dict_quizz, image_logo=None, filepath_out=None,
         pdf.drawString(120 + index_x * 80, 480 - index_y * font_size * 1.5, option)
 
     # ------------------------question 9-------------------
-    question = dict_quizz["8"]['question']
+    question = dict_quizz["8"]["question"]
     question = question.split("\n")
     font_size = 12
     pdf.setFont("Times-Roman", font_size)
     for i, line in enumerate(question):
         pdf.drawString(80, 445 - i * font_size, line)
-    options = dict_quizz["8"]['options']
-    answers = [dict_quizz["8"]['answer']] if 'answer' in dict_quizz["8"] else [2]
+    options = dict_quizz["8"]["options"]
+    answers = [dict_quizz["8"]["answer"]] if "answer" in dict_quizz["8"] else [2]
     cols = 5
     for i, option in enumerate(options):
         index_x = i % cols
@@ -333,7 +394,7 @@ def create_pdf_quizz_salida(dict_quizz, image_logo=None, filepath_out=None,
         pdf.drawString(120 + index_x * 80, 400 - index_y * font_size * 1.5, option)
 
     # ------------------------question 10-------------------
-    question = dict_quizz["9"]['question']
+    question = dict_quizz["9"]["question"]
     question = question.split("\n")
     font_size = 12
     pdf.setFont("Times-Roman", font_size)
@@ -343,10 +404,10 @@ def create_pdf_quizz_salida(dict_quizz, image_logo=None, filepath_out=None,
     pdf.line(80, 340, 80, 200)
     pdf.line(520, 340, 520, 200)
     pdf.line(80, 200, 520, 200)
-    answer = dict_quizz["9"]['answer'] if 'answer' in dict_quizz["9"] else "No"
+    answer = dict_quizz["9"]["answer"] if "answer" in dict_quizz["9"] else "No"
     # split every 100 characters
     n_char = 105
-    answer = "\n".join([answer[i:i + n_char] for i in range(0, len(answer), n_char)])
+    answer = "\n".join([answer[i : i + n_char] for i in range(0, len(answer), n_char)])
     answer = answer.split("\n")
     pdf.setFont("Times-Roman", 10)
     pdf.setFillColorRGB(0, 0, 255)
@@ -354,7 +415,1468 @@ def create_pdf_quizz_salida(dict_quizz, image_logo=None, filepath_out=None,
         pdf.drawString(85, 330 - i * 10, line)
     pdf.setFillColorRGB(0, 0, 0)
     # ------------------------personal data-------------------
-    create_datos_personales(pdf, name_emp, job, terminal, date_start, date_end, date_inteview,
-                            name_interviewer, 80, 180)
+    create_datos_personales(
+        pdf,
+        name_emp,
+        job,
+        terminal,
+        date_start,
+        date_end,
+        date_inteview,
+        name_interviewer,
+        80,
+        180,
+    )
     pdf.save()
     return True
+
+
+# def ceate_pdf__quizz_nor035_v1(
+# def create_pdf__quizz_nor035_v1(
+#     dict_quizz,
+#     image_logo=None,
+#     filepath_out=None,
+#     name_emp="Ejemplo1",
+#     job="position 1",
+#     terminal="terminal",
+#     date_start="01/01/2021",
+#     date_end="31/12/2021",
+#     date_inteview="01/01/2021",
+#     name_interviewer="Interviewer",
+# ):
+#     # initializing variables with values
+#     #  file_name = "C:\Users\eugen\OneDrive\Escritorio\pdfs\orm035_v1.pdf"
+#     file_name = (
+#         "C:/Users/eugen/OneDrive/Escritorio/pdfs/orm035_v1.pdf"
+#         if filepath_out is None
+#         else filepath_out
+#     )
+#     image_logo = "img/logo_docs.png" if image_logo is None else image_logo
+#     name_quizz = "NORMA 035 V1"
+#     n_questions = len(dict_quizz)
+#     # creating a pdf object
+#     a4_x = 595.27
+#     a4_y = 841.89
+#     # create documente
+#     pdf = canvas.Canvas(file_name, pagesize=(a4_x, a4_y))
+#     # setting the title of the document
+#     pdf.setTitle(name_quizz)
+#     # create header
+#     create_header(pdf, image_logo, name_quizz, a4_x, date_inteview)
+#     # information text
+#     txt_lines = [
+#         "CUESTIONARIO PARA IDENTIFICAR A LOS TRABAJADORES QUE FUERON SUJETOS A ",
+#         "ACONTECIMIENTOS TRAUMÁTICOS SEVEROS",
+#     ]
+#     font_size = 12
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, line in enumerate(txt_lines):
+#         pdf.drawString(80, 730 - i * font_size, line)
+#     # ----------------------question1----------------------
+#     question = dict_quizz["0"]["question"]
+#     question = question.split("\n")
+#     font_size = 12
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, line in enumerate(question):
+#         pdf.drawString(80, 490 - i * font_size, line)
+#     options = dict_quizz["0"]["options"]
+#     subquestions = dict_quizz["0"]["subquestions"]
+#     answers = dict_quizz["0"]["answer"] if dict_quizz["0"]["answer"] != "" else [(0, 0)]
+#     cols = len(options)
+#     font_size = 8
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, option in enumerate(options):
+#         option = option.split(" ")
+#         for j, word in enumerate(option):
+#             pdf.drawCentredString(250 + i * 70, 450 - j * font_size, word)
+#     font_size = 11
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, subquestion in enumerate(subquestions):
+#         pdf.drawString(80, 425 - i * font_size * 1.25, subquestion)
+#     for i in range(len(subquestions)):
+#         for j in range(len(options)):
+#             if (i, j) in answers:
+#                 pdf.setFillColorRGB(0, 255, 0)
+#                 pdf.drawString(250 + j * 70, 425 - i * font_size * 1.25, "X")
+#             else:
+#                 pdf.setFillColorRGB(0, 0, 0)
+#                 pdf.drawString(250 + j * 70, 425 - i * font_size * 1.25, "O")
+
+#     #   ----------------------question2----------------------
+#     question = dict_quizz["1"]["question"]
+#     question = question.split("\n")
+#     font_size = 12
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, line in enumerate(question):
+#         pdf.drawString(80, 280 - i * font_size, line)
+#     options = dict_quizz["1"]["options"]
+#     subquestions = dict_quizz["1"]["subquestions"]
+#     answers = (
+#         dict_quizz["1"]["answer"]
+#         if dict_quizz["1"]["answer"] != ""
+#         else [(0, 0), (1, 0)]
+#     )
+#     cols = len(options)
+#     font_size = 8
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, option in enumerate(options):
+#         option = option.split(" ")
+#         for j, word in enumerate(option):
+#             pdf.drawCentredString(250 + i * 70, 525 - j * font_size, word)
+#     font_size = 11
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, subquestion in enumerate(subquestions):
+#         pdf.drawString(40, 225 - i * font_size * 1.25, subquestion)
+#     for i in range(len(subquestions)):
+#         for j in range(len(options)):
+#             if (i, j) in answers:
+#                 pdf.setFillColorRGB(0, 255, 0)
+#                 pdf.drawString(250 + j * 70, 500 - i * font_size * 1.25, "X")
+#             else:
+#                 pdf.setFillColorRGB(0, 0, 0)
+#                 pdf.drawString(250 + j * 70, 500 - i * font_size * 1.25, "O")
+
+#     # ----------------------question3----------------------
+#     question = dict_quizz["2"]["question"]
+#     question = question.split("\n")
+#     font_size = 12
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, line in enumerate(question):
+#         pdf.drawString(80, 430 - i * font_size, line)
+#     options = dict_quizz["2"]["options"]
+#     subquestions = dict_quizz["2"]["subquestions"]
+#     answers = (
+#         dict_quizz["2"]["answer"]
+#         if dict_quizz["2"]["answer"] != ""
+#         else [(0, 0), (1, 0), (2, 0), (3, 0), (4, 0), (5, 0), (6, 0)]
+#     )
+#     cols = len(options)
+#     font_size = 8
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, option in enumerate(options):
+#         option = option.split(" ")
+#         for j, word in enumerate(option):
+#             pdf.drawCentredString(250 + i * 70, 400 - j * font_size, word)
+#     font_size = 11
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, subquestion in enumerate(subquestions):
+#         pdf.drawString(80, 375 - i * font_size * 1.25, subquestion)
+#     for i in range(len(subquestions)):
+#         for j in range(len(options)):
+#             if (i, j) in answers:
+#                 pdf.setFillColorRGB(0, 255, 0)
+#                 pdf.drawString(250 + j * 70, 375 - i * font_size * 1.25, "X")
+#             else:
+#                 pdf.setFillColorRGB(0, 0, 0)
+#                 pdf.drawString(250 + j * 70, 375 - i * font_size * 1.25, "O")
+
+#     # ----------------------question4----------------------
+#     question = dict_quizz["3"]["question"]
+#     question = question.split("\n")
+#     font_size = 12
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, line in enumerate(question):
+#         pdf.drawString(80, 330 - i * font_size, line)
+#     options = dict_quizz["3"]["options"]
+#     subquestions = dict_quizz["3"]["subquestions"]
+#     answers = (
+#         dict_quizz["3"]["answer"]
+#         if dict_quizz["3"]["answer"] != ""
+#         else [(0, 0), (1, 0), (2, 0), (3, 0), (4, 0)]
+#     )
+#     cols = len(options)
+#     font_size = 8
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, option in enumerate(options):
+#         option = option.split(" ")
+#         for j, word in enumerate(option):
+#             pdf.drawCentredString(250 + i * 70, 300 - j * font_size, word)
+#     font_size = 11
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, subquestion in enumerate(subquestions):
+#         pdf.drawString(80, 275 - i * font_size * 1.25, subquestion)
+#     for i in range(len(subquestions)):
+#         for j in range(len(options)):
+#             if (i, j) in answers:
+#                 pdf.setFillColorRGB(0, 255, 0)
+#                 pdf.drawString(250 + j * 70, 275 - i * font_size * 1.25, "X")
+#             else:
+#                 pdf.setFillColorRGB(0, 0, 0)
+#                 pdf.drawString(250 + j * 70, 275 - i * font_size * 1.25, "O")
+
+#     # ---------------------- add other page ----------------------
+#     pdf.showPage()
+#     create_header(pdf, image_logo, name_quizz, a4_x, date_inteview)
+
+#     # ----------------------question5----------------------
+#     question = dict_quizz["4"]["question"]
+#     question = question.split("\n")
+#     font_size = 12
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, line in enumerate(question):
+#         pdf.drawString(80, 230 - i * font_size, line)
+#     options = dict_quizz["4"]["options"]
+#     subquestions = dict_quizz["4"]["subquestions"]
+#     answers = (
+#         dict_quizz["4"]["answer"]
+#         if dict_quizz["4"]["answer"] != ""
+#         else [(0, 0), (1, 0), (2, 0), (3, 0), (4, 0), (5, 0), (6, 0), (7, 0), (8, 0)]
+#     )
+#     cols = len(options)
+#     font_size = 8
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, option in enumerate(options):
+#         option = option.split(" ")
+#         for j, word in enumerate(option):
+#             pdf.drawCentredString(250 + i * 70, 200 - j * font_size, word)
+#     font_size = 11
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, subquestion in enumerate(subquestions):
+#         pdf.drawString(80, 175 - i * font_size * 1.25, subquestion)
+#     for i in range(len(subquestions)):
+#         for j in range(len(options)):
+#             if (i, j) in answers:
+#                 pdf.setFillColorRGB(0, 255, 0)
+#                 pdf.drawString(250 + j * 70, 175 - i * font_size * 1.25, "X")
+#             else:
+#                 pdf.setFillColorRGB(0, 0, 0)
+#                 pdf.drawString(250 + j * 70, 175 - i * font_size * 1.25, "O")
+#     # ----------------------question6----------------------
+#     question = dict_quizz["5"]["question"]
+#     question = question.split("\n")
+#     font_size = 12
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, line in enumerate(question):
+#         pdf.drawString(80, 130 - i * font_size, line)
+#     options = dict_quizz["5"]["options"]
+#     subquestions = dict_quizz["5"]["subquestions"]
+#     answers = (
+#         dict_quizz["5"]["answer"]
+#         if dict_quizz["5"]["answer"] != ""
+#         else [(0, 0), (1, 0), (2, 0), (3, 0)]
+#     )
+#     cols = len(options)
+#     font_size = 8
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, option in enumerate(options):
+#         option = option.split(" ")
+#         for j, word in enumerate(option):
+#             pdf.drawCentredString(250 + i * 70, 100 - j * font_size, word)
+#     font_size = 11
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, subquestion in enumerate(subquestions):
+#         pdf.drawString(80, 75 - i * font_size * 1.25, subquestion)
+#     for i in range(len(subquestions)):
+#         for j in range(len(options)):
+#             if (i, j) in answers:
+#                 pdf.setFillColorRGB(0, 255, 0)
+#                 pdf.drawString(250 + j * 70, 75 - i * font_size * 1.25, "X")
+#             else:
+#                 pdf.setFillColorRGB(0, 0, 0)
+#                 pdf.drawString(250 + j * 70, 75 - i * font_size * 1.25, "O")
+
+#     # ----------------------question7-------------------
+#     question = dict_quizz["6"]["question"]
+#     question = question.split("\n")
+#     font_size = 12
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, line in enumerate(question):
+#         pdf.drawString(80, 630 - i * font_size, line)
+#     options = dict_quizz["6"]["options"]
+#     subquestions = dict_quizz["6"]["subquestions"]
+#     answers = (
+#         dict_quizz["6"]["answer"]
+#         if dict_quizz["6"]["answer"] != ""
+#         else [(0, 0), (1, 0), (2, 0), (3, 0)]
+#     )
+#     cols = len(options)
+#     font_size = 8
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, option in enumerate(options):
+#         option = option.split(" ")
+#         for j, word in enumerate(option):
+#             pdf.drawCentredString(250 + i * 70, 600 - j * font_size, word)
+#     font_size = 11
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, subquestion in enumerate(subquestions):
+#         pdf.drawString(80, 575 - i * font_size * 1.25, subquestion)
+#     for i in range(len(subquestions)):
+#         for j in range(len(options)):
+#             if (i, j) in answers:
+#                 pdf.setFillColorRGB(0, 255, 0)
+#                 pdf.drawString(250 + j * 70, 575 - i * font_size * 1.25, "X")
+#             else:
+#                 pdf.setFillColorRGB(0, 0, 0)
+#                 pdf.drawString(250 + j * 70, 575 - i * font_size * 1.25, "O")
+
+#     # ----------------------question8-------------------
+#     question = dict_quizz["7"]["question"]
+#     question = question.split("\n")
+#     font_size = 12
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, line in enumerate(question):
+#         pdf.drawString(80, 530 - i * font_size, line)
+#     options = dict_quizz["7"]["options"]
+#     subquestions = dict_quizz["7"]["subquestions"]
+#     answers = (
+#         dict_quizz["7"]["answer"]
+#         if dict_quizz["7"]["answer"] != ""
+#         else [(0, 0), (1, 0), (2, 0), (3, 0), (4, 0)]
+#     )
+#     cols = len(options)
+#     font_size = 8
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, option in enumerate(options):
+#         option = option.split(" ")
+#         for j, word in enumerate(option):
+#             pdf.drawCentredString(250 + i * 70, 500 - j * font_size, word)
+#     font_size = 11
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, subquestion in enumerate(subquestions):
+#         pdf.drawString(80, 475 - i * font_size * 1.25, subquestion)
+#     for i in range(len(subquestions)):
+#         for j in range(len(options)):
+#             if (i, j) in answers:
+#                 pdf.setFillColorRGB(0, 255, 0)
+#                 pdf.drawString(250 + j * 70, 475 - i * font_size * 1.25, "X")
+#             else:
+#                 pdf.setFillColorRGB(0, 0, 0)
+#                 pdf.drawString(250 + j * 70, 475 - i * font_size * 1.25, "O")
+
+#     # ----------------------question9-------------------
+#     question = dict_quizz["8"]["question"]
+#     question = question.split("\n")
+#     font_size = 12
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, line in enumerate(question):
+#         pdf.drawString(80, 430 - i * font_size, line)
+#     options = dict_quizz["8"]["options"]
+#     subquestions = dict_quizz["8"]["subquestions"]
+#     answers = (
+#         dict_quizz["8"]["answer"]
+#         if dict_quizz["8"]["answer"] != ""
+#         else [(0, 0), (1, 0), (2, 0), (3, 0), (4, 0)]
+#     )
+#     cols = len(options)
+#     font_size = 8
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, option in enumerate(options):
+#         option = option.split(" ")
+#         for j, word in enumerate(option):
+#             pdf.drawCentredString(250 + i * 70, 400 - j * font_size, word)
+#     font_size = 11
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, subquestion in enumerate(subquestions):
+#         pdf.drawString(80, 375 - i * font_size * 1.25, subquestion)
+#     for i in range(len(subquestions)):
+#         for j in range(len(options)):
+#             if (i, j) in answers:
+#                 pdf.setFillColorRGB(0, 255, 0)
+#                 pdf.drawString(250 + j * 70, 375 - i * font_size * 1.25, "X")
+#             else:
+#                 pdf.setFillColorRGB(0, 0, 0)
+#                 pdf.drawString(250 + j * 70, 375 - i * font_size * 1.25, "O")
+#     # ---------------------- add other page ----------------------
+#     pdf.showPage()
+#     create_header(pdf, image_logo, name_quizz, a4_x, date_inteview)
+
+#     # ----------------------question10-------------------
+#     question = dict_quizz["9"]["question"]
+#     question = question.split("\n")
+#     font_size = 12
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, line in enumerate(question):
+#         pdf.drawString(80, 330 - i * font_size, line)
+#     options = dict_quizz["9"]["options"]
+#     subquestions = dict_quizz["9"]["subquestions"]
+#     answers = (
+#         dict_quizz["9"]["answer"]
+#         if dict_quizz["9"]["answer"] != ""
+#         else [
+#             (0, 0),
+#             (1, 0),
+#             (2, 0),
+#             (3, 0),
+#             (4, 0),
+#             (5, 0),
+#             (6, 0),
+#             (7, 0),
+#             (8, 0),
+#             (9, 0),
+#             (10, 0),
+#             (11, 0),
+#             (12, 0),
+#         ]
+#     )
+#     cols = len(options)
+#     font_size = 8
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, option in enumerate(options):
+#         option = option.split(" ")
+#         for j, word in enumerate(option):
+#             pdf.drawCentredString(250 + i * 70, 300 - j * font_size, word)
+#     font_size = 11
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, subquestion in enumerate(subquestions):
+#         pdf.drawString(80, 275 - i * font_size * 1.25, subquestion)
+#     for i in range(len(subquestions)):
+#         for j in range(len(options)):
+#             if (i, j) in answers:
+#                 pdf.setFillColorRGB(0, 255, 0)
+#                 pdf.drawString(250 + j * 70, 275 - i * font_size * 1.25, "X")
+#             else:
+#                 pdf.setFillColorRGB(0, 0, 0)
+#                 pdf.drawString(250 + j * 70, 275 - i * font_size * 1.25, "O")
+
+#     # ----------------------question11-------------------
+#     question = dict_quizz["10"]["question"]
+#     question = question.split("\n")
+#     font_size = 12
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, line in enumerate(question):
+#         pdf.drawString(80, 230 - i * font_size, line)
+#     options = dict_quizz["10"]["options"]
+#     subquestions = dict_quizz["10"]["subquestions"]
+#     answers = (
+#         dict_quizz["10"]["answer"]
+#         if dict_quizz["10"]["answer"] != ""
+#         else [(0, 0), (1, 0)]
+#     )
+#     cols = len(options)
+#     font_size = 8
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, option in enumerate(options):
+#         option = option.split(" ")
+#         for j, word in enumerate(option):
+#             pdf.drawCentredString(250 + i * 70, 200 - j * font_size, word)
+#     font_size = 11
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, subquestion in enumerate(subquestions):
+#         pdf.drawString(80, 175 - i * font_size * 1.25, subquestion)
+#     for i in range(len(subquestions)):
+#         for j in range(len(options)):
+#             if (i, j) in answers:
+#                 pdf.setFillColorRGB(0, 255, 0)
+#                 pdf.drawString(250 + j * 70, 175 - i * font_size * 1.25, "X")
+#             else:
+#                 pdf.setFillColorRGB(0, 0, 0)
+#                 pdf.drawString(250 + j * 70, 175 - i * font_size * 1.25, "O")
+
+#     # ----------------------question12-------------------
+#     question = dict_quizz["11"]["question"]
+#     question = question.split("\n")
+#     font_size = 12
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, line in enumerate(question):
+#         pdf.drawString(80, 130 - i * font_size, line)
+#     options = dict_quizz["11"]["options"]
+#     subquestions = dict_quizz["11"]["subquestions"]
+#     answers = (
+#         dict_quizz["11"]["answer"]
+#         if dict_quizz["11"]["answer"] != ""
+#         else [(0, 0), (1, 0), (2, 0)]
+#     )
+#     cols = len(options)
+#     font_size = 8
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, option in enumerate(options):
+#         option = option.split(" ")
+#         for j, word in enumerate(option):
+#             pdf.drawCentredString(250 + i * 70, 100 - j * font_size, word)
+#     font_size = 11
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, subquestion in enumerate(subquestions):
+#         pdf.drawString(80, 75 - i * font_size * 1.25, subquestion)
+#     for i in range(len(subquestions)):
+#         for j in range(len(options)):
+#             if (i, j) in answers:
+#                 pdf.setFillColorRGB(0, 255, 0)
+#                 pdf.drawString(250 + j * 70, 75 - i * font_size * 1.25, "X")
+#             else:
+#                 pdf.setFillColorRGB(0, 0, 0)
+#                 pdf.drawString(250 + j * 70, 75 - i * font_size * 1.25, "O")
+
+#         # ---------------------- add other page ----------------------
+#     pdf.showPage()
+#     create_header(pdf, image_logo, name_quizz, a4_x, date_inteview)
+#     # ---------------------question13-------------------
+#     question = dict_quizz["12"]["question"]
+#     question = question.split("\n")
+#     font_size = 12
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, line in enumerate(question):
+#         pdf.drawString(80, 730 - i * font_size, line)
+#     options = dict_quizz["12"]["options"]
+#     subquestions = dict_quizz["12"]["subquestions"]
+#     answers = (
+#         dict_quizz["12"]["answer"] if dict_quizz["12"]["answer"] != "" else [(0, 0)]
+#     )
+#     cols = len(options)
+#     font_size = 8
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, option in enumerate(options):
+#         option = option.split(" ")
+#         for j, word in enumerate(option):
+#             pdf.drawCentredString(250 + i * 70, 700 - j * font_size, word)
+#     font_size = 11
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, subquestion in enumerate(subquestions):
+#         pdf.drawString(80, 675 - i * font_size * 1.25, subquestion)
+#     for i in range(len(subquestions)):
+#         for j in range(len(options)):
+#             if (i, j) in answers:
+#                 pdf.setFillColorRGB(0, 255, 0)
+#                 pdf.drawString(250 + j * 70, 675 - i * font_size * 1.25, "X")
+#             else:
+#                 pdf.setFillColorRGB(0, 0, 0)
+#                 pdf.drawString(250 + j * 70, 675 - i * font_size * 1.25, "O")
+
+#     # ----------------------question14-------------------
+#     question = dict_quizz["13"]["question"]
+#     question = question.split("\n")
+#     font_size = 12
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, line in enumerate(question):
+#         pdf.drawString(80, 630 - i * font_size, line)
+#     options = dict_quizz["13"]["options"]
+#     subquestions = dict_quizz["13"]["subquestions"]
+#     answers = (
+#         dict_quizz["13"]["answer"]
+#         if dict_quizz["13"]["answer"] != ""
+#         else [(0, 0), (1, 0), (2, 0)]
+#     )
+#     cols = len(options)
+#     font_size = 8
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, option in enumerate(options):
+#         option = option.split(" ")
+#         for j, word in enumerate(option):
+#             pdf.drawCentredString(250 + i * 70, 600 - j * font_size, word)
+#     font_size = 11
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, subquestion in enumerate(subquestions):
+#         pdf.drawString(80, 575 - i * font_size * 1.25, subquestion)
+#     for i in range(len(subquestions)):
+#         for j in range(len(options)):
+#             if (i, j) in answers:
+#                 pdf.setFillColorRGB(0, 255, 0)
+#                 pdf.drawString(250 + j * 70, 575 - i * font_size * 1.25, "X")
+#             else:
+#                 pdf.setFillColorRGB(0, 0, 0)
+#                 pdf.drawString(250 + j * 70, 575 - i * font_size * 1.25, "O")
+
+#     pdf.save()
+#     return True
+
+
+def create_pdf__quizz_nor035_v1(
+    dict_quizz,
+    image_logo=None,
+    filepath_out=None,
+    name_emp="Ejemplo1",
+    job="position 1",
+    terminal="terminal",
+    date_start="01/01/2021",
+    date_end="31/12/2021",
+    date_interview="01/01/2021",
+    name_interviewer="Interviewer",
+):
+    file_name = (
+        "C:/Users/eugen/OneDrive/Escritorio/pdfs/orm035_v1.pdf"
+        if filepath_out is None
+        else filepath_out
+    )
+    image_logo = "img/logo_docs.png" if image_logo is None else image_logo
+    name_quizz = "NORMA 035 V1"
+    n_questions = len(dict_quizz)
+
+    a4_x = 595.27
+    a4_y = 841.89
+
+    pdf = canvas.Canvas(file_name, pagesize=(a4_x, a4_y))
+    pdf.setTitle(name_quizz)
+
+    create_header(pdf, image_logo, name_quizz, a4_x, date_interview)
+
+    txt_lines = [
+        "CUESTIONARIO PARA IDENTIFICAR A LOS TRABAJADORES QUE FUERON SUJETOS A ",
+        "ACONTECIMIENTOS TRAUMÁTICOS SEVEROS",
+    ]
+    font_size = 12
+    pdf.setFont("Times-Roman", font_size)
+    y_position = 730
+    for line in txt_lines:
+        pdf.drawString(80, y_position, line)
+        y_position -= font_size
+
+    for i in range(n_questions):
+        if i % 3 == 0 and i != 0:
+            pdf.showPage()
+            create_header(pdf, image_logo, name_quizz, a4_x, date_interview)
+            y_position = 730
+
+        question = dict_quizz[str(i)]["question"]
+        question = question.split("\n")
+        font_size = 9
+        pdf.setFont("Times-Roman", font_size)
+        y_position -= font_size * 2
+        for line in question:
+            pdf.drawString(40, y_position, line)
+            y_position -= font_size
+
+        options = dict_quizz[str(i)]["options"]
+        subquestions = dict_quizz[str(i)]["subquestions"]
+        answers = (
+            dict_quizz[str(i)]["answer"]
+            if dict_quizz[str(i)]["answer"] != ""
+            else [(0, 0)]
+        )
+        cols = len(options)
+        font_size = 8
+        pdf.setFont("Times-Roman", font_size)
+        y_position -= font_size * 2
+
+        # Draw subquestions and answers in columns
+        max_subquestion_len = max(len(subq) for subq in subquestions)
+        max_option_len = max(len(option) for option in options)
+        x_subquestion = 25
+        x_answers = a4_x - 40 - max_option_len * 23
+        #  Draw options titles
+        for j, option in enumerate(options):
+            option_title = f"{option}:"
+            pdf.drawString(x_answers + j * 55, y_position, option_title)
+        y_position -= font_size * 2
+        for l, subquestion in enumerate(subquestions):
+            lines = textwrap.wrap(subquestion, width=60)
+            for line in lines:
+                pdf.drawString(x_subquestion, y_position, line)
+                y_position -= font_size * 1.5
+            for j, option in enumerate(options):
+                if (l, j) in answers:
+                    pdf.setFillColorRGB(0, 255, 0)
+                    pdf.drawString(x_answers + j * 55, y_position, "X")
+                else:
+                    pdf.setFillColorRGB(0, 0, 0)
+                    pdf.drawString(x_answers + j * 55, y_position, "O")
+            y_position -= font_size * 1.5
+
+    pdf.showPage()
+    create_header(pdf, image_logo, name_quizz, a4_x, date_interview)
+    pdf.save()
+    return True
+
+
+# ------------new method---------------
+def create_pdf_quizz_nor035_50_plus(
+    dict_quizz,
+    image_logo=None,
+    filepath_out=None,
+    name_emp="Ejemplo1",
+    job="position 1",
+    terminal="terminal",
+    date_start="01/01/2021",
+    date_end="31/12/2021",
+    date_interview="01/01/2021",
+    name_interviewer="Interviewer",
+):
+    file_name = (
+        "C:/Users/eugen/OneDrive/Escritorio/pdfs/norm035_50_plus.pdf"
+        if filepath_out is None
+        else filepath_out
+    )
+    image_logo = "img/logo_docs.png" if image_logo is None else image_logo
+    name_quizz = "NORMA 035 V1"
+    n_questions = len(dict_quizz)
+
+    a4_x = 595.27
+    a4_y = 841.89
+
+    pdf = canvas.Canvas(file_name, pagesize=(a4_x, a4_y))
+    pdf.setTitle(name_quizz)
+
+    create_header(pdf, image_logo, name_quizz, a4_x, date_interview)
+
+    txt_lines = [
+        "CUESTIONARIO PARA IDENTIFICAR A LOS TRABAJADORES QUE FUERON SUJETOS A ",
+        "ACONTECIMIENTOS TRAUMÁTICOS SEVEROS",
+    ]
+    font_size = 12
+    pdf.setFont("Times-Roman", font_size)
+    y_position = 730
+    for line in txt_lines:
+        pdf.drawString(80, y_position, line)
+        y_position -= font_size
+
+    for i in range(n_questions):
+        if i % 3 == 0 and i != 0:
+            pdf.showPage()
+            create_header(pdf, image_logo, name_quizz, a4_x, date_interview)
+            y_position = 730
+
+        question = dict_quizz[str(i)]["question"]
+        question = question.split("\n")
+        font_size = 9
+        pdf.setFont("Times-Roman", font_size)
+        y_position -= font_size * 2
+        for line in question:
+            pdf.drawString(40, y_position, line)
+            y_position -= font_size
+
+        options = dict_quizz[str(i)]["options"]
+        subquestions = dict_quizz[str(i)]["subquestions"]
+        answers = (
+            dict_quizz[str(i)]["answer"]
+            if dict_quizz[str(i)]["answer"] != ""
+            else [(0, 0)]
+        )
+        cols = len(options)
+        font_size = 8
+        pdf.setFont("Times-Roman", font_size)
+        y_position -= font_size * 2
+        if subquestions:
+            max_subquestion_len = max(len(subq) for subq in subquestions)
+        else:
+            max_subquestion_len = 0  # O cualquier otro valor predeterminado que desees
+        # Draw subquestions and answers in columns
+        # max_subquestion_len = max(len(subq) for subq in subquestions)
+        max_option_len = max(len(option) for option in options)
+        x_subquestion = 25
+        x_answers = a4_x - 40 - max_option_len * 23
+        #  Draw options titles
+        for j, option in enumerate(options):
+            option_title = f"{option}:"
+            pdf.drawString(x_answers + j * 55, y_position, option_title)
+        y_position -= font_size * 2
+        for l, subquestion in enumerate(subquestions):
+            lines = textwrap.wrap(subquestion, width=60)
+            for line in lines:
+                pdf.drawString(x_subquestion, y_position, line)
+                y_position -= font_size * 1.5
+            for j, option in enumerate(options):
+                if (l, j) in answers:
+                    pdf.setFillColorRGB(0, 255, 0)
+                    pdf.drawString(x_answers + j * 55, y_position, "X")
+                else:
+                    pdf.setFillColorRGB(0, 0, 0)
+                    pdf.drawString(x_answers + j * 55, y_position, "O")
+            y_position -= font_size * 1.5
+
+    pdf.showPage()
+    create_header(pdf, image_logo, name_quizz, a4_x, date_interview)
+    pdf.save()
+    return True
+
+
+# def create_pdf_quizz_nor035_50_plus(
+#     dict_quizz,
+#     image_logo=None,
+#     filepath_out=None,
+#     name_emp="Ejemplo1",
+#     job="position 1",
+#     terminal="terminal",
+#     date_start="01/01/2021",
+#     date_end="31/12/2021",
+#     date_inteview="01/01/2021",
+#     name_interviewer="Interviewer",
+# ):
+#     # initializing variables with values
+#     file_name = (
+#         "C:/Users/eugen/Documents/norm035_50_plus.pdf"
+#         if filepath_out is None
+#         else filepath_out
+#     )
+#     image_logo = "img/logo_docs.png" if image_logo is None else image_logo
+#     name_quizz = "NORMA 035 50+"
+#     n_questions = len(dict_quizz)
+#     # creating a pdf object
+#     a4_x = 595.27
+#     a4_y = 841.89
+#     # create documente
+#     pdf = canvas.Canvas(file_name, pagesize=(a4_x, a4_y))
+#     # setting the title of the document
+#     pdf.setTitle(name_quizz)
+#     # create header
+#     create_header(pdf, image_logo, name_quizz, a4_x, date_inteview)
+#     # information text
+#     txt_lines = [
+#         "CUESTIONARIO PARA IDENTIFICAR A LOS TRABAJADORES QUE FUERON SUJETOS A ACONTECIMIENTOS TRAUMÁTICOS SEVEROS",
+#     ]
+#     font_size = 12
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, line in enumerate(txt_lines):
+#         pdf.drawString(80, 730 - i * font_size, line)
+#     # ----------------------question1----------------------
+#     # ----------------------question1----------------------
+#     question = dict_quizz["0"]["question"]
+#     question = question.split("\n")
+#     font_size = 12
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, line in enumerate(question):
+#         pdf.drawString(80, 680 - i * font_size, line)
+#     options = dict_quizz["0"]["options"]
+#     subquestions = dict_quizz["0"]["subquestions"]
+#     answers = dict_quizz["0"]["answer"] if dict_quizz["0"]["answer"] != "" else [(0, 0)]
+#     cols = len(options)
+#     font_size = 8
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, option in enumerate(options):
+#         option = option.split(" ")
+#         for j, word in enumerate(option):
+#             pdf.drawCentredString(250 + i * 70, 640 - j * font_size, word)
+#     font_size = 11
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, subquestion in enumerate(subquestions):
+#         pdf.drawString(80, 615 - i * font_size * 1.25, subquestion)
+#     for i in range(len(subquestions)):
+#         for j in range(len(options)):
+#             if (i, j) in answers:
+#                 pdf.setFillColorRGB(0, 255, 0)
+#                 pdf.drawString(250 + j * 70, 615 - i * font_size * 1.25, "X")
+#             else:
+#                 pdf.setFillColorRGB(0, 0, 0)
+#                 pdf.drawString(250 + j * 70, 615 - i * font_size * 1.25, "O")
+
+#     #   ----------------------question2----------------------
+#     question = dict_quizz["1"]["question"]
+#     question = question.split("\n")
+#     font_size = 12
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, line in enumerate(question):
+#         pdf.drawString(80, 555 - i * font_size, line)
+#     options = dict_quizz["1"]["options"]
+#     subquestions = dict_quizz["1"]["subquestions"]
+#     answers = (
+#         dict_quizz["1"]["answer"]
+#         if dict_quizz["1"]["answer"] != ""
+#         else [(0, 0), (1, 0)]
+#     )
+#     cols = len(options)
+#     font_size = 8
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, option in enumerate(options):
+#         option = option.split(" ")
+#         for j, word in enumerate(option):
+#             pdf.drawCentredString(250 + i * 70, 525 - j * font_size, word)
+#     font_size = 11
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, subquestion in enumerate(subquestions):
+#         pdf.drawString(80, 500 - i * font_size * 1.25, subquestion)
+#     for i in range(len(subquestions)):
+#         for j in range(len(options)):
+#             if (i, j) in answers:
+#                 pdf.setFillColorRGB(0, 255, 0)
+#                 pdf.drawString(250 + j * 70, 500 - i * font_size * 1.25, "X")
+#             else:
+#                 pdf.setFillColorRGB(0, 0, 0)
+#                 pdf.drawString(250 + j * 70, 500 - i * font_size * 1.25, "O")
+
+#     # ----------------------question3----------------------
+#     question = dict_quizz["2"]["question"]
+#     question = question.split("\n")
+#     font_size = 12
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, line in enumerate(question):
+#         pdf.drawString(80, 430 - i * font_size, line)
+#     options = dict_quizz["2"]["options"]
+#     subquestions = dict_quizz["2"]["subquestions"]
+#     answers = (
+#         dict_quizz["2"]["answer"]
+#         if dict_quizz["2"]["answer"] != ""
+#         else [(0, 0), (1, 0), (2, 0), (3, 0), (4, 0), (5, 0), (6, 0)]
+#     )
+#     cols = len(options)
+#     font_size = 8
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, option in enumerate(options):
+#         option = option.split(" ")
+#         for j, word in enumerate(option):
+#             pdf.drawCentredString(250 + i * 70, 400 - j * font_size, word)
+#     font_size = 11
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, subquestion in enumerate(subquestions):
+#         pdf.drawString(80, 375 - i * font_size * 1.25, subquestion)
+#     for i in range(len(subquestions)):
+#         for j in range(len(options)):
+#             if (i, j) in answers:
+#                 pdf.setFillColorRGB(0, 255, 0)
+#                 pdf.drawString(250 + j * 70, 375 - i * font_size * 1.25, "X")
+#             else:
+#                 pdf.setFillColorRGB(0, 0, 0)
+#                 pdf.drawString(250 + j * 70, 375 - i * font_size * 1.25, "O")
+
+#     # ----------------------question4----------------------
+#     question = dict_quizz["3"]["question"]
+#     question = question.split("\n")
+#     font_size = 12
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, line in enumerate(question):
+#         pdf.drawString(80, 330 - i * font_size, line)
+#     options = dict_quizz["3"]["options"]
+#     subquestions = dict_quizz["3"]["subquestions"]
+#     answers = (
+#         dict_quizz["3"]["answer"]
+#         if dict_quizz["3"]["answer"] != ""
+#         else [(0, 0), (1, 0), (2, 0), (3, 0), (4, 0)]
+#     )
+#     cols = len(options)
+#     font_size = 8
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, option in enumerate(options):
+#         option = option.split(" ")
+#         for j, word in enumerate(option):
+#             pdf.drawCentredString(250 + i * 70, 300 - j * font_size, word)
+#     font_size = 11
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, subquestion in enumerate(subquestions):
+#         pdf.drawString(80, 275 - i * font_size * 1.25, subquestion)
+#     for i in range(len(subquestions)):
+#         for j in range(len(options)):
+#             if (i, j) in answers:
+#                 pdf.setFillColorRGB(0, 255, 0)
+#                 pdf.drawString(250 + j * 70, 275 - i * font_size * 1.25, "X")
+#             else:
+#                 pdf.setFillColorRGB(0, 0, 0)
+#                 pdf.drawString(250 + j * 70, 275 - i * font_size * 1.25, "O")
+
+#     # ----------------------question5----------------------
+#     question = dict_quizz["4"]["question"]
+#     question = question.split("\n")
+#     font_size = 12
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, line in enumerate(question):
+#         pdf.drawString(80, 230 - i * font_size, line)
+#     options = dict_quizz["4"]["options"]
+#     subquestions = dict_quizz["4"]["subquestions"]
+#     answers = (
+#         dict_quizz["4"]["answer"]
+#         if dict_quizz["4"]["answer"] != ""
+#         else [(0, 0), (1, 0), (2, 0), (3, 0), (4, 0)]
+#     )
+#     cols = len(options)
+#     font_size = 8
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, option in enumerate(options):
+#         option = option.split(" ")
+#         for j, word in enumerate(option):
+#             pdf.drawCentredString(250 + i * 70, 200 - j * font_size, word)
+#     font_size = 11
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, subquestion in enumerate(subquestions):
+#         pdf.drawString(80, 175 - i * font_size * 1.25, subquestion)
+#     for i in range(len(subquestions)):
+#         for j in range(len(options)):
+#             if (i, j) in answers:
+#                 pdf.setFillColorRGB(0, 255, 0)
+#                 pdf.drawString(250 + j * 70, 175 - i * font_size * 1.25, "X")
+#             else:
+#                 pdf.setFillColorRGB(0, 0, 0)
+#                 pdf.drawString(250 + j * 70, 175 - i * font_size * 1.25, "O")
+
+#     # ----------------------question6----------------------
+#     question = dict_quizz["5"]["question"]
+#     question = question.split("\n")
+#     font_size = 12
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, line in enumerate(question):
+#         pdf.drawString(80, 130 - i * font_size, line)
+#     options = dict_quizz["5"]["options"]
+#     subquestions = dict_quizz["5"]["subquestions"]
+#     answers = (
+#         dict_quizz["5"]["answer"]
+#         if dict_quizz["5"]["answer"] != ""
+#         else [(0, 0), (1, 0), (2, 0)]
+#     )
+#     cols = len(options)
+#     font_size = 8
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, option in enumerate(options):
+#         option = option.split(" ")
+#         for j, word in enumerate(option):
+#             pdf.drawCentredString(250 + i * 70, 100 - j * font_size, word)
+#     font_size = 11
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, subquestion in enumerate(subquestions):
+#         pdf.drawString(80, 75 - i * font_size * 1.25, subquestion)
+#     for i in range(len(subquestions)):
+#         for j in range(len(options)):
+#             if (i, j) in answers:
+#                 pdf.setFillColorRGB(0, 255, 0)
+#                 pdf.drawString(250 + j * 70, 75 - i * font_size * 1.25, "X")
+#             else:
+#                 pdf.setFillColorRGB(0, 0, 0)
+#                 pdf.drawString(250 + j * 70, 75 - i * font_size * 1.25, "O")
+
+#     # ----------------------question7-------------------
+#     question = dict_quizz["6"]["question"]
+#     question = question.split("\n")
+#     font_size = 12
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, line in enumerate(question):
+#         pdf.drawString(80, 630 - i * font_size, line)
+#     options = dict_quizz["6"]["options"]
+#     subquestions = dict_quizz["6"]["subquestions"]
+#     answers = (
+#         dict_quizz["6"]["answer"]
+#         if dict_quizz["6"]["answer"] != ""
+#         else [(0, 0), (1, 0), (2, 0), (3, 0)]
+#     )
+#     cols = len(options)
+#     font_size = 8
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, option in enumerate(options):
+#         option = option.split(" ")
+#         for j, word in enumerate(option):
+#             pdf.drawCentredString(250 + i * 70, 600 - j * font_size, word)
+#     font_size = 11
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, subquestion in enumerate(subquestions):
+#         pdf.drawString(80, 575 - i * font_size * 1.25, subquestion)
+#     for i in range(len(subquestions)):
+#         for j in range(len(options)):
+#             if (i, j) in answers:
+#                 pdf.setFillColorRGB(0, 255, 0)
+#                 pdf.drawString(250 + j * 70, 575 - i * font_size * 1.25, "X")
+#             else:
+#                 pdf.setFillColorRGB(0, 0, 0)
+#                 pdf.drawString(250 + j * 70, 575 - i * font_size * 1.25, "O")
+
+#     # ----------------------question8-------------------
+#     question = dict_quizz["7"]["question"]
+#     question = question.split("\n")
+#     font_size = 12
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, line in enumerate(question):
+#         pdf.drawString(80, 530 - i * font_size, line)
+#     options = dict_quizz["7"]["options"]
+#     subquestions = dict_quizz["7"]["subquestions"]
+#     answers = (
+#         dict_quizz["7"]["answer"]
+#         if dict_quizz["7"]["answer"] != ""
+#         else [(0, 0), (1, 0), (2, 0), (3, 0)]
+#     )
+#     question = dict_quizz["7"]["question"]
+#     cols = len(options)
+#     font_size = 8
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, option in enumerate(options):
+#         option = option.split(" ")
+#         for j, word in enumerate(option):
+#             pdf.drawCentredString(250 + i * 70, 500 - j * font_size, word)
+#     font_size = 11
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, subquestion in enumerate(subquestions):
+#         pdf.drawString(80, 475 - i * font_size * 1.25, subquestion)
+#     for i in range(len(subquestions)):
+#         for j in range(len(options)):
+#             if (i, j) in answers:
+#                 pdf.setFillColorRGB(0, 255, 0)
+#                 pdf.drawString(250 + j * 70, 475 - i * font_size * 1.25, "X")
+#             else:
+#                 pdf.setFillColorRGB(0, 0, 0)
+#                 pdf.drawString(250 + j * 70, 475 - i * font_size * 1.25, "O")
+
+#     # ----------------------question9-------------------
+#     question = dict_quizz["8"]["question"]
+#     question = question.split("\n")
+#     font_size = 12
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, line in enumerate(question):
+#         pdf.drawString(80, 430 - i * font_size, line)
+#     options = dict_quizz["8"]["options"]
+#     subquestions = dict_quizz["8"]["subquestions"]
+#     answers = (
+#         dict_quizz["8"]["answer"]
+#         if dict_quizz["8"]["answer"] != ""
+#         else [(0, 0), (1, 0), (2, 0), (3, 0), (4, 0), (5, 0)]
+#     )
+#     cols = len(options)
+#     font_size = 8
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, option in enumerate(options):
+#         option = option.split(" ")
+#         for j, word in enumerate(option):
+#             pdf.drawCentredString(250 + i * 70, 400 - j * font_size, word)
+#     font_size = 11
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, subquestion in enumerate(subquestions):
+#         pdf.drawString(80, 375 - i * font_size * 1.25, subquestion)
+#     for i in range(len(subquestions)):
+#         for j in range(len(options)):
+#             if (i, j) in answers:
+#                 pdf.setFillColorRGB(0, 255, 0)
+#                 pdf.drawString(250 + j * 70, 375 - i * font_size * 1.25, "X")
+#             else:
+#                 pdf.setFillColorRGB(0, 0, 0)
+#                 pdf.drawString(250 + j * 70, 375 - i * font_size * 1.25, "O")
+
+#     # ----------------------question10-------------------
+#     question = dict_quizz["9"]["question"]
+#     question = question.split("\n")
+#     font_size = 12
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, line in enumerate(question):
+#         pdf.drawString(80, 330 - i * font_size, line)
+#     options = dict_quizz["9"]["options"]
+#     subquestions = dict_quizz["9"]["subquestions"]
+#     answers = (
+#         dict_quizz["9"]["answer"]
+#         if dict_quizz["9"]["answer"] != ""
+#         else [(0, 0), (1, 0), (2, 0), (3, 0), (4, 0), (5, 0)]
+#     )
+#     cols = len(options)
+#     font_size = 8
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, option in enumerate(options):
+#         option = option.split(" ")
+#         for j, word in enumerate(option):
+#             pdf.drawCentredString(250 + i * 70, 300 - j * font_size, word)
+#     font_size = 11
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, subquestion in enumerate(subquestions):
+#         pdf.drawString(80, 275 - i * font_size * 1.25, subquestion)
+#     for i in range(len(subquestions)):
+#         for j in range(len(options)):
+#             if (i, j) in answers:
+#                 pdf.setFillColorRGB(0, 255, 0)
+#                 pdf.drawString(250 + j * 70, 275 - i * font_size * 1.25, "X")
+#             else:
+#                 pdf.setFillColorRGB(0, 0, 0)
+#                 pdf.drawString(250 + j * 70, 275 - i * font_size * 1.25, "O")
+
+#     # ----------------------question11-------------------
+#     question = dict_quizz["10"]["question"]
+#     question = question.split("\n")
+#     font_size = 12
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, line in enumerate(question):
+#         pdf.drawString(80, 230 - i * font_size, line)
+#     options = dict_quizz["10"]["options"]
+#     subquestions = dict_quizz["10"]["subquestions"]
+#     answers = (
+#         dict_quizz["10"]["answer"]
+#         if dict_quizz["10"]["answer"] != ""
+#         else [(0, 0), (1, 0)]
+#     )
+#     cols = len(options)
+#     font_size = 8
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, option in enumerate(options):
+#         option = option.split(" ")
+#         for j, word in enumerate(option):
+#             pdf.drawCentredString(250 + i * 70, 200 - j * font_size, word)
+#     font_size = 11
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, subquestion in enumerate(subquestions):
+#         pdf.drawString(80, 175 - i * font_size * 1.25, subquestion)
+#     for i in range(len(subquestions)):
+#         for j in range(len(options)):
+#             if (i, j) in answers:
+#                 pdf.setFillColorRGB(0, 255, 0)
+#                 pdf.drawString(250 + j * 70, 175 - i * font_size * 1.25, "X")
+#             else:
+#                 pdf.setFillColorRGB(0, 0, 0)
+#                 pdf.drawString(250 + j * 70, 175 - i * font_size * 1.25, "O")
+
+#     # ----------------------question12-------------------
+#     question = dict_quizz["11"]["question"]
+#     question = question.split("\n")
+#     font_size = 12
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, line in enumerate(question):
+#         pdf.drawString(80, 130 - i * font_size, line)
+#     options = dict_quizz["11"]["options"]
+#     subquestions = dict_quizz["11"]["subquestions"]
+#     answers = (
+#         dict_quizz["11"]["answer"]
+#         if dict_quizz["11"]["answer"] != ""
+#         else [(0, 0), (1, 0), (2, 0), (3, 0), (4, 0), (5, 0)]
+#     )
+#     cols = len(options)
+#     font_size = 8
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, option in enumerate(options):
+#         option = option.split(" ")
+#         for j, word in enumerate(option):
+#             pdf.drawCentredString(250 + i * 70, 100 - j * font_size, word)
+#     font_size = 11
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, subquestion in enumerate(subquestions):
+#         pdf.drawString(80, 75 - i * font_size * 1.25, subquestion)
+#     for i in range(len(subquestions)):
+#         for j in range(len(options)):
+#             if (i, j) in answers:
+#                 pdf.setFillColorRGB(0, 255, 0)
+#                 pdf.drawString(250 + j * 70, 75 - i * font_size * 1.25, "X")
+#             else:
+#                 pdf.setFillColorRGB(0, 0, 0)
+#                 pdf.drawString(250 + j * 70, 75 - i * font_size * 1.25, "O")
+
+#     # ----------------------question13-------------------
+#     question = dict_quizz["12"]["question"]
+#     question = question.split("\n")
+#     font_size = 12
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, line in enumerate(question):
+#         pdf.drawString(80, 730 - i * font_size, line)
+#     options = dict_quizz["12"]["options"]
+#     subquestions = dict_quizz["12"]["subquestions"]
+#     answers = (
+#         dict_quizz["12"]["answer"]
+#         if dict_quizz["12"]["answer"] != ""
+#         else [(0, 0), (1, 0), (2, 0), (3, 0), (4, 0)]
+#     )
+#     cols = len(options)
+#     font_size = 8
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, option in enumerate(options):
+#         option = option.split(" ")
+#         for j, word in enumerate(option):
+#             pdf.drawCentredString(250 + i * 70, 700 - j * font_size, word)
+#     font_size = 11
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, subquestion in enumerate(subquestions):
+#         pdf.drawString(80, 675 - i * font_size * 1.25, subquestion)
+#     for i in range(len(subquestions)):
+#         for j in range(len(options)):
+#             if (i, j) in answers:
+#                 pdf.setFillColorRGB(0, 255, 0)
+#                 pdf.drawString(250 + j * 70, 675 - i * font_size * 1.25, "X")
+#             else:
+#                 pdf.setFillColorRGB(0, 0, 0)
+#                 pdf.drawString(250 + j * 70, 675 - i * font_size * 1.25, "O")
+
+#     # ----------------------question14-------------------
+#     question = dict_quizz["13"]["question"]
+#     question = question.split("\n")
+#     font_size = 12
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, line in enumerate(question):
+#         pdf.drawString(80, 630 - i * font_size, line)
+#     options = dict_quizz["13"]["options"]
+#     subquestions = dict_quizz["13"]["subquestions"]
+#     answers = (
+#         dict_quizz["13"]["answer"]
+#         if dict_quizz["13"]["answer"] != ""
+#         else [(0, 0), (1, 0), (2, 0), (3, 0), (4, 0)]
+#     )
+#     cols = len(options)
+#     font_size = 8
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, option in enumerate(options):
+#         option = option.split(" ")
+#         for j, word in enumerate(option):
+#             pdf.drawCentredString(250 + i * 70, 600 - j * font_size, word)
+#     font_size = 11
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, subquestion in enumerate(subquestions):
+#         pdf.drawString(80, 575 - i * font_size * 1.25, subquestion)
+#     for i in range(len(subquestions)):
+#         for j in range(len(options)):
+#             if (i, j) in answers:
+#                 pdf.setFillColorRGB(0, 255, 0)
+#                 pdf.drawString(250 + j * 70, 575 - i * font_size * 1.25, "X")
+#             else:
+#                 pdf.setFillColorRGB(0, 0, 0)
+#                 pdf.drawString(250 + j * 70, 575 - i * font_size * 1.25, "O")
+
+#     # ----------------------question15-------------------
+#     question = dict_quizz["14"]["question"]
+#     question = question.split("\n")
+#     font_size = 12
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, line in enumerate(question):
+#         pdf.drawString(80, 530 - i * font_size, line)
+#     options = dict_quizz["14"]["options"]
+#     subquestions = dict_quizz["14"]["subquestions"]
+#     answers = (
+#         dict_quizz["14"]["answer"]
+#         if dict_quizz["14"]["answer"] != ""
+#         else [
+#             (0, 0),
+#             (1, 0),
+#             (2, 0),
+#             (3, 0),
+#             (4, 0),
+#             (5, 0),
+#             (6, 0),
+#             (7, 0),
+#             (8, 0),
+#             (9, 0),
+#         ]
+#     )
+#     cols = len(options)
+#     font_size = 8
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, option in enumerate(options):
+#         option = option.split(" ")
+#         for j, word in enumerate(option):
+#             pdf.drawCentredString(250 + i * 70, 500 - j * font_size, word)
+#     font_size = 11
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, subquestion in enumerate(subquestions):
+#         pdf.drawString(80, 475 - i * font_size * 1.25, subquestion)
+#     for i in range(len(subquestions)):
+#         for j in range(len(options)):
+#             if (i, j) in answers:
+#                 pdf.setFillColorRGB(0, 255, 0)
+#                 pdf.drawString(250 + j * 70, 475 - i * font_size * 1.25, "X")
+#             else:
+#                 pdf.setFillColorRGB(0, 0, 0)
+#                 pdf.drawString(250 + j * 70, 475 - i * font_size * 1.25, "O")
+
+#     # ----------------------question16-------------------
+#     question = dict_quizz["15"]["question"]
+#     question = question.split("\n")
+#     font_size = 12
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, line in enumerate(question):
+#         pdf.drawString(80, 430 - i * font_size, line)
+#     options = dict_quizz["15"]["options"]
+#     subquestions = dict_quizz["15"]["subquestions"]
+#     answers = (
+#         dict_quizz["15"]["answer"]
+#         if dict_quizz["15"]["answer"] != ""
+#         else [(0, 0), (1, 0), (2, 0), (3, 0), (4, 0), (5, 0), (6, 0), (7, 0)]
+#     )
+#     cols = len(options)
+#     font_size = 8
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, option in enumerate(options):
+#         option = option.split(" ")
+#         for j, word in enumerate(option):
+#             pdf.drawCentredString(250 + i * 70, 400 - j * font_size, word)
+#     font_size = 11
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, subquestion in enumerate(subquestions):
+#         pdf.drawString(80, 375 - i * font_size * 1.25, subquestion)
+#     for i in range(len(subquestions)):
+#         for j in range(len(options)):
+#             if (i, j) in answers:
+#                 pdf.setFillColorRGB(0, 255, 0)
+#                 pdf.drawString(250 + j * 70, 375 - i * font_size * 1.25, "X")
+#             else:
+#                 pdf.setFillColorRGB(0, 0, 0)
+#                 pdf.drawString(250 + j * 70, 375 - i * font_size * 1.25, "O")
+
+#     # ----------------------question17-------------------
+#     question = dict_quizz["16"]["question"]
+#     question = question.split("\n")
+#     font_size = 12
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, line in enumerate(question):
+#         pdf.drawString(80, 330 - i * font_size, line)
+#     options = dict_quizz["16"]["options"]
+#     subquestions = dict_quizz["16"]["subquestions"]
+#     answers = (
+#         dict_quizz["16"]["answer"] if dict_quizz["16"]["answer"] != "" else [(0, 0)]
+#     )
+#     cols = len(options)
+#     font_size = 8
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, option in enumerate(options):
+#         option = option.split(" ")
+#         for j, word in enumerate(option):
+#             pdf.drawCentredString(250 + i * 70, 300 - j * font_size, word)
+#     font_size = 11
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, subquestion in enumerate(subquestions):
+#         pdf.drawString(80, 275 - i * font_size * 1.25, subquestion)
+#     for i in range(len(subquestions)):
+#         for j in range(len(options)):
+#             if (i, j) in answers:
+#                 pdf.setFillColorRGB(0, 255, 0)
+#                 pdf.drawString(250 + j * 70, 275 - i * font_size * 1.25, "X")
+#             else:
+#                 pdf.setFillColorRGB(0, 0, 0)
+#                 pdf.drawString(250 + j * 70, 275 - i * font_size * 1.25, "O")
+
+#     # ----------------------question18-------------------
+#     question = dict_quizz["17"]["question"]
+#     question = question.split("\n")
+#     font_size = 12
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, line in enumerate(question):
+#         pdf.drawString(80, 230 - i * font_size, line)
+#     options = dict_quizz["17"]["options"]
+#     subquestions = dict_quizz["17"]["subquestions"]
+#     answers = (
+#         dict_quizz["17"]["answer"]
+#         if dict_quizz["17"]["answer"] != ""
+#         else [(0, 0), (1, 0), (2, 0), (3, 0)]
+#     )
+#     cols = len(options)
+#     font_size = 8
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, option in enumerate(options):
+#         option = option.split(" ")
+#         for j, word in enumerate(option):
+#             pdf.drawCentredString(250 + i * 70, 200 - j * font_size, word)
+#     font_size = 11
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, subquestion in enumerate(subquestions):
+#         pdf.drawString(80, 175 - i * font_size * 1.25, subquestion)
+#     for i in range(len(subquestions)):
+#         for j in range(len(options)):
+#             if (i, j) in answers:
+#                 pdf.setFillColorRGB(0, 255, 0)
+#                 pdf.drawString(250 + j * 70, 175 - i * font_size * 1.25, "X")
+#             else:
+#                 pdf.setFillColorRGB(0, 0, 0)
+#                 pdf.drawString(250 + j * 70, 175 - i * font_size * 1.25, "O")
+
+#     # ----------------------question19-------------------
+#     question = dict_quizz["18"]["question"]
+#     question = question.split("\n")
+#     font_size = 12
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, line in enumerate(question):
+#         pdf.drawString(80, 130 - i * font_size, line)
+#     options = dict_quizz["18"]["options"]
+#     answers = dict_quizz["18"]["answer"] if answers in dict_quizz["18"] else [0, 2]
+#     cols = 3
+#     for i, option in enumerate(options):
+#         index_x = i % cols
+#         index_y = i // cols
+#         if i in answers:
+#             pdf.setFillColorRGB(0, 255, 0)
+#         else:
+#             pdf.setFillColorRGB(0, 0, 0)
+#         pdf.drawCentredString(250 + index_x * 70, 100 - index_y * font_size, option)
+
+#     # -----------------------question20-------------------
+#     question = dict_quizz["19"]["question"]
+#     question = question.split("\n")
+#     font_size = 12
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, line in enumerate(question):
+#         pdf.drawString(80, 730 - i * font_size, line)
+#     options = dict_quizz["19"]["options"]
+#     subquestions = dict_quizz["19"]["subquestions"]
+#     answers = (
+#         dict_quizz["19"]["answer"]
+#         if dict_quizz["19"]["answer"] != ""
+#         else [(0, 0), (1, 0), (2, 0), (3, 0)]
+#     )
+#     cols = len(options)
+#     font_size = 8
+#     pdf.setFont("Times-Roman", font_size)
+
+#     for i, option in enumerate(options):
+#         option = option.split(" ")
+#         for j, word in enumerate(option):
+#             pdf.drawCentredString(250 + i * 70, 700 - j * font_size, word)
+#     font_size = 11
+#     pdf.setFont("Times-Roman", font_size)
+#     for i, subquestion in enumerate(subquestions):
+#         pdf.drawString(80, 675 - i * font_size * 1.25, subquestion)
+#     for i in range(len(subquestions)):
+#         for j in range(len(options)):
+#             if (i, j) in answers:
+#                 pdf.setFillColorRGB(0, 255, 0)
+#                 pdf.drawString(250 + j * 70, 675 - i * font_size * 1.25, "X")
+#             else:
+#                 pdf.setFillColorRGB(0, 0, 0)
+#                 pdf.drawString(250 + j * 70, 675 - i * font_size * 1.25, "O")
+
+#     pdf.save()
+#     return True
