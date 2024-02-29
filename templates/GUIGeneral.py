@@ -16,6 +16,7 @@ from templates.frames.Frame_ExamenesMedicos import ExamenesMedicos
 from templates.frames.Frame_FichajeFilesFrames import FichajesFilesGUI
 from templates.frames.Frame_NotificationsFrame import Notifications
 from templates.frames.Frame_PedidosFrame import PedidosFrame
+from templates.frames.Frame_Quizzes import FrameEncuestas
 from templates.frames.Frame_SettingsFrame import SettingsFrameGUI
 from templates.frames.Frame_Vacations import VacationsFrame
 from templates.frames.Frame_vAssistantGUI import AssistantGUI
@@ -226,6 +227,9 @@ class GUIAsistente(ttk.Window):
                 case "Vacaciones":
                     windows[window] = VacationsFrame(self)
                     print("vacations frame created")
+                case "Encuestas":
+                    windows[window] = FrameEncuestas(self)
+                    print("encuestas frame created")
                 case _:
                     pass
         return windows

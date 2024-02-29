@@ -8,8 +8,8 @@ from tkinter import IntVar
 import ttkbootstrap as ttk
 from ttkbootstrap.dialogs import Messagebox
 
-from static.extensions import quizzes_RRHH
-from templates.Funtions_Utils import create_Combobox
+from static.extensions import quizzes_RRHH, quizz_out_path
+from templates.Funtions_Utils import create_Combobox, calculate_results_quizzes
 from templates.PDFGenerator import (
     create_pdf__quizz_nor035_v1,
     create_pdf_quizz_nor035_50_plus,
@@ -62,6 +62,7 @@ class QuizMaker(ttk.Frame):
         Messagebox.show_info(
             title="Result", message=f"Your answers are: {self.opt_selected}\n"
         )
+        print(self.opt_selected)
 
     def next_btn(self):
         self.save_result()
@@ -176,7 +177,7 @@ class QuizMaker(ttk.Frame):
 
 
 class FrameEncuestas(ttk.Frame):
-    def __init__(self, master, quizzes=quizzes_RRHH, **kwargs):
+    def __init__(self, master, quizzes=quizzes_RRHH, quizz_out=None, **kwargs):
         super().__init__(master, **kwargs)
         self.columnconfigure(0, weight=1)
         # ----------Title-------------
@@ -184,6 +185,7 @@ class FrameEncuestas(ttk.Frame):
             row=0, column=0, padx=10, pady=10, sticky="nswe"
         )
         # ----------variables-------------
+        self.quizz_out_path = quizz_out_path if quizz_out is None else quizz_out
         self.quizzes = quizzes
         self.quizz = None
         self.dict_quizz = None
@@ -194,23 +196,14 @@ class FrameEncuestas(ttk.Frame):
         for item in self.quizzes.values():
             options.append(item["name"])
         self.quizz_selector = create_Combobox(
-            self,
-            values=options,
-            state="readonly",
-            row=1,
-            column=0,
-            sticky="n",
-            width=50,
+            self, values=options, state="readonly",
+            row=1, column=0, sticky="n", width=50,
         )
         self.quizz_selector.bind("<<ComboboxSelected>>", self.select_quiz)
         self.quizz_selector.set("Seleccione una encuesta")
-        ttk.Button(
-            self,
-            text="Crear Encuesta",
-            command=self.create_quiz,
-            width=20,
-            bootstyle="primary",
-        ).grid(row=1, column=1, padx=10, pady=10, sticky="n")
+        ttk.Button(self, text="Crear Encuesta", command=self.create_quiz,
+                   width=20, bootstyle="primary",
+                   ).grid(row=1, column=1, padx=10, pady=10, sticky="n")
 
     def select_quiz(self, event=None):
         quiz_name = event.widget.get()
@@ -221,7 +214,6 @@ class FrameEncuestas(ttk.Frame):
                 flag = True
                 self.dict_quizz = json.load(open(self.filepath, encoding="utf-8"))
                 self.tipoOp = item["type"]
-
                 break
         if not flag:
             self.filepath = None
@@ -246,10 +238,9 @@ class FrameEncuestas(ttk.Frame):
         date_end = "31/12/2021"
         date_inteview = "01/01/2021"
         name_interviewer = "Interviewer"
-        file_out = f"files/samplev2.pdf"
-
+        file_out = self.quizz_out_path + f"{name_emp.replace(' ', '')}_{date_inteview.replace('/','-')}_type_{tipo_op}.pdf"
+        # dict_results = calculate_results_quizzes(self.dict_quizz, tipo_op)
         if tipo_op == 0:
-
             create_pdf_quizz_salida(
                 self.dict_quizz,
                 None,
@@ -262,7 +253,6 @@ class FrameEncuestas(ttk.Frame):
                 date_inteview,
                 name_interviewer,
             )
-
         elif tipo_op == 1:
             create_pdf__quizz_nor035_v1(
                 self.dict_quizz,

@@ -22,3 +22,4 @@ __pycache__/
 /venv/
 /app_gui.exe
 /files/samplev2.pdf
+/files/*.pdf

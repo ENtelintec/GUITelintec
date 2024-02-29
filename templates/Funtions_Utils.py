@@ -2,6 +2,7 @@
 __author__ = 'Edisson Naula'
 __date__ = '$ 29/ene./2024  at 15:31 $'
 
+import json
 from typing import Any
 
 import ttkbootstrap as ttk
@@ -438,3 +439,21 @@ def create_btns_DB(
             return btn_insert, btn_update, btn_delete
         case _:
             return None
+
+
+def calculate_results_quizzes(dict_quizz: dict, tipo_q: int):
+    dict_results = {}
+    dict_conversions = json.load(open("conversions.json", encoding="utf-8"))
+    match tipo_q:
+        case 1:
+            dict_values = dict_conversions["norm035"]["v1"]
+            for group in dict_quizz.values():
+                items = group["items"]
+                values = group["values"]
+
+        case 2:
+            for key, value in dict_quizz.items():
+                dict_results[key] = value[0]
+        case _:
+            pass
+    return dict_results
