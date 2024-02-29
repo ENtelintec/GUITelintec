@@ -491,8 +491,8 @@ def get_name_id_contracts(contracts: dict, name: str) -> tuple[Any, str] | tuple
     """
     for contract in contracts.keys():
         for emp in contracts[contract].keys():
-            if name == contracts[contract][emp]["name_db"]:
-                return contracts[contract][emp]["id"], name
+            if name.lower() == contracts[contract][emp]["name_db"].lower() or name.lower() == emp.lower():
+                return contracts[contract][emp]["id"], contracts[contract][emp]["name_db"]
     return None, name
 
 
@@ -942,7 +942,6 @@ def check_names_employees_in_cache(names: list, filepath: str) -> dict:
     for name in names:
         if name not in fichajes_emp_dict.keys():
             id_emp, name_db = get_employee_id_name(name)
-            print(id_emp, name_db, name)
             if id_emp is not None:
                 fichajes_emp_dict[name] = {
                     "id": id_emp,
@@ -1078,7 +1077,6 @@ def get_info_f_file_name(df, name: str, clocks, window_time_in, window_time_out,
 
 def get_info_t_file_name(df, name: str, clocks, window_time_in, window_time_out, flag):
     if flag:
-        print(df.head().to_string())
         df_name = df[df["name"] == name]
         df_name_entrada = df_name[df_name["in_out"] == "DENTRO"]
         df_name_salida = df_name[df_name["in_out"] == "FUERA"]

@@ -15,12 +15,10 @@ from templates.PDFGenerator import (
     create_pdf_quizz_nor035_50_plus,
     create_pdf_quizz_salida,
 )
-import PyPDF2
-from PyPDF2 import PdfFileReader
 
 
 class QuizMaker(ttk.Frame):
-    def __init__(self, master, dict_quizz, title=None, tipoOp=0):
+    def __init__(self, master, dict_quizz, title=None, tipo_op=0):
         super().__init__(master)
         self.q_no = 0
         self.title = title if title is not None else "Quiz"
@@ -29,7 +27,7 @@ class QuizMaker(ttk.Frame):
         self.opt_selected = []
         self.data_size = len(self.dict_quizz)
         self.correct = 0
-        self.tipoOp = tipoOp
+        self.tipoOp = tipo_op
         # ----------widgets-------------
         self.columnconfigure(0, weight=1)
         self.frame_questions = ttk.Frame(self)
@@ -71,7 +69,7 @@ class QuizMaker(ttk.Frame):
         if self.q_no == self.data_size:
             self.display_result()
             print(self.tipoOp)
-            self.master.update_dict_quizz(self.dict_quizz, tipoOp=self.tipoOp)
+            self.master.update_dict_quizz(self.dict_quizz, tipo_op=self.tipoOp)
             self.destroy()
         else:
             self.recreate_frames()
@@ -190,6 +188,7 @@ class FrameEncuestas(ttk.Frame):
         self.quizz = None
         self.dict_quizz = None
         self.filepath = None
+        self.tipoOp = None
         # ----------widgets-------------
         options = []
         for item in self.quizzes.values():
@@ -235,10 +234,10 @@ class FrameEncuestas(ttk.Frame):
         print("creating quizz")
         name = self.quizz_selector.get()
         self.dict_quizz = json.load(open(self.filepath, encoding="utf-8"))
-        self.quizz = QuizMaker(self, self.dict_quizz, title=name, tipoOp=self.tipoOp)
+        self.quizz = QuizMaker(self, self.dict_quizz, title=name, tipo_op=self.tipoOp)
         self.quizz.grid(row=2, column=0, padx=10, pady=10, sticky="nswe")
 
-    def update_dict_quizz(self, new_dict: dict, tipoOp):
+    def update_dict_quizz(self, new_dict: dict, tipo_op):
         self.dict_quizz = new_dict
         name_emp = "employee 1"
         job = "position 1"
@@ -247,9 +246,9 @@ class FrameEncuestas(ttk.Frame):
         date_end = "31/12/2021"
         date_inteview = "01/01/2021"
         name_interviewer = "Interviewer"
-        file_out = f"C:/Users/eugen/OneDrive/Escritorio/pdfs/samplev2.pdf"
+        file_out = f"files/samplev2.pdf"
 
-        if tipoOp == 0:
+        if tipo_op == 0:
 
             create_pdf_quizz_salida(
                 self.dict_quizz,
@@ -264,7 +263,7 @@ class FrameEncuestas(ttk.Frame):
                 name_interviewer,
             )
 
-        elif tipoOp == 1:
+        elif tipo_op == 1:
             create_pdf__quizz_nor035_v1(
                 self.dict_quizz,
                 None,
@@ -277,7 +276,7 @@ class FrameEncuestas(ttk.Frame):
                 date_inteview,
                 name_interviewer,
             )
-        elif tipoOp == 2:
+        elif tipo_op == 2:
             create_pdf_quizz_nor035_50_plus(
                 self.dict_quizz,
                 None,

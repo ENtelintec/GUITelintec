@@ -348,7 +348,6 @@ class FichajesAuto(ttk.Frame):
             (worked_days_f, worked_intime_f, count_l_f, count_e_f,
              self.days_late, self.days_extra) = cb.get_info_f_file_name(
                 self.dff, name, self.clocks, self.window_time_in, self.window_time_out, self.file_selected_1)
-            print(worked_days_f, worked_intime_f, count_l_f, count_e_f)
             # ------------file ternium-----------
             (worked_days_t, worked_intime_t, count_l_t, count_e_t,
              self.days_late_t, self.days_extra_t) = cb.get_info_t_file_name(
@@ -833,7 +832,7 @@ class FichajesManual(ttk.Frame):
         frame_inputs2 = ttk.Frame(self.group_2, padding=5)
         frame_inputs2.grid(row=0, column=0, sticky="nswe")
         # frame_inputs2.columnconfigure((0, 1), weight=1)
-        self.name_oct = self.create_inputs_o(frame_inputs2)
+        self.name_oct_selector = self.create_inputs_o(frame_inputs2)
         # -------labels result file 2-------
         frame_info2 = ttk.Frame(self.group_2, padding=5)
         frame_info2.grid(row=1, column=0, sticky="nswe")
@@ -923,21 +922,13 @@ class FichajesManual(ttk.Frame):
             self.contracts = cb.extract_data_file_contracts(filename)
             if len(self.contracts) != 0:
                 table_data, columns = cb.generate_table_from_dict_contracts(self.contracts)
-                # self.table_2 = Tableview(self.group_2, bootstyle="primary",
-                #                          coldata=columns,
-                #                          rowdata=table_data,
-                #                          paginated=False,
-                #                          searchable=True,
-                #                          autofit=True)
-                # self.table_2.grid(row=8, column=0, sticky='nsew', padx=50, pady=10, columnspan=6)
                 self.file_selected_2 = True
                 names_oct = []
                 for row in table_data:
-                    # row[1]=name_employee, create a list of employees
                     name = row[1]
                     if name not in names_oct:
                         names_oct.append(name)
-                self.name_oct.configure(values=names_oct)
+                self.name_oct_selector.configure(values=names_oct)
 
     def create_info_display_file1(self, master, type_i=0):
         svars = [
