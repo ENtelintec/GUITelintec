@@ -62,6 +62,24 @@ class Order:
                 self.connection.close()
                 self.cursor = None
 
+    def get_total_products(self):
+        try:
+            self.connection = db()
+            self.cursor = self.connection.cursor()
+            sql = """
+            SELECT SUM(order_details_amc.quantity) AS total_products
+            FROM orders_amc JOIN order_details_amc ON orders_amc.id_order = order_details_amc.id_order;"""
+            self.cursor.execute(sql)
+            result = self.cursor.fetchall()
+            return result
+        except Exception as e:
+            return f"Error: {e}"
+        finally:
+            if self.connection.is_connected():
+                self.cursor.close()
+                self.connection.close()
+                self.cursor = None
+
     def get_profit(self):
         try:
             self.connection = db()
