@@ -15,7 +15,7 @@ from templates.Functions_SQL import get_employees, get_customers, get_department
 
 
 def create_label(master, row, column, padx=5, pady=5, text=None, textvariable=None,
-                 font=('Helvetica', 10, 'normal'), columnspan=1, sticky=None):
+                 font=('Helvetica', 10, 'normal'), columnspan=1, sticky=None, **kwargs) -> ttk.Label:
     """
     Create a label with the text-provided
     :param sticky:
@@ -31,9 +31,9 @@ def create_label(master, row, column, padx=5, pady=5, text=None, textvariable=No
     :return: Placed label in the grid
     """
     if text is not None:
-        label = ttk.Label(master, text=text, font=font)
+        label = ttk.Label(master, text=text, font=font, **kwargs)
     else:
-        label = ttk.Label(master, textvariable=textvariable, font=font)
+        label = ttk.Label(master, textvariable=textvariable, font=font, **kwargs)
     if sticky is None:
         label.grid(row=row, column=column, padx=padx, pady=pady, columnspan=columnspan)
     else:

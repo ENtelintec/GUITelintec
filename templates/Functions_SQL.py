@@ -149,7 +149,7 @@ def update_employee(employee_id, name, lastname, curp, phone, email, department,
     return flag, e, out
 
 
-def get_employee_id_name(name: str) -> tuple[None, None] | tuple[int, str]:
+def get_employee_id_name(name: str) -> tuple[None, str] | tuple[int, str]:
     """
         Get the id of the employee
         :param name: name of the employee
@@ -163,7 +163,7 @@ def get_employee_id_name(name: str) -> tuple[None, None] | tuple[int, str]:
     values = (name, name)
     flag, e, out = execute_sql(sql, values, 1)
     if e is not None or len(out) == 0:
-        return None, None
+        return None, str(e)
     else:
         return out[0], f"{out[1].title()} {out[2].title()}"
 

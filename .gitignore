@@ -13,6 +13,7 @@ __pycache__/
 /files/OCT*
 /files/*cache*
 /files/*.csv
+/files/fichaje*.xlsx
 *csv
 /Fill_Vacations.py
 /app_gui.spec

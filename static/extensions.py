@@ -29,10 +29,22 @@ cache_file_Fichajes_path = "files/Fichajes_cache.pkl"
 cache_file_Tickets_path = "files/Tickets_cache.pkl"
 cache_file_Chats_path = "files/Chats_cache.pkl"
 cache_file_Notificaciones_path = "files/Notificaciones_cache.pkl"
+cache_file_resume_fichaje = 'files/fichajes_resume_cache.pkl'
+cache_file_emp_fichaje = 'files/emp_name_ids_fichajes_cache.pkl'
+cache_oct_file_temp_path = "files/OCT_cache.csv"
+cache_oct_fichaje_path = 'files/contracts_cache.pkl'
 filepath_settings = "files/settings.json"
 quizzes_RRHH = {
     "0": {
         "name": "Encuesta de Salida",
         "path": "files/quizz_salida.json"
-    }
+    },
+    "1": {
+        "name": "Encuesta Nom-035-50",
+        "path": "files/quizz_nom_035_50_v1.json"
+    },
+    "2": {
+            "name": "Encuesta Nom-035-50+",
+            "path": "files/quizz_nom_035_50_v2.json"
+        }
 }
