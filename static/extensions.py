@@ -50,6 +50,7 @@ ventanasApp = {
         "Inventario",
         "Suministros Diarios",
         "Inventario Int.",
+        "Ordenes (A)",
         "Clients (A)",
         "Proveedores (A)",
         "Configuraciones (A)",

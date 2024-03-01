@@ -502,9 +502,7 @@ def get_username_data(username: str):
            "INNER JOIN employees ON (users_system.emp_id = employee_id and usernames=%s) "
            "INNER JOIN departments on employees.department_id = departments.department_id")
     val = (username,)
-    print(sql, val)
     flag, error, result = execute_sql(sql, val)
-    print(flag, error, result)
     out = None
     if len(result) > 0:
         out = {

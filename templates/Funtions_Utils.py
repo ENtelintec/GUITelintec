@@ -10,7 +10,7 @@ from tkinter import StringVar, Misc
 
 from ttkbootstrap.tableview import Tableview
 
-from static.extensions import ventanasApp
+from static.extensions import ventanasApp, conversion_quizzes_path
 from templates.Functions_SQL import get_employees, get_customers, get_departments, get_heads, get_supplier, get_p_and_s, \
     get_orders, get_v_orders, get_purchases, get_tickets, get_users, get_chats
 
@@ -397,10 +397,10 @@ def create_widget_input_DB(master, table) -> list:
             entry6 = ttk.Entry(master, width=7)
             entry7 = ttk.Entry(master, width=9)
             var8 = ttk.IntVar()
-            entry8 = ttk.Checkbutton(master, onvalue=1, offvalue=0,  variable=var8,
+            entry8 = ttk.Checkbutton(master, onvalue=1, offvalue=0, variable=var8,
                                      bootstyle="succes, round-toggle")
             var9 = ttk.IntVar()
-            entry9 = ttk.Checkbutton(master, onvalue=1, offvalue=0,  variable=var9,
+            entry9 = ttk.Checkbutton(master, onvalue=1, offvalue=0, variable=var9,
                                      bootstyle="succes, round-toggle")
             entry10 = ttk.Entry(master, width=15)
             entry11 = ttk.Entry(master, width=15)
@@ -442,18 +442,50 @@ def create_btns_DB(
 
 
 def calculate_results_quizzes(dict_quizz: dict, tipo_q: int):
-    dict_results = {}
-    dict_conversions = json.load(open("conversions.json", encoding="utf-8"))
+    dict_results = {
+        "c_final": 0,
+        "c_dom": 0,
+        "c_cat": 0,
+        "detail": {}
+    }
+    dict_conversions = json.load(open(conversion_quizzes_path, encoding="utf-8"))
     match tipo_q:
         case 1:
             dict_values = dict_conversions["norm035"]["v1"]
-            for group in dict_quizz.values():
-                items = group["items"]
-                values = group["values"]
-
+            c_final = 0
+            for question in dict_quizz.values():
+                if question["items"] != "":
+                    upper_limit = question["items"][1]
+                    lower_limit = question["items"][0]
+                    answers = question["answer"]
+                    for q in range(lower_limit, upper_limit + 1):
+                        for group in dict_values.values():
+                            items = group["items"]
+                            values = group["values"]
+                            if q in items:
+                                res = values[answers[q - lower_limit][1]]
+                                dict_results["detail"][str(q)] = res
+                                c_final += res
+                                break
+            dict_results["c_final"] = c_final
         case 2:
-            for key, value in dict_quizz.items():
-                dict_results[key] = value[0]
+            dict_values = dict_conversions["norm035"]["v2"]
+            c_final = 0
+            for question in dict_quizz.values():
+                if question["items"] != "":
+                    upper_limit = question["items"][1]
+                    lower_limit = question["items"][0]
+                    answers = question["answer"]
+                    for q in range(lower_limit, upper_limit + 1):
+                        for group in dict_values.values():
+                            items = group["items"]
+                            values = group["values"]
+                            if q in items:
+                                res = values[answers[q - lower_limit][1]]
+                                dict_results["detail"][str(q)] = res
+                                c_final += res
+                                break
+            dict_results["c_final"] = c_final
         case _:
             pass
     return dict_results

@@ -59,17 +59,19 @@ class QuizMaker(ttk.Frame):
         title.grid(row=0, column=0, padx=10, pady=10)
 
     def display_result(self):
+        dict_results = calculate_results_quizzes(self.dict_quizz, self.tipoOp)
         Messagebox.show_info(
-            title="Result", message=f"Your answers are: {self.opt_selected}\n"
+            title="Result", message=f"Your final result is:\n"
+                                    f"Calificación final: {dict_results['c_final']}\n"
+                                    f"Calificación de dominio: {dict_results['c_dom']}\n"
+                                    f"Calificacion de categoria: {dict_results['c_cat']}\n"
         )
-        print(self.opt_selected)
 
     def next_btn(self):
         self.save_result()
         self.q_no += 1
         if self.q_no == self.data_size:
             self.display_result()
-            print(self.tipoOp)
             self.master.update_dict_quizz(self.dict_quizz, tipo_op=self.tipoOp)
             self.destroy()
         else:
@@ -239,7 +241,6 @@ class FrameEncuestas(ttk.Frame):
         date_inteview = "01/01/2021"
         name_interviewer = "Interviewer"
         file_out = self.quizz_out_path + f"{name_emp.replace(' ', '')}_{date_inteview.replace('/','-')}_type_{tipo_op}.pdf"
-        # dict_results = calculate_results_quizzes(self.dict_quizz, tipo_op)
         if tipo_op == 0:
             create_pdf_quizz_salida(
                 self.dict_quizz,

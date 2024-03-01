@@ -70,7 +70,6 @@ class GUIAsistente(ttk.Window):
             "telegram": get_image_side_menu("telegram"),
             "webchat": get_image_side_menu("webchat")
         }
-        print("images and variables loaded")
         # -----------------------Create side menu frame-----------------------
         self.navigation_frame = ttk.Frame(self)
         self.navigation_frame.grid(row=0, column=0, sticky="nswe", pady=10, padx=5)
