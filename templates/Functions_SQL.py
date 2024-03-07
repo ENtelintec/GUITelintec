@@ -572,7 +572,6 @@ def insert_new_fichaje_DB(emp_id: int, contract: str, absences: dict, lates: dic
     return flag, error, result
 
 
-
 def get_fichaje_DB(emp_id: int):
     sql = ("SELECT * FROM sql_telintec.fichajes "
            "WHERE emp_id = %s")

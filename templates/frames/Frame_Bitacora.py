@@ -9,7 +9,8 @@ from ttkbootstrap.scrolled import ScrolledFrame
 from ttkbootstrap.tableview import Tableview
 
 from static.extensions import log_file_bitacora_path
-from templates.Functions_AuxFiles import get_data_employees, get_data_employees_ids, update_bitacora, get_events_date
+from templates.Functions_AuxFiles import get_data_employees, get_data_employees_ids, update_bitacora, get_events_date, \
+    erase_value_bitacora
 from templates.Functions_Files import write_log_file
 from templates.Functions_SQL import get_employess_op_names
 from templates.Funtions_Utils import create_label, create_var_none, create_stringvar, create_button, \
@@ -38,8 +39,8 @@ class BitacoraEditFrame(ScrolledFrame):
         # --------------------------buttons-----------------------------------
         frame_buttons = ttk.Frame(self)
         frame_buttons.grid(row=3, column=0, padx=10, pady=10, sticky="nswe")
-        frame_buttons.columnconfigure((0, 1, 2), weight=1)
-        (self.btn_add, self.btn_cancel) = self.create_buttons(frame_buttons)
+        frame_buttons.columnconfigure((0, 1, 2, 3), weight=1)
+        (self.btn_add, self.btn_cancel, self.btn_update, self.btn_erase) = self.create_buttons(frame_buttons)
         # -----------------------------tableview----------------------------
         self.frame_table = ttk.Frame(self)
         self.frame_table.grid(row=4, column=0, padx=10, pady=10, sticky="nswe")
@@ -59,7 +60,8 @@ class BitacoraEditFrame(ScrolledFrame):
         contract_selector = ttk.Combobox(master, values=contratos, state="readonly", width=15)
         contract_selector.grid(row=1, column=1, padx=10, pady=10, sticky="w")
         create_label(master, 2, 0, text="Fecha", sticky="w")
-        date_selector = ttk.DateEntry(master)
+        date_selector = ttk.DateEntry(master,
+                                      dateformat="%d-%m-%Y")
         date_selector.grid(row=2, column=1, padx=10, pady=10, sticky="w")
         create_label(master, 3, 0, text="Evento", sticky="w")
         event_selector = ttk.Combobox(
@@ -105,7 +107,10 @@ class BitacoraEditFrame(ScrolledFrame):
         btn_update_table = create_button(
             master, 0, 2, "Actualizar tabla", command=self.update_table,
             sticky="n", width=15)
-        return btn_add, btn_reset
+        btn_erase_event = create_button(
+            master, 0, 3, "Borrar evento", command=self.erase_event,
+            sticky="n", width=15)
+        return btn_add, btn_reset, btn_update_table, btn_erase_event
 
     def on_add_click(self):
         if self.emp_id is None:
@@ -115,12 +120,18 @@ class BitacoraEditFrame(ScrolledFrame):
         contract = self.contract_selector.get()
         date = self.date_selector.entry.get()
         event = self.event_selector.get()
-        value = self.valor_entry.get()
+        value = float(self.valor_entry.get()) if self.valor_entry.get() != "" else 0
         comment = self.comment_entry.get()
+        if event == "":
+            self.svar_info.set("Llene todos los datos")
+            return
         flag, error, result = update_bitacora(self.emp_id, event, (date, value, comment, contract))
+        print(flag, error, result)
         if flag:
             msg = f"Record inserted--> Empleado: {name}, Contrato: {contract}, Fecha: {date}, Evento: {event}, Valor: {value}, Comentario: {comment}--> by {self.username}"
             write_log_file(log_file_bitacora_path, msg)
+            self.update_table()
+            self.on_reset_click()
         else:
             self.svar_info.set(error)
 
@@ -135,7 +146,7 @@ class BitacoraEditFrame(ScrolledFrame):
     def on_double_click_table(self, event):
         row = event.widget.item(event.widget.selection()[0], "values")
         (id_emp, name, contract, event, timestamp, value, comment) = row
-        timestamp = datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S")
+        timestamp = datetime.strptime(timestamp, "%d-%m-%Y %H:%M:%S")
         self.emp_id = int(id_emp)
         self.emp_selector.set(name)
         self.contract_selector.set(contract)
@@ -147,17 +158,17 @@ class BitacoraEditFrame(ScrolledFrame):
         self.svar_info.set(f"Empleado: {name}, ID: {self.emp_id}")
         self.date_selector = set_dateEntry_new_value(
             self.frame_inputs, self.date_selector,
-            timestamp, row=2, column=1, padx=10, pady=10, sticky="w")
+            timestamp, row=2, column=1, padx=10, pady=10, sticky="w", date_format="%d-%m-%Y")
 
-    def create_table(self, master):
+    def create_table(self, master, hard_update=False):
         # label title
         ttk.Label(
             master, text='Eventos del mes', font=("Helvetica", 22, "bold")).grid(
             row=0, column=0, columnspan=4, padx=10, pady=10)
         # tableview de eventos
         date = self.date_selector.entry.get()
-        date = datetime.strptime(date, '%d/%b/%Y')
-        self.events, columns = get_events_date(date)
+        date = datetime.strptime(date, "%d-%m-%Y")
+        self.events, columns = get_events_date(date, hard_update)
         table_events = Tableview(master,
                                  coldata=columns,
                                  rowdata=self.events,
@@ -183,4 +194,22 @@ class BitacoraEditFrame(ScrolledFrame):
     def update_table(self):
         self.table.destroy()
         self.table_events.destroy()
-        self.table, self.table_events = self.create_table(self.frame_table)
+        self.table, self.table_events = self.create_table(self.frame_table, hard_update=True)
+
+    def erase_event(self):
+        if self.emp_id is None:
+            self.svar_info.set("Seleccione un empleado")
+            return
+        name = self.emp_selector.get()
+        contract = self.contract_selector.get()
+        date = self.date_selector.entry.get()
+        event = self.event_selector.get()
+        flag, error, result = erase_value_bitacora(self.emp_id, event, (date, contract))
+        if flag:
+            msg = f"Record deleted--> Empleado: {name}, Contrato: {contract}, Fecha: {date}, Evento: {event}--> by {self.username}"
+            write_log_file(log_file_bitacora_path, msg)
+            self.update_table()
+            self.on_reset_click()
+        else:
+            self.svar_info.set(error)
+

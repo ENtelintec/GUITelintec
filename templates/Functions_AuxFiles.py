@@ -118,81 +118,136 @@ def update_bitacora(emp_id: int, event, data):
     :return: None.
     """
     event_dic = {}
-    contract = data[3]
+    contract_sel = data[3]
     flag, error, result = get_fichaje_DB(emp_id)
-    if flag:
-        contract_db = result[2]
-        if contract_db == contract:
-            match event:
-                case "falta":
-                    event_dic = json.loads(result[3])
-                case "atraso":
-                    event_dic = json.loads(result[4])
-                case "extra":
-                    event_dic = json.loads(result[5])
-                case "prima":
-                    event_dic = json.loads(result[6])
-        else:
-            print("error at updating bitacora, not the same contract for the employee")
+    if flag and len(result) > 0:
+        match event:
+            case "falta":
+                event_dic = json.loads(result[3])
+            case "atraso":
+                event_dic = json.loads(result[4])
+            case "extra":
+                event_dic = json.loads(result[5])
+            case "prima":
+                event_dic = json.loads(result[6])
     else:
         print("error at getting data from db or not data found for the employee")
-    date = datetime.strptime(data[0], "%d/%m/%Y")
-    if date.year not in event_dic.keys():
-        event_dic[date.year] = {}
-        event_dic[date.year][date.month] = {}
-        event_dic[date.year][date.month][date.day] = {
+    date = datetime.strptime(data[0], "%d-%m-%Y")
+    if str(date.year) not in event_dic.keys():
+        event_dic[str(date.year)] = {}
+        event_dic[str(date.year)][str(date.month)] = {}
+        event_dic[str(date.year)][str(date.month)][str(date.day)] = {
             "value": data[1],
             "comment": data[2],
-            "timestamp": date
+            "timestamp": date.strftime("%d-%m-%Y %H:%M:%S")
         }
-    elif date.month not in event_dic[date.year].keys():
-        event_dic[date.year][date.month] = {}
-        event_dic[date.year][date.month][date.day] = {
+    elif str(date.month) not in event_dic[str(date.year)].keys():
+        event_dic[str(date.year)][str(date.month)] = {}
+        event_dic[str(date.year)][str(date.month)][str(date.day)] = {
             "value": data[1],
             "comment": data[2],
-            "timestamp": date
+            "timestamp": date.strftime("%d-%m-%Y %H:%M:%S")
         }
-    elif date.day not in event_dic[date.year][date.month].keys():
-        event_dic[date.year][date.month][date.day] = {
+    elif str(date.day) not in event_dic[str(date.year)][str(date.month)].keys():
+        event_dic[str(date.year)][str(date.month)][str(date.day)] = {
             "value": data[1],
             "comment": data[2],
-            "timestamp": date
+            "timestamp": date.strftime("%d-%m-%Y %H:%M:%S")
         }
-    if flag:
-        match event:
-            case "falta":
-                flag, error, result = update_fichaje_DB(emp_id, contract, event_dic, result[4], result[5], result[6])
-            case "atraso":
-                flag, error, result = update_fichaje_DB(emp_id, contract, result[3], event_dic, result[5], result[6])
-            case "extra":
-                flag, error, result = update_fichaje_DB(emp_id, contract, result[3], result[4], event_dic, result[6])
-            case "prima":
-                flag, error, result = update_fichaje_DB(emp_id, contract, result[3], result[4], result[5], event_dic)
-    else:
-        match event:
-            case "falta":
-                flag, error, result = insert_new_fichaje_DB(emp_id, contract, event_dic, {}, {}, {})
-            case "atraso":
-                flag, error, result = insert_new_fichaje_DB(emp_id, contract, {}, event_dic, {}, {})
-            case "extra":
-                flag, error, result = insert_new_fichaje_DB(emp_id, contract, {}, {}, event_dic, {})
-            case "prima":
-                flag, error, result = insert_new_fichaje_DB(emp_id, contract, {}, {}, {}, event_dic)
     fichajes_resume, flag = get_fichajes_resume_cache(cache_file_resume_fichaje)
     if flag:
         for i, row in enumerate(fichajes_resume):
-            if int(row[0]) == emp_id:
+            (id_emp, name, contract, new_faltas, new_tardanzas,
+             new_extras, new_extras_value, new_primas, absences,
+             lates, extras, primes) = row
+            if id_emp == emp_id:
                 match event:
                     case "falta":
-                        fichajes_resume[i][8] = event_dic
+                        new_row = [id_emp, name, contract_sel, new_faltas, new_tardanzas,
+                                   new_extras, new_extras_value, new_primas, event_dic,
+                                   lates, extras, primes]
+                        fichajes_resume[i] = new_row
                     case "atraso":
-                        fichajes_resume[i][9] = event_dic
+                        new_row = [id_emp, name, contract_sel, new_faltas, new_tardanzas,
+                                   new_extras, new_extras_value, new_primas, absences,
+                                   event_dic, extras, primes]
+                        fichajes_resume[i] = new_row
                     case "extra":
-                        fichajes_resume[i][10] = event_dic
+                        new_row = [id_emp, name, contract_sel, new_faltas, new_tardanzas,
+                                   new_extras, new_extras_value, new_primas, absences,
+                                   lates, event_dic, primes]
+                        fichajes_resume[i] = new_row
                     case "prima":
-                        fichajes_resume[i][11] = event_dic
+                        new_row = [id_emp, name, contract_sel, new_faltas, new_tardanzas,
+                                   new_extras, new_extras_value, new_primas, absences,
+                                   lates, extras, event_dic]
+                        fichajes_resume[i] = new_row
+                update_fichajes_resume_cache(cache_file_resume_fichaje, fichajes_resume, id_emp_up=id_emp)
+                print("updated cache")
+                break
+    return flag, error, result
+
+
+def erase_value_bitacora(emp_id: int, event, data):
+    """
+    Erase the value of the bitacora.
+    :param emp_id: The id of the employee.
+    :param event: The event.
+    :param data: The data.
+    :return: None.
+    """
+    event_dic = {}
+    contract_sel = data[1]
+    flag, error, result = get_fichaje_DB(emp_id)
+    if flag and len(result) > 0:
+        match event:
+            case "falta":
+                event_dic = json.loads(result[3])
+            case "atraso":
+                event_dic = json.loads(result[4])
+            case "extra":
+                event_dic = json.loads(result[5])
+            case "prima":
+                event_dic = json.loads(result[6])
     else:
-        update_fichajes_resume_cache(cache_file_resume_fichaje, [], True)
+        print("error at getting data from db or not data found for the employee")
+    date = datetime.strptime(data[0], "%d-%m-%Y")
+    if str(date.year) in event_dic.keys():
+        if str(date.month) in event_dic[str(date.year)].keys():
+            if str(date.day) in event_dic[str(date.year)][str(date.month)].keys():
+                del event_dic[str(date.year)][str(date.month)][str(date.day)]
+    fichajes_resume, flag = get_fichajes_resume_cache(cache_file_resume_fichaje)
+    if flag:
+        for i, row in enumerate(fichajes_resume):
+            (id_emp, name, contract, new_faltas, new_tardanzas,
+             new_extras, new_extras_value, new_primas, absences,
+             lates, extras, primes) = row
+            if id_emp == emp_id:
+                flag = False
+                match event:
+                    case "falta":
+                        new_row = [id_emp, name, contract_sel, new_faltas, new_tardanzas,
+                                   new_extras, new_extras_value, new_primas, event_dic,
+                                   lates, extras, primes]
+                        fichajes_resume[i] = new_row
+                    case "atraso":
+                        new_row = [id_emp, name, contract_sel, new_faltas, new_tardanzas,
+                                   new_extras, new_extras_value, new_primas, absences,
+                                   event_dic, extras, primes]
+                        fichajes_resume[i] = new_row
+                    case "extra":
+                        new_row = [id_emp, name, contract_sel, new_faltas, new_tardanzas,
+                                   new_extras, new_extras_value, new_primas, absences,
+                                   lates, event_dic, primes]
+                        fichajes_resume[i] = new_row
+                    case "prima":
+                        new_row = [id_emp, name, contract_sel, new_faltas, new_tardanzas,
+                                   new_extras, new_extras_value, new_primas, absences,
+                                   lates, extras, event_dic]
+                        fichajes_resume[i] = new_row
+                update_fichajes_resume_cache(cache_file_resume_fichaje, fichajes_resume, id_emp_up=id_emp, deletion=True)
+                flag = True
+                break
     return flag, error, result
 
 
@@ -205,9 +260,9 @@ def get_data_from_dict_by_date(data: dict, date: datetime, stamp: str):
     :return: The data.
     """
     data_out = []
-    if date.year in data.keys():
-        if date.month in data[date.year].keys():
-            for day in data[date.year][date.month].values():
+    if str(date.year) in data.keys():
+        if str(date.month) in data[str(date.year)].keys():
+            for day in data[str(date.year)][str(date.month)].values():
                 data_out.append([stamp, day["timestamp"], day["value"], day["comment"]])
             return data_out
     return None
@@ -230,14 +285,15 @@ def unify_data_list(info_list: list, data: list[list]):
     return out_list
 
 
-def get_events_date(date):
+def get_events_date(date, hard_update):
     """
     Get the events of the date.
+    :param hard_update: update from db
     :param date: The date.
     :return: The events.
     """
     data_events = []
-    fichajes_resume, flag = get_fichajes_resume_cache(cache_file_resume_fichaje)
+    fichajes_resume, flag = get_fichajes_resume_cache(cache_file_resume_fichaje, hard_update=hard_update)
     for row in fichajes_resume:
         (id_emp, name, contract, faltas, tardanzas, extras, extras_value, primas,
          absences_dic, lates_dic, extras_dic, primes_dic) = row

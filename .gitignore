@@ -20,6 +20,7 @@ __pycache__/
 /dist/
 /build/
 /venv/
+/files/logs/*
 /app_gui.exe
 /files/samplev2.pdf
 /files/*.pdf

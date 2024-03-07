@@ -89,4 +89,4 @@ quizzes_RRHH = {
 }
 conversion_quizzes_path = "files/conversions_quizzes.json"
 quizz_out_path = "files/"
-log_file_bitacora_path = "files/log_bitacora.txt"
+log_file_bitacora_path = "files/logs/"
