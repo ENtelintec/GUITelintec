@@ -501,7 +501,7 @@ class FichajesAuto(ttk.Frame):
                     name_db = names_and_ids[name]["name_db"]
                     id_db = names_and_ids[name]["id"]
                     self.dff.loc[self.dff["name"] == name, "name"] = name_db
-                    self.dff.loc[self.dff["name"] == name, "ID"] = id_db
+                    self.dff.loc[self.dff["name"] == name_db, "ID"] = id_db
                 # enables scales
                 names_list = self.dff["name"].unique().tolist()
                 self.name_emp_selector.configure(values=names_list)
@@ -728,8 +728,6 @@ class FichajesAuto(ttk.Frame):
                 if self.file_selected_3:
                     id_emp = self.dft[self.dft["name"] == name]["ID"].to_list()[0] if len(
                         self.dft[self.dft["name"] == name]["ID"].to_list()) > 0 else None
-            else:
-                id_emp = None
             # get data for an employee
             (worked_days_f, worked_intime_f, count_l_f, count_e_f,
              days_late, days_extra) = cb.get_info_f_file_name(

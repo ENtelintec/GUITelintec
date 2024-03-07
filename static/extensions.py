@@ -17,7 +17,7 @@ api = Api()
 url_api = "https://ec2-3-144-117-149.us-east-2.compute.amazonaws.com/AuthAPI/api/v1/auth/loginUP"
 IMG_PATH_COLLAPSING = Path("./img")
 ventanasApp = {
-    "App.Deparment.Director": [
+    "App.Department.Director": [
         "DB",
         "Notificaciones",
         "Chats",
@@ -25,7 +25,7 @@ ventanasApp = {
         "Tickets",
         "Cuenta",
     ],
-    "App.Deparment.RRHH": [
+    "App.Department.RRHH": [
         "Fichajes",
         "Examenes",
         "Emp. Detalles",
@@ -34,7 +34,7 @@ ventanasApp = {
         "Encuestas",
         "Cuenta",
     ],
-    "App.Deparment.Administrator": [
+    "App.Department.Administrator": [
         "DB",
         "Notificaciones",
         "Chats",
@@ -43,7 +43,7 @@ ventanasApp = {
         "Settings",
         "Cuenta",
     ],
-    "App.Deparment.ALMACEN": [
+    "App.Department.ALMACEN": [
         "Home",
         "Entradas",
         "Salidas",
@@ -56,7 +56,11 @@ ventanasApp = {
         "Configuraciones (A)",
         "Cuenta",
     ],
-    "App.Deparment.Default": ["Cuenta"],
+    "App.Department.Bitacoras": [
+        "Bitacora",
+        "Cuenta",
+    ],
+    "App.Department.Default": ["Cuenta"],
 }
 cache_file_EM_path = "files/EM_cache.pkl"
 cache_file_Fichajes_path = "files/Fichajes_cache.pkl"
@@ -81,7 +85,8 @@ quizzes_RRHH = {
         "name": "Encuesta de Norma_035_+50",
         "path": "files/quizz_norma035_+50_v2.json",
         "type": 2,
-    },
+    }
 }
 conversion_quizzes_path = "files/conversions_quizzes.json"
 quizz_out_path = "files/"
+log_file_bitacora_path = "files/log_bitacora.txt"

@@ -214,6 +214,16 @@ def get_name_employee(id_employee: int) -> None | str:
         return f"{out[0].upper()} {out[1].upper()}"
 
 
+def get_employess_op_names():
+    sql = ("SELECT employee_id, name, l_name, contrato FROM employees "
+           "WHERE  department_id = 2")
+    flag, e, out = execute_sql(sql, None, 5)
+    if e is not None:
+        return None
+    else:
+        return out
+
+
 def get_ids_employees(names: list):
     """
     Get the id of the employee
@@ -539,6 +549,36 @@ def get_all_fichajes():
     flag, error, result = execute_sql(sql, type_sql=2)
     return flag, error, result
 
+
+def update_fichaje_DB(emp_id: int, contract: str, absences: dict, lates: dict, extras: dict,
+                      primes: dict):
+    sql = ("UPDATE sql_telintec.fichajes "
+           "SET contract = %s, absences = %s, lates = %s, extras = %s, primes = %s "
+           "WHERE emp_id = %s")
+    val = (contract, json.dumps(absences), json.dumps(lates), json.dumps(extras),
+           json.dumps(primes), emp_id)
+    flag, error, result = execute_sql(sql, val, 3)
+    return flag, error, result
+
+
+def insert_new_fichaje_DB(emp_id: int, contract: str, absences: dict, lates: dict, extras: dict,
+                          primes: dict):
+    sql = ("INSERT INTO sql_telintec.fichajes "
+           "(emp_id, contract, absences, lates, extras, primes) "
+           "VALUES (%s, %s, %s, %s, %s, %s)")
+    val = (emp_id, contract, json.dumps(absences), json.dumps(lates),
+           json.dumps(extras), json.dumps(primes))
+    flag, error, result = execute_sql(sql, val, 4)
+    return flag, error, result
+
+
+
+def get_fichaje_DB(emp_id: int):
+    sql = ("SELECT * FROM sql_telintec.fichajes "
+           "WHERE emp_id = %s")
+    val = (emp_id,)
+    flag, error, result = execute_sql(sql, val, 1)
+    return flag, error, result
 
 # --------------------------------Examenes medicos GUI--------------------------
 def insert_new_exam_med(name: str, blood: str, status: str, aptitud: list,

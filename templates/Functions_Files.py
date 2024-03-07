@@ -18,7 +18,8 @@ import ttkbootstrap as ttk
 from ttkbootstrap.toast import ToastNotification
 
 from static.extensions import secrets, cache_oct_file_temp_path, cache_oct_fichaje_path
-from templates.Functions_SQL import get_id_employee, get_all_fichajes, get_employee_id_name
+from templates.Functions_SQL import get_id_employee, get_all_fichajes, get_employee_id_name, update_fichaje_DB, \
+    insert_new_fichaje_DB
 from templates.Functions_Text import clean_accents, compare_employee_name
 
 
@@ -714,22 +715,22 @@ def get_dict_fichaje(dict_list: list[dict], data: list[dict]):
                     dict_f[year][month][day] = {}
                     dict_f[year][month][day]["timestamp"] = str(timestamp)
                     dict_f[year][month][day]["comment"] = comment
-                    dict_f[year][month][day]["value"] = value
+                    dict_f[year][month][day]["value"] = value.seconds//3600
                 elif month not in dict_f[year].keys():
                     dict_f[year][month] = {}
                     dict_f[year][month][day] = {}
                     dict_f[year][month][day]["timestamp"] = str(timestamp)
                     dict_f[year][month][day]["comment"] = comment
-                    dict_f[year][month][day]["value"] = value
+                    dict_f[year][month][day]["value"] = value.seconds//3600
                 elif day not in dict_f[year][month].keys():
                     dict_f[year][month][day] = {}
                     dict_f[year][month][day]["timestamp"] = str(timestamp)
                     dict_f[year][month][day]["comment"] = comment
-                    dict_f[year][month][day]["value"] = value
+                    dict_f[year][month][day]["value"] = value.seconds//3600
                 else:
                     dict_f[year][month][day]["timestamp"] = str(timestamp)
                     dict_f[year][month][day]["comment"] = comment
-                    dict_f[year][month][day]["value"] = value
+                    dict_f[year][month][day]["value"] = value.seconds//3600
         dict_list[i] = dict_f
     return tuple(dict_list)
 
@@ -823,9 +824,10 @@ def get_cumulative_data_fichajes_dict(dic_data: dict) -> tuple[int, int]:
     return total_days, total_value
 
 
-def update_fichajes_resume_cache(filepath: str, data):
+def update_fichajes_resume_cache(filepath: str, data, just_file=False):
     """
     Updates the fichajes resume cache
+    :param just_file:
     :param filepath:
     :param data:
     :return:
@@ -838,28 +840,58 @@ def update_fichajes_resume_cache(filepath: str, data):
         print("Error at getting cache file to update: ", e)
         update = False
         fichajes_resume = data
-    if update:
-        for i, row in enumerate(fichajes_resume):
-            (id_emp, name, contract, faltas, lates, extras, total_extra, primas,
-             faltas_dic, lates_dic, extras_dic, primas_dic) = row
-            for row2 in data:
+    if update and not just_file:
+        ids_old = [item[0] for item in fichajes_resume]
+        ids_new = [item[0] for item in data]
+        for id_new in ids_new:
+            if id_new in ids_old:
+                index_1 = ids_new.index(id_new)
+                index_0 = ids_old.index(id_new)
+                (id_emp, name, contract, faltas, lates, extras, total_extra, primas,
+                 faltas_dic, lates_dic, extras_dic, primas_dic) = fichajes_resume[index_0]
                 (id_emp2, name2, contract2, faltas2, lates2, extras2, total_extra2, primas2,
-                 faltas_dic2, lates_dic2, extras_dic2, primas_dic2) = row2
-                if id_emp == id_emp2:
-                    faltas_dic.update(faltas_dic2)
-                    lates_dic.update(lates_dic2)
-                    extras_dic.update(extras_dic2)
-                    primas_dic.update(primas_dic2)
-                    break
-            new_faltas, new_faltas_value = get_cumulative_data_fichajes_dict(faltas_dic)
-            new_lates, new_lates_value = get_cumulative_data_fichajes_dict(lates_dic)
-            new_extras, new_extras_value = get_cumulative_data_fichajes_dict(extras_dic)
-            new_primas, new_primas_value = get_cumulative_data_fichajes_dict(primas_dic)
-            aux = (id_emp, name, contract, new_faltas, new_lates, new_extras, new_extras_value, new_primas,
-                   faltas_dic, lates_dic, extras_dic, primas_dic)
-            fichajes_resume[i] = aux
+                 faltas_dic2, lates_dic2, extras_dic2, primas_dic2) = data[index_1]
+                faltas_dic.update(faltas_dic2)
+                lates_dic.update(lates_dic2)
+                extras_dic.update(extras_dic2)
+                primas_dic.update(primas_dic2)
+                new_faltas, new_faltas_value = get_cumulative_data_fichajes_dict(faltas_dic)
+                new_lates, new_lates_value = get_cumulative_data_fichajes_dict(lates_dic)
+                new_extras, new_extras_value = get_cumulative_data_fichajes_dict(extras_dic)
+                new_primas, new_primas_value = get_cumulative_data_fichajes_dict(primas_dic)
+                aux = (id_emp, name, contract, new_faltas, new_lates, new_extras, new_extras_value, new_primas,
+                       faltas_dic, lates_dic, extras_dic, primas_dic)
+                flag, error, result = update_fichaje_DB(id_new, contract, faltas_dic, lates_dic, extras_dic, primas_dic)
+                if flag:
+                    print("Fichaje updated DB")
+                    fichajes_resume[index_0] = aux
+                else:
+                    print("Error at updating DB")
+                    print(error)
+            elif id_new is not None:
+                (id_emp2, name2, contract2, faltas2, lates2, extras2, total_extra2, primas2,
+                 faltas_dic2, lates_dic2, extras_dic2, primas_dic2) = data[ids_new.index(id_new)]
+                aux = (id_new, name2, contract2, faltas2, lates2, extras2, total_extra2, primas2,
+                       faltas_dic2, lates_dic2, extras_dic2, primas_dic2)
+                flag, error, result = update_fichaje_DB(id_new, contract2, faltas_dic2, lates_dic2, extras_dic2, primas_dic2)
+                if flag:
+                    fichajes_resume.append(aux)
+                    print("Fichaje added DB")
+                else:
+                    print("Error at adding DB, creating a new registry")
+                    print(error)
+                    flag, error, result = insert_new_fichaje_DB(id_new, name2, contract2, faltas2, lates2, extras2)
+                    if flag:
+                        fichajes_resume.append(aux)
+                        print("Fichaje added DB")
+                    else:
+                        print("Error at creating new registry at DB")
+                        print(error)
+    if just_file:
+        flag, error, fichajes_resume = get_all_fichajes()
     with open(filepath, 'wb') as file:
         pickle.dump(fichajes_resume, file)
+    print("Fichajes resume cache updated")
 
 
 def get_fichajes_resume_cache(filepath) -> tuple[list, bool]:
@@ -1156,7 +1188,6 @@ def get_info_o_file_name(contracts, name: str, id_2=None, flag=False) -> tuple[s
                     print(f"user not registered in the file OCT: {id_2}")
                     return "None", [], [], [], 0.0, []
         else:
-            print("user not registered")
             return "None", [], [], [], 0.0, []
     else:
         print("no data avaliable")
@@ -1194,3 +1225,9 @@ def get_list_files(files, filename=None) -> tuple[tuple[list[Any], list[Any]], l
                     files_pairs = v["pairs"] if v["pairs"] is not None else ["No pair avaliable"]
     files_pairs = divide_pairs(files_pairs)
     return files_pairs, files_names_f
+
+
+def write_log_file(filename, text):
+    with open(f"logs/{filename}.txt", "a") as f:
+        f.write(text + "\n")
+    return True

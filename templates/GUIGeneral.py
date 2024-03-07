@@ -9,6 +9,7 @@ from templates.Functions_AuxFiles import carpeta_principal, get_image_side_menu
 from templates.Functions_Files import read_file_not
 from templates.Functions_SQL import get_chats_w_limit, get_username_data
 from templates.Funtions_Utils import create_button_side_menu, compare_permissions_windows
+from templates.frames.Frame_Bitacora import BitacoraEditFrame
 from templates.frames.Frame_ChatsFrame import ChatFrame
 from templates.frames.Frame_DBFrame import DBFrame, EmployeesFrame
 from templates.frames.Frame_EmployeeDetail import EmployeeDetails
@@ -114,9 +115,11 @@ class GUIAsistente(ttk.Window):
         self.windows_frames = self._create_side_menu_windows()
         department = "default"  # default department if no department permissions are found
         for k, v in self.permissions.items():
-            if "App.Deparment" in v:
+            if "App.Department" in v:
                 department = v.split(".")[-1]
                 break
+        if department == "Bitacoras":
+            return
         self.VA_frame = ttk.Frame(self, width=150)
         self.VA_frame.rowconfigure(0, weight=1)
         self.VA_frame.grid(row=0, column=2, sticky="nsew", pady=10, padx=5)
@@ -128,7 +131,8 @@ class GUIAsistente(ttk.Window):
             case "none":
                 for txt in self.names_side_menu:
                     self.windows_frames[txt].grid_forget()
-                self.VA_frame.grid_forget()
+                if self.VA_frame is not None:
+                    self.VA_frame.grid_forget()
             case _:
                 for txt in self.names_side_menu:
                     if txt == name:
@@ -138,7 +142,7 @@ class GUIAsistente(ttk.Window):
 
     def _create_side_menu_widgets(self, master):
         flag, windows_names = compare_permissions_windows(list(self.permissions.values()))
-        windows_names = windows_names if windows_names is not None else ["Notificaciones", "Settings"]
+        windows_names = windows_names if windows_names is not None else ["Cuenta"]
         widgets = []
         if flag or windows_names is not None:
             if len(windows_names) >= 12:
@@ -229,6 +233,9 @@ class GUIAsistente(ttk.Window):
                 case "Encuestas":
                     windows[window] = FrameEncuestas(self)
                     print("encuestas frame created")
+                case "Bitacora":
+                    windows[window] = BitacoraEditFrame(self, self.username)
+                    print("bitacora frame created")
                 case _:
                     pass
         return windows

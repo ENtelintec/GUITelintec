@@ -136,7 +136,7 @@ def create_stringvar(number: int, value: str):
     :param number: number to create the stringvar
     :return: tuple
     """
-    return [ttk.StringVar(value=value) for _ in range(number)]
+    return tuple([ttk.StringVar(value=value) for _ in range(number)])
 
 
 def create_var_none(number: int):
@@ -451,8 +451,10 @@ def calculate_results_quizzes(dict_quizz: dict, tipo_q: int):
     dict_conversions = json.load(open(conversion_quizzes_path, encoding="utf-8"))
     match tipo_q:
         case 1:
-            dict_values = dict_conversions["norm035"]["v1"]
+            dict_values = dict_conversions["norm035"]["v1"]["conversion"]
             c_final = 0
+            c_dom = 0
+            c_cat = 0
             for question in dict_quizz.values():
                 if question["items"] != "":
                     upper_limit = question["items"][1]
@@ -468,8 +470,24 @@ def calculate_results_quizzes(dict_quizz: dict, tipo_q: int):
                                 c_final += res
                                 break
             dict_results["c_final"] = c_final
+            dict_cat_doms = dict_conversions["norm035"]["v1"]["categorias"]
+            dict_results["c_dom"] = {}
+            dict_results["c_cat"] = {}
+
+            for cat_dic in dict_cat_doms.values():
+                cat_name = cat_dic["categoria"]
+                dict_results["c_cat"][cat_name] = 0
+                for dom_name, dom_dic in cat_dic["dominio"].items():
+                    dict_results["c_dom"][dom_name] = 0
+                    for dim_dic in dom_dic["dimensiones"]:
+                        dim_name = dim_dic["dimension"]
+                        items = dim_dic["item"]
+                        for q, val in dict_results["detail"].items():
+                            if int(q) in items:
+                                dict_results["c_dom"][dom_name] += val
+                                dict_results["c_cat"][cat_name] += val
         case 2:
-            dict_values = dict_conversions["norm035"]["v2"]
+            dict_values = dict_conversions["norm035"]["v2"]["conversion"]
             c_final = 0
             for question in dict_quizz.values():
                 if question["items"] != "":
@@ -489,3 +507,5 @@ def calculate_results_quizzes(dict_quizz: dict, tipo_q: int):
         case _:
             pass
     return dict_results
+
+

@@ -30,6 +30,7 @@ class QuizMaker(ttk.Frame):
         self.tipoOp = tipo_op
         # ----------widgets-------------
         self.columnconfigure(0, weight=1)
+        self.display_title()
         self.frame_questions = ttk.Frame(self)
         self.frame_questions.grid(row=1, column=0, padx=10, pady=10, sticky="nswe")
         self.frame_questions.columnconfigure(0, weight=1)
@@ -38,7 +39,7 @@ class QuizMaker(ttk.Frame):
         self.frame_buttons = ttk.Frame(self)
         self.frame_buttons.grid(row=3, column=0, padx=10, pady=10, sticky="nswe")
         self.frame_buttons.columnconfigure((0, 1), weight=1)
-        self.display_title()
+
         # entries
         self.display_question()
         self.entries = self.display_options()
@@ -61,10 +62,11 @@ class QuizMaker(ttk.Frame):
     def display_result(self):
         dict_results = calculate_results_quizzes(self.dict_quizz, self.tipoOp)
         Messagebox.show_info(
-            title="Result", message=f"Your final result is:\n"
-                                    f"Calificación final: {dict_results['c_final']}\n"
-                                    f"Calificación de dominio: {dict_results['c_dom']}\n"
-                                    f"Calificacion de categoria: {dict_results['c_cat']}\n"
+            title="Result",
+            message=f"Your final result is:\n"
+                    f"Calificación final: {dict_results['c_final']}\n"
+                    f"Calificación de dominio: {dict_results['c_dom']}\n"
+                    f"Calificacion de categoria: {dict_results['c_cat']}\n"
         )
 
     def next_btn(self):
