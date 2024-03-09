@@ -507,7 +507,7 @@ def set_finish_chat(chat_id: str):
 
 def get_username_data(username: str):
     sql = ("select users_system.exp, users_system.timestamp_token, employees.name,"
-           " employees.l_name, employees.department_id, departments.name "
+           " employees.l_name, employees.department_id, departments.name, employees.contrato "
            "from users_system "
            "INNER JOIN employees ON (users_system.emp_id = employee_id and usernames=%s) "
            "INNER JOIN departments on employees.department_id = departments.department_id")
@@ -521,7 +521,8 @@ def get_username_data(username: str):
             "name": result[2],
             "lastname": result[3],
             "department_id": result[4],
-            "department_name": result[5]
+            "department_name": result[5],
+            "contract": result[6]
         }
     return out
 
@@ -578,6 +579,7 @@ def get_fichaje_DB(emp_id: int):
     val = (emp_id,)
     flag, error, result = execute_sql(sql, val, 1)
     return flag, error, result
+
 
 # --------------------------------Examenes medicos GUI--------------------------
 def insert_new_exam_med(name: str, blood: str, status: str, aptitud: list,

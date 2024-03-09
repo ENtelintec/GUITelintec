@@ -55,6 +55,7 @@ class GUIAsistente(ttk.Window):
         # -----------------------Variables-----------------------
         self.permissions = {"1": "App.Deparment.Default"}
         self.username = "default"
+        self.contrato = "default"
         self.username_data = None
         self.windows_frames = None
         self.data_notifications = read_file_not(filepath_notifications)
@@ -112,6 +113,7 @@ class GUIAsistente(ttk.Window):
 
     def update_side_menu_windows(self):
         print(f"windows menu for: {self.username} with {self.permissions}")
+        self.get_username_data()
         self.windows_frames = self._create_side_menu_windows()
         department = "default"  # default department if no department permissions are found
         for k, v in self.permissions.items():
@@ -234,7 +236,7 @@ class GUIAsistente(ttk.Window):
                     windows[window] = FrameEncuestas(self)
                     print("encuestas frame created")
                 case "Bitacora":
-                    windows[window] = BitacoraEditFrame(self, self.username)
+                    windows[window] = BitacoraEditFrame(self, self.username, self.username_data["contract"])
                     print("bitacora frame created")
                 case _:
                     pass

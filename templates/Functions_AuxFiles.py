@@ -3,6 +3,7 @@ __author__ = 'Edisson Naula'
 __date__ = '$ 22/ene./2024  at 16:09 $'
 
 from datetime import datetime
+from math import comb
 
 from PIL import Image, ImageTk
 
@@ -188,6 +189,72 @@ def update_bitacora(emp_id: int, event, data):
     return flag, error, result
 
 
+def update_bitacora_value(emp_id: int, event, data):
+    """
+        Update the bitacora for just values.
+        :param emp_id: The id of the employee.
+        :param event: The event.
+        :param data: The data.
+        :return: None.
+        """
+    event_dic = {}
+    contract_sel = data[3]
+    flag, error, result = get_fichaje_DB(emp_id)
+    if flag and len(result) > 0:
+        match event:
+            case "falta":
+                event_dic = json.loads(result[3])
+            case "atraso":
+                event_dic = json.loads(result[4])
+            case "extra":
+                event_dic = json.loads(result[5])
+            case "prima":
+                event_dic = json.loads(result[6])
+    else:
+        print("error at getting data from db or not data found for the employee")
+    date = datetime.strptime(data[0], "%d-%m-%Y")
+    try:
+        event_dic[str(date.year)][str(date.month)][str(date.day)] = {
+            "value": data[1],
+            "comment": data[2],
+            "timestamp": date.strftime("%d-%m-%Y %H:%M:%S")
+        }
+    except KeyError:
+        print(f"error at updating the value for {date}")
+        return False, f"error at updating the value for {date}", None
+    fichajes_resume, flag = get_fichajes_resume_cache(cache_file_resume_fichaje)
+    if flag:
+        for i, row in enumerate(fichajes_resume):
+            (id_emp, name, contract, new_faltas, new_tardanzas,
+             new_extras, new_extras_value, new_primas, absences,
+             lates, extras, primes) = row
+            if id_emp == emp_id:
+                match event:
+                    case "falta":
+                        new_row = [id_emp, name, contract_sel, new_faltas, new_tardanzas,
+                                   new_extras, new_extras_value, new_primas, event_dic,
+                                   lates, extras, primes]
+                        fichajes_resume[i] = new_row
+                    case "atraso":
+                        new_row = [id_emp, name, contract_sel, new_faltas, new_tardanzas,
+                                   new_extras, new_extras_value, new_primas, absences,
+                                   event_dic, extras, primes]
+                        fichajes_resume[i] = new_row
+                    case "extra":
+                        new_row = [id_emp, name, contract_sel, new_faltas, new_tardanzas,
+                                   new_extras, new_extras_value, new_primas, absences,
+                                   lates, event_dic, primes]
+                        fichajes_resume[i] = new_row
+                    case "prima":
+                        new_row = [id_emp, name, contract_sel, new_faltas, new_tardanzas,
+                                   new_extras, new_extras_value, new_primas, absences,
+                                   lates, extras, event_dic]
+                        fichajes_resume[i] = new_row
+                update_fichajes_resume_cache(cache_file_resume_fichaje, fichajes_resume, id_emp_up=id_emp)
+                break
+    return flag, error, result
+
+
 def erase_value_bitacora(emp_id: int, event, data):
     """
     Erase the value of the bitacora.
@@ -245,7 +312,8 @@ def erase_value_bitacora(emp_id: int, event, data):
                                    new_extras, new_extras_value, new_primas, absences,
                                    lates, extras, event_dic]
                         fichajes_resume[i] = new_row
-                update_fichajes_resume_cache(cache_file_resume_fichaje, fichajes_resume, id_emp_up=id_emp, deletion=True)
+                update_fichajes_resume_cache(cache_file_resume_fichaje, fichajes_resume, id_emp_up=id_emp,
+                                             deletion=True)
                 flag = True
                 break
     return flag, error, result
@@ -309,3 +377,44 @@ def get_events_date(date, hard_update):
 
     columns = ("ID", "Nombre", "Contrato", "Evento", "Timestamp", "Valor", "Comentario")
     return data_events, columns
+
+
+def split_commment(txt: str) -> dict:
+    """
+    Split the comment.
+    :paramtxt: The comment.
+    :return: The comment.
+    example ---> <"comentary \nincidencia-->acuerdo\nactividad-->actividad\nlugar-->lugar">
+    """
+    comment_dict = {}
+    rows = txt.split("\n")
+    if len(rows) == 1:
+        comment_dict["comment"] = rows[0]
+    elif len(rows) == 2:
+        comment_dict["comment"] = rows[0]
+        incidence = rows[1].split("-->")
+        comment_dict["incidence"] = incidence[1]
+    elif len(rows) == 3:
+        comment_dict["comment"] = rows[0]
+        incidence = rows[1].split("-->")
+        comment_dict["incidence"] = incidence[1]
+        activity = rows[2].split("-->")
+        comment_dict["activity"] = activity[1]
+    elif len(rows) >= 4:
+        comment_dict["comment"] = rows[0]
+        incidence = rows[1].split("-->")
+        comment_dict["incidence"] = incidence[1]
+        activity = rows[2].split("-->")
+        comment_dict["activity"] = activity[1]
+        place = rows[3].split("-->")
+        comment_dict["place"] = place[1]
+        for i in range(4, len(rows)):
+            comment_dict["comment"] += "\t" + rows[i]
+    if len(comment_dict) == 0:
+        comment_dict = {
+            "comment": "",
+            "incidence": "",
+            "activity": "",
+            "place": ""
+        }
+    return comment_dict

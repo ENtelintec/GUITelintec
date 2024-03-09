@@ -869,7 +869,7 @@ def update_fichajes_resume_cache(filepath: str, data, just_file=False, id_emp_up
                     flag, error, result = update_fichaje_DB(
                         id_new, contract, faltas_dic, lates_dic, extras_dic, primas_dic)
                     if flag:
-                        print("Fichaje updated DB", flag, error, result)
+                        print("Fichaje updated DB: ", id_emp)
                         fichajes_resume[index_0] = aux
                     else:
                         print("Error at updating DB")
@@ -949,7 +949,7 @@ def update_fichajes_resume_cache(filepath: str, data, just_file=False, id_emp_up
 
     with open(filepath, 'wb') as file:
         pickle.dump(fichajes_resume, file)
-    print("Fichajes resume cache updated")
+    print("Fichajes resume cache file rewrited")
 
 
 def get_fichajes_resume_cache(filepath, hard_update=False) -> tuple[list, bool]:
@@ -961,13 +961,13 @@ def get_fichajes_resume_cache(filepath, hard_update=False) -> tuple[list, bool]:
     :param filepath:
     :return:
     """
-    fichajes_resume=[]
+    fichajes_resume = []
     flag = False
     if hard_update:
         try:
             with open(filepath, 'rb') as file:
                 fichajes_resume = pickle.load(file)
-            flag = False if len(fichajes_resume) == 0 else True
+            flag = False if len(fichajes_resume) == 0 or fichajes_resume is None else True
         except Exception as e:
             print("Error at getting cache file: ", e)
             fichajes_resume = []
@@ -975,6 +975,7 @@ def get_fichajes_resume_cache(filepath, hard_update=False) -> tuple[list, bool]:
     else:
         flag = False
     if not flag:
+        "calling db, because file not founded"
         flag, error, result = get_all_fichajes()
         if flag and len(result) > 0:
             fichajes_resume = []
@@ -989,7 +990,6 @@ def get_fichajes_resume_cache(filepath, hard_update=False) -> tuple[list, bool]:
                            json.loads(lates), json.loads(extras), json.loads(primes))
                 fichajes_resume.append(new_row)
             update_fichajes_resume_cache(filepath, fichajes_resume, just_file=True)
-            print("Fichajes resume cache created")
         else:
             fichajes_resume = []
             print("Error at getting fichajes from sql: ", error)
