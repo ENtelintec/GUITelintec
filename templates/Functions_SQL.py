@@ -552,12 +552,12 @@ def get_all_fichajes():
 
 
 def update_fichaje_DB(emp_id: int, contract: str, absences: dict, lates: dict, extras: dict,
-                      primes: dict):
+                      primes: dict, normal: dict):
     sql = ("UPDATE sql_telintec.fichajes "
-           "SET contract = %s, absences = %s, lates = %s, extras = %s, primes = %s "
+           "SET contract = %s, absences = %s, lates = %s, extras = %s, primes = %s, normal = %s "
            "WHERE emp_id = %s")
     val = (contract, json.dumps(absences), json.dumps(lates), json.dumps(extras),
-           json.dumps(primes), emp_id)
+           json.dumps(primes), json.dumps(normal), emp_id)
     flag, error, result = execute_sql(sql, val, 3)
     return flag, error, result
 

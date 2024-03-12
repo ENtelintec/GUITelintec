@@ -2,14 +2,15 @@
 __author__ = 'Edisson Naula'
 __date__ = '$ 04/mar./2024  at 13:32 $'
 
-from datetime import datetime
+import calendar
+from datetime import datetime, timedelta
 
 import ttkbootstrap as ttk
 from ttkbootstrap.scrolled import ScrolledFrame
 from ttkbootstrap.tableview import Tableview
 
 from static.extensions import log_file_bitacora_path
-from templates.Functions_AuxFiles import get_data_employees, get_data_employees_ids, update_bitacora, get_events_date, \
+from templates.Functions_AuxFiles import update_bitacora, get_events_op_date, \
     erase_value_bitacora, split_commment, update_bitacora_value
 from templates.Functions_Files import write_log_file
 from templates.Functions_SQL import get_employess_op_names
@@ -17,13 +18,27 @@ from templates.Funtions_Utils import create_label, create_var_none, create_strin
     set_dateEntry_new_value
 
 
+def check_date_difference(date_modify, delta):
+    flag = True
+    date_now = datetime.now()
+    date_modify = datetime.strptime(date_modify, "%Y-%m-%d")
+    date_modify = date_modify.date()
+    date_now = date_now.date()
+    date_modify = date_modify + timedelta(days=delta)
+    if date_modify <= date_now:
+        flag = False
+    return flag
+
+
 class BitacoraEditFrame(ScrolledFrame):
-    def __init__(self, master, username="default", contrato="default", *args, **kwargs):
+    def __init__(self, master, username="default", contrato="default", delta=4, *args, **kwargs):
         super().__init__(master, *args, **kwargs)
         self.columnconfigure(0, weight=1)
+        self.rowconfigure(4, weight=1)
         # --------------------------variables----------------------------------
         self.username = username
         self.contrato = contrato
+        self.delta = delta
         self.emp_id, self.data_emp, self.events = create_var_none(3)
         self.svar_info, self.svar_out, self.svar_activity, self.location = create_stringvar(4, "")
         self.bvar_prima = ttk.BooleanVar()
@@ -35,10 +50,10 @@ class BitacoraEditFrame(ScrolledFrame):
         self.frame_inputs.columnconfigure((0, 1, 2, 3, 4, 5), weight=1)
         (self.emp_selector, self.emp_ids, self.contratos, self.emp_names,
          self.contract_selector, self.date_selector, self.event_selector,
-         self.label_valor, self.valor_entry, self.label_comment,
-         self.comment_entry, self.prima_selector, self.emp_sel_contract,
+         self.label_valor, self.valor_entry_hora, self.valor_entry_mins, self.frame_valor,
+         self.label_comment, self.comment_entry, self.prima_selector, self.emp_sel_contract,
          self.label_incidencia, self.incidencia_selector) = self.create_inputs(self.frame_inputs)
-        create_label(self, 2, 0, textvariable=self.svar_info, sticky="n")
+        create_label(self, 2, 0, textvariable=self.svar_info, sticky="n", font=("Helvetica", 15, "bold"))
         # --------------------------buttons-----------------------------------
         frame_buttons = ttk.Frame(self)
         frame_buttons.grid(row=3, column=0, padx=10, pady=10, sticky="nswe")
@@ -49,7 +64,8 @@ class BitacoraEditFrame(ScrolledFrame):
         self.frame_table = ttk.Frame(self)
         self.frame_table.grid(row=4, column=0, padx=10, pady=10, sticky="nswe")
         self.frame_table.columnconfigure(0, weight=1)
-        self.table, self.table_events = self.create_table(self.frame_table)
+        self.frame_table.rowconfigure(1, weight=1)
+        self.table_events = self.create_table(self.frame_table)
 
     def create_inputs(self, master):
         # ----data -----------
@@ -59,14 +75,15 @@ class BitacoraEditFrame(ScrolledFrame):
         contratos_display = list(set(contratos))
         emp_names = [i[1].upper() + " " + i[2].upper() for i in emp_data]
         emp_name_contract = [i[1].upper() + " " + i[2].upper() for i in emp_data if i[3] == self.contrato]
+        emp_name_extra = [name for name in emp_names if name not in emp_name_contract]
         # --------widgets------------
         create_label(master, 0, 0, text="Empleado (c)", sticky="w")
         emp_selector_contract = ttk.Combobox(
             master, values=emp_name_contract, state="readonly", width=35)
         emp_selector_contract.grid(row=0, column=1, padx=10, pady=10, sticky="w")
         emp_selector_contract.bind("<<ComboboxSelected>>", self.on_emp_selected)
-        create_label(master, 0, 2, text="Empleados (g)", sticky="w")
-        emp_selector = ttk.Combobox(master, values=emp_names, state="readonly", width=35)
+        create_label(master, 0, 2, text="Empleados (extra)", sticky="w")
+        emp_selector = ttk.Combobox(master, values=emp_name_extra, state="readonly", width=35)
         emp_selector.grid(row=0, column=3, padx=10, pady=10, sticky="w")
         emp_selector.bind("<<ComboboxSelected>>", self.on_emp_selected)
         create_label(master, 1, 0, text="Contrato", sticky="w")
@@ -74,15 +91,16 @@ class BitacoraEditFrame(ScrolledFrame):
         contract_selector.grid(row=1, column=1, padx=10, pady=10, sticky="w")
         create_label(master, 2, 0, text="Fecha", sticky="w")
         date_selector = ttk.DateEntry(master,
-                                      dateformat="%d-%m-%Y")
+                                      dateformat="%Y-%m-%d")
         date_selector.grid(row=2, column=1, padx=10, pady=10, sticky="w")
         create_label(master, 3, 0, text="Evento", sticky="w")
         event_selector = ttk.Combobox(
-            master, values=["falta", "atraso", "prima", "extra"],
+            master, values=["falta", "atraso", "prima", "extra", "normal"],
             state="readonly", width=15)
         event_selector.grid(row=3, column=1, padx=10, pady=10, sticky="w")
         event_selector.bind("<<ComboboxSelected>>", self.on_event_selected)
         # toogle button
+        # noinspection PyArgumentList
         prima_selector = ttk.Checkbutton(
             master, text="Aplica prima", variable=self.bvar_prima,
             onvalue=True, offvalue=False, bootstyle="success, round-toggle")
@@ -92,20 +110,32 @@ class BitacoraEditFrame(ScrolledFrame):
             master, values=incidencias, state="readonly", width=20)
         incidencia_selector.grid(row=3, column=5, padx=10, pady=10, sticky="w")
         label_valor = create_label(master, 4, 0, text="Valor", sticky="w")
-        valor_entry = ttk.Entry(master, width=5)
-        valor_entry.grid(row=4, column=1, padx=10, pady=10, sticky="w")
+        frame_valor = ttk.Frame(master)
+        frame_valor.grid(row=4, column=1, padx=10, pady=10, sticky="w")
+        valor_entry_hora = ttk.Entry(frame_valor, width=3)
+        valor_entry_hora.grid(row=0, column=0, padx=1, pady=10, sticky="w")
+        create_label(frame_valor, 0, 1, text="horas", sticky="w", padx=1, pady=10)
+        valor_entry_min = ttk.Entry(frame_valor, width=3)
+        valor_entry_min.grid(row=0, column=2, padx=1, pady=10, sticky="w")
+        create_label(frame_valor, 0, 3, text="minutos", sticky="w", padx=1, pady=10)
         create_label(master, 4, 2, text="Actividad", sticky="w")
         ttk.Entry(master, width=35, textvariable=self.svar_activity).grid(
             row=4, column=3, padx=10, pady=10, sticky="w")
         create_label(master, 4, 4, text="Lugar", sticky="w")
-        ttk.Entry(master, width=35, textvariable=self.location).grid(
-            row=4, column=5, padx=10, pady=10, sticky="w")
+        place_list = ["GUERRERO", "UNIVERSIDAD", "ALMACEN", "CURUBUSCO", "MITRAS",
+                      "LARGOS NORTE", "JUVENTUD", "PESQUERIA", "CSI", "CSC", "EDIFICIO METALICOS",
+                      "NOVA", "PUEBLA", "SAN LUIS"]
+        place_selector = ttk.Combobox(
+            master, values=place_list, state="readonly", width=20, textvariable=self.location)
+        place_selector.grid(row=4, column=5, padx=10, pady=10, sticky="w")
+        # ttk.Entry(master, width=35, textvariable=self.location).grid(
+        #     row=4, column=5, padx=10, pady=10, sticky="w")
         # ---- comments----
         label_comment = create_label(master, 5, 0, text="Comentario", sticky="w")
         comment_entry = ttk.Entry(master, width=100)
         comment_entry.grid(row=5, column=1, padx=10, pady=10, sticky="w", columnspan=5)
         return (emp_selector, emp_ids, contratos, emp_names, contract_selector, date_selector,
-                event_selector, label_valor, valor_entry, label_comment, comment_entry,
+                event_selector, label_valor, valor_entry_hora, valor_entry_min, frame_valor, label_comment, comment_entry,
                 prima_selector, emp_selector_contract, label_incidencia, incidencia_selector)
 
     def on_emp_selected(self, event):
@@ -124,26 +154,32 @@ class BitacoraEditFrame(ScrolledFrame):
         txt = event.widget.get()
         if txt == "falta":
             self.label_valor.grid_remove()
-            self.valor_entry.grid_remove()
+            self.frame_valor.grid_remove()
             self.prima_selector.grid_remove()
             self.label_incidencia.grid()
             self.incidencia_selector.grid()
         elif txt == "prima":
             self.prima_selector.grid_remove()
             self.label_valor.grid_remove()
-            self.valor_entry.grid_remove()
+            self.frame_valor.grid_remove()
             self.label_incidencia.grid_remove()
             self.incidencia_selector.grid_remove()
         elif txt == "extra":
             self.prima_selector.grid(row=3, column=2)
             self.label_valor.grid()
-            self.valor_entry.grid()
+            self.frame_valor.grid()
+            self.label_incidencia.grid_remove()
+            self.incidencia_selector.grid_remove()
+        elif txt == "normal":
+            self.prima_selector.grid_remove()
+            self.label_valor.grid_remove()
+            self.frame_valor.grid_remove()
             self.label_incidencia.grid_remove()
             self.incidencia_selector.grid_remove()
         else:
             self.prima_selector.grid_remove()
             self.label_valor.grid()
-            self.valor_entry.grid()
+            self.frame_valor.grid()
             self.label_incidencia.grid_remove()
             self.incidencia_selector.grid_remove()
 
@@ -170,7 +206,8 @@ class BitacoraEditFrame(ScrolledFrame):
         contract = self.contract_selector.get()
         date = self.date_selector.entry.get()
         event = self.event_selector.get()
-        value = float(self.valor_entry.get()) if self.valor_entry.get() != "" else 0
+        value = float(self.valor_entry_hora.get()) if self.valor_entry_hora.get() != "" else 0
+        value += float(self.valor_entry_mins.get()) / 60 if self.valor_entry_mins.get() != "" else 0
         comment = self.comment_entry.get()
         include_prima = self.bvar_prima.get()
         incidencia = self.incidencia_selector.get()
@@ -184,8 +221,10 @@ class BitacoraEditFrame(ScrolledFrame):
         elif event == "falta":
             value = 1.0
             comment += f"\nincidencia-->{incidencia}"
-            comment += f"\nactividad-->{activity}"
-            comment += f"\nlugar-->{location}"
+        elif event == "normal":
+            value = 1.0
+        comment += f"\nactividad-->{activity}"
+        comment += f"\nlugar-->{location}"
         return name, contract, date, event, value, comment, include_prima, incidencia, activity, location
 
     def on_add_click(self):
@@ -194,6 +233,10 @@ class BitacoraEditFrame(ScrolledFrame):
             return
         (name, contract, date, event, value, comment, include_prima, incidencia,
          activity, location) = self.prepare_data_to_send_DB()
+        out = check_date_difference(date, self.delta)
+        if not out:
+            self.svar_info.set("No se puede añadir un evento pasado el tiempo limite de modificaciones.")
+            return
         if include_prima and event == "extra":
             flag, error, result = update_bitacora(self.emp_id, event, (date, value, comment, contract))
             if flag:
@@ -229,7 +272,8 @@ class BitacoraEditFrame(ScrolledFrame):
         self.contract_selector.set("")
         self.emp_id = None
         self.event_selector.set("")
-        self.valor_entry.delete(0, "end")
+        self.valor_entry_hora.delete(0, "end")
+        self.valor_entry_mins.delete(0, "end")
         self.comment_entry.delete(0, "end")
         self.svar_info.set("Seleccione un empleado")
         self.svar_activity.set("")
@@ -238,16 +282,19 @@ class BitacoraEditFrame(ScrolledFrame):
 
     def on_double_click_table(self, event):
         row = event.widget.item(event.widget.selection()[0], "values")
-        (id_emp, name, contract, event, timestamp, value, comment) = row
-        timestamp = datetime.strptime(timestamp, "%d-%m-%Y %H:%M:%S")
+        (id_emp, name, contract, event, place, activity, timestamp, value, comment) = row
+        timestamp = datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S")
+        value = float(value)
         comment_dict = split_commment(comment)
         self.emp_id = int(id_emp)
         self.emp_selector.set(name)
         self.emp_sel_contract.set(name)
         self.contract_selector.set(contract)
         self.event_selector.set(event)
-        self.valor_entry.delete(0, "end")
-        self.valor_entry.insert(0, value)
+        self.valor_entry_hora.delete(0, "end")
+        self.valor_entry_hora.insert(0, str(int(value)))
+        self.valor_entry_mins.delete(0, "end")
+        self.valor_entry_mins.insert(0, str(int((value - int(value)) * 60)))
         self.comment_entry.delete(0, "end")
         self.comment_entry.insert(0, comment_dict["comment"])
         self.svar_info.set(f"Empleado: {name}, ID: {self.emp_id}")
@@ -256,15 +303,19 @@ class BitacoraEditFrame(ScrolledFrame):
         self.incidencia_selector.set(comment_dict["incidence"])
         self.date_selector = set_dateEntry_new_value(
             self.frame_inputs, self.date_selector,
-            timestamp, row=2, column=1, padx=10, pady=10, sticky="w", date_format="%d-%m-%Y")
+            timestamp, row=2, column=1, padx=10, pady=10, sticky="w", date_format="%Y-%m-%d")
 
     def on_erase_event(self):
         if self.emp_id is None:
             self.svar_info.set("Seleccione un empleado")
             return
+        date = self.date_selector.entry.get()
+        out = check_date_difference(date, self.delta)
+        if not out:
+            self.svar_info.set("No se puede eliminar en esta fecha.")
+            return
         name = self.emp_selector.get()
         contract = self.contract_selector.get()
-        date = self.date_selector.entry.get()
         event = self.event_selector.get()
         flag, error, result = erase_value_bitacora(self.emp_id, event, (date, contract))
         if flag:
@@ -280,6 +331,11 @@ class BitacoraEditFrame(ScrolledFrame):
             return
         (name, contract, date, event, value, comment, include_prima, incidencia,
          activity, location) = self.prepare_data_to_send_DB()
+        out = check_date_difference(date, self.delta)
+        print(out)
+        if not out:
+            self.svar_info.set("No se puede modificar estas fechas")
+            return
         flag, error, result = update_bitacora_value(self.emp_id, event, (date, value, comment, contract))
         if flag:
             msg = (f"Record updated--> Empleado: {name}, "
@@ -294,36 +350,43 @@ class BitacoraEditFrame(ScrolledFrame):
 
     def create_table(self, master, hard_update=False):
         # label title
+        date = self.date_selector.entry.get()
+        date = datetime.strptime(date, "%Y-%m-%d")
+        month = date.month
+        # month name
+        month_name = calendar.month_name[month]
         ttk.Label(
-            master, text='Eventos del mes', font=("Helvetica", 22, "bold")).grid(
+            master, text=f'Eventos del mes de {month_name}', font=("Helvetica", 22, "bold")).grid(
             row=0, column=0, columnspan=4, padx=10, pady=10)
         # tableview de eventos
         date = self.date_selector.entry.get()
-        date = datetime.strptime(date, "%d-%m-%Y")
-        self.events, columns = get_events_date(date, hard_update)
+        date = datetime.strptime(date, "%Y-%m-%d")
+        self.events, columns = get_events_op_date(date, hard_update)
         table_events = Tableview(master,
                                  coldata=columns,
                                  rowdata=self.events,
                                  paginated=True,
                                  searchable=True,
-                                 autofit=True)
-        table_events.grid(row=1, column=0, padx=20, pady=10, sticky="nswe")
+                                 autofit=True,
+                                 height=21,
+                                 pagesize=20)
+        table_events.grid(row=1, column=0, padx=20, pady=10, sticky="n")
         table_events.view.bind("<Double-1>", self.on_double_click_table)
-        ttk.Label(
-            master, text='Resumen general de empleados', font=("Helvetica", 22, "bold")).grid(
-            row=2, column=0, columnspan=4, padx=10, pady=10)
-        # tableview de empleados
-        self.data_emp, columns = get_data_employees_ids(self.emp_ids)
-        table_resume = Tableview(master,
-                                 coldata=columns,
-                                 rowdata=self.data_emp,
-                                 paginated=True,
-                                 searchable=True,
-                                 autofit=True)
-        table_resume.grid(row=3, column=0, padx=20, pady=10)
-        return table_resume, table_events
+        # ttk.Label(
+        #     master, text='Resumen general de empleados', font=("Helvetica", 22, "bold")).grid(
+        #     row=2, column=0, columnspan=4, padx=10, pady=10)
+        # # tableview de empleados
+        # self.data_emp, columns = get_data_employees_ids(self.emp_ids)
+        # table_resume = Tableview(master,
+        #                          coldata=columns,
+        #                          rowdata=self.data_emp,
+        #                          paginated=True,
+        #                          searchable=True,
+        #                          autofit=True)
+        # table_resume.grid(row=3, column=0, padx=20, pady=10)
+        return table_events
 
     def update_table(self):
-        self.table.destroy()
+        # self.table.destroy()
         self.table_events.destroy()
-        self.table, self.table_events = self.create_table(self.frame_table, hard_update=True)
+        self.table_events = self.create_table(self.frame_table, hard_update=True)
