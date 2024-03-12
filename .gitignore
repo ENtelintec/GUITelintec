@@ -21,6 +21,8 @@ __pycache__/
 /build/
 /venv/
 /files/logs/*
+/files/quizz_out/*
 /app_gui.exe
 /files/samplev2.pdf
 /files/*.pdf
+/files/files_fichaje/*

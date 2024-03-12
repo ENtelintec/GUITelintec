@@ -12,7 +12,7 @@ from ttkbootstrap.scrolled import ScrolledFrame
 from ttkbootstrap.tableview import Tableview
 
 import templates.Functions_Files as cb
-from static.extensions import cache_file_resume_fichaje, cache_file_emp_fichaje
+from static.extensions import cache_file_resume_fichaje, cache_file_emp_fichaje, files_fichaje_path
 from templates.Functions_SQL import get_id_employee
 from templates.Funtions_Utils import create_var_none, create_label, create_Combobox, update_stringvars, create_stringvar
 from templates.frames.Frame_CollapsingFrame import CollapsingFrame
@@ -428,7 +428,7 @@ class FichajesAuto(ttk.Frame):
 
     def read_files(self):
         # check files in the directory
-        flag, self.files = cb.check_fichajes_files_in_directory("files/", ["Fichaje", "OCTreport", "Ternium"])
+        flag, self.files = cb.check_fichajes_files_in_directory(files_fichaje_path, ["Fichaje", "OCTreport", "Ternium"])
         self.files_names_pairs, self.files_names_main = cb.get_list_files(self.files)
         self.files_main_cb.configure(values=self.files_names_main)
         self.files_sec_o_cb.configure(values=self.files_names_pairs[0])
@@ -817,7 +817,7 @@ class FichajesManual(ttk.Frame):
         self.master = master
         self.columnconfigure(0, weight=1)
         # variables
-        flag, self.files = cb.check_fichajes_files_in_directory("files/", ["Fichaje", "OCTreport", "Ternium"])
+        flag, self.files = cb.check_fichajes_files_in_directory(files_fichaje_path, ["Fichaje", "OCTreport", "Ternium"])
         self.file_selected_1 = False
         self.file_selected_2 = False
         self.file_selected_3 = False
@@ -908,7 +908,7 @@ class FichajesManual(ttk.Frame):
         self.frame_collapse.add(self.group_3, title="Archivos Ternium")
 
     def read_files_from_directory(self):
-        flag, self.files = cb.check_fichajes_files_in_directory("files/", ["Fichaje", "OCTreport", "Ternium"])
+        flag, self.files = cb.check_fichajes_files_in_directory(files_fichaje_path, ["Fichaje", "OCTreport", "Ternium"])
         self.file_selected_1 = False
         self.file_selected_2 = False
         self.file_selected_3 = False

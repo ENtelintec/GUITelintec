@@ -69,6 +69,7 @@ cache_file_Chats_path = "files/Chats_cache.pkl"
 cache_file_Notificaciones_path = "files/Notificaciones_cache.pkl"
 cache_file_resume_fichaje = 'files/fichajes_resume_cache.pkl'
 cache_file_emp_fichaje = 'files/emp_name_ids_fichajes_cache.pkl'
+files_fichaje_path = "files/files_fichaje/"
 cache_oct_file_temp_path = "files/OCT_cache.csv"
 cache_oct_fichaje_path = 'files/contracts_cache.pkl'
 filepath_settings = "files/settings.json"
@@ -85,8 +86,18 @@ quizzes_RRHH = {
         "name": "Encuesta de Norma_035_+50",
         "path": "files/quizz_norma035_+50_v2.json",
         "type": 2,
+    },
+    "3": {
+        "name": "Encuesta de clima laboral",
+        "path": "files/quizz_clima_laboral.json",
+        "type": 3,
+    },
+    "4": {
+        "name": "Encuesta eva 360",
+        "path": "files/quizz_eva_360.json",
+        "type": 4,
     }
 }
 conversion_quizzes_path = "files/conversions_quizzes.json"
-quizz_out_path = "files/"
+quizz_out_path = "files/quizz_out/"
 log_file_bitacora_path = "files/logs/"
