@@ -101,3 +101,4 @@ quizzes_RRHH = {
 conversion_quizzes_path = "files/conversions_quizzes.json"
 quizz_out_path = "files/quizz_out/"
 log_file_bitacora_path = "files/logs/"
+patterns_files_fichaje = ["Fichaje", "Ternium"]

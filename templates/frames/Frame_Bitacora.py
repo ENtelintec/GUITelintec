@@ -23,6 +23,8 @@ def check_date_difference(date_modify, delta):
     date_now = datetime.now()
     date_modify = datetime.strptime(date_modify, "%Y-%m-%d")
     date_modify = date_modify.date()
+    days_month = calendar.monthrange(date_modify.year, date_modify.month)[1]
+    date_modify = date_modify.replace(day=days_month)
     date_now = date_now.date()
     date_modify = date_modify + timedelta(days=delta)
     if date_modify <= date_now:
@@ -31,7 +33,7 @@ def check_date_difference(date_modify, delta):
 
 
 class BitacoraEditFrame(ScrolledFrame):
-    def __init__(self, master, username="default", contrato="default", delta=4, *args, **kwargs):
+    def __init__(self, master, username="default", contrato="default", delta=7, *args, **kwargs):
         super().__init__(master, *args, **kwargs)
         self.columnconfigure(0, weight=1)
         self.rowconfigure(4, weight=1)

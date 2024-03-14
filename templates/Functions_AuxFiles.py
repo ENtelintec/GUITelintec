@@ -393,7 +393,7 @@ def get_place_incidence_from_comment(comment: str):
     return place, activity
 
 
-def get_events_op_date(date, hard_update):
+def get_events_op_date(date: datetime, hard_update):
     """
     Get the events of the date.
     :param hard_update: update from db

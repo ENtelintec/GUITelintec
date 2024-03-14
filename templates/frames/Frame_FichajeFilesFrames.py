@@ -2,7 +2,7 @@
 __author__ = 'Edisson Naula'
 __date__ = '$ 14/nov./2023  at 17:12 $'
 
-from datetime import timedelta
+from datetime import timedelta, datetime
 from tkinter.filedialog import asksaveasfilename
 
 import pandas as pd
@@ -12,7 +12,9 @@ from ttkbootstrap.scrolled import ScrolledFrame
 from ttkbootstrap.tableview import Tableview
 
 import templates.Functions_Files as cb
-from static.extensions import cache_file_resume_fichaje, cache_file_emp_fichaje, files_fichaje_path
+from static.extensions import cache_file_resume_fichaje, cache_file_emp_fichaje, files_fichaje_path, \
+    patterns_files_fichaje
+from templates.Functions_AuxFiles import get_events_op_date
 from templates.Functions_SQL import get_id_employee
 from templates.Funtions_Utils import create_var_none, create_label, create_Combobox, update_stringvars, create_stringvar
 from templates.frames.Frame_CollapsingFrame import CollapsingFrame
@@ -48,7 +50,8 @@ class FichajesAuto(ttk.Frame):
         (self.dft, self.days_late, self.days_extra, self.days_faltas,
          self.contract_emp, self.days_late2, self.days_extra2,
          self.total_extra2, self.days_prima, self.files, self.max_date_g,
-         self.min_date_g, self.dff) = create_var_none(13)
+         self.min_date_g, self.dff, self.date_file, self.events_bitacora,
+         self.dfb) = create_var_none(16)
         self.files_names_pairs = [[], []]
         self.files_names_main = []
         # ----------------string vars-------------
@@ -61,9 +64,9 @@ class FichajesAuto(ttk.Frame):
          self.svar_worked_days_within_f, self.svar_late_hours_f, self.svar_extra_hours_f,
          self.svar_nlate_hours_day_f, self.svar_late_hours_comment_f,
          self.svar_extra_hours_day_f, self.svar_extra_hours_comment_f,
-         self.svar_puerta_out_f, self.svar_puerta_in_f, self.svar_faltas, self.svar_late_days_op,
-         self.svar_extra_days_op, self.svar_primas_op, self.svar_com_missed,
-         self.svar_com_late, self.svar_com_extra, self.svar_com_prima) = create_stringvar(32, value="")
+         self.svar_puerta_out_f, self.svar_puerta_in_f, self.svar_absences_bit, self.svar_lates_bit,
+         self.svar_extras_bit, self.svar_primes_bit, self.svar_com_absence_bit,
+         self.svar_com_late_bit, self.svar_com_extra_bit, self.svar_com_prime_bit) = create_stringvar(32, value="")
         # -------------------create title-----------------
         create_label(self, text='Telintec Software Fichajes',
                      row=0, column=0, columnspan=5, padx=0, pady=0,
@@ -75,13 +78,13 @@ class FichajesAuto(ttk.Frame):
         # -------------------file selectors-----------------
         self.files_main_cb = create_Combobox(
             self, values=self.files_names_main, state="readonly", row=1, column=1, padx=0, pady=0)
-        self.files_sec_o_cb = create_Combobox(
-            self, values=self.files_names_pairs[0], state="readonly", row=1, column=3, padx=0, pady=0)
+        #self.files_sec_o_cb = create_Combobox(
+        #     self, values=self.files_names_pairs[0], state="readonly", row=1, column=3, padx=0, pady=0)
         self.files_sec_t_cb = create_Combobox(
-            self, values=self.files_names_pairs[1], state="readonly", row=2, column=3, padx=0, pady=0)
-        self.files_sec_o_cb.bind("<<ComboboxSelected>>", self._select_file_fun)
-        self.files_main_cb.bind("<<ComboboxSelected>>", self._select_file_fun)
-        self.files_sec_t_cb.bind("<<ComboboxSelected>>", self._select_file_fun)
+            self, values=self.files_names_pairs[1], state="readonly", row=1, column=3, padx=0, pady=0)
+        #self.files_sec_o_cb.bind("<<ComboboxSelected>>", self._select_file_fun)
+        self.files_main_cb.bind("<<ComboboxSelected>>", self.on_selected_file_fun)
+        self.files_sec_t_cb.bind("<<ComboboxSelected>>", self.on_selected_file_fun)
         # -------------------create date range selector-----------------
         # self.date_ranges = create_Combobox(
         #     self, values=[""], state="readonly", row=2, column=1, padx=0, pady=0, columnspan=3, sticky="nswe")
@@ -125,8 +128,8 @@ class FichajesAuto(ttk.Frame):
         frame_info_file_2 = ttk.Frame(group_1)
         frame_info_file_2.grid(row=2, column=0, sticky="nswe")
         frame_info_file_2.columnconfigure((0, 1, 2), weight=1)
-        (self.days_missing_selector2, self.days_late_selector2,
-         self.days_extra_selector2, self.days_primas_selector) = self.create_info_display_file2(frame_info_file_2)
+        (self.days_absence_selector, self.days_late_selector,
+         self.days_extra_selector, self.days_primes_selector) = self.create_info_display_bitacora(frame_info_file_2)
         # -------labels result file 3-------
         frame_info_file_3 = ttk.Frame(group_1)
         frame_info_file_3.grid(row=3, column=0, sticky="nswe")
@@ -195,84 +198,84 @@ class FichajesAuto(ttk.Frame):
         days_extra_selector.bind("<<ComboboxSelected>>", self.select_day_extra_fun_f)
         return days_late_selector, days_extra_selector
 
-    def create_info_display_file2(self, master):
+    def create_info_display_bitacora(self, master):
         create_label(
-            master, text='Información archivo Operaciones', row=0, column=0,
+            master, text='Información de bitacora', row=0, column=0,
             font=("Arial", 12, "bold"), columnspan=6)
-        create_label(master, textvariable=self.svar_faltas,
+        create_label(master, textvariable=self.svar_absences_bit,
                      row=1, column=0, sticky="w")
-        create_label(master, textvariable=self.svar_late_days_op,
+        create_label(master, textvariable=self.svar_lates_bit,
                      row=2, column=0, sticky="w")
-        create_label(master, textvariable=self.svar_extra_days_op,
+        create_label(master, textvariable=self.svar_extras_bit,
                      row=3, column=0, sticky="w")
-        create_label(master, textvariable=self.svar_primas_op,
+        create_label(master, textvariable=self.svar_primes_bit,
                      row=4, column=0, sticky="w")
         # coments label
         create_label(
-            master, textvariable=self.svar_com_missed,
+            master, textvariable=self.svar_com_absence_bit,
             row=1, column=2, font=('Helvetica', 8))
         create_label(
-            master, textvariable=self.svar_com_late,
+            master, textvariable=self.svar_com_late_bit,
             row=2, column=2, font=('Helvetica', 8))
         create_label(
-            master, textvariable=self.svar_com_extra,
+            master, textvariable=self.svar_com_extra_bit,
             row=3, column=2, font=('Helvetica', 8))
         create_label(
-            master, textvariable=self.svar_com_prima,
+            master, textvariable=self.svar_com_prime_bit,
             row=4, column=2, font=('Helvetica', 8))
-        days_missing_selector2 = create_Combobox(
+        days_absence_selector = create_Combobox(
             master, values=["no data"], state="readonly",
             row=1, column=1)
-        days_missing_selector2.bind("<<ComboboxSelected>>", self.select_day_faltas)
-        days_late_selector2 = create_Combobox(
+        days_absence_selector.bind("<<ComboboxSelected>>", self.on_absence_day_bit_selected)
+        days_late_selector = create_Combobox(
             master, values=["no data"], state="readonly",
             row=2, column=1)
-        days_late_selector2.bind("<<ComboboxSelected>>", self.select_day_late2)
-        days_extra_selector2 = create_Combobox(
+        days_late_selector.bind("<<ComboboxSelected>>", self.on_late_day_bit_selected)
+        days_extra_selector = create_Combobox(
             master, values=["no data"], state="readonly",
             row=3, column=1)
-        days_extra_selector2.bind("<<ComboboxSelected>>", self.select_day_extra2)
-        days_primas_selector = create_Combobox(
+        days_extra_selector.bind("<<ComboboxSelected>>", self.on_extra_day_bit_selected)
+        days_prime_selector = create_Combobox(
             master, values=["no data"], state="readonly",
             row=4, column=1)
-        days_primas_selector.bind("<<ComboboxSelected>>", self.select_day_primas)
-        return days_missing_selector2, days_late_selector2, days_extra_selector2, days_primas_selector
+        days_prime_selector.bind("<<ComboboxSelected>>", self.on_prime_day_selected)
+        return days_absence_selector, days_late_selector, days_extra_selector, days_prime_selector
 
-    def select_day_faltas(self, event):
+    def on_absence_day_bit_selected(self, event):
         date = event.widget.get()
         if not self.file_selected_2:
             return
         # date = self.days_missing_selector2.get()
         for day, comment in self.days_faltas:
             if day == date:
-                self.svar_com_missed.set(comment)
+                self.svar_com_absence_bit.set(comment)
                 break
 
-    def select_day_late2(self, event):
+    def on_late_day_bit_selected(self, event):
         date = event.widget.get()
         if not self.file_selected_2:
             return
         for day, comment in self.days_late2:
             if day == date:
-                self.svar_com_late.set(comment)
+                self.svar_com_late_bit.set(comment)
                 break
 
-    def select_day_extra2(self, event):
+    def on_extra_day_bit_selected(self, event):
         date = event.widget.get()
         if not self.file_selected_2:
             return
         for day, comment, value in self.days_extra2:
             if day == date:
-                self.svar_com_extra.set(str(value) + " horas. " + comment)
+                self.svar_com_extra_bit.set(str(value) + " horas. " + comment)
                 break
 
-    def select_day_primas(self, event):
+    def on_prime_day_selected(self, event):
         date = event.widget.get()
         if not self.file_selected_2:
             return
         for day, comment in self.days_prima:
             if day == date:
-                self.svar_com_prima.set(comment)
+                self.svar_com_prime_bit.set(comment)
                 break
 
     def change_time_grace(self, event):
@@ -325,10 +328,10 @@ class FichajesAuto(ttk.Frame):
             extra_keys2.append("no data")
         if len(primas_keys) == 0:
             primas_keys.append("no data")
-        self.days_missing_selector2.configure(values=faltas_keys)
-        self.days_late_selector2.configure(values=late_keys2)
-        self.days_extra_selector2.configure(values=extra_keys2)
-        self.days_primas_selector.configure(values=primas_keys)
+        self.days_absence_selector.configure(values=faltas_keys)
+        self.days_late_selector.configure(values=late_keys2)
+        self.days_extra_selector.configure(values=extra_keys2)
+        self.days_primes_selector.configure(values=primas_keys)
         # -------------file 3---------------
         late_keys3 = []
         extra_keys3 = []
@@ -368,11 +371,11 @@ class FichajesAuto(ttk.Frame):
                  (self.svar_extra_hours_comment_t, ""),
                  (self.svar_puerta_in_t, ""),
                  (self.svar_puerta_out_t, ""),
-                 (self.svar_faltas, f'Dias con falta: NA.'),
-                 (self.svar_late_days_op, f'Dias tarde: NA.'),
-                 (self.svar_extra_days_op,
+                 (self.svar_absences_bit, f'Dias con falta: NA.'),
+                 (self.svar_lates_bit, f'Dias tarde: NA.'),
+                 (self.svar_extras_bit,
                   f'Dias con horas extra: NA.\nTotal de horas extra: NA'),
-                 (self.svar_primas_op, f'Dias con prima: NA.'),
+                 (self.svar_primes_bit, f'Dias con prima: NA.'),
                  (self.svar_worked_days_t, f'Numero de dias trabajados: NA.'),
                  (self.svar_late_days_t, f'Numero de dias tarde: NA.'),
                  (self.svar_extra_days_t, f'Numero de dias con horas extras: NA.'),
@@ -414,11 +417,11 @@ class FichajesAuto(ttk.Frame):
                  (self.svar_worked_days_within_t, f'Numero de dias dentro de horario: {worked_intime_t}.')])
             # update vars for oct file
             update_stringvars(
-                [(self.svar_faltas, f'Dias con falta: {len(self.days_faltas)}.'),
-                 (self.svar_late_days_op, f'Dias tarde: {len(self.days_late2)}.'),
-                 (self.svar_extra_days_op,
+                [(self.svar_absences_bit, f'Dias con falta: {len(self.days_faltas)}.'),
+                 (self.svar_lates_bit, f'Dias tarde: {len(self.days_late2)}.'),
+                 (self.svar_extras_bit,
                   f'Dias con horas extra: {len(self.days_extra2)}.\nTotal de horas extra: {total_extra2}'),
-                 (self.svar_primas_op, f'Dias con prima: {len(self.days_prima)}.')])
+                 (self.svar_primes_bit, f'Dias con prima: {len(self.days_prima)}.')])
 
     def name_emp_sel_action(self, event):
         if event.widget.get() != "no file selected":
@@ -428,10 +431,10 @@ class FichajesAuto(ttk.Frame):
 
     def read_files(self):
         # check files in the directory
-        flag, self.files = cb.check_fichajes_files_in_directory(files_fichaje_path, ["Fichaje", "OCTreport", "Ternium"])
+        flag, self.files = cb.check_fichajes_files_in_directory(files_fichaje_path, patterns_files_fichaje)
         self.files_names_pairs, self.files_names_main = cb.get_list_files(self.files)
         self.files_main_cb.configure(values=self.files_names_main)
-        self.files_sec_o_cb.configure(values=self.files_names_pairs[0])
+        #self.files_sec_o_cb.configure(values=self.files_names_pairs[0])
         self.files_sec_t_cb.configure(values=self.files_names_pairs[1])
 
     def check_dates_ranges(self):
@@ -483,20 +486,6 @@ class FichajesAuto(ttk.Frame):
         self.date_ranges.configure(values=list_display)
         self.date_ranges.current(0)
         # self.date_ranges.configure(values=list_fortnights)
-
-    def read_file_oct(self, filename):
-        if ".xls" in filename or ".xlsx" in filename or ".csv" in filename:
-            self.contracts = cb.extract_data_file_contracts(filename)
-            if len(self.contracts) != 0:
-                table_data, columns = cb.generate_table_from_dict_contracts(self.contracts)
-                self.table_2 = Tableview(self.group_2, bootstyle="primary",
-                                         coldata=columns,
-                                         rowdata=table_data,
-                                         paginated=True,
-                                         searchable=True,
-                                         autofit=True)
-                self.table_2.grid(row=1, column=0, sticky='nsew', padx=50, pady=10)
-                self.file_selected_2 = True
 
     def read_file_ternium(self, filename):
         if ".xls" in filename or ".xlsx" in filename or ".csv" in filename:
@@ -553,24 +542,14 @@ class FichajesAuto(ttk.Frame):
                 self.window_time_in.grid(row=0, column=3)
                 self.window_time_out.grid(row=0, column=5)
 
-    def _select_file_fun(self, event):
+    def on_selected_file_fun(self, event):
         filename = event.widget.get()
         if "Ternium" in filename:
             self.read_file_ternium(self.files[filename]["path"])
             self.update_info_displayed("reset")
-        elif "OCTreport" in filename:
-            self.read_file_oct(self.files[filename]["path"])
-            self.update_info_displayed("reset")
         elif "Fichaje" in filename:
-            self.files_names_pairs, files_names_o = cb.get_list_files(self.files, filename)
-            self.files_sec_o_cb.configure(values=self.files_names_pairs[0])
-            self.files_sec_o_cb.set(self.files_names_pairs[0][0])
-            filename_sec_1 = self.files_names_pairs[0][0] if len(self.files_names_pairs[0]) > 0 else "No pair avaliable"
-            self.file_selected_2 = False
+            self.files_names_pairs, files_names_f = cb.get_list_files(self.files, filename)
             self.file_selected_3 = False
-            if filename_sec_1 != "No pair avaliable":
-                self.read_file_oct(self.files[filename_sec_1]["path"])
-                self.file_selected_2 = True
             self.files_sec_t_cb.configure(values=self.files_names_pairs[1])
             self.files_sec_t_cb.set(self.files_names_pairs[1][0])
             filename_sec_2 = self.files_names_pairs[1][0] if len(self.files_names_pairs[1]) > 0 else "No pair avaliable"
@@ -578,6 +557,7 @@ class FichajesAuto(ttk.Frame):
                 self.read_file_ternium(self.files[filename_sec_2]["path"])
                 self.file_selected_3 = True
             self.name_emp_selector.configure(state="readonly")
+            self.read_bitacora(self.files[filename]["date"])
             self.read_file_fichaje(self.files[filename]["path"])
             self.update_info_displayed("reset")
 
@@ -810,6 +790,24 @@ class FichajesAuto(ttk.Frame):
         cb.update_fichajes_resume_cache(cache_file_resume_fichaje, data_resume)
         Messagebox.show_info(title="Info", message=f"Archivo exportado:\n{path}")
 
+    def read_bitacora(self, date: str):
+        self.date_file = datetime.strptime(date, "%d-%m-%Y")
+        self.events_bitacora, columns = get_events_op_date(self.date_file, True)
+        self.table_2 = Tableview(self.group_2,
+                                 coldata=columns,
+                                 rowdata=self.events_bitacora,
+                                 paginated=True,
+                                 searchable=True,
+                                 autofit=True)
+        self.table_2.grid(row=1, column=0, padx=20, pady=10, sticky="n")
+        # create dataframe pandas
+        data_f = {}
+        for i, column in enumerate(columns):
+            data_f[column] = []
+            for row in self.events_bitacora:
+                data_f[column].append(row[i])
+        self.dfb = pd.DataFrame.from_dict(data_f)
+
 
 class FichajesManual(ttk.Frame):
     def __init__(self, master=None, *args, **kwargs):
@@ -817,7 +815,7 @@ class FichajesManual(ttk.Frame):
         self.master = master
         self.columnconfigure(0, weight=1)
         # variables
-        flag, self.files = cb.check_fichajes_files_in_directory(files_fichaje_path, ["Fichaje", "OCTreport", "Ternium"])
+        flag, self.files = cb.check_fichajes_files_in_directory(files_fichaje_path, patterns_files_fichaje)
         self.file_selected_1 = False
         self.file_selected_2 = False
         self.file_selected_3 = False
@@ -908,7 +906,7 @@ class FichajesManual(ttk.Frame):
         self.frame_collapse.add(self.group_3, title="Archivos Ternium")
 
     def read_files_from_directory(self):
-        flag, self.files = cb.check_fichajes_files_in_directory(files_fichaje_path, ["Fichaje", "OCTreport", "Ternium"])
+        flag, self.files = cb.check_fichajes_files_in_directory(files_fichaje_path, patterns_files_fichaje)
         self.file_selected_1 = False
         self.file_selected_2 = False
         self.file_selected_3 = False
