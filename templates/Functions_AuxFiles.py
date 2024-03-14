@@ -387,9 +387,9 @@ def get_place_incidence_from_comment(comment: str):
     for i, row in enumerate(rows):
         if i >= 1:
             if "actividad" in row:
-                place = row.split("-->")[1]
-            elif "lugar" in row:
                 activity = row.split("-->")[1]
+            elif "lugar" in row:
+                place = row.split("-->")[1]
     return place, activity
 
 

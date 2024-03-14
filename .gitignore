@@ -26,3 +26,4 @@ __pycache__/
 /files/samplev2.pdf
 /files/*.pdf
 /files/files_fichaje/*
+.env_*

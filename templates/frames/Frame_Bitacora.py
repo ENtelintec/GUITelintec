@@ -28,7 +28,6 @@ def check_date_difference(date_modify, delta):
     date_now = date_now.date()
     week_now = date_now.isocalendar()[1]
     date_modify = date_modify + timedelta(days=delta)
-    print(date_modify, date_now, week_modify, week_now)
     if week_now-week_modify > 1:
         flag = False
     return flag
@@ -222,7 +221,7 @@ class BitacoraEditFrame(ScrolledFrame):
         location = self.location.get()
         if event == "":
             self.svar_info.set("Llene todos los datos")
-            return
+            return None, None, None, None, None, None, None, None, None, None
         elif event == "prima":
             value = 1.0
         elif event == "falta":
@@ -241,7 +240,6 @@ class BitacoraEditFrame(ScrolledFrame):
         (name, contract, date, event, value, comment, include_prima, incidencia,
          activity, location) = self.prepare_data_to_send_DB()
         out = check_date_difference(date, self.delta)
-        print(out)
         if not out:
             self.svar_info.set("No se puede añadir un evento pasado el tiempo limite de modificaciones.")
             return
@@ -344,7 +342,6 @@ class BitacoraEditFrame(ScrolledFrame):
         (name, contract, date, event, value, comment, include_prima, incidencia,
          activity, location) = self.prepare_data_to_send_DB()
         out = check_date_difference(date, self.delta)
-        print(out)
         if not out:
             self.svar_info.set("No se puede modificar estas fechas")
             return
