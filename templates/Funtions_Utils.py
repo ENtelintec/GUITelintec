@@ -151,12 +151,14 @@ def create_var_none(number: int):
     return tuple(var_none)
 
 
-def set_dateEntry_new_value(master, entry, value, row, column, padx, pady, sticky="nswe", date_format=None):
+def set_dateEntry_new_value(master, entry, value, row, column, padx, pady, sticky="nswe",
+                            date_format=None, firstweekday=1):
     entry.destroy()
     if date_format is not None:
         entry = ttk.DateEntry(master,
                               startdate=value,
-                              dateformat=date_format)
+                              dateformat=date_format,
+                              firstweekday=firstweekday)
     else:
         entry = ttk.DateEntry(master, startdate=value)
     entry.grid(row=row, column=column, padx=padx, pady=pady, sticky=sticky)

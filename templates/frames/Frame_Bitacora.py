@@ -23,17 +23,19 @@ def check_date_difference(date_modify, delta):
     date_now = datetime.now()
     date_modify = datetime.strptime(date_modify, "%Y-%m-%d")
     date_modify = date_modify.date()
-    days_month = calendar.monthrange(date_modify.year, date_modify.month)[1]
-    date_modify = date_modify.replace(day=days_month)
+    # week of the month
+    week_modify = date_modify.isocalendar()[1]
     date_now = date_now.date()
+    week_now = date_now.isocalendar()[1]
     date_modify = date_modify + timedelta(days=delta)
-    if date_modify <= date_now:
+    print(date_modify, date_now, week_modify, week_now)
+    if week_now-week_modify > 1:
         flag = False
     return flag
 
 
 class BitacoraEditFrame(ScrolledFrame):
-    def __init__(self, master, username="default", contrato="default", delta=7, *args, **kwargs):
+    def __init__(self, master, username="default", contrato="default", delta=14, *args, **kwargs):
         super().__init__(master, *args, **kwargs)
         self.columnconfigure(0, weight=1)
         self.rowconfigure(4, weight=1)
@@ -93,11 +95,11 @@ class BitacoraEditFrame(ScrolledFrame):
         contract_selector.grid(row=1, column=1, padx=10, pady=10, sticky="w")
         create_label(master, 2, 0, text="Fecha", sticky="w")
         date_selector = ttk.DateEntry(master,
-                                      dateformat="%Y-%m-%d")
+                                      dateformat="%Y-%m-%d", firstweekday=0)
         date_selector.grid(row=2, column=1, padx=10, pady=10, sticky="w")
         create_label(master, 3, 0, text="Evento", sticky="w")
         event_selector = ttk.Combobox(
-            master, values=["falta", "atraso", "prima", "extra", "normal"],
+            master, values=["falta", "atraso", "extra", "normal"],
             state="readonly", width=15)
         event_selector.grid(row=3, column=1, padx=10, pady=10, sticky="w")
         event_selector.bind("<<ComboboxSelected>>", self.on_event_selected)
@@ -111,6 +113,8 @@ class BitacoraEditFrame(ScrolledFrame):
         incidencia_selector = ttk.Combobox(
             master, values=incidencias, state="readonly", width=20)
         incidencia_selector.grid(row=3, column=5, padx=10, pady=10, sticky="w")
+        label_incidencia.grid_remove()
+        incidencia_selector.grid_remove()
         label_valor = create_label(master, 4, 0, text="Valor", sticky="w")
         frame_valor = ttk.Frame(master)
         frame_valor.grid(row=4, column=1, padx=10, pady=10, sticky="w")
@@ -126,7 +130,7 @@ class BitacoraEditFrame(ScrolledFrame):
         create_label(master, 4, 4, text="Lugar", sticky="w")
         place_list = ["GUERRERO", "UNIVERSIDAD", "ALMACEN", "CURUBUSCO", "MITRAS",
                       "LARGOS NORTE", "JUVENTUD", "PESQUERIA", "CSI", "CSC", "EDIFICIO METALICOS",
-                      "NOVA", "PUEBLA", "SAN LUIS"]
+                      "NOVA", "PUEBLA", "SAN LUIS", "OTROS"]
         place_selector = ttk.Combobox(
             master, values=place_list, state="readonly", width=20, textvariable=self.location)
         place_selector.grid(row=4, column=5, padx=10, pady=10, sticky="w")
@@ -137,7 +141,8 @@ class BitacoraEditFrame(ScrolledFrame):
         comment_entry = ttk.Entry(master, width=100)
         comment_entry.grid(row=5, column=1, padx=10, pady=10, sticky="w", columnspan=5)
         return (emp_selector, emp_ids, contratos, emp_names, contract_selector, date_selector,
-                event_selector, label_valor, valor_entry_hora, valor_entry_min, frame_valor, label_comment, comment_entry,
+                event_selector, label_valor, valor_entry_hora, valor_entry_min, frame_valor, label_comment,
+                comment_entry,
                 prima_selector, emp_selector_contract, label_incidencia, incidencia_selector)
 
     def on_emp_selected(self, event):
@@ -236,6 +241,7 @@ class BitacoraEditFrame(ScrolledFrame):
         (name, contract, date, event, value, comment, include_prima, incidencia,
          activity, location) = self.prepare_data_to_send_DB()
         out = check_date_difference(date, self.delta)
+        print(out)
         if not out:
             self.svar_info.set("No se puede añadir un evento pasado el tiempo limite de modificaciones.")
             return
@@ -281,6 +287,9 @@ class BitacoraEditFrame(ScrolledFrame):
         self.svar_activity.set("")
         self.location.set("")
         self.incidencia_selector.set("")
+        self.prima_selector.grid_remove()
+        self.incidencia_selector.grid_remove()
+        self.label_incidencia.grid_remove()
 
     def on_double_click_table(self, event):
         row = event.widget.item(event.widget.selection()[0], "values")
@@ -305,7 +314,8 @@ class BitacoraEditFrame(ScrolledFrame):
         self.incidencia_selector.set(comment_dict["incidence"])
         self.date_selector = set_dateEntry_new_value(
             self.frame_inputs, self.date_selector,
-            timestamp, row=2, column=1, padx=10, pady=10, sticky="w", date_format="%Y-%m-%d")
+            timestamp, row=2, column=1, padx=10, pady=10, sticky="w",
+            date_format="%Y-%m-%d", firstweekday=0)
 
     def on_erase_event(self):
         if self.emp_id is None:
