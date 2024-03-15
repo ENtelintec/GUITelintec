@@ -3,6 +3,7 @@ __author__ = "Edisson Naula"
 __date__ = "$ 13/feb./2024  at 15:36 $"
 
 import json
+from datetime import datetime
 from tkinter import IntVar
 
 import ttkbootstrap as ttk
@@ -18,23 +19,29 @@ from templates.PDFGenerator import (
 )
 
 
-def get_name_id_employees_list(department: int, is_all: bool):
+def get_name_id_employees_list(department: int, is_all: bool) -> tuple[list[str], list[tuple[str, int, str, str, dict]]]:
     flag, error, out = get_id_name_employee(department, is_all)
     names = []
-    ids_emp = []
-    for id_emp, name, lastname in out:
+    aux = []
+    for id_emp, name, lastname, job, date_admission, departure in out:
         names.append(f"{name.upper()} {lastname.upper()}")
-        ids_emp.append(id_emp)
-    return names, ids_emp
+        if departure is None:
+            departure = {"date": "not defined", "reason": ""}
+        else:
+            departure = json.loads(departure)
+        job = job.upper() if job is not None else "other"
+        aux.append((f"{name.upper()} {lastname.upper()}", id_emp, job, date_admission, departure))
+    return names, aux
 
 
 class QuizMaker(ttk.Frame):
-    def __init__(self, master, dict_quizz, title=None, tipo_op=0, out_path=quizz_out_path):
+    def __init__(self, master, dict_quizz, title=None, tipo_op=0, out_path=quizz_out_path, metadata: dict = None):
         super().__init__(master)
         self.quizz_out_path = out_path
         self.q_no = 0
         self.title = title if title is not None else "Quiz"
         self.dict_quizz = dict_quizz
+        self.metadata = metadata
         self.questions_label = None
         self.opt_selected = []
         self.data_size = len(self.dict_quizz)
@@ -197,13 +204,13 @@ class QuizMaker(ttk.Frame):
 
     def update_dict_quizz(self, new_dict: dict, tipo_op):
         self.dict_quizz = new_dict
-        name_emp = "employee 1"
-        job = "position 1"
+        name_emp = self.metadata["name_emp"]
+        name_interviewer = self.metadata["interviewer"]
+        job = self.metadata["position"]
         terminal = "terminal"
-        date_start = "01/01/2021"
-        date_end = "31/12/2021"
-        date_inteview = "01/01/2021"
-        name_interviewer = "Interviewer"
+        date_start = str(self.metadata["admision"])
+        date_end = str(self.metadata["departure"])
+        date_inteview = str(self.metadata["date"])
         file_out = self.quizz_out_path + f"{name_emp.replace(' ', '')}_{date_inteview.replace('/', '-')}_type_{tipo_op}.pdf"
         if tipo_op == 0:
             create_pdf_quizz_salida(
@@ -273,22 +280,18 @@ class FrameEncuestas(ttk.Frame):
             options.append(item["name"])
         self.quizz_selector = create_Combobox(
             frame_inputs, values=options, state="readonly",
-            row=0, column=0, sticky="w", width=50,
+            row=0, column=0, sticky="n", width=50, columnspan=2
         )
         self.quizz_selector.bind("<<ComboboxSelected>>", self.select_quiz)
         self.quizz_selector.set("Seleccione una encuesta")
 
         # employees data
-        self.names, self.ids_emp = get_name_id_employees_list(1, True)
-        create_label(frame_inputs, text="Datos de la encuesta", row=1, column=0, sticky="w")
-        name_emp_selector = create_Combobox(
-            frame_inputs,
-            values=self.names,
-            state="readonly",
-            row=1, column=1, sticky="n",
-            width=50,
+        self.names, self.emps_metadata = get_name_id_employees_list(1, True)
+        create_label(frame_inputs, text="Empleado encuestado: ", row=1, column=0, sticky="w")
+        self.name_emp_selector = create_Combobox(
+            frame_inputs, values=self.names, state="readonly", width=40,
+            row=1, column=1, sticky="w"
         )
-
         # ------------buttons------------
         frame_btns = ttk.Frame(self)
         frame_btns.grid(row=2, column=0, padx=10, pady=10, sticky="nswe")
@@ -320,13 +323,37 @@ class FrameEncuestas(ttk.Frame):
             self.quizz = None
 
     def create_quiz(self):
-        if self.dict_quizz is None:
+        if self.dict_quizz is None or self.name_emp_selector.get() == "":
             return
+        else:
+            msg = f"Esta seguro que desea crear la encuesta para {self.name_emp_selector.get()}?"
+            answer = Messagebox.show_question(
+                title="Confirmacion",
+                message=msg
+            )
+            if answer == "No":
+                return
         print("creating quizz")
-        name = self.quizz_selector.get()
+        data_emp = None
+        for row in self.emps_metadata:
+            if row[0] == self.name_emp_selector.get():
+                data_emp = row
+                break
+        metadata = {
+            "name_emp": self.name_emp_selector.get(),
+            "date": datetime.now().strftime("%d/%m/%Y"),
+            "interviewer": self.interviewer,
+            "ID_emp": data_emp[1],
+            "position": data_emp[2],
+            "admision": data_emp[3],
+            "departure": data_emp[4]["date"],
+            "departure_reason": data_emp[4]["reason"],
+        }
+        name_quizz = self.quizz_selector.get()
         self.dict_quizz = json.load(open(self.filepath, encoding="utf-8"))
-        self.quizz = QuizMaker(self.frame_encuesta, self.dict_quizz, title=name,
-                               tipo_op=self.tipoOp, out_path=self.quizz_out_path)
+        self.quizz = QuizMaker(self.frame_encuesta, self.dict_quizz, title=name_quizz,
+                               tipo_op=self.tipoOp, out_path=self.quizz_out_path,
+                               metadata=metadata)
         self.quizz.grid(row=0, column=0, padx=10, pady=10, sticky="nswe")
 
 

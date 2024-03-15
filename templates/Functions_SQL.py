@@ -18,13 +18,17 @@ def execute_sql(sql: str, values: tuple = None, type_sql=1):
     :param values: values for sql query
     :return:
     """
-    mydb = mysql.connector.connect(
-        host=secrets["HOST_DB_AWS"],
-        user=secrets["USER_SQL_AWS"],
-        password=secrets["PASS_SQL_AWS"],
-        database="sql_telintec"
-    )
-    my_cursor = mydb.cursor(buffered=True)
+    try:
+        mydb = mysql.connector.connect(
+            host=secrets["HOST_DB_AWS"],
+            user=secrets["USER_SQL_AWS"],
+            password=secrets["PASS_SQL_AWS"],
+            database="sql_telintec"
+        )
+        my_cursor = mydb.cursor(buffered=True)
+    except Exception as e:
+        print(e)
+        return False, e, []
     out = []
     flag = True
     exception = None
@@ -70,12 +74,17 @@ def execute_sql_multiple(sql: str, values_list: list = None, type_sql=1):
     :param sql: sql query
     :return:
     """
-    mydb = mysql.connector.connect(
-        host=secrets["HOST_DB_AWS"],
-        user=secrets["USER_SQL_AWS"],
-        password=secrets["PASS_SQL_AWS"],
-        database="sql_telintec"
-    )
+    try:
+        mydb = mysql.connector.connect(
+            host=secrets["HOST_DB_AWS"],
+            user=secrets["USER_SQL_AWS"],
+            password=secrets["PASS_SQL_AWS"],
+            database="sql_telintec"
+        )
+        my_cursor = mydb.cursor(buffered=True)
+    except Exception as e:
+        print(e)
+        return False, e, []
     out = []
     flag = True
     error = None
@@ -220,10 +229,10 @@ def get_id_name_employee(department: int, is_all=False):
     :param is_all:
     :return:
     """
-    sql = ("SELECT employee_id, name, l_name FROM employees "
+    sql = ("SELECT employee_id, name, l_name, puesto, date_admission, departure FROM employees "
            "WHERE department_id = %s")
     if is_all:
-        sql = "SELECT employee_id, name, l_name FROM employees"
+        sql = "SELECT employee_id, name, l_name, puesto, date_admission, departure FROM employees"
         flag, e, out = execute_sql(sql, None, 5)
     else:
         values = (department,)
