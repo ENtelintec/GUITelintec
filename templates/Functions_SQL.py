@@ -214,6 +214,24 @@ def get_name_employee(id_employee: int) -> None | str:
         return f"{out[0].upper()} {out[1].upper()}"
 
 
+def get_id_name_employee(department: int, is_all=False):
+    """
+    :param department:
+    :param is_all:
+    :return:
+    """
+    sql = ("SELECT employee_id, name, l_name FROM employees "
+           "WHERE department_id = %s")
+    if is_all:
+        sql = "SELECT employee_id, name, l_name FROM employees"
+        flag, e, out = execute_sql(sql, None, 5)
+    else:
+        values = (department,)
+        flag, e, out = execute_sql(sql, values, 5)
+    return flag, e, out
+
+
+
 def get_employess_op_names():
     sql = ("SELECT employee_id, name, l_name, contrato FROM employees "
            "WHERE  department_id = 2")

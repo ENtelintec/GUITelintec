@@ -158,33 +158,33 @@ def update_bitacora(emp_id: int, event, data):
     fichajes_resume, flag = get_fichajes_resume_cache(cache_file_resume_fichaje)
     if flag:
         for i, row in enumerate(fichajes_resume):
-            (id_emp, name, contract, new_faltas, new_tardanzas,
+            (id_emp, name, contract, new_faltas, new_tardanzas, new_tardanzas_values,
              new_extras, new_extras_value, new_primas, absences,
              lates, extras, primes, normal) = row
             if id_emp == emp_id:
                 match event:
                     case "falta":
-                        new_row = [id_emp, name, contract_sel, new_faltas, new_tardanzas,
+                        new_row = [id_emp, name, contract_sel, new_faltas, new_tardanzas, new_tardanzas_values,
                                    new_extras, new_extras_value, new_primas, event_dic,
                                    lates, extras, primes, normal]
                         fichajes_resume[i] = new_row
                     case "atraso":
-                        new_row = [id_emp, name, contract_sel, new_faltas, new_tardanzas,
+                        new_row = [id_emp, name, contract_sel, new_faltas, new_tardanzas, new_tardanzas_values,
                                    new_extras, new_extras_value, new_primas, absences,
                                    event_dic, extras, primes, normal]
                         fichajes_resume[i] = new_row
                     case "extra":
-                        new_row = [id_emp, name, contract_sel, new_faltas, new_tardanzas,
+                        new_row = [id_emp, name, contract_sel, new_faltas, new_tardanzas, new_tardanzas_values,
                                    new_extras, new_extras_value, new_primas, absences,
                                    lates, event_dic, primes, normal]
                         fichajes_resume[i] = new_row
                     case "prima":
-                        new_row = [id_emp, name, contract_sel, new_faltas, new_tardanzas,
+                        new_row = [id_emp, name, contract_sel, new_faltas, new_tardanzas, new_tardanzas_values,
                                    new_extras, new_extras_value, new_primas, absences,
                                    lates, extras, event_dic, normal]
                         fichajes_resume[i] = new_row
                     case "normal":
-                        new_row = [id_emp, name, contract_sel, new_faltas, new_tardanzas,
+                        new_row = [id_emp, name, contract_sel, new_faltas, new_tardanzas, new_tardanzas_values,
                                    new_extras, new_extras_value, new_primas, absences,
                                    lates, extras, primes, event_dic]
                         fichajes_resume[i] = new_row
@@ -232,33 +232,33 @@ def update_bitacora_value(emp_id: int, event, data):
     fichajes_resume, flag = get_fichajes_resume_cache(cache_file_resume_fichaje)
     if flag:
         for i, row in enumerate(fichajes_resume):
-            (id_emp, name, contract, new_faltas, new_tardanzas,
+            (id_emp, name, contract, new_faltas, new_tardanzas, new_tardanzas_value,
              new_extras, new_extras_value, new_primas, absences,
              lates, extras, primes, normal) = row
             if id_emp == emp_id:
                 match event:
                     case "falta":
-                        new_row = [id_emp, name, contract_sel, new_faltas, new_tardanzas,
+                        new_row = [id_emp, name, contract_sel, new_faltas, new_tardanzas, new_tardanzas_value,
                                    new_extras, new_extras_value, new_primas, event_dic,
                                    lates, extras, primes, normal]
                         fichajes_resume[i] = new_row
                     case "atraso":
-                        new_row = [id_emp, name, contract_sel, new_faltas, new_tardanzas,
+                        new_row = [id_emp, name, contract_sel, new_faltas, new_tardanzas, new_tardanzas_value,
                                    new_extras, new_extras_value, new_primas, absences,
                                    event_dic, extras, primes, normal]
                         fichajes_resume[i] = new_row
                     case "extra":
-                        new_row = [id_emp, name, contract_sel, new_faltas, new_tardanzas,
+                        new_row = [id_emp, name, contract_sel, new_faltas, new_tardanzas, new_tardanzas_value,
                                    new_extras, new_extras_value, new_primas, absences,
                                    lates, event_dic, primes, normal]
                         fichajes_resume[i] = new_row
                     case "prima":
-                        new_row = [id_emp, name, contract_sel, new_faltas, new_tardanzas,
+                        new_row = [id_emp, name, contract_sel, new_faltas, new_tardanzas, new_tardanzas_value,
                                    new_extras, new_extras_value, new_primas, absences,
                                    lates, extras, event_dic, normal]
                         fichajes_resume[i] = new_row
                     case "normal":
-                        new_row = [id_emp, name, contract_sel, new_faltas, new_tardanzas,
+                        new_row = [id_emp, name, contract_sel, new_faltas, new_tardanzas, new_tardanzas_value,
                                    new_extras, new_extras_value, new_primas, absences,
                                    lates, extras, primes, event_dic]
                         fichajes_resume[i] = new_row
@@ -300,34 +300,34 @@ def erase_value_bitacora(emp_id: int, event, data):
     fichajes_resume, flag = get_fichajes_resume_cache(cache_file_resume_fichaje)
     if flag:
         for i, row in enumerate(fichajes_resume):
-            (id_emp, name, contract, new_faltas, new_tardanzas,
+            (id_emp, name, contract, new_faltas, new_tardanzas, new_tardanzas_value,
              new_extras, new_extras_value, new_primas, absences,
              lates, extras, primes, normal) = row
             if id_emp == emp_id:
                 flag = False
                 match event:
                     case "falta":
-                        new_row = [id_emp, name, contract_sel, new_faltas, new_tardanzas,
+                        new_row = [id_emp, name, contract_sel, new_faltas, new_tardanzas, new_tardanzas_value,
                                    new_extras, new_extras_value, new_primas, event_dic,
                                    lates, extras, primes, normal]
                         fichajes_resume[i] = new_row
                     case "atraso":
-                        new_row = [id_emp, name, contract_sel, new_faltas, new_tardanzas,
+                        new_row = [id_emp, name, contract_sel, new_faltas, new_tardanzas, new_tardanzas_value,
                                    new_extras, new_extras_value, new_primas, absences,
                                    event_dic, extras, primes, normal]
                         fichajes_resume[i] = new_row
                     case "extra":
-                        new_row = [id_emp, name, contract_sel, new_faltas, new_tardanzas,
+                        new_row = [id_emp, name, contract_sel, new_faltas, new_tardanzas, new_tardanzas_value,
                                    new_extras, new_extras_value, new_primas, absences,
                                    lates, event_dic, primes, normal]
                         fichajes_resume[i] = new_row
                     case "prima":
-                        new_row = [id_emp, name, contract_sel, new_faltas, new_tardanzas,
+                        new_row = [id_emp, name, contract_sel, new_faltas, new_tardanzas, new_tardanzas_value,
                                    new_extras, new_extras_value, new_primas, absences,
                                    lates, extras, event_dic, normal]
                         fichajes_resume[i] = new_row
                     case "normal":
-                        new_row = [id_emp, name, contract_sel, new_faltas, new_tardanzas,
+                        new_row = [id_emp, name, contract_sel, new_faltas, new_tardanzas, new_tardanzas_value,
                                    new_extras, new_extras_value, new_primas, absences,
                                    lates, extras, primes, event_dic]
                         fichajes_resume[i] = new_row
