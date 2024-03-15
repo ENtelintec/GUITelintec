@@ -495,8 +495,10 @@ def calculate_results_quizzes(dict_quizz: dict, tipo_q: int):
         case 2:
             dict_values = dict_conversions["norm035"]["v2"]["conversion"]
             c_final = 0
+            print(dict_quizz)
             for question in dict_quizz.values():
                 if question["items"] != "":
+                    print(question["items"])
                     upper_limit = question["items"][1]
                     lower_limit = question["items"][0]
                     answers = question["answer"]

@@ -563,12 +563,12 @@ def update_fichaje_DB(emp_id: int, contract: str, absences: dict, lates: dict, e
 
 
 def insert_new_fichaje_DB(emp_id: int, contract: str, absences: dict, lates: dict, extras: dict,
-                          primes: dict):
+                          primes: dict, normals: dict):
     sql = ("INSERT INTO sql_telintec.fichajes "
-           "(emp_id, contract, absences, lates, extras, primes) "
-           "VALUES (%s, %s, %s, %s, %s, %s)")
+           "(emp_id, contract, absences, lates, extras, primes, normal) "
+           "VALUES (%s, %s, %s, %s, %s, %s, %s)")
     val = (emp_id, contract, json.dumps(absences), json.dumps(lates),
-           json.dumps(extras), json.dumps(primes))
+           json.dumps(extras), json.dumps(primes), json.dumps(normals))
     flag, error, result = execute_sql(sql, val, 4)
     return flag, error, result
 

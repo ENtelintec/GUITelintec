@@ -7,6 +7,7 @@ from tkinter.filedialog import asksaveasfilename
 
 import pandas as pd
 import ttkbootstrap as ttk
+from ttkbootstrap import DateEntry
 from ttkbootstrap.dialogs.dialogs import Messagebox
 from ttkbootstrap.scrolled import ScrolledFrame
 from ttkbootstrap.tableview import Tableview
@@ -47,9 +48,9 @@ class FichajesAuto(ttk.Frame):
         self.file_selected_3 = False
         self.master = master
         self.contracts = {}
-        (self.dft, self.days_late, self.days_extra, self.days_faltas,
-         self.contract_emp, self.days_late2, self.days_extra2,
-         self.total_extra2, self.days_prima, self.files, self.max_date_g,
+        (self.dft, self.days_late, self.days_extra, self.absences_bit,
+         self.contract_emp, self.lates_bit, self.extras_bit,
+         self.total_extra2, self.primes_bit, self.files, self.max_date_g,
          self.min_date_g, self.dff, self.date_file, self.events_bitacora,
          self.dfb) = create_var_none(16)
         self.files_names_pairs = [[], []]
@@ -78,11 +79,11 @@ class FichajesAuto(ttk.Frame):
         # -------------------file selectors-----------------
         self.files_main_cb = create_Combobox(
             self, values=self.files_names_main, state="readonly", row=1, column=1, padx=0, pady=0)
-        #self.files_sec_o_cb = create_Combobox(
+        # self.files_sec_o_cb = create_Combobox(
         #     self, values=self.files_names_pairs[0], state="readonly", row=1, column=3, padx=0, pady=0)
         self.files_sec_t_cb = create_Combobox(
             self, values=self.files_names_pairs[1], state="readonly", row=1, column=3, padx=0, pady=0)
-        #self.files_sec_o_cb.bind("<<ComboboxSelected>>", self._select_file_fun)
+        # self.files_sec_o_cb.bind("<<ComboboxSelected>>", self._select_file_fun)
         self.files_main_cb.bind("<<ComboboxSelected>>", self.on_selected_file_fun)
         self.files_sec_t_cb.bind("<<ComboboxSelected>>", self.on_selected_file_fun)
         # -------------------create date range selector-----------------
@@ -149,7 +150,7 @@ class FichajesAuto(ttk.Frame):
         name_emp_selector = create_Combobox(
             master, values=["no file selected"], state="readonly",
             row=1, column=1)
-        name_emp_selector.bind("<<ComboboxSelected>>", self.name_emp_sel_action)
+        name_emp_selector.bind("<<ComboboxSelected>>", self.on_name_emp_sel_action)
         create_label(master, text='Hora de entrada: ', row=0, column=2, sticky="w")
         clocks = []
         clock1, dict_c = cb.create_spinboxes_time(master, self, 1, 2,
@@ -246,7 +247,7 @@ class FichajesAuto(ttk.Frame):
         if not self.file_selected_2:
             return
         # date = self.days_missing_selector2.get()
-        for day, comment in self.days_faltas:
+        for day, comment, value in self.absences_bit:
             if day == date:
                 self.svar_com_absence_bit.set(comment)
                 break
@@ -255,16 +256,16 @@ class FichajesAuto(ttk.Frame):
         date = event.widget.get()
         if not self.file_selected_2:
             return
-        for day, comment in self.days_late2:
+        for day, comment, value in self.lates_bit:
             if day == date:
-                self.svar_com_late_bit.set(comment)
+                self.svar_com_late_bit.set(str(value) + " horas. " + comment)
                 break
 
     def on_extra_day_bit_selected(self, event):
         date = event.widget.get()
         if not self.file_selected_2:
             return
-        for day, comment, value in self.days_extra2:
+        for day, comment, value in self.extras_bit:
             if day == date:
                 self.svar_com_extra_bit.set(str(value) + " horas. " + comment)
                 break
@@ -273,7 +274,7 @@ class FichajesAuto(ttk.Frame):
         date = event.widget.get()
         if not self.file_selected_2:
             return
-        for day, comment in self.days_prima:
+        for day, comment, value in self.primes_bit:
             if day == date:
                 self.svar_com_prime_bit.set(comment)
                 break
@@ -312,13 +313,13 @@ class FichajesAuto(ttk.Frame):
         late_keys2 = []
         extra_keys2 = []
         primas_keys = []
-        for date, comment in self.days_faltas:
+        for date, comment, value in self.absences_bit:
             faltas_keys.append(str(date))
-        for date, comment in self.days_late2:
+        for date, comment, value in self.lates_bit:
             late_keys2.append(str(date))
-        for date, comment, value in self.days_extra2:
+        for date, comment, value in self.extras_bit:
             extra_keys2.append(str(date))
-        for date, comment in self.days_prima:
+        for date, comment, value in self.primes_bit:
             primas_keys.append(str(date))
         if len(faltas_keys) == 0:
             faltas_keys.append("no data")
@@ -390,6 +391,8 @@ class FichajesAuto(ttk.Frame):
                  (self.svar_puerta_out_f, ""),
                  ])
         else:
+            df_name = self.dff[self.dff["name"] == name]
+            id_emp = df_name["ID"].values[0]
             # -----------file fichaje------------
             (worked_days_f, worked_intime_f, count_l_f, count_e_f,
              self.days_late, self.days_extra) = cb.get_info_f_file_name(
@@ -399,10 +402,11 @@ class FichajesAuto(ttk.Frame):
              self.days_late_t, self.days_extra_t) = cb.get_info_t_file_name(
                 self.dft, self.name_emp_selector.get(), self.clocks, self.window_time_in, self.window_time_out,
                 self.file_selected_3)
-            # ------------file oct-----------
-            (self.contract_emp, self.days_faltas, self.days_late2,
-             self.days_extra2, total_extra2, self.days_prima) = cb.get_info_o_file_name(
-                contracts=self.contracts, name=self.name_emp_selector.get(), flag=self.file_selected_2)
+            # ------------info bitacora-----------
+            (days_absence_bit, days_extra_bit, days_primes_bit, days_lates_bit,
+             self.absences_bit, self.extras_bit, self.primes_bit, self.lates_bit, normals_bit,
+             contract) = cb.get_info_bitacora(
+                self.dfb, name=self.name_emp_selector.get(), id_emp=id_emp, flag=self.file_selected_2)
             # update vars for fichaje file
             update_stringvars(
                 [(self.svar_worked_days_f, f'Numero de dias trabajados: {worked_days_f}.'),
@@ -417,13 +421,13 @@ class FichajesAuto(ttk.Frame):
                  (self.svar_worked_days_within_t, f'Numero de dias dentro de horario: {worked_intime_t}.')])
             # update vars for oct file
             update_stringvars(
-                [(self.svar_absences_bit, f'Dias con falta: {len(self.days_faltas)}.'),
-                 (self.svar_lates_bit, f'Dias tarde: {len(self.days_late2)}.'),
+                [(self.svar_absences_bit, f'Dias con falta: {days_absence_bit[0]}.'),
+                 (self.svar_lates_bit, f'Dias tarde: {days_lates_bit[0]}.\nTotal de horas tarde: {days_lates_bit[1]}'),
                  (self.svar_extras_bit,
-                  f'Dias con horas extra: {len(self.days_extra2)}.\nTotal de horas extra: {total_extra2}'),
-                 (self.svar_primes_bit, f'Dias con prima: {len(self.days_prima)}.')])
+                  f'Dias con horas extra: {days_extra_bit[0]}.\nTotal de horas extra: {days_extra_bit[1]}'),
+                 (self.svar_primes_bit, f'Dias con prima: {days_primes_bit[0]}.')])
 
-    def name_emp_sel_action(self, event):
+    def on_name_emp_sel_action(self, event):
         if event.widget.get() != "no file selected":
             self.update_info_displayed("reset")
             self.update_info_displayed(event.widget.get())
@@ -434,7 +438,6 @@ class FichajesAuto(ttk.Frame):
         flag, self.files = cb.check_fichajes_files_in_directory(files_fichaje_path, patterns_files_fichaje)
         self.files_names_pairs, self.files_names_main = cb.get_list_files(self.files)
         self.files_main_cb.configure(values=self.files_names_main)
-        #self.files_sec_o_cb.configure(values=self.files_names_pairs[0])
         self.files_sec_t_cb.configure(values=self.files_names_pairs[1])
 
     def check_dates_ranges(self):
@@ -505,7 +508,6 @@ class FichajesAuto(ttk.Frame):
             self.file_selected_3 = True
             names_list = self.dft["name"].unique().tolist()
             names_and_ids = cb.check_names_employees_in_cache(names_list, cache_file_emp_fichaje)
-            print("ternium", names_and_ids)
             for name in names_and_ids.keys():
                 name_db = names_and_ids[name]["name_db"]
                 id_db = names_and_ids[name]["id"]
@@ -678,75 +680,24 @@ class FichajesAuto(ttk.Frame):
         else:
             print("no data selected")
 
-    def button_export_emp_click(self):
-        name = self.name_emp_selector.get()
-        id_emp = self.dff[self.dff["name"] == name]["ID"].to_list()[0] if len(
-            self.dff[self.dff["name"] == name]["ID"].to_list()) > 0 else None
-        if id_emp is None:
-            if self.file_selected_3:
-                id_emp = self.dft[self.dft["name"] == name]["ID"].to_list()[0] if len(
-                    self.dft[self.dft["name"] == name]["ID"].to_list()) > 0 else None
-        else:
-            id_emp = None
-        # get data for an employee
-        (worked_days_f, worked_intime_f, count_l_f, count_e_f,
-         days_late, days_extra) = cb.get_info_f_file_name(
-            self.dff, name, self.clocks, self.window_time_in, self.window_time_out, self.file_selected_1)
-        (worked_days_t, worked_intime_t, count_l_t, count_e_t,
-         days_late_t, days_extra_t) = cb.get_info_t_file_name(
-            self.dft, name, self.clocks, self.window_time_in, self.window_time_out, self.file_selected_3)
-        if id_emp is not None:
-            (contract_emp, days_faltas, days_late_o,
-             days_extra_o, total_extra2, days_prima) = cb.get_info_o_file_name(
-                contracts=self.contracts, name=name, id_2=id_emp, flag=self.file_selected_2)
-        else:
-            (contract_emp, days_faltas, days_late_o,
-             days_extra_o, total_extra2, days_prima) = (None, None, None, None, None, None)
-        # convert data in dictionaries
-        dict_faltas, dict_late, dict_extra, dict_prima = cb.get_dic_from_list_fichajes(
-            (None, days_late, days_extra, None),
-            oct_file=(days_faltas, days_late_o, days_extra_o, days_prima),
-            ternium_file=(None, days_late_t, days_extra_t, None)
-        )
-        days_faltas = [] if days_faltas is None else days_faltas
-        days_late = [] if days_late is None else days_late
-        days_extra = [] if days_extra is None else days_extra
-        days_prima = [] if days_prima is None else days_prima
-        table_data, columns = cb.generate_table_from_dict_contracts(self.contracts)
-        data_f = {}
-        for i, column in enumerate(columns):
-            data_f[column] = []
-            for row in table_data:
-                data_f[column].append(row[i])
-        df = pd.DataFrame.from_dict(data_f)
-        if self.name_emp_selector.get() != "no name selected" and self.name_emp_selector.get() != "":
-            id_n = get_id_employee(self.name_emp_selector.get())
-            df = df[df["ID"] == id_n]
-            # select a path to save file
-            path = asksaveasfilename(defaultextension=".csv",
-                                     filetypes=[("CSV", "*.csv")])
-            df.to_csv(path, index=False)
-            Messagebox.show_info(title="Info", message=f"Archivo exportado:\n{path}")
-        else:
-            Messagebox.show_error(title="Alert", message="primero seleccione un empleado")
-
     def button_export_click(self):
         data_resume = []
-        name_list_f = self.dff["name"].unique().tolist()
-        name_list_t = self.dft["name"].unique().tolist() if self.file_selected_3 else []
-        name_list_o = []
-        for contract in self.contracts.keys():
-            for emp in self.contracts[contract].values():
-                if emp["id"] is not None:
-                    name_list_o.append(emp["name_db"])
-        name_list = list(set(name_list_f + name_list_o + name_list_t))
-        for name in name_list:
-            id_emp = self.dff[self.dff["name"] == name]["ID"].to_list()[0] if len(
-                self.dff[self.dff["name"] == name]["ID"].to_list()) > 0 else None
-            if id_emp is None:
-                if self.file_selected_3:
-                    id_emp = self.dft[self.dft["name"] == name]["ID"].to_list()[0] if len(
-                        self.dft[self.dft["name"] == name]["ID"].to_list()) > 0 else None
+        id_list_f = self.dff["ID"].unique().tolist()
+        id_list_t = self.dft["ID"].unique().tolist() if self.file_selected_3 else []
+        id_list_b = self.dfb["ID"].unique().tolist() if self.file_selected_2 else []
+        id_list = list(set(id_list_f + id_list_t + id_list_b))
+        for id_emp in id_list:
+            name = self.dff[self.dff["ID"] == id_emp]["name"].to_list()[0] if len(
+                self.dff[self.dff["ID"] == id_emp]["name"].to_list()) > 0 else None
+            if name is None:
+                name = self.dft[self.dft["ID"] == id_emp]["name"].to_list()[0] if len(
+                    self.dft[self.dft["ID"] == id_emp]["name"].to_list()) > 0 else None
+            if name is None:
+                name = self.dfb[self.dfb["ID"] == id_emp]["Nombre"].to_list()[0] if len(
+                    self.dfb[self.dfb["ID"] == id_emp]["Nombre"].to_list()) > 0 else None
+            if name is None:
+                continue
+            contract_emp = "otros"
             # get data for an employee
             (worked_days_f, worked_intime_f, count_l_f, count_e_f,
              days_late, days_extra) = cb.get_info_f_file_name(
@@ -755,28 +706,30 @@ class FichajesAuto(ttk.Frame):
              days_late_t, days_extra_t) = cb.get_info_t_file_name(
                 self.dft, name, self.clocks, self.window_time_in, self.window_time_out, self.file_selected_3)
             if id_emp is not None:
-                (contract_emp, days_faltas, days_late_o,
-                 days_extra_o, total_extra2, days_prima) = cb.get_info_o_file_name(
-                    contracts=self.contracts, name=name, id_2=id_emp, flag=self.file_selected_2)
+                (days_absence_bit, days_extra_bit, days_primes_bit, days_lates_bit,
+                 absences_bit, extras_bit, primes_bit, lates_bit, normals_bit, contract_emp) = cb.get_info_bitacora(
+                    self.dfb, name=self.name_emp_selector.get(), id_emp=id_emp, flag=self.file_selected_2)
             else:
-                (contract_emp, days_faltas, days_late_o,
-                 days_extra_o, total_extra2, days_prima) = (None, None, None, None, None, None)
+                (days_absence_bit, days_extra_bit, days_primes_bit, days_lates_bit,
+                 absences_bit, extras_bit, primes_bit, normals_bit, lates_bit) = (None, None, None, None, None, None, None, None, None)
             # convert data in dictionaries
-            dict_faltas, dict_late, dict_extra, dict_prima = cb.get_dic_from_list_fichajes(
-                (None, days_late, days_extra, None),
-                oct_file=(days_faltas, days_late_o, days_extra_o, days_prima),
-                ternium_file=(None, days_late_t, days_extra_t, None)
+            dict_faltas, dict_late, dict_extra, dict_prima, dict_normal = cb.get_dic_from_list_fichajes(
+                (None, days_late, days_extra, None, None),
+                oct_file=(absences_bit, lates_bit, extras_bit, primes_bit, normals_bit),
+                ternium_file=(None, days_late_t, days_extra_t, None, None)
             )
-            days_faltas = [] if days_faltas is None else days_faltas
-            days_late = [] if days_late is None else days_late
-            days_extra = [] if days_extra is None else days_extra
-            days_prima = [] if days_prima is None else days_prima
+
+            absences_bit = ["0", "0"] if absences_bit is None else absences_bit
+            days_late = ["0", "0"] if days_late is None else days_late
+            days_extra = ["0", "0"] if days_extra is None else days_extra
+            primes_bit = ["0", "0"] if primes_bit is None else primes_bit
+            normal_bit = ["0", "0"] if normals_bit is None else normals_bit
             row = (id_emp, name, contract_emp,
-                   len(days_faltas), len(days_late), len(days_extra), total_extra2,
-                   len(days_prima), dict_faltas, dict_late, dict_extra, dict_prima)
+                   days_absence_bit[0], days_lates_bit[0], days_lates_bit[1], days_extra_bit[0], days_extra_bit[1],
+                   days_primes_bit[0], dict_faltas, dict_late, dict_extra, dict_prima, dict_normal)
             data_resume.append(row)
-        columns = ["ID", "Nombre", "Contrato", "Faltas", "Tardanzas", "Dias Extra", "Total horas extras", "Primas",
-                   "Detalles Faltas", "Detalles Tardanzas", "Detalles Extras", "Detalles Primas"]
+        columns = ["ID", "Nombre", "Contrato", "Faltas", "Tardanzas", "Total horas tarde", "Dias Extra", "Total horas extras", "Primas",
+                   "Detalles Faltas", "Detalles Tardanzas", "Detalles Extras", "Detalles Primas", "Detalles normal"]
         data_f = {}
         for i, column in enumerate(columns):
             data_f[column] = []
@@ -805,8 +758,12 @@ class FichajesAuto(ttk.Frame):
         for i, column in enumerate(columns):
             data_f[column] = []
             for row in self.events_bitacora:
-                data_f[column].append(row[i])
+                if column == "Nombre":
+                    data_f[column].append(row[i].upper())
+                else:
+                    data_f[column].append(row[i])
         self.dfb = pd.DataFrame.from_dict(data_f)
+        self.file_selected_2 = True
 
 
 class FichajesManual(ttk.Frame):
@@ -819,12 +776,13 @@ class FichajesManual(ttk.Frame):
         self.file_selected_1 = False
         self.file_selected_2 = False
         self.file_selected_3 = False
-        self.contracts = None
+        self.svar_date_file = ttk.StringVar()
+        self.dfb = None
         self.files_ternium, self.files_oct, self.files_fichaje = self.list_files_type()
         (self.dff, self.days_late_f, self.days_extra_f,
          self.dft, self.days_late_t, self.days_extra_t,
-         self.days_faltas_op, self.data_con_emp_op, self.days_late_op,
-         self.days_extra_op, self.days_prima_op,
+         self.absences_bit, self.data_con_emp_op, self.lates_bit,
+         self.extras_bit, self.primes_bit,
          self.max_date_g, self.min_date_g) = create_var_none(13)
         (self.svar_wd_f, self.svar_late_f, self.svar_nday_extra_f, self.svar_wd_intime_f,
          self.svar_late_hours_f, self.svar_tot_extra_hours_f, self.svar_late_h_by_day_f,
@@ -876,7 +834,7 @@ class FichajesManual(ttk.Frame):
         frame_inputs2 = ttk.Frame(self.group_2, padding=5)
         frame_inputs2.grid(row=0, column=0, sticky="nswe")
         # frame_inputs2.columnconfigure((0, 1), weight=1)
-        self.name_oct_selector = self.create_inputs_o(frame_inputs2)
+        self.name_oct_selector, self.date_selector_bit = self.create_inputs_o(frame_inputs2)
         # -------labels result file 2-------
         frame_info2 = ttk.Frame(self.group_2, padding=5)
         frame_info2.grid(row=1, column=0, sticky="nswe")
@@ -910,16 +868,32 @@ class FichajesManual(ttk.Frame):
         self.file_selected_1 = False
         self.file_selected_2 = False
         self.file_selected_3 = False
-        self.contracts = None
         self.files_ternium, self.files_oct, self.files_fichaje = self.list_files_type()
+
+    def on_date_selected_bitacora(self, *args):
+        date = self.svar_date_file.get()
+        if date == "":
+            return
+        print("date", date)
+        date = datetime.strptime(date, "%Y-%m-%d")
+        events_bitacora, columns = get_events_op_date(date, True, False)
+        # create dataframe pandas
+        data_f = {}
+        for i, column in enumerate(columns):
+            data_f[column] = []
+            for row in events_bitacora:
+                if column == "Nombre":
+                    data_f[column].append(row[i].upper())
+                else:
+                    data_f[column].append(row[i])
+        self.dfb = pd.DataFrame.from_dict(data_f)
+        names_list = self.dfb["Nombre"].unique().tolist()
+        self.name_oct_selector.configure(values=names_list)
+        self.file_selected_2 = True
 
     def on_file_selected(self, event):
         filename = event.widget.get()
-        if "OCT" in filename:
-            self.generate_data_files_oct(self.files[filename]["path"])
-            self.file_selected_2 = True
-        else:
-            self.data_files_fichaje(self.files[filename]["path"])
+        self.data_files_fichaje(self.files[filename]["path"])
 
     def list_files_type(self):
         files_ternium = []
@@ -1062,7 +1036,7 @@ class FichajesManual(ttk.Frame):
     def select_day_faltas(self, event):
         date = event.widget.get()
         # date = self.days_missing_selector.get()
-        for day, comment in self.days_faltas_op:
+        for day, comment, value in self.absences_bit:
             if day == date:
                 self.svar_com_missed_days.set(comment)
                 break
@@ -1070,15 +1044,15 @@ class FichajesManual(ttk.Frame):
     def select_day_late2(self, event):
         date = event.widget.get()
         # date = self.days_late_selector2.get()
-        for day, comment in self.days_late_op:
+        for day, comment, value in self.lates_bit:
             if day == date:
-                self.svar_com_late_op.set(comment)
+                self.svar_com_late_op.set(str(value) + " horas. " + comment)
                 break
 
     def select_day_extra2(self, event):
         date = event.widget.get()
         # date = self.days_extra_selector2.get()
-        for day, comment, value in self.days_extra_op:
+        for day, comment, value in self.extras_bit:
             if day == date:
                 self.svar_com_extra_op.set(str(value) + " horas. " + comment)
                 break
@@ -1086,7 +1060,7 @@ class FichajesManual(ttk.Frame):
     def select_day_primas(self, event):
         date = event.widget.get()
         # date = self.days_primas_selector.get()
-        for day, comment in self.days_prima_op:
+        for day, comment, value in self.primes_bit:
             if day == date:
                 self.svar_com_primas_op.set(comment)
                 break
@@ -1218,24 +1192,27 @@ class FichajesManual(ttk.Frame):
         else:
             print("no data selected")
 
-    def select_name_oct(self, event):
+    def on_name_selected_bitacora(self, event):
+        df_name = self.dfb[self.dfb["Nombre"] == event.widget.get()]
+        id_emp = df_name["ID"].to_list()[0]
         if event.widget.get() != "no name selected":
-            (self.data_con_emp_op, self.days_faltas_op, self.days_late_op, self.days_extra_op,
-             total_extra2, self.days_prima_op) = cb.get_info_o_file_name(
-                contracts=self.contracts, name=event.widget.get(), flag=self.file_selected_2)
+            (days_absence_bit, days_extra_bit, days_primes_bit, days_lates_bit,
+             self.absences_bit, self.extras_bit, self.primes_bit, self.lates_bit, normals_bit,
+             contract) = cb.get_info_bitacora(
+                self.dfb, name=event.widget.get(), id_emp=id_emp, flag=self.file_selected_2)
             update_stringvars(
-                [(self.svar_missed_days, f'Dias con falta: {len(self.days_faltas_op)}.'),
-                 (self.svar_late_op, f'Dias tarde: {len(self.days_late_op)}.'),
+                [(self.svar_missed_days, f'Dias con falta: {days_absence_bit[0]}.'),
+                 (self.svar_late_op, f'Dias tarde: {days_lates_bit[0]}.\nTotal de horas tarde: {days_lates_bit[1]}'),
                  (self.svar_extra_hours_op,
-                  f'Dias con horas extra: {len(self.days_extra_op)}.\nTotal de horas extra: {total_extra2}'),
-                 (self.svar_primas_op, f'Dias con prima: {len(self.days_prima_op)}.'),
+                  f'Dias con horas extra: {days_extra_bit[0]}.\nTotal de horas extra: {days_extra_bit[1]}'),
+                 (self.svar_primas_op, f'Dias con prima: {days_primes_bit[0]}.'),
                  (self.svar_com_missed_days, ""),
                  (self.svar_com_late_op, ""),
                  (self.svar_com_extra_op, ""),
                  (self.svar_com_primas_op, "")])
-            self.update_late_extra_days_oct()
-            data_chart = {"data": {'Faltas': len(self.days_faltas_op), 'Tarde': len(self.days_late_op),
-                                   'Extras': len(self.days_extra_op), 'Primas': len(self.days_prima_op)},
+            self.update_late_extra_days_bitacora()
+            data_chart = {"data": {'Faltas': days_lates_bit[0], 'Extras': days_extra_bit[0],
+                                   'Tarde': days_absence_bit[0], 'Primas': days_primes_bit[0]},
                           "title": f"Datos de {event.widget.get()}",
                           "ylabel": "Dias"
                           }
@@ -1296,18 +1273,18 @@ class FichajesManual(ttk.Frame):
                 (self.svar_tot_extra_hours_t, f'Total horas extras: \n{round(total_extra / 3600, 2)}')
             ])
 
-    def update_late_extra_days_oct(self):
+    def update_late_extra_days_bitacora(self):
         faltas_keys = []
         late_keys2 = []
         extra_keys2 = []
         primas_keys = []
-        for date, comment in self.days_faltas_op:
+        for date, comment, value in self.absences_bit:
             faltas_keys.append(str(date))
-        for date, comment in self.days_late_op:
+        for date, comment, value in self.lates_bit:
             late_keys2.append(str(date))
-        for date, comment, value in self.days_extra_op:
+        for date, comment, value in self.extras_bit:
             extra_keys2.append(str(date))
-        for date, comment in self.days_prima_op:
+        for date, comment, value in self.primes_bit:
             primas_keys.append(str(date))
         if len(faltas_keys) == 0:
             faltas_keys.append("no data")
@@ -1375,14 +1352,16 @@ class FichajesManual(ttk.Frame):
                 label_time_in, label_time_out, name_emp_selector)
 
     def create_inputs_o(self, master):
-        create_label(master, text='Archivos: ', row=0, column=0, sticky="n", width=10)
-        file_oct_selector = create_Combobox(
-            master, values=self.files_oct, state="readonly",
-            row=0, column=1, width=30, sticky="n")
-        file_oct_selector.bind("<<ComboboxSelected>>", self.on_file_selected)
+        create_label(master, text='Fecha: ', row=0, column=0, sticky="n", width=10)
+        self.svar_date_file.set(datetime.now().strftime("%Y-%m-%d"))
+        date_selector = DateEntry(master,
+                                  dateformat="%Y-%m-%d", firstweekday=0)
+        date_selector.entry.configure(textvariable=self.svar_date_file)
+        date_selector.grid(row=0, column=1, sticky="n")
+        self.svar_date_file.trace("w", self.on_date_selected_bitacora)
         create_label(master, text='Empleado: ', row=1, column=0, sticky="n", width=10)
         names_oct = create_Combobox(
             master, values=["no name selected"], state="readonly",
             row=1, column=1, width=30, sticky="n")
-        names_oct.bind("<<ComboboxSelected>>", self.select_name_oct)
-        return names_oct
+        names_oct.bind("<<ComboboxSelected>>", self.on_name_selected_bitacora)
+        return names_oct, date_selector

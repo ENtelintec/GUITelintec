@@ -2,16 +2,14 @@
 __author__ = 'Edisson Naula'
 __date__ = '$ 22/ene./2024  at 16:09 $'
 
+import json
 from datetime import datetime
-from math import comb
 
 from PIL import Image, ImageTk
 
 from static.extensions import cache_file_resume_fichaje
 from templates.Functions_Files import get_fichajes_resume_cache, update_fichajes_resume_cache
-from templates.Functions_SQL import get_fichaje_DB, update_fichaje_DB, insert_new_fichaje_DB
-
-import json
+from templates.Functions_SQL import get_fichaje_DB
 
 carpeta_principal = "img"
 
@@ -393,9 +391,10 @@ def get_place_incidence_from_comment(comment: str):
     return place, activity
 
 
-def get_events_op_date(date: datetime, hard_update):
+def get_events_op_date(date: datetime, hard_update, only_op=True):
     """
     Get the events of the date.
+    :param only_op:
     :param hard_update: update from db
     :param date: The date.
     :return: The events.
@@ -403,7 +402,7 @@ def get_events_op_date(date: datetime, hard_update):
     data_events = []
     fichajes_resume, flag = get_fichajes_resume_cache(cache_file_resume_fichaje, hard_update=hard_update)
     for row in fichajes_resume:
-        (id_emp, name, contract, faltas, tardanzas, extras, extras_value, primas,
+        (id_emp, name, contract, faltas, tardanzas, tardanzas_value, extras, extras_value, primas,
          absences_dic, lates_dic, extras_dic, primes_dic, normal_dic) = row
         data_absences = get_data_from_dict_by_date(absences_dic, date, "falta")
         data_lates = get_data_from_dict_by_date(lates_dic, date, "atraso")
@@ -414,7 +413,7 @@ def get_events_op_date(date: datetime, hard_update):
                                                  [data_absences, data_lates, data_extras, data_primes, data_normal])
         for item in data_events_emp:
             if item is not None:
-                if item[2] != "None":
+                if item[2] != "None" or not only_op:
                     data_events.append(item)
     columns = ("ID", "Nombre", "Contrato", "Evento", "Lugar", "Actividad", "Timestamp", "Valor", "Comentario")
     return data_events, columns
