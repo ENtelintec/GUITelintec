@@ -8,6 +8,7 @@ from tkinter import IntVar
 
 import ttkbootstrap as ttk
 from ttkbootstrap.dialogs import Messagebox
+from ttkbootstrap.scrolled import ScrolledFrame
 
 from static.extensions import quizzes_RRHH, quizz_out_path
 from templates.Functions_SQL import get_id_name_employee
@@ -19,7 +20,8 @@ from templates.PDFGenerator import (
 )
 
 
-def get_name_id_employees_list(department: int, is_all: bool) -> tuple[list[str], list[tuple[str, int, str, str, dict]]]:
+def get_name_id_employees_list(department: int, is_all: bool) -> tuple[
+    list[str], list[tuple[str, int, str, str, dict]]]:
     flag, error, out = get_id_name_employee(department, is_all)
     names = []
     aux = []
@@ -35,7 +37,7 @@ def get_name_id_employees_list(department: int, is_all: bool) -> tuple[list[str]
 
 
 class QuizMaker(ttk.Frame):
-    def __init__(self, master, dict_quizz, title=None, tipo_op=0, out_path=quizz_out_path, metadata: dict = None):
+    def __init__(self, master, dict_quizz, title=None, tipo_id=0, out_path=quizz_out_path, metadata: dict = None):
         super().__init__(master)
         self.quizz_out_path = out_path
         self.q_no = 0
@@ -46,7 +48,9 @@ class QuizMaker(ttk.Frame):
         self.opt_selected = []
         self.data_size = len(self.dict_quizz)
         self.correct = 0
-        self.tipoOp = tipo_op
+        self.tipo_quizz = tipo_id
+        self.last_default = False
+        self.questions_default = []
         # ----------widgets-------------
         self.columnconfigure(0, weight=1)
         self.rowconfigure(1, weight=1)
@@ -55,8 +59,8 @@ class QuizMaker(ttk.Frame):
         self.frame_questions.grid(row=1, column=0, padx=10, pady=10, sticky="nswe")
         self.frame_questions.columnconfigure(0, weight=1)
         self.frame_questions.rowconfigure(1, weight=1)
-        self.frame_options = ttk.Frame(self.frame_questions)
-        self.frame_options.grid(row=1, column=0, padx=20, pady=10, sticky="n")
+        self.frame_options = ScrolledFrame(self.frame_questions, autohide=True)
+        self.frame_options.grid(row=1, column=0, padx=20, pady=10, sticky="nswe")
         self.frame_options.columnconfigure((0, 1, 2, 3, 4, 5), weight=1)
         self.frame_options.rowconfigure((0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10), weight=1)
         self.frame_buttons = ttk.Frame(self)
@@ -76,8 +80,8 @@ class QuizMaker(ttk.Frame):
         self.frame_questions.grid(row=1, column=0, padx=20, pady=10, sticky="nswe")
         self.frame_questions.columnconfigure(0, weight=1)
         self.frame_questions.rowconfigure(1, weight=1)
-        self.frame_options = ttk.Frame(self.frame_questions)
-        self.frame_options.grid(row=1, column=0, padx=10, pady=10, sticky="n")
+        self.frame_options = ScrolledFrame(self.frame_questions, autohide=True)
+        self.frame_options.grid(row=1, column=0, padx=10, pady=10, sticky="nswe")
         self.frame_options.columnconfigure((0, 1, 2, 3, 4, 5), weight=1)
         self.frame_options.rowconfigure((0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10), weight=1)
 
@@ -86,7 +90,7 @@ class QuizMaker(ttk.Frame):
         title.grid(row=0, column=0, padx=10, pady=10, sticky="n")
 
     def display_result(self):
-        dict_results = calculate_results_quizzes(self.dict_quizz, self.tipoOp)
+        dict_results = calculate_results_quizzes(self.dict_quizz, self.tipo_quizz)
         Messagebox.show_info(
             title="Result",
             message=f"Your final result is:\n"
@@ -100,9 +104,10 @@ class QuizMaker(ttk.Frame):
         self.q_no += 1
         if self.q_no == self.data_size:
             self.display_result()
-            self.update_dict_quizz(self.dict_quizz, tipo_op=self.tipoOp)
+            self.update_dict_quizz(self.dict_quizz, tipo_op=self.tipo_quizz)
             self.destroy()
         else:
+            self.check_especial_case()
             self.recreate_frames()
             self.display_question()
             self.entries = self.display_options()
@@ -171,6 +176,7 @@ class QuizMaker(ttk.Frame):
                         row=index_y + 2, column=0, sticky="w", pady=3
                     )
                     q_list.append(IntVar())
+                    index_x = 0
                     for index_x, subitem in enumerate(options):
                         ttk.Radiobutton(
                             self.frame_options,
@@ -178,6 +184,8 @@ class QuizMaker(ttk.Frame):
                             variable=q_list[-1],
                             value=index_x,
                         ).grid(row=index_y + 2, column=index_x + 1, sticky="n", pady=3)
+                    if self.last_default and self.q_no in self.questions_default:
+                        q_list[-1].set(index_x)
             case _:
                 txt_entry = ttk.Text(self.frame_options, height=4, width=50)
                 txt_entry.grid(row=1, column=0, sticky="nswe", padx=10, pady=10)
@@ -197,7 +205,6 @@ class QuizMaker(ttk.Frame):
                 self.opt_selected.append([])
                 for i, opt in enumerate(self.entries):
                     self.opt_selected[-1].append((i, opt.get()))
-
             case _:
                 self.opt_selected.append(self.entries[0].get("1.0", "end-1c"))
         self.dict_quizz[str(self.q_no)]["answer"] = self.opt_selected[-1]
@@ -214,44 +221,49 @@ class QuizMaker(ttk.Frame):
         file_out = self.quizz_out_path + f"{name_emp.replace(' ', '')}_{date_inteview.replace('/', '-')}_type_{tipo_op}.pdf"
         if tipo_op == 0:
             create_pdf_quizz_salida(
-                self.dict_quizz,
-                None,
-                file_out,
-                name_emp,
-                job,
-                terminal,
-                date_start,
-                date_end,
-                date_inteview,
+                self.dict_quizz, None, file_out, name_emp, job, terminal, date_start, date_end, date_inteview,
                 name_interviewer,
             )
         elif tipo_op == 1:
             create_pdf__quizz_nor035_v1(
-                self.dict_quizz,
-                None,
-                file_out,
-                name_emp,
-                job,
-                terminal,
-                date_start,
-                date_end,
-                date_inteview,
-                name_interviewer,
+                self.dict_quizz, None, file_out, name_emp, job, terminal, date_start, date_end, date_inteview,
+                name_interviewer
             )
         elif tipo_op == 2:
             create_pdf_quizz_nor035_50_plus(
-                self.dict_quizz,
-                None,
-                file_out,
-                name_emp,
-                job,
-                terminal,
-                date_start,
-                date_end,
-                date_inteview,
-                name_interviewer,
+                self.dict_quizz, None, file_out, name_emp, job, terminal, date_start, date_end, date_inteview,
+                name_interviewer
             )
         print(f"quizz update and pdf generated at {file_out}")
+
+    def check_especial_case(self):
+        match self.tipo_quizz:
+            case 1:
+                if self.q_no - 1 == 0:
+                    all_no_selected = all(opt == 0 for _, opt in self.opt_selected[-1])
+                    self.last_default = not all_no_selected
+                    self.questions_default = [1, 2, 3] if not all_no_selected else []
+                elif self.q_no - 1 == 10:
+                    all_no_selected = all(opt == 0 for _, opt in self.opt_selected[-1])
+                    self.last_default = not all_no_selected
+                    self.questions_default = [11] if not all_no_selected else []
+                elif self.q_no - 1 == 12:
+                    all_no_selected = all(opt == 0 for _, opt in self.opt_selected[-1])
+                    self.last_default = not all_no_selected
+                    self.questions_default = [13] if not all_no_selected else []
+            case 2:
+                if self.q_no - 1 == 0:
+                    all_no_selected = all(opt == 0 for _, opt in self.opt_selected[-1])
+                    self.last_default = not all_no_selected
+                    self.questions_default = [1, 2, 3] if not all_no_selected else []
+                elif self.q_no - 1 == 10:
+                    all_no_selected = all(opt == 0 for _, opt in self.opt_selected[-1])
+                    self.last_default = not all_no_selected
+                    self.questions_default = [11] if not all_no_selected else []
+                elif self.q_no - 1 == 12:
+                    all_no_selected = all(opt == 0 for _, opt in self.opt_selected[-1])
+                    self.last_default = not all_no_selected
+                    self.questions_default = [13] if not all_no_selected else []
 
 
 class FrameEncuestas(ttk.Frame):
@@ -269,7 +281,7 @@ class FrameEncuestas(ttk.Frame):
         self.quizz = None
         self.dict_quizz = None
         self.filepath = None
-        self.tipoOp = None
+        self.tipo_id = None
         self.interviewer = interviewer
         # ----------widgets-------------
         frame_inputs = ttk.Frame(self)
@@ -315,7 +327,7 @@ class FrameEncuestas(ttk.Frame):
                 self.filepath = item["path"]
                 flag = True
                 self.dict_quizz = json.load(open(self.filepath, encoding="utf-8"))
-                self.tipoOp = item["type"]
+                self.tipo_id = item["type"]
                 break
         if not flag:
             self.filepath = None
@@ -352,7 +364,7 @@ class FrameEncuestas(ttk.Frame):
         name_quizz = self.quizz_selector.get()
         self.dict_quizz = json.load(open(self.filepath, encoding="utf-8"))
         self.quizz = QuizMaker(self.frame_encuesta, self.dict_quizz, title=name_quizz,
-                               tipo_op=self.tipoOp, out_path=self.quizz_out_path,
+                               tipo_id=self.tipo_id, out_path=self.quizz_out_path,
                                metadata=metadata)
         self.quizz.grid(row=0, column=0, padx=10, pady=10, sticky="nswe")
 

@@ -5,10 +5,10 @@
             "Ha presenciado o sufrido alguna vez, durante o con motivo en su trabajo actual, un acontecimiento como los siguientes:",
             "*Accidente que tenga como consecuencia la muerte, pérdida de un miembro corporal o una lesión grave",
             "*Asaltos",
-            " *Actos violentos que derivaron en lesiones graves.",
-            " *Secuestro",
-            " *Amenazas",
-            " *Cualquier otro que ponga en riesgo su vida o salud y/o la de otras personas."
+            "*Actos violentos que derivaron en lesiones graves.",
+            "*Secuestro",
+            "*Amenazas",
+            "*Cualquier otro que ponga en riesgo su vida o salud y/o la de otras personas."
         ],
         "options": [
             "SI",
