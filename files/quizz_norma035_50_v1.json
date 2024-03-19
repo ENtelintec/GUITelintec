@@ -8,9 +8,7 @@
             " *Actos violentos que derivaron en lesiones graves.",
             " *Secuestro",
             " *Amenazas",
-            " *Cualquier otro que ponga en riesgo su vida o salud y/o la de otras personas.",
-            "  *",
-            "  NOTA: Si en esta SECCIÓN  I.- Acontecimiento traumático severo  tu respuesta es NO, en las siguientes secciones de esta HOJA vas a seleccionar NO a TODAS."
+            " *Cualquier otro que ponga en riesgo su vida o salud y/o la de otras personas."
         ],
         "options": [
             "SI",
@@ -21,7 +19,7 @@
         "items": ""
     },
     "1": {
-        "question": "II.- Recuerdos persistentes sobre el acontecimiento (durante el último mes):*",
+        "question": "II.- Recuerdos persistentes sobre el acontecimiento (durante el último mes):",
         "subquestions": [
             "¿Ha tenido recuerdos recurrentes sobre el acontecimiento que le provocan malestares?",
             "¿Ha tenido sueños de carácter recurrente sobre el acontecimiento, que le producen malestar?"
@@ -31,7 +29,7 @@
             "NO"
         ],
         "answer": 0,
-        "type": 0,
+        "type": 3,
         "items": ""
     },
     "2": {
@@ -54,7 +52,7 @@
         "items": ""
     },
     "3": {
-        "question": "IV.- Afectación (durante el último mes):*",
+        "question": "IV.- Afectación (durante el último mes):",
         "subquestions": [
             "¿Ha tenido usted dificultades para dormir?",
             "¿Ha estado particularmente irritable o le han dado arranques de coraje?",
@@ -72,7 +70,7 @@
     },
 
     "4": {
-        "question": "Para responder las preguntas siguientes considere las condiciones de su centro de trabajo, así como la cantidad y ritmo de trabajo.*",
+        "question": "Para responder las preguntas siguientes considere las condiciones de su centro de trabajo, así como la cantidad y ritmo de trabajo.",
         "subquestions": [
             "Q1. Mi trabajo me exige hacer mucho esfuerzo físico.",
             "Q2. Me preocupa sufrir un accidente en mi trabajo.",
@@ -96,7 +94,7 @@
         "items": [1, 9]
     },
     "5": {
-        "question": "Las preguntas siguientes están relacionadas con las actividades que realiza en su trabajo y las responsabilidades que tiene.*",
+        "question": "Las preguntas siguientes están relacionadas con las actividades que realiza en su trabajo y las responsabilidades que tiene.",
         "subquestions": [
             "Q10. En mi trabajo soy responsable de cosas de mucho valor.",
             "Q11. Respondo ante mi jefe por los resultados de toda mi área de trabajo.",
@@ -115,7 +113,7 @@
         "items": [10, 13]
     },
     "6": {
-        "question": "Las preguntas siguientes están relacionadas con el tiempo destinado a su trabajo y sus responsabilidades familiares.*",
+        "question": "Las preguntas siguientes están relacionadas con el tiempo destinado a su trabajo y sus responsabilidades familiares.",
         "subquestions": [
             "Q14. Trabajo horas extras más de tres veces a la semana.",
             "Q15. Mi trabajo me exige laborar en días de descanso, festivos o fines de semana.",
@@ -134,7 +132,7 @@
         "items": [14, 17]
     },
     "7": {
-        "question": "Las preguntas siguientes están relacionadas con las decisiones que puede tomar en su trabajo.*",
+        "question": "Las preguntas siguientes están relacionadas con las decisiones que puede tomar en su trabajo.",
         "subquestions": [
             "Q18. Mi trabajo permite que desarrolle nuevas habilidades.",
             "Q19. En mi trabajo puedo aspirar a un mejor puesto.",
@@ -154,7 +152,7 @@
         "items": [18, 22]
     },
     "8": {
-        "question": "Las preguntas siguientes están relacionadas con la capacitación e información que recibe sobre su trabajo.*",
+        "question": "Las preguntas siguientes están relacionadas con la capacitación e información que recibe sobre su trabajo.",
         "subquestions": [
             "Q23. Me informan con claridad cuáles son mis funciones.",
             "Q24. Me explican claramente los resultados que debo obtener en mi trabajo.",
@@ -174,7 +172,7 @@
         "items": [23, 27]
     },
     "9": {
-        "question": "Las preguntas siguientes se refieren a las relaciones con sus compañeros de trabajo y su jefe.*",
+        "question": "Las preguntas siguientes se refieren a las relaciones con sus compañeros de trabajo y su jefe.",
         "subquestions": [
             "Q28. Mi jefe tiene en cuenta mis puntos de vista y opiniones.",
             "Q29. Mi jefe ayuda a solucionar los problemas que se presentan en el trabajo.",
@@ -202,7 +200,7 @@
         "items": [28, 40]
     },
     "10": {
-        "question": "Las preguntas siguientes están relacionadas con la atención a clientes y usuarios.*",
+        "question": "Las preguntas siguientes están relacionadas con la atención a clientes y usuarios.",
         "subquestions": [
             "En mi trabajo debo brindar servicio a clientes o usuarios."
         ],
@@ -215,7 +213,7 @@
         "items": ""
     },
     "11": {
-        "question": "Si su respuesta fue “SÍ”, responda las preguntas siguientes.\nSi su respuesta fue “NO” seleccione la opción (NO APLICA)*",
+        "question": "Si su respuesta fue “SÍ”, responda las preguntas siguientes.\nSi su respuesta fue “NO” seleccione la opción (NO APLICA)",
         "subquestions": [
             "Q41. Atiendo clientes o usuarios muy enojados.",
             "Q42. Mi trabajo me exige atender personas muy necesitadas de ayuda o enfermas.",
@@ -234,7 +232,7 @@
         "items": [41, 43]
     },
     "12": {
-        "question": "Soy jefe de otros trabajadores:*",
+        "question": "Soy jefe de otros trabajadores:",
         "subquestions": [
             "Soy jefe de otros trabajadores."
         ],
@@ -247,7 +245,7 @@
         "items": ""
     },
     "13": {
-        "question": "Si su respuesta fue “SÍ”, responda las preguntas siguientes.\nSi su respuesta fue “NO” seleccione la opción (NO APLICA)*",
+        "question": "Si su respuesta fue “SÍ”, responda las preguntas siguientes.\nSi su respuesta fue “NO” seleccione la opción (NO APLICA)",
         "subquestions": [
             "Q44. Comunican tarde los asuntos de trabajo.",
             "Q45. Dificultan el logro de los resultados del trabajo.",
