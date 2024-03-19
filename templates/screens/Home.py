@@ -12,17 +12,10 @@ class HomeScreen(ttk.Frame):
         self.master = master
         self.columnconfigure((0, 1), weight=1)
         self._data = DataHandler()
-        self._total_profit = self._data._order.get_profit()
-        self._total_orders = len(self._data._order.get_all_orders())
-        self._total_returns = 0
+        self._total_profit = int(len(self._data._order.get_total_products()))
+        self._total_orders = int(len(self._data._order.get_all_orders()))
+        # self._total_returns = 0
         self.create_content(self)
-
-    def verify_profit(self):
-        if self._total_profit[0][0] == None:
-            return 0
-        else:
-            # return int(self._total_profit[0][0])
-            return 0
 
     def create_content(self, parent):
         """
@@ -36,13 +29,13 @@ class HomeScreen(ttk.Frame):
         chart_profit = ttk.Meter(
             self,
             bootstyle="success",
-            amountused=self.verify_profit(),
+            amountused=self._total_orders,
             amounttotal=int("500000"),
             textleft="$",
             metertype="full",
             padding=10,
             stripethickness=10,
-            subtext="Ingresos",
+            subtext="Total de Ordenes",
         )
         chart_profit.grid(row=1, column=0, sticky="nsew")
 
@@ -50,39 +43,39 @@ class HomeScreen(ttk.Frame):
         chart_orders = ttk.Meter(
             self,
             bootstyle="info",
-            amountused=int(self._total_orders),
+            amountused=self._total_profit,
             amounttotal=int("500000"),
             textleft="$",
             metertype="full",
             padding=10,
             stripethickness=10,
-            subtext="Pedidos",
+            subtext="Productos Vendidos",
         )
         chart_orders.grid(row=1, column=1, sticky="nsew")
 
-        # chart 3
-        chart_returns = ttk.Meter(
-            self,
-            bootstyle="danger",
-            amountused=0,
-            amounttotal=int("500000"),
-            textleft="$",
-            metertype="full",
-            padding=10,
-            stripethickness=10,
-            subtext="Devoluciones",
-        )
-        chart_returns.grid(row=2, column=0, sticky="nsew")
-        # Chart 4
-        chart_profit = ttk.Meter(
-            self,
-            bootstyle="success",
-            amountused=0,
-            amounttotal=int("500000"),
-            textleft="$",
-            metertype="full",
-            padding=10,
-            stripethickness=10,
-            subtext="Egresos",
-        )
-        chart_profit.grid(row=2, column=1, sticky="nsew")
+        # # chart 3
+        # chart_returns = ttk.Meter(
+        #     self,
+        #     bootstyle="danger",
+        #     amountused=0,
+        #     amounttotal=int("500000"),
+        #     textleft="$",
+        #     metertype="full",
+        #     padding=10,
+        #     stripethickness=10,
+        #     subtext="Devoluciones",
+        # )
+        # chart_returns.grid(row=2, column=0, sticky="nsew")
+        # # Chart 4
+        # chart_profit = ttk.Meter(
+        #     self,
+        #     bootstyle="success",
+        #     amountused=0,
+        #     amounttotal=int("500000"),
+        #     textleft="$",
+        #     metertype="full",
+        #     padding=10,
+        #     stripethickness=10,
+        #     subtext="Egresos",
+        # )
+        # chart_profit.grid(row=2, column=1, sticky="nsew")

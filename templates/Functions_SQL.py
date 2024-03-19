@@ -18,13 +18,17 @@ def execute_sql(sql: str, values: tuple = None, type_sql=1):
     :param values: values for sql query
     :return:
     """
-    mydb = mysql.connector.connect(
-        host=secrets["HOST_DB_AWS"],
-        user=secrets["USER_SQL_AWS"],
-        password=secrets["PASS_SQL_AWS"],
-        database="sql_telintec"
-    )
-    my_cursor = mydb.cursor(buffered=True)
+    try:
+        mydb = mysql.connector.connect(
+            host=secrets["HOST_DB_AWS"],
+            user=secrets["USER_SQL_AWS"],
+            password=secrets["PASS_SQL_AWS"],
+            database="sql_telintec"
+        )
+        my_cursor = mydb.cursor(buffered=True)
+    except Exception as e:
+        print(e)
+        return False, e, []
     out = []
     flag = True
     exception = None
@@ -70,12 +74,17 @@ def execute_sql_multiple(sql: str, values_list: list = None, type_sql=1):
     :param sql: sql query
     :return:
     """
-    mydb = mysql.connector.connect(
-        host=secrets["HOST_DB_AWS"],
-        user=secrets["USER_SQL_AWS"],
-        password=secrets["PASS_SQL_AWS"],
-        database="sql_telintec"
-    )
+    try:
+        mydb = mysql.connector.connect(
+            host=secrets["HOST_DB_AWS"],
+            user=secrets["USER_SQL_AWS"],
+            password=secrets["PASS_SQL_AWS"],
+            database="sql_telintec"
+        )
+        my_cursor = mydb.cursor(buffered=True)
+    except Exception as e:
+        print(e)
+        return False, e, []
     out = []
     flag = True
     error = None
@@ -149,7 +158,7 @@ def update_employee(employee_id, name, lastname, curp, phone, email, department,
     return flag, e, out
 
 
-def get_employee_id_name(name: str) -> tuple[None, None] | tuple[int, str]:
+def get_employee_id_name(name: str) -> tuple[None, str] | tuple[int, str]:
     """
         Get the id of the employee
         :param name: name of the employee
@@ -163,7 +172,7 @@ def get_employee_id_name(name: str) -> tuple[None, None] | tuple[int, str]:
     values = (name, name)
     flag, e, out = execute_sql(sql, values, 1)
     if e is not None or len(out) == 0:
-        return None, None
+        return None, str(e)
     else:
         return out[0], f"{out[1].title()} {out[2].title()}"
 
@@ -212,6 +221,34 @@ def get_name_employee(id_employee: int) -> None | str:
         return None
     else:
         return f"{out[0].upper()} {out[1].upper()}"
+
+
+def get_id_name_employee(department: int, is_all=False):
+    """
+    :param department:
+    :param is_all:
+    :return:
+    """
+    sql = ("SELECT employee_id, name, l_name, puesto, date_admission, departure FROM employees "
+           "WHERE department_id = %s")
+    if is_all:
+        sql = "SELECT employee_id, name, l_name, puesto, date_admission, departure FROM employees"
+        flag, e, out = execute_sql(sql, None, 5)
+    else:
+        values = (department,)
+        flag, e, out = execute_sql(sql, values, 5)
+    return flag, e, out
+
+
+
+def get_employess_op_names():
+    sql = ("SELECT employee_id, name, l_name, contrato FROM employees "
+           "WHERE  department_id = 2")
+    flag, e, out = execute_sql(sql, None, 5)
+    if e is not None:
+        return None
+    else:
+        return out
 
 
 def get_ids_employees(names: list):
@@ -497,14 +534,12 @@ def set_finish_chat(chat_id: str):
 
 def get_username_data(username: str):
     sql = ("select users_system.exp, users_system.timestamp_token, employees.name,"
-           " employees.l_name, employees.department_id, departments.name "
+           " employees.l_name, employees.department_id, departments.name, employees.contrato "
            "from users_system "
            "INNER JOIN employees ON (users_system.emp_id = employee_id and usernames=%s) "
            "INNER JOIN departments on employees.department_id = departments.department_id")
     val = (username,)
-    print(sql, val)
     flag, error, result = execute_sql(sql, val)
-    print(flag, error, result)
     out = None
     if len(result) > 0:
         out = {
@@ -513,7 +548,8 @@ def get_username_data(username: str):
             "name": result[2],
             "lastname": result[3],
             "department_id": result[4],
-            "department_name": result[5]
+            "department_name": result[5],
+            "contract": result[6]
         }
     return out
 
@@ -539,6 +575,36 @@ def get_all_fichajes():
            "FROM sql_telintec.fichajes "
            "INNER JOIN employees ON (fichajes.emp_id = employees.employee_id)")
     flag, error, result = execute_sql(sql, type_sql=2)
+    return flag, error, result
+
+
+def update_fichaje_DB(emp_id: int, contract: str, absences: dict, lates: dict, extras: dict,
+                      primes: dict, normal: dict):
+    sql = ("UPDATE sql_telintec.fichajes "
+           "SET contract = %s, absences = %s, lates = %s, extras = %s, primes = %s, normal = %s "
+           "WHERE emp_id = %s")
+    val = (contract, json.dumps(absences), json.dumps(lates), json.dumps(extras),
+           json.dumps(primes), json.dumps(normal), emp_id)
+    flag, error, result = execute_sql(sql, val, 3)
+    return flag, error, result
+
+
+def insert_new_fichaje_DB(emp_id: int, contract: str, absences: dict, lates: dict, extras: dict,
+                          primes: dict, normals: dict):
+    sql = ("INSERT INTO sql_telintec.fichajes "
+           "(emp_id, contract, absences, lates, extras, primes, normal) "
+           "VALUES (%s, %s, %s, %s, %s, %s, %s)")
+    val = (emp_id, contract, json.dumps(absences), json.dumps(lates),
+           json.dumps(extras), json.dumps(primes), json.dumps(normals))
+    flag, error, result = execute_sql(sql, val, 4)
+    return flag, error, result
+
+
+def get_fichaje_DB(emp_id: int):
+    sql = ("SELECT * FROM sql_telintec.fichajes "
+           "WHERE emp_id = %s")
+    val = (emp_id,)
+    flag, error, result = execute_sql(sql, val, 1)
     return flag, error, result
 
 

@@ -71,7 +71,7 @@ class OrdersScreen(ttk.Frame):
         inputs.grid(row=2, column=0, sticky="nswe")
         inputs.columnconfigure((0, 1, 2, 3), weight=1)
         ttk.Label(
-            inputs, text="Agregar nuevo producto", style="bg.TLabel", font=("Arial", 20)
+            inputs, text="Agregar nueva Orden", style="bg.TLabel", font=("Arial", 20)
         ).grid(row=0, column=0, sticky="w", ipady=5, pady=(16, 0), padx=10)
 
         # dividir el frame en 2, izq y derecha para los inputs

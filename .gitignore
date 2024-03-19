@@ -13,10 +13,17 @@ __pycache__/
 /files/OCT*
 /files/*cache*
 /files/*.csv
+/files/fichaje*.xlsx
 *csv
 /Fill_Vacations.py
 /app_gui.spec
 /dist/
 /build/
 /venv/
+/files/logs/*
+/files/quizz_out/*
 /app_gui.exe
+/files/samplev2.pdf
+/files/*.pdf
+/files/files_fichaje/*
+.env_*

@@ -154,7 +154,7 @@ class EmployeesFrame(ttk.Frame):
         phone = self.entries[3].get()
         email = self.entries[4].get()
         department = self.entries[5].get()
-        contract = self.entries[8].get()
+        contract = self.entries[7].get()
         entry_date = self.entries[8].entry.get()
         rfc = self.entries[9].get()
         nss = self.entries[11].get()

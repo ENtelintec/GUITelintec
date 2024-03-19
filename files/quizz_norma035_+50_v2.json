@@ -17,63 +17,67 @@
             "NO"
         ],
         "answer": "",
-        "type": 3
+        "type": 3,
+        "items": ""
     },
     "1": {
         "question": "Recuerdos persistentes sobre el acontecimiento (durante el último mes):*",
         "subquestions": [
-            "¿Ha tenido recuerdos recurrentes sobre el acontecimiento que le provocan malestares?",
-            "¿Ha tenido sueños de carácter recurrente sobre el acontecimiento, que le producen malestar?"
+            "Q1 ¿Ha tenido recuerdos recurrentes sobre el acontecimiento que le provocan malestares?",
+            "Q2 ¿Ha tenido sueños de carácter recurrente sobre el acontecimiento, que le producen malestar?"
         ],
         "options": [
             "SI",
             "NO"
         ],
         "answer": "",
-        "type": 3
+        "type": 3,
+        "items": [1, 2]
     },
     "2": {
         "question": " Esfuerzo por evitar circunstancias parecidas o asociadas al acontecimiento (durante el último mes):",
         "subquestions": [
-            "¿Se ha esforzado para evitar todo tipo de sentimientos, conversaciones o situaciones que le pueden recordar el acontecimiento?",
-            "¿Se ha esforzado por evitar todo tipo de actividades, lugares o personas que motivan recuerdos del acontecimiento?",
-            "¿Ha tenido dificultad para recordar alguna parte importante del evento?",
-            "¿Ha disminuido su interés en sus actividades cotidianas?",
-            "¿Se ha sentido usted alejado o distante de los demás?",
-            "¿Ha notado que tiene dificultad para expresar sus sentimientos?",
-            "¿Ha tenido la impresión de que su vida se va a acortar, que va a morir antes que otras personas o que tiene un futuro limitado?"
+            "Q3 ¿Se ha esforzado para evitar todo tipo de sentimientos, conversaciones o situaciones que le pueden recordar el acontecimiento?",
+            "Q4 ¿Se ha esforzado por evitar todo tipo de actividades, lugares o personas que motivan recuerdos del acontecimiento?",
+            "Q5 ¿Ha tenido dificultad para recordar alguna parte importante del evento?",
+            "Q6 ¿Ha disminuido su interés en sus actividades cotidianas?",
+            "Q7 ¿Se ha sentido usted alejado o distante de los demás?",
+            "Q8 ¿Ha notado que tiene dificultad para expresar sus sentimientos?",
+            "Q9 ¿Ha tenido la impresión de que su vida se va a acortar, que va a morir antes que otras personas o que tiene un futuro limitado?"
         ],
         "options": [
             "SI",
             "NO"
         ],
         "answer": "",
-        "type": 3
+        "type": 3,
+        "items": [3, 9]
     },
     "3": {
         "question": " Afectación (durante el último mes):*",
         "subquestions": [
-            "¿Ha tenido usted dificultades para dormir?",
-            "¿Ha estado particularmente irritable o le han dado arranques de coraje?",
-            "¿Ha tenido dificultad para concentrarse?",
-            "¿Ha estado nervioso o constantemente en alerta?",
-            "¿Se ha sobresaltado fácilmente por cualquier cosa?"
+            "Q10 ¿Ha tenido usted dificultades para dormir?",
+            "Q11 ¿Ha estado particularmente irritable o le han dado arranques de coraje?",
+            "Q12 ¿Ha tenido dificultad para concentrarse?",
+            "Q13 ¿Ha estado nervioso o constantemente en alerta?",
+            "Q14 ¿Se ha sobresaltado fácilmente por cualquier cosa?"
         ],
         "options": [
             "SI",
             "NO"
         ],
         "answer": "",
-        "type": 3
+        "type": 3,
+        "items": [10, 14]
     },
     "4": {
         "question": "Para responder las preguntas siguientes considere las condiciones ambientales de su centro de trabajo.*",
         "subquestions": [
-            "El espacio donde trabajo me permite realizar mis actividades de manera segura e higiénica.",
-            "Mi trabajo me exige hacer mucho esfuerzo físico.",
-            "Me preocupa sufrir un accidente en mi trabajo.",
-            "Considero que en mi trabajo se aplican las normas de seguridad y salud en el trabajo.",
-            "Considero que las actividades que realizo son peligrosas."
+            "Q15 El espacio donde trabajo me permite realizar mis actividades de manera segura e higiénica.",
+            "Q16 Mi trabajo me exige hacer mucho esfuerzo físico.",
+            "Q17 Me preocupa sufrir un accidente en mi trabajo.",
+            "Q18 Considero que en mi trabajo se aplican las normas de seguridad y salud en el trabajo.",
+            "Q19 Considero que las actividades que realizo son peligrosas."
         ],
         "options": [
             "Siempre",
@@ -83,15 +87,16 @@
             "Nunca"
         ],
         "answer": "",
-        "type": 3
+        "type": 3,
+        "items": [15, 19]
     },
 
     "5": {
         "question": "Para responder a las preguntas siguientes piense en la cantidad y ritmo de trabajo que tiene.*",
         "subquestions": [
-            "Por la cantidad de trabajo que tengo debo quedarme tiempo adicional a mi turno.",
-            "Por la cantidad de trabajo que tengo debo trabajar sin parar.",
-            "Considero que es necesario mantener un ritmo de trabajo acelerado."
+            "Q20 Por la cantidad de trabajo que tengo debo quedarme tiempo adicional a mi turno.",
+            "Q21 Por la cantidad de trabajo que tengo debo trabajar sin parar.",
+            "Q22 Considero que es necesario mantener un ritmo de trabajo acelerado."
         ],
         "options": [
             "Siempre",
@@ -101,146 +106,157 @@
             "Nunca"
         ],
         "answer": "",
-        "type": 3
+        "type": 3,
+        "items": [20, 22]
     },
 
     "6": {
         "question": "Las preguntas siguientes están relacionadas con el esfuerzo mental que le exige su trabajo.*",
         "subquestions": [
-            "Mi trabajo exige que esté muy concentrado.",
-            "Mi trabajo requiere que memorice mucha información.",
-            "En mi trabajo tengo que tomar decisiones difíciles muy rápido.",
-            "Mi trabajo exige que atienda varios asuntos al mismo tiempo."
+            "Q23 Mi trabajo exige que esté muy concentrado.",
+            "Q24 Mi trabajo requiere que memorice mucha información.",
+            "Q25 En mi trabajo tengo que tomar decisiones difíciles muy rápido.",
+            "Q26 Mi trabajo exige que atienda varios asuntos al mismo tiempo."
         ],
         "options": ["Siempre", "Casi siempre", "Algunas veces", "Casi Nunca", "Nunca"],
         "answer": "",
-        "type": 3
+        "type": 3,
+        "items": [23, 26]
     },
 
     "7": {
         "question": "Las preguntas siguientes están relacionadas con las actividades que realiza en su trabajo y las responsabilidades que tiene.*",
         "subquestions": [
-            "En mi trabajo soy responsable de cosas de mucho valor.",
-            "Respondo ante mi jefe por los resultados de toda mi área de trabajo.",
-            "En el trabajo me dan órdenes contradictorias.",
-            "Considero que en mi trabajo me piden hacer cosas innecesarias."
+            "Q27 En mi trabajo soy responsable de cosas de mucho valor.",
+            "Q28 Respondo ante mi jefe por los resultados de toda mi área de trabajo.",
+            "Q29 En el trabajo me dan órdenes contradictorias.",
+            "Q30 Considero que en mi trabajo me piden hacer cosas innecesarias."
         ],
         "options": ["Siempre", "Casi siempre", "Algunas veces", "Casi Nunca", "Nunca"],
         "answer": "",
-        "type": 3
+        "type": 3,
+        "items": [27, 30]
     },
     "8": {
         "question": "Las preguntas siguientes están relacionadas con su jornada de trabajo. *",
         "subquestions": [
-            "Trabajo horas extras más de tres veces a la semana.",
-            "Mi trabajo me exige laborar en días de descanso, festivos o fines de semana.",
-            "Considero que el tiempo en el trabajo es mucho y perjudica mis actividades familiares o personales.",
-            "Debo atender asuntos de trabajo cuando estoy en casa.",
-            "Pienso en las actividades familiares o personales cuando estoy en mi trabajo.",
-            "Pienso que mis responsabilidades familiares afectan mi trabajo."
+            "Q31 Trabajo horas extras más de tres veces a la semana.",
+            "Q32 Mi trabajo me exige laborar en días de descanso, festivos o fines de semana.",
+            "Q33 Considero que el tiempo en el trabajo es mucho y perjudica mis actividades familiares o personales.",
+            "Q34 Debo atender asuntos de trabajo cuando estoy en casa.",
+            "Q35 Pienso en las actividades familiares o personales cuando estoy en mi trabajo.",
+            "Q36 Pienso que mis responsabilidades familiares afectan mi trabajo."
         ],
         "options": ["Siempre", "Casi siempre", "Algunas veces", "Casi Nunca", "Nunca"],
         "answer": "",
-        "type": 3
+        "type": 3,
+        "items": [31, 36]
     },
     "9": {
         "question": "Las preguntas siguientes están relacionadas con las decisiones que puede tomar en su trabajo.*",
         "subquestions": [
-            "Mi trabajo permite que desarrolle nuevas habilidades.",
-            "En mi trabajo puedo aspirar a un mejor puesto.",
-            "Durante mi jornada de trabajo puedo tomar pausas cuando las necesito.",
-            "Puedo decidir cuánto trabajo realizo durante la jornada laboral.",
-            "Puedo decidir la velocidad a la que realizo mis actividades en mi trabajo.",
-            "Puedo cambiar el orden de las actividades que realizo en mi trabajo."
+            "Q37 Mi trabajo permite que desarrolle nuevas habilidades.",
+            "Q38 En mi trabajo puedo aspirar a un mejor puesto.",
+            "Q39 Durante mi jornada de trabajo puedo tomar pausas cuando las necesito.",
+            "Q40 Puedo decidir cuánto trabajo realizo durante la jornada laboral.",
+            "Q41 Puedo decidir la velocidad a la que realizo mis actividades en mi trabajo.",
+            "Q42 Puedo cambiar el orden de las actividades que realizo en mi trabajo."
         ],
         "options": ["Siempre", "Casi siempre", "Algunas veces", "Casi Nunca", "Nunca"],
         "answer": "",
-        "type": 3
+        "type": 3,
+        "items": [37, 42]
     },
     "10": {
         "question": "Las preguntas siguientes están relacionadas con cualquier tipo de cambio que ocurra en su trabajo (considere los últimos cambios realizados).*",
         "subquestions": [
-            "Los cambios que se presentan en mi trabajo dificultan mi labor.",
-            "Cuando se presentan cambios en mi trabajo se tienen en cuenta mis ideas o aportaciones."
+            "Q43 Los cambios que se presentan en mi trabajo dificultan mi labor.",
+            "Q44 Cuando se presentan cambios en mi trabajo se tienen en cuenta mis ideas o aportaciones."
         ],
         "options": ["Siempre", "Casi siempre", "Algunas veces", "Casi Nunca", "Nunca"],
         "answer": "",
-        "type": 3
+        "type": 3,
+        "items": [43, 44]
     },
     "11": {
         "question": "Las preguntas siguientes están relacionadas con la capacitación e información que se le proporciona sobre su trabajo.*",
         "subquestions": [
-            "Me informan con claridad cuáles son mis funciones.",
-            "Me explican claramente los resultados que debo obtener en mi trabajo.",
-            "Me explican claramente los objetivos de mi trabajo.",
-            "Me informan con quién puedo resolver problemas o asuntos de trabajo.",
-            "Me permiten asistir a capacitaciones relacionadas con mi trabajo.",
-            "Recibo capacitación útil para hacer mi trabajo."
+            "Q45 Me informan con claridad cuáles son mis funciones.",
+            "Q46 Me explican claramente los resultados que debo obtener en mi trabajo.",
+            "Q47 Me explican claramente los objetivos de mi trabajo.",
+            "Q48 Me informan con quién puedo resolver problemas o asuntos de trabajo.",
+            "Q49 Me permiten asistir a capacitaciones relacionadas con mi trabajo.",
+            "Q50 Recibo capacitación útil para hacer mi trabajo."
         ],
         "options": ["Siempre", "Casi siempre", "Algunas veces", "Casi Nunca", "Nunca"],
         "answer": "",
-        "type": 3
+        "type": 3,
+        "items": [45, 50]
     },
     "12": {
         "question": "Las preguntas siguientes están relacionadas con el o los jefes con quien tiene contacto.*",
         "subquestions": [
-            "Mi jefe ayuda a organizar mejor el trabajo.",
-            "Mi jefe tiene en cuenta mis puntos de vista y opiniones.",
-            "Mi jefe me comunica a tiempo la información relacionada con el trabajo.",
-            "La orientación que me da mi jefe me ayuda a realizar mejor mi trabajo.",
-            "Mi jefe ayuda a solucionar los problemas que se presentan en el trabajo."
+            "Q51 Mi jefe ayuda a organizar mejor el trabajo.",
+            "Q52 Mi jefe tiene en cuenta mis puntos de vista y opiniones.",
+            "Q53 Mi jefe me comunica a tiempo la información relacionada con el trabajo.",
+            "Q54 La orientación que me da mi jefe me ayuda a realizar mejor mi trabajo.",
+            "Q55 Mi jefe ayuda a solucionar los problemas que se presentan en el trabajo."
         ],
         "options": ["Siempre", "Casi siempre", "Algunas veces", "Casi Nunca", "Nunca"],
         "answer": "",
-        "type": 3
+        "type": 3,
+        "items": [51, 55]
     },
 
     "13": {
         "question": "Las preguntas siguientes se refieren a las relaciones con sus compañeros.*",
         "subquestions": [
-            "Puedo confiar en mis compañeros de trabajo.",
-            "Entre compañeros solucionamos los problemas de trabajo de forma respetuosa.",
-            "En mi trabajo me hacen sentir parte del grupo.",
-            "Cuando tenemos que realizar trabajo de equipo los compañeros colaboran.",
-            "Mis compañeros de trabajo me ayudan cuando tengo dificultades."
+            "Q56 Puedo confiar en mis compañeros de trabajo.",
+            "Q57 Entre compañeros solucionamos los problemas de trabajo de forma respetuosa.",
+            "Q58 En mi trabajo me hacen sentir parte del grupo.",
+            "Q59 Cuando tenemos que realizar trabajo de equipo los compañeros colaboran.",
+            "Q60 Mis compañeros de trabajo me ayudan cuando tengo dificultades."
         ],
         "options": ["Siempre", "Casi siempre", "Algunas veces", "Casi Nunca", "Nunca"],
         "answer": "",
-        "type": 3
+        "type": 3,
+        "items": [56, 60]
     },
     "14": {
         "question": "Las preguntas siguientes están relacionadas con la información que recibe sobre su rendimiento en el trabajo, el reconocimiento, el sentido de pertenencia y la estabilidad que le ofrece su trabajo.*",
         "subquestions": [
-            "Me informan sobre lo que hago bien en mi trabajo.",
-            "La forma como evalúan mi trabajo en mi centro de trabajo me ayuda a mejorar mi desempeño.",
-            "En mi centro de trabajo me pagan a tiempo mi salario.",
-            "El pago que recibo es el que merezco por el trabajo que realizo.",
-            "Si obtengo los resultados esperados en mi trabajo me recompensan o reconocen.",
-            "Las personas que hacen bien el trabajo pueden crecer laboralmente.",
-            "Considero que mi trabajo es estable.",
-            "En mi trabajo existe continua rotación de personal.",
-            "Siento orgullo de laborar en este centro de trabajo.",
-            "Me siento comprometido con mi trabajo."
+            "Q61 Me informan sobre lo que hago bien en mi trabajo.",
+            "Q62 La forma como evalúan mi trabajo en mi centro de trabajo me ayuda a mejorar mi desempeño.",
+            "Q63 En mi centro de trabajo me pagan a tiempo mi salario.",
+            "Q64 El pago que recibo es el que merezco por el trabajo que realizo.",
+            "Q65 Si obtengo los resultados esperados en mi trabajo me recompensan o reconocen.",
+            "Q66 Las personas que hacen bien el trabajo pueden crecer laboralmente.",
+            "Q67 Considero que mi trabajo es estable.",
+            "Q68 En mi trabajo existe continua rotación de personal.",
+            "Q69 Siento orgullo de laborar en este centro de trabajo.",
+            "Q70 Me siento comprometido con mi trabajo."
         ],
         "options": ["Siempre", "Casi siempre", "Algunas veces", "Casi Nunca", "Nunca"],
         "answer": "",
-        "type": 3
+        "type": 3,
+        "items": [61, 70]
     },
     "15": {
         "question": "Las preguntas siguientes están relacionadas con actos de violencia laboral (malos tratos, acoso, hostigamiento, acoso psicológico).*",
         "subquestions": [
-            "En mi trabajo puedo expresarme libremente sin interrupciones.",
-            "Recibo críticas constantes a mi persona y/o trabajo.",
-            "Recibo burlas, calumnias, difamaciones, humillaciones o ridiculizaciones.",
-            "Se ignora mi presencia o se me excluye de las reuniones de trabajo y en la toma de decisiones.",
-            "Se manipulan las situaciones de trabajo para hacerme parecer un mal trabajador.",
-            "Se ignoran mis éxitos laborales y se atribuyen a otros trabajadores.",
-            "Me bloquean o impiden las oportunidades que tengo para obtener ascenso o mejora en mi trabajo.",
-            "He presenciado actos de violencia en mi centro de trabajo."
+            "Q71 En mi trabajo puedo expresarme libremente sin interrupciones.",
+            "Q72 Recibo críticas constantes a mi persona y/o trabajo.",
+            "Q73 Recibo burlas, calumnias, difamaciones, humillaciones o ridiculizaciones.",
+            "Q74 Se ignora mi presencia o se me excluye de las reuniones de trabajo y en la toma de decisiones.",
+            "Q75 Se manipulan las situaciones de trabajo para hacerme parecer un mal trabajador.",
+            "Q76 Se ignoran mis éxitos laborales y se atribuyen a otros trabajadores.",
+            "Q77 Me bloquean o impiden las oportunidades que tengo para obtener ascenso o mejora en mi trabajo.",
+            "Q78 He presenciado actos de violencia en mi centro de trabajo."
         ],
         "options": ["Siempre", "Casi siempre", "Algunas veces", "Casi Nunca", "Nunca"],
         "answer": "",
-        "type": 3
+        "type": 3,
+        "items": [71, 78]
     },
 
 
@@ -248,25 +264,27 @@
         "question": "Las preguntas siguientes están relacionadas con la atención a clientes y usuarios.*",
         "subquestions": [
 
-            "En mi trabajo debo brindar servicio a clientes o usuarios:"
+            "Q79 En mi trabajo debo brindar servicio a clientes o usuarios:"
 
         ],
         "options": ["SI", "NO"],
         "answer": "",
-        "type": 3
+        "type": 3,
+        "items": [79, 79]
     },
 
     "17": {
         "question": "Si su respuesta fue “SÍ”, responda las preguntas siguientes./Si su respuesta fue “NO” seleccione la opción (NO APLICA)",
         "subquestions": [
-            "Atiendo clientes o usuarios muy enojados.",
-            "Mi trabajo me exige atender personas muy necesitadas de ayuda o enfermas.",
-            "Para hacer mi trabajo debo demostrar sentimientos distintos a los míos.",
-            "Mi trabajo me exige atender situaciones de violencia."
+            "Q80 Atiendo clientes o usuarios muy enojados.",
+            "Q81 Mi trabajo me exige atender personas muy necesitadas de ayuda o enfermas.",
+            "Q82 Para hacer mi trabajo debo demostrar sentimientos distintos a los míos.",
+            "Q83 Mi trabajo me exige atender situaciones de violencia."
         ],
         "options": ["Siempre", "Casi siempre", "Algunas veces", "Casi Nunca", "Nunca", "NO APLICA"],
         "answer": "",
-        "type": 3
+        "type": 3,
+        "items": [80, 83]
     },
 
     "18": {
@@ -274,20 +292,22 @@
         "subquestions": [],
         "options": ["SI", "NO"],
         "answer": "",
-        "type": 3
+        "type": 3,
+        "items": ""
     },
 
     "19": {
         "question": "Si su respuesta fue “SÍ”, responda las preguntas siguientes./Si su respuesta fue “NO” seleccione la opción (NO APLICA).  Las preguntas siguientes están relacionadas con las actitudes de las personas que supervisa.*",
         "subquestions": [
-            "Comunican tarde los asuntos de trabajo.",
-            "Dificultan el logro de los resultados del trabajo.",
-            "Cooperan poco cuando se necesita.",
-            "Ignoran las sugerencias para mejorar su trabajo."
+            "Q84 Comunican tarde los asuntos de trabajo.",
+            "Q85 Dificultan el logro de los resultados del trabajo.",
+            "Q86 Cooperan poco cuando se necesita.",
+            "Q87 Ignoran las sugerencias para mejorar su trabajo."
         ],
         "options": ["Siempre", "Casi siempre", "Algunas veces", "Casi Nunca", "Nunca", "NO APLICA"],
         "answer": "",
-        "type": 3
+        "type": 3,
+        "items": [84, 87]
     }
 
 

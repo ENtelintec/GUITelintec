@@ -2,6 +2,7 @@
 __author__ = 'Edisson Naula'
 __date__ = '$ 29/ene./2024  at 15:31 $'
 
+import json
 from typing import Any
 
 import ttkbootstrap as ttk
@@ -9,13 +10,13 @@ from tkinter import StringVar, Misc
 
 from ttkbootstrap.tableview import Tableview
 
-from static.extensions import ventanasApp
+from static.extensions import ventanasApp, conversion_quizzes_path
 from templates.Functions_SQL import get_employees, get_customers, get_departments, get_heads, get_supplier, get_p_and_s, \
     get_orders, get_v_orders, get_purchases, get_tickets, get_users, get_chats
 
 
 def create_label(master, row, column, padx=5, pady=5, text=None, textvariable=None,
-                 font=('Helvetica', 10, 'normal'), columnspan=1, sticky=None):
+                 font=('Helvetica', 10, 'normal'), columnspan=1, sticky=None, **kwargs) -> ttk.Label:
     """
     Create a label with the text-provided
     :param sticky:
@@ -31,9 +32,9 @@ def create_label(master, row, column, padx=5, pady=5, text=None, textvariable=No
     :return: Placed label in the grid
     """
     if text is not None:
-        label = ttk.Label(master, text=text, font=font)
+        label = ttk.Label(master, text=text, font=font, **kwargs)
     else:
-        label = ttk.Label(master, textvariable=textvariable, font=font)
+        label = ttk.Label(master, textvariable=textvariable, font=font, **kwargs)
     if sticky is None:
         label.grid(row=row, column=column, padx=padx, pady=pady, columnspan=columnspan)
     else:
@@ -135,7 +136,7 @@ def create_stringvar(number: int, value: str):
     :param number: number to create the stringvar
     :return: tuple
     """
-    return [ttk.StringVar(value=value) for _ in range(number)]
+    return tuple([ttk.StringVar(value=value) for _ in range(number)])
 
 
 def create_var_none(number: int):
@@ -150,10 +151,16 @@ def create_var_none(number: int):
     return tuple(var_none)
 
 
-def set_dateEntry_new_value(master, entry, value, row, column, padx, pady, sticky="nswe"):
+def set_dateEntry_new_value(master, entry, value, row, column, padx, pady, sticky="nswe",
+                            date_format=None, firstweekday=1):
     entry.destroy()
-    entry = ttk.DateEntry(master,
-                          startdate=value)
+    if date_format is not None:
+        entry = ttk.DateEntry(master,
+                              startdate=value,
+                              dateformat=date_format,
+                              firstweekday=firstweekday)
+    else:
+        entry = ttk.DateEntry(master, startdate=value)
     entry.grid(row=row, column=column, padx=padx, pady=pady, sticky=sticky)
     return entry
 
@@ -396,10 +403,10 @@ def create_widget_input_DB(master, table) -> list:
             entry6 = ttk.Entry(master, width=7)
             entry7 = ttk.Entry(master, width=9)
             var8 = ttk.IntVar()
-            entry8 = ttk.Checkbutton(master, onvalue=1, offvalue=0,  variable=var8,
+            entry8 = ttk.Checkbutton(master, onvalue=1, offvalue=0, variable=var8,
                                      bootstyle="succes, round-toggle")
             var9 = ttk.IntVar()
-            entry9 = ttk.Checkbutton(master, onvalue=1, offvalue=0,  variable=var9,
+            entry9 = ttk.Checkbutton(master, onvalue=1, offvalue=0, variable=var9,
                                      bootstyle="succes, round-toggle")
             entry10 = ttk.Entry(master, width=15)
             entry11 = ttk.Entry(master, width=15)
@@ -438,3 +445,75 @@ def create_btns_DB(
             return btn_insert, btn_update, btn_delete
         case _:
             return None
+
+
+def calculate_results_quizzes(dict_quizz: dict, tipo_q: int):
+    dict_results = {
+        "c_final": 0,
+        "c_dom": 0,
+        "c_cat": 0,
+        "detail": {}
+    }
+    dict_conversions = json.load(open(conversion_quizzes_path, encoding="utf-8"))
+    match tipo_q:
+        case 1:
+            dict_values = dict_conversions["norm035"]["v1"]["conversion"]
+            c_final = 0
+            c_dom = 0
+            c_cat = 0
+            for question in dict_quizz.values():
+                if question["items"] != "":
+                    upper_limit = question["items"][1]
+                    lower_limit = question["items"][0]
+                    answers = question["answer"]
+                    for q in range(lower_limit, upper_limit + 1):
+                        for group in dict_values.values():
+                            items = group["items"]
+                            values = group["values"]
+                            if q in items:
+                                res = values[answers[q - lower_limit][1]]
+                                dict_results["detail"][str(q)] = res
+                                c_final += res
+                                break
+            dict_results["c_final"] = c_final
+            dict_cat_doms = dict_conversions["norm035"]["v1"]["categorias"]
+            dict_results["c_dom"] = {}
+            dict_results["c_cat"] = {}
+
+            for cat_dic in dict_cat_doms.values():
+                cat_name = cat_dic["categoria"]
+                dict_results["c_cat"][cat_name] = 0
+                for dom_name, dom_dic in cat_dic["dominio"].items():
+                    dict_results["c_dom"][dom_name] = 0
+                    for dim_dic in dom_dic["dimensiones"]:
+                        dim_name = dim_dic["dimension"]
+                        items = dim_dic["item"]
+                        for q, val in dict_results["detail"].items():
+                            if int(q) in items:
+                                dict_results["c_dom"][dom_name] += val
+                                dict_results["c_cat"][cat_name] += val
+        case 2:
+            dict_values = dict_conversions["norm035"]["v2"]["conversion"]
+            c_final = 0
+            print(dict_quizz)
+            for question in dict_quizz.values():
+                if question["items"] != "":
+                    print(question["items"])
+                    upper_limit = question["items"][1]
+                    lower_limit = question["items"][0]
+                    answers = question["answer"]
+                    for q in range(lower_limit, upper_limit + 1):
+                        for group in dict_values.values():
+                            items = group["items"]
+                            values = group["values"]
+                            if q in items:
+                                res = values[answers[q - lower_limit][1]]
+                                dict_results["detail"][str(q)] = res
+                                c_final += res
+                                break
+            dict_results["c_final"] = c_final
+        case _:
+            pass
+    return dict_results
+
+

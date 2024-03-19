@@ -2,9 +2,14 @@
 __author__ = 'Edisson Naula'
 __date__ = '$ 22/ene./2024  at 16:09 $'
 
+import json
+from datetime import datetime
+
 from PIL import Image, ImageTk
 
-from templates.Functions_Files import get_fichajes_resume_cache
+from static.extensions import cache_file_resume_fichaje
+from templates.Functions_Files import get_fichajes_resume_cache, update_fichajes_resume_cache
+from templates.Functions_SQL import get_fichaje_DB
 
 carpeta_principal = "img"
 
@@ -23,7 +28,7 @@ def get_image_side_menu(wname, image_path=carpeta_principal):
         "DB": "bd_img_col_!.png",
         "Notificaciones": "not_img_col_re.png",
         "Chats": "chat_light.png",
-        "Settings": "settings_light.png",
+        "Settings": "settings.png",
         "Fichajes": "fichaje.png",
         "Cuenta": "user_robot.png",
         "Examenes": "exam_medical.png",
@@ -38,12 +43,12 @@ def get_image_side_menu(wname, image_path=carpeta_principal):
         "Proveedores (A)": "providers_p.png",
         "Configuraciones (A)": "settings.png",
         "messenger": "messenger.png",
-        "whasapp":  "whasapp.png",
+        "whasapp": "whasapp.png",
         "telegram": "telegram.png",
         "webchat": "webchat.png",
-        "logo":  "telintec-500.png",
-        "Empleados":  "customers_ligth.png",
-        "Clientes":  "employees_ligth.png",
+        "logo": "telintec-500.png",
+        "Empleados": "customers_ligth.png",
+        "Clientes": "employees_ligth.png",
         "Departamentos": "departments_ligth.png",
         "Encargados": "heads_ligth.png",
         "Proveedores": "suppliers_ligth.png",
@@ -81,9 +86,363 @@ def get_image_side_menu(wname, image_path=carpeta_principal):
 def get_data_employees(status="ACTIVO"):
     columns = ("ID", "Nombre", "Contrato", "Faltas", "Tardanzas", "Dias Extra", "Total", "Primas",
                "Detalles Faltas", "Detalles Tardanzas", "Detalles Extras", "Detalles Primas")
-    fichajes_resume, flag = get_fichajes_resume_cache("files/fichajes_resume_cache.pkl")
+    fichajes_resume, flag = get_fichajes_resume_cache(cache_file_resume_fichaje)
     if flag:
         return fichajes_resume, columns
     else:
         print("error at getting data resume")
         return None, None
+
+
+def get_data_employees_ids(ids: list):
+    columns = ("ID", "Nombre", "Contrato", "Faltas", "Tardanzas", "Dias Extra", "Total", "Primas",
+               "Detalles Faltas", "Detalles Tardanzas", "Detalles Extras", "Detalles Primas")
+    fichajes_resume, flag = get_fichajes_resume_cache(cache_file_resume_fichaje)
+    if flag:
+        for row in fichajes_resume:
+            if row[0] not in ids:
+                fichajes_resume.remove(row)
+        return fichajes_resume, columns
+    else:
+        print("error at getting data resume")
+        return None, None
+
+
+def update_bitacora(emp_id: int, event, data):
+    """
+    Update the bitacora.
+    :param emp_id: The id of the employee.
+    :param event: The event.
+    :param data: The data.
+    :return: None.
+    """
+    event_dic = {}
+    contract_sel = data[3]
+    flag, error, result = get_fichaje_DB(emp_id)
+    if flag and len(result) > 0:
+        match event:
+            case "falta":
+                event_dic = json.loads(result[3])
+            case "atraso":
+                event_dic = json.loads(result[4])
+            case "extra":
+                event_dic = json.loads(result[5])
+            case "prima":
+                event_dic = json.loads(result[6])
+            case "normal":
+                event_dic = json.loads(result[7])
+    else:
+        print("error at getting data from db or not data found for the employee")
+    date = datetime.strptime(data[0], "%Y-%m-%d")
+    if str(date.year) not in event_dic.keys():
+        event_dic[str(date.year)] = {}
+        event_dic[str(date.year)][str(date.month)] = {}
+        event_dic[str(date.year)][str(date.month)][str(date.day)] = {
+            "value": data[1],
+            "comment": data[2],
+            "timestamp": date.strftime("%Y-%m-%d %H:%M:%S")
+        }
+    elif str(date.month) not in event_dic[str(date.year)].keys():
+        event_dic[str(date.year)][str(date.month)] = {}
+        event_dic[str(date.year)][str(date.month)][str(date.day)] = {
+            "value": data[1],
+            "comment": data[2],
+            "timestamp": date.strftime("%Y-%m-%d %H:%M:%S")
+        }
+    elif str(date.day) not in event_dic[str(date.year)][str(date.month)].keys():
+        event_dic[str(date.year)][str(date.month)][str(date.day)] = {
+            "value": data[1],
+            "comment": data[2],
+            "timestamp": date.strftime("%Y-%m-%d %H:%M:%S")
+        }
+    fichajes_resume, flag = get_fichajes_resume_cache(cache_file_resume_fichaje)
+    if flag:
+        for i, row in enumerate(fichajes_resume):
+            (id_emp, name, contract, new_faltas, new_tardanzas, new_tardanzas_values,
+             new_extras, new_extras_value, new_primas, absences,
+             lates, extras, primes, normal) = row
+            if id_emp == emp_id:
+                match event:
+                    case "falta":
+                        new_row = [id_emp, name, contract_sel, new_faltas, new_tardanzas, new_tardanzas_values,
+                                   new_extras, new_extras_value, new_primas, event_dic,
+                                   lates, extras, primes, normal]
+                        fichajes_resume[i] = new_row
+                    case "atraso":
+                        new_row = [id_emp, name, contract_sel, new_faltas, new_tardanzas, new_tardanzas_values,
+                                   new_extras, new_extras_value, new_primas, absences,
+                                   event_dic, extras, primes, normal]
+                        fichajes_resume[i] = new_row
+                    case "extra":
+                        new_row = [id_emp, name, contract_sel, new_faltas, new_tardanzas, new_tardanzas_values,
+                                   new_extras, new_extras_value, new_primas, absences,
+                                   lates, event_dic, primes, normal]
+                        fichajes_resume[i] = new_row
+                    case "prima":
+                        new_row = [id_emp, name, contract_sel, new_faltas, new_tardanzas, new_tardanzas_values,
+                                   new_extras, new_extras_value, new_primas, absences,
+                                   lates, extras, event_dic, normal]
+                        fichajes_resume[i] = new_row
+                    case "normal":
+                        new_row = [id_emp, name, contract_sel, new_faltas, new_tardanzas, new_tardanzas_values,
+                                   new_extras, new_extras_value, new_primas, absences,
+                                   lates, extras, primes, event_dic]
+                        fichajes_resume[i] = new_row
+                update_fichajes_resume_cache(cache_file_resume_fichaje, fichajes_resume, id_emp_up=id_emp)
+                print("updated cache")
+                break
+    return flag, error, result
+
+
+def update_bitacora_value(emp_id: int, event, data):
+    """
+        Update the bitacora for just values.
+        :param emp_id: The id of the employee.
+        :param event: The event.
+        :param data: The data.
+        :return: None.
+        """
+    event_dic = {}
+    contract_sel = data[3]
+    flag, error, result = get_fichaje_DB(emp_id)
+    if flag and len(result) > 0:
+        match event:
+            case "falta":
+                event_dic = json.loads(result[3])
+            case "atraso":
+                event_dic = json.loads(result[4])
+            case "extra":
+                event_dic = json.loads(result[5])
+            case "prima":
+                event_dic = json.loads(result[6])
+            case "normal":
+                event_dic = json.loads(result[7])
+    else:
+        print("error at getting data from db or not data found for the employee")
+    date = datetime.strptime(data[0], "%Y-%m-%d")
+    try:
+        event_dic[str(date.year)][str(date.month)][str(date.day)] = {
+            "value": data[1],
+            "comment": data[2],
+            "timestamp": date.strftime("%Y-%m-%d %H:%M:%S")
+        }
+    except KeyError:
+        print(f"error at updating the value for {date}")
+        return False, f"error at updating the value for {date}", None
+    fichajes_resume, flag = get_fichajes_resume_cache(cache_file_resume_fichaje)
+    if flag:
+        for i, row in enumerate(fichajes_resume):
+            (id_emp, name, contract, new_faltas, new_tardanzas, new_tardanzas_value,
+             new_extras, new_extras_value, new_primas, absences,
+             lates, extras, primes, normal) = row
+            if id_emp == emp_id:
+                match event:
+                    case "falta":
+                        new_row = [id_emp, name, contract_sel, new_faltas, new_tardanzas, new_tardanzas_value,
+                                   new_extras, new_extras_value, new_primas, event_dic,
+                                   lates, extras, primes, normal]
+                        fichajes_resume[i] = new_row
+                    case "atraso":
+                        new_row = [id_emp, name, contract_sel, new_faltas, new_tardanzas, new_tardanzas_value,
+                                   new_extras, new_extras_value, new_primas, absences,
+                                   event_dic, extras, primes, normal]
+                        fichajes_resume[i] = new_row
+                    case "extra":
+                        new_row = [id_emp, name, contract_sel, new_faltas, new_tardanzas, new_tardanzas_value,
+                                   new_extras, new_extras_value, new_primas, absences,
+                                   lates, event_dic, primes, normal]
+                        fichajes_resume[i] = new_row
+                    case "prima":
+                        new_row = [id_emp, name, contract_sel, new_faltas, new_tardanzas, new_tardanzas_value,
+                                   new_extras, new_extras_value, new_primas, absences,
+                                   lates, extras, event_dic, normal]
+                        fichajes_resume[i] = new_row
+                    case "normal":
+                        new_row = [id_emp, name, contract_sel, new_faltas, new_tardanzas, new_tardanzas_value,
+                                   new_extras, new_extras_value, new_primas, absences,
+                                   lates, extras, primes, event_dic]
+                        fichajes_resume[i] = new_row
+                update_fichajes_resume_cache(cache_file_resume_fichaje, fichajes_resume, id_emp_up=id_emp)
+                break
+    return flag, error, result
+
+
+def erase_value_bitacora(emp_id: int, event, data):
+    """
+    Erase the value of the bitacora.
+    :param emp_id: The id of the employee.
+    :param event: The event.
+    :param data: The data.
+    :return: None.
+    """
+    event_dic = {}
+    contract_sel = data[1]
+    flag, error, result = get_fichaje_DB(emp_id)
+    if flag and len(result) > 0:
+        match event:
+            case "falta":
+                event_dic = json.loads(result[3])
+            case "atraso":
+                event_dic = json.loads(result[4])
+            case "extra":
+                event_dic = json.loads(result[5])
+            case "prima":
+                event_dic = json.loads(result[6])
+            case "normal":
+                event_dic = json.loads(result[7])
+    else:
+        print("error at getting data from db or not data found for the employee")
+    date = datetime.strptime(data[0], "%Y-%m-%d")
+    if str(date.year) in event_dic.keys():
+        if str(date.month) in event_dic[str(date.year)].keys():
+            if str(date.day) in event_dic[str(date.year)][str(date.month)].keys():
+                del event_dic[str(date.year)][str(date.month)][str(date.day)]
+    fichajes_resume, flag = get_fichajes_resume_cache(cache_file_resume_fichaje)
+    if flag:
+        for i, row in enumerate(fichajes_resume):
+            (id_emp, name, contract, new_faltas, new_tardanzas, new_tardanzas_value,
+             new_extras, new_extras_value, new_primas, absences,
+             lates, extras, primes, normal) = row
+            if id_emp == emp_id:
+                flag = False
+                match event:
+                    case "falta":
+                        new_row = [id_emp, name, contract_sel, new_faltas, new_tardanzas, new_tardanzas_value,
+                                   new_extras, new_extras_value, new_primas, event_dic,
+                                   lates, extras, primes, normal]
+                        fichajes_resume[i] = new_row
+                    case "atraso":
+                        new_row = [id_emp, name, contract_sel, new_faltas, new_tardanzas, new_tardanzas_value,
+                                   new_extras, new_extras_value, new_primas, absences,
+                                   event_dic, extras, primes, normal]
+                        fichajes_resume[i] = new_row
+                    case "extra":
+                        new_row = [id_emp, name, contract_sel, new_faltas, new_tardanzas, new_tardanzas_value,
+                                   new_extras, new_extras_value, new_primas, absences,
+                                   lates, event_dic, primes, normal]
+                        fichajes_resume[i] = new_row
+                    case "prima":
+                        new_row = [id_emp, name, contract_sel, new_faltas, new_tardanzas, new_tardanzas_value,
+                                   new_extras, new_extras_value, new_primas, absences,
+                                   lates, extras, event_dic, normal]
+                        fichajes_resume[i] = new_row
+                    case "normal":
+                        new_row = [id_emp, name, contract_sel, new_faltas, new_tardanzas, new_tardanzas_value,
+                                   new_extras, new_extras_value, new_primas, absences,
+                                   lates, extras, primes, event_dic]
+                        fichajes_resume[i] = new_row
+                update_fichajes_resume_cache(cache_file_resume_fichaje, fichajes_resume, id_emp_up=id_emp,
+                                             deletion=True)
+                flag = True
+                break
+    return flag, error, result
+
+
+def get_data_from_dict_by_date(data: dict, date: datetime, stamp: str):
+    """
+    Get the data from the dict by the date.
+    :param stamp:
+    :param data: The data.
+    :param date: The date.
+    :return: The data.
+    """
+    data_out = []
+    if str(date.year) in data.keys():
+        if str(date.month) in data[str(date.year)].keys():
+            for day in data[str(date.year)][str(date.month)].values():
+                place, activity = get_place_incidence_from_comment(day["comment"])
+                data_out.append([stamp, place, activity, day["timestamp"], day["value"], day["comment"]])
+            return data_out
+    return None
+
+
+def unify_data_list_events(info_list: list, data: list[list]):
+    """
+    Unify the data list.
+    :param info_list: The info list.
+    :param data: The data.
+    :return: The data.
+    """
+    out_list = []
+    # concatenate info list with every row of data list
+    for data_event in data:
+        if data_event is None:
+            continue
+        for row in data_event:
+            out_list.append(info_list + row)
+    return out_list
+
+
+def get_place_incidence_from_comment(comment: str):
+    """
+    Get the place and activity from the comment.
+    :param comment: The comment.
+    :return: The place and activity.
+    """
+    rows = comment.split("\n")
+    place = ""
+    activity = ""
+    for i, row in enumerate(rows):
+        if i >= 1:
+            if "actividad" in row:
+                activity = row.split("-->")[1]
+            elif "lugar" in row:
+                place = row.split("-->")[1]
+    return place, activity
+
+
+def get_events_op_date(date: datetime, hard_update, only_op=True):
+    """
+    Get the events of the date.
+    :param only_op:
+    :param hard_update: update from db
+    :param date: The date.
+    :return: The events.
+    """
+    data_events = []
+    fichajes_resume, flag = get_fichajes_resume_cache(cache_file_resume_fichaje, hard_update=hard_update)
+    for row in fichajes_resume:
+        (id_emp, name, contract, faltas, tardanzas, tardanzas_value, extras, extras_value, primas,
+         absences_dic, lates_dic, extras_dic, primes_dic, normal_dic) = row
+        data_absences = get_data_from_dict_by_date(absences_dic, date, "falta")
+        data_lates = get_data_from_dict_by_date(lates_dic, date, "atraso")
+        data_extras = get_data_from_dict_by_date(extras_dic, date, "extra")
+        data_primes = get_data_from_dict_by_date(primes_dic, date, "prima")
+        data_normal = get_data_from_dict_by_date(normal_dic, date, "normal")
+        data_events_emp = unify_data_list_events([id_emp, name, contract],
+                                                 [data_absences, data_lates, data_extras, data_primes, data_normal])
+        for item in data_events_emp:
+            if item is not None:
+                if item[2] != "None" or not only_op:
+                    data_events.append(item)
+    columns = ("ID", "Nombre", "Contrato", "Evento", "Lugar", "Actividad", "Timestamp", "Valor", "Comentario")
+    return data_events, columns
+
+
+def split_commment(txt: str) -> dict:
+    """
+    Split the comment.
+    :paramtxt: The comment.
+    :return: The comment.
+    example ---> <"comentary \nincidencia-->acuerdo\nactividad-->actividad\nlugar-->lugar">
+    """
+    comment_dict = {
+        "comment": "",
+        "incidence": "",
+        "activity": "",
+        "place": "",
+    }
+    rows = txt.split("\n")
+    for i, row in enumerate(rows):
+        if i == 0:
+            comment_dict["comment"] = rows[0]
+        elif i >= 1:
+            if "actividad" in row:
+                comment_dict["activity"] = row.split("-->")[1]
+            elif "lugar" in row:
+                comment_dict["place"] = row.split("-->")[1]
+            elif "incidencia" in row:
+                comment_dict["incidence"] = row.split("-->")[1]
+            else:
+                comment_dict["comment"] += "\t" + row
+    return comment_dict

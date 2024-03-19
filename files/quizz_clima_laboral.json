@@ -1,0 +1,208 @@
+{
+    "0": {
+        "question": "Introduzca el CÓDIGO proporcionado para continuar *",
+        "subquestions": [ ],
+        "options": [],
+        "answer": "",
+        "type": 4
+    },
+    "1": {
+        "question": "¿Cuánto tiempo llevas trabajando en la empresa?*",
+        "subquestions": [],
+        "options": [
+            "Menos de 6 meses",
+            "6 meses a 1 año",
+            "1 a 2 años",
+            "De 2 años en adelante"
+        ],
+        "answer": "",
+        "type": 2
+    },
+    "2": {
+        "question": "Relaciones Interpersonales*",
+        "subquestions": [
+            "La empresa fomenta una relación sana entre sus empleados",
+            "Las relaciones interpersonales son cordiales y abiertas entre los miembros del equipo",
+            "Soy aceptado por mi grupo de trabajo",
+            "El grupo de trabajo valora mis aportaciones",
+            "La empresa fomenta que las relaciones entre unidades de negocios sea buena"
+        ],
+        "options": [
+            "Totalmente de acuerdo",
+            "De acuerdo",
+            "Desacuerdo",
+            "Totalmente en desacuerdo"
+        ],
+        "answer": "",
+        "type": 3
+    },
+    "3": {
+        "question": "Estilo de Dirección*",
+        "subquestions": [
+            "Mi jefe me trata con respeto",
+            "Estoy satisfecho con la calidad de supervisión que recibo de mi jefe directo",
+            "Mi jefe inmediato sabe cómo comunicar y trasmitir sus ideas",
+            "Mi jefe directo fomenta el trabajo en equipo",
+            "Los directores de la empresa se preocupan por los empleados",
+            "Mi jefe inmediato me da retroalimentación clara y de forma frecuente",
+            "Puedo expresar un punto de vista distinto al de mis superiores sin que se enojen",
+            "Mi jefe me comunica efectivamente las políticas y formas de trabajo de mi área",
+            "Considero que mi jefe es flexible y justo ante las peticiones o apoyos que solicito"
+        ],
+        "options": [
+            "Totalmente de acuerdo",
+            "De acuerdo",
+            "Desacuerdo",
+            "Totalmente en desacuerdo"
+        ],
+        "answer": "",
+        "type": 3
+    } ,
+    "4": {
+        "question": "Sentido de pertenencia*",
+        "subquestions": [
+            "Si recibiera una oferta de trabajo similar en responsabilidades y salario a la que tengo en esta empresa preferiría no aceptarla",
+            "En los últimos 6 meses he buscado algún otro trabajo",
+            "Recomendaría a conocidos trabajar en esta empresa",
+            "Estoy motivado para dar lo mejor de mí en mi trabajo",
+            "El trabajo en esta empresa es una buena referencia en mi currículum"
+        ],
+        "options": [
+            "Totalmente de acuerdo",
+            "De acuerdo",
+            "Desacuerdo",
+            "Totalmente en desacuerdo"
+        ],
+        "answer": "",
+        "type": 3
+    },
+    "5": {
+        "question": "Balance de trabajo - vida personal*",
+        "subquestions": [
+            "La carga de trabajo es razonable y me permite entregar a tiempo mis pendientes",
+            "El trabajo que realizo me hace sentir pleno profesionalmente",
+            "Mi trabajo afecta mi relación con familiares y amigos",
+            "Estoy contento con el balance entre mi vida profesional y personal",
+            "Estoy satisfecho con la labor que realiza mi área"
+        ],
+        "options": [
+            "Totalmente de acuerdo",
+            "De acuerdo",
+            "Desacuerdo",
+            "Totalmente en desacuerdo"
+        ],
+        "answer": "",
+        "type": 3
+    },
+    "6": {
+        "question": "Compensaciones*",
+        "subquestions": [
+            "Estoy satisfecho con las prestaciones que la empresa me da",
+            "Recibo reconocimiento por los trabajos bien hechos",
+            "El salario y las bonificaciones son adecuados con relación a la labor que realizo",
+            "Dentro de la Dirección se reconoce la trayectoria del personal de mi área para ser promovidos"
+        ],
+        "options": [
+            "Totalmente de acuerdo",
+            "De acuerdo",
+            "Desacuerdo",
+            "Totalmente en desacuerdo"
+        ],
+        "answer": "",
+        "type": 3
+    },
+    "7": {
+        "question": "Disponibilidad de recursos*",
+        "subquestions": [
+            "Tengo todo el material necesario para hacer correctamente mi trabajo",
+            "El ambiente físico de mi sitio de trabajo es adecuado",
+            "Mi área de trabajo se encuentra limpia y ordenada",
+            "El equipo de cómputo o de trabajo, así como las herramientas asignadas me permite realizar con efectividad mi trabajo"
+        ],
+        "options": [
+            "Totalmente de acuerdo",
+            "De acuerdo",
+            "Desacuerdo",
+            "Totalmente en desacuerdo"
+        ],
+        "answer": "",
+        "type": 3
+    },
+    "8": {
+        "question": "Estabilidad*",
+        "subquestions": [
+            "Estoy satisfecho con la estabilidad de mi trabajo",
+            "La permanencia en mi cargo depende de mi buen desempeño",
+            "La empresa despide al personal sin tomar en cuenta el desempeño"
+        ],
+        "options": [
+            "Totalmente de acuerdo",
+            "De acuerdo",
+            "Desacuerdo",
+            "Totalmente en desacuerdo"
+        ],
+        "answer": "",
+        "type": 3
+    },
+    "9": {
+        "question": "Claridad y coherencia del liderazgo*",
+        "subquestions": [
+            "Están definidas claramente las funciones de mi puesto y los límites de mis responsabilidades",
+            "Mis habilidades son las correctas para el trabajo que desempeño",
+            "Conozco los objetivos de la empresa y estos son claros",
+            "Tengo bien definidos los objetivos de mi área",
+            "Conozco bien cómo la empresa está logrando sus metas",
+            "Algunas tareas a diario asignadas tienen poca relación con las metas",
+            "Los directivos dan a conocer los logros de la empresa"
+        ],
+        "options": [
+            "Totalmente de acuerdo",
+            "De acuerdo",
+            "Desacuerdo",
+            "Totalmente en desacuerdo"
+        ],
+        "answer": "",
+        "type": 3
+    },
+    "10": {
+        "question": "Claridad y coherencia del liderazgo*",
+        "subquestions": [
+            "La empresa da el entrenamiento necesario para mejorar profesionalmente",
+            "Los cursos que he recibido me han servido para mi desempeño dentro de la empresa",
+            "Mi jefe conoce mis áreas de oportunidad y me ayuda a mejorarlas",
+            "La capacitación que me brindó la empresa para desarrollar mis funciones fue suficiente"
+        ],
+        "options": [
+            "Totalmente de acuerdo",
+            "De acuerdo",
+            "Desacuerdo",
+            "Totalmente en desacuerdo"
+        ],
+        "answer": "",
+        "type": 3
+    },
+    "11": {
+        "question": "Comunicación interna*",
+        "subquestions": [
+            "Estoy satisfecho con la comunicación interna que hay en la empresa",
+            "La empresa sostiene reuniones frecuentes en las cuales se comunican los resultados y las iniciativas",
+            "Suelo recibir órdenes contradictorias de diferentes personas"
+        ],
+        "options": [
+            "Totalmente de acuerdo",
+            "De acuerdo",
+            "Desacuerdo",
+            "Totalmente en desacuerdo"
+        ],
+        "answer": "",
+        "type": 3
+    },
+    "12": {
+        "question": "Opiniones personales acerca de su trabajo *",
+        "subquestions": [],
+        "options": [ ],
+        "answer": "",
+        "type": 4
+    }
+    
+}
