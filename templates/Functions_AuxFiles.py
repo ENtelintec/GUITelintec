@@ -395,7 +395,7 @@ def get_events_op_date(date: datetime, hard_update, only_op=True):
     """
     Get the events of the date.
     :param only_op:
-    :param hard_update: update from db
+    :param hard_update: Update from db
     :param date: The date.
     :return: The events.
     """
@@ -424,7 +424,7 @@ def split_commment(txt: str) -> dict:
     Split the comment.
     :paramtxt: The comment.
     :return: The comment.
-    example ---> <"comentary \nincidencia-->acuerdo\nactividad-->actividad\nlugar-->lugar">
+    Example ---> <"comentary \nincidencia-->acuerdo\nactividad-->actividad\nlugar-->lugar">
     """
     comment_dict = {
         "comment": "",
@@ -446,3 +446,14 @@ def split_commment(txt: str) -> dict:
             else:
                 comment_dict["comment"] += "\t" + row
     return comment_dict
+
+
+def save_json_file_quizz(dict_quizz: dict, file_name: str):
+    """
+    Save the json file.
+    :param dict_quizz: The dict.
+    :param file_name: The file name.
+    """
+    # encode utf-8
+    with open(file_name, "w") as file:
+        json.dump(dict_quizz, file, indent=4, ensure_ascii=True)

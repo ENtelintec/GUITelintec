@@ -11,6 +11,7 @@ from ttkbootstrap.dialogs import Messagebox
 from ttkbootstrap.scrolled import ScrolledFrame
 
 from static.extensions import quizzes_RRHH, quizz_out_path
+from templates.Functions_AuxFiles import save_json_file_quizz
 from templates.Functions_SQL import get_id_name_employee
 from templates.Funtions_Utils import create_Combobox, calculate_results_quizzes, create_label
 from templates.PDFGenerator import (
@@ -20,8 +21,7 @@ from templates.PDFGenerator import (
 )
 
 
-def get_name_id_employees_list(department: int, is_all: bool) -> tuple[
-    list[str], list[tuple[str, int, str, str, dict]]]:
+def get_name_id_employees_list(department: int, is_all: bool) -> tuple[list[str], list[tuple[str, int, str, str, dict]]]:
     flag, error, out = get_id_name_employee(department, is_all)
     names = []
     aux = []
@@ -212,6 +212,7 @@ class QuizMaker(ttk.Frame):
     def update_dict_quizz(self, new_dict: dict, tipo_op):
         self.dict_quizz = new_dict
         name_emp = self.metadata["name_emp"]
+        id_emp = self.metadata["ID_emp"]
         name_interviewer = self.metadata["interviewer"]
         job = self.metadata["position"]
         terminal = "terminal"
@@ -234,7 +235,18 @@ class QuizMaker(ttk.Frame):
                 self.dict_quizz, None, file_out, name_emp, job, terminal, date_start, date_end, date_inteview,
                 name_interviewer
             )
+        elif tipo_op == 3:
+            # quizz de salida
+            create_pdf_quizz_salida(
+                self.dict_quizz, None, file_out, name_emp, job, terminal, date_start, date_end, date_inteview,
+                name_interviewer
+            )
         print(f"quizz update and pdf generated at {file_out}")
+        result_name = f"Quiz_{tipo_op}_{id_emp}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        self.metadata["date"] = str(self.metadata["date"])
+        self.metadata["admision"] = str(self.metadata["admision"])
+        self.dict_quizz["metadata"] = self.metadata
+        save_json_file_quizz(self.dict_quizz, quizz_out_path + result_name)
 
     def check_especial_case(self):
         match self.tipo_quizz:
@@ -256,14 +268,14 @@ class QuizMaker(ttk.Frame):
                     all_no_selected = all(opt == 0 for _, opt in self.opt_selected[-1])
                     self.last_default = not all_no_selected
                     self.questions_default = [1, 2, 3] if not all_no_selected else []
-                elif self.q_no - 1 == 10:
+                elif self.q_no - 1 == 16:
                     all_no_selected = all(opt == 0 for _, opt in self.opt_selected[-1])
                     self.last_default = not all_no_selected
-                    self.questions_default = [11] if not all_no_selected else []
-                elif self.q_no - 1 == 12:
+                    self.questions_default = [17] if not all_no_selected else []
+                elif self.q_no - 1 == 18:
                     all_no_selected = all(opt == 0 for _, opt in self.opt_selected[-1])
                     self.last_default = not all_no_selected
-                    self.questions_default = [13] if not all_no_selected else []
+                    self.questions_default = [19] if not all_no_selected else []
 
 
 class FrameEncuestas(ttk.Frame):
@@ -297,13 +309,29 @@ class FrameEncuestas(ttk.Frame):
         self.quizz_selector.bind("<<ComboboxSelected>>", self.select_quiz)
         self.quizz_selector.set("Seleccione una encuesta")
 
-        # employees data
+        # employee making the quizz data
         self.names, self.emps_metadata = get_name_id_employees_list(1, True)
         create_label(frame_inputs, text="Empleado encuestado: ", row=1, column=0, sticky="w")
         self.name_emp_selector = create_Combobox(
             frame_inputs, values=self.names, state="readonly", width=40,
             row=1, column=1, sticky="w"
         )
+        # evaluated employee
+        self.label_evaluated = create_label(frame_inputs, text="Empleado evaluado: ", row=0, column=2, sticky="w")
+        self.label_evaluated.grid_remove()
+        self.name_emp_evaluated = create_Combobox(
+            frame_inputs, values=self.names, state="readonly", width=40,
+            row=0, column=3, sticky="w"
+        )
+        self.name_emp_evaluated.grid_remove()
+        self.label_pos_evaluator = create_label(frame_inputs, text="Nivel del evaluado: ", row=1, column=2, sticky="w")
+        self.label_pos_evaluator.grid_remove()
+        self.pos_evaluator = create_Combobox(
+            frame_inputs, values=["Autoevaluación", "Jefe Inmediato", "Colega", "Subordinado"],
+            state="readonly", width=40,
+            row=1, column=3, sticky="w"
+        )
+        self.pos_evaluator.grid_remove()
         # ------------buttons------------
         frame_btns = ttk.Frame(self)
         frame_btns.grid(row=2, column=0, padx=10, pady=10, sticky="nswe")
@@ -328,6 +356,16 @@ class FrameEncuestas(ttk.Frame):
                 flag = True
                 self.dict_quizz = json.load(open(self.filepath, encoding="utf-8"))
                 self.tipo_id = item["type"]
+                if self.tipo_id == 4:
+                    self.label_evaluated.grid()
+                    self.name_emp_evaluated.grid()
+                    self.label_pos_evaluator.grid()
+                    self.pos_evaluator.grid()
+                else:
+                    self.label_evaluated.grid_remove()
+                    self.name_emp_evaluated.grid_remove()
+                    self.label_pos_evaluator.grid_remove()
+                    self.pos_evaluator.grid_remove()
                 break
         if not flag:
             self.filepath = None
@@ -346,20 +384,28 @@ class FrameEncuestas(ttk.Frame):
             if answer == "No":
                 return
         print("creating quizz")
-        data_emp = None
+        data_emp_questioned = None
         for row in self.emps_metadata:
             if row[0] == self.name_emp_selector.get():
-                data_emp = row
+                data_emp_questioned = row
+                break
+        data_emp_evaluated = None
+        for row in self.emps_metadata:
+            if row[0] == self.name_emp_evaluated.get():
+                data_emp_evaluated = row
                 break
         metadata = {
             "name_emp": self.name_emp_selector.get(),
             "date": datetime.now().strftime("%d/%m/%Y"),
             "interviewer": self.interviewer,
-            "ID_emp": data_emp[1],
-            "position": data_emp[2],
-            "admision": data_emp[3],
-            "departure": data_emp[4]["date"],
-            "departure_reason": data_emp[4]["reason"],
+            "ID_emp": data_emp_questioned[1],
+            "position": data_emp_questioned[2],
+            "admision": data_emp_questioned[3],
+            "departure": data_emp_questioned[4]["date"],
+            "departure_reason": data_emp_questioned[4]["reason"],
+            "evaluated_emp": self.name_emp_evaluated.get(),
+            "pos_evaluator": self.pos_evaluator.get(),
+            "evaluated_emp_ID": data_emp_evaluated[1],
         }
         name_quizz = self.quizz_selector.get()
         self.dict_quizz = json.load(open(self.filepath, encoding="utf-8"))
