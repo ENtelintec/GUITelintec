@@ -95,32 +95,25 @@ class OutScreen(ttk.Frame):
         buttons.columnconfigure((0, 1, 2, 3), weight=1)
         ttk.Button(
             buttons,
-            text="Agregar",
-            style="bg.TButton",
-            width=25,
-            command=self.add_out_item,
-        ).grid(row=0, column=0, sticky="w", padx=5, pady=5)
-        ttk.Button(
-            buttons,
-            text="Editar",
+            text="Actualizar Salida",
             style="bg.TButton",
             width=25,
             command=self.update_out_item,
-        ).grid(row=0, column=1, sticky="w", padx=5, pady=5)
+        ).grid(row=0, column=0, sticky="w", padx=5, pady=5)
         ttk.Button(
             buttons,
-            text="Eliminar",
+            text="Eliminar Salida",
             style="bg.TButton",
             width=25,
             command=self.delete_out_item,
-        ).grid(row=0, column=2, sticky="w", padx=5, pady=5)
+        ).grid(row=0, column=1, sticky="w", padx=5, pady=5)
         ttk.Button(
             buttons,
-            text="Limpiar",
+            text="Limpiar Campos",
             style="bg.TButton",
             width=25,
             command=self.clear_fields,
-        ).grid(row=0, column=3, sticky="w", padx=5, pady=5)
+        ).grid(row=0, column=2, sticky="w", padx=5, pady=5)
 
     def clear_fields(self):
         self.products_selector.set("")
@@ -153,19 +146,19 @@ class OutScreen(ttk.Frame):
         self.update_table()
         self.clear_fields()
 
-    def add_out_item(self):
-        self.movetement_id = self.products_selector.get().split()[0]
-        if self.movetement_id is None:
-            return
-        id_product = self.products_selector.get().split()[0]
-        id_movement_type = "salida"
-        quantity = self.quantity.get()
-        movement_date = self.date.get()
-        self._data._product_movements.create_out_movement(
-            id_product, id_movement_type, quantity, movement_date
-        )
-        self.update_table()
-        self.clear_fields()
+    # def add_out_item(self):
+    #     self.movetement_id = self.products_selector.get().split()[0]
+    #     if self.movetement_id is None:
+    #         return
+    #     id_product = self.products_selector.get().split()[0]
+    #     id_movement_type = "salida"
+    #     quantity = self.quantity.get()
+    #     movement_date = self.date.get()
+    #     self._data._product_movements.create_out_movement(
+    #         id_product, id_movement_type, quantity, movement_date
+    #     )
+    #     self.update_table()
+    #     self.clear_fields()
 
     def delete_out_item(self):
         if self.movetement_id is None:

@@ -58,8 +58,16 @@ CREATE TABLE IF NOT EXISTS suppliers_amc (
 CREATE TABLE IF NOT EXISTS orders_amc (
     id_order INT PRIMARY KEY AUTO_INCREMENT,
     id_customer INT,
-    date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    return_status ENUM('pending', 'urgent', 'processing', 'complete') DEFAULT 'pending',
+    order_date VARCHAR(100),
+    sm_code VARCHAR(100),
+    contract VARCHAR(100),
+    order_number VARCHAR(100),
+    operation_plant VARCHAR(100),
+    ubication VARCHAR(100),
+    requester VARCHAR(100),
+    personal VARCHAR(100),
+    estimated_date VARCHAR(100),
+    status ENUM('pending', 'urgent', 'processing', 'complete') DEFAULT 'pending',
     FOREIGN KEY (id_customer) REFERENCES customers_amc(id_customer) ON DELETE
     SET
         NULL ON UPDATE CASCADE,
@@ -72,11 +80,39 @@ CREATE TABLE IF NOT EXISTS order_details_amc (
     id_order INT,
     id_product INT,
     quantity INT NOT NULL,
+    description VARCHAR(255),
     FOREIGN KEY (id_order) REFERENCES orders_amc(id_order) ON DELETE CASCADE ON UPDATE CASCADE,
     FOREIGN KEY (id_product) REFERENCES products_amc(id_product) ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT unique_order_product UNIQUE (id_order, id_product),
     INDEX idx_order (id_order),
     INDEX idx_product (id_product)
+);
+
+-- Crear tabla de solicitud de movimiento
+CREATE TABLE IF NOT EXISTS movement_requests_amc (
+    id_request INT PRIMARY KEY AUTO_INCREMENT,
+    order_date VARCHAR(100),
+    sm_code VARCHAR(100),
+    contract VARCHAR(100),
+    order_number VARCHAR(100),
+    operation_plant VARCHAR(100),
+    ubication VARCHAR(100),
+    requester VARCHAR(100),
+    personal VARCHAR(100),
+    estimated_date VARCHAR(100)
+);
+
+-- Crear tabla de detalles de solicitud de movimiento
+CREATE TABLE IF NOT EXISTS movement_request_details_amc (
+    id_request_detail INT PRIMARY KEY AUTO_INCREMENT,
+    id_request INT,
+    sku VARCHAR(50),
+    name VARCHAR(100),
+    quantity INT,
+    unit VARCHAR(20),
+    description VARCHAR(255),
+    FOREIGN KEY (id_request) REFERENCES movement_requests_amc(id_request) ON DELETE CASCADE ON UPDATE CASCADE,
+    INDEX idx_request (id_request)
 );
 
 -- Crear tabla de detalles de proveedores y productos
@@ -139,20 +175,31 @@ FROM
     LEFT JOIN suppliers_amc ON supplier_product_amc.id_supplier = suppliers_amc.id_supplier;
 
 -- Agregar vista para obtener todas las órdenes
-CREATE VIEW get_all_orders AS
+CREATE
+OR REPLACE VIEW get_all_orders AS
 SELECT
     orders_amc.id_order,
     orders_amc.id_customer,
     customers_amc.name AS customer_name,
-    orders_amc.date,
-    orders_amc.return_status,
+    orders_amc.order_date,
+    orders_amc.sm_code,
+    orders_amc.contract,
+    orders_amc.order_number,
+    orders_amc.operation_plant,
+    orders_amc.ubication,
+    orders_amc.requester,
+    orders_amc.personal,
+    orders_amc.estimated_date,
+    orders_amc.status,
     GROUP_CONCAT(
         CONCAT(
             products_amc.id_product,
             ' : ',
             products_amc.name,
             ' : ',
-            order_details_amc.quantity
+            order_details_amc.quantity,
+            ' : ',
+            order_details_amc.description
         )
         ORDER BY
             order_details_amc.id_order_detail SEPARATOR '; '
@@ -164,3 +211,37 @@ FROM
     JOIN products_amc ON order_details_amc.id_product = products_amc.id_product
 GROUP BY
     orders_amc.id_order;
+
+CREATE
+OR REPLACE VIEW get_all_movement_requests AS
+SELECT
+    mra.id_request,
+    mra.order_date,
+    mra.sm_code,
+    mra.contract,
+    mra.order_number,
+    mra.operation_plant,
+    mra.ubication,
+    mra.requester,
+    mra.personal,
+    mra.estimated_date,
+    GROUP_CONCAT(
+        CONCAT(
+            mrd.sku,
+            ' : ',
+            mrd.name,
+            ' : ',
+            mrd.quantity,
+            ' : ',
+            mrd.unit,
+            ' : ',
+            mrd.description
+        )
+        ORDER BY
+            mrd.id_request_detail SEPARATOR '; '
+    ) AS movement_details
+FROM
+    movement_requests_amc mra
+    JOIN movement_request_details_amc mrd ON mra.id_request = mrd.id_request
+GROUP BY
+    mra.id_request;

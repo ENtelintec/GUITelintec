@@ -21,12 +21,30 @@ class Product:
         try:
             self.connection = db()
             self.cursor = self.connection.cursor()
-            sql = f"INSERT INTO products_amc (sku, name, udm, stock, minStock, maxStock, reorderPoint, id_category) VALUES ('{sku}', '{name}', '{udm}', {stock}, {minStock}, {maxStock}, {reorderPoint}, {id_category})"
-            self.cursor.execute(sql)
-            self.connection.commit()
+            sku = str(sku)
+            name = str(name)
+            udm = str(udm)
+            stock = int(stock)
+            minStock = int(minStock)
+            maxStock = int(maxStock)
+            reorderPoint = int(reorderPoint)
+            id_category = int(id_category)
+            search_sql = "SELECT * FROM products_amc WHERE name = %s"
+            self.cursor.execute(search_sql, (name,))
+            result = self.cursor.fetchone()
+            if result:
+                return "Product already exists"
 
-            sql2 = f"INSERT INTO supplier_product_amc (id_supplier, id_product) VALUES ({id_supplier}, {self.cursor.lastrowid})"
-            self.cursor.execute(sql2)
+            insert_sql = "INSERT INTO products_amc (sku, name, udm, stock, minStock, maxStock, reorderPoint, id_category) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
+            self.cursor.execute(
+                insert_sql,
+                (sku, name, udm, stock, minStock, maxStock, reorderPoint, id_category),
+            )
+            self.connection.commit()
+            insert_supplier_product_sql = "INSERT INTO supplier_product_amc (id_supplier, id_product) VALUES (%s, %s)"
+            self.cursor.execute(
+                insert_supplier_product_sql, (id_supplier, self.cursor.lastrowid)
+            )
             self.connection.commit()
             return True
         except Exception as e:
@@ -69,12 +87,26 @@ class Product:
         try:
             self.connection = db()
             self.cursor = self.connection.cursor()
-            sql = f"UPDATE products_amc SET sku = '{sku}', name = '{name}', udm = '{udm}', stock = {stock}, minStock = {minStock}, maxStock = {maxStock}, reorderPoint = {reorderPoint}, id_category = {id_category} WHERE id_product = {id_product}"
-            self.cursor.execute(sql)
+            update_sql = "UPDATE products_amc SET sku = %s, name = %s, udm = %s, stock = %s, minStock = %s, maxStock = %s, reorderPoint = %s, id_category = %s WHERE id_product = %s"
+            self.cursor.execute(
+                update_sql,
+                (
+                    sku,
+                    name,
+                    udm,
+                    stock,
+                    minStock,
+                    maxStock,
+                    reorderPoint,
+                    id_category,
+                    id_product,
+                ),
+            )
             self.connection.commit()
-
-            sql2 = f"UPDATE supplier_product_amc SET id_supplier = {id_supplier} WHERE id_product = {id_product}"
-            self.cursor.execute(sql2)
+            update_relation_sql = (
+                "UPDATE supplier_product_amc SET id_supplier = %s WHERE id_product = %s"
+            )
+            self.cursor.execute(update_relation_sql, (id_supplier, id_product))
             self.connection.commit()
             return True
         except Exception as e:
@@ -89,8 +121,8 @@ class Product:
         try:
             self.connection = db()
             self.cursor = self.connection.cursor()
-            sql2 = f"DELETE FROM products_amc WHERE id_product = {id_product}"
-            self.cursor.execute(sql2)
+            delete_sql = "DELETE FROM products_amc WHERE id_product = %s"
+            self.cursor.execute(delete_sql, (id_product,))
             self.connection.commit()
             return True
         except Exception as e:

@@ -6,23 +6,6 @@ class Customer:
         self.connection = None
         self.cursor = None
 
-    def create_customer(self, name, email, phone, rfc, address):
-        try:
-            self.connection = db()
-            self.cursor = self.connection.cursor()
-            sql1 = f"INSERT INTO customers_amc (name, email, phone, rfc, address) VALUES ('{name}', '{email}', '{phone}', '{rfc}', '{address}')"
-            self.cursor.execute(sql1)
-            id_customer = self.cursor.lastrowid
-            self.connection.commit()
-            return True
-        except Exception as e:
-            return f"Error: {e}"
-        finally:
-            if self.connection.is_connected():
-                self.cursor.close()
-                self.connection.close()
-                self.cursor = None
-
     def get_all_customers(self):
         try:
             self.connection = db()
@@ -39,12 +22,45 @@ class Customer:
                 self.connection.close()
                 self.cursor = None
 
+    def create_customer(self, name, email, phone, rfc, address):
+        try:
+            self.connection = db()
+            self.cursor = self.connection.cursor()
+            name = str(name)
+            email = str(email)
+            phone = str(phone)
+            rfc = str(rfc)
+            address = str(address)
+            search_sql = "SELECT * FROM customers_amc WHERE name = %s"
+            insert_sql = "INSERT INTO customers_amc (name, email, phone, rfc, address) VALUES (%s, %s, %s, %s, %s)"
+            self.cursor.execute(search_sql, (name,))
+            result = self.cursor.fetchone()
+            if result:
+                return "Customer already exists"
+            self.cursor.execute(insert_sql, (name, email, phone, rfc, address))
+            self.connection.commit()
+            return True
+        except Exception as e:
+            return f"Error: {e}"
+        finally:
+            if self.connection.is_connected():
+                self.cursor.close()
+                self.connection.close()
+                self.cursor = None
+
     def update_customer(self, id_customer, name, email, phone, rfc, address):
         try:
             self.connection = db()
             self.cursor = self.connection.cursor()
-            sql1 = f"UPDATE customers_amc SET name = '{name}', email = '{email}', phone = '{phone}', rfc = '{rfc}', address = '{address}' WHERE id_customer = {id_customer}"
-            self.cursor.execute(sql1)
+            name = str(name)
+            email = str(email)
+            phone = str(phone)
+            rfc = str(rfc)
+            address = str(address)
+            update_sql = "UPDATE customers_amc SET name = %s, email = %s, phone = %s, rfc = %s, address = %s WHERE id_customer = %s"
+            self.cursor.execute(
+                update_sql, (name, email, phone, rfc, address, id_customer)
+            )
             self.connection.commit()
             return True
         except Exception as e:
@@ -59,8 +75,8 @@ class Customer:
         try:
             self.connection = db()
             self.cursor = self.connection.cursor()
-            sql = f"DELETE FROM customers_amc WHERE id_customer = {id_customer}"
-            self.cursor.execute(sql)
+            delete_sql = "DELETE FROM customers_amc WHERE id_customer = %s"
+            self.cursor.execute(delete_sql, (id_customer,))
             self.connection.commit()
             return True
         except Exception as e:
