@@ -11,15 +11,23 @@ from ttkbootstrap.dialogs import Messagebox
 
 from static.extensions import quizzes_RRHH, quizz_out_path
 from templates.Functions_SQL import get_id_name_employee
-from templates.Funtions_Utils import create_Combobox, calculate_results_quizzes, create_label
+from templates.Funtions_Utils import (
+    create_Combobox,
+    calculate_results_quizzes,
+    create_label,
+)
 from templates.PDFGenerator import (
     create_pdf__quizz_nor035_v1,
     create_pdf_quizz_nor035_50_plus,
+    create_quizz_clima_laboral,
     create_pdf_quizz_salida,
+    create_quizz_eva_360,
 )
 
 
-def get_name_id_employees_list(department: int, is_all: bool) -> tuple[list[str], list[tuple[str, int, str, str, dict]]]:
+def get_name_id_employees_list(
+    department: int, is_all: bool
+) -> tuple[list[str], list[tuple[str, int, str, str, dict]]]:
     flag, error, out = get_id_name_employee(department, is_all)
     names = []
     aux = []
@@ -30,12 +38,28 @@ def get_name_id_employees_list(department: int, is_all: bool) -> tuple[list[str]
         else:
             departure = json.loads(departure)
         job = job.upper() if job is not None else "other"
-        aux.append((f"{name.upper()} {lastname.upper()}", id_emp, job, date_admission, departure))
+        aux.append(
+            (
+                f"{name.upper()} {lastname.upper()}",
+                id_emp,
+                job,
+                date_admission,
+                departure,
+            )
+        )
     return names, aux
 
 
 class QuizMaker(ttk.Frame):
-    def __init__(self, master, dict_quizz, title=None, tipo_op=0, out_path=quizz_out_path, metadata: dict = None):
+    def __init__(
+        self,
+        master,
+        dict_quizz,
+        title=None,
+        tipo_op=0,
+        out_path=quizz_out_path,
+        metadata: dict = None,
+    ):
         super().__init__(master)
         self.quizz_out_path = out_path
         self.q_no = 0
@@ -90,9 +114,9 @@ class QuizMaker(ttk.Frame):
         Messagebox.show_info(
             title="Result",
             message=f"Your final result is:\n"
-                    f"Calificación final: {dict_results['c_final']}\n"
-                    f"Calificación de dominio: {dict_results['c_dom']}\n"
-                    f"Calificacion de categoria: {dict_results['c_cat']}\n"
+            f"Calificación final: {dict_results['c_final']}\n"
+            f"Calificación de dominio: {dict_results['c_dom']}\n"
+            f"Calificacion de categoria: {dict_results['c_cat']}\n",
         )
 
     def next_btn(self):
@@ -101,6 +125,7 @@ class QuizMaker(ttk.Frame):
         if self.q_no == self.data_size:
             self.display_result()
             self.update_dict_quizz(self.dict_quizz, tipo_op=self.tipoOp)
+            print("update_dict_quizz")
             self.destroy()
         else:
             self.recreate_frames()
@@ -147,8 +172,12 @@ class QuizMaker(ttk.Frame):
                     index_x = index % cols
                     index_y = index // cols
                     ttk.Checkbutton(
-                        self.frame_options, text=item, onvalue=1, offvalue=0,
-                        variable=var).grid(
+                        self.frame_options,
+                        text=item,
+                        onvalue=1,
+                        offvalue=0,
+                        variable=var,
+                    ).grid(
                         row=index_y + 1, column=index_x, sticky="w", padx=10, pady=10
                     )
                     q_list.append(var)
@@ -178,6 +207,27 @@ class QuizMaker(ttk.Frame):
                             variable=q_list[-1],
                             value=index_x,
                         ).grid(row=index_y + 2, column=index_x + 1, sticky="n", pady=3)
+
+            case 4:
+                options = self.dict_quizz[str(self.q_no)]["options"]
+                subquetions = self.dict_quizz[str(self.q_no)]["subquestions"]
+                for index_x, item in enumerate(options):
+                    ttk.Label(self.frame_options, text=item).grid(
+                        row=1, column=index_x + 1, sticky="n", padx=10, pady=3
+                    )
+                for index_y, item in enumerate(subquetions):
+                    ttk.Label(self.frame_options, text=item).grid(
+                        row=index_y + 2, column=0, sticky="w", pady=3
+                    )
+                    q_list.append(IntVar())
+                    for index_x, subitem in enumerate(options):
+                        ttk.Radiobutton(
+                            self.frame_options,
+                            text="",
+                            variable=q_list[-1],
+                            value=index_x,
+                        ).grid(row=index_y + 2, column=index_x + 1, sticky="n", pady=3)
+
             case _:
                 txt_entry = ttk.Text(self.frame_options, height=4, width=50)
                 txt_entry.grid(row=1, column=0, sticky="nswe", padx=10, pady=10)
@@ -197,6 +247,10 @@ class QuizMaker(ttk.Frame):
                 self.opt_selected.append([])
                 for i, opt in enumerate(self.entries):
                     self.opt_selected[-1].append((i, opt.get()))
+            case 4:
+                self.opt_selected.append([])
+                for i, opt in enumerate(self.entries):
+                    self.opt_selected[-1].append((i, opt.get()))
 
             case _:
                 self.opt_selected.append(self.entries[0].get("1.0", "end-1c"))
@@ -211,7 +265,10 @@ class QuizMaker(ttk.Frame):
         date_start = str(self.metadata["admision"])
         date_end = str(self.metadata["departure"])
         date_inteview = str(self.metadata["date"])
-        file_out = self.quizz_out_path + f"{name_emp.replace(' ', '')}_{date_inteview.replace('/', '-')}_type_{tipo_op}.pdf"
+        file_out = (
+            self.quizz_out_path
+            + f"{name_emp.replace(' ', '')}_{date_inteview.replace('/', '-')}_type_{tipo_op}.pdf"
+        )
         if tipo_op == 0:
             create_pdf_quizz_salida(
                 self.dict_quizz,
@@ -251,11 +308,46 @@ class QuizMaker(ttk.Frame):
                 date_inteview,
                 name_interviewer,
             )
+        elif tipo_op == 3:
+            create_quizz_clima_laboral(
+                self.dict_quizz,
+                None,
+                file_out,
+                name_emp,
+                job,
+                terminal,
+                date_start,
+                date_end,
+                date_inteview,
+                name_interviewer,
+            )
+
+        elif tipo_op == 4:
+            create_quizz_eva_360(
+                self.dict_quizz,
+                None,
+                file_out,
+                name_emp,
+                job,
+                terminal,
+                date_start,
+                date_end,
+                date_inteview,
+                name_interviewer,
+            )
+            print("create eva360", create_quizz_eva_360)
         print(f"quizz update and pdf generated at {file_out}")
 
 
 class FrameEncuestas(ttk.Frame):
-    def __init__(self, master, quizzes=quizzes_RRHH, quizz_out=None, interviewer="default", **kwargs):
+    def __init__(
+        self,
+        master,
+        quizzes=quizzes_RRHH,
+        quizz_out=None,
+        interviewer="default",
+        **kwargs,
+    ):
         super().__init__(master, **kwargs)
         self.columnconfigure(0, weight=1)
         self.rowconfigure(3, weight=1)
@@ -279,18 +371,31 @@ class FrameEncuestas(ttk.Frame):
         for item in self.quizzes.values():
             options.append(item["name"])
         self.quizz_selector = create_Combobox(
-            frame_inputs, values=options, state="readonly",
-            row=0, column=0, sticky="n", width=50, columnspan=2
+            frame_inputs,
+            values=options,
+            state="readonly",
+            row=0,
+            column=0,
+            sticky="n",
+            width=50,
+            columnspan=2,
         )
         self.quizz_selector.bind("<<ComboboxSelected>>", self.select_quiz)
         self.quizz_selector.set("Seleccione una encuesta")
 
         # employees data
         self.names, self.emps_metadata = get_name_id_employees_list(1, True)
-        create_label(frame_inputs, text="Empleado encuestado: ", row=1, column=0, sticky="w")
+        create_label(
+            frame_inputs, text="Empleado encuestado: ", row=1, column=0, sticky="w"
+        )
         self.name_emp_selector = create_Combobox(
-            frame_inputs, values=self.names, state="readonly", width=40,
-            row=1, column=1, sticky="w"
+            frame_inputs,
+            values=self.names,
+            state="readonly",
+            width=40,
+            row=1,
+            column=1,
+            sticky="w",
         )
         # ------------buttons------------
         frame_btns = ttk.Frame(self)
@@ -298,8 +403,11 @@ class FrameEncuestas(ttk.Frame):
         frame_btns.columnconfigure(0, weight=1)
         # noinspection PyArgumentList
         ttk.Button(
-            frame_btns, text="Crear Encuesta", command=self.create_quiz,
-            width=20, bootstyle="primary",
+            frame_btns,
+            text="Crear Encuesta",
+            command=self.create_quiz,
+            width=20,
+            bootstyle="primary",
         ).grid(row=0, column=0, padx=10, pady=10, sticky="n")
         # ----------encuestas--------
         self.frame_encuesta = ttk.Frame(self)
@@ -327,10 +435,7 @@ class FrameEncuestas(ttk.Frame):
             return
         else:
             msg = f"Esta seguro que desea crear la encuesta para {self.name_emp_selector.get()}?"
-            answer = Messagebox.show_question(
-                title="Confirmacion",
-                message=msg
-            )
+            answer = Messagebox.show_question(title="Confirmacion", message=msg)
             if answer == "No":
                 return
         print("creating quizz")
@@ -351,9 +456,14 @@ class FrameEncuestas(ttk.Frame):
         }
         name_quizz = self.quizz_selector.get()
         self.dict_quizz = json.load(open(self.filepath, encoding="utf-8"))
-        self.quizz = QuizMaker(self.frame_encuesta, self.dict_quizz, title=name_quizz,
-                               tipo_op=self.tipoOp, out_path=self.quizz_out_path,
-                               metadata=metadata)
+        self.quizz = QuizMaker(
+            self.frame_encuesta,
+            self.dict_quizz,
+            title=name_quizz,
+            tipo_op=self.tipoOp,
+            out_path=self.quizz_out_path,
+            metadata=metadata,
+        )
         self.quizz.grid(row=0, column=0, padx=10, pady=10, sticky="nswe")
 
 
