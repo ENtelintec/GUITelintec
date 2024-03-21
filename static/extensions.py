@@ -102,3 +102,10 @@ conversion_quizzes_path = "files/conversions_quizzes.json"
 quizz_out_path = "files/quizz_out/"
 log_file_bitacora_path = "files/logs/"
 patterns_files_fichaje = ["Fichaje", "Ternium"]
+department_tools_openAI = {
+    "director": "files/tools_AV_default.json",
+    "rrhh": "files/tools_AV_default.json",
+    "administrator": "files/tools_AV_default.json",
+    "almacen": "files/tools_AV_almacen.json",
+    "default": "files/tools_AV_default.json"
+}

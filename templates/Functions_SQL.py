@@ -240,7 +240,6 @@ def get_id_name_employee(department: int, is_all=False):
     return flag, e, out
 
 
-
 def get_employess_op_names():
     sql = ("SELECT employee_id, name, l_name, contrato FROM employees "
            "WHERE  department_id = 2")
@@ -761,3 +760,117 @@ def get_all_employees_active():
            "FROM employees WHERE status = 'activo'")
     flag, error, result = execute_sql(sql, type_sql=5)
     return flag, error, result
+
+
+# ---------------------------AV almacen tables-----------------------
+def get_product_categories():
+    columns = ("id_category", "name")
+    sql = "SELECT product_categories_amc.id_category, product_categories_amc.name FROM product_categories_amc limit 20 "
+    flag, error, result = execute_sql(sql, type_sql=5)
+    return flag, error, result, columns
+
+
+def get_products_almacen(id_p: int, name: str, category: str, limit: int = 10):
+    columns = ("id_product", "name", "description", "price", "stock", "id_category")
+    sql = ("SELECT id_product, name, description, price, stock, id_category FROM products_amc WHERE id_product = %s or "
+           "(match(name) against (%s IN NATURAL LANGUAGE MODE ) and id_category = %s ) "
+           "limit %s")
+    val = (id_p, name, category, limit)
+    flag, error, result = execute_sql(sql, val, 2)
+    return flag, error, result, columns
+
+
+def get_high_stock_products(category: str, quantity: int):
+    columns = ("id_product", "name", "udm", "stock", "id_category")
+    # get category
+    sql = "SELECT * FROM product_categories_amc WHERE name = %s"
+    val = (category.lower(),)
+    flag, error, result = execute_sql(sql, val, 1)
+    if len(result) > 0:
+        category_id = result[0]
+        sql = ("SELECT id_product, name, udm, stock, id_category "
+               "FROM products_amc WHERE id_category = %s "
+               "ORDER BY stock DESC limit %s")
+        val = (category_id, quantity)
+        flag, error, result = execute_sql(sql, val, 2)
+        return flag, error, result, columns
+    else:
+        return False, "No category in the DB", [], columns
+
+
+def get_low_stock_products(category: str, quantity: int):
+    columns = ("id_product", "name", "udm", "stock", "id_category")
+    # get category
+    sql = "SELECT * FROM product_categories_amc WHERE name = %s"
+    val = (category.lower(),)
+    flag, error, result = execute_sql(sql, val, 1)
+    if len(result) > 0:
+        category_id = result[0]
+        sql = ("SELECT id_product, name, udm, stock, id_category "
+               "FROM products_amc WHERE id_category = %s "
+               "ORDER BY stock limit %s")
+        val = (category_id, quantity)
+        flag, error, result = execute_sql(sql, val, 2)
+        return flag, error, result, columns
+    else:
+        return False, "No category in the DB", [], columns
+
+
+def get_no_stock_products(category: str, quantity: int = 10):
+    columns = ("id_product", "name", "udm", "stock", "id_category")
+    # get category
+    sql = "SELECT * FROM product_categories_amc WHERE name = %s"
+    val = (category.lower(),)
+    flag, error, result = execute_sql(sql, val, 1)
+    if len(result) > 0:
+        category_id = result[0]
+        sql = ("SELECT id_product, name, udm, stock, id_category "
+               "FROM products_amc WHERE id_category = %s "
+               "and stock=0 limit %s")
+        val = (category_id, quantity)
+        flag, error, result = execute_sql(sql, val, 2)
+        return flag, error, result, columns
+    else:
+        return False, "No category in the DB", [], columns
+
+
+def get_costumers_amc(name: str, id_c: int):
+    columns = ("id_customer", "name", "phone", "email", "address")
+    sql = ("SELECT id_customer, name, phone, email, address "
+           "FROM customers_amc WHERE id_customer = %s or "
+           "match(name) against (%s IN NATURAL LANGUAGE MODE ) "
+           "limit 10")
+    val = (id_c, name)
+    flag, error, result = execute_sql(sql, val, 2)
+    return flag, error, result, columns
+
+
+def get_supplier_amc(name: str, id_s: int):
+    columns = ("id_supplier", "name", "phone", "type", "address")
+    sql = ("SELECT id_supplier, name, phone, type, address "
+           "FROM suppliers_amc WHERE id_supplier = %s or "
+           "match(name) against (%s IN NATURAL LANGUAGE MODE ) "
+           "limit 10")
+    val = (id_s, name)
+    flag, error, result = execute_sql(sql, val, 2)
+    return flag, error, result, columns
+
+
+def get_orders_amc(id_o: int, id_c: int, status: str, name_c: str):
+    columns = ("id_order", "id_customer", "status", "sm_code", "date", "id_customer")
+    if id_c is None:
+        # get id customer from name_c
+        sql = "SELECT id_customer FROM customers_amc WHERE match(name) against (%s IN NATURAL LANGUAGE MODE ) "
+        val = (name_c,)
+        flag, error, result = execute_sql(sql, val, 1)
+        if len(result) > 0:
+            id_c = result[0]
+        else:
+            id_c = "%"
+    sql = ("SELECT id_order, id_customer, status, sm_code, order_date, id_customer "
+           "FROM orders_amc WHERE (id_order = %s or "
+           "id_customer = %s) and status like %s "
+           "limit 10")
+    val = (id_o, id_c, status)
+    flag, error, result = execute_sql(sql, val, 2)
+    return flag, error, result, columns

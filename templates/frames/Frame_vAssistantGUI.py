@@ -142,6 +142,7 @@ class AssistantGUI(ttk.Frame):
             instructions = (
                 f"Act as an Virtual Assistant, you work aiding in a telecomunications enterprise called Telintec. \n "
                 f"You help in the {self.department} and you answer are concise and precise.\n"
+                f"Ask for clarification if a user request is ambiguous\n."
                 f"You answer in {self.language}.")
             self.files_AV, res = get_response_assistant(msg, self.files_cb.get(), self.files_AV, instructions, self.department)
             print("Responge assistant gpt: ", res)
