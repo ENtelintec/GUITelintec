@@ -6,6 +6,7 @@ import json
 from datetime import datetime
 
 import mysql.connector
+
 from static.extensions import secrets
 
 
@@ -88,7 +89,7 @@ def execute_sql_multiple(sql: str, values_list: list = None, type_sql=1):
     out = []
     flag = True
     error = None
-    my_cursor = mydb.cursor(buffered=True)
+    # my_cursor = mydb.cursor(buffered=True)
     for i in range(len(values_list[0])):
         values = []
         for j in range(len(values_list)):
@@ -874,3 +875,68 @@ def get_orders_amc(id_o: int, id_c: int, status: str, name_c: str):
     val = (id_o, id_c, status)
     flag, error, result = execute_sql(sql, val, 2)
     return flag, error, result, columns
+
+
+def get_product_movement_amc(type_m: str, id_m: int, id_p: int):
+    columns = ("id_movement", "id_product", "type", "quantity", "date")
+    sql = ("SELECT id_movement, id_product, movement_type, quantity, movement_date "
+           "FROM product_movements_amc WHERE (id_movement = %s or "
+           "id_product = %s) and movement_type like %s "
+           "limit 10")
+    val = (id_m, id_p, type_m)
+    flag, error, result = execute_sql(sql, val, 2)
+    return flag, error, result, columns
+
+
+def get_supply_inv_amc(id_s: int, name: str):
+    columns = ("id_supply", "name", "id_supplier", "date", "status")
+    sql = ("SELECT id_supply, name, stock "
+           "FROM supply_inventory_amc WHERE (id_supply = %s or "
+           "match(name) against (%s IN NATURAL LANGUAGE MODE ) ) "
+           "limit 10")
+    val = (id_s, name)
+    flag, error, result = execute_sql(sql, val, 2)
+    return flag, error, result, columns
+
+
+def get_fichaje_emp_AV(name: str, id_e: int):
+    columns = ("id_employee", "absences", "lates", "lates_value[h]", "extras", "extras_value[h]", "primes")
+    if id_e is None:
+        id_e, name_db = get_employee_id_name(name)
+        if len(id_e) > 0:
+            sql = ("SELECT emp_id, absences, lates, extras, primes "
+                   "FROM fichajes WHERE emp_id = %s")
+            val = (id_e,)
+            flag, error, result = execute_sql(sql, val, 1)
+            return flag, error, result, columns
+        else:
+            return False, "No employee in the DB", [], columns
+    else:
+        sql = ("SELECT emp_id, absences, lates, extras, primes "
+               "FROM fichajes WHERE emp_id = %s")
+        val = (id_e,)
+        flag, error, result = execute_sql(sql, val, 1)
+        return flag, error, result, columns
+
+
+def get_employees_w_status(status: str, quantity: int, order: str):
+    columns = ("employee_id", "name", "l_name", "date_admission", "status")
+    sql = ("SELECT employee_id, name, l_name, date_admission, status "
+           "FROM employees "
+           "WHERE status like %s "
+           "ORDER BY %s "
+           "limit %s")
+    val = (status, order, quantity)
+    flag, error, result = execute_sql(sql, val, 2)
+    return flag, error, result, columns
+
+
+def get_employee_info(id_e: int):
+    columns = ("employee_id", "name", "l_name", "date_admission", "status", "department", "phone", "email", "contrato")
+    sql = ("SELECT employee_id, name, l_name, date_admission, status, department_id, phone_number, email, contrato "
+           "FROM employees "
+           "WHERE employee_id = %s")
+    val = (id_e,)
+    flag, error, result = execute_sql(sql, val, 1)
+    return flag, error, result, columns
+

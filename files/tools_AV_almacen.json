@@ -8,6 +8,20 @@
   {
     "type": "function",
     "function": {
+      "name": "getToolsForDepartment",
+      "description": "Get the information, from the body input text, to retrieve the tools for a certain department",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "name": {"type": "string", "description": "name of the department"},
+        },
+        "required": ["name"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
       "name": "getProductCategories",
       "description": "Get the avaliable categories of products",
       "parameters": {
@@ -134,11 +148,11 @@
       "parameters": {
         "type": "object",
         "properties": {
-          "name": {"type": "string", "description": "name of the Product Movement enum(\"entrada\", \"salida\")"},
+          "type": {"type": "string", "description": "type of the Product Movement", "enum": ["entrada", "salida"]},
           "id": {"type": "integer", "description": "id of the Product Movement"},
-          "product": {"type": "string", "description": "name of the product of the Product Movement"}
+          "id_p": {"type": "string", "description": "id of the product"}
         },
-        "required": ["name"]
+        "required": ["type"]
       }
     }
   },
@@ -150,8 +164,8 @@
       "parameters": {
         "type": "object",
         "properties": {
-          "name": {"type": "string", "description": "name of the inventory supply"},
-          "id": {"type": "integer", "description": "id of the inventory supply"}
+          "name": {"type": "string", "description": "name of the supply for the inventory"},
+          "id": {"type": "integer", "description": "id of the supply for the inventory"}
         },
         "required": ["name"]
       }

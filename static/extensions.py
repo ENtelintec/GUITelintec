@@ -104,8 +104,36 @@ log_file_bitacora_path = "files/logs/"
 patterns_files_fichaje = ["Fichaje", "Ternium"]
 department_tools_openAI = {
     "director": "files/tools_AV_default.json",
-    "rrhh": "files/tools_AV_default.json",
+    "rrhh": "files/tools_AV_rrhh.json",
     "administrator": "files/tools_AV_default.json",
     "almacen": "files/tools_AV_almacen.json",
     "default": "files/tools_AV_default.json"
+}
+tools_AV_avaliable = {
+    "default": [
+        {"type": "code_interpreter"},
+        {"type": "retrieval"
+        }
+    ],
+    "rrhh": [
+        {"type": "code_interpreter"},
+        {"type": "retrieval"},
+        {"type": "function", "name": "getTotalFichajeEmployee", "args": ["id", "name"]},
+        {"type": "function", "name": "getActiveEmployees", "args": ["status", "quantity", "order"]},
+        {"type": "function", "name": "getEmployeeInfo", "args": ["id"]}
+    ],
+    "almacen": [
+        {"type": "code_interpreter"},
+        {"type": "retrieval"},
+        {"type": "function", "name": "getProductCategories", "args": ["name"]},
+        {"type": "function", "name": "getProductsAlmacen", "args": ["name", "id", "category"]},
+        {"type": "function", "name": "getHighStockProducts", "args": ["category", "quantity"]},
+        {"type": "function", "name": "getLowStockProducts", "args": ["category", "quantity"]},
+        {"type": "function", "name": "getCostumer", "args": ["name", "id"]},
+        {"type": "function", "name": "getSupplier", "args": ["name", "id"]},
+        {"type": "function", "name": "getOrder", "args": ["id", "customer", "status", "id_customer"]},
+        {"type": "function", "name": "getProductMovement", "args": ["type", "id", "id_p"]},
+        {"type": "function", "name": "getSupplyInventory", "args": ["name", "id"]},
+        {"type": "function", "name": "getNoStockProducts", "args": ["category"]}
+    ]
 }

@@ -3,20 +3,34 @@ __author__ = 'Edisson Naula'
 __date__ = '$ 26/dic./2023  at 14:35 $'
 
 import json
-import pickle
-
-import openai
-
-from static.extensions import secrets, department_tools_openAI
-from openai import OpenAI
-
 import time
 
+import openai
+from openai import OpenAI
+
+from static.extensions import secrets, department_tools_openAI
 from templates.Function_tools_openAI import getProductCategories, getProductsAlmacen, getHighStockProducts, \
-    getLowStockProducts, getCostumer, getSupplier, getOrder, getProductMovement, getSupplyInventory, getNoStockProducts
+    getLowStockProducts, getCostumer, getSupplier, getOrder, getProductMovement, getSupplyInventory, getNoStockProducts, \
+    getTotalFichajeEmployee, getActiveEmployees, getEmployeeInfo
 
 client = OpenAI(api_key=secrets.get("OPENAI_API_KEY_1"))
 openai.api_key = secrets["OPENAI_API_KEY_1"]
+
+available_functions = {
+        "getProductCategories": getProductCategories,
+        "getProductsAlmacen": getProductsAlmacen,
+        "getHighStockProducts":  getHighStockProducts,
+        "getLowStockProducts": getLowStockProducts,
+        "getCostumer": getCostumer,
+        "getSupplier": getSupplier,
+        "getOrder": getOrder,
+        "getProductMovement": getProductMovement,
+        "getSupplyInventory": getSupplyInventory,
+        "getNoStockProducts": getNoStockProducts,
+        "getTotalFichajeEmployee": getTotalFichajeEmployee,
+        "getActiveEmployees": getActiveEmployees,
+        "getEmployeeInfo": getEmployeeInfo
+    }
 
 
 def create_assistant_openai(model="gpt-4-1106-preview", files=None, instructions=None, tools=None):
@@ -76,20 +90,8 @@ def run_thread_openai(thread_id, assistant_id):
 
 def get_tool_outputs(required_actions):
     outputs = []
-    available_functions = {
-        "getProductCategories": getProductCategories,
-        "getProductsAlmacen": getProductsAlmacen,
-        "getHighStockProducts":  getHighStockProducts,
-        "getLowStockProducts": getLowStockProducts,
-        "getCostumer": getCostumer,
-        "getSupplier": getSupplier,
-        "getOrder": getOrder,
-        "getProductMovement": getProductMovement,
-        "getSupplyInventory": getSupplyInventory,
-        "getNoStockProducts": getNoStockProducts
-    }
+
     for tool in required_actions:
-        print(tool)
         arguments = json.loads(tool.function.arguments)
         function_to_call = available_functions[tool.function.name]
         output = function_to_call(**arguments)
@@ -198,7 +200,6 @@ def get_response_assistant(message: str, filename: str, files: list = None, inst
             if item["name"] == filename:
                 files_assistat_ids.append(item["file_id"])
                 break
-
     try:
         assistant, error = create_assistant_openai(files=files_assistat_ids, instructions=instructions, tools=tools)
     except Exception as e:
@@ -210,7 +211,6 @@ def get_response_assistant(message: str, filename: str, files: list = None, inst
         run, error = run_thread_openai(thread.id, assistant.id)
         run, error = retrieve_runs_openai(thread.id, run.id)
         msgs, error = retrieve_messages_openai(thread.id)
-        print(msgs)
         for msg in reversed(msgs.data):
             answer += msg.content[0].text.value + "\n" if msg.role == "assistant" else ""
     except Exception as e:
