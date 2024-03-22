@@ -92,6 +92,7 @@ def get_tool_outputs(required_actions):
     outputs = []
 
     for tool in required_actions:
+        print(tool)
         arguments = json.loads(tool.function.arguments)
         function_to_call = available_functions[tool.function.name]
         output = function_to_call(**arguments)
