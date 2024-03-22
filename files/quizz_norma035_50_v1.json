@@ -1,14 +1,13 @@
 {
     "0": {
-        "question": " I.- Acontecimiento traumático severo (en el período laborado de su actual empresa)",
+        "question": " I.- Acontecimiento traumático severo (en el período laborado de su actual empresa)\nHa presenciado o sufrido alguna vez, durante o con motivo en su trabajo actual, un acontecimiento como los siguientes:",
         "subquestions": [
-            "Ha presenciado o sufrido alguna vez, durante o con motivo en su trabajo actual, un acontecimiento como los siguientes:",
             "*Accidente que tenga como consecuencia la muerte, pérdida de un miembro corporal o una lesión grave",
             "*Asaltos",
-            " *Actos violentos que derivaron en lesiones graves.",
-            " *Secuestro",
-            " *Amenazas",
-            " *Cualquier otro que ponga en riesgo su vida o salud y/o la de otras personas."
+            "*Actos violentos que derivaron en lesiones graves.",
+            "*Secuestro",
+            "*Amenazas",
+            "*Cualquier otro que ponga en riesgo su vida o salud y/o la de otras personas."
         ],
         "options": [
             "SI",
@@ -21,8 +20,8 @@
     "1": {
         "question": "II.- Recuerdos persistentes sobre el acontecimiento (durante el último mes):",
         "subquestions": [
-            "¿Ha tenido recuerdos recurrentes sobre el acontecimiento que le provocan malestares?",
-            "¿Ha tenido sueños de carácter recurrente sobre el acontecimiento, que le producen malestar?"
+            "-¿Ha tenido recuerdos recurrentes sobre el acontecimiento que le provocan malestares?",
+            "-¿Ha tenido sueños de carácter recurrente sobre el acontecimiento, que le producen malestar?"
         ],
         "options": [
             "SI",
@@ -35,13 +34,13 @@
     "2": {
         "question": "III.- Esfuerzo por evitar circunstancias parecidas o asociadas al acontecimiento (durante el último mes):",
         "subquestions": [
-            "¿Se ha esforzado para evitar todo tipo de sentimientos, conversaciones o situaciones que le pueden recordar el acontecimiento?",
-            "¿Se ha esforzado por evitar todo tipo de actividades, lugares o personas que motivan recuerdos del acontecimiento?",
-            "¿Ha tenido dificultad para recordar alguna parte importante del evento?",
-            "¿Ha disminuido su interés en sus actividades cotidianas?",
-            "¿Se ha sentido usted alejado o distante de los demás?",
-            "¿Ha notado que tiene dificultad para expresar sus sentimientos?",
-            "¿Ha tenido la impresión de que su vida se va a acortar, que va a morir antes que otras personas o que tiene un futuro limitado?"
+            "-¿Se ha esforzado para evitar todo tipo de sentimientos, conversaciones o situaciones que le pueden recordar el acontecimiento?",
+            "-¿Se ha esforzado por evitar todo tipo de actividades, lugares o personas que motivan recuerdos del acontecimiento?",
+            "-¿Ha tenido dificultad para recordar alguna parte importante del evento?",
+            "-¿Ha disminuido su interés en sus actividades cotidianas?",
+            "-¿Se ha sentido usted alejado o distante de los demás?",
+            "-¿Ha notado que tiene dificultad para expresar sus sentimientos?",
+            "-¿Ha tenido la impresión de que su vida se va a acortar, que va a morir antes que otras personas o que tiene un futuro limitado?"
         ],
         "options": [
             "SI",
@@ -54,11 +53,11 @@
     "3": {
         "question": "IV.- Afectación (durante el último mes):",
         "subquestions": [
-            "¿Ha tenido usted dificultades para dormir?",
-            "¿Ha estado particularmente irritable o le han dado arranques de coraje?",
-            "¿Ha tenido dificultad para concentrarse?",
-            "¿Ha estado nervioso o constantemente en alerta?",
-            "¿Se ha sobresaltado fácilmente por cualquier cosa?"
+            "-¿Ha tenido usted dificultades para dormir?",
+            "-¿Ha estado particularmente irritable o le han dado arranques de coraje?",
+            "-¿Ha tenido dificultad para concentrarse?",
+            "-¿Ha estado nervioso o constantemente en alerta?",
+            "-¿Se ha sobresaltado fácilmente por cualquier cosa?"
         ],
         "options": [
             "SI",

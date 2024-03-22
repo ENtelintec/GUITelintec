@@ -1,8 +1,7 @@
 {
     "0": {
-        "question": "Acontecimiento traumático severo (en el período laborado de su actual empresa)",
+        "question": "I.- Acontecimiento traumático severo (en el período laborado de su actual empresa)\nHa presenciado o sufrido alguna vez, durante o con motivo en su trabajo actual, un acontecimiento como los siguientes:",
         "subquestions": [
-            "Ha presenciado o sufrido alguna vez, durante o con motivo en su trabajo actual, un acontecimiento como los siguientes:",
             "*Accidente que tenga como consecuencia la muerte, pérdida de un miembro corporal o una lesión grave",
             "*Asaltos",
             "*Actos violentos que derivaron en lesiones graves.",
@@ -19,7 +18,7 @@
         "items": ""
     },
     "1": {
-        "question": "Recuerdos persistentes sobre el acontecimiento (durante el último mes):*",
+        "question": "II.- Recuerdos persistentes sobre el acontecimiento (durante el último mes):*",
         "subquestions": [
             "-¿Ha tenido recuerdos recurrentes sobre el acontecimiento que le provocan malestares?",
             "-¿Ha tenido sueños de carácter recurrente sobre el acontecimiento, que le producen malestar?"
@@ -33,7 +32,7 @@
         "items": ""
     },
     "2": {
-        "question": " Esfuerzo por evitar circunstancias parecidas o asociadas al acontecimiento (durante el último mes):",
+        "question": "III.- Esfuerzo por evitar circunstancias parecidas o asociadas al acontecimiento (durante el último mes):",
         "subquestions": [
             "-¿Se ha esforzado para evitar todo tipo de sentimientos, conversaciones o situaciones que le pueden recordar el acontecimiento?",
             "-¿Se ha esforzado por evitar todo tipo de actividades, lugares o personas que motivan recuerdos del acontecimiento?",
@@ -52,7 +51,7 @@
         "items": ""
     },
     "3": {
-        "question": " Afectación (durante el último mes):*",
+        "question": "IV.- Afectación (durante el último mes):*",
         "subquestions": [
             "-¿Ha tenido usted dificultades para dormir?",
             "-¿Ha estado particularmente irritable o le han dado arranques de coraje?",
@@ -267,7 +266,7 @@
         "items": ""
     },
     "17": {
-        "question": "Si su respuesta fue “SÍ”, responda las preguntas siguientes./Si su respuesta fue “NO” seleccione la opción (NO APLICA)",
+        "question": "Si su respuesta fue “SÍ”, responda las preguntas siguientes.\nSi su respuesta fue “NO” seleccione la opción (NO APLICA)",
         "subquestions": [
             "Q65. Atiendo clientes o usuarios muy enojados.",
             "Q66. Mi trabajo me exige atender personas muy necesitadas de ayuda o enfermas.",

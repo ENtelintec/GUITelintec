@@ -1,0 +1,174 @@
+[
+  {
+    "type": "code_interpreter"
+  },
+  {
+    "type": "retrieval"
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "getToolsForDepartment",
+      "description": "Get the information, from the body input text, to retrieve the tools for a certain department",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "name": {"type": "string", "description": "name of the department"},
+        },
+        "required": ["name"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "getProductCategories",
+      "description": "Get the avaliable categories of products",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "name": {"type": "string", "description": "name of the category"}
+        },
+        "required": []
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "getProductsAlmacen",
+      "description": "Get information for a product from the body of the input text",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "name": {"type": "string", "description": "name of the product"},
+          "id": {"type": "integer", "description": "id of the product"},
+          "category": {"type": "string", "description": "category of the product"}
+        },
+        "required": ["name", "catergory"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "getHighStockProducts",
+      "description": "Get information for display high stock products from the body of the input text",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "category": {"type": "string", "description": "category of the product"},
+          "quantity": {"type": "integer", "description": "quantity of the product to be showed. Max 20 products."}
+        },
+        "required": ["category", "quantity"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "getLowStockProducts",
+      "description": "Get information for display low stock products from the body of the input text",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "category": {"type": "string", "description": "category of the product"},
+          "quantity": {"type": "integer", "description": "quantity of the product to be showed. Max 20 products."}
+        },
+        "required": ["category", "quantity"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "getNoStockProducts",
+      "description": "Get information for zero or non-existing stock products in a category from the body of the input text",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "category": {"type": "string", "description": "category of the product"}
+        },
+        "required": ["category"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "getCostumer",
+      "description": "Get information for a costumer from the body of the input text",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "name": {"type": "string", "description": "name of the costumer"},
+          "id": {"type": "integer", "description": "id of the costumer"}
+        },
+        "required": ["name"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "getSupplier",
+      "description": "Get information for a supplier or provider from the body of the input text",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "name": {"type": "string", "description": "name of the supplier"},
+          "id": {"type": "integer", "description": "id of the supplier"}
+        },
+        "required": ["name"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "getOrder",
+      "description": "Get information for an Order from the body of the input text",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "id": {"type": "integer", "description": "id of the Order"},
+          "custumer": {"type": "string", "description": "name of the custumer of the Order"},
+          "status": {"type": "string", "description": "status of the Order", "enum":  ["pending", "urgent", "processing", "complete"]},
+          "id_custumer": {"type": "integer", "description": "id of the customer"}
+        },
+        "required": ["status"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "getProductMovement",
+      "description": "Get information for a Product Movement from the body of the input text",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "type": {"type": "string", "description": "type of the Product Movement", "enum": ["entrada", "salida"]},
+          "id": {"type": "integer", "description": "id of the Product Movement"},
+          "id_p": {"type": "string", "description": "id of the product"}
+        },
+        "required": ["type"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "getSupplyInventory",
+      "description": "Get information for an Inventory of supplies from the body of the input text",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "name": {"type": "string", "description": "name of the supply for the inventory"},
+          "id": {"type": "integer", "description": "id of the supply for the inventory"}
+        },
+        "required": ["name"]
+      }
+    }
+  }
+]
