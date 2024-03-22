@@ -8,8 +8,17 @@ from reportlab.pdfgen import canvas
 
 
 def create_datos_personales(
-        master: canvas.Canvas, emp, puesto, term, start, end,
-        interview, interviewer, dim_x, dim_y):
+    master: canvas.Canvas,
+    emp,
+    puesto,
+    term,
+    start,
+    end,
+    interview,
+    interviewer,
+    dim_x,
+    dim_y,
+):
     pady = 0
     master.setFont("Courier-Bold", 10)
     master.drawString(dim_x + 10, dim_y - 25 - pady, "Nombre y firma del empleado:")
@@ -110,16 +119,16 @@ def create_header(master: canvas.Canvas, img, title, page_x, date_int):
 
 
 def create_pdf_quizz_salida(
-        dict_quizz,
-        image_logo=None,
-        filepath_out=None,
-        name_emp="Ejemplo1",
-        job="position 1",
-        terminal="terminal",
-        date_start="01/01/2021",
-        date_end="31/12/2021",
-        date_inteview="01/01/2021",
-        name_interviewer="Interviewer",
+    dict_quizz,
+    image_logo=None,
+    filepath_out=None,
+    name_emp="Ejemplo1",
+    job="position 1",
+    terminal="terminal",
+    date_start="01/01/2021",
+    date_end="31/12/2021",
+    date_inteview="01/01/2021",
+    name_interviewer="Interviewer",
 ):
     # initializing variables with values
     file_name = (
@@ -393,7 +402,7 @@ def create_pdf_quizz_salida(
     answer = dict_quizz["9"]["answer"] if "answer" in dict_quizz["9"] else "No"
     # split every 100 characters
     n_char = 105
-    answer = "\n".join([answer[i: i + n_char] for i in range(0, len(answer), n_char)])
+    answer = "\n".join([answer[i : i + n_char] for i in range(0, len(answer), n_char)])
     answer = answer.split("\n")
     pdf.setFont("Times-Roman", 10)
     pdf.setFillColorRGB(0, 0, 255)
@@ -418,6 +427,9 @@ def create_pdf_quizz_salida(
 
 
 def draw_option(x, y, k, options, answers, pdf):
+    if not isinstance(answers, (list, set)):
+        answers = [answers]  # Convertir a lista si es un entero
+
     for j, option in enumerate(options):
         if (k, j) in answers:
             pdf.setFillColorRGB(0, 255, 0)
@@ -428,22 +440,20 @@ def draw_option(x, y, k, options, answers, pdf):
 
 
 def create_pdf__quizz_nor035_v1(
-        dict_quizz,
-        image_logo=None,
-        filepath_out=None,
-        name_emp="Ejemplo1",
-        job="position 1",
-        terminal="terminal",
-        date_start="01/01/2021",
-        date_end="31/12/2021",
-        date_interview="01/01/2021",
-        name_interviewer="Interviewer",
+    dict_quizz,
+    image_logo=None,
+    filepath_out=None,
+    name_emp="Ejemplo1",
+    job="position 1",
+    terminal="terminal",
+    date_start="01/01/2021",
+    date_end="31/12/2021",
+    date_interview="01/01/2021",
+    name_interviewer="Interviewer",
 ):
     note_txt = "*NOTA: Si en esta SECCIÓN  I.- Acontecimiento traumático severo  tu respuesta es NO, en las siguientes secciones de esta HOJA vas a seleccionar NO a TODAS."
     file_name = (
-        "files/quizz_out/norm035_v1.pdf"
-        if filepath_out is None
-        else filepath_out
+        "files/quizz_out/norm035_v1.pdf" if filepath_out is None else filepath_out
     )
     image_logo = "img/logo_docs.png" if image_logo is None else image_logo
     name_quizz = "NORMA 035 V1"
@@ -495,7 +505,7 @@ def create_pdf__quizz_nor035_v1(
 
         # Draw subquestions and answers in columns
         x_subquestion = 20
-        x_answers = a4_x / 2 -10
+        x_answers = a4_x / 2 - 10
         #  Draw options titles
         for j, option in enumerate(options):
             option_title = f"{option}:"
@@ -523,8 +533,16 @@ def create_pdf__quizz_nor035_v1(
         if i == n_questions - 1:
             # ------------------------personal data-------------------
             create_datos_personales(
-                pdf, name_emp, job, terminal, date_start, date_end,
-                date_interview, name_interviewer, 80, 180,
+                pdf,
+                name_emp,
+                job,
+                terminal,
+                date_start,
+                date_end,
+                date_interview,
+                name_interviewer,
+                80,
+                180,
             )
     pdf.save()
     return True
@@ -532,16 +550,16 @@ def create_pdf__quizz_nor035_v1(
 
 # ------------new method---------------
 def create_pdf_quizz_nor035_50_plus(
-        dict_quizz,
-        image_logo=None,
-        filepath_out=None,
-        name_emp="Ejemplo1",
-        job="position 1",
-        terminal="terminal",
-        date_start="01/01/2021",
-        date_end="31/12/2021",
-        date_interview="01/01/2021",
-        name_interviewer="Interviewer",
+    dict_quizz,
+    image_logo=None,
+    filepath_out=None,
+    name_emp="Ejemplo1",
+    job="position 1",
+    terminal="terminal",
+    date_start="01/01/2021",
+    date_end="31/12/2021",
+    date_interview="01/01/2021",
+    name_interviewer="Interviewer",
 ):
     file_name = (
         "C:/Users/eugen/OneDrive/Escritorio/pdfs/norm035_50_plus.pdf"
@@ -549,9 +567,9 @@ def create_pdf_quizz_nor035_50_plus(
         else filepath_out
     )
     image_logo = "img/logo_docs.png" if image_logo is None else image_logo
-    name_quizz = "NORMA 035 V1"
+    name_quizz = "NORMA 035 +50"
     n_questions = len(dict_quizz)
-
+    interlineado = 1
     a4_x = 595.27
     a4_y = 841.89
 
@@ -576,12 +594,13 @@ def create_pdf_quizz_nor035_50_plus(
             pdf.showPage()
             create_header(pdf, image_logo, name_quizz, a4_x, date_interview)
             y_position = 730
-
-        question = dict_quizz[str(i)]["question"]
-        question = question.split("\n")
-        font_size = 9
+        question = textwrap.wrap(dict_quizz[str(i)]["question"], width=121)
+        font_size = 11
         pdf.setFont("Times-Roman", font_size)
-        y_position -= font_size * 2
+        y_position -= font_size * interlineado
+
+        # pdf.setFont("Times-Roman", font_size)
+        # y_position -= font_size * 2
         for line in question:
             pdf.drawString(40, y_position, line)
             y_position -= font_size
@@ -593,39 +612,270 @@ def create_pdf_quizz_nor035_50_plus(
             if dict_quizz[str(i)]["answer"] != ""
             else [(0, 0)]
         )
-        cols = len(options)
+
         font_size = 8
         pdf.setFont("Times-Roman", font_size)
-        y_position -= font_size * 2
-        if subquestions:
-            max_subquestion_len = max(len(subq) for subq in subquestions)
-        else:
-            max_subquestion_len = 0  # O cualquier otro valor predeterminado que desees
+        y_position -= font_size * interlineado
         # Draw subquestions and answers in columns
-        # max_subquestion_len = max(len(subq) for subq in subquestions)
-        max_option_len = max(len(option) for option in options)
-        x_subquestion = 25
-        x_answers = a4_x - 40 - max_option_len * 23
+        x_subquestion = 20
+        x_answers = a4_x / 2 - 10
+
         #  Draw options titles
         for j, option in enumerate(options):
             option_title = f"{option}:"
-            pdf.drawString(x_answers + j * 55, y_position, option_title)
-        y_position -= font_size * 2
-        for l, subquestion in enumerate(subquestions):
+            pdf.drawCentredString(x_answers + j * 55, y_position, option_title)
+        y_position -= font_size * interlineado * 2
+        # draw subquestions
+        font_size = 9
+        pdf.setFont("Times-Roman", font_size)
+        for k, subquestion in enumerate(subquestions):
             lines = textwrap.wrap(subquestion, width=60)
-            for line in lines:
+            for m, line in enumerate(lines):
                 pdf.drawString(x_subquestion, y_position, line)
-                y_position -= font_size * 1.5
-            for j, option in enumerate(options):
-                if (l, j) in answers:
-                    pdf.setFillColorRGB(0, 255, 0)
-                    pdf.drawString(x_answers + j * 55, y_position, "X")
-                else:
-                    pdf.setFillColorRGB(0, 0, 0)
-                    pdf.drawString(x_answers + j * 55, y_position, "O")
-            y_position -= font_size * 1.5
+                if m == 0:
+                    draw_option(x_answers, y_position, k, options, answers, pdf)
+                y_position -= font_size * interlineado
+            y_position -= font_size * interlineado
+        if i == n_questions - 1:
+            # ------------------------personal data-------------------
+            create_datos_personales(
+                pdf,
+                name_emp,
+                job,
+                terminal,
+                date_start,
+                date_end,
+                date_interview,
+                name_interviewer,
+                80,
+                180,
+            )
 
-    pdf.showPage()
+    pdf.save()
+    return True
+
+
+def create_quizz_clima_laboral(
+    dict_quizz,
+    image_logo=None,
+    filepath_out=None,
+    name_emp="Ejemplo1",
+    job="position 1",
+    terminal="terminal",
+    date_start="01/01/2021",
+    date_end="31/12/2021",
+    date_interview="01/01/2021",
+    name_interviewer="Interviewer",
+):
+    file_name = (
+        "C:/Users/eugen/OneDrive/Escritorio/pdfs/quizz_clima_laboral.pdf"
+        if filepath_out is None
+        else filepath_out
+    )
+    image_logo = "img/logo_docs.png" if image_logo is None else image_logo
+    name_quizz = "CLIMA LABORAL"
+    n_questions = len(dict_quizz)
+    interlineado = 1
+    a4_x = 595.27
+    a4_y = 841.89
+
+    pdf = canvas.Canvas(file_name, pagesize=(a4_x, a4_y))
+    pdf.setTitle(name_quizz)
+
     create_header(pdf, image_logo, name_quizz, a4_x, date_interview)
+    note = "* Indica que la pregunta es obligatoria"
+    txt_lines = [
+        "OBJETIVO: * ",
+        "Conocer la percepción del personal sobre la empresa identificando las áreas ",
+        "de oportunidad para poder realizar un plan de acción",
+    ]
+    font_size = 12
+    pdf.setFont("Times-Roman", font_size)
+    y_position = 730
+    for line in txt_lines:
+        pdf.drawString(80, y_position, line)
+        y_position -= font_size
+
+    for i in range(n_questions):
+        if i % 3 == 0 and i != 0:
+            pdf.showPage()
+            create_header(pdf, image_logo, name_quizz, a4_x, date_interview)
+            y_position = 730
+        question = textwrap.wrap(dict_quizz[str(i)]["question"], width=121)
+        font_size = 11
+        pdf.setFont("Times-Roman", font_size)
+        y_position -= font_size * interlineado
+
+        for line in question:
+            pdf.drawString(40, y_position, line)
+            y_position -= font_size
+
+        options = dict_quizz[str(i)]["options"]
+        subquestions = dict_quizz[str(i)]["subquestions"]
+        answers = (
+            dict_quizz[str(i)]["answer"]
+            if dict_quizz[str(i)]["answer"] != ""
+            else [(0, 0)]
+        )
+
+        font_size = 8
+        pdf.setFont("Times-Roman", font_size)
+        y_position -= font_size * interlineado
+        # Draw subquestions and answers in columns
+        x_subquestion = 20
+        x_answers = a4_x / 2 - 10
+
+        #  Draw options titles
+        for j, option in enumerate(options):
+            option_title = f"{option}:"
+            pdf.drawCentredString(x_answers + j * 55, y_position, option_title)
+        y_position -= font_size * interlineado * 2
+        # draw subquestions
+        font_size = 9
+        pdf.setFont("Times-Roman", font_size)
+        for k, subquestion in enumerate(subquestions):
+            lines = textwrap.wrap(subquestion, width=60)
+            for m, line in enumerate(lines):
+                pdf.drawString(x_subquestion, y_position, line)
+                if m == 0:
+                    draw_option(x_answers, y_position, k, options, answers, pdf)
+                y_position -= font_size * interlineado
+            y_position -= font_size * interlineado
+
+        if i == 0:
+            font_size = 8
+            pdf.setFillColorRGB(255, 0, 0)
+            pdf.setFont("Times-Roman", font_size)
+            pdf.drawString(20, y_position, note)
+            pdf.setFillColorRGB(0, 0, 0)
+            y_position -= font_size * interlineado
+
+        if i == n_questions - 1:
+            # ------------------------personal data-------------------
+            create_datos_personales(
+                pdf,
+                name_emp,
+                job,
+                terminal,
+                date_start,
+                date_end,
+                date_interview,
+                name_interviewer,
+                80,
+                180,
+            )
+
+    pdf.save()
+    return True
+
+
+def create_quizz_eva_360(
+    dict_quizz,
+    image_logo=None,
+    filepath_out=None,
+    name_emp="Ejemplo1",
+    job="position 1",
+    terminal="terminal",
+    date_start="01/01/2021",
+    date_end="31/12/2021",
+    date_interview="01/01/2021",
+    name_interviewer="Interviewer",
+):
+    file_name = (
+        "C:/Users/eugen/OneDrive/Escritorio/pdfs/quizz_eva_360.pdf"
+        if filepath_out is None
+        else filepath_out
+    )
+    image_logo = "img/logo_docs.png" if image_logo is None else image_logo
+    name_quizz = "Evaluacion 360°"
+    n_questions = len(dict_quizz)
+    interlineado = 1
+    a4_x = 595.27
+    a4_y = 841.89
+
+    pdf = canvas.Canvas(file_name, pagesize=(a4_x, a4_y))
+    pdf.setTitle(name_quizz)
+
+    create_header(pdf, image_logo, name_quizz, a4_x, date_interview)
+    note = "* Indica que la pregunta es obligatoria"
+    txt_lines = [
+        " Evaluacion 360",
+    ]
+    font_size = 12
+    pdf.setFont("Times-Roman", font_size)
+    y_position = 730
+    for line in txt_lines:
+        pdf.drawString(80, y_position, line)
+        y_position -= font_size
+
+    for i in range(n_questions):
+        if i % 4 == 0 and i != 0:
+            pdf.showPage()
+            create_header(pdf, image_logo, name_quizz, a4_x, date_interview)
+            y_position = 730
+        question = textwrap.wrap(dict_quizz[str(i)]["question"], width=121)
+        font_size = 11
+        pdf.setFont("Times-Roman", font_size)
+        y_position -= font_size * interlineado
+
+        for line in question:
+            pdf.drawString(40, y_position, line)
+            y_position -= font_size
+
+        options = dict_quizz[str(i)]["options"]
+        subquestions = dict_quizz[str(i)]["subquestions"]
+        answers = (
+            dict_quizz[str(i)]["answer"]
+            if dict_quizz[str(i)]["answer"] != ""
+            else [(0, 0)]
+        )
+
+        font_size = 8
+        pdf.setFont("Times-Roman", font_size)
+        y_position -= font_size * interlineado
+        # Draw subquestions and answers in columns
+        x_subquestion = 20
+        x_answers = a4_x / 2 - 10
+
+        #  Draw options titles
+        for j, option in enumerate(options):
+            option_title = f"{option}:"
+            pdf.drawCentredString(x_answers + j * 55, y_position, option_title)
+        y_position -= font_size * interlineado * 2
+        # draw subquestions
+        font_size = 9
+        pdf.setFont("Times-Roman", font_size)
+        for k, subquestion in enumerate(subquestions):
+            lines = textwrap.wrap(subquestion, width=60)
+            for m, line in enumerate(lines):
+                pdf.drawString(x_subquestion, y_position, line)
+                if m == 0:
+                    draw_option(x_answers, y_position, k, options, answers, pdf)
+                y_position -= font_size * interlineado
+            y_position -= font_size * interlineado
+
+        if i == 0:
+            font_size = 8
+            pdf.setFillColorRGB(255, 0, 0)
+            pdf.setFont("Times-Roman", font_size)
+            pdf.drawString(20, y_position, note)
+            pdf.setFillColorRGB(0, 0, 0)
+            y_position -= font_size * interlineado
+
+        if i == n_questions - 1:
+            # ------------------------personal data-------------------
+            create_datos_personales(
+                pdf,
+                name_emp,
+                job,
+                terminal,
+                date_start,
+                date_end,
+                date_interview,
+                name_interviewer,
+                80,
+                180,
+            )
+
     pdf.save()
     return True
