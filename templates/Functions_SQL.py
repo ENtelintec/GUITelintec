@@ -478,18 +478,116 @@ def delete_supplier_DB(supplier_id: int) -> tuple[bool, Exception | None, int | 
 
 
 # --------------------------------Products and Services--------------------------------
-def insert_product_and_service(product_id: str, name: str, model: str, brand: str,
+def insert_product_and_service(product_id: int, name: str, model: str, brand: str,
                                description: str, price_retail: str, quantity: str,
                                price_provider: str,
-                               support: int, is_service: int) -> tuple[bool, Exception | None, str | None]:
+                               support: int, is_service: int, categories: str,
+                               img_url: str) -> tuple[bool, Exception | None, list | None]:
     sql = ("INSERT INTO sql_telintec.products_services (product_id, name, model, marca, description, "
-           "price_retail, available_quantity, price_provider, support_offered, is_service) "
-           "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)")
+           "price_retail, available_quantity, price_provider, support_offered, is_service,"
+           "category, image) "
+           "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)")
     val = (product_id, name, model, brand, description, price_retail, quantity,
-           price_provider, str(support), str(is_service))
+           price_provider, str(support), str(is_service), categories, img_url)
     flag, e, out = execute_sql(sql, val, 3)
     print(out, "record inserted in products_services.")
-    return flag, None, product_id
+    return flag, None, out
+
+
+def update_product_and_service(product_id: int, name: str, model: str, brand: str,
+                               description: str, price_retail: str, quantity: str,
+                               price_provider: str,
+                               support: int, is_service: int, categories: str,
+                               img_url: str) -> tuple[bool, Exception | None, list | None]:
+    sql = ("UPDATE sql_telintec.products_services SET name = %s, model = %s, marca = %s, "
+           "description = %s, price_retail = %s, available_quantity = %s, price_provider = %s, "
+           "support_offered = %s, is_service = %s, category = %s, image = %s "
+           "WHERE product_id = %s")
+    val = (name, model, brand, description, price_retail, quantity, price_provider,
+           str(support), str(is_service), categories, img_url, product_id)
+    flag, e, out = execute_sql(sql, val, 3)
+    return flag, e, out
+
+
+def delete_product_and_service(id_ps: int):
+    sql = "DELETE FROM sql_telintec.products_services WHERE product_id = %s"
+    val = (id_ps,)
+    flag, e, out = execute_sql(sql, val, 3)
+    return flag, e, out
+
+
+def insert_order(id_order: int, id_product: int, quantity: int, date_order, id_customer: int, id_employee: int):
+    sql = ("INSERT INTO sql_telintec.orders (order_id, product_id, quantity, date_order, "
+           "customer_id, employee_id) VALUES (%s, %s, %s, %s, %s, %s)")
+    val = (id_order, id_product, quantity, date_order, id_customer, id_employee)
+    flag, e, out = execute_sql(sql, val, 3)
+    print(out, "record inserted in orders.")
+    return flag, None, out
+
+
+def update_order_db(id_order: int, id_product: int, quantity: int, date_order, id_customer: int, id_employee: int):
+    sql = ("UPDATE sql_telintec.orders SET product_id = %s, quantity = %s, date_order = %s, "
+           "customer_id = %s, employee_id = %s WHERE order_id = %s")
+    val = (id_product, quantity, date_order, id_customer, id_employee, id_order)
+    flag, e, out = execute_sql(sql, val, 3)
+    return flag, e, out
+
+
+def delete_order_db(id_order: int):
+    sql = "DELETE FROM sql_telintec.orders WHERE order_id = %s"
+    val = (id_order,)
+    flag, e, out = execute_sql(sql, val, 3)
+    return flag, e, out
+
+
+def insert_vorder_db(id_vorder: int, products: str, date_order,
+                     id_customer: int, id_employee: int, chat_id: int):
+    sql = ("INSERT INTO sql_telintec.virtual_orders (vo_id, products, date_order, "
+           "customer_id, employee_id, chat_id) VALUES (%s, %s, %s, %s, %s, %s)")
+    val = (id_vorder, products, date_order, id_customer, id_employee)
+    flag, e, out = execute_sql(sql, val, 3)
+    print(out, "record inserted in vorders.")
+    return flag, None, out
+
+
+def update_vorder_db(id_vorder: int, products: str, date_order,
+                     id_customer: int, id_employee: int, chat_id: int):
+    sql = ("UPDATE sql_telintec.virtual_orders SET products = %s, date_order = %s, "
+           "customer_id = %s, employee_id = %s, chat_id = %s WHERE vo_id = %s")
+    val = (products, date_order, id_customer, id_employee, chat_id, id_vorder)
+    flag, e, out = execute_sql(sql, val, 3)
+    return flag, e, out
+
+
+def delete_vorder_db(id_vorder: int):
+    sql = "DELETE FROM sql_telintec.virtual_orders WHERE vo_id = %s"
+    val = (id_vorder,)
+    flag, e, out = execute_sql(sql, val, 3)
+    return flag, e, out
+
+
+def insert_ticket_db(id_t: int, content: str, is_retrieved: int, is_answered: int, timestamp: str):
+    sql = ("INSERT INTO sql_telintec.tickets (ticket_id, content_ticket, is_retrieved, is_answered, "
+           "timestamp_create) VALUES (%s, %s, %s, %s, %s)")
+    val = (id_t, content, is_retrieved, is_answered, timestamp)
+    flag, e, out = execute_sql(sql, val, 3)
+    print(out, "record inserted in tickets.")
+    return flag, None, out
+
+
+def update_ticket_db(id_t: int, content: str, is_retrieved: int, is_answered: int, timestamp: str):
+    sql = ("UPDATE sql_telintec.tickets SET content_ticket = %s, is_retrieved = %s, is_answered = %s, "
+           "timestamp_create = %s WHERE ticket_id = %s")
+    val = (content, is_retrieved, is_answered, timestamp, id_t)
+    flag, e, out = execute_sql(sql, val, 3)
+    return flag, e, out
+
+
+def delete_ticket_db(id_t: int):
+    sql = "DELETE FROM sql_telintec.tickets WHERE ticket_id = %s"
+    val = (id_t,)
+    flag, e, out = execute_sql(sql, val, 3)
+    return flag, e, out
 
 
 def check_last_id(old: str = None) -> list:

@@ -424,6 +424,70 @@ def create_widget_input_DB(master, table) -> list:
             entry11.grid(row=5, column=2, padx=5, pady=1)
             entry12.grid(row=5, column=3, padx=5, pady=1)
             return [entry1, entry2, entry3, entry4, entry5, entry6, entry7, var8, var9, entry10, entry11, entry12]
+        case "orders":
+            ttk.Label(master, text="ID", font=("Helvetica", 12, "bold")).grid(row=0, column=0, padx=1, pady=1, sticky="nsew")
+            ttk.Label(master, text="Product ID", font=("Helvetica", 12, "bold")).grid(row=0, column=1, padx=1, pady=1, sticky="nsew")
+            ttk.Label(master, text="Quantity", font=("Helvetica", 12, "bold")).grid(row=0, column=2, padx=1, pady=1, sticky="nsew")
+            ttk.Label(master, text="Date order", font=("Helvetica", 12, "bold")).grid(row=0, column=3, padx=1, pady=1, sticky="nsew")
+            ttk.Label(master, text="Customer ID", font=("Helvetica", 12, "bold")).grid(row=2, column=0, padx=1, pady=1, sticky="nsew")
+            ttk.Label(master, text="Employee ID", font=("Helvetica", 12, "bold")).grid(row=2, column=1, padx=1, pady=1, sticky="nsew")
+            # -----------------------inputs-----------------------
+            entry1 = ttk.Entry(master, width=15)
+            entry2 = ttk.Entry(master, width=15)
+            entry3 = ttk.Entry(master, width=13)
+            entry4 = ttk.DateEntry(master)
+            entry5 = ttk.Entry(master, width=7)
+            entry6 = ttk.Entry(master, width=9)
+            entry1.grid(row=1, column=0, padx=5, pady=1)
+            entry2.grid(row=1, column=1, padx=5, pady=1)
+            entry3.grid(row=1, column=2, padx=5, pady=1)
+            entry4.grid(row=1, column=3, padx=5, pady=1)
+            entry5.grid(row=3, column=0, padx=5, pady=1)
+            entry6.grid(row=3, column=1, padx=5, pady=1)
+            return [entry1, entry2, entry3, entry4, entry5, entry6]
+        case "vorders":
+            ttk.Label(master, text="ID", font=("Helvetica", 12, "bold")).grid(row=0, column=0, padx=1, pady=1, sticky="nsew")
+            ttk.Label(master, text="Products", font=("Helvetica", 12, "bold")).grid(row=0, column=1, padx=1, pady=1, sticky="nsew")
+            ttk.Label(master, text="Date order", font=("Helvetica", 12, "bold")).grid(row=0, column=2, padx=1, pady=1, sticky="nsew")
+            ttk.Label(master, text="Customer ID", font=("Helvetica", 12, "bold")).grid(row=2, column=3, padx=1, pady=1, sticky="nsew")
+            ttk.Label(master, text="Employee ID", font=("Helvetica", 12, "bold")).grid(row=2, column=0, padx=1, pady=1, sticky="nsew")
+            ttk.Label(master, text="Chat ID", font=("Helvetica", 12, "bold")).grid(row=2, column=1, padx=1, pady=1, sticky="nsew")
+            # -----------------------inputs-----------------------
+            entry1 = ttk.Entry(master, width=15)
+            entry2 = ttk.Entry(master, width=15)
+            entry4 = ttk.DateEntry(master)
+            entry5 = ttk.Entry(master, width=7)
+            entry6 = ttk.Entry(master, width=9)
+            entry7 = ttk.Entry(master, width=9)
+            entry1.grid(row=1, column=0, padx=5, pady=1)
+            entry2.grid(row=1, column=1, padx=5, pady=1)
+            entry4.grid(row=1, column=2, padx=5, pady=1)
+            entry5.grid(row=3, column=3, padx=5, pady=1)
+            entry6.grid(row=3, column=0, padx=5, pady=1)
+            entry7.grid(row=3, column=1, padx=5, pady=1)
+            return [entry1, entry2, entry4, entry5, entry6, entry7]
+        case "tickets":
+            ttk.Label(master, text="ID", font=("Helvetica", 12, "bold")).grid(row=0, column=0, padx=1, pady=1, sticky="nsew")
+            ttk.Label(master, text="Content", font=("Helvetica", 12, "bold")).grid(row=0, column=1, padx=1, pady=1, sticky="nsew")
+            ttk.Label(master, text="Is retrieved?", font=("Helvetica", 12, "bold")).grid(row=0, column=2, padx=1, pady=1, sticky="nsew")
+            ttk.Label(master, text="Is answered?", font=("Helvetica", 12, "bold")).grid(row=2, column=0, padx=1, pady=1, sticky="nsew")
+            ttk.Label(master, text="Timestamp Creation", font=("Helvetica", 12, "bold")).grid(row=2, column=1, padx=1, pady=1, sticky="nsew")
+            # -----------------------inputs-----------------------
+            entry1 = ttk.Entry(master, width=15)
+            var2 = ttk.IntVar(value=1)
+            entry2 = ttk.Checkbutton(master, onvalue=1, offvalue=0, variable=var2,
+                                     bootstyle="succes, round-toggle")
+            var3 = ttk.IntVar(value=1)
+            entry3 = ttk.Checkbutton(master, onvalue=1, offvalue=0, variable=var3,
+                                     bootstyle="succes, round-toggle")
+            entry4 = ttk.Entry(master)
+            entry5 = ttk.Entry(master, width=30)
+            entry1.grid(row=1, column=0, padx=5, pady=1)
+            entry2.grid(row=1, column=1, padx=5, pady=1)
+            entry3.grid(row=1, column=2, padx=5, pady=1)
+            entry4.grid(row=3, column=0, padx=5, pady=1)
+            entry5.grid(row=3, column=1, padx=5, pady=1)
+            return [entry1, var2, var3, entry4, entry5]
         case _:
             pass
 

@@ -6,7 +6,6 @@ import json
 import tkinter as tk
 from datetime import datetime
 
-import customtkinter as ctk
 import ttkbootstrap as ttk
 from ttkbootstrap.dialogs import Messagebox
 from ttkbootstrap.scrolled import ScrolledFrame
@@ -845,9 +844,9 @@ class ProductsFrame(ttk.Frame):
         self.btn_insert, self.btn_update, self.btn_delete = create_btns_DB(
             btn_frame,
             table_type=1,
-            _command_insert=self._insert_product(),
-            _command_update=self._update_product(),
-            _command_delete=self._delete_product(),
+            _command_insert=self._insert_product,
+            _command_update=self._update_product,
+            _command_delete=self._delete_product,
             width=20
         )
         # -----------------------subframe visual-----------------------
@@ -881,10 +880,12 @@ class ProductsFrame(ttk.Frame):
         )
         if answer == "No":
             return
-        flag, e, out = fsql.insert_product_DB(
-            name, model, brand, description, price_retail, stock, price_provider,
-            support, service, categories, img_url, id_ps)
+        flag, e, out = fsql.insert_product_and_service(
+            id_ps, name, model, brand, description, price_retail, stock,
+            price_provider, support, service, categories, img_url)
         if flag:
+            out = [id_ps, name, model, brand, description, price_retail, stock,
+                   price_provider, support, service, categories, img_url]
             self.data.append(out)
             self._update_table_show(self.data)
             Messagebox.show_info(title="Informacion", message=f"Product inserted")
@@ -894,10 +895,65 @@ class ProductsFrame(ttk.Frame):
             Messagebox.show_error(title="Error", message=f"Error inserting product:\n{e}")
 
     def _update_product(self):
-        pass
+        (name, model, brand, description, price_retail, stock, price_provider,
+         support, service, categories, img_url, id_ps) = self.get_entries_values()
+        id_ps = int(id_ps) if id_ps != "" else None
+        support = int(support)
+        service = int(service)
+        if id_ps is None:
+            return
+        msg = (f"Are you sure you want to update the following product:\n"
+               f"Name: {name}\nModel: {model}\nBrand: {brand}\n"
+               f"Description: {description}\nPrice retail: {price_retail}\n"
+               f"Stock: {stock}\nPrice provider: {price_provider}\n"
+               f"Support: {support}\nService: {service}\n"
+               f"Categories: {categories}\nImg url: {img_url}\n"
+               f"Id PS: {id_ps}")
+        answer = Messagebox.show_question(
+            title="Confirmacion",
+            message=msg
+        )
+        if answer == "No":
+            return
+        flag, e, out = fsql.update_product_and_service(
+            id_ps, name, model, brand, description, price_retail, stock,
+            price_provider, support, service, categories, img_url)
+        if flag:
+            for index, item in enumerate(self.data):
+                if item[0] == id_ps:
+                    self.data[index] = [id_ps, name, model, brand, description, price_retail, stock,
+                                        price_provider, support, service, categories, img_url]
+                    break
+            self._update_table_show(self.data)
+            Messagebox.show_info(title="Informacion", message=f"Product updated")
+            self.clean_widgets_products()
+            self._id_product_update = None
 
     def _delete_product(self):
-        pass
+        if self._id_product_update is None:
+            return
+        id_ps = self._id_product_update
+        msg = (f"Are you sure you want to delete the following product:\n"
+               f"Id PS: {id_ps}")
+        answer = Messagebox.show_question(
+            title="Confirmacion",
+            message=msg
+        )
+        if answer == "No":
+            return
+        flag, e, out = fsql.delete_product_and_service(id_ps)
+        if flag:
+            for index, item in enumerate(self.data):
+                if item[0] == id_ps:
+                    self.data.pop(index)
+                    break
+            self._update_table_show(self.data)
+            Messagebox.show_info(title="Informacion", message=f"Product deleted")
+            self.clean_widgets_products()
+            self._id_product_update = None
+        else:
+            Messagebox.show_error(title="Error", message=f"Error deleting product:\n{e}")
+            return
 
     def _get_data_product(self, event):
         row = event.widget.item(event.widget.selection()[0], "values")
@@ -928,330 +984,530 @@ class ProductsFrame(ttk.Frame):
             else:
                 set_entry_value(item, "")
 
+    def _update_table_show(self, data):
+        self.ps_insert.destroy()
+        self.ps_insert, self.data = create_visualizer_treeview(
+            self.visual_frame, "p_and_s", row=0, column=0,
+            style="success", data=data)
+        self.ps_insert.view.bind("<Double-1>", self._get_data_product)
+
 
 class OrdersFrame(ttk.Frame):
     def __init__(self, master, *args, **kwargs):
-        super().__init__(master, *args, **kwargs, fg_color="#02021A")
+        super().__init__(master, *args, **kwargs, )
         self.columnconfigure(0, weight=1)
         self.rowconfigure(3, weight=1)
         self.label = ttk.Label(self, text="Orders table",
-                               text_color="#fff",
-                               font=ttk.Font(size=30, weight="bold"))
+                               font=("Helvetica", 30, "bold"))
         self.label.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
+        self._id_order_update = None
         # -----------------------subframe insert-----------------------
-        self.insert_frame = ttk.Frame(self, fg_color="#02021A")
+        self.insert_frame = ttk.Frame(self)
         self.insert_frame.grid(row=1, column=0, padx=5, pady=10, sticky="nsew")
         self.insert_frame.columnconfigure((0, 1, 2, 3), weight=1)
         # -----------------widgets on left_frame----------------------
-        self.label1 = ttk.Label(self.insert_frame, text="ID", font=ttk.Font(size=12, weight="bold"),
-                                text_color="#fff")
-        self.label2 = ttk.Label(self.insert_frame, text="Product ID", font=ttk.Font(size=12, weight="bold"),
-                                text_color="#fff")
-        self.label3 = ttk.Label(self.insert_frame, text="Quantity", font=ttk.Font(size=12, weight="bold"),
-                                text_color="#fff")
-        self.label4 = ttk.Label(self.insert_frame, text="Date order", font=ttk.Font(size=12, weight="bold"),
-                                text_color="#fff")
-        self.label5 = ttk.Label(self.insert_frame, text="Customer ID", font=ttk.Font(size=12, weight="bold"),
-                                text_color="#fff")
-        self.label6 = ttk.Label(self.insert_frame, text="Employee ID", font=ttk.Font(size=12, weight="bold"),
-                                text_color="#fff")
-        self.label1.grid(row=0, column=0, padx=1, pady=1, sticky="nsew")
-        self.label2.grid(row=0, column=1, padx=1, pady=1, sticky="nsew")
-        self.label3.grid(row=0, column=2, padx=1, pady=1, sticky="nsew")
-        self.label4.grid(row=0, column=3, padx=1, pady=1, sticky="nsew")
-        self.label5.grid(row=2, column=0, padx=1, pady=1, sticky="nsew")
-        self.label6.grid(row=2, column=1, padx=1, pady=1, sticky="nsew")
-        # -----------------------inputs-----------------------
-        self.entry1 = ttk.Entry(self.insert_frame, placeholder_text="ID",
-                                height=25, width=150)
-        self.entry2 = ttk.Entry(self.insert_frame, width=150)
-        self.entry3 = ttk.Entry(self.insert_frame, placeholder_text="1",
-                                height=25, width=130)
-        self.entry4 = ttk.DateEntry(self.insert_frame)
-        self.entry5 = ttk.Entry(self.insert_frame, placeholder_text="#",
-                                height=25, width=70)
-        self.entry6 = ttk.Entry(self.insert_frame, placeholder_text="#",
-                                height=25, width=90)
-        self.entry1.grid(row=1, column=0, padx=5, pady=1)
-        self.entry2.grid(row=1, column=1, padx=5, pady=1)
-        self.entry3.grid(row=1, column=2, padx=5, pady=1)
-        self.entry4.grid(row=1, column=3, padx=5, pady=1)
-        self.entry5.grid(row=3, column=0, padx=5, pady=1)
-        self.entry6.grid(row=3, column=1, padx=5, pady=1)
-        # -----------------------insert button-----------------------
-        self.btn_insert = ttk.Button(self, text="Insert", width=200)
-        self.btn_insert.grid(row=2, column=0, pady=10, padx=1)
+        self.entries = create_widget_input_DB(
+            self.insert_frame,
+            "orders",
+        )
+        # -----------------------buttons-----------------------
+        btn_frame = ttk.Frame(self)
+        btn_frame.grid(row=2, column=0, pady=10, padx=10, sticky="nswe")
+        btn_frame.columnconfigure((0, 1, 2), weight=1)
+        self.btn_insert, self.btn_update, self.btn_delete = create_btns_DB(
+            btn_frame,
+            table_type=1,
+            _command_insert=self._insert_order(),
+            _command_update=self._update_order(),
+            _command_delete=self._delete_order(),
+            width=20
+        )
         # -----------------------subframe visual-----------------------
-        self.visual_frame = ttk.ScrollableFrame(self, fg_color="transparent",
-                                                width=750, height=400,
-                                                border_color="#656565",
-                                                border_width=2)
+        self.visual_frame = ScrolledFrame(self, autohide=True)
         self.visual_frame.grid(row=3, column=0, sticky="nsew", padx=5, pady=5)
         self.visual_frame.columnconfigure(0, weight=1)
-        self.label_table1 = ttk.Label(self.visual_frame, text="Table of orders",
-                                      text_color="#fff")
+        self.label_table1 = ttk.Label(self.visual_frame, text="Table of orders")
         self.label_table1.grid(row=0, column=0, padx=5, pady=5, sticky="w")
-        order_insert = create_visualizer_treeview(self.visual_frame, "orders", row=1, column=0, style="success")
-        self.label_table_show = ttk.Label(self.visual_frame,
-                                          text="See the next table for available customers and employees",
-                                          text_color="#fff")
-        self.label_table_show.grid(row=2, column=0, padx=10, pady=10, sticky="w")
-        cus_tab_v = create_visualizer_treeview(self.visual_frame, "customers", row=3, column=0, style="info")
-        self.subframe_table1 = ttk.ScrollableFrame(self.visual_frame, fg_color="transparent",
-                                                   orientation="horizontal",
-                                                   width=750, height=200, )
-        self.subframe_table1.grid(row=4, column=0, sticky="nsew", padx=5, pady=5)
-        self.subframe_table1.columnconfigure(0, weight=1)
-        emp_tab_v = create_visualizer_treeview(self.subframe_table1, "employees", row=4, column=0, style="info")
+        self.order_insert, self.data = create_visualizer_treeview(
+            self.visual_frame, "orders", row=1, column=0, style="success")
+        self.order_insert.view.bind("<Double-1>", self._get_data_order)
+        ttk.Label(self.visual_frame,
+                  text="See the next table for available customers and employees").grid(
+            row=2, column=0, padx=10, pady=10, sticky="w")
+        create_visualizer_treeview(
+            self.visual_frame, "customers", row=3, column=0, style="info")
+        create_visualizer_treeview(
+            self.visual_frame, "employees", row=4, column=0, style="info")
+
+    def _insert_order(self):
+        (id_order, id_product, quantity, date_order, id_customer, id_employee) = self.get_entries_values()
+        id_order = int(id_order) if id_order != "" else None
+        if id_order is None:
+            return
+        date_order = datetime.strptime(date_order, "%Y-%m-%d %H:%M:%S") if date_order != "None" else datetime.now()
+        msg = (f"Are you sure you want to insert the following order:\n"
+               f"Id order: {id_order}\n"
+               f"Id product: {id_product}\n"
+               f"Quantity: {quantity}\n"
+               f"Date order: {date_order}\n"
+               f"Id customer: {id_customer}\n"
+               f"Id employee: {id_employee}")
+        answer = Messagebox.show_question(
+            title="Confirmacion",
+            message=msg
+        )
+        if answer == "No":
+            return
+        flag, e, out = fsql.insert_order(
+            id_order, id_product, quantity, date_order, id_customer, id_employee)
+        if flag:
+            self.data.append([id_order, id_product, quantity, date_order, id_customer, id_employee])
+            self._update_table_show(self.data)
+            Messagebox.show_info(title="Informacion", message=f"Order inserted")
+            self.clean_widgets_orders()
+            self._id_order_update = None
+        else:
+            Messagebox.show_error(title="Error", message=f"Error inserting order:\n{e}")
+            return
+
+    def _update_order(self):
+        (id_order, id_product, quantity, date_order, id_customer, id_employee) = self.get_entries_values()
+        if self._id_order_update is None:
+            return
+        date_order = datetime.strptime(date_order, "%Y-%m-%d %H:%M:%S") if date_order != "None" else datetime.now()
+        msg = (f"Are you sure you want to update the following order:\n"
+               f"Id order: {id_order}\n"
+               f"Id product: {id_product}\n"
+               f"Quantity: {quantity}\n"
+               f"Date order: {date_order}\n"
+               f"Id customer: {id_customer}\n"
+               f"Id employee: {id_employee}")
+        answer = Messagebox.show_question(
+            title="Confirmacion",
+            message=msg
+        )
+        if answer == "No":
+            return
+        flag, e, out = fsql.update_order_db(
+            id_order, id_product, quantity, date_order, id_customer, id_employee)
+        if flag:
+            for index, item in enumerate(self.data):
+                if item[0] == self._id_order_update:
+                    self.data[index] = [id_order, id_product, quantity, date_order, id_customer, id_employee]
+                    break
+            self._update_table_show(self.data)
+            Messagebox.show_info(title="Informacion", message=f"Order updated")
+            self.clean_widgets_orders()
+            self._id_order_update = None
+        else:
+            Messagebox.show_error(title="Error", message=f"Error updating order:\n{e}")
+            return
+
+    def _delete_order(self):
+        if self._id_order_update is None:
+            return
+        msg = (f"Are you sure you want to delete the following order:\n"
+               f"Id order: {self._id_order_update}")
+        answer = Messagebox.show_question(
+            title="Confirmacion",
+            message=msg
+        )
+        if answer == "No":
+            return
+        flag, e, out = fsql.delete_order_db(self._id_order_update)
+        if flag:
+            for index, item in enumerate(self.data):
+                if item[0] == self._id_order_update:
+                    self.data.pop(index)
+                    break
+            self._update_table_show(self.data)
+            Messagebox.show_info(title="Informacion", message=f"Order deleted")
+            self.clean_widgets_orders()
+            self._id_order_update = None
+        else:
+            Messagebox.show_error(title="Error", message=f"Error deleting order:\n{e}")
+            return
+        pass
+
+    def get_entries_values(self):
+        out = []
+        for item in self.entries:
+            if isinstance(item, ttk.Entry) or isinstance(item, ttk.IntVar):
+                out.append(item.get())
+            elif isinstance(item, ttk.DateEntry):
+                out.append(item.entry.get())
+        return out
+
+    def _get_data_order(self, event):
+        row = event.widget.item(event.widget.selection()[0], "values")
+        self._id_order_update = int(row[0])
+        for index, item in enumerate(self.entries):
+            if isinstance(item, ttk.Entry):
+                set_entry_value(item, row[index])
+            elif isinstance(item, ttk.IntVar):
+                item.set(int(row[index]))
+            elif isinstance(item, ttk.DateEntry):
+                set_dateEntry_new_value(
+                    self.insert_frame, item, datetime.now(),
+                    1, 3, 5, 1)
+
+    def _update_table_show(self, data):
+        self.order_insert.destroy()
+        self.order_insert, self.data = create_visualizer_treeview(
+            self.visual_frame, "orders", row=1, column=0, style="success", data=data)
+        self.order_insert.view.bind("<Double-1>", self._get_data_order)
+
+    def clean_widgets_orders(self):
+        for item in self.entries:
+            if isinstance(item, ttk.Entry):
+                item.delete(0, tk.END)
+            elif isinstance(item, ttk.IntVar):
+                item.set(0)
+        self._id_order_update = None
 
 
 class VOrdersFrame(ttk.Frame):
     def __init__(self, master, *args, **kwargs):
-        super().__init__(master, *args, **kwargs, fg_color="#02021A")
+        super().__init__(master, *args, **kwargs)
         self.columnconfigure(0, weight=1)
         self.rowconfigure(3, weight=1)
         self.label = ttk.Label(self, text="Virtual Orders table",
-                               text_color="#fff",
-                               font=ttk.Font(size=30, weight="bold"))
+                               font=("Helvetica", 30, "bold"), )
         self.label.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
+        self._id_vorder_update = None
         # -----------------------subframe insert-----------------------
-        self.insert_frame = ttk.Frame(self, fg_color="#02021A")
+        self.insert_frame = ttk.Frame(self)
         self.insert_frame.grid(row=1, column=0, padx=5, pady=5, sticky="nsew")
         self.insert_frame.columnconfigure((0, 1, 2, 3), weight=1)
         # -----------------widgets on left_frame----------------------
-        self.label1 = ttk.Label(self.insert_frame, text="ID", font=ttk.Font(size=12, weight="bold"),
-                                text_color="#fff")
-        self.label2 = ttk.Label(self.insert_frame, text="Product ID", font=ttk.Font(size=12, weight="bold"),
-                                text_color="#fff")
-        self.label3 = ttk.Label(self.insert_frame, text="Quantity", font=ttk.Font(size=12, weight="bold"),
-                                text_color="#fff")
-        self.label4 = ttk.Label(self.insert_frame, text="Date order", font=ttk.Font(size=12, weight="bold"),
-                                text_color="#fff")
-        self.label5 = ttk.Label(self.insert_frame, text="Customer ID", font=ttk.Font(size=12, weight="bold"),
-                                text_color="#fff")
-        self.label6 = ttk.Label(self.insert_frame, text="Employee ID", font=ttk.Font(size=12, weight="bold"),
-                                text_color="#fff")
-        self.label7 = ttk.Label(self.insert_frame, text="Chat ID", font=ttk.Font(size=12, weight="bold"),
-                                text_color="#fff")
-        self.label1.grid(row=0, column=0, padx=1, pady=1, sticky="nsew")
-        self.label2.grid(row=0, column=1, padx=1, pady=1, sticky="nsew")
-        self.label3.grid(row=0, column=2, padx=1, pady=1, sticky="nsew")
-        self.label4.grid(row=0, column=3, padx=1, pady=1, sticky="nsew")
-        self.label5.grid(row=2, column=0, padx=1, pady=1, sticky="nsew")
-        self.label6.grid(row=2, column=1, padx=1, pady=1, sticky="nsew")
-        self.label7.grid(row=2, column=2, padx=1, pady=1, sticky="nsew")
-        # -----------------------inputs-----------------------
-        self.entry1 = ttk.Entry(self.insert_frame, placeholder_text="ID",
-                                height=25, width=150)
-        self.entry2 = ttk.Entry(self.insert_frame, placeholder_text="json text",
-                                height=25, width=150)
-        self.entry3 = ttk.Entry(self.insert_frame, placeholder_text="1",
-                                height=25, width=130)
-        self.entry4 = ttk.DateEntry(self.insert_frame)
-        self.entry5 = ttk.Entry(self.insert_frame, placeholder_text="#",
-                                height=25, width=70)
-        self.entry6 = ttk.Entry(self.insert_frame, placeholder_text="#",
-                                height=25, width=90)
-        self.entry7 = ttk.Entry(self.insert_frame, placeholder_text="#",
-                                height=25, width=90)
-        self.entry1.grid(row=1, column=0, padx=5, pady=1)
-        self.entry2.grid(row=1, column=1, padx=5, pady=1)
-        self.entry3.grid(row=1, column=2, padx=5, pady=1)
-        self.entry4.grid(row=1, column=3, padx=5, pady=1)
-        self.entry5.grid(row=3, column=0, padx=5, pady=1)
-        self.entry6.grid(row=3, column=1, padx=5, pady=1)
-        self.entry7.grid(row=3, column=2, padx=5, pady=1)
+        self.entries = create_widget_input_DB(self.insert_frame, "vorders")
         # -----------------------insert button-----------------------
-        self.btn_insert = ttk.Button(self, text="Insert", width=200)
-        self.btn_insert.grid(row=2, column=0, pady=10, padx=1)
+        btn_frame = ttk.Frame(self)
+        btn_frame.grid(row=2, column=0, pady=10, padx=10, sticky="nswe")
+        btn_frame.columnconfigure((0, 1, 2), weight=1)
+        self.btn_insert, self.btn_update, self.btn_delete = create_btns_DB(
+            btn_frame,
+            table_type=1,
+            _command_insert=self._insert_vorder(),
+            _command_update=self._update_vorder(),
+            _command_delete=self._delete_vorder(),
+            width=20
+        )
         # -----------------------subframe visual-----------------------
-        self.visual_frame = ttk.ScrollableFrame(self, fg_color="transparent",
-                                                border_color="#656565",
-                                                border_width=2)
+        self.visual_frame = ScrolledFrame(self, autohide=True)
         self.visual_frame.grid(row=3, column=0, sticky="nsew", padx=5, pady=5)
         self.visual_frame.columnconfigure(0, weight=1)
         self.label_table1 = ttk.Label(self.visual_frame,
-                                      text="Table of virtual orders",
-                                      text_color="#fff")
+                                      text="Table of virtual orders")
         self.label_table1.grid(row=0, column=0, padx=10, pady=10, sticky="w")
-        ps_insert = create_visualizer_treeview(self.visual_frame, "v_orders", row=1, column=0, style="success")
-        self.label_table_show = ttk.Label(self.visual_frame,
-                                          text="See the next table for available departments",
-                                          text_color="#fff")
-        self.label_table_show.grid(row=2, column=0, padx=10, pady=10, sticky="w")
-        cus_tab_v = create_visualizer_treeview(self.visual_frame, "customers", row=3, column=0, style="info")
-        self.subframe_table1 = ttk.ScrollableFrame(self.visual_frame, fg_color="transparent",
-                                                   orientation="horizontal")
-        self.subframe_table1.grid(row=4, column=0, sticky="nsew")
-        self.subframe_table1.columnconfigure(0, weight=1)
-        emp_tab_v = create_visualizer_treeview(self.subframe_table1, "employees", row=4, column=0, style="info")
+        self.vorders_insert, self.data = create_visualizer_treeview(self.visual_frame, "v_orders", row=1, column=0,
+                                                                    style="success")
+        self.vorders_insert.view.bind("<Double-1>", self._get_data_vorder)
 
+    def _insert_vorder(self):
+        (id_vorder, products, date_vorder, id_customer, id_employee, chat_id) = self.get_entries_values()
+        id_vorder = int(id_vorder) if id_vorder != "" else None
+        if id_vorder is None:
+            return
+        date_vorder = datetime.strptime(date_vorder, "%Y-%m-%d %H:%M:%S") if date_vorder != "None" else datetime.now()
+        msg = (f"Are you sure you want to insert the following virtual order:\n"
+               f"Id virtual order: {id_vorder}\n"
+               f"Id product: {products}\n"
+               f"Date virtual order: {date_vorder}\n"
+               f"Id customer: {id_customer}\n"
+               f"Id employee: {id_employee}\n"
+               f"Chat ID: {chat_id}")
+        answer = Messagebox.show_question(
+            title="Confirmacion",
+            message=msg)
+        if answer == "No":
+            return
+        flag, e, out = fsql.insert_vorder_db(
+            id_vorder, products, date_vorder, id_customer, id_employee, chat_id)
+        if flag:
+            self.data.append([id_vorder, products, date_vorder, id_customer, id_employee, chat_id])
+            self._update_table_show(self.data)
+            Messagebox.show_info(title="Informacion", message=f"Virtual order inserted")
+            self.clean_widgets_orders()
+        else:
+            Messagebox.show_error(title="Error", message=f"Error inserting virtual order:\n{e}")
+            return
 
-class PurchasesFrame(ttk.Frame):
-    def __init__(self, master, *args, **kwargs):
-        super().__init__(master, *args, **kwargs, fg_color="#02021A")
-        self.columnconfigure(0, weight=1)
-        self.rowconfigure(3, weight=1)
-        self.label = ttk.Label(self, text="Purchases table",
-                               text_color="#fff",
-                               font=ttk.Font(size=30, weight="bold"))
-        self.label.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
-        # -----------------------subframe insert-----------------------
-        self.insert_frame = ttk.Frame(self, fg_color="#02021A")
-        self.insert_frame.grid(row=1, column=0, padx=5, pady=5, sticky="nsew")
-        self.insert_frame.columnconfigure((0, 1, 2), weight=1)
-        # -----------------widgets on left_frame----------------------
-        self.label1 = ttk.Label(self.insert_frame, text="ID", font=ttk.Font(size=12, weight="bold"),
-                                text_color="#fff")
-        self.label2 = ttk.Label(self.insert_frame, text="Product ID", font=ttk.Font(size=12, weight="bold"),
-                                text_color="#fff")
-        self.label3 = ttk.Label(self.insert_frame, text="Quantity", font=ttk.Font(size=12, weight="bold"),
-                                text_color="#fff")
-        self.label4 = ttk.Label(self.insert_frame, text="Date purchase", font=ttk.Font(size=12, weight="bold"),
-                                text_color="#fff")
-        self.label5 = ttk.Label(self.insert_frame, text="Supplier ID", font=ttk.Font(size=12, weight="bold"),
-                                text_color="#fff")
-        self.label1.grid(row=0, column=0, padx=1, pady=1, sticky="nsew")
-        self.label2.grid(row=0, column=1, padx=1, pady=1, sticky="nsew")
-        self.label3.grid(row=0, column=2, padx=1, pady=1, sticky="nsew")
-        self.label4.grid(row=2, column=0, padx=1, pady=1, sticky="nsew")
-        self.label5.grid(row=2, column=1, padx=1, pady=1, sticky="nsew")
-        # -----------------------inputs-----------------------
-        self.entry1 = ttk.Entry(self.insert_frame, placeholder_text="ID",
-                                height=25, width=150)
-        self.entry2 = ttk.Entry(self.insert_frame, placeholder_text="####",
-                                height=25, width=150)
-        self.entry3 = ttk.Entry(self.insert_frame, placeholder_text="1",
-                                height=25, width=130)
-        self.entry4 = ttk.DateEntry(self.insert_frame)
-        self.entry5 = ttk.Entry(self.insert_frame, placeholder_text="#",
-                                height=25, width=70)
+    def _update_vorder(self):
+        (id_vorder, products, date_vorder, id_customer, id_employee, chat_id) = self.get_entries_values()
 
-        self.entry1.grid(row=1, column=0, padx=5, pady=1)
-        self.entry2.grid(row=1, column=1, padx=5, pady=1)
-        self.entry3.grid(row=1, column=2, padx=5, pady=1)
-        self.entry4.grid(row=3, column=0, padx=5, pady=1)
-        self.entry5.grid(row=3, column=1, padx=5, pady=1)
-        # -----------------------insert button-----------------------
-        self.btn_insert = ttk.Button(self, text="Insert", width=200)
-        self.btn_insert.grid(row=2, column=0, pady=10, padx=1)
-        # -----------------------subframe visual-----------------------
-        self.visual_frame = ttk.ScrollableFrame(self, fg_color="transparent",
-                                                width=750, height=400,
-                                                border_color="#656565",
-                                                border_width=2)
-        self.visual_frame.grid(row=3, column=0, sticky="nsew", padx=5, pady=5)
-        self.visual_frame.columnconfigure(0, weight=1)
-        self.label_table1 = ttk.Label(self.visual_frame,
-                                      text="Table Purchases", text_color="#fff")
-        self.label_table1.grid(row=0, column=0, padx=5, pady=5, sticky="w")
-        ps_insert = create_visualizer_treeview(self.visual_frame, "purchases", row=1, column=0, style="success")
-        self.label_table_show = ttk.Label(self.visual_frame,
-                                          text="See the next table for available departments", text_color="#fff")
-        self.label_table_show.grid(row=2, column=0, padx=10, pady=10, sticky="w")
-        cus_tab_v = create_visualizer_treeview(self.visual_frame, "supplier", row=3, column=0, style="info")
+        if self._id_vorder_update is None:
+            return
+        id_vorder = self._id_vorder_update
+        date_vorder = datetime.strptime(date_vorder, "%Y-%m-%d %H:%M:%S") if date_vorder != "None" else datetime.now()
+        msg = (f"Are you sure you want to update the following virtual order:\n"
+               f"Id virtual order: {id_vorder}\n"
+               f"Id product: {products}\n"
+               f"Date virtual order: {date_vorder}\n"
+               f"Id customer: {id_customer}\n"
+               f"Id employee: {id_employee}\n"
+               f"Chat ID: {chat_id}")
+        answer = Messagebox.show_question(
+            title="Confirmacion",
+            message=msg)
+        if answer == "No":
+            return
+        flag, e, out = fsql.update_vorder_db(
+            id_vorder, products, date_vorder, id_customer, id_employee, chat_id)
+        if flag:
+            for index, item in enumerate(self.data):
+                if item[0] == id_vorder:
+                    self.data[index] = [id_vorder, products, date_vorder, id_customer, id_employee, chat_id]
+                    break
+            self._update_table_show(self.data)
+            Messagebox.show_info(title="Informacion", message=f"Virtual order updated")
+            self.clean_widgets_orders()
+            self._id_vorder_update = None
+        else:
+            Messagebox.show_error(title="Error", message=f"Error updating virtual order:\n{e}")
+            return
 
+    def _delete_vorder(self):
+        (id_vorder, products, date_vorder, id_customer, id_employee, chat_id) = self.get_entries_values()
+        if self._id_vorder_update is None:
+            return
+        id_vorder = self._id_vorder_update
+        date_vorder = datetime.strptime(date_vorder, "%Y-%m-%d %H:%M:%S") if date_vorder != "None" else datetime.now()
+        msg = (f"Are you sure you want to delete the following virtual order:\n"
+               f"Id virtual order: {id_vorder}\n"
+               f"Id product: {products}\n"
+               f"Date virtual order: {date_vorder}\n"
+               f"Id customer: {id_customer}\n"
+               f"Id employee: {id_employee}\n"
+               f"Chat ID: {chat_id}")
+        answer = Messagebox.show_question(
+            title="Confirmacion",
+            message=msg)
+        if answer == "No":
+            return
+        flag, e, out = fsql.delete_vorder_db(
+            id_vorder)
+        if flag:
+            for index, item in enumerate(self.data):
+                if item[0] == id_vorder:
+                    self.data.pop(index)
+                    break
+            self._update_table_show(self.data)
+            Messagebox.show_info(title="Informacion", message=f"Virtual order deleted")
+            self.clean_widgets_orders()
+            self._id_vorder_update = None
+        else:
+            Messagebox.show_error(title="Error", message=f"Error deleting virtual order:\n{e}")
+            return
 
-class UsersFrame(ttk.Frame):
+    def get_entries_values(self):
+        out = []
+        for item in self.entries:
+            if isinstance(item, ttk.Entry) or isinstance(item, ttk.IntVar):
+                out.append(item.get())
+            elif isinstance(item, ttk.DateEntry):
+                out.append(item.entry.get())
+        return out
 
-    def __init__(self, master, *args, **kwargs):
-        super().__init__(master, *args, **kwargs, fg_color="#02021A")
-        self.columnconfigure(0, weight=1)
-        self.rowconfigure(3, weight=1)
-        self.label = ttk.Label(self, text="Users table", text_color="#fff",
-                               font=ttk.Font(size=30, weight="bold"))
-        self.label.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
-        # -----------------------subframe insert-----------------------
-        # -----------------------subframe visual-----------------------
-        self.visual_frame = ttk.Frame(self, fg_color="transparent",
-                                      border_color="#656565",
-                                      border_width=2)
-        self.visual_frame.grid(row=3, column=0, sticky="nsew", padx=5, pady=5)
-        self.visual_frame.columnconfigure(0, weight=1)
-        self.label_table1 = ttk.Label(self.visual_frame,
-                                      text="Table of system users", text_color="#fff")
-        self.label_table1.grid(row=0, column=0, padx=10, pady=10, sticky="w")
-        ps_insert = create_visualizer_treeview(self.visual_frame, "users", row=1, column=0, style="success")
+    def _update_table_show(self, data):
+        self.vorders_insert.destroy()
+        self.vorder_insert, self.data = create_visualizer_treeview(
+            self.visual_frame, "v_orders", row=1, column=0, style="success", data=data)
+        self.vorder_insert.view.bind("<Double-1>", self._get_data_vorder)
+
+    def clean_widgets_orders(self):
+        for item in self.entries:
+            if isinstance(item, ttk.Entry):
+                item.delete(0, tk.END)
+            elif isinstance(item, ttk.IntVar):
+                item.set(0)
+        self._id_vorder_update = None
+
+    def _get_data_vorder(self, event):
+        row = event.widget.item(event.widget.selection()[0], "values")
+        self._id_vorder_update = int(row[0])
+        for index, item in enumerate(self.entries):
+            if isinstance(item, ttk.Entry):
+                set_entry_value(item, row[index])
+            elif isinstance(item, ttk.IntVar):
+                item.set(int(row[index]))
+            elif isinstance(item, ttk.DateEntry):
+                set_dateEntry_new_value(
+                    self.insert_frame, item, datetime.now(),
+                    1, 2, 5, 1)
 
 
 class TicketsFrame(ttk.Frame):
     def __init__(self, master, *args, **kwargs):
-        super().__init__(master, *args, **kwargs, fg_color="#02021A")
+        super().__init__(master, *args, **kwargs)
         self.columnconfigure(0, weight=1)
         self.rowconfigure(3, weight=1)
-        self.label = ttk.Label(self, text="Tickets table", text_color="#fff",
-                               font=ttk.Font(size=30, weight="bold"))
+        self.label = ttk.Label(self, text="Tickets table", font=("Helvetica", 30, "bold"))
         self.label.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
+        self._id_ticket_update = None
         # -----------------------subframe insert-----------------------
-        self.insert_frame = ttk.Frame(self, fg_color="#02021A")
+        self.insert_frame = ttk.Frame(self)
         self.insert_frame.grid(row=1, column=0, padx=5, pady=5, sticky="nsew")
         # -----------------widgets on left_frame----------------------
-        self.label1 = ttk.Label(self.insert_frame, text="ID", font=ttk.Font(size=12, weight="bold"),
-                                text_color="#fff")
-        self.label5 = ttk.Label(self.insert_frame, text="Content", font=ttk.Font(size=12, weight="bold"),
-                                text_color="#fff")
-        self.label2 = ttk.Label(self.insert_frame, text="Is retrieved?", font=ttk.Font(size=12, weight="bold"),
-                                text_color="#fff")
-        self.label3 = ttk.Label(self.insert_frame, text="Is answered?", font=ttk.Font(size=12, weight="bold"),
-                                text_color="#fff")
-        self.label4 = ttk.Label(self.insert_frame, text="Timestamp Creation",
-                                font=ttk.Font(size=12, weight="bold"), text_color="#fff")
-        self.label1.grid(row=0, column=0, padx=1, pady=1, sticky="nsew")
-        self.label2.grid(row=0, column=1, padx=1, pady=1, sticky="nsew")
-        self.label3.grid(row=0, column=2, padx=1, pady=1, sticky="nsew")
-        self.label4.grid(row=2, column=0, padx=1, pady=1, sticky="nsew")
-        self.label5.grid(row=2, column=1, padx=1, pady=1, sticky="nsew")
-        # -----------------------inputs-----------------------
-        self.entry1 = ttk.Entry(self.insert_frame, placeholder_text="ID",
-                                height=25, width=150)
-        switch_var_retrieved = ctk.StringVar(value="True")
-        self.entry2 = ttk.Switch(self.insert_frame, variable=switch_var_retrieved,
-                                 onvalue="True", offvalue="False",
-                                 textvariable=switch_var_retrieved)
-        switch_var_answered = ctk.StringVar(value="True")
-        self.entry3 = ttk.Switch(self.insert_frame, variable=switch_var_answered,
-                                 onvalue="True", offvalue="False",
-                                 textvariable=switch_var_answered)
-        self.entry4 = ttk.DateEntry(self.insert_frame)
-        self.entry5 = ttk.Entry(self.insert_frame, placeholder_text="Content...",
-                                height=25, width=300)
-
-        self.entry1.grid(row=1, column=0, padx=5, pady=1)
-        self.entry2.grid(row=1, column=1, padx=5, pady=1)
-        self.entry3.grid(row=1, column=2, padx=5, pady=1)
-        self.entry4.grid(row=3, column=0, padx=5, pady=1)
-        self.entry5.grid(row=3, column=1, padx=5, pady=1, columnspan=2)
-        # -----------------------insert button-----------------------
-        self.btn_insert = ttk.Button(self, text="Insert", width=200)
-        self.btn_insert.grid(row=2, column=0, pady=10, padx=1)
+        self.entries = create_widget_input_DB(self.insert_frame,
+                                              "tickets")
+        # -----------------------buttons-----------------------
+        btn_frame = ttk.Frame(self)
+        btn_frame.grid(row=2, column=0, pady=10, padx=10, sticky="nswe")
+        btn_frame.columnconfigure((0, 1, 2), weight=1)
+        self.btn_insert, self.btn_update, self.btn_delete = create_btns_DB(
+            btn_frame,
+            table_type=1,
+            _command_insert=self._insert_tickets,
+            _command_update=self._update_tickets,
+            _command_delete=self._delete_tickets,
+            width=20
+        )
         # -----------------------subframe visual-----------------------
-        self.visual_frame = ttk.Frame(self, fg_color="transparent",
-                                      border_color="#656565",
-                                      border_width=2)
+        self.visual_frame = ttk.Frame(self)
         self.visual_frame.grid(row=3, column=0, sticky="nsew", padx=5, pady=5)
         self.visual_frame.columnconfigure(0, weight=1)
-        self.label_table1 = ttk.Label(self.visual_frame, text="Table of tickets",
-                                      text_color="#fff")
+        self.label_table1 = ttk.Label(self.visual_frame, text="Table of tickets")
         self.label_table1.grid(row=0, column=0, padx=10, pady=10, sticky="w")
-        ps_insert = create_visualizer_treeview(self.visual_frame, "tickets", row=1, column=0, style="success")
+        self.tickets_insert, self.data = create_visualizer_treeview(self.visual_frame, "tickets", row=1, column=0, style="success")
+        self.tickets_insert.view.bind("<Double-1>", self._get_data_ticket)
+
+    def _insert_tickets(self):
+        (id_t, content, is_retrieved, is_answered, timestamp) = self.get_entries_values()
+        id_t = int(id_t) if id_t != "" else None
+        if id_t is None:
+            return
+        is_retrieved = int(is_retrieved)
+        is_answered = int(is_answered)
+        msg = (f"Are you sure you want to insert the following ticket:\n"
+               f"Id ticket: {id_t}\n"
+               f"Content: {content}\n"
+               f"Is retrieved: {is_retrieved}\n"
+               f"Is answered: {is_answered}\n"
+               f"Timestamp: {timestamp}")
+        answer = Messagebox.show_question(
+            title="Confirmacion",
+            message=msg)
+        if answer == "No":
+            return
+        flag, e, out = fsql.insert_ticket_db(
+            id_t, content, is_retrieved, is_answered, timestamp)
+        if flag:
+            self.data.append([id_t, content, is_retrieved, is_answered, timestamp])
+            self._update_table_show(self.data)
+            Messagebox.show_info(title="Informacion", message=f"Ticket inserted")
+            self.clean_widgets_orders()
+        else:
+            Messagebox.show_error(title="Error", message=f"Error inserting ticket:\n{e}")
+            return
+
+    def _update_tickets(self):
+        (id_t, content, is_retrieved, is_answered, timestamp) = self.get_entries_values()
+        if self._id_ticket_update is None:
+            return
+        id_t = self._id_ticket_update
+        is_retrieved = int(is_retrieved)
+        is_answered = int(is_answered)
+        msg = (f"Are you sure you want to update the following ticket:\n"
+               f"Id ticket: {id_t}\n"
+               f"Content: {content}\n"
+               f"Is retrieved: {is_retrieved}\n"
+               f"Is answered: {is_answered}\n"
+               f"Timestamp: {timestamp}")
+        answer = Messagebox.show_question(
+            title="Confirmacion",
+            message=msg)
+        if answer == "No":
+            return
+        flag, e, out = fsql.update_ticket_db(
+            id_t, content, is_retrieved, is_answered, timestamp)
+        if flag:
+            for index, item in enumerate(self.data):
+                if item[0] == id_t:
+                    self.data[index] = [id_t, content, is_retrieved, is_answered, timestamp]
+                    break
+            self._update_table_show(self.data)
+            Messagebox.show_info(title="Informacion", message=f"Ticket updated")
+            self.clean_widgets_orders()
+            self._id_ticket_update = None
+        else:
+            Messagebox.show_error(title="Error", message=f"Error updating ticket:\n{e}")
+            return
+
+    def _delete_tickets(self):
+        if self._id_ticket_update is None:
+            return
+        id_t = self._id_ticket_update
+        msg = (f"Are you sure you want to delete the following ticket:\n"
+               f"Id ticket: {id_t}")
+        answer = Messagebox.show_question(
+            title="Confirmacion",
+            message=msg)
+        if answer == "No":
+            return
+        flag, e, out = fsql.delete_ticket_db(id_t)
+        if flag:
+            for index, item in enumerate(self.data):
+                if item[0] == id_t:
+                    self.data.pop(index)
+                    break
+            self._update_table_show(self.data)
+            Messagebox.show_info(title="Informacion", message=f"Ticket deleted")
+            self.clean_widgets_orders()
+            self._id_ticket_update = None
+        else:
+            Messagebox.show_error(title="Error", message=f"Error deleting ticket:\n{e}")
+            return
+
+    def get_entries_values(self):
+        out = []
+        for item in self.entries:
+            if isinstance(item, ttk.Entry) or isinstance(item, ttk.IntVar):
+                out.append(item.get())
+            elif isinstance(item, ttk.DateEntry):
+                out.append(item.entry.get())
+        return out
+
+    def _update_table_show(self, data):
+        self.tickets_insert.destroy()
+        self.tickets_insert, self.data = create_visualizer_treeview(
+            self.visual_frame, "tickets", row=1, column=0, style="success", data=data)
+        self.tickets_insert.view.bind("<Double-1>", self._get_data_ticket)
+
+    def clean_widgets_orders(self):
+        for item in self.entries:
+            if isinstance(item, ttk.Entry):
+                item.delete(0, tk.END)
+            elif isinstance(item, ttk.IntVar):
+                item.set(0)
+        self._id_ticket_update = None
+
+    def _get_data_ticket(self, event):
+        row = event.widget.item(event.widget.selection()[0], "values")
+        self._id_ticket_update = int(row[0])
+        for index, item in enumerate(self.entries):
+            if isinstance(item, ttk.Entry):
+                set_entry_value(item, row[index])
+            elif isinstance(item, ttk.IntVar):
+                item.set(int(row[index]))
+            elif isinstance(item, ttk.DateEntry):
+                set_dateEntry_new_value(
+                    self.insert_frame, item, datetime.now(),
+                    1, 2, 5, 1)
 
 
 class ChatsFrame(ttk.Frame):
     def __init__(self, master, *args, **kwargs):
-        super().__init__(master, *args, **kwargs, fg_color="#02021A")
+        super().__init__(master, *args, **kwargs)
         self.columnconfigure(0, weight=1)
         self.rowconfigure(1, weight=1)
-        self.label = ttk.Label(self, text="Chats table", text_color="#fff",
-                               font=ttk.Font(size=30, weight="bold"))
+        self.label = ttk.Label(self, text="Chats table", font=("Helvetica", 30, "bold"))
         self.label.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
         # -----------------------subframe insert-----------------------
-        self.visual_frame = ttk.ScrollableFrame(self, fg_color="transparent",
-                                                border_color="#656565",
-                                                border_width=2,
-                                                orientation="horizontal")
+        self.visual_frame = ttk.Frame(self)
         self.visual_frame.grid(row=1, column=0, sticky="nsew", padx=5, pady=5)
         self.visual_frame.columnconfigure(0, weight=1)
-        ps_insert = create_visualizer_treeview(self.visual_frame, "chats", row=0, column=0, style="success")
+        ps_chats = create_visualizer_treeview(self.visual_frame, "chats", row=0, column=0, style="success")
 
 
 class DBFrame(ttk.Frame):
@@ -1265,178 +1521,80 @@ class DBFrame(ttk.Frame):
             load_data_tables(['customers', 'employees', 'departments',
                               'heads', 'suppliers', 'products']))
         print("data db loaded")
-        # -------------------frame selector table------------------------
-        self.table_frame = ScrolledFrame(self, fg_color="#02021A",
-                                         scrollbar_fg_color="transparent",
-                                         scrollbar_button_color="#02021A")
-        self.table_frame.grid(row=0, column=0, pady=10, padx=10, sticky="nswe")
-        self.btn_employees = (
-            create_button_side_menu(self.table_frame, 0, 0,
-                                    text="Employees", image=get_image_side_menu("Empleados"),
-                                    command=lambda: self.select_frame_by_name("btn1")))
-        self.btn_customers = (
-            create_button_side_menu(self.table_frame, 1, 0,
-                                    text="Customers", image=get_image_side_menu("Clientes"),
-                                    command=lambda: self.select_frame_by_name("btn2")))
-        self.btn_departments = (
-            create_button_side_menu(self.table_frame, 2, 0,
-                                    text="Departments", image=get_image_side_menu("Departamentos"),
-                                    command=lambda: self.select_frame_by_name("btn3")))
-        self.btn_heads = (
-            create_button_side_menu(self.table_frame, 3, 0,
-                                    text="Heads", image=get_image_side_menu("Encargados"),
-                                    command=lambda: self.select_frame_by_name("btn4")))
-        self.btn_suppliers = (
-            create_button_side_menu(self.table_frame, 4, 0,
-                                    text="Suppliers", image=get_image_side_menu("Proveedores"),
-                                    command=lambda: self.select_frame_by_name("btn5")))
-        self.btn_products = (
-            create_button_side_menu(self.table_frame, 5, 0,
-                                    text="Products and services", image=get_image_side_menu("Productos"),
-                                    command=lambda: self.select_frame_by_name("btn6")))
-        self.btn_orders = (
-            create_button_side_menu(self.table_frame, 6, 0,
-                                    text="Orders", image=get_image_side_menu("Ordenes"),
-                                    command=lambda: self.select_frame_by_name("btn7")))
-        self.btn_purchases = (
-            create_button_side_menu(self.table_frame, 7, 0,
-                                    text="Purchases", image=get_image_side_menu("Compras"),
-                                    command=lambda: self.select_frame_by_name("btn8")))
-        self.btn_users = (
-            create_button_side_menu(self.table_frame, 8, 0,
-                                    text="Users", image=get_image_side_menu("Usuarios"),
-                                    command=lambda: self.select_frame_by_name("btn9")))
-        self.btn_tickets = (
-            create_button_side_menu(self.table_frame, 9, 0,
-                                    text="Tickets", image=get_image_side_menu("Tickets"),
-                                    command=lambda: self.select_frame_by_name("btn10")))
-        self.btn_chats = (
-            create_button_side_menu(self.table_frame, 10, 0,
-                                    text="Chats", image=get_image_side_menu("Chats"),
-                                    command=lambda: self.select_frame_by_name("btn11")))
-        self.btn_v_orders = (
-            create_button_side_menu(self.table_frame, 11, 0,
-                                    text="V_Orders", image=get_image_side_menu("O. Virtuales"),
-                                    command=lambda: self.select_frame_by_name("btn12")))
-        print("side menu widgets created")
-        # -------------------------Frame Employees--------------------------
-        self.employees = ttk.Frame(self)
-        print("employees frame DB created")
-        # -------------------------Frame  Customers-------------------------
-        self.customers_frame = ttk.Frame(self)
-        print("customers frame DB created")
-        # -------------------------Frame  departments-------------------------
-        self.departments_frame = ttk.Frame(self)
-        print("departments frame DB created")
-        # -------------------------Frame heads-------------------------
-        self.heads_frame = ttk.Frame(self)
-        print("heads frame DB created")
-        # -------------------------Frame  suppliers-------------------------
-        self.suppliers_frame = ttk.Frame(self)
-        print("suppliers frame DB created")
-        # -------------------------Frame  p and s-------------------------
-        self.products_frame = ttk.Frame(self)
-        print("products frame DB created")
-        # -------------------------Frame Orders-------------------------
-        self.orders_frame = ttk.Frame(self)
-        print("orders frame DB created")
-        # -------------------------Frame V_Orders-------------------------
-        self.v_orders_frame = ttk.Frame(self)
-        print("v_orders frame DB created")
-        # -------------------------Frame purchases-------------------------
-        self.purchases_frame = ttk.Frame(self)
-        print("purchases frame DB created")
-        # -------------------------Frame UsersS-------------------------
-        self.users_frame = ttk.Frame(self)
-        print("users frame DB created")
-        # -------------------------Frame Tickets------------------------
-        self.tickets_frame = ttk.Frame(self)
-        print("tickets frame DB created")
-        # -------------------------Frame  Chats-------------------------
-        self.chats_frame = ttk.Frame(self)
-        print("chats frame DB created")
-        self.select_frame_by_name("none")
+        windows_names = ["Empleados", "Clientes", "Departamentos", "Encargados",
+                         "Proveedores", "Productos", "Ordenes",
+                         "Tickets", "Chats", "O. Virtuales"]
+        self.names_side_menu = windows_names
+        frame_side_menu = ttk.Frame(self)
+        frame_side_menu.grid(row=0, column=0, sticky="nsew")
+        self.widgets = self._create_side_menu_widgets(frame_side_menu)
+        self.windows_frames = self._create_side_menu_windows()
 
-    def select_frame_by_name(self, name):
-        # set button color for selected button
-        self.btn_employees.configure(fg_color=("gray75", "gray25") if name == "btn1" else "transparent")
-        self.btn_customers.configure(fg_color=("gray75", "gray25") if name == "btn2" else "transparent")
-        self.btn_departments.configure(fg_color=("gray75", "gray25") if name == "btn3" else "transparent")
-        self.btn_heads.configure(fg_color=("gray75", "gray25") if name == "btn4" else "transparent")
-        self.btn_suppliers.configure(fg_color=("gray75", "gray25") if name == "btn5" else "transparent")
-        self.btn_products.configure(fg_color=("gray75", "gray25") if name == "btn6" else "transparent")
-        self.btn_orders.configure(fg_color=("gray75", "gray25") if name == "btn7" else "transparent")
-        self.btn_purchases.configure(fg_color=("gray75", "gray25") if name == "btn8" else "transparent")
-        self.btn_users.configure(fg_color=("gray75", "gray25") if name == "btn9" else "transparent")
-        self.btn_tickets.configure(fg_color=("gray75", "gray25") if name == "btn10" else "transparent")
-        self.btn_chats.configure(fg_color=("gray75", "gray25") if name == "btn11" else "transparent")
-        self.btn_v_orders.configure(fg_color=("gray75", "gray25") if name == "btn12" else "transparent")
-        # show selected frame
+    def _create_side_menu_widgets(self, master):
+        widgets = []
+        if len(self.names_side_menu) >= 12:
+            scrollbar = ttk.Scrollbar(master, orient="vertical")
+            scrollbar.grid(row=0, column=2, sticky="ns")
+        for i, window in enumerate(self.names_side_menu):
+            widgets.append(
+                create_button_side_menu(
+                    master, i, 0,
+                    text=window,
+                    image=get_image_side_menu(window),
+                    command=lambda x=window: self._select_frame_by_name(x),
+                    columnspan=1)
+            )
+        return widgets
+
+    def _select_frame_by_name(self, name):
         match name:
-            case "btn1":
-                self.hide_all_frame(1)
-                self.employees = EmployeesFrame(self)
-                self.employees.grid(row=0, column=1, sticky="nsew", padx=1, pady=1)
-            case "btn2":
-                self.hide_all_frame(2)
-                self.customers_frame = CustomersFrame(self)
-                self.customers_frame.grid(row=0, column=1, sticky="nsew", padx=1, pady=1)
-            case "btn3":
-                self.hide_all_frame(3)
-                self.departments_frame = DepartmentsFrame(self)
-                self.departments_frame.grid(row=0, column=1, sticky="nsew", padx=1, pady=1)
-            case "btn4":
-                self.hide_all_frame(4)
-                self.heads_frame = HeadsFrame(self)
-                self.heads_frame.grid(row=0, column=1, sticky="nsew", padx=1, pady=1)
-            case "btn5":
-                self.hide_all_frame(5)
-                self.suppliers_frame = SuppliersFrame(self)
-                self.suppliers_frame.grid(row=0, column=1, sticky="nsew", padx=1, pady=1)
-            case "btn6":
-                self.hide_all_frame(6)
-                self.products_frame = ProductsFrame(self)
-                self.products_frame.grid(row=0, column=1, sticky="nsew", padx=1, pady=1)
-            case "btn7":
-                self.hide_all_frame(7)
-                self.orders_frame = OrdersFrame(self)
-                self.orders_frame.grid(row=0, column=1, sticky="nsew", padx=1, pady=1)
-            case "btn8":
-                self.hide_all_frame(8)
-                self.purchases_frame = PurchasesFrame(self)
-                self.purchases_frame.grid(row=0, column=1, sticky="nsew", padx=1, pady=1)
-            case "btn9":
-                self.hide_all_frame(9)
-                self.users_frame = UsersFrame(self)
-                self.users_frame.grid(row=0, column=1, sticky="nsew", padx=1, pady=1)
-            case "btn10":
-                self.hide_all_frame(10)
-                self.tickets_frame = TicketsFrame(self)
-                self.tickets_frame.grid(row=0, column=1, sticky="nsew", padx=1, pady=1)
-            case "btn11":
-                self.hide_all_frame(11)
-                self.chats_frame = ChatsFrame(self)
-                self.chats_frame.grid(row=0, column=1, sticky="nsew", padx=1, pady=1)
-            case "btn12":
-                self.hide_all_frame(12)
-                self.v_orders_frame = VOrdersFrame(self)
-                self.v_orders_frame.grid(row=0, column=1, sticky="nsew", padx=1, pady=1)
+            case "none":
+                for txt in self.names_side_menu:
+                    self.windows_frames[txt].grid_forget()
             case _:
-                self.hide_all_frame(0)
+                for txt in self.names_side_menu:
+                    if txt == name:
+                        self.windows_frames[name].grid(row=0, column=1, sticky="nsew", padx=1, pady=1)
+                    else:
+                        self.windows_frames[txt].grid_forget()
 
-    def hide_all_frame(self, val: int):
-        self.employees.grid_forget() if val != 1 else None
-        self.customers_frame.grid_forget() if val != 2 else None
-        self.departments_frame.grid_forget() if val != 3 else None
-        self.heads_frame.grid_forget() if val != 4 else None
-        self.suppliers_frame.grid_forget() if val != 5 else None
-        self.products_frame.grid_forget() if val != 6 else None
-        self.orders_frame.grid_forget() if val != 6 else None
-        self.purchases_frame.grid_forget() if val != 8 else None
-        self.users_frame.grid_forget() if val != 9 else None
-        self.tickets_frame.grid_forget() if val != 10 else None
-        self.chats_frame.grid_forget() if val != 11 else None
-        self.v_orders_frame.grid_forget() if val != 12 else None
+    def _create_side_menu_windows(self):
+        windows = {}
+        for i, window in enumerate(self.names_side_menu):
+            match window:
+                case "Encargados":
+                    windows[window] = HeadsFrame(self)
+                    print("heads frame created")
+                case "Clientes":
+                    windows[window] = CustomersFrame(self)
+                    print("customers frame created")
+                case "Empleados":
+                    windows[window] = EmployeesFrame(self)
+                    print("employees frame created")
+                case "Departamentos":
+                    windows[window] = DepartmentsFrame(self)
+                    print("departments frame created")
+                case "Proveedores":
+                    windows[window] = SuppliersFrame(self)
+                    print("suppliers frame created")
+                case "Productos":
+                    windows[window] = ProductsFrame(self)
+                    print("products frame created")
+                case "Ordenes":
+                    windows[window] = OrdersFrame(self)
+                    print("orders frame created")
+                case "O. Virtuales":
+                    windows[window] = VOrdersFrame(self)
+                    print("virtual orders frame created")
+                case "Chats":
+                    windows[window] = ChatsFrame(self)
+                    print("chats frame created")
+                case "Tickets":
+                    windows[window] = TicketsFrame(self)
+                    print("tickets frame created")
+                case _:
+                    pass
+        return windows
 
 
 if __name__ == '__main__':

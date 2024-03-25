@@ -11,7 +11,7 @@ from openai import OpenAI
 from static.extensions import secrets, department_tools_openAI
 from templates.Function_tools_openAI import getProductCategories, getProductsAlmacen, getHighStockProducts, \
     getLowStockProducts, getCostumer, getSupplier, getOrder, getProductMovement, getSupplyInventory, getNoStockProducts, \
-    getTotalFichajeEmployee, getActiveEmployees, getEmployeeInfo
+    getTotalFichajeEmployee, getActiveEmployees, getEmployeeInfo, getToolsForDepartment
 
 client = OpenAI(api_key=secrets.get("OPENAI_API_KEY_1"))
 openai.api_key = secrets["OPENAI_API_KEY_1"]
@@ -29,7 +29,8 @@ available_functions = {
         "getNoStockProducts": getNoStockProducts,
         "getTotalFichajeEmployee": getTotalFichajeEmployee,
         "getActiveEmployees": getActiveEmployees,
-        "getEmployeeInfo": getEmployeeInfo
+        "getEmployeeInfo": getEmployeeInfo,
+        "getToolsForDepartment": getToolsForDepartment
     }
 
 
@@ -114,7 +115,7 @@ def complete_required_actions(required_actions, thread_id, run_id):
             tool_outputs=get_tool_outputs(required_actions)
         )
     except Exception as e:
-        print(e)
+        print("catch error complete required tool: ", e)
         complete_actions = None
     return complete_actions, e
 
@@ -130,7 +131,7 @@ def retrieve_runs_openai(thread_id, run_id):
             if runs.status == "requires_action":
                 completed_actions, error = complete_required_actions(runs.required_action.submit_tool_outputs.tool_calls, thread_id, run_id)
                 if error is not None:
-                    print(error)
+                    print("Error at completing required tool: ", error)
                     runs = None
                     e = error
                     break
@@ -138,7 +139,7 @@ def retrieve_runs_openai(thread_id, run_id):
                 break
             time.sleep(0.5)
     except Exception as e:
-        print(e)
+        print("Error at retrieving runs ", e)
         runs = None
     return runs, e
 
@@ -215,8 +216,8 @@ def get_response_assistant(message: str, filename: str, files: list = None, inst
         for msg in reversed(msgs.data):
             answer += msg.content[0].text.value + "\n" if msg.role == "assistant" else ""
     except Exception as e:
-        print("Error at getting response on openAI: ", e)
-        return files, "Error at creating getting response on openAI"
+        print("Catching Error at getting response on openAI: ", e)
+        return files, f"Catching Error at getting response on openAI: {e}"
     return files, answer
 
 

@@ -37,9 +37,7 @@ ventanasApp = {
     "App.Department.Administrator": [
         "DB",
         "Notificaciones",
-        "Chats",
         "Fichajes",
-        "Tickets",
         "Settings",
         "Cuenta",
     ],
@@ -60,7 +58,10 @@ ventanasApp = {
         "Bitacora",
         "Cuenta",
     ],
-    "App.Department.Default": ["Cuenta"],
+    "App.Department.Default": [
+        "Settings",
+        "Cuenta"
+    ],
 }
 cache_file_EM_path = "files/EM_cache.pkl"
 cache_file_Fichajes_path = "files/Fichajes_cache.pkl"

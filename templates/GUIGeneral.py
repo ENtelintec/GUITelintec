@@ -43,8 +43,8 @@ class GUIAsistente(ttk.Window):
         # -----------------------window setup------------------------------
         super().__init__(master, *args, **kwargs)
         self.master = master
-        style = ttk.Style()
-        style.theme_use("vapor")
+        self.style_gui = ttk.Style()
+        self.style_gui.theme_use("vapor")
         self.title("Admin-Chatbot.py")
         p1 = PhotoImage(file=carpeta_principal + "/robot_1.png")
         self.iconphoto(False, p1)
@@ -55,6 +55,7 @@ class GUIAsistente(ttk.Window):
         # -----------------------Variables-----------------------
         self.permissions = {"1": "App.Deparment.Default"}
         self.username = "default"
+        self.department = "default"
         self.contrato = "default"
         self.username_data = None
         self.windows_frames = None
@@ -80,13 +81,13 @@ class GUIAsistente(ttk.Window):
         # --------------------------------title-------------------------------
         self.btnTeli = LogoFrame(self.navigation_frame)
         self.btnTeli.grid(row=0, column=0, sticky="we", columnspan=2)
-        theme_names = style.theme_names()
+        theme_names = self.style_gui.theme_names()
         ttk.Label(self.navigation_frame, text="Theme:").grid(row=1, column=0, sticky="nsew")
         self.theme_selector = ttk.Combobox(self.navigation_frame, values=theme_names,
                                            state="readonly")
         self.theme_selector.current(theme_names.index('vapor'))
         self.theme_selector.grid(row=1, column=1, sticky="nsew")
-        self.theme_selector.bind('<<ComboboxSelected>>', lambda event: style.theme_use(self.theme_selector.get()))
+        self.theme_selector.bind('<<ComboboxSelected>>', lambda event: self.style_gui.theme_use(self.theme_selector.get()))
         # --------------------widgets side menu -----------------------
         self.side_menu_frame = ttk.Frame(self.navigation_frame)
         self.side_menu_frame.grid(row=2, column=0, sticky="nsew", pady=5, padx=1,
@@ -176,7 +177,7 @@ class GUIAsistente(ttk.Window):
                     windows[window] = ChatFrame(self, self.chats_to_show, self.images, self.chats)
                     print("chats frame created")
                 case "Settings":
-                    windows[window] = SettingsFrameGUI(self)
+                    windows[window] = SettingsFrameGUI(self, department=self.department, style_gui=self.style_gui)
                     print("settings frame created")
                 case "Tickets":
                     windows[window] = PedidosFrame(self, self.images, self.chats)
