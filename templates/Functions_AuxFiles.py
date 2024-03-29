@@ -84,8 +84,8 @@ def get_image_side_menu(wname, image_path=carpeta_principal):
 
 
 def get_data_employees(status="ACTIVO"):
-    columns = ("ID", "Nombre", "Contrato", "Faltas", "Tardanzas", "Dias Extra", "Total", "Primas",
-               "Detalles Faltas", "Detalles Tardanzas", "Detalles Extras", "Detalles Primas")
+    columns = ("ID", "Nombre", "Contrato", "Faltas", "Tardanzas", "Total tardanzas", "Dias Extra", "Total extra", "Primas",
+               "Detalles Faltas", "Detalles Tardanzas", "Detalles Extras", "Detalles Primas", "Detalles Normal")
     fichajes_resume, flag = get_fichajes_resume_cache(cache_file_resume_fichaje)
     if flag:
         return fichajes_resume, columns

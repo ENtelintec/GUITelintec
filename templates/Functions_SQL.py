@@ -1001,7 +1001,7 @@ def get_fichaje_emp_AV(name: str, id_e: int):
     columns = ("id_employee", "absences", "lates", "lates_value[h]", "extras", "extras_value[h]", "primes")
     if id_e is None:
         id_e, name_db = get_employee_id_name(name)
-        if len(id_e) > 0:
+        if id_e is not None:
             sql = ("SELECT emp_id, absences, lates, extras, primes "
                    "FROM fichajes WHERE emp_id = %s")
             val = (id_e,)
