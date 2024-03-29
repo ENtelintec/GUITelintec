@@ -22,20 +22,20 @@ def select_path():
 
 
 class SettingsFrameGUI(ttk.Frame):
-    def __init__(self, master, style_gui, department=None, *args, **kwargs):
+    def __init__(self, master, style_gui, department=None, setting: dict = None, *args, **kwargs):
         super().__init__(master, *args, **kwargs)
         self.columnconfigure(0, weight=1)
         self.filepath = filepath_settings
         self.master = master
         self.style_gui = ttk.Style() if style_gui is None else style_gui
         self.department = department
-        flag, self.settings = open_file_settings(filepath_settings)
-        create_label(self, text="Settings", row=0, column=0, sticky="nswe",
+        flag, self.settings = open_file_settings(filepath_settings) if setting is None else (True, setting)
+        create_label(self, text="Configuraciones", row=0, column=0, sticky="nswe",
                      font=("Arial", 20, "bold"))
         self.settings_frame = SettingsGeneral(self, self.settings, self.department, self.style_gui)
         self.settings_frame.grid(row=1, column=0, columnspan=4, padx=10, pady=10, sticky="nsew")
         match self.department:
-            case "RRHH":
+            case w if w in ["RRHH", "rrhh"]:
                 self.secondary_frame = SettingsRRHH(self, self.settings, self.department, self.style_gui)
             case "Chatbot":
                 self.secondary_frame = SettingsChatbot(self, self.settings, self.department, self.style_gui)
@@ -43,20 +43,21 @@ class SettingsFrameGUI(ttk.Frame):
                 self.secondary_frame = None
         if self.secondary_frame is not None:
             self.secondary_frame.grid(row=2, column=0, columnspan=4, padx=10, pady=10, sticky="nsew")
+        # -------------------------btns--------------------------------------------
         frame_btns = ttk.Frame(self)
         frame_btns.columnconfigure((0, 1), weight=1)
         frame_btns.grid(row=3, column=0, columnspan=4, padx=10, pady=10, sticky="nsew")
-        create_button(frame_btns, text="Guardar", command=self.save_settings,
+        create_button(frame_btns, text="Guardar", command=self.save_settings_master,
                       width=10, row=0, column=0, sticky="n")
-        create_button(frame_btns, text="Cargar", command=self.load_settings,
+        create_button(frame_btns, text="Cargar", command=self.load_settings_master,
                       width=10, row=0, column=1, sticky="n")
 
-    def save_settings(self):
+    def save_settings_master(self):
         self.settings_frame.save_settings(self.department)
         if self.secondary_frame is not None:
             self.secondary_frame.save_settings()
 
-    def load_settings(self):
+    def load_settings_master(self):
         self.settings_frame.load_settings(self.department)
         if self.secondary_frame is not None:
             self.secondary_frame.load_settings()

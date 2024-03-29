@@ -84,8 +84,8 @@ def get_image_side_menu(wname, image_path=carpeta_principal):
 
 
 def get_data_employees(status="ACTIVO"):
-    columns = ("ID", "Nombre", "Contrato", "Faltas", "Tardanzas", "Dias Extra", "Total", "Primas",
-               "Detalles Faltas", "Detalles Tardanzas", "Detalles Extras", "Detalles Primas")
+    columns = ("ID", "Nombre", "Contrato", "Faltas", "Tardanzas", "Total tardanzas", "Dias Extra", "Total extra", "Primas",
+               "Detalles Faltas", "Detalles Tardanzas", "Detalles Extras", "Detalles Primas", "Detalles Normal")
     fichajes_resume, flag = get_fichajes_resume_cache(cache_file_resume_fichaje)
     if flag:
         return fichajes_resume, columns
@@ -431,6 +431,7 @@ def split_commment(txt: str) -> dict:
         "incidence": "",
         "activity": "",
         "place": "",
+        "contract": None
     }
     rows = txt.split("\n")
     for i, row in enumerate(rows):
@@ -443,6 +444,8 @@ def split_commment(txt: str) -> dict:
                 comment_dict["place"] = row.split("-->")[1]
             elif "incidencia" in row:
                 comment_dict["incidence"] = row.split("-->")[1]
+            elif "contrato" in row:
+                comment_dict["contract"] = row.split("-->")[1]
             else:
                 comment_dict["comment"] += "\t" + row
     return comment_dict
@@ -457,3 +460,13 @@ def save_json_file_quizz(dict_quizz: dict, file_name: str):
     # encode utf-8
     with open(file_name, "w") as file:
         json.dump(dict_quizz, file, indent=4, ensure_ascii=True)
+
+
+def read_setting_file(file_path: str) -> dict:
+    """
+    Read the setting file.
+    :param file_path: The file path.
+    :return: The setting.
+    """
+    setting = json.load(open(file_path, encoding="utf-8"))
+    return setting

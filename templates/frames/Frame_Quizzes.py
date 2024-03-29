@@ -358,7 +358,7 @@ class FrameEncuestas(ttk.Frame):
         master,
         quizzes=quizzes_RRHH,
         quizz_out=None,
-        interviewer="default",
+        interviewer="default", setting: dict = None,
         **kwargs,
     ):
         super().__init__(master, **kwargs)

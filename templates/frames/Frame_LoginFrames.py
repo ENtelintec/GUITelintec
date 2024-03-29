@@ -115,7 +115,7 @@ class LoginGUI(ttk.Frame):
 
 
 class LogOptionsFrame(ttk.Frame):
-    def __init__(self, master=None, *args, **kwargs):
+    def __init__(self, master=None, setting: dict = None, *args, **kwargs):
         super().__init__(master, *args, **kwargs)
         self.columnconfigure(1, weight=1)
         self.master = master

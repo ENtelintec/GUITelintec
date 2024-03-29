@@ -16,7 +16,7 @@ from templates.Functions_SQL import get_employees, get_customers, get_department
 
 
 def create_label(master, row, column, padx=5, pady=5, text=None, textvariable=None,
-                 font=('Helvetica', 10, 'normal'), columnspan=1, sticky=None, **kwargs) -> ttk.Label:
+                 font=('Helvetica', 11, 'normal'), columnspan=1, sticky=None, **kwargs) -> ttk.Label:
     """
     Create a label with the text-provided
     :param sticky:

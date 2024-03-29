@@ -70,7 +70,7 @@ def tranform_data_vacations_db_display(data):
 
 
 class VacationsFrame(ScrolledFrame):
-    def __init__(self, master, *args, **kwargs):
+    def __init__(self, master, setting: dict = None, *args, **kwargs):
         super().__init__(master, autohide=True, *args, **kwargs)
         # self.pack(fill=ttk.BOTH, expand=True)
         self.seniority_dict = None

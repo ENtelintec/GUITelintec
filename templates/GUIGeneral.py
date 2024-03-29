@@ -4,8 +4,9 @@ from tkinter import PhotoImage
 import ttkbootstrap as ttk
 
 import templates.frames.Frame_LoginFrames as Login
+from static.extensions import filepath_settings
 from templates import AlmacenGUI
-from templates.Functions_AuxFiles import carpeta_principal, get_image_side_menu
+from templates.Functions_AuxFiles import carpeta_principal, get_image_side_menu, read_setting_file
 from templates.Functions_Files import read_file_not
 from templates.Functions_SQL import get_chats_w_limit, get_username_data
 from templates.Funtions_Utils import create_button_side_menu, compare_permissions_windows
@@ -54,6 +55,7 @@ class GUIAsistente(ttk.Window):
         self.rowconfigure(0, weight=1)
         # -----------------------Variables-----------------------
         self.permissions = {"1": "App.Deparment.Default"}
+        self.settings = read_setting_file(filepath_settings)
         self.username = "default"
         self.department = "default"
         self.contrato = "default"
@@ -66,6 +68,7 @@ class GUIAsistente(ttk.Window):
         self.chats = get_chats_w_limit(limit=(0, chats_to_show))
         self.virtual_assistant_window = None
         self.VA_frame = None
+        self._active_window = None
         # -----------------------load images -----------------------
         self.images = {
             "facebook": get_image_side_menu("facebook"),
@@ -126,6 +129,8 @@ class GUIAsistente(ttk.Window):
         self.VA_frame = ttk.Frame(self, width=150)
         self.VA_frame.rowconfigure(0, weight=1)
         self.VA_frame.grid(row=0, column=2, sticky="nsew", pady=10, padx=5)
+        self.department = department
+        self.update_style_department()
         self.virtual_assistant_window = AssistantGUI(self.VA_frame, department=department, width=150)
         self.virtual_assistant_window.grid(row=0, column=0, sticky="nsew")
 
@@ -136,12 +141,12 @@ class GUIAsistente(ttk.Window):
                     self.windows_frames[txt].grid_forget()
                 if self.VA_frame is not None:
                     self.VA_frame.grid_forget()
+                self._active_window = None
             case _:
-                for txt in self.names_side_menu:
-                    if txt == name:
-                        self.windows_frames[name].grid(row=0, column=1, sticky="nsew", padx=1, pady=1)
-                    else:
-                        self.windows_frames[txt].grid_forget()
+                if self._active_window != name:
+                    self.windows_frames[self._active_window].grid_forget() if self._active_window is not None else None
+                    self._active_window = name
+                    self.windows_frames[name].grid(row=0, column=1, sticky="nsew", padx=1, pady=1)
 
     def _create_side_menu_widgets(self, master):
         flag, windows_names = compare_permissions_windows(list(self.permissions.values()))
@@ -167,7 +172,7 @@ class GUIAsistente(ttk.Window):
         for i, window in enumerate(self.names_side_menu):
             match window:
                 case "DB":
-                    windows[window] = DBFrame(self)
+                    windows[window] = DBFrame(self, setting=self.settings)
                     print("DB frame created")
                 case "Notificaciones":
                     windows[window] = Notifications(
@@ -246,6 +251,10 @@ class GUIAsistente(ttk.Window):
     def _destroy_side_menu_widgets(self):
         for widget in self.buttons_side_menu:
             widget.destroy()
+
+    def update_style_department(self):
+        if self.department in self.settings["gui"]:
+            self.style_gui.theme_use(self.settings["gui"][self.department]["theme"])
 
 
 class LogoFrame(tk.Frame):

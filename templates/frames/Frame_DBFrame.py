@@ -11,6 +11,7 @@ from ttkbootstrap.dialogs import Messagebox
 from ttkbootstrap.scrolled import ScrolledFrame
 
 import templates.Functions_SQL as fsql
+from static.extensions import windows_names_db_frame
 from templates.Functions_AuxFiles import get_image_side_menu
 from templates.Funtions_Utils import set_dateEntry_new_value, create_widget_input_DB, create_visualizer_treeview, \
     create_btns_DB, set_entry_value, create_button_side_menu, clean_entries
@@ -61,8 +62,89 @@ def load_data_tables(names: list[str]):
     return out
 
 
+class DBFrame(ttk.Frame):
+    def __init__(self, master, setting: dict = None, *args, **kwargs):
+        super().__init__(master, *args, **kwargs)
+        self.columnconfigure(1, weight=1)
+        self.rowconfigure(0, weight=1)
+        # --------------------------variables-----------------------------------
+        self.settings = setting
+        self._active_window = None
+        self.names_side_menu = windows_names_db_frame
+        frame_side_menu = ttk.Frame(self)
+        frame_side_menu.grid(row=0, column=0, sticky="nsew")
+        self.widgets = self._create_side_menu_widgets(frame_side_menu)
+        self.windows_frames = self._create_side_menu_windows()
+
+    def _create_side_menu_widgets(self, master):
+        widgets = []
+        if len(self.names_side_menu) >= 12:
+            scrollbar = ttk.Scrollbar(master, orient="vertical")
+            scrollbar.grid(row=0, column=2, sticky="ns")
+        for i, window in enumerate(self.names_side_menu):
+            widgets.append(
+                create_button_side_menu(
+                    master, i, 0,
+                    text=window,
+                    image=get_image_side_menu(window),
+                    command=lambda x=window: self._select_frame_by_name(x),
+                    columnspan=1)
+            )
+        return widgets
+
+    def _select_frame_by_name(self, name):
+        match name:
+            case "none":
+                for txt in self.names_side_menu:
+                    self.windows_frames[txt].grid_forget()
+                self._active_window = None
+            case _:
+                if self._active_window != name:
+                    self.windows_frames[self._active_window].grid_forget() if self._active_window is not None else None
+                    self._active_window = name
+                    self.windows_frames[name].grid(row=0, column=1, sticky="nsew", padx=1, pady=1)
+
+    def _create_side_menu_windows(self):
+        windows = {}
+        for i, window in enumerate(self.names_side_menu):
+            match window:
+                case "Encargados":
+                    windows[window] = HeadsFrame(self, setting=self.settings)
+                    print("heads frame created")
+                case "Clientes":
+                    windows[window] = CustomersFrame(self, setting=self.settings)
+                    print("customers frame created")
+                case "Empleados":
+                    windows[window] = EmployeesFrame(self, setting=self.settings)
+                    print("employees frame created")
+                case "Departamentos":
+                    windows[window] = DepartmentsFrame(self, setting=self.settings)
+                    print("departments frame created")
+                case "Proveedores":
+                    windows[window] = SuppliersFrame(self, setting=self.settings)
+                    print("suppliers frame created")
+                case "Productos":
+                    windows[window] = ProductsFrame(self, setting=self.settings)
+                    print("products frame created")
+                case "Ordenes":
+                    windows[window] = OrdersFrame(self, setting=self.settings)
+                    print("orders frame created")
+                case "O. Virtuales":
+                    windows[window] = VOrdersFrame(self, setting=self.settings)
+                    print("virtual orders frame created")
+                case "Chats":
+                    windows[window] = ChatsFrame(self, setting=self.settings)
+                    print("chats frame created")
+                case "Tickets":
+                    windows[window] = TicketsFrame(self, setting=self.settings)
+                    print("tickets frame created")
+                case _:
+                    pass
+        return windows
+
+
 class EmployeesFrame(ttk.Frame):
-    def __init__(self, master, **kwargs):
+    def __init__(self, master, setting: dict = None, **kwargs):
         super().__init__(master, **kwargs)
         self.columnconfigure(0, weight=1)
         self.rowconfigure(3, weight=1)
@@ -126,13 +208,13 @@ class EmployeesFrame(ttk.Frame):
         self.entries[13].set(status)
         if len(baja) > 0 and baja != "None":
             baja = json.loads(baja)
-            set_dateEntry_new_value(
+            self.entries[14] = set_dateEntry_new_value(
                 self.insert_frame, self.entries[14],
                 datetime.strptime(baja["date"], "%Y-%m-%d %H:%M:%S"),
                 row=7, column=2, padx=5, pady=5)
             set_entry_value(self.entries[15], baja["reason"])
         else:
-            set_dateEntry_new_value(
+            self.entries[14] = set_dateEntry_new_value(
                 self.insert_frame, self.entries[14],
                 datetime.now(),
                 row=7, column=2, padx=5, pady=5
@@ -282,7 +364,7 @@ class EmployeesFrame(ttk.Frame):
 
 
 class CustomersFrame(ttk.Frame):
-    def __init__(self, master, **kwargs):
+    def __init__(self, master, setting: dict = None, **kwargs):
         super().__init__(master, **kwargs)
         self.columnconfigure(0, weight=1)
         self.rowconfigure(3, weight=1)
@@ -420,7 +502,7 @@ class CustomersFrame(ttk.Frame):
 
 
 class DepartmentsFrame(ttk.Frame):
-    def __init__(self, master, **kwargs):
+    def __init__(self, master, setting: dict = None, **kwargs):
         super().__init__(master, **kwargs)
         self._id_dep_update = None
         self.columnconfigure(0, weight=1)
@@ -548,7 +630,7 @@ class DepartmentsFrame(ttk.Frame):
 
 
 class HeadsFrame(ttk.Frame):
-    def __init__(self, master, **kwargs):
+    def __init__(self, master, setting: dict = None, **kwargs):
         super().__init__(master, **kwargs)
         self.columnconfigure(0, weight=1)
         self.rowconfigure(3, weight=1)
@@ -688,7 +770,7 @@ class HeadsFrame(ttk.Frame):
 
 
 class SuppliersFrame(ttk.Frame):
-    def __init__(self, master, **kwargs):
+    def __init__(self, master, setting: dict = None, **kwargs):
         super().__init__(master, **kwargs)
         self.columnconfigure(0, weight=1)
         self.rowconfigure(3, weight=1)
@@ -820,7 +902,7 @@ class SuppliersFrame(ttk.Frame):
 
 
 class ProductsFrame(ttk.Frame):
-    def __init__(self, master, **kwargs):
+    def __init__(self, master, setting: dict = None, **kwargs):
         super().__init__(master, **kwargs)
         self.columnconfigure(0, weight=1)
         self.rowconfigure(3, weight=1)
@@ -993,7 +1075,7 @@ class ProductsFrame(ttk.Frame):
 
 
 class OrdersFrame(ttk.Frame):
-    def __init__(self, master, *args, **kwargs):
+    def __init__(self, master, setting: dict = None, *args, **kwargs):
         super().__init__(master, *args, **kwargs, )
         self.columnconfigure(0, weight=1)
         self.rowconfigure(3, weight=1)
@@ -1167,7 +1249,7 @@ class OrdersFrame(ttk.Frame):
 
 
 class VOrdersFrame(ttk.Frame):
-    def __init__(self, master, *args, **kwargs):
+    def __init__(self, master, setting: dict = None, *args, **kwargs):
         super().__init__(master, *args, **kwargs)
         self.columnconfigure(0, weight=1)
         self.rowconfigure(3, weight=1)
@@ -1338,7 +1420,7 @@ class VOrdersFrame(ttk.Frame):
 
 
 class TicketsFrame(ttk.Frame):
-    def __init__(self, master, *args, **kwargs):
+    def __init__(self, master, setting: dict = None, *args, **kwargs):
         super().__init__(master, *args, **kwargs)
         self.columnconfigure(0, weight=1)
         self.rowconfigure(3, weight=1)
@@ -1497,7 +1579,7 @@ class TicketsFrame(ttk.Frame):
 
 
 class ChatsFrame(ttk.Frame):
-    def __init__(self, master, *args, **kwargs):
+    def __init__(self, master, setting: dict = None, *args, **kwargs):
         super().__init__(master, *args, **kwargs)
         self.columnconfigure(0, weight=1)
         self.rowconfigure(1, weight=1)
@@ -1508,98 +1590,3 @@ class ChatsFrame(ttk.Frame):
         self.visual_frame.grid(row=1, column=0, sticky="nsew", padx=5, pady=5)
         self.visual_frame.columnconfigure(0, weight=1)
         ps_chats = create_visualizer_treeview(self.visual_frame, "chats", row=0, column=0, style="success")
-
-
-class DBFrame(ttk.Frame):
-    def __init__(self, master, *args, **kwargs):
-        super().__init__(master, *args, **kwargs)
-        self.columnconfigure(1, weight=1)
-        self.rowconfigure(0, weight=1)
-        # --------------------------variables-----------------------------------
-        (self.data_costumers, self.data_employees, self.data_departments,
-         self.data_heads, self.data_suppliers, self.data_products) = (
-            load_data_tables(['customers', 'employees', 'departments',
-                              'heads', 'suppliers', 'products']))
-        print("data db loaded")
-        windows_names = ["Empleados", "Clientes", "Departamentos", "Encargados",
-                         "Proveedores", "Productos", "Ordenes",
-                         "Tickets", "Chats", "O. Virtuales"]
-        self.names_side_menu = windows_names
-        frame_side_menu = ttk.Frame(self)
-        frame_side_menu.grid(row=0, column=0, sticky="nsew")
-        self.widgets = self._create_side_menu_widgets(frame_side_menu)
-        self.windows_frames = self._create_side_menu_windows()
-
-    def _create_side_menu_widgets(self, master):
-        widgets = []
-        if len(self.names_side_menu) >= 12:
-            scrollbar = ttk.Scrollbar(master, orient="vertical")
-            scrollbar.grid(row=0, column=2, sticky="ns")
-        for i, window in enumerate(self.names_side_menu):
-            widgets.append(
-                create_button_side_menu(
-                    master, i, 0,
-                    text=window,
-                    image=get_image_side_menu(window),
-                    command=lambda x=window: self._select_frame_by_name(x),
-                    columnspan=1)
-            )
-        return widgets
-
-    def _select_frame_by_name(self, name):
-        match name:
-            case "none":
-                for txt in self.names_side_menu:
-                    self.windows_frames[txt].grid_forget()
-            case _:
-                for txt in self.names_side_menu:
-                    if txt == name:
-                        self.windows_frames[name].grid(row=0, column=1, sticky="nsew", padx=1, pady=1)
-                    else:
-                        self.windows_frames[txt].grid_forget()
-
-    def _create_side_menu_windows(self):
-        windows = {}
-        for i, window in enumerate(self.names_side_menu):
-            match window:
-                case "Encargados":
-                    windows[window] = HeadsFrame(self)
-                    print("heads frame created")
-                case "Clientes":
-                    windows[window] = CustomersFrame(self)
-                    print("customers frame created")
-                case "Empleados":
-                    windows[window] = EmployeesFrame(self)
-                    print("employees frame created")
-                case "Departamentos":
-                    windows[window] = DepartmentsFrame(self)
-                    print("departments frame created")
-                case "Proveedores":
-                    windows[window] = SuppliersFrame(self)
-                    print("suppliers frame created")
-                case "Productos":
-                    windows[window] = ProductsFrame(self)
-                    print("products frame created")
-                case "Ordenes":
-                    windows[window] = OrdersFrame(self)
-                    print("orders frame created")
-                case "O. Virtuales":
-                    windows[window] = VOrdersFrame(self)
-                    print("virtual orders frame created")
-                case "Chats":
-                    windows[window] = ChatsFrame(self)
-                    print("chats frame created")
-                case "Tickets":
-                    windows[window] = TicketsFrame(self)
-                    print("tickets frame created")
-                case _:
-                    pass
-        return windows
-
-
-if __name__ == '__main__':
-    app = tk.Tk()
-    app.geometry("1300x700")
-    db_frame = DBFrame(app, data_tables=load_data_tables(["customers", "employees"]))
-    db_frame.grid(row=0, column=1, sticky="nsew", pady=10, padx=10)
-    app.mainloop()

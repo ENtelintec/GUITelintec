@@ -7,6 +7,8 @@ import json
 import os
 import pickle
 import re
+import warnings
+from calendar import monthrange
 from datetime import datetime
 from tkinter import Misc, Frame, messagebox
 from tkinter.ttk import Frame
@@ -541,6 +543,7 @@ def extract_fichajes_file(filename: str):
     try:
         skip_rows = [0, 1, 2]
         cols = [0, 1, 2] if "Ternium" in filename else [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
+        warnings.simplefilter("ignore")
         # noinspection PyTypeChecker
         df = pd.read_excel(filename, skiprows=skip_rows, usecols=cols)
         if "Ternium" in filename:
@@ -565,7 +568,9 @@ def extract_fichajes_file(filename: str):
                              "Hora de fichaje a la salida"], inplace=True)
             df["Fecha/hora_in"] = pd.to_datetime(df["Fecha/hora_in"], format="mixed", dayfirst=True)
             df["Fecha/hora_out"] = pd.to_datetime(df["Fecha/hora_out"], format="mixed", dayfirst=True)
+            df["Fecha"] = pd.to_datetime(df["Fecha"], format="mixed", dayfirst=True)
             df["name"] = df["Nombre"].str.upper() + " " + df["Apellido"].str.upper()
+            df["Horas trabajadas"] = transform_hours_to_float(df["Horas trabajadas"].tolist())
             df.drop(columns=["Nombre", "Apellido"], inplace=True)
         return df
     except Exception as e:
@@ -917,7 +922,7 @@ def update_fichajes_resume_cache(filepath: str, data, just_file=False, id_emp_up
                  faltas_dic2, lates_dic2, extras_dic2, primas_dic2, normal_dic2) = item_1
                 if id_emp_up == id_emp:
                     for index_0, item_0 in enumerate(fichajes_resume):
-                        if id_emp == item_0[0] and item_0[2] == contract2:
+                        if id_emp == item_0[0]:
                             (id_emp_0, name, contract, faltas, lates, total_lates, extras, total_extra, primas,
                              faltas_dic, lates_dic, extras_dic, primas_dic, normal_dic) = fichajes_resume[index_0]
                             if deletion:
@@ -949,7 +954,6 @@ def update_fichajes_resume_cache(filepath: str, data, just_file=False, id_emp_up
                                 print(error)
                             break
                     break
-
     with open(filepath, 'wb') as file:
         pickle.dump(fichajes_resume, file)
     print("Fichajes resume cache file rewrited")
@@ -1135,19 +1139,71 @@ def update_file_settings(filepath: str, settings: dict):
     return True, None
 
 
+def transform_hours_to_float(hours: list[str]):
+    hour_out = []
+    for hour in hours:
+        hour = hour.split(":")
+        hour = float(hour[0]) + float(hour[1]) / 60
+        hour = round(hour, 2)
+        hour_out.append(hour)
+    return hour_out
+
+
+def transform_hours_to_str(hours: float):
+    hours_str = f"{int(hours):02}"
+    hours_str += ":"
+    hours_str += f"{int(round((hours - int(hours)) * 60, 0)):02}"
+    return hours_str
+
+
+def get_days_work(date: datetime):
+    n_days_month = monthrange(date.year, date.month)
+    days_of_the_month = [i for i in range(1, n_days_month[1] + 1)]
+    # exclude sundays from the list
+    work_days = []
+    for day in days_of_the_month:
+        date_aux = datetime(date.year, date.month, day)
+        if date_aux.weekday() != 6:
+            work_days.append(day)
+    return work_days
+
+
+def get_date_from_days_list(date: datetime, days: list):
+    month = date.month
+    year = date.year
+    dates_list = []
+    for day in days:
+        timestamp = datetime(year, month, day)
+        dates_list.append(timestamp)
+    return dates_list
+
+
+def get_worked_days(df_name: pd.DataFrame):
+    days_worked = df_name["Fecha"].tolist()
+    last_date = days_worked[-1] if len(days_worked) > 0 else None
+    days_for_work = []
+    if last_date is None:
+        return [], []
+    days_for_work = get_days_work(last_date)
+    for day_worked in days_worked:
+        if day_worked.day in days_for_work:
+            days_for_work.remove(day_worked.day)
+    days_not_worked = get_date_from_days_list(last_date, days_for_work)
+    days_worked = df_name[["Fecha", "Horas trabajadas", "Dispositivo de fichaje de entrada", "Dispositivo de fichaje de salida"]].values.tolist()
+    return days_worked, days_not_worked
+
+
 def get_info_f_file_name(df: pd.DataFrame, name: str, clocks, window_time_in, window_time_out, flag):
     if flag:
         df_name = df[df["name"] == name]
         df_name_in = df[df["name"] == name]
-        worked_days = len(df_name["name"].to_list())
+        days_worked, days_not_worked = get_worked_days(df_name)
         min_in = clocks[0]["entrada"][0].get()
         hour_in = clocks[0]["entrada"][1].get()
         min_out = clocks[1]["salida"][0].get()
         hour_out = clocks[1]["salida"][1].get()
-        # filter worked days
+        # filter worked days within monday and saturday
         df_name_in.set_index('Fecha/hora_in', inplace=True)
-        worked_intime = len(
-            df_name_in.between_time(start_time=f"{hour_in}:{min_in}:00", end_time=f"{hour_out}:{min_out}:00"))
         # filter late days and extra hours
         # set entrance hour
         aux_hour = int(hour_in) + int(window_time_in.get() / 60)
@@ -1155,12 +1211,12 @@ def get_info_f_file_name(df: pd.DataFrame, name: str, clocks, window_time_in, wi
         limit_hour = pd.Timestamp(year=1, month=1, day=1, hour=aux_hour, minute=aux_min, second=0)
         # count the number of rows where the person is late
         late_name = df_name[df_name["Fecha/hora_in"].dt.time > limit_hour.time()]
-        count = len(late_name)
-        # calculate the time difference between the entrance hour and the late hour
-        time_late = {}
+        count_late = len(late_name)
+        # calculate the time difference between the entrance hour and the limit hour
+        late_dic = {}
         for i in late_name[["Fecha/hora_in", "Dispositivo de fichaje de entrada"]].values:
             time_str = pd.Timestamp(year=1, month=1, day=1, hour=i[0].hour, minute=i[0].minute, second=0)
-            time_late[i[0]] = (time_str - limit_hour, i[1])
+            late_dic[i[0]] = (time_str - limit_hour, i[1])
         # filter extra hours
         # set exit hour
         aux_hour = int(hour_out) + int(window_time_out.get() / 60)
@@ -1170,11 +1226,11 @@ def get_info_f_file_name(df: pd.DataFrame, name: str, clocks, window_time_in, wi
         extra_name = df_name[df_name["Fecha/hora_out"].dt.time > limit_hour.time()]
         count_extra = len(extra_name)
         # calculate the time difference between the entrance hour and the late hour
-        time_extra = {}
+        extra_dic = {}
         for i in extra_name[["Fecha/hora_out", "Dispositivo de fichaje de salida"]].values:
             time_str = pd.Timestamp(year=1, month=1, day=1, hour=i[0].hour, minute=i[0].minute, second=0)
-            time_extra[i[0]] = (time_str - limit_hour, i[1])
-        return worked_days, worked_intime, count, count_extra, time_late, time_extra
+            extra_dic[i[0]] = (time_str - limit_hour, i[1])
+        return days_worked, days_not_worked, count_late, count_extra, late_dic, extra_dic
 
 
 def get_info_t_file_name(df: pd.DataFrame, name: str, clocks, window_time_in, window_time_out, flag):

@@ -34,7 +34,7 @@ def check_date_difference(date_modify, delta):
 
 
 class BitacoraEditFrame(ScrolledFrame):
-    def __init__(self, master, username="default", contrato="default", delta=14, *args, **kwargs):
+    def __init__(self, master, username="default", contrato="default", delta=14, setting: dict = None, *args, **kwargs):
         super().__init__(master, *args, **kwargs)
         self.columnconfigure(0, weight=1)
         self.rowconfigure(4, weight=1)
@@ -231,6 +231,7 @@ class BitacoraEditFrame(ScrolledFrame):
             value = 1.0
         comment += f"\nactividad-->{activity}"
         comment += f"\nlugar-->{location}"
+        comment += f"\ncontrato-->{contract}"
         return name, contract, date, event, value, comment, include_prima, incidencia, activity, location
 
     def on_add_click(self):
@@ -243,6 +244,7 @@ class BitacoraEditFrame(ScrolledFrame):
         if not out:
             self.svar_info.set("No se puede añadir un evento pasado el tiempo limite de modificaciones.")
             return
+
         if include_prima and event == "extra":
             flag, error, result = update_bitacora(self.emp_id, event, (date, value, comment, contract))
             if flag:
@@ -263,6 +265,7 @@ class BitacoraEditFrame(ScrolledFrame):
                 self.svar_info.set(error)
                 return
         else:
+            print(self.emp_id, event)
             flag, error, result = update_bitacora(self.emp_id, event, (date, value, comment, contract))
             if flag:
                 msg = f"Record inserted--> Empleado: {name}, Contrato: {contract}, Fecha: {date}, Evento: {event}, Valor: {value}, Comentario: {comment}--> by {self.username}"
@@ -298,7 +301,7 @@ class BitacoraEditFrame(ScrolledFrame):
         self.emp_id = int(id_emp)
         self.emp_selector.set(name)
         self.emp_sel_contract.set(name)
-        self.contract_selector.set(contract)
+        self.contract_selector.set(contract) if comment_dict["contract"] is None else self.contract_selector.set(comment_dict["contract"])
         self.event_selector.set(event)
         self.valor_entry_hora.delete(0, "end")
         self.valor_entry_hora.insert(0, str(int(value)))

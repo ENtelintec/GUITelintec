@@ -114,7 +114,7 @@ tools_AV_avaliable = {
     "default": [
         {"type": "code_interpreter"},
         {"type": "retrieval"
-        }
+         }
     ],
     "rrhh": [
         {"type": "code_interpreter"},
@@ -138,3 +138,6 @@ tools_AV_avaliable = {
         {"type": "function", "name": "getNoStockProducts", "args": ["category"]}
     ]
 }
+windows_names_db_frame = ["Empleados", "Clientes", "Departamentos", "Encargados",
+                          "Proveedores", "Productos", "Ordenes",
+                          "Tickets", "Chats", "O. Virtuales"]

@@ -43,7 +43,7 @@ class AssistantGUI(ttk.Frame):
         lable1 = ttk.Label(self, text="Asistente Virtual", font=FONT_Title)
         lable1.grid(row=0, column=0, columnspan=2, sticky="n", padx=10, pady=10)
         #  -------------------create type selector checkbutton-----------------
-        self.var_type_AV = tk.BooleanVar(value=False)
+        self.var_type_AV = tk.BooleanVar(value=True)
         self.var_type_text = tk.StringVar(value="Permitir Archivos")
         # noinspection PyArgumentList
         self.type_AV = ttk.Checkbutton(self,

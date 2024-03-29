@@ -23,7 +23,7 @@ from templates.frames.SubFrame_Plots import FramePlot
 
 
 class FichajesFilesGUI(ScrolledFrame):
-    def __init__(self, master=None):
+    def __init__(self, master=None, setting: dict = None):
         super().__init__(master, autohide=True)
         # noinspection PyTypeChecker
         self.columnconfigure(0, weight=1)
@@ -52,7 +52,7 @@ class FichajesAuto(ttk.Frame):
          self.contract_emp, self.lates_bit, self.extras_bit,
          self.total_extra2, self.primes_bit, self.files, self.max_date_g,
          self.min_date_g, self.dff, self.date_file, self.events_bitacora,
-         self.dfb) = create_var_none(16)
+         self.dfb, self.days_absence, self.worked_days_f) = create_var_none(18)
         self.files_names_pairs = [[], []]
         self.files_names_main = []
         # ----------------string vars-------------
@@ -60,14 +60,15 @@ class FichajesAuto(ttk.Frame):
          self.svar_worked_days_within_t, self.svar_late_hours_t, self.svar_extra_hours_t,
          self.svar_nlate_hours_day_t, self.svar_late_hours_comment_t,
          self.svar_extra_hours_day_t, self.svar_extra_hours_comment_t,
-         self.svar_puerta_out_t, self.svar_puerta_in_t,
-         self.svar_worked_days_f, self.svar_late_days_f, self.svar_extra_days_f,
-         self.svar_worked_days_within_f, self.svar_late_hours_f, self.svar_extra_hours_f,
+         self.svar_puerta_out_t, self.svar_puerta_normal_t,
+         self.svar_absence_days_f, self.svar_late_days_f, self.svar_extra_days_f,
+         self.svar_primes_days_f, self.svar_late_hours_f, self.svar_extra_hours_f,
          self.svar_nlate_hours_day_f, self.svar_late_hours_comment_f,
          self.svar_extra_hours_day_f, self.svar_extra_hours_comment_f,
          self.svar_puerta_out_f, self.svar_puerta_in_f, self.svar_absences_bit, self.svar_lates_bit,
          self.svar_extras_bit, self.svar_primes_bit, self.svar_com_absence_bit,
-         self.svar_com_late_bit, self.svar_com_extra_bit, self.svar_com_prime_bit) = create_stringvar(32, value="")
+         self.svar_com_late_bit, self.svar_com_extra_bit, self.svar_com_prime_bit,
+         self.svar_worked_days, self.svar_nhours_worked) = create_stringvar(34, value="")
         # -------------------create title-----------------
         create_label(self, text='Telintec Software Fichajes',
                      row=0, column=0, columnspan=5, padx=0, pady=0,
@@ -124,7 +125,7 @@ class FichajesAuto(ttk.Frame):
         frame_info_file_1 = ttk.Frame(group_1)
         frame_info_file_1.grid(row=1, column=0, sticky="nswe")
         frame_info_file_1.columnconfigure((0, 1, 2, 3, 4), weight=1)
-        self.days_late_selector_f, self.days_extra_selector_f = self.create_info_display_file1(frame_info_file_1)
+        self.days_late_selector_f, self.days_extra_selector_f, self.days_normal_selector_f = self.create_info_display_file1(frame_info_file_1)
         # -------labels result file 2-------
         frame_info_file_2 = ttk.Frame(group_1)
         frame_info_file_2.grid(row=2, column=0, sticky="nswe")
@@ -175,10 +176,16 @@ class FichajesAuto(ttk.Frame):
 
     def create_info_display_file1(self, master):
         create_label(
-            master, text='Información resumida archivo principal', row=2, column=0,
-            font=("Arial", 12, "bold"), columnspan=6)
-        create_label(master, textvariable=self.svar_worked_days_f, row=3, column=0, sticky="w")
-        create_label(master, textvariable=self.svar_worked_days_within_f, row=4, column=0, sticky="w")
+            master, text='Información resumida Sist. Fichaje', row=0, column=0,
+            font=("Arial", 14, "bold"), columnspan=6)
+        # normal days
+        create_label(master, textvariable=self.svar_worked_days, row=1, column=0, sticky="w")
+        create_label(master, textvariable=self.svar_nhours_worked, row=1, column=3)
+        create_label(master, textvariable=self.svar_puerta_normal_t, row=1, column=4)
+        # absence days
+        create_label(master, textvariable=self.svar_absence_days_f, row=3, column=0, sticky="w")
+        create_label(master, textvariable=self.svar_primes_days_f, row=4, column=0, sticky="w")
+        create_label(master, textvariable=self.svar_com_prime_bit, row=4, column=5)
         # late hours
         create_label(master, textvariable=self.svar_late_days_f, row=5, column=0, sticky="w")
         create_label(master, textvariable=self.svar_late_hours_f, row=5, column=1)
@@ -191,13 +198,17 @@ class FichajesAuto(ttk.Frame):
         create_label(master, textvariable=self.svar_extra_hours_day_f, row=6, column=3)
         create_label(master, textvariable=self.svar_puerta_out_f, row=6, column=4)
         create_label(master, textvariable=self.svar_extra_hours_comment_f, row=6, column=5)
+
+        days_normal_selector = create_Combobox(
+            master, values=["no data"], state="readonly", row=1, column=2)
+        days_normal_selector.bind("<<ComboboxSelected>>", self.select_day_normal_fun_f)
         days_late_selector = create_Combobox(
             master, values=["no data"], state="readonly", row=5, column=2)
         days_late_selector.bind("<<ComboboxSelected>>", self.select_day_late_fun_f)
         days_extra_selector = create_Combobox(
             master, values=["no data"], state=ttk.DISABLED, row=6, column=2)
         days_extra_selector.bind("<<ComboboxSelected>>", self.select_day_extra_fun_f)
-        return days_late_selector, days_extra_selector
+        return days_late_selector, days_extra_selector, days_normal_selector
 
     def create_info_display_bitacora(self, master):
         create_label(
@@ -290,6 +301,7 @@ class FichajesAuto(ttk.Frame):
         extra_keys = []
         total_late = 0
         total_extra = 0
+        normal_keys = []
         for i in self.days_late.keys():
             late_keys.append(str(i))
             total_late += self.days_late[i][0].seconds
@@ -300,6 +312,9 @@ class FichajesAuto(ttk.Frame):
             late_keys.append("no data")
         if len(extra_keys) == 0:
             extra_keys.append("no data")
+        if len(self.worked_days_f) > 0:
+            normal_keys = [i[0] for i in self.worked_days_f]
+        self.days_normal_selector_f.configure(values=normal_keys)
         self.days_late_selector_f.configure(values=late_keys)
         self.days_extra_selector_f.configure(values=extra_keys)
         self.days_late_selector_f.configure(state="readonly")
@@ -360,17 +375,18 @@ class FichajesAuto(ttk.Frame):
     def update_info_displayed(self, name):
         if name == "reset":
             update_stringvars(
-                [(self.svar_worked_days_f, f'Numero de dias trabajados: NA.'),
+                [(self.svar_worked_days, f'Numero de dias trabajados: NA.'),
+                 (self.svar_absence_days_f, f'Numero de faltas: NA.'),
                  (self.svar_late_days_f, f'Numero de dias tarde: NA.'),
                  (self.svar_extra_days_f, f'Numero de dias con horas extras: NA.'),
-                 (self.svar_worked_days_within_f, f'Numero de dias dentro de horario: NA.'),
+                 (self.svar_primes_days_f, f'Numero de dias con prima: NA.'),
                  (self.svar_late_hours_f, f'Total horas tarde:'),
                  (self.svar_extra_hours_f, f'Total horas extras:'),
                  (self.svar_nlate_hours_day_t, ""),
                  (self.svar_extra_hours_day_t, ""),
                  (self.svar_late_hours_comment_t, ""),
                  (self.svar_extra_hours_comment_t, ""),
-                 (self.svar_puerta_in_t, ""),
+                 (self.svar_puerta_normal_t, ""),
                  (self.svar_puerta_out_t, ""),
                  (self.svar_absences_bit, f'Dias con falta: NA.'),
                  (self.svar_lates_bit, f'Dias tarde: NA.'),
@@ -394,7 +410,7 @@ class FichajesAuto(ttk.Frame):
             df_name = self.dff[self.dff["name"] == name]
             id_emp = df_name["ID"].values[0]
             # -----------file fichaje------------
-            (worked_days_f, worked_intime_f, count_l_f, count_e_f,
+            (self.worked_days_f, self.days_absence, count_l_f, count_e_f,
              self.days_late, self.days_extra) = cb.get_info_f_file_name(
                 self.dff, name, self.clocks, self.window_time_in, self.window_time_out, self.file_selected_1)
             # ------------file ternium-----------
@@ -409,17 +425,18 @@ class FichajesAuto(ttk.Frame):
                 self.dfb, name=self.name_emp_selector.get(), id_emp=id_emp, flag=self.file_selected_2)
             # update vars for fichaje file
             update_stringvars(
-                [(self.svar_worked_days_f, f'Numero de dias trabajados: {worked_days_f}.'),
-                 (self.svar_late_days_f, f'Numero de dias tarde: {count_l_f}.'),
+                [(self.svar_worked_days, f'Numero de dias trabajados: {len(self.worked_days_f)}.'),
+                 (self.svar_absence_days_f, f'Numero de faltas: {len(self.days_absence)}.'),
+                 (self.svar_late_days_f, f'Numero de dias con atraso: {count_l_f}.'),
                  (self.svar_extra_days_f, f'Numero de dias con horas extras: {count_e_f}.'),
-                 (self.svar_worked_days_within_f, f'Numero de dias dentro de horario: {worked_intime_f}.')])
+                 (self.svar_primes_days_f, f'Numero de dias con prima: {count_l_f}.')])
             # update vars for ternium file
             update_stringvars(
                 [(self.svar_worked_days_t, f'Numero de dias trabajados: {worked_days_t}.'),
                  (self.svar_late_days_t, f'Numero de dias tarde: {count_l_t}.'),
                  (self.svar_extra_days_t, f'Numero de dias con horas extras: {count_e_t}.'),
                  (self.svar_worked_days_within_t, f'Numero de dias dentro de horario: {worked_intime_t}.')])
-            # update vars for oct file
+            # update vars for bitacora
             update_stringvars(
                 [(self.svar_absences_bit, f'Dias con falta: {days_absence_bit[0]}.'),
                  (self.svar_lates_bit, f'Dias tarde: {days_lates_bit[0]}.\nTotal de horas tarde: {days_lates_bit[1]}'),
@@ -443,52 +460,6 @@ class FichajesAuto(ttk.Frame):
     def check_dates_ranges(self):
         # max and min dates from dataframe
         return
-        df_dates = self.dff.copy()
-        max_date = df_dates["Fecha/hora_in"].max()
-        min_date = df_dates["Fecha/hora_in"].min()
-        print(f"max date: {max_date}")
-        print(f"min date: {min_date}")
-        # max and min dates from contracts
-        table_data, columns = cb.generate_table_from_dict_contracts(self.contracts)
-        data_f = {}
-        for i, column in enumerate(columns):
-            data_f[column] = []
-            for row in table_data:
-                data_f[column].append(row[i])
-        df_contracts = pd.DataFrame.from_dict(data_f)
-        df_contracts["Fecha"] = pd.to_datetime(df_contracts["Fecha"], format='mixed')
-        max_date_c = df_contracts["Fecha"].max()
-        min_date_c = df_contracts["Fecha"].min()
-        print(f"max date c: {max_date_c}")
-        print(f"min date c: {min_date_c}")
-        # check the max and min dates general
-        self.max_date_g = max_date if max_date <= max_date_c else max_date_c
-        self.min_date_g = min_date if min_date >= min_date_c else min_date_c
-        fortnights = self.max_date_g - self.min_date_g
-        print(f"fortnights: {fortnights.days}")
-        print(f"max date g: {self.max_date_g}", f"day: {self.max_date_g.weekday()}")
-        print(f"min date g: {self.min_date_g}", f"day: {self.min_date_g.weekday()}")
-        fort_options = fortnights.days / 15
-        list_fortnights = []
-        if fort_options >= 2:
-            for i in range(int(fort_options)):
-                if i == 0:
-                    list_fortnights.append((self.min_date_g, self.min_date_g + timedelta(days=15)))
-                elif i == int(fort_options) - 1:
-                    list_fortnights.append((self.min_date_g + timedelta(days=i * 15), self.max_date_g))
-                else:
-                    list_fortnights.append((self.min_date_g + timedelta(days=i * 15),
-                                            self.min_date_g + timedelta(days=i * 15) + timedelta(days=14)))
-        else:
-            list_fortnights.append((self.min_date_g, self.max_date_g))
-        list_display = []
-        for item in list_fortnights:
-            diff = item[1] - item[0]
-            list_display.append(f"{diff.days} days - {item[0].date()} - {item[1].date()}")
-        list_display = list_display if len(list_display) > 0 else ["no ranges avaliable"]
-        self.date_ranges.configure(values=list_display)
-        self.date_ranges.current(0)
-        # self.date_ranges.configure(values=list_fortnights)
 
     def read_file_ternium(self, filename):
         if ".xls" in filename or ".xlsx" in filename or ".csv" in filename:
@@ -567,9 +538,6 @@ class FichajesAuto(ttk.Frame):
         btn_export = ttk.Button(
             master, text="Exportar", command=self.button_export_click)
         btn_export.grid(row=0, column=0, sticky="n", padx=5, pady=5)
-        # btn_export_2 = ttk.Button(
-        #     master, text="Exportar/empleado", command=self.button_export_emp_click)
-        # btn_export_2.grid(row=0, column=1, sticky="n", padx=5, pady=5)
         return btn_export
 
     def create_info_display_file3(self, master):
@@ -582,7 +550,7 @@ class FichajesAuto(ttk.Frame):
         create_label(master, textvariable=self.svar_late_days_t, row=5, column=0, sticky="w")
         create_label(master, textvariable=self.svar_late_hours_t, row=5, column=1)
         create_label(master, textvariable=self.svar_nlate_hours_day_t, row=5, column=3)
-        create_label(master, textvariable=self.svar_puerta_in_t, row=5, column=4)
+        create_label(master, textvariable=self.svar_puerta_normal_t, row=5, column=4)
         create_label(master, textvariable=self.svar_late_hours_comment_t, row=5, column=5)
         # extra hours
         create_label(master, textvariable=self.svar_extra_days_t, row=6, column=0, sticky="w")
@@ -597,6 +565,16 @@ class FichajesAuto(ttk.Frame):
             master, values=["no data"], state=ttk.DISABLED, row=6, column=2)
         days_extra_selector.bind("<<ComboboxSelected>>", self.select_day_extra_fun_t)
         return days_late_selector, days_extra_selector
+
+    def select_day_normal_fun_f(self, event):
+        if event.widget.get() != "no data":
+            date = pd.Timestamp(event.widget.get())
+            for day in self.worked_days_f:
+                if date == day[0]:
+                    self.svar_nhours_worked.set(f"Horas trabajadas:\n{cb.transform_hours_to_str(day[1])}")
+                    self.svar_puerta_normal_t.set(f"Puerta de entrada:\n{day[2]}\n" +
+                                                  f"Puerta de salida:\n{day[3]}")
+                    break
 
     def select_day_late_fun_f(self, event):
         if event.widget.get() != "no data":
@@ -644,7 +622,7 @@ class FichajesAuto(ttk.Frame):
             aux = self.days_late_t[date][0].seconds
             hours, minutes = divmod(aux / 60, 60)
             self.svar_nlate_hours_day_t.set(f'Horas tarde: \n{int(hours)} con {int(minutes)} minutos.')
-            self.svar_puerta_in_t.set(f'Puerta de entrada: \n{self.days_late_t[date][1]}')
+            self.svar_puerta_normal_t.set(f'Puerta de entrada: \n{self.days_late_t[date][1]}')
             name = self.name_emp_selector.get()
             df_name = self.dft[self.dft["name"] == name]
             limit_hour_down = pd.Timestamp(year=date.year, month=date.month, day=date.day,
@@ -711,7 +689,8 @@ class FichajesAuto(ttk.Frame):
                     self.dfb, name=self.name_emp_selector.get(), id_emp=id_emp, flag=self.file_selected_2)
             else:
                 (days_absence_bit, days_extra_bit, days_primes_bit, days_lates_bit,
-                 absences_bit, extras_bit, primes_bit, normals_bit, lates_bit) = (None, None, None, None, None, None, None, None, None)
+                 absences_bit, extras_bit, primes_bit, normals_bit, lates_bit) = (
+                None, None, None, None, None, None, None, None, None)
             # convert data in dictionaries
             dict_faltas, dict_late, dict_extra, dict_prima, dict_normal = cb.get_dic_from_list_fichajes(
                 (None, days_late, days_extra, None, None),
@@ -728,7 +707,8 @@ class FichajesAuto(ttk.Frame):
                    days_absence_bit[0], days_lates_bit[0], days_lates_bit[1], days_extra_bit[0], days_extra_bit[1],
                    days_primes_bit[0], dict_faltas, dict_late, dict_extra, dict_prima, dict_normal)
             data_resume.append(row)
-        columns = ["ID", "Nombre", "Contrato", "Faltas", "Tardanzas", "Total horas tarde", "Dias Extra", "Total horas extras", "Primas",
+        columns = ["ID", "Nombre", "Contrato", "Faltas", "Tardanzas", "Total horas tarde", "Dias Extra",
+                   "Total horas extras", "Primas",
                    "Detalles Faltas", "Detalles Tardanzas", "Detalles Extras", "Detalles Primas", "Detalles normal"]
         data_f = {}
         for i, column in enumerate(columns):
@@ -834,7 +814,7 @@ class FichajesManual(ttk.Frame):
         frame_inputs2 = ttk.Frame(self.group_2, padding=5)
         frame_inputs2.grid(row=0, column=0, sticky="nswe")
         # frame_inputs2.columnconfigure((0, 1), weight=1)
-        self.name_oct_selector, self.date_selector_bit = self.create_inputs_o(frame_inputs2)
+        self.name_oct_selector, self.date_selector_bit = self.create_inputs_b(frame_inputs2)
         # -------labels result file 2-------
         frame_info2 = ttk.Frame(self.group_2, padding=5)
         frame_info2.grid(row=1, column=0, sticky="nswe")
@@ -842,6 +822,7 @@ class FichajesManual(ttk.Frame):
         (self.days_missing_selector2, self.days_late_selector2,
          self.days_extra_selector2, self.days_primas_selector) = self.create_info_display_file2(frame_info2)
         self.plot2_1 = FramePlot(self.group_2)
+
         # -----------------------group 3 frame----------------------------------
         self.group_3 = ttk.Frame(self.frame_collapse, padding=5)
         self.group_3.columnconfigure(0, weight=1)
@@ -860,7 +841,7 @@ class FichajesManual(ttk.Frame):
         self.plot3_1 = FramePlot(self.group_3)
 
         self.frame_collapse.add(self.group_1, title="Archivos Fichaje")
-        self.frame_collapse.add(self.group_2, title="Archivos OCT")
+        self.frame_collapse.add(self.group_2, title="Bitacora")
         self.frame_collapse.add(self.group_3, title="Archivos Ternium")
 
     def read_files_from_directory(self):
@@ -890,6 +871,14 @@ class FichajesManual(ttk.Frame):
         names_list = self.dfb["Nombre"].unique().tolist()
         self.name_oct_selector.configure(values=names_list)
         self.file_selected_2 = True
+        data_b, columns = get_events_op_date(date, True)
+        table_bitacora = Tableview(self.group_2,
+                                   coldata=columns,
+                                   rowdata=data_b,
+                                   paginated=True,
+                                   searchable=True,
+                                   autofit=True)
+        table_bitacora.grid(row=9, column=0, padx=30, pady=10, sticky="n")
 
     def on_file_selected(self, event):
         filename = event.widget.get()
@@ -1008,16 +997,16 @@ class FichajesManual(ttk.Frame):
         create_label(master, textvariable=self.svar_primas_op, row=7, column=0)
         # coments label
         create_label(
-            master, textvariable=self.svar_com_missed_days, row=4, column=2, font=('Helvetica', 8),
+            master, textvariable=self.svar_com_missed_days, row=4, column=2, font=('Helvetica', 11),
             columnspan=4)
         create_label(
-            master, textvariable=self.svar_com_late_op, row=5, column=2, font=('Helvetica', 8),
+            master, textvariable=self.svar_com_late_op, row=5, column=2, font=('Helvetica', 11),
             columnspan=4)
         create_label(
-            master, textvariable=self.svar_com_extra_op, row=6, column=2, font=('Helvetica', 8),
+            master, textvariable=self.svar_com_extra_op, row=6, column=2, font=('Helvetica', 11),
             columnspan=4)
         create_label(
-            master, textvariable=self.svar_com_primas_op, row=7, column=2, font=('Helvetica', 8),
+            master, textvariable=self.svar_com_primas_op, row=7, column=2, font=('Helvetica', 11),
             columnspan=4)
         days_missing_selector2 = create_Combobox(
             master, values=["no data"], state="readonly", row=4, column=1)
@@ -1211,8 +1200,8 @@ class FichajesManual(ttk.Frame):
                  (self.svar_com_extra_op, ""),
                  (self.svar_com_primas_op, "")])
             self.update_late_extra_days_bitacora()
-            data_chart = {"data": {'Faltas': days_lates_bit[0], 'Extras': days_extra_bit[0],
-                                   'Tarde': days_absence_bit[0], 'Primas': days_primes_bit[0]},
+            data_chart = {"data": {'Tarde': days_lates_bit[0], 'Extras': days_extra_bit[0],
+                                   'Faltas': days_absence_bit[0], 'Primas': days_primes_bit[0]},
                           "title": f"Datos de {event.widget.get()}",
                           "ylabel": "Dias"
                           }
@@ -1351,7 +1340,7 @@ class FichajesManual(ttk.Frame):
         return (clocks, window_time_in, window_time_out,
                 label_time_in, label_time_out, name_emp_selector)
 
-    def create_inputs_o(self, master):
+    def create_inputs_b(self, master):
         create_label(master, text='Fecha: ', row=0, column=0, sticky="n", width=10)
         self.svar_date_file.set(datetime.now().strftime("%Y-%m-%d"))
         date_selector = DateEntry(master,

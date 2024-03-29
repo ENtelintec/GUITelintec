@@ -12,7 +12,7 @@ from templates.frames.SubFrame_Plots import FramePlot
 
 
 class EmployeeDetails(ScrolledFrame):
-    def __init__(self, master=None, *args, **kwargs):
+    def __init__(self, master=None, setting: dict = None, *args, **kwargs):
         super().__init__(master, autohide=True, *args, **kwargs)
         self.columnconfigure(0, weight=1)
         # variables

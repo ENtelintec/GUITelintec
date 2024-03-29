@@ -13,7 +13,7 @@
       "parameters": {
         "type": "object",
         "properties": {
-          "name": {"type": "string", "description": "name of the department"},
+          "name": {"type": "string", "description": "name of the department"}
         },
         "required": ["name"]
       }
@@ -42,7 +42,7 @@
       "parameters": {
         "type": "object",
         "properties": {
-          "status": {"type": "string", "description": "status of the employees"},
+          "status": {"type": "string", "description": "status of the employees", "enum":  ["activo", "inactivo"]},
           "quantity": {"type": "integer", "description": "quantity of employees to display"},
           "order": {"type": "string", "description": "order of the employees to display", "enum":  ["asc", "desc"]}
         },

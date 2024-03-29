@@ -67,7 +67,7 @@ def get_entry_from_data(data, id_emp):
 
 
 class ExamenesMedicos(ScrolledFrame):
-    def __init__(self, master, *args, **kwargs):
+    def __init__(self, master, *args, setting: dict = None, **kwargs):
         super().__init__(master, autohide=True, *args, **kwargs)
         # self.pack(fill=ttk.BOTH, expand=True)
         self.columnconfigure((0, 1), weight=1)

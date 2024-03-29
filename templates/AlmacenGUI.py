@@ -12,7 +12,7 @@ from templates.screens.Settings import SettingsScreen
 
 
 class App(ttk.Frame):
-    def __init__(self, master):
+    def __init__(self, master, setting: dict = None):
         super().__init__(master)
         self.master = master
         self.columnconfigure(1, weight=1)

@@ -320,6 +320,7 @@ def getEmployeeInfo(**kwargs):
     id_e = id_e if id_e is not None else None
     flag, error, result, columns = get_employee_info(id_e)
     if flag:
+        result = [result]
         result.insert(0, columns)
         return result
     else:

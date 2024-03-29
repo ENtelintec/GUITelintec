@@ -870,8 +870,8 @@ def get_product_categories():
 
 
 def get_products_almacen(id_p: int, name: str, category: str, limit: int = 10):
-    columns = ("id_product", "name", "description", "price", "stock", "id_category")
-    sql = ("SELECT id_product, name, description, price, stock, id_category FROM products_amc WHERE id_product = %s or "
+    columns = ("id_product", "name", "udm", "stock", "id_category")
+    sql = ("SELECT id_product, name, udm, stock, id_category FROM products_amc WHERE id_product = %s or "
            "(match(name) against (%s IN NATURAL LANGUAGE MODE ) and id_category = %s ) "
            "limit %s")
     val = (id_p, name, category, limit)
@@ -1001,7 +1001,7 @@ def get_fichaje_emp_AV(name: str, id_e: int):
     columns = ("id_employee", "absences", "lates", "lates_value[h]", "extras", "extras_value[h]", "primes")
     if id_e is None:
         id_e, name_db = get_employee_id_name(name)
-        if len(id_e) > 0:
+        if id_e is not None :
             sql = ("SELECT emp_id, absences, lates, extras, primes "
                    "FROM fichajes WHERE emp_id = %s")
             val = (id_e,)
