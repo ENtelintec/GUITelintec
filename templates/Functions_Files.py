@@ -10,9 +10,9 @@ import re
 import warnings
 from calendar import monthrange
 from datetime import datetime
-from tkinter import Misc, Frame, messagebox
+from tkinter import Misc, messagebox
 from tkinter.ttk import Frame
-from typing import Tuple, Dict, Any
+from typing import Any
 
 import dropbox
 import pandas as pd
@@ -20,7 +20,7 @@ import ttkbootstrap as ttk
 from ttkbootstrap.toast import ToastNotification
 
 from static.extensions import secrets, cache_oct_file_temp_path, cache_oct_fichaje_path
-from templates.Functions_SQL import get_id_employee, get_all_fichajes, get_employee_id_name, update_fichaje_DB, \
+from templates.Functions_SQL import get_all_fichajes, get_employee_id_name, update_fichaje_DB, \
     insert_new_fichaje_DB
 from templates.Functions_Text import clean_accents, compare_employee_name
 
@@ -1139,6 +1139,115 @@ def update_file_settings(filepath: str, settings: dict):
     return True, None
 
 
+def unify_data_display_fichaje(data: list[tuple[any, float, str]]) -> dict:
+    """
+    Unifies the data to be displayed in the fichaje frame.
+    :param data: List of tuples fills with <timestamp, value, comment>
+    :return:
+    """
+    dic_out = {}
+    for item in data:
+        timestamp, value, comment = item
+        if isinstance(value, pd.Timedelta):
+            value = value.total_seconds() / 3600
+        comment = "" if comment is None else comment
+        timestamp = datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S") if isinstance(timestamp, str) else timestamp
+        year = timestamp.year
+        month = timestamp.month
+        day = timestamp.day
+        new_timestamp = datetime(year, month, day).strftime("%Y-%m-%d")
+        if new_timestamp not in dic_out.keys():
+            dic_out[new_timestamp] = [value, comment, [timestamp]]
+        else:
+            dic_out[new_timestamp][0] += float(value)
+            dic_out[new_timestamp][1] += comment
+            dic_out[new_timestamp][2].append(timestamp)
+    return dic_out
+
+
+def unify_data_employee(data_normal: list, data_absence: list,
+                        data_prime: list, data_late: list, data_extra: list) -> tuple[dict, dict, dict, dict, dict]:
+    # normal data
+    normal_data = []
+    for group in data_normal:
+        if group is None:
+            continue
+        for item in group:
+            timestamp = None
+            value = 1.0
+            comment = None
+            if isinstance(item, list):
+                timestamp = item[0]
+                if len(item) > 2:
+                    value = item[1]
+                    comment = f"------Fichaje------\nEntrada: {item[2]}\n"
+                    comment += f"Salida: {item[3]}"
+                else:
+                    comment = f"------Ternium------\nPuerta ternium: {item[1]}"
+            elif isinstance(item, tuple):
+                timestamp, comment, value = item
+                comment = f"------Bitacora------\n{comment}"
+            normal_data.append((timestamp, value, comment))
+    normal_data_emp = unify_data_display_fichaje(normal_data)
+    # absence data
+    absence_data = []
+    for group in data_absence:
+        if group is None:
+            continue
+        for item in group:
+            value = 1.0
+            comment = None
+            if isinstance(item, tuple):
+                timestamp, comment, value = item
+                comment = f"------Bitacora------\n{comment}"
+            else:
+                timestamp = item
+            absence_data.append((timestamp, value, comment))
+    absence_data_emp = unify_data_display_fichaje(absence_data)
+    # prime data
+    prime_data = []
+    for group in data_prime:
+        if group is None:
+            continue
+        for item in group:
+            if isinstance(item, tuple):
+                timestamp, comment, value = item
+                comment = f"------Bitacora------\n{comment}"
+                prime_data.append((timestamp, value, comment))
+    prime_data_emp = unify_data_display_fichaje(prime_data)
+    # late data
+    late_data = []
+    for group in data_late:
+        if group is None:
+            continue
+        if isinstance(group, dict):
+            for k, v in group.items():
+                late_data.append((k, v[0], f"------Fichaje------\nPuerta entrada: {v[1]}"))
+        else:
+            for item in group:
+                if isinstance(item, tuple):
+                    timestamp, comment, value = item
+                    comment = f"------Bitacora------\n{comment}"
+                    late_data.append((timestamp, value, comment))
+    late_data_emp = unify_data_display_fichaje(late_data)
+    # extra data
+    extra_data = []
+    for group in data_extra:
+        if group is None:
+            continue
+        if isinstance(group, dict):
+            for k, v in group.items():
+                extra_data.append((k, v[0], f"------Fichaje------\nPuerta salida: {v[1]}"))
+        else:
+            for item in group:
+                if isinstance(item, tuple):
+                    timestamp, comment, value = item
+                    comment = f"------Bitacora------\n{comment}"
+                    extra_data.append((timestamp, value, comment))
+    extra_data_emp = unify_data_display_fichaje(extra_data)
+    return normal_data_emp, absence_data_emp, prime_data_emp, late_data_emp, extra_data_emp
+
+
 def transform_hours_to_float(hours: list[str]):
     hour_out = []
     for hour in hours:
@@ -1178,19 +1287,34 @@ def get_date_from_days_list(date: datetime, days: list):
     return dates_list
 
 
-def get_worked_days(df_name: pd.DataFrame):
-    days_worked = df_name["Fecha"].tolist()
-    last_date = days_worked[-1] if len(days_worked) > 0 else None
-    days_for_work = []
-    if last_date is None:
-        return [], []
-    days_for_work = get_days_work(last_date)
-    for day_worked in days_worked:
-        if day_worked.day in days_for_work:
-            days_for_work.remove(day_worked.day)
-    days_not_worked = get_date_from_days_list(last_date, days_for_work)
-    days_worked = df_name[["Fecha", "Horas trabajadas", "Dispositivo de fichaje de entrada", "Dispositivo de fichaje de salida"]].values.tolist()
-    return days_worked, days_not_worked
+def get_worked_days(df_name: pd.DataFrame, type_f=1):
+    if type_f == 1:
+        days_worked = df_name["Fecha"].tolist()
+        last_date = days_worked[-1] if len(days_worked) > 0 else None
+        days_for_work = []
+        if last_date is None:
+            return [], []
+        days_for_work = get_days_work(last_date)
+        for day_worked in days_worked:
+            if day_worked.day in days_for_work:
+                days_for_work.remove(day_worked.day)
+        days_not_worked = get_date_from_days_list(last_date, days_for_work)
+        days_worked = df_name[["Fecha", "Horas trabajadas", "Dispositivo de fichaje de entrada",
+                               "Dispositivo de fichaje de salida"]].values.tolist()
+        return days_worked, days_not_worked
+    else:
+        days_worked = df_name["Fecha/hora"].tolist()
+        last_date = days_worked[-1] if len(days_worked) > 0 else None
+        days_for_work = []
+        if last_date is None:
+            return [], []
+        days_for_work = get_days_work(last_date)
+        for day_worked in days_worked:
+            if day_worked.day in days_for_work:
+                days_for_work.remove(day_worked.day)
+        days_not_worked = get_date_from_days_list(last_date, days_for_work)
+        days_worked = df_name[["Fecha/hora", "Puerta"]].values.tolist()
+        return days_worked, days_not_worked
 
 
 def get_info_f_file_name(df: pd.DataFrame, name: str, clocks, window_time_in, window_time_out, flag):
@@ -1236,6 +1360,7 @@ def get_info_f_file_name(df: pd.DataFrame, name: str, clocks, window_time_in, wi
 def get_info_t_file_name(df: pd.DataFrame, name: str, clocks, window_time_in, window_time_out, flag):
     if flag:
         df_name = df[df["name"] == name]
+        days_worked, days_not_worked = get_worked_days(df_name, 2)
         df_name_entrada = df_name[df_name["in_out"] == "DENTRO"]
         df_name_salida = df_name[df_name["in_out"] == "FUERA"]
         worked_days = len(df_name["name"].to_list())
@@ -1272,9 +1397,9 @@ def get_info_t_file_name(df: pd.DataFrame, name: str, clocks, window_time_in, wi
             time_str = pd.Timestamp(year=1, month=1, day=1, hour=i[0].hour, minute=i[0].minute, second=i[0].second)
             diff = time_str - limit_hour2
             extra_time[i[0]] = (diff, i[1])
-        return worked_days, worked_intime, count, count2, time_late, extra_time
+        return worked_days, worked_intime, count, count2, time_late, extra_time, days_worked, days_not_worked
     else:
-        return "NA", "NA", "NA", "NA", {}, {}
+        return "NA", "NA", "NA", "NA", {}, {}, [], []
 
 
 def get_info_bitacora(df: pd.DataFrame, name: str, id_emp: int, flag):

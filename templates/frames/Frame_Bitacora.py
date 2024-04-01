@@ -13,7 +13,7 @@ from static.extensions import log_file_bitacora_path
 from templates.Functions_AuxFiles import update_bitacora, get_events_op_date, \
     erase_value_bitacora, split_commment, update_bitacora_value
 from templates.Functions_Files import write_log_file
-from templates.Functions_SQL import get_employess_op_names
+from templates.Functions_SQL import get_employees_op_names
 from templates.Funtions_Utils import create_label, create_var_none, create_stringvar, create_button, \
     set_dateEntry_new_value
 
@@ -72,7 +72,7 @@ class BitacoraEditFrame(ScrolledFrame):
 
     def create_inputs(self, master):
         # ----data -----------
-        emp_data = get_employess_op_names()
+        emp_data = get_employees_op_names()
         emp_ids = [i[0] for i in emp_data]
         contratos = [i[3] for i in emp_data]
         contratos_display = list(set(contratos))

@@ -47,6 +47,42 @@ def parse_data(data: dict, mode: int):
                     "password": data['password'],
                     "permissions": data['permissions']
                 }
+            case 5:
+                out = {
+                    "limit": data['limit'],
+                    "page": data['page']
+                }
+            case 6 | 8:
+                id_sm = data['id'] if mode == 8 else None
+                info = {
+                        'id': data['info']['id'],
+                        "sm_code": data['info']['sm_code'],
+                        "folio": data['info']['folio'],
+                        "contract": data['info']['contract'],
+                        "facility": data['info']['facility'],
+                        "location": data['info']['location'],
+                        "client_id": data['info']['client_id'],
+                        "emp_id": data['info']['emp_id'],
+                        "date": data['info']['date'],
+                        "limit_date": data['info']['limit_date'],
+                        "status": data['info']['status']
+                    }
+                items = []
+                for item in data['items']:
+                    items.append({
+                        'id': item['id'],
+                        "quantity": item['quantity'],
+                    })
+                out = {
+                    "info": info,
+                    "items": items,
+                    "id_sm": id_sm
+                }
+            case 7:
+                out = {
+                    "id": data['id'],
+                    "sm_code": data['sm_code'],
+                }
             case _:
                 print("Invalid mode")
                 code = 204

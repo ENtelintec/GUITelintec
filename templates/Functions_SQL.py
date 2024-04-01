@@ -139,7 +139,7 @@ def new_employee(name, lastname, curp, phone, email, department, contract, entry
     sql = ("INSERT INTO employees (name, l_name, curp, phone_number, email, department_id,"
            " contrato, date_admission, rfc, nss, emergency_contact, modality, puesto, status, departure) "
            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)")
-    values = (name, lastname, curp, phone, email, department,
+    values = (name.lower(), lastname.lower(), curp, phone, email, department,
               contract, entry_date, rfc, nss, emergency, modality, puesto, estatus,
               json.dumps(departure))
     flag, e, out = execute_sql(sql, values, 4)
@@ -149,10 +149,10 @@ def new_employee(name, lastname, curp, phone, email, department, contract, entry
 def update_employee(employee_id, name, lastname, curp, phone, email, department, contract, entry_date, rfc, nss,
                     emergency, modality, puesto, estatus, departure):
     sql = ("UPDATE employees SET name = %s, l_name = %s, curp = %s, phone_number = %s, email = %s, department_id = %s,"
-           "contrato = %s, date_admission = %s, rfc = %s, nss = %s, emergency_contact = %s, modality = %s , puesto = %s,"
-           "status = %s, departure = %s "
+           "contrato = %s, date_admission = %s, rfc = %s, nss = %s, emergency_contact = %s, modality = %s , "
+           "puesto = %s, status = %s, departure = %s "
            "WHERE employee_id = %s")
-    values = (name, lastname, curp, phone, email, department,
+    values = (name.lower(), lastname.lower(), curp, phone, email, department,
               contract, entry_date, rfc, nss, emergency, modality, puesto,
               estatus, json.dumps(departure), employee_id)
     flag, e, out = execute_sql(sql, values, 3)
@@ -241,7 +241,7 @@ def get_id_name_employee(department: int, is_all=False):
     return flag, e, out
 
 
-def get_employess_op_names():
+def get_employees_op_names():
     sql = ("SELECT employee_id, name, l_name, contrato FROM employees "
            "WHERE  department_id = 2")
     flag, e, out = execute_sql(sql, None, 5)
@@ -366,16 +366,6 @@ def get_users(limit=(0, 100)):
     flag, e, my_result = execute_sql(sql, val, 2)
     out = my_result if my_result is not None else []
     return out
-
-
-def insert_employee(name: str, lastname: str, dni: str, phone: str, email: str,
-                    department: str, modality: str) -> tuple[bool, Exception | None, int | None]:
-    sql = ("INSERT INTO sql_telintec.employees (name, l_name, phone_number, email, department_id, modality) "
-           "VALUES (%s, %s, %s, %s, %s, %s)")
-    val = (name, lastname, dni, phone, email, department, modality)
-    flag, e, out = execute_sql(sql, val, 4)
-    print(out, "record inserted.")
-    return flag, e, out
 
 
 def insert_customer(
@@ -795,7 +785,9 @@ def update_status_EM(status, emp_id):
     return flag, e, out
 
 
-# ---------------------------Login API-----------------------
+'''---------------------------Login API-----------------------'''
+
+
 def verify_user_DB(user: str, password: str) -> bool:
     """
     Verifies if the user and password are correct.
@@ -831,7 +823,9 @@ def get_permissions_user_password(user: str, password: str):
     return permissions
 
 
-# ---------------------------Vacations table-----------------------
+'''---------------------------Vacations table-----------------------'''
+
+
 def insert_vacation(emp_id: int, seniority: dict):
     sql = "INSERT INTO vacations (emp_id, seniority) VALUES (%s, %s)"
     val = (emp_id, json.dumps(seniority))
@@ -861,7 +855,9 @@ def get_all_employees_active():
     return flag, error, result
 
 
-# ---------------------------AV almacen tables-----------------------
+'''-------------------------AV almacén tables-----------------------'''
+
+
 def get_product_categories():
     columns = ("id_category", "name")
     sql = "SELECT product_categories_amc.id_category, product_categories_amc.name FROM product_categories_amc limit 20 "
@@ -1001,7 +997,7 @@ def get_fichaje_emp_AV(name: str, id_e: int):
     columns = ("id_employee", "absences", "lates", "lates_value[h]", "extras", "extras_value[h]", "primes")
     if id_e is None:
         id_e, name_db = get_employee_id_name(name)
-        if id_e is not None :
+        if id_e is not None:
             sql = ("SELECT emp_id, absences, lates, extras, primes "
                    "FROM fichajes WHERE emp_id = %s")
             val = (id_e,)
@@ -1038,3 +1034,72 @@ def get_employee_info(id_e: int):
     flag, error, result = execute_sql(sql, val, 1)
     return flag, error, result, columns
 
+
+'''-----------------------------------SM API-------------------------------------'''
+
+
+def get_sm_employees():
+    sql = ("SELECT employee_id, name, l_name "
+           "FROM employees where status = 'activo' "
+           "and (department_id=2 or department_id=3)")
+    flag, error, result = execute_sql(sql, None, 5)
+    return flag, error, result
+
+
+def get_sm_clients():
+    sql = ("SELECT id_customer, name "
+           "FROM customers_amc  ")
+    flag, error, result = execute_sql(sql, None, 5)
+    return flag, error, result
+
+
+def get_sm_products():
+    sql = ("SELECT id_product, name, udm, stock "
+           "FROM products_amc ")
+    flag, error, result = execute_sql(sql, None, 5)
+    return flag, error, result
+
+
+def insert_sm_db(data):
+    sql = ("INSERT INTO materials_request (sm_code, folio, contract, facility, location, "
+           "client_id, emp_id, date, limit_date, items, status)"
+           "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)")
+    val = (data['info']['sm_code'], data['info']['folio'], data['info']['contract'], data['info']['facility'], data['info']['location'],
+           data['info']['client_id'], data['info']['emp_id'], data['info']['date'], data['info']['limit_date'],
+           json.dumps(data['items']), data['info']['status'])
+    flag, error, result = execute_sql(sql, val, 4)
+    print(error, result)
+    return flag, error, result
+
+
+def delete_sm_db(id_m: int, sm_code: str):
+    sql = "DELETE FROM materials_request WHERE sm_id = %s and sm_code = %s "
+    val = (id_m, sm_code)
+    flag, error, result = execute_sql(sql, val, 3)
+    if not flag:
+        return False, error, None
+    sql = "SELECT * FROM materials_request WHERE sm_id = %s and sm_code = %s"
+    val = (id_m, sm_code)
+    flag, error, result = execute_sql(sql, val, 1)
+    if len(result) == 0:
+        return True, "Material request deleted", None
+    else:
+        return False, "Material request not deleted", None
+
+
+def update_sm_db(data):
+    sql = "SELECT sm_id FROM materials_request "
+    flag, error, result = execute_sql(sql, None, 5)
+    if not flag:
+        return False, error, None
+    ids_sm = result
+    if data['id_sm'] not in ids_sm:
+        return True, "Material request not found", None
+    sql = ("UPDATE materials_request SET sm_code = %s, folio = %s, contract = %s, facility = %s, location = %s, "
+           "client_id = %s, emp_id = %s, date = %s, limit_date = %s, items = %s, status = %s "
+           "WHERE sm_id = %s")
+    val = (data['info']['sm_code'], data['info']['folio'], data['info']['contract'], data['info']['facility'], data['info']['location'],
+           data['info']['client_id'], data['info']['emp_id'], data['info']['date'], data['info']['limit_date'],
+           json.dumps(data['items']), data['info']['status'], data['id_sm'])
+    flag, error, result = execute_sql(sql, val, 4)
+    return flag, error, result
