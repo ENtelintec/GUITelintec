@@ -100,7 +100,7 @@ products_request_model = api.model('ProductSearch', {
 })
 
 sm_model = api.model('SM', {
-    'id': fields.Integer(required=True, description='The id'),
+    'id': fields.Integer(required=True, description='The id <ignored on add event>'),
     'sm_code': fields.String(required=True, description='The sm code'),
     'folio': fields.String(required=True, description='The folio'),
     'contract': fields.String(required=True, description='The contract'),
@@ -113,9 +113,22 @@ sm_model = api.model('SM', {
     'status': fields.Integer(required=True, description='The status of the sm')
 })
 
+table_sm_model = api.model('Table SM', {
+    'data': fields.List(fields.Nested(sm_model)),
+    'page': fields.Integer(required=True, description='The page number send'),
+    'pages': fields.Integer(required=True, description='The total number of'
+                                                       ' pages with the selected limit')
+})
+
+table_request_model = api.model('Table Request', {
+    'limit':  fields.Integer(required=True, description='The results limit', example=10),
+    'page': fields.Integer(required=True, description='The output page default: 1', example=0)
+})
+
 sm_product_request_model = api.model('SM Product Request', {
     'id': fields.Integer(required=True, description='The product id', example=1),
-    'quantity': fields.Integer(required=True, description='The quantity')
+    'quantity': fields.Integer(required=True, description='The quantity'),
+    'comment': fields.String(required=True, description='The comment')
 })
 
 sm_post_model = api.model('SM Post', {
@@ -140,7 +153,7 @@ fichaje_request_model = api.model('Fichaje Request', {
 })
 
 fichaje_add_update_request_model = api.model('Fichaje Add Request', {
-    'id': fields.Integer(required=True, description='The id'),
+    'id': fields.Integer(required=True, description='The id <ignored when adding event>'),
     'date': fields.String(required=True, description='The date', example="2024-03-01"),
     'event':  fields.String(required=True, description='The event', example="falta"),
     'value':  fields.Float(required=True, description='The value', example=1.0),

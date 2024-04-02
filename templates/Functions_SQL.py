@@ -811,16 +811,29 @@ def get_permissions_user_password(user: str, password: str):
         <permissions>: <list>
         <code>: <int>
     """
-    sql = "SELECT permissions FROM users_system " \
-          "WHERE usernames = %s AND password = %s"
+    sql = ("SELECT permissions, emp_id, name, l_name, contrato  FROM users_system "
+           "INNER JOIN employees ON (users_system.emp_id = employees.employee_id) "
+           "WHERE usernames = %s AND password = %s ")
     val = (user, password)
     flag, error, result = execute_sql(sql, val, 1)
     if len(result) > 0:
         permissions = json.loads(result[0])
+        emp_id = result[1]
+        name = result[2]
+        l_name = result[3]
+        contrato = result[4]
     else:
         print("User not found")
         permissions = None
-    return permissions
+        emp_id = None
+        name = None
+        l_name = None
+        contrato = None
+    out = {"permissions": permissions,
+           "emp_id": emp_id,
+           "name": name + " " + l_name,
+           "contract": contrato}
+    return out
 
 
 '''---------------------------Vacations table-----------------------'''
@@ -1056,6 +1069,13 @@ def get_sm_clients():
 def get_sm_products():
     sql = ("SELECT id_product, name, udm, stock "
            "FROM products_amc ")
+    flag, error, result = execute_sql(sql, None, 5)
+    return flag, error, result
+
+
+def get_sm_entries():
+    sql = ("SELECT sm_id, sm_code, folio, contract, facility, location, client_id, emp_id, date, limit_date, items, status "
+           "FROM materials_request ")
     flag, error, result = execute_sql(sql, None, 5)
     return flag, error, result
 

@@ -24,12 +24,15 @@ class LoginUP(Resource):
         if code == 200:
             pass_key = data['password']
             is_real_user = verify_user_DB(data['username'], pass_key)
-            permissions = get_permissions_user_password(data['username'], pass_key)
+            out_dict = get_permissions_user_password(data['username'], pass_key)
             if is_real_user:
                 out = {
                     "verified": True,
                     "user": data['username'],
-                    "permissions": permissions
+                    "permissions": out_dict["permissions"],
+                    "name":  out_dict["name"],
+                    "contract": out_dict["contract"],
+                    "emp_id":  out_dict["emp_id"]
                 }
             else:
                 code = 400

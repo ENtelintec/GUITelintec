@@ -29,7 +29,7 @@ class Employees(Resource):
             return {"data": result, "comment": error}, 400
 
 
-@ns.route('/fichaje/date')
+@ns.route('/fichaje/table')
 class Fichaje(Resource):
     @ns.expect(fichaje_request_model)
     def post(self):

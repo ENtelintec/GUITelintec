@@ -4,8 +4,8 @@ __date__ = '$ 01/abr./2024  at 10:26 $'
 
 from flask_restx import Resource, Namespace
 from static.api_models import client_emp_sm_response_model, products_answer_model, products_request_model, \
-    sm_post_model, delete_request_sm_model, sm_put_model
-from templates.Functions_DB_midleware import get_products_sm
+    sm_post_model, delete_request_sm_model, sm_put_model, table_sm_model, table_request_model
+from templates.Functions_DB_midleware import get_products_sm, get_all_sm
 from templates.Functions_SQL import get_sm_employees, get_sm_clients, insert_sm_db, delete_sm_db, update_sm_db
 from templates.Functions_Text import parse_data
 
@@ -44,6 +44,18 @@ class Products(Resource):
             return {"data": None, "page": 0, "pages": 0}, code
         data_out, code = get_products_sm(data['limit'], data['page'])
         return data_out, code
+
+
+@ns.route('/all')
+class AllSm(Resource):
+    @ns.expect(table_request_model)
+    @ns.marshal_with(table_sm_model)
+    def post(self):
+        code, data = parse_data(ns.payload, 5)
+        if code == 400:
+            return {"data": None, "page": 0, "pages": 0}, code
+        data, code = get_all_sm(data['limit'], data['page'])
+        return data, code
 
 
 @ns.route('/add')

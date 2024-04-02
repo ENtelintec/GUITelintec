@@ -53,9 +53,9 @@ def parse_data(data: dict, mode: int):
                     "page": data['page']
                 }
             case 6 | 8:
-                id_sm = data['id'] if mode == 8 else None
+                id_sm = data['info']['id'] if mode == 8 else None
                 info = {
-                        'id': data['info']['id'],
+                        'id': id_sm,
                         "sm_code": data['info']['sm_code'],
                         "folio": data['info']['folio'],
                         "contract": data['info']['contract'],
@@ -72,6 +72,7 @@ def parse_data(data: dict, mode: int):
                     items.append({
                         'id': item['id'],
                         "quantity": item['quantity'],
+                        "comment":  item['comment']
                     })
                 out = {
                     "info": info,
