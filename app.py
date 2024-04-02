@@ -4,6 +4,7 @@ from static.extensions import api
 from templates.resources.resources_login import ns as ns_login
 from templates.resources.resources_RRHH import ns as ns_rrhh
 from templates.resources.resources_SM import ns as ns_sm
+from templates.resources.resources_Bitacora import ns as ns_bitacora
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
@@ -18,6 +19,7 @@ api.init_app(app)
 api.add_namespace(ns_login)
 api.add_namespace(ns_rrhh)
 api.add_namespace(ns_sm)
+api.add_namespace(ns_bitacora)
 
 if __name__ == '__main__':
     app.run()

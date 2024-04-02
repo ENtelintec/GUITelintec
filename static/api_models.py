@@ -134,3 +134,25 @@ delete_request_sm_model = api.model('Delete Request SM', {
     'id': fields.Integer(required=True, description='The id'),
     'sm_code': fields.String(required=True, description='The sm code')
 })
+
+fichaje_request_model = api.model('Fichaje Request', {
+    'date': fields.String(required=True, description='The date', example="2024-03-01"),
+})
+
+fichaje_add_update_request_model = api.model('Fichaje Add Request', {
+    'id': fields.Integer(required=True, description='The id'),
+    'date': fields.String(required=True, description='The date', example="2024-03-01"),
+    'event':  fields.String(required=True, description='The event', example="falta"),
+    'value':  fields.Float(required=True, description='The value', example=1.0),
+    'comment':  fields.String(required=True, description='The comment', example="This is a comment"),
+    'id_emp':  fields.Integer(required=True, description='The id of the editor employee ', example=1),
+    'contract':  fields.String(required=True, description='The contract of the empployee', example="INFRA")
+})
+
+fichaje_delete_request_model = api.model('Fichaje Delete Request', {
+    'id': fields.Integer(required=True, description='The id'),
+    'date': fields.String(required=True, description='The date', example="2024-03-01"),
+    'event':  fields.String(required=True, description='The event', example="falta"),
+    'id_emp':  fields.Integer(required=True, description='The id of the editor employee ', example=1),
+    'contract':  fields.String(required=True, description='The contract of the empployee', example="INFRA")
+})

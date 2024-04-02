@@ -141,3 +141,4 @@ tools_AV_avaliable = {
 windows_names_db_frame = ["Empleados", "Clientes", "Departamentos", "Encargados",
                           "Proveedores", "Productos", "Ordenes",
                           "Tickets", "Chats", "O. Virtuales"]
+delta_bitacora_edit = 14

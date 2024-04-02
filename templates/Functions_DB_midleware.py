@@ -3,6 +3,7 @@ __author__ = 'Edisson Naula'
 __date__ = '$ 01/abr./2024  at 11:38 $'
 
 import math
+from datetime import datetime, timedelta
 
 from templates.Functions_SQL import get_sm_products
 
@@ -42,3 +43,18 @@ def get_products_sm(limit, page=0):
         'pages': pages + 1
     }
     return data_out, 200
+
+
+def check_date_difference(date_modify, delta):
+    flag = True
+    date_now = datetime.now()
+    date_modify = datetime.strptime(date_modify, "%Y-%m-%d")
+    date_modify = date_modify.date()
+    # week of the month
+    week_modify = date_modify.isocalendar()[1]
+    date_now = date_now.date()
+    week_now = date_now.isocalendar()[1]
+    date_modify = date_modify + timedelta(days=delta)
+    if week_now-week_modify > 1:
+        flag = False
+    return flag

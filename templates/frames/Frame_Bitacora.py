@@ -9,7 +9,7 @@ import ttkbootstrap as ttk
 from ttkbootstrap.scrolled import ScrolledFrame
 from ttkbootstrap.tableview import Tableview
 
-from static.extensions import log_file_bitacora_path
+from static.extensions import log_file_bitacora_path, delta_bitacora_edit
 from templates.Functions_AuxFiles import update_bitacora, get_events_op_date, \
     erase_value_bitacora, split_commment, update_bitacora_value
 from templates.Functions_Files import write_log_file
@@ -34,7 +34,7 @@ def check_date_difference(date_modify, delta):
 
 
 class BitacoraEditFrame(ScrolledFrame):
-    def __init__(self, master, username="default", contrato="default", delta=14, setting: dict = None, *args, **kwargs):
+    def __init__(self, master, username="default", contrato="default", delta=delta_bitacora_edit, setting: dict = None, *args, **kwargs):
         super().__init__(master, *args, **kwargs)
         self.columnconfigure(0, weight=1)
         self.rowconfigure(4, weight=1)
@@ -72,7 +72,7 @@ class BitacoraEditFrame(ScrolledFrame):
 
     def create_inputs(self, master):
         # ----data -----------
-        emp_data = get_employees_op_names()
+        flag, error, emp_data = get_employees_op_names()
         emp_ids = [i[0] for i in emp_data]
         contratos = [i[3] for i in emp_data]
         contratos_display = list(set(contratos))

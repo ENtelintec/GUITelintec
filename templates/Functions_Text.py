@@ -83,6 +83,22 @@ def parse_data(data: dict, mode: int):
                     "id": data['id'],
                     "sm_code": data['sm_code'],
                 }
+            case 9:
+                out = {
+                    'date': data['date'],
+                }
+            case 10 | 11:
+                value = data['value'] if mode == 10 else None
+                comment = data['comment'] if mode == 10 else None
+                out = {
+                        'id': data['id'],
+                        "date": data['date'],
+                        "event": data['event'],
+                        "value": value,
+                        "comment": comment,
+                        "contract": data['contract'],
+                        "id_emp": data['id_emp']
+                    }
             case _:
                 print("Invalid mode")
                 code = 204

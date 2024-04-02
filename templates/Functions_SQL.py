@@ -246,9 +246,9 @@ def get_employees_op_names():
            "WHERE  department_id = 2")
     flag, e, out = execute_sql(sql, None, 5)
     if e is not None:
-        return None
+        return False, e, None
     else:
-        return out
+        return flag, e, out
 
 
 def get_ids_employees(names: list):
