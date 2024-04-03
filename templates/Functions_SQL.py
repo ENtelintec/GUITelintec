@@ -1112,7 +1112,8 @@ def update_sm_db(data):
     flag, error, result = execute_sql(sql, None, 5)
     if not flag:
         return False, error, None
-    ids_sm = result
+    ids_sm = [i[0] for i in result]
+    print(ids_sm,  data['id_sm'])
     if data['id_sm'] not in ids_sm:
         return True, "Material request not found", None
     sql = ("UPDATE materials_request SET sm_code = %s, folio = %s, contract = %s, facility = %s, location = %s, "

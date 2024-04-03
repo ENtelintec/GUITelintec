@@ -485,7 +485,12 @@ def get_all_sm_entries():
 def get_all_sm_products():
     flag, error, result = get_sm_products()
     if flag:
-        columns = ("ID", "Nombre", "udm", "Stock")
+        columns = ("ID", "udm", "Stock", "Nombre")
+        # change second column to last position column
+        for i, row in enumerate(result):
+            id_emp, name, udm, stock = row
+            new_row = (id_emp, udm, stock, name)
+            result[i] = new_row
         return result, columns
     else:
         return None, None
