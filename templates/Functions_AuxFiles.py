@@ -9,7 +9,7 @@ from PIL import Image, ImageTk
 
 from static.extensions import cache_file_resume_fichaje
 from templates.Functions_Files import get_fichajes_resume_cache, update_fichajes_resume_cache
-from templates.Functions_SQL import get_fichaje_DB
+from templates.Functions_SQL import get_fichaje_DB, get_sm_entries, get_sm_products
 
 carpeta_principal = "img"
 
@@ -470,3 +470,23 @@ def read_setting_file(file_path: str) -> dict:
     """
     setting = json.load(open(file_path, encoding="utf-8"))
     return setting
+
+
+def get_all_sm_entries():
+    flag, error, result = get_sm_entries()
+    if flag:
+        columns = ("ID", "Codigo", "Folio", "Contrato", "Planta", "Ubicación", "Cliente", "Empleado", "Fecha",
+                   "Fecha Limite", "Items", "Estado")
+        return result, columns
+    else:
+        return None, None
+
+
+def get_all_sm_products():
+    flag, error, result = get_sm_products()
+    if flag:
+        columns = ("ID", "Nombre", "udm", "Stock")
+        return result, columns
+    else:
+        return None, None
+
