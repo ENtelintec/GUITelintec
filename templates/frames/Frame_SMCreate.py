@@ -8,13 +8,12 @@ from datetime import datetime
 
 import ttkbootstrap as ttk
 from ttkbootstrap.dialogs import Messagebox
-from ttkbootstrap.scrolled import ScrolledFrame
 from ttkbootstrap.tableview import Tableview
 
 from static.extensions import log_file_sm_path
 from templates.Functions_AuxFiles import get_all_sm_entries, get_all_sm_products
 from templates.Functions_Files import write_log_file
-from templates.Functions_SQL import get_sm_employees, get_sm_clients, insert_sm_db, update_sm_db, delete_sm_db, \
+from templates.Functions_SQL import insert_sm_db, update_sm_db, delete_sm_db, \
     get_user_data_by_ID
 from templates.Funtions_Utils import create_label, create_button, create_stringvar, create_Combobox, create_entry, \
     create_date_entry
@@ -86,8 +85,8 @@ def create_dict_sm(info, products):
     return dict_data
 
 
-class FrameSM(ScrolledFrame):
-    def __init__(self, master=None, department="default", settings=None, id_emp=None, **kw):
+class FrameSMCreate(ttk.Frame):
+    def __init__(self, master=None, department="default", settings=None, id_emp=None, data=None, **kw):
         super().__init__(master, **kw)
         self.columnconfigure((0, 1), weight=1)
         """----------------------------variables-----------------------------"""
@@ -98,8 +97,8 @@ class FrameSM(ScrolledFrame):
         self.history = None
         self._id_emp = id_emp if id_emp is not None else 60
         self.svar_info, svar_test = create_stringvar(2, "")
-        flag, error, self.employees = get_sm_employees()
-        flag, error, self.clients = get_sm_clients()
+        self.employees = data["employees"]
+        self.clients = data["clients"]
         self.data_emp_dic = get_user_data_by_ID(self._id_emp)
         """-------------------------title------------------------------------"""
         create_label(self, 0, 0, text="Solicitudes de material",
@@ -113,7 +112,7 @@ class FrameSM(ScrolledFrame):
         self.frame_inputs.columnconfigure((0, 1), weight=1)
         self.entries = self.create_inputs(self.frame_inputs)
         self.set_conditions()
-        self.frame_products = FrameSMProdcuts(frame_input_general)
+        self.frame_products = FrameSMProdcuts(frame_input_general, data=data)
         self.frame_products.grid(row=0, column=1, padx=(2, 5), pady=5, sticky="nswe")
         create_label(self, 2, 0, textvariable=self.svar_info, sticky="n", font=("Helvetica", 15, "bold"))
         """------------------------buttons-----------------------------------"""
@@ -127,7 +126,7 @@ class FrameSM(ScrolledFrame):
         self.frame_table.grid(row=4, column=0, padx=10, pady=10, sticky="nswe")
         self.frame_table.columnconfigure(0, weight=1)
         self.frame_table.rowconfigure(1, weight=1)
-        self.table_events = self.create_table(self.frame_table)
+        self.table_events = self.create_table(self.frame_table, data=data["data_sm"], columns=data["columns_sm"])
 
     def create_inputs(self, master):
         entries = []
@@ -184,8 +183,11 @@ class FrameSM(ScrolledFrame):
             sticky="n", width=15, bootstyle="danger")
         return btn_add, btn_update_data, btn_reset, btn_update_table, btn_erase_event
 
-    def create_table(self, master):
-        self.data_sm, columns = get_all_sm_entries(filter_status=True)
+    def create_table(self, master, data=None, columns=None):
+        if data is None:
+            self.data_sm, columns = get_all_sm_entries(filter_status=True)
+        else:
+            self.data_sm = data
         table = Tableview(master,
                           coldata=columns,
                           rowdata=self.data_sm,
@@ -402,11 +404,12 @@ class FrameSM(ScrolledFrame):
 
 
 class FrameSMProdcuts(ttk.Frame):
-    def __init__(self, master=None, **kw):
+    def __init__(self, master=None, data=None, **kw):
         super().__init__(master, **kw)
         self.columnconfigure((0, 1), weight=1)
         self.svar_info = create_stringvar(1, "")
-        self.products, self.columns_products = get_all_sm_products()
+        self.products = data["products"]
+        self.columns_products = data["columns_products"]
         """-------------------------title------------------------------------"""
         create_label(self, 0, 0, text="Editar Productos",
                      font=("Helvetica", 14, "bold"), columnspan=2)
