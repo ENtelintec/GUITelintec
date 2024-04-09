@@ -22,7 +22,7 @@ def load_data():
         'employees': employees,
         'clients': clients,
         'products': products,
-        'columns_products': columns_products,
+        'columns_products': columns_products
     }
     return data_dic
 
