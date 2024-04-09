@@ -178,6 +178,7 @@ def getOrder(**kwargs):
     name_c = None
     status = None
     id_c = None
+    date = None
     for k, v in kwargs.items():
         match k:
             case "id":
@@ -188,6 +189,8 @@ def getOrder(**kwargs):
                 status = v
             case "id_custumer":
                 id_c = v
+            case "date":
+                date = v
             case _:
                 pass
     pass
@@ -195,7 +198,7 @@ def getOrder(**kwargs):
     id_c = id_c if id_c is not None and name_c is not None else None
     name_c = name_c if name_c is not None else "%"
     status = status if status is not None else "%"
-    flag, error, result, columns = get_orders_amc(id_o, name_c, status, id_c)
+    flag, error, result, columns = get_orders_amc(id_o, name_c, status, id_c, date)
     if flag:
         result.insert(0, columns)
         return result
@@ -208,6 +211,7 @@ def getProductMovement(**kwargs):
     type_movement = None
     id_p = None
     id_m = None
+    date = None
     for k, v in kwargs.items():
         match k:
             case "type":
@@ -216,12 +220,14 @@ def getProductMovement(**kwargs):
                 id_m = v
             case "id_p":
                 id_p = v
+            case "date":
+                date = v
             case _:
                 pass
     type_movement = type_movement if type_movement is not None else "%"
     id_m = id_m if id_m is not None else "%"
     id_p = id_p if id_p is not None else "%"
-    flag, error, result, columns = get_product_movement_amc(type_movement, id_m, id_p)
+    flag, error, result, columns = get_product_movement_amc(type_movement, id_m, id_p, date)
     if flag:
         result.insert(0, columns)
         return result
@@ -255,12 +261,15 @@ def getSupplyInventory(**kwargs):
 def getTotalFichajeEmployee(**kwargs):
     name = None
     id_e = None
+    date = None
     for k, v in kwargs.items():
         match k:
             case "name":
                 name = v
             case "id":
                 id_e = v
+            case "date":
+                date = v
             case _:
                 pass
     name = name if name is not None else "%"
@@ -269,10 +278,10 @@ def getTotalFichajeEmployee(**kwargs):
     if flag:
         if len(result) > 0:
             emp_id, absences_dict, lates_dict, extras_dict, primes_dict = result
-            faltas, faltas_value = get_cumulative_data_fichajes_dict(json.loads(absences_dict))
-            atrasos, atrasos_value = get_cumulative_data_fichajes_dict(json.loads(lates_dict))
-            extras, extras_value = get_cumulative_data_fichajes_dict(json.loads(extras_dict))
-            primas, primas_value = get_cumulative_data_fichajes_dict(json.loads(primes_dict))
+            faltas, faltas_value = get_cumulative_data_fichajes_dict(json.loads(absences_dict), date=date)
+            atrasos, atrasos_value = get_cumulative_data_fichajes_dict(json.loads(lates_dict), date=date)
+            extras, extras_value = get_cumulative_data_fichajes_dict(json.loads(extras_dict), date=date)
+            primas, primas_value = get_cumulative_data_fichajes_dict(json.loads(primes_dict), date=date)
             data = [emp_id, faltas, atrasos, atrasos_value, extras, extras_value, primas]
             data.insert(0, columns)
             return data
@@ -286,21 +295,20 @@ def getTotalFichajeEmployee(**kwargs):
 def getActiveEmployees(**kwargs):
     status = None
     quantity = None
-    order = None
+    date = None
     for k, v in kwargs.items():
         match k:
             case "status":
                 status = v
             case "quantity":
                 quantity = v
-            case "order":
-                order = v
+            case "date":
+                date = v
             case _:
                 pass
     status = status if status is not None else "%"
     quantity = quantity if quantity is not None else 0
-    order = order if order is not None else "asc"
-    flag, error, result, columns = get_employees_w_status(status, quantity, order)
+    flag, error, result, columns = get_employees_w_status(status, quantity, date)
     if flag:
         result.insert(0, columns)
         return result

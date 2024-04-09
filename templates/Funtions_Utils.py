@@ -65,6 +65,43 @@ def create_Combobox(master, values, width=None, row=0, column=0,
     return combobox
 
 
+def create_entry(master, width=10, row=0, column=0,
+                 state="normal", padx=5, pady=5, columnspan=1, sticky="nswe", *args, **kwargs):
+    """
+    Create an entry with the values provided
+    :param sticky:
+    :param columnspan:
+    :param master: Parent of the entry
+    :param row: row to place the widget
+    :param column: Column to place the widget
+    :param state: state of the entry
+    :param padx:
+    :param pady:
+    :param width:
+    :return: Placed entry in the grid
+    """
+    entry = ttk.Entry(master, state=state, width=width, *args, **kwargs)
+    entry.grid(row=row, column=column, padx=padx, pady=pady, columnspan=columnspan, sticky=sticky)
+    return entry
+
+
+def create_date_entry(master, row=0, column=0, padx=5, pady=5, columnspan=1, sticky="nswe", *args, **kwargs):
+    """
+    Create a date entry with the values provided
+    :param sticky:
+    :param columnspan:
+    :param master: Parent of the entry
+    :param row: row to place the widget
+    :param column: Column to place the widget
+    :param padx:
+    :param pady:
+    :return: Placed entry in the grid
+    """
+    entry = ttk.DateEntry(master, *args, **kwargs)
+    entry.grid(row=row, column=column, padx=padx, pady=pady, columnspan=columnspan, sticky=sticky)
+    return entry
+
+
 def compare_permissions_windows(user_permissions: list) -> tuple[bool, Any] | tuple[bool, None]:
     """
     This method is used to compare the permissions of a user.
@@ -98,10 +135,12 @@ def create_button_side_menu(master, row, column, text, image=None, command=None,
 
 
 def create_button(master, row, column, text, image=None,
-                  columnspan=1, sticky="nswe",
+                  columnspan=1, sticky="nswe", pady=5, padx=5,
                   *args, **kwargs):
     """
     This method is used to create a button in the side menu.
+    :param padx:
+    :param pady:
     :param sticky:
     :param columnspan:
     :param image: image for the button
@@ -114,7 +153,7 @@ def create_button(master, row, column, text, image=None,
                         text=text,
                         image=image,
                         *args, **kwargs)
-    button.grid(row=row, column=column, sticky=sticky, pady=5, padx=5, columnspan=columnspan)
+    button.grid(row=row, column=column, sticky=sticky, pady=pady, padx=padx, columnspan=columnspan)
     button.image = image
     return button
 

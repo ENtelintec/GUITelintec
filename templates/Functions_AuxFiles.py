@@ -9,7 +9,7 @@ from PIL import Image, ImageTk
 
 from static.extensions import cache_file_resume_fichaje
 from templates.Functions_Files import get_fichajes_resume_cache, update_fichajes_resume_cache
-from templates.Functions_SQL import get_fichaje_DB
+from templates.Functions_SQL import get_fichaje_DB, get_sm_entries, get_sm_products
 
 carpeta_principal = "img"
 
@@ -84,8 +84,9 @@ def get_image_side_menu(wname, image_path=carpeta_principal):
 
 
 def get_data_employees(status="ACTIVO"):
-    columns = ("ID", "Nombre", "Contrato", "Faltas", "Tardanzas", "Total tardanzas", "Dias Extra", "Total extra", "Primas",
-               "Detalles Faltas", "Detalles Tardanzas", "Detalles Extras", "Detalles Primas", "Detalles Normal")
+    columns = (
+    "ID", "Nombre", "Contrato", "Faltas", "Tardanzas", "Total tardanzas", "Dias Extra", "Total extra", "Primas",
+    "Detalles Faltas", "Detalles Tardanzas", "Detalles Extras", "Detalles Primas", "Detalles Normal")
     fichajes_resume, flag = get_fichajes_resume_cache(cache_file_resume_fichaje)
     if flag:
         return fichajes_resume, columns
@@ -419,35 +420,62 @@ def get_events_op_date(date: datetime, hard_update, only_op=True):
     return data_events, columns
 
 
-def split_commment(txt: str) -> dict:
+def split_commment(txt: str, type_fun=0) -> dict:
     """
     Split the comment.
     :paramtxt: The comment.
     :return: The comment.
     Example ---> <"comentary \nincidencia-->acuerdo\nactividad-->actividad\nlugar-->lugar">
     """
-    comment_dict = {
-        "comment": "",
-        "incidence": "",
-        "activity": "",
-        "place": "",
-        "contract": None
-    }
-    rows = txt.split("\n")
-    for i, row in enumerate(rows):
-        if i == 0:
-            comment_dict["comment"] = rows[0]
-        elif i >= 1:
-            if "actividad" in row:
-                comment_dict["activity"] = row.split("-->")[1]
-            elif "lugar" in row:
-                comment_dict["place"] = row.split("-->")[1]
-            elif "incidencia" in row:
-                comment_dict["incidence"] = row.split("-->")[1]
-            elif "contrato" in row:
-                comment_dict["contract"] = row.split("-->")[1]
-            else:
-                comment_dict["comment"] += "\t" + row
+    match type_fun:
+        case 0:
+            comment_dict = {
+                "comment": "",
+                "incidence": "",
+                "activity": "",
+                "place": "",
+                "contract": None
+            }
+            rows = txt.split("\n")
+            for i, row in enumerate(rows):
+                if i == 0:
+                    comment_dict["comment"] = rows[0]
+                elif i >= 1:
+                    if "actividad" in row:
+                        comment_dict["activity"] = row.split("-->")[1]
+                    elif "lugar" in row:
+                        comment_dict["place"] = row.split("-->")[1]
+                    elif "incidencia" in row:
+                        comment_dict["incidence"] = row.split("-->")[1]
+                    elif "contrato" in row:
+                        comment_dict["contract"] = row.split("-->")[1]
+                    else:
+                        comment_dict["comment"] += "\t" + row
+        case 1:
+            comment_dict = {
+                "comment": "",
+                "pedido_cotizacion": "",
+                "activity": "",
+                "place": "",
+                "contract": None
+            }
+            rows = txt.split("\n")
+            for i, row in enumerate(rows):
+                if i == 0:
+                    comment_dict["comment"] = rows[0]
+                elif i >= 1:
+                    if "actividad" in row:
+                        comment_dict["activity"] = row.split("-->")[1]
+                    elif "lugar" in row:
+                        comment_dict["place"] = row.split("-->")[1]
+                    elif "incidencia" in row:
+                        comment_dict["incidence"] = row.split("-->")[1]
+                    elif "contrato" in row:
+                        comment_dict["contract"] = row.split("-->")[1]
+                    else:
+                        comment_dict["comment"] += "\t" + row
+        case _:
+            comment_dict = {"comment": txt}
     return comment_dict
 
 
@@ -470,3 +498,33 @@ def read_setting_file(file_path: str) -> dict:
     """
     setting = json.load(open(file_path, encoding="utf-8"))
     return setting
+
+
+def get_all_sm_entries(filter_status: False):
+    flag, error, result = get_sm_entries()
+    if flag:
+        columns = ("ID", "Codigo", "Folio", "Contrato", "Planta", "Ubicación", "Cliente", "Empleado", "Orden/Cotización", "Fecha",
+                   "Fecha Limite", "Items", "Estado", "Historial", "Comentario")
+        if filter_status:
+            result = [row for row in result if row[12] == 0]
+        for index, row in enumerate(result):
+            id_sm, code, folio, contract, plant, location, client, employee, order, date, date_limit, items, status, history, comment = row
+            new_row = (id_sm, code, folio, contract, plant, location, client, employee, order, date, date_limit, items, "Pendiente", history, comment)
+            result[index] = new_row
+        return result, columns
+    else:
+        return None, None
+
+
+def get_all_sm_products():
+    flag, error, result = get_sm_products()
+    if flag:
+        columns = ("ID", "udm", "Stock", "Nombre")
+        # change second column to last position column
+        for i, row in enumerate(result):
+            id_emp, name, udm, stock = row
+            new_row = (id_emp, udm, stock, name)
+            result[i] = new_row
+        return result, columns
+    else:
+        return None, None

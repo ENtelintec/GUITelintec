@@ -107,10 +107,13 @@ sm_model = api.model('SM', {
     'facility': fields.String(required=True, description='The facility'),
     'location': fields.String(required=True, description='The location'),
     'client_id': fields.Integer(required=True, description='The client id', example=1),
+    'order_quotation': fields.String(required=True, description='The order or quotation'),
     'emp_id': fields.String(required=True, description='The employee id', example=1),
     'date': fields.String(required=True, description='The date'),
     'limit_date': fields.String(required=True, description='The limit date'),
-    'status': fields.Integer(required=True, description='The status of the sm')
+    'status': fields.Integer(required=True, description='The status of the sm'),
+    'history':  fields.String(required=True, description='The history'),
+    'comment': fields.String(required=True, description='The comment')
 })
 
 table_sm_model = api.model('Table SM', {

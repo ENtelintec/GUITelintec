@@ -44,9 +44,9 @@ class EmployeeDetails(ScrolledFrame):
         self.frame_plot = ttk.Frame(self)
 
     def on_double_click(self, event):
-        (emp_id, emp_name, emp_contract, emp_absense, emp_late, emp_extra, emp_tot_extra,
+        (emp_id, emp_name, emp_contract, emp_absense, emp_late, emp_tot_late, emp_extra, emp_tot_extra,
          emp_primes, emp_det_abs, emp_det_late, emp_det_extra,
-         emp_det_primes) = self.table.view.item(event.widget.selection()[0], "values")
+         emp_det_primes, emp_det_normal) = self.table.view.item(event.widget.selection()[0], "values")
         self.emp_details.set(f"ID: {emp_id} \n{emp_name.title()} \n"
                              f"Contrato: {emp_contract}\n"
                              f"Faltas: {emp_absense}\t Tardanzas: {emp_late}\n"

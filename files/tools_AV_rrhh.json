@@ -23,14 +23,15 @@
     "type": "function",
     "function": {
       "name": "getTotalFichajeEmployee",
-      "description": "Get the information to retrieve the total numer of absences, days the employee was late, days the employee did extra hours and the days it has a prime payment",
+      "description": "Get the information to retrieve the total numer of absences, days the employee was late, days the employee did extra hours and the days it has a prime payment since a date",
       "parameters": {
         "type": "object",
         "properties": {
           "name": {"type": "string", "description": "name of the employee"},
-          "id": {"type": "integer", "description": "id of the employee"}
+          "id": {"type": "integer", "description": "id of the employee"},
+          "date": {"type": "string", "description": "date for the search with format <dd-MM-yyyy>"}
         },
-        "required": ["name"]
+        "required": ["name", "date"]
       }
     }
   },
@@ -38,15 +39,15 @@
     "type": "function",
     "function": {
       "name": "getActiveEmployees",
-      "description": "Get the information, from the body of the input text, to retrieve the employees witch certain status",
+      "description": "Get the information, from the body of the input text, to retrieve the employees witch certain status since a date",
       "parameters": {
         "type": "object",
         "properties": {
           "status": {"type": "string", "description": "status of the employees", "enum":  ["activo", "inactivo"]},
           "quantity": {"type": "integer", "description": "quantity of employees to display"},
-          "order": {"type": "string", "description": "order of the employees to display", "enum":  ["asc", "desc"]}
+          "date": {"type": "string", "description": "date for the search with format <dd-MM-yyyy>"}
         },
-        "required": ["status"]
+        "required": ["status", "date"]
       }
     }
   },
