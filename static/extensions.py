@@ -101,7 +101,8 @@ quizzes_RRHH = {
 }
 conversion_quizzes_path = "files/conversions_quizzes.json"
 quizz_out_path = "files/quizz_out/"
-log_file_bitacora_path = "files/logs/"
+log_file_bitacora_path = "files/logs/bitacora"
+log_file_sm_path = "files/logs/sm"
 patterns_files_fichaje = ["Fichaje", "Ternium"]
 department_tools_openAI = {
     "director": "files/tools_AV_default.json",
@@ -119,8 +120,8 @@ tools_AV_avaliable = {
     "rrhh": [
         {"type": "code_interpreter"},
         {"type": "retrieval"},
-        {"type": "function", "name": "getTotalFichajeEmployee", "args": ["id", "name"]},
-        {"type": "function", "name": "getActiveEmployees", "args": ["status", "quantity", "order"]},
+        {"type": "function", "name": "getTotalFichajeEmployee", "args": ["id", "name", "date"]},
+        {"type": "function", "name": "getActiveEmployees", "args": ["status", "quantity", "date"]},
         {"type": "function", "name": "getEmployeeInfo", "args": ["id"]}
     ],
     "almacen": [
@@ -132,8 +133,8 @@ tools_AV_avaliable = {
         {"type": "function", "name": "getLowStockProducts", "args": ["category", "quantity"]},
         {"type": "function", "name": "getCostumer", "args": ["name", "id"]},
         {"type": "function", "name": "getSupplier", "args": ["name", "id"]},
-        {"type": "function", "name": "getOrder", "args": ["id", "customer", "status", "id_customer"]},
-        {"type": "function", "name": "getProductMovement", "args": ["type", "id", "id_p"]},
+        {"type": "function", "name": "getOrder", "args": ["id", "customer", "status", "id_customer", "date"]},
+        {"type": "function", "name": "getProductMovement", "args": ["type", "id", "id_p", "date"]},
         {"type": "function", "name": "getSupplyInventory", "args": ["name", "id"]},
         {"type": "function", "name": "getNoStockProducts", "args": ["category"]}
     ]

@@ -68,18 +68,18 @@ def get_all_sm(limit, page=0):
     page = page if page >= 0 else 0
     if len(result) <= 0:
         return [None, 204]
-    pages = math.floor(result.__len__() / limit)
+    pages = math.floor(len(result) / limit)
     if page > pages:
         print("page > pages")
         return [None, 204]
     items = []
     if pages == 0:
-        limit_up = result.__len__()
+        limit_up = len(result)
         limit_down = 0
     else:
         limit_down = limit * page
         limit_up = limit * (page + 1)
-        limit_up = limit_up if limit_up < result.__len__() else result.__len__()
+        limit_up = limit_up if limit_up < len(result) else len(result)
     for i in range(limit_down, limit_up):
         items.append({
             'id': result[i][0],
@@ -90,10 +90,13 @@ def get_all_sm(limit, page=0):
             'location': result[i][5],
             'client_id': result[i][6],
             'emp_id': result[i][7],
-            'date': result[i][8],
-            'limit_date': result[i][9],
-            'items': result[i][10],
-            'status': result[i][11]
+            'order_quotation': result[i][8],
+            'date': result[i][9],
+            'limit_date': result[i][10],
+            'items': result[i][11],
+            'status': result[i][12],
+            'history': result[i][13],
+            'comment': result[i][14],
         })
     data_out = {
         'data': items,

@@ -2,6 +2,7 @@
 __author__ = 'Edisson Naula'
 __date__ = '$ 02/abr./2024  at 15:59 $'
 
+import json
 import time
 from datetime import datetime
 
@@ -10,12 +11,13 @@ from ttkbootstrap.dialogs import Messagebox
 from ttkbootstrap.scrolled import ScrolledFrame
 from ttkbootstrap.tableview import Tableview
 
+from static.extensions import log_file_sm_path
 from templates.Functions_AuxFiles import get_all_sm_entries, get_all_sm_products
-from templates.Functions_SQL import get_sm_employees, get_sm_clients, insert_sm_db, update_sm_db, delete_sm_db
+from templates.Functions_Files import write_log_file
+from templates.Functions_SQL import get_sm_employees, get_sm_clients, insert_sm_db, update_sm_db, delete_sm_db, \
+    get_user_data_by_ID
 from templates.Funtions_Utils import create_label, create_button, create_stringvar, create_Combobox, create_entry, \
     create_date_entry
-
-import json
 
 
 def search_employee(emps_data, emp_key: int | str):
@@ -57,7 +59,7 @@ def search_client(clients_data, client_key: int | str):
 
 
 def create_dict_sm(info, products):
-    id_sm, code, folio, contract, plant, location, client, employee, date, date_limit, status = info
+    id_sm, code, folio, contract, plant, location, client, order_quotation, date, date_limit, comment = info
     dict_data = {
         "info": {
             "id": id_sm,
@@ -67,10 +69,10 @@ def create_dict_sm(info, products):
             "facility": plant,
             "location": location,
             "client_id": client,
-            "emp_id": employee,
             "date": date,
             "limit_date": date_limit,
-            "status": status,
+            "comment": comment,
+            "order_quotation": order_quotation
         }
     }
     products_list = []
@@ -93,10 +95,12 @@ class FrameSM(ScrolledFrame):
         self.department = department
         self._id_sm_to_edit = None
         self.data_sm = None
-        self._id_emp = id_emp
+        self.history = None
+        self._id_emp = id_emp if id_emp is not None else 60
         self.svar_info, svar_test = create_stringvar(2, "")
         flag, error, self.employees = get_sm_employees()
         flag, error, self.clients = get_sm_clients()
+        self.data_emp_dic = get_user_data_by_ID(self._id_emp)
         """-------------------------title------------------------------------"""
         create_label(self, 0, 0, text="Solicitudes de material",
                      font=("Helvetica", 30, "bold"), columnspan=2)
@@ -108,6 +112,7 @@ class FrameSM(ScrolledFrame):
         self.frame_inputs.grid(row=0, column=0, padx=(5, 1), pady=1, sticky="nswe")
         self.frame_inputs.columnconfigure((0, 1), weight=1)
         self.entries = self.create_inputs(self.frame_inputs)
+        self.set_conditions()
         self.frame_products = FrameSMProdcuts(frame_input_general)
         self.frame_products.grid(row=0, column=1, padx=(2, 5), pady=5, sticky="nswe")
         create_label(self, 2, 0, textvariable=self.svar_info, sticky="n", font=("Helvetica", 15, "bold"))
@@ -128,35 +133,37 @@ class FrameSM(ScrolledFrame):
         entries = []
         # info inputs---------
         create_label(master, 0, 0, text="Informacion", sticky="n", font=("Helvetica", 12, "bold"), columnspan=2)
-        create_label(master, 1, 0, text="SM:", sticky="w")
-        create_label(master, 2, 0, text="SM code:", sticky="w")
-        create_label(master, 3, 0, text="Folio:", sticky="w")
-        create_label(master, 4, 0, text="Contrato:", sticky="w")
-        create_label(master, 5, 0, text="Planta:", sticky="w")
-        create_label(master, 6, 0, text="Ubicación:", sticky="w")
-        create_label(master, 7, 0, text="Cliente:", sticky="w")
-        create_label(master, 8, 0, text="Empleado:", sticky="w")
-        create_label(master, 9, 0, text="Fecha:", sticky="w")
-        create_label(master, 10, 0, text="Fecha limite:", sticky="w")
-        create_label(master, 11, 0, text="Estatus: ", sticky="w")
+        create_label(master, 1, 0, text="SM ID DB:", sticky="nswe")
+        create_label(master, 2, 0, text="SM code:", sticky="nswe")
+        create_label(master, 3, 0, text="Folio:", sticky="nswe")
+        create_label(master, 4, 0, text="Contrato:", sticky="nswe")
+        create_label(master, 5, 0, text="Planta:", sticky="nswe")
+        create_label(master, 6, 0, text="Ubicación:", sticky="nswe")
+        create_label(master, 7, 0, text="Cliente:", sticky="nswe")
+        create_label(master, 8, 0, text="Pedido/Cotización: ", sticky="nswe")
+        create_label(master, 9, 0, text="Fecha:", sticky="nswe")
+        create_label(master, 10, 0, text="Fecha limite:", sticky="nswe")
+        create_label(master, 11, 0, text="Comentario: ", sticky="nswe")
+        create_label(master, 12, 0, text="Empleado:", sticky="nswe")
         # entries
         emp_list = [emp[1].title() + " " + emp[2].title() for emp in self.employees]
         client_list = [client[1] for client in self.clients]
-        entries.append(create_entry(master, row=1, column=1, padx=3, pady=5, sticky="w"))
-        entries.append(create_entry(master, row=2, column=1, padx=3, pady=5, sticky="w"))
-        entries.append(create_entry(master, row=3, column=1, padx=3, pady=5, sticky="w"))
-        entries.append(create_entry(master, row=4, column=1, padx=3, pady=5, sticky="w"))
-        entries.append(create_entry(master, row=5, column=1, padx=3, pady=5, sticky="w"))
-        entries.append(create_entry(master, row=6, column=1, padx=3, pady=5, sticky="w"))
-        entries.append(create_Combobox(master, client_list, 25, row=7, column=1, sticky="w", padx=3, pady=5))
-        entries.append(create_Combobox(master, emp_list, 25, row=8, column=1, sticky="w", padx=3, pady=5))
+        entries.append(create_entry(master, row=1, column=1, padx=3, pady=5, sticky="nswe"))
+        entries.append(create_entry(master, row=2, column=1, padx=3, pady=5, sticky="nswe"))
+        entries.append(create_entry(master, row=3, column=1, padx=3, pady=5, sticky="nswe"))
+        entries.append(create_entry(master, row=4, column=1, padx=3, pady=5, sticky="nswe"))
+        entries.append(create_entry(master, row=5, column=1, padx=3, pady=5, sticky="nswe"))
+        entries.append(create_entry(master, row=6, column=1, padx=3, pady=5, sticky="nswe"))
+        entries.append(create_Combobox(master, client_list, 25, row=7, column=1, sticky="we", padx=3, pady=5))
+        entries.append(create_entry(master, row=8, column=1, padx=3, pady=5, sticky="nswe"))
         entries.append(create_date_entry(master, firstweekday=0, dateformat="%Y-%m-%d", row=9, column=1, padx=3, pady=5,
                                          sticky="w"))
         entries.append(
             create_date_entry(master, firstweekday=0, dateformat="%Y-%m-%d", row=10, column=1, padx=3, pady=5,
                               sticky="w"))
-        entries.append(
-            create_Combobox(master, ["pendiente", "completado"], 15, row=11, column=1, sticky="w", padx=3, pady=5))
+        entries.append(create_entry(master, row=11, column=1, padx=3, pady=5, sticky="nswe"))
+        create_label(master, 12, 1, text=f"{self.data_emp_dic['name'].title()} {self.data_emp_dic['lastname'].title()}",
+                     sticky="nswe")
         return entries
 
     def create_buttons(self, master):
@@ -178,7 +185,7 @@ class FrameSM(ScrolledFrame):
         return btn_add, btn_update_data, btn_reset, btn_update_table, btn_erase_event
 
     def create_table(self, master):
-        self.data_sm, columns = get_all_sm_entries()
+        self.data_sm, columns = get_all_sm_entries(filter_status=True)
         table = Tableview(master,
                           coldata=columns,
                           rowdata=self.data_sm,
@@ -199,10 +206,10 @@ class FrameSM(ScrolledFrame):
         plant = info[4]
         location = info[5]
         client = info[6]
-        employee = info[7]
+        order_quotation = info[7]
         date = info[8]
         date_limit = info[9]
-        status = info[10]
+        comment = info[10]
         try:
             date = datetime.strptime(date, "%Y-%m-%d %H:%M:%S") if len(date) > 10 else datetime.strptime(
                 date, "%Y-%m-%d")
@@ -219,24 +226,25 @@ class FrameSM(ScrolledFrame):
             return
         try:
             self._id_sm_to_edit = int(id_sm) if action != 0 else None
-            status = int(status) if action == 1 else status
             client = int(info[6]) if action == 1 else client
-            employee = int(info[7]) if action == 1 else employee
         except ValueError:
             self._id_sm_to_edit = None
             print("!!!Error con los datos ingresados para convertir a ids¡¡¡")
-            return
-        status_int = 1 if status == "completado" else 0
-        employee_out = search_employee(self.employees, employee)
-        if employee_out is None:
-            self.svar_info.set("!!!Revise los datos del empleado¡¡¡")
             return
         client_out = search_client(self.clients, client)
         if client_out is None:
             self.svar_info.set("!!!Revise los datos del cliente¡¡¡")
             return
-        return (self._id_sm_to_edit, code, folio, contract, plant, location, client_out, employee_out, date, date_limit,
-                status_int)
+        return (self._id_sm_to_edit, code, folio, contract, plant, location, client_out, order_quotation,
+                date, date_limit, comment)
+
+    def get_sm_values_row(self, row):
+        id_sm, code, folio, contract, plant, location, client, employee, order_quotation, date, date_limit, items, status, history, comment = row
+        dict_data = {"id": id_sm, "code": code, "folio": folio, "contract": contract, "plant": plant,
+                     "location": location, "client": client, "employee": self._id_emp, "date": date,
+                     "date_limit": date_limit, "items": items, "status": status, "history": history,
+                     "order_quotation": order_quotation, "comment": comment}
+        return dict_data
 
     def on_add_click(self):
         out_info, data_products = self.get_entries_values()
@@ -245,7 +253,8 @@ class FrameSM(ScrolledFrame):
             self.svar_info.set("!!!Debe agregar productos¡¡¡")
             return
         dict_data = create_dict_sm(out_info, data_products)
-        msg = f"Esto por igresar un nuevo registro. Esta de acuerdo con los datos?"
+        dict_data['info']['emp_id'] = self._id_emp
+        msg = f"Esto por crear un nuevo registro. Esta de acuerdo con los datos?"
         answer = Messagebox.show_question(
             title="Confirmacion",
             message=msg)
@@ -256,8 +265,11 @@ class FrameSM(ScrolledFrame):
             if error is not None:
                 self.svar_info.set(f"{error}")
             else:
+                msg = (f"Record inserted--> SM: {dict_data['info']['sm_code']} --> by {self.data_emp_dic['name'].title()} "
+                       f"{self.data_emp_dic['lastname'].title()} at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+                write_log_file(log_file_sm_path, msg)
                 self.svar_info.set(f"SM {result} agregado correctamente")
-            time.sleep(1)
+            time.sleep(0.5)
             self.update_table_visual()
             self.on_reset_widgets_click()
         else:
@@ -269,8 +281,17 @@ class FrameSM(ScrolledFrame):
         if len(data_products) == 0:
             self.svar_info.set("!!!Debe agregar productos¡¡¡")
             return
+
         dict_data = create_dict_sm(out_info, data_products)
+        dict_data["info"]['emp_id'] = self._id_emp
         dict_data['id_sm'] = dict_data["info"]['id']
+        try:
+            self.history.append({"event": "update",
+                                 "date": datetime.now().strftime('%Y-%m-%d %H:%M:%S'), "user": dict_data['info']['emp_id']})
+            dict_data['info']['history'] = self.history
+        except Exception as e:
+            print(e, "Error at creating history")
+            return
         msg = f"Esto por actualizar un registro con id: {dict_data['id_sm']}. Esta de acuerdo con los datos?"
         answer = Messagebox.show_question(
             title="Confirmacion",
@@ -282,8 +303,11 @@ class FrameSM(ScrolledFrame):
             if error is not None:
                 self.svar_info.set(f"{error}")
             else:
+                msg = (f"Record updated--> SM: {dict_data['id_sm']} --> by {self.data_emp_dic['name'].title()} "
+                       f"{self.data_emp_dic['lastname'].title()} at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+                write_log_file(log_file_sm_path, msg)
                 self.svar_info.set(f"SM actualizado correctamente")
-            time.sleep(1)
+            time.sleep(0.5)
             self.update_table_visual()
             self.on_reset_widgets_click()
         else:
@@ -305,8 +329,12 @@ class FrameSM(ScrolledFrame):
             if error is not None:
                 self.svar_info.set(f"{error}")
             else:
+                msg = (
+                    f"Record deleted--> SM: {sm_code} --> by {self.data_emp_dic['name'].title()} {self.data_emp_dic['lastname'].title()} "
+                    f"at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+                write_log_file(log_file_sm_path, msg)
                 self.svar_info.set(f"SM eliminado correctamente")
-            time.sleep(1)
+            time.sleep(0.5)
             self.update_table_visual()
             self.on_reset_widgets_click()
 
@@ -325,16 +353,19 @@ class FrameSM(ScrolledFrame):
 
     def on_double_click_table_sm(self, event):
         row = event.widget.item(event.widget.selection()[0], "values")
-        id_sm, code, folio, contract, plant, location, client, employee, date, date_limit, items, status = row
-
+        self.set_normal_entries()
+        data_dic = self.get_sm_values_row(row)
+        self.history = json.loads(data_dic["history"])
         self.on_reset_widgets_click()
-        items = json.loads(items)
+        items = json.loads(data_dic["items"])
         items_table = []
         for product in items:
             items_table.append((product["id"], product["quantity"], product["comment"],))
         self.frame_products.put_data_resumen(items_table)
         data_info = self.formart_values_info(
-            (id_sm, code, folio, contract, plant, location, client, employee, date, date_limit, status), action=1)
+            (data_dic["id"], data_dic["code"], data_dic["folio"], data_dic["contract"], data_dic["plant"],
+             data_dic["location"], data_dic["client"], data_dic["order_quotation"], data_dic["date"], data_dic["date_limit"],
+             data_dic["comment"]), action=1)
         for index, item in enumerate(self.entries):
             if isinstance(item, ttk.Combobox):
                 item.set(data_info[index])
@@ -345,6 +376,7 @@ class FrameSM(ScrolledFrame):
                 self.entries[index] = create_date_entry(self.frame_inputs, firstweekday=0,
                                                         dateformat="%Y-%m-%d", startdate=data_info[index],
                                                         row=index + 1, column=1, padx=3, pady=5, sticky="w")
+        self.set_disabled_entries()
 
     def get_entries_values(self):
         data_products = self.frame_products.get_resumen_table_data()
@@ -355,6 +387,18 @@ class FrameSM(ScrolledFrame):
             else:
                 out.append(entry.get())
         return out, data_products
+
+    def set_conditions(self):
+        self.set_normal_entries()
+        self.entries[3].insert(0, self.data_emp_dic["contract"])
+
+    def set_normal_entries(self):
+        for entry in self.entries:
+            entry.configure(state="normal")
+
+    def set_disabled_entries(self):
+        self.entries[3].configure(state="readonly")
+        self.entries[0].configure(state="readonly")
 
 
 class FrameSMProdcuts(ttk.Frame):
@@ -474,6 +518,8 @@ class FrameSMProdcuts(ttk.Frame):
         values = []
         for item in self.entries:
             values.append(item.get())
+        if len(self.table_resumen.view.selection()) == 0:
+            return
         self.table_resumen.view.item(self.table_resumen.view.selection()[0], values=values)
 
     def on_reset_click(self):

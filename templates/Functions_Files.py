@@ -812,21 +812,34 @@ def get_dic_from_list_fichajes(data_fichaje: tuple, **kwargs) -> tuple:
     return days_missing_dict, days_late_dict, days_extra_dict, primes_dict, normal_dic
 
 
-def get_cumulative_data_fichajes_dict(dic_data: dict) -> tuple[int, int]:
+def get_cumulative_data_fichajes_dict(dic_data: dict, date=None) -> tuple[int, int]:
     """
     Gets the cumulative data from a dictionary of data from fichajes files
+    :param date: date since the data is taken into account
     :param dic_data:
     :return:
     """
+    if date is not None:
+        date = pd.to_datetime(date)
     total_days = 0
     total_value = 0
-    for year in dic_data.keys():
-        for month in dic_data[year].keys():
-            total_days += len(dic_data[year][month].keys())
-            for day in dic_data[year][month].keys():
-                value = dic_data[year][month][day]["value"]
-                if value is not None and value != "":
-                    total_value += value
+    if date is None:
+        for year in dic_data.keys():
+            for month in dic_data[year].keys():
+                total_days += len(dic_data[year][month].keys())
+                for day in dic_data[year][month].keys():
+                    value = dic_data[year][month][day]["value"]
+                    if value is not None and value != "":
+                        total_value += value
+    else:
+        for year in dic_data.keys():
+            for month in dic_data[year].keys():
+                for day in dic_data[year][month].keys():
+                    if date.month <= int(month) and date.year <= int(year) and date.day <=int(day):
+                        value = dic_data[year][month][day]["value"]
+                        total_days += 1
+                        if value is not None and value != "":
+                            total_value += value
     return total_days, total_value
 
 

@@ -134,7 +134,8 @@
           "id": {"type": "integer", "description": "id of the Order"},
           "custumer": {"type": "string", "description": "name of the custumer of the Order"},
           "status": {"type": "string", "description": "status of the Order", "enum":  ["pending", "urgent", "processing", "complete"]},
-          "id_custumer": {"type": "integer", "description": "id of the customer"}
+          "id_custumer": {"type": "integer", "description": "id of the customer"},
+          "date": {"type": "string", "description": "date for the search with format <dd-MM-yyyy>"}
         },
         "required": ["status"]
       }
@@ -150,7 +151,8 @@
         "properties": {
           "type": {"type": "string", "description": "type of the Product Movement", "enum": ["entrada", "salida"]},
           "id": {"type": "integer", "description": "id of the Product Movement"},
-          "id_p": {"type": "string", "description": "id of the product"}
+          "id_p": {"type": "string", "description": "id of the product"},
+          "date": {"type": "string", "description": "date for the search with format <dd-MM-yyyy>"}
         },
         "required": ["type"]
       }

@@ -12,7 +12,7 @@ from static.extensions import secrets
 
 def execute_sql(sql: str, values: tuple = None, type_sql=1):
     """
-    Execute the sql with the values provides (or not) and returns a value
+    Execute the sql with the values provides (OR not) AND returns a value
     depending on the type of query. In case of exception returns None
     :param type_sql: type of query to execute
     :param sql: sql query
@@ -68,7 +68,7 @@ def execute_sql(sql: str, values: tuple = None, type_sql=1):
 
 def execute_sql_multiple(sql: str, values_list: list = None, type_sql=1):
     """
-    Execute the sql with the values provides (or not) and returns a value
+    Execute the sql with the values provides (OR not) AND returns a value
     depending on the type of query. In case of exception returns None
     :param values_list: values for sql query
     :param type_sql: type of query to execute
@@ -166,7 +166,7 @@ def get_employee_id_name(name: str) -> tuple[None, str] | tuple[int, str]:
         :return: id of the employee
         """
     sql = ("SELECT employee_id, name, l_name FROM employees WHERE "
-           "MATCH(l_name) AGAINST (%s IN NATURAL LANGUAGE MODE ) and "
+           "MATCH(l_name) AGAINST (%s IN NATURAL LANGUAGE MODE ) AND "
            "MATCH(name) AGAINST (%s IN NATURAL LANGUAGE MODE )")
     # lowercase names
     name = name.lower()
@@ -196,7 +196,7 @@ def get_id_employee(name: str) -> None | int:
     :return: id of the employee
     """
     sql = ("SELECT employee_id FROM employees WHERE "
-           "MATCH(l_name) AGAINST (%s IN NATURAL LANGUAGE MODE ) and "
+           "MATCH(l_name) AGAINST (%s IN NATURAL LANGUAGE MODE ) AND "
            "MATCH(name) AGAINST (%s IN NATURAL LANGUAGE MODE )")
     # lowercase names
     name = name.lower()
@@ -258,7 +258,7 @@ def get_ids_employees(names: list):
     :return: id of the employee
     """
     sql = ("SELECT employee_id FROM employees WHERE "
-           "MATCH(l_name) AGAINST (%s IN NATURAL LANGUAGE MODE ) and "
+           "MATCH(l_name) AGAINST (%s IN NATURAL LANGUAGE MODE ) AND "
            "MATCH(name) AGAINST (%s IN NATURAL LANGUAGE MODE )")
     # lowercase names
     for i, name in enumerate(names):
@@ -467,7 +467,7 @@ def delete_supplier_DB(supplier_id: int) -> tuple[bool, Exception | None, int | 
     return flag, e, out
 
 
-# --------------------------------Products and Services--------------------------------
+# --------------------------------Products AND Services--------------------------------
 def insert_product_and_service(product_id: int, name: str, model: str, brand: str,
                                description: str, price_retail: str, quantity: str,
                                price_provider: str,
@@ -623,10 +623,34 @@ def set_finish_chat(chat_id: str):
 def get_username_data(username: str):
     sql = ("select users_system.exp, users_system.timestamp_token, employees.name,"
            " employees.l_name, employees.department_id, departments.name, employees.contrato "
-           "from users_system "
-           "INNER JOIN employees ON (users_system.emp_id = employee_id and usernames=%s) "
-           "INNER JOIN departments on employees.department_id = departments.department_id")
+           "FROM users_system "
+           "INNER JOIN employees ON users_system.emp_id = employee_id "
+           "INNER JOIN departments on employees.department_id = departments.department_id "
+           "WHERE users_system.usernames = %s")
     val = (username,)
+    flag, error, result = execute_sql(sql, val)
+    out = None
+    if len(result) > 0:
+        out = {
+            "exp": result[0],
+            "timestamp": result[1],
+            "name": result[2],
+            "lastname": result[3],
+            "department_id": result[4],
+            "department_name": result[5],
+            "contract": result[6]
+        }
+    return out
+
+
+def get_user_data_by_ID(user_id: int):
+    sql = ("select users_system.exp, users_system.timestamp_token, employees.name,"
+           " employees.l_name, employees.department_id, departments.name, employees.contrato "
+           "FROM users_system "
+           "INNER JOIN employees ON users_system.emp_id = employee_id "
+           "INNER JOIN departments on employees.department_id = departments.department_id "
+           "WHERE users_system.emp_id = %s ")
+    val = (user_id,)
     flag, error, result = execute_sql(sql, val)
     out = None
     if len(result) > 0:
@@ -652,7 +676,7 @@ def get_all_data_employees(status: str):
     sql = ("SELECT sql_telintec.employees.*, departments.name, examen_id FROM sql_telintec.employees "
            "left join departments on sql_telintec.employees.department_id = departments.department_id "
            "left join examenes_med on "
-           "(sql_telintec.employees.employee_id = examenes_med.empleado_id and examenes_med.status like %s )")
+           "(sql_telintec.employees.employee_id = examenes_med.empleado_id AND examenes_med.status LIKE %s )")
     val = (status,)
     flag, error, result = execute_sql(sql, val, type_sql=2)
     return flag, error, result
@@ -790,7 +814,7 @@ def update_status_EM(status, emp_id):
 
 def verify_user_DB(user: str, password: str) -> bool:
     """
-    Verifies if the user and password are correct.
+    Verifies if the user AND password are correct.
     :param password: <String>
     :param user: <String>
     :return: <Boolean>
@@ -811,9 +835,11 @@ def get_permissions_user_password(user: str, password: str):
         <permissions>: <list>
         <code>: <int>
     """
-    sql = ("SELECT permissions, emp_id, name, l_name, contrato  FROM users_system "
-           "INNER JOIN employees ON (users_system.emp_id = employees.employee_id) "
-           "WHERE usernames = %s AND password = %s ")
+    sql = (
+        "SELECT users_system.permissions, users_system.emp_id, employees.name, employees.l_name, employees.contrato  "
+        "FROM users_system "
+        "INNER JOIN employees ON (users_system.emp_id = employees.employee_id) "
+        "WHERE usernames = %s AND password = %s ")
     val = (user, password)
     flag, error, result = execute_sql(sql, val, 1)
     if len(result) > 0:
@@ -849,7 +875,7 @@ def insert_vacation(emp_id: int, seniority: dict):
 def get_vacations_data():
     sql = ("SELECT emp_id, name, l_name, date_admission, seniority  "
            "FROM vacations "
-           "inner join employees on vacations.emp_id = employees.employee_id")
+           "INNER JOIN employees ON vacations.emp_id = employees.employee_id")
     flag, error, result = execute_sql(sql, type_sql=5)
     return flag, error, result
 
@@ -873,16 +899,16 @@ def get_all_employees_active():
 
 def get_product_categories():
     columns = ("id_category", "name")
-    sql = "SELECT product_categories_amc.id_category, product_categories_amc.name FROM product_categories_amc limit 20 "
+    sql = "SELECT product_categories_amc.id_category, product_categories_amc.name FROM product_categories_amc LIMIT 20 "
     flag, error, result = execute_sql(sql, type_sql=5)
     return flag, error, result, columns
 
 
 def get_products_almacen(id_p: int, name: str, category: str, limit: int = 10):
     columns = ("id_product", "name", "udm", "stock", "id_category")
-    sql = ("SELECT id_product, name, udm, stock, id_category FROM products_amc WHERE id_product = %s or "
-           "(match(name) against (%s IN NATURAL LANGUAGE MODE ) and id_category = %s ) "
-           "limit %s")
+    sql = ("SELECT id_product, name, udm, stock, id_category FROM products_amc WHERE id_product = %s OR "
+           "(match(name) against (%s IN NATURAL LANGUAGE MODE ) AND id_category = %s ) "
+           "LIMIT %s")
     val = (id_p, name, category, limit)
     flag, error, result = execute_sql(sql, val, 2)
     return flag, error, result, columns
@@ -898,7 +924,7 @@ def get_high_stock_products(category: str, quantity: int):
         category_id = result[0]
         sql = ("SELECT id_product, name, udm, stock, id_category "
                "FROM products_amc WHERE id_category = %s "
-               "ORDER BY stock DESC limit %s")
+               "ORDER BY stock DESC LIMIT %s")
         val = (category_id, quantity)
         flag, error, result = execute_sql(sql, val, 2)
         return flag, error, result, columns
@@ -916,7 +942,7 @@ def get_low_stock_products(category: str, quantity: int):
         category_id = result[0]
         sql = ("SELECT id_product, name, udm, stock, id_category "
                "FROM products_amc WHERE id_category = %s "
-               "ORDER BY stock limit %s")
+               "ORDER BY stock LIMIT %s")
         val = (category_id, quantity)
         flag, error, result = execute_sql(sql, val, 2)
         return flag, error, result, columns
@@ -934,7 +960,7 @@ def get_no_stock_products(category: str, quantity: int = 10):
         category_id = result[0]
         sql = ("SELECT id_product, name, udm, stock, id_category "
                "FROM products_amc WHERE id_category = %s "
-               "and stock=0 limit %s")
+               "AND stock=0 LIMIT %s")
         val = (category_id, quantity)
         flag, error, result = execute_sql(sql, val, 2)
         return flag, error, result, columns
@@ -945,9 +971,9 @@ def get_no_stock_products(category: str, quantity: int = 10):
 def get_costumers_amc(name: str, id_c: int):
     columns = ("id_customer", "name", "phone", "email", "address")
     sql = ("SELECT id_customer, name, phone, email, address "
-           "FROM customers_amc WHERE id_customer = %s or "
+           "FROM customers_amc WHERE id_customer = %s OR "
            "match(name) against (%s IN NATURAL LANGUAGE MODE ) "
-           "limit 10")
+           "LIMIT 10")
     val = (id_c, name)
     flag, error, result = execute_sql(sql, val, 2)
     return flag, error, result, columns
@@ -956,18 +982,18 @@ def get_costumers_amc(name: str, id_c: int):
 def get_supplier_amc(name: str, id_s: int):
     columns = ("id_supplier", "name", "phone", "type", "address")
     sql = ("SELECT id_supplier, name, phone, type, address "
-           "FROM suppliers_amc WHERE id_supplier = %s or "
+           "FROM suppliers_amc WHERE id_supplier = %s OR "
            "match(name) against (%s IN NATURAL LANGUAGE MODE ) "
-           "limit 10")
+           "LIMIT 10")
     val = (id_s, name)
     flag, error, result = execute_sql(sql, val, 2)
     return flag, error, result, columns
 
 
-def get_orders_amc(id_o: int, id_c: int, status: str, name_c: str):
+def get_orders_amc(id_o: int, id_c: int, status: str, name_c: str, date: str):
     columns = ("id_order", "id_customer", "status", "sm_code", "date", "id_customer")
     if id_c is None:
-        # get id customer from name_c
+        # get id customer FROM name_c
         sql = "SELECT id_customer FROM customers_amc WHERE match(name) against (%s IN NATURAL LANGUAGE MODE ) "
         val = (name_c,)
         flag, error, result = execute_sql(sql, val, 1)
@@ -976,21 +1002,25 @@ def get_orders_amc(id_o: int, id_c: int, status: str, name_c: str):
         else:
             id_c = "%"
     sql = ("SELECT id_order, id_customer, status, sm_code, order_date, id_customer "
-           "FROM orders_amc WHERE (id_order = %s or "
-           "id_customer = %s) and status like %s "
-           "limit 10")
-    val = (id_o, id_c, status)
+           "FROM orders_amc WHERE (id_order = %s OR "
+           "id_customer = %s) AND status LIKE %s ")
+    if date is not None:
+        sql = sql + " AND order_date = %s"
+    sql = sql + " LIMIT 10"
+    val = (id_o, id_c, status, date)
     flag, error, result = execute_sql(sql, val, 2)
     return flag, error, result, columns
 
 
-def get_product_movement_amc(type_m: str, id_m: int, id_p: int):
+def get_product_movement_amc(type_m: str, id_m: int, id_p: int, date: str):
     columns = ("id_movement", "id_product", "type", "quantity", "date")
     sql = ("SELECT id_movement, id_product, movement_type, quantity, movement_date "
-           "FROM product_movements_amc WHERE (id_movement = %s or "
-           "id_product = %s) and movement_type like %s "
-           "limit 10")
-    val = (id_m, id_p, type_m)
+           "FROM product_movements_amc WHERE (id_movement = %s OR "
+           "id_product = %s) AND movement_type LIKE %s ")
+    if date is not None:
+        sql = sql + " AND movement_date = %s"
+    sql = sql + " LIMIT 10"
+    val = (id_m, id_p, type_m, date)
     flag, error, result = execute_sql(sql, val, 2)
     return flag, error, result, columns
 
@@ -998,9 +1028,9 @@ def get_product_movement_amc(type_m: str, id_m: int, id_p: int):
 def get_supply_inv_amc(id_s: int, name: str):
     columns = ("id_supply", "name", "id_supplier", "date", "status")
     sql = ("SELECT id_supply, name, stock "
-           "FROM supply_inventory_amc WHERE (id_supply = %s or "
+           "FROM supply_inventory_amc WHERE (id_supply = %s OR "
            "match(name) against (%s IN NATURAL LANGUAGE MODE ) ) "
-           "limit 10")
+           "LIMIT 10")
     val = (id_s, name)
     flag, error, result = execute_sql(sql, val, 2)
     return flag, error, result, columns
@@ -1008,32 +1038,26 @@ def get_supply_inv_amc(id_s: int, name: str):
 
 def get_fichaje_emp_AV(name: str, id_e: int):
     columns = ("id_employee", "absences", "lates", "lates_value[h]", "extras", "extras_value[h]", "primes")
+    sql = ("SELECT emp_id, absences, lates, extras, primes "
+           "FROM fichajes WHERE emp_id = %s")
     if id_e is None:
         id_e, name_db = get_employee_id_name(name)
-        if id_e is not None:
-            sql = ("SELECT emp_id, absences, lates, extras, primes "
-                   "FROM fichajes WHERE emp_id = %s")
-            val = (id_e,)
-            flag, error, result = execute_sql(sql, val, 1)
-            return flag, error, result, columns
-        else:
+        if id_e is None:
             return False, "No employee in the DB", [], columns
-    else:
-        sql = ("SELECT emp_id, absences, lates, extras, primes "
-               "FROM fichajes WHERE emp_id = %s")
-        val = (id_e,)
-        flag, error, result = execute_sql(sql, val, 1)
-        return flag, error, result, columns
+    val = (id_e,)
+    flag, error, result = execute_sql(sql, val, 1)
+    return flag, error, result, columns
 
 
-def get_employees_w_status(status: str, quantity: int, order: str):
+def get_employees_w_status(status: str, quantity: int, date: str):
     columns = ("employee_id", "name", "l_name", "date_admission", "status")
     sql = ("SELECT employee_id, name, l_name, date_admission, status "
            "FROM employees "
-           "WHERE status like %s "
-           "ORDER BY %s "
-           "limit %s")
-    val = (status, order, quantity)
+           "WHERE status LIKE %s ")
+    if date is not None:
+        sql = sql + " AND date_admission >= %s "
+    sql = sql + " ORDER BY date_admission  LIMIT %s "
+    val = (status, date, quantity)
     flag, error, result = execute_sql(sql, val, 2)
     return flag, error, result, columns
 
@@ -1053,8 +1077,8 @@ def get_employee_info(id_e: int):
 
 def get_sm_employees():
     sql = ("SELECT employee_id, name, l_name "
-           "FROM employees where status = 'activo' "
-           "and (department_id=2 or department_id=3)")
+           "FROM employees WHERE status = 'activo' "
+           "AND (department_id=2 OR department_id=3)")
     flag, error, result = execute_sql(sql, None, 5)
     return flag, error, result
 
@@ -1074,31 +1098,37 @@ def get_sm_products():
 
 
 def get_sm_entries():
-    sql = ("SELECT sm_id, sm_code, folio, contract, facility, location, client_id, emp_id, date, limit_date, items, status "
-           "FROM materials_request ")
+    sql = (
+        "SELECT sm_id, sm_code, folio, contract, facility, location, client_id, emp_id, "
+        "pedido_cotizacion, date, limit_date, "
+        "items, status, history, comment "
+        "FROM materials_request ")
     flag, error, result = execute_sql(sql, None, 5)
     return flag, error, result
 
 
 def insert_sm_db(data):
+    event = [{"event": "creation",
+             "date": datetime.now().strftime('%Y-%m-%d %H:%M:%S'), "user": data['info']['emp_id']}]
     sql = ("INSERT INTO materials_request (sm_code, folio, contract, facility, location, "
-           "client_id, emp_id, date, limit_date, items, status)"
-           "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)")
-    val = (data['info']['sm_code'], data['info']['folio'], data['info']['contract'], data['info']['facility'], data['info']['location'],
-           data['info']['client_id'], data['info']['emp_id'], data['info']['date'], data['info']['limit_date'],
-           json.dumps(data['items']), data['info']['status'])
+           "client_id, emp_id, pedido_cotizacion, date, limit_date, items, status, history, comment)"
+           "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)")
+    val = (data['info']['sm_code'], data['info']['folio'], data['info']['contract'], data['info']['facility'],
+           data['info']['location'], data['info']['client_id'], data['info']['emp_id'],
+           data['info']['order_quotation'], data['info']['date'], data['info']['limit_date'],
+           json.dumps(data['items']), 0, json.dumps(event), data['info']['comment'])
     flag, error, result = execute_sql(sql, val, 4)
     print(error, result)
     return flag, error, result
 
 
 def delete_sm_db(id_m: int, sm_code: str):
-    sql = "DELETE FROM materials_request WHERE sm_id = %s and sm_code = %s "
+    sql = "DELETE FROM materials_request WHERE sm_id = %s AND sm_code = %s "
     val = (id_m, sm_code)
     flag, error, result = execute_sql(sql, val, 3)
     if not flag:
         return False, error, None
-    sql = "SELECT * FROM materials_request WHERE sm_id = %s and sm_code = %s"
+    sql = "SELECT * FROM materials_request WHERE sm_id = %s AND sm_code = %s"
     val = (id_m, sm_code)
     flag, error, result = execute_sql(sql, val, 1)
     if len(result) == 0:
@@ -1113,14 +1143,18 @@ def update_sm_db(data):
     if not flag:
         return False, error, None
     ids_sm = [i[0] for i in result]
-    print(ids_sm,  data['id_sm'])
+    print(ids_sm, data['id_sm'])
     if data['id_sm'] not in ids_sm:
         return True, "Material request not found", None
     sql = ("UPDATE materials_request SET sm_code = %s, folio = %s, contract = %s, facility = %s, location = %s, "
-           "client_id = %s, emp_id = %s, date = %s, limit_date = %s, items = %s, status = %s "
+           "client_id = %s, emp_id = %s, date = %s, limit_date = %s, items = %s, status = 0, pedido_cotizacion = %s, "
+           "history = %s, comment = %s "
            "WHERE sm_id = %s")
-    val = (data['info']['sm_code'], data['info']['folio'], data['info']['contract'], data['info']['facility'], data['info']['location'],
-           data['info']['client_id'], data['info']['emp_id'], data['info']['date'], data['info']['limit_date'],
-           json.dumps(data['items']), data['info']['status'], data['id_sm'])
+    val = (data['info']['sm_code'], data['info']['folio'], data['info']['contract'], data['info']['facility'],
+           data['info']['location'], data['info']['client_id'], data['info']['emp_id'], data['info']['date'],
+           data['info']['limit_date'], json.dumps(data['items']),
+           data['info']['order_quotation'], json.dumps(data['info']['history']),
+           data['info']['comment'],
+           data['id_sm'])
     flag, error, result = execute_sql(sql, val, 4)
     return flag, error, result
