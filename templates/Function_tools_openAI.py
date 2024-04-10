@@ -79,7 +79,7 @@ def getHighStockProducts(**kwargs):
             case _:
                 pass
     category = category if category is not None else "%"
-    quantity = quantity if quantity is not None else 0
+    quantity = quantity if quantity is not None else 10
     flag, error, result, columns = get_high_stock_products(category=category, quantity=quantity)
     if flag:
         result.insert(0, columns)
@@ -101,7 +101,7 @@ def getLowStockProducts(**kwargs):
             case _:
                 pass
     category = category if category is not None else "%"
-    quantity = quantity if quantity is not None else 0
+    quantity = quantity if quantity is not None else 10
     flag, error, result, columns = get_low_stock_products(category=category, quantity=quantity)
     if flag:
         result.insert(0, columns)
@@ -307,7 +307,7 @@ def getActiveEmployees(**kwargs):
             case _:
                 pass
     status = status if status is not None else "%"
-    quantity = quantity if quantity is not None else 0
+    quantity = quantity if quantity is not None else 10
     flag, error, result, columns = get_employees_w_status(status, quantity, date)
     if flag:
         result.insert(0, columns)

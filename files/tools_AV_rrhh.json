@@ -29,7 +29,7 @@
         "properties": {
           "name": {"type": "string", "description": "name of the employee"},
           "id": {"type": "integer", "description": "id of the employee"},
-          "date": {"type": "string", "description": "date for the search with format <dd-MM-yyyy>"}
+          "date": {"type": "string", "description": "date for the search with format <YYYY-MM-dd>"}
         },
         "required": ["name", "date"]
       }
@@ -45,7 +45,8 @@
         "properties": {
           "status": {"type": "string", "description": "status of the employees", "enum":  ["activo", "inactivo"]},
           "quantity": {"type": "integer", "description": "quantity of employees to display"},
-          "date": {"type": "string", "description": "date for the search with format <dd-MM-yyyy>"}
+          "date": {"type": "string", "description": "date for the search with format <YYYY-MM-dd>"
+          }
         },
         "required": ["status", "date"]
       }
