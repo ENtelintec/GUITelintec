@@ -85,8 +85,8 @@ def get_image_side_menu(wname, image_path=carpeta_principal):
 
 def get_data_employees(status="ACTIVO"):
     columns = (
-    "ID", "Nombre", "Contrato", "Faltas", "Tardanzas", "Total tardanzas", "Dias Extra", "Total extra", "Primas",
-    "Detalles Faltas", "Detalles Tardanzas", "Detalles Extras", "Detalles Primas", "Detalles Normal")
+        "ID", "Nombre", "Contrato", "Faltas", "Tardanzas", "Total tardanzas", "Dias Extra", "Total extra", "Primas",
+        "Detalles Faltas", "Detalles Tardanzas", "Detalles Extras", "Detalles Primas", "Detalles Normal")
     fichajes_resume, flag = get_fichajes_resume_cache(cache_file_resume_fichaje)
     if flag:
         return fichajes_resume, columns
@@ -500,16 +500,20 @@ def read_setting_file(file_path: str) -> dict:
     return setting
 
 
-def get_all_sm_entries(filter_status: False):
+def get_all_sm_entries(filter_status=False, is_supper=False, emp_id=None):
     flag, error, result = get_sm_entries()
     if flag:
-        columns = ("ID", "Codigo", "Folio", "Contrato", "Planta", "Ubicación", "Cliente", "Empleado", "Orden/Cotización", "Fecha",
-                   "Fecha Limite", "Items", "Estado", "Historial", "Comentario")
+        columns = (
+        "ID", "Codigo", "Folio", "Contrato", "Planta", "Ubicación", "Cliente", "Empleado", "Orden/Cotización", "Fecha",
+        "Fecha Limite", "Items", "Estado", "Historial", "Comentario")
         if filter_status:
             result = [row for row in result if row[12] == 0]
+        if not is_supper:
+            result = [row for row in result if row[7] == emp_id]
         for index, row in enumerate(result):
             id_sm, code, folio, contract, plant, location, client, employee, order, date, date_limit, items, status, history, comment = row
-            new_row = (id_sm, code, folio, contract, plant, location, client, employee, order, date, date_limit, items, "Pendiente", history, comment)
+            new_row = (id_sm, code, folio, contract, plant, location, client, employee, order, date, date_limit, items,
+                       "Pendiente", history, comment)
             result[index] = new_row
         return result, columns
     else:

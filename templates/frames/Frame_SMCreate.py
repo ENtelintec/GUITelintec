@@ -10,7 +10,7 @@ import ttkbootstrap as ttk
 from ttkbootstrap.dialogs import Messagebox
 from ttkbootstrap.tableview import Tableview
 
-from static.extensions import log_file_sm_path
+from static.extensions import log_file_sm_path, permissions_supper_SM
 from templates.Functions_AuxFiles import get_all_sm_entries, get_all_sm_products
 from templates.Functions_Files import write_log_file
 from templates.Functions_SQL import insert_sm_db, update_sm_db, delete_sm_db, \
@@ -86,15 +86,20 @@ def create_dict_sm(info, products):
 
 
 class FrameSMCreate(ttk.Frame):
-    def __init__(self, master=None, department="default", settings=None, id_emp=None, data=None, **kw):
+    def __init__(self, master=None, permissions=None, settings=None, id_emp=None, data=None, **kw):
         super().__init__(master, **kw)
         self.columnconfigure(0, weight=1)
         """----------------------------variables-----------------------------"""
         self.settings = settings
-        self.department = department
+        self.permissions = permissions
         self._id_sm_to_edit = None
         self.data_sm = None
         self.history = None
+        self._is_supper_user = self.check_permissions()
+        if self._is_supper_user:
+            self.list_to_disable = [0]
+        else:
+            self.list_to_disable = [0, 3]
         self._id_emp = id_emp if id_emp is not None else 60
         self.svar_info, svar_test = create_stringvar(2, "")
         self.employees = data["employees"]
@@ -185,7 +190,7 @@ class FrameSMCreate(ttk.Frame):
 
     def create_table(self, master, data=None, columns=None):
         if data is None:
-            self.data_sm, columns = get_all_sm_entries(filter_status=True)
+            self.data_sm, columns = get_all_sm_entries(filter_status=True, is_supper=True, emp_id=self._id_emp)
         else:
             self.data_sm = data
         table = Tableview(master,
@@ -267,8 +272,9 @@ class FrameSMCreate(ttk.Frame):
             if error is not None:
                 self.svar_info.set(f"{error}")
             else:
-                msg = (f"Record inserted--> SM: {dict_data['info']['sm_code']} --> by {self.data_emp_dic['name'].title()} "
-                       f"{self.data_emp_dic['lastname'].title()} at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+                msg = (
+                    f"Record inserted--> SM: {dict_data['info']['sm_code']} --> by {self.data_emp_dic['name'].title()} "
+                    f"{self.data_emp_dic['lastname'].title()} at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
                 write_log_file(log_file_sm_path, msg)
                 self.svar_info.set(f"SM {result} agregado correctamente")
             time.sleep(0.5)
@@ -283,13 +289,13 @@ class FrameSMCreate(ttk.Frame):
         if len(data_products) == 0:
             self.svar_info.set("!!!Debe agregar productos¡¡¡")
             return
-
         dict_data = create_dict_sm(out_info, data_products)
         dict_data["info"]['emp_id'] = self._id_emp
         dict_data['id_sm'] = dict_data["info"]['id']
         try:
             self.history.append({"event": "update",
-                                 "date": datetime.now().strftime('%Y-%m-%d %H:%M:%S'), "user": dict_data['info']['emp_id']})
+                                 "date": datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                                 "user": dict_data['info']['emp_id']})
             dict_data['info']['history'] = self.history
         except Exception as e:
             print(e, "Error at creating history")
@@ -366,19 +372,23 @@ class FrameSMCreate(ttk.Frame):
         self.frame_products.put_data_resumen(items_table)
         data_info = self.formart_values_info(
             (data_dic["id"], data_dic["code"], data_dic["folio"], data_dic["contract"], data_dic["plant"],
-             data_dic["location"], data_dic["client"], data_dic["order_quotation"], data_dic["date"], data_dic["date_limit"],
+             data_dic["location"], data_dic["client"], data_dic["order_quotation"], data_dic["date"],
+             data_dic["date_limit"],
              data_dic["comment"]), action=1)
         for index, item in enumerate(self.entries):
             if isinstance(item, ttk.Combobox):
                 item.set(data_info[index])
             elif isinstance(item, ttk.Entry):
-                item.insert(0, data_info[index])
+                if index == 3:
+                    self.entries[index].insert(0, self.data_emp_dic["contract"])
+                else:
+                    item.insert(0, data_info[index])
             elif isinstance(item, ttk.DateEntry):
                 self.entries[index].destroy()
                 self.entries[index] = create_date_entry(self.frame_inputs, firstweekday=0,
                                                         dateformat="%Y-%m-%d", startdate=data_info[index],
                                                         row=index + 1, column=1, padx=3, pady=5, sticky="w")
-        self.set_disabled_entries()
+        self.set_disabled_entries(self.list_to_disable)
 
     def get_entries_values(self):
         data_products = self.frame_products.get_resumen_table_data()
@@ -393,14 +403,21 @@ class FrameSMCreate(ttk.Frame):
     def set_conditions(self):
         self.set_normal_entries()
         self.entries[3].insert(0, self.data_emp_dic["contract"])
+        self.set_disabled_entries(self.list_to_disable)
+
+    def check_permissions(self):
+        for item in self.permissions.values():
+            if item in permissions_supper_SM:
+                return True
+        return False
 
     def set_normal_entries(self):
         for entry in self.entries:
             entry.configure(state="normal")
 
-    def set_disabled_entries(self):
-        self.entries[3].configure(state="readonly")
-        self.entries[0].configure(state="readonly")
+    def set_disabled_entries(self, n_entries):
+        for i in n_entries:
+            self.entries[i].configure(state="readonly")
 
 
 class FrameSMProdcuts(ttk.Frame):

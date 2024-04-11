@@ -72,6 +72,11 @@ permissions_allowed_AV = [
     "App.Department.Administrator",
     "App.Department.ALMACEN",
 ]
+permissions_supper_SM = [
+    "App.Department.Administrator",
+    "App.Department.Administracion",
+    "App.Department.Operaciones",
+]
 cache_file_EM_path = "files/EM_cache.pkl"
 cache_file_Fichajes_path = "files/Fichajes_cache.pkl"
 cache_file_Tickets_path = "files/Tickets_cache.pkl"

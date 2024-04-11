@@ -116,7 +116,13 @@ def compare_permissions_windows(user_permissions: list) -> tuple[bool, Any] | tu
             ventanas += ventanasApp[permission]
     if len(ventanas) > 0:
         ventanas = list(set(ventanas))
-
+        ventanas.sort()
+        if "Home" in ventanas:
+            ventanas.remove("Home")
+            ventanas.insert(0, "Home")
+        if "Configuraciones (A)" in ventanas:
+            ventanas.remove("Configuraciones (A)")
+            ventanas.append("Configuraciones (A)")
         if "Cuenta" in ventanas:
             ventanas.remove("Cuenta")
             ventanas.append("Cuenta")

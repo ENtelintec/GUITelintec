@@ -5,14 +5,18 @@ __date__ = '$ 09/abr./2024  at 17:11 $'
 import ttkbootstrap as ttk
 from ttkbootstrap.scrolled import ScrolledFrame
 
+from static.extensions import permissions_supper_SM
 from templates.Functions_AuxFiles import get_all_sm_entries, get_all_sm_products
 from templates.Functions_SQL import get_sm_clients, get_sm_employees
 from templates.frames.Frame_SMCreate import FrameSMCreate
 from templates.frames.Frame_SMDashboard import SMDashboard
 
 
-def load_data():
-    data_sm, columns_sm = get_all_sm_entries(filter_status=False)
+def load_data(is_super=False, emp_id=None):
+    data_sm, columns_sm = get_all_sm_entries(filter_status=False, is_supper=True, emp_id=emp_id)
+    data_sm_not_supper = []
+    if not is_super:
+        data_sm_not_supper = [data for data in data_sm if data[7] == emp_id]
     flag, error, employees = get_sm_employees()
     flag, error, clients = get_sm_clients()
     products, columns_products = get_all_sm_products()
@@ -22,24 +26,36 @@ def load_data():
         'employees': employees,
         'clients': clients,
         'products': products,
-        'columns_products': columns_products
+        'columns_products': columns_products,
+        'data_sm_not_supper': data_sm_not_supper
     }
     return data_dic
 
 
 class SMFrame(ScrolledFrame):
-    def __init__(self, master=None, settings=None, department=None, id_emp=None, **kw):
+    def __init__(self, master=None, settings=None, department=None, id_emp=None, data_emp=None, **kw):
         super().__init__(master, **kw)
+        self.permissions = data_emp["permissions"]
+        self.is_supper_user = self.check_permissions()
         self.columnconfigure(0, weight=1)
         self.id_emp = id_emp
+        self.data_emp = data_emp
         self.department = department
         self.settings = settings
-        data_dic = load_data()
+        data_dic = load_data(self.is_supper_user, self.id_emp)
         nb = ttk.Notebook(self)
-        frame_1 = SMDashboard(nb, data=data_dic["data_sm"], columns=data_dic["columns_sm"])
-        frame_2 = FrameSMCreate(nb, id_emp=self.id_emp, department=self.department, settings=self.settings, data=data_dic)
+        if self.is_supper_user:
+            frame_1 = SMDashboard(nb, data=data_dic["data_sm"], columns=data_dic["columns_sm"], data_user=data_emp)
+        else:
+            frame_1 = SMDashboard(nb, data=data_dic["data_sm_not_supper"], columns=data_dic["columns_sm"], data_user=data_emp)
+        frame_2 = FrameSMCreate(nb, id_emp=self.id_emp, permissions=data_emp["permissions"], settings=self.settings, data=data_dic)
         nb.add(frame_1, text='Dashboard')
         nb.add(frame_2, text='Crear-editar-eliminar')
         nb.grid(row=0, column=0, sticky="nswe", padx=(5, 20), pady=15)
 
+    def check_permissions(self):
+        for item in self.permissions.values():
+            if item in permissions_supper_SM:
+                return True
+        return False
 

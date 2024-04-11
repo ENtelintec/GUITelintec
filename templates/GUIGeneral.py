@@ -111,6 +111,7 @@ class GUIAsistente(ttk.Window):
 
     def get_username_data(self):
         self.username_data = get_username_data(self.username)
+        self.username_data["permissions"] = self.permissions
 
     def update_side_menu(self):
         print(f"side menu for: {self.username} with {self.permissions}")
@@ -249,7 +250,7 @@ class GUIAsistente(ttk.Window):
                     windows[window] = BitacoraEditFrame(self, self.username, self.username_data["contract"])
                     print("bitacora frame created")
                 case "SM":
-                    windows[window] = SMFrame(self, self.settings, department=self.department, id_emp=self.username_data["id"])
+                    windows[window] = SMFrame(self, self.settings, department=self.department, id_emp=self.username_data["id"], data_emp=self.username_data)
                     print("SM frame created")
                 case _:
                     pass

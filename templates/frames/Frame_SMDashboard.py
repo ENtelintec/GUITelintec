@@ -7,15 +7,18 @@ import json
 import ttkbootstrap as ttk
 from ttkbootstrap.tableview import Tableview
 
+from static.extensions import permissions_supper_SM
 from templates.Functions_AuxFiles import get_all_sm_entries
 from templates.Funtions_Utils import create_label
 from templates.frames.SubFrame_Plots import FramePlot
 
 
 class SMDashboard(ttk.Frame):
-    def __init__(self, master=None, data=None, columns=None, *args, **kwargs):
+    def __init__(self, master=None, data=None, columns=None, data_user=None, *args, **kwargs):
         super().__init__(master, *args, **kwargs)
-        self._id_emp = None
+        self.permissions = data_user["permissions"]
+        self._id_emp = data_user["id"]
+        self.is_supper_user = self.check_permissions()
         self.history = None
         self.data_sm = None
         self.columnconfigure(0, weight=1)
@@ -57,7 +60,7 @@ class SMDashboard(ttk.Frame):
 
     def create_table(self, master, data=None, columns=None):
         if data is None:
-            self.data_sm, columns = get_all_sm_entries(filter_status=False)
+            self.data_sm, columns = get_all_sm_entries(filter_status=False, is_supper=self.is_supper_user, emp_id=self._id_emp)
         else:
             self.data_sm = data
         if columns is not None:
@@ -104,3 +107,9 @@ class SMDashboard(ttk.Frame):
                      "date_limit": date_limit, "items": items, "status": status, "history": history,
                      "order_quotation": order_quotation, "comment": comment}
         return dict_data
+
+    def check_permissions(self):
+        for item in self.permissions.values():
+            if item in permissions_supper_SM:
+                return True
+        return False
