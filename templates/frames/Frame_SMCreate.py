@@ -88,7 +88,7 @@ def create_dict_sm(info, products):
 class FrameSMCreate(ttk.Frame):
     def __init__(self, master=None, department="default", settings=None, id_emp=None, data=None, **kw):
         super().__init__(master, **kw)
-        self.columnconfigure((0, 1), weight=1)
+        self.columnconfigure(0, weight=1)
         """----------------------------variables-----------------------------"""
         self.settings = settings
         self.department = department
@@ -123,7 +123,7 @@ class FrameSMCreate(ttk.Frame):
          self.btn_update, self.btn_erase) = self.create_buttons(frame_buttons)
         """-----------------------------tableview----------------------------"""
         self.frame_table = ttk.Frame(self)
-        self.frame_table.grid(row=4, column=0, padx=10, pady=10, sticky="nswe")
+        self.frame_table.grid(row=4, column=0, padx=50, pady=10, sticky="nswe")
         self.frame_table.columnconfigure(0, weight=1)
         self.frame_table.rowconfigure(1, weight=1)
         self.table_events = self.create_table(self.frame_table, data=data["data_sm"], columns=data["columns_sm"])
@@ -194,8 +194,8 @@ class FrameSMCreate(ttk.Frame):
                           paginated=True,
                           searchable=True,
                           autofit=True,
-                          height=21,
-                          pagesize=20)
+                          height=11,
+                          pagesize=10)
         table.grid(row=1, column=0, padx=20, pady=10, sticky="n")
         table.view.bind("<Double-1>", self.on_double_click_table_sm)
         return table

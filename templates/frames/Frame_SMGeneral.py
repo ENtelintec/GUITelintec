@@ -31,7 +31,6 @@ class SMFrame(ScrolledFrame):
     def __init__(self, master=None, settings=None, department=None, id_emp=None, **kw):
         super().__init__(master, **kw)
         self.columnconfigure(0, weight=1)
-        self.rowconfigure(0, weight=1)
         self.id_emp = id_emp
         self.department = department
         self.settings = settings
@@ -41,6 +40,6 @@ class SMFrame(ScrolledFrame):
         frame_2 = FrameSMCreate(nb, id_emp=self.id_emp, department=self.department, settings=self.settings, data=data_dic)
         nb.add(frame_1, text='Dashboard')
         nb.add(frame_2, text='Crear-editar-eliminar')
-        nb.grid(row=0, column=0, sticky="nswe", padx=15, pady=5)
+        nb.grid(row=0, column=0, sticky="nswe", padx=(5, 20), pady=15)
 
 

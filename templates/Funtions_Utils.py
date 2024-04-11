@@ -108,9 +108,19 @@ def compare_permissions_windows(user_permissions: list) -> tuple[bool, Any] | tu
     :param user_permissions: list of permissions of the user
     :return: bool with the result of the comparison
     """
+    ventanas = []
+    ventanas_keys = list(ventanasApp.keys())
+    ventanas_keys = [item.lower() for item in ventanas_keys]
     for permission in user_permissions:
-        if permission in ventanasApp.keys():
-            return True, ventanasApp[permission]
+        if permission.lower() in ventanas_keys:
+            ventanas += ventanasApp[permission]
+    if len(ventanas) > 0:
+        ventanas = list(set(ventanas))
+
+        if "Cuenta" in ventanas:
+            ventanas.remove("Cuenta")
+            ventanas.append("Cuenta")
+        return True, ventanas
     return False, None
 
 

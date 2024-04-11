@@ -4,7 +4,7 @@ from tkinter import PhotoImage
 import ttkbootstrap as ttk
 
 import templates.frames.Frame_LoginFrames as Login
-from static.extensions import filepath_settings
+from static.extensions import filepath_settings, permissions_allowed_AV
 from templates import AlmacenGUI
 from templates.Functions_AuxFiles import carpeta_principal, get_image_side_menu, read_setting_file
 from templates.Functions_Files import read_file_not
@@ -19,6 +19,7 @@ from templates.frames.Frame_FichajeFilesFrames import FichajesFilesGUI
 from templates.frames.Frame_NotificationsFrame import Notifications
 from templates.frames.Frame_PedidosFrame import PedidosFrame
 from templates.frames.Frame_Quizzes import FrameEncuestas
+from templates.frames.Frame_SMGeneral import SMFrame
 from templates.frames.Frame_SettingsFrame import SettingsFrameGUI
 from templates.frames.Frame_Vacations import VacationsFrame
 from templates.frames.Frame_vAssistantGUI import AssistantGUI
@@ -116,23 +117,26 @@ class GUIAsistente(ttk.Window):
         self.buttons_side_menu, self.names_side_menu = self._create_side_menu_widgets(self.side_menu_frame)
 
     def update_side_menu_windows(self):
-        print(f"windows menu for: {self.username} with {self.permissions}")
         self.get_username_data()
         self.windows_frames = self._create_side_menu_windows()
-        department = "default"  # default department if no department permissions are found
+        department = self.username_data["department_name"] if self.username_data is not None else "default"
         for k, v in self.permissions.items():
-            if "App.Department" in v:
-                department = v.split(".")[-1]
+            if "ALMACEN" in v:
+                department = "almacen"
                 break
-        if department == "Bitacoras":
-            return
+        for k, v in self.permissions.items():
+            if v in permissions_allowed_AV:
+                self.create_AV_window(department)
+                break
+
+    def create_AV_window(self, department):
         self.VA_frame = ttk.Frame(self, width=150)
         self.VA_frame.rowconfigure(0, weight=1)
         self.VA_frame.grid(row=0, column=2, sticky="nsew", pady=10, padx=5)
-        self.department = department
-        self.update_style_department()
         self.virtual_assistant_window = AssistantGUI(self.VA_frame, department=department, width=150)
         self.virtual_assistant_window.grid(row=0, column=0, sticky="nsew")
+        self.department = department
+        self.update_style_department()
 
     def _select_frame_by_name(self, name):
         match name:
@@ -244,6 +248,9 @@ class GUIAsistente(ttk.Window):
                 case "Bitacora":
                     windows[window] = BitacoraEditFrame(self, self.username, self.username_data["contract"])
                     print("bitacora frame created")
+                case "SM":
+                    windows[window] = SMFrame(self, self.settings, department=self.department, id_emp=self.username_data["id"])
+                    print("SM frame created")
                 case _:
                     pass
         return windows

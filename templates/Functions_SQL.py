@@ -622,7 +622,8 @@ def set_finish_chat(chat_id: str):
 
 def get_username_data(username: str):
     sql = ("select users_system.exp, users_system.timestamp_token, employees.name,"
-           " employees.l_name, employees.department_id, departments.name, employees.contrato "
+           " employees.l_name, employees.department_id, departments.name, employees.contrato,"
+           " employees.employee_id "
            "FROM users_system "
            "INNER JOIN employees ON users_system.emp_id = employee_id "
            "INNER JOIN departments on employees.department_id = departments.department_id "
@@ -638,7 +639,8 @@ def get_username_data(username: str):
             "lastname": result[3],
             "department_id": result[4],
             "department_name": result[5],
-            "contract": result[6]
+            "contract": result[6],
+            "id": result[7]
         }
     return out
 
