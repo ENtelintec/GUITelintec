@@ -17,6 +17,7 @@ from templates.Functions_SQL import insert_sm_db, update_sm_db, delete_sm_db, \
     get_user_data_by_ID
 from templates.Funtions_Utils import create_label, create_button, create_stringvar, create_Combobox, create_entry, \
     create_date_entry
+from templates.controllers.index import DataHandler
 
 
 def search_employee(emps_data, emp_key: int | str):
@@ -125,7 +126,7 @@ class FrameSMCreate(ttk.Frame):
         frame_buttons.grid(row=3, column=0, padx=5, pady=5, sticky="nswe")
         frame_buttons.columnconfigure((0, 1, 2, 3, 4), weight=1)
         (self.btn_add, self.btn_update_event, self.btn_cancel,
-         self.btn_update, self.btn_erase) = self.create_buttons(frame_buttons)
+         self.btn_update, self.btn_erase, self.btn_add_client) = self.create_buttons(frame_buttons)
         """-----------------------------tableview----------------------------"""
         self.frame_table = ttk.Frame(self)
         self.frame_table.grid(row=4, column=0, padx=50, pady=10, sticky="nswe")
@@ -186,7 +187,10 @@ class FrameSMCreate(ttk.Frame):
         btn_erase_event = create_button(
             master, 0, 4, "Borrar SM", command=self.on_erase_click,
             sticky="n", width=15, bootstyle="danger")
-        return btn_add, btn_update_data, btn_reset, btn_update_table, btn_erase_event
+        btn_add_client = create_button(
+            master, 0, 5, "Agregar cliente", command=self.on_add_client_click,
+            sticky="n", width=15, bootstyle="success")
+        return btn_add, btn_update_data, btn_reset, btn_update_table, btn_erase_event, btn_add_client
 
     def create_table(self, master, data=None, columns=None):
         if data is None:
@@ -419,6 +423,79 @@ class FrameSMCreate(ttk.Frame):
         for i in n_entries:
             self.entries[i].configure(state="readonly")
 
+    def on_add_client_click(self):
+        NewClient()
+
+
+class NewProduct(ttk.Window):
+    def __init__(self, master=None, **kw):
+        super().__init__(master, **kw)
+        self.title("Nuevo producto")
+        self._data = DataHandler()
+        self.resizable(False, False)
+        self.columnconfigure((0, 1), weight=1)
+        create_button(self, 6, 0, "Guardar", command=self.on_save_click, sticky="n", width=15)
+        self.entries = self.create_inputs()
+
+    def create_inputs(self):
+        create_label(self, 1, 0, text="SKU: ", sticky="w")
+        create_label(self, 2, 0, text="Nombre: ", sticky="w")
+        create_label(self, 3, 0, text="UDM: ", sticky="w")
+        create_label(self, 4, 0, text="Stock: ", sticky="w")
+        create_label(self, 5, 0, text="Categoria: ", sticky="w")
+        entry2 = create_entry(self, width=10, row=1, column=1, padx=10, pady=10, sticky="w")
+        entry3 = create_entry(self, width=55, row=2, column=1, padx=10, pady=10, sticky="w")
+        entry4 = create_entry(self, width=5, row=3, column=1, padx=10, pady=10, sticky="w")
+        entry5 = create_entry(self, width=5, row=4, column=1, padx=10, pady=10, sticky="w")
+        entry6 = create_entry(self, width=3, row=5, column=1, padx=10, pady=10, sticky="w")
+        return [entry2, entry3, entry4, entry5, entry6]
+
+    def get_data(self):
+        data = []
+        for item in self.entries:
+            data.append(item.get())
+        return data
+
+    def on_save_click(self):
+        data = self.get_data()
+        self._data._product.create_product(data[0], data[1], data[2], data[3], 0, 0, 0, data[4], "")
+        self.destroy()
+
+
+class NewClient(ttk.Window):
+    def __init__(self, master=None, **kw):
+        super().__init__(master, **kw)
+        self.title("Nuevo producto")
+        self._data = DataHandler()
+        self.resizable(False, False)
+        self.columnconfigure((0, 1), weight=1)
+        create_button(self, 6, 0, "Guardar", command=self.on_save_click, sticky="n", width=15)
+        self.entries = self.create_inputs()
+
+    def create_inputs(self):
+        create_label(self, 1, 0, text="Nombre: ", sticky="w")
+        create_label(self, 2, 0, text="Email: ", sticky="w")
+        create_label(self, 3, 0, text="Phone: ", sticky="w")
+        create_label(self, 4, 0, text="RFC: ", sticky="w")
+        create_label(self, 5, 0, text="Dirección: ", sticky="w")
+        entry2 = create_entry(self, width=30, row=1, column=1, padx=10, pady=10, sticky="w")
+        entry3 = create_entry(self, width=55, row=2, column=1, padx=10, pady=10, sticky="w")
+        entry4 = create_entry(self, width=15, row=3, column=1, padx=10, pady=10, sticky="w")
+        entry5 = create_entry(self, width=20, row=4, column=1, padx=10, pady=10, sticky="w")
+        entry6 = create_entry(self, width=55, row=5, column=1, padx=10, pady=10, sticky="w")
+        return [entry2, entry3, entry4, entry5, entry6]
+
+    def get_data(self):
+        data = []
+        for item in self.entries:
+            data.append(item.get())
+        return data
+
+    def on_save_click(self):
+        data = self.get_data()
+        self._data._customer.create_customer(data[0], data[1], data[2], data[3], data[4])
+        self.destroy()
+
 
 class FrameSMProdcuts(ttk.Frame):
     def __init__(self, master=None, data=None, **kw):
@@ -447,10 +524,11 @@ class FrameSMProdcuts(ttk.Frame):
         frame_inputs = ttk.Frame(self)
         frame_inputs.grid(row=1, column=1, padx=1, pady=20, sticky="nswe")
         self.entries = self.create_inputs(frame_inputs)
+        create_button(frame_inputs, 0, 2, text="Nuevo producto", command=self.on_new_product_click)
         """-------------------Widgets buttons--------------------------------"""
         frame_buttons = ttk.Frame(self)
         frame_buttons.grid(row=2, column=1, padx=1, pady=20, sticky="nswe")
-        frame_buttons.columnconfigure(0, weight=1)
+        frame_buttons.columnconfigure((0, 1), weight=1)
         self.create_buttons(frame_buttons)
 
     def create_table(self, master, type_table=1, data_resumen=None):
@@ -566,3 +644,6 @@ class FrameSMProdcuts(ttk.Frame):
     def put_data_resumen(self, data):
         self.table_resumen.destroy()
         self.table_resumen = self.create_table(self.frame_resumen, type_table=2, data_resumen=data)
+
+    def on_new_product_click(self):
+        NewProduct()

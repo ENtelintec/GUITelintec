@@ -10,7 +10,8 @@ class Customer:
         try:
             self.connection = db()
             self.cursor = self.connection.cursor()
-            sql1 = f"INSERT INTO customers_amc (name, email, phone, rfc, address) VALUES ('{name}', '{email}', '{phone}', '{rfc}', '{address}')"
+            sql1 = (f"INSERT INTO customers_amc (name, email, phone, rfc, address) "
+                    f"VALUES ('{name}', '{email}', '{phone}', '{rfc}', '{address}')")
             self.cursor.execute(sql1)
             id_customer = self.cursor.lastrowid
             self.connection.commit()
