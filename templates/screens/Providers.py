@@ -131,28 +131,28 @@ class ProvidersScreen(ttk.Frame):
 
         ttk.Button(
             buttons,
-            text="Agregar",
+            text="Agregar Proveedor",
             style="bg.TButton",
             width=25,
             command=self.create_provider,
         ).grid(row=0, column=0, sticky="w", padx=5, pady=5)
         ttk.Button(
             buttons,
-            text="Editar",
+            text="Actualizar Proveedor",
             style="bg.TButton",
             width=25,
             command=self.update_provider,
         ).grid(row=0, column=1, sticky="w", padx=5, pady=5)
         ttk.Button(
             buttons,
-            text="Eliminar",
+            text="Eliminar Proveedor",
             style="bg.TButton",
             width=25,
             command=self.delete_provider,
         ).grid(row=0, column=2, sticky="w", padx=5, pady=5)
         ttk.Button(
             buttons,
-            text="Limpiar",
+            text="Limpiar Campos",
             style="bg.TButton",
             width=25,
             command=self.clear_fields,

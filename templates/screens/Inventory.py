@@ -156,28 +156,28 @@ class InventoryScreen(ttk.Frame):
         buttons.columnconfigure((0, 1, 2, 3), weight=1)
         ttk.Button(
             buttons,
-            text="Agregar",
+            text="Agregar Producto",
             style="bg.TButton",
             width=25,
             command=self.add_product,
         ).grid(row=0, column=0, sticky="w", ipady=5, pady=(16, 0), padx=10)
         ttk.Button(
             buttons,
-            text="Editar",
+            text="Actualizar Producto",
             style="bg.TButton",
             width=25,
             command=self.update_product,
         ).grid(row=0, column=1, sticky="w", ipady=5, pady=(16, 0), padx=10)
         ttk.Button(
             buttons,
-            text="Eliminar",
+            text="Eliminar Producto",
             style="bg.TButton",
             width=25,
             command=self.delete_product,
         ).grid(row=0, column=2, sticky="w", ipady=5, pady=(16, 0), padx=10)
         ttk.Button(
             buttons,
-            text="Limpiar",
+            text="Limpiar Campos",
             style="bg.TButton",
             width=25,
             command=self.clear_fields,

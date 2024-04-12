@@ -25,8 +25,16 @@ class Category:
         try:
             self.connection = db()
             self.cursor = self.connection.cursor()
-            sql = f"INSERT INTO product_categories_amc (name) VALUES ('{name}')"
-            self.cursor.execute(sql)
+            name = str(name)
+            insert_sql = "INSERT INTO product_categories_amc (name) VALUES (%s)"
+            find_sql = "SELECT * FROM product_categories_amc WHERE name = %s"
+            self.cursor.execute(find_sql, (name,))
+            result = self.cursor.fetchone()
+
+            if result:
+                return "Category already exists"
+
+            self.cursor.execute(insert_sql, (name,))
             self.connection.commit()
             return True
         except Exception as e:
@@ -41,11 +49,8 @@ class Category:
         try:
             self.connection = db()
             self.cursor = self.connection.cursor()
-            sql = (
-                f"UPDATE product_categories_amc SET name = '{name}' "
-                f"WHERE id_category = {id_category}"
-            )
-            self.cursor.execute(sql)
+            update_sql = "UPDATE product_categories_amc SET name = %s WHERE id = %s"
+            self.cursor.execute(update_sql, (name, id_category))
             self.connection.commit()
             return True
         except Exception as e:
@@ -60,8 +65,8 @@ class Category:
         try:
             self.connection = db()
             self.cursor = self.connection.cursor()
-            sql = f"DELETE FROM product_categories_amc WHERE id = {id_category}"
-            self.cursor.execute(sql)
+            delete_sql = "DELETE FROM product_categories_amc WHERE id = %s"
+            self.cursor.execute(delete_sql, (id_category,))
             self.connection.commit()
             return True
         except Exception as e:
