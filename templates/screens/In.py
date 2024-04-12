@@ -31,7 +31,8 @@ class InScreen(ttk.Frame):
         table = ttk.Frame(content, style="bg.TFrame")
         table.grid(row=1, column=0, sticky="nswe")
         table.columnconfigure(0, weight=1)
-        ttk.Label(table, text="Tabla de Entradas", style="bg.TLabel", font=("Arial", 20)
+        ttk.Label(
+            table, text="Tabla de Entradas", style="bg.TLabel", font=("Arial", 20)
         ).grid(row=0, column=0, sticky="w", padx=5, pady=10)
         self.col_data = [
             {"text": "ID Movimiento", "stretch": True},
@@ -92,28 +93,28 @@ class InScreen(ttk.Frame):
         button_frame.columnconfigure((0, 1, 2, 3), weight=1)
         ttk.Button(
             button_frame,
-            text="Agregar",
+            text="Agregar Entrada",
             style="bg.TButton",
             width=25,
             command=self.add_in_item,
         ).grid(row=0, column=0, sticky="w", padx=5, pady=5)
         ttk.Button(
             button_frame,
-            text="Editar",
+            text="Actualizar Entrada",
             style="bg.TButton",
             width=25,
             command=self.update_in_item,
         ).grid(row=0, column=1, sticky="w", padx=5, pady=5)
         ttk.Button(
             button_frame,
-            text="Eliminar",
+            text="Eliminar Entrada",
             style="bg.TButton",
             width=25,
             command=self.delete_in_item,
         ).grid(row=0, column=2, sticky="w", padx=5, pady=5)
         ttk.Button(
             button_frame,
-            text="Limpiar",
+            text="Limpiar Campos",
             style="bg.TButton",
             width=25,
             command=self.clear_fields,
