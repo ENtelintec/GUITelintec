@@ -1,0 +1,180 @@
+{
+    "0": {
+        "question": "Nombre del Evaluador*",
+        "subquestions": [ ],
+        "options": [],
+        "answer": "",
+        "type": 4
+    },
+    "1": {
+        "question": "Puesto del Evaluador*",
+        "subquestions": [ ],
+        "options": [],
+        "answer": "",
+        "type": 4
+    },
+    "2": {
+        "question": "Nombre del EVALUADO *",
+        "subquestions": [ ],
+        "options": [],
+        "answer": "",
+        "type": 4
+    },
+    "3": {
+        "question": "Nivel de Puesto del Evaluado *",
+        "subquestions": [],
+        "options": ["Autoevaluación", "Jefe Inmediato", "Colega", "Subordinado"],
+        "answer": "",
+        "type": 4
+    },
+    "4": {
+        "question": "Respecto a Organización",
+        "subquestions": [
+            "Organización*"
+        ],
+        "options": [
+            "5 | Siempre realiza sus actividades de manera organizada",
+            "4 | Frecuentemente es organizado en la forma de realizar su trabajo",
+            "3 | Normalmente mantiene ordenada su área de trabajo",
+            "2 | La deficiente organización limita su trabajo",
+            "1 | La desorganización impide cumplir su trabajo"
+        ],
+        "answer": "",
+        "type": 2
+    },
+    "5": {
+        "question": " Respecto a Eficiencia en su trabajo",
+        "subquestions": [
+            "Eficiencia en su trabajo *"
+        ],
+        "options": [
+            "5 | El trabajo realizado es entregado antes de que se le solicite",
+            "4 | El trabajo realizado es entregado en el tiempo requerido",
+            "3 | Su trabajo es realizado sin presentar extensas demoras",
+            "2 | Difícilmente realiza su trabajo en el tiempo determinado",
+            "1 | Nunca realiza su trabajo en el tiempo establecido"
+        ],
+        "answer": "",
+        "type": 2
+    },
+    "6": {
+        "question": " Respecto a Iniciativa",
+        "subquestions": [
+            "Iniciativa *"
+        ],
+        "options": [
+            "5 | Siempre realiza aportaciones de mejora con buenos resultados",
+            "4 | Continuamente realiza aportaciones de mejora con buenos resultados",
+            "3 | Realiza aportaciones cuando se le solicita",
+            "2 | Difícilmente propone mejoras en el sistema",
+            "1 | No hace aportaciones"
+        ],
+        "answer": "",
+        "type": 2
+    },
+    "7": {
+        "question": " Conocimientos para realizar el trabajo",
+        "subquestions": [
+            "Conocimientos para realizar el trabajo*"
+        ],
+        "options": [
+            "5 | Debido a sus conocimientos podría intervenir en la capacitación de otras personas",
+            "4 | El buen conocimiento permite un buen desempeño",
+            "3 | Posee los conocimientos necesarios para realizar su trabajo de forma suficiente",
+            "2 | Pregunta constantemente la forma de realizar el trabajo",
+            "1 | Desconoce la manera de realizar su trabajo"
+        ],
+        "answer": "",
+        "type": 2
+    },
+    "8": {
+        "question": " Respecto a Calidad en su trabajo",
+        "subquestions": [
+            "Calidad en su trabajo *"
+        ],
+        "options": [
+            "5 | Siempre realiza acciones de mejora con resultados óptimos, y participa para que sean implementadas",
+            "4 | En ocasiones su trabajo es mejor a lo esperado",
+            "3 | Cumple sus actividades de acuerdo a lo esperado",
+            "2 | El trabajo realizado en ocasiones no cumple con lo establecido",
+            "1 | Siempre comete errores en la realización de su trabajo por lo que requiere supervisión"
+        ],
+        "answer": "",
+        "type": 2
+    },
+    "9": {
+        "question": " Respecto a Eficacia de la capacitación tomada",
+        "subquestions": [
+            "Eficacia de la capacitación tomada*"
+        ],
+        "options": [
+            "5 | La capacitación impartida superó las expectativas en el desempeño del trabajo",
+            "4 | La capacitación impartida mostró cambios importantes en la realización de las actividades",
+            "3 | La capacitación impartida cumplió su objetivo",
+            "2 | La capacitación tomada mostró un ligero cambio en el desempeño de su trabajo",
+            "1 | La capacitación impartida no se refleja en el desempeño de su trabajo"
+        ],
+        "answer": "",
+        "type": 2
+    },
+    "10": {
+        "question": " Respecto a Trabajo en Equipo",
+        "subquestions": [
+            "Trabajo en Equipo*"
+        ],
+        "options": [
+            "5 | Siempre fomenta el trabajo en equipo y de cooperación",
+            "4 | Trabaja en equipo y es aceptado por el grupo de trabajo",
+            "3 | Trabaja en equipo y es aceptado generalmente en el grupo",
+            "2 | Su mala relación limita el trabajo en equipo",
+            "1 | Tiene problemas interpersonales con el grupo o algún compañero"
+        ],
+        "answer": "",
+        "type": 2
+    },
+    "11": {
+        "question": " Respecto a Manejo de su Equipo de Trabajo",
+        "subquestions": [
+            "Manejo de su Equipo de Trabajo *"
+        ],
+        "options": [
+            "5 | El buen manejo de su equipo origina siempre en resultados exitosos",
+            "4 | Maneja y cuida su equipo de trabajo obteniendo con frecuencia buenos resultados",
+            "3 | Cuida y maneja adecuadamente las herramientas de trabajo",
+            "2 | Difícilmente tiene buen manejo de su equipo de trabajo",
+            "1 | No sabe manejar el equipo de trabajo"
+        ],
+        "answer": "",
+        "type": 2
+    },
+    "12": {
+        "question": " Respecto a Manejo de su Equipo de Trabajo",
+        "subquestions": [
+            "Manejo de su Equipo de Trabajo *"
+        ],
+        "options": [
+            "5 | El buen manejo de su equipo origina siempre en resultados exitosos",
+            "4 | Maneja y cuida su equipo de trabajo obteniendo con frecuencia buenos resultados",
+            "3 | Cuida y maneja adecuadamente las herramientas de trabajo",
+            "2 | Difícilmente tiene buen manejo de su equipo de trabajo",
+            "1 | No sabe manejar el equipo de trabajo"
+        ],
+        "answer": "",
+        "type": 2
+    },
+    "13": {
+        "question": " Respecto a Comunicación",
+        "subquestions": [
+            "Comunicación *"
+        ],
+        "options": [
+            "5 | Sus comentarios siempre son claramente expresados y entendidos sin importar la situación",
+            "4 | Expresa claramente sus ideas e instrucciones",
+            "3 | Frecuentemente comunica sus ideas e instrucciones de forma precisa",
+            "2 | Presenta dificultad para expresar sus ideas o instrucciones",
+            "1 | Nunca expresa ni escucha sus ideas o instrucciones con claridad"
+        ],
+        "answer": "",
+        "type": 2
+    }
+}

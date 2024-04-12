@@ -70,7 +70,7 @@ def tranform_data_vacations_db_display(data):
 
 
 class VacationsFrame(ScrolledFrame):
-    def __init__(self, master, *args, **kwargs):
+    def __init__(self, master, setting: dict = None, *args, **kwargs):
         super().__init__(master, autohide=True, *args, **kwargs)
         # self.pack(fill=ttk.BOTH, expand=True)
         self.seniority_dict = None
@@ -152,7 +152,8 @@ class VacationsFrame(ScrolledFrame):
                     message=f"Todos los empleados estan en la tabla de vacaciones."
                 )
                 return
-            complete_name_of_not_vac = [item[1].upper() + " " + item[2].upper() for item in data if item[0] in ids_not_vac]
+            complete_name_of_not_vac = [item[1].upper() + " " + item[2].upper() for item in data if
+                                        item[0] in ids_not_vac]
             answer = Messagebox.show_question(
                 title="Confirmacion",
                 message=f"Esta por actualizar la informacion de los empleados.\n"
@@ -414,8 +415,8 @@ class VacationsFrame(ScrolledFrame):
                             if int(item) == year - 1 and year > 0:
                                 self.clean_widgets_year()
                                 self.wentry_comentarios.insert(0.0, seniority_dict[item]["comentarios"]) if \
-                                seniority_dict[item][
-                                    "comentarios"] is not None else self.wentry_comentarios.insert(0.0, "")
+                                    seniority_dict[item][
+                                        "comentarios"] is not None else self.wentry_comentarios.insert(0.0, "")
                                 self.wentry_prima.set("Si") if seniority_dict[item]["prima"][
                                                                    "status"].lower() == "si" else self.wentry_prima.set(
                                     "No")

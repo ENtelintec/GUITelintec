@@ -23,7 +23,7 @@ def read_file(filepath) -> list[tuple]:
 
 
 class Notifications(ttk.Frame):
-    def __init__(self, master, data=None, filepath='files/notifications.txt'):
+    def __init__(self, master, data=None, filepath='files/notifications.txt', setting: dict = None):
         super().__init__(master)
         self.columnconfigure(0, weight=1)
         self.filepath = filepath

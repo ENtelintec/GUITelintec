@@ -18,7 +18,7 @@ from templates.Functions_Files import get_ExMed_cache_file, update_ExMed_cache_f
 from templates.Functions_SQL import insert_new_exam_med, get_id_employee, update_aptitud_renovacion, \
     get_aptitud_renovacion, update_aptitud, update_renovacion, get_renovacion, get_all_examenes, get_aptitud, \
     update_status_EM
-from templates.Funtions_Utils import create_label
+from templates.Funtions_Utils import create_label, set_dateEntry_new_value
 from static.extensions import cache_file_EM_path
 
 
@@ -66,16 +66,8 @@ def get_entry_from_data(data, id_emp):
     return None, None, None, None, None, None, None, None, None
 
 
-def set_dateEntry_new_value(master, entry, value, row, column, padx, pady, sticky):
-    entry.destroy()
-    entry = ttk.DateEntry(master,
-                          startdate=value)
-    entry.grid(row=row, column=column, padx=padx, pady=pady, sticky=sticky)
-    return entry
-
-
 class ExamenesMedicos(ScrolledFrame):
-    def __init__(self, master, *args, **kwargs):
+    def __init__(self, master, *args, setting: dict = None, **kwargs):
         super().__init__(master, autohide=True, *args, **kwargs)
         # self.pack(fill=ttk.BOTH, expand=True)
         self.columnconfigure((0, 1), weight=1)

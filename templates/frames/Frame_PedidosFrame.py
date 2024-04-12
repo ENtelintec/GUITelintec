@@ -45,7 +45,7 @@ class DisplayPedidos(ctk.CTkFrame):
 
 
 class PedidosFrame(ttk.Frame):
-    def __init__(self, parent, images, pedidos=None, **kwargs):
+    def __init__(self, parent, images, pedidos=None, setting: dict = None, **kwargs):
         super().__init__(parent, **kwargs)
         self.columnconfigure(1, weight=1)
         self.rowconfigure(0, weight=1)

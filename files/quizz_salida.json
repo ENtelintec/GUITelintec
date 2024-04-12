@@ -1,0 +1,152 @@
+{
+  "0": {
+    "question": "Q1. Cuales son sus motivos para dejar su empleo actual?\n*Por favor selecciones todas las casillas que procedan*",
+    "subquestions": [],
+    "options": [
+      "Un trabajo Mejor",
+      "Desmotivación",
+      "Vuelvo a estudiar",
+      "Necesito un cambio",
+      "Mejor sueldo",
+      "Relación con superiores",
+      "Conflicto de Intereses",
+      "Motivos Personales",
+      "Relaciones Laborales",
+      "Motivos Familiares",
+      "Cambio de Residencia",
+      "Mejores Prestaciones"
+    ],
+    "answer": 0,
+    "type": 1
+    },
+  "1": {
+    "question": "Q2. Cuanto tiempo lleva pensando en dejar su empleo actual?",
+    "subquestions": [],
+    "options": [
+      "Un mes o menos",
+      "De uno a cinco meses",
+      "Más de cinco meses"
+    ],
+    "answer": 0,
+    "type": 2
+    },
+  "2": {
+    "question": "Q3. Cuál es su grado de satisfacción con los siguientes aspectos de la compañía y sobre su puesto \nde trabajo en ella?",
+    "subquestions": [
+      "Salario",
+      "Formación",
+      "Ambiente de trabajo",
+      "Carga de trabajo",
+      "Posibilidad de ascenso",
+      "Relación con los compañeros",
+      "Reconocimiento",
+      "Trabajo en equipo",
+      "Relación con los superiores"
+    ],
+    "options":[
+      "Totalmente satisfecho",
+      "Satisfecho",
+      "Insatisfecho",
+      "Totalmente insatisfecho",
+      "No aplicable"
+    ],
+    "answer": "",
+    "type": 3
+    },
+  "3": {
+    "question": "Q4. Favor de compartirnos su opinión al respecto de los siguientes temas:",
+    "subquestions": [
+      "Le gusto el puesto que desempeño en la empresa",
+      "Se cumplió con lo que usted esperaba de la empresa",
+      "Se sintió satisfecho con los logros y el desarrollo que alcanzó en la empresa",
+      "¿La empresa le proporcionó oportunamente todo lo necesario para trabajar?\n(herramientas, equipo, materiales,equipo de seguridad, etc.)"
+    ],
+    "options": [
+      "Nunca",
+      "Casi nunca",
+      "La mitad de las veces",
+      "Casi siempre",
+      "Siempre"
+    ],
+    "answer": "",
+    "type": 3
+    },
+  "4": {
+    "question": "Q5. Como califica el trato que le brindaron las personas de los siguientes puestos/áreas:",
+    "subquestions": [
+      "Dirección/Gerente",
+      "Jefe o Supervisor de Departamento",
+      "Personal de Administración",
+      "Compañeros de trabajo",
+      "Recursos Humanos"
+    ],
+    "options": [
+      "Pésimo",
+      "Malo",
+      "Regular",
+      "Bueno",
+      "Excelente"
+    ],
+    "answer": "",
+    "type": 3
+    },
+  "5": {
+    "question": "Q6. Cómo aprendió a realizar su trabajo en nuestra empresa?",
+    "subquestions": [],
+    "options": [
+      "No aprendí nada",
+      "Aprendí yo solo",
+      "Mis compañeros me enseñaron",
+      "Aprendí en el curso de entrenamiento",
+      "Mi Jefe me enseño"
+    ],
+    "answer": 1,
+    "type": 2
+    },
+  "6": {
+    "question": "Q7. Cómo califica el apoyo que recibió de su jefe inmediato?",
+    "subquestions": [],
+    "options": [
+      "Nunca se preocupó por mi persona",
+      "Me daba órdenes a través de otra persona",
+      "Solo se concretó a darme órdenes y a llamarme la atención",
+      "Me orientaba y me ayudaba en mi trabajo",
+      "Siempre se preocupó por mi superación personal"
+    ],
+    "answer": 0,
+    "type": 2
+    },
+  "7": {
+    "question": "Q8. Cómo evalúa las áreas de servicio al personal? \n(comedor, baños, lockers, etc.)",
+    "subquestions": [],
+    "options": [
+      "Pésimas",
+      "Malas",
+      "Regulares",
+      "Buenas",
+      "Excelentes"
+    ],
+    "answer": 0,
+    "type": 2
+    },
+  "8": {
+    "question": "Q9. ¿Considera que mientras laboró con nosotros, nuestra empresa le respetó sus derechos? \n(horarios, vacaciones, descansos, pagos, etc.)",
+    "subquestions": [],
+    "options": [
+      "Nunca",
+      "Casi Nunca",
+      "Regulares",
+      "Buenas",
+      "Excelentes"
+    ],
+    "answer": 0,
+    "type": 2
+    },
+  "9": {
+    "question": "Q10. ¿Tiene alguna observación o sugerencia que considere que la empresa deba de atender?",
+    "subquestions": [],
+    "options": [],
+    "answer": "esto es una texto de pruebaesto es una texto de pruebaesto es una texto de pruebaesto es una texto de pruebaesto es una texto de pruebaesto es una texto de pruebaesto es una texto de pruebaesto es una texto de pruebaesto es una texto de pruebaesto es una texto de pruebaesto es una texto de pruebaesto es una texto de pruebaesto es una texto de prueba",
+    "type": 4
+    }
+}

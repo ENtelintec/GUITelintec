@@ -2,12 +2,14 @@
 __author__ = 'Edisson Naula'
 __date__ = '$ 18/ene./2024  at 15:48 $'
 
+import numpy as np
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg, NavigationToolbar2Tk)
 import tkinter as tk
 import matplotlib
 
 matplotlib.use('TkAgg')
+width_bar = 0.1
 
 
 class FramePlot(tk.Frame):
@@ -23,7 +25,16 @@ class FramePlot(tk.Frame):
                     figure_canvas = FigureCanvasTkAgg(figure, self)
                     NavigationToolbar2Tk(figure_canvas, self)
                     axes = figure.add_subplot()
-                    axes.bar(labels_x, values)
+                    if isinstance(list(values)[0], list):
+                        values = np.array(list(values))
+                        values = values.T
+                        indexes = np.arange(len(labels_x))
+                        for index_k, values_k in enumerate(values):
+                            axes.bar(indexes + index_k * width_bar, values_k, width=width_bar)
+                        axes.set_xticks(indexes)
+                        axes.set_xticklabels(labels_x)
+                    else:
+                        axes.bar(labels_x, values)
                     axes.set_title(data["title"])
                     axes.set_ylabel(data["ylabel"])
                     figure_canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1, padx=10, pady=10)
@@ -69,26 +80,17 @@ class FramePlot(tk.Frame):
                     figure_canvas = FigureCanvasTkAgg(figure, self)
                     NavigationToolbar2Tk(figure_canvas, self)
                     axes = figure.add_subplot()
-                    axes.plot(x_values, y_values)
-                    axes.set_title('Plot')
+                    if isinstance(y_values[0], list):
+                        values = np.array(y_values)
+                        values = values.T
+                        indexes = np.arange(len(x_values))
+                        for index_k, values_k in enumerate(values):
+                            axes.plot(indexes, values_k)
+                        axes.set_xticks(indexes)
+                        axes.set_xticklabels(x_values)
+                    else:
+                        axes.plot(x_values, y_values)
+                    axes.set_title(data["title"])
                     axes.set_xlabel('X Values')
                     axes.set_ylabel('Y Values')
                     figure_canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1, padx=10, pady=10)
-
-
-if __name__ == '__main__':
-    window = tk.Tk()
-    window.title('Matplotlib Demo')
-    window.columnconfigure(0, weight=1)
-    label = tk.Label(window, text='Matplotlib Demo')
-    label.grid(row=0, column=0)
-    data_plot = {"data": {'Python': 11.27, 'C': 11.16, 'Java': 10.46, 'C++': 7.5, 'C#': 5.26},
-                 "title": "Language Popularity",
-                 "ylabel": "Popularity"
-                 }
-    app = FramePlot(window, data_plot, type_chart='bar', width=300)
-    app.grid(row=1, column=0)
-    label2 = tk.Label(window, text='Matplotlib Demo label 2')
-    label2.grid(row=2, column=0)
-    app.mainloop()
-    print("Hecho por Edisson Naula, 2023-1-18, version 1.0")

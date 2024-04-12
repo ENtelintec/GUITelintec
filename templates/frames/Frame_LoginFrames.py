@@ -115,7 +115,7 @@ class LoginGUI(ttk.Frame):
 
 
 class LogOptionsFrame(ttk.Frame):
-    def __init__(self, master=None, *args, **kwargs):
+    def __init__(self, master=None, setting: dict = None, *args, **kwargs):
         super().__init__(master, *args, **kwargs)
         self.columnconfigure(1, weight=1)
         self.master = master
@@ -131,7 +131,7 @@ class LogOptionsFrame(ttk.Frame):
             if self.master.username_data['exp'] is not None:
                 txt += f"\nToken expira en: {self.master.username_data['exp']}"
                 txt += f"\nCreado en: {self.master.username_data['timestamp']}"
-            txt += f"\nEmpleado: {self.master.username_data['name']} {self.master.username_data['lastname']}"
+            txt += f"\nEmpleado: {self.master.username_data['name'].upper()} {self.master.username_data['lastname'].upper()}"
             txt += f"\nDepartamento: {self.master.username_data['department_id']}. {self.master.username_data['department_name']}"
         else:
             txt = "No se pudo obtener los datos del usuario"

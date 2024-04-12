@@ -6,10 +6,11 @@ from flask_restx import Namespace, Resource
 
 from static.api_models import employees_info_model, employees_resume_model, resume_model, examenes_medicos_model, \
     employes_examenes_model
+from static.extensions import cache_file_resume_fichaje
 from templates.Functions_Files import get_fichajes_resume_cache
 from templates.Functions_SQL import get_all_data_employees, get_all_examenes
 
-ns = Namespace('GUI/api/rrhh')
+ns = Namespace('GUI/api/v1/rrhh')
 
 
 @ns.route('/employees/info/<string:status>')
@@ -18,8 +19,8 @@ class EmployeesInfo(Resource):
     @ns.marshal_with(employees_info_model)
     def get(self, status):
         flag, error, result = get_all_data_employees(status)
-        columns = ("ID", "Nombre", "Apellido", "Telefono",
-                   "Dep_Id", "Modalidad", "Email", "Contrato", "Admision",
+        columns = ("ID", "Nombre", "Apellido", "Teléfono",
+                   "Dep_Id", "Modalidad", "Email", "Contrato", "Admisión",
                    "RFC", "CURP", "NSS", "C. Emergencia", " Departamento",
                    "Exam_id")
         if flag:
@@ -32,7 +33,7 @@ class EmployeesInfo(Resource):
 class EmployeesResume(Resource):
     @ns.marshal_with(employees_resume_model)
     def get(self):
-        fichajes_resume, flag = get_fichajes_resume_cache("files/fichajes_resume_cache.pkl")
+        fichajes_resume, flag = get_fichajes_resume_cache(cache_file_resume_fichaje)
         print(fichajes_resume)
         if flag:
             out_aux = []
@@ -67,7 +68,7 @@ class EmployeesResume(Resource):
 class EmployeesResume(Resource):
     @ns.marshal_with(resume_model)
     def get(self, id_emp):
-        fichajes_resume, flag = get_fichajes_resume_cache("files/fichajes_resume_cache.pkl")
+        fichajes_resume, flag = get_fichajes_resume_cache(cache_file_resume_fichaje)
         if flag:
             out = {}
             code = 404

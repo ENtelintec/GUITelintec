@@ -2,29 +2,50 @@
 __author__ = 'Edisson Naula'
 __date__ = '$ 26/dic./2023  at 14:35 $'
 
-import pickle
+import json
+import time
 
 import openai
-
-from static.extensions import secrets
 from openai import OpenAI
 
-import time
+from static.extensions import secrets, department_tools_openAI
+from templates.Function_tools_openAI import getProductCategories, getProductsAlmacen, getHighStockProducts, \
+    getLowStockProducts, getCostumer, getSupplier, getOrder, getProductMovement, getSupplyInventory, getNoStockProducts, \
+    getTotalFichajeEmployee, getActiveEmployees, getEmployeeInfo, getToolsForDepartment
 
 client = OpenAI(api_key=secrets.get("OPENAI_API_KEY_1"))
 openai.api_key = secrets["OPENAI_API_KEY_1"]
 
+available_functions = {
+        "getProductCategories": getProductCategories,
+        "getProductsAlmacen": getProductsAlmacen,
+        "getHighStockProducts":  getHighStockProducts,
+        "getLowStockProducts": getLowStockProducts,
+        "getCostumer": getCostumer,
+        "getSupplier": getSupplier,
+        "getOrder": getOrder,
+        "getProductMovement": getProductMovement,
+        "getSupplyInventory": getSupplyInventory,
+        "getNoStockProducts": getNoStockProducts,
+        "getTotalFichajeEmployee": getTotalFichajeEmployee,
+        "getActiveEmployees": getActiveEmployees,
+        "getEmployeeInfo": getEmployeeInfo,
+        "getToolsForDepartment": getToolsForDepartment
+    }
 
-def create_assistant_openai(model="gpt-4-1106-preview", files=None, instructions=None):
+
+def create_assistant_openai(model="gpt-4-1106-preview", files=None, instructions=None, tools=None):
+    if tools is None:
+        tools = [{"type": "code_interpreter"}, {"type": "retrieval"}]
     e = None
-    file_IDS = files if files is not None else []
+    file_ids = files if files is not None else []
     try:
         assistant = client.beta.assistants.create(
             name="Assistant",
             instructions=instructions,
             model=model,
-            tools=[{"type": "code_interpreter"}, {"type": "retrieval"}],
-            file_ids=file_IDS
+            tools=tools,
+            file_ids=file_ids
         )
     except Exception as e:
         print(e)
@@ -68,6 +89,37 @@ def run_thread_openai(thread_id, assistant_id):
     return run, e
 
 
+def get_tool_outputs(required_actions):
+    outputs = []
+
+    for tool in required_actions:
+        print(tool)
+        arguments = json.loads(tool.function.arguments)
+        function_to_call = available_functions[tool.function.name]
+        output = function_to_call(**arguments)
+        outputs.append(
+            {
+                "tool_call_id": tool.id,
+                "output": str(output),
+            }
+        )
+    return outputs
+
+
+def complete_required_actions(required_actions, thread_id, run_id):
+    e = None
+    try:
+        complete_actions = client.beta.threads.runs.submit_tool_outputs(
+            thread_id=thread_id,
+            run_id=run_id,
+            tool_outputs=get_tool_outputs(required_actions)
+        )
+    except Exception as e:
+        print("catch error complete required tool: ", e)
+        complete_actions = None
+    return complete_actions, e
+
+
 def retrieve_runs_openai(thread_id, run_id):
     e = None
     try:
@@ -76,11 +128,18 @@ def retrieve_runs_openai(thread_id, run_id):
                 thread_id=thread_id,
                 run_id=run_id
             )
+            if runs.status == "requires_action":
+                completed_actions, error = complete_required_actions(runs.required_action.submit_tool_outputs.tool_calls, thread_id, run_id)
+                if error is not None:
+                    print("Error at completing required tool: ", error)
+                    runs = None
+                    e = error
+                    break
             if runs.status == "completed":
                 break
             time.sleep(0.5)
     except Exception as e:
-        print(e)
+        print("Error at retrieving runs ", e)
         runs = None
     return runs, e
 
@@ -133,6 +192,8 @@ def get_response_assistant(message: str, filename: str, files: list = None, inst
     :param message:message
     :return: answer (string)
     """
+    # json.loads(open('context.json', encoding='utf-8').read())["context"]]
+    tools = json.loads(open(department_tools_openAI[department.lower()], encoding='utf-8').read())
     e = None
     answer = ""
     files_assistat_ids = []
@@ -141,9 +202,8 @@ def get_response_assistant(message: str, filename: str, files: list = None, inst
             if item["name"] == filename:
                 files_assistat_ids.append(item["file_id"])
                 break
-
     try:
-        assistant, error = create_assistant_openai(files=files_assistat_ids, instructions=instructions)
+        assistant, error = create_assistant_openai(files=files_assistat_ids, instructions=instructions, tools=tools)
     except Exception as e:
         print("Error at creating assistant on openAI: ", e)
         return files, "Error at creating assistant on openAI"
@@ -153,12 +213,11 @@ def get_response_assistant(message: str, filename: str, files: list = None, inst
         run, error = run_thread_openai(thread.id, assistant.id)
         run, error = retrieve_runs_openai(thread.id, run.id)
         msgs, error = retrieve_messages_openai(thread.id)
-        print(msgs)
         for msg in reversed(msgs.data):
             answer += msg.content[0].text.value + "\n" if msg.role == "assistant" else ""
     except Exception as e:
-        print("Error at getting response on openAI: ", e)
-        return files, "Error at creating getting response on openAI"
+        print("Catching Error at getting response on openAI: ", e)
+        return files, f"Catching Error at getting response on openAI: {e}"
     return files, answer
 
 

@@ -47,6 +47,59 @@ def parse_data(data: dict, mode: int):
                     "password": data['password'],
                     "permissions": data['permissions']
                 }
+            case 5:
+                out = {
+                    "limit": data['limit'],
+                    "page": data['page']
+                }
+            case 6 | 8:
+                id_sm = data['info']['id'] if mode == 8 else None
+                info = {
+                        'id': id_sm,
+                        "sm_code": data['info']['sm_code'],
+                        "folio": data['info']['folio'],
+                        "contract": data['info']['contract'],
+                        "facility": data['info']['facility'],
+                        "location": data['info']['location'],
+                        "client_id": data['info']['client_id'],
+                        "emp_id": data['info']['emp_id'],
+                        "date": data['info']['date'],
+                        "limit_date": data['info']['limit_date'],
+                        "status": data['info']['status']
+                    }
+                items = []
+                for item in data['items']:
+                    items.append({
+                        'id': item['id'],
+                        "quantity": item['quantity'],
+                        "comment":  item['comment']
+                    })
+                out = {
+                    "info": info,
+                    "items": items,
+                    "id_sm": id_sm
+                }
+            case 7:
+                out = {
+                    "id": data['id'],
+                    "sm_code": data['sm_code'],
+                }
+            case 9:
+                out = {
+                    'date': data['date'],
+                }
+            case 10 | 11:
+                value = data['value'] if mode == 10 else None
+                comment = data['comment'] if mode == 10 else None
+                out = {
+                        'id': data['id'],
+                        "date": data['date'],
+                        "event": data['event'],
+                        "value": value,
+                        "comment": comment,
+                        "contract": data['contract'],
+                        "id_emp": data['id_emp']
+                    }
             case _:
                 print("Invalid mode")
                 code = 204

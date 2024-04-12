@@ -2,15 +2,12 @@
 __author__ = 'Edisson Naula'
 __date__ = '$ 25/dic./2023  at 13:30 $'
 
+import os
 import pickle
+import tkinter as tk
+from tkinter import END, filedialog, messagebox
 
 import ttkbootstrap as ttk
-from tkinter import END, filedialog, messagebox
-from ttkbootstrap.scrolled import ScrolledText
-
-import tkinter as tk
-
-import os
 
 from templates.Functions_openAI import get_response_chat_completion, get_response_assistant, get_files_list_openai, \
     upload_file_openai, delete_file_openai
@@ -46,8 +43,9 @@ class AssistantGUI(ttk.Frame):
         lable1 = ttk.Label(self, text="Asistente Virtual", font=FONT_Title)
         lable1.grid(row=0, column=0, columnspan=2, sticky="n", padx=10, pady=10)
         #  -------------------create type selector checkbutton-----------------
-        self.var_type_AV = tk.BooleanVar(value=False)
+        self.var_type_AV = tk.BooleanVar(value=True)
         self.var_type_text = tk.StringVar(value="Permitir Archivos")
+        # noinspection PyArgumentList
         self.type_AV = ttk.Checkbutton(self,
                                        textvariable=self.var_type_text,
                                        variable=self.var_type_AV,
@@ -89,26 +87,26 @@ class AssistantGUI(ttk.Frame):
     def get_files_openai(self):
         try:
             with open(f'files/files_{self.department}_openAI_cache.pkl', 'rb') as f:
-                files_openAI = pickle.load(f)
-            files_openAI_online, error = get_files_list_openai()
-            if len(files_openAI) > 0:
-                for file in files_openAI:
+                files_open_ai = pickle.load(f)
+            files_open_ai_online, error = get_files_list_openai()
+            if len(files_open_ai) > 0:
+                for file in files_open_ai:
                     if file["department"] != self.department:
-                        files_openAI.remove(file)
+                        files_open_ai.remove(file)
         except Exception as e:
-            files_openAI = []
-            files_openAI_online = []
+            files_open_ai = []
+            files_open_ai_online = []
             print(e)
-        for i, file in enumerate(files_openAI):
-            for file_online in files_openAI_online:
+        for i, file in enumerate(files_open_ai):
+            for file_online in files_open_ai_online:
                 if file["name"] == file_online.filename:
                     if file_online.status == "processed":
-                        files_openAI[i]["status"] = "uploaded"
+                        files_open_ai[i]["status"] = "uploaded"
                     else:
-                        files_openAI[i]["status"] = "pending"
+                        files_open_ai[i]["status"] = "pending"
                     print(file["name"])
                     break
-        return files_openAI
+        return files_open_ai
 
     def send_txt(self):
         self.txt.configure(state="normal")
@@ -132,24 +130,25 @@ class AssistantGUI(ttk.Frame):
 
     def change_context(self, new_context):
         """
-        This method change the context of the virtual assistant.
+        This method changes the context of the virtual assistant.
 
         :param new_context:
         """
         self.context = new_context
 
     def get_response(self, msg):
-        # return "dummy answer, dummy answer"
+        # return "test double answer, test double answer"
         if self.var_type_AV.get():
             # files supported
             instructions = (
-                f"Act as an Virtual Assistant, you work aiding in a telecomunications enterprise called Telintec. \n "
+                f"Act as an Virtual Assistant, you work aiding in a telecomunications enterprise called Telintec.\n "
                 f"You help in the {self.department} and you answer are concise and precise.\n"
+                f"Ask for clarification if a user request is ambiguous\n."
                 f"You answer in {self.language}.")
             self.files_AV, res = get_response_assistant(msg, self.files_cb.get(), self.files_AV, instructions, self.department)
             print("Responge assistant gpt: ", res)
         else:
-            # files not supported
+            # files are not supported
             self.context.append({"role": "user", "content": msg})
             res = get_response_chat_completion(self.context)
             print("Responge gpt: ", res)
@@ -195,7 +194,7 @@ class AssistantGUI(ttk.Frame):
         index = 0
         for i, item in enumerate(self.files_AV):
             if item["name"] == os.path.basename(filepath):
-                # ask if re-upload same file
+                # ask if re-upload the same file
                 duplicated = True
                 index = i
                 res = messagebox.askyesno("File already uploaded",
