@@ -172,3 +172,20 @@ fichaje_delete_request_model = api.model('Fichaje Delete Request', {
     'id_emp':  fields.Integer(required=True, description='The id of the editor employee ', example=1),
     'contract':  fields.String(required=True, description='The contract of the empployee', example="INFRA")
 })
+
+new_cliente_model = api.model('New Cliente', {
+    'name': fields.String(required=True, description='The name'),
+    'address': fields.String(required=True, description='The address'),
+    'phone': fields.String(required=True, description='The phone'),
+    'email': fields.String(required=True, description='The email'),
+    'rfc': fields.String(required=True, description='The rfc')
+})
+
+new_product_model = api.model('New Product', {
+    'name': fields.String(required=True, description='The name'),
+    'udm': fields.String(required=True, description='The udm'),
+    'price': fields.Float(required=True, description='The price'),
+    'stock': fields.Integer(required=True, description='The stock'),
+    'sku': fields.String(required=True, description='The sku'),
+    'category':  fields.Integer(required=True, description='The category')
+})
