@@ -58,7 +58,7 @@ class AssistantGUI(ttk.Frame):
         #   -------------------create message----------------
         self.txt = ttk.Text(self, width=15, state=tk.DISABLED)
         self.txt.grid(row=2, column=0, columnspan=2, sticky="nsew", padx=5, pady=5)
-        self.txt.tag_config("user", foreground="blue")
+        self.txt.tag_config("user", foreground="green")
         self.txt.delete(1.0, tk.END)
         #    -------------------create input----------------
         self.entry_msg = ttk.Entry(self, font=FONT_CHAT)

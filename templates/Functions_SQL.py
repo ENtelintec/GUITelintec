@@ -1079,8 +1079,7 @@ def get_employee_info(id_e: int):
 
 def get_sm_employees():
     sql = ("SELECT employee_id, name, l_name "
-           "FROM employees WHERE status = 'activo' "
-           "AND (department_id=2 OR department_id=3)")
+           "FROM employees WHERE status = 'activo' ")
     flag, error, result = execute_sql(sql, None, 5)
     return flag, error, result
 
@@ -1158,5 +1157,20 @@ def update_sm_db(data):
            data['info']['order_quotation'], json.dumps(data['info']['history']),
            data['info']['comment'],
            data['id_sm'])
+    flag, error, result = execute_sql(sql, val, 4)
+    return flag, error, result
+
+
+def cancel_sm_db(id_m: int, history: dict):
+    sql = "SELECT sm_id FROM materials_request "
+    flag, error, result = execute_sql(sql, None, 5)
+    if not flag:
+        return False, error, None
+    ids_sm = [i[0] for i in result]
+    if id_m not in ids_sm:
+        return True, "Material request not found", None
+    sql = ("UPDATE materials_request SET status = -1, history = %s  "
+           "WHERE sm_id = %s ")
+    val = (json.dumps(history), id_m)
     flag, error, result = execute_sql(sql, val, 4)
     return flag, error, result

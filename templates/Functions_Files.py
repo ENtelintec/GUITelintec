@@ -916,7 +916,7 @@ def update_fichajes_resume_cache(filepath: str, data, just_file=False, id_emp_up
         ids_old = [item[0] for item in fichajes_resume]
         ids_new = [item[0] for item in data]
         if id_emp_up not in ids_old:
-            for index_1, item_1 in data:
+            for index_1, item_1 in enumerate(data):
                 (id_emp, name, contract, faltas, lates, total_lates, extras, total_extra, primas,
                  faltas_dic, lates_dic, extras_dic, primas_dic, normal_dic) = item_1
                 if id_emp == id_emp_up:

@@ -9,7 +9,7 @@ from PIL import Image, ImageTk
 
 from static.extensions import cache_file_resume_fichaje
 from templates.Functions_Files import get_fichajes_resume_cache, update_fichajes_resume_cache
-from templates.Functions_SQL import get_fichaje_DB, get_sm_entries, get_sm_products
+from templates.Functions_SQL import get_fichaje_DB, get_sm_entries, get_sm_products, get_name_employee
 
 carpeta_principal = "img"
 
@@ -118,6 +118,7 @@ def update_bitacora(emp_id: int, event, data):
     :return: None.
     """
     event_dic = {}
+    new_registry = False
     contract_sel = data[3]
     flag, error, result = get_fichaje_DB(emp_id)
     if flag and len(result) > 0:
@@ -134,6 +135,7 @@ def update_bitacora(emp_id: int, event, data):
                 event_dic = json.loads(result[7])
     else:
         print("error at getting data from db or not data found for the employee")
+        new_registry=True
     date = datetime.strptime(data[0], "%Y-%m-%d")
     if str(date.year) not in event_dic.keys():
         event_dic[str(date.year)] = {}
@@ -156,42 +158,48 @@ def update_bitacora(emp_id: int, event, data):
             "comment": data[2],
             "timestamp": date.strftime("%Y-%m-%d %H:%M:%S")
         }
+
     fichajes_resume, flag = get_fichajes_resume_cache(cache_file_resume_fichaje)
-    if flag:
-        for i, row in enumerate(fichajes_resume):
-            (id_emp, name, contract, new_faltas, new_tardanzas, new_tardanzas_values,
-             new_extras, new_extras_value, new_primas, absences,
-             lates, extras, primes, normal) = row
-            if id_emp == emp_id:
-                match event:
-                    case "falta":
-                        new_row = [id_emp, name, contract_sel, new_faltas, new_tardanzas, new_tardanzas_values,
-                                   new_extras, new_extras_value, new_primas, event_dic,
-                                   lates, extras, primes, normal]
-                        fichajes_resume[i] = new_row
-                    case "atraso":
-                        new_row = [id_emp, name, contract_sel, new_faltas, new_tardanzas, new_tardanzas_values,
-                                   new_extras, new_extras_value, new_primas, absences,
-                                   event_dic, extras, primes, normal]
-                        fichajes_resume[i] = new_row
-                    case "extra":
-                        new_row = [id_emp, name, contract_sel, new_faltas, new_tardanzas, new_tardanzas_values,
-                                   new_extras, new_extras_value, new_primas, absences,
-                                   lates, event_dic, primes, normal]
-                        fichajes_resume[i] = new_row
-                    case "prima":
-                        new_row = [id_emp, name, contract_sel, new_faltas, new_tardanzas, new_tardanzas_values,
-                                   new_extras, new_extras_value, new_primas, absences,
-                                   lates, extras, event_dic, normal]
-                        fichajes_resume[i] = new_row
-                    case "normal":
-                        new_row = [id_emp, name, contract_sel, new_faltas, new_tardanzas, new_tardanzas_values,
-                                   new_extras, new_extras_value, new_primas, absences,
-                                   lates, extras, primes, event_dic]
-                        fichajes_resume[i] = new_row
-                update_fichajes_resume_cache(cache_file_resume_fichaje, fichajes_resume, id_emp_up=id_emp)
-                print("updated cache")
-                break
+    if not flag:
+        return False, "error at getting data resume", result
+    if new_registry:
+        name = get_name_employee(emp_id)
+        fichajes_resume.append([emp_id, name.title(), contract_sel, 0, 0, 0, 0, 0, 0, {}, {}, {}, {}, {}])
+    for i, row in enumerate(fichajes_resume):
+        (id_emp, name, contract, new_faltas, new_tardanzas, new_tardanzas_values,
+         new_extras, new_extras_value, new_primas, absences,
+         lates, extras, primes, normal) = row
+        if id_emp == emp_id:
+            match event:
+                case "falta":
+                    new_row = [id_emp, name, contract_sel, new_faltas, new_tardanzas, new_tardanzas_values,
+                               new_extras, new_extras_value, new_primas, event_dic,
+                               lates, extras, primes, normal]
+                    fichajes_resume[i] = new_row
+                case "atraso":
+                    new_row = [id_emp, name, contract_sel, new_faltas, new_tardanzas, new_tardanzas_values,
+                               new_extras, new_extras_value, new_primas, absences,
+                               event_dic, extras, primes, normal]
+                    fichajes_resume[i] = new_row
+                case "extra":
+                    new_row = [id_emp, name, contract_sel, new_faltas, new_tardanzas, new_tardanzas_values,
+                               new_extras, new_extras_value, new_primas, absences,
+                               lates, event_dic, primes, normal]
+                    fichajes_resume[i] = new_row
+                case "prima":
+                    new_row = [id_emp, name, contract_sel, new_faltas, new_tardanzas, new_tardanzas_values,
+                               new_extras, new_extras_value, new_primas, absences,
+                               lates, extras, event_dic, normal]
+                    fichajes_resume[i] = new_row
+                case "normal":
+                    new_row = [id_emp, name, contract_sel, new_faltas, new_tardanzas, new_tardanzas_values,
+                               new_extras, new_extras_value, new_primas, absences,
+                               lates, extras, primes, event_dic]
+                    fichajes_resume[i] = new_row
+            print(fichajes_resume)
+            update_fichajes_resume_cache(cache_file_resume_fichaje, fichajes_resume, id_emp_up=id_emp)
+            print("updated cache")
+            break
     return flag, error, result
 
 
@@ -503,6 +511,7 @@ def read_setting_file(file_path: str) -> dict:
 def get_all_sm_entries(filter_status=False, is_supper=False, emp_id=None):
     flag, error, result = get_sm_entries()
     if flag:
+        status_dic = {0: "Pendiente", 1: "En Proceso", 2: "Terminado", -1: "Cancelado"}
         columns = (
         "ID", "Codigo", "Folio", "Contrato", "Planta", "Ubicación", "Cliente", "Empleado", "Orden/Cotización", "Fecha",
         "Fecha Limite", "Items", "Estado", "Historial", "Comentario")
@@ -513,7 +522,7 @@ def get_all_sm_entries(filter_status=False, is_supper=False, emp_id=None):
         for index, row in enumerate(result):
             id_sm, code, folio, contract, plant, location, client, employee, order, date, date_limit, items, status, history, comment = row
             new_row = (id_sm, code, folio, contract, plant, location, client, employee, order, date, date_limit, items,
-                       "Pendiente", history, comment)
+                       status_dic[status], history, comment)
             result[index] = new_row
         return result, columns
     else:
