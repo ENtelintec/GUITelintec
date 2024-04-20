@@ -467,7 +467,6 @@ class ExamenesMedicos(ScrolledFrame):
                 aptitudes = json.loads(row[4])
                 fechas = json.loads(row[5])
                 break
-        print(id_exam, id_emp, name, blood, status, aptitudes[-1], fechas[-1])
         # modify inputs
         self.entry_name.delete(0, ttk.END)
         self.entry_name.insert(0, name)

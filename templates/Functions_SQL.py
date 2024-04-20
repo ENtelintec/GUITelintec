@@ -1220,3 +1220,17 @@ def cancel_sm_db(id_m: int, history: dict):
     val = (json.dumps(history), id_m)
     flag, error, result = execute_sql(sql, val, 4)
     return flag, error, result
+
+
+def update_history_sm(sm_id, history: dict, is_complete=False):
+    if is_complete:
+        sql = ("UPDATE materials_request SET history = %s, status = 1 "
+               "WHERE sm_id = %s ")
+        val = (json.dumps(history), sm_id)
+        flag, error, result = execute_sql(sql, val, 4)
+    else:
+        sql = ("UPDATE materials_request SET history = %s, status = 2  "
+               "WHERE sm_id = %s ")
+        val = (json.dumps(history), sm_id)
+        flag, error, result = execute_sql(sql, val, 4)
+    return flag, error, result

@@ -5,7 +5,7 @@ python-dotenv
 CTkTable~=0.8
 flask-restx
 pyjwt~=2.8.0
-numpy==1.26.2
+numpy
 requests
 flask-cors
 ttkbootstrap

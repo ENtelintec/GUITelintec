@@ -28,14 +28,14 @@ class Movement:
                 self.connection.close()
                 self.cursor = None
 
-    def create_in_movement(self, id_product, movement_type, quantity, movement_date):
+    def create_in_movement(self, id_product, movement_type, quantity, movement_date, sm_id):
         try:
             self.connection = db()
             self.cursor = self.connection.cursor()
             search_sql = "SELECT * FROM product_movements_amc WHERE id_product = %s"
             insert_sql = (
-                "INSERT INTO product_movements_amc (id_product, movement_type, quantity, movement_date) "
-                "VALUES (%s, %s, %s, %s)"
+                "INSERT INTO product_movements_amc (id_product, movement_type, quantity, movement_date, sm_id) "
+                "VALUES (%s, %s, %s, %s, %s)"
             )
             update_sql = (
                 "UPDATE products_amc SET stock = stock + %s WHERE id_product = %s"
@@ -45,9 +45,8 @@ class Movement:
 
             if result:
                 return "Product already exists"
-
             self.cursor.execute(
-                insert_sql, (id_product, movement_type, quantity, movement_date)
+                insert_sql, (id_product, movement_type, quantity, movement_date, sm_id)
             )
             self.cursor.execute(update_sql, (quantity, id_product))
             self.connection.commit()
@@ -124,7 +123,11 @@ class Movement:
             self.cursor = self.connection.cursor()
             self.cursor.execute(
                 """
-                    SELECT product_movements_amc.*, products_amc.name as product_name
+                    SELECT product_movements_amc.id_movement, product_movements_amc.id_product, 
+                    product_movements_amc.movement_type, product_movements_amc.quantity, 
+                    product_movements_amc.movement_date, 
+                    # product_movements_amc.sm_id, 
+                    products_amc.name as product_name
                     FROM product_movements_amc
                     JOIN products_amc ON product_movements_amc.id_product = products_amc.id_product
                     WHERE product_movements_amc.movement_type = 'salida';
@@ -140,11 +143,12 @@ class Movement:
                 self.connection.close()
                 self.cursor = None
 
-    def create_out_movement(self, id_product, movement_type, quantity, movement_date):
+    def create_out_movement(self, id_product, movement_type, quantity, movement_date, sm_id):
         try:
             self.connection = db()
             self.cursor = self.connection.cursor()
-            sql = f"INSERT INTO product_movements_amc (id_product, movement_type, quantity, movement_date) VALUES ('{id_product}', '{movement_type}', '{quantity}', '{movement_date}')"
+            sql = (f"INSERT INTO product_movements_amc (id_product, movement_type, quantity, movement_date, sm_id) "
+                   f"VALUES ('{id_product}', '{movement_type}', '{quantity}', '{movement_date}', '{sm_id}')")
             self.cursor.execute(sql)
             self.connection.commit()
             return True
