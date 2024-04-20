@@ -3,9 +3,6 @@
     "type": "code_interpreter"
   },
   {
-    "type": "retrieval"
-  },
-  {
     "type": "function",
     "function": {
       "name": "getToolsForDepartment",

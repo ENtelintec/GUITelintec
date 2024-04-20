@@ -114,13 +114,14 @@ class QuizMaker(ttk.Frame):
             f"Calificación de dominio: {dict_results['c_dom']}\n"
             f"Calificacion de categoria: {dict_results['c_cat']}\n",
         )
+        return dict_results
 
     def next_btn(self):
         self.save_result()
         self.q_no += 1
         if self.q_no == self.data_size:
-            self.display_result()
-            self.update_dict_quizz(self.dict_quizz, tipo_op=self.tipo_quizz)
+            dict_results = self.display_result()
+            self.update_dict_quizz(self.dict_quizz, tipo_op=self.tipo_quizz, dict_results=dict_results)
             self.destroy()
         else:
             self.check_especial_case()
@@ -252,8 +253,9 @@ class QuizMaker(ttk.Frame):
                 self.opt_selected.append(self.entries[0].get("1.0", "end-1c"))
         self.dict_quizz[str(self.q_no)]["answer"] = self.opt_selected[-1]
 
-    def update_dict_quizz(self, new_dict: dict, tipo_op):
+    def update_dict_quizz(self, new_dict: dict, tipo_op, dict_results):
         self.dict_quizz = new_dict
+        self.dict_quizz["results"] = dict_results
         name_emp = self.metadata["name_emp"]
         id_emp = self.metadata["ID_emp"]
         name_interviewer = self.metadata["interviewer"]

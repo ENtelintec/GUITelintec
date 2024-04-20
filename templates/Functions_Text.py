@@ -65,7 +65,10 @@ def parse_data(data: dict, mode: int):
                         "emp_id": data['info']['emp_id'],
                         "date": data['info']['date'],
                         "limit_date": data['info']['limit_date'],
-                        "status": data['info']['status']
+                        "status": data['info']['status'],
+                        "order_quotation": data['info']['order_quotation'],
+                        "comment": data['info']['comment'],
+                        "history": data['info']['history']
                     }
                 items = []
                 for item in data['items']:

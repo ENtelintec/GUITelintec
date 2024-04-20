@@ -17,51 +17,6 @@ from templates.Funtions_Utils import set_dateEntry_new_value, create_widget_inpu
     create_btns_DB, set_entry_value, create_button_side_menu, clean_entries
 
 
-def load_data_tables(names: list[str]):
-    out = []
-    for name in names:
-        match name:
-            case "customers":
-                my_result = fsql.get_customers()
-                out.append(my_result) if len(my_result) > 0 else out.append([])
-            case "employees":
-                my_result = fsql.get_employees()
-                out.append(my_result) if len(my_result) > 0 else out.append([])
-            case "departments":
-                my_result = fsql.get_departments()
-                out.append(my_result) if len(my_result) > 0 else out.append([])
-            case "heads":
-                my_result = fsql.get_heads()
-                out.append(my_result) if len(my_result) > 0 else out.append([])
-            case "suppliers":
-                my_result = fsql.get_supplier()
-                out.append(my_result) if len(my_result) > 0 else out.append([])
-            case "products":
-                my_result = fsql.get_p_and_s()
-                out.append(my_result) if len(my_result) > 0 else out.append([])
-            case "chats":
-                my_result = fsql.get_chats_w_limit()
-                out.append(my_result) if len(my_result) > 0 else out.append([])
-            case "Users":
-                my_result = fsql.get_users()
-                out.append(my_result) if len(my_result) > 0 else out.append([])
-            case "orders":
-                my_result = fsql.get_orders()
-                out.append(my_result) if len(my_result) > 0 else out.append([])
-            case "v_orders":
-                my_result = fsql.get_v_orders()
-                out.append(my_result) if len(my_result) > 0 else out.append([])
-            case "tickets":
-                my_result = fsql.get_tickets()
-                out.append(my_result) if len(my_result) > 0 else out.append([])
-            case "purchases":
-                my_result = fsql.get_purchases()
-                out.append(my_result) if len(my_result) > 0 else out.append([])
-            case _:
-                pass
-    return out
-
-
 class DBFrame(ttk.Frame):
     def __init__(self, master, setting: dict = None, *args, **kwargs):
         super().__init__(master, *args, **kwargs)
@@ -143,7 +98,7 @@ class DBFrame(ttk.Frame):
         return windows
 
 
-class EmployeesFrame(ttk.Frame):
+class EmployeesFrame(ScrolledFrame):
     def __init__(self, master, setting: dict = None, **kwargs):
         super().__init__(master, **kwargs)
         self.columnconfigure(0, weight=1)
@@ -155,7 +110,7 @@ class EmployeesFrame(ttk.Frame):
         self.label.grid(row=0, column=0, padx=5, pady=5, sticky="nsew")
         # -----------------------subframe insert-----------------------
         self.insert_frame = ttk.Frame(self)
-        self.insert_frame.grid(row=1, column=0, pady=10, sticky="nsew")
+        self.insert_frame.grid(row=1, column=0, padx=(5, 20), pady=10, sticky="nsew")
         self.insert_frame.columnconfigure((0, 1, 2, 3), weight=1)
         # -----------------widgets on left_frame----------------------
         self.entries = create_widget_input_DB(
@@ -163,12 +118,12 @@ class EmployeesFrame(ttk.Frame):
         # -----------------------insert button-----------------------
         btns_frame = ttk.Frame(self)
         btns_frame.grid(row=2, column=0, pady=10, sticky="nsew")
-        btns_frame.columnconfigure((0, 1, 2), weight=1)
+        btns_frame.columnconfigure((0, 1, 2, 3), weight=1)
         self.btn_insert, self.btn_update, self.btn_delete = create_btns_DB(
             btns_frame, 1, self._insert_employee,
-            self._update_employee, self._delete_employee, width=20)
+            self._update_employee, self._delete_employee, self.clean_widgets_emp, width=20)
         # -----------------------subframe visual-----------------------
-        self.visual_frame = ScrolledFrame(self)
+        self.visual_frame = ttk.Frame(self)
         self.visual_frame.grid(row=3, column=0, sticky="nsew", padx=5, pady=5)
         self.visual_frame.columnconfigure(0, weight=1)
         self.label_table1 = ttk.Label(self.visual_frame,
@@ -179,47 +134,39 @@ class EmployeesFrame(ttk.Frame):
             row=1, column=0, style="primary",
             pad_x=25, pad_y=10)
         self.employee_insert.view.bind("<Double-1>", self._emp_selected)
-        self.label_table_show = ttk.Label(self.visual_frame,
-                                          text="See the next table for available departments")
-        self.label_table_show.grid(row=2, column=0, padx=10, pady=10, sticky="w")
-        create_visualizer_treeview(self.visual_frame, "departments", row=3, column=0, style="info", pad_x=25, pad_y=10)
 
     def _emp_selected(self, event):
         data = event.widget.item(event.widget.selection()[0], "values")
-        (id_emp, name, lastname, phone, department, modality, email,
-         contract, entry_date, rfc, curp, nss, emergency, puesto, status, baja) = data
-        self._id_emp_update = int(id_emp)
-        set_entry_value(self.entries[0], name.title())
-        set_entry_value(self.entries[1], lastname.title())
-        set_entry_value(self.entries[2], curp)
-        set_entry_value(self.entries[3], phone)
-        set_entry_value(self.entries[4], email)
-        set_entry_value(self.entries[5], department)
-        set_entry_value(self.entries[12], puesto)
-        self.entries[6].set(modality)
-        set_entry_value(self.entries[7], contract)
-        entry_date = datetime.strptime(entry_date, "%Y-%m-%d %H:%M:%S") if entry_date != "None" else datetime.now()
-        self.entries[8] = set_dateEntry_new_value(
-            self.insert_frame, self.entries[8], entry_date.date(),
-            row=5, column=0, padx=5, pady=1)
-        set_entry_value(self.entries[9], rfc)
-        set_entry_value(self.entries[11], nss)
-        set_entry_value(self.entries[10], emergency)
-        self.entries[13].set(status)
-        if len(baja) > 0 and baja != "None":
-            baja = json.loads(baja)
-            self.entries[14] = set_dateEntry_new_value(
-                self.insert_frame, self.entries[14],
-                datetime.strptime(baja["date"], "%Y-%m-%d %H:%M:%S"),
-                row=7, column=2, padx=5, pady=5)
-            set_entry_value(self.entries[15], baja["reason"])
-        else:
-            self.entries[14] = set_dateEntry_new_value(
-                self.insert_frame, self.entries[14],
-                datetime.now(),
-                row=7, column=2, padx=5, pady=5
-            )
-            self.entries[15].delete(0, "end")
+        for index, entry in enumerate(self.entries):
+            if index >= len(data)-1:
+                break
+            if isinstance(entry, ttk.Combobox):
+                entry.set(data[index + 1])
+            elif isinstance(entry, ttk.Entry):
+                if index in [13]:
+                    continue
+                set_entry_value(entry, data[index + 1].upper())
+            elif isinstance(entry, ttk.DateEntry):
+                if index + 1 == 7:
+                    entry_date = datetime.strptime(data[index + 1],
+                                                   "%Y-%m-%d %H:%M:%S") if data[index + 1] != "None" else datetime.now()
+                    self.entries[index + 1] = set_dateEntry_new_value(
+                        self.insert_frame, self.entries[index + 1], entry_date.date(),
+                        row=3, column=3, padx=5, pady=1, date_format="%Y-%m-%d")
+                elif index + 1 == 12:
+                    if len(data[index + 1]) > 0 and data[index + 1] != "None":
+                        departure = json.loads(data[index + 1])
+                        entry_date = datetime.strptime(departure["date"],
+                                                       "%Y-%m-%d %H:%M:%S") if departure["date"] != "None" else datetime.now()
+                        self.entries[index + 1] = set_dateEntry_new_value(
+                            self.insert_frame, self.entries[index + 1], entry_date.date(),
+                            row=9, column=0, padx=5, pady=1, date_format="%Y-%m-%d")
+                        set_entry_value(self.entries[13], departure["reason"])
+                    else:
+                        self.entries[index + 1] = set_dateEntry_new_value(
+                            self.insert_frame, self.entries[index + 1], datetime.now().date(),
+                            row=9, column=0, padx=5, pady=1, date_format="%Y-%m-%d")
+                        set_entry_value(self.entries[13], "")
 
     def _update_table_show(self, data):
         self.employee_insert.grid_forget()
@@ -229,59 +176,42 @@ class EmployeesFrame(ttk.Frame):
         self.employee_insert.view.bind("<Double-1>", self._emp_selected)
 
     def get_entries_values(self):
-        name = self.entries[0].get()
-        lastname = self.entries[1].get()
-        curp = self.entries[2].get()
-        phone = self.entries[3].get()
-        email = self.entries[4].get()
-        department = self.entries[5].get()
-        contract = self.entries[7].get()
-        entry_date = self.entries[8].entry.get()
-        rfc = self.entries[9].get()
-        nss = self.entries[11].get()
-        emergency = self.entries[10].get()
-        modality = self.entries[6].get()
-        puesto = self.entries[12].get()
-        status = self.entries[13].get()
-        baja = self.entries[14].entry.get()
-        reason = self.entries[15].get()
-        departure = {"date": baja, "reason": reason}
-        return (name, lastname, curp, phone, email, department, contract,
-                entry_date, rfc, nss, emergency, modality, puesto, status, departure)
+        values = []
+        for entry in self.entries:
+            if isinstance(entry, ttk.DateEntry):
+                values.append(entry.entry.get())
+            else:
+                values.append(entry.get())
+        return values
 
     def _insert_employee(self):
-        (name, lastname, curp, phone, email, department, contract,
-         entry_date, rfc, nss, emergency, modality, puesto, status,
-         departure) = self.get_entries_values()
-        baja = departure["date"]
-        reason = departure["reason"]
+        values = self.get_entries_values()
+        status = values[11]
         if status == "inactivo":
             msg = (f"Are you sure you want to insert the following employee:\n"
-                   f"Name: {name}\nLastname: {lastname}\nCurp: {curp}\nPhone: {phone}\n"
-                   f"Email: {email}\nDepartment: {department}\nContract: {contract}\n"
-                   f"Entry date: {entry_date}\nRfc: {rfc}\nNss: {nss}\n"
-                   f"Emergency: {emergency}\nModality: {modality}\nPuesto: {puesto}\n"
-                   f"Fecha de baja: {baja}\nComentarios: {reason}")
+                   f"Name: {values[0].upper()}\nLastname: {values[1].upper()}")
         else:
             departure = {"date": "None", "reason": ""}
-            msg = (f"Are you sure you want to insert the following employee:\n"
-                   f"Name: {name}\nLastname: {lastname}\nCurp: {curp}\nPhone: {phone}\n"
-                   f"Email: {email}\nDepartment: {department}\nContract: {contract}\n"
-                   f"Entry date: {entry_date}\nRfc: {rfc}\nNss: {nss}\n"
-                   f"Emergency: {emergency}\nModality: {modality}\nPuesto: {puesto}")
+            msg = f"Are you sure you want to insert the following employee:\n"
+            for item in values:
+                msg += f"{item.upper()}\n"
         answer = Messagebox.show_question(
             title="Confirmacion",
             message=msg
         )
         if answer == "No":
             return
+        departure = {"date": values[12], "reason": values[13]}
+        email = values[16] + "," + values[17]
+        emergency = {"name": values[18], "phone_number": values[19]}
+        dict_deps = {"Dirección": 1, "Operaciones": 2, "Administración": 3, "RRHH": 4, "REPSE": 5, "IA": 6, "Otros": 7}
         flag, e, out = fsql.new_employee(
-            name, lastname, curp, phone, email, department, contract, entry_date,
-            rfc, nss, emergency, modality, puesto, status, departure)
+            values[0], values[1], values[2], values[3], values[4], dict_deps[values[5]], values[6], values[7],
+            values[8], values[9], values[10], values[11], json.dumps(departure), values[14], values[15], email,
+            emergency)
         if flag:
-            row = [out, name, lastname, phone, department, modality, email,
-                   contract, entry_date, rfc, curp, nss, emergency, puesto, "activo",
-                   json.dumps(departure)]
+            row = [out, values[0], values[1], values[2], values[3], values[4], values[5], values[6], values[7],
+                   values[8], values[9], values[10], values[11], json.dumps(departure)]
             self.data.append(row)
             self._update_table_show(self.data)
             Messagebox.show_info(title="Informacion", message=f"New employee created:\n{out}")
@@ -1231,7 +1161,7 @@ class OrdersFrame(ttk.Frame):
             elif isinstance(item, ttk.DateEntry):
                 set_dateEntry_new_value(
                     self.insert_frame, item, datetime.now(),
-                    1, 3, 5, 1)
+                    1, 3, 5, 1, date_format="%Y-%m-%d")
 
     def _update_table_show(self, data):
         self.order_insert.destroy()
@@ -1416,7 +1346,7 @@ class VOrdersFrame(ttk.Frame):
             elif isinstance(item, ttk.DateEntry):
                 set_dateEntry_new_value(
                     self.insert_frame, item, datetime.now(),
-                    1, 2, 5, 1)
+                    1, 2, 5, 1, date_format="%Y-%m-%d")
 
 
 class TicketsFrame(ttk.Frame):
@@ -1451,7 +1381,8 @@ class TicketsFrame(ttk.Frame):
         self.visual_frame.columnconfigure(0, weight=1)
         self.label_table1 = ttk.Label(self.visual_frame, text="Table of tickets")
         self.label_table1.grid(row=0, column=0, padx=10, pady=10, sticky="w")
-        self.tickets_insert, self.data = create_visualizer_treeview(self.visual_frame, "tickets", row=1, column=0, style="success")
+        self.tickets_insert, self.data = create_visualizer_treeview(self.visual_frame, "tickets", row=1, column=0,
+                                                                    style="success")
         self.tickets_insert.view.bind("<Double-1>", self._get_data_ticket)
 
     def _insert_tickets(self):
@@ -1575,7 +1506,7 @@ class TicketsFrame(ttk.Frame):
             elif isinstance(item, ttk.DateEntry):
                 set_dateEntry_new_value(
                     self.insert_frame, item, datetime.now(),
-                    1, 2, 5, 1)
+                    1, 2, 5, 1, date_format="%Y-%m-%d")
 
 
 class ChatsFrame(ttk.Frame):

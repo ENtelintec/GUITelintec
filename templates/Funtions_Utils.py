@@ -227,7 +227,10 @@ def set_entry_value(entry, param: str):
 
 def clean_entries(entries: list[ttk.Entry]):
     for entry in entries:
-        entry.delete(0, ttk.END)
+        if isinstance(entry, ttk.Entry):
+            entry.delete(0, ttk.END)
+        elif isinstance(entry, ttk.Combobox):
+            entry.current(0)
     return entries
 
 
@@ -236,8 +239,10 @@ def create_visualizer_treeview(master: Misc, table: str, pad_x: int = 5, pad_y: 
                                style: str = 'primary', data=None) -> tuple[Tableview, list[Any] | list[list] | Any]:
     match table:
         case "employees":
-            columns = ["Id", "Nombre", "Apellido", "Telefono", "Dep. ID.", "Modalidad", "Email", "Contrato",
-                       "Ingreso", "RFC", "CURP", "NSS", "Emg. Info.", "Puesto", "Estatus", "Baja"]
+            columns = ["Id", "Nombre", "Apellido", "CURP", "Telefono", "Modalidad", "Departamento", "Contrato",
+                       "Ingreso", "RFC", "NSS", "Puesto", "Estatus", "Baja", "Email", "Emg. Info."]
+            # columns = ["Id", "Nombre", "Apellido", "Telefono", "Dep. ID.", "Modalidad", "Email", "Contrato",
+            #            "Ingreso", "RFC", "CURP", "NSS", "Emg. Info.", "Puesto", "Estatus", "Baja", "Cumpleaños", "# de Legajo"]
             data = get_employees() if data is None else data
         case "customers":
             columns = ["Id", "Nombre", "Apellido", "Telefono", "Ciudad", "Email"]
@@ -246,7 +251,7 @@ def create_visualizer_treeview(master: Misc, table: str, pad_x: int = 5, pad_y: 
             columns = ["Id", "Name", "Location"]
             data = get_departments() if data is None else data
         case "heads":
-            columns = ["Name", "Lastname", "Phone", "City", "Email"]
+            columns = ["Cargo", "Empleado", "Dep.ID", "Dep. Name", "Nombre", "Email"]
             data = get_heads() if data is None else data
         case "supplier":
             columns = ["Id", "Name", "Location"]
@@ -302,30 +307,34 @@ def create_widget_input_DB(master, table) -> list:
                 row=0, column=2, padx=1, pady=1, sticky="nsew")
             ttk.Label(master, text="Telefono", font=("Helvetica", 11, "bold")).grid(
                 row=0, column=3, padx=1, pady=1, sticky="nsew")
-            ttk.Label(master, text="Email", font=("Helvetica", 11, "bold")).grid(
-                row=2, column=2, padx=1, pady=1, sticky="nsew")
-            ttk.Label(master, text="Departmento", font=("Helvetica", 11, "bold")).grid(
-                row=2, column=1, padx=1, pady=1, sticky="nsew")
             ttk.Label(master, text="Modalidad", font=("Helvetica", 11, "bold")).grid(
                 row=2, column=0, padx=1, pady=1, sticky="nsew")
+            ttk.Label(master, text="Departamento", font=("Helvetica", 11, "bold")).grid(
+                row=2, column=1, padx=1, pady=1, sticky="nsew")
             ttk.Label(master, text="Contrato", font=("Helvetica", 11, "bold")).grid(
-                row=2, column=3, padx=1, pady=1, sticky="nsew")
+                row=2, column=2, padx=1, pady=1, sticky="nsew")
             ttk.Label(master, text="Ingreso", font=("Helvetica", 11, "bold")).grid(
-                row=4, column=0, padx=1, pady=1, sticky="nsew")
+                row=2, column=3, padx=1, pady=1, sticky="nsew")
             ttk.Label(master, text="RFC", font=("Helvetica", 11, "bold")).grid(
-                row=4, column=1, padx=1, pady=1, sticky="nsew")
-            ttk.Label(master, text="Emg. Info.", font=("Helvetica", 11, "bold")).grid(
-                row=4, column=2, padx=1, pady=1, sticky="nsew")
+                row=4, column=0, padx=1, pady=1, sticky="nsew")
             ttk.Label(master, text="NSS", font=("Helvetica", 11, "bold")).grid(
-                row=4, column=3, padx=1, pady=1, sticky="nsew")
+                row=4, column=1, padx=1, pady=1, sticky="nsew")
             ttk.Label(master, text="Puesto", font=("Helvetica", 11, "bold")).grid(
-                row=6, column=0, padx=1, pady=1, sticky="nsew")
+                row=4, column=2, padx=1, pady=1, sticky="nsew")
             ttk.Label(master, text="Estatus", font=("Helvetica", 11, "bold")).grid(
-                row=6, column=1, padx=1, pady=1, sticky="nsew")
+                row=4, column=3, padx=1, pady=1, sticky="nsew")
             ttk.Label(master, text="Baja", font=("Helvetica", 11, "bold")).grid(
-                row=6, column=2, padx=1, pady=1, sticky="nsew")
+                row=6, column=0, padx=1, pady=1, sticky="nsew")
             ttk.Label(master, text="Comentario", font=("Helvetica", 11, "bold")).grid(
+                row=6, column=1, padx=1, pady=1, sticky="nsew")
+            ttk.Label(master, text="Fecha de nacimiento: ", font=("Helvetica", 11, "bold")).grid(
+                row=6, column=2, padx=1, pady=1, sticky="nsew")
+            ttk.Label(master, text="# de Legajo: ", font=("Helvetica", 11, "bold")).grid(
                 row=6, column=3, padx=1, pady=1, sticky="nsew")
+            ttk.Label(master, text="Email", font=("Helvetica", 11, "bold")).grid(
+                row=8, column=0, padx=1, pady=1, sticky="nsew")
+            ttk.Label(master, text="Emg. Info.", font=("Helvetica", 11, "bold")).grid(
+                row=8, column=1, padx=1, pady=1, sticky="nsew")
             # -----------------------inputs-----------------------
             entry1_emp = ttk.Entry(master, width=16)
             entry1_emp.grid(row=1, column=0, padx=5, pady=1, sticky="nswe")
@@ -335,35 +344,57 @@ def create_widget_input_DB(master, table) -> list:
             entry3_emp.grid(row=1, column=2, padx=5, pady=1, sticky="nswe")
             entry4_emp = ttk.Entry(master, width=10)
             entry4_emp.grid(row=1, column=3, padx=5, pady=1, sticky="nswe")
-            entry5_emp = ttk.Entry(master, width=21)
-            entry5_emp.grid(row=3, column=2, padx=5, pady=1, sticky="nswe")
-            entry6_emp = ttk.Entry(master, width=5)
-            entry6_emp.grid(row=3, column=1, padx=5, pady=1, sticky="nswe")
-            entry7_emp = ttk.Combobox(master, values=["Telintec", "RESP"],
+            entry5_emp = ttk.Combobox(master, values=["Telintec", "RESP"],
                                       state="readonly")
-            entry7_emp.grid(row=3, column=0, pady=1, padx=1, sticky="nswe")
-            entry8_emp = ttk.Entry(master, width=10)
+            entry5_emp.grid(row=3, column=0, pady=1, padx=1, sticky="nswe")
+            entry6_emp = ttk.Combobox(master, values=["Dirección", "Operaciones", "Administración", "RRHH", "REPSE", "IA", "Otros"],
+                                      state="readonly")
+            entry6_emp.grid(row=3, column=1, padx=5, pady=1, sticky="nswe")
+            entry7_emp = ttk.Entry(master, width=10)
+            entry7_emp.grid(row=3, column=2, padx=5, pady=1, sticky="nswe")
+            entry8_emp = ttk.DateEntry(master, dateformat="%Y-%m-%d")
             entry8_emp.grid(row=3, column=3, padx=5, pady=1, sticky="nswe")
-            entry9_emp = ttk.DateEntry(master)
+            entry9_emp = ttk.Entry(master, width=13)
             entry9_emp.grid(row=5, column=0, padx=5, pady=1, sticky="nswe")
-            entry10_emp = ttk.Entry(master, width=13)
+            entry10_emp = ttk.Entry(master, width=10)
             entry10_emp.grid(row=5, column=1, padx=5, pady=1, sticky="nswe")
-            entry11_emp = ttk.Entry(master, width=21)
+            entry11_emp = ttk.Entry(master, width=15)
             entry11_emp.grid(row=5, column=2, padx=5, pady=1, sticky="nswe")
-            entry12_emp = ttk.Entry(master, width=10)
-            entry12_emp.grid(row=5, column=3, padx=5, pady=1, sticky="nswe")
-            entry13_emp = ttk.Entry(master, width=15)
-            entry13_emp.grid(row=7, column=0, padx=5, pady=1, sticky="nswe")
-            entry14_emp = ttk.Combobox(master, values=["activo", "inactivo"],
+            entry12_emp = ttk.Combobox(master, values=["activo", "inactivo"],
                                        state="readonly")
-            entry14_emp.grid(row=7, column=1, pady=1, padx=1, sticky="nswe")
-            entry15_emp = ttk.DateEntry(master)
+            entry12_emp.grid(row=5, column=3, pady=1, padx=1, sticky="nswe")
+            entry13_emp = ttk.DateEntry(master, dateformat="%Y-%m-%d")
+            entry13_emp.grid(row=7, column=0, padx=5, pady=1, sticky="nswe")
+            entry14_emp = ttk.Entry(master, width=21)
+            entry14_emp.grid(row=7, column=1, padx=5, pady=1, sticky="nswe")
+            entry15_emp = ttk.DateEntry(master, dateformat="%Y-%m-%d")
             entry15_emp.grid(row=7, column=2, padx=5, pady=1, sticky="nswe")
             entry16_emp = ttk.Entry(master, width=21)
             entry16_emp.grid(row=7, column=3, padx=5, pady=1, sticky="nswe")
+            frame_email = ttk.Frame(master)
+            frame_email.grid(row=9, column=0, padx=5, pady=1, sticky="nswe")
+            frame_emergency = ttk.Frame(master)
+            frame_emergency.grid(row=9, column=1, padx=5, pady=1, sticky="nswe")
+            ttk.Label(frame_email, text="Email Telintec: ", font=("Helvetica", 11, "bold")).grid(
+                row=0, column=0, padx=1, pady=1, sticky="nsew")
+            ttk.Label(frame_email, text="Email 2: ", font=("Helvetica", 11, "bold")).grid(
+                row=1, column=0, padx=1, pady=1, sticky="nsew")
+            entry17_emp = ttk.Entry(frame_email, width=21)
+            entry17_emp.grid(row=0, column=1, padx=5, pady=1, sticky="nswe")
+            entry18_emp = ttk.Entry(frame_email, width=21)
+            entry18_emp.grid(row=1, column=1, padx=5, pady=1, sticky="nswe")
+            ttk.Label(frame_emergency, text="Nombre: ", font=("Helvetica", 11, "bold")).grid(
+                row=0, column=0, padx=1, pady=1, sticky="nsew")
+            ttk.Label(frame_emergency, text="Número: ", font=("Helvetica", 11, "bold")).grid(
+                row=1, column=0, padx=1, pady=1, sticky="nsew")
+            entry19_emp = ttk.Entry(frame_emergency, width=21)
+            entry19_emp.grid(row=0, column=1, padx=5, pady=1, sticky="nswe")
+            entry20_emp = ttk.Entry(frame_emergency, width=21)
+            entry20_emp.grid(row=1, column=1, padx=5, pady=1, sticky="nswe")
             return [entry1_emp, entry2_emp, entry3_emp, entry4_emp, entry5_emp, entry6_emp,
                     entry7_emp, entry8_emp, entry9_emp, entry10_emp, entry11_emp,
-                    entry12_emp, entry13_emp, entry14_emp, entry15_emp, entry16_emp]
+                    entry12_emp, entry13_emp, entry14_emp, entry15_emp, entry16_emp,
+                    entry17_emp, entry18_emp, entry19_emp, entry20_emp]
         case "customers":
             ttk.Label(master, text="Nombre:", font=("Helvetica", 12, "bold")).grid(
                 row=0, column=0, padx=1, pady=1, sticky="n")
@@ -490,7 +521,7 @@ def create_widget_input_DB(master, table) -> list:
             entry1 = ttk.Entry(master, width=15)
             entry2 = ttk.Entry(master, width=15)
             entry3 = ttk.Entry(master, width=13)
-            entry4 = ttk.DateEntry(master)
+            entry4 = ttk.DateEntry(master, dateformat="%Y-%m-%d")
             entry5 = ttk.Entry(master, width=7)
             entry6 = ttk.Entry(master, width=9)
             entry1.grid(row=1, column=0, padx=5, pady=1)
@@ -510,7 +541,7 @@ def create_widget_input_DB(master, table) -> list:
             # -----------------------inputs-----------------------
             entry1 = ttk.Entry(master, width=15)
             entry2 = ttk.Entry(master, width=15)
-            entry4 = ttk.DateEntry(master)
+            entry4 = ttk.DateEntry(master, dateformat="%Y-%m-%d")
             entry5 = ttk.Entry(master, width=7)
             entry6 = ttk.Entry(master, width=9)
             entry7 = ttk.Entry(master, width=9)
@@ -549,18 +580,20 @@ def create_widget_input_DB(master, table) -> list:
 
 def create_btns_DB(
         master, table_type=1, _command_insert=None, _command_update=None,
-        _command_delete=None, *args, **kwargs) -> tuple | None:
+        _command_delete=None, _command_reset=None, *args, **kwargs) -> tuple | None:
     match table_type:
         case 1:
             btn_insert = ttk.Button(
-                master, text="Insertar", command=_command_insert, *args, **kwargs)
+                master, text="Insertar", command=_command_insert, bootstyle="success", *args, **kwargs)
             btn_insert.grid(row=0, column=0, pady=10, padx=1)
             btn_update = ttk.Button(
                 master, text="Actualizar", command=_command_update, *args, **kwargs)
             btn_update.grid(row=0, column=1, pady=10, padx=1)
+            btn_reset = ttk.Button(master, text="Limpiar", command=_command_reset, *args, **kwargs)
+            btn_reset.grid(row=0, column=2, pady=10, padx=1)
             btn_delete = ttk.Button(
-                master, text="Eliminar", command=_command_delete, *args, **kwargs)
-            btn_delete.grid(row=0, column=2, pady=10, padx=1)
+                master, text="Eliminar", command=_command_delete, bootstyle="warning", *args, **kwargs)
+            btn_delete.grid(row=0, column=3, pady=10, padx=1)
             return btn_insert, btn_update, btn_delete
         case _:
             return None

@@ -13,8 +13,8 @@ from templates.Function_tools_openAI import getProductCategories, getProductsAlm
     getLowStockProducts, getCostumer, getSupplier, getOrder, getProductMovement, getSupplyInventory, getNoStockProducts, \
     getTotalFichajeEmployee, getActiveEmployees, getEmployeeInfo, getToolsForDepartment
 
-client = OpenAI(api_key=secrets.get("OPENAI_API_KEY_1"))
-openai.api_key = secrets["OPENAI_API_KEY_1"]
+client = OpenAI(api_key=secrets.get("OPENAI_API_KEY_AV"))
+openai.api_key = secrets["OPENAI_API_KEY_AV"]
 
 available_functions = {
         "getProductCategories": getProductCategories,
@@ -45,7 +45,11 @@ def create_assistant_openai(model="gpt-4-1106-preview", files=None, instructions
             instructions=instructions,
             model=model,
             tools=tools,
-            file_ids=file_ids
+            tool_resources={
+                "code_interpreter": {
+                    "file_ids": file_ids
+                }
+            }
         )
     except Exception as e:
         print(e)
