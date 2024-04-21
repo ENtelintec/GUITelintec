@@ -6,9 +6,10 @@ import ttkbootstrap as ttk
 import templates.frames.Frame_LoginFrames as Login
 from static.extensions import filepath_settings, permissions_allowed_AV
 from templates import AlmacenGUI
-from templates.Functions_AuxFiles import carpeta_principal, get_image_side_menu, read_setting_file
+from templates.Functions_AuxFiles import carpeta_principal, get_image_side_menu, read_setting_file, get_all_sm_entries, \
+    get_all_sm_products
 from templates.Functions_Files import read_file_not
-from templates.Functions_SQL import get_chats_w_limit, get_username_data
+from templates.Functions_SQL import get_chats_w_limit, get_username_data, get_sm_employees, get_sm_clients
 from templates.Funtions_Utils import create_button_side_menu, compare_permissions_windows
 from templates.frames.Frame_Bitacora import BitacoraEditFrame
 from templates.frames.Frame_ChatsFrame import ChatFrame
@@ -23,6 +24,7 @@ from templates.frames.Frame_SMGeneral import SMFrame
 from templates.frames.Frame_SettingsFrame import SettingsFrameGUI
 from templates.frames.Frame_Vacations import VacationsFrame
 from templates.frames.Frame_vAssistantGUI import AssistantGUI
+from templates.frames.SubFrame_SMManagement import SMManagement
 from templates.screens.Clients import ClientsScreen
 from templates.screens.Home import HomeScreen
 from templates.screens.In import InScreen
@@ -40,6 +42,26 @@ default_values_settings = {"max_chats": "40", "start_date": "19/oct./2023", "end
 chats_to_show = 40  # number of chats to show at the beginning
 
 
+def load_data(is_super=False, emp_id=None):
+    data_sm, columns_sm = get_all_sm_entries(filter_status=False, is_supper=True, emp_id=emp_id)
+    data_sm_not_supper = []
+    if not is_super:
+        data_sm_not_supper = [data for data in data_sm if data[7] == emp_id]
+    flag, error, employees = get_sm_employees()
+    flag, error, clients = get_sm_clients()
+    products, columns_products = get_all_sm_products()
+    data_dic = {
+        'data_sm': data_sm,
+        'columns_sm': columns_sm,
+        'employees': employees,
+        'clients': clients,
+        'products': products,
+        'columns_products': columns_products,
+        'data_sm_not_supper': data_sm_not_supper
+    }
+    return data_dic
+
+
 class GUIAsistente(ttk.Window):
     def __init__(self, master=None, *args, **kwargs):
         # -----------------------window setup------------------------------
@@ -51,10 +73,11 @@ class GUIAsistente(ttk.Window):
         p1 = PhotoImage(file=carpeta_principal + "/robot_1.png")
         self.iconphoto(False, p1)
         # self.after(0, lambda: self.state('zoomed'))
-        # self.state('zoomed')
+        self.state('zoomed')
         # self.grid(row=0, column=0, sticky="nsew")
         self.columnconfigure(1, weight=1)
         self.rowconfigure(0, weight=1)
+        self.data_dic = None
         # -----------------------Variables-----------------------
         self.permissions = {"1": "App.Deparment.Default"}
         self.settings = read_setting_file(filepath_settings)
@@ -92,7 +115,8 @@ class GUIAsistente(ttk.Window):
                                            state="readonly")
         self.theme_selector.current(theme_names.index('vapor'))
         self.theme_selector.grid(row=1, column=1, sticky="nsew")
-        self.theme_selector.bind('<<ComboboxSelected>>', lambda event: self.style_gui.theme_use(self.theme_selector.get()))
+        self.theme_selector.bind('<<ComboboxSelected>>',
+                                 lambda event: self.style_gui.theme_use(self.theme_selector.get()))
         # --------------------widgets side menu -----------------------
         self.side_menu_frame = ttk.Frame(self.navigation_frame)
         self.side_menu_frame.grid(row=2, column=0, sticky="nsew", pady=5, padx=1,
@@ -173,7 +197,7 @@ class GUIAsistente(ttk.Window):
                 )
         return widgets, windows_names
 
-    def _create_side_menu_windows(self):
+    def _create_side_menu_windows(self, data_dic=None):
         windows = {}
         for i, window in enumerate(self.names_side_menu):
             match window:
@@ -251,8 +275,12 @@ class GUIAsistente(ttk.Window):
                     windows[window] = BitacoraEditFrame(self, self.username, self.username_data["contract"])
                     print("bitacora frame created")
                 case "SM":
-                    windows[window] = SMFrame(self, self.settings, department=self.department, id_emp=self.username_data["id"], data_emp=self.username_data)
+                    windows[window] = SMFrame(self, self.settings, department=self.department,
+                                              id_emp=self.username_data["id"], data_emp=self.username_data)
                     print("SM frame created")
+                case "Procesar SM":
+                    windows[window] = SMManagement(self, data_emp=self.username_data)
+                    print("SM process frame created")
                 case _:
                     pass
         return windows

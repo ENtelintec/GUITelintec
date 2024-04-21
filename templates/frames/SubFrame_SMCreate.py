@@ -124,7 +124,7 @@ class FrameSMCreate(ttk.Frame):
         """------------------------buttons-----------------------------------"""
         frame_buttons = ttk.Frame(self)
         frame_buttons.grid(row=3, column=0, padx=5, pady=5, sticky="nswe")
-        frame_buttons.columnconfigure((0, 1, 2, 3, 4), weight=1)
+        frame_buttons.columnconfigure((0, 1, 2, 3, 4, 5), weight=1)
         (self.btn_add, self.btn_update_event, self.btn_cancel,
          self.btn_update, self.btn_erase, self.btn_add_client) = self.create_buttons(frame_buttons)
         """-----------------------------tableview----------------------------"""
@@ -188,7 +188,7 @@ class FrameSMCreate(ttk.Frame):
             master, 0, 4, "Borrar SM", command=self.on_erase_click,
             sticky="n", width=15, bootstyle="danger")
         btn_add_client = create_button(
-            master, 0, 5, "Agregar cliente", command=self.on_add_client_click,
+            master, 0, 5, "(+) cliente", command=self.on_add_client_click,
             sticky="n", width=15, bootstyle="success")
         return btn_add, btn_update_data, btn_reset, btn_update_table, btn_erase_event, btn_add_client
 
@@ -523,8 +523,9 @@ class FrameSMProdcuts(ttk.Frame):
         """-------------------Widgets input----------------------------------"""
         frame_inputs = ttk.Frame(self)
         frame_inputs.grid(row=1, column=1, padx=1, pady=20, sticky="nswe")
+        frame_inputs.columnconfigure((0, 1, 2), weight=1)
         self.entries = self.create_inputs(frame_inputs)
-        create_button(frame_inputs, 0, 2, text="Nuevo producto", command=self.on_new_product_click)
+        create_button(frame_inputs, 0, 2, text="(+) Producto", command=self.on_new_product_click)
         """-------------------Widgets buttons--------------------------------"""
         frame_buttons = ttk.Frame(self)
         frame_buttons.grid(row=2, column=1, padx=1, pady=20, sticky="nswe")

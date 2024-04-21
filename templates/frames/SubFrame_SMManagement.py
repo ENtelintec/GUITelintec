@@ -227,7 +227,7 @@ class SMManagement(ttk.Frame):
     def clean_widgets(self):
         self.info_products.text.delete("1.0", "end")
         self.info_history.text.delete("1.0", "end")
-        self.svar_info.set("Seleccione una sm de la tabla")
+        # self.svar_info.set("Seleccione una sm de la tabla")
         self._id_sm_to_edit = None
 
     def update_table(self, event):

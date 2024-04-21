@@ -52,6 +52,8 @@ ventanasApp = {
         "Clients (A)",
         "Proveedores (A)",
         "Configuraciones (A)",
+        "SM",
+        "Procesar SM",
         "Cuenta",
     ],
     "App.Department.Bitacoras": [
