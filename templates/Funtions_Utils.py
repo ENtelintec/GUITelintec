@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-__author__ = 'Edisson Naula'
-__date__ = '$ 29/ene./2024  at 15:31 $'
+__author__ = "Edisson Naula"
+__date__ = "$ 29/ene./2024  at 15:31 $"
 
 import json
 from typing import Any
@@ -11,12 +11,37 @@ from tkinter import StringVar, Misc
 from ttkbootstrap.tableview import Tableview
 
 from static.extensions import ventanasApp, conversion_quizzes_path
-from templates.Functions_SQL import get_employees, get_customers, get_departments, get_heads, get_supplier, get_p_and_s, \
-    get_orders, get_v_orders, get_purchases, get_tickets, get_users, get_chats
+from static.extensions import filepath_recommendations
+
+from templates.Functions_SQL import (
+    get_employees,
+    get_customers,
+    get_departments,
+    get_heads,
+    get_supplier,
+    get_p_and_s,
+    get_orders,
+    get_v_orders,
+    get_purchases,
+    get_tickets,
+    get_users,
+    get_chats,
+)
 
 
-def create_label(master, row, column, padx=5, pady=5, text=None, textvariable=None,
-                 font=('Helvetica', 11, 'normal'), columnspan=1, sticky=None, **kwargs) -> ttk.Label:
+def create_label(
+    master,
+    row,
+    column,
+    padx=5,
+    pady=5,
+    text=None,
+    textvariable=None,
+    font=("Helvetica", 11, "normal"),
+    columnspan=1,
+    sticky=None,
+    **kwargs,
+) -> ttk.Label:
     """
     Create a label with the text-provided
     :param sticky:
@@ -38,12 +63,31 @@ def create_label(master, row, column, padx=5, pady=5, text=None, textvariable=No
     if sticky is None:
         label.grid(row=row, column=column, padx=padx, pady=pady, columnspan=columnspan)
     else:
-        label.grid(row=row, column=column, padx=padx, pady=pady, columnspan=columnspan, sticky=sticky)
+        label.grid(
+            row=row,
+            column=column,
+            padx=padx,
+            pady=pady,
+            columnspan=columnspan,
+            sticky=sticky,
+        )
     return label
 
 
-def create_Combobox(master, values, width=None, row=0, column=0,
-                    state="readonly", padx=5, pady=5, columnspan=1, sticky="nswe", *args, **kwargs):
+def create_Combobox(
+    master,
+    values,
+    width=None,
+    row=0,
+    column=0,
+    state="readonly",
+    padx=5,
+    pady=5,
+    columnspan=1,
+    sticky="nswe",
+    *args,
+    **kwargs,
+):
     """
     Create a combobox with the values provided
     :param sticky:
@@ -58,15 +102,35 @@ def create_Combobox(master, values, width=None, row=0, column=0,
     :param width:
     :return: Placed combobox in the grid
     """
-    combobox = ttk.Combobox(master, values=values, state=state, width=width, *args, **kwargs)
+    combobox = ttk.Combobox(
+        master, values=values, state=state, width=width, *args, **kwargs
+    )
     if len(values) > 0:
         combobox.current(0)
-    combobox.grid(row=row, column=column, padx=padx, pady=pady, columnspan=columnspan, sticky=sticky)
+    combobox.grid(
+        row=row,
+        column=column,
+        padx=padx,
+        pady=pady,
+        columnspan=columnspan,
+        sticky=sticky,
+    )
     return combobox
 
 
-def create_entry(master, width=10, row=0, column=0,
-                 state="normal", padx=5, pady=5, columnspan=1, sticky="nswe", *args, **kwargs):
+def create_entry(
+    master,
+    width=10,
+    row=0,
+    column=0,
+    state="normal",
+    padx=5,
+    pady=5,
+    columnspan=1,
+    sticky="nswe",
+    *args,
+    **kwargs,
+):
     """
     Create an entry with the values provided
     :param sticky:
@@ -81,11 +145,28 @@ def create_entry(master, width=10, row=0, column=0,
     :return: Placed entry in the grid
     """
     entry = ttk.Entry(master, state=state, width=width, *args, **kwargs)
-    entry.grid(row=row, column=column, padx=padx, pady=pady, columnspan=columnspan, sticky=sticky)
+    entry.grid(
+        row=row,
+        column=column,
+        padx=padx,
+        pady=pady,
+        columnspan=columnspan,
+        sticky=sticky,
+    )
     return entry
 
 
-def create_date_entry(master, row=0, column=0, padx=5, pady=5, columnspan=1, sticky="nswe", *args, **kwargs):
+def create_date_entry(
+    master,
+    row=0,
+    column=0,
+    padx=5,
+    pady=5,
+    columnspan=1,
+    sticky="nswe",
+    *args,
+    **kwargs,
+):
     """
     Create a date entry with the values provided
     :param sticky:
@@ -98,11 +179,20 @@ def create_date_entry(master, row=0, column=0, padx=5, pady=5, columnspan=1, sti
     :return: Placed entry in the grid
     """
     entry = ttk.DateEntry(master, *args, **kwargs)
-    entry.grid(row=row, column=column, padx=padx, pady=pady, columnspan=columnspan, sticky=sticky)
+    entry.grid(
+        row=row,
+        column=column,
+        padx=padx,
+        pady=pady,
+        columnspan=columnspan,
+        sticky=sticky,
+    )
     return entry
 
 
-def compare_permissions_windows(user_permissions: list) -> tuple[bool, Any] | tuple[bool, None]:
+def compare_permissions_windows(
+    user_permissions: list,
+) -> tuple[bool, Any] | tuple[bool, None]:
     """
     This method is used to compare the permissions of a user.
     :param user_permissions: list of permissions of the user
@@ -130,7 +220,9 @@ def compare_permissions_windows(user_permissions: list) -> tuple[bool, Any] | tu
     return False, None
 
 
-def create_button_side_menu(master, row, column, text, image=None, command=None, columnspan=1):
+def create_button_side_menu(
+    master, row, column, text, image=None, command=None, columnspan=1
+):
     """
     This method is used to create a button in the side menu.
     :param columnspan:
@@ -141,18 +233,30 @@ def create_button_side_menu(master, row, column, text, image=None, command=None,
     :param column: column for the button
     :param text: text for the button
     """
-    button = ttk.Button(master,
-                        text=text,
-                        image=image, compound="left", command=command)
-    button.grid(row=row, column=column, sticky="nsew", pady=5, padx=5, columnspan=columnspan)
+    button = ttk.Button(
+        master, text=text, image=image, compound="left", command=command
+    )
+    button.grid(
+        row=row, column=column, sticky="nsew", pady=5, padx=5, columnspan=columnspan
+    )
     button.image = image
     # button.configure(text=text, command=command)
     return button
 
 
-def create_button(master, row, column, text, image=None,
-                  columnspan=1, sticky="nswe", pady=5, padx=5,
-                  *args, **kwargs):
+def create_button(
+    master,
+    row,
+    column,
+    text,
+    image=None,
+    columnspan=1,
+    sticky="nswe",
+    pady=5,
+    padx=5,
+    *args,
+    **kwargs,
+):
     """
     This method is used to create a button in the side menu.
     :param padx:
@@ -165,11 +269,15 @@ def create_button(master, row, column, text, image=None,
     :param column: column for the button
     :param text: text for the button
     """
-    button = ttk.Button(master,
-                        text=text,
-                        image=image,
-                        *args, **kwargs)
-    button.grid(row=row, column=column, sticky=sticky, pady=pady, padx=padx, columnspan=columnspan)
+    button = ttk.Button(master, text=text, image=image, *args, **kwargs)
+    button.grid(
+        row=row,
+        column=column,
+        sticky=sticky,
+        pady=pady,
+        padx=padx,
+        columnspan=columnspan,
+    )
     button.image = image
     return button
 
@@ -206,14 +314,23 @@ def create_var_none(number: int):
     return tuple(var_none)
 
 
-def set_dateEntry_new_value(master, entry, value, row, column, padx, pady, sticky="nswe",
-                            date_format=None, firstweekday=1):
+def set_dateEntry_new_value(
+    master,
+    entry,
+    value,
+    row,
+    column,
+    padx,
+    pady,
+    sticky="nswe",
+    date_format=None,
+    firstweekday=1,
+):
     entry.destroy()
     if date_format is not None:
-        entry = ttk.DateEntry(master,
-                              startdate=value,
-                              dateformat=date_format,
-                              firstweekday=firstweekday)
+        entry = ttk.DateEntry(
+            master, startdate=value, dateformat=date_format, firstweekday=firstweekday
+        )
     else:
         entry = ttk.DateEntry(master, startdate=value)
     entry.grid(row=row, column=column, padx=padx, pady=pady, sticky=sticky)
@@ -234,9 +351,16 @@ def clean_entries(entries: list[ttk.Entry]):
     return entries
 
 
-def create_visualizer_treeview(master: Misc, table: str, pad_x: int = 5, pad_y: int = 5,
-                               row: int = 0, column: int = 0,
-                               style: str = 'primary', data=None) -> tuple[Tableview, list[Any] | list[list] | Any]:
+def create_visualizer_treeview(
+    master: Misc,
+    table: str,
+    pad_x: int = 5,
+    pad_y: int = 5,
+    row: int = 0,
+    column: int = 0,
+    style: str = "primary",
+    data=None,
+) -> tuple[Tableview, list[Any] | list[list] | Any]:
     match table:
         case "employees":
             columns = ["Id", "Nombre", "Apellido", "CURP", "Telefono", "Modalidad", "Departamento", "Contrato",
@@ -257,9 +381,20 @@ def create_visualizer_treeview(master: Misc, table: str, pad_x: int = 5, pad_y: 
             columns = ["Id", "Name", "Location"]
             data = get_supplier() if data is None else data
         case "p_and_s":
-            columns = ["ID", "Name", "Model", "Brand", "Description", "Price retail",
-                       "Quantity", "Price Provider", "Support", "Is_service", "Category",
-                       "Img URL"]
+            columns = [
+                "ID",
+                "Name",
+                "Model",
+                "Brand",
+                "Description",
+                "Price retail",
+                "Quantity",
+                "Price Provider",
+                "Support",
+                "Is_service",
+                "Category",
+                "Img URL",
+            ]
             data = get_p_and_s() if data is None else data
         case "orders":
             columns = ["Id", "Product ID", "Quantity", "Date", "Customer", "Employee"]
@@ -277,22 +412,40 @@ def create_visualizer_treeview(master: Misc, table: str, pad_x: int = 5, pad_y: 
             columns = ["Id", "Username", "Permissions", "Expiration", "Timestamp"]
             data = get_users() if data is None else data
         case "chats":
-            columns = ["ID", "Context", "Start", "End", "Receiver", "Sender", "Platform", "Is alive?", "Is reviewed?"]
+            columns = [
+                "ID",
+                "Context",
+                "Start",
+                "End",
+                "Receiver",
+                "Sender",
+                "Platform",
+                "Is alive?",
+                "Is reviewed?",
+            ]
             data = get_chats() if data is None else data
         case _:
             columns = []
             data = []
             print("Error in create_visualizer_treeview")
     column_span = len(columns)
-    treeview = Tableview(master,
-                         coldata=columns,
-                         rowdata=data,
-                         paginated=True,
-                         searchable=True,
-                         autofit=True,
-                         bootstyle=style)
-    treeview.grid(row=row, column=column, padx=pad_x, pady=pad_y,
-                  columnspan=column_span, sticky="nswe")
+    treeview = Tableview(
+        master,
+        coldata=columns,
+        rowdata=data,
+        paginated=True,
+        searchable=True,
+        autofit=True,
+        bootstyle=style,
+    )
+    treeview.grid(
+        row=row,
+        column=column,
+        padx=pad_x,
+        pady=pad_y,
+        columnspan=column_span,
+        sticky="nswe",
+    )
     return treeview, data
 
 
@@ -300,11 +453,14 @@ def create_widget_input_DB(master, table) -> list:
     match table:
         case "employees":
             ttk.Label(master, text="Nombre", font=("Helvetica", 11, "bold")).grid(
-                row=0, column=0, padx=1, pady=1, sticky="nsew")
+                row=0, column=0, padx=1, pady=1, sticky="nsew"
+            )
             ttk.Label(master, text="Apellido", font=("Helvetica", 11, "bold")).grid(
-                row=0, column=1, padx=1, pady=1, sticky="nsew")
+                row=0, column=1, padx=1, pady=1, sticky="nsew"
+            )
             ttk.Label(master, text="CURP", font=("Helvetica", 11, "bold")).grid(
-                row=0, column=2, padx=1, pady=1, sticky="nsew")
+                row=0, column=2, padx=1, pady=1, sticky="nsew"
+            )
             ttk.Label(master, text="Telefono", font=("Helvetica", 11, "bold")).grid(
                 row=0, column=3, padx=1, pady=1, sticky="nsew")
             ttk.Label(master, text="Modalidad", font=("Helvetica", 11, "bold")).grid(
@@ -397,15 +553,20 @@ def create_widget_input_DB(master, table) -> list:
                     entry17_emp, entry18_emp, entry19_emp, entry20_emp]
         case "customers":
             ttk.Label(master, text="Nombre:", font=("Helvetica", 12, "bold")).grid(
-                row=0, column=0, padx=1, pady=1, sticky="n")
+                row=0, column=0, padx=1, pady=1, sticky="n"
+            )
             ttk.Label(master, text="Apellido:", font=("Helvetica", 12, "bold")).grid(
-                row=0, column=1, padx=1, pady=1, sticky="n")
+                row=0, column=1, padx=1, pady=1, sticky="n"
+            )
             ttk.Label(master, text="Telefono:", font=("Helvetica", 12, "bold")).grid(
-                row=0, column=2, padx=1, pady=1, sticky="n")
+                row=0, column=2, padx=1, pady=1, sticky="n"
+            )
             ttk.Label(master, text="Email:", font=("Helvetica", 12, "bold")).grid(
-                row=0, column=3, padx=1, pady=1, sticky="n")
+                row=0, column=3, padx=1, pady=1, sticky="n"
+            )
             ttk.Label(master, text="Ciudad:", font=("Helvetica", 12, "bold")).grid(
-                row=2, column=0, padx=1, pady=1, sticky="n")
+                row=2, column=0, padx=1, pady=1, sticky="n"
+            )
             # inputs
             entry1_emp = ttk.Entry(master, width=15)
             entry2_emp = ttk.Entry(master, width=15)
@@ -420,9 +581,11 @@ def create_widget_input_DB(master, table) -> list:
             return [entry1_emp, entry2_emp, entry3_emp, entry4_emp, entry5_emp]
         case "departments":
             ttk.Label(master, text="Nombre:", font=("Helvetica", 12, "bold")).grid(
-                row=0, column=0, padx=1, pady=1, sticky="n")
+                row=0, column=0, padx=1, pady=1, sticky="n"
+            )
             ttk.Label(master, text="Localizacón:", font=("Helvetica", 12, "bold")).grid(
-                row=0, column=1, padx=1, pady=1, sticky="n")
+                row=0, column=1, padx=1, pady=1, sticky="n"
+            )
             # inputs
             entry1_emp = ttk.Entry(master, width=25)
             entry2_emp = ttk.Entry(master, width=25)
@@ -430,12 +593,15 @@ def create_widget_input_DB(master, table) -> list:
             entry2_emp.grid(row=1, column=1, padx=5, pady=1, sticky="n")
             return [entry1_emp, entry2_emp]
         case "heads":
-            ttk.Label(master, text="Nombre (cargo):", font=("Helvetica", 12, "bold")).grid(
-                row=0, column=0, padx=1, pady=1, sticky="n")
+            ttk.Label(
+                master, text="Nombre (cargo):", font=("Helvetica", 12, "bold")
+            ).grid(row=0, column=0, padx=1, pady=1, sticky="n")
             ttk.Label(master, text="Empleado:", font=("Helvetica", 12, "bold")).grid(
-                row=0, column=1, padx=1, pady=1, sticky="n")
-            ttk.Label(master, text="Departamento:", font=("Helvetica", 12, "bold")).grid(
-                row=0, column=2, padx=1, pady=1, sticky="n")
+                row=0, column=1, padx=1, pady=1, sticky="n"
+            )
+            ttk.Label(
+                master, text="Departamento:", font=("Helvetica", 12, "bold")
+            ).grid(row=0, column=2, padx=1, pady=1, sticky="n")
             # inputs
             entry1_emp = ttk.Entry(master, width=10)
             entry2_emp = ttk.Entry(master, width=10)
@@ -446,9 +612,11 @@ def create_widget_input_DB(master, table) -> list:
             return [entry1_emp, entry2_emp, entry3_emp]
         case "suppliers":
             ttk.Label(master, text="Nombre:", font=("Helvetica", 12, "bold")).grid(
-                row=0, column=0, padx=1, pady=1, sticky="n")
+                row=0, column=0, padx=1, pady=1, sticky="n"
+            )
             ttk.Label(master, text="Telefono:", font=("Helvetica", 12, "bold")).grid(
-                row=0, column=1, padx=1, pady=1, sticky="n")
+                row=0, column=1, padx=1, pady=1, sticky="n"
+            )
             # inputs
             entry1_emp = ttk.Entry(master, width=35)
             entry2_emp = ttk.Entry(master, width=15)
@@ -457,29 +625,41 @@ def create_widget_input_DB(master, table) -> list:
             return [entry1_emp, entry2_emp]
         case "products":
             ttk.Label(master, text="Nombre:", font=("Helvetica", 12, "bold")).grid(
-                row=0, column=0, padx=1, pady=1, sticky="n")
+                row=0, column=0, padx=1, pady=1, sticky="n"
+            )
             ttk.Label(master, text="Modelo:", font=("Helvetica", 12, "bold")).grid(
-                row=0, column=1, padx=1, pady=1, sticky="n")
+                row=0, column=1, padx=1, pady=1, sticky="n"
+            )
             ttk.Label(master, text="Marca:", font=("Helvetica", 12, "bold")).grid(
-                row=0, column=2, padx=1, pady=1, sticky="n")
+                row=0, column=2, padx=1, pady=1, sticky="n"
+            )
             ttk.Label(master, text="Descripcion:", font=("Helvetica", 12, "bold")).grid(
-                row=0, column=3, padx=1, pady=1, sticky="n")
-            ttk.Label(master, text="Precio de venta:", font=("Helvetica", 12, "bold")).grid(
-                row=2, column=0, padx=1, pady=1, sticky="n")
+                row=0, column=3, padx=1, pady=1, sticky="n"
+            )
+            ttk.Label(
+                master, text="Precio de venta:", font=("Helvetica", 12, "bold")
+            ).grid(row=2, column=0, padx=1, pady=1, sticky="n")
             ttk.Label(master, text="Disponible:", font=("Helvetica", 12, "bold")).grid(
-                row=2, column=1, padx=1, pady=1, sticky="n")
-            ttk.Label(master, text="Precio de proveedor:", font=("Helvetica", 12, "bold")).grid(
-                row=2, column=2, padx=1, pady=1, sticky="n")
+                row=2, column=1, padx=1, pady=1, sticky="n"
+            )
+            ttk.Label(
+                master, text="Precio de proveedor:", font=("Helvetica", 12, "bold")
+            ).grid(row=2, column=2, padx=1, pady=1, sticky="n")
             ttk.Label(master, text="Soporte:", font=("Helvetica", 12, "bold")).grid(
-                row=2, column=3, padx=1, pady=1, sticky="n")
+                row=2, column=3, padx=1, pady=1, sticky="n"
+            )
             ttk.Label(master, text="Es servicio:", font=("Helvetica", 12, "bold")).grid(
-                row=4, column=0, padx=1, pady=1, sticky="n")
+                row=4, column=0, padx=1, pady=1, sticky="n"
+            )
             ttk.Label(master, text="Categoria:", font=("Helvetica", 12, "bold")).grid(
-                row=4, column=1, padx=1, pady=1, sticky="n")
-            ttk.Label(master, text="URL de imagen:", font=("Helvetica", 12, "bold")).grid(
-                row=4, column=2, padx=1, pady=1, sticky="n")
+                row=4, column=1, padx=1, pady=1, sticky="n"
+            )
+            ttk.Label(
+                master, text="URL de imagen:", font=("Helvetica", 12, "bold")
+            ).grid(row=4, column=2, padx=1, pady=1, sticky="n")
             ttk.Label(master, text="ID:", font=("Helvetica", 12, "bold")).grid(
-                row=4, column=3, padx=1, pady=1, sticky="n")
+                row=4, column=3, padx=1, pady=1, sticky="n"
+            )
             # -----------------------inputs-----------------------
             entry1 = ttk.Entry(master, width=15)
             entry2 = ttk.Entry(master, width=15)
@@ -489,11 +669,21 @@ def create_widget_input_DB(master, table) -> list:
             entry6 = ttk.Entry(master, width=7)
             entry7 = ttk.Entry(master, width=9)
             var8 = ttk.IntVar()
-            entry8 = ttk.Checkbutton(master, onvalue=1, offvalue=0, variable=var8,
-                                     bootstyle="succes, round-toggle")
+            entry8 = ttk.Checkbutton(
+                master,
+                onvalue=1,
+                offvalue=0,
+                variable=var8,
+                bootstyle="succes, round-toggle",
+            )
             var9 = ttk.IntVar()
-            entry9 = ttk.Checkbutton(master, onvalue=1, offvalue=0, variable=var9,
-                                     bootstyle="succes, round-toggle")
+            entry9 = ttk.Checkbutton(
+                master,
+                onvalue=1,
+                offvalue=0,
+                variable=var9,
+                bootstyle="succes, round-toggle",
+            )
             entry10 = ttk.Entry(master, width=15)
             entry11 = ttk.Entry(master, width=15)
             entry12 = ttk.Entry(master, width=10)
@@ -509,14 +699,39 @@ def create_widget_input_DB(master, table) -> list:
             entry10.grid(row=5, column=1, padx=5, pady=1)
             entry11.grid(row=5, column=2, padx=5, pady=1)
             entry12.grid(row=5, column=3, padx=5, pady=1)
-            return [entry1, entry2, entry3, entry4, entry5, entry6, entry7, var8, var9, entry10, entry11, entry12]
+            return [
+                entry1,
+                entry2,
+                entry3,
+                entry4,
+                entry5,
+                entry6,
+                entry7,
+                var8,
+                var9,
+                entry10,
+                entry11,
+                entry12,
+            ]
         case "orders":
-            ttk.Label(master, text="ID", font=("Helvetica", 12, "bold")).grid(row=0, column=0, padx=1, pady=1, sticky="nsew")
-            ttk.Label(master, text="Product ID", font=("Helvetica", 12, "bold")).grid(row=0, column=1, padx=1, pady=1, sticky="nsew")
-            ttk.Label(master, text="Quantity", font=("Helvetica", 12, "bold")).grid(row=0, column=2, padx=1, pady=1, sticky="nsew")
-            ttk.Label(master, text="Date order", font=("Helvetica", 12, "bold")).grid(row=0, column=3, padx=1, pady=1, sticky="nsew")
-            ttk.Label(master, text="Customer ID", font=("Helvetica", 12, "bold")).grid(row=2, column=0, padx=1, pady=1, sticky="nsew")
-            ttk.Label(master, text="Employee ID", font=("Helvetica", 12, "bold")).grid(row=2, column=1, padx=1, pady=1, sticky="nsew")
+            ttk.Label(master, text="ID", font=("Helvetica", 12, "bold")).grid(
+                row=0, column=0, padx=1, pady=1, sticky="nsew"
+            )
+            ttk.Label(master, text="Product ID", font=("Helvetica", 12, "bold")).grid(
+                row=0, column=1, padx=1, pady=1, sticky="nsew"
+            )
+            ttk.Label(master, text="Quantity", font=("Helvetica", 12, "bold")).grid(
+                row=0, column=2, padx=1, pady=1, sticky="nsew"
+            )
+            ttk.Label(master, text="Date order", font=("Helvetica", 12, "bold")).grid(
+                row=0, column=3, padx=1, pady=1, sticky="nsew"
+            )
+            ttk.Label(master, text="Customer ID", font=("Helvetica", 12, "bold")).grid(
+                row=2, column=0, padx=1, pady=1, sticky="nsew"
+            )
+            ttk.Label(master, text="Employee ID", font=("Helvetica", 12, "bold")).grid(
+                row=2, column=1, padx=1, pady=1, sticky="nsew"
+            )
             # -----------------------inputs-----------------------
             entry1 = ttk.Entry(master, width=15)
             entry2 = ttk.Entry(master, width=15)
@@ -532,12 +747,24 @@ def create_widget_input_DB(master, table) -> list:
             entry6.grid(row=3, column=1, padx=5, pady=1)
             return [entry1, entry2, entry3, entry4, entry5, entry6]
         case "vorders":
-            ttk.Label(master, text="ID", font=("Helvetica", 12, "bold")).grid(row=0, column=0, padx=1, pady=1, sticky="nsew")
-            ttk.Label(master, text="Products", font=("Helvetica", 12, "bold")).grid(row=0, column=1, padx=1, pady=1, sticky="nsew")
-            ttk.Label(master, text="Date order", font=("Helvetica", 12, "bold")).grid(row=0, column=2, padx=1, pady=1, sticky="nsew")
-            ttk.Label(master, text="Customer ID", font=("Helvetica", 12, "bold")).grid(row=2, column=3, padx=1, pady=1, sticky="nsew")
-            ttk.Label(master, text="Employee ID", font=("Helvetica", 12, "bold")).grid(row=2, column=0, padx=1, pady=1, sticky="nsew")
-            ttk.Label(master, text="Chat ID", font=("Helvetica", 12, "bold")).grid(row=2, column=1, padx=1, pady=1, sticky="nsew")
+            ttk.Label(master, text="ID", font=("Helvetica", 12, "bold")).grid(
+                row=0, column=0, padx=1, pady=1, sticky="nsew"
+            )
+            ttk.Label(master, text="Products", font=("Helvetica", 12, "bold")).grid(
+                row=0, column=1, padx=1, pady=1, sticky="nsew"
+            )
+            ttk.Label(master, text="Date order", font=("Helvetica", 12, "bold")).grid(
+                row=0, column=2, padx=1, pady=1, sticky="nsew"
+            )
+            ttk.Label(master, text="Customer ID", font=("Helvetica", 12, "bold")).grid(
+                row=2, column=3, padx=1, pady=1, sticky="nsew"
+            )
+            ttk.Label(master, text="Employee ID", font=("Helvetica", 12, "bold")).grid(
+                row=2, column=0, padx=1, pady=1, sticky="nsew"
+            )
+            ttk.Label(master, text="Chat ID", font=("Helvetica", 12, "bold")).grid(
+                row=2, column=1, padx=1, pady=1, sticky="nsew"
+            )
             # -----------------------inputs-----------------------
             entry1 = ttk.Entry(master, width=15)
             entry2 = ttk.Entry(master, width=15)
@@ -553,19 +780,39 @@ def create_widget_input_DB(master, table) -> list:
             entry7.grid(row=3, column=1, padx=5, pady=1)
             return [entry1, entry2, entry4, entry5, entry6, entry7]
         case "tickets":
-            ttk.Label(master, text="ID", font=("Helvetica", 12, "bold")).grid(row=0, column=0, padx=1, pady=1, sticky="nsew")
-            ttk.Label(master, text="Content", font=("Helvetica", 12, "bold")).grid(row=0, column=1, padx=1, pady=1, sticky="nsew")
-            ttk.Label(master, text="Is retrieved?", font=("Helvetica", 12, "bold")).grid(row=0, column=2, padx=1, pady=1, sticky="nsew")
-            ttk.Label(master, text="Is answered?", font=("Helvetica", 12, "bold")).grid(row=2, column=0, padx=1, pady=1, sticky="nsew")
-            ttk.Label(master, text="Timestamp Creation", font=("Helvetica", 12, "bold")).grid(row=2, column=1, padx=1, pady=1, sticky="nsew")
+            ttk.Label(master, text="ID", font=("Helvetica", 12, "bold")).grid(
+                row=0, column=0, padx=1, pady=1, sticky="nsew"
+            )
+            ttk.Label(master, text="Content", font=("Helvetica", 12, "bold")).grid(
+                row=0, column=1, padx=1, pady=1, sticky="nsew"
+            )
+            ttk.Label(
+                master, text="Is retrieved?", font=("Helvetica", 12, "bold")
+            ).grid(row=0, column=2, padx=1, pady=1, sticky="nsew")
+            ttk.Label(master, text="Is answered?", font=("Helvetica", 12, "bold")).grid(
+                row=2, column=0, padx=1, pady=1, sticky="nsew"
+            )
+            ttk.Label(
+                master, text="Timestamp Creation", font=("Helvetica", 12, "bold")
+            ).grid(row=2, column=1, padx=1, pady=1, sticky="nsew")
             # -----------------------inputs-----------------------
             entry1 = ttk.Entry(master, width=15)
             var2 = ttk.IntVar(value=1)
-            entry2 = ttk.Checkbutton(master, onvalue=1, offvalue=0, variable=var2,
-                                     bootstyle="succes, round-toggle")
+            entry2 = ttk.Checkbutton(
+                master,
+                onvalue=1,
+                offvalue=0,
+                variable=var2,
+                bootstyle="succes, round-toggle",
+            )
             var3 = ttk.IntVar(value=1)
-            entry3 = ttk.Checkbutton(master, onvalue=1, offvalue=0, variable=var3,
-                                     bootstyle="succes, round-toggle")
+            entry3 = ttk.Checkbutton(
+                master,
+                onvalue=1,
+                offvalue=0,
+                variable=var3,
+                bootstyle="succes, round-toggle",
+            )
             entry4 = ttk.Entry(master)
             entry5 = ttk.Entry(master, width=30)
             entry1.grid(row=1, column=0, padx=5, pady=1)
@@ -587,7 +834,8 @@ def create_btns_DB(
                 master, text="Insertar", command=_command_insert, bootstyle="success", *args, **kwargs)
             btn_insert.grid(row=0, column=0, pady=10, padx=1)
             btn_update = ttk.Button(
-                master, text="Actualizar", command=_command_update, *args, **kwargs)
+                master, text="Actualizar", command=_command_update, *args, **kwargs
+            )
             btn_update.grid(row=0, column=1, pady=10, padx=1)
             btn_reset = ttk.Button(master, text="Limpiar", command=_command_reset, *args, **kwargs)
             btn_reset.grid(row=0, column=2, pady=10, padx=1)
@@ -600,12 +848,7 @@ def create_btns_DB(
 
 
 def calculate_results_quizzes(dict_quizz: dict, tipo_q: int):
-    dict_results = {
-        "c_final": 0,
-        "c_dom": 0,
-        "c_cat": 0,
-        "detail": {}
-    }
+    dict_results = {"c_final": 0, "c_dom": 0, "c_cat": 0, "detail": {}}
     dict_conversions = json.load(open(conversion_quizzes_path, encoding="utf-8"))
     match tipo_q:
         case 1:
@@ -669,3 +912,12 @@ def calculate_results_quizzes(dict_quizz: dict, tipo_q: int):
     return dict_results
 
 
+def recommendations_results_quizzes(dict_results: dict, tipo_q: int):
+    dict_recommendations = {
+        "c_final_r": 0,
+        "c_dom_r": 0,
+        "c_cat_r": 0,
+    }
+    dict_conversions_recomen = json.load(open(filepath_recommendations, encoding="utf-8"))
+
+    return dict_recommendations

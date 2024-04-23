@@ -3,8 +3,12 @@ __author__ = "Edisson Naula"
 __date__ = "$ 14/feb./2024  at 15:54 $"
 
 import textwrap
+from tkinter import messagebox
 
 from reportlab.pdfgen import canvas
+from reportlab.lib import colors
+
+from templates.Funtions_Utils import calculate_results_quizzes
 
 
 def create_datos_personales(
@@ -38,6 +42,51 @@ def create_datos_personales(
     master.drawString(dim_x + 95, dim_y - 85 - pady, end)
     master.drawString(dim_x + 105, dim_y - 100 - pady, interview)
     master.drawString(dim_x + 215, dim_y - 115 - pady, interviewer)
+
+
+def display_result(master: canvas.Canvas, dict_quizz, dim_x, dim_y):
+    dict_results = dict_quizz["results"]
+    # Posición inicial de la primera línea
+    pady = 0
+    master.setFont("Courier-Bold", 10)
+    master.drawString(dim_x + 10, dim_y - 140 - pady, "Your final result is:\n")
+    master.drawString(
+        dim_x + 10,
+        dim_y - 155 - pady,
+        f"Calificación final: {dict_results['c_final']}\n",
+    )
+    master.drawString(
+        dim_x + 10,
+        dim_y - 170 - pady,
+        f"Calificación de dominio: {dict_results['c_dom']}\n",
+    )
+    master.drawString(
+        dim_x + 10,
+        dim_y - 185 - pady,
+        f"Calificacion de categoria: {dict_results['c_cat']}\n",
+    )
+
+
+def display_recommendations(master: canvas.Canvas, dict_quizz, dim_x, dim_y):
+    dict_recommendations = dict_quizz["recommendations"]
+    pady = 0
+    master.setFont("Courier-Bold", 10)
+    master.drawString(dim_x + 10, dim_y - 200 - pady, "Recomendaciones:\n")
+    master.drawString(
+        dim_x + 10,
+        dim_y - 215 - pady,
+        f"Recomendacion para calificación final:{dict_recommendations['c_final_r']}\n",
+    )
+    master.drawString(
+        dim_x + 10,
+        dim_y - 230 - pady,
+        f"Recomendacion para calificación de dominio:{dict_recommendations['c_dom_r']}\n",
+    )
+    master.drawString(
+        dim_x + 10,
+        dim_y - 245 - pady,
+        f"Recomendacion para calificación de categoria:{dict_recommendations['c_cat_r']}\n",
+    )
 
 
 def create_header(master: canvas.Canvas, img, title, page_x, date_int):
@@ -409,6 +458,12 @@ def create_pdf_quizz_salida(
     for i, line in enumerate(answer):
         pdf.drawString(85, 330 - i * 10, line)
     pdf.setFillColorRGB(0, 0, 0)
+
+    pdf.showPage()
+    # ---------------------Resultados-------------------
+
+    display_result(pdf, dict_quizz, 80, 400)
+
     # ------------------------personal data-------------------
     create_datos_personales(
         pdf,
@@ -422,6 +477,7 @@ def create_pdf_quizz_salida(
         80,
         180,
     )
+    display_recommendations(pdf, dict_quizz, 80, 580)
     pdf.save()
     return True
 
@@ -530,6 +586,8 @@ def create_pdf__quizz_nor035_v1(
             pdf.setFillColorRGB(0, 0, 0)
             y_position -= font_size * interlineado
 
+        pdf.showPage()
+
         if i == n_questions - 1:
             # ------------------------personal data-------------------
             create_datos_personales(
@@ -544,6 +602,8 @@ def create_pdf__quizz_nor035_v1(
                 80,
                 180,
             )
+            display_result(pdf, dict_quizz, 80, 400)
+            display_recommendations(pdf, dict_quizz, 80, 580)
     pdf.save()
     return True
 
@@ -638,6 +698,7 @@ def create_pdf_quizz_nor035_50_plus(
             y_position -= font_size * interlineado
         if i == n_questions - 1:
             # ------------------------personal data-------------------
+            pdf.showPage()
             create_datos_personales(
                 pdf,
                 name_emp,
@@ -650,6 +711,8 @@ def create_pdf_quizz_nor035_50_plus(
                 80,
                 180,
             )
+            display_result(pdf, dict_quizz, 80, 400)
+            display_recommendations(pdf, dict_quizz, 80, 580)
 
     pdf.save()
     return True
@@ -752,6 +815,7 @@ def create_quizz_clima_laboral(
 
         if i == n_questions - 1:
             # ------------------------personal data-------------------
+            pdf.showPage()
             create_datos_personales(
                 pdf,
                 name_emp,
@@ -764,9 +828,123 @@ def create_quizz_clima_laboral(
                 80,
                 180,
             )
+            display_result(pdf, dict_quizz, 80, 400)
+            display_recommendations(pdf, dict_quizz, 80, 580)
 
     pdf.save()
     return True
+
+
+# def create_quizz_eva_360(
+#     dict_quizz,
+#     image_logo=None,
+#     filepath_out=None,
+#     name_emp="Ejemplo1",
+#     job="position 1",
+#     terminal="terminal",
+#     date_start="01/01/2021",
+#     date_end="31/12/2021",
+#     date_interview="01/01/2021",
+#     name_interviewer="Interviewer",
+# ):
+#     file_name = (
+#         "C:/Users/eugen/OneDrive/Escritorio/pdfs/quizz_eva_360.pdf"
+#         if filepath_out is None
+#         else filepath_out
+#     )
+#     image_logo = "img/logo_docs.png" if image_logo is None else image_logo
+#     name_quizz = "Evaluacion 360°"
+#     n_questions = len(dict_quizz)
+#     interlineado = 3
+#     a4_x = 595.27
+#     a4_y = 841.89
+
+#     pdf = canvas.Canvas(file_name, pagesize=(a4_x, a4_y))
+#     pdf.setTitle(name_quizz)
+
+#     create_header(pdf, image_logo, name_quizz, a4_x, date_interview)
+#     note = "* Indica que la pregunta es obligatoria"
+#     txt_lines = [
+#         " Evaluacion 360",
+#     ]
+#     font_size = 12
+#     pdf.setFont("Times-Roman", font_size)
+#     y_position = 730
+#     for line in txt_lines:
+#         pdf.drawString(80, y_position, line)
+#         y_position -= font_size
+
+#     for i in range(n_questions):
+#         if i % 4 == 0 and i != 0:
+#             pdf.showPage()
+#             create_header(pdf, image_logo, name_quizz, a4_x, date_interview)
+#             y_position = 730
+#         question = textwrap.wrap(dict_quizz[str(i)]["question"], width=121)
+#         font_size = 11
+#         pdf.setFont("Times-Roman", font_size)
+#         y_position -= font_size * interlineado
+
+#         for line in question:
+#             pdf.drawString(40, y_position, line)
+#             y_position -= font_size
+
+#         options = dict_quizz[str(i)]["options"]
+#         subquestions = dict_quizz[str(i)]["subquestions"]
+#         answers = (
+#             dict_quizz[str(i)]["answer"]
+#             if dict_quizz[str(i)]["answer"] != ""
+#             else [(0, 0)]
+#         )
+
+#         font_size = 8
+#         pdf.setFont("Times-Roman", font_size)
+#         y_position -= font_size * interlineado
+#         # Draw subquestions and answers in columns
+#         x_subquestion = 10
+#         x_answers = a4_x / 2 - 10
+
+#         #  Draw options titles
+#         for j, option in enumerate(options):
+#             option_title = f"{option}:"
+#             pdf.drawCentredString(x_answers + j * 45, y_position, option_title)
+#         y_position -= font_size * interlineado * 8
+#         # draw subquestions
+#         font_size = 8
+#         pdf.setFont("Times-Roman", font_size)
+#         for k, subquestion in enumerate(subquestions):
+#             lines = textwrap.wrap(subquestion, width=120)
+#             for m, line in enumerate(lines):
+#                 pdf.drawString(x_subquestion, y_position, line)
+#                 if m == 0:
+#                     draw_option(x_answers, y_position, k, options, answers, pdf)
+#                 y_position -= font_size * interlineado
+#                 y_position -= font_size * interlineado
+#         #
+#         if i == 0:
+#             font_size = 8
+#             pdf.setFillColorRGB(255, 0, 0)
+#             pdf.setFont("Times-Roman", font_size)
+#             pdf.drawString(20, y_position, note)
+#             pdf.setFillColorRGB(0, 0, 0)
+#             y_position -= font_size * interlineado
+
+#         if i == n_questions - 1:
+#             # ------------------------personal data-------------------
+#             create_datos_personales(
+#                 pdf,
+#                 name_emp,
+#                 job,
+#                 terminal,
+#                 date_start,
+#                 date_end,
+#                 date_interview,
+#                 name_interviewer,
+#                 80,
+#                 180,
+#             )
+
+#     pdf.save()
+#     return True
 
 
 def create_quizz_eva_360(
@@ -789,7 +967,7 @@ def create_quizz_eva_360(
     image_logo = "img/logo_docs.png" if image_logo is None else image_logo
     name_quizz = "Evaluacion 360°"
     n_questions = len(dict_quizz)
-    interlineado = 1
+    interlineado = 1.5
     a4_x = 595.27
     a4_y = 841.89
 
@@ -806,13 +984,13 @@ def create_quizz_eva_360(
     y_position = 730
     for line in txt_lines:
         pdf.drawString(80, y_position, line)
-        y_position -= font_size
+        # y_position -= font_size * interlineado
 
     for i in range(n_questions):
-        if i % 4 == 0 and i != 0:
+        if i % 2 == 0 and i != 0:
             pdf.showPage()
             create_header(pdf, image_logo, name_quizz, a4_x, date_interview)
-            y_position = 730
+            y_position = 400
         question = textwrap.wrap(dict_quizz[str(i)]["question"], width=121)
         font_size = 11
         pdf.setFont("Times-Roman", font_size)
@@ -820,7 +998,7 @@ def create_quizz_eva_360(
 
         for line in question:
             pdf.drawString(40, y_position, line)
-            y_position -= font_size
+            y_position -= font_size * interlineado
 
         options = dict_quizz[str(i)]["options"]
         subquestions = dict_quizz[str(i)]["subquestions"]
@@ -832,28 +1010,31 @@ def create_quizz_eva_360(
 
         font_size = 8
         pdf.setFont("Times-Roman", font_size)
-        y_position -= font_size * interlineado
+        y_position -= 400
         # Draw subquestions and answers in columns
-        x_subquestion = 20
-        x_answers = a4_x / 2 - 10
+        x_subquestion = 10
+        # x_answers = a4_x / 2 - 10
+        x_answers = 340
 
         #  Draw options titles
         for j, option in enumerate(options):
             option_title = f"{option}:"
-            pdf.drawCentredString(x_answers + j * 55, y_position, option_title)
-        y_position -= font_size * interlineado * 2
+            pdf.drawString(
+                x_answers, y_position - j * font_size * interlineado, option_title
+            )
+        # y_position -= font_size * interlineado * 9
         # draw subquestions
-        font_size = 9
+        font_size = 8
         pdf.setFont("Times-Roman", font_size)
         for k, subquestion in enumerate(subquestions):
-            lines = textwrap.wrap(subquestion, width=60)
+            lines = textwrap.wrap(subquestion, width=120)
             for m, line in enumerate(lines):
                 pdf.drawString(x_subquestion, y_position, line)
-                if m == 0:
+                if m == 0 and options:
                     draw_option(x_answers, y_position, k, options, answers, pdf)
                 y_position -= font_size * interlineado
-            y_position -= font_size * interlineado
 
+        #
         if i == 0:
             font_size = 8
             pdf.setFillColorRGB(255, 0, 0)
@@ -864,6 +1045,7 @@ def create_quizz_eva_360(
 
         if i == n_questions - 1:
             # ------------------------personal data-------------------
+            pdf.showPage()
             create_datos_personales(
                 pdf,
                 name_emp,
@@ -876,6 +1058,8 @@ def create_quizz_eva_360(
                 80,
                 180,
             )
+            display_result(pdf, dict_quizz, 80, 400)
+            display_recommendations(pdf, dict_quizz, 80, 580)
 
     pdf.save()
     return True

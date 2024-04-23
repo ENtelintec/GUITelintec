@@ -11,12 +11,15 @@ from ttkbootstrap.dialogs import Messagebox
 from ttkbootstrap.scrolled import ScrolledFrame
 
 from static.extensions import quizzes_RRHH, quizz_out_path
+
 from templates.Functions_AuxFiles import save_json_file_quizz
 from templates.Functions_SQL import get_id_name_employee
 from templates.Funtions_Utils import (
     create_Combobox,
     calculate_results_quizzes,
     create_label,
+    recommendations_results_quizzes,
+    recommendations_results_quizzes,
 )
 from templates.PDFGenerator import (
     create_pdf__quizz_nor035_v1,
@@ -53,7 +56,15 @@ def get_name_id_employees_list(
 
 
 class QuizMaker(ttk.Frame):
-    def __init__(self, master, dict_quizz, title=None, tipo_id=0, out_path=quizz_out_path, metadata: dict = None):
+    def __init__(
+        self,
+        master,
+        dict_quizz,
+        title=None,
+        tipo_id=0,
+        out_path=quizz_out_path,
+        metadata: dict = None,
+    ):
         super().__init__(master)
         self.quizz_out_path = out_path
         self.q_no = 0
@@ -107,21 +118,42 @@ class QuizMaker(ttk.Frame):
 
     def display_result(self):
         dict_results = calculate_results_quizzes(self.dict_quizz, self.tipo_quizz)
+
         Messagebox.show_info(
             title="Result",
             message=f"Your final result is:\n"
             f"Calificación final: {dict_results['c_final']}\n"
             f"Calificación de dominio: {dict_results['c_dom']}\n"
-            f"Calificacion de categoria: {dict_results['c_cat']}\n",
+            f"Calificacion de categoria: {dict_results['c_cat']}\n"
+            f"----RECOMENDACIONES----",
         )
         return dict_results
+
+    def display_recommendations(self):
+        dict_recommendations = recommendations_results_quizzes(
+            self.dict_quizz, self.tipo_quizz
+        )
+        Messagebox.show_info(
+            title="Recommendations",
+            message=f"Algunas recomendaciones : \n"
+            f"Se recomienda Para la calificacion final{dict_recommendations['c_final_r']}\n"
+            f"Se recomienda Para la calificacion de dominio{dict_recommendations['c_dom_r']}\n"
+            f"Se recomienda Para la calificacion categoria{dict_recommendations['c_cat_r']}\n",
+        )
+        return dict_recommendations
 
     def next_btn(self):
         self.save_result()
         self.q_no += 1
         if self.q_no == self.data_size:
             dict_results = self.display_result()
-            self.update_dict_quizz(self.dict_quizz, tipo_op=self.tipo_quizz, dict_results=dict_results)
+            dict_recommendations = self.display_recommendations()
+            self.update_dict_quizz(
+                self.dict_quizz,
+                tipo_op=self.tipo_quizz,
+                dict_results=dict_results,
+                dict_recommendations=dict_recommendations,
+            )
             self.destroy()
         else:
             self.check_especial_case()
@@ -253,9 +285,13 @@ class QuizMaker(ttk.Frame):
                 self.opt_selected.append(self.entries[0].get("1.0", "end-1c"))
         self.dict_quizz[str(self.q_no)]["answer"] = self.opt_selected[-1]
 
-    def update_dict_quizz(self, new_dict: dict, tipo_op, dict_results):
+    def update_dict_quizz(
+        self, new_dict: dict, tipo_op, dict_results, dict_recommendations
+    ):
+
         self.dict_quizz = new_dict
         self.dict_quizz["results"] = dict_results
+        self.dict_quizz["recommendations"] = dict_recommendations
         name_emp = self.metadata["name_emp"]
         id_emp = self.metadata["ID_emp"]
         name_interviewer = self.metadata["interviewer"]
@@ -270,25 +306,44 @@ class QuizMaker(ttk.Frame):
         )
         if tipo_op == 0:
             create_pdf_quizz_salida(
-                self.dict_quizz, None, file_out, name_emp, job, terminal, date_start, date_end, date_inteview,
+                self.dict_quizz,
+                None,
+                file_out,
+                name_emp,
+                job,
+                terminal,
+                date_start,
+                date_end,
+                date_inteview,
                 name_interviewer,
             )
         elif tipo_op == 1:
             create_pdf__quizz_nor035_v1(
-                self.dict_quizz, None, file_out, name_emp, job, terminal, date_start, date_end, date_inteview,
-                name_interviewer
+                self.dict_quizz,
+                None,
+                file_out,
+                name_emp,
+                job,
+                terminal,
+                date_start,
+                date_end,
+                date_inteview,
+                name_interviewer,
             )
         elif tipo_op == 2:
             create_pdf_quizz_nor035_50_plus(
-                self.dict_quizz, None, file_out, name_emp, job, terminal, date_start, date_end, date_inteview,
-                name_interviewer
+                self.dict_quizz,
+                None,
+                file_out,
+                name_emp,
+                job,
+                terminal,
+                date_start,
+                date_end,
+                date_inteview,
+                name_interviewer,
             )
-        elif tipo_op == 3:
-            # quizz de salida
-            create_pdf_quizz_salida(
-                self.dict_quizz, None, file_out, name_emp, job, terminal, date_start, date_end, date_inteview,
-                name_interviewer
-            )
+
         elif tipo_op == 3:
             create_quizz_clima_laboral(
                 self.dict_quizz,
@@ -318,7 +373,9 @@ class QuizMaker(ttk.Frame):
             )
             print("create eva360", create_quizz_eva_360)
         print(f"quizz update and pdf generated at {file_out}")
-        result_name = f"Quiz_{tipo_op}_{id_emp}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        result_name = (
+            f"Quiz_{tipo_op}_{id_emp}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        )
         self.metadata["date"] = str(self.metadata["date"])
         self.metadata["admision"] = str(self.metadata["admision"])
         self.dict_quizz["metadata"] = self.metadata
@@ -360,7 +417,8 @@ class FrameEncuestas(ttk.Frame):
         master,
         quizzes=quizzes_RRHH,
         quizz_out=None,
-        interviewer="default", setting: dict = None,
+        interviewer="default",
+        setting: dict = None,
         **kwargs,
     ):
         super().__init__(master, **kwargs)
@@ -413,19 +471,32 @@ class FrameEncuestas(ttk.Frame):
             sticky="w",
         )
         # evaluated employee
-        self.label_evaluated = create_label(frame_inputs, text="Empleado evaluado: ", row=0, column=2, sticky="w")
+        self.label_evaluated = create_label(
+            frame_inputs, text="Empleado evaluado: ", row=0, column=2, sticky="w"
+        )
         self.label_evaluated.grid_remove()
         self.name_emp_evaluated = create_Combobox(
-            frame_inputs, values=self.names, state="readonly", width=40,
-            row=0, column=3, sticky="w"
+            frame_inputs,
+            values=self.names,
+            state="readonly",
+            width=40,
+            row=0,
+            column=3,
+            sticky="w",
         )
         self.name_emp_evaluated.grid_remove()
-        self.label_pos_evaluator = create_label(frame_inputs, text="Nivel del evaluado: ", row=1, column=2, sticky="w")
+        self.label_pos_evaluator = create_label(
+            frame_inputs, text="Nivel del evaluado: ", row=1, column=2, sticky="w"
+        )
         self.label_pos_evaluator.grid_remove()
         self.pos_evaluator = create_Combobox(
-            frame_inputs, values=["Autoevaluación", "Jefe Inmediato", "Colega", "Subordinado"],
-            state="readonly", width=40,
-            row=1, column=3, sticky="w"
+            frame_inputs,
+            values=["Autoevaluación", "Jefe Inmediato", "Colega", "Subordinado"],
+            state="readonly",
+            width=40,
+            row=1,
+            column=3,
+            sticky="w",
         )
         self.pos_evaluator.grid_remove()
         # ------------buttons------------
@@ -505,9 +576,14 @@ class FrameEncuestas(ttk.Frame):
         }
         name_quizz = self.quizz_selector.get()
         self.dict_quizz = json.load(open(self.filepath, encoding="utf-8"))
-        self.quizz = QuizMaker(self.frame_encuesta, self.dict_quizz, title=name_quizz,
-                               tipo_id=self.tipo_id, out_path=self.quizz_out_path,
-                               metadata=metadata)
+        self.quizz = QuizMaker(
+            self.frame_encuesta,
+            self.dict_quizz,
+            title=name_quizz,
+            tipo_id=self.tipo_id,
+            out_path=self.quizz_out_path,
+            metadata=metadata,
+        )
         self.quizz.grid(row=0, column=0, padx=10, pady=10, sticky="nswe")
 
 
