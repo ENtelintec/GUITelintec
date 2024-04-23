@@ -65,7 +65,10 @@ def parse_data(data: dict, mode: int):
                         "emp_id": data['info']['emp_id'],
                         "date": data['info']['date'],
                         "limit_date": data['info']['limit_date'],
-                        "status": data['info']['status']
+                        "status": data['info']['status'],
+                        "order_quotation": data['info']['order_quotation'],
+                        "comment": data['info']['comment'],
+                        "history": data['info']['history']
                     }
                 items = []
                 for item in data['items']:
@@ -100,6 +103,23 @@ def parse_data(data: dict, mode: int):
                         "contract": data['contract'],
                         "id_emp": data['id_emp']
                     }
+            case 12:
+                out = {
+                    'name': data["name"],
+                    'address': data["address"],
+                    'phone': data["phone"],
+                    'email': data["email"],
+                    'rfc': data["rfc"]
+                }
+            case 13:
+                out = {
+                    'name': data["name"],
+                    'stock': data["stock"],
+                    'udm': data["udm"],
+                    'price': data["price"],
+                    'category': data["category"],
+                    'sku':  data["sku"]
+                }
             case _:
                 print("Invalid mode")
                 code = 204

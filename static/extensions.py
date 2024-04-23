@@ -52,6 +52,8 @@ ventanasApp = {
         "Clients (A)",
         "Proveedores (A)",
         "Configuraciones (A)",
+        "SM",
+        "Procesar SM",
         "Cuenta",
     ],
     "App.Department.Bitacoras": [
@@ -85,7 +87,7 @@ files_fichaje_path = "files/files_fichaje/"
 cache_oct_file_temp_path = "files/OCT_cache.csv"
 cache_oct_fichaje_path = "files/contracts_cache.pkl"
 filepath_settings = "files/settings.json"
-
+filepath_recomendations = "files/recomendations.json"
 quizzes_RRHH = {
     "0": {"name": "Encuesta de Salida", "path": "files/quizz_salida.json", "type": 0},
     "1": {

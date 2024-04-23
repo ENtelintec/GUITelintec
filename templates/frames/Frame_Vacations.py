@@ -180,7 +180,6 @@ class VacationsFrame(ScrolledFrame):
 
     def _test_id(self):
         emp_id = self.wentry_emp_id.get()
-        print(emp_id)
         name = None
         if emp_id == "":
             Messagebox.show_error(

@@ -6,4 +6,5 @@ from templates import GUIGeneral
 
 if __name__ == "__main__":
     main = GUIGeneral.GUIAsistente()
+    main.state("zoomed")
     main.mainloop()

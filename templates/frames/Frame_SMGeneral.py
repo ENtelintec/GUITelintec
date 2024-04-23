@@ -8,8 +8,8 @@ from ttkbootstrap.scrolled import ScrolledFrame
 from static.extensions import permissions_supper_SM
 from templates.Functions_AuxFiles import get_all_sm_entries, get_all_sm_products
 from templates.Functions_SQL import get_sm_clients, get_sm_employees
-from templates.frames.Frame_SMCreate import FrameSMCreate
-from templates.frames.Frame_SMDashboard import SMDashboard
+from templates.frames.SubFrame_SMCreate import FrameSMCreate
+from templates.frames.SubFrame_SMDashboard import SMDashboard
 
 
 def load_data(is_super=False, emp_id=None):

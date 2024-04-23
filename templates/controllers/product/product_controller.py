@@ -132,3 +132,19 @@ class Product:
                 self.cursor.close()
                 self.connection.close()
                 self.cursor = None
+
+    def update_stock(self, id_product, stock):
+        try:
+            self.connection = db()
+            self.cursor = self.connection.cursor()
+            update_sql = "UPDATE products_amc SET stock = %s WHERE id_product = %s"
+            self.cursor.execute(update_sql, (stock, id_product))
+            self.connection.commit()
+            return True
+        except Exception as e:
+            return f"Error: {e}"
+        finally:
+            if self.connection.is_connected():
+                self.cursor.close()
+                self.connection.close()
+                self.cursor = None

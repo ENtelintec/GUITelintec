@@ -127,15 +127,21 @@ def execute_sql_multiple(sql: str, values_list: list = None, type_sql=1):
 
 
 def get_employees(limit=(0, 100)) -> list[list]:
-    sql = "SELECT * FROM sql_telintec.employees LIMIT %s, %s"
-    val = (limit[0], limit[1])
+    sql = ("SELECT employees.employee_id, employees.name, employees.l_name, employees.curp, employees.phone_number, "
+           "employees.modality, departments.name, employees.contrato, employees.date_admission, "
+           "employees.rfc, employees.nss, employees.puesto, employees.status, "
+           "employees.departure, employees.email, employees.emergency_contact "
+           "FROM sql_telintec.employees "
+           "INNER JOIN sql_telintec.departments ON employees.department_id = departments.department_id "
+           "LIMIT  %s")
+    val = (limit[1],)
     flag, e, my_result = execute_sql(sql, val, 2)
     out = my_result if my_result is not None else []
     return out
 
 
-def new_employee(name, lastname, curp, phone, email, department, contract, entry_date, rfc, nss, emergency, modality,
-                 puesto, estatus, departure):
+def new_employee(name, lastname, curp, phone, modality, department, contract, entry_date,
+                 rfc, nss, puesto, estatus, departure, birthday, legajo, email, emergency):
     sql = ("INSERT INTO employees (name, l_name, curp, phone_number, email, department_id,"
            " contrato, date_admission, rfc, nss, emergency_contact, modality, puesto, status, departure) "
            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)")
@@ -272,7 +278,9 @@ def get_ids_employees(names: list):
 
 
 def get_departments(limit=(0, 100)) -> list[list]:
-    sql = "SELECT * FROM sql_telintec.departments LIMIT %s, %s"
+    sql = ("SELECT department_id, name, location "
+           "FROM sql_telintec.departments "
+           "LIMIT %s, %s")
     val = (limit[0], limit[1])
     flag, e, my_result = execute_sql(sql, val, 2)
     out = my_result if my_result is not None else []
@@ -280,15 +288,22 @@ def get_departments(limit=(0, 100)) -> list[list]:
 
 
 def get_heads(limit=(0, 100)) -> list[list]:
-    sql = "SELECT * FROM sql_telintec.heads LIMIT %s, %s"
-    val = (limit[0], limit[1])
+    sql = ("SELECT heads.name, heads.employee, heads.department, departments.name, "
+           "UPPER(CONCAT(employees.name, ' ', employees.l_name)) as name_emp, employees.email "
+           "FROM sql_telintec.heads "
+           "INNER JOIN sql_telintec.employees ON heads.employee = employees.employee_id "
+           "INNER JOIN sql_telintec.departments ON heads.department = departments.department_id "
+           "LIMIT %s ")
+    val = (limit[1],)
     flag, e, my_result = execute_sql(sql, val, 2)
     out = my_result if my_result is not None else []
     return out
 
 
 def get_customers(limit=(0, 100)) -> list[list]:
-    sql = "SELECT * FROM sql_telintec.customers LIMIT %s, %s"
+    sql = ("SELECT customer_id, name, l_name, phone_number, city, email "
+           "FROM sql_telintec.customers "
+           "LIMIT %s, %s")
     val = (limit[0], limit[1])
     flag, e, my_result = execute_sql(sql, val, 2)
     out = my_result if my_result is not None else []
@@ -296,7 +311,9 @@ def get_customers(limit=(0, 100)) -> list[list]:
 
 
 def get_supplier(limit=(0, 100)) -> list[list]:
-    sql = "SELECT * FROM sql_telintec.suppliers LIMIT %s, %s"
+    sql = ("SELECT supplier_id, name, location "
+           "FROM sql_telintec.suppliers "
+           "LIMIT %s, %s")
     val = (limit[0], limit[1])
     flag, e, my_result = execute_sql(sql, val, 2)
     out = my_result if my_result is not None else []
@@ -304,7 +321,10 @@ def get_supplier(limit=(0, 100)) -> list[list]:
 
 
 def get_p_and_s(limit=(0, 100)):
-    sql = "SELECT * FROM sql_telintec.products_services LIMIT %s, %s"
+    sql = ("SELECT product_id, name, model, marca, description, price_retail, available_quantity, "
+           "price_provider, support_offered, is_service, category, image "
+           "FROM sql_telintec.products_services "
+           "LIMIT %s, %s")
     val = (limit[0], limit[1])
     flag, e, my_result = execute_sql(sql, val, 2)
     out = my_result if my_result is not None else []
@@ -320,7 +340,11 @@ def get_chats_w_limit(limit=(0, 100)):
 
 
 def get_chats(limit=(0, 100)):
-    sql = "SELECT * FROM chats ORDER BY chat_id DESC LIMIT %s, %s"
+    sql = ("SELECT chat_id, context, timestamp_start, timestamp_end, receiver_id, "
+           "sender_id, platform, is_alive, is_review "
+           "FROM chats "
+           "ORDER BY chat_id DESC "
+           "LIMIT %s, %s")
     val = (limit[0], limit[1])
     flag, e, my_result = execute_sql(sql, val, 2)
     out = [] if my_result is None else my_result
@@ -344,7 +368,9 @@ def get_v_orders(limit=(0, 100)):
 
 
 def get_tickets(limit=(0, 100)):
-    sql = "SELECT * FROM sql_telintec.tickets LIMIT %s, %s"
+    sql = ("SELECT ticket_id, content_ticket, is_retrieved, is_answered, timestamp_create "
+           "FROM sql_telintec.tickets "
+           "LIMIT %s, %s")
     val = (limit[0], limit[1])
     flag, e, my_result = execute_sql(sql, val, 2)
     out = my_result if my_result is not None else []
@@ -675,9 +701,15 @@ def get_all_data_employees(status: str):
         status = "INACTIVO"
     else:
         status = "ACTIVO"
-    sql = ("SELECT sql_telintec.employees.*, departments.name, examen_id FROM sql_telintec.employees "
-           "left join departments on sql_telintec.employees.department_id = departments.department_id "
-           "left join examenes_med on "
+    sql = ("SELECT employees.employee_id, employees.employee_id, employees.name, employees.l_name, "
+           "employees.phone_number, employees.department_id, employees.modality, "
+           "employees.email, employees.contrato, employees.date_admission, "
+           "employees.rfc, employees.curp, employees.nss, employees.emergency_contact, employees.puesto, "
+           "employees.status, employees.departure, "
+           "departments.name, examenes_med.examen_id "
+           "FROM sql_telintec.employees "
+           "LEFT JOIN departments ON sql_telintec.employees.department_id = departments.department_id "
+           "LEFT JOIN examenes_med ON "
            "(sql_telintec.employees.employee_id = examenes_med.empleado_id AND examenes_med.status LIKE %s )")
     val = (status,)
     flag, error, result = execute_sql(sql, val, type_sql=2)
@@ -685,7 +717,10 @@ def get_all_data_employees(status: str):
 
 
 def get_all_fichajes():
-    sql = ("SELECT employees.name, employees.l_name,fichajes.* "
+    # (name, lastname, id_fich, id_emp, contract, absences, lates, extras, primes, normal)
+    sql = ("SELECT employees.name, employees.l_name, "
+           "fichajes.ficha_id, fichajes.emp_id, fichajes.contract, "
+           "fichajes.absences, fichajes.lates, fichajes.extras, fichajes.primes, fichajes.normal "
            "FROM sql_telintec.fichajes "
            "INNER JOIN employees ON (fichajes.emp_id = employees.employee_id)")
     flag, error, result = execute_sql(sql, type_sql=2)
@@ -715,7 +750,8 @@ def insert_new_fichaje_DB(emp_id: int, contract: str, absences: dict, lates: dic
 
 
 def get_fichaje_DB(emp_id: int):
-    sql = ("SELECT * FROM sql_telintec.fichajes "
+    sql = ("SELECT ficha_id, emp_id, contract, absences, lates, extras, primes, normal "
+           "FROM sql_telintec.fichajes "
            "WHERE emp_id = %s")
     val = (emp_id,)
     flag, error, result = execute_sql(sql, val, 1)
@@ -799,7 +835,8 @@ def get_renovacion(emp_id: int):
 
 
 def get_all_examenes():
-    sql = "SELECT * FROM sql_telintec.examenes_med"
+    sql = ("SELECT examen_id, name, blood, status, aptitud, renovacion, aptitude_actual, empleado_id "
+           "FROM sql_telintec.examenes_med ")
     flag, e, out = execute_sql(sql, type_sql=5)
     return flag, e, out
 
@@ -919,7 +956,9 @@ def get_products_almacen(id_p: int, name: str, category: str, limit: int = 10):
 def get_high_stock_products(category: str, quantity: int):
     columns = ("id_product", "name", "udm", "stock", "id_category")
     # get category
-    sql = "SELECT * FROM product_categories_amc WHERE name = %s"
+    sql = ("SELECT id_category, name "
+           "FROM product_categories_amc "
+           "WHERE name = %s")
     val = (category.lower(),)
     flag, error, result = execute_sql(sql, val, 1)
     if len(result) > 0:
@@ -937,7 +976,9 @@ def get_high_stock_products(category: str, quantity: int):
 def get_low_stock_products(category: str, quantity: int):
     columns = ("id_product", "name", "udm", "stock", "id_category")
     # get category
-    sql = "SELECT * FROM product_categories_amc WHERE name = %s"
+    sql = ("SELECT id_category, name "
+           "FROM product_categories_amc "
+           "WHERE name = %s")
     val = (category.lower(),)
     flag, error, result = execute_sql(sql, val, 1)
     if len(result) > 0:
@@ -955,7 +996,9 @@ def get_low_stock_products(category: str, quantity: int):
 def get_no_stock_products(category: str, quantity: int = 10):
     columns = ("id_product", "name", "udm", "stock", "id_category")
     # get category
-    sql = "SELECT * FROM product_categories_amc WHERE name = %s"
+    sql = ("SELECT id_category, name "
+           "FROM product_categories_amc "
+           "WHERE name = %s")
     val = (category.lower(),)
     flag, error, result = execute_sql(sql, val, 1)
     if len(result) > 0:
@@ -1079,8 +1122,7 @@ def get_employee_info(id_e: int):
 
 def get_sm_employees():
     sql = ("SELECT employee_id, name, l_name "
-           "FROM employees WHERE status = 'activo' "
-           "AND (department_id=2 OR department_id=3)")
+           "FROM employees WHERE status = 'activo' ")
     flag, error, result = execute_sql(sql, None, 5)
     return flag, error, result
 
@@ -1130,7 +1172,10 @@ def delete_sm_db(id_m: int, sm_code: str):
     flag, error, result = execute_sql(sql, val, 3)
     if not flag:
         return False, error, None
-    sql = "SELECT * FROM materials_request WHERE sm_id = %s AND sm_code = %s"
+    sql = ("SELECT sm_id, sm_code, folio, contract, facility, location, client_id, emp_id, date, limit_date, "
+           "items, status, history, comment, pedido_cotizacion "
+           "FROM materials_request "
+           "WHERE sm_id = %s AND sm_code = %s")
     val = (id_m, sm_code)
     flag, error, result = execute_sql(sql, val, 1)
     if len(result) == 0:
@@ -1159,4 +1204,33 @@ def update_sm_db(data):
            data['info']['comment'],
            data['id_sm'])
     flag, error, result = execute_sql(sql, val, 4)
+    return flag, error, result
+
+
+def cancel_sm_db(id_m: int, history: dict):
+    sql = "SELECT sm_id FROM materials_request "
+    flag, error, result = execute_sql(sql, None, 5)
+    if not flag:
+        return False, error, None
+    ids_sm = [i[0] for i in result]
+    if id_m not in ids_sm:
+        return True, "Material request not found", None
+    sql = ("UPDATE materials_request SET status = -1, history = %s  "
+           "WHERE sm_id = %s ")
+    val = (json.dumps(history), id_m)
+    flag, error, result = execute_sql(sql, val, 4)
+    return flag, error, result
+
+
+def update_history_sm(sm_id, history: dict, is_complete=False):
+    if is_complete:
+        sql = ("UPDATE materials_request SET history = %s, status = 1 "
+               "WHERE sm_id = %s ")
+        val = (json.dumps(history), sm_id)
+        flag, error, result = execute_sql(sql, val, 4)
+    else:
+        sql = ("UPDATE materials_request SET history = %s, status = 2  "
+               "WHERE sm_id = %s ")
+        val = (json.dumps(history), sm_id)
+        flag, error, result = execute_sql(sql, val, 4)
     return flag, error, result

@@ -4,10 +4,12 @@ __date__ = '$ 01/abr./2024  at 10:26 $'
 
 from flask_restx import Resource, Namespace
 from static.api_models import client_emp_sm_response_model, products_answer_model, products_request_model, \
-    sm_post_model, delete_request_sm_model, sm_put_model, table_sm_model, table_request_model
+    sm_post_model, delete_request_sm_model, sm_put_model, table_sm_model, table_request_model, new_cliente_model, \
+    new_product_model
 from templates.Functions_DB_midleware import get_products_sm, get_all_sm
 from templates.Functions_SQL import get_sm_employees, get_sm_clients, insert_sm_db, delete_sm_db, update_sm_db
 from templates.Functions_Text import parse_data
+from templates.controllers.index import DataHandler
 
 ns = Namespace('GUI/api/v1/sm')
 
@@ -94,3 +96,37 @@ class AddSM(Resource):
             return {"answer": "ok", "msg": error}, 200
         else:
             return {"answer": f"error at updating db"}, 400
+
+
+@ns.route('/newclient')
+class Client(Resource):
+    @ns.expect(new_cliente_model)
+    def post(self):
+        code, data = parse_data(ns.payload, 12)
+        if code == 400:
+            return {"answer": "The data has a bad structure"}, code
+        _data = DataHandler()
+        result = _data._customer.create_customer(data['name'], data['email'], data['phone'], data['rfc'], data["address"])
+        if isinstance(result, str):
+            return {"answer": "Error", "msg": result}, 400
+        else:
+            return {"answer": "ok", "msg": result}, 201
+
+
+@ns.route('/newproduct')
+class Product(Resource):
+    @ns.expect(new_product_model)
+    def post(self):
+        code, data = parse_data(ns.payload, 13)
+        if code == 400:
+            return {"answer": "The data has a bad structure"}, code
+        print(data)
+        _data = DataHandler()
+        result = _data._product.create_product(data['sku'], data['name'], data['udm'], data['stock'], 0, 0, 0, data['price'], data['category'], 0)
+        if isinstance(result, str):
+            return {"answer": "Error", "msg": result}, 400
+        else:
+            return {"answer": "ok", "msg": result}, 201
+
+
+
