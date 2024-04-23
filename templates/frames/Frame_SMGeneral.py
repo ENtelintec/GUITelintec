@@ -2,14 +2,17 @@
 __author__ = 'Edisson Naula'
 __date__ = '$ 09/abr./2024  at 17:11 $'
 
+import json
+
 import ttkbootstrap as ttk
 from ttkbootstrap.scrolled import ScrolledFrame
 
-from static.extensions import permissions_supper_SM
+from static.extensions import ventanasApp_path
 from templates.Functions_AuxFiles import get_all_sm_entries, get_all_sm_products
 from templates.Functions_SQL import get_sm_clients, get_sm_employees
 from templates.frames.SubFrame_SMCreate import FrameSMCreate
 from templates.frames.SubFrame_SMDashboard import SMDashboard
+permissions_supper_SM = json.load(open(ventanasApp_path, encoding="utf-8"))["permissions_supper_SM"]
 
 
 def load_data(is_super=False, emp_id=None):
@@ -33,8 +36,8 @@ def load_data(is_super=False, emp_id=None):
 
 
 class SMFrame(ScrolledFrame):
-    def __init__(self, master=None, settings=None, department=None, id_emp=None, data_emp=None, **kw):
-        super().__init__(master, **kw)
+    def __init__(self, master=None, settings=None, department=None, id_emp=None, data_emp=None, *args, **kwargs):
+        super().__init__(master)
         self.permissions = data_emp["permissions"]
         self.is_supper_user = self.check_permissions()
         self.columnconfigure(0, weight=1)
@@ -58,4 +61,3 @@ class SMFrame(ScrolledFrame):
             if item in permissions_supper_SM:
                 return True
         return False
-

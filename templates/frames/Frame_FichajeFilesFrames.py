@@ -22,7 +22,7 @@ from templates.frames.SubFrame_Plots import FramePlot
 
 
 class FichajesFilesGUI(ScrolledFrame):
-    def __init__(self, master=None, setting: dict = None):
+    def __init__(self, master=None, setting: dict = None, **kwargs):
         super().__init__(master, autohide=True)
         # noinspection PyTypeChecker
         self.columnconfigure(0, weight=1)

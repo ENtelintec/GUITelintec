@@ -8,7 +8,7 @@ from ttkbootstrap.tableview import Tableview
 
 class OutScreen(ttk.Frame):
     def __init__(self, master, setting: dict = None, *args, **kwargs):
-        super().__init__(master, *args, **kwargs)
+        super().__init__(master)
         self.master = master
         self.columnconfigure(0, weight=1)
         self._data = DataHandler()

@@ -1,10 +1,12 @@
+import json
 import tkinter as tk
 from tkinter import PhotoImage
 
 import ttkbootstrap as ttk
+from ttkbootstrap.scrolled import ScrolledFrame
 
 import templates.frames.Frame_LoginFrames as Login
-from static.extensions import filepath_settings, permissions_allowed_AV
+from static.extensions import filepath_settings, ventanasApp_path
 from templates import AlmacenGUI
 from templates.Functions_AuxFiles import carpeta_principal, get_image_side_menu, read_setting_file, get_all_sm_entries, \
     get_all_sm_products
@@ -17,6 +19,7 @@ from templates.frames.Frame_DBFrame import DBFrame, EmployeesFrame
 from templates.frames.Frame_EmployeeDetail import EmployeeDetails
 from templates.frames.Frame_ExamenesMedicos import ExamenesMedicos
 from templates.frames.Frame_FichajeFilesFrames import FichajesFilesGUI
+from templates.frames.Frame_Home import HomeFrame
 from templates.frames.Frame_NotificationsFrame import Notifications
 from templates.frames.Frame_PedidosFrame import PedidosFrame
 from templates.frames.Frame_Quizzes import FrameEncuestas
@@ -40,6 +43,36 @@ filepath_notifications = 'files/notifications.txt'
 default_values_settings = {"max_chats": "40", "start_date": "19/oct./2023", "end_date": "19/oct./2023",
                            "sampling_time": 15}
 chats_to_show = 40  # number of chats to show at the beginning
+available_frames = {
+    "Inicio": HomeFrame,
+    "Chats": ChatFrame,
+    "Bitacora": BitacoraEditFrame,
+    "Notificaciones": Notifications,
+    "Vacaciones": VacationsFrame,
+    "Encuestas": FrameEncuestas,
+    "Exámenes Médicos": ExamenesMedicos,
+    "Fichajes": FichajesFilesGUI,
+    "DB": DBFrame,
+    "Empleados": EmployeesFrame,
+    "Emp. Detalles": EmployeeDetails,
+    "Pedidos": PedidosFrame,
+    "Configuración": SettingsFrameGUI,
+    "SM": SMFrame,
+    "Procesar SM": SMManagement,
+    "Clients (A)": ClientsScreen,
+    "Proveedores (A)": ProvidersScreen,
+    "Inventario": InventoryScreen,
+    "Home": HomeScreen,
+    "Entradas": InScreen,
+    "Salidas": OutScreen,
+    "Suministros Diarios": SuppliesScreen,
+    "Ordenes (A)": OrdersScreen,
+    "Configuraciones (A)": SettingsScreen,
+    "Inventario Int.":  InternalInventoryScreen,
+    "Ventana Asistente": AssistantGUI,
+    "Examenes":  ExamenesMedicos,
+    "Cuenta":  Login.LogOptionsFrame
+}
 
 
 def load_data(is_super=False, emp_id=None):
@@ -122,6 +155,7 @@ class GUIAsistente(ttk.Window):
         self.side_menu_frame.grid(row=2, column=0, sticky="nsew", pady=5, padx=1,
                                   columnspan=2)
         self.side_menu_frame.columnconfigure(0, weight=1)
+        self.side_menu_frame.rowconfigure(0, weight=1)
         self.buttons_side_menu, self.names_side_menu = self._create_side_menu_widgets(self.side_menu_frame)
         print("side menu widgets created")
         # ------------------------login frame-------------------------------
@@ -140,18 +174,21 @@ class GUIAsistente(ttk.Window):
 
     def update_side_menu(self):
         print(f"side menu for: {self.username} with {self.permissions}")
+        for widget in self.buttons_side_menu:
+            widget.destroy()
         self.buttons_side_menu, self.names_side_menu = self._create_side_menu_widgets(self.side_menu_frame)
 
     def update_side_menu_windows(self):
         self.get_username_data()
         self.windows_frames = self._create_side_menu_windows()
         department = self.username_data["department_name"] if self.username_data is not None else "default"
+        permissions_allowed_av = json.load(open(ventanasApp_path, encoding="utf-8"))["permissions_allowed_AV"]
         for k, v in self.permissions.items():
             if "ALMACEN" in v:
                 department = "almacen"
                 break
         for k, v in self.permissions.items():
-            if v in permissions_allowed_AV:
+            if v in permissions_allowed_av:
                 self.create_AV_window(department)
                 break
 
@@ -181,109 +218,14 @@ class GUIAsistente(ttk.Window):
     def _create_side_menu_widgets(self, master):
         flag, windows_names = compare_permissions_windows(list(self.permissions.values()))
         windows_names = windows_names if windows_names is not None else ["Cuenta"]
-        widgets = []
-        if flag or windows_names is not None:
-            if len(windows_names) >= 12:
-                scrollbar = ttk.Scrollbar(master, orient="vertical")
-                scrollbar.grid(row=0, column=2, sticky="ns")
-            for i, window in enumerate(windows_names):
-                widgets.append(
-                    create_button_side_menu(
-                        master, i, 0,
-                        text=window,
-                        image=get_image_side_menu(window),
-                        command=lambda x=window: self._select_frame_by_name(x),
-                        columnspan=1)
-                )
+        if len(windows_names) >= 12:
+            side_menu = SideMenuFrameScrollable(master, windows_names, flag, self._select_frame_by_name, width=200)
+            side_menu.grid(row=0, column=0, sticky="ns", pady=10, padx=(0, 5))
+        else:
+            side_menu = SideMenuFrame(master, windows_names, flag, self._select_frame_by_name, width=200)
+            side_menu.grid(row=0, column=0, sticky="nswe", pady=10, padx=(0, 5))
+        widgets = side_menu.get_widgets()
         return widgets, windows_names
-
-    def _create_side_menu_windows(self, data_dic=None):
-        windows = {}
-        for i, window in enumerate(self.names_side_menu):
-            match window:
-                case "DB":
-                    windows[window] = DBFrame(self, setting=self.settings)
-                    print("DB frame created")
-                case "Notificaciones":
-                    windows[window] = Notifications(
-                        self, self.data_notifications, filepath_notifications)
-                    print("notifications frame created")
-                case "Chats":
-                    windows[window] = ChatFrame(self, self.chats_to_show, self.images, self.chats)
-                    print("chats frame created")
-                case "Settings":
-                    windows[window] = SettingsFrameGUI(self, department=self.department, style_gui=self.style_gui)
-                    print("settings frame created")
-                case "Tickets":
-                    windows[window] = PedidosFrame(self, self.images, self.chats)
-                    print("tickets frame created")
-                case "Fichajes":
-                    windows[window] = FichajesFilesGUI(self)
-                    print("Fichajes frame created")
-                case "Cuenta":
-                    windows[window] = Login.LogOptionsFrame(self)
-                    print("cuenta frame created")
-                case "Examenes":
-                    windows[window] = ExamenesMedicos(self)
-                    print("examenes frame created")
-                case "Almacen":
-                    windows[window] = AlmacenGUI.App(self)
-                    print("almacen frame created")
-                case "Emp. Detalles":
-                    windows[window] = EmployeeDetails(self)
-                    print("Employee details frame created")
-                case "Home":
-                    windows[window] = HomeScreen(self)
-                    print("home frame created")
-                case "Clients (A)":
-                    windows[window] = ClientsScreen(self)
-                    print("clients frame created")
-                case "Inventario":
-                    windows[window] = InventoryScreen(self)
-                    print("inventory frame created")
-                case "Suministros Diarios":
-                    windows[window] = SuppliesScreen(self)
-                    print("diary supplies frame created")
-                case "Configuraciones (A)":
-                    windows[window] = SettingsScreen(self)
-                    print("settings frame created")
-                case "Entradas":
-                    windows[window] = InScreen(self)
-                    print("in frame created")
-                case "Salidas":
-                    windows[window] = OutScreen(self)
-                    print("out frame created")
-                case "Ordenes (A)":
-                    windows[window] = OrdersScreen(self)
-                    print("orders frame created")
-                case "Proveedores (A)":
-                    windows[window] = ProvidersScreen(self)
-                    print("providers frame created")
-                case "Inventario Int.":
-                    windows[window] = InternalInventoryScreen(self)
-                    print("inventory internal frame created")
-                case "Empleados":
-                    windows[window] = EmployeesFrame(self)
-                    print("employees frame created")
-                case "Vacaciones":
-                    windows[window] = VacationsFrame(self)
-                    print("vacations frame created")
-                case "Encuestas":
-                    windows[window] = FrameEncuestas(self)
-                    print("encuestas frame created")
-                case "Bitacora":
-                    windows[window] = BitacoraEditFrame(self, self.username, self.username_data["contract"])
-                    print("bitacora frame created")
-                case "SM":
-                    windows[window] = SMFrame(self, self.settings, department=self.department,
-                                              id_emp=self.username_data["id"], data_emp=self.username_data)
-                    print("SM frame created")
-                case "Procesar SM":
-                    windows[window] = SMManagement(self, data_emp=self.username_data)
-                    print("SM process frame created")
-                case _:
-                    pass
-        return windows
 
     def _destroy_side_menu_widgets(self):
         for widget in self.buttons_side_menu:
@@ -293,15 +235,160 @@ class GUIAsistente(ttk.Window):
         if self.department in self.settings["gui"]:
             self.style_gui.theme_use(self.settings["gui"][self.department]["theme"])
 
+    def _create_side_menu_windows(self, data_dic=None):
+        windows = {}
+        for i, window in enumerate(self.names_side_menu):
+            window_to_create = available_frames[window]
+            arguments = {
+                "master":  self, "data": data_dic, "style_gui": self.style_gui, "settings": self.settings,
+                "chats_to_show": self.chats_to_show, "images": self.images, "chats": self.chats,
+                "department": self.department, "username": self.username,
+                "permissions": self.permissions,
+                "username_data": self.username_data,
+                "data_emp": self.username_data,
+                "id_emp": self.username_data["id"]
+            }
+            windows[window] = window_to_create(**arguments)
+            print(f"{window} frame created")
+            # match window:
+            #     case "DB":
+            #         windows[window] = DBFrame(self, setting=self.settings)
+            #         print("DB frame created")
+            #     case "Notificaciones":
+            #         windows[window] = Notifications(
+            #             self, self.data_notifications, filepath_notifications)
+            #         print("notifications frame created")
+            #     case "Chats":
+            #         windows[window] = ChatFrame(self, self.chats_to_show, self.images, self.chats)
+            #         print("chats frame created")
+            #     case "Settings":
+            #         windows[window] = SettingsFrameGUI(self, department=self.department, style_gui=self.style_gui)
+            #         print("settings frame created")
+            #     case "Tickets":
+            #         windows[window] = PedidosFrame(self, self.images, self.chats)
+            #         print("tickets frame created")
+            #     case "Fichajes":
+            #         windows[window] = FichajesFilesGUI(self)
+            #         print("Fichajes frame created")
+            #     case "Cuenta":
+            #         windows[window] = Login.LogOptionsFrame(self)
+            #         print("cuenta frame created")
+            #     case "Examenes":
+            #         windows[window] = ExamenesMedicos(self)
+            #         print("examenes frame created")
+            #     case "Almacen":
+            #         windows[window] = AlmacenGUI.App(self)
+            #         print("almacen frame created")
+            #     case "Emp. Detalles":
+            #         windows[window] = EmployeeDetails(self)
+            #         print("Employee details frame created")
+            #     case "Home":
+            #         windows[window] = HomeScreen(self)
+            #         print("home frame created")
+            #     case "Clients (A)":
+            #         windows[window] = ClientsScreen(self)
+            #         print("clients frame created")
+            #     case "Inventario":
+            #         windows[window] = InventoryScreen(self)
+            #         print("inventory frame created")
+            #     case "Suministros Diarios":
+            #         windows[window] = SuppliesScreen(self)
+            #         print("diary supplies frame created")
+            #     case "Configuraciones (A)":
+            #         windows[window] = SettingsScreen(self)
+            #         print("settings frame created")
+            #     case "Entradas":
+            #         windows[window] = InScreen(self)
+            #         print("in frame created")
+            #     case "Salidas":
+            #         windows[window] = OutScreen(self)
+            #         print("out frame created")
+            #     case "Ordenes (A)":
+            #         windows[window] = OrdersScreen(self)
+            #         print("orders frame created")
+            #     case "Proveedores (A)":
+            #         windows[window] = ProvidersScreen(self)
+            #         print("providers frame created")
+            #     case "Inventario Int.":
+            #         windows[window] = InternalInventoryScreen(self)
+            #         print("inventory internal frame created")
+            #     case "Empleados":
+            #         windows[window] = EmployeesFrame(self)
+            #         print("employees frame created")
+            #     case "Vacaciones":
+            #         windows[window] = VacationsFrame(self)
+            #         print("vacations frame created")
+            #     case "Encuestas":
+            #         windows[window] = FrameEncuestas(self)
+            #         print("encuestas frame created")
+            #     case "Bitacora":
+            #         windows[window] = BitacoraEditFrame(self, self.username, self.username_data["contract"])
+            #         print("bitacora frame created")
+            #     case "SM":
+            #         windows[window] = SMFrame(self, self.settings, department=self.department,
+            #                                   id_emp=self.username_data["id"], data_emp=self.username_data)
+            #         print("SM frame created")
+            #     case "Procesar SM":
+            #         windows[window] = SMManagement(self, data_emp=self.username_data)
+            #         print("SM process frame created")
+            #     case _:
+            #         pass
+        return windows
+
 
 class LogoFrame(tk.Frame):
     def __init__(self, master):
         super().__init__(master)
         self.columnconfigure(0, weight=1)
         img_logo = get_image_side_menu("logo")
-        width = 100
-        height = 80
+        width = 200
+        height = 100
+        width_img = 100
+        height_img = 100
+        ratio = 1
         canva = tk.Canvas(self, width=width, height=height)
-        canva.grid(row=0, column=0, sticky="nswe", columnspan=2, padx=20)
-        canva.create_image(width / 2, height / 2, anchor='center', image=img_logo)
+        canva.grid(row=0, column=0, sticky="nswe", padx=10)
+        canva.create_image(width_img / ratio, height_img / ratio, anchor='s', image=img_logo)
         canva.image = img_logo
+
+
+class SideMenuFrame(ttk.Frame):
+    def __init__(self, master, windows_names, is_allowed, command, *args, **kwargs):
+        super().__init__(master, *args, **kwargs)
+        self.columnconfigure(0, weight=1)
+        self.widgets = []
+        if is_allowed or windows_names is not None:
+            for i, window in enumerate(windows_names):
+                self.widgets.append(
+                    create_button_side_menu(
+                        self, i, 0,
+                        text=window,
+                        image=get_image_side_menu(window),
+                        command=lambda x=window: command(x),
+                        columnspan=1, padx=(1, 15))
+                )
+
+    def get_widgets(self):
+        return self.widgets
+
+
+class SideMenuFrameScrollable(ScrolledFrame):
+    def __init__(self, master, windows_names, is_allowed, command, *args, **kwargs):
+        super().__init__(master, autohide=True, *args, **kwargs)
+        self.columnconfigure(0, weight=1)
+        indexes = [i for i in range(len(windows_names))]
+        self.rowconfigure(indexes, weight=1)
+        self.widgets = []
+        if is_allowed or windows_names is not None:
+            for i, window in enumerate(windows_names):
+                self.widgets.append(
+                    create_button_side_menu(
+                        self, i, 0,
+                        text=window,
+                        image=get_image_side_menu(window),
+                        command=lambda x=window: command(x),
+                        columnspan=1, padx=(1, 15))
+                )
+
+    def get_widgets(self):
+        return self.widgets

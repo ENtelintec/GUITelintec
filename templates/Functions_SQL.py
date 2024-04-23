@@ -21,9 +21,9 @@ def execute_sql(sql: str, values: tuple = None, type_sql=1):
     """
     try:
         mydb = mysql.connector.connect(
-            host=secrets["HOST_DB_AWS"],
-            user=secrets["USER_SQL_AWS"],
-            password=secrets["PASS_SQL_AWS"],
+            host=secrets["HOST_DB"],
+            user=secrets["USER_SQL"],
+            password=secrets["PASS_SQL"],
             database="sql_telintec"
         )
         my_cursor = mydb.cursor(buffered=True)

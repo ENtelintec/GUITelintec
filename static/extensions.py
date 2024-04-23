@@ -16,56 +16,7 @@ api = Api()
 # url_api = "http://127.0.0.1:5000/AuthAPI/api/v1/auth/loginUP"
 url_api = "https://ec2-3-144-117-149.us-east-2.compute.amazonaws.com/AuthAPI/api/v1/auth/loginUP"
 IMG_PATH_COLLAPSING = Path("./img")
-ventanasApp = {
-    "App.Department.Director": [
-        "DB",
-        "Notificaciones",
-        "Chats",
-        "Settings",
-        "Tickets",
-        "Cuenta",
-    ],
-    "App.Department.RRHH": [
-        "Fichajes",
-        "Examenes",
-        "Emp. Detalles",
-        "Vacaciones",
-        "Empleados",
-        "Encuestas",
-        "Cuenta",
-    ],
-    "App.Department.Administrator": [
-        "DB",
-        "Notificaciones",
-        "Fichajes",
-        "Settings",
-        "Cuenta",
-    ],
-    "App.Department.ALMACEN": [
-        "Home",
-        "Entradas",
-        "Salidas",
-        "Inventario",
-        "Suministros Diarios",
-        "Inventario Int.",
-        "Ordenes (A)",
-        "Clients (A)",
-        "Proveedores (A)",
-        "Configuraciones (A)",
-        "SM",
-        "Procesar SM",
-        "Cuenta",
-    ],
-    "App.Department.Bitacoras": [
-        "Bitacora",
-        "Cuenta",
-    ],
-    "App.Department.Default": ["Settings", "Cuenta"],
-    "App.Department.SM": [
-        "SM",
-        "Cuenta",
-    ],
-}
+ventanasApp_path = "files/ventanasAppGUI.json"
 permissions_allowed_AV = [
     "App.Department.RRHH",
     "App.Department.Administrator",

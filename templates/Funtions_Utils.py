@@ -3,16 +3,14 @@ __author__ = "Edisson Naula"
 __date__ = "$ 29/ene./2024  at 15:31 $"
 
 import json
+from tkinter import StringVar, Misc
 from typing import Any
 
 import ttkbootstrap as ttk
-from tkinter import StringVar, Misc
-
 from ttkbootstrap.tableview import Tableview
 
-from static.extensions import ventanasApp, conversion_quizzes_path
+from static.extensions import conversion_quizzes_path, ventanasApp_path
 from static.extensions import filepath_recommendations
-
 from templates.Functions_SQL import (
     get_employees,
     get_customers,
@@ -199,17 +197,21 @@ def compare_permissions_windows(
     :return: bool with the result of the comparison
     """
     ventanas = []
-    ventanas_keys = list(ventanasApp.keys())
+    ventanas_app = json.load(open(ventanasApp_path, encoding="utf-8"))["ventanasApp"]
+    ventanas_keys = list(ventanas_app.keys())
     ventanas_keys = [item.lower() for item in ventanas_keys]
     for permission in user_permissions:
         if permission.lower() in ventanas_keys:
-            ventanas += ventanasApp[permission]
+            ventanas += ventanas_app[permission]
     if len(ventanas) > 0:
         ventanas = list(set(ventanas))
         ventanas.sort()
         if "Home" in ventanas:
             ventanas.remove("Home")
             ventanas.insert(0, "Home")
+        if "Inicio" in ventanas:
+            ventanas.remove("Inicio")
+            ventanas.insert(0, "Inicio")
         if "Configuraciones (A)" in ventanas:
             ventanas.remove("Configuraciones (A)")
             ventanas.append("Configuraciones (A)")
@@ -220,11 +222,12 @@ def compare_permissions_windows(
     return False, None
 
 
-def create_button_side_menu(
-    master, row, column, text, image=None, command=None, columnspan=1
-):
+def create_button_side_menu(master, row, column, text, image=None, command=None,
+                            padx=(5, 5), pady=(5, 5), columnspan=1):
     """
     This method is used to create a button in the side menu.
+    :param pady:
+    :param padx:
     :param columnspan:
     :param image: image for the button
     :param command: command for the button
@@ -237,7 +240,7 @@ def create_button_side_menu(
         master, text=text, image=image, compound="left", command=command
     )
     button.grid(
-        row=row, column=column, sticky="nsew", pady=5, padx=5, columnspan=columnspan
+        row=row, column=column, sticky="nsew", pady=pady, padx=padx, columnspan=columnspan
     )
     button.image = image
     # button.configure(text=text, command=command)

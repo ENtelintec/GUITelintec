@@ -57,14 +57,7 @@ def get_name_id_employees_list(
 
 class QuizMaker(ttk.Frame):
     def __init__(
-        self,
-        master,
-        dict_quizz,
-        title=None,
-        tipo_id=0,
-        out_path=quizz_out_path,
-        metadata: dict = None,
-    ):
+        self, master, dict_quizz, title=None, tipo_id=0, out_path=quizz_out_path, metadata: dict = None, **kwargs):
         super().__init__(master)
         self.quizz_out_path = out_path
         self.q_no = 0
@@ -413,15 +406,8 @@ class QuizMaker(ttk.Frame):
 
 class FrameEncuestas(ttk.Frame):
     def __init__(
-        self,
-        master,
-        quizzes=quizzes_RRHH,
-        quizz_out=None,
-        interviewer="default",
-        setting: dict = None,
-        **kwargs,
-    ):
-        super().__init__(master, **kwargs)
+        self, master, quizzes=quizzes_RRHH, quizz_out=None, interviewer="default", setting: dict = None, **kwargs):
+        super().__init__(master)
         self.columnconfigure(0, weight=1)
         self.rowconfigure(3, weight=1)
         # ----------Title-------------
@@ -589,7 +575,7 @@ class FrameEncuestas(ttk.Frame):
 
 class QuizzResultPDF(ttk.Frame):
     def __init__(self, master, quizzes=quizzes_RRHH, **kwargs):
-        super().__init__(master, **kwargs)
+        super().__init__(master)
         self.columnconfigure(0, weight=1)
         # ----------Title-------------
         ttk.Label(

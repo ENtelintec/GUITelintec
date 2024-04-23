@@ -19,7 +19,7 @@ from templates.Funtions_Utils import set_dateEntry_new_value, create_widget_inpu
 
 class DBFrame(ttk.Frame):
     def __init__(self, master, setting: dict = None, *args, **kwargs):
-        super().__init__(master, *args, **kwargs)
+        super().__init__(master)
         self.columnconfigure(1, weight=1)
         self.rowconfigure(0, weight=1)
         # --------------------------variables-----------------------------------
@@ -100,7 +100,7 @@ class DBFrame(ttk.Frame):
 
 class EmployeesFrame(ScrolledFrame):
     def __init__(self, master, setting: dict = None, **kwargs):
-        super().__init__(master, **kwargs)
+        super().__init__(master)
         self.columnconfigure(0, weight=1)
         self.rowconfigure(3, weight=1)
         self._id_emp_update = None
@@ -295,7 +295,7 @@ class EmployeesFrame(ScrolledFrame):
 
 class CustomersFrame(ttk.Frame):
     def __init__(self, master, setting: dict = None, **kwargs):
-        super().__init__(master, **kwargs)
+        super().__init__(master)
         self.columnconfigure(0, weight=1)
         self.rowconfigure(3, weight=1)
         self._id_cus_update = None
@@ -433,7 +433,7 @@ class CustomersFrame(ttk.Frame):
 
 class DepartmentsFrame(ttk.Frame):
     def __init__(self, master, setting: dict = None, **kwargs):
-        super().__init__(master, **kwargs)
+        super().__init__(master)
         self._id_dep_update = None
         self.columnconfigure(0, weight=1)
         self.rowconfigure(3, weight=1)
@@ -561,7 +561,7 @@ class DepartmentsFrame(ttk.Frame):
 
 class HeadsFrame(ttk.Frame):
     def __init__(self, master, setting: dict = None, **kwargs):
-        super().__init__(master, **kwargs)
+        super().__init__(master)
         self.columnconfigure(0, weight=1)
         self.rowconfigure(3, weight=1)
         self.label = ttk.Label(self, text="Tabla de Jefes de Departamento", font=("Helvetica", 32, "bold"))
@@ -701,7 +701,7 @@ class HeadsFrame(ttk.Frame):
 
 class SuppliersFrame(ttk.Frame):
     def __init__(self, master, setting: dict = None, **kwargs):
-        super().__init__(master, **kwargs)
+        super().__init__(master)
         self.columnconfigure(0, weight=1)
         self.rowconfigure(3, weight=1)
         self._id_supplier_update = None
@@ -833,7 +833,7 @@ class SuppliersFrame(ttk.Frame):
 
 class ProductsFrame(ttk.Frame):
     def __init__(self, master, setting: dict = None, **kwargs):
-        super().__init__(master, **kwargs)
+        super().__init__(master)
         self.columnconfigure(0, weight=1)
         self.rowconfigure(3, weight=1)
         self._id_product_update = None
@@ -1006,7 +1006,7 @@ class ProductsFrame(ttk.Frame):
 
 class OrdersFrame(ttk.Frame):
     def __init__(self, master, setting: dict = None, *args, **kwargs):
-        super().__init__(master, *args, **kwargs, )
+        super().__init__(master)
         self.columnconfigure(0, weight=1)
         self.rowconfigure(3, weight=1)
         self.label = ttk.Label(self, text="Orders table",
@@ -1180,7 +1180,7 @@ class OrdersFrame(ttk.Frame):
 
 class VOrdersFrame(ttk.Frame):
     def __init__(self, master, setting: dict = None, *args, **kwargs):
-        super().__init__(master, *args, **kwargs)
+        super().__init__(master)
         self.columnconfigure(0, weight=1)
         self.rowconfigure(3, weight=1)
         self.label = ttk.Label(self, text="Virtual Orders table",
@@ -1351,7 +1351,7 @@ class VOrdersFrame(ttk.Frame):
 
 class TicketsFrame(ttk.Frame):
     def __init__(self, master, setting: dict = None, *args, **kwargs):
-        super().__init__(master, *args, **kwargs)
+        super().__init__(master)
         self.columnconfigure(0, weight=1)
         self.rowconfigure(3, weight=1)
         self.label = ttk.Label(self, text="Tickets table", font=("Helvetica", 30, "bold"))
@@ -1511,7 +1511,7 @@ class TicketsFrame(ttk.Frame):
 
 class ChatsFrame(ttk.Frame):
     def __init__(self, master, setting: dict = None, *args, **kwargs):
-        super().__init__(master, *args, **kwargs)
+        super().__init__(master)
         self.columnconfigure(0, weight=1)
         self.rowconfigure(1, weight=1)
         self.label = ttk.Label(self, text="Chats table", font=("Helvetica", 30, "bold"))

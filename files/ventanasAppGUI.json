@@ -1,0 +1,73 @@
+{
+  "ventanasApp": {
+    "App.Department.Director": [
+      "Inicio",
+      "DB",
+      "Notificaciones",
+      "Chats",
+      "Settings",
+      "Tickets",
+      "Cuenta"
+    ],
+    "App.Department.RRHH": [
+      "Inicio",
+      "Fichajes",
+      "Examenes",
+      "Emp. Detalles",
+      "Vacaciones",
+      "Empleados",
+      "Encuestas",
+      "Cuenta"
+    ],
+    "App.Department.Administrator": [
+      "DB",
+      "Notificaciones",
+      "Fichajes",
+      "Settings",
+      "Cuenta"
+    ],
+    "App.Department.ALMACEN": [
+      "Inicio",
+      "Home",
+      "Entradas",
+      "Salidas",
+      "Inventario",
+      "Suministros Diarios",
+      "Inventario Int.",
+      "Ordenes (A)",
+      "Configuraciones (A)",
+      "SM",
+      "Procesar SM",
+      "Cuenta"
+    ],
+    "App.Department.Bitacoras": [
+      "Bitacora",
+      "Cuenta"
+    ],
+    "App.Department.Default": [
+      "Settings",
+      "Cuenta"
+    ],
+    "App.Department.SM": [
+      "SM",
+      "Cuenta"
+    ],
+    "App.Department.Administracion": [
+      "Clients (A)",
+      "Proveedores (A)",
+      "SM",
+      "Cuenta"
+    ]
+  },
+  "permissions_allowed_AV": [
+    "App.Department.RRHH",
+    "App.Department.Administrator",
+    "App.Department.ALMACEN",
+    "App.Department.Administracion"
+  ],
+  "permissions_supper_SM" : [
+    "App.Department.Administrator",
+    "App.Department.Administracion",
+    "App.Department.Operaciones"
+  ]
+}

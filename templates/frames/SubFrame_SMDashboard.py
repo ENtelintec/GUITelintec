@@ -7,15 +7,16 @@ import json
 import ttkbootstrap as ttk
 from ttkbootstrap.tableview import Tableview
 
-from static.extensions import permissions_supper_SM
+from static.extensions import ventanasApp_path
 from templates.Functions_AuxFiles import get_all_sm_entries
 from templates.Funtions_Utils import create_label
 from templates.frames.SubFrame_Plots import FramePlot
+permissions_supper_SM = json.load(open(ventanasApp_path, encoding="utf-8"))["permissions_supper_SM"]
 
 
 class SMDashboard(ttk.Frame):
     def __init__(self, master=None, data=None, columns=None, data_user=None, *args, **kwargs):
-        super().__init__(master, *args, **kwargs)
+        super().__init__(master)
         self.permissions = data_user["permissions"]
         self._id_emp = data_user["id"]
         self.is_supper_user = self.check_permissions()

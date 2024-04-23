@@ -102,7 +102,7 @@ class ScrollableLabelFrame(ctk.CTkScrollableFrame):
 class ChatFrame(ttk.Frame):
     def __init__(self, master, chats_to_show, images, chats=None, setting: dict = None, **kwargs):
         # noinspection PyArgumentList
-        super().__init__(master, **kwargs)
+        super().__init__(master)
         # -------------variables and config----------------------------
         self.columnconfigure(1, weight=1)
         self.rowconfigure(0, weight=1)

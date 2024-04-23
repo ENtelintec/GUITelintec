@@ -10,7 +10,7 @@ import ttkbootstrap as ttk
 from ttkbootstrap.dialogs import Messagebox
 from ttkbootstrap.tableview import Tableview
 
-from static.extensions import log_file_sm_path, permissions_supper_SM
+from static.extensions import log_file_sm_path, ventanasApp_path
 from templates.Functions_AuxFiles import get_all_sm_entries, get_all_sm_products
 from templates.Functions_Files import write_log_file
 from templates.Functions_SQL import insert_sm_db, update_sm_db, delete_sm_db, \
@@ -18,6 +18,7 @@ from templates.Functions_SQL import insert_sm_db, update_sm_db, delete_sm_db, \
 from templates.Funtions_Utils import create_label, create_button, create_stringvar, create_Combobox, create_entry, \
     create_date_entry
 from templates.controllers.index import DataHandler
+permissions_supper_SM = json.load(open(ventanasApp_path, encoding="utf-8"))["permissions_supper_SM"]
 
 
 def search_employee(emps_data, emp_key: int | str):
@@ -88,7 +89,7 @@ def create_dict_sm(info, products):
 
 class FrameSMCreate(ttk.Frame):
     def __init__(self, master=None, permissions=None, settings=None, id_emp=None, data=None, **kw):
-        super().__init__(master, **kw)
+        super().__init__(master)
         self.columnconfigure(0, weight=1)
         """----------------------------variables-----------------------------"""
         self.settings = settings
@@ -429,7 +430,7 @@ class FrameSMCreate(ttk.Frame):
 
 class NewProduct(ttk.Window):
     def __init__(self, master=None, **kw):
-        super().__init__(master, **kw)
+        super().__init__(master)
         self.title("Nuevo producto")
         self._data = DataHandler()
         self.resizable(False, False)
@@ -464,7 +465,7 @@ class NewProduct(ttk.Window):
 
 class NewClient(ttk.Window):
     def __init__(self, master=None, **kw):
-        super().__init__(master, **kw)
+        super().__init__(master)
         self.title("Nuevo producto")
         self._data = DataHandler()
         self.resizable(False, False)
@@ -499,7 +500,7 @@ class NewClient(ttk.Window):
 
 class FrameSMProdcuts(ttk.Frame):
     def __init__(self, master=None, data=None, **kw):
-        super().__init__(master, **kw)
+        super().__init__(master)
         self.columnconfigure((0, 1), weight=1)
         self.svar_info = create_stringvar(1, "")
         self.products = data["products"]

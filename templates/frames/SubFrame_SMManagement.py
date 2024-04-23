@@ -49,8 +49,8 @@ def load_data(is_super=False, emp_id=None):
 
 
 class SMManagement(ttk.Frame):
-    def __init__(self, parent, data_emp=None, **kwargs):
-        super().__init__(parent, **kwargs)
+    def __init__(self, master, data_emp=None, **kwargs):
+        super().__init__(master)
         self.columnconfigure(1, weight=1)
         # -----------------------Variables-----------------------
         self.data_emp = data_emp if data_emp is not None else {"id": 60, "name": "Default"}

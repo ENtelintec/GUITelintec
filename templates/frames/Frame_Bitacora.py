@@ -35,7 +35,7 @@ def check_date_difference(date_modify, delta):
 
 class BitacoraEditFrame(ScrolledFrame):
     def __init__(self, master, username="default", contrato="default", delta=delta_bitacora_edit, setting: dict = None, *args, **kwargs):
-        super().__init__(master, *args, **kwargs)
+        super().__init__(master)
         self.columnconfigure(0, weight=1)
         self.rowconfigure(4, weight=1)
         # --------------------------variables----------------------------------
