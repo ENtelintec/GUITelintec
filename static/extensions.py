@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-__author__ = 'Edisson Naula'
-__date__ = '$ 02/nov./2023  at 17:32 $'
+__author__ = "Edisson Naula"
+__date__ = "$ 02/nov./2023  at 17:32 $"
 
 import json
 
@@ -60,10 +60,7 @@ ventanasApp = {
         "Bitacora",
         "Cuenta",
     ],
-    "App.Department.Default": [
-        "Settings",
-        "Cuenta"
-    ],
+    "App.Department.Default": ["Settings", "Cuenta"],
     "App.Department.SM": [
         "SM",
         "Cuenta",
@@ -84,17 +81,15 @@ cache_file_Fichajes_path = "files/Fichajes_cache.pkl"
 cache_file_Tickets_path = "files/Tickets_cache.pkl"
 cache_file_Chats_path = "files/Chats_cache.pkl"
 cache_file_Notificaciones_path = "files/Notificaciones_cache.pkl"
-cache_file_resume_fichaje = 'files/fichajes_resume_cache.pkl'
-cache_file_emp_fichaje = 'files/emp_name_ids_fichajes_cache.pkl'
+cache_file_resume_fichaje = "files/fichajes_resume_cache.pkl"
+cache_file_emp_fichaje = "files/emp_name_ids_fichajes_cache.pkl"
 files_fichaje_path = "files/files_fichaje/"
 cache_oct_file_temp_path = "files/OCT_cache.csv"
-cache_oct_fichaje_path = 'files/contracts_cache.pkl'
+cache_oct_fichaje_path = "files/contracts_cache.pkl"
 filepath_settings = "files/settings.json"
 filepath_recomendations = "files/recomendations.json"
 quizzes_RRHH = {
-    "0": {"name": "Encuesta de Salida",
-          "path": "files/quizz_salida.json",
-          "type": 0},
+    "0": {"name": "Encuesta de Salida", "path": "files/quizz_salida.json", "type": 0},
     "1": {
         "name": "Encuesta de Norma_035_50",
         "path": "files/quizz_norma035_50_v1.json",
@@ -114,9 +109,10 @@ quizzes_RRHH = {
         "name": "Encuesta eva 360",
         "path": "files/quizz_eva_360.json",
         "type": 4,
-    }
+    },
 }
 conversion_quizzes_path = "files/conversions_quizzes.json"
+filepath_recommendations = "files/recommendations.json"
 quizz_out_path = "files/quizz_out/"
 log_file_bitacora_path = "files/logs/bitacora"
 log_file_sm_path = "files/logs/sm"
@@ -126,37 +122,70 @@ department_tools_openAI = {
     "rrhh": "files/tools_AV_rrhh.json",
     "administrator": "files/tools_AV_default.json",
     "almacen": "files/tools_AV_almacen.json",
-    "default": "files/tools_AV_default.json"
+    "default": "files/tools_AV_default.json",
 }
 tools_AV_avaliable = {
-    "default": [
-        {"type": "code_interpreter"},
-        {"type": "retrieval"
-         }
-    ],
+    "default": [{"type": "code_interpreter"}, {"type": "retrieval"}],
     "rrhh": [
         {"type": "code_interpreter"},
         {"type": "retrieval"},
-        {"type": "function", "name": "getTotalFichajeEmployee", "args": ["id", "name", "date"]},
-        {"type": "function", "name": "getActiveEmployees", "args": ["status", "quantity", "date"]},
-        {"type": "function", "name": "getEmployeeInfo", "args": ["id"]}
+        {
+            "type": "function",
+            "name": "getTotalFichajeEmployee",
+            "args": ["id", "name", "date"],
+        },
+        {
+            "type": "function",
+            "name": "getActiveEmployees",
+            "args": ["status", "quantity", "date"],
+        },
+        {"type": "function", "name": "getEmployeeInfo", "args": ["id"]},
     ],
     "almacen": [
         {"type": "code_interpreter"},
         {"type": "retrieval"},
         {"type": "function", "name": "getProductCategories", "args": ["name"]},
-        {"type": "function", "name": "getProductsAlmacen", "args": ["name", "id", "category"]},
-        {"type": "function", "name": "getHighStockProducts", "args": ["category", "quantity"]},
-        {"type": "function", "name": "getLowStockProducts", "args": ["category", "quantity"]},
+        {
+            "type": "function",
+            "name": "getProductsAlmacen",
+            "args": ["name", "id", "category"],
+        },
+        {
+            "type": "function",
+            "name": "getHighStockProducts",
+            "args": ["category", "quantity"],
+        },
+        {
+            "type": "function",
+            "name": "getLowStockProducts",
+            "args": ["category", "quantity"],
+        },
         {"type": "function", "name": "getCostumer", "args": ["name", "id"]},
         {"type": "function", "name": "getSupplier", "args": ["name", "id"]},
-        {"type": "function", "name": "getOrder", "args": ["id", "customer", "status", "id_customer", "date"]},
-        {"type": "function", "name": "getProductMovement", "args": ["type", "id", "id_p", "date"]},
+        {
+            "type": "function",
+            "name": "getOrder",
+            "args": ["id", "customer", "status", "id_customer", "date"],
+        },
+        {
+            "type": "function",
+            "name": "getProductMovement",
+            "args": ["type", "id", "id_p", "date"],
+        },
         {"type": "function", "name": "getSupplyInventory", "args": ["name", "id"]},
-        {"type": "function", "name": "getNoStockProducts", "args": ["category"]}
-    ]
+        {"type": "function", "name": "getNoStockProducts", "args": ["category"]},
+    ],
 }
-windows_names_db_frame = ["Empleados", "Clientes", "Departamentos", "Encargados",
-                          "Proveedores", "Productos", "Ordenes",
-                          "Tickets", "Chats", "O. Virtuales"]
+windows_names_db_frame = [
+    "Empleados",
+    "Clientes",
+    "Departamentos",
+    "Encargados",
+    "Proveedores",
+    "Productos",
+    "Ordenes",
+    "Tickets",
+    "Chats",
+    "O. Virtuales",
+]
 delta_bitacora_edit = 14
