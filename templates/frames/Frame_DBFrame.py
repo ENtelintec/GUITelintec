@@ -156,7 +156,7 @@ class EmployeesFrame(ScrolledFrame):
                     if len(data[index + 1]) > 0 and data[index + 1] != "None":
                         departure = json.loads(data[index + 1])
                         entry_date = datetime.strptime(departure["date"],
-                                                       "%Y-%m-%d %H:%M:%S") if departure["date"] != "None" else datetime.now()
+                                                       "%Y-%m-%d") if departure["date"] != "None" else datetime.now()
                         self.entries[index + 1] = set_dateEntry_new_value(
                             self.insert_frame, self.entries[index + 1], entry_date.date(),
                             row=9, column=0, padx=5, pady=1, date_format="%Y-%m-%d")
