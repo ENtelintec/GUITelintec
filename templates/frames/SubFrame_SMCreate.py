@@ -18,6 +18,7 @@ from templates.Functions_SQL import insert_sm_db, update_sm_db, delete_sm_db, \
 from templates.Funtions_Utils import create_label, create_button, create_stringvar, create_Combobox, create_entry, \
     create_date_entry
 from templates.controllers.index import DataHandler
+
 permissions_supper_SM = json.load(open(ventanasApp_path, encoding="utf-8"))["permissions_supper_SM"]
 
 
@@ -640,7 +641,8 @@ class FrameSMProdcuts(ttk.Frame):
         data = []
         for item in self.table_resumen.view.get_children():
             id_p, quantity, comment = self.table_resumen.view.item(item, "values")
-            data.append((id_p, quantity, comment))
+            if float(quantity) >= 0:
+                data.append((id_p, quantity, comment))
         return data
 
     def put_data_resumen(self, data):

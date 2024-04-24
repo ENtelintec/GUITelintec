@@ -17,16 +17,6 @@ api = Api()
 url_api = "https://ec2-3-144-117-149.us-east-2.compute.amazonaws.com/AuthAPI/api/v1/auth/loginUP"
 IMG_PATH_COLLAPSING = Path("./img")
 ventanasApp_path = "files/ventanasAppGUI.json"
-permissions_allowed_AV = [
-    "App.Department.RRHH",
-    "App.Department.Administrator",
-    "App.Department.ALMACEN",
-]
-permissions_supper_SM = [
-    "App.Department.Administrator",
-    "App.Department.Administracion",
-    "App.Department.Operaciones",
-]
 cache_file_EM_path = "files/EM_cache.pkl"
 cache_file_Fichajes_path = "files/Fichajes_cache.pkl"
 cache_file_Tickets_path = "files/Tickets_cache.pkl"

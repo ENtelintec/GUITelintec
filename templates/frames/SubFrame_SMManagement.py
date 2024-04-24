@@ -16,7 +16,7 @@ from templates.Functions_SQL import get_sm_employees, cancel_sm_db, update_histo
 from templates.Funtions_Utils import create_label, create_button, create_stringvar
 
 # status_dic = {"pendiente": 0, "En Proceso": 1, "terminado": 2, "cancelado": -1}
-status_dic = {0: "Pendiente", 1: "En Proceso", 2: "Terminado", -1: "Cancelado"}
+status_dic = {0: "Pendiente", 1: "En Proceso", 2: "Compleatado", -1: "Cancelado"}
 
 
 def reorder_data_table(data):
@@ -59,6 +59,7 @@ class SMManagement(ttk.Frame):
         self.products = data_dic["products"]
         self.employees = data_dic["employees"]
         self._id_sm_to_edit = None
+        self.status_sm = None
         self.svar_info = ttk.StringVar(value="")
         self.history_sm = None
         self.products_sm = None
@@ -124,10 +125,11 @@ class SMManagement(ttk.Frame):
         return info_products, info_history
 
     def on_dispatch_click(self):
-        if self._id_sm_to_edit is None:
+        if self._id_sm_to_edit is None or self.status_sm is None:
             return
-        print(self.products_sm)
-        print(self.history_sm)
+        if self.status_sm == "Completado":
+            self.svar_info.set("La SM ya esta completada")
+            return
         self.history_sm.append(
             {"user": self.data_emp["id"], "event": "dispatch", "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S")})
         products_to_dispacth = []
@@ -179,6 +181,7 @@ class SMManagement(ttk.Frame):
         if self._id_sm_to_edit is None:
             print("Error en la base de datos")
             return
+        self.status_sm = row[0]
         self.products_sm = json.loads(row[12])
         for i, item in enumerate(self.products_sm):
             for product in self.products:
@@ -244,7 +247,19 @@ class SMManagement(ttk.Frame):
                             ('cancelado', id_sm, code, folio, contract, plant, location, client, employee, order, date,
                              date_limit, items, json.dumps(self.history_sm), comment))
                 self.table_events = self.create_table(self.frame_table, data, re_order=False)
+
             case "dispatch":
+                data = []
+                for item in self.data_sm:
+                    if int(item[1]) != self._id_sm_to_edit:
+                        data.append(item)
+                    else:
+                        (status, id_sm, code, folio, contract, plant, location, client, employee, order, date,
+                         date_limit, items, history, comment) = item
+                        data.append(
+                            ('Completado', id_sm, code, folio, contract, plant, location, client, employee, order, date,
+                             date_limit, items, json.dumps(self.history_sm), comment))
+                self.table_events = self.create_table(self.frame_table, data, re_order=False)
                 self.clean_widgets()
             case _:
                 print("Error evento no permitido")

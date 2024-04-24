@@ -511,7 +511,7 @@ def read_setting_file(file_path: str) -> dict:
 def get_all_sm_entries(filter_status=False, is_supper=False, emp_id=None):
     flag, error, result = get_sm_entries()
     if flag:
-        status_dic = {0: "Pendiente", 1: "En Proceso", 2: "Terminado", -1: "Cancelado"}
+        status_dic = {0: "Pendiente", 1: "En Proceso", 2: "Completado", -1: "Cancelado"}
         columns = (
         "ID", "Codigo", "Folio", "Contrato", "Planta", "Ubicación", "Cliente", "Empleado", "Orden/Cotización", "Fecha",
         "Fecha Limite", "Items", "Estado", "Historial", "Comentario")

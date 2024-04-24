@@ -7,7 +7,6 @@ from ttkbootstrap.scrolled import ScrolledFrame
 
 import templates.frames.Frame_LoginFrames as Login
 from static.extensions import filepath_settings, ventanasApp_path
-from templates import AlmacenGUI
 from templates.Functions_AuxFiles import carpeta_principal, get_image_side_menu, read_setting_file, get_all_sm_entries, \
     get_all_sm_products
 from templates.Functions_Files import read_file_not
@@ -16,7 +15,6 @@ from templates.Funtions_Utils import create_button_side_menu, compare_permission
 from templates.frames.Frame_Bitacora import BitacoraEditFrame
 from templates.frames.Frame_ChatsFrame import ChatFrame
 from templates.frames.Frame_DBFrame import DBFrame, EmployeesFrame
-from templates.frames.Frame_EmployeeDetail import EmployeeDetails
 from templates.frames.Frame_ExamenesMedicos import ExamenesMedicos
 from templates.frames.Frame_FichajeFilesFrames import FichajesFilesGUI
 from templates.frames.Frame_Home import HomeFrame
@@ -29,7 +27,6 @@ from templates.frames.Frame_Vacations import VacationsFrame
 from templates.frames.Frame_vAssistantGUI import AssistantGUI
 from templates.frames.SubFrame_SMManagement import SMManagement
 from templates.screens.Clients import ClientsScreen
-from templates.screens.Home import HomeScreen
 from templates.screens.In import InScreen
 from templates.screens.InternalInventory import InternalInventoryScreen
 from templates.screens.Inventory import InventoryScreen
@@ -43,6 +40,7 @@ filepath_notifications = 'files/notifications.txt'
 default_values_settings = {"max_chats": "40", "start_date": "19/oct./2023", "end_date": "19/oct./2023",
                            "sampling_time": 15}
 chats_to_show = 40  # number of chats to show at the beginning
+permissions_supper_SM = json.load(open(ventanasApp_path, encoding="utf-8"))["permissions_supper_SM"]
 available_frames = {
     "Inicio": HomeFrame,
     "Chats": ChatFrame,
@@ -54,7 +52,6 @@ available_frames = {
     "Fichajes": FichajesFilesGUI,
     "DB": DBFrame,
     "Empleados": EmployeesFrame,
-    "Emp. Detalles": EmployeeDetails,
     "Pedidos": PedidosFrame,
     "Configuración": SettingsFrameGUI,
     "SM": SMFrame,
@@ -62,7 +59,6 @@ available_frames = {
     "Clients (A)": ClientsScreen,
     "Proveedores (A)": ProvidersScreen,
     "Inventario": InventoryScreen,
-    "Home": HomeScreen,
     "Entradas": InScreen,
     "Salidas": OutScreen,
     "Suministros Diarios": SuppliesScreen,
@@ -235,8 +231,9 @@ class GUIAsistente(ttk.Window):
         if self.department in self.settings["gui"]:
             self.style_gui.theme_use(self.settings["gui"][self.department]["theme"])
 
-    def _create_side_menu_windows(self, data_dic=None):
+    def _create_side_menu_windows(self):
         windows = {}
+        data_dic = load_data(self.check_permissions(), self.username_data["id"])
         for i, window in enumerate(self.names_side_menu):
             window_to_create = available_frames[window]
             arguments = {
@@ -334,6 +331,12 @@ class GUIAsistente(ttk.Window):
             #     case _:
             #         pass
         return windows
+
+    def check_permissions(self):
+        for item in self.permissions.values():
+            if item in permissions_supper_SM:
+                return True
+        return False
 
 
 class LogoFrame(tk.Frame):
