@@ -133,27 +133,26 @@ class EmployeesFrame(ScrolledFrame):
             self.visual_frame, "employees",
             row=1, column=0, style="primary",
             pad_x=25, pad_y=10)
-        self.employee_insert.view.bind("<Double-1>", self._emp_selected)
+        self.employee_insert.view.bind("<Double-1>", self._emp_selected_table)
 
-    def _emp_selected(self, event):
+    def _emp_selected_table(self, event):
         data = event.widget.item(event.widget.selection()[0], "values")
+        print(len(data), data)
         for index, entry in enumerate(self.entries):
-            if index >= len(data)-1:
-                break
+            print(index, entry)
             if isinstance(entry, ttk.Combobox):
                 entry.set(data[index + 1])
             elif isinstance(entry, ttk.Entry):
-                if index in [13]:
-                    continue
                 set_entry_value(entry, data[index + 1].upper())
             elif isinstance(entry, ttk.DateEntry):
-                if index + 1 == 7:
+                if index == 7:
                     entry_date = datetime.strptime(data[index + 1],
                                                    "%Y-%m-%d %H:%M:%S") if data[index + 1] != "None" else datetime.now()
                     self.entries[index + 1] = set_dateEntry_new_value(
                         self.insert_frame, self.entries[index + 1], entry_date.date(),
                         row=3, column=3, padx=5, pady=1, date_format="%Y-%m-%d")
-                elif index + 1 == 12:
+                elif index == 12:
+                    print(data[index + 1])
                     if len(data[index + 1]) > 0 and data[index + 1] != "None":
                         departure = json.loads(data[index + 1])
                         entry_date = datetime.strptime(departure["date"],
@@ -167,13 +166,19 @@ class EmployeesFrame(ScrolledFrame):
                             self.insert_frame, self.entries[index + 1], datetime.now().date(),
                             row=9, column=0, padx=5, pady=1, date_format="%Y-%m-%d")
                         set_entry_value(self.entries[13], "")
+                elif index == 14:
+                    entry_date = datetime.strptime(data[index + 1],
+                                                   "%Y-%m-%d") if data[index + 1] != "None" else datetime.now()
+                    self.entries[index + 1] = set_dateEntry_new_value(
+                        self.insert_frame, self.entries[index + 1], entry_date.date(),
+                        row=9, column=2, padx=5, pady=1, date_format="%Y-%m-%d")
 
     def _update_table_show(self, data):
         self.employee_insert.grid_forget()
         self.employee_insert, data = create_visualizer_treeview(
             self.visual_frame, "employees", row=1, column=0, style="primary",
             pad_x=25, pad_y=10, data=data)
-        self.employee_insert.view.bind("<Double-1>", self._emp_selected)
+        self.employee_insert.view.bind("<Double-1>", self._emp_selected_table)
 
     def get_entries_values(self):
         values = []

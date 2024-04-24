@@ -130,7 +130,7 @@ def get_employees(limit=(0, 100)) -> list[list]:
     sql = ("SELECT employees.employee_id, employees.name, employees.l_name, employees.curp, employees.phone_number, "
            "employees.modality, departments.name, employees.contrato, employees.date_admission, "
            "employees.rfc, employees.nss, employees.puesto, employees.status, "
-           "employees.departure, employees.email, employees.emergency_contact "
+           "employees.departure, employees.email, employees.emergency_contact, employees.birthday, employees.legajo "
            "FROM sql_telintec.employees "
            "INNER JOIN sql_telintec.departments ON employees.department_id = departments.department_id "
            "LIMIT  %s")

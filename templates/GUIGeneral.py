@@ -15,6 +15,7 @@ from templates.Funtions_Utils import create_button_side_menu, compare_permission
 from templates.frames.Frame_Bitacora import BitacoraEditFrame
 from templates.frames.Frame_ChatsFrame import ChatFrame
 from templates.frames.Frame_DBFrame import DBFrame, EmployeesFrame
+from templates.frames.Frame_EmployeeDetail import EmployeeDetails, EmployeeDetailsScrolled
 from templates.frames.Frame_ExamenesMedicos import ExamenesMedicos
 from templates.frames.Frame_FichajeFilesFrames import FichajesFilesGUI
 from templates.frames.Frame_Home import HomeFrame
@@ -67,6 +68,7 @@ available_frames = {
     "Inventario Int.":  InternalInventoryScreen,
     "Ventana Asistente": AssistantGUI,
     "Examenes":  ExamenesMedicos,
+    "Emp. Detalles": EmployeeDetailsScrolled,
     "Cuenta":  Login.LogOptionsFrame
 }
 

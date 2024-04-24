@@ -367,7 +367,7 @@ def create_visualizer_treeview(
     match table:
         case "employees":
             columns = ["Id", "Nombre", "Apellido", "CURP", "Telefono", "Modalidad", "Departamento", "Contrato",
-                       "Ingreso", "RFC", "NSS", "Puesto", "Estatus", "Baja", "Email", "Emg. Info."]
+                       "Ingreso", "RFC", "NSS", "Puesto", "Estatus", "Baja", "Email", "Emg. Info.", "Cumpleaños", "# de Legajo"]
             # columns = ["Id", "Nombre", "Apellido", "Telefono", "Dep. ID.", "Modalidad", "Email", "Contrato",
             #            "Ingreso", "RFC", "CURP", "NSS", "Emg. Info.", "Puesto", "Estatus", "Baja", "Cumpleaños", "# de Legajo"]
             data = get_employees() if data is None else data

@@ -20,6 +20,7 @@
       "Cuenta"
     ],
     "App.Department.Administrator": [
+      "Inicio",
       "DB",
       "Notificaciones",
       "Fichajes",
@@ -28,7 +29,6 @@
     ],
     "App.Department.ALMACEN": [
       "Inicio",
-      "Home",
       "Entradas",
       "Salidas",
       "Inventario",
@@ -41,6 +41,7 @@
       "Cuenta"
     ],
     "App.Department.Bitacoras": [
+      "Inicio",
       "Bitacora",
       "Cuenta"
     ],
@@ -49,10 +50,12 @@
       "Cuenta"
     ],
     "App.Department.SM": [
+      "Inicio",
       "SM",
       "Cuenta"
     ],
     "App.Department.Administracion": [
+      "Inicio",
       "Clients (A)",
       "Proveedores (A)",
       "SM",

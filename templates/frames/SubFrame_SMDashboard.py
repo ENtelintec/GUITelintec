@@ -15,10 +15,10 @@ permissions_supper_SM = json.load(open(ventanasApp_path, encoding="utf-8"))["per
 
 
 class SMDashboard(ttk.Frame):
-    def __init__(self, master=None, data=None, columns=None, data_user=None, *args, **kwargs):
+    def __init__(self, master=None, data=None, data_emp=None, *args, **kwargs):
         super().__init__(master)
-        self.permissions = data_user["permissions"]
-        self._id_emp = data_user["id"]
+        self.permissions = data_emp["permissions"]
+        self._id_emp = data_emp["id"]
         self.is_supper_user = self.check_permissions()
         self.history = None
         self.data_sm = None
@@ -35,7 +35,10 @@ class SMDashboard(ttk.Frame):
         self.frame_table = ttk.Frame(self)
         self.frame_table.grid(row=1, column=0, padx=20, pady=20, sticky="nswe")
         self.frame_table.columnconfigure(0, weight=1)
-        self.table_events = self.create_table(self.frame_table, data=data, columns=columns)
+        if self.is_supper_user:
+            self.table_events = self.create_table(self.frame_table, data=data["data_sm"], columns=data["columns_sm"])
+        else:
+            self.table_events = self.create_table(self.frame_table, data=data["data_sm_not_supper"], columns=data["columns_sm"])
         # ----------------------- history sm-----------------------------------
         create_label(self.frame_table, 0, 1, text="Historial de la SMs", sticky="nswe", font=("Helvetica", 14, "bold"))
         create_label(self.frame_table, 1, 1, textvariable=self.svar_info_history, sticky="nswe")
@@ -94,7 +97,6 @@ class SMDashboard(ttk.Frame):
         for item in self.history:
             msg += f"Evento de {item['event']} por el usuario {item['user']} en la fecha: {item['date']}\n"
         self.svar_info_history.set(msg)
-        print(msg)
         self.on_reset_widgets_click()
 
     def on_reset_widgets_click(self):

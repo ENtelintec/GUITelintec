@@ -47,13 +47,10 @@ class SMFrame(ScrolledFrame):
         self.settings = settings
         data_dic = load_data(self.is_supper_user, self.id_emp)
         nb = ttk.Notebook(self)
-        if self.is_supper_user:
-            frame_1 = SMDashboard(nb, data=data_dic["data_sm"], columns=data_dic["columns_sm"], data_user=data_emp)
-        else:
-            frame_1 = SMDashboard(nb, data=data_dic["data_sm_not_supper"], columns=data_dic["columns_sm"], data_user=data_emp)
+        # frame_1 = SMDashboard(nb, data=data_dic, data_emp=data_emp)
         frame_2 = FrameSMCreate(nb, id_emp=self.id_emp, permissions=data_emp["permissions"], settings=self.settings, data=data_dic)
-        nb.add(frame_1, text='Dashboard')
-        nb.add(frame_2, text='Crear-editar-eliminar')
+        # nb.add(frame_1, text='Dashboard')
+        nb.add(frame_2, text='Crear-Editar-Eliminar')
         nb.grid(row=0, column=0, sticky="nswe", padx=(5, 20), pady=15)
 
     def check_permissions(self):
