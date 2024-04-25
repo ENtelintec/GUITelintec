@@ -367,7 +367,7 @@ def create_visualizer_treeview(
     match table:
         case "employees":
             columns = ["Id", "Nombre", "Apellido", "CURP", "Telefono", "Modalidad", "Departamento", "Contrato",
-                       "Ingreso", "RFC", "NSS", "Puesto", "Estatus", "Baja", "Email", "Emg. Info.", "Cumpleaños", "# de Legajo"]
+                       "Ingreso", "RFC", "NSS", "Puesto", "Estatus", "Baja", "Cumpleaños", "# de Legajo", "Email", "Emg. Info."]
             # columns = ["Id", "Nombre", "Apellido", "Telefono", "Dep. ID.", "Modalidad", "Email", "Contrato",
             #            "Ingreso", "RFC", "CURP", "NSS", "Emg. Info.", "Puesto", "Estatus", "Baja", "Cumpleaños", "# de Legajo"]
             data = get_employees() if data is None else data
@@ -492,7 +492,7 @@ def create_widget_input_DB(master, table) -> list:
                 row=6, column=3, padx=1, pady=1, sticky="nsew")
             ttk.Label(master, text="Email", font=("Helvetica", 11, "bold")).grid(
                 row=8, column=0, padx=1, pady=1, sticky="nsew")
-            ttk.Label(master, text="Emg. Info.", font=("Helvetica", 11, "bold")).grid(
+            ttk.Label(master, text="Contacto Emergencia: ", font=("Helvetica", 11, "bold")).grid(
                 row=8, column=1, padx=1, pady=1, sticky="nsew")
             # -----------------------inputs-----------------------
             entry1_emp = ttk.Entry(master, width=16)
@@ -538,17 +538,17 @@ def create_widget_input_DB(master, table) -> list:
                 row=0, column=0, padx=1, pady=1, sticky="nsew")
             ttk.Label(frame_email, text="Email 2: ", font=("Helvetica", 11, "bold")).grid(
                 row=1, column=0, padx=1, pady=1, sticky="nsew")
-            entry17_emp = ttk.Entry(frame_email, width=21)
+            entry17_emp = ttk.Entry(frame_email, width=31)
             entry17_emp.grid(row=0, column=1, padx=5, pady=1, sticky="nswe")
-            entry18_emp = ttk.Entry(frame_email, width=21)
+            entry18_emp = ttk.Entry(frame_email, width=31)
             entry18_emp.grid(row=1, column=1, padx=5, pady=1, sticky="nswe")
             ttk.Label(frame_emergency, text="Nombre: ", font=("Helvetica", 11, "bold")).grid(
                 row=0, column=0, padx=1, pady=1, sticky="nsew")
             ttk.Label(frame_emergency, text="Número: ", font=("Helvetica", 11, "bold")).grid(
                 row=1, column=0, padx=1, pady=1, sticky="nsew")
-            entry19_emp = ttk.Entry(frame_emergency, width=21)
+            entry19_emp = ttk.Entry(frame_emergency, width=31)
             entry19_emp.grid(row=0, column=1, padx=5, pady=1, sticky="nswe")
-            entry20_emp = ttk.Entry(frame_emergency, width=21)
+            entry20_emp = ttk.Entry(frame_emergency, width=31)
             entry20_emp.grid(row=1, column=1, padx=5, pady=1, sticky="nswe")
             return [entry1_emp, entry2_emp, entry3_emp, entry4_emp, entry5_emp, entry6_emp,
                     entry7_emp, entry8_emp, entry9_emp, entry10_emp, entry11_emp,
@@ -840,7 +840,8 @@ def create_btns_DB(
                 master, text="Actualizar", command=_command_update, *args, **kwargs
             )
             btn_update.grid(row=0, column=1, pady=10, padx=1)
-            btn_reset = ttk.Button(master, text="Limpiar", command=_command_reset, *args, **kwargs)
+            btn_reset = ttk.Button(
+                master, text="Limpiar", command=_command_reset, bootstyle="info", *args, **kwargs)
             btn_reset.grid(row=0, column=2, pady=10, padx=1)
             btn_delete = ttk.Button(
                 master, text="Eliminar", command=_command_delete, bootstyle="warning", *args, **kwargs)

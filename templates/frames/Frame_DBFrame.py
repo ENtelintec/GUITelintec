@@ -15,7 +15,7 @@ from static.extensions import windows_names_db_frame
 from templates.Functions_AuxFiles import get_image_side_menu
 from templates.Funtions_Utils import set_dateEntry_new_value, create_widget_input_DB, create_visualizer_treeview, \
     create_btns_DB, set_entry_value, create_button_side_menu, clean_entries
-
+dict_deps = {"Dirección": 1, "Operaciones": 2, "Administración": 3, "RRHH": 4, "REPSE": 5, "IA": 6, "Otros": 7}
 
 class DBFrame(ttk.Frame):
     def __init__(self, master, setting: dict = None, *args, **kwargs):
@@ -137,41 +137,56 @@ class EmployeesFrame(ScrolledFrame):
 
     def _emp_selected_table(self, event):
         data = event.widget.item(event.widget.selection()[0], "values")
-        print(len(data), data)
+        try:
+            self._id_emp_update = int(data[0])
+        except ValueError:
+            print("Error ID db")
+            return
         for index, entry in enumerate(self.entries):
-            print(index, entry)
             if isinstance(entry, ttk.Combobox):
                 entry.set(data[index + 1])
             elif isinstance(entry, ttk.Entry):
-                set_entry_value(entry, data[index + 1].upper())
+                if index == 13:
+                    departure = json.loads(data[index])
+                    value_update = departure["reason"] if departure["reason"] != "None" else ""
+                elif index in [16, 17]:
+                    emails = data[16].split(",") if data[16] != "None" or data[16] == "" else ["", ""]
+                    emails.append("")
+                    value_update = emails[index - 16]
+                elif index in [18, 19]:
+                    emergency = json.loads(data[17])
+                    values = [emergency["name"], emergency["phone_number"]]
+                    value_update = values[index - 18] if values[index - 18] is not None else ""
+                elif index >= 14:
+                    value_update = data[index] if data[index] != "None" else ""
+                else:
+                    value_update = data[index + 1]
+                set_entry_value(entry, str(value_update).upper())
             elif isinstance(entry, ttk.DateEntry):
                 if index == 7:
                     entry_date = datetime.strptime(data[index + 1],
-                                                   "%Y-%m-%d %H:%M:%S") if data[index + 1] != "None" else datetime.now()
-                    self.entries[index + 1] = set_dateEntry_new_value(
-                        self.insert_frame, self.entries[index + 1], entry_date.date(),
+                                                   "%Y-%m-%d") if data[index + 1] != "None" else datetime.now()
+                    self.entries[index] = set_dateEntry_new_value(
+                        self.insert_frame, self.entries[index], entry_date.date(),
                         row=3, column=3, padx=5, pady=1, date_format="%Y-%m-%d")
                 elif index == 12:
-                    print(data[index + 1])
                     if len(data[index + 1]) > 0 and data[index + 1] != "None":
                         departure = json.loads(data[index + 1])
                         entry_date = datetime.strptime(departure["date"],
                                                        "%Y-%m-%d") if departure["date"] != "None" else datetime.now()
-                        self.entries[index + 1] = set_dateEntry_new_value(
-                            self.insert_frame, self.entries[index + 1], entry_date.date(),
-                            row=9, column=0, padx=5, pady=1, date_format="%Y-%m-%d")
-                        set_entry_value(self.entries[13], departure["reason"])
+                        self.entries[index] = set_dateEntry_new_value(
+                            self.insert_frame, self.entries[index], entry_date.date(),
+                            row=7, column=0, padx=5, pady=1, date_format="%Y-%m-%d")
                     else:
-                        self.entries[index + 1] = set_dateEntry_new_value(
-                            self.insert_frame, self.entries[index + 1], datetime.now().date(),
-                            row=9, column=0, padx=5, pady=1, date_format="%Y-%m-%d")
-                        set_entry_value(self.entries[13], "")
+                        self.entries[index] = set_dateEntry_new_value(
+                            self.insert_frame, self.entries[index], datetime.now().date(),
+                            row=7, column=0, padx=5, pady=1, date_format="%Y-%m-%d")
                 elif index == 14:
-                    entry_date = datetime.strptime(data[index + 1],
-                                                   "%Y-%m-%d") if data[index + 1] != "None" else datetime.now()
-                    self.entries[index + 1] = set_dateEntry_new_value(
-                        self.insert_frame, self.entries[index + 1], entry_date.date(),
-                        row=9, column=2, padx=5, pady=1, date_format="%Y-%m-%d")
+                    entry_date = datetime.strptime(data[index],
+                                                   "%Y-%m-%d") if data[index] != "None" else datetime.now()
+                    self.entries[index] = set_dateEntry_new_value(
+                        self.insert_frame, self.entries[index], entry_date.date(),
+                        row=7, column=2, padx=5, pady=1, date_format="%Y-%m-%d")
 
     def _update_table_show(self, data):
         self.employee_insert.grid_forget()
@@ -192,6 +207,9 @@ class EmployeesFrame(ScrolledFrame):
     def _insert_employee(self):
         values = self.get_entries_values()
         status = values[11]
+        if values[0] == "" or values[1] == "":
+            Messagebox.show_error(title="Error", message="Por favor rellenar la información.")
+            return
         if status == "inactivo":
             msg = (f"Are you sure you want to insert the following employee:\n"
                    f"Name: {values[0].upper()}\nLastname: {values[1].upper()}")
@@ -209,14 +227,14 @@ class EmployeesFrame(ScrolledFrame):
         departure = {"date": values[12], "reason": values[13]}
         email = values[16] + "," + values[17]
         emergency = {"name": values[18], "phone_number": values[19]}
-        dict_deps = {"Dirección": 1, "Operaciones": 2, "Administración": 3, "RRHH": 4, "REPSE": 5, "IA": 6, "Otros": 7}
         flag, e, out = fsql.new_employee(
             values[0], values[1], values[2], values[3], values[4], dict_deps[values[5]], values[6], values[7],
             values[8], values[9], values[10], values[11], json.dumps(departure), values[14], values[15], email,
-            emergency)
+            json.dumps(emergency))
         if flag:
             row = [out, values[0], values[1], values[2], values[3], values[4], values[5], values[6], values[7],
-                   values[8], values[9], values[10], values[11], json.dumps(departure)]
+                   values[8], values[9], values[10], values[11], json.dumps(departure), values[14], values[15],
+                   email, json.dumps(emergency)]
             self.data.append(row)
             self._update_table_show(self.data)
             Messagebox.show_info(title="Informacion", message=f"New employee created:\n{out}")
@@ -224,40 +242,41 @@ class EmployeesFrame(ScrolledFrame):
             Messagebox.show_error(title="Error", message=f"Error creating employee:\n{e}")
 
     def _update_employee(self):
-        (name, lastname, curp, phone, email, department, contract,
-         entry_date, rfc, nss, emergency, modality, puesto, status, departure) = self.get_entries_values()
-        baja = departure["date"]
-        reason = departure["reason"]
+        if self._id_emp_update is None:
+            Messagebox.show_error(title="Error", message="Please select a employee to update.")
+            return
+        values = self.get_entries_values()
+        status = values[11]
         if status == "inactivo":
-            msg = (f"Are you sure you want to update the following employee:\n"
-                   f"Name: {name}\nLastname: {lastname}\nCurp: {curp}\nPhone: {phone}\n"
-                   f"Email: {email}\nDepartment: {department}\nContract: {contract}\n"
-                   f"Entry date: {entry_date}\nRfc: {rfc}\nNss: {nss}\n"
-                   f"Emergency: {emergency}\nModality: {modality}\nPuesto: {puesto}\n"
-                   f"Fecha de baja: {baja}\nComentarios: {reason}")
+            msg = (f"Are you sure you want to update the following employee to inactive:\n"
+                   f"Name: {values[0].upper()}\nLastname: {values[1].upper()}")
         else:
             departure = {"date": "None", "reason": ""}
             msg = (f"Are you sure you want to update the following employee:\n"
-                   f"Name: {name}\nLastname: {lastname}\nCurp: {curp}\nPhone: {phone}\n"
-                   f"Email: {email}\nDepartment: {department}\nContract: {contract}\n"
-                   f"Entry date: {entry_date}\nRfc: {rfc}\nNss: {nss}\n"
-                   f"Emergency: {emergency}\nModality: {modality}\nPuesto: {puesto}")
+                   f"Name: {values[0].upper()}\nLastname: {values[1].upper()}\n")
         answer = Messagebox.show_question(
             title="Confirmacion",
             message=msg
         )
         if answer == "No":
             return
+        departure = {"date": values[12], "reason": values[13]}
+        email = values[16] + "," + values[17]
+        emergency = {"name": values[18], "phone_number": values[19]}
         flag, e, out = fsql.update_employee(
-            self._id_emp_update, name, lastname, curp, phone, email, department,
-            contract, entry_date, rfc, nss, emergency, modality, puesto, status, departure)
+            self._id_emp_update, values[0], values[1], values[2], values[3], values[4], dict_deps[values[5]], values[6], values[7],
+            values[8], values[9], values[10], values[11], json.dumps(departure), values[14], values[15], email,
+            json.dumps(emergency))
         if flag:
             for index, item in enumerate(self.data):
-                if item[0] == self._id_emp_update:
+                print(item[0], self._id_emp_update)
+                if int(item[0]) == self._id_emp_update:
+                    print(self.data[index])
                     self.data[index] = [
-                        self._id_emp_update, name, lastname, phone, department,
-                        modality, email, contract, entry_date, rfc, curp,
-                        nss, emergency, puesto, status, json.dumps(departure)]
+                        self._id_emp_update, values[0], values[1], values[2], values[3], values[4], values[5], values[6], values[7],
+                        values[8], values[9], values[10], values[11], json.dumps(departure), values[14], values[15],
+                        email, json.dumps(emergency)]
+                    print(self.data[index])
                     break
             self._update_table_show(self.data)
             Messagebox.show_info(title="Informacion", message=f"Employee updated")
@@ -281,7 +300,7 @@ class EmployeesFrame(ScrolledFrame):
         flag, e, out = fsql.delete_employee(self._id_emp_update)
         if flag:
             for index, item in enumerate(self.data):
-                if item[0] == self._id_emp_update:
+                if int(item[0]) == self._id_emp_update:
                     self.data.pop(index)
             self._update_table_show(self.data)
             Messagebox.show_info(

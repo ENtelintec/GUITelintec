@@ -127,13 +127,15 @@ def execute_sql_multiple(sql: str, values_list: list = None, type_sql=1):
 
 
 def get_employees(limit=(0, 100)) -> list[list]:
-    sql = ("SELECT employees.employee_id, employees.name, employees.l_name, employees.curp, employees.phone_number, "
-           "employees.modality, departments.name, employees.contrato, employees.date_admission, "
-           "employees.rfc, employees.nss, employees.puesto, employees.status, "
-           "employees.departure, employees.email, employees.emergency_contact, employees.birthday, employees.legajo "
-           "FROM sql_telintec.employees "
-           "INNER JOIN sql_telintec.departments ON employees.department_id = departments.department_id "
-           "LIMIT  %s")
+    sql = (
+        "SELECT employees.employee_id, UPPER(employees.name), UPPER(employees.l_name), employees.curp, employees.phone_number, "
+        "employees.modality, departments.name, employees.contrato, employees.date_admission, "
+        "employees.rfc, employees.nss, employees.puesto, employees.status, "
+        "employees.departure, employees.birthday, employees.legajo, employees.email, employees.emergency_contact "
+        "FROM sql_telintec.employees "
+        "INNER JOIN sql_telintec.departments ON employees.department_id = departments.department_id "
+        "ORDER BY employees.employee_id "
+        "LIMIT  %s ")
     val = (limit[1],)
     flag, e, my_result = execute_sql(sql, val, 2)
     out = my_result if my_result is not None else []
@@ -143,24 +145,25 @@ def get_employees(limit=(0, 100)) -> list[list]:
 def new_employee(name, lastname, curp, phone, modality, department, contract, entry_date,
                  rfc, nss, puesto, estatus, departure, birthday, legajo, email, emergency):
     sql = ("INSERT INTO employees (name, l_name, curp, phone_number, email, department_id,"
-           " contrato, date_admission, rfc, nss, emergency_contact, modality, puesto, status, departure) "
-           "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)")
+           " contrato, date_admission, rfc, nss, emergency_contact, modality, puesto, status, "
+           " departure, birthday, legajo) "
+           "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)")
     values = (name.lower(), lastname.lower(), curp, phone, email, department,
               contract, entry_date, rfc, nss, emergency, modality, puesto, estatus,
-              json.dumps(departure))
+              departure, birthday, legajo)
     flag, e, out = execute_sql(sql, values, 4)
     return flag, e, out
 
 
-def update_employee(employee_id, name, lastname, curp, phone, email, department, contract, entry_date, rfc, nss,
-                    emergency, modality, puesto, estatus, departure):
+def update_employee(employee_id, name, lastname, curp, phone, modality, department, contract, entry_date,
+                    rfc, nss, puesto, estatus, departure, birthday, legajo, email, emergency):
     sql = ("UPDATE employees SET name = %s, l_name = %s, curp = %s, phone_number = %s, email = %s, department_id = %s,"
            "contrato = %s, date_admission = %s, rfc = %s, nss = %s, emergency_contact = %s, modality = %s , "
-           "puesto = %s, status = %s, departure = %s "
+           "puesto = %s, status = %s, departure = %s, birthday = %s, legajo = %s "
            "WHERE employee_id = %s")
     values = (name.lower(), lastname.lower(), curp, phone, email, department,
               contract, entry_date, rfc, nss, emergency, modality, puesto,
-              estatus, json.dumps(departure), employee_id)
+              estatus, departure, birthday, legajo, employee_id)
     flag, e, out = execute_sql(sql, values, 3)
     return flag, e, out
 
@@ -1153,7 +1156,7 @@ def get_sm_entries():
 
 def insert_sm_db(data):
     event = [{"event": "creation",
-             "date": datetime.now().strftime('%Y-%m-%d %H:%M:%S'), "user": data['info']['emp_id']}]
+              "date": datetime.now().strftime('%Y-%m-%d %H:%M:%S'), "user": data['info']['emp_id']}]
     sql = ("INSERT INTO materials_request (sm_code, folio, contract, facility, location, "
            "client_id, emp_id, pedido_cotizacion, date, limit_date, items, status, history, comment)"
            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)")
