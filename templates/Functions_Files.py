@@ -709,8 +709,7 @@ def get_dict_fichaje(dict_list: list[dict], data: list[dict]):
         dict_f = dict_list[i]
         if item_dict is not None:
             for timestamp_key, item in item_dict.items():
-                timestamp = datetime.strptime(timestamp_key, '%Y-%m-%d %H:%M:%S') if type(
-                    timestamp_key) is str else timestamp_key
+                timestamp = datetime.strptime(timestamp_key, '%Y-%m-%d %H:%M:%S') if isinstance(timestamp_key, str) else timestamp_key
                 year = str(timestamp.year)
                 month = str(timestamp.month)
                 day = str(timestamp.day)
@@ -798,7 +797,6 @@ def get_dic_from_list_fichajes(data_fichaje: tuple, **kwargs) -> tuple:
             days_missing_o, days_late_o, days_extra_o, primes_o, normal_o = value
         elif key == "ternium_file":
             days_missing_t, days_late_t, days_extra_t, primes_t, normal_t = value
-    dict_f = {}
     days_missing_dict, days_late_dict, days_extra_dict, primes_dict, normal_dic = ({}, {}, {}, {}, {})
     days_missing_dict, days_late_dict, days_extra_dict, primes_dict, normal_dic = get_dict_fichaje(
         [days_missing_dict, days_late_dict, days_extra_dict, primes_dict, normal_dic],
@@ -1040,7 +1038,7 @@ def get_fichajes_emp_cache(filepath) -> tuple[dict, bool]:
 
 def update_fichajes_emp_cache(filepath: str, data: dict):
     """
-    Updates the fichajescache file with the data provided. If the file does not exist
+    Updates the fichajescache file with the data provided. If the file does not exist,
     it is created. If the file exists, it is updated.
     :param filepath:
     :param data:
@@ -1163,7 +1161,7 @@ def unify_data_display_fichaje(data: list[tuple[any, float, str]]) -> dict:
         timestamp, value, comment = item
         if isinstance(value, pd.Timedelta):
             value = value.total_seconds() / 3600
-        comment = "" if comment is None else comment
+        comment = "Sin registro" if comment is None else comment
         timestamp = datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S") if isinstance(timestamp, str) else timestamp
         year = timestamp.year
         month = timestamp.month
@@ -1176,6 +1174,15 @@ def unify_data_display_fichaje(data: list[tuple[any, float, str]]) -> dict:
             dic_out[new_timestamp][1] += comment
             dic_out[new_timestamp][2].append(timestamp)
     return dic_out
+
+
+def correct_repetitions(normal_data_emp: dict, absence_data_emp: dict, prime_data_emp: dict, late_data_emp: dict, extra_data_emp: dict):
+    keys_absence = absence_data_emp.keys()
+    for key in normal_data_emp.keys():
+        if key in keys_absence:
+            res = absence_data_emp.pop(key, None)
+            print("res----", res)
+    return normal_data_emp, absence_data_emp, prime_data_emp, late_data_emp, extra_data_emp
 
 
 def unify_data_employee(data_normal: list, data_absence: list,
@@ -1258,6 +1265,8 @@ def unify_data_employee(data_normal: list, data_absence: list,
                     comment = f"------Bitacora------\n{comment}"
                     extra_data.append((timestamp, value, comment))
     extra_data_emp = unify_data_display_fichaje(extra_data)
+    normal_data_emp, absence_data_emp, prime_data_emp, late_data_emp, extra_data_emp = correct_repetitions(
+        normal_data_emp, absence_data_emp, prime_data_emp, late_data_emp, extra_data_emp)
     return normal_data_emp, absence_data_emp, prime_data_emp, late_data_emp, extra_data_emp
 
 
@@ -1280,7 +1289,8 @@ def transform_hours_to_str(hours: float):
 
 def get_days_work(date: datetime):
     n_days_month = monthrange(date.year, date.month)
-    days_of_the_month = [i for i in range(1, n_days_month[1] + 1)]
+    last_day = n_days_month[1] if n_days_month[1] <= date.day else date.day
+    days_of_the_month = [i for i in range(1, last_day+1)]
     # exclude sundays from the list
     work_days = []
     for day in days_of_the_month:
@@ -1300,11 +1310,10 @@ def get_date_from_days_list(date: datetime, days: list):
     return dates_list
 
 
-def get_worked_days(df_name: pd.DataFrame, type_f=1):
+def get_worked_days(df_name: pd.DataFrame, type_f=1, month=None, date_max=None):
     if type_f == 1:
         days_worked = df_name["Fecha"].tolist()
-        last_date = days_worked[-1] if len(days_worked) > 0 else None
-        days_for_work = []
+        last_date = date_max if date_max is not None else days_worked[-1]
         if last_date is None:
             return [], []
         days_for_work = get_days_work(last_date)
@@ -1317,7 +1326,9 @@ def get_worked_days(df_name: pd.DataFrame, type_f=1):
         return days_worked, days_not_worked
     else:
         days_worked = df_name["Fecha/hora"].tolist()
+        # sort list by date
         last_date = days_worked[-1] if len(days_worked) > 0 else None
+        month = last_date.month if month is None else month
         days_for_work = []
         if last_date is None:
             return [], []
@@ -1326,135 +1337,138 @@ def get_worked_days(df_name: pd.DataFrame, type_f=1):
             if day_worked.day in days_for_work:
                 days_for_work.remove(day_worked.day)
         days_not_worked = get_date_from_days_list(last_date, days_for_work)
-        days_worked = df_name[["Fecha/hora", "Puerta"]].values.tolist()
+        date_lower_limit = datetime(last_date.year, month, 1)
+        days_worked = df_name[df_name["Fecha/hora"] >= date_lower_limit][["Fecha/hora", "Puerta"]].values.tolist()
+        # days_worked = df_name[["Fecha/hora", "Puerta"]].values.tolist()
         return days_worked, days_not_worked
 
 
-def get_info_f_file_name(df: pd.DataFrame, name: str, clocks, window_time_in, window_time_out, flag):
-    if flag:
-        df_name = df[df["name"] == name]
-        df_name_in = df[df["name"] == name]
-        days_worked, days_not_worked = get_worked_days(df_name)
-        min_in = clocks[0]["entrada"][0].get()
-        hour_in = clocks[0]["entrada"][1].get()
-        min_out = clocks[1]["salida"][0].get()
-        hour_out = clocks[1]["salida"][1].get()
-        # filter worked days within monday and saturday
-        df_name_in.set_index('Fecha/hora_in', inplace=True)
-        # filter late days and extra hours
-        # set entrance hour
-        aux_hour = int(hour_in) + int(window_time_in.get() / 60)
-        aux_min = int(min_in) + int(window_time_in.get() % 60)
-        limit_hour = pd.Timestamp(year=1, month=1, day=1, hour=aux_hour, minute=aux_min, second=0)
-        # count the number of rows where the person is late
-        late_name = df_name[df_name["Fecha/hora_in"].dt.time > limit_hour.time()]
-        count_late = len(late_name)
-        # calculate the time difference between the entrance hour and the limit hour
-        late_dic = {}
-        for i in late_name[["Fecha/hora_in", "Dispositivo de fichaje de entrada"]].values:
-            time_str = pd.Timestamp(year=1, month=1, day=1, hour=i[0].hour, minute=i[0].minute, second=0)
-            late_dic[i[0]] = (time_str - limit_hour, i[1])
-        # filter extra hours
-        # set exit hour
-        aux_hour = int(hour_out) + int(window_time_out.get() / 60)
-        aux_min = int(min_out) + int(window_time_out.get() % 60)
-        limit_hour = pd.Timestamp(year=1, month=1, day=1, hour=aux_hour, minute=aux_min, second=0)
-        # count the number of rows where the person is late
-        extra_name = df_name[df_name["Fecha/hora_out"].dt.time > limit_hour.time()]
-        count_extra = len(extra_name)
-        # calculate the time difference between the entrance hour and the late hour
-        extra_dic = {}
-        for i in extra_name[["Fecha/hora_out", "Dispositivo de fichaje de salida"]].values:
-            time_str = pd.Timestamp(year=1, month=1, day=1, hour=i[0].hour, minute=i[0].minute, second=0)
-            extra_dic[i[0]] = (time_str - limit_hour, i[1])
-        return days_worked, days_not_worked, count_late, count_extra, late_dic, extra_dic
+def get_info_f_file_name(df: pd.DataFrame, name: str, clocks, window_time_in, window_time_out, flag, date_max=None):
+    if not flag:
+        return [], [], 0, 0, {}, {}
+    df_name = df[(df["name"] == name) & (df["Fecha/hora_in"] <= date_max)]
+    days_worked, days_not_worked = get_worked_days(df_name, date_max=date_max)
+    min_in = clocks[0]["entrada"][0].get()
+    hour_in = clocks[0]["entrada"][1].get()
+    min_out = clocks[1]["salida"][0].get()
+    hour_out = clocks[1]["salida"][1].get()
+    # filter late days and extra hours
+    # set entrance hour
+    aux_hour = int(hour_in) + int(window_time_in.get() / 60)
+    aux_min = int(min_in) + int(window_time_in.get() % 60)
+    limit_hour = pd.Timestamp(year=1, month=1, day=1, hour=aux_hour, minute=aux_min, second=0)
+    # count the number of rows where the person is late
+    late_name = df_name[(df_name["Fecha/hora_in"].dt.time > limit_hour.time()) & (df_name["Fecha/hora_in"] <= date_max)]
+    count_late = len(late_name)
+    # calculate the time difference between the entrance hour and the limit hour
+    late_dic = {}
+    for i in late_name[["Fecha/hora_in", "Dispositivo de fichaje de entrada"]].values:
+        time_str = pd.Timestamp(year=1, month=1, day=1, hour=i[0].hour, minute=i[0].minute, second=0)
+        late_dic[i[0]] = (time_str - limit_hour, i[1])
+    # filter extra hours
+    # set exit hour
+    aux_hour = int(hour_out) + int(window_time_out.get() / 60)
+    aux_min = int(min_out) + int(window_time_out.get() % 60)
+    limit_hour = pd.Timestamp(year=1, month=1, day=1, hour=aux_hour, minute=aux_min, second=0)
+    # count the number of rows where the person is late
+    extra_name = df_name[(df_name["Fecha/hora_out"].dt.time > limit_hour.time()) & (df_name["Fecha/hora_out"] <= date_max)]
+    count_extra = len(extra_name)
+    # calculate the time difference between the entrance hour and the late hour
+    extra_dic = {}
+    for i in extra_name[["Fecha/hora_out", "Dispositivo de fichaje de salida"]].values:
+        time_str = pd.Timestamp(year=1, month=1, day=1, hour=i[0].hour, minute=i[0].minute, second=0)
+        extra_dic[i[0]] = (time_str - limit_hour, i[1])
+    return days_worked, days_not_worked, count_late, count_extra, late_dic, extra_dic
 
 
-def get_info_t_file_name(df: pd.DataFrame, name: str, clocks, window_time_in, window_time_out, flag):
+def get_info_t_file_name(df: pd.DataFrame, name: str, clocks, window_time_in, window_time_out, flag, month=None, date_max=None):
     if flag:
-        df_name = df[df["name"] == name]
-        days_worked, days_not_worked = get_worked_days(df_name, 2)
-        df_name_entrada = df_name[df_name["in_out"] == "DENTRO"]
-        df_name_salida = df_name[df_name["in_out"] == "FUERA"]
-        worked_days = len(df_name["name"].to_list())
-        min_in = clocks[0]["entrada"][0].get()
-        hour_in = clocks[0]["entrada"][1].get()
-        min_out = clocks[1]["salida"][0].get()
-        hour_out = clocks[1]["salida"][1].get()
-        # filter worked days
-        df_name.set_index('Fecha/hora', inplace=True)
-        worked_intime = len(
-            df_name.between_time(start_time=f"{hour_in}:{min_in}:00", end_time=f"{hour_out}:{min_out}:00"))
-        # filter late days and extra hours
-        # set entrance hour
-        aux_hour = int(hour_in) + int(window_time_in.get() / 60)
-        aux_min = int(min_in) + int(window_time_in.get() % 60)
-        limit_hour = pd.Timestamp(year=1, month=1, day=1, hour=aux_hour, minute=aux_min, second=0)
-        # count the number of rows where the person is late
-        late_name = df_name_entrada[df_name_entrada["Fecha/hora"].dt.time > limit_hour.time()]
-        count = len(late_name)
-        # calculate the time difference between the entrance hour and the late hour
-        time_late = {}
-        for i in late_name[["Fecha/hora", "Puerta"]].values:
-            time_str = pd.Timestamp(year=1, month=1, day=1, hour=i[0].hour, minute=i[0].minute, second=i[0].second)
-            diff = time_str - limit_hour
-            time_late[i[0]] = (diff, i[1])
-        # calculate the number of days when the person worked extra hours
-        aux_hour = int(hour_out) + int(window_time_out.get() / 60)
-        aux_min = int(min_out) + int(window_time_out.get() % 60)
-        limit_hour2 = pd.Timestamp(year=1, month=1, day=1, hour=aux_hour, minute=aux_min, second=0)
-        extra_name = df_name_salida[df_name_salida["Fecha/hora"].dt.time > limit_hour2.time()]
-        count2 = len(extra_name)
-        extra_time = {}
-        for i in extra_name[["Fecha/hora", "Puerta"]].values:
-            time_str = pd.Timestamp(year=1, month=1, day=1, hour=i[0].hour, minute=i[0].minute, second=i[0].second)
-            diff = time_str - limit_hour2
-            extra_time[i[0]] = (diff, i[1])
-        return worked_days, worked_intime, count, count2, time_late, extra_time, days_worked, days_not_worked
-    else:
         return "NA", "NA", "NA", "NA", {}, {}, [], []
+    date_min = pd.Timestamp(year=date_max.year, month=date_max.month, day=1, hour=0, minute=0, second=0)
+    df_name = df[(df["name"] == name) & (df["Fecha/hora"] <= date_max) & (df["Fecha/hora"] >= date_min)]
+    days_worked, days_not_worked = get_worked_days(df_name, 2, month, date_max=date_max)
+    df_name_entrada = df_name[(df_name["in_out"] == "DENTRO") & (df["Fecha/hora"] <= date_max) & (df["Fecha/hora"] >= date_min)]
+    df_name_salida = df_name[(df_name["in_out"] == "FUERA") & (df["Fecha/hora"] <= date_max) & (df["Fecha/hora"] >= date_min)]
+    worked_days = len(df_name["name"].to_list())
+    min_in = clocks[0]["entrada"][0].get()
+    hour_in = clocks[0]["entrada"][1].get()
+    min_out = clocks[1]["salida"][0].get()
+    hour_out = clocks[1]["salida"][1].get()
+    # filter worked days
+    df_name.set_index('Fecha/hora', inplace=True)
+    worked_intime = len(
+        df_name.between_time(start_time=f"{hour_in}:{min_in}:00", end_time=f"{hour_out}:{min_out}:00"))
+    # filter late days and extra hours
+    # set entrance hour
+    aux_hour = int(hour_in) + int(window_time_in.get() / 60)
+    aux_min = int(min_in) + int(window_time_in.get() % 60)
+    limit_hour = pd.Timestamp(year=1, month=1, day=1, hour=aux_hour, minute=aux_min, second=0)
+    # count the number of rows where the person is late
+    late_name = df_name_entrada[(df_name_entrada["Fecha/hora"].dt.time > limit_hour.time()) & (df_name_entrada["Fecha/hora"] <= date_max)]
+    count = len(late_name)
+    # calculate the time difference between the entrance hour and the late hour
+    time_late = {}
+    for i in late_name[["Fecha/hora", "Puerta"]].values:
+        time_str = pd.Timestamp(year=1, month=1, day=1, hour=i[0].hour, minute=i[0].minute, second=i[0].second)
+        diff = time_str - limit_hour
+        time_late[i[0]] = (diff, i[1])
+    # calculate the number of days when the person worked extra hours
+    aux_hour = int(hour_out) + int(window_time_out.get() / 60)
+    aux_min = int(min_out) + int(window_time_out.get() % 60)
+    limit_hour2 = pd.Timestamp(year=1, month=1, day=1, hour=aux_hour, minute=aux_min, second=0)
+    extra_name = df_name_salida[(df_name_salida["Fecha/hora"].dt.time > limit_hour2.time()) & (df_name_salida["Fecha/hora"] <= date_max)]
+    count2 = len(extra_name)
+    extra_time = {}
+    for i in extra_name[["Fecha/hora", "Puerta"]].values:
+        time_str = pd.Timestamp(year=1, month=1, day=1, hour=i[0].hour, minute=i[0].minute, second=i[0].second)
+        diff = time_str - limit_hour2
+        extra_time[i[0]] = (diff, i[1])
+    return worked_days, worked_intime, count, count2, time_late, extra_time, days_worked, days_not_worked
 
 
-def get_info_bitacora(df: pd.DataFrame, name: str, id_emp: int, flag):
-    if flag:
-        df_name = df[df["ID"] == id_emp]
-        # count the number of days when the person is atraso in event column
-        df_atraso = df_name[df_name["Evento"] == "atraso"]
-        days_late = (len(df_atraso), sum(df_atraso["Valor"]))
-        # count the number of days when the person is extra in event column
-        df_extra = df_name[df_name["Evento"] == "extra"]
-        days_extra = (len(df_extra), sum(df_extra["Valor"]))
-        # count the number of days when the person is falta in event column
-        df_falta = df_name[df_name["Evento"] == "falta"]
-        days_falta = (len(df_falta), sum(df_falta["Valor"]))
-        # count the number of days when the person is prima in event column
-        df_prima = df_name[df_name["Evento"] == "prima"]
-        days_prima = (len(df_prima), sum(df_prima["Valor"]))
-        # count the number of days when the person is normal in event column
-        df_normal = df_name[df_name["Evento"] == "normal"]
-        normals = (len(df_normal), sum(df_normal["Valor"]))
-        # generate tuple containing (timestamp, comment, value) for each event
-        faltas = []
-        for i, val in enumerate(df_falta["Timestamp"]):
-            faltas.append((val, df_falta["Comentario"].iloc[i], df_falta["Valor"].iloc[i]))
-        extras = []
-        for i, val in enumerate(df_extra["Timestamp"]):
-            extras.append((val, df_extra["Comentario"].iloc[i], df_extra["Valor"].iloc[i]))
-        primas = []
-        for i, val in enumerate(df_prima["Timestamp"]):
-            primas.append((val, df_prima["Comentario"].iloc[i], df_prima["Valor"].iloc[i]))
-        lates = []
-        for i, val in enumerate(df_atraso["Timestamp"]):
-            lates.append((val, df_atraso["Comentario"].iloc[i], df_atraso["Valor"].iloc[i]))
-        normals = []
-        for i, val in enumerate(df_normal["Timestamp"]):
-            normals.append((val, df_normal["Comentario"].iloc[i], df_normal["Valor"].iloc[i]))
-        contract = df_name["Contrato"].iloc[0] if len(df_name) > 0 else "NA"
-        return (days_falta, days_extra, days_prima, days_late,
-                faltas, extras, primas, lates, normals, contract)
-
-    else:
+def get_info_bitacora(df: pd.DataFrame, name: str, id_emp: int, flag, date_limit=None):
+    if not flag:
         return 0.0, 0.0, 0.0, 0.0, [], [], [], []
+    df_name = df[df["ID"] == id_emp]
+    # convert timestamp to datetime format
+    df_name["Timestamp"] = pd.to_datetime(df_name["Timestamp"])
+    date_limit = date_limit if date_limit is not None else df["Timestamp"].max()
+    # filter by max date 
+    df_name = df_name[df_name["Timestamp"] <= date_limit]
+    # count the number of days when the person is atraso in event column
+    df_atraso = df_name[df_name["Evento"] == "atraso"]
+    days_late = (len(df_atraso), sum(df_atraso["Valor"]))
+    # count the number of days when the person is extra in event column
+    df_extra = df_name[df_name["Evento"] == "extra"]
+    days_extra = (len(df_extra), sum(df_extra["Valor"]))
+    # count the number of days when the person is falta in event column
+    df_falta = df_name[df_name["Evento"] == "falta"]
+    days_falta = (len(df_falta), sum(df_falta["Valor"]))
+    # count the number of days when the person is prima in event column
+    df_prima = df_name[df_name["Evento"] == "prima"]
+    days_prima = (len(df_prima), sum(df_prima["Valor"]))
+    # count the number of days when the person is normal in event column
+    df_normal = df_name[df_name["Evento"] == "normal"]
+    normals = (len(df_normal), sum(df_normal["Valor"]))
+    # generate tuple containing (timestamp, comment, value) for each event
+    faltas = []
+    for i, val in enumerate(df_falta["Timestamp"]):
+        faltas.append((val, df_falta["Comentario"].iloc[i], df_falta["Valor"].iloc[i]))
+    extras = []
+    for i, val in enumerate(df_extra["Timestamp"]):
+        extras.append((val, df_extra["Comentario"].iloc[i], df_extra["Valor"].iloc[i]))
+    primas = []
+    for i, val in enumerate(df_prima["Timestamp"]):
+        primas.append((val, df_prima["Comentario"].iloc[i], df_prima["Valor"].iloc[i]))
+    lates = []
+    for i, val in enumerate(df_atraso["Timestamp"]):
+        lates.append((val, df_atraso["Comentario"].iloc[i], df_atraso["Valor"].iloc[i]))
+    normals = []
+    for i, val in enumerate(df_normal["Timestamp"]):
+        normals.append((val, df_normal["Comentario"].iloc[i], df_normal["Valor"].iloc[i]))
+    contract = df_name["Contrato"].iloc[0] if len(df_name) > 0 else "NA"
+    return (days_falta, days_extra, days_prima, days_late,
+            faltas, extras, primas, lates, normals, contract)
 
 
 def get_info_o_file_name(contracts, name: str, id_2=None, flag=False) -> tuple[str, list, list, list, float, list]:
