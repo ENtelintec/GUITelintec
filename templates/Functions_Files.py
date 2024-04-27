@@ -1551,3 +1551,25 @@ def write_log_file(path, text):
     with open(f"{path}bitacora_log.txt", "a") as f:
         f.write(text + "\n")
     return True
+
+
+def get_cache_notifications(path: str):
+    try:
+        with open(path, 'rb') as file:
+            notifications = pickle.load(file)
+        return notifications
+    except Exception as e:
+        print(f"Error at opening file notifications {e} {path}")
+        notifications = {}
+    return notifications
+
+
+def update_cache_notifications(path: str, notifications: dict):
+    try:
+        with open(path, 'wb') as file:
+            pickle.dump(notifications, file)
+        return True
+    except Exception as e:
+        print(f"Error at opening file notifications {e}")
+        notifications = {}
+        return False

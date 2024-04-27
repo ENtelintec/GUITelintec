@@ -925,3 +925,8 @@ def recommendations_results_quizzes(dict_results: dict, tipo_q: int):
     dict_conversions_recomen = json.load(open(filepath_recommendations, encoding="utf-8"))
 
     return dict_recommendations
+
+
+def Reverse(lst):
+    new_lst = lst[::-1]
+    return new_lst

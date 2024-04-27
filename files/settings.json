@@ -1,1 +1,30 @@
-{"max_chats": "40", "start_date": "19/oct./2023", "end_date": "19/oct./2023", "sampling_time": 1, "gui": {"null": {"theme": "litera"}, "RRHH": {"days_asueto": ["01-01", "14-09"],"theme": "morph", "files_procces": "C:/Users/Edisson/OneDrive/Documentos/Telintec_files_departments/RH", "files_cache": "C:/Users/Edisson/OneDrive/Documentos/Telintec_files_departments/RH"}, "default": {"theme": "morph"}}}
+{
+  "max_chats": "40",
+  "start_date": "19\/oct.\/2023",
+  "end_date": "19\/oct.\/2023",
+  "sampling_time": 1,
+  "gui": {
+    "null": {
+      "theme": "litera"
+    },
+    "RRHH": {
+      "days_asueto": [
+        "01-01",
+        "14-09"
+      ],
+      "theme": "morph",
+      "files_procces": "C:\/Users\/Edisson\/OneDrive\/Documentos\/Telintec_files_departments\/RH",
+      "files_cache": "C:\/Users\/Edisson\/OneDrive\/Documentos\/Telintec_files_departments\/RH"
+    },
+    "default": {
+      "theme": "morph"
+    }
+  },
+  "chatbot": {
+    "filepath": "files/notifications.txt",
+    "cache": "files/Notificaciones_cache.pkl"
+  },
+  "sm": {
+    "cache": "files/Notificaciones_cache.pkl"
+  }
+}

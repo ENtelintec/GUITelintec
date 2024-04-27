@@ -135,7 +135,7 @@ def update_bitacora(emp_id: int, event, data):
                 event_dic = json.loads(result[7])
     else:
         print("error at getting data from db or not data found for the employee")
-        new_registry=True
+        new_registry = True
     date = datetime.strptime(data[0], "%Y-%m-%d")
     if str(date.year) not in event_dic.keys():
         event_dic[str(date.year)] = {}
@@ -513,8 +513,8 @@ def get_all_sm_entries(filter_status=False, is_supper=False, emp_id=None):
     if flag:
         status_dic = {0: "Pendiente", 1: "En Proceso", 2: "Completado", -1: "Cancelado"}
         columns = (
-        "ID", "Codigo", "Folio", "Contrato", "Planta", "Ubicación", "Cliente", "Empleado", "Orden/Cotización", "Fecha",
-        "Fecha Limite", "Items", "Estado", "Historial", "Comentario")
+            "ID", "Codigo", "Folio", "Contrato", "Planta", "Ubicación", "Cliente", "Empleado", "Orden/Cotización",
+            "Fecha", "Fecha Limite", "Items", "Estado", "Historial", "Comentario")
         if filter_status:
             result = [row for row in result if row[12] == 0]
         if not is_supper:
