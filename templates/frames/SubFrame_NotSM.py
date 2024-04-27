@@ -17,9 +17,17 @@ def get_notifications_tables(data):
     return complete, pending
 
 
+def check_status(item):
+    if int(item[1]) == 1:
+        return True
+    else:
+        return False
+
+
 class NotificationsSm(ttk.Frame):
     def __init__(self, master, settings=None, username_data=None, **kwargs):
         super().__init__(master)
+        self.coldata = None
         self.columnconfigure(0, weight=1)
         self.settings = settings
         self.user_data = username_data
@@ -30,6 +38,8 @@ class NotificationsSm(ttk.Frame):
         self.columns = data_dic_chatbot["chatbot"]["columns"]
         self.svar_pending = ttk.StringVar()
         self.svar_complete = ttk.StringVar()
+        self.svar_info = ttk.StringVar()
+        self.table_not = None
         # ------------------------------title label------------------------
         title_label = ttk.Label(self, text="Notificaciones de Solicitudes de Material",
                                 font=("Helvetica", 22, "bold"))
@@ -47,41 +57,56 @@ class NotificationsSm(ttk.Frame):
                      font=("Helvetica", 18, "normal"))
         create_label(frame_info_widgets, 0, 1, textvariable=self.svar_complete,
                      font=("Helvetica", 18, "normal"))
+        create_label(frame_info_widgets, 1, 0, textvariable=self.svar_info, font=("Helvetica", 18, "normal"),
+                     columnspan=2)
         # ----------------------------tables----------------------------------
-        frame_tables = ttk.Frame(self)
-        frame_tables.grid(row=2, column=0, padx=10, pady=10, sticky="nsew")
-        frame_tables.columnconfigure(0, weight=1)
-        self.create_tables(frame_tables,
-                           data=self.data)
+        self.frame_tables = ttk.Frame(self)
+        self.frame_tables.grid(row=2, column=0, padx=10, pady=10, sticky="nsew")
+        self.frame_tables.columnconfigure(0, weight=1)
+        self.table_not = self.create_tables(self.frame_tables, data=self.notifications_pending+self.notifications_complete)        
 
     def create_tables(self, master, data):
+        self.table_not.destroy() if self.table_not is not None else None
+        coldata = []
+        for column in self.columns:
+            if "Items" in column:
+                coldata.append({"text": column, "stretch": False, "width": 50})
+            elif "Id" in column:
+                coldata.append({"text": column, "stretch": False, "width": 35})
+            elif "Estado" in column:
+                coldata.append({"text": column, "stretch": False, "width": 50})
+            else:
+                coldata.append({"text": column, "stretch": True})
+        self.coldata = coldata
         table_notifications = Tableview(master, 
-                                        coldata=self.columns, 
-                                        autofit=True, 
-                                        autoalign=True, 
+                                        coldata=coldata, 
+                                        autofit=False, 
                                         paginated=False,
                                         searchable=False,
-                                        rowdata=data)
-        table_notifications.grid(row=0, column=0, sticky="nsew")
-        table_notifications.view.tag_configure("complete", font=("Arial", 10, "normal"), background="gray")
-        table_notifications.view.tag_configure("incomplete", font=("Arial", 11, "bold"), background="white")
-        # for item in data:
-        #     if int(item[1]) == 1:
-        #         table_notifications.insert_row("end", item)
-        #         # get the last item 
-        #         # table_notifications.view.item(item_t, tags="complete")
-        #         # table_notifications.view.insert("", "end", values=item, tags="complete")
-        #     else:
-        #         # table_notifications.view.insert("", "end", values=item, tags="incomplete")
-        #         table_notifications.insert_row("end", item)
-        # table_notifications.load_table_data()
-        # table_notifications.autofit_columns()
-        # table_notifications.autoalign_columns()
+                                        rowdata=data,
+                                        height=15)
+        table_notifications.grid(row=1, column=0, sticky="nswe", padx=(5, 30))
+        table_notifications.view.tag_configure("complete", font=("Arial", 10, "normal"), background="white")
+        table_notifications.view.tag_configure("incomplete", font=("Arial", 11, "bold"), background="#98F5FF")
         items_t = table_notifications.view.get_children()
-        print(items_t)
         for item_t in items_t:
-            if int(table_notifications.view.item(item_t, "values")[1]) == 1:
+            if check_status(table_notifications.view.item(item_t, "values")):
                 table_notifications.view.item(item_t, tags="complete")
             else:
                 table_notifications.view.item(item_t, tags="incomplete")
-        
+        table_notifications.view.bind("<Double-1>", self._on_double_click_table)
+        return table_notifications
+
+    def _on_double_click_table(self, event):
+        item = event.widget.selection()[0]
+        item_data = event.widget.item(item, "values")
+        self.svar_info.set(f"Mensaje: {item_data[4]}")
+        if not check_status(item_data):
+            item_to_add = list(item_data)
+            item_to_add[1] = "1"
+            self.notifications_complete.insert(0, item_to_add)
+            # eliminate row from the pending not
+            self.notifications_pending.remove(list(item_data))
+            self.create_tables(self.frame_tables, data=self.notifications_pending+self.notifications_complete)
+            self.svar_pending.set(f"Pendientes: {len(self.notifications_pending)}")
+            self.svar_complete.set(f"Revisadas: {len(self.notifications_complete)}")

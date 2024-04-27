@@ -28,17 +28,17 @@ from templates.Functions_SQL import (
 
 
 def create_label(
-    master,
-    row,
-    column,
-    padx=5,
-    pady=5,
-    text=None,
-    textvariable=None,
-    font=("Helvetica", 11, "normal"),
-    columnspan=1,
-    sticky=None,
-    **kwargs,
+        master,
+        row,
+        column,
+        padx=5,
+        pady=5,
+        text=None,
+        textvariable=None,
+        font=("Helvetica", 11, "normal"),
+        columnspan=1,
+        sticky=None,
+        **kwargs,
 ) -> ttk.Label:
     """
     Create a label with the text-provided
@@ -73,18 +73,18 @@ def create_label(
 
 
 def create_Combobox(
-    master,
-    values,
-    width=None,
-    row=0,
-    column=0,
-    state="readonly",
-    padx=5,
-    pady=5,
-    columnspan=1,
-    sticky="nswe",
-    *args,
-    **kwargs,
+        master,
+        values,
+        width=None,
+        row=0,
+        column=0,
+        state="readonly",
+        padx=5,
+        pady=5,
+        columnspan=1,
+        sticky="nswe",
+        *args,
+        **kwargs,
 ):
     """
     Create a combobox with the values provided
@@ -117,17 +117,17 @@ def create_Combobox(
 
 
 def create_entry(
-    master,
-    width=10,
-    row=0,
-    column=0,
-    state="normal",
-    padx=5,
-    pady=5,
-    columnspan=1,
-    sticky="nswe",
-    *args,
-    **kwargs,
+        master,
+        width=10,
+        row=0,
+        column=0,
+        state="normal",
+        padx=5,
+        pady=5,
+        columnspan=1,
+        sticky="nswe",
+        *args,
+        **kwargs,
 ):
     """
     Create an entry with the values provided
@@ -155,15 +155,15 @@ def create_entry(
 
 
 def create_date_entry(
-    master,
-    row=0,
-    column=0,
-    padx=5,
-    pady=5,
-    columnspan=1,
-    sticky="nswe",
-    *args,
-    **kwargs,
+        master,
+        row=0,
+        column=0,
+        padx=5,
+        pady=5,
+        columnspan=1,
+        sticky="nswe",
+        *args,
+        **kwargs,
 ):
     """
     Create a date entry with the values provided
@@ -189,7 +189,7 @@ def create_date_entry(
 
 
 def compare_permissions_windows(
-    user_permissions: list,
+        user_permissions: list,
 ) -> tuple[bool, Any] | tuple[bool, None]:
     """
     This method is used to compare the permissions of a user.
@@ -248,17 +248,17 @@ def create_button_side_menu(master, row, column, text, image=None, command=None,
 
 
 def create_button(
-    master,
-    row,
-    column,
-    text,
-    image=None,
-    columnspan=1,
-    sticky="nswe",
-    pady=5,
-    padx=5,
-    *args,
-    **kwargs,
+        master,
+        row,
+        column,
+        text,
+        image=None,
+        columnspan=1,
+        sticky="nswe",
+        pady=5,
+        padx=5,
+        *args,
+        **kwargs,
 ):
     """
     This method is used to create a button in the side menu.
@@ -318,16 +318,16 @@ def create_var_none(number: int):
 
 
 def set_dateEntry_new_value(
-    master,
-    entry,
-    value,
-    row,
-    column,
-    padx,
-    pady,
-    sticky="nswe",
-    date_format=None,
-    firstweekday=1,
+        master,
+        entry,
+        value,
+        row,
+        column,
+        padx,
+        pady,
+        sticky="nswe",
+        date_format=None,
+        firstweekday=1,
 ):
     entry.destroy()
     if date_format is not None:
@@ -355,19 +355,20 @@ def clean_entries(entries: list[ttk.Entry]):
 
 
 def create_visualizer_treeview(
-    master: Misc,
-    table: str,
-    pad_x: int = 5,
-    pad_y: int = 5,
-    row: int = 0,
-    column: int = 0,
-    style: str = "primary",
-    data=None,
+        master: Misc,
+        table: str,
+        pad_x: int = 5,
+        pad_y: int = 5,
+        row: int = 0,
+        column: int = 0,
+        style: str = "primary",
+        data=None,
 ) -> tuple[Tableview, list[Any] | list[list] | Any]:
     match table:
         case "employees":
             columns = ["Id", "Nombre", "Apellido", "CURP", "Telefono", "Modalidad", "Departamento", "Contrato",
-                       "Ingreso", "RFC", "NSS", "Puesto", "Estatus", "Baja", "Cumpleaños", "# de Legajo", "Email", "Emg. Info."]
+                       "Ingreso", "RFC", "NSS", "Puesto", "Estatus", "Baja", "Cumpleaños", "# de Legajo", "Email",
+                       "Emg. Info."]
             # columns = ["Id", "Nombre", "Apellido", "Telefono", "Dep. ID.", "Modalidad", "Email", "Contrato",
             #            "Ingreso", "RFC", "CURP", "NSS", "Emg. Info.", "Puesto", "Estatus", "Baja", "Cumpleaños", "# de Legajo"]
             data = get_employees() if data is None else data
@@ -506,7 +507,9 @@ def create_widget_input_DB(master, table) -> list:
             entry5_emp = ttk.Combobox(master, values=["Telintec", "RESP"],
                                       state="readonly")
             entry5_emp.grid(row=3, column=0, pady=1, padx=1, sticky="nswe")
-            entry6_emp = ttk.Combobox(master, values=["Dirección", "Operaciones", "Administración", "RRHH", "REPSE", "IA", "Otros"],
+            entry6_emp = ttk.Combobox(master,
+                                      values=["Dirección", "Operaciones", "Administración", "RRHH", "REPSE", "IA",
+                                              "Otros"],
                                       state="readonly")
             entry6_emp.grid(row=3, column=1, padx=5, pady=1, sticky="nswe")
             entry7_emp = ttk.Entry(master, width=10)
@@ -930,3 +933,19 @@ def recommendations_results_quizzes(dict_results: dict, tipo_q: int):
 def Reverse(lst):
     new_lst = lst[::-1]
     return new_lst
+
+
+def hex_to_item_tableview(hex_num: str, digits: int):
+    hex_num = hex_num.replace("0x", "")
+    hex_num = int(hex_num, 16)
+    hex_num = hex(hex_num)
+    hex_num = hex_num.replace("0x", "")
+    hex_num = hex_num.zfill(digits)
+    return hex_num
+
+
+def list_hex_numbers(n: int):
+    hex_numbers = []
+    for i in range(1, n+1):
+        hex_numbers.append(hex(i))
+    return hex_numbers
