@@ -1,12 +1,10 @@
 import time
-from ttkbootstrap.scrolled import ScrolledFrame
-from templates.widgets import *
 from templates.controllers.index import DataHandler
 from ttkbootstrap.tableview import Tableview
 import os
 import pandas as pd
 from tkinter import filedialog
-
+import ttkbootstrap as ttk
 
 class OrdersScreen(ttk.Frame):
     def __init__(self, master, setting: dict = None, *args, **kwargs):
@@ -17,8 +15,8 @@ class OrdersScreen(ttk.Frame):
         self._products = self.fetch_products()
         self._table = Tableview(self)
         self._orders = self._data._order.get_all_orders_sm()
-        self._products = self._data._product.get_all_products()
-        self._clients = self._data._customer.get_all_customers()
+        self._products = self._data.get_all_products()
+        self._clients = self._data.get_all_customers()
         self.customer_id = None
         self._complete_order = 0
         self._incomplete_order = 0
@@ -184,7 +182,7 @@ class OrdersScreen(ttk.Frame):
         self.update_table()
 
     def fetch_products(self):
-        return self._data._product.get_all_products()
+        return self._data.get_all_products()
 
     def clear_fields(self):
         self.order_id.delete(0, "end")

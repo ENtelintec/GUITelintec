@@ -1,6 +1,6 @@
-from ttkbootstrap.scrolled import ScrolledFrame
+import ttkbootstrap as ttk
 from PIL import Image
-from templates.widgets import *
+
 from templates.controllers.index import DataHandler
 
 Image.CUBIC = Image.BICUBIC

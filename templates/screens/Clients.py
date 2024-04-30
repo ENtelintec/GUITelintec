@@ -1,8 +1,7 @@
 import time
-from templates.widgets import *
 from templates.controllers.index import DataHandler
 from ttkbootstrap.tableview import Tableview
-from ttkbootstrap.scrolled import ScrolledFrame
+import ttkbootstrap as ttk
 
 
 class ClientsScreen(ttk.Frame):
@@ -11,7 +10,7 @@ class ClientsScreen(ttk.Frame):
         self.master = master
         self.columnconfigure(0, weight=1)
         self._data = DataHandler()
-        self._clients = self._data._customer.get_all_customers()
+        self._clients = self._data.get_all_customers()
         self._table = Tableview(self)
         self.create_content(self)
 
@@ -156,7 +155,7 @@ class ClientsScreen(ttk.Frame):
         self.input_client_address.insert(0, data[5])
 
     def update_table(self):
-        self._clients = self._data._customer.get_all_customers()
+        self._clients = self._data.get_all_customers()
         self.table.unload_table_data()
         time.sleep(0.5)
         self.table.build_table_data(self.col_data, self._clients)
@@ -176,7 +175,7 @@ class ClientsScreen(ttk.Frame):
         phone = self.input_client_phone.get()
         rfc = self.input_client_rfc.get()
         address = self.input_client_address.get()
-        self._data._customer.create_customer(name, email, phone, rfc, address)
+        self._data.create_customer(name, email, phone, rfc, address)
         self.update_table()
         self.clear_fields()
 
@@ -187,7 +186,7 @@ class ClientsScreen(ttk.Frame):
         phone = self.input_client_phone.get()
         rfc = self.input_client_rfc.get()
         address = self.input_client_address.get()
-        self._data._customer.update_customer(
+        self._data.update_customer(
             id_customer, name, email, phone, rfc, address
         )
         self.update_table()
@@ -195,6 +194,6 @@ class ClientsScreen(ttk.Frame):
 
     def delete_client(self):
         id_customer = self.input_client_id.get()
-        self._data._customer.delete_customer(id_customer)
+        self._data.delete_customer(id_customer)
         self.update_table()
         self.clear_fields()

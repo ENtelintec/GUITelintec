@@ -3,7 +3,6 @@ __author__ = 'Edisson Naula'
 __date__ = '$ 29/nov./2023  at 16:55 $'
 
 import unicodedata
-import templates.Functions_SQL as fsql
 
 
 def clean_accents(txt: str):
@@ -116,7 +115,7 @@ def parse_data(data: dict, mode: int):
                     'name': data["name"],
                     'stock': data["stock"],
                     'udm': data["udm"],
-                    'price': data["price"],
+                    'supplier': data["supplier"],
                     'category': data["category"],
                     'sku':  data["sku"]
                 }

@@ -111,17 +111,17 @@ def dispatch_products(avaliable: list, to_request: list, sm_id: int):
     _data = DataHandler()
     date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     for product in avaliable:
-        _outs = _data._product_movements.create_out_movement(
+        _outs = _data.create_out_movement(
             product['id'],
             "salida",
             product['quantity'],
             date,
             sm_id
         )
-        _data._product.update_stock(product['id'], product["stock"]-product['quantity'])
+        _data.update_stock(product['id'], product["stock"]-product['quantity'])
         print(f"producto {product['id']} en salida {product['quantity']}")
         print(f"producto {product['id']} actualizado stock {product['stock']-product['quantity']}")
     for product in to_request:
-        _ins = _data._product_movements.create_in_movement(
+        _ins = _data.create_in_movement(
             product['id'], "entrada", product['quantity'], date, sm_id)
         print(f"producto {product['id']} pedido {product['quantity']}")

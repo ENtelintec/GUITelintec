@@ -1,9 +1,7 @@
 import time
-from ttkbootstrap.scrolled import ScrolledFrame
-from templates.widgets import *
 from templates.controllers.index import DataHandler
 from ttkbootstrap.tableview import Tableview
-
+import ttkbootstrap as ttk
 
 class InternalInventoryScreen(ttk.Frame):
     def __init__(self, master, setting: dict = None, *args, **kwargs):

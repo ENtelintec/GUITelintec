@@ -216,7 +216,7 @@ class GUIAsistente(ttk.Window):
     def _create_side_menu_widgets(self, master):
         flag, windows_names = compare_permissions_windows(list(self.permissions.values()))
         windows_names = windows_names if windows_names is not None else ["Cuenta"]
-        if len(windows_names) >= 12:
+        if len(windows_names) >= 10:
             side_menu = SideMenuFrameScrollable(master, windows_names, flag, self._select_frame_by_name, width=200)
             side_menu.grid(row=0, column=0, sticky="ns", pady=10, padx=(0, 5))
         else:
@@ -249,89 +249,6 @@ class GUIAsistente(ttk.Window):
             }
             windows[window] = window_to_create(**arguments)
             print(f"{window} frame created")
-            # match window:
-            #     case "DB":
-            #         windows[window] = DBFrame(self, setting=self.settings)
-            #         print("DB frame created")
-            #     case "Notificaciones":
-            #         windows[window] = Notifications(
-            #             self, self.data_notifications, filepath_notifications)
-            #         print("notifications frame created")
-            #     case "Chats":
-            #         windows[window] = ChatFrame(self, self.chats_to_show, self.images, self.chats)
-            #         print("chats frame created")
-            #     case "Settings":
-            #         windows[window] = SettingsFrameGUI(self, department=self.department, style_gui=self.style_gui)
-            #         print("settings frame created")
-            #     case "Tickets":
-            #         windows[window] = PedidosFrame(self, self.images, self.chats)
-            #         print("tickets frame created")
-            #     case "Fichajes":
-            #         windows[window] = FichajesFilesGUI(self)
-            #         print("Fichajes frame created")
-            #     case "Cuenta":
-            #         windows[window] = Login.LogOptionsFrame(self)
-            #         print("cuenta frame created")
-            #     case "Examenes":
-            #         windows[window] = ExamenesMedicos(self)
-            #         print("examenes frame created")
-            #     case "Almacen":
-            #         windows[window] = AlmacenGUI.App(self)
-            #         print("almacen frame created")
-            #     case "Emp. Detalles":
-            #         windows[window] = EmployeeDetails(self)
-            #         print("Employee details frame created")
-            #     case "Home":
-            #         windows[window] = HomeScreen(self)
-            #         print("home frame created")
-            #     case "Clients (A)":
-            #         windows[window] = ClientsScreen(self)
-            #         print("clients frame created")
-            #     case "Inventario":
-            #         windows[window] = InventoryScreen(self)
-            #         print("inventory frame created")
-            #     case "Suministros Diarios":
-            #         windows[window] = SuppliesScreen(self)
-            #         print("diary supplies frame created")
-            #     case "Configuraciones (A)":
-            #         windows[window] = SettingsScreen(self)
-            #         print("settings frame created")
-            #     case "Entradas":
-            #         windows[window] = InScreen(self)
-            #         print("in frame created")
-            #     case "Salidas":
-            #         windows[window] = OutScreen(self)
-            #         print("out frame created")
-            #     case "Ordenes (A)":
-            #         windows[window] = OrdersScreen(self)
-            #         print("orders frame created")
-            #     case "Proveedores (A)":
-            #         windows[window] = ProvidersScreen(self)
-            #         print("providers frame created")
-            #     case "Inventario Int.":
-            #         windows[window] = InternalInventoryScreen(self)
-            #         print("inventory internal frame created")
-            #     case "Empleados":
-            #         windows[window] = EmployeesFrame(self)
-            #         print("employees frame created")
-            #     case "Vacaciones":
-            #         windows[window] = VacationsFrame(self)
-            #         print("vacations frame created")
-            #     case "Encuestas":
-            #         windows[window] = FrameEncuestas(self)
-            #         print("encuestas frame created")
-            #     case "Bitacora":
-            #         windows[window] = BitacoraEditFrame(self, self.username, self.username_data["contract"])
-            #         print("bitacora frame created")
-            #     case "SM":
-            #         windows[window] = SMFrame(self, self.settings, department=self.department,
-            #                                   id_emp=self.username_data["id"], data_emp=self.username_data)
-            #         print("SM frame created")
-            #     case "Procesar SM":
-            #         windows[window] = SMManagement(self, data_emp=self.username_data)
-            #         print("SM process frame created")
-            #     case _:
-            #         pass
         return windows
 
     def check_permissions(self):

@@ -1,8 +1,7 @@
 import os
 from tkinter import filedialog
 import pandas as pd
-from ttkbootstrap.scrolled import ScrolledFrame
-from templates.widgets import *
+import ttkbootstrap as ttk
 from templates.controllers.index import DataHandler
 
 
@@ -117,7 +116,7 @@ class SettingsScreen(ttk.Frame):
         for indice, fila in enumerate(df.values):
             if indice == 0:
                 continue
-            self._data._product_categories.create_category(fila[0])
+            self._data.create_category(fila[0])
         self._message_box("Categorias", "Categorias cargadas correctamente")
 
     def load_clients(self):
@@ -153,7 +152,7 @@ class SettingsScreen(ttk.Frame):
         for indice, fila in enumerate(df.values):
             if indice == 0:
                 continue
-            self._data._customer.create_customer(
+            self._data.create_customer(
                 fila[0], fila[1], fila[2], fila[3], fila[4]
             )
         self._message_box("Clientes", "Clientes cargados correctamente")
@@ -191,14 +190,11 @@ class SettingsScreen(ttk.Frame):
         for indice, fila in enumerate(df.values):
             if indice == 0:
                 continue
-            self._data._product.create_product(
+            self._data.create_product(
                 fila[0],
                 fila[1],
                 fila[2],
                 fila[3],
-                fila[4],
-                fila[5],
-                fila[6],
                 fila[7],
                 fila[8],
             )

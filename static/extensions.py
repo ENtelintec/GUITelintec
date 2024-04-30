@@ -7,7 +7,6 @@ import json
 from dotenv import dotenv_values
 from flask_restx import Api
 from pathlib import Path
-import ttkbootstrap as ttk
 
 paths_dpb_folders = json.load(open("files/paths_general.json"))
 local_father_path_dpb = "C:/Users/Edisson/Telintec Dropbox/SOFTWARE TELINTEC"
@@ -16,7 +15,7 @@ api = Api()
 # url_api = "http://127.0.0.1:5000/AuthAPI/api/v1/auth/loginUP"
 url_api = "https://ec2-3-144-117-149.us-east-2.compute.amazonaws.com/AuthAPI/api/v1/auth/loginUP"
 IMG_PATH_COLLAPSING = Path("./img")
-ventanasApp_path = "files/ventanasAppGUI.json"
+ventanasApp_path = "static/ventanasAppGUI.json"
 cache_file_EM_path = "files/EM_cache.pkl"
 cache_file_Fichajes_path = "files/Fichajes_cache.pkl"
 cache_file_Tickets_path = "files/Tickets_cache.pkl"

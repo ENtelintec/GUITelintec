@@ -1,26 +1,35 @@
 import time
 from datetime import datetime
-from ttkbootstrap.scrolled import ScrolledFrame
-from templates.widgets import *
-from templates.controllers.index import DataHandler
+
+import ttkbootstrap as ttk
 from ttkbootstrap.tableview import Tableview
+
+from templates.controllers.index import DataHandler
 
 
 class InScreen(ttk.Frame):
     def __init__(self, master, setting: dict = None, *args, **kwargs):
         super().__init__(master)
+        # variables
+        self.date = None
+        self.quantity = None
+        self.products_selector = None
+        self.table = None
+        self.col_data = None
+        self.movetement_id = None
         self.master = master
         self.columnconfigure(0, weight=1)
+        # handlers
         self._data = DataHandler()
-        self._products = self._data._product.get_all_products()
-        self._ins = self._data._product_movements.get_ins()
+        self._products = self._data.get_all_products()
+        self._ins = self._data.get_ins()
         self._table = Tableview(self)
+        # content
         self.create_content(self)
-        self.movetement_id = None
 
-    def create_content(self, parent):
+    def create_content(self, master):
         """Creates the content of the Inputs screen, includes the table of inputs and the inputs to add a new entrs"""
-        content = ttk.Frame(parent, style="bg.TFrame")
+        content = ttk.Frame(master, style="bg.TFrame")
         content.grid(row=0, column=0, sticky="nswe")
         content.columnconfigure(0, weight=1)
         ttk.Label(content, text="Entradas", font=("Arial Black", 25)).grid(
@@ -40,6 +49,7 @@ class InScreen(ttk.Frame):
             {"text": "Tipo de Movimiento", "stretch": True},
             {"text": "Cantidad", "stretch": True},
             {"text": "Fecha", "stretch": False},
+            {"text": "ID SM", "stretch": True},
             {"text": "Nombre producto", "stretch": False},
         ]
         self.table = Tableview(
@@ -50,9 +60,9 @@ class InScreen(ttk.Frame):
             searchable=True,
             autofit=True,
         )
-        self.table.build_table_data(self.col_data, self._ins)
+        self.table.build_table_data(coldata=self.col_data, rowdata=self._ins)
         self.table.grid(row=1, column=0, sticky="nswe", padx=15, pady=5, columnspan=2)
-        self.table.view.bind("<Double-1>", self.events)
+        self.table.view.bind("<Double-1>", self.on_double_click_in_table)
 
         # Inputs
         inputs = ttk.Frame(content, style="bg.TFrame")
@@ -85,7 +95,7 @@ class InScreen(ttk.Frame):
         self.date = ttk.Entry(inputs_left)
         self.date.grid(row=2, column=1, sticky="w", padx=5, pady=5)
         current_date = datetime.now()
-        self.date.insert(0, current_date)
+        self.date.insert(0, current_date.strftime("%Y-%m-%d"))
 
         # Buttons
         button_frame = ttk.Frame(self, style="bg.TFrame")
@@ -125,16 +135,16 @@ class InScreen(ttk.Frame):
         self.quantity.delete(0, "end")
         current_date = datetime.now()
         self.date.delete(0, "end")
-        self.date.insert(0, current_date)
+        self.date.insert(0, current_date.strftime("%Y-%m-%d"))
 
-    def events(self, event):
+    def on_double_click_in_table(self, event):
         data = self.table.view.item(self.table.view.focus())["values"]
         self.products_selector.delete(0, "end")
         self.products_selector.insert(0, data[1])
         self.movetement_id = data[0]
 
     def update_table(self):
-        self._ins = self._data._product_movements.get_ins()
+        self._ins = self._data.get_ins()
         self.table.unload_table_data()
         time.sleep(0.5)
         self.table.build_table_data(self.col_data, self._ins)
@@ -145,7 +155,7 @@ class InScreen(ttk.Frame):
             return
         new_date = datetime.now()
         quantity = self.quantity.get()
-        self._data._product_movements.update_in_movement(
+        self._data.update_in_movement(
             self.movetement_id, quantity, new_date
         )
         self.update_table()
@@ -159,7 +169,7 @@ class InScreen(ttk.Frame):
         id_movement_type = "entrada"
         quantity = self.quantity.get()
         movement_date = self.date.get()
-        self._data._product_movements.create_in_movement(
+        self._data.create_in_movement(
             id_product, id_movement_type, quantity, movement_date
         )
         self.update_table()
@@ -168,6 +178,6 @@ class InScreen(ttk.Frame):
     def delete_in_item(self):
         if self.movetement_id is None:
             return
-        self._data._product_movements.delete_in_movement(self.movetement_id)
+        self._data.delete_in_movement(self.movetement_id)
         self.update_table()
         self.clear_fields()

@@ -1,9 +1,7 @@
 import time
-from templates.widgets import *
 from templates.controllers.index import DataHandler
 from ttkbootstrap.tableview import Tableview
-from ttkbootstrap.scrolled import ScrolledFrame
-
+import ttkbootstrap as ttk
 
 class ProvidersScreen(ttk.Frame):
     def __init__(self, master, setting: dict = None, *args, **kwargs):

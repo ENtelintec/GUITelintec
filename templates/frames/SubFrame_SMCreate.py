@@ -267,7 +267,7 @@ class FrameSMCreate(ttk.Frame):
             return
         dict_data = create_dict_sm(out_info, data_products)
         dict_data['info']['emp_id'] = self._id_emp
-        msg = f"Esto por crear un nuevo registro. Esta de acuerdo con los datos?"
+        msg = "Esto por crear un nuevo registro. Esta de acuerdo con los datos?"
         answer = Messagebox.show_question(
             title="Confirmacion",
             message=msg)
@@ -320,7 +320,7 @@ class FrameSMCreate(ttk.Frame):
                 msg = (f"Record updated--> SM: {dict_data['id_sm']} --> by {self.data_emp_dic['name'].title()} "
                        f"{self.data_emp_dic['lastname'].title()} at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
                 write_log_file(log_file_sm_path, msg)
-                self.svar_info.set(f"SM actualizado correctamente")
+                self.svar_info.set("SM actualizado correctamente")
             time.sleep(0.5)
             self.update_table_visual()
             self.on_reset_widgets_click()
@@ -347,7 +347,7 @@ class FrameSMCreate(ttk.Frame):
                     f"Record deleted--> SM: {sm_code} --> by {self.data_emp_dic['name'].title()} {self.data_emp_dic['lastname'].title()} "
                     f"at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
                 write_log_file(log_file_sm_path, msg)
-                self.svar_info.set(f"SM eliminado correctamente")
+                self.svar_info.set("SM eliminado correctamente")
             time.sleep(0.5)
             self.update_table_visual()
             self.on_reset_widgets_click()
@@ -460,7 +460,7 @@ class NewProduct(ttk.Window):
 
     def on_save_click(self):
         data = self.get_data()
-        self._data._product.create_product(data[0], data[1], data[2], data[3], 0, 0, 0, data[4], "")
+        self._data.create_product(data[0], data[1], data[2], data[3], data[4], "")
         self.destroy()
 
 
@@ -495,7 +495,7 @@ class NewClient(ttk.Window):
 
     def on_save_click(self):
         data = self.get_data()
-        self._data._customer.create_customer(data[0], data[1], data[2], data[3], data[4])
+        self._data.create_customer(data[0], data[1], data[2], data[3], data[4])
         self.destroy()
 
 

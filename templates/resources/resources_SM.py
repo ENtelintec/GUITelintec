@@ -72,7 +72,7 @@ class AddSM(Resource):
             return {"answer": "ok", "msg": result}, 201
         else:
             print(error)
-            return {"answer": f"error at updating db"}, 400
+            return {"answer": "error at updating db"}, 400
 
     @ns.expect(delete_request_sm_model)
     def delete(self):
@@ -84,7 +84,7 @@ class AddSM(Resource):
             return {"answer": "ok", "msg": error}, 200
         else:
             print(error)
-            return {"answer": f"error at updating db"}, 400
+            return {"answer": "error at updating db"}, 400
 
     @ns.expect(sm_put_model)
     def put(self):
@@ -95,7 +95,7 @@ class AddSM(Resource):
         if flag:
             return {"answer": "ok", "msg": error}, 200
         else:
-            return {"answer": f"error at updating db"}, 400
+            return {"answer": "error at updating db"}, 400
 
 
 @ns.route('/newclient')
@@ -106,7 +106,7 @@ class Client(Resource):
         if code == 400:
             return {"answer": "The data has a bad structure"}, code
         _data = DataHandler()
-        result = _data._customer.create_customer(data['name'], data['email'], data['phone'], data['rfc'], data["address"])
+        result = _data.create_customer(data['name'], data['email'], data['phone'], data['rfc'], data["address"])
         if isinstance(result, str):
             return {"answer": "Error", "msg": result}, 400
         else:
@@ -122,7 +122,7 @@ class Product(Resource):
             return {"answer": "The data has a bad structure"}, code
         print(data)
         _data = DataHandler()
-        result = _data._product.create_product(data['sku'], data['name'], data['udm'], data['stock'], 0, 0, 0, data['price'], data['category'], 0)
+        result = _data.create_product(data['sku'], data['name'], data['udm'], data['stock'], data['category'], data['supplier'])
         if isinstance(result, str):
             return {"answer": "Error", "msg": result}, 400
         else:

@@ -184,7 +184,7 @@ new_cliente_model = api.model('New Cliente', {
 new_product_model = api.model('New Product', {
     'name': fields.String(required=True, description='The name'),
     'udm': fields.String(required=True, description='The udm'),
-    'price': fields.Float(required=True, description='The price'),
+    'supplier': fields.Float(required=True, description='The supplier'),
     'stock': fields.Integer(required=True, description='The stock'),
     'sku': fields.String(required=True, description='The sku'),
     'category':  fields.Integer(required=True, description='The category')

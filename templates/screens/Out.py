@@ -1,7 +1,6 @@
 import time
+import ttkbootstrap as ttk
 from datetime import datetime
-from ttkbootstrap.scrolled import ScrolledFrame
-from templates.widgets import *
 from templates.controllers.index import DataHandler
 from ttkbootstrap.tableview import Tableview
 
@@ -12,8 +11,8 @@ class OutScreen(ttk.Frame):
         self.master = master
         self.columnconfigure(0, weight=1)
         self._data = DataHandler()
-        self._products = self._data._product.get_all_products()
-        self._outs = self._data._product_movements.get_outs()
+        self._products = self._data.get_all_products()
+        self._outs = self._data.get_outs()
         self._table = Tableview(self)
         self.create_content(self)
         self.movetement_id = None
@@ -34,16 +33,15 @@ class OutScreen(ttk.Frame):
         ttk.Label(table, text="Tabla de Salidas", font=("Arial", 20)).grid(
             row=0, column=0, sticky="w", padx=5, pady=10
         )
-
         self.col_data = [
             {"text": "ID Movimiento", "stretch": True},
             {"text": "ID Producto", "stretch": True},
             {"text": "Tipo de Movimiento", "stretch": True},
             {"text": "Cantidad", "stretch": True},
             {"text": "Fecha", "stretch": False},
+            {"text": "ID SM", "stretch": True},
             {"text": "Nombre producto", "stretch": False},
         ]
-
         self.table = Tableview(
             master=table,
             bootstyle="primary",
@@ -129,7 +127,7 @@ class OutScreen(ttk.Frame):
         self.movetement_id = data[0]
 
     def update_table(self):
-        self._ins = self._data._product_movements.get_outs()
+        self._ins = self._data.get_outs()
         self.table.unload_table_data()
         time.sleep(0.5)
         self.table.build_table_data(self.col_data, self._ins)
@@ -140,7 +138,7 @@ class OutScreen(ttk.Frame):
             return
         new_date = datetime.now()
         quantity = self.quantity.get()
-        self._data._product_movements.update_out_movement(
+        self._data.update_out_movement(
             self.movetement_id, quantity, new_date
         )
         self.update_table()
@@ -163,6 +161,6 @@ class OutScreen(ttk.Frame):
     def delete_out_item(self):
         if self.movetement_id is None:
             return
-        self._data._product_movements.delete_out_movement(self.movetement_id)
+        self._data.delete_out_movement(self.movetement_id)
         self.update_table()
         self.clear_fields()

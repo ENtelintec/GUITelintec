@@ -1,6 +1,6 @@
 import time
-from ttkbootstrap.scrolled import ScrolledFrame
-from templates.widgets import *
+import ttkbootstrap as ttk
+
 from templates.controllers.index import DataHandler
 from ttkbootstrap.tableview import Tableview
 
@@ -38,9 +38,6 @@ class InventoryScreen(ttk.Frame):
             {"text": "Nombre", "stretch": True},
             {"text": "UDM", "stretch": True},
             {"text": "Stock", "stretch": True},
-            {"text": "MinStock", "stretch": True},
-            {"text": "MaxStock", "stretch": True},
-            {"text": "ReorderPoint", "stretch": True},
             {"text": "Categoría", "stretch": True},
             {"text": "Proveedor", "stretch": True},
         ]
@@ -130,7 +127,7 @@ class InventoryScreen(ttk.Frame):
         ttk.Label(extra_inputs, text="Categoría", style="bg.TLabel").grid(
             row=0, column=0, sticky="w", padx=5, pady=5
         )
-        self.values_cat = self._data._product_categories.get_all_categories()
+        self.values_cat = self._data.get_all_categories()
         # self.values_cat_filter = [name for _, name in self.values_cat]
         self.dropdown_category_selector = ttk.Combobox(
             extra_inputs, values=self.values_cat, style="bg.TCombobox"
@@ -184,7 +181,7 @@ class InventoryScreen(ttk.Frame):
         ).grid(row=0, column=3, sticky="w", ipady=5, pady=(16, 0), padx=10)
 
     def fetch_products(self):
-        return self._data._product.get_all_products()
+        return self._data.get_all_products()
 
     def events(self, event):
         data = self.table.view.item(self.table.view.focus())["values"]
@@ -248,15 +245,12 @@ class InventoryScreen(ttk.Frame):
                 if item[1] == product_supplier:
                     product_supplier = item[0]
 
-        self._data._product.update_product(
+        self._data.update_product(
             product_id,
             product_name,
             product_description,
             product_price,
             product_stock,
-            product_minStock,
-            product_maxStock,
-            product_reorderPoint,
             product_category,
             product_supplier,
         )
@@ -304,14 +298,11 @@ class InventoryScreen(ttk.Frame):
             return
 
         if product_id == "":
-            self._data._product.create_product(
+            self._data.create_product(
                 product_name,
                 product_description,
                 product_price,
                 product_stock,
-                product_minStock,
-                product_maxStock,
-                product_reorderPoint,
                 product_category[0],
                 product_supplier[0],
             )
@@ -324,7 +315,7 @@ class InventoryScreen(ttk.Frame):
         product_id = self.input_product_id.get()
         if product_id == "":
             return
-        self._data._product.delete_product(product_id)
+        self._data.delete_product(product_id)
         time.sleep(0.5)
         self.clear_fields()
         time.sleep(0.5)
