@@ -14,7 +14,7 @@ from templates.controllers.index import DataHandler
 def get_products_sm(limit, page=0):
     flag, error, result = get_sm_products()
     if limit == -1:
-        limit = len(result)+1
+        limit = len(result) + 1
     limit = limit if limit > 0 else 10
     page = page if page >= 0 else 0
     if len(result) <= 0:
@@ -56,7 +56,7 @@ def check_date_difference(date_modify, delta):
     date_now = date_now.date()
     week_now = date_now.isocalendar()[1]
     date_modify = date_modify + timedelta(days=delta)
-    if week_now-week_modify > 1:
+    if week_now - week_modify > 1:
         flag = False
     return flag
 
@@ -64,7 +64,7 @@ def check_date_difference(date_modify, delta):
 def get_all_sm(limit, page=0):
     flag, error, result = get_sm_entries()
     if limit == -1:
-        limit = len(result)+1
+        limit = len(result) + 1
     limit = limit if limit > 0 else 10
     page = page if page >= 0 else 0
     if len(result) <= 0:
@@ -85,7 +85,7 @@ def get_all_sm(limit, page=0):
         items.append({
             'id': result[i][0],
             'sm_code': result[i][1],
-            'folio':  result[i][2],
+            'folio': result[i][2],
             'contract': result[i][3],
             'facility': result[i][4],
             'location': result[i][5],
@@ -107,10 +107,13 @@ def get_all_sm(limit, page=0):
     return data_out, 200
 
 
-def dispatch_products(avaliable: list, to_request: list, sm_id: int):
+def dispatch_products(
+        avaliable: list[dict], to_request: list[dict], sm_id: int, new_products: list[dict]
+) -> tuple[list[dict], list[dict], list[dict]]:
     _data = DataHandler()
     date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    for product in avaliable:
+    # ------------------------------avaliable products------------------------------------------
+    for i, product in enumerate(avaliable):
         _outs = _data.create_out_movement(
             product['id'],
             "salida",
@@ -118,10 +121,23 @@ def dispatch_products(avaliable: list, to_request: list, sm_id: int):
             date,
             sm_id
         )
-        _data.update_stock(product['id'], product["stock"]-product['quantity'])
+        _data.update_stock(product['id'], product["stock"] - product['quantity'])
         print(f"producto {product['id']} en salida {product['quantity']}")
-        print(f"producto {product['id']} actualizado stock {product['stock']-product['quantity']}")
-    for product in to_request:
+        print(f"producto {product['id']} actualizado stock {product['stock'] - product['quantity']}")
+        product['comment'] += " ;(Despachado) "
+        avaliable[i] = product
+    # ------------------------------products to request------------------------------------------
+    for i, product in enumerate(to_request):
         _ins = _data.create_in_movement(
             product['id'], "entrada", product['quantity'], date, sm_id)
         print(f"producto {product['id']} pedido {product['quantity']}")
+        product['comment'] += " ;(Pedido) "
+        to_request[i] = product
+    # ------------------------------products to request for admin-----------------------------------
+    for i, product in enumerate(new_products):
+        _ins = _data.create_in_movement(
+            product['id'], "entrada", product['quantity'], date, sm_id)
+        print(f"producto {product['id']} nuevo {product['quantity']}")
+        product['comment'] += " ;(Pedido) "
+        new_products[i] = product
+    return avaliable, to_request, new_products

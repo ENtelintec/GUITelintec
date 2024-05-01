@@ -7,7 +7,7 @@ from datetime import datetime
 
 from PIL import Image, ImageTk
 
-from static.extensions import cache_file_resume_fichaje
+from static.extensions import cache_file_resume_fichaje, status_dic
 from templates.Functions_Files import get_fichajes_resume_cache, update_fichajes_resume_cache
 from templates.Functions_SQL import get_fichaje_DB, get_sm_entries, get_sm_products, get_name_employee
 
@@ -511,7 +511,6 @@ def read_setting_file(file_path: str) -> dict:
 def get_all_sm_entries(filter_status=False, is_supper=False, emp_id=None):
     flag, error, result = get_sm_entries()
     if flag:
-        status_dic = {0: "Pendiente", 1: "En Proceso", 2: "Completado", -1: "Cancelado"}
         columns = (
             "ID", "Codigo", "Folio", "Contrato", "Planta", "Ubicación", "Cliente", "Empleado", "Orden/Cotización",
             "Fecha", "Fecha Limite", "Items", "Estado", "Historial", "Comentario")

@@ -10,13 +10,11 @@ from ttkbootstrap.dialogs import Messagebox
 from ttkbootstrap.scrolled import ScrolledText
 from ttkbootstrap.tableview import Tableview
 
+from static.extensions import status_dic
 from templates.Functions_AuxFiles import get_all_sm_entries, get_all_sm_products
 from templates.Functions_DB_midleware import dispatch_products
 from templates.Functions_SQL import get_sm_employees, cancel_sm_db, update_history_sm
-from templates.Funtions_Utils import create_label, create_button, create_stringvar
-
-# status_dic = {"pendiente": 0, "En Proceso": 1, "terminado": 2, "cancelado": -1}
-status_dic = {0: "Pendiente", 1: "En Proceso", 2: "Compleatado", -1: "Cancelado"}
+from templates.Funtions_Utils import create_label, create_button, create_entry
 
 
 def reorder_data_table(data):
@@ -48,6 +46,16 @@ def load_data(is_super=False, emp_id=None):
     return data_dic
 
 
+def update_data_dicts(products: list, products_sm):    
+    for list_items in products:
+        for item in list_items:
+            for i, item_p in enumerate(products_sm):
+                if item["id"] == item_p["id"]:
+                    products_sm[i] = item
+                    break
+    return products_sm
+
+
 class SMManagement(ttk.Frame):
     def __init__(self, master, data_emp=None, **kwargs):
         super().__init__(master)
@@ -58,9 +66,11 @@ class SMManagement(ttk.Frame):
         self.data_sm = None
         self.products = data_dic["products"]
         self.employees = data_dic["employees"]
+        self.style_gui = kwargs["style_gui"]
         self._id_sm_to_edit = None
         self.status_sm = None
         self.svar_info = ttk.StringVar(value="")
+        self.svar_entry_comment = ttk.StringVar(value="")
         self.history_sm = None
         self.products_sm = None
         self.table_events = None
@@ -103,15 +113,17 @@ class SMManagement(ttk.Frame):
         return table
 
     def create_buttons(self, master):
-        create_label(master, 0, 0, textvariable=self.svar_info, font=("Helvetica", 16, "bold"), columnspan=3)
+        create_label(master, 0, 0, text="Comentario: ", font=("Helvetica", 16, "bold"))
+        create_entry(master, 50, 0, 1, textvariable=self.svar_entry_comment)
+        create_label(master, 1, 0, textvariable=self.svar_info, font=("Helvetica", 16, "bold"), columnspan=3)
         create_button(
-            master, 1, 0, "Despachar", command=self.on_dispatch_click,
+            master, 2, 0, "Despachar", command=self.on_dispatch_click,
             sticky="n", width=15, bootstyle="success")
         create_button(
-            master, 1, 1, "Actualizar", command=self.on_update_table_click,
-            sticky="n", width=15, bootstyle="success")
+            master, 2, 1, "Actualizar", command=self.on_update_table_click,
+            sticky="n", width=15, bootstyle="normal")
         create_button(
-            master, 1, 2, "Cancelar", command=self.on_cancel_click,
+            master, 2, 2, "Cancelar", command=self.on_cancel_click,
             sticky="n", width=15, bootstyle="danger")
 
     def create_resumen_widgets(self, master):
@@ -127,24 +139,47 @@ class SMManagement(ttk.Frame):
     def on_dispatch_click(self):
         if self._id_sm_to_edit is None or self.status_sm is None:
             return
-        if self.status_sm == "Completado":
+        if self.status_sm == "Completado" or self.status_sm == "Finalizado":
             self.svar_info.set("La SM ya esta completada")
             return
         self.history_sm.append(
-            {"user": self.data_emp["id"], "event": "dispatch", "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S")})
+            {"user": self.data_emp["id"], "event": "dispatch", "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "comment": self.svar_entry_comment.get()})
         products_to_dispacth = []
         products_to_request = []
+        new_products = []
         for item in self.products_sm:
-            if item["stock"] >= item["quantity"]:
+            if "(Nuevo)" in item["comment"] and "(Pedido)" not in item["comment"]:
+                new_products.append(item)
+                continue
+            if (item["stock"] >= item["quantity"] or "(Pedido)" in item["comment"]) and "(Despachado)" not in item["comment"]:
                 products_to_dispacth.append(item)
-            else:
+            elif "(Pedido)" not in item["comment"] and "(Despachado)" not in item["comment"]:
                 products_to_request.append(item)
-        dispatch_products(products_to_dispacth, products_to_request, self._id_sm_to_edit)
-        is_complete = True if len(products_to_request) == 0 else False
-        flag, error, result = update_history_sm(self._id_sm_to_edit, self.history_sm, is_complete)
+        msg = f"Esta por despachar la SM con ID-{self._id_sm_to_edit}.\n Esta seguro de esto?"
+        msg += "\n\nProductos a despachar: "
+        for item in products_to_dispacth:
+            msg += f"\n{item['name']} - {item['quantity']}"
+        msg += "\n\nProductos a pedir: "
+        for item in products_to_request:
+            msg += f"\n{item['name']} - {item['quantity']}"
+        msg += "\n\nProductos nuevos: "
+        for item in new_products:
+            msg += f"\n{item['name']} - {item['quantity']}"        
+        answer = Messagebox.show_question(
+            title="Confirmacion",
+            message=msg)
+        if answer == "No":
+            return
+        # update db with corresponding movements
+        (products_to_dispacth, products_to_request, new_products) = dispatch_products(
+            products_to_dispacth, products_to_request, self._id_sm_to_edit, new_products)
+        # update table with new stock
+        self.products_sm = update_data_dicts([products_to_dispacth, products_to_request, new_products], self.products_sm)
+        is_complete = True if len(products_to_request) == 0 and len(new_products) == 0 else False
+        flag, error, result = update_history_sm(self._id_sm_to_edit, self.history_sm, self.products_sm, is_complete)
         if flag:
             self.svar_info.set(f"SM con ID-{self._id_sm_to_edit} despachada")
-            self.update_table("dispatch")
+            self.update_table("dispatch", 2) if len(products_to_request) == 0 and len(new_products) == 0 else self.update_table("dispatch", 1)
         else:
             self.svar_info.set(f"Error al despachar SM con ID-{self._id_sm_to_edit}")
 
@@ -188,19 +223,31 @@ class SMManagement(ttk.Frame):
                 if item["id"] == product[0]:
                     self.info_products.text.insert(ttk.END, f"{i + 1}. Producto: ", "property")
                     self.info_products.text.insert(ttk.END, f"{product[3]}\n", "description")
-                    self.info_products.text.insert(ttk.END, f" Cantidad requerida: ", "property")
+                    self.info_products.text.insert(ttk.END, " Cantidad requerida: ", "property")
                     self.info_products.text.insert(ttk.END, f"{item['quantity']}\n", "description")
-                    self.info_products.text.insert(ttk.END, f" Cantidad disponible: ", "property")
+                    self.info_products.text.insert(ttk.END, " Cantidad disponible: ", "property")
                     self.info_products.text.insert(ttk.END, f"{product[2]}\n", "description")
-                    self.info_products.text.insert(ttk.END, f" UDM: ", "property")
+                    self.info_products.text.insert(ttk.END, " UDM: ", "property")
                     self.info_products.text.insert(ttk.END, f"{product[1]}\n", "description")
-                    self.info_products.text.insert(ttk.END, f" Comentario: ", "property")
-                    self.info_products.text.insert(ttk.END, f"{item['comment']}\n", "description")
-                    self.info_products.text.tag_config("property", foreground="green")
-                    self.info_products.text.tag_config("description", foreground="black")
-                    item["stock"]= product[2]
+                    self.info_products.text.insert(ttk.END, " Comentario: ", "property")
+                    comment = item["comment"]
+                    tag_name = "description"
+                    if "(Nuevo)" in comment:
+                        tag_name = "nuevo"
+                    if "(Pedido)" in comment:
+                        tag_name = "pedido"
+                    if "(Despachado)" in comment:
+                        tag_name = "despachado"
+                    self.info_products.text.insert(ttk.END, f"{comment}\n", tag_name)
+                    item["stock"] = product[2]
+                    item["name"] =  product[3]
                     self.products_sm[i] = item
                     break
+        self.info_products.text.tag_config("property", foreground=self.style_gui.colors.get("warning"))
+        self.info_products.text.tag_config("nuevo", foreground=self.style_gui.colors.get("danger"))
+        self.info_products.text.tag_config("description", foreground=self.style_gui.colors.get("fg"))
+        self.info_products.text.tag_config("pedido", foreground=self.style_gui.colors.get("secondary"))
+        self.info_products.text.tag_config("despachado", foreground=self.style_gui.colors.get("success"))
         self.history_sm = json.loads(row[13])
         emp_found = False
         for i, event in enumerate(self.history_sm):
@@ -208,32 +255,34 @@ class SMManagement(ttk.Frame):
                 if event["user"] == employee[0]:
                     self.info_history.text.insert(ttk.END, f"{i + 1}. Evento: ", "property")
                     self.info_history.text.insert(ttk.END, f"{event['event']}\n", "description")
-                    self.info_history.text.insert(ttk.END, f" Empleado: ", "property")
+                    self.info_history.text.insert(ttk.END, " Empleado: ", "property")
                     self.info_history.text.insert(ttk.END, f"{employee[1].title()} {employee[2].title()}\n",
                                                   "description")
-                    self.info_history.text.insert(ttk.END, f" Fecha: ", "property")
+                    self.info_history.text.insert(ttk.END, " Fecha: ", "property")
                     self.info_history.text.insert(ttk.END, f"{event['date']}\n", "description")
-                    self.info_history.text.tag_config("property", foreground="green")
-                    self.info_history.text.tag_config("description", foreground="black")
+                    if "comment" in event.keys():
+                        self.info_history.text.insert(ttk.END, " Comentario: ", "property")
+                        self.info_history.text.insert(ttk.END, f"{event['comment']}\n", "description")
                     emp_found = True
                     break
             if not emp_found:
                 self.info_history.text.insert(ttk.END, f"{i + 1}. Evento: ", "property")
                 self.info_history.text.insert(ttk.END, f"{event['event']}\n", "description")
-                self.info_history.text.insert(ttk.END, f" Empleado: ", "property")
+                self.info_history.text.insert(ttk.END, " Empleado: ", "property")
                 self.info_history.text.insert(ttk.END, f"{event['user']}\n", "description")
-                self.info_history.text.insert(ttk.END, f" Fecha: ", "property")
+                self.info_history.text.insert(ttk.END, " Fecha: ", "property")
                 self.info_history.text.insert(ttk.END, f"{event['date']}\n", "description")
-                self.info_history.text.tag_config("property", foreground="green")
-                self.info_history.text.tag_config("description", foreground="black")
+        self.info_history.text.tag_config("property", foreground=self.style_gui.colors.get("warning"))
+        self.info_history.text.tag_config("description", foreground=self.style_gui.colors.get("fg"))
 
     def clean_widgets(self):
         self.info_products.text.delete("1.0", "end")
         self.info_history.text.delete("1.0", "end")
+        self.svar_entry_comment.set("")
         # self.svar_info.set("Seleccione una sm de la tabla")
         self._id_sm_to_edit = None
 
-    def update_table(self, event):
+    def update_table(self, event, type_e=None):
         match event:
             case "cancel":
                 data = []
@@ -245,11 +294,12 @@ class SMManagement(ttk.Frame):
                          date_limit, items, history, comment) = item
                         data.append(
                             ('cancelado', id_sm, code, folio, contract, plant, location, client, employee, order, date,
-                             date_limit, items, json.dumps(self.history_sm), comment))
+                             date_limit, json.dumps(self.products_sm), json.dumps(self.history_sm), comment))
                 self.table_events = self.create_table(self.frame_table, data, re_order=False)
 
             case "dispatch":
                 data = []
+                type_e = 1 if type_e is None else type_e
                 for item in self.data_sm:
                     if int(item[1]) != self._id_sm_to_edit:
                         data.append(item)
@@ -257,8 +307,8 @@ class SMManagement(ttk.Frame):
                         (status, id_sm, code, folio, contract, plant, location, client, employee, order, date,
                          date_limit, items, history, comment) = item
                         data.append(
-                            ('Completado', id_sm, code, folio, contract, plant, location, client, employee, order, date,
-                             date_limit, items, json.dumps(self.history_sm), comment))
+                            (status_dic[type_e], id_sm, code, folio, contract, plant, location, client, employee, order, date,
+                             date_limit, json.dumps(self.products_sm), json.dumps(self.history_sm), comment))
                 self.table_events = self.create_table(self.frame_table, data, re_order=False)
                 self.clean_widgets()
             case _:

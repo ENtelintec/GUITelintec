@@ -5,7 +5,6 @@ __date__ = '$ 23/abr./2024  at 15:34 $'
 import asyncio
 
 import python_weather
-from python_weather.forecast import Forecast, DailyForecast, HourlyForecast
 import ttkbootstrap as ttk
 from ttkbootstrap.scrolled import ScrolledFrame
 
@@ -50,15 +49,19 @@ class HomeFrame(ScrolledFrame):
         for permission in self.permissions.values():
             txt = permission.split(".")
             self.dashboard_key.append(txt[-1].lower())
+        
         indexes = []
+        created_windows = []
         for index, dashboard in enumerate(self.dashboard_key):
             if dashboard not in avaliable_dashboards.keys():
                 continue
             for window in avaliable_dashboards[dashboard]:
+                if window in created_windows:
+                    continue
+                created_windows.append(window)
                 frame = window(self, **kwargs)
                 frame.grid(row=2+index, column=0, sticky="we", padx=(0, 10))
                 indexes.append(2+index)
-        print(indexes)
         self.rowconfigure(indexes, weight=1)
 
 
@@ -93,7 +96,7 @@ class WeatherFrame(ttk.Frame):
         # -----------------------Title-----------------
         create_label(self, 0, 0, text=f"Clima en: {self.weather.location}", font=("Helvetica", 14, "bold"), columnspan=2)
         # -----------------------Frames---------------------------
-        create_label(master, 1, 0, text=f"Hoy: ", font=("Helvetica", 10, "bold"))
+        create_label(master, 1, 0, text="Hoy: ", font=("Helvetica", 10, "bold"))
         create_label(master, 1, 1, text=f"{self.weather.temperature} ", font=("Helvetica", 10, "bold"))
         indexes = []
         for day, daily in enumerate(self.daily_forecasts):

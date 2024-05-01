@@ -1225,15 +1225,23 @@ def cancel_sm_db(id_m: int, history: dict):
     return flag, error, result
 
 
-def update_history_sm(sm_id, history: dict, is_complete=False):
+def update_history_sm(sm_id, history: dict, items: list, is_complete=False):
     if is_complete:
-        sql = ("UPDATE materials_request SET history = %s, status = 2 "
+        sql = ("UPDATE materials_request SET history = %s, status = 2 , items = %s "
                "WHERE sm_id = %s ")
-        val = (json.dumps(history), sm_id)
+        val = (json.dumps(history), json.dumps(items), sm_id)
         flag, error, result = execute_sql(sql, val, 4)
     else:
-        sql = ("UPDATE materials_request SET history = %s, status = 1  "
+        sql = ("UPDATE materials_request SET history = %s, status = 1, items = %s "
                "WHERE sm_id = %s ")
-        val = (json.dumps(history), sm_id)
+        val = (json.dumps(history), json.dumps(items), sm_id)
         flag, error, result = execute_sql(sql, val, 4)
+    return flag, error, result
+
+
+def finalize_status_sm(sm_id: int):
+    sql = ("UPDATE materials_request SET status = 3 "
+           "WHERE sm_id = %s ")
+    val = (sm_id,)
+    flag, error, result = execute_sql(sql, val, 4)
     return flag, error, result

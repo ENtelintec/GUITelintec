@@ -121,7 +121,7 @@ class FrameSMCreate(ttk.Frame):
         self.entries = self.create_inputs(self.frame_inputs)
         self.set_conditions()
         self.frame_products = FrameSMProdcuts(frame_input_general, data=data)
-        self.frame_products.grid(row=0, column=1, padx=(2, 5), pady=5, sticky="nswe")
+        self.frame_products.grid(row=1, column=0, padx=(2, 5), pady=5, sticky="nswe")
         create_label(self, 2, 0, textvariable=self.svar_info, sticky="n", font=("Helvetica", 15, "bold"))
         """------------------------buttons-----------------------------------"""
         frame_buttons = ttk.Frame(self)
@@ -139,37 +139,36 @@ class FrameSMCreate(ttk.Frame):
     def create_inputs(self, master):
         entries = []
         # info inputs---------
-        create_label(master, 0, 0, text="Informacion", sticky="n", font=("Helvetica", 12, "bold"), columnspan=2)
+        create_label(master, 0, 0, text="Informacion", sticky="n", font=("Helvetica", 12, "bold"), columnspan=4)
         create_label(master, 1, 0, text="SM ID DB:", sticky="nswe")
-        create_label(master, 2, 0, text="SM code:", sticky="nswe")
-        create_label(master, 3, 0, text="Folio:", sticky="nswe")
-        create_label(master, 4, 0, text="Contrato:", sticky="nswe")
-        create_label(master, 5, 0, text="Planta:", sticky="nswe")
-        create_label(master, 6, 0, text="Ubicación:", sticky="nswe")
-        create_label(master, 7, 0, text="Cliente:", sticky="nswe")
-        create_label(master, 8, 0, text="Pedido/Cotización: ", sticky="nswe")
-        create_label(master, 9, 0, text="Fecha:", sticky="nswe")
-        create_label(master, 10, 0, text="Fecha limite:", sticky="nswe")
-        create_label(master, 11, 0, text="Comentario: ", sticky="nswe")
-        create_label(master, 12, 0, text="Empleado:", sticky="nswe")
+        create_label(master, 1, 1, text="SM code:", sticky="nswe")
+        create_label(master, 1, 2, text="Folio:", sticky="nswe")
+        create_label(master, 1, 3, text="Contrato:", sticky="nswe")
+        create_label(master, 3, 0, text="Planta:", sticky="nswe")
+        create_label(master, 3, 1, text="Ubicación:", sticky="nswe")
+        create_label(master, 3, 2, text="Cliente:", sticky="nswe")
+        create_label(master, 3, 3, text="Pedido/Cotización: ", sticky="nswe")
+        create_label(master, 5, 0, text="Fecha:", sticky="nswe")
+        create_label(master, 5, 1, text="Fecha limite:", sticky="nswe")
+        create_label(master, 5, 2, text="Comentario: ", sticky="nswe")
+        create_label(master, 5, 3, text="Empleado:", sticky="nswe")
         # entries
-        emp_list = [emp[1].title() + " " + emp[2].title() for emp in self.employees]
         client_list = [client[1] for client in self.clients]
-        entries.append(create_entry(master, row=1, column=1, padx=3, pady=5, sticky="nswe"))
+        entries.append(create_entry(master, row=2, column=0, padx=3, pady=5, sticky="nswe"))
         entries.append(create_entry(master, row=2, column=1, padx=3, pady=5, sticky="nswe"))
-        entries.append(create_entry(master, row=3, column=1, padx=3, pady=5, sticky="nswe"))
+        entries.append(create_entry(master, row=2, column=2, padx=3, pady=5, sticky="nswe"))
+        entries.append(create_entry(master, row=2, column=3, padx=3, pady=5, sticky="nswe"))
+        entries.append(create_entry(master, row=4, column=0, padx=3, pady=5, sticky="nswe"))
         entries.append(create_entry(master, row=4, column=1, padx=3, pady=5, sticky="nswe"))
-        entries.append(create_entry(master, row=5, column=1, padx=3, pady=5, sticky="nswe"))
-        entries.append(create_entry(master, row=6, column=1, padx=3, pady=5, sticky="nswe"))
-        entries.append(create_Combobox(master, client_list, 25, row=7, column=1, sticky="we", padx=3, pady=5))
-        entries.append(create_entry(master, row=8, column=1, padx=3, pady=5, sticky="nswe"))
-        entries.append(create_date_entry(master, firstweekday=0, dateformat="%Y-%m-%d", row=9, column=1, padx=3, pady=5,
+        entries.append(create_Combobox(master, client_list, 25, row=4, column=2, sticky="we", padx=3, pady=5))
+        entries.append(create_entry(master, row=4, column=3, padx=3, pady=5, sticky="nswe"))
+        entries.append(create_date_entry(master, firstweekday=0, dateformat="%Y-%m-%d", row=6, column=0, padx=3, pady=5,
                                          sticky="w"))
         entries.append(
-            create_date_entry(master, firstweekday=0, dateformat="%Y-%m-%d", row=10, column=1, padx=3, pady=5,
+            create_date_entry(master, firstweekday=0, dateformat="%Y-%m-%d", row=6, column=1, padx=3, pady=5,
                               sticky="w"))
-        entries.append(create_entry(master, row=11, column=1, padx=3, pady=5, sticky="nswe"))
-        create_label(master, 12, 1, text=f"{self.data_emp_dic['name'].title()} {self.data_emp_dic['lastname'].title()}",
+        entries.append(create_entry(master, row=6, column=2, padx=3, pady=5, sticky="nswe"))
+        create_label(master, 6, 3, text=f"{self.data_emp_dic['name'].title()} {self.data_emp_dic['lastname'].title()}",
                      sticky="nswe")
         return entries
 
@@ -230,6 +229,7 @@ class FrameSMCreate(ttk.Frame):
                                            "%Y-%m-%d %H:%M:%S") if len(date_limit) > 10 else datetime.strptime(
                 date_limit, "%Y-%m-%d")
             if date > date_limit:
+                self.svar_info.set("!!!La fecha de inicio no puede ser mayor a la fecha limite¡¡¡")
                 raise Exception("La fecha de inicio no puede ser mayor a la fecha de fin")
             date = date.strftime("%Y-%m-%d %H:%M:%S") if action != 1 else date
             date_limit = date_limit.strftime("%Y-%m-%d %H:%M:%S") if action != 1 else date_limit
@@ -261,12 +261,16 @@ class FrameSMCreate(ttk.Frame):
 
     def on_add_click(self):
         out_info, data_products = self.get_entries_values()
+        
         out_info = self.formart_values_info(out_info, action=0)
+        if out_info is None:
+            return
         if len(data_products) == 0:
             self.svar_info.set("!!!Debe agregar productos¡¡¡")
             return
         dict_data = create_dict_sm(out_info, data_products)
         dict_data['info']['emp_id'] = self._id_emp
+        print("pass date")
         msg = "Esto por crear un nuevo registro. Esta de acuerdo con los datos?"
         answer = Messagebox.show_question(
             title="Confirmacion",
@@ -504,6 +508,7 @@ class FrameSMProdcuts(ttk.Frame):
         super().__init__(master)
         self.columnconfigure((0, 1), weight=1)
         self.svar_info = create_stringvar(1, "")
+        self.bvar_is_new = ttk.BooleanVar(value=False)
         self.products = data["products"]
         self.columns_products = data["columns_products"]
         """-------------------------title------------------------------------"""
@@ -528,6 +533,10 @@ class FrameSMProdcuts(ttk.Frame):
         frame_inputs.columnconfigure((0, 1, 2), weight=1)
         self.entries = self.create_inputs(frame_inputs)
         create_button(frame_inputs, 0, 2, text="(+) Producto", command=self.on_new_product_click)
+        is_new = ttk.Checkbutton(
+            frame_inputs, text="Nuevo", variable=self.bvar_is_new,
+            onvalue=True, offvalue=False, bootstyle="success, round-toggle")
+        is_new.grid(row=1, column=2, padx=10, pady=10, sticky="w")
         """-------------------Widgets buttons--------------------------------"""
         frame_buttons = ttk.Frame(self)
         frame_buttons.grid(row=2, column=1, padx=1, pady=20, sticky="nswe")
@@ -564,7 +573,13 @@ class FrameSMProdcuts(ttk.Frame):
         row = event.widget.item(event.widget.selection()[0], "values")
         for i, item in enumerate(self.entries):
             item.delete(0, "end")
-            item.insert(0, row[i])
+            if i == 2:
+                value = row[i]
+                self.bvar_is_new.set(True) if "(Nuevo)" in value else self.bvar_is_new.set(False)
+                value = value.replace(";(Nuevo)", "")
+                item.insert(0, value)
+            else:
+                item.insert(0, row[i])
 
     def clean_table_resumen(self):
         self.table_resumen = self.create_table(self.frame_resumen, type_table=2)
@@ -604,6 +619,8 @@ class FrameSMProdcuts(ttk.Frame):
         values = []
         for item in self.entries:
             values.append(item.get())
+        # add is new as comment
+        values[2] = values[2] if not self.bvar_is_new.get() else values[2] + " ;(Nuevo) "
         data_table = self.table_resumen.view.get_children()
         flag_update = False
         for item in data_table:
