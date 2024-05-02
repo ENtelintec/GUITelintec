@@ -21,3 +21,4 @@ openai
 bardapi
 SQLAlchemy
 reportlab
+setuptools
