@@ -4,9 +4,7 @@ __date__ = '$ 29/dic./2023  at 17:12 $'
 
 import json
 from datetime import datetime
-from tkinter import BooleanVar
 from tkinter import filedialog
-from tkinter.ttk import Style
 
 import pandas as pd
 import ttkbootstrap as ttk
@@ -14,12 +12,12 @@ from ttkbootstrap.dialogs import Messagebox
 from ttkbootstrap.scrolled import ScrolledFrame
 from ttkbootstrap.tableview import Tableview
 
+from static.extensions import cache_file_EM_path
 from templates.Functions_Files import get_ExMed_cache_file, update_ExMed_cache_file
-from templates.Functions_SQL import insert_new_exam_med, get_id_employee, update_aptitud_renovacion, \
-    get_aptitud_renovacion, update_aptitud, update_renovacion, get_renovacion, get_all_examenes, get_aptitud, \
+from templates.Functions_SQL import insert_new_exam_med, update_aptitud, update_renovacion, get_all_examenes, \
     update_status_EM
 from templates.Funtions_Utils import create_label, set_dateEntry_new_value
-from static.extensions import cache_file_EM_path
+from templates.controllers.employees.employees_controller import get_id_employee
 
 
 def load_data_EM(option=1):
@@ -37,14 +35,14 @@ def load_data_EM(option=1):
             flag, data = get_ExMed_cache_file(cache_file_EM_path)
             if not flag:
                 Messagebox.show_error(
-                    title="Error", message=f"Error con el cache local.\n"
+                    title="Error", message="Error con el cache local.\n"
                 )
                 data = []
     else:
         flag, data = get_ExMed_cache_file(cache_file_EM_path)
         if not flag:
             Messagebox.show_error(
-                title="Error", message=f"Error con el cache local.\n"
+                title="Error", message="Error con el cache local.\n"
             )
             data = []
     return data, columns
@@ -310,7 +308,7 @@ class ExamenesMedicos(ScrolledFrame):
             if flag:
                 Messagebox.show_info(
                     title="Exito",
-                    message=f"Se inserto el registro correctamente"
+                    message="Se inserto el registro correctamente"
                 )
                 self.data.append((out, name, blood, status, json.dumps(apt_list), json.dumps(renovacion),
                                   int(aptitud), last_date_formatted, int(emp_id)))

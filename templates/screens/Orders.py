@@ -45,7 +45,7 @@ class OrdersScreen(ttk.Frame):
         self.col_data = [
             {"text": "ID Orden", "stretch": True},
             {"text": "Fecha Solicitud", "stretch": True},
-            {"text": "SM", "stretch": True},
+            {"text": "material_request", "stretch": True},
             {"text": "Contrato", "stretch": True},
             {"text": "Numero Orden", "stretch": True},
             {"text": "Planta", "stretch": True},

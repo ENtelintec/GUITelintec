@@ -12,8 +12,8 @@ from static.extensions import delta_bitacora_edit
 from templates.Functions_AuxFiles import get_events_op_date, update_bitacora, update_bitacora_value, \
     erase_value_bitacora
 from templates.Functions_DB_midleware import check_date_difference
-from templates.Functions_SQL import get_employees_op_names
 from templates.Functions_Text import parse_data
+from templates.controllers.employees.employees_controller import get_employees_op_names
 
 ns = Namespace('GUI/api/v1/bitacora')
 

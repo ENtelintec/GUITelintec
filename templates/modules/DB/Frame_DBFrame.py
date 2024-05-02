@@ -15,6 +15,8 @@ from static.extensions import windows_names_db_frame
 from templates.Functions_AuxFiles import get_image_side_menu
 from templates.Funtions_Utils import set_dateEntry_new_value, create_widget_input_DB, create_visualizer_treeview, \
     create_btns_DB, set_entry_value, create_button_side_menu, clean_entries
+from templates.controllers.employees.employees_controller import new_employee, update_employee, delete_employee
+
 dict_deps = {"Dirección": 1, "Operaciones": 2, "Administración": 3, "RRHH": 4, "REPSE": 5, "IA": 6, "Otros": 7}
 
 class DBFrame(ttk.Frame):
@@ -215,7 +217,7 @@ class EmployeesFrame(ScrolledFrame):
                    f"Name: {values[0].upper()}\nLastname: {values[1].upper()}")
         else:
             departure = {"date": "None", "reason": ""}
-            msg = f"Are you sure you want to insert the following employee:\n"
+            msg = "Are you sure you want to insert the following employee:\n"
             for item in values:
                 msg += f"{item.upper()}\n"
         answer = Messagebox.show_question(
@@ -227,7 +229,7 @@ class EmployeesFrame(ScrolledFrame):
         departure = {"date": values[12], "reason": values[13]}
         email = values[16] + "," + values[17]
         emergency = {"name": values[18], "phone_number": values[19]}
-        flag, e, out = fsql.new_employee(
+        flag, e, out = new_employee(
             values[0], values[1], values[2], values[3], values[4], dict_deps[values[5]], values[6], values[7],
             values[8], values[9], values[10], values[11], json.dumps(departure), values[14], values[15], email,
             json.dumps(emergency))
@@ -263,7 +265,7 @@ class EmployeesFrame(ScrolledFrame):
         departure = {"date": values[12], "reason": values[13]}
         email = values[16] + "," + values[17]
         emergency = {"name": values[18], "phone_number": values[19]}
-        flag, e, out = fsql.update_employee(
+        flag, e, out = update_employee(
             self._id_emp_update, values[0], values[1], values[2], values[3], values[4], dict_deps[values[5]], values[6], values[7],
             values[8], values[9], values[10], values[11], json.dumps(departure), values[14], values[15], email,
             json.dumps(emergency))
@@ -279,7 +281,7 @@ class EmployeesFrame(ScrolledFrame):
                     print(self.data[index])
                     break
             self._update_table_show(self.data)
-            Messagebox.show_info(title="Informacion", message=f"Employee updated")
+            Messagebox.show_info(title="Informacion", message="Employee updated")
         else:
             Messagebox.show_error(title="Error", message=f"Error updating employee:\n{e}")
 
@@ -297,7 +299,7 @@ class EmployeesFrame(ScrolledFrame):
         )
         if answer == "No":
             return
-        flag, e, out = fsql.delete_employee(self._id_emp_update)
+        flag, e, out = delete_employee(self._id_emp_update)
         if flag:
             for index, item in enumerate(self.data):
                 if int(item[0]) == self._id_emp_update:
@@ -374,7 +376,7 @@ class CustomersFrame(ttk.Frame):
         if flag:
             self.data.append([out, name, lastname, phone, email, ciudad])
             self._update_table_show(self.data)
-            Messagebox.show_info(title="Informacion", message=f"Customer inserted")
+            Messagebox.show_info(title="Informacion", message="Customer inserted")
             self.clean_widgets_cus()
         else:
             Messagebox.show_error(title="Error", message=f"Error inserting customer:\n{e}")
@@ -424,7 +426,7 @@ class CustomersFrame(ttk.Frame):
                     self.data.pop(index)
                     break
             self._update_table_show(self.data)
-            Messagebox.show_info(title="Informacion", message=f"Customer deleted")
+            Messagebox.show_info(title="Informacion", message="Customer deleted")
             self.clean_widgets_cus()
         else:
             Messagebox.show_error(title="Error", message=f"Error deleting customer:\n{e}")
@@ -509,7 +511,7 @@ class DepartmentsFrame(ttk.Frame):
         if flag:
             self.data.append([out, name, location])
             self._update_table_show(self.data)
-            Messagebox.show_info(title="Informacion", message=f"Department inserted")
+            Messagebox.show_info(title="Informacion", message="Department inserted")
             self.clean_widgets_dep()
         else:
             Messagebox.show_error(title="Error", message=f"Error inserting department:\n{e}")
@@ -556,7 +558,7 @@ class DepartmentsFrame(ttk.Frame):
                     self.data.pop(index)
                     break
             self._update_table_show(self.data)
-            Messagebox.show_info(title="Informacion", message=f"Department deleted")
+            Messagebox.show_info(title="Informacion", message="Department deleted")
             self.clean_widgets_dep()
         else:
             Messagebox.show_error(title="Error", message=f"Error deleting department:\n{e}")
@@ -640,7 +642,7 @@ class HeadsFrame(ttk.Frame):
         if flag:
             self.data.append([out, name, department, employee])
             self._update_table_show(self.data)
-            Messagebox.show_info(title="Informacion", message=f"Head inserted")
+            Messagebox.show_info(title="Informacion", message="Head inserted")
             self.clean_widgets_heads()
             self._id_heads_update = None
         else:
@@ -668,7 +670,7 @@ class HeadsFrame(ttk.Frame):
                     self.data[index] = [self._id_heads_update, name, department, employee]
                     break
             self._update_table_show(self.data)
-            Messagebox.show_info(title="Informacion", message=f"Head updated")
+            Messagebox.show_info(title="Informacion", message="Head updated")
         else:
             Messagebox.show_error(title="Error", message=f"Error updating head:\n{e}")
             self.clean_widgets_heads()
@@ -694,7 +696,7 @@ class HeadsFrame(ttk.Frame):
                     self.data.pop(index)
                     break
             self._update_table_show(self.data)
-            Messagebox.show_info(title="Informacion", message=f"Head deleted")
+            Messagebox.show_info(title="Informacion", message="Head deleted")
         else:
             Messagebox.show_error(title="Error", message=f"Error deleting head:\n{e}")
         self.clean_widgets_heads()
@@ -778,7 +780,7 @@ class SuppliersFrame(ttk.Frame):
         if flag:
             self.data.append([out, name, location])
             self._update_table_show(self.data)
-            Messagebox.show_info(title="Informacion", message=f"Supplier inserted")
+            Messagebox.show_info(title="Informacion", message="Supplier inserted")
             self.clean_widgets_suppliers()
             self._id_supplier_update = None
         else:
@@ -801,7 +803,7 @@ class SuppliersFrame(ttk.Frame):
                     self.data[index] = [self._id_supplier_update, name, location]
                     break
             self._update_table_show(self.data)
-            Messagebox.show_info(title="Informacion", message=f"Supplier updated")
+            Messagebox.show_info(title="Informacion", message="Supplier updated")
             self.clean_widgets_suppliers()
             self._id_supplier_update = None
         else:
@@ -826,7 +828,7 @@ class SuppliersFrame(ttk.Frame):
                     self.data.pop(index)
                     break
             self._update_table_show(self.data)
-            Messagebox.show_info(title="Informacion", message=f"Supplier deleted")
+            Messagebox.show_info(title="Informacion", message="Supplier deleted")
             self.clean_widgets_suppliers()
             self._id_supplier_update = None
         else:
@@ -924,7 +926,7 @@ class ProductsFrame(ttk.Frame):
                    price_provider, support, service, categories, img_url]
             self.data.append(out)
             self._update_table_show(self.data)
-            Messagebox.show_info(title="Informacion", message=f"Product inserted")
+            Messagebox.show_info(title="Informacion", message="Product inserted")
             self.clean_widgets_products()
             self._id_product_update = None
         else:
@@ -961,7 +963,7 @@ class ProductsFrame(ttk.Frame):
                                         price_provider, support, service, categories, img_url]
                     break
             self._update_table_show(self.data)
-            Messagebox.show_info(title="Informacion", message=f"Product updated")
+            Messagebox.show_info(title="Informacion", message="Product updated")
             self.clean_widgets_products()
             self._id_product_update = None
 
@@ -984,7 +986,7 @@ class ProductsFrame(ttk.Frame):
                     self.data.pop(index)
                     break
             self._update_table_show(self.data)
-            Messagebox.show_info(title="Informacion", message=f"Product deleted")
+            Messagebox.show_info(title="Informacion", message="Product deleted")
             self.clean_widgets_products()
             self._id_product_update = None
         else:
@@ -1099,7 +1101,7 @@ class OrdersFrame(ttk.Frame):
         if flag:
             self.data.append([id_order, id_product, quantity, date_order, id_customer, id_employee])
             self._update_table_show(self.data)
-            Messagebox.show_info(title="Informacion", message=f"Order inserted")
+            Messagebox.show_info(title="Informacion", message="Order inserted")
             self.clean_widgets_orders()
             self._id_order_update = None
         else:
@@ -1132,7 +1134,7 @@ class OrdersFrame(ttk.Frame):
                     self.data[index] = [id_order, id_product, quantity, date_order, id_customer, id_employee]
                     break
             self._update_table_show(self.data)
-            Messagebox.show_info(title="Informacion", message=f"Order updated")
+            Messagebox.show_info(title="Informacion", message="Order updated")
             self.clean_widgets_orders()
             self._id_order_update = None
         else:
@@ -1157,7 +1159,7 @@ class OrdersFrame(ttk.Frame):
                     self.data.pop(index)
                     break
             self._update_table_show(self.data)
-            Messagebox.show_info(title="Informacion", message=f"Order deleted")
+            Messagebox.show_info(title="Informacion", message="Order deleted")
             self.clean_widgets_orders()
             self._id_order_update = None
         else:
@@ -1263,7 +1265,7 @@ class VOrdersFrame(ttk.Frame):
         if flag:
             self.data.append([id_vorder, products, date_vorder, id_customer, id_employee, chat_id])
             self._update_table_show(self.data)
-            Messagebox.show_info(title="Informacion", message=f"Virtual order inserted")
+            Messagebox.show_info(title="Informacion", message="Virtual order inserted")
             self.clean_widgets_orders()
         else:
             Messagebox.show_error(title="Error", message=f"Error inserting virtual order:\n{e}")
@@ -1296,7 +1298,7 @@ class VOrdersFrame(ttk.Frame):
                     self.data[index] = [id_vorder, products, date_vorder, id_customer, id_employee, chat_id]
                     break
             self._update_table_show(self.data)
-            Messagebox.show_info(title="Informacion", message=f"Virtual order updated")
+            Messagebox.show_info(title="Informacion", message="Virtual order updated")
             self.clean_widgets_orders()
             self._id_vorder_update = None
         else:
@@ -1329,7 +1331,7 @@ class VOrdersFrame(ttk.Frame):
                     self.data.pop(index)
                     break
             self._update_table_show(self.data)
-            Messagebox.show_info(title="Informacion", message=f"Virtual order deleted")
+            Messagebox.show_info(title="Informacion", message="Virtual order deleted")
             self.clean_widgets_orders()
             self._id_vorder_update = None
         else:
@@ -1432,7 +1434,7 @@ class TicketsFrame(ttk.Frame):
         if flag:
             self.data.append([id_t, content, is_retrieved, is_answered, timestamp])
             self._update_table_show(self.data)
-            Messagebox.show_info(title="Informacion", message=f"Ticket inserted")
+            Messagebox.show_info(title="Informacion", message="Ticket inserted")
             self.clean_widgets_orders()
         else:
             Messagebox.show_error(title="Error", message=f"Error inserting ticket:\n{e}")
@@ -1464,7 +1466,7 @@ class TicketsFrame(ttk.Frame):
                     self.data[index] = [id_t, content, is_retrieved, is_answered, timestamp]
                     break
             self._update_table_show(self.data)
-            Messagebox.show_info(title="Informacion", message=f"Ticket updated")
+            Messagebox.show_info(title="Informacion", message="Ticket updated")
             self.clean_widgets_orders()
             self._id_ticket_update = None
         else:
@@ -1489,7 +1491,7 @@ class TicketsFrame(ttk.Frame):
                     self.data.pop(index)
                     break
             self._update_table_show(self.data)
-            Messagebox.show_info(title="Informacion", message=f"Ticket deleted")
+            Messagebox.show_info(title="Informacion", message="Ticket deleted")
             self.clean_widgets_orders()
             self._id_ticket_update = None
         else:

@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 from templates.Functions_SQL import get_sm_products, get_sm_entries
 from templates.controllers.index import DataHandler
 
-"""---------------------------API SM-----------------------------------------"""
+"""---------------------------API material_request-----------------------------------------"""
 
 
 def get_products_sm(limit, page=0):

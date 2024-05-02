@@ -8,7 +8,8 @@ from static.extensions import tools_AV_avaliable
 from templates.Functions_Files import get_cumulative_data_fichajes_dict
 from templates.Functions_SQL import get_product_categories, get_products_almacen, get_high_stock_products, \
     get_low_stock_products, get_no_stock_products, get_costumers_amc, get_supplier_amc, get_orders_amc, \
-    get_product_movement_amc, get_supply_inv_amc, get_fichaje_emp_AV, get_employees_w_status, get_employee_info
+    get_product_movement_amc, get_supply_inv_amc, get_fichaje_emp_AV
+from templates.controllers.employees.employees_controller import get_employees_w_status, get_employee_info
 
 
 def getToolsForDepartment(**kwargs):

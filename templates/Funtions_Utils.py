@@ -12,7 +12,6 @@ from ttkbootstrap.tableview import Tableview
 from static.extensions import conversion_quizzes_path, ventanasApp_path
 from static.extensions import filepath_recommendations
 from templates.Functions_SQL import (
-    get_employees,
     get_customers,
     get_departments,
     get_heads,
@@ -25,6 +24,7 @@ from templates.Functions_SQL import (
     get_users,
     get_chats,
 )
+from templates.controllers.employees.employees_controller import get_employees
 
 
 def create_label(

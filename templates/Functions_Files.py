@@ -20,9 +20,10 @@ import ttkbootstrap as ttk
 from ttkbootstrap.toast import ToastNotification
 
 from static.extensions import secrets, cache_oct_file_temp_path, cache_oct_fichaje_path
-from templates.Functions_SQL import get_all_fichajes, get_employee_id_name, update_fichaje_DB, \
+from templates.Functions_SQL import get_all_fichajes, update_fichaje_DB, \
     insert_new_fichaje_DB
 from templates.Functions_Text import clean_accents, compare_employee_name
+from templates.controllers.employees.employees_controller import get_employee_id_name
 
 
 def check_only_read_conflict(name: str) -> bool:

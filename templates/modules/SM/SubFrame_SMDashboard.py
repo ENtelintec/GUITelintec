@@ -130,9 +130,9 @@ class SMDashboard(ttk.Frame):
         if self._id_sm_to_modify is None:
             return
         if "Finalizado" in self.status_sm:
-            Messagebox.show_error(title="Error", message="El SM no esta en estado procesado")
+            Messagebox.show_error(title="Error", message="El material_request no esta en estado procesado")
             return
-        msg = f"El SM {self._id_sm_to_modify} se marcará como recibido, esta seguro?"
+        msg = f"El material_request {self._id_sm_to_modify} se marcará como recibido, esta seguro?"
         answer = Messagebox.show_question(
             title="Confirmacion",
             message=msg)

@@ -13,9 +13,9 @@ from static.extensions import log_file_bitacora_path, delta_bitacora_edit
 from templates.Functions_AuxFiles import update_bitacora, get_events_op_date, \
     erase_value_bitacora, split_commment, update_bitacora_value
 from templates.Functions_Files import write_log_file
-from templates.Functions_SQL import get_employees_op_names
 from templates.Funtions_Utils import create_label, create_var_none, create_stringvar, create_button, \
     set_dateEntry_new_value
+from templates.controllers.employees.employees_controller import get_employees_op_names
 
 
 def check_date_difference(date_modify, delta):

@@ -140,8 +140,8 @@ class FrameSMCreate(ttk.Frame):
         entries = []
         # info inputs---------
         create_label(master, 0, 0, text="Informacion", sticky="n", font=("Helvetica", 12, "bold"), columnspan=4)
-        create_label(master, 1, 0, text="SM ID DB:", sticky="nswe")
-        create_label(master, 1, 1, text="SM code:", sticky="nswe")
+        create_label(master, 1, 0, text="material_request ID DB:", sticky="nswe")
+        create_label(master, 1, 1, text="material_request code:", sticky="nswe")
         create_label(master, 1, 2, text="Folio:", sticky="nswe")
         create_label(master, 1, 3, text="Contrato:", sticky="nswe")
         create_label(master, 3, 0, text="Planta:", sticky="nswe")
@@ -174,10 +174,10 @@ class FrameSMCreate(ttk.Frame):
 
     def create_buttons(self, master):
         btn_add = create_button(
-            master, 0, 0, "Agregar SM", command=self.on_add_click,
+            master, 0, 0, "Agregar material_request", command=self.on_add_click,
             sticky="n", width=15, bootstyle="success")
         btn_update_data = create_button(
-            master, 0, 1, "Actualizar SM", command=self.on_update_sm_event,
+            master, 0, 1, "Actualizar material_request", command=self.on_update_sm_event,
             sticky="n", width=15)
         btn_reset = create_button(
             master, 0, 2, "Reset", command=self.on_reset_widgets_click,
@@ -186,7 +186,7 @@ class FrameSMCreate(ttk.Frame):
             master, 0, 3, "Recargar tablas", command=self.update_table_visual,
             sticky="n", width=15)
         btn_erase_event = create_button(
-            master, 0, 4, "Borrar SM", command=self.on_erase_click,
+            master, 0, 4, "Borrar material_request", command=self.on_erase_click,
             sticky="n", width=15, bootstyle="danger")
         btn_add_client = create_button(
             master, 0, 5, "(+) cliente", command=self.on_add_client_click,
@@ -283,10 +283,10 @@ class FrameSMCreate(ttk.Frame):
                 self.svar_info.set(f"{error}")
             else:
                 msg = (
-                    f"Record inserted--> SM: {dict_data['info']['sm_code']} --> by {self.data_emp_dic['name'].title()} "
+                    f"Record inserted--> material_request: {dict_data['info']['sm_code']} --> by {self.data_emp_dic['name'].title()} "
                     f"{self.data_emp_dic['lastname'].title()} at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
                 write_log_file(log_file_sm_path, msg)
-                self.svar_info.set(f"SM {result} agregado correctamente")
+                self.svar_info.set(f"material_request {result} agregado correctamente")
             time.sleep(0.5)
             self.update_table_visual()
             self.on_reset_widgets_click()
@@ -321,10 +321,10 @@ class FrameSMCreate(ttk.Frame):
             if error is not None:
                 self.svar_info.set(f"{error}")
             else:
-                msg = (f"Record updated--> SM: {dict_data['id_sm']} --> by {self.data_emp_dic['name'].title()} "
+                msg = (f"Record updated--> material_request: {dict_data['id_sm']} --> by {self.data_emp_dic['name'].title()} "
                        f"{self.data_emp_dic['lastname'].title()} at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
                 write_log_file(log_file_sm_path, msg)
-                self.svar_info.set("SM actualizado correctamente")
+                self.svar_info.set("material_request actualizado correctamente")
             time.sleep(0.5)
             self.update_table_visual()
             self.on_reset_widgets_click()
@@ -348,10 +348,10 @@ class FrameSMCreate(ttk.Frame):
                 self.svar_info.set(f"{error}")
             else:
                 msg = (
-                    f"Record deleted--> SM: {sm_code} --> by {self.data_emp_dic['name'].title()} {self.data_emp_dic['lastname'].title()} "
+                    f"Record deleted--> material_request: {sm_code} --> by {self.data_emp_dic['name'].title()} {self.data_emp_dic['lastname'].title()} "
                     f"at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
                 write_log_file(log_file_sm_path, msg)
-                self.svar_info.set("SM eliminado correctamente")
+                self.svar_info.set("material_request eliminado correctamente")
             time.sleep(0.5)
             self.update_table_visual()
             self.on_reset_widgets_click()

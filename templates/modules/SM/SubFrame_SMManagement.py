@@ -75,7 +75,7 @@ class SMManagement(ttk.Frame):
         self.products_sm = None
         self.table_events = None
         # -----------------------Title---------------------------
-        create_label(self, 0, 0, text="Procesado de las SM", font=("Helvetica", 26, "bold"), columnspan=2)
+        create_label(self, 0, 0, text="Procesado de las material_request", font=("Helvetica", 26, "bold"), columnspan=2)
         # -----------------------Frames---------------------------
         self.frame_table = ttk.Frame(self)
         self.frame_table.grid(row=1, column=1, padx=20, pady=10)
@@ -128,8 +128,8 @@ class SMManagement(ttk.Frame):
 
     def create_resumen_widgets(self, master):
         create_label(master, 0, 0, text="Resumen", font=("Helvetica", 20, "bold"), columnspan=2, sticky="n")
-        create_label(master, 1, 0, text="Productos SM: ", font=("Helvetica", 16, "bold"))
-        create_label(master, 3, 0, text="Historial SM: ", font=("Helvetica", 16, "bold"))
+        create_label(master, 1, 0, text="Productos material_request: ", font=("Helvetica", 16, "bold"))
+        create_label(master, 3, 0, text="Historial material_request: ", font=("Helvetica", 16, "bold"))
         info_products = ScrolledText(master, padding=5, height=10, autohide=True)
         info_products.grid(row=2, column=0, padx=5, pady=10, sticky="nswe")
         info_history = ScrolledText(master, padding=5, height=10, autohide=True)
@@ -140,7 +140,7 @@ class SMManagement(ttk.Frame):
         if self._id_sm_to_edit is None or self.status_sm is None:
             return
         if self.status_sm == "Completado" or self.status_sm == "Finalizado":
-            self.svar_info.set("La SM ya esta completada")
+            self.svar_info.set("La material_request ya esta completada")
             return
         self.history_sm.append(
             {"user": self.data_emp["id"], "event": "dispatch", "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "comment": self.svar_entry_comment.get()})
@@ -155,7 +155,7 @@ class SMManagement(ttk.Frame):
                 products_to_dispacth.append(item)
             elif "(Pedido)" not in item["comment"] and "(Despachado)" not in item["comment"]:
                 products_to_request.append(item)
-        msg = f"Esta por despachar la SM con ID-{self._id_sm_to_edit}.\n Esta seguro de esto?"
+        msg = f"Esta por despachar la material_request con ID-{self._id_sm_to_edit}.\n Esta seguro de esto?"
         msg += "\n\nProductos a despachar: "
         for item in products_to_dispacth:
             msg += f"\n{item['name']} - {item['quantity']}"
@@ -178,10 +178,10 @@ class SMManagement(ttk.Frame):
         is_complete = True if len(products_to_request) == 0 and len(new_products) == 0 else False
         flag, error, result = update_history_sm(self._id_sm_to_edit, self.history_sm, self.products_sm, is_complete)
         if flag:
-            self.svar_info.set(f"SM con ID-{self._id_sm_to_edit} despachada")
+            self.svar_info.set(f"material_request con ID-{self._id_sm_to_edit} despachada")
             self.update_table("dispatch", 2) if len(products_to_request) == 0 and len(new_products) == 0 else self.update_table("dispatch", 1)
         else:
-            self.svar_info.set(f"Error al despachar SM con ID-{self._id_sm_to_edit}")
+            self.svar_info.set(f"Error al despachar material_request con ID-{self._id_sm_to_edit}")
 
     def on_update_table_click(self):
         self.clean_widgets()
@@ -189,9 +189,9 @@ class SMManagement(ttk.Frame):
 
     def on_cancel_click(self):
         if self._id_sm_to_edit is None:
-            self.svar_info.set("No se ha seleccionado ninguna SM")
+            self.svar_info.set("No se ha seleccionado ninguna material_request")
             return
-        msg = f"Esta por cancelar la SM con ID-{self._id_sm_to_edit}.\n Esta seguro de esto?"
+        msg = f"Esta por cancelar la material_request con ID-{self._id_sm_to_edit}.\n Esta seguro de esto?"
         answer = Messagebox.show_question(
             title="Confirmacion",
             message=msg)
@@ -203,7 +203,7 @@ class SMManagement(ttk.Frame):
         if flag:
             self.update_table("cancel")
             self.clean_widgets()
-            self.svar_info.set(f"SM con ID-{self._id_sm_to_edit} cancelada")
+            self.svar_info.set(f"material_request con ID-{self._id_sm_to_edit} cancelada")
 
     def on_double_click_table(self, event):
         self.clean_widgets()

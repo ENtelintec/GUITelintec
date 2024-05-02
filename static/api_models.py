@@ -99,7 +99,7 @@ products_request_model = api.model('ProductSearch', {
     'page': fields.Integer(required=True, description='The output page default: 1', example=0)
 })
 
-sm_model = api.model('SM', {
+sm_model = api.model('material_request', {
     'id': fields.Integer(required=True, description='The id <ignored on add event>'),
     'sm_code': fields.String(required=True, description='The sm code'),
     'folio': fields.String(required=True, description='The folio'),
@@ -116,7 +116,7 @@ sm_model = api.model('SM', {
     'comment': fields.String(required=True, description='The comment')
 })
 
-table_sm_model = api.model('Table SM', {
+table_sm_model = api.model('Table material_request', {
     'data': fields.List(fields.Nested(sm_model)),
     'page': fields.Integer(required=True, description='The page number send'),
     'pages': fields.Integer(required=True, description='The total number of'
@@ -128,25 +128,25 @@ table_request_model = api.model('Table Request', {
     'page': fields.Integer(required=True, description='The output page default: 1', example=0)
 })
 
-sm_product_request_model = api.model('SM Product Request', {
+sm_product_request_model = api.model('material_request Product Request', {
     'id': fields.Integer(required=True, description='The product id', example=1),
     'quantity': fields.Integer(required=True, description='The quantity'),
     'comment': fields.String(required=True, description='The comment')
 })
 
-sm_post_model = api.model('SM Post', {
+sm_post_model = api.model('material_request Post', {
     "info":  fields.Nested(sm_model),
     "items": fields.List(fields.Nested(sm_product_request_model))
 })
 
-sm_put_model = api.model('SM Put', {
+sm_put_model = api.model('material_request Put', {
     "info":  fields.Nested(sm_model),
     "items": fields.List(fields.Nested(sm_product_request_model)),
     "id": fields.Integer(required=True, description='The id')
 })
 
 
-delete_request_sm_model = api.model('Delete Request SM', {
+delete_request_sm_model = api.model('Delete Request material_request', {
     'id': fields.Integer(required=True, description='The id'),
     'sm_code': fields.String(required=True, description='The sm code')
 })

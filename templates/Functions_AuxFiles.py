@@ -9,7 +9,8 @@ from PIL import Image, ImageTk
 
 from static.extensions import cache_file_resume_fichaje, status_dic
 from templates.Functions_Files import get_fichajes_resume_cache, update_fichajes_resume_cache
-from templates.Functions_SQL import get_fichaje_DB, get_sm_entries, get_sm_products, get_name_employee
+from templates.Functions_SQL import get_fichaje_DB, get_sm_entries, get_sm_products
+from templates.controllers.employees.employees_controller import get_name_employee
 
 carpeta_principal = "img"
 

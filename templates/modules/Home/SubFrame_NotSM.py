@@ -1,15 +1,15 @@
-import json
-  # -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 __author__ = 'Edisson Naula'
 __date__ = '$ 26/abr./2024  at 17:21 $'
 
+import json
 import ttkbootstrap as ttk
 from ttkbootstrap.scrolled import ScrolledText
 from ttkbootstrap.tableview import Tableview
 
 from static.extensions import format_timestamps
 from templates.Funtions_Utils import Reverse, create_label
-from templates.modules.Home.Controllers_SQL import get_notifications_by_user
+from templates.controllers.notifications.Notifications_controller import get_notifications_by_user
 dict_status = {0: "Pendiente", 1: "Completado"}
 
 
@@ -127,8 +127,8 @@ class NotificationsUser(ttk.Frame):
         item = event.widget.selection()[0]
         item_data = event.widget.item(item, "values")
         self.svar_info.set(f"Mensaje: {item_data[2]}")
-        self.text_info.delete("1.0", "end")
-        self.text_info.insert("1.0", item_data[2])
+        self.text_info.text.delete("1.0", "end")
+        self.text_info.text.insert("1.0", item_data[2])
         if not check_status(item_data):
             item_to_add = list(item_data)
             item_to_add[1] = dict_status[1]

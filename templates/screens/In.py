@@ -49,7 +49,7 @@ class InScreen(ttk.Frame):
             {"text": "Tipo de Movimiento", "stretch": True},
             {"text": "Cantidad", "stretch": True},
             {"text": "Fecha", "stretch": False},
-            {"text": "ID SM", "stretch": True},
+            {"text": "ID material_request", "stretch": True},
             {"text": "Nombre producto", "stretch": False},
         ]
         self.table = Tableview(

@@ -13,12 +13,10 @@ from ttkbootstrap.scrolled import ScrolledFrame
 from static.extensions import quizzes_RRHH, quizz_out_path
 
 from templates.Functions_AuxFiles import save_json_file_quizz
-from templates.Functions_SQL import get_id_name_employee
 from templates.Funtions_Utils import (
     create_Combobox,
     calculate_results_quizzes,
     create_label,
-    recommendations_results_quizzes,
     recommendations_results_quizzes,
 )
 from templates.PDFGenerator import (
@@ -28,6 +26,7 @@ from templates.PDFGenerator import (
     create_pdf_quizz_salida,
     create_quizz_eva_360,
 )
+from templates.controllers.employees.employees_controller import get_id_name_employee
 
 
 def get_name_id_employees_list(
