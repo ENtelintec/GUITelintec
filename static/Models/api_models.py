@@ -15,14 +15,9 @@ token_model = api.model('Token', {
     'password': fields.String(required=True, description='The password or pass_key')
     })
 
-client_emp_sm_response_model = api.model('Employee', {
+client_emp_sm_response_model = api.model('Employee sm response', {
     'data': fields.List(fields.List(fields.String)),
     'comment': fields.String(description='comment'),
-    })
-
-employees_info_model = api.model('EmployeeInfo', {
-    "columns": fields.List(fields.String(required=True, description="The columns")),
-    "data": fields.List(fields.List(fields.String))
     })
 
 resume_model = api.model('Resume', {

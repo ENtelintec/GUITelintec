@@ -44,3 +44,13 @@ def update_notification_body(id_not: int, body: dict):
     vals = (json.dumps(body), timestamp, id_not)
     flag, error, result = execute_sql(sql, vals, 4)
     return flag, error, result
+
+
+def update_status_notification(id_not: int, status: int):
+    timestamp = datetime.now().strftime(format_timestamps)
+    sql = ("UPDATE notifications_gui "
+           "SET body = JSON_REPLACE(body, '$.status', %s), timestamp = %s "
+           "WHERE id = %s")
+    vals = (status, timestamp, id_not)
+    flag, error, result = execute_sql(sql, vals, 4)
+    return flag, error, result

@@ -7,10 +7,11 @@ import ttkbootstrap as ttk
 from ttkbootstrap.scrolled import ScrolledText
 from ttkbootstrap.tableview import Tableview
 
-from static.extensions import format_timestamps
-from templates.Funtions_Utils import Reverse, create_label
-from templates.controllers.notifications.Notifications_controller import get_notifications_by_user
-dict_status = {0: "Pendiente", 1: "Completado"}
+from templates.Funtions_Utils import create_label, Reverse
+from templates.controllers.notifications.Notifications_controller import get_notifications_by_user, \
+    update_status_notification
+
+dict_status = {0: "Pendiente", 1: "Leido"}
 
 
 def get_notifications_tables(data):
@@ -18,9 +19,6 @@ def get_notifications_tables(data):
     complete = Reverse(complete)
     pending = [key for key in data if key[1] == dict_status[0]]
     pending = Reverse(pending)
-    print(data)
-    print(complete)
-    print(pending)
     return complete, pending
 
 
@@ -32,19 +30,19 @@ def check_status(item):
 
 
 def load_notifications(user_id: int):
-    columns = ["Fecha", "Estado", "Mensaje"]
+    columns = ["Fecha", "Estado", "Mensaje", "id"]
     flag, error, result = get_notifications_by_user(user_id)
     if not flag:
         return {"data": [], "columns": columns, "raw": []}
     data = []
     raw_data = []
     for item in result:
-        timestamp, id_not, body = item
+        date_modify, id_not, body = item
         body = json.loads(body)
         status = dict_status[body["status"]]
         message = body["msg"]
-        timestamp = timestamp.strftime(format_timestamps)
-        data.append([timestamp, status, message])
+        timestamp = body["timestamp"]
+        data.append([timestamp, status, message, id_not])
         raw_data.append([id_not, item])
     return {"data": data, "columns": columns, "raw": raw_data} 
 
@@ -91,7 +89,7 @@ class NotificationsUser(ttk.Frame):
         self.text_info = ScrolledText(self.frame_tables, width=20, height=10, 
                                       wrap=ttk.WORD, autohide=True,
                                       font=("Helvetica", 18, "normal"))
-        self.text_info.grid(row=1, column=1, sticky="nsew", padx=(10, 0))
+        self.text_info.grid(row=1, column=1, sticky="nsew", padx=(10, 10))
 
     def create_tables(self, master, data):
         self.table_not.destroy() if self.table_not is not None else None
@@ -121,11 +119,16 @@ class NotificationsUser(ttk.Frame):
             else:
                 table_notifications.view.item(item_t, tags="incomplete")
         table_notifications.view.bind("<Double-1>", self._on_double_click_table)
+        columns_header = table_notifications.get_columns()
+        for item in columns_header:
+            if item.headertext == "id":
+                item.hide()
         return table_notifications
 
     def _on_double_click_table(self, event):
         item = event.widget.selection()[0]
         item_data = event.widget.item(item, "values")
+        id_not = int(item_data[3])
         self.svar_info.set(f"Mensaje: {item_data[2]}")
         self.text_info.text.delete("1.0", "end")
         self.text_info.text.insert("1.0", item_data[2])
@@ -134,7 +137,11 @@ class NotificationsUser(ttk.Frame):
             item_to_add[1] = dict_status[1]
             self.notifications_complete.insert(0, item_to_add)
             # eliminate row from the pending not
-            self.notifications_pending.remove(list(item_data))
+            for index, noti in enumerate(self.notifications_pending):
+                if int(noti[3]) == id_not:
+                    flag, error, result = update_status_notification(id_not, 1)
+                    self.notifications_pending.pop(index) if flag else None
+                    break
             self.create_tables(self.frame_tables, data=self.notifications_pending+self.notifications_complete)
             self.svar_pending.set(f"Pendientes: {len(self.notifications_pending)}")
             self.svar_complete.set(f"Revisadas: {len(self.notifications_complete)}")

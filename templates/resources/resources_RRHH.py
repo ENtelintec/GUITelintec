@@ -4,14 +4,72 @@ __date__ = '$ 02/nov./2023  at 17:29 $'
 
 from flask_restx import Namespace, Resource
 
-from static.api_models import employees_info_model, employees_resume_model, resume_model, examenes_medicos_model, \
+from static.Models.api_employee_models import employees_info_model, employee_model, employee_model_insert, \
+    employee_model_update, employee_model_delete
+from static.Models.api_models import employees_resume_model, resume_model, examenes_medicos_model, \
     employes_examenes_model
 from static.extensions import cache_file_resume_fichaje
+from templates.Functions_DB_midleware import get_info_employees_with_status, get_info_employee_id
 from templates.Functions_Files import get_fichajes_resume_cache
+from templates.Functions_Text import parse_data
 from templates.controllers.employees.em_controller import get_all_examenes
-from templates.controllers.employees.employees_controller import get_all_data_employees
+from templates.controllers.employees.employees_controller import new_employee, update_employee, delete_employee
 
 ns = Namespace('GUI/api/v1/rrhh')
+
+
+@ns.route('/employee')
+class Employee(Resource):
+    @ns.expect(employee_model_insert)
+    def post(self):
+        code, data = parse_data(ns.payload, 14)
+        if code == 400:
+            return {"data": None}, code
+        flag, error, result = new_employee(data["info"]["name"], data["info"]["lastname"], data["info"]["curp"],
+                                           data["info"]["phone"], data["info"]["modality"], data["info"]["dep"],
+                                           data["info"]["contract"], data["info"]["admission"], data["info"]["rfc"],
+                                           data["info"]["nss"], data["info"]["position"], data["info"]["status"],
+                                           data["info"]["departure"], data["info"]["birthday"], data["info"]["legajo"],
+                                           data["info"]["email"], data["info"]["emergency"])
+        if flag:
+            return {"data": result}, 201
+        else:
+            return {"data": None}, 400
+    
+    @ns.expect(employee_model_update)
+    def put(self):
+        code, data = parse_data(ns.payload, 14)
+        if code == 400:
+            return {"data": None}, code
+        flag, error, result = update_employee(data["id"], data["info"]["name"], data["info"]["lastname"], data["info"]["curp"], 
+                                              data["info"]["phone"], data["info"]["modality"], data["info"]["dep"], 
+                                              data["info"]["contract"], data["info"]["admission"], data["info"]["rfc"], 
+                                              data["info"]["nss"], data["info"]["position"], data["info"]["status"], 
+                                              data["info"]["departure"], data["info"]["birthday"], data["info"]["legajo"],
+                                              data["info"]["email"], data["info"]["emergency"])
+        if flag:
+            return {"data": result}, 200
+        else:
+            return {"data": None}, 400
+
+    @ns.expect(employee_model_delete)
+    def delete(self):
+        code, data = parse_data(ns.payload, 14)
+        if code == 400:
+            return {"data": None}, code
+        flag, error, result = delete_employee(data["id"])
+        if flag:
+            return {"data": result}, 200
+        else:
+            return {"data": None}, 400
+
+
+@ns.route('/employee/info/<string:id_emp>')
+class EmployeeInfo(Resource):
+    @ns.marshal_with(employee_model)
+    def get(self, id_emp):
+        data_out, code = get_info_employee_id(id_emp)
+        return data_out, code
 
 
 @ns.route('/employees/info/<string:status>')
@@ -19,15 +77,8 @@ class EmployeesInfo(Resource):
 
     @ns.marshal_with(employees_info_model)
     def get(self, status):
-        flag, error, result = get_all_data_employees(status)
-        columns = ("ID", "Nombre", "Apellido", "Teléfono",
-                   "Dep_Id", "Modalidad", "Email", "Contrato", "Admisión",
-                   "RFC", "CURP", "NSS", "C. Emergencia", " Departamento",
-                   "Exam_id")
-        if flag:
-            return {"columns": columns, "data": result}, 200
-        else:
-            return {"error": error}, 400
+        data_out, code = get_info_employees_with_status(status)
+        return {"data": data_out}, code
 
 
 @ns.route('/employees/resume')
@@ -97,7 +148,7 @@ class EmployeesResume(Resource):  # noqa: F811
         return out, code
 
 
-@ns.route('/employees/em/<string:id_emp>')
+@ns.route('/employees/medical/<string:id_emp>')
 class EmployeesEMResume(Resource):
     @ns.marshal_with(examenes_medicos_model)
     def get(self, id_emp):
@@ -126,7 +177,7 @@ class EmployeesEMResume(Resource):
         return out, code
 
 
-@ns.route('/employees/em')
+@ns.route('/employees/medical/all')
 class EmployeesEMResume(Resource):  # noqa: F811
     @ns.marshal_with(employes_examenes_model)
     def get(self):

@@ -6,7 +6,7 @@ from datetime import datetime
 
 from flask_restx import Resource, Namespace
 
-from static.api_models import client_emp_sm_response_model, fichaje_request_model, fichaje_add_update_request_model, \
+from static.Models.api_models import client_emp_sm_response_model, fichaje_request_model, fichaje_add_update_request_model, \
     fichaje_delete_request_model
 from static.extensions import delta_bitacora_edit
 from templates.Functions_AuxFiles import get_events_op_date, update_bitacora, update_bitacora_value, \

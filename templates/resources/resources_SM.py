@@ -3,7 +3,7 @@ __author__ = 'Edisson Naula'
 __date__ = '$ 01/abr./2024  at 10:26 $'
 
 from flask_restx import Resource, Namespace
-from static.api_models import client_emp_sm_response_model, products_answer_model, products_request_model, \
+from static.Models.api_models import client_emp_sm_response_model, products_answer_model, products_request_model, \
     sm_post_model, delete_request_sm_model, sm_put_model, table_sm_model, table_request_model, new_cliente_model, \
     new_product_model
 from templates.Functions_DB_midleware import get_products_sm, get_all_sm

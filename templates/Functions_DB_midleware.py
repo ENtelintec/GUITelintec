@@ -4,6 +4,8 @@ __date__ = '$ 01/abr./2024  at 11:38 $'
 
 import math
 from datetime import datetime, timedelta
+
+from templates.controllers.employees.employees_controller import get_all_data_employees, get_all_data_employee
 from templates.controllers.index import DataHandler
 from templates.controllers.material_request.sm_controller import get_sm_entries
 from templates.controllers.product.p_and_s_controller import get_sm_products
@@ -141,3 +143,64 @@ def dispatch_products(
         product['comment'] += " ;(Pedido) "
         new_products[i] = product
     return avaliable, to_request, new_products
+
+
+""" --------------------------------------API RRHH----------------------------------------------------------"""
+
+
+def get_info_employees_with_status(status: str):
+    flag, error, result = get_all_data_employees(status)
+    data_out = []
+    print(result)
+    for item in result:
+        (id_emp, name, lastname, phone, department, modality, email, contract, admission, rfc, curp, nss,
+         emergency_contact, position, status, departure, examen, birthday, legajo) = item
+        data_out.append({
+            "id": id_emp,
+            "name": name.upper() + " " + lastname.upper(),
+            "phone": phone,
+            "dep": department,
+            "modality": modality,
+            "email": email,
+            "contract": contract,
+            "admission": admission,
+            "rfc": rfc,
+            "curp": curp,
+            "nss": nss,
+            "emergency": emergency_contact,
+            "position": position,
+            "status": status,
+            "departure": departure,
+            "exam_id": examen,
+            "birthday": birthday,
+            "legajo": legajo
+        })
+
+    return (data_out, 200) if flag else ([], 400)
+
+
+def get_info_employee_id(id_emp: int):
+    flag, error, result = get_all_data_employee(id_emp)
+    (id_emp, name, lastname, phone, department, modality, email, contract, admission, rfc, curp, nss,
+     emergency_contact, position, status, departure, examen, birthday, legajo) = result
+    data_out = {
+        "id": id_emp,
+        "name": name.upper() + " " + lastname.upper(),
+        "phone": phone,
+        "dep": department,
+        "modality": modality,
+        "email": email,
+        "contract": contract,
+        "admission": admission,
+        "rfc": rfc,
+        "curp": curp,
+        "nss": nss,
+        "emergency": emergency_contact,
+        "position": position,
+        "status": status,
+        "departure": departure,
+        "exam_id": examen,
+        "birthday": birthday,
+        "legajo": legajo
+    }
+    return (data_out, 200) if flag else ({}, 400)

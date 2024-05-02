@@ -225,16 +225,15 @@ def get_all_data_employees(status: str):
     if "all" in status.lower():
         status = "%"
     elif "inactivo" in status.lower():
-        status = "INACTIVO"
+        status = "inactivo"
     else:
-        status = "ACTIVO"
+        status = "activo"
     sql = ("SELECT "
-           "employees.employee_id, "
            "employees.employee_id, "
            "employees.name, "
            "employees.l_name, "
            "employees.phone_number, "
-           "employees.department_id, "
+           "departments.name, "
            "employees.modality, "
            "employees.email, "
            "employees.contrato, "
@@ -246,13 +245,47 @@ def get_all_data_employees(status: str):
            "employees.puesto, "
            "employees.status, "
            "employees.departure, "
-           "departments.name, "
-           "examenes_med.examen_id "
+           "examenes_med.examen_id, "
+           "employees.birthday, "
+           "employees.legajo "
            "FROM sql_telintec.employees "
            "LEFT JOIN departments "
            "ON sql_telintec.employees.department_id = departments.department_id "
            "LEFT JOIN examenes_med "
-           "ON (sql_telintec.employees.employee_id = examenes_med.empleado_id AND examenes_med.status LIKE %s )")
+           "ON (sql_telintec.employees.employee_id = examenes_med.empleado_id) "
+           "WHERE employees.status LIKE %s ")
     val = (status,)
     flag, error, result = execute_sql(sql, val, type_sql=2)
+    return flag, error, result
+
+
+def get_all_data_employee(id_employee: int):
+    sql = ("SELECT "
+           "employees.employee_id, "
+           "employees.name, "
+           "employees.l_name, "
+           "employees.phone_number, "
+           "departments.name, "
+           "employees.modality, "
+           "employees.email, "
+           "employees.contrato, "
+           "employees.date_admission, "
+           "employees.rfc, "
+           "employees.curp, "
+           "employees.nss, "
+           "employees.emergency_contact, "
+           "employees.puesto, "
+           "employees.status, "
+           "employees.departure, "
+           "examenes_med.examen_id, "
+           "employees.birthday, "
+           "employees.legajo "
+           "FROM sql_telintec.employees "
+           "LEFT JOIN departments "
+           "ON sql_telintec.employees.department_id = departments.department_id "
+           "LEFT JOIN examenes_med "
+           "ON (sql_telintec.employees.employee_id = examenes_med.empleado_id)"
+           "WHERE employee_id = %s")
+    val = (id_employee,)
+    flag, error, result = execute_sql(sql, val, type_sql=1)
     return flag, error, result
