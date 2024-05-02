@@ -1,6 +1,5 @@
 from templates.database.connection import connectionDB as db
 
-
 class Details:
     def __init__(self):
         self.connection = None

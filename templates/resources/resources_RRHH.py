@@ -8,7 +8,8 @@ from static.api_models import employees_info_model, employees_resume_model, resu
     employes_examenes_model
 from static.extensions import cache_file_resume_fichaje
 from templates.Functions_Files import get_fichajes_resume_cache
-from templates.Functions_SQL import get_all_data_employees, get_all_examenes
+from templates.controllers.employees.em_controller import get_all_examenes
+from templates.controllers.employees.employees_controller import get_all_data_employees
 
 ns = Namespace('GUI/api/v1/rrhh')
 
@@ -65,7 +66,7 @@ class EmployeesResume(Resource):
 
 
 @ns.route('/employees/resume/<string:id_emp>')
-class EmployeesResume(Resource):
+class EmployeesResume(Resource):  # noqa: F811
     @ns.marshal_with(resume_model)
     def get(self, id_emp):
         fichajes_resume, flag = get_fichajes_resume_cache(cache_file_resume_fichaje)
@@ -126,7 +127,7 @@ class EmployeesEMResume(Resource):
 
 
 @ns.route('/employees/em')
-class EmployeesEMResume(Resource):
+class EmployeesEMResume(Resource):  # noqa: F811
     @ns.marshal_with(employes_examenes_model)
     def get(self):
         flag, e, result = get_all_examenes()

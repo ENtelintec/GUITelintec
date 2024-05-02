@@ -2,7 +2,7 @@
 __author__ = 'Edisson Naula'
 __date__ = '$ 01/may./2024  at 18:20 $'
 
-from templates.Functions_SQL import execute_sql, execute_sql_multiple
+from templates.database.connection import execute_sql, execute_sql_multiple
 
 
 def get_employees(limit=(0, 100)) -> list[list]:
@@ -121,7 +121,9 @@ def get_id_employee(name: str) -> None | int:
     :param name: name of the employee
     :return: id of the employee
     """
-    sql = ("SELECT employee_id FROM employees WHERE "
+    sql = ("SELECT employee_id "
+           "FROM employees "
+           "WHERE "
            "MATCH(l_name) AGAINST (%s IN NATURAL LANGUAGE MODE ) AND "
            "MATCH(name) AGAINST (%s IN NATURAL LANGUAGE MODE )")
     # lowercase names
@@ -188,7 +190,9 @@ def get_ids_employees(names: list):
     :param names: list name of the employee
     :return: id of the employee
     """
-    sql = ("SELECT employee_id FROM employees WHERE "
+    sql = ("SELECT employee_id "
+           "FROM employees "
+           "WHERE "
            "MATCH(l_name) AGAINST (%s IN NATURAL LANGUAGE MODE ) AND "
            "MATCH(name) AGAINST (%s IN NATURAL LANGUAGE MODE )")
     # lowercase names
@@ -200,3 +204,55 @@ def get_ids_employees(names: list):
         return None
     else:
         return out
+
+
+def get_sm_employees():
+    sql = ("SELECT employee_id, name, l_name "
+           "FROM employees "
+           "WHERE status = 'activo' ")
+    flag, error, result = execute_sql(sql, None, 5)
+    return flag, error, result
+
+
+def get_all_employees_active():
+    sql = ("SELECT employee_id, name, l_name, date_admission "
+           "FROM employees WHERE status = 'activo'")
+    flag, error, result = execute_sql(sql, type_sql=5)
+    return flag, error, result
+
+
+def get_all_data_employees(status: str):
+    if "all" in status.lower():
+        status = "%"
+    elif "inactivo" in status.lower():
+        status = "INACTIVO"
+    else:
+        status = "ACTIVO"
+    sql = ("SELECT "
+           "employees.employee_id, "
+           "employees.employee_id, "
+           "employees.name, "
+           "employees.l_name, "
+           "employees.phone_number, "
+           "employees.department_id, "
+           "employees.modality, "
+           "employees.email, "
+           "employees.contrato, "
+           "employees.date_admission, "
+           "employees.rfc, "
+           "employees.curp, "
+           "employees.nss, "
+           "employees.emergency_contact, "
+           "employees.puesto, "
+           "employees.status, "
+           "employees.departure, "
+           "departments.name, "
+           "examenes_med.examen_id "
+           "FROM sql_telintec.employees "
+           "LEFT JOIN departments "
+           "ON sql_telintec.employees.department_id = departments.department_id "
+           "LEFT JOIN examenes_med "
+           "ON (sql_telintec.employees.employee_id = examenes_med.empleado_id AND examenes_med.status LIKE %s )")
+    val = (status,)
+    flag, error, result = execute_sql(sql, val, type_sql=2)
+    return flag, error, result

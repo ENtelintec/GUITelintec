@@ -10,8 +10,8 @@ from ttkbootstrap.tableview import Tableview
 
 from static.extensions import ventanasApp_path, status_dic
 from templates.Functions_AuxFiles import get_all_sm_entries
-from templates.Functions_SQL import finalize_status_sm
 from templates.Funtions_Utils import create_label
+from templates.controllers.material_request.sm_controller import finalize_status_sm
 from templates.modules.SubFrame_Plots import FramePlot
 permissions_supper_SM = json.load(open(ventanasApp_path, encoding="utf-8"))["permissions_supper_SM"]
 

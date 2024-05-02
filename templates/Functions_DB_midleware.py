@@ -4,9 +4,9 @@ __date__ = '$ 01/abr./2024  at 11:38 $'
 
 import math
 from datetime import datetime, timedelta
-
-from templates.Functions_SQL import get_sm_products, get_sm_entries
 from templates.controllers.index import DataHandler
+from templates.controllers.material_request.sm_controller import get_sm_entries
+from templates.controllers.product.p_and_s_controller import get_sm_products
 
 """---------------------------API material_request-----------------------------------------"""
 

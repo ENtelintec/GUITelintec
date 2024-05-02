@@ -1,4 +1,4 @@
-from templates.controllers.product.Functions_SQL import update_stock_db, delete_product_db, update_product_db, \
+from templates.controllers.product.p_and_s_controller import update_stock_db, delete_product_db, update_product_db, \
     get_all_products_db, create_product_db
 
 

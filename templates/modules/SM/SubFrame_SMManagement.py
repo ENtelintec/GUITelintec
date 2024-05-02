@@ -13,8 +13,9 @@ from ttkbootstrap.tableview import Tableview
 from static.extensions import status_dic
 from templates.Functions_AuxFiles import get_all_sm_entries, get_all_sm_products
 from templates.Functions_DB_midleware import dispatch_products
-from templates.Functions_SQL import get_sm_employees, cancel_sm_db, update_history_sm
 from templates.Funtions_Utils import create_label, create_button, create_entry
+from templates.controllers.employees.employees_controller import get_sm_employees
+from templates.controllers.material_request.sm_controller import update_history_sm, cancel_sm_db
 
 
 def reorder_data_table(data):
@@ -240,7 +241,7 @@ class SMManagement(ttk.Frame):
                         tag_name = "despachado"
                     self.info_products.text.insert(ttk.END, f"{comment}\n", tag_name)
                     item["stock"] = product[2]
-                    item["name"] =  product[3]
+                    item["name"] = product[3]
                     self.products_sm[i] = item
                     break
         self.info_products.text.tag_config("property", foreground=self.style_gui.colors.get("warning"))

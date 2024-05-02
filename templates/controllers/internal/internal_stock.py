@@ -10,7 +10,7 @@ class InternalStock:
         try:
             self.connection = db()
             self.cursor = self.connection.cursor()
-            sql = f"SELECT * from internal_tools_amc"
+            sql = "SELECT * from internal_tools_amc"
             self.cursor.execute(sql)
             result = self.cursor.fetchall()
             return result
@@ -81,7 +81,7 @@ class InternalStock:
         try:
             self.connection = db()
             self.cursor = self.connection.cursor()
-            sql = f"SELECT * from supply_inventory_amc"
+            sql = "SELECT * from supply_inventory_amc"
             self.cursor.execute(sql)
             result = self.cursor.fetchall()
             return result

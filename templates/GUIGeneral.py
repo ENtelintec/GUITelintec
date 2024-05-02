@@ -10,8 +10,11 @@ from static.extensions import filepath_settings, ventanasApp_path
 from templates.Functions_AuxFiles import carpeta_principal, get_image_side_menu, read_setting_file, get_all_sm_entries, \
     get_all_sm_products
 from templates.Functions_Files import read_file_not
-from templates.Functions_SQL import get_chats_w_limit, get_username_data, get_sm_employees, get_sm_clients
 from templates.Funtions_Utils import create_button_side_menu, compare_permissions_windows
+from templates.controllers.chatbot.chatbot_controller import get_chats_w_limit
+from templates.controllers.customer.customers_controller import get_sm_clients
+from templates.controllers.employees.employees_controller import get_sm_employees
+from templates.controllers.employees.us_controller import get_username_data
 from templates.modules.Bitacora.Frame_Bitacora import BitacoraEditFrame
 from templates.modules.Chatbot.Frame_ChatsFrame import ChatFrame
 from templates.modules.DB.Frame_DBFrame import DBFrame, EmployeesFrame
@@ -27,15 +30,15 @@ from templates.modules.Frame_SettingsFrame import SettingsFrameGUI
 from templates.modules.RRHH.Frame_Vacations import VacationsFrame
 from templates.modules.Assistant.Frame_vAssistantGUI import AssistantGUI
 from templates.modules.SM.SubFrame_SMManagement import SMManagement
-from templates.screens.Clients import ClientsScreen
-from templates.screens.In import InScreen
-from templates.screens.InternalInventory import InternalInventoryScreen
-from templates.screens.Inventory import InventoryScreen
-from templates.screens.Orders import OrdersScreen
-from templates.screens.Out import OutScreen
-from templates.screens.Providers import ProvidersScreen
-from templates.screens.Settings import SettingsScreen
-from templates.screens.Supplies import SuppliesScreen
+from templates.modules.Almacen.Clients import ClientsScreen
+from templates.modules.Almacen.In import InScreen
+from templates.modules.Almacen.InternalInventory import InternalInventoryScreen
+from templates.modules.Almacen.Inventory import InventoryScreen
+from templates.modules.Almacen.Orders import OrdersScreen
+from templates.modules.Almacen.Out import OutScreen
+from templates.modules.Almacen.Providers import ProvidersScreen
+from templates.modules.Almacen.Settings import SettingsScreen
+from templates.modules.Almacen.Supplies import SuppliesScreen
 
 filepath_notifications = 'files/notifications.txt'
 default_values_settings = {"max_chats": "40", "start_date": "19/oct./2023", "end_date": "19/oct./2023",
@@ -49,14 +52,13 @@ available_frames = {
     "Notificaciones": Notifications,
     "Vacaciones": VacationsFrame,
     "Encuestas": FrameEncuestas,
-    "Exámenes Médicos": ExamenesMedicos,
+    "Exámenes": ExamenesMedicos,
     "Fichajes": FichajesFilesGUI,
     "DB": DBFrame,
     "Empleados": EmployeesFrame,
     "Pedidos": PedidosFrame,
     "Configuración": SettingsFrameGUI,
-    "material_request": SMFrame,
-    "Procesar material_request": SMManagement,
+    "SM": SMFrame,
     "Clients (A)": ClientsScreen,
     "Proveedores (A)": ProvidersScreen,
     "Inventario": InventoryScreen,
@@ -70,6 +72,7 @@ available_frames = {
     "Examenes":  ExamenesMedicos,
     "Emp. Detalles": EmployeeDetailsScrolled,
     "Cuenta":  Login.LogOptionsFrame,
+    "Procesar SM": SMManagement
 }
 
 

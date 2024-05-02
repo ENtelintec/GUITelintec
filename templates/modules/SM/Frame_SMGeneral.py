@@ -9,7 +9,8 @@ from ttkbootstrap.scrolled import ScrolledFrame
 
 from static.extensions import ventanasApp_path
 from templates.Functions_AuxFiles import get_all_sm_entries, get_all_sm_products
-from templates.Functions_SQL import get_sm_clients, get_sm_employees
+from templates.controllers.customer.customers_controller import get_sm_clients
+from templates.controllers.employees.employees_controller import get_sm_employees
 from templates.modules.SM.SubFrame_SMCreate import FrameSMCreate
 
 permissions_supper_SM = json.load(open(ventanasApp_path, encoding="utf-8"))["permissions_supper_SM"]

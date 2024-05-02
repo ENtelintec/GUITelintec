@@ -6,12 +6,11 @@ import json
 from datetime import datetime
 
 import ttkbootstrap as ttk
+from templates.controllers.employees.employees_controller import get_all_employees_active
+from templates.Funtions_Utils import create_Combobox, create_label
 from ttkbootstrap.dialogs import Messagebox
 from ttkbootstrap.scrolled import ScrolledFrame
 from ttkbootstrap.tableview import Tableview
-
-from templates.Functions_SQL import get_vacations_data, update_registry_vac, get_all_employees_active, insert_vacation
-from templates.Funtions_Utils import create_label, create_Combobox
 
 
 def get_data_small_from_table(data):
@@ -149,7 +148,7 @@ class VacationsFrame(ScrolledFrame):
             if len(ids_not_vac) == 0:
                 Messagebox.show_info(
                     title="Exito",
-                    message=f"Todos los empleados estan en la tabla de vacaciones."
+                    message="Todos los empleados estan en la tabla de vacaciones."
                 )
                 return
             complete_name_of_not_vac = [item[1].upper() + " " + item[2].upper() for item in data if
@@ -184,7 +183,7 @@ class VacationsFrame(ScrolledFrame):
         if emp_id == "":
             Messagebox.show_error(
                 title="Error",
-                message=f"El id del empleado esta vacio."
+                message="El id del empleado esta vacio."
             )
             return
         for item in self.data:
@@ -195,13 +194,13 @@ class VacationsFrame(ScrolledFrame):
         if name is not None:
             Messagebox.show_info(
                 title="Exito",
-                message=f"El id del empleado es correcto."
+                message="El id del empleado es correcto."
             )
             self.name_emp.set(f"ID: {emp_id}\nNombre: {name}")
         else:
             Messagebox.show_error(
                 title="Error",
-                message=f"El id del empleado es incorrecto."
+                message="El id del empleado es incorrecto."
             )
 
     def _update_registry_to_emp(self):
@@ -220,7 +219,7 @@ class VacationsFrame(ScrolledFrame):
             if anios <= year:
                 answer = Messagebox.show_question(
                     title="Confirmacion",
-                    message=f"Esta por agregar informacion de un nuevo año. Desea continuar?",
+                    message="Esta por agregar informacion de un nuevo año. Desea continuar?",
                     buttons=["No:secondary", "Yes:primary"]
                 )
                 if answer == "No" or None:
@@ -360,6 +359,7 @@ class VacationsFrame(ScrolledFrame):
             txt_pendientes = seniority_dict["0"]["status"]
             self.wentry_pendientes.set(int(
                 txt_pendientes.split(" ")[0])) if txt_pendientes.lower() != "tomadas" else self.wentry_pendientes.set(0)
+            # noinspection PyArgumentList
             self.wentry_pendientes.configure(
                 bootstyle="success") if txt_pendientes.lower() == "tomadas" else self.wentry_pendientes.configure(
                 bootstyle="danger")
@@ -434,7 +434,7 @@ class VacationsFrame(ScrolledFrame):
                             f"Año: {year} sin informacion (El empleado lleva {workey_days.days % 365} dias trabajando del ultimo año.")
                         self.clean_widgets_year()
                     else:
-                        self.year_var_info.set(f"No hay registro de vacaciones del empleado")
+                        self.year_var_info.set("No hay registro de vacaciones del empleado")
                         self.clean_widgets_year()
                 else:
                     self.year_var_info.set("No se encontro el empleado")

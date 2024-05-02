@@ -6,10 +6,13 @@ import json
 
 from static.extensions import tools_AV_avaliable
 from templates.Functions_Files import get_cumulative_data_fichajes_dict
-from templates.Functions_SQL import get_product_categories, get_products_almacen, get_high_stock_products, \
-    get_low_stock_products, get_no_stock_products, get_costumers_amc, get_supplier_amc, get_orders_amc, \
-    get_product_movement_amc, get_supply_inv_amc, get_fichaje_emp_AV
+from templates.controllers.customer.customers_controller import get_costumers_amc
 from templates.controllers.employees.employees_controller import get_employees_w_status, get_employee_info
+from templates.controllers.fichajes.fichajes_controller import get_fichaje_emp_AV
+from templates.controllers.order.orders_controller import get_orders_amc
+from templates.controllers.product.p_and_s_controller import get_product_categories, get_products_almacen, \
+    get_high_stock_products, get_low_stock_products, get_no_stock_products, get_product_movement_amc, get_supply_inv_amc
+from templates.controllers.supplier.suppliers_controller import get_supplier_amc
 
 
 def getToolsForDepartment(**kwargs):

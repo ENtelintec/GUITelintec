@@ -11,20 +11,17 @@ from ttkbootstrap.tableview import Tableview
 
 from static.extensions import conversion_quizzes_path, ventanasApp_path
 from static.extensions import filepath_recommendations
-from templates.Functions_SQL import (
-    get_customers,
-    get_departments,
-    get_heads,
-    get_supplier,
-    get_p_and_s,
-    get_orders,
-    get_v_orders,
-    get_purchases,
-    get_tickets,
-    get_users,
-    get_chats,
-)
+from templates.controllers.chatbot.chatbot_controller import get_chats
+from templates.controllers.customer.customers_controller import get_customers
+from templates.controllers.departments.department_controller import get_departments
+from templates.controllers.departments.heads_controller import get_heads
 from templates.controllers.employees.employees_controller import get_employees
+from templates.controllers.employees.us_controller import get_users
+from templates.controllers.order.orders_controller import get_orders, get_v_orders
+from templates.controllers.product.p_and_s_controller import get_p_and_s
+from templates.controllers.purchases.purchases_controller import get_purchases
+from templates.controllers.supplier.suppliers_controller import get_supplier
+from templates.controllers.tickets.tickets_controller import get_tickets
 
 
 def create_label(
@@ -90,7 +87,7 @@ def create_Combobox(
     Create a combobox with the values provided
     :param sticky:
     :param columnspan:
-    :param master: parent of the combobox
+    :param master: Parent of the combobox
     :param values: values of the combobox
     :param row: row to place the widget
     :param column: Column to place the widget
@@ -193,7 +190,7 @@ def compare_permissions_windows(
 ) -> tuple[bool, Any] | tuple[bool, None]:
     """
     This method is used to compare the permissions of a user.
-    :param user_permissions: list of permissions of the user
+    :param user_permissions: List of permissions of the user
     :return: bool with the result of the comparison
     """
     ventanas = []

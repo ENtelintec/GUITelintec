@@ -6,7 +6,7 @@ import json
 from datetime import datetime
 
 from static.extensions import format_timestamps
-from templates.Functions_SQL import execute_sql
+from templates.database.connection import execute_sql
 
 
 def get_notifications_by_user(user_id: int):

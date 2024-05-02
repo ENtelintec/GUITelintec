@@ -8,7 +8,7 @@ from templates.Funtions_Utils import create_label
 from templates.modules.RRHH.Frame_EmployeeDetail import EmployeeDetails
 from templates.modules.Home.Frame_Wheather import WeatherFrame
 from templates.modules.SM.SubFrame_SMDashboard import SMDashboard
-from templates.screens.Home import HomeScreen
+from templates.modules.Almacen.Home import HomeScreen
 
 avaliable_dashboards = {
     "sm": [SMDashboard],

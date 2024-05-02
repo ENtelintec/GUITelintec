@@ -1,4 +1,4 @@
-from templates.controllers.product.Functions_SQL import get_ins_db, create_in_movement_db, update_in_movement_db, \
+from templates.controllers.product.p_and_s_controller import get_ins_db, create_in_movement_db, update_in_movement_db, \
     delete_in_movement_db, get_outs_db, create_out_movement_db, update_out_movement_db, delete_out_movement_db
 
 

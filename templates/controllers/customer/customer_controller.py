@@ -1,4 +1,4 @@
-from templates.controllers.customer.Functions_SQL import delete_customer_db, update_customer_db, create_customer_db, \
+from templates.controllers.customer.customers_controller import delete_customer_db, update_customer_db, create_customer_db, \
     get_all_customers_db
 
 

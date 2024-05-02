@@ -1,6 +1,5 @@
 from templates.database.connection import connectionDB as db
 
-
 class Order:
     def __init__(self):
         self.connection = None
@@ -169,7 +168,7 @@ class Order:
         try:
             self.connection = db()
             self.cursor = self.connection.cursor()
-            sql = f"SELECT * FROM get_all_orders"
+            sql = "SELECT * FROM get_all_orders"
             self.cursor.execute(sql)
             result = self.cursor.fetchall()
             return result
@@ -272,7 +271,7 @@ class Order:
         try:
             self.connection = db()
             self.cursor = self.connection.cursor()
-            sql = f"SELECT * FROM get_all_movement_requests"
+            sql = "SELECT * FROM get_all_movement_requests"
             self.cursor.execute(sql)
             result = self.cursor.fetchall()
             return result

@@ -13,11 +13,11 @@ from ttkbootstrap.tableview import Tableview
 from static.extensions import log_file_sm_path, ventanasApp_path
 from templates.Functions_AuxFiles import get_all_sm_entries, get_all_sm_products
 from templates.Functions_Files import write_log_file
-from templates.Functions_SQL import insert_sm_db, update_sm_db, delete_sm_db, \
-    get_user_data_by_ID
 from templates.Funtions_Utils import create_label, create_button, create_stringvar, create_Combobox, create_entry, \
     create_date_entry
+from templates.controllers.employees.us_controller import get_user_data_by_ID
 from templates.controllers.index import DataHandler
+from templates.controllers.material_request.sm_controller import insert_sm_db, update_sm_db, delete_sm_db
 
 permissions_supper_SM = json.load(open(ventanasApp_path, encoding="utf-8"))["permissions_supper_SM"]
 
@@ -140,8 +140,8 @@ class FrameSMCreate(ttk.Frame):
         entries = []
         # info inputs---------
         create_label(master, 0, 0, text="Informacion", sticky="n", font=("Helvetica", 12, "bold"), columnspan=4)
-        create_label(master, 1, 0, text="material_request ID DB:", sticky="nswe")
-        create_label(master, 1, 1, text="material_request code:", sticky="nswe")
+        create_label(master, 1, 0, text="SM. ID DB:", sticky="nswe")
+        create_label(master, 1, 1, text="SM. code:", sticky="nswe")
         create_label(master, 1, 2, text="Folio:", sticky="nswe")
         create_label(master, 1, 3, text="Contrato:", sticky="nswe")
         create_label(master, 3, 0, text="Planta:", sticky="nswe")

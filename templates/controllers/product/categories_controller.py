@@ -1,4 +1,4 @@
-from templates.controllers.product.Functions_SQL import get_all_categories_db, create_category_db, update_category_db, \
+from templates.controllers.product.p_and_s_controller import get_all_categories_db, create_category_db, update_category_db, \
     delete_category_db
 
 
