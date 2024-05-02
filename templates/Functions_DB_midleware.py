@@ -2,10 +2,12 @@
 __author__ = 'Edisson Naula'
 __date__ = '$ 01/abr./2024  at 11:38 $'
 
+import json
 import math
 from datetime import datetime, timedelta
 
 from templates.controllers.employees.employees_controller import get_all_data_employees, get_all_data_employee
+from templates.controllers.employees.vacations_controller import get_vacations_data, get_vacations_data_emp
 from templates.controllers.index import DataHandler
 from templates.controllers.material_request.sm_controller import get_sm_entries
 from templates.controllers.product.p_and_s_controller import get_sm_products
@@ -204,3 +206,36 @@ def get_info_employee_id(id_emp: int):
         "legajo": legajo
     }
     return (data_out, 200) if flag else ({}, 400)
+
+
+def get_all_vacations():
+    flag, error, result = get_vacations_data()
+    out = []
+    if not flag or len(result) == 0:
+        return [], 400
+    for item in result:
+        (emp_id, name, l_name, date_admission, seniority) = item
+
+        out.append({
+            "emp_id": emp_id,
+            "name": name.upper() + " " + l_name.upper(),
+            "date_admission": date_admission,
+            "seniority": json.loads(seniority)
+        })
+
+    return out, 200
+
+
+def get_vacations_employee(emp_id: int):
+    flag, error, result = get_vacations_data_emp(emp_id)
+    out = None
+    if not flag or len(result) == 0:
+        return out, 400
+    (emp_id, name, l_name, date_admission, seniority) = result
+    out = {
+        "emp_id": emp_id,
+        "name": name.upper() + " " + l_name.upper(),
+        "date_admission": date_admission,
+        "seniority": json.loads(seniority)
+    }
+    return out, 200

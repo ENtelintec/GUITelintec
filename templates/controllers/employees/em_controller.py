@@ -3,37 +3,41 @@ __author__ = 'Edisson Naula'
 __date__ = '$ 01/may./2024  at 20:07 $'
 
 import json
-from datetime import datetime
 
 from templates.database.connection import execute_sql
 
 
 def insert_new_exam_med(name: str, blood: str, status: str, aptitud: list,
-                        renovaciones: list, apt_actual: int, last_date: str,
+                        renovaciones: list, apt_actual: int,
                         emp_id: int) -> tuple[bool, Exception | None, int | None]:
     sql = ("INSERT INTO sql_telintec.examenes_med "
            "(name, blood, status, aptitud, renovacion, aptitude_actual, empleado_id) "
            "VALUES (%s, %s, %s, %s, %s, %s, %s)")
     val = (name.upper(), blood, status.upper(), json.dumps(aptitud),
-           json.dumps(renovaciones), apt_actual,
-           datetime.strptime(last_date, "%d/%m/%Y"), emp_id)
+           json.dumps(renovaciones), apt_actual, emp_id)
     flag, e, out = execute_sql(sql, val, 4)
     print(out, "record inserted.")
     return flag, e, out
 
 
-# option 1
-def update_aptitud_renovacion(aptitud: list, renovaciones: list, apt_actual: int, last_date: str, emp_id: int):
+def update_aptitud_renovacion(aptitud: list, renovaciones: list, apt_actual: int, exm_id: int):
     sql = ("UPDATE sql_telintec.examenes_med "
            "SET aptitud = %s, renovacion = %s, aptitude_actual = %s "
-           "WHERE empleado_id = %s")
-    val = (json.dumps(aptitud), json.dumps(renovaciones), apt_actual, last_date, emp_id)
-    flag, e, out = execute_sql(sql, val, 4)
+           "WHERE examen_id = %s")
+    val = (json.dumps(aptitud), json.dumps(renovaciones), apt_actual, exm_id)
+    flag, e, out = execute_sql(sql, val, 3)
     print(out, "record inserted.")
     return flag, e, out
 
 
-# option 1
+def delete_exam_med(exm_id: int):
+    sql = ("DELETE FROM sql_telintec.examenes_med "
+           "WHERE examen_id = %s")
+    val = (exm_id,)
+    flag, e, out = execute_sql(sql, val, 3)
+    return flag, e, out
+
+
 def get_aptitud_renovacion(emp_id: int):
     sql = ("SELECT aptitud, renovacion "
            "FROM examenes_med "
@@ -43,7 +47,6 @@ def get_aptitud_renovacion(emp_id: int):
     return flag, e, out
 
 
-# option 2
 def update_aptitud(aptitud: list, apt_actual: int, emp_id: int):
     sql = ("UPDATE examenes_med "
            "SET aptitud = %s, aptitude_actual = %s "

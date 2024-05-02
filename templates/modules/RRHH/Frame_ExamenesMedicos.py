@@ -303,7 +303,7 @@ class ExamenesMedicos(ScrolledFrame):
             if answer == "No" or None:
                 return
             flag, error, out = insert_new_exam_med(
-                name, blood, status, apt_list, renovacion, aptitud, last_date, emp_id
+                name, blood, status, apt_list, renovacion, aptitud, emp_id
             )
             if flag:
                 Messagebox.show_info(

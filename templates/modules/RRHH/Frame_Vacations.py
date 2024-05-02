@@ -12,15 +12,11 @@ from ttkbootstrap.dialogs import Messagebox
 from ttkbootstrap.scrolled import ScrolledFrame
 from ttkbootstrap.tableview import Tableview
 
+from templates.controllers.employees.vacations_controller import insert_vacation, update_registry_vac, \
+    get_vacations_data
+
 
 def get_data_small_from_table(data):
-    columns = ["ID Emp.", "Nombre", "Apellido", "Fecha de Ingreso",
-               "1 año \n(12 dias)", "Prima", "Fecha pago", "Comentarios",
-               "2 años \n(14 dias)", "Prima", "Fecha pago", "Comentarios",
-               "3 años \n(16 dias)", "Prima", "Fecha pago", "Comentarios",
-               "4 años \n(18 dias)", "Prima", "Fecha pago", "Comentarios",
-               "5 años \n(20 dias)", "Prima", "Fecha pago", "Comentarios",
-               "6-10 años \n(22 dias)", "Prima", "Fecha pago", "Comentarios"]
     id_emp = data[0]
     name = data[1]
     lastname = data[2]

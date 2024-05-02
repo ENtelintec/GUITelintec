@@ -16,6 +16,23 @@ def insert_vacation(emp_id: int, seniority: dict):
     return flag, error, result
 
 
+def update_registry_vac(emp_id: int, seniority: dict):
+    sql = ("UPDATE vacations "
+           "SET seniority = %s "
+           "WHERE emp_id = %s")
+    val = (json.dumps(seniority), emp_id)
+    flag, error, result = execute_sql(sql, val, 3)
+    return flag, error, result
+
+
+def delete_vacation(emp_id: int):
+    sql = ("DELETE FROM vacations "
+           "WHERE emp_id = %s")
+    val = (emp_id,)
+    flag, error, result = execute_sql(sql, val, 3)
+    return flag, error, result
+
+
 def get_vacations_data():
     sql = ("SELECT emp_id, name, l_name, date_admission, seniority  "
            "FROM vacations "
@@ -24,10 +41,11 @@ def get_vacations_data():
     return flag, error, result
 
 
-def update_registry_vac(emp_id: int, seniority: dict):
-    sql = ("UPDATE vacations "
-           "SET seniority = %s "
+def get_vacations_data_emp(emp_id: int):
+    sql = ("SELECT emp_id, name, l_name, date_admission, seniority  "
+           "FROM vacations "
+           "INNER JOIN employees ON vacations.emp_id = employees.employee_id "
            "WHERE emp_id = %s")
-    val = (json.dumps(seniority), emp_id)
-    flag, error, result = execute_sql(sql, val, 4)
+    val = (emp_id,)
+    flag, error, result = execute_sql(sql, val, 1)
     return flag, error, result

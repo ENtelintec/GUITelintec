@@ -1,3 +1,4 @@
+
 # -*- coding: utf-8 -*-
 __author__ = 'Edisson Naula'
 __date__ = '$ 29/nov./2023  at 16:55 $'
@@ -15,6 +16,25 @@ def compare_employee_name(names_1, id_2):
             if id_1 == id_2:
                 return name, id_1, True
     return None, None, False
+
+
+def validate_seniority_dict(data):
+    if "seniority" not in data.keys():
+        return False
+    data_dict = data["seniority"]
+    keys1 = ["prima", "status", "comentarios"]
+    keys2 = ["fecha_pago", "status"]
+    for key, value in data_dict.items():
+        for key_2, value_2 in value.items():
+            if key_2 not in keys1:
+                print("Error en la clave: ", key_2)
+                return False
+            if key_2 == "prima":
+                for key_3, value_3 in value_2.items():
+                    if key_3 not in keys2:
+                        print("Error en la clave: ", key_3)
+                        return False
+    return True
 
 
 def parse_data(data: dict, mode: int):
@@ -54,27 +74,27 @@ def parse_data(data: dict, mode: int):
             case 6 | 8:
                 id_sm = data['info']['id'] if mode == 8 else None
                 info = {
-                        'id': id_sm,
-                        "sm_code": data['info']['sm_code'],
-                        "folio": data['info']['folio'],
-                        "contract": data['info']['contract'],
-                        "facility": data['info']['facility'],
-                        "location": data['info']['location'],
-                        "client_id": data['info']['client_id'],
-                        "emp_id": data['info']['emp_id'],
-                        "date": data['info']['date'],
-                        "limit_date": data['info']['limit_date'],
-                        "status": data['info']['status'],
-                        "order_quotation": data['info']['order_quotation'],
-                        "comment": data['info']['comment'],
-                        "history": data['info']['history']
-                    }
+                    'id': id_sm,
+                    "sm_code": data['info']['sm_code'],
+                    "folio": data['info']['folio'],
+                    "contract": data['info']['contract'],
+                    "facility": data['info']['facility'],
+                    "location": data['info']['location'],
+                    "client_id": data['info']['client_id'],
+                    "emp_id": data['info']['emp_id'],
+                    "date": data['info']['date'],
+                    "limit_date": data['info']['limit_date'],
+                    "status": data['info']['status'],
+                    "order_quotation": data['info']['order_quotation'],
+                    "comment": data['info']['comment'],
+                    "history": data['info']['history']
+                }
                 items = []
                 for item in data['items']:
                     items.append({
                         'id': item['id'],
                         "quantity": item['quantity'],
-                        "comment":  item['comment']
+                        "comment": item['comment']
                     })
                 out = {
                     "info": info,
@@ -94,14 +114,14 @@ def parse_data(data: dict, mode: int):
                 value = data['value'] if mode == 10 else None
                 comment = data['comment'] if mode == 10 else None
                 out = {
-                        'id': data['id'],
-                        "date": data['date'],
-                        "event": data['event'],
-                        "value": value,
-                        "comment": comment,
-                        "contract": data['contract'],
-                        "id_emp": data['id_emp']
-                    }
+                    'id': data['id'],
+                    "date": data['date'],
+                    "event": data['event'],
+                    "value": value,
+                    "comment": comment,
+                    "contract": data['contract'],
+                    "id_emp": data['id_emp']
+                }
             case 12:
                 out = {
                     'name': data["name"],
@@ -117,7 +137,7 @@ def parse_data(data: dict, mode: int):
                     'udm': data["udm"],
                     'supplier': data["supplier"],
                     'category': data["category"],
-                    'sku':  data["sku"]
+                    'sku': data["sku"]
                 }
             case 14:
                 out = {"id": data["id"] if "id" in data.keys() else None, "info": {
@@ -139,6 +159,22 @@ def parse_data(data: dict, mode: int):
                     "birthday": data["info"]["birthday"],
                     "legajo": data["info"]["legajo"]
                 } if "info" in data.keys() else {}}
+
+            case 15:
+                out = {"id": data["id"] if "id" in data.keys() else None, "info": {
+                    "name": data["info"]["name"],
+                    "blood": data["info"]["blood"],
+                    "status": data["info"]["status"],
+                    "aptitudes": data["info"]["aptitudes"],
+                    "dates": data["info"]["dates"],
+                    "apt_actual": data["info"]["apt_actual"],
+                    "emp_id": data["info"]["emp_id"]
+                } if "info" in data.keys() else {}}
+            case 16:
+                out = {
+                    "emp_id": data["emp_id"],
+                    "seniority": data["seniority"] if validate_seniority_dict(data) and "seniority" in data.keys() else None
+                }
             case _:
                 print("Invalid mode")
                 code = 204
