@@ -48,44 +48,48 @@ def display_result(master: canvas.Canvas, dict_quizz, dim_x, dim_y):
     dict_results = dict_quizz["results"]
     # Posición inicial de la primera línea
     pady = 0
-    master.setFont("Courier-Bold", 10)
-    master.drawString(dim_x + 10, dim_y - 140 - pady, "Your final result is:\n")
+    master.setFont("Helvetica", 10)
+    master.drawString(dim_x + 10, dim_y - 140 - pady, "Your final result is:")
     master.drawString(
         dim_x + 10,
         dim_y - 155 - pady,
-        f"Calificación final: {dict_results['c_final']}\n",
+        f"Calificación final: {wrap_text(str(dict_results['c_final']))}",
     )
     master.drawString(
         dim_x + 10,
         dim_y - 170 - pady,
-        f"Calificación de dominio: {dict_results['c_dom']}\n",
+        f"Calificación de dominio:{wrap_text(str(dict_results['c_dom']))}",
     )
     master.drawString(
         dim_x + 10,
         dim_y - 185 - pady,
-        f"Calificacion de categoria: {dict_results['c_cat']}\n",
+        f"Calificacion de categoria: {wrap_text(str(dict_results['c_cat']))}",
     )
+
+
+def wrap_text(text, width=30):
+    return "\n".join(textwrap.wrap(text, width=width))
 
 
 def display_recommendations(master: canvas.Canvas, dict_quizz, dim_x, dim_y):
     dict_recommendations = dict_quizz["recommendations"]
     pady = 0
-    master.setFont("Courier-Bold", 10)
-    master.drawString(dim_x + 10, dim_y - 200 - pady, "Recomendaciones:\n")
+    master.setFont("Helvetica", 10)
+    master.drawString(dim_x + 10, dim_y - 200 - pady, "Recomendaciones:")
     master.drawString(
         dim_x + 10,
         dim_y - 215 - pady,
-        f"Recomendacion para calificación final:{dict_recommendations['c_final_r']}\n",
+        f"Recomendacion para calificación final:{dict_recommendations['c_final_r']}",
     )
     master.drawString(
         dim_x + 10,
         dim_y - 230 - pady,
-        f"Recomendacion para calificación de dominio:{dict_recommendations['c_dom_r']}\n",
+        f"Recomendacion para calificación de dominio:{dict_recommendations['c_dom_r']}",
     )
     master.drawString(
         dim_x + 10,
         dim_y - 245 - pady,
-        f"Recomendacion para calificación de categoria:{dict_recommendations['c_cat_r']}\n",
+        f"Recomendacion para calificación de categoria:{dict_recommendations['c_cat_r']}",
     )
 
 
@@ -514,7 +518,7 @@ def create_pdf__quizz_nor035_v1(
     image_logo = "img/logo_docs.png" if image_logo is None else image_logo
     name_quizz = "NORMA 035 V1"
     n_questions = len(dict_quizz)
-    interlineado = 1
+    interlineado = 0.8
     a4_x = 595.27
     a4_y = 841.89
 
@@ -535,18 +539,20 @@ def create_pdf__quizz_nor035_v1(
         y_position -= font_size
 
     for i in range(n_questions):
+        if str(i) not in dict_quizz:
+            continue
         if i % 3 == 0 and i != 0:
             pdf.showPage()
             create_header(pdf, image_logo, name_quizz, a4_x, date_interview)
             y_position = 730
 
         question = textwrap.wrap(dict_quizz[str(i)]["question"], width=121)
-        font_size = 11
+        font_size = 10
         pdf.setFont("Times-Roman", font_size)
         y_position -= font_size * interlineado
         for line in question:
             pdf.drawString(40, y_position, line)
-            y_position -= font_size
+            y_position -= font_size * interlineado
 
         options = dict_quizz[str(i)]["options"]
         subquestions = dict_quizz[str(i)]["subquestions"]
@@ -586,24 +592,25 @@ def create_pdf__quizz_nor035_v1(
             pdf.setFillColorRGB(0, 0, 0)
             y_position -= font_size * interlineado
 
-        pdf.showPage()
+        # pdf.showPage()
+        # y_position -= font_size * interlineado
 
-        if i == n_questions - 1:
-            # ------------------------personal data-------------------
-            create_datos_personales(
-                pdf,
-                name_emp,
-                job,
-                terminal,
-                date_start,
-                date_end,
-                date_interview,
-                name_interviewer,
-                80,
-                180,
-            )
-            display_result(pdf, dict_quizz, 80, 400)
-            display_recommendations(pdf, dict_quizz, 80, 580)
+    if i == n_questions - 1:
+        # ------------------------personal data-------------------
+        create_datos_personales(
+            pdf,
+            name_emp,
+            job,
+            terminal,
+            date_start,
+            date_end,
+            date_interview,
+            name_interviewer,
+            80,
+            180,
+        )
+        display_result(pdf, dict_quizz, 80, 400)
+        display_recommendations(pdf, dict_quizz, 80, 580)
     pdf.save()
     return True
 
