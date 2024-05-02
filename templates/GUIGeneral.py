@@ -135,23 +135,25 @@ class GUIAsistente(ttk.Window):
         # -----------------------Create side menu frame-----------------------
         self.navigation_frame = ttk.Frame(self)
         self.navigation_frame.grid(row=0, column=0, sticky="nswe", pady=10, padx=5)
-        self.navigation_frame.columnconfigure((0, 1), weight=1)
+        self.navigation_frame.columnconfigure(0, weight=1)
         self.navigation_frame.rowconfigure(2, weight=1)
         # --------------------------------title-------------------------------
         self.btnTeli = LogoFrame(self.navigation_frame)
-        self.btnTeli.grid(row=0, column=0, sticky="we", columnspan=2)
+        self.btnTeli.grid(row=0, column=0, sticky="nswe")
         theme_names = self.style_gui.theme_names()
-        ttk.Label(self.navigation_frame, text="Theme:").grid(row=1, column=0, sticky="nsew")
-        self.theme_selector = ttk.Combobox(self.navigation_frame, values=theme_names,
-                                           state="readonly")
+        frame_theme = ttk.Frame(self.navigation_frame)
+        frame_theme.grid(row=1, column=0, sticky="nsew")
+        ttk.Label(frame_theme, text="Theme:").grid(row=1, column=0, sticky="nsew")
+
+        self.theme_selector = ttk.Combobox(frame_theme, values=theme_names,
+                                           state="readonly", width=15)
         self.theme_selector.current(theme_names.index('vapor'))
-        self.theme_selector.grid(row=1, column=1, sticky="nsew")
+        self.theme_selector.grid(row=1, column=1, sticky="w")
         self.theme_selector.bind('<<ComboboxSelected>>',
                                  lambda event: self.style_gui.theme_use(self.theme_selector.get()))
         # --------------------widgets side menu -----------------------
         self.side_menu_frame = ttk.Frame(self.navigation_frame)
-        self.side_menu_frame.grid(row=2, column=0, sticky="nsew", pady=5, padx=1,
-                                  columnspan=2)
+        self.side_menu_frame.grid(row=2, column=0, sticky="nsew", pady=5, padx=(0, 5))
         self.side_menu_frame.columnconfigure(0, weight=1)
         self.side_menu_frame.rowconfigure(0, weight=1)
         self.buttons_side_menu, self.names_side_menu = self._create_side_menu_widgets(self.side_menu_frame)
@@ -216,7 +218,7 @@ class GUIAsistente(ttk.Window):
     def _create_side_menu_widgets(self, master):
         flag, windows_names = compare_permissions_windows(list(self.permissions.values()))
         windows_names = windows_names if windows_names is not None else ["Cuenta"]
-        if len(windows_names) >= 10:
+        if len(windows_names) >= 12:
             side_menu = SideMenuFrameScrollable(master, windows_names, flag, self._select_frame_by_name, width=200)
             side_menu.grid(row=0, column=0, sticky="ns", pady=10, padx=(0, 5))
         else:
