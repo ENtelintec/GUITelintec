@@ -130,3 +130,5 @@ windows_names_db_frame = [
 ]
 delta_bitacora_edit = 14
 status_dic = {0: "Pendiente", 1: "En Proceso", 2: "Completado", 3: "Finalizado", -1: "Cancelado"}
+format_timestamps = "%Y-%m-%d %H:%M:%S"
+format_date = "%Y-%m-%d"

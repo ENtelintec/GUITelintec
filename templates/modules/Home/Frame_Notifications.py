@@ -4,17 +4,13 @@ __date__ = '$ 26/abr./2024  at 16:42 $'
 
 from ttkbootstrap.scrolled import ScrolledFrame
 
-from templates.frames.SubFrame_NotSM import NotificationsSm
-from templates.frames.SubFrame_NotificationsChatbot import NotificationsChatbot
+from templates.modules.Home.SubFrame_NotSM import NotificationsUser
+from templates.modules.Home.SubFrame_NotificationsChatbot import NotificationsChatbot
 
 frames_notifications_avaliable = {
     "chatbot": NotificationsChatbot,
-    "administracion": NotificationsSm
+    "administracion": NotificationsUser
 }
-
-
-def get_notifications(settings=None, data_emp=None, master=None, **kw):
-    return Notifications(settings, data_emp, master, **kw)
 
 
 class Notifications(ScrolledFrame):

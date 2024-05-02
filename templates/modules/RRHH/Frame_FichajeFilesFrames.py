@@ -5,8 +5,8 @@ __date__ = '$ 14/nov./2023  at 17:12 $'
 import ttkbootstrap as ttk
 from ttkbootstrap.scrolled import ScrolledFrame
 
-from templates.frames.SubFrame_FichajesAuto import FichajesAuto
-from templates.frames.SubFrame_FichajesManual import FichajesManual
+from templates.modules.RRHH.SubFrame_FichajesAuto import FichajesAuto
+from templates.modules.RRHH.SubFrame_FichajesManual import FichajesManual
 
 
 class FichajesFilesGUI(ScrolledFrame):

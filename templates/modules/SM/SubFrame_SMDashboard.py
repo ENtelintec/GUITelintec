@@ -12,8 +12,28 @@ from static.extensions import ventanasApp_path, status_dic
 from templates.Functions_AuxFiles import get_all_sm_entries
 from templates.Functions_SQL import finalize_status_sm
 from templates.Funtions_Utils import create_label
-from templates.frames.SubFrame_Plots import FramePlot
+from templates.modules.SubFrame_Plots import FramePlot
 permissions_supper_SM = json.load(open(ventanasApp_path, encoding="utf-8"))["permissions_supper_SM"]
+
+
+def create_plots(master):
+    data_chart = {"data": {'2024-03_1': [10, 8, 2], '2024-03_2': [15, 2, 13],
+                           '2024-03_3': [10, 2, 8], '2024-03_4': [3, 2, 1]},
+                  "title": "SMs por semana",
+                  "ylabel": "# de SMs",
+                  "legend": ("Creadas", "Procesadas", "Pendientes")
+                  }
+    plot1_1 = FramePlot(master, data_chart, "bar")
+    plot1_1.grid(row=0, column=0, padx=10, pady=10, sticky="nswe")
+    data_chart = {
+        "val_x": [1, 2, 3, 4, 5, 6, 7],
+        "val_y": [[10, 1], [2, 1], [15, 12], [12, 5], [3, 3], [1, 1], [10, 8]],
+        "title": "SMs por dia de la ultima semana",
+        "ylabel": "# de SMs",
+        "legend": ("Creadas", "Procesadas")
+    }
+    plot1_2 = FramePlot(master, data_chart)
+    plot1_2.grid(row=0, column=1, padx=10, pady=10, sticky="nswe")
 
 
 class SMDashboard(ttk.Frame):
@@ -35,7 +55,7 @@ class SMDashboard(ttk.Frame):
         self.frame_graphs = ttk.Frame(self)
         self.frame_graphs.grid(row=0, column=0, padx=10, pady=10, sticky="nswe", columnspan=1)
         self.frame_graphs.columnconfigure((0, 1), weight=1)
-        self.create_plots(self.frame_graphs)
+        create_plots(self.frame_graphs)
         # --------------------------table SMs---------------------+--------------
         self.frame_table = ttk.Frame(self)
         self.frame_table.grid(row=1, column=0, padx=20, pady=20, sticky="nswe")
@@ -48,25 +68,6 @@ class SMDashboard(ttk.Frame):
             self.table_events = self.create_table(self.frame_table, data=data["data_sm_not_supper"], columns=data["columns_sm"])
         # ----------------------- history sm-----------------------------------
         create_label(self.frame_table, 2, 1, textvariable=self.svar_info_history, sticky="nswe")
-
-    def create_plots(self, master):
-        data_chart = {"data": {'2024-03_1': [10, 8, 2], '2024-03_2': [15, 2, 13],
-                               '2024-03_3': [10, 2, 8], '2024-03_4': [3, 2, 1]},
-                      "title": "SMs por semana",
-                      "ylabel": "# de SMs",
-                      "legend": ("Creadas", "Procesadas", "Pendientes")
-                      }
-        plot1_1 = FramePlot(master, data_chart, "bar")
-        plot1_1.grid(row=0, column=0, padx=10, pady=10, sticky="nswe")
-        data_chart = {
-            "val_x": [1, 2, 3, 4, 5, 6, 7],
-            "val_y": [[10, 1], [2, 1], [15, 12], [12, 5], [3, 3], [1, 1], [10, 8]],
-            "title": "SMs por dia de la ultima semana",
-            "ylabel": "# de SMs",
-            "legend": ("Creadas", "Procesadas")
-        }
-        plot1_2 = FramePlot(master, data_chart)
-        plot1_2.grid(row=0, column=1, padx=10, pady=10, sticky="nswe")
 
     def create_table(self, master, data=None, columns=None):
         if data is None:

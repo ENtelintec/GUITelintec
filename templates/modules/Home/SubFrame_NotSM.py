@@ -1,41 +1,65 @@
-# -*- coding: utf-8 -*-
+import json
+  # -*- coding: utf-8 -*-
 __author__ = 'Edisson Naula'
 __date__ = '$ 26/abr./2024  at 17:21 $'
 
 import ttkbootstrap as ttk
+from ttkbootstrap.scrolled import ScrolledText
 from ttkbootstrap.tableview import Tableview
 
-from templates.Functions_Files import get_cache_notifications
+from static.extensions import format_timestamps
 from templates.Funtions_Utils import Reverse, create_label
+from templates.modules.Home.Controllers_SQL import get_notifications_by_user
+dict_status = {0: "Pendiente", 1: "Completado"}
 
 
 def get_notifications_tables(data):
-    complete = [key for key in data if int(key[1]) == 1]
+    complete = [key for key in data if key[1] == dict_status[1]]
     complete = Reverse(complete)
-    pending = [key for key in data if int(key[1]) == 0]
+    pending = [key for key in data if key[1] == dict_status[0]]
     pending = Reverse(pending)
+    print(data)
+    print(complete)
+    print(pending)
     return complete, pending
 
 
 def check_status(item):
-    if int(item[1]) == 1:
+    if item[1] == dict_status[1]:
         return True
     else:
         return False
 
 
-class NotificationsSm(ttk.Frame):
+def load_notifications(user_id: int):
+    columns = ["Fecha", "Estado", "Mensaje"]
+    flag, error, result = get_notifications_by_user(user_id)
+    if not flag:
+        return {"data": [], "columns": columns, "raw": []}
+    data = []
+    raw_data = []
+    for item in result:
+        timestamp, id_not, body = item
+        body = json.loads(body)
+        status = dict_status[body["status"]]
+        message = body["msg"]
+        timestamp = timestamp.strftime(format_timestamps)
+        data.append([timestamp, status, message])
+        raw_data.append([id_not, item])
+    return {"data": data, "columns": columns, "raw": raw_data} 
+
+
+class NotificationsUser(ttk.Frame):
     def __init__(self, master, settings=None, username_data=None, **kwargs):
         super().__init__(master)
         self.coldata = None
         self.columnconfigure(0, weight=1)
         self.settings = settings
-        self.user_data = username_data
-        self.filepath_cache = settings["chatbot"]["cache"]
-        print(self.filepath_cache)
-        data_dic_chatbot = get_cache_notifications(self.filepath_cache)
-        self.data = data_dic_chatbot["chatbot"]["data"]
-        self.columns = data_dic_chatbot["chatbot"]["columns"]
+        self.user_data = username_data if username_data is not None else kwargs["data_emp"]
+        self.filepath_cache = settings["sm"]["cache"]
+        self.data_dict = load_notifications(self.user_data["id"])
+        self.data = self.data_dict["data"]
+        self.columns = self.data_dict["columns"]
         self.svar_pending = ttk.StringVar()
         self.svar_complete = ttk.StringVar()
         self.svar_info = ttk.StringVar()
@@ -62,19 +86,21 @@ class NotificationsSm(ttk.Frame):
         # ----------------------------tables----------------------------------
         self.frame_tables = ttk.Frame(self)
         self.frame_tables.grid(row=2, column=0, padx=10, pady=10, sticky="nsew")
-        self.frame_tables.columnconfigure(0, weight=1)
-        self.table_not = self.create_tables(self.frame_tables, data=self.notifications_pending+self.notifications_complete)        
+        self.frame_tables.columnconfigure((0, 1), weight=1)
+        self.table_not = self.create_tables(self.frame_tables, data=self.notifications_pending+self.notifications_complete)     
+        self.text_info = ScrolledText(self.frame_tables, width=20, height=10, 
+                                      wrap=ttk.WORD, autohide=True,
+                                      font=("Helvetica", 18, "normal"))
+        self.text_info.grid(row=1, column=1, sticky="nsew", padx=(10, 0))
 
     def create_tables(self, master, data):
         self.table_not.destroy() if self.table_not is not None else None
         coldata = []
         for column in self.columns:
-            if "Items" in column:
-                coldata.append({"text": column, "stretch": False, "width": 50})
-            elif "Id" in column:
-                coldata.append({"text": column, "stretch": False, "width": 35})
+            if "Fecha" in column:
+                coldata.append({"text": column, "stretch": False, "width": 150})
             elif "Estado" in column:
-                coldata.append({"text": column, "stretch": False, "width": 50})
+                coldata.append({"text": column, "stretch": False, "width": 85})
             else:
                 coldata.append({"text": column, "stretch": True})
         self.coldata = coldata
@@ -100,10 +126,12 @@ class NotificationsSm(ttk.Frame):
     def _on_double_click_table(self, event):
         item = event.widget.selection()[0]
         item_data = event.widget.item(item, "values")
-        self.svar_info.set(f"Mensaje: {item_data[4]}")
+        self.svar_info.set(f"Mensaje: {item_data[2]}")
+        self.text_info.delete("1.0", "end")
+        self.text_info.insert("1.0", item_data[2])
         if not check_status(item_data):
             item_to_add = list(item_data)
-            item_to_add[1] = "1"
+            item_to_add[1] = dict_status[1]
             self.notifications_complete.insert(0, item_to_add)
             # eliminate row from the pending not
             self.notifications_pending.remove(list(item_data))

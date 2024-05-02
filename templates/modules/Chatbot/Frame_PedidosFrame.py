@@ -4,7 +4,7 @@ import tkinter as tk
 from tkinter import ttk
 import customtkinter as ctk
 
-from templates.frames.SubFrame_DisplayChatSubframe import ChatsDisplay
+from templates.modules.Chatbot.SubFrame_DisplayChatSubframe import ChatsDisplay
 
 
 class DisplayPedidos(ctk.CTkFrame):

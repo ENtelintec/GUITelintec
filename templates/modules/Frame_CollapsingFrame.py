@@ -3,7 +3,7 @@ __author__ = 'Edisson Naula'
 __date__ = '$ 15/nov./2023  at 13:03 $'
 
 import ttkbootstrap as ttk
-from ttkbootstrap.constants import *
+from ttkbootstrap import INFO
 from ttkbootstrap.style import Bootstyle
 
 from static.extensions import IMG_PATH_COLLAPSING as IMG_PATH
@@ -45,18 +45,18 @@ class CollapsingFrame(ttk.Frame):
 
         style_color = Bootstyle.ttkstyle_widget_color(bootstyle)
         frm = ttk.Frame(self, bootstyle=style_color)
-        frm.grid(row=self.cumulative_rows, column=0, sticky=EW)
+        frm.grid(row=self.cumulative_rows, column=0, sticky=ttk.EW)
 
         # header title
         header = ttk.Label(
             master=frm,
             text=title,
-            bootstyle=(style_color, INVERSE),
+            bootstyle=(style_color, ttk.INVERSE),
             font=("Arial", 20)
         )
         if kwargs.get('textvariable'):
             header.configure(textvariable=kwargs.get('textvariable'))
-        header.pack(side=LEFT, fill=BOTH, padx=10)
+        header.pack(side=ttk.LEFT, fill=ttk.BOTH, padx=10)
 
         # header toggle button
         def _func(c=child):
@@ -68,11 +68,11 @@ class CollapsingFrame(ttk.Frame):
             bootstyle=style_color,
             command=_func
         )
-        btn.pack(side=RIGHT)
+        btn.pack(side=ttk.RIGHT)
 
         # assign toggle button to child so that it can be toggled
         child.btn = btn
-        child.grid(row=self.cumulative_rows + 1, column=0, sticky=NSEW)
+        child.grid(row=self.cumulative_rows + 1, column=0, sticky="nswe")
 
         # increment the row assignment
         self.cumulative_rows += 2

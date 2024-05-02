@@ -15,8 +15,8 @@ from templates.Functions_Files import create_spinboxes_time, get_info_f_file_nam
     get_info_t_file_name, check_fichajes_files_in_directory, extract_fichajes_file, \
     check_names_employees_in_cache, extract_data_file_contracts, generate_table_from_dict_contracts
 from templates.Funtions_Utils import create_var_none, create_Combobox, create_label, create_stringvar, update_stringvars
-from templates.frames.Frame_CollapsingFrame import CollapsingFrame
-from templates.frames.SubFrame_Plots import FramePlot
+from templates.modules.Frame_CollapsingFrame import CollapsingFrame
+from templates.modules.SubFrame_Plots import FramePlot
 
 
 class FichajesManual(ttk.Frame):

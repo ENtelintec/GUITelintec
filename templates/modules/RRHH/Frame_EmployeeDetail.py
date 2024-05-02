@@ -8,7 +8,7 @@ from ttkbootstrap.tableview import Tableview
 
 from templates.Functions_AuxFiles import get_data_employees
 from templates.Funtions_Utils import create_stringvar
-from templates.frames.SubFrame_Plots import FramePlot
+from templates.modules.SubFrame_Plots import FramePlot
 
 
 class EmployeeDetailsScrolled(ScrolledFrame):

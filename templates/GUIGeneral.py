@@ -5,28 +5,28 @@ from tkinter import PhotoImage
 import ttkbootstrap as ttk
 from ttkbootstrap.scrolled import ScrolledFrame
 
-import templates.frames.Frame_LoginFrames as Login
+import templates.modules.Sesion.Frame_LoginFrames as Login
 from static.extensions import filepath_settings, ventanasApp_path
 from templates.Functions_AuxFiles import carpeta_principal, get_image_side_menu, read_setting_file, get_all_sm_entries, \
     get_all_sm_products
 from templates.Functions_Files import read_file_not
 from templates.Functions_SQL import get_chats_w_limit, get_username_data, get_sm_employees, get_sm_clients
 from templates.Funtions_Utils import create_button_side_menu, compare_permissions_windows
-from templates.frames.Frame_Bitacora import BitacoraEditFrame
-from templates.frames.Frame_ChatsFrame import ChatFrame
-from templates.frames.Frame_DBFrame import DBFrame, EmployeesFrame
-from templates.frames.Frame_EmployeeDetail import EmployeeDetailsScrolled
-from templates.frames.Frame_ExamenesMedicos import ExamenesMedicos
-from templates.frames.Frame_FichajeFilesFrames import FichajesFilesGUI
-from templates.frames.Frame_Home import HomeFrame
-from templates.frames.Frame_Notifications import Notifications
-from templates.frames.Frame_PedidosFrame import PedidosFrame
-from templates.frames.Frame_Quizzes import FrameEncuestas
-from templates.frames.Frame_SMGeneral import SMFrame
-from templates.frames.Frame_SettingsFrame import SettingsFrameGUI
-from templates.frames.Frame_Vacations import VacationsFrame
-from templates.frames.Frame_vAssistantGUI import AssistantGUI
-from templates.frames.SubFrame_SMManagement import SMManagement
+from templates.modules.Bitacora.Frame_Bitacora import BitacoraEditFrame
+from templates.modules.Chatbot.Frame_ChatsFrame import ChatFrame
+from templates.modules.DB.Frame_DBFrame import DBFrame, EmployeesFrame
+from templates.modules.RRHH.Frame_EmployeeDetail import EmployeeDetailsScrolled
+from templates.modules.RRHH.Frame_ExamenesMedicos import ExamenesMedicos
+from templates.modules.RRHH.Frame_FichajeFilesFrames import FichajesFilesGUI
+from templates.modules.Home.Frame_Home import HomeFrame
+from templates.modules.Home.Frame_Notifications import Notifications
+from templates.modules.Chatbot.Frame_PedidosFrame import PedidosFrame
+from templates.modules.Frame_Quizzes import FrameEncuestas
+from templates.modules.SM.Frame_SMGeneral import SMFrame
+from templates.modules.Frame_SettingsFrame import SettingsFrameGUI
+from templates.modules.RRHH.Frame_Vacations import VacationsFrame
+from templates.modules.Assistant.Frame_vAssistantGUI import AssistantGUI
+from templates.modules.SM.SubFrame_SMManagement import SMManagement
 from templates.screens.Clients import ClientsScreen
 from templates.screens.In import InScreen
 from templates.screens.InternalInventory import InternalInventoryScreen
