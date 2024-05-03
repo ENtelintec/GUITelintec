@@ -1,3 +1,5 @@
+from flask import send_file
+
 # -*- coding: utf-8 -*-
 __author__ = 'Edisson Naula'
 __date__ = '$ 02/nov./2023  at 17:29 $'
@@ -11,13 +13,14 @@ from static.Models.api_employee_models import employees_info_model, employee_mod
 from static.Models.api_models import employees_resume_model, resume_model
 from static.extensions import cache_file_resume_fichaje
 from templates.Functions_DB_midleware import get_info_employees_with_status, get_info_employee_id, get_all_vacations, \
-    get_vacations_employee
+    get_vacations_employee, create_csv_file_employees
 from templates.Functions_Files import get_fichajes_resume_cache
 from templates.Functions_Text import parse_data
 from templates.controllers.employees.em_controller import get_all_examenes, insert_new_exam_med, \
     update_aptitud_renovacion, delete_exam_med
 from templates.controllers.employees.employees_controller import new_employee, update_employee, delete_employee
-from templates.controllers.employees.vacations_controller import insert_vacation, update_registry_vac, delete_vacation
+from templates.controllers.employees.vacations_controller import insert_vacation, update_registry_vac, delete_vacation, \
+    get_vacations_data
 
 ns = Namespace('GUI/api/v1/rrhh')
 
@@ -150,24 +153,24 @@ class EmployeesEMRegistry(Resource):
     @ns.expect(employee_exam_model_insert)
     def post(self):
         code, data = parse_data(ns.payload, 15)
-        flag, error, result = insert_new_exam_med(data["info"]["name"], data["info"]["blood"], data["info"]["status"], 
-                                                  data["info"]["aptitudes"], data["info"]["dates"], 
+        flag, error, result = insert_new_exam_med(data["info"]["name"], data["info"]["blood"], data["info"]["status"],
+                                                  data["info"]["aptitudes"], data["info"]["dates"],
                                                   data["info"]["apt_actual"], data["info"]["emp_id"])
         if flag:
             return {"data": result}, 200
         else:
             return {"error": error}, 400
-    
+
     @ns.expect(employee_exam_model_update)
     def put(self):
         code, data = parse_data(ns.payload, 15)
-        flag, error, result = update_aptitud_renovacion(data["info"]["aptitudes"], data["info"]["dates"], 
+        flag, error, result = update_aptitud_renovacion(data["info"]["aptitudes"], data["info"]["dates"],
                                                         data["info"]["apt_actual"], data["id"])
         if flag:
             return {"data": result}, 200
         else:
             return {"error": error}, 400
-    
+
     @ns.expect(employee_exam_model_delete)
     def delete(self):
         code, data = parse_data(ns.payload, 15)
@@ -212,7 +215,7 @@ class EmployeesVacationRegistry(Resource):
             return {"data": result}, 200
         else:
             return {"error": error}, 400
-    
+
     @ns.expect(employee_vacation_model_insert)
     def put(self):
         code, data = parse_data(ns.payload, 16)
@@ -223,7 +226,7 @@ class EmployeesVacationRegistry(Resource):
             return {"data": result}, 200
         else:
             return {"error": error}, 400
-    
+
     @ns.expect(employee_vacation_model_delete)
     def delete(self):
         code, data = parse_data(ns.payload, 16)
@@ -299,3 +302,39 @@ class EmployeesResume(Resource):  # noqa: F811
             out = None
             code = 400
         return out, code
+
+
+@ns.route('/download/employees/<string:status>')
+class DownloadFileEMPs(Resource):
+    def get(self, status):
+        filepath = create_csv_file_employees(status)
+        return send_file(filepath, as_attachment=True)
+
+
+@ns.route('/download/employees/medical')
+class DownloadFileMedical(Resource):
+    def get(self):
+        flag, e, result = get_all_examenes()
+        filepath = "files/medical.csv"
+        with (open(filepath, "w")) as file:
+            file.write("id_exam,nombre,sangre,estatus,aptitudes,fechas,apt_actual,emp_id\n")
+            for item in result:
+                id_exam, nombre, sangre, status, aptitud, fechas, apt_actual, emp_id = item
+                fechas = fechas.replace(",", ";")
+                aptitud = aptitud.replace(",", ";")
+                file.write(f"{id_exam},{nombre},{sangre},{status},{aptitud},{fechas},{apt_actual},{emp_id}\n")
+        return send_file(filepath, as_attachment=True)
+
+
+@ns.route('/download/employees/vacations')
+class DownloadFileVacations(Resource):
+    def get(self):
+        flag, error, data = get_vacations_data()
+        filepath = "files/vacations.csv"
+        with (open(filepath, "w")) as file:
+            file.write("emp_id, Nombre, Apellido, fecha_inicio, body\n")
+            for item in data:
+                emp_id, name, l_name, date_admission, seniority = item
+                seniority = seniority.replace(",", ";")
+                file.write(f"{emp_id}, {name}, {l_name}, {date_admission}, {seniority}\n")
+        return send_file(filepath, as_attachment=True)

@@ -181,6 +181,20 @@ def get_info_employees_with_status(status: str):
     return (data_out, 200) if flag else ([], 400)
 
 
+def create_csv_file_employees(status: str):
+    flag, error, result = get_all_data_employees(status)
+    result = result if flag else []
+    # create file
+    filepath = "files/emp.csv"
+    with (open(filepath, "w")) as file:
+        file.write("id,name,phone,department,modality,email,contract,admission,rfc,curp,nss,emergency,position,status,departure,exam_id,birthday,legajo\n")
+        for item in result:
+            (id_emp, name, lastname, phone, department, modality, email, contract, admission, rfc, curp, nss,
+             emergency_contact, position, status, departure, examen, birthday, legajo) = item
+            file.write(f"{id_emp},{name},{phone},{department},{modality},{email},{contract},{admission},{rfc},{curp},{nss},{emergency_contact},{position},{status},{departure},{examen},{birthday},{legajo}\n")
+    return filepath
+
+
 def get_info_employee_id(id_emp: int):
     flag, error, result = get_all_data_employee(id_emp)
     (id_emp, name, lastname, phone, department, modality, email, contract, admission, rfc, curp, nss,
