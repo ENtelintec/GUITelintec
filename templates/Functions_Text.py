@@ -175,6 +175,34 @@ def parse_data(data: dict, mode: int):
                     "emp_id": data["emp_id"],
                     "seniority": data["seniority"] if validate_seniority_dict(data) and "seniority" in data.keys() else None
                 }
+            case 17:
+                "id"
+                "id_product"
+                "type_m"
+                "quantity"
+                "movement_date"
+                "sm_id"
+                out = {"id": data["id"] if "id" in data.keys() else None, "info": {
+                    "id": data["info"]["id"],
+                    "id_product": data["info"]["id_product"],
+                    "type_m": data["info"]["type_m"],
+                    "quantity": data["info"]["quantity"],
+                    "movement_date": data["info"]["movement_date"],
+                    "sm_id": data["info"]["sm_id"],
+                    "previous_q": data["info"]["previous_q"]
+                } if "info" in data.keys() else {}}
+            case 18:
+                out = {"id": data["id"] if "id" in data.keys() else None, "info": {
+                    "id": data["info"]["id"],
+                    "name": data["info"]["name"],
+                    "sku": data["info"]["sku"],
+                    "udm": data["info"]["udm"],
+                    "stock": data["info"]["stock"],
+                    "category_name": data["info"]["category_name"],
+                    "supplier_name": data["info"]["supplier_name"],
+                    "is_tool": data["info"]["is_tool"],
+                    "is_internal": data["info"]["is_internal"]
+                } if "info" in data.keys() else {}}
             case _:
                 print("Invalid mode")
                 code = 204

@@ -60,8 +60,8 @@ class DataHandler:
     def create_out_movement(self, product_id, movement_type, quantity, date, sm_id):
         return self._product_movements.create_out_movement(product_id, movement_type, quantity, date, sm_id)
 
-    def update_out_movement(self, movetement_id, quantity, new_date):
-        return self._product_movements.update_out_movement(movetement_id, quantity, new_date)
+    def update_out_movement(self, movetement_id, quantity, new_date, sm_id):
+        return self._product_movements.update_out_movement(movetement_id, quantity, new_date, sm_id)
 
     def delete_out_movement(self, movetement_id):
         return self._product_movements.delete_out_movement(movetement_id)

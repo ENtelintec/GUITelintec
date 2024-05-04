@@ -139,7 +139,7 @@ class OutScreen(ttk.Frame):
         new_date = datetime.now()
         quantity = self.quantity.get()
         self._data.update_out_movement(
-            self.movetement_id, quantity, new_date
+            self.movetement_id, quantity, new_date, None
         )
         self.update_table()
         self.clear_fields()

@@ -7,8 +7,8 @@ class Product:
         self.connection = None
         self.cursor = None
 
-    def create_product(self, sku, name, udm, stock, id_category, id_supplier):
-        flag, error, result = create_product_db(sku, name, udm, stock, id_category, id_supplier)
+    def create_product(self, sku, name, udm, stock, id_category, id_supplier, is_tool=0, is_internal=0):
+        flag, error, result = create_product_db(sku, name, udm, stock, id_category, id_supplier, is_tool, is_internal)
         return flag
 
     def get_all_products(self):
