@@ -162,9 +162,8 @@ def get_all_products_db_tool_internal(is_tool: int, is_internal: int):
            "LEFT JOIN sql_telintec.suppliers_amc ON (sql_telintec.supplier_product_amc.id_supplier = sql_telintec.suppliers_amc.id_supplier)"
            "WHERE products_amc.is_internal like %s AND products_amc.is_tool like %s ")
     vals = (is_internal, is_tool)
-    print(vals)
     flag, error, result = execute_sql(sql, vals, 2)
-    print(result)
+
     return flag, error, result
 
 
