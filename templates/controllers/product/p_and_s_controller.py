@@ -32,7 +32,7 @@ def create_in_movement_db(id_product, movement_type, quantity, movement_date, sm
 
 def update_movement_db(id_movement, quantity, movement_date, sm_id, type_m=None, id_product=None):
     update_sql = ("UPDATE product_movements_amc "
-                  "SET quantity = %s, movement_date = %s, sm_id = %s , id_product = %s, movement_type = %s "
+                  "SET quantity = %s, movement_date = %s, sm_id = %s , movement_type = %s, id_product = %s "
                   "WHERE id_movement = %s ")
     vals = (quantity, movement_date, sm_id, type_m, id_product, id_movement)
     flag, error, result = execute_sql(update_sql, vals, 4)
@@ -154,14 +154,17 @@ def get_all_products_db_tool_internal(is_tool: int, is_internal: int):
            "sql_telintec.products_amc.stock AS stock,"
            "sql_telintec.product_categories_amc.name AS category_name,"
            "sql_telintec.suppliers_amc.name AS supplier_name, "
-           "sql_telintec.products_amc.is_tool AS is_tool, "
-           "sql_telintec.products_amc.is_internal AS is_internal "
+           "sql_telintec.products_amc.is_tool, "
+           "sql_telintec.products_amc.is_internal "
            "FROM sql_telintec.products_amc "
            "LEFT JOIN sql_telintec.supplier_product_amc ON (sql_telintec.products_amc.id_product = sql_telintec.supplier_product_amc.id_product) "
            "LEFT JOIN sql_telintec.product_categories_amc ON (sql_telintec.products_amc.id_category = sql_telintec.product_categories_amc.id_category) "
            "LEFT JOIN sql_telintec.suppliers_amc ON (sql_telintec.supplier_product_amc.id_supplier = sql_telintec.suppliers_amc.id_supplier)"
            "WHERE products_amc.is_internal like %s AND products_amc.is_tool like %s ")
-    flag, error, result = execute_sql(sql, None, 5)
+    vals = (is_internal, is_tool)
+    print(vals)
+    flag, error, result = execute_sql(sql, vals, 2)
+    print(result)
     return flag, error, result
 
 

@@ -61,7 +61,6 @@ def update_movement(data):
     flag, error, actual_stock = get_stock_db(data["info"]["id_product"])
     if not flag or isinstance(actual_stock, list):
         return False, error + " " + actual_stock
-    print(actual_stock)
     quantity = data["info"]["quantity"]
     p_quantity = data["info"]["previous_q"]
     flag, e, result = update_movement_db(data["id"], data["info"]["quantity"], data["info"]["movement_date"],
@@ -81,6 +80,9 @@ def get_all_products_DB(type_p):
         is_tool = 1
     elif "internal" in type_p:
         is_internal = 1
+    else:
+        is_tool = 0
+        is_internal = 0
     flag, error, result = get_all_products_db_tool_internal(is_tool, is_internal)
     if not flag:
         return [], 400
