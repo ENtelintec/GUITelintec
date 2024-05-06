@@ -39,9 +39,9 @@ class Employee(Resource):
                                            data["info"]["departure"], data["info"]["birthday"], data["info"]["legajo"],
                                            data["info"]["email"], data["info"]["emergency"])
         if flag:
-            return {"data": result}, 201
+            return {"data": str(result)}, 201
         else:
-            return {"data": None}, 400
+            return {"error": str(error)}, 400
 
     @ns.expect(employee_model_update)
     def put(self):
@@ -57,9 +57,9 @@ class Employee(Resource):
                                               data["info"]["legajo"],
                                               data["info"]["email"], data["info"]["emergency"])
         if flag:
-            return {"data": result}, 200
+            return {"data": str(result)}, 200
         else:
-            return {"data": None}, 400
+            return {"error": str(error)}, 400
 
     @ns.expect(employee_model_delete)
     def delete(self):
@@ -68,9 +68,9 @@ class Employee(Resource):
             return {"data": None}, code
         flag, error, result = delete_employee(data["id"])
         if flag:
-            return {"data": result}, 200
+            return {"data": str(result)}, 200
         else:
-            return {"data": None}, 400
+            return {"error": str(error)}, 400
 
 
 @ns.route('/employee/info/<string:id_emp>')
@@ -157,9 +157,9 @@ class EmployeesEMRegistry(Resource):
                                                   data["info"]["aptitudes"], data["info"]["dates"],
                                                   data["info"]["apt_actual"], data["info"]["emp_id"])
         if flag:
-            return {"data": result}, 200
+            return {"data": str(result)}, 201
         else:
-            return {"error": error}, 400
+            return {"error": str(error)}, 400
 
     @ns.expect(employee_exam_model_update)
     def put(self):
@@ -167,18 +167,18 @@ class EmployeesEMRegistry(Resource):
         flag, error, result = update_aptitud_renovacion(data["info"]["aptitudes"], data["info"]["dates"],
                                                         data["info"]["apt_actual"], data["id"])
         if flag:
-            return {"data": result}, 200
+            return {"data": str(result)}, 200
         else:
-            return {"error": error}, 400
+            return {"error": str(error)}, 400
 
     @ns.expect(employee_exam_model_delete)
     def delete(self):
         code, data = parse_data(ns.payload, 15)
         flag, error, result = delete_exam_med(data["id"])
         if flag:
-            return {"data": result}, 200
+            return {"data": str(result)}, 200
         else:
-            return {"error": error}, 400
+            return {"error": str(error)}, 400
 
 
 @ns.route('/employees/vacations/all')
@@ -212,9 +212,9 @@ class EmployeesVacationRegistry(Resource):
             return {"data": "Error en la estructura del diccionario seniority"}, 400
         flag, error, result = insert_vacation(data["emp_id"], data["seniority"])
         if flag:
-            return {"data": result}, 200
+            return {"data": str(result)}, 201
         else:
-            return {"error": error}, 400
+            return {"error": str(error)}, 400
 
     @ns.expect(employee_vacation_model_insert)
     def put(self):
@@ -223,18 +223,18 @@ class EmployeesVacationRegistry(Resource):
             return {"data": "Error en la estructura del diccionario seniority"}, 400
         flag, error, result = update_registry_vac(data["emp_id"], data["seniority"])
         if flag:
-            return {"data": result}, 200
+            return {"data": str(result)}, 200
         else:
-            return {"error": error}, 400
+            return {"error": str(error)}, 400
 
     @ns.expect(employee_vacation_model_delete)
     def delete(self):
         code, data = parse_data(ns.payload, 16)
         flag, error, result = delete_vacation(data["emp_id"])
         if flag:
-            return {"data": result}, 200
+            return {"data": str(result)}, 200
         else:
-            return {"error": error}, 400
+            return {"error": str(error)}, 400
 
 
 @ns.route('/employees/fichaje/all')

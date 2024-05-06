@@ -32,3 +32,30 @@ product_delete_model = api.model('ProductDeleteAMC', {
     "id":  fields.Integer(required=True, description="The product id to delete")
 })
 
+
+category_model = api.model('CategoryAMC', {
+    "id": fields.Integer(required=True, description="The category id"),
+    "name": fields.String(required=True, description="The category name")
+})
+
+categories_output_model = api.model('CategoriesOutAMC', {
+    "data": fields.List(fields.Nested(category_model)),
+    "msg": fields.String(required=True, description="The message")
+})
+
+
+supplier_model = api.model('SupplierAMC', {
+    "id": fields.Integer(required=True, description="The supplier id"),
+    "name": fields.String(required=True, description="The supplier name"),
+    "seller_email": fields.String(required=True, description="The supplier seller email"),
+    "seller_name": fields.String(required=True, description="The supplier seller name"),
+    "phone": fields.String(required=True, description="The supplier phone"),
+    "address": fields.String(required=True, description="The supplier address"),
+    "web_url": fields.String(required=True, description="The supplier web url"),
+    "type": fields.String(required=True, description="The supplier type")
+})
+
+suppliers_output_model = api.model('SuppliersOutAMC', {
+    "data": fields.List(fields.Nested(supplier_model)),
+    "msg": fields.String(required=True, description="The message")
+})

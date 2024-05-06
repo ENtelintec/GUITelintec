@@ -86,7 +86,8 @@ def create_out_movement_db(id_product, movement_type, quantity, movement_date, s
 
 
 def get_all_categories_db():
-    sql = "SELECT  id_category, name FROM product_categories_amc"
+    sql = ("SELECT  id_category, name "
+           "FROM product_categories_amc")
     flag, error, result = execute_sql(sql, None, 5)
     return flag, error, result
 
@@ -381,5 +382,12 @@ def get_supply_inv_amc(id_s: int, name: str):
 def get_sm_products():
     sql = ("SELECT id_product, name, udm, stock "
            "FROM products_amc ")
+    flag, error, result = execute_sql(sql, None, 5)
+    return flag, error, result
+
+
+def get_all_suppliers():
+    sql = ("SELECT id_supplier, name, seller_name, seller_email, phone, address, web_url, type "
+           "FROM suppliers_amc ")
     flag, error, result = execute_sql(sql, None, 5)
     return flag, error, result

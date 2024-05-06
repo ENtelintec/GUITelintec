@@ -4,7 +4,7 @@ __date__ = '$ 03/may./2024  at 15:31 $'
 
 from templates.controllers.product.p_and_s_controller import get_movements_type_db, create_out_movement_db, \
     create_in_movement_db, get_stock_db, update_movement_db, update_stock_db, get_all_products_db_tool_internal, \
-    create_product_db, update_product_db
+    create_product_db, update_product_db, get_all_categories_db, get_all_suppliers
 
 
 def get_all_movements(type_m: str):
@@ -42,7 +42,6 @@ def insert_movement(data):
     if type_m == "salida":
         flag, e, result = create_out_movement_db(data["info"]["id_product"], type_m, data["info"]["quantity"],
                                                  data["info"]["movement_date"], data["info"]["sm_id"])
-
     else:
         flag, e, result = create_in_movement_db(data["info"]["id_product"], type_m, data["info"]["quantity"],
                                                 data["info"]["movement_date"], data["info"]["sm_id"])
@@ -119,3 +118,37 @@ def update_product_amc(data):
     if not flag:
         return False, error
     return True, result
+
+
+def get_categories_db():
+    flag, error, result = get_all_categories_db()
+    if not flag:
+        return [], 400
+    out = []
+    for item in result:
+        id_category, name = item
+        out.append({
+            "id": id_category,
+            "name": name,
+        })
+    return 200, out
+
+
+def get_suppliers_db():
+    flag, error, result = get_all_suppliers()
+    if not flag:
+        return [], 400
+    out = []
+    for item in result:
+        id_supplier, name, seller_name, seller_email, phone, address, web_url, type_s = item
+        out.append({
+            "id": id_supplier,
+            "name": name,
+            "seller_name": seller_name,
+            "seller_email": seller_email,
+            "phone": phone,
+            "address": address,
+            "web_url": web_url,
+            "type": type_s
+        })
+    return 200, out
