@@ -1,3 +1,5 @@
+import json
+
 from flask import send_file
 
 # -*- coding: utf-8 -*-
@@ -100,6 +102,7 @@ class EmployeesEMResume(Resource):
             code = 200
             for row in result:
                 id_exam, nombre, sangre, status, aptitud, fechas, apt_actual, emp_id = row
+                print(row)
                 if str(emp_id) == id_emp:
                     out = {
                         "exist": True,
@@ -129,6 +132,7 @@ class EmployeesEMResume(Resource):  # noqa: F811
             code = 200
             data_out = []
             for row in result:
+                print(row)
                 id_exam, nombre, sangre, status, aptitud, fechas, apt_actual, emp_id = row
                 data_out.append({
                     "exist": True,
@@ -136,14 +140,15 @@ class EmployeesEMResume(Resource):  # noqa: F811
                     "name": nombre,
                     "blood": sangre,
                     "status": status,
-                    "aptitudes": aptitud,
-                    "dates": fechas,
+                    "aptitudes": json.loads(aptitud),
+                    "dates": json.loads(fechas),
                     "apt_last": apt_actual,
                     "emp_id": emp_id
                 })
             out["data"] = data_out
+            print(out)
         else:
-            out = {"exist": False}
+            out = {"data": []}
             code = 400
         return out, code
 
