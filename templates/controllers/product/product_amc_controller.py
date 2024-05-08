@@ -1,5 +1,5 @@
 from templates.controllers.product.p_and_s_controller import update_stock_db, delete_product_db, update_product_db, \
-    get_all_products_db, create_product_db
+    get_all_products_db, create_product_db, create_product_db_admin
 
 
 class Product:
@@ -8,7 +8,10 @@ class Product:
         self.cursor = None
 
     def create_product(self, sku, name, udm, stock, id_category, id_supplier, is_tool=0, is_internal=0):
-        flag, error, result = create_product_db(sku, name, udm, stock, id_category, id_supplier, is_tool, is_internal)
+        if id_supplier is not None:
+            flag, error, result = create_product_db(sku, name, udm, stock, id_category, id_supplier, is_tool, is_internal)
+        else:
+            flag, error, result = create_product_db_admin(sku, name, udm, stock, id_category)
         return flag
 
     def get_all_products(self):

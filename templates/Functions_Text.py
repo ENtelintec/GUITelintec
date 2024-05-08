@@ -203,6 +203,17 @@ def parse_data(data: dict, mode: int):
                     "is_tool": data["info"]["is_tool"],
                     "is_internal": data["info"]["is_internal"]
                 } if "info" in data.keys() else {}}
+            case 19:
+                out = {"id": data["id"] if "id" in data.keys() else None, "info": {
+                    'id': data["info"]["id"],
+                    'status': data["info"]["status"],
+                    'title': data["info"]["title"],
+                    'msg': data["info"]["msg"],
+                    'timestamp': data["info"]["timestamp"],
+                    'sender_id': data["info"]["sender_id"],
+                    'receiver_id': data["info"]["receiver_id"],
+                    'app': data["info"]["app"]
+                } if "info" in data.keys() else {}}
             case _:
                 print("Invalid mode")
                 code = 204

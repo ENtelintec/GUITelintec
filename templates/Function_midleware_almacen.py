@@ -4,7 +4,7 @@ __date__ = '$ 03/may./2024  at 15:31 $'
 
 from templates.controllers.product.p_and_s_controller import get_movements_type_db, create_out_movement_db, \
     create_in_movement_db, get_stock_db, update_movement_db, update_stock_db, get_all_products_db_tool_internal, \
-    create_product_db, update_product_db, get_all_categories_db, get_all_suppliers
+    create_product_db, update_product_db, get_all_categories_db, get_all_suppliers, create_product_db_admin
 
 
 def get_all_movements(type_m: str):
@@ -103,10 +103,14 @@ def get_all_products_DB(type_p):
 
 
 def insert_product_db(data):
-    flag, error, result = create_product_db(data["info"]["sku"], data["info"]["name"], data["info"]["udm"],
-                                            data["info"]["stock"], data["info"]["category_name"],
-                                            data["info"]["supplier_name"], data["info"]["is_tool"],
-                                            data["info"]["is_internal"])
+    if data["info"]["id_supplier"] is not None:
+        flag, error, result = create_product_db(data["info"]["sku"], data["info"]["name"], data["info"]["udm"],
+                                                data["info"]["stock"], data["info"]["category_name"],
+                                                data["info"]["supplier_name"], data["info"]["is_tool"],
+                                                data["info"]["is_internal"])
+    else:
+        flag, error, result = create_product_db_admin(data["info"]["sku"], data["info"]["name"], data["info"]["udm"],
+                                                      data["info"]["stock"], data["info"]["category_name"])
     if not flag:
         return False, error
     return True, result

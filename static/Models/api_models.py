@@ -171,3 +171,29 @@ new_product_model = api.model('New Product', {
     'sku': fields.String(required=True, description='The sku'),
     'category':  fields.Integer(required=True, description='The category')
 })
+
+
+notification_model = api.model('Notification', {
+    'id':  fields.Integer(required=False, description='The id on the DB (only for answer)'),
+    'title': fields.String(required=True, description='The title'),
+    'msg': fields.String(required=True, description='The message of the notification'),
+    'status': fields.Integer(required=True, description='The status'),
+    'sender_id': fields.Integer(required=True, description='The sender id'),
+    'timestamp': fields.String(required=True, description='The timestamp', example="2024-04-30 17:48:26"),
+    'receiver_id': fields.Integer(required=True, description='The receiver id'),
+    'app': fields.List(fields.String(required=True, description='The app'), example=["app1", "app2"])
+})
+
+notification_request_model = api.model('NotificationRequest', {
+    'data':   fields.List(fields.Nested(notification_model)),
+    'msg': fields.String(required=True, description='The message from the server'),
+})
+
+notification_insert_model = api.model('NotificationInputAMC', {
+    "info":  fields.Nested(notification_model, description="The notification info to insert"),
+    "id": fields.Integer(required=True, description="The notification id to modify, only required in update")
+})
+
+notification_delete_model = api.model('NotificationDeleteAMC', {
+    "id":  fields.Integer(required=True, description="The notification id to delete")
+})

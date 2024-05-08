@@ -464,7 +464,7 @@ class NewProduct(ttk.Window):
 
     def on_save_click(self):
         data = self.get_data()
-        self._data.create_product(data[0], data[1], data[2], data[3], data[4], "")
+        self._data.create_product(data[0], data[1], data[2], data[3], data[4], None)
         self.destroy()
 
 

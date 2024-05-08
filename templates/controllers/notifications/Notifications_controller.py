@@ -9,11 +9,11 @@ from static.extensions import format_timestamps
 from templates.database.connection import execute_sql
 
 
-def get_notifications_by_user(user_id: int):
+def get_notifications_by_user(user_id: int, status="%"):
     sql = ("SELECT timestamp, id, body "
            "FROM notifications_gui "
-           "WHERE body->'$.receiver_id' = %s")
-    vals = (user_id, )
+           "WHERE body->'$.receiver_id' = %s and body->'$.status' like %s ")
+    vals = (user_id, status)
     flag, error, result = execute_sql(sql, vals, 2)
     return flag, error, result
 
