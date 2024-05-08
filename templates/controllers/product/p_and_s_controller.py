@@ -121,8 +121,8 @@ def create_product_db(sku, name, udm, stock, id_category, id_supplier, is_tool, 
     id_category = int(id_category)
     id_supplier = int(id_supplier)
     insert_sql = ("INSERT INTO products_amc "
-                  "(sku, name, udm, stock, id_category) "
-                  "VALUES (%s, %s, %s, %s, %s)")
+                  "(sku, name, udm, stock, id_category, is_tool, is_internal) "
+                  "VALUES (%s, %s, %s, %s, %s, %s, %s)")
     vals = (sku, name, udm, stock, id_category)
     flag, error, result = execute_sql(insert_sql, vals, 4)
     return flag, error, result

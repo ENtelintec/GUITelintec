@@ -73,13 +73,13 @@ class InventoryProduct(Resource):
     def put(self):
         code, data = parse_data(ns.payload, 18)
         flag, data_out = update_product_amc(data)
-        return {"data": data_out, "msg": "Ok" if flag else "Error"}, 200 if flag else 400
+        return {"data": str(data_out), "msg": "Ok" if flag else "Error"}, 200 if flag else 400
     
     @ns.expect(product_delete_model)
     def delete(self):
         code, data = parse_data(ns.payload, 18)
         flag, error, data_out = delete_product_db(data["id"])
-        return {"data": data_out, "msg": "Ok" if flag else "Error"}, 200 if flag else 400
+        return {"data": str(data_out), "msg": "Ok" if flag else "Error"}, 200 if flag else 400
 
 
 @ns.route('/inventory/categories/all')

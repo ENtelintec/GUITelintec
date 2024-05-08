@@ -81,8 +81,8 @@ def get_all_products_DB(type_p):
     elif "internal" in type_p:
         is_internal = 1
     else:
-        is_tool = 0
-        is_internal = 0
+        is_tool = "%"
+        is_internal = "%"
     flag, error, result = get_all_products_db_tool_internal(is_tool, is_internal)
     if not flag:
         return [], 400
