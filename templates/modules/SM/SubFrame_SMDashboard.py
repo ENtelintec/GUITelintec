@@ -6,6 +6,7 @@ import json
 
 import ttkbootstrap as ttk
 from ttkbootstrap.dialogs import Messagebox
+from ttkbootstrap.scrolled import ScrolledText
 from ttkbootstrap.tableview import Tableview
 
 from static.extensions import ventanasApp_path, status_dic
@@ -46,6 +47,7 @@ class SMDashboard(ttk.Frame):
         self.columns_sm = data["columns_sm"]
         self.columnconfigure(0, weight=1)
         self.rowconfigure((0, 1), weight=1)
+        self.style_gui = kwargs["style_gui"]
         # ----------------------variables-------------------------------------
         self.svar_info_history = ttk.StringVar(value="************Selecciones un item de la tabla*********************")
         self.svar_range_selector = ttk.StringVar(value="day")
@@ -73,7 +75,9 @@ class SMDashboard(ttk.Frame):
         else:
             self.table_events = self.create_table(self.frame_table, data=data["data_sm_not_supper"], columns=data["columns_sm"])
         # ----------------------- history sm-----------------------------------
-        create_label(self.frame_table, 2, 1, textvariable=self.svar_info_history, sticky="nswe")
+        self.info_history = ScrolledText(self.frame_table, padding=5, height=10, autohide=True)
+        self.info_history.grid(row=2, column=1, padx=5, pady=10, sticky="n")
+        # create_label(self.frame_table, 2, 1, textvariable=self.svar_info_history, sticky="nswe")
 
     def create_table(self, master, data=None, columns=None):
         if data is None:
@@ -103,19 +107,24 @@ class SMDashboard(ttk.Frame):
         return table
 
     def on_double_click_table_sm(self, event):
+        self.on_reset_widgets_click()
         row = event.widget.item(event.widget.selection()[0], "values")
         data_dic = self.get_sm_values_row(row)
         self.status_sm = data_dic["status"]
         self._id_sm_to_modify = int(data_dic["id"])
         self.history = json.loads(data_dic["history"])
         msg = ""
-        for item in self.history:
-            msg += f"Evento de {item['event']} por el usuario {item['user']} en la fecha: {item['date']}\n"
-        self.svar_info_history.set(msg)
+        tag_names = ["line1", "line2"]
+        for i, item in enumerate(self.history):
+            self.info_history.text.insert(ttk.END, f"Evento de {item['event']} por el usuario {item['user']} en la fecha: {item['date']}\n", tag_names[i % 2])
+            # msg += f"Evento de {item['event']} por el usuario {item['user']} en la fecha: {item['date']}\n"
+        # self.svar_info_history.set(msg)
+        self.info_history.text.tag_config("line1", foreground=self.style_gui.colors.get("warning"))
+        self.info_history.text.tag_config("line2", foreground=self.style_gui.colors.get("fg"))
 
     def on_reset_widgets_click(self):
-        print("on_reset_widgets_click")
         self.svar_info_history.set("************Selecciones un item de la tabla*********************")
+        self.info_history.text.delete("1.0", "end")
 
     def get_sm_values_row(self, row):
         (status, id_sm, code, folio, contract, plant, location, client, employee, order_quotation,
