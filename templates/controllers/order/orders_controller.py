@@ -125,3 +125,10 @@ def get_orders_amc(id_o: int, id_c: int, status: str, name_c: str, date: str):
     val = (id_o, id_c, status, date)
     flag, error, result = execute_sql(sql, val, 2)
     return flag, error, result, columns
+
+
+def get_all_amc_orders():
+    sql = ("SELECT id_order, id_customer, order_date, sm_code, contract, order_number, operation_plant, ubication, requester, personal, estimated_date, status "
+           "FROM orders_amc ")
+    flag, error, result = execute_sql(sql, None, 2)
+    return flag, error, result

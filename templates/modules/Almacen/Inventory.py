@@ -11,6 +11,8 @@ class InventoryScreen(ttk.Frame):
         self.master = master
         self.columnconfigure(0, weight=1)
         self._data = DataHandler()
+        self._ivar_tool = ttk.IntVar(value=0)
+        self._ivar_internal = ttk.IntVar(value=0)
         self._products = self.fetch_products()
         self._table = Tableview(self)
         self.create_content(self)
@@ -40,6 +42,8 @@ class InventoryScreen(ttk.Frame):
             {"text": "Stock", "stretch": True},
             {"text": "Categoría", "stretch": True},
             {"text": "Proveedor", "stretch": True},
+            {"text": "Herramienta", "stretch": True},
+            {"text": "Interno", "stretch": True},
         ]
 
         self.table = Tableview(
@@ -139,6 +143,16 @@ class InventoryScreen(ttk.Frame):
         ttk.Label(extra_inputs, text="Proveedor", style="bg.TLabel").grid(
             row=1, column=0, sticky="w", padx=5, pady=5
         )
+        ttk.Checkbutton(
+            extra_inputs, text="Es herramienta?", variable=self._ivar_tool,
+            onvalue=1, offvalue=0, bootstyle="success, round-toggle").grid(
+                row=2, column=0, sticky="w", padx=5, pady=5, columnspan=2
+            )
+        ttk.Checkbutton(
+            extra_inputs, text="Es interno?", variable=self._ivar_internal,
+            onvalue=1, offvalue=0, bootstyle="success, round-toggle").grid(
+            row=3, column=0, sticky="w", padx=5, pady=5, columnspan=2
+        )
         self.values_supp = self._data._supplier.get_all_suppliers()
         self.dropdown_supplier_selector = ttk.Combobox(
             extra_inputs, values=self.values_supp, style="bg.TCombobox"
@@ -231,6 +245,8 @@ class InventoryScreen(ttk.Frame):
         product_reorderPoint = self.input_product_reorderPoint.get()
         product_category = self.dropdown_category_selector.get().split(" ")[0]
         product_supplier = self.dropdown_supplier_selector.get().split(" ")[0]
+        is_tool = self._ivar_tool.get()
+        is_internal = self._ivar_internal.get()
         if product_category.__contains__(" "):
             product_category = product_category.split(" ")[0]
         else:
@@ -253,6 +269,8 @@ class InventoryScreen(ttk.Frame):
             product_stock,
             product_category,
             product_supplier,
+            is_tool,
+            is_internal
         )
         time.sleep(0.5)
         self.clear_fields()
@@ -270,6 +288,8 @@ class InventoryScreen(ttk.Frame):
         self.input_product_reorderPoint.delete(0, "end")
         self.dropdown_category_selector.set("")
         self.dropdown_supplier_selector.set("")
+        self._ivar_tool.set(0)
+        self._ivar_internal.set(0)
 
     def add_product(self):
         product_id = self.input_product_id.get()
@@ -282,7 +302,8 @@ class InventoryScreen(ttk.Frame):
         product_reorderPoint = self.input_product_reorderPoint.get()
         product_category = self.dropdown_category_selector.get().split(" ")[0]
         product_supplier = self.dropdown_supplier_selector.get().split(" ")[0]
-
+        is_tool = self._ivar_tool.get()
+        is_internal = self._ivar_internal.get()
         if (
             product_name == ""
             or product_description == ""
@@ -305,6 +326,8 @@ class InventoryScreen(ttk.Frame):
                 product_stock,
                 product_category[0],
                 product_supplier[0],
+                is_tool,
+                is_internal
             )
             time.sleep(0.5)
             self.clear_fields()

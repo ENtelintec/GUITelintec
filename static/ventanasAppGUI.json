@@ -29,12 +29,8 @@
     ],
     "App.Department.ALMACEN": [
       "Inicio",
-      "Entradas",
-      "Salidas",
+      "Movimientos",
       "Inventario",
-      "Suministros Diarios",
-      "Inventario Int.",
-      "Ordenes (A)",
       "Configuraciones (A)",
       "Procesar SM",
       "Cuenta"
@@ -58,7 +54,6 @@
       "Clients (A)",
       "Proveedores (A)",
       "SM",
-      "Procesar SM",
       "Cuenta"
     ]
   },

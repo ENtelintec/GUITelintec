@@ -18,8 +18,8 @@ class Product:
         flag, error, result = get_all_products_db()
         return result if flag else []
 
-    def update_product(self, id_product, sku, name, udm, stock, id_category, id_supplier):
-        flag, error, result = update_product_db(id_product, sku, name, udm, stock, id_category, id_supplier)
+    def update_product(self, id_product, sku, name, udm, stock, id_category, id_supplier, is_tool=0, is_internal=0):
+        flag, error, result = update_product_db(id_product, sku, name, udm, stock, id_category, id_supplier, is_tool, is_internal)
         return flag
 
     def delete_product(self, id_product):

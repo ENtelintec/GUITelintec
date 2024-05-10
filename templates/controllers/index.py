@@ -1,6 +1,7 @@
 from templates.controllers.customer.customer_controller import Customer
 from templates.controllers.order.details_controller import Details
 from templates.controllers.order.order_amc_controller import Order
+from templates.controllers.order.orders_controller import get_all_amc_orders
 from templates.controllers.product.categories_controller import Category
 from templates.controllers.product.movements_controller import Movement
 from templates.controllers.product.product_amc_controller import Product
@@ -18,6 +19,10 @@ class DataHandler:
         self._product_movements = Movement()
         self._supplier = Supplier()
         self._internal_stock = InternalStock()
+    
+    def get_all_orders_amc(self):
+        flag, eror, result = get_all_amc_orders()
+        return result if flag else []
     
     def get_all_products(self):
         return self._product.get_all_products()
@@ -40,16 +45,16 @@ class DataHandler:
     def create_category(self, name):
         return self._product_categories.create_category(name)
 
-    def create_product(self, sku, name, udm, stock, id_category, id_supplier):
-        return self._product.create_product(sku, name, udm, stock, id_category, id_supplier)
+    def create_product(self, sku, name, udm, stock, id_category, id_supplier, is_tool=0, is_internal=0):
+        return self._product.create_product(sku, name, udm, stock, id_category, id_supplier, is_tool, is_internal)
 
     def delete_product(self, product_id):
         return self._product.delete_product(product_id)
 
     def update_product(self, product_id, product_name, product_description, product_price, 
-                       product_stock, product_category, product_supplier):
+                       product_stock, product_category, product_supplier, is_tool=0, is_internal=0):
         return self._product.update_product(product_id, product_name, product_description, product_price,
-                                            product_stock, product_category, product_supplier)
+                                            product_stock, product_category, product_supplier, is_tool, is_internal)
 
     def update_stock(self, id_product, stock):
         return self._product.update_stock(id_product, stock)

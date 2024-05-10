@@ -35,10 +35,12 @@ def create_label(
         font=("Helvetica", 11, "normal"),
         columnspan=1,
         sticky=None,
+        rowspan=1,
         **kwargs,
 ) -> ttk.Label:
     """
     Create a label with the text-provided
+    :param rowspan: 
     :param sticky:
     :param columnspan:
     :param text: If None, a label with textvariable is created
@@ -56,7 +58,7 @@ def create_label(
     else:
         label = ttk.Label(master, textvariable=textvariable, font=font, **kwargs)
     if sticky is None:
-        label.grid(row=row, column=column, padx=padx, pady=pady, columnspan=columnspan)
+        label.grid(row=row, column=column, padx=padx, pady=pady, columnspan=columnspan, rowspan=rowspan)
     else:
         label.grid(
             row=row,
@@ -64,6 +66,7 @@ def create_label(
             padx=padx,
             pady=pady,
             columnspan=columnspan,
+            rowspan=rowspan,
             sticky=sticky,
         )
     return label

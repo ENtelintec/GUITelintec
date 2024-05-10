@@ -6,6 +6,7 @@ import pandas as pd
 from tkinter import filedialog
 import ttkbootstrap as ttk
 
+
 class OrdersScreen(ttk.Frame):
     def __init__(self, master, setting: dict = None, *args, **kwargs):
         super().__init__(master)
@@ -14,7 +15,7 @@ class OrdersScreen(ttk.Frame):
         self._data = DataHandler()
         self._products = self.fetch_products()
         self._table = Tableview(self)
-        self._orders = self._data._order.get_all_orders_sm()
+        self._orders = self._data.get_all_orders_amc()
         self._products = self._data.get_all_products()
         self._clients = self._data.get_all_customers()
         self.customer_id = None

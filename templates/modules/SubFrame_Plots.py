@@ -37,6 +37,7 @@ class FramePlot(tk.Frame):
                         axes.bar(labels_x, values)
                     axes.set_title(data["title"])
                     axes.set_ylabel(data["ylabel"])
+                    axes.legend(data["legend"])
                     figure_canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1, padx=10, pady=10)
                 case 'scatter':
                     x_values = data["val_x"]
@@ -76,6 +77,7 @@ class FramePlot(tk.Frame):
                 case _:
                     x_values = data["val_x"]
                     y_values = data["val_y"]
+                    line_style = data["line_style"]
                     figure = Figure(figsize=(6, 4), dpi=100)
                     figure_canvas = FigureCanvasTkAgg(figure, self)
                     NavigationToolbar2Tk(figure_canvas, self)
@@ -85,7 +87,7 @@ class FramePlot(tk.Frame):
                         values = values.T
                         indexes = np.arange(len(x_values))
                         for index_k, values_k in enumerate(values):
-                            axes.plot(indexes, values_k)
+                            axes.plot(indexes, values_k, line_style[index_k])
                         axes.set_xticks(indexes)
                         axes.set_xticklabels(x_values)
                     else:
@@ -93,4 +95,6 @@ class FramePlot(tk.Frame):
                     axes.set_title(data["title"])
                     axes.set_xlabel('X Values')
                     axes.set_ylabel('Y Values')
+                    axes.legend(data["legend"])
+                    axes.tick_params(axis='x', rotation=80)
                     figure_canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1, padx=10, pady=10)

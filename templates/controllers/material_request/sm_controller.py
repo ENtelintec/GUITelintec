@@ -30,7 +30,6 @@ def insert_sm_db(data):
            data['info']['order_quotation'], data['info']['date'], data['info']['limit_date'],
            json.dumps(data['items']), 0, json.dumps(event), data['info']['comment'])
     flag, error, result = execute_sql(sql, val, 4)
-    print(error, result)
     return flag, error, result
 
 
@@ -60,7 +59,6 @@ def update_sm_db(data):
     if not flag:
         return False, error, None
     ids_sm = [i[0] for i in result]
-    print(ids_sm, data['id_sm'])
     if data['id_sm'] not in ids_sm:
         return True, "Material request not found", None
     sql = ("UPDATE materials_request "
@@ -115,5 +113,28 @@ def finalize_status_sm(sm_id: int):
     sql = ("UPDATE materials_request SET status = 3 "
            "WHERE sm_id = %s ")
     val = (sm_id,)
+    flag, error, result = execute_sql(sql, val, 4)
+    return flag, error, result
+
+
+def get_all_sm_plots(emp_id: int, is_supper=False):
+    if is_supper:
+        sql = ("SELECT sm_id, emp_id, date, limit_date, status "
+               "FROM materials_request ")
+        val = None
+    else:
+        sql = ("SELECT sm_id, emp_id, date, limit_date, status "
+               "FROM materials_request "
+               "WHERE emp_id = %s ")
+        val = (emp_id,)
+    flag, error, result = execute_sql(sql, val, 5 if is_supper else 2)
+    return flag, error, result
+
+
+def update_only_status(status: int, sm_id: int):
+    sql = ("UPDATE materials_request "
+           "SET status = %s "
+           "WHERE sm_id = %s ")
+    val = (status, sm_id)
     flag, error, result = execute_sql(sql, val, 4)
     return flag, error, result

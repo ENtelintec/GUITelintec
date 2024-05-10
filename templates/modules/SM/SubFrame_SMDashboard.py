@@ -10,30 +10,27 @@ from ttkbootstrap.tableview import Tableview
 
 from static.extensions import ventanasApp_path, status_dic
 from templates.Functions_AuxFiles import get_all_sm_entries
-from templates.Funtions_Utils import create_label
+from templates.Functions_AuxPlots import get_data_sm_per_range
+from templates.Funtions_Utils import create_label, create_Combobox
 from templates.controllers.material_request.sm_controller import finalize_status_sm
 from templates.modules.SubFrame_Plots import FramePlot
 permissions_supper_SM = json.load(open(ventanasApp_path, encoding="utf-8"))["permissions_supper_SM"]
 
 
-def create_plots(master):
-    data_chart = {"data": {'2024-03_1': [10, 8, 2], '2024-03_2': [15, 2, 13],
-                           '2024-03_3': [10, 2, 8], '2024-03_4': [3, 2, 1]},
-                  "title": "SMs por semana",
-                  "ylabel": "# de SMs",
-                  "legend": ("Creadas", "Procesadas", "Pendientes")
-                  }
-    plot1_1 = FramePlot(master, data_chart, "bar")
-    plot1_1.grid(row=0, column=0, padx=10, pady=10, sticky="nswe")
-    data_chart = {
-        "val_x": [1, 2, 3, 4, 5, 6, 7],
-        "val_y": [[10, 1], [2, 1], [15, 12], [12, 5], [3, 3], [1, 1], [10, 8]],
-        "title": "SMs por dia de la ultima semana",
-        "ylabel": "# de SMs",
-        "legend": ("Creadas", "Procesadas")
-    }
-    plot1_2 = FramePlot(master, data_chart)
-    plot1_2.grid(row=0, column=1, padx=10, pady=10, sticky="nswe")
+def create_plots(master, range_selected):
+    data_chart = get_data_sm_per_range(range_selected, "normal")
+    plot1_1 = FramePlot(master, data_chart, "normal")
+    plot1_1.grid(row=1, column=0, padx=10, pady=10, sticky="nswe")
+    # data_chart = {
+    #     "val_x": [1, 2, 3, 4, 5, 6, 7],
+    #     "val_y": [[10, 1], [2, 1], [15, 12], [12, 5], [3, 3], [1, 1], [10, 8]],
+    #     "title": "SMs por dia de la ultima semana",
+    #     "ylabel": "# de SMs",
+    #     "legend": ("Creadas", "Procesadas")
+    # }
+    # plot1_2 = FramePlot(master, data_chart)
+    # plot1_2.grid(row=0, column=1, padx=10, pady=10, sticky="nswe")
+    return plot1_1
 
 
 class SMDashboard(ttk.Frame):
@@ -51,14 +48,23 @@ class SMDashboard(ttk.Frame):
         self.rowconfigure((0, 1), weight=1)
         # ----------------------variables-------------------------------------
         self.svar_info_history = ttk.StringVar(value="************Selecciones un item de la tabla*********************")
+        self.svar_range_selector = ttk.StringVar(value="day")
         #  --------------------------graphs-----------------------------------
         self.frame_graphs = ttk.Frame(self)
-        self.frame_graphs.grid(row=0, column=0, padx=10, pady=10, sticky="nswe", columnspan=1)
-        self.frame_graphs.columnconfigure((0, 1), weight=1)
-        create_plots(self.frame_graphs)
+        self.frame_graphs.grid(row=0, column=0, padx=(10, 25), pady=10, sticky="nswe", columnspan=1)
+        self.frame_graphs.columnconfigure(0, weight=1)
+        frame_selector = ttk.Frame(self.frame_graphs)
+        frame_selector.grid(row=0, column=0, sticky="nswe")
+        frame_selector.columnconfigure(0, weight=1)
+        self.range_selector = create_Combobox(master=frame_selector, row=0, column=0, values=["day", "month", "year"], 
+                                              width=10, textvariable=self.svar_range_selector, sticky="w")
+        self.range_selector.bind("<<ComboboxSelected>>", self.change_plot_type)
+        # create_Combobox(master=frame_selector, row=0, column=1, values=["normal", "all"],
+        #                 command=self.change_plot_type, width=10)
+        self.plots = create_plots(self.frame_graphs, self.svar_range_selector.get())
         # --------------------------table SMs---------------------+--------------
         self.frame_table = ttk.Frame(self)
-        self.frame_table.grid(row=1, column=0, padx=20, pady=20, sticky="nswe")
+        self.frame_table.grid(row=1, column=0, padx=20, pady=(0, 20), sticky="nswe")
         self.frame_table.columnconfigure(0, weight=1)
         create_label(self.frame_table, 0, 0, text="SMs en la base de datos", font=("Arial", 24, "bold"), columnspan=2)
         ttk.Button(self.frame_table, text="Marca de recibido", command=self._on_recieved_sm).grid(row=1, column=0, sticky="n")
@@ -106,10 +112,10 @@ class SMDashboard(ttk.Frame):
         for item in self.history:
             msg += f"Evento de {item['event']} por el usuario {item['user']} en la fecha: {item['date']}\n"
         self.svar_info_history.set(msg)
-        self.on_reset_widgets_click()
 
     def on_reset_widgets_click(self):
         print("on_reset_widgets_click")
+        self.svar_info_history.set("************Selecciones un item de la tabla*********************")
 
     def get_sm_values_row(self, row):
         (status, id_sm, code, folio, contract, plant, location, client, employee, order_quotation,
@@ -152,3 +158,12 @@ class SMDashboard(ttk.Frame):
                                                               row[7], row[8], row[9], row[10], row[11], row[12],
                                                               row[13], row[14]))
                     break
+
+    def change_plot_type(self, event):
+        range_selected = self.svar_range_selector.get()
+        if isinstance(self.plots, tuple):
+            for plot in self.plots:
+                plot.destroy()
+        else:
+            self.plots.destroy()
+        self.plots = create_plots(self.frame_graphs, range_selected)

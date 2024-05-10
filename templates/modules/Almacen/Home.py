@@ -13,7 +13,7 @@ class HomeScreen(ttk.Frame):
         self.columnconfigure((0, 1), weight=1)
         self._data = DataHandler()
         self._total_profit = int(len(self._data._order.get_total_products()))
-        self._total_orders = int(len(self._data._order.get_all_orders()))
+        self._total_orders = int(len(self._data.get_all_orders_amc()))
         self.create_content(self)
 
     def create_content(self, parent):

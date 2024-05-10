@@ -15,6 +15,7 @@ from templates.controllers.chatbot.chatbot_controller import get_chats_w_limit
 from templates.controllers.customer.customers_controller import get_sm_clients
 from templates.controllers.employees.employees_controller import get_sm_employees
 from templates.controllers.employees.us_controller import get_username_data
+from templates.modules.Almacen.Frame_Movements import MovementsFrame
 from templates.modules.Bitacora.Frame_Bitacora import BitacoraEditFrame
 from templates.modules.Chatbot.Frame_ChatsFrame import ChatFrame
 from templates.modules.DB.Frame_DBFrame import DBFrame, EmployeesFrame
@@ -31,11 +32,8 @@ from templates.modules.RRHH.Frame_Vacations import VacationsFrame
 from templates.modules.Assistant.Frame_vAssistantGUI import AssistantGUI
 from templates.modules.SM.SubFrame_SMManagement import SMManagement
 from templates.modules.Almacen.Clients import ClientsScreen
-from templates.modules.Almacen.In import InScreen
 from templates.modules.Almacen.InternalInventory import InternalInventoryScreen
 from templates.modules.Almacen.Inventory import InventoryScreen
-from templates.modules.Almacen.Orders import OrdersScreen
-from templates.modules.Almacen.Out import OutScreen
 from templates.modules.Almacen.Providers import ProvidersScreen
 from templates.modules.Almacen.Settings import SettingsScreen
 from templates.modules.Almacen.Supplies import SuppliesScreen
@@ -62,17 +60,15 @@ available_frames = {
     "Clients (A)": ClientsScreen,
     "Proveedores (A)": ProvidersScreen,
     "Inventario": InventoryScreen,
-    "Entradas": InScreen,
-    "Salidas": OutScreen,
     "Suministros Diarios": SuppliesScreen,
-    "Ordenes (A)": OrdersScreen,
     "Configuraciones (A)": SettingsScreen,
     "Inventario Int.":  InternalInventoryScreen,
     "Ventana Asistente": AssistantGUI,
     "Examenes":  ExamenesMedicos,
     "Emp. Detalles": EmployeeDetailsScrolled,
     "Cuenta":  Login.LogOptionsFrame,
-    "Procesar SM": SMManagement
+    "Procesar SM": SMManagement,
+    "Movimientos": MovementsFrame
 }
 
 

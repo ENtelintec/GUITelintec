@@ -35,7 +35,7 @@ class WeatherFrame(ttk.Frame):
         # declare the client. the measuring unit used defaults to the metric system (celcius, km/h, etc.)
         async with python_weather.Client(unit=python_weather.METRIC) as client:
             # fetch a weather forecast from a city
-            self.weather = await client.get(self.city)
+            self.weather = await client.get(self.city)           
             # get the weather forecast for a few days
             self.hourly_forecasts = []
             self.daily_forecasts = []
@@ -48,13 +48,22 @@ class WeatherFrame(ttk.Frame):
     async def create_widgets(self, master):
         await self.getweather()
         # -----------------------Title-----------------
-        create_label(self, 0, 0, text=f"Clima en: {self.weather.location}", font=("Helvetica", 14, "bold"), columnspan=2)
+        master.columnconfigure(0, weight=1)
+        create_label(master, 0, 0, text=f"Clima en: {self.weather.location}", font=("Helvetica", 14, "bold"), columnspan=2)
+        frame_current = ttk.Frame(master)
+        frame_current.grid(row=1, column=0, sticky="nsew")
         # -----------------------Frames---------------------------
-        create_label(master, 1, 0, text="Hoy: ", font=("Helvetica", 10, "bold"))
-        create_label(master, 1, 1, text=f"{self.weather.temperature} ", font=("Helvetica", 10, "bold"))
+        create_label(frame_current, 0, 0, text=f"{self.weather.temperature} ºC", font=("Helvetica", 30, "bold"),  rowspan=4)
+        create_label(frame_current, 0, 1, text=f"Humedad: {self.weather.humidity}%", font=("Helvetica", 8, "normal"))
+        create_label(frame_current, 1, 1, text=f"Viento: {self.weather.wind_direction} {self.weather.wind_speed} km/h", font=("Helvetica", 8, "normal"))
+        create_label(frame_current, 2, 1, text=f"{self.weather.description}", font=("Helvetica", 8, "normal"))
+        create_label(frame_current, 3, 1, text=f"Sensación: {self.weather.feels_like} km", font=("Helvetica", 8, "normal"))
+        frame_daily = ttk.Frame(self)
+        frame_daily.grid(row=1, column=1, sticky="we")
         indexes = []
         for day, daily in enumerate(self.daily_forecasts):
-            create_label(master, 2, day*2, text=f"{days_of_week[daily.date.weekday()]}: ", font=("Helvetica", 10, "bold"))
-            create_label(master, 2, day*2 + 1, text=f"{daily.temperature} ", font=("Helvetica", 10, "bold"))
+            create_label(frame_daily, 0, day, text=f"{days_of_week[daily.date.weekday()]}: ", font=("Helvetica", 10, "bold"))
+            create_label(frame_daily, 1, day, text=f"{daily.highest_temperature} ºC", font=("Helvetica", 10, "bold"))
+            create_label(frame_daily, 2, day, text=f"{daily.lowest_temperature} ºC", font=("Helvetica", 10, "bold"))
             indexes.append(day)
-        master.columnconfigure(indexes, weight=1)
+        frame_daily.columnconfigure(indexes, weight=1)
