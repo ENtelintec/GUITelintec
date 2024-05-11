@@ -15,6 +15,7 @@ from templates.controllers.chatbot.chatbot_controller import get_chats_w_limit
 from templates.controllers.customer.customers_controller import get_sm_clients
 from templates.controllers.employees.employees_controller import get_sm_employees
 from templates.controllers.employees.us_controller import get_username_data
+from templates.controllers.product.p_and_s_controller import get_ins_db
 from templates.modules.Almacen.Frame_Movements import MovementsFrame
 from templates.modules.Bitacora.Frame_Bitacora import BitacoraEditFrame
 from templates.modules.Chatbot.Frame_ChatsFrame import ChatFrame
@@ -32,7 +33,6 @@ from templates.modules.RRHH.Frame_Vacations import VacationsFrame
 from templates.modules.Assistant.Frame_vAssistantGUI import AssistantGUI
 from templates.modules.SM.SubFrame_SMManagement import SMManagement
 from templates.modules.Almacen.Clients import ClientsScreen
-from templates.modules.Almacen.InternalInventory import InternalInventoryScreen
 from templates.modules.Almacen.Inventory import InventoryScreen
 from templates.modules.Almacen.Providers import ProvidersScreen
 from templates.modules.Almacen.Settings import SettingsScreen
@@ -62,7 +62,6 @@ available_frames = {
     "Inventario": InventoryScreen,
     "Suministros Diarios": SuppliesScreen,
     "Configuraciones (A)": SettingsScreen,
-    "Inventario Int.":  InternalInventoryScreen,
     "Ventana Asistente": AssistantGUI,
     "Examenes":  ExamenesMedicos,
     "Emp. Detalles": EmployeeDetailsScrolled,
@@ -80,6 +79,7 @@ def load_data(is_super=False, emp_id=None):
     flag, error, employees = get_sm_employees()
     flag, error, clients = get_sm_clients()
     products, columns_products = get_all_sm_products()
+    data_movements = get_ins_db()
     data_dic = {
         'data_sm': data_sm,
         'columns_sm': columns_sm,
@@ -87,7 +87,8 @@ def load_data(is_super=False, emp_id=None):
         'clients': clients,
         'products': products,
         'columns_products': columns_products,
-        'data_sm_not_supper': data_sm_not_supper
+        'data_sm_not_supper': data_sm_not_supper,
+        'data_movements': data_movements
     }
     return data_dic
 

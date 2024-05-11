@@ -138,5 +138,4 @@ class PlotSMData(Resource):
     @ns.marshal_with(request_sm_plot_data_model)
     def get(self, typerange):
         data_out = get_data_sm_per_range(typerange, "normal")
-        print(data_out)
         return {"data": data_out, "type": "normal plot lines"}, 200

@@ -3,18 +3,30 @@ from templates.controllers.index import DataHandler
 from ttkbootstrap.tableview import Tableview
 import ttkbootstrap as ttk
 
+
 class ProvidersScreen(ttk.Frame):
     def __init__(self, master, setting: dict = None, *args, **kwargs):
         super().__init__(master)
+        self.web_provider = None
+        self.type_provider = None
+        self.phone_provider = None
+        self.address_provider = None
+        self.email_provider = None
+        self.seller_provider = None
+        self.name_provider = None
+        self.id_provider = None
+        self.table = None
+        self.col_data = None
         self.master = master
         self.columnconfigure(0, weight=1)
         self._data = DataHandler()
-        self._providers = self._data._supplier.get_all_suppliers()
+        self._providers = self._data.get_all_suppliers()
         self._table = Tableview(self)
         self.create_content(self)
 
     def create_content(self, parent):
-        """Creates the content of the providers screen, includes the table of providers and the inputs to add a new client"""
+        """Creates the content of the provider screen,
+        includes the table of providers and the inputs to add a new client"""
         content = ttk.Frame(parent, style="bg.TFrame")
         content.grid(row=0, column=0, sticky="nswe")
         content.columnconfigure(0, weight=1)
@@ -64,7 +76,7 @@ class ProvidersScreen(ttk.Frame):
             font=("Arial", 20),
         ).grid(row=0, column=0, sticky="w", padx=5, pady=10)
 
-        # dividir el frame en 2, izq y derecha para los inputs
+        # Dividir el frame en 2, izq. Y derecha para los inputs
         inputs_left = ttk.Frame(inputs, style="bg.TFrame")
         inputs_left.grid(row=1, column=0, sticky="nswe")
 
@@ -170,7 +182,7 @@ class ProvidersScreen(ttk.Frame):
 
     def update_table(self):
         """Updates the table of providers"""
-        self._providers = self._data._supplier.get_all_suppliers()
+        self._providers = self._data.get_all_suppliers()
         self.table.unload_table_data()
         time.sleep(0.5)
         self.table.build_table_data(self.col_data, self._providers)
@@ -196,7 +208,7 @@ class ProvidersScreen(ttk.Frame):
         address_provider = self.address_provider.get()
         web_provider = self.web_provider.get()
         type_provider = self.type_provider.get()
-        self._data._supplier.create_supplier(
+        self._data.create_supplier(
             name_provider,
             seller_provider,
             email_provider,
@@ -218,7 +230,7 @@ class ProvidersScreen(ttk.Frame):
         address_provider = self.address_provider.get()
         web_provider = self.web_provider.get()
         type_provider = self.type_provider.get()
-        self._data._supplier.update_supplier(
+        self._data.update_supplier(
             id_provider,
             name_provider,
             seller_provider,
@@ -234,6 +246,6 @@ class ProvidersScreen(ttk.Frame):
     def delete_provider(self):
         """Deletes a client"""
         id_provider = self.id_provider.get()
-        self._data._supplier.delete_supplier(id_provider)
+        self._data.delete_supplier(id_provider)
         self.update_table()
         self.clear_fields()

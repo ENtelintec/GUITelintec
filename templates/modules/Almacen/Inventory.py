@@ -153,7 +153,7 @@ class InventoryScreen(ttk.Frame):
             onvalue=1, offvalue=0, bootstyle="success, round-toggle").grid(
             row=3, column=0, sticky="w", padx=5, pady=5, columnspan=2
         )
-        self.values_supp = self._data._supplier.get_all_suppliers()
+        self.values_supp = self._data.get_all_suppliers()
         self.dropdown_supplier_selector = ttk.Combobox(
             extra_inputs, values=self.values_supp, style="bg.TCombobox"
         )
