@@ -127,7 +127,9 @@ class LogOptionsFrame(ttk.Frame):
         # -------------------create message----------------
         if self.master.username_data is not None:
             txt = f"Usuario: {self.master.username}"
-            txt += f"\nPermisos: {self.master.permissions}"
+            txt += "\nPermisos:"
+            for permission in self.master.permissions.values():
+                txt += f"\n{permission}"
             if self.master.username_data['exp'] is not None:
                 txt += f"\nToken expira en: {self.master.username_data['exp']}"
                 txt += f"\nCreado en: {self.master.username_data['timestamp']}"

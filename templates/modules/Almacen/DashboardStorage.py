@@ -12,7 +12,7 @@ class StorageDashboard(ttk.Frame):
         self.master = master
         self.columnconfigure((0, 1), weight=1)
         self._data = DataHandler()
-        self._total_orders = int(len(self._data.get_all_orders_amc()))
+        self._total_orders = 100
         self.create_content(self)
 
     def create_content(self, parent):
