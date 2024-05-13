@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-__author__ = 'Edisson Naula'
-__date__ = '$ 27/jul./2023  at 16:41 $'
+__author__ = "Edisson Naula"
+__date__ = "$ 27/jul./2023  at 16:41 $"
 
 
 import mysql.connector
@@ -11,9 +11,9 @@ from static.extensions import secrets
 def connectionDB():
     try:
         connection = mysql.connector.connect(
-            host=secrets["HOST_DB"],
-            user=secrets["USER_SQL"],
-            password=secrets["PASS_SQL"],
+            host=secrets["HOST_DB_AWS"],
+            user=secrets["USER_SQL_AWS"],
+            password=secrets["PASS_SQL_AWS"],
             database="sql_telintec",
         )
         if connection.is_connected():
@@ -35,10 +35,10 @@ def execute_sql(sql: str, values: tuple = None, type_sql=1):
     """
     try:
         mydb = mysql.connector.connect(
-            host=secrets["HOST_DB"],
-            user=secrets["USER_SQL"],
-            password=secrets["PASS_SQL"],
-            database="sql_telintec"
+            host=secrets["HOST_DB_AWS"],
+            user=secrets["USER_SQL_AWS"],
+            password=secrets["PASS_SQL_AWS"],
+            database="sql_telintec",
         )
         my_cursor = mydb.cursor(buffered=True)
     except Exception as e:
@@ -83,7 +83,7 @@ def execute_sql(sql: str, values: tuple = None, type_sql=1):
 def execute_sql_multiple(sql: str, values_list: list = None, type_sql=1):
     """
     Execute the sql with the values provides (OR not) AND returns a value
-    depending on the type of query. 
+    depending on the type of query.
     In case of exception returns None
     :param values_list: values for sql query
     :param type_sql: type of query to execute
@@ -95,7 +95,7 @@ def execute_sql_multiple(sql: str, values_list: list = None, type_sql=1):
             host=secrets["HOST_DB_AWS"],
             user=secrets["USER_SQL_AWS"],
             password=secrets["PASS_SQL_AWS"],
-            database="sql_telintec"
+            database="sql_telintec",
         )
         my_cursor = mydb.cursor(buffered=True)
     except Exception as e:

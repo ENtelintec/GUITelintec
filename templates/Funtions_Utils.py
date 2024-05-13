@@ -920,14 +920,37 @@ def calculate_results_quizzes(dict_quizz: dict, tipo_q: int):
 
 
 def recommendations_results_quizzes(dict_results: dict, tipo_q: int):
-    dict_recommendations = {
-        "c_final_r": 0,
-        "c_dom_r": 0,
-        "c_cat_r": 0,
-    }
+    # Asumiendo que tienes la ruta correcta en filepath_recommendations
     dict_conversions_recomen = json.load(open(filepath_recommendations, encoding="utf-8"))
+    dict_recommendations = {
+        "c_final_r": "",
+        "c_dom_r": "",
+        "c_cat_r": "",
+    }
+
+    # Asumiendo que dict_results contiene las claves 'c_final', 'c_dom', 'c_cat'
+    # y que pueden tener valores como 'MUY ALTO', 'ALTO', 'MEDIO', 'BAJO', 'NULO'.
+
+    # Acceder a las recomendaciones basadas en el resultado final, dominio, y categoría
+    final_score = dict_results.get('c_final', 'NULO')  # Usar NULO como valor por defecto si no se encuentra
+    dom_score = dict_results.get('c_dom', 'default_dom')  # Usar un valor por defecto
+    cat_score = dict_results.get('c_cat', 'default_cat')  # Usar un valor por defecto
+
+    # Acceder a las recomendaciones finales
+    dict_recommendations['c_final_r'] = dict_conversions_recomen['c_final_r'].get(final_score, ["No hay recomendaciones específicas."])
+    
+    # Aquí necesitas modificar el código según cómo desees manejar las recomendaciones de dominio y categoría
+    # dado que en tu JSON 'c_dom_r' es solo una cadena, puedes necesitar un enfoque diferente o más información
+    # Si 'c_dom_r' debería ser una estructura similar a 'c_final_r', ajusta tu JSON y tu código en consecuencia
+
+    # Acceder a las recomendaciones de categoría
+    if cat_score in dict_conversions_recomen['c_cat_r']:
+        dict_recommendations['c_cat_r'] = dict_conversions_recomen['c_cat_r'][cat_score]
+    else:
+        dict_recommendations['c_cat_r'] = ["No hay recomendaciones específicas para esta categoría."]
 
     return dict_recommendations
+
 
 
 def Reverse(lst):
