@@ -1,5 +1,79 @@
 {
-    "c_final_r": "recomendacion final",
-    "c_dom_r": "recomendcion dominio",
-    "c_cat_r": "recomendacion categoria"
+    "c_final_r": {
+        "MUY ALTO": [
+            "Realizar análisis de cada categoría y dominio para establecer las acciones de intervención apropiadas, mediante un programa de intervención donde incluya evaluaciones específicas.",
+            "Campañas de sensibilización.",
+            "Revisión de la política de prevención de riesgos psicosociales y programas de prevención.",
+            "Promover un entorno organizacional favorable y la prevención de violencia laborar.",
+            "Reforzar su aplicación y difusión."
+        ],
+        "ALTO": [
+            "Realizar análisis de cada categoría y dominio para establecer las acciones de intervención apropiadas, mediante un programa de intervención donde incluya evaluaciones específicas.",
+            "Campañas de sensibilización.",
+            "Revisión de la política de prevención de riesgos psicosociales y programas de prevención.",
+            "Promover un entorno organizacional favorable y la prevención de violencia laborar.",
+            "Reforzar su aplicación y difusión."
+        ],
+        "MEDIO": [
+            "Revisión de la política de prevención de riesgos psicosociales y programas de prevención.",
+            "Promover un entorno organizacional favorable y la prevención de violencia laborar.",
+            "Reforzar su aplicación y difusión, mediante un programa de intervención."
+        ],
+        "BAJO": [
+            "Es necesario realizar mayor difusión de la política de prevención de riesgos psicosociales y programas de prevención.",
+            "Mayor promoción de un entorno organizacional favorable y la prevención de la violencia laboral."
+        ],
+        "NULO": [
+            "No se requiere tomar medidas adicionales."
+        ]
+    },
+    "c_dom_r": "recomendacion dominio",
+    "c_cat_r": {
+        "Ambiente de trabajo": [
+            "Formar e informar: Involucrar y hacer participe a los colaboradores en la seguridad laboral",
+            "Revisar y trabajar de forma continua en la mejora de las condiciones de la seguridad y salud en el trabajo, hacer revisiones periódicamente para saber si las implementaciones se hacen de forma correcta, planes de prevención de accidentes actualizados acorde a la demanda de cada puesto y/o área.",
+            "Contar con un proveedor de medicina laboral, para la realización de exámenes médicos a sus colaboradores para garantizar condiciones de salud optima y dar su debido seguimiento (al menos 1 vez al año).",
+            "Mantener en buen estado los elementos de seguridad de los colaboradores, estableciendo una rutina de mantenimiento frecuente para cualquier elemento o herramienta que sea utilizado en el puesto de trabajo, para reducir riesgos de accidentes laborales debido al mal estado de los implementos.",
+            "Revisión del Plan de Prevención de Riesgos Laborales, para hacer las correcciones o actualizaciones según las necesidades que surjan y adoptar las nuevas medidas."
+        ],
+        "Factores propios de la actividad": [
+            "Definir objetivos y metas de la empresa, para identificar que tareas y proyectos son cruciales para el éxito organizacional",
+            "Identificar tareas y proyectos, enumerando las tareas y proyectos se puede realizar a nivel departamental, áreas o equipos específicos.",
+            "Clasificar las tareas y proyectos, acorde a su importancia y urgencia para los objetivos y metas definidos anteriormente. (crear una matriz de priorización)",
+            "Recopilar datos de tiempo, solicitar a los colaboradores que registren el tiempo que dedican a cada tarea y proyecto (se puede utilizar herramientas de seguimiento, bitácoras, etc)",
+            "Analizar los datos de tiempo, para saber el promedio que se le dedica a cada tarea o proyecto y se podrá tener una visión clara de la carga real de trabajo.",
+            "Evaluar la capacidad de los recursos, comparar los datos de carga de trabajo con la capacidad de los recursos disponibles, para saber cuanto trabajo pueden manejar los colaboradores o equipos en un período de tiempo determinado.",
+            "Identificar desbalances en la carga de trabajo, esto implica que algunos colaboradores o equipos puedan estar sobrecargados, mientras que otros tienen una carga ligera.",
+            "Evaluar eficiencia en la realización de tareas y proyectos, si se esta cumpliendo en tiempo y forma.",
+            "Establecer prioridades, basándose en los objetivos y metas organizacionales, esto puede ser en apoyo con RRHH, para hacer una mejor proporción de las tareas acorde a la importancia y urgencia, ayudando a evitar la carga y garantizar que se cumplan con los plazos y objetivos clave.",
+            "Implementar cambios, si se encuentran desbalances significativos o ineficiencias, trabajar en la redistribución de tareas, con asignación de recursos adicionales cuando sea necesario y la optimización de procesos. La carga de trabajo es cambiante de acuerdo al crecimiento de la organización por lo que se debe dar un seguimiento continuo.",
+            "Aplica las 4 buenas prácticas a la hora de gestionar las cargas de trabajo: a) Promover la flexibilidad Laboral b) Promover la capacitación y desarrollo c) Comunicación abierta y apoyo emocional. d) Procura un buen ambiente de trabajo.",
+            "Desarrollar los perfiles de puestos de manera que quede plasmado sus actividades, responsabilidades, plan de crecimiento, líneas de comunicación y sobre todo hasta donde tiene autonomía sobre su puesto para la toma de decisiones y solución de problemas."
+        ],
+        "Organización del tiempo de trabajo": [
+            "Identificar si la carga laboral es física (dolor muscular, inmobiliario inadecuado) se tendría que configurar el espacio de trabajo para promover la comodidad y disminuir la carga física.",
+            "Identificar si la carga laboral es mental donde las tareas demandan principalmente un esfuerzo mental a los colaboradores como análisis, toma de decisiones, resolución de problemas, gestión de la información compleja, no poder pasar más tiempo con su familia.",
+            "Recomendaciones para mejor gestión de su tiempo: a) Apostar a los puestos que puedan realizar teletrabajo. b) Enlistar todas tus tareas para comenzar tu jornada laboral consciente de los pendientes para saber cuanto tiempo dedicaras a cada una de ellas. c) Delegar cuando sea necesario d) Trabajar en los hábitos saludables, como realizar pausas activas cada 30 o 60 minutos para descansar la vista, estirarse, relajarse, darle un respiro a tu mente, etc. e) Aplica la regla de los 2 minutos, si una tarea requiere de menos de 2 minutos para completarse, debemos hacerla en ese momento (confirmar una reunión, asignar una tarea a otro compañero, descargar un documento, enviar un correo, etc) f) Planifícate con antelación, si es un proyecto grande, puedes utilizar un calendario que te ayude a planificar cada día, teniendo flexibilidad y dejar unos días extras para posibles imprevistos o tareas urgentes. g) Organiza tu espacio de trabajo, para evitar distracciones, solo puedes dedicar 10 min al día para acomodar tu espacio de trabajo. h) Conocer tus límites y horas más productivas (observar como rindes a distintas horas, evaluar los factores que provocan cansancio y estrés) i) Asigna un tiempo a cada tarea: Mas o menos ya sabes cuanto te toma cada actividad o tarea, por lo que puedes llevar una mejor planificación para cumplir con los objetivos.",
+            "Realizar todo esto ayudará a reducir los tiempos muertos, poder salir en tiempo y forma para poder pasar más tiempo con su familia, y no generar más tiempo del horario regular al menos que sea por una actividad o situación urgente de manera muy puntual para evitar desgastes físicos y mentales."
+        ],
+        "Liderazgo y relaciones en el trabajo": [
+            "Verificar que la difusión de roles de puestos se haya realizado correctamente y que los colaboradores no tengan dudas sobre lo que deben o no realizar en cuanto sus funciones y responsabilidades.",
+            "Capacitar a los puestos que tienen personal a su cargo para desarrollar más las habilidades de liderazgo.",
+            "Realizar evaluaciones a los líderes o jefes inmediatos para saber que están realizando sus funciones correctamente y ver si hay áreas de oportunidad.",
+            "Dar seguimiento a los casos que hayan salido con violencia alta, para detectar a tiempo en caso de que realmente se estén presentando y tomar las medidas pertinentes.",
+            "Recomendaciones para mejorar el liderazgo y relaciones laborales: a) Dar retroalimentación constructiva b) Aumentar la comunicación con controles regulares c) Proporcionar formación y oportunidades para mejorar las competencias d) Crear una cultura que promueva la transparencia. e) Permitir la flexibilidad y potenciar la toma de decisiones independientes. f) Recompensas y reconocimiento para los colaboradores. g) Analizar el rendimiento y el crecimiento para introducir mejoras."
+        ],
+        "Entorno organizacional": [
+            "Mejorar la retroalimentación con los colaboradores siendo precisos con el “que” y “por qué”",
+            "Dar la oportunidad de dar su opinión al colaborador antes de tomar cualquier decisión.",
+            "Los errores se señalan en privado siempre con respeto, para no disminuir la confianza en el colaborador.",
+            "Si harás un reconocimiento o felicitación a un colaborador que sea publico.",
+            "Crear una matriz de comunicación interna para que todos los colaboradores sepan con quién y como dirigirse ante ciertas situaciones para no triangular información.",
+            "Realizar reuniones periódicas para ver pendientes y avances de actividades ya sea por área, departamento o equipo de trabajo.",
+            "Contar con un buzón de transparencia para recibir nuevas ideas, sugerencias, mejoras, etc.",
+            "Desarrollar un plan de carrera, donde se brinden oportunidades de crecimiento laboral que le brinden estabilidad a sus colaboradores.",
+            "Realizar actividades recreativas y sociales donde se fomente la cultura, los valores, la comunicación y convivencia entre los colaboradores."
+
+        ]
+    }
 }
