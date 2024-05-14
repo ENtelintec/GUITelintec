@@ -210,31 +210,3 @@ class FrameEncuestas(ttk.Frame):
             out_path=self.quizz_out_path,
             metadata=metadata
         )
-
-
-class QuizzResultPDF(ttk.Frame):
-    def __init__(self, master, quizzes=quizzes_RRHH, **kwargs):
-        super().__init__(master)
-        self.columnconfigure(0, weight=1)
-        # ----------Title-------------
-        ttk.Label(
-            self, text="Resultados de Encuestas", font=("Helvetica", 30, "bold")
-        ).grid(row=0, column=0, padx=10, pady=10, sticky="nswe")
-        # ----------variables-------------
-        self.quizzes = quizzes
-        self.quizz = None
-        self.dict_quizz = None
-        self.filepath = None
-        # ----------widgets-------------
-        options = []
-        for item in self.quizzes.values():
-            options.append(item["name"])
-        self.quizz_selector = create_Combobox(
-            self,
-            values=options,
-            state="readonly",
-            row=1,
-            column=0,
-            sticky="n",
-            width=50,
-        )

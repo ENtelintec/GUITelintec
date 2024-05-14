@@ -4,7 +4,7 @@ __date__ = '$ 26/abr./2024  at 16:42 $'
 
 from ttkbootstrap.scrolled import ScrolledFrame
 
-from templates.modules.Home.SubFrame_NotSM import NotificationsUser
+from templates.modules.Home.SubFrame_GeneralNoti import NotificationsUser
 from templates.modules.Home.SubFrame_NotificationsChatbot import NotificationsChatbot
 
 frames_notifications_avaliable = {
