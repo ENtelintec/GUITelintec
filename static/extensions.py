@@ -29,7 +29,11 @@ cache_oct_fichaje_path = "files/contracts_cache.pkl"
 filepath_settings = "files/settings.json"
 filepath_recomendations = "files/recomendations.json"
 quizzes_RRHH = {
-    "0": {"name": "Encuesta de Salida", "path": "files/quizz_salida.json", "type": 0},
+    "0": {
+        "name": "Encuesta de Salida", 
+        "path": "files/quizz_salida.json", 
+        "type": 0
+    },
     "1": {
         "name": "Encuesta de Norma_035_50",
         "path": "files/quizz_norma035_50_v1.json",

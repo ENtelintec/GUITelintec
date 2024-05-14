@@ -13,7 +13,7 @@ from static.Models.api_employee_models import employees_info_model, employee_mod
     employee_exam_model_insert, employee_exam_model_delete, employee_exam_model_update, employees_vacations_model, \
     vacations_model, employee_vacation_model_insert, employee_vacation_model_delete
 from static.Models.api_models import employees_resume_model, resume_model
-from static.extensions import cache_file_resume_fichaje
+from static.extensions import cache_file_resume_fichaje, quizzes_RRHH
 from templates.Functions_DB_midleware import get_info_employees_with_status, get_info_employee_id, get_all_vacations, \
     get_vacations_employee, create_csv_file_employees
 from templates.Functions_Files import get_fichajes_resume_cache
@@ -343,3 +343,13 @@ class DownloadFileVacations(Resource):
                 seniority = seniority.replace(",", ";")
                 file.write(f"{emp_id}, {name}, {l_name}, {date_admission}, {seniority}\n")
         return send_file(filepath, as_attachment=True)
+
+
+@ns.route('/download/quizz/<int:type_q>')
+class DownloadFileQuizz(Resource):
+    def get(self, type_q):
+        try:
+            quizz = quizzes_RRHH[str(type_q)]
+            return send_file(quizz["path"], as_attachment=True)
+        except Exception as e:
+            return {"data": f"Error en el tipo de quizz: {str(e)}"}, 400

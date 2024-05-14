@@ -2,9 +2,11 @@
 __author__ = 'Edisson Naula'
 __date__ = '$ 08/may./2024  at 10:00 $'
 
+from flask import send_file
 from flask_restx import Namespace, Resource
 
 from static.Models.api_models import notification_insert_model, notification_request_model
+from static.extensions import filepath_settings
 from templates.Functions_Text import parse_data
 from templates.Functions_midleware_misc import get_all_notification_db_user_status
 from templates.controllers.notifications.Notifications_controller import insert_notification, update_status_notification
@@ -45,4 +47,11 @@ class Notification(Resource):
             return {"msg": "Ok", "data": str(result)}, 200
         else:
             return {"error": error, "data": str(result)}, 400
-        
+
+    @ns.route('/download/gui/settings')
+    class DownloadFileVacations(Resource):
+        def get(self):
+            try:
+                return send_file(filepath_settings, as_attachment=True)
+            except Exception as e:
+                return {"data": f"Error en el tipo de quizz: {str(e)}"}, 400

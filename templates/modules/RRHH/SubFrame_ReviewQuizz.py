@@ -14,7 +14,7 @@ from templates.Funtions_Utils import create_label, create_button
 from templates.PDFGenerator import create_pdf_quizz_salida, create_pdf__quizz_nor035_v1, \
     create_pdf_quizz_nor035_50_plus, create_quizz_clima_laboral, create_quizz_eva_360
 
-dict_keys ={
+dict_keys = {
     "name_emp": "Empleado",
     "date": "Fecha",
     "interviewer": "Entrevistador",
