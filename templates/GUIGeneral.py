@@ -35,7 +35,6 @@ from templates.modules.SM.SubFrame_SMManagement import SMManagement
 from templates.modules.Almacen.Clients import ClientsScreen
 from templates.modules.Almacen.Inventory import InventoryScreen
 from templates.modules.Almacen.Providers import ProvidersScreen
-from templates.modules.Almacen.Settings import SettingsScreen
 from templates.modules.Almacen.Supplies import SuppliesScreen
 
 filepath_notifications = 'files/notifications.txt'
@@ -57,17 +56,17 @@ available_frames = {
     "Pedidos": PedidosFrame,
     "Configuración": SettingsFrameGUI,
     "SM": SMFrame,
-    "Clients (A)": ClientsScreen,
-    "Proveedores (A)": ProvidersScreen,
+    "Clientes": ClientsScreen,
+    "Proveedores": ProvidersScreen,
     "Inventario": InventoryScreen,
     "Suministros Diarios": SuppliesScreen,
-    "Configuraciones (A)": SettingsScreen,
     "Ventana Asistente": AssistantGUI,
     "Examenes":  ExamenesMedicos,
     "Emp. Detalles": EmployeeDetailsScrolled,
     "Cuenta":  Login.LogOptionsFrame,
     "Procesar SM": SMManagement,
-    "Movimientos": MovementsFrame
+    "Movimientos": MovementsFrame,
+    "Settings":  SettingsFrameGUI
 }
 
 
@@ -125,13 +124,7 @@ class GUIAsistente(ttk.Window):
         self.virtual_assistant_window = None
         self.VA_frame = None
         self._active_window = None
-        # -----------------------load images -----------------------
-        self.images = {
-            "facebook": get_image_side_menu("facebook"),
-            "whatsapp": get_image_side_menu("whatsapp"),
-            "telegram": get_image_side_menu("telegram"),
-            "webchat": get_image_side_menu("webchat")
-        }
+        
         # -----------------------Create side menu frame-----------------------
         self.navigation_frame = ttk.Frame(self)
         self.navigation_frame.grid(row=0, column=0, sticky="nswe", pady=10, padx=5)
@@ -242,7 +235,7 @@ class GUIAsistente(ttk.Window):
             window_to_create = available_frames[window]
             arguments = {
                 "master":  self, "data": data_dic, "style_gui": self.style_gui, "settings": self.settings,
-                "chats_to_show": self.chats_to_show, "images": self.images, "chats": self.chats,
+                "chats_to_show": self.chats_to_show, "images": None, "chats": self.chats,
                 "department": self.department, "username": self.username,
                 "permissions": self.permissions,
                 "username_data": self.username_data,

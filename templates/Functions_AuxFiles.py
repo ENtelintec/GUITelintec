@@ -29,40 +29,39 @@ def get_image_side_menu(wname, image_path=carpeta_principal):
     :rtype: CTkImage.
     """
     images = {
-        "DB": "bd_img_col_!.png",
-        "Notificaciones": "not_img_col_re.png",
-        "Chats": "chat_light.png",
-        "Settings": "settings.png",
-        "Fichajes": "fichaje.png",
-        "Cuenta": "user_robot.png",
-        "Examenes": "exam_medical.png",
-        "Emp. Detalles": "emp_details_dark.png",
-        "Home": "warehouse_white.png",
-        "Clients (A)": "employees_ligth.png",
-        "Inventario": "products_ligth.png",
-        "Entradas": "incoming.png",
-        "Salidas": "out_p.png",
-        "Devoluciones": "return_p.png",
-        "Ordenes (A)": "order_p.png",
-        "Proveedores (A)": "providers_p.png",
-        "Configuraciones (A)": "settings.png",
+        "DB": "DB.png",
+        "Notificaciones": "Notificacion.png",
+        "Settings": "Settings.png",
+        "Fichajes": "RH/Fichajes.png",
+        "Cuenta": "Cuenta.png",
+        "Examenes": "RH/Examenes.png",
+        "Emp. Detalles": "RH/DetallesEmpleados.png",
+        "Home": "Inicio.png",
+        "Clientes": "Almacenes/Clientes.png",
+        "Inventario": "Almacenes/Inventario.png",
+        "Entradas": "Almacenes/Entradas.png",
+        "Salidas": "Almacenes/Salidas.png",
+        "Proveedores": "Almacenes/proveedores.png",
         "messenger": "messenger.png",
-        "whasapp": "whasapp.png",
+        "whatsapp": "whasapp.png",
         "telegram": "telegram.png",
+        "facebook":  "messenger.png",
         "webchat": "webchat.png",
-        "logo": "telintec-500.png",
-        "Empleados": "customers_ligth.png",
-        "Clientes": "employees_ligth.png",
-        "Departamentos": "departments_ligth.png",
-        "Encargados": "heads_ligth.png",
-        "Proveedores": "suppliers_ligth.png",
-        "Productos": "products_ligth.png",
-        "Ordenes": "orders_img.png",
-        "Compras": "purchases_img.png",
-        "Tickets": "ticket_img.png",
-        "Chat": "chats_img.png",
-        "O. Virtuales": "v_orders_img.png",
-        "Usuarios": "add_user_light.png"
+        "logo": "LogoTelintec.png",
+        "Empleados": "RH/Empleados.png",
+        "Inicio": "Inicio.png",
+        "Encuestas": "RH/Encuestas.png",
+        "Exámenes": "RH/Examenes.png",
+        "Vacaciones": "RH/Vacaciones.png",
+        "Procesar SM": "Almacenes/ProcesamientoSM.png",
+        "Movimientos": "Almacenes/Movimientos.png",
+        "SM": "Almacenes/SM.png",
+        "Departamentos": "DB/Departamentos.png",
+        "Encargados": "DB/Encargados.png",
+        "Productos": "DB/Productos.png",
+        "Ordenes": "DB/Ordenes.png",
+        "Tickets": "DB/tickets.png",
+        "O. Virtuales": "DB/Ordenes.png"
     }
     if wname in images.keys():
         if wname == "logo":
@@ -79,6 +78,7 @@ def get_image_side_menu(wname, image_path=carpeta_principal):
         # return CTkImage(light_image=Image.open(os.path.join(image_path, images[wname])),
         #                 size=(30, 30))
     else:
+        print(f"image for icon not found: {wname}")
         image = Image.open(image_path + "/" + images["DB"])
         resize_img = image.resize((30, 30))
         out_img = ImageTk.PhotoImage(resize_img)
@@ -559,6 +559,8 @@ def load_quizzes_names(path_directory: str):
                 quizzes_names_json.append(file)
     except Exception as e:
         print(e)
+        print(path_directory)
+        print(quizz_out_path)
         print("Error al cargar los quizzes, verifique la direccion del directorio en settings")
         print("intentando con directorio por defecto")
         for file in os.listdir(quizz_out_path):

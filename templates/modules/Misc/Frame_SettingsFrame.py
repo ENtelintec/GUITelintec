@@ -23,7 +23,7 @@ def select_path():
 
 class SettingsFrameGUI(ttk.Frame):
     def __init__(self, master, style_gui, department=None, setting: dict = None, *args, **kwargs):
-        super().__init__(master, *args, **kwargs)
+        super().__init__(master)
         self.columnconfigure(0, weight=1)
         self.filepath = filepath_settings
         self.master = master

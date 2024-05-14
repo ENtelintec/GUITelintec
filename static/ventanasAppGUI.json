@@ -23,7 +23,6 @@
       "Inicio",
       "DB",
       "Notificaciones",
-      "Fichajes",
       "Settings",
       "Cuenta"
     ],
@@ -31,7 +30,6 @@
       "Inicio",
       "Movimientos",
       "Inventario",
-      "Configuraciones (A)",
       "Procesar SM",
       "Cuenta"
     ],
@@ -51,8 +49,8 @@
     ],
     "App.Department.Administracion": [
       "Inicio",
-      "Clients (A)",
-      "Proveedores (A)",
+      "Clientes",
+      "Proveedores",
       "SM",
       "Cuenta"
     ]

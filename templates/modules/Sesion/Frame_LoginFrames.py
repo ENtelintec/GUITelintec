@@ -46,8 +46,8 @@ def image_load():
     :return:
     """
     image_path = carpeta_principal
-    return (ctk.CTkImage(Image.open(os.path.join(image_path, "telintec-500.png")), size=(90, 90)),
-            ctk.CTkImage(light_image=Image.open(os.path.join(image_path, "bd_img_col_!.png")),
+    return (ctk.CTkImage(Image.open(os.path.join(image_path, "LogoTelintec.png")), size=(90, 90)),
+            ctk.CTkImage(light_image=Image.open(os.path.join(image_path, "DB.png")),
                          size=(30, 30)),
             ctk.CTkImage(dark_image=Image.open(os.path.join(image_path, "iso_claro.png")), size=(350, 180))
             )
@@ -59,7 +59,6 @@ class LoginGUI(ttk.Frame):
         self.columnconfigure(1, weight=1)
 
         self.images = {}
-        self.load_default_images = image_load()
         (self.logo_image, self.employees_img, self.iso_claro) = image_load()
         self.frame_login = ttk.Frame(self)
         self.frame_login.place(relx=0.5, rely=0.5, anchor="center")  # Centrar el nuevo frame

@@ -8,6 +8,7 @@ import re
 import customtkinter as ctk
 import ttkbootstrap as ttk
 
+from templates.Functions_AuxFiles import get_image_side_menu
 from templates.controllers.chatbot.chatbot_controller import get_chats_w_limit
 from templates.modules.Chatbot.SubFrame_DisplayChatSubframe import ChatsDisplay
 
@@ -101,14 +102,19 @@ class ScrollableLabelFrame(ctk.CTkScrollableFrame):
 
 
 class ChatFrame(ttk.Frame):
-    def __init__(self, master, chats_to_show, images, chats=None, setting: dict = None, **kwargs):
+    def __init__(self, master, chats_to_show, images=None, chats=None, setting: dict = None, **kwargs):
         # noinspection PyArgumentList
         super().__init__(master)
         # -------------variables and config----------------------------
         self.columnconfigure(1, weight=1)
         self.rowconfigure(0, weight=1)
         self.chats_to_show = chats_to_show
-        self.images = images
+        self.images = {
+            "facebook": get_image_side_menu("facebook"),
+            "whatsapp": get_image_side_menu("whatsapp"),
+            "telegram": get_image_side_menu("telegram"),
+            "webchat": get_image_side_menu("webchat")
+        }
         # --------------widgets--------------
         self.chats = get_chats_w_limit(limit=(0, self.chats_to_show)) if chats is None else chats
         self.chats_selections = ScrollableChats(self,

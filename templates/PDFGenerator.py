@@ -3,12 +3,9 @@ __author__ = "Edisson Naula"
 __date__ = "$ 14/feb./2024  at 15:54 $"
 
 import textwrap
-from tkinter import messagebox
 
 from reportlab.pdfgen import canvas
-from reportlab.lib import colors
 
-from templates.Funtions_Utils import calculate_results_quizzes
 
 
 def create_datos_personales(
@@ -185,7 +182,7 @@ def create_pdf_quizz_salida(
 ):
     # initializing variables with values
     file_name = (
-        "C:/Users/eugen/OneDrive/Escritorio/pdfs/samplev2.pdf"
+        "files/quizz_out/sample.pdf"
         if filepath_out is None
         else filepath_out
     )
