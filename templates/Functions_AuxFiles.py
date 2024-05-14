@@ -3,11 +3,12 @@ __author__ = 'Edisson Naula'
 __date__ = '$ 22/ene./2024  at 16:09 $'
 
 import json
+import os
 from datetime import datetime
 
 from PIL import Image, ImageTk
 
-from static.extensions import cache_file_resume_fichaje, status_dic
+from static.extensions import cache_file_resume_fichaje, status_dic, quizz_out_path
 from templates.Functions_Files import get_fichajes_resume_cache, update_fichajes_resume_cache
 from templates.controllers.employees.employees_controller import get_name_employee
 from templates.controllers.fichajes.fichajes_controller import get_fichaje_DB
@@ -543,3 +544,47 @@ def get_all_sm_products():
         return result, columns
     else:
         return None, None
+
+
+def load_quizzes_names(path_directory: str):
+    # look for pdf filees in the directory
+    quizzes_names_pdf = []
+    quizzes_names_json = []
+    path = path_directory
+    try:
+        for file in os.listdir(path_directory):
+            if file.endswith(".pdf"):
+                quizzes_names_pdf.append(file)
+            elif file.endswith(".json"):
+                quizzes_names_json.append(file)
+    except Exception as e:
+        print(e)
+        print("Error al cargar los quizzes, verifique la direccion del directorio en settings")
+        print("intentando con directorio por defecto")
+        for file in os.listdir(quizz_out_path):
+            if file.endswith(".pdf"):
+                quizzes_names_pdf.append(file)
+            elif file.endswith(".json"):
+                quizzes_names_json.append(file)
+        path = quizz_out_path
+    return quizzes_names_pdf,  quizzes_names_json, path
+
+
+def get_data_files_quizzes(path_quizzes: str):
+    """
+    Get the data files.
+    :param path_quizzes: The path quizzes.
+    :return: The data files.
+    """
+    data_files = {}
+    names_files_pdf, names_files_json, path = load_quizzes_names(path_quizzes)
+    for json_name in names_files_json:
+        file = json.load(open(path + json_name, "r"))
+        name_emp = file["metadata"]["name_emp"]
+        name_emp = name_emp.replace(" ", "")
+        print(name_emp, names_files_pdf)
+        for name_pdf in names_files_pdf:
+            if name_emp in name_pdf:
+                print(file["metadata"])
+                break
+    return names_files_pdf

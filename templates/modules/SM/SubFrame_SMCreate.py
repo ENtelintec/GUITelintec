@@ -433,7 +433,7 @@ class FrameSMCreate(ttk.Frame):
         NewClient()
 
 
-class NewProduct(ttk.Window):
+class NewProduct(ttk.Toplevel):
     def __init__(self, master=None, **kw):
         super().__init__(master)
         self.title("Nuevo producto")
@@ -468,7 +468,7 @@ class NewProduct(ttk.Window):
         self.destroy()
 
 
-class NewClient(ttk.Window):
+class NewClient(ttk.Toplevel):
     def __init__(self, master=None, **kw):
         super().__init__(master)
         self.title("Nuevo producto")

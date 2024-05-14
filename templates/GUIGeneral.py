@@ -21,14 +21,14 @@ from templates.modules.Bitacora.Frame_Bitacora import BitacoraEditFrame
 from templates.modules.Chatbot.Frame_ChatsFrame import ChatFrame
 from templates.modules.DB.Frame_DBFrame import DBFrame, EmployeesFrame
 from templates.modules.RRHH.Frame_EmployeeDetail import EmployeeDetailsScrolled
+from templates.modules.RRHH.Frame_Encuestas import EncuestasFrame
 from templates.modules.RRHH.Frame_ExamenesMedicos import ExamenesMedicos
 from templates.modules.RRHH.Frame_FichajeFilesFrames import FichajesFilesGUI
 from templates.modules.Home.Frame_Home import HomeFrame
 from templates.modules.Home.Frame_Notifications import Notifications
 from templates.modules.Chatbot.Frame_PedidosFrame import PedidosFrame
-from templates.modules.Frame_Quizzes import FrameEncuestas
 from templates.modules.SM.Frame_SMGeneral import SMFrame
-from templates.modules.Frame_SettingsFrame import SettingsFrameGUI
+from templates.modules.Misc.Frame_SettingsFrame import SettingsFrameGUI
 from templates.modules.RRHH.Frame_Vacations import VacationsFrame
 from templates.modules.Assistant.Frame_vAssistantGUI import AssistantGUI
 from templates.modules.SM.SubFrame_SMManagement import SMManagement
@@ -49,7 +49,7 @@ available_frames = {
     "Bitacora": BitacoraEditFrame,
     "Notificaciones": Notifications,
     "Vacaciones": VacationsFrame,
-    "Encuestas": FrameEncuestas,
+    "Encuestas": EncuestasFrame,
     "Exámenes": ExamenesMedicos,
     "Fichajes": FichajesFilesGUI,
     "DB": DBFrame,
