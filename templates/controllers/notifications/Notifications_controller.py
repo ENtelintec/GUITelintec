@@ -18,7 +18,7 @@ def get_notifications_by_user(user_id: int, status="%"):
     return flag, error, result
 
 
-def get_notification_by_id(id_not: int):
+def get_notification_by_permission(id_not: int):
     sql = ("SELECT timestamp, id, body "
            "FROM notifications_gui "
            "WHERE id = %s")

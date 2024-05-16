@@ -98,9 +98,9 @@ def get_all_sm(limit, page=0):
             'order_quotation': result[i][8],
             'date': result[i][9],
             'limit_date': result[i][10],
-            'items': result[i][11],
+            'items': json.loads(result[i][11]),
             'status': result[i][12],
-            'history': result[i][13],
+            'history': json.loads(result[i][13]),
             'comment': result[i][14],
         })
     data_out = {

@@ -18,6 +18,19 @@ product_model_SM_selection = api.model('Product Data', {
     'stock':  fields.Integer(required=True, description='The product stock')
 })
 
+items_model_sm = api.model('ItemsModel', {
+    'id': fields.String(required=True, description='The product id'),
+    'name': fields.String(required=True, description='The product name'),
+    'stock':  fields.Integer(required=True, description='The product stock'),
+    'comment': fields.String(required=True, description='The product comment'),
+    'quantity': fields.Float(required=True, description='The product quantity')
+})
+history_model_sm = api.model('HistoryModel', {
+    'date': fields.String(required=True, description='The product id'),
+    'user': fields.Integer(required=True, description='The product name'),
+    'event': fields.String(required=True, description='The product unit of measure')
+})
+
 products_answer_model = api.model('AnswerProducts', {
     'data': fields.List(fields.Nested(product_model_SM_selection)),
     'page': fields.Integer(required=True, description='The page number send'),
@@ -43,8 +56,9 @@ sm_model = api.model('Material_request', {
     'date': fields.String(required=True, description='The date'),
     'limit_date': fields.String(required=True, description='The limit date'),
     'status': fields.Integer(required=True, description='The status of the sm'),
-    'history':  fields.String(required=True, description='The history'),
-    'comment': fields.String(required=True, description='The comment')
+    'history':  fields.List(fields.Nested(history_model_sm)),
+    'comment': fields.String(required=True, description='The comment'),
+    'items':  fields.List(fields.Nested(items_model_sm))
 })
 
 table_sm_model = api.model('TableMaterialRequest', {

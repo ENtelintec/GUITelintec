@@ -3,13 +3,14 @@ __author__ = "Edisson Naula"
 __date__ = "$ 29/ene./2024  at 15:31 $"
 
 import json
+from datetime import datetime
 from tkinter import StringVar, Misc, filedialog
 from typing import Any
 
 import ttkbootstrap as ttk
 from ttkbootstrap.tableview import Tableview
 
-from static.extensions import conversion_quizzes_path, ventanasApp_path
+from static.extensions import conversion_quizzes_path, ventanasApp_path, format_timestamps
 from static.extensions import filepath_recommendations
 from templates.controllers.chatbot.chatbot_controller import get_chats
 from templates.controllers.customer.customers_controller import get_customers
@@ -17,6 +18,7 @@ from templates.controllers.departments.department_controller import get_departme
 from templates.controllers.departments.heads_controller import get_heads
 from templates.controllers.employees.employees_controller import get_employees
 from templates.controllers.employees.us_controller import get_users
+from templates.controllers.notifications.Notifications_controller import insert_notification
 from templates.controllers.order.orders_controller import get_orders, get_v_orders
 from templates.controllers.product.p_and_s_controller import get_p_and_s
 from templates.controllers.purchases.purchases_controller import get_purchases
@@ -937,8 +939,9 @@ def recommendations_results_quizzes(dict_results: dict, tipo_q: int):
     cat_score = dict_results.get('c_cat', 'default_cat')  # Usar un valor por defecto
 
     # Acceder a las recomendaciones finales
-    dict_recommendations['c_final_r'] = dict_conversions_recomen['c_final_r'].get(final_score, ["No hay recomendaciones específicas."])
-    
+    dict_recommendations['c_final_r'] = dict_conversions_recomen['c_final_r'].get(final_score, [
+        "No hay recomendaciones específicas."])
+
     # Aquí necesitas modificar el código según cómo desees manejar las recomendaciones de dominio y categoría
     # dado que en tu JSON 'c_dom_r' es solo una cadena, puedes necesitar un enfoque diferente o más información
     # Si 'c_dom_r' debería ser una estructura similar a 'c_final_r', ajusta tu JSON y tu código en consecuencia
@@ -950,7 +953,6 @@ def recommendations_results_quizzes(dict_results: dict, tipo_q: int):
         dict_recommendations['c_cat_r'] = ["No hay recomendaciones específicas para esta categoría."]
 
     return dict_recommendations
-
 
 
 def Reverse(lst):
@@ -969,7 +971,7 @@ def hex_to_item_tableview(hex_num: str, digits: int):
 
 def list_hex_numbers(n: int):
     hex_numbers = []
-    for i in range(1, n+1):
+    for i in range(1, n + 1):
         hex_numbers.append(hex(i))
     return hex_numbers
 
@@ -982,3 +984,28 @@ def select_path():
     path = filedialog.askdirectory()
     print(path)
     return path
+
+
+def create_notification_permission(msg: str, permissions: list, title: str, sender_id: int):
+    """
+    Función para crear una notificación de permiso
+    :param sender_id: 
+    :param title: 
+    :param msg:
+    :param permissions:
+    :return:
+    """
+    date = datetime.now()
+    timestamp = date.strftime(format_timestamps)
+    body = {
+        'id': 0,
+        'status': 0,
+        'title': title,
+        'msg': msg,
+        'timestamp': timestamp,
+        'sender_id': sender_id,
+        'receiver_id': data["info"]["receiver_id"],
+        'app': permissions,
+    }
+    flag, error, result = insert_notification(body)
+    return flag
