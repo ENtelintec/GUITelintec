@@ -18,12 +18,15 @@ def get_notifications_by_user(user_id: int, status="%"):
     return flag, error, result
 
 
-def get_notification_by_permission(id_not: int):
+def get_notification_by_permission(user_id: int, permissions=None):
     sql = ("SELECT timestamp, id, body "
            "FROM notifications_gui "
-           "WHERE id = %s")
-    vals = (id_not,)
-    flag, error, result = execute_sql(sql, vals, 1)
+           "WHERE body->'$.receiver_id' = %s ")
+    vals = (user_id,)
+    if permissions is not None:
+        for item in permissions:
+            sql += f"OR body->'$.app' REGEXP '{item}' "
+    flag, error, result = execute_sql(sql, vals, 2)
     return flag, error, result
 
 

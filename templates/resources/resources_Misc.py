@@ -5,10 +5,11 @@ __date__ = '$ 08/may./2024  at 10:00 $'
 from flask import send_file
 from flask_restx import Namespace, Resource
 
-from static.Models.api_models import notification_insert_model, notification_request_model
+from static.Models.api_models import notification_insert_model, notification_request_model, request_av_response_model, \
+    response_av_model, response_files_av_model
 from static.extensions import filepath_settings
 from templates.Functions_Text import parse_data
-from templates.Functions_midleware_misc import get_all_notification_db_user_status
+from templates.Functions_midleware_misc import get_all_notification_db_user_status, get_response_AV, get_files_openai
 from templates.controllers.notifications.Notifications_controller import insert_notification, update_status_notification
 
 ns = Namespace('GUI/api/v1/misc')
@@ -55,3 +56,31 @@ class Notification(Resource):
                 return send_file(filepath_settings, as_attachment=True)
             except Exception as e:
                 return {"data": f"Error en el tipo de quizz: {str(e)}"}, 400
+
+
+@ns.route('/AV/response')
+class ResponseAV(Resource):
+    @ns.marshal_with(response_av_model)
+    @ns.expect(request_av_response_model)
+    def post(self):
+        code, data = parse_data(ns.payload, 20)
+        if code != 200:
+            return {"msg": f"Error in the data structure: {str(data)}"}, code
+        try:
+            files, res, id_chat = get_response_AV(data["department"], data["msg"], data["files"], data["filename"], data["id"])
+            return {"answer": res, "files": files, "id": id_chat}, 200
+        except Exception as e:
+            return {"answer": f"Error at getting answer from openAI: {str(e)}"}, 400
+
+
+@ns.route('/AV/files/<string:department>')
+class FilesAV(Resource):
+    @ns.marshal_with(response_files_av_model)
+    def get(self, department):
+        try:
+            files = get_files_openai(department)
+            if len(files) == 0:
+                files = []
+            return {"files": files}, 200
+        except Exception as e:
+            return {"files": [], "error": str(e)}, 400

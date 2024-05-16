@@ -214,6 +214,14 @@ def parse_data(data: dict, mode: int):
                     'receiver_id': data["info"]["receiver_id"],
                     'app': data["info"]["app"]
                 } if "info" in data.keys() else {}}
+            case 20:
+                out = {
+                    'msg': data["msg"],
+                    'department': data["department"],
+                    'filename': data["filename"],
+                    'files': data["files"],
+                    'id': data["id"]
+                }
             case _:
                 print("Invalid mode")
                 code = 204

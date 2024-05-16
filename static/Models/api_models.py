@@ -110,3 +110,28 @@ notification_delete_model = api.model('NotificationDeleteAMC', {
 })
 
 
+response_av_model = api.model('ResponseAV', {
+    'answer': fields.String(required=True, description='The message from the server'),
+    'files': fields.List(fields.String(required=True, description='The files')),
+    'id': fields.Integer(required=True, description='The id of the av chat'),
+})
+
+request_av_response_model = api.model('RequestAVResponse', {
+    'msg': fields.String(required=True, description='The message to the server'),
+    'department': fields.String(required=True, description='The department'),
+    'filename': fields.String(required=True, description='The name of the file to use with the av'),
+    'files': fields.List(fields.String(required=True, description='The files the av use including <filename>')),
+    'id': fields.Integer(required=False, description='The id of the av chat'),
+})
+
+files_av_model = api.model('ResponseFilesAV', {
+    'path': fields.String(required=True, description='The path of the file'),
+    'name': fields.String(required=False, description='The name of the file'),
+    'file_openai': fields.String(required=False, description='The file id of the openai'),
+    'file_id': fields.String(required=False, description='The file id of the assistat'),
+    'department':  fields.String(required=True, description='The department'),
+    'status': fields.String(required=True, description='The status of the file')
+})
+response_files_av_model = api.model('ResponseFilesAV', {
+    'files': fields.List(fields.Nested(files_av_model)),
+})
