@@ -57,7 +57,7 @@ class WeatherFrame(ttk.Frame):
         create_label(frame_current, 0, 1, text=f"Humedad: {self.weather.humidity}%", font=("Helvetica", 8, "normal"))
         create_label(frame_current, 1, 1, text=f"Viento: {self.weather.wind_direction} {self.weather.wind_speed} km/h", font=("Helvetica", 8, "normal"))
         create_label(frame_current, 2, 1, text=f"{self.weather.description}", font=("Helvetica", 8, "normal"))
-        create_label(frame_current, 3, 1, text=f"Sensación: {self.weather.feels_like} km", font=("Helvetica", 8, "normal"))
+        create_label(frame_current, 3, 1, text=f"Sensación: {self.weather.feels_like} ºC", font=("Helvetica", 8, "normal"))
         frame_daily = ttk.Frame(self)
         frame_daily.grid(row=1, column=1, sticky="we")
         indexes = []

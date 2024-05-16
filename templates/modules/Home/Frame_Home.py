@@ -5,6 +5,7 @@ __date__ = '$ 23/abr./2024  at 15:34 $'
 from ttkbootstrap.scrolled import ScrolledFrame
 
 from templates.Funtions_Utils import create_label
+from templates.modules.Home.Frame_Notifications import NotificationsFrame
 from templates.modules.RRHH.Frame_EmployeeDetail import EmployeeDetails
 from templates.modules.Home.Frame_Wheather import WeatherFrame
 from templates.modules.SM.SubFrame_SMDashboard import SMDashboard
@@ -31,13 +32,15 @@ class HomeFrame(ScrolledFrame):
         create_label(self, 0, 0, text="Inicio", font=("Helvetica", 30, "bold"), columnspan=2)
         frame_wather = WeatherFrame(self)
         frame_wather.grid(row=1, column=0, sticky="nsew", padx=(0, 10))
+        frame_notifications = NotificationsFrame(self, **kwargs)
+        frame_notifications.grid(row=2, column=0, sticky="we", padx=(0, 10))
         # -----------------Check permissions--------------------------------
         self.permissions = data_emp["permissions"]
         self.dashboard_key = []
         for permission in self.permissions.values():
             txt = permission.split(".")
             self.dashboard_key.append(txt[-1].lower())
-        
+        index_offset = 3
         indexes = []
         created_windows = []
         for index, dashboard in enumerate(self.dashboard_key):
@@ -48,6 +51,6 @@ class HomeFrame(ScrolledFrame):
                     continue
                 created_windows.append(window)
                 frame = window(self, **kwargs)
-                frame.grid(row=2+index, column=0, sticky="we", padx=(0, 10))
-                indexes.append(2+index)
+                frame.grid(row=index_offset+index, column=0, sticky="we", padx=(0, 10))
+                indexes.append(index_offset+index)
         self.rowconfigure(indexes, weight=1)

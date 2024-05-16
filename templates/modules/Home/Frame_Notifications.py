@@ -2,8 +2,10 @@
 __author__ = 'Edisson Naula'
 __date__ = '$ 26/abr./2024  at 16:42 $'
 
-from ttkbootstrap.scrolled import ScrolledFrame
+import ttkbootstrap as ttk
 
+from static.extensions import filepath_settings
+from templates.Functions_Files import open_file_settings
 from templates.modules.Home.SubFrame_GeneralNoti import NotificationsUser
 from templates.modules.Home.SubFrame_NotificationsChatbot import NotificationsChatbot
 
@@ -13,11 +15,11 @@ frames_notifications_avaliable = {
 }
 
 
-class Notifications(ScrolledFrame):
-    def __init__(self, master, settings=None, data_emp=None, **kw):
-        super().__init__(master, autohide=True)
+class NotificationsFrame(ttk.Frame):
+    def __init__(self, master, data_emp=None, **kw):
+        super().__init__(master)
         self.columnconfigure(0, weight=1)
-        self.settings = settings
+        flag, self.settings = open_file_settings(filepath_settings)
         self.data_emp = data_emp
         self.permissions = self.data_emp["permissions"]
         apps = []
@@ -33,5 +35,5 @@ class Notifications(ScrolledFrame):
         for frame in apps:
             if frame in frames_notifications_avaliable.keys():
                 frame_created = frames_notifications_avaliable[frame](self, **kw)
-                frame_created.grid(row=index, column=0, sticky="nsew")
+                frame_created.grid(row=index, column=0, sticky="nsew", padx=(0, 10))
                 index += 1                

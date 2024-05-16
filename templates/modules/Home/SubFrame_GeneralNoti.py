@@ -63,7 +63,7 @@ class NotificationsUser(ttk.Frame):
         self.svar_info = ttk.StringVar()
         self.table_not = None
         # ------------------------------title label------------------------
-        title_label = ttk.Label(self, text="Notificaciones de Solicitudes de Material",
+        title_label = ttk.Label(self, text="Notificaciones",
                                 font=("Helvetica", 22, "bold"))
         title_label.grid(row=0, column=0, padx=10, pady=10, sticky="n")
         # ------------------- change the data initial for a read file.-----------

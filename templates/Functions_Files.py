@@ -1118,15 +1118,37 @@ def open_file_settings(filepath: str) -> tuple[bool, dict]:
     :param filepath:
     :return:
     """
-    flag = False
-    settings = {}
+    settings_default = {
+        "max_chats": "40",
+        "start_date": "19\/oct.\/2023",
+        "end_date": "19\/oct.\/2023",
+        "sampling_time": 1,
+        "gui": {
+            "null": {
+                "theme": "litera"
+            },
+            "RRHH": {
+                "days_asueto": ["01-01", "14-09"],
+                "theme": "morph",
+                "files_procces": "C:\/Users\/Edisson\/OneDrive\/Documentos\/Telintec_files_departments\/RH",
+                "files_cache": "C:\/Users\/Edisson\/OneDrive\/Documentos\/Telintec_files_departments\/RH",
+                "files_quizz_out": "files\/quizz_out\/"            
+            },
+            "default": {
+                "theme": "morph"
+            }
+        }
+    }
     if not os.path.exists(filepath):
-        return flag, settings
+        return False, settings_default
     # Open the file and read the data.
-    with open(filepath, 'r') as file:
-        settings = json.load(file)
-    flag = True
-    return flag, settings
+    try:
+        with open(filepath, 'r') as file:
+            settings = json.load(file)
+        return True, settings
+    except  Exception as e:
+        print("Error at opening file: ", e)
+        return False, settings_default
 
 
 def update_file_settings(filepath: str, settings: dict):

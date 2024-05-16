@@ -25,7 +25,7 @@ from templates.modules.RRHH.Frame_Encuestas import EncuestasFrame
 from templates.modules.RRHH.Frame_ExamenesMedicos import ExamenesMedicos
 from templates.modules.RRHH.Frame_FichajeFilesFrames import FichajesFilesGUI
 from templates.modules.Home.Frame_Home import HomeFrame
-from templates.modules.Home.Frame_Notifications import Notifications
+from templates.modules.Home.Frame_Notifications import NotificationsFrame
 from templates.modules.Chatbot.Frame_PedidosFrame import PedidosFrame
 from templates.modules.SM.Frame_SMGeneral import SMFrame
 from templates.modules.Misc.Frame_SettingsFrame import SettingsFrameGUI
@@ -46,7 +46,7 @@ available_frames = {
     "Inicio": HomeFrame,
     "Chats": ChatFrame,
     "Bitacora": BitacoraEditFrame,
-    "Notificaciones": Notifications,
+    "Notificaciones": NotificationsFrame,
     "Vacaciones": VacationsFrame,
     "Encuestas": EncuestasFrame,
     "Exámenes": ExamenesMedicos,
