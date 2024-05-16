@@ -409,3 +409,21 @@ def get_all_suppliers():
            "FROM suppliers_amc ")
     flag, error, result = execute_sql(sql, None, 5)
     return flag, error, result
+
+
+def get_movements_type(type_m: str, limit=10):
+    sql = ("SELECT sql_telintec.product_movements_amc.id_product, "
+           "sum(sql_telintec.product_movements_amc.quantity) as total_move, "
+           "sql_telintec.products_amc.name, "
+           "sql_telintec.products_amc.udm "
+           "FROM product_movements_amc "
+           "INNER JOIN sql_telintec.products_amc ON (products_amc.id_product = product_movements_amc.id_product) "
+           "WHERE movement_type LIKE %s "
+           "GROUP BY id_product "
+           "ORDER BY total_move "
+           "LIMIT %s ")
+    
+    val = (type_m, limit)
+    flag, error, result = execute_sql(sql, val, 2)
+    return flag, error, result
+

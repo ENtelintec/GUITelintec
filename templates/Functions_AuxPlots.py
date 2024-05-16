@@ -4,6 +4,7 @@ __date__ = '$ 09/may./2024  at 16:49 $'
 
 from static.extensions import status_dic
 from templates.controllers.material_request.sm_controller import get_all_sm_plots
+from templates.controllers.product.p_and_s_controller import get_movements_type
 
 line_style = ['-', '--', '-.', ':', '-*']
 
@@ -157,4 +158,25 @@ def get_data_sm_per_range(type_r: str, type_chart: str):
         else:
             dict_results[year][month][day].append([id_sm, id_emp, date_init, date_limit, status])
     return generate_bar_data_from_dict(dict_results, type_r, type_chart)
-    
+
+
+def get_data_movements_type(type_m: str, n_elements: int):
+    flag, error, results = get_movements_type(type_m, n_elements)
+    if not flag:
+        return None
+    data_dict_p = {}
+    for item in results:
+        id_prod, quantity, name, udm = item
+        if str(id_prod) not in data_dict_p:
+            data_dict_p[str(id_prod)] = quantity
+    title = f"Movimientos de {type_m}"
+    ylabel = "Cantidad"
+    legend = None
+    data_chart = {
+        "data": data_dict_p,
+        "title": title,
+        "ylabel": ylabel,
+        "legend": legend,
+        "xlabel": "ID Productos"
+    }
+    return data_chart

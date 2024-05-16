@@ -3,7 +3,7 @@ __author__ = "Edisson Naula"
 __date__ = "$ 29/ene./2024  at 15:31 $"
 
 import json
-from tkinter import StringVar, Misc
+from tkinter import StringVar, Misc, filedialog
 from typing import Any
 
 import ttkbootstrap as ttk
@@ -212,9 +212,9 @@ def compare_permissions_windows(
         if "Inicio" in ventanas:
             ventanas.remove("Inicio")
             ventanas.insert(0, "Inicio")
-        if "Configuraciones (A)" in ventanas:
-            ventanas.remove("Configuraciones (A)")
-            ventanas.append("Configuraciones (A)")
+        if "Settings" in ventanas:
+            ventanas.remove("Settings")
+            ventanas.append("Settings")
         if "Cuenta" in ventanas:
             ventanas.remove("Cuenta")
             ventanas.append("Cuenta")
@@ -972,3 +972,13 @@ def list_hex_numbers(n: int):
     for i in range(1, n+1):
         hex_numbers.append(hex(i))
     return hex_numbers
+
+
+def select_path():
+    """
+    Función para seleccionar una carpeta de archivos
+    :return:
+    """
+    path = filedialog.askdirectory()
+    print(path)
+    return path

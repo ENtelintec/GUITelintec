@@ -37,7 +37,12 @@ class FramePlot(tk.Frame):
                         axes.bar(labels_x, values)
                     axes.set_title(data["title"])
                     axes.set_ylabel(data["ylabel"])
-                    axes.legend(data["legend"])
+                    if "legend" in data.keys():
+
+                        if data["legend"] is not None:
+                            axes.legend(data["legend"])
+                    if "xlabel" in data.keys():
+                        axes.set_xlabel(data["xlabel"])
                     figure_canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1, padx=10, pady=10)
                 case 'scatter':
                     x_values = data["val_x"]
@@ -95,6 +100,7 @@ class FramePlot(tk.Frame):
                     axes.set_title(data["title"])
                     axes.set_xlabel('X Values')
                     axes.set_ylabel('Y Values')
-                    axes.legend(data["legend"])
+                    if data["legend"] is not None:
+                        axes.legend(data["legend"])
                     axes.tick_params(axis='x', rotation=80)
                     figure_canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1, padx=10, pady=10)
