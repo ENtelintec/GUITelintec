@@ -14,7 +14,7 @@ from templates.Functions_AuxFiles import update_bitacora, get_events_op_date, \
     erase_value_bitacora, split_commment, update_bitacora_value
 from templates.Functions_Files import write_log_file
 from templates.Funtions_Utils import create_label, create_var_none, create_stringvar, create_button, \
-    set_dateEntry_new_value
+    set_dateEntry_new_value, create_notification_permission
 from templates.controllers.employees.employees_controller import get_employees_op_names
 
 
@@ -259,6 +259,7 @@ class BitacoraEditFrame(ScrolledFrame):
             if flag:
                 msg = f"Record inserted--> Empleado: {name}, Contrato: {contract}, Fecha: {date}, Evento: {event}, Valor: {value}, Comentario: {comment}--> by {self.username}"
                 write_log_file(log_file_bitacora_path, msg)
+                create_notification_permission(msg, ["bitacora", "operaciones"], "Nuevo evento bitacora", self.emp_id, 0)
                 self.update_table()
                 self.on_reset_click()
             else:
@@ -270,6 +271,8 @@ class BitacoraEditFrame(ScrolledFrame):
             if flag:
                 msg = f"Record inserted--> Empleado: {name}, Contrato: {contract}, Fecha: {date}, Evento: {event}, Valor: {value}, Comentario: {comment}--> by {self.username}"
                 write_log_file(log_file_bitacora_path, msg)
+                create_notification_permission(msg, ["bitacoras", "operaciones"], "Nuevo evento bitacora", self.emp_id,
+                                               0)
                 self.update_table()
                 self.on_reset_click()
             else:
@@ -334,6 +337,7 @@ class BitacoraEditFrame(ScrolledFrame):
         if flag:
             msg = f"Record deleted--> Empleado: {name}, Contrato: {contract}, Fecha: {date}, Evento: {event}--> by {self.username}"
             write_log_file(log_file_bitacora_path, msg)
+            create_notification_permission(msg, ["bitacoras", "operaciones"], "Evento borrado bitacora", self.emp_id, 0)
             self.update_table()
             self.on_reset_click()
         else:
@@ -355,6 +359,7 @@ class BitacoraEditFrame(ScrolledFrame):
                    f"Evento: {event}, Valor: {value}, "
                    f"Comentario: {comment}--> by {self.username}")
             write_log_file(log_file_bitacora_path, msg)
+            create_notification_permission(msg, ["bitacoras", "operaciones"], "Evento actualizado bitacora", self.emp_id, 0)
             self.update_table()
             self.on_reset_click()
         else:

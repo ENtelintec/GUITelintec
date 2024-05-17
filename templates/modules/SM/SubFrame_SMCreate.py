@@ -14,7 +14,7 @@ from static.extensions import log_file_sm_path, ventanasApp_path
 from templates.Functions_AuxFiles import get_all_sm_entries, get_all_sm_products
 from templates.Functions_Files import write_log_file
 from templates.Funtions_Utils import create_label, create_button, create_stringvar, create_Combobox, create_entry, \
-    create_date_entry
+    create_date_entry, create_notification_permission
 from templates.controllers.employees.us_controller import get_user_data_by_ID
 from templates.controllers.index import DataHandler
 from templates.controllers.material_request.sm_controller import insert_sm_db, update_sm_db, delete_sm_db
@@ -261,7 +261,6 @@ class FrameSMCreate(ttk.Frame):
 
     def on_add_click(self):
         out_info, data_products = self.get_entries_values()
-        
         out_info = self.formart_values_info(out_info, action=0)
         if out_info is None:
             return
@@ -286,6 +285,7 @@ class FrameSMCreate(ttk.Frame):
                     f"Record inserted--> material_request: {dict_data['info']['sm_code']} --> by {self.data_emp_dic['name'].title()} "
                     f"{self.data_emp_dic['lastname'].title()} at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
                 write_log_file(log_file_sm_path, msg)
+                create_notification_permission(msg, ["sm"], "SM creada", self._id_emp, 0)
                 self.svar_info.set(f"material_request {result} agregado correctamente")
             time.sleep(0.5)
             self.update_table_visual()
@@ -324,6 +324,7 @@ class FrameSMCreate(ttk.Frame):
                 msg = (f"Record updated--> material_request: {dict_data['id_sm']} --> by {self.data_emp_dic['name'].title()} "
                        f"{self.data_emp_dic['lastname'].title()} at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
                 write_log_file(log_file_sm_path, msg)
+                create_notification_permission(msg, ["sm"], "SM actualizada", self._id_emp, 0)
                 self.svar_info.set("material_request actualizado correctamente")
             time.sleep(0.5)
             self.update_table_visual()
@@ -351,6 +352,7 @@ class FrameSMCreate(ttk.Frame):
                     f"Record deleted--> material_request: {sm_code} --> by {self.data_emp_dic['name'].title()} {self.data_emp_dic['lastname'].title()} "
                     f"at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
                 write_log_file(log_file_sm_path, msg)
+                create_notification_permission(msg, ["sm"], "SM borrada", self._id_emp, 0)
                 self.svar_info.set("material_request eliminado correctamente")
             time.sleep(0.5)
             self.update_table_visual()

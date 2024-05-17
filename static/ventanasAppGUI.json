@@ -22,7 +22,6 @@
     "App.Department.Administrator": [
       "Inicio",
       "DB",
-      "Notificaciones",
       "Settings",
       "Cuenta"
     ],

@@ -7,9 +7,8 @@ import ttkbootstrap as ttk
 from ttkbootstrap.scrolled import ScrolledText
 from ttkbootstrap.tableview import Tableview
 
-from templates.Funtions_Utils import create_label, Reverse
-from templates.controllers.notifications.Notifications_controller import get_notifications_by_user, \
-    update_status_notification
+from templates.Funtions_Utils import create_label, Reverse, create_button
+from templates.controllers.notifications.Notifications_controller import update_status_notification, get_notification_by_permission
 
 dict_status = {0: "Pendiente", 1: "Leido"}
 
@@ -29,9 +28,10 @@ def check_status(item):
         return False
 
 
-def load_notifications(user_id: int):
-    columns = ["Fecha", "Estado", "Mensaje", "id"]
-    flag, error, result = get_notifications_by_user(user_id)
+def load_notifications(user_id: int, permissions: dict):
+    keys_permisson = [item.split(".")[-1] for item in permissions.values()]
+    columns = ["Fecha", "Estado", "Titulo", "Mensaje", "id"]
+    flag, error, result = get_notification_by_permission(user_id, keys_permisson)
     if not flag:
         return {"data": [], "columns": columns, "raw": []}
     data = []
@@ -42,7 +42,8 @@ def load_notifications(user_id: int):
         status = dict_status[body["status"]]
         message = body["msg"]
         timestamp = body["timestamp"]
-        data.append([timestamp, status, message, id_not])
+        title = body["title"] if "title" in body.keys() else "Notificacion"
+        data.append([timestamp, status, title, message, id_not])
         raw_data.append([id_not, item])
     return {"data": data, "columns": columns, "raw": raw_data} 
 
@@ -55,8 +56,9 @@ class NotificationsUser(ttk.Frame):
         self.settings = settings
         self.user_data = username_data if username_data is not None else kwargs["data_emp"]
         self.filepath_cache = settings["sm"]["cache"]
-        self.data_dict = load_notifications(self.user_data["id"])
+        self.data_dict = load_notifications(self.user_data["id"], self.user_data["permissions"])
         self.data = self.data_dict["data"]
+        self.notifications_complete, self.notifications_pending = get_notifications_tables(self.data)
         self.columns = self.data_dict["columns"]
         self.svar_pending = ttk.StringVar()
         self.svar_complete = ttk.StringVar()
@@ -67,20 +69,21 @@ class NotificationsUser(ttk.Frame):
                                 font=("Helvetica", 22, "bold"))
         title_label.grid(row=0, column=0, padx=10, pady=10, sticky="n")
         # ------------------- change the data initial for a read file.-----------
-        self.notifications_complete, self.notifications_pending = get_notifications_tables(self.data)
+        
         self.svar_pending.set(f"Pendientes: {len(self.notifications_pending)}")
         self.svar_complete.set(f"Revisadas: {len(self.notifications_complete)}")
         # ---------------------------------widgets info-------------------------
         frame_info_widgets = ttk.Frame(self)
         frame_info_widgets.grid(row=1, column=0, padx=10, pady=10, sticky="nsew")
-        frame_info_widgets.columnconfigure((0, 1), weight=1)
+        frame_info_widgets.columnconfigure((0, 1, 2), weight=1)
         # Create a Counter text that shows the number of pending notifications
         create_label(frame_info_widgets, 0, 0, textvariable=self.svar_pending,
                      font=("Helvetica", 18, "normal"))
         create_label(frame_info_widgets, 0, 1, textvariable=self.svar_complete,
                      font=("Helvetica", 18, "normal"))
+        create_button(frame_info_widgets, 0, 2, sticky="n", text="Actualizar", command=self._on_update_notifications)
         create_label(frame_info_widgets, 1, 0, textvariable=self.svar_info, font=("Helvetica", 18, "normal"),
-                     columnspan=2)
+                     columnspan=3)
         # ----------------------------tables----------------------------------
         self.frame_tables = ttk.Frame(self)
         self.frame_tables.grid(row=2, column=0, padx=10, pady=10, sticky="nsew")
@@ -88,7 +91,7 @@ class NotificationsUser(ttk.Frame):
         self.table_not = self.create_tables(self.frame_tables, data=self.notifications_pending+self.notifications_complete)     
         self.text_info = ScrolledText(self.frame_tables, width=20, height=10, 
                                       wrap=ttk.WORD, autohide=True,
-                                      font=("Helvetica", 18, "normal"))
+                                      font=("Helvetica", 14, "normal"))
         self.text_info.grid(row=1, column=1, sticky="nsew", padx=(10, 10))
 
     def create_tables(self, master, data):
@@ -121,17 +124,17 @@ class NotificationsUser(ttk.Frame):
         table_notifications.view.bind("<Double-1>", self._on_double_click_table)
         columns_header = table_notifications.get_columns()
         for item in columns_header:
-            if item.headertext == "id":
+            if item.headertext in ["id", "Mensaje"]:
                 item.hide()
         return table_notifications
 
     def _on_double_click_table(self, event):
         item = event.widget.selection()[0]
         item_data = event.widget.item(item, "values")
-        id_not = int(item_data[3])
-        self.svar_info.set(f"Mensaje: {item_data[2]}")
+        id_not = int(item_data[4])
+        self.svar_info.set(f"Titulo: {item_data[2]}")
         self.text_info.text.delete("1.0", "end")
-        self.text_info.text.insert("1.0", item_data[2])
+        self.text_info.text.insert("1.0", item_data[3])
         if not check_status(item_data):
             item_to_add = list(item_data)
             item_to_add[1] = dict_status[1]
@@ -145,3 +148,10 @@ class NotificationsUser(ttk.Frame):
             self.create_tables(self.frame_tables, data=self.notifications_pending+self.notifications_complete)
             self.svar_pending.set(f"Pendientes: {len(self.notifications_pending)}")
             self.svar_complete.set(f"Revisadas: {len(self.notifications_complete)}")
+
+    def _on_update_notifications(self):
+        self.data_dict = load_notifications(self.user_data["id"], self.user_data["permissions"])
+        self.data = self.data_dict["data"]
+        self.notifications_complete, self.notifications_pending = get_notifications_tables(self.data)
+        self.columns = self.data_dict["columns"]
+        self.create_tables(self.frame_tables, data=self.notifications_pending+self.notifications_complete)

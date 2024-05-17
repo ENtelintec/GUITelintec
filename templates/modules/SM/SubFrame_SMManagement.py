@@ -13,7 +13,7 @@ from ttkbootstrap.tableview import Tableview
 from static.extensions import status_dic
 from templates.Functions_AuxFiles import get_all_sm_entries, get_all_sm_products
 from templates.Functions_DB_midleware import dispatch_products
-from templates.Funtions_Utils import create_label, create_button, create_entry
+from templates.Funtions_Utils import create_label, create_button, create_entry, create_notification_permission
 from templates.controllers.employees.employees_controller import get_sm_employees
 from templates.controllers.material_request.sm_controller import update_history_sm, cancel_sm_db
 
@@ -60,10 +60,12 @@ def update_data_dicts(products: list, products_sm):
 class SMManagement(ttk.Frame):
     def __init__(self, master, data_emp=None, **kwargs):
         super().__init__(master)
+        self.emp_creation = None
         self.columnconfigure(1, weight=1)
         # -----------------------Variables-----------------------
         self.data_emp = data_emp if data_emp is not None else {"id": 60, "name": "Default"}
         data_dic = load_data(True, self.data_emp["id"])
+        self._id_emp = self.data_emp["id"]
         self.data_sm = None
         self.products = data_dic["products"]
         self.employees = data_dic["employees"]
@@ -181,6 +183,8 @@ class SMManagement(ttk.Frame):
         if flag:
             self.svar_info.set(f"material_request con ID-{self._id_sm_to_edit} despachada")
             self.update_table("dispatch", 2) if len(products_to_request) == 0 and len(new_products) == 0 else self.update_table("dispatch", 1)
+            msg = f"SM con ID-{self._id_sm_to_edit} despachada"
+            create_notification_permission(msg, ["sm"], "SM Despachada", self._id_emp, self.emp_creation)
         else:
             self.svar_info.set(f"Error al despachar material_request con ID-{self._id_sm_to_edit}")
 
@@ -202,9 +206,11 @@ class SMManagement(ttk.Frame):
             {"user": self.data_emp["id"], "event": "cancelation", "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S")})
         flag, error, result = cancel_sm_db(self._id_sm_to_edit, self.history_sm)
         if flag:
+            msg = f"SM con ID-{self._id_sm_to_edit} cancelada"
             self.update_table("cancel")
             self.clean_widgets()
-            self.svar_info.set(f"material_request con ID-{self._id_sm_to_edit} cancelada")
+            self.svar_info.set(msg)
+            create_notification_permission(msg, ["sm"], "SM Cancelada", self._id_emp, self.emp_creation)
 
     def on_double_click_table(self, event):
         self.clean_widgets()
@@ -218,6 +224,7 @@ class SMManagement(ttk.Frame):
             print("Error en la base de datos")
             return
         self.status_sm = row[0]
+        self.emp_creation = int(row[8])
         self.products_sm = json.loads(row[12])
         for i, item in enumerate(self.products_sm):
             for product in self.products:

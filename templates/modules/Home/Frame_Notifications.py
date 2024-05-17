@@ -24,7 +24,6 @@ class NotificationsFrame(ttk.Frame):
         self.permissions = self.data_emp["permissions"]
         apps = []
         for value in self.permissions.values():
-            print(value)
             apps.append(value.split(".")[-1].lower())
         self.create_widgets(apps, kw)
 

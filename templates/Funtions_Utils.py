@@ -986,15 +986,17 @@ def select_path():
     return path
 
 
-def create_notification_permission(msg: str, permissions: list, title: str, sender_id: int):
+def create_notification_permission(msg: str, permissions: list, title: str, sender_id: int, recierver_id=0):
     """
     Función para crear una notificación de permiso
+    :param recierver_id: 
     :param sender_id: 
     :param title: 
     :param msg:
     :param permissions:
     :return:
     """
+    permissions = [item.lower() for item in permissions]
     date = datetime.now()
     timestamp = date.strftime(format_timestamps)
     body = {
@@ -1004,7 +1006,7 @@ def create_notification_permission(msg: str, permissions: list, title: str, send
         'msg': msg,
         'timestamp': timestamp,
         'sender_id': sender_id,
-        'receiver_id': data["info"]["receiver_id"],
+        'receiver_id': recierver_id,
         'app': permissions,
     }
     flag, error, result = insert_notification(body)

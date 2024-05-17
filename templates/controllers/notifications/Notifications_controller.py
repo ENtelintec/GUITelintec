@@ -25,7 +25,7 @@ def get_notification_by_permission(user_id: int, permissions=None):
     vals = (user_id,)
     if permissions is not None:
         for item in permissions:
-            sql += f"OR body->'$.app' REGEXP '{item}' "
+            sql += f"OR body->'$.app' REGEXP '{item.lower()}' "
     flag, error, result = execute_sql(sql, vals, 2)
     return flag, error, result
 

@@ -12,7 +12,7 @@ from ttkbootstrap.tableview import Tableview
 from static.extensions import ventanasApp_path, status_dic
 from templates.Functions_AuxFiles import get_all_sm_entries
 from templates.Functions_AuxPlots import get_data_sm_per_range
-from templates.Funtions_Utils import create_label, create_Combobox
+from templates.Funtions_Utils import create_label, create_Combobox, create_notification_permission
 from templates.controllers.material_request.sm_controller import finalize_status_sm
 from templates.modules.Misc.SubFrame_Plots import FramePlot
 permissions_supper_SM = json.load(open(ventanasApp_path, encoding="utf-8"))["permissions_supper_SM"]
@@ -37,6 +37,7 @@ def create_plots(master, range_selected):
 class SMDashboard(ttk.Frame):
     def __init__(self, master=None, data=None, data_emp=None, *args, **kwargs):
         super().__init__(master)
+        self.emp_creation = None
         self._id_sm_to_modify = None
         self.permissions = data_emp["permissions"]
         self._id_emp = data_emp["id"]
@@ -113,7 +114,7 @@ class SMDashboard(ttk.Frame):
         self.status_sm = data_dic["status"]
         self._id_sm_to_modify = int(data_dic["id"])
         self.history = json.loads(data_dic["history"])
-        msg = ""
+        self.emp_creation = int(row[8])
         tag_names = ["line1", "line2"]
         for i, item in enumerate(self.history):
             self.info_history.text.insert(ttk.END, f"Evento de {item['event']} por el usuario {item['user']} en la fecha: {item['date']}\n", tag_names[i % 2])
@@ -167,6 +168,8 @@ class SMDashboard(ttk.Frame):
                                                               row[7], row[8], row[9], row[10], row[11], row[12],
                                                               row[13], row[14]))
                     break
+            msg = f"SM con ID-{self._id_sm_to_modify} marcada como recibida"
+            create_notification_permission(msg, ["sm", "almacen"], "SM marcada como recibida", self._id_emp, self.emp_creation)
 
     def change_plot_type(self, event):
         range_selected = self.svar_range_selector.get()
