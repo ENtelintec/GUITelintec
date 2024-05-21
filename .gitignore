@@ -28,3 +28,4 @@ __pycache__/
 /files/files_fichaje/*
 .env_*
 /tester_code.py
+/fill_sm_dummy_data.py
