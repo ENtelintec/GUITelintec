@@ -188,7 +188,7 @@ class FichajesAuto(ttk.Frame):
             for day_key in self.normal_data_emp.keys():
                 if date in day_key:
                     self.txt_c_normal.text.delete('1.0', 'end')
-                    self.txt_c_normal.text.insert(ttk.END, "Horas trabajadas: ", "keys")
+                    self.txt_c_normal.text.insert(ttk.END, "Horas trabajadas: \n", "keys")
                     self.txt_c_normal.text.insert(ttk.END, f"{self.normal_data_emp[day_key][0]}", "values")
                     self.txt_c_normal.text.insert(ttk.END, "\nDetalle: \n", "keys")
                     self.txt_c_normal.text.insert(ttk.END, f"{self.normal_data_emp[day_key][1]}", "values")
@@ -244,7 +244,7 @@ class FichajesAuto(ttk.Frame):
             if date in day_key:
                 horas_float = self.late_data_emp[day_key][0]
                 self.txt_c_late.text.delete('1.0', 'end')
-                self.txt_c_late.text.insert(ttk.END, "Horas tarde: ", "keys")
+                self.txt_c_late.text.insert(ttk.END, "Horas tarde: \n", "keys")
                 self.txt_c_late.text.insert(ttk.END, f"{int(horas_float)} horas y {int(horas_float * 60 % 60)} minutos",
                                             "values")
                 self.txt_c_late.text.insert(ttk.END, "\nDetalle: \n", "keys")
@@ -267,7 +267,7 @@ class FichajesAuto(ttk.Frame):
             if date in day_key:
                 horas_float = self.extra_data_emp[day_key][0]
                 self.txt_c_extra.text.delete('1.0', 'end')
-                self.txt_c_extra.text.insert(ttk.END, "Horas extra: ", "keys")
+                self.txt_c_extra.text.insert(ttk.END, "Horas extra: \n", "keys")
                 self.txt_c_extra.text.insert(ttk.END,
                                              f"{int(horas_float)} horas y {int(horas_float * 60 % 60)} minutos",
                                              "values")
@@ -374,11 +374,11 @@ class FichajesAuto(ttk.Frame):
             )
             # update vars for fichaje file
             update_stringvars(
-                [(self.svar_worked_days_f, f'Numero de dias trabajados: {len(self.normal_data_emp.keys())}.'),
-                 (self.svar_absence_days_f, f'Numero de faltas: {len(self.absence_data_emp.keys())}.'),
-                 (self.svar_late_days_f, f'Numero de dias con atraso: {len(self.late_data_emp.keys())}.'),
-                 (self.svar_extra_days_f, f'Numero de dias con horas extras: {len(self.extra_data_emp.keys())}.'),
-                 (self.svar_primes_days_f, f'Numero de dias con prima: {len(self.prime_data_emp.keys())}.')])
+                [(self.svar_worked_days_f, f'# dias trabajados: \n{len(self.normal_data_emp.keys())}.'),
+                 (self.svar_absence_days_f, f'# faltas: \n{len(self.absence_data_emp.keys())}.'),
+                 (self.svar_late_days_f, f'# dias con atraso: \n{len(self.late_data_emp.keys())}.'),
+                 (self.svar_extra_days_f, f'# dias con horas extras: \n{len(self.extra_data_emp.keys())}.'),
+                 (self.svar_primes_days_f, f'# dias con prima: \n{len(self.prime_data_emp.keys())}.')])
             self.update_days_selectors()
 
     def on_name_emp_sel_action(self, event):

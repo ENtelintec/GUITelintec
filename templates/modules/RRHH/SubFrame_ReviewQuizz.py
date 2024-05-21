@@ -56,7 +56,9 @@ def create_data_for_table(pdf_files, json_files, path):
     for json_name in json_files:
         file = json.load(open(path + json_name, "r"))
         name_emp = file["metadata"]["name_emp"]
-        row = [name_emp, file["metadata"]["evaluated_emp_ID"], file["metadata"]["title"],
+        evaluated_emp_id = file["metadata"]["evaluated_emp_ID"]
+        title = file["metadata"]["title"] if "title" in file["metadata"] else ""
+        row = [name_emp, evaluated_emp_id, title,
                file["metadata"]["interviewer"], file["metadata"]["date"]]
         name_emp = name_emp.replace(" ", "")
         pdf_name_to_add = "No se encuentra el pdf"

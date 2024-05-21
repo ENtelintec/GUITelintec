@@ -473,7 +473,6 @@ class ExamenesMedicos(ScrolledFrame):
         self.entry_blood.set(blood)
         self.entry_status.set(status)
         self.entry_aptitud.set(str(int(aptitudes[-1])))
-        print(fechas)
         date = datetime.strptime(fechas[-1], format_timestamps)
         set_dateEntry_new_value(self.entry_last_date.master, self.entry_last_date, date.date(),
                                 5, 1, 5, 5, "w", date_format=format_date)

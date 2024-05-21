@@ -10,7 +10,7 @@ from typing import Any
 import ttkbootstrap as ttk
 from ttkbootstrap.tableview import Tableview
 
-from static.extensions import conversion_quizzes_path, ventanasApp_path, format_timestamps
+from static.extensions import conversion_quizzes_path, ventanasApp_path, format_timestamps, format_date
 from static.extensions import filepath_recommendations
 from templates.controllers.chatbot.chatbot_controller import get_chats
 from templates.controllers.customer.customers_controller import get_customers
@@ -506,7 +506,7 @@ def create_widget_input_DB(master, table) -> list:
             entry3_emp.grid(row=1, column=2, padx=5, pady=1, sticky="nswe")
             entry4_emp = ttk.Entry(master, width=10)
             entry4_emp.grid(row=1, column=3, padx=5, pady=1, sticky="nswe")
-            entry5_emp = ttk.Combobox(master, values=["Telintec", "RESP"],
+            entry5_emp = ttk.Combobox(master, values=["Telintec", "REPSE"],
                                       state="readonly")
             entry5_emp.grid(row=3, column=0, pady=1, padx=1, sticky="nswe")
             entry6_emp = ttk.Combobox(master,
@@ -516,7 +516,7 @@ def create_widget_input_DB(master, table) -> list:
             entry6_emp.grid(row=3, column=1, padx=5, pady=1, sticky="nswe")
             entry7_emp = ttk.Entry(master, width=10)
             entry7_emp.grid(row=3, column=2, padx=5, pady=1, sticky="nswe")
-            entry8_emp = ttk.DateEntry(master, dateformat="%Y-%m-%d")
+            entry8_emp = ttk.DateEntry(master, dateformat=format_date)
             entry8_emp.grid(row=3, column=3, padx=5, pady=1, sticky="nswe")
             entry9_emp = ttk.Entry(master, width=13)
             entry9_emp.grid(row=5, column=0, padx=5, pady=1, sticky="nswe")
@@ -527,11 +527,11 @@ def create_widget_input_DB(master, table) -> list:
             entry12_emp = ttk.Combobox(master, values=["activo", "inactivo"],
                                        state="readonly")
             entry12_emp.grid(row=5, column=3, pady=1, padx=1, sticky="nswe")
-            entry13_emp = ttk.DateEntry(master, dateformat="%Y-%m-%d")
+            entry13_emp = ttk.DateEntry(master, dateformat=format_date)
             entry13_emp.grid(row=7, column=0, padx=5, pady=1, sticky="nswe")
             entry14_emp = ttk.Entry(master, width=21)
             entry14_emp.grid(row=7, column=1, padx=5, pady=1, sticky="nswe")
-            entry15_emp = ttk.DateEntry(master, dateformat="%Y-%m-%d")
+            entry15_emp = ttk.DateEntry(master, dateformat=format_date)
             entry15_emp.grid(row=7, column=2, padx=5, pady=1, sticky="nswe")
             entry16_emp = ttk.Entry(master, width=21)
             entry16_emp.grid(row=7, column=3, padx=5, pady=1, sticky="nswe")
@@ -744,7 +744,7 @@ def create_widget_input_DB(master, table) -> list:
             entry1 = ttk.Entry(master, width=15)
             entry2 = ttk.Entry(master, width=15)
             entry3 = ttk.Entry(master, width=13)
-            entry4 = ttk.DateEntry(master, dateformat="%Y-%m-%d")
+            entry4 = ttk.DateEntry(master, dateformat=format_date)
             entry5 = ttk.Entry(master, width=7)
             entry6 = ttk.Entry(master, width=9)
             entry1.grid(row=1, column=0, padx=5, pady=1)
@@ -776,7 +776,7 @@ def create_widget_input_DB(master, table) -> list:
             # -----------------------inputs-----------------------
             entry1 = ttk.Entry(master, width=15)
             entry2 = ttk.Entry(master, width=15)
-            entry4 = ttk.DateEntry(master, dateformat="%Y-%m-%d")
+            entry4 = ttk.DateEntry(master, dateformat=format_date)
             entry5 = ttk.Entry(master, width=7)
             entry6 = ttk.Entry(master, width=9)
             entry7 = ttk.Entry(master, width=9)
