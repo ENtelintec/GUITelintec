@@ -96,7 +96,7 @@ class GUIAsistente(ttk.Window):
         super().__init__(master, *args, **kwargs)
         self.master = master
         self.style_gui = ttk.Style()
-        self.style_gui.theme_use("vapor")
+        self.style_gui.theme_use("morph")
         self.title("Admin-Chatbot.py")
         p1 = PhotoImage(file=carpeta_principal + "/robot_1.png")
         self.iconphoto(False, p1)
