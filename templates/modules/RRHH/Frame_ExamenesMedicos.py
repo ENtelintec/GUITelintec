@@ -12,7 +12,7 @@ from ttkbootstrap.dialogs import Messagebox
 from ttkbootstrap.scrolled import ScrolledFrame
 from ttkbootstrap.tableview import Tableview
 
-from static.extensions import cache_file_EM_path
+from static.extensions import cache_file_EM_path, format_date, format_timestamps
 from templates.Functions_Files import get_ExMed_cache_file, update_ExMed_cache_file
 from templates.Funtions_Utils import create_label, set_dateEntry_new_value
 from templates.controllers.employees.em_controller import get_all_examenes, update_status_EM, update_aptitud, \
@@ -280,7 +280,7 @@ class ExamenesMedicos(ScrolledFrame):
         status = self.entry_status.get()
         aptitud = int(self.entry_aptitud.get())
         last_date = self.entry_last_date.entry.get()
-        last_date_formatted = datetime.strptime(last_date, "%d/%m/%Y")
+        last_date_formatted = datetime.strptime(last_date, format_date)
         emp_id = int(self.entry_emp_id.get())
         # insert data to database
         if name != "" or emp_id != "":
@@ -389,7 +389,7 @@ class ExamenesMedicos(ScrolledFrame):
         entry_aptitud["values"] = ("1", "2", "3", "4")
         entry_aptitud.current(0)
         entry_aptitud.grid(row=4, column=1, sticky="w", padx=5, pady=5)
-        entry_last_date = ttk.DateEntry(frame_inputs, bootstyle="info")
+        entry_last_date = ttk.DateEntry(frame_inputs, bootstyle="info", dateformat=format_date)
         entry_last_date.grid(row=5, column=1, sticky="w", padx=5, pady=5)
         entry_emp_id = ttk.Entry(frame_inputs)
         entry_emp_id.grid(row=6, column=1, sticky="w", padx=5, pady=5)
@@ -473,9 +473,10 @@ class ExamenesMedicos(ScrolledFrame):
         self.entry_blood.set(blood)
         self.entry_status.set(status)
         self.entry_aptitud.set(str(int(aptitudes[-1])))
-        date = datetime.strptime(fechas[-1], "%Y-%m-%d %H:%M:%S")
+        print(fechas)
+        date = datetime.strptime(fechas[-1], format_timestamps)
         set_dateEntry_new_value(self.entry_last_date.master, self.entry_last_date, date.date(),
-                                5, 1, 5, 5, "w")
+                                5, 1, 5, 5, "w", date_format=format_date)
         # info display
         self.name_emp.set(f"Nombre: {name}")
         self.aptitud_act.set(f"Aptitud actual: {aptitudes[-1]}")

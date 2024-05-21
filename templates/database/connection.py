@@ -11,9 +11,9 @@ from static.extensions import secrets
 def connectionDB():
     try:
         connection = mysql.connector.connect(
-            host=secrets["HOST_DB"],
-            user=secrets["USER_SQL"],
-            password=secrets["PASS_SQL"],
+            host=secrets["HOST_DB_AWS"],
+            user=secrets["USER_SQL_AWS"],
+            password=secrets["PASS_SQL_AWS"],
             database="sql_telintec",
         )
         if connection.is_connected():
@@ -35,9 +35,9 @@ def execute_sql(sql: str, values: tuple = None, type_sql=1):
     """
     try:
         mydb = mysql.connector.connect(
-            host=secrets["HOST_DB"],
-            user=secrets["USER_SQL"],
-            password=secrets["PASS_SQL"],
+            host=secrets["HOST_DB_AWS"],
+            user=secrets["USER_SQL_AWS"],
+            password=secrets["PASS_SQL_AWS"],
             database="sql_telintec",
         )
         my_cursor = mydb.cursor(buffered=True)

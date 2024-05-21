@@ -186,14 +186,11 @@ class EmployeesFrame(ScrolledFrame):
             json.dumps(emergency))
         if flag:
             for index, item in enumerate(self.data):
-                print(item[0], self._id_emp_update)
                 if int(item[0]) == self._id_emp_update:
-                    print(self.data[index])
                     self.data[index] = [
                         self._id_emp_update, values[0], values[1], values[2], values[3], values[4], values[5], values[6], values[7],
                         values[8], values[9], values[10], values[11], json.dumps(departure), values[14], values[15],
                         email, json.dumps(emergency)]
-                    print(self.data[index])
                     break
             self._update_table_show(self.data)
             Messagebox.show_info(title="Informacion", message="Employee updated")

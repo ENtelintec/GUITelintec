@@ -7,7 +7,6 @@ from ttkbootstrap.scrolled import ScrolledFrame
 from templates.Funtions_Utils import create_label
 from templates.modules.Home.Frame_Notifications import NotificationsFrame
 from templates.modules.RRHH.Frame_EmployeeDetail import EmployeeDetails
-from templates.modules.Home.Frame_Wheather import WeatherFrame
 from templates.modules.SM.SubFrame_SMDashboard import SMDashboard
 from templates.modules.Almacen.DashboardStorage import StorageDashboard
 
@@ -30,8 +29,8 @@ class HomeFrame(ScrolledFrame):
         kwargs["data_emp"] = self.data_emp
         # -----------------Title-------------------------------
         create_label(self, 0, 0, text="Inicio", font=("Helvetica", 30, "bold"), columnspan=2)
-        frame_wather = WeatherFrame(self)
-        frame_wather.grid(row=1, column=0, sticky="nsew", padx=(0, 10))
+        # frame_wather = WeatherFrame(self)
+        # frame_wather.grid(row=1, column=0, sticky="nsew", padx=(0, 10))
         frame_notifications = NotificationsFrame(self, **kwargs)
         frame_notifications.grid(row=2, column=0, sticky="we", padx=(0, 10))
         # -----------------Check permissions--------------------------------

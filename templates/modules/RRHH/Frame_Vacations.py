@@ -6,6 +6,8 @@ import json
 from datetime import datetime
 
 import ttkbootstrap as ttk
+
+from static.extensions import format_date
 from templates.controllers.employees.employees_controller import get_all_employees_active
 from templates.Funtions_Utils import create_Combobox, create_label
 from ttkbootstrap.dialogs import Messagebox
@@ -97,12 +99,12 @@ class VacationsFrame(ScrolledFrame):
             row=0, column=0, padx=5, pady=0)
         ttk.Button(frame_buttons, text="Actualizar registro", command=self._update_registry_to_emp).grid(
             row=0, column=1, padx=5, pady=0)
-        ttk.Button(frame_buttons, text="Borrar registro", command=self._delete_registry_from_emp).grid(
+        ttk.Button(frame_buttons, text="Limpiar", command=self._delete_registry_from_emp).grid(
             row=0, column=2, padx=5, pady=0)
         ttk.Button(frame_buttons, text="Actualizar empleados", command=self._update_emps).grid(
             row=0, column=3, padx=5, pady=0)
-        ttk.Button(frame_buttons, text="Exportar", command=self._export_table()).grid(
-            row=0, column=4, padx=5, pady=0)
+        # ttk.Button(frame_buttons, text="Exportar", command=self._export_table()).grid(
+        #     row=0, column=4, padx=5, pady=0)
         # -------------------table and info data-----------------
         self.frame_info = ttk.Frame(self)
         self.frame_info.grid(row=3, column=0, columnspan=2, sticky='nsew')
@@ -115,13 +117,6 @@ class VacationsFrame(ScrolledFrame):
         # -------------------export medical examination report-----------------
 
     def _delete_registry_from_emp(self):
-        emp_id = self.wentry_emp_id.get()
-        for item in self.data:
-            id_emp, name, lastname, date_admission, seniority = item
-            if emp_id == id_emp:
-                self.data.remove(item)
-                break
-        self.loadTable(self.data)
         self.wentry_emp_id.delete(0, 'end')
         self.name_emp.set("")
         self.aptitud_act.set("")
@@ -129,10 +124,10 @@ class VacationsFrame(ScrolledFrame):
         self.antiguedad.set("")
         self.seniority_string.set("")
         self.pagoprima_string.set("")
-        self.wentry_pendientes.delete(0, 'end')
-        self.wentry_prima.delete(0, 'end')
+        self.wentry_pendientes.set(0)
+        self.wentry_prima.set("No")
         self.wentry_prima_pago.delete(0, 'end')
-        self.wentry_comentarios.delete(0, 'end')
+        self.wentry_comentarios.delete(0.0, 'end')
 
     def _update_emps(self):
         flag, error, data = get_all_employees_active()
@@ -171,7 +166,7 @@ class VacationsFrame(ScrolledFrame):
                             self.data.append((ids_emp, name, lastname, date_admission, json.dumps({})))
                             print(f"Nuevo registro creado para el empleado: {ids_emp}")
                         break
-        self.loadTable(self.data)
+        self.loadTable(self.data, 1)
 
     def _test_id(self):
         emp_id = self.wentry_emp_id.get()
@@ -210,7 +205,7 @@ class VacationsFrame(ScrolledFrame):
         year = int(self.wentry_year.get())
         for row in self.data:
             id_emp, name, lastname, date_admission, seniority = row
-            diff = datetime.now() - date_admission
+            diff = datetime.now().date() - date_admission
             anios = diff.days / 365
             if anios <= year:
                 answer = Messagebox.show_question(
@@ -261,7 +256,7 @@ class VacationsFrame(ScrolledFrame):
                     message=f"Se inserto el registro correctamente, \npara el año: {year} del empleado {self.wentry_emp_id.get()}."
                 )
                 self.seniority_dict = seniority_dict
-                self.loadTable(self.data)
+                self.loadTable(self.data, 1)
             else:
                 Messagebox.show_error(
                     title="Error",
@@ -314,7 +309,10 @@ class VacationsFrame(ScrolledFrame):
         entry_comentarios.grid(row=1, column=4, sticky="nsew", padx=5, pady=5, rowspan=2)
         return entry_emp_id, entry_year, entry_pendientes, entry_prima, entry_prima_pago, entry_comentarios
 
-    def loadTable(self, data):
+    def loadTable(self, data, type_l=0):
+        if type_l != 0:
+            self.data, columns = self.load_data_vacations(1)
+            data = self.data
         data, columns = tranform_data_vacations_db_display(data)
         # update tableview
         self.grouped_table = Tableview(self.frame_info,
@@ -340,7 +338,7 @@ class VacationsFrame(ScrolledFrame):
                 break
         self.wentry_emp_id.delete(0, 'end')
         self.wentry_emp_id.insert(0, id_emp)
-        date_admission = datetime.strptime(date_admission, "%Y-%m-%d %H:%M:%S")
+        date_admission = datetime.strptime(date_admission, format_date)
         time_at_company = (datetime.now() - date_admission).days
         anios = time_at_company // 365
         self.name_emp.set(f"Nombre: {name} {lastname}\nAntigüedad: {anios} años y {time_at_company % 365} dias")
