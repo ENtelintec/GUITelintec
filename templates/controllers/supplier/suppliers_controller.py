@@ -1,124 +1,86 @@
-from templates.database.connection import connectionDB as db
+# -*- coding: utf-8 -*-
+__author__ = 'Edisson Naula'
+__date__ = '$ 01/may./2024  at 19:30 $'
+
+from templates.database.connection import execute_sql
 
 
-class Supplier:
-    def __init__(self):
-        self.connection = None
-        self.cursor = None
+def get_supplier(limit=(0, 100)) -> list[list]:
+    sql = ("SELECT supplier_id, name, location "
+           "FROM sql_telintec.suppliers "
+           "LIMIT %s, %s")
+    val = (limit[0], limit[1])
+    flag, e, my_result = execute_sql(sql, val, 2)
+    out = my_result if my_result is not None else []
+    return out
 
-    def get_all_suppliers(self):
-        try:
-            self.connection = db()
-            self.cursor = self.connection.cursor()
-            self.cursor.execute("SELECT * FROM suppliers_amc;")
-            result = self.cursor.fetchall()
-            return result
-        except Exception as e:
-            return f"Error: {e}"
-        finally:
-            if self.connection.is_connected():
-                self.cursor.close()
-                self.connection.close()
-                self.cursor = None
 
-    def create_supplier(
-        self,
-        name_provider,
-        seller_provider,
-        email_provider,
-        phone_provider,
-        address_provider,
-        web_provider,
-        type_provider,
-    ):
-        try:
-            self.connection = db()
-            self.cursor = self.connection.cursor()
-            search_sql = "SELECT * FROM suppliers_amc WHERE name = %s"
-            insert_sql = "INSERT INTO suppliers_amc (name, seller_name, seller_email, phone, address, web_url, type) VALUES (%s, %s, %s, %s, %s, %s, %s)"
-            self.cursor.execute(search_sql, (name_provider,))
-            result = self.cursor.fetchone()
-            name_provider = str(name_provider)
-            seller_provider = str(seller_provider)
-            email_provider = str(email_provider)
-            phone_provider = str(phone_provider)
-            address_provider = str(address_provider)
-            web_provider = str(web_provider)
-            type_provider = str(type_provider)
-            if result:
-                return "Supplier already exists"
-            self.cursor.execute(
-                insert_sql,
-                (
-                    name_provider,
-                    seller_provider,
-                    email_provider,
-                    phone_provider,
-                    address_provider,
-                    web_provider,
-                    type_provider,
-                ),
-            )
-            self.connection.commit()
-            return True
-        except Exception as e:
-            return f"Error: {e}"
-        finally:
-            if self.connection.is_connected():
-                self.cursor.close()
-                self.connection.close()
-                self.cursor = None
+def insert_supplier(name: str, location: str) -> tuple[bool, Exception | None, int | None]:
+    sql = ("INSERT INTO sql_telintec.suppliers (name, location) "
+           "VALUES (%s, %s)")
+    val = (name, location)
+    flag, e, out = execute_sql(sql, val, 4)
+    print(out, "record inserted.")
+    return flag, None, out
 
-    def update_supplier(
-        self,
-        id_provider,
-        name_provider,
-        seller_provider,
-        email_provider,
-        phone_provider,
-        address_provider,
-        web_provider,
-        type_provider,
-    ):
-        try:
-            self.connection = db()
-            self.cursor = self.connection.cursor()
-            update_sql = "UPDATE suppliers_amc SET name = %s, seller_name = %s, seller_email = %s, phone = %s, address = %s, web_url = %s, type = %s WHERE id_supplier = %s"
-            self.cursor.execute(
-                update_sql,
-                (
-                    name_provider,
-                    seller_provider,
-                    email_provider,
-                    phone_provider,
-                    address_provider,
-                    web_provider,
-                    type_provider,
-                    id_provider,
-                ),
-            )
-            self.connection.commit()
-            return True
-        except Exception as e:
-            return f"Error: {e}"
-        finally:
-            if self.connection.is_connected():
-                self.cursor.close()
-                self.connection.close()
-                self.cursor = None
 
-    def delete_supplier(self, id_supplier):
-        try:
-            self.connection = db()
-            self.cursor = self.connection.cursor()
-            delete_sql = "DELETE FROM suppliers_amc WHERE id_supplier = %s"
-            self.cursor.execute(delete_sql, (id_supplier,))
-            self.connection.commit()
-            return True
-        except Exception as e:
-            return f"Error: {e}"
-        finally:
-            if self.connection.is_connected():
-                self.cursor.close()
-                self.connection.close()
-                self.cursor = None
+def update_supplier_DB(name: str, location: str, supplier_id: int) -> tuple[bool, Exception | None, int | None]:
+    sql = ("UPDATE sql_telintec.suppliers "
+           "SET name = %s, location = %s "
+           "WHERE supplier_id = %s")
+    val = (name, location, supplier_id)
+    flag, e, out = execute_sql(sql, val, 3)
+    return flag, e, out
+
+
+def delete_supplier_DB(supplier_id: int) -> tuple[bool, Exception | None, int | None]:
+    sql = ("DELETE FROM sql_telintec.suppliers "
+           "WHERE supplier_id = %s")
+    val = (supplier_id,)
+    flag, e, out = execute_sql(sql, val, 3)
+    return flag, e, out
+
+
+def get_supplier_amc(name: str, id_s: int):
+    columns = ("id_supplier", "name", "phone", "type", "address")
+    sql = ("SELECT id_supplier, name, phone, type, address "
+           "FROM suppliers_amc "
+           "WHERE id_supplier = %s OR "
+           "match(name) against (%s IN NATURAL LANGUAGE MODE ) "
+           "LIMIT 10")
+    val = (id_s, name)
+    flag, error, result = execute_sql(sql, val, 2)
+    return flag, error, result, columns
+
+
+def create_supplier_amc(name_provider, seller_provider, email_provider, phone_provider, address_provider, web_provider, type_provider):
+    name_provider = str(name_provider)
+    seller_provider = str(seller_provider)
+    email_provider = str(email_provider)
+    phone_provider = str(phone_provider)
+    address_provider = str(address_provider)
+    web_provider = str(web_provider)
+    type_provider = str(type_provider)
+    insert_sql = ("INSERT INTO suppliers_amc "
+                  "(name, seller_name, seller_email, phone, address, web_url, type) "
+                  "VALUES (%s, %s, %s, %s, %s, %s, %s)")
+    vals = (name_provider, seller_provider, email_provider, phone_provider, address_provider, web_provider, type_provider)
+    flag, error, result = execute_sql(insert_sql, vals, 3)
+    return flag, error, result
+
+
+def update_supplier_amc(id_provider, name_provider, seller_provider, email_provider, phone_provider, address_provider, web_provider, type_provider):
+    update_sql = ("UPDATE suppliers_amc "
+                  "SET name = %s, seller_name = %s, seller_email = %s, phone = %s, address = %s, web_url = %s, type = %s "
+                  "WHERE id_supplier = %s")
+    vals = (name_provider, seller_provider, email_provider, phone_provider, address_provider, web_provider, type_provider, id_provider)
+    flag, error, result = execute_sql(update_sql, vals, 4)
+    return flag, error, result    
+
+
+def delete_supplier_amc(id_supplier):
+    delete_sql = ("DELETE FROM suppliers_amc "
+                  "WHERE id_supplier = %s")
+    vals = (id_supplier,)
+    flag, error, result = execute_sql(delete_sql, vals, 4)
+    return flag, error, result

@@ -1,12 +1,5 @@
 {
     "0": {
-        "question": "Introduzca el CÓDIGO proporcionado para continuar *",
-        "subquestions": [ ],
-        "options": [],
-        "answer": "",
-        "type": 4
-    },
-    "1": {
         "question": "¿Cuánto tiempo llevas trabajando en la empresa?*",
         "subquestions": [],
         "options": [
@@ -18,7 +11,7 @@
         "answer": "",
         "type": 2
     },
-    "2": {
+    "1": {
         "question": "Relaciones Interpersonales*",
         "subquestions": [
             "La empresa fomenta una relación sana entre sus empleados",
@@ -36,7 +29,7 @@
         "answer": "",
         "type": 3
     },
-    "3": {
+    "2": {
         "question": "Estilo de Dirección*",
         "subquestions": [
             "Mi jefe me trata con respeto",
@@ -58,7 +51,7 @@
         "answer": "",
         "type": 3
     } ,
-    "4": {
+    "3": {
         "question": "Sentido de pertenencia*",
         "subquestions": [
             "Si recibiera una oferta de trabajo similar en responsabilidades y salario a la que tengo en esta empresa preferiría no aceptarla",
@@ -76,7 +69,7 @@
         "answer": "",
         "type": 3
     },
-    "5": {
+    "4": {
         "question": "Balance de trabajo - vida personal*",
         "subquestions": [
             "La carga de trabajo es razonable y me permite entregar a tiempo mis pendientes",
@@ -94,7 +87,7 @@
         "answer": "",
         "type": 3
     },
-    "6": {
+    "5": {
         "question": "Compensaciones*",
         "subquestions": [
             "Estoy satisfecho con las prestaciones que la empresa me da",
@@ -111,7 +104,7 @@
         "answer": "",
         "type": 3
     },
-    "7": {
+    "6": {
         "question": "Disponibilidad de recursos*",
         "subquestions": [
             "Tengo todo el material necesario para hacer correctamente mi trabajo",
@@ -128,7 +121,7 @@
         "answer": "",
         "type": 3
     },
-    "8": {
+    "7": {
         "question": "Estabilidad*",
         "subquestions": [
             "Estoy satisfecho con la estabilidad de mi trabajo",
@@ -144,7 +137,7 @@
         "answer": "",
         "type": 3
     },
-    "9": {
+    "8": {
         "question": "Claridad y coherencia del liderazgo*",
         "subquestions": [
             "Están definidas claramente las funciones de mi puesto y los límites de mis responsabilidades",
@@ -164,7 +157,7 @@
         "answer": "",
         "type": 3
     },
-    "10": {
+    "9": {
         "question": "Claridad y coherencia del liderazgo*",
         "subquestions": [
             "La empresa da el entrenamiento necesario para mejorar profesionalmente",
@@ -181,7 +174,7 @@
         "answer": "",
         "type": 3
     },
-    "11": {
+    "10": {
         "question": "Comunicación interna*",
         "subquestions": [
             "Estoy satisfecho con la comunicación interna que hay en la empresa",
@@ -197,12 +190,12 @@
         "answer": "",
         "type": 3
     },
-    "12": {
+    "11": {
         "question": "Opiniones personales acerca de su trabajo *",
         "subquestions": [],
         "options": [],
         "answer": "",
-        "type": 4
+        "type": 5
     }
     
 }

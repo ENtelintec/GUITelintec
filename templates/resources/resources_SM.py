@@ -3,13 +3,16 @@ __author__ = 'Edisson Naula'
 __date__ = '$ 01/abr./2024  at 10:26 $'
 
 from flask_restx import Resource, Namespace
-from static.api_models import client_emp_sm_response_model, products_answer_model, products_request_model, \
+from static.Models.api_sm_models import client_emp_sm_response_model, products_answer_model, products_request_model, \
     sm_post_model, delete_request_sm_model, sm_put_model, table_sm_model, table_request_model, new_cliente_model, \
-    new_product_model
+    new_product_model, request_sm_plot_data_model
+from templates.Functions_AuxPlots import get_data_sm_per_range
 from templates.Functions_DB_midleware import get_products_sm, get_all_sm
-from templates.Functions_SQL import get_sm_employees, get_sm_clients, insert_sm_db, delete_sm_db, update_sm_db
 from templates.Functions_Text import parse_data
+from templates.controllers.customer.customers_controller import get_sm_clients
+from templates.controllers.employees.employees_controller import get_sm_employees
 from templates.controllers.index import DataHandler
+from templates.controllers.material_request.sm_controller import insert_sm_db, delete_sm_db, update_sm_db
 
 ns = Namespace('GUI/api/v1/sm')
 
@@ -72,7 +75,7 @@ class AddSM(Resource):
             return {"answer": "ok", "msg": result}, 201
         else:
             print(error)
-            return {"answer": f"error at updating db"}, 400
+            return {"answer": "error at updating db"}, 400
 
     @ns.expect(delete_request_sm_model)
     def delete(self):
@@ -84,7 +87,7 @@ class AddSM(Resource):
             return {"answer": "ok", "msg": error}, 200
         else:
             print(error)
-            return {"answer": f"error at updating db"}, 400
+            return {"answer": "error at updating db"}, 400
 
     @ns.expect(sm_put_model)
     def put(self):
@@ -95,7 +98,7 @@ class AddSM(Resource):
         if flag:
             return {"answer": "ok", "msg": error}, 200
         else:
-            return {"answer": f"error at updating db"}, 400
+            return {"answer": "error at updating db"}, 400
 
 
 @ns.route('/newclient')
@@ -106,7 +109,7 @@ class Client(Resource):
         if code == 400:
             return {"answer": "The data has a bad structure"}, code
         _data = DataHandler()
-        result = _data._customer.create_customer(data['name'], data['email'], data['phone'], data['rfc'], data["address"])
+        result = _data.create_customer(data['name'], data['email'], data['phone'], data['rfc'], data["address"])
         if isinstance(result, str):
             return {"answer": "Error", "msg": result}, 400
         else:
@@ -122,11 +125,17 @@ class Product(Resource):
             return {"answer": "The data has a bad structure"}, code
         print(data)
         _data = DataHandler()
-        result = _data._product.create_product(data['sku'], data['name'], data['udm'], data['stock'], 0, 0, 0, data['price'], data['category'], 0)
+        result = _data.create_product(data['sku'], data['name'], data['udm'], data['stock'], data['category'], data['supplier'])
         if isinstance(result, str):
             return {"answer": "Error", "msg": result}, 400
         else:
             return {"answer": "ok", "msg": result}, 201
 
 
-
+@ns.route('/plot/<string:typerange>')
+class PlotSMData(Resource):
+    
+    @ns.marshal_with(request_sm_plot_data_model)
+    def get(self, typerange):
+        data_out = get_data_sm_per_range(typerange, "normal")
+        return {"data": data_out, "type": "normal plot lines"}, 200

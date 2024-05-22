@@ -14,11 +14,11 @@ import openai
 import requests
 from bardapi import Bard
 from bardapi.constants import SESSION_HEADERS
-from dotenv import dotenv_values
 
-from templates.Functions_SQL import get_isAlive, update_isAlive, get_only_context, set_finish_chat
+from static.extensions import secrets
+from templates.controllers.chatbot.chatbot_controller import get_isAlive, update_isAlive, get_only_context, \
+    set_finish_chat
 
-secrets = dotenv_values(".env")
 openai.api_key = secrets["OPENAI_API_KEY_1"]
 session = requests.Session()
 session.headers = SESSION_HEADERS
@@ -91,7 +91,7 @@ def clean_command(command: str) -> str:
 def clean_name(name: str) -> List:
     """
 
-    :param name: name to be cleaned and make iterable
+    :param name: name to be cleaned and make an iterable
     :return: cleaned message list without special characters
     """
     message = normalize_command(name)
@@ -177,7 +177,7 @@ def observer_chats_msg(chat_id, sender_id, time_start):
 
 def process_request(raw_request: str) -> tuple[str, list | None]:
     """
-    :param raw_request: string  with the request to process.
+    :param raw_request: string with the request to process.
     :return: tuple with the command and the data sent.
     """
     # Split the request
@@ -352,7 +352,7 @@ def handle_if_products(thread, products: list, chat_id: str, is_finish: bool, ti
 def handle_chat_status(thread, result: str, last_timestamp: str, time_wait):
     """
     This method is used to handle the status of the chats in the database.
-    :param last_timestamp: timestamp for checking status
+    :param last_timestamp: timestamp for checking a status
     :param time_wait: time window for a chat to be alive
     :param result: string with the result of the query
     :param thread

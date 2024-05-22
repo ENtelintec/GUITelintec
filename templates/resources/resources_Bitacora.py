@@ -6,14 +6,15 @@ from datetime import datetime
 
 from flask_restx import Resource, Namespace
 
-from static.api_models import client_emp_sm_response_model, fichaje_request_model, fichaje_add_update_request_model, \
+from static.Models.api_models import fichaje_request_model, fichaje_add_update_request_model, \
     fichaje_delete_request_model
+from static.Models.api_sm_models import client_emp_sm_response_model
 from static.extensions import delta_bitacora_edit
 from templates.Functions_AuxFiles import get_events_op_date, update_bitacora, update_bitacora_value, \
     erase_value_bitacora
 from templates.Functions_DB_midleware import check_date_difference
-from templates.Functions_SQL import get_employees_op_names
 from templates.Functions_Text import parse_data
+from templates.controllers.employees.employees_controller import get_employees_op_names
 
 ns = Namespace('GUI/api/v1/bitacora')
 
@@ -43,7 +44,7 @@ class Fichaje(Resource):
 
 
 @ns.route('/fichaje/event')
-class Fichaje(Resource):
+class FichajeAPI(Resource):
     @ns.expect(fichaje_add_update_request_model)
     def post(self):
         code, data = parse_data(ns.payload, 10)

@@ -3,13 +3,17 @@ __author__ = 'Edisson Naula'
 __date__ = '$ 22/ene./2024  at 16:09 $'
 
 import json
+import os
 from datetime import datetime
 
 from PIL import Image, ImageTk
 
-from static.extensions import cache_file_resume_fichaje
+from static.extensions import cache_file_resume_fichaje, status_dic, quizz_out_path
 from templates.Functions_Files import get_fichajes_resume_cache, update_fichajes_resume_cache
-from templates.Functions_SQL import get_fichaje_DB, get_sm_entries, get_sm_products, get_name_employee
+from templates.controllers.employees.employees_controller import get_name_employee
+from templates.controllers.fichajes.fichajes_controller import get_fichaje_DB
+from templates.controllers.material_request.sm_controller import get_sm_entries
+from templates.controllers.product.p_and_s_controller import get_sm_products
 
 carpeta_principal = "img"
 
@@ -25,40 +29,39 @@ def get_image_side_menu(wname, image_path=carpeta_principal):
     :rtype: CTkImage.
     """
     images = {
-        "DB": "bd_img_col_!.png",
-        "Notificaciones": "not_img_col_re.png",
-        "Chats": "chat_light.png",
-        "Settings": "settings.png",
-        "Fichajes": "fichaje.png",
-        "Cuenta": "user_robot.png",
-        "Examenes": "exam_medical.png",
-        "Emp. Detalles": "emp_details_dark.png",
-        "Home": "warehouse_white.png",
-        "Clients (A)": "employees_ligth.png",
-        "Inventario": "products_ligth.png",
-        "Entradas": "incoming.png",
-        "Salidas": "out_p.png",
-        "Devoluciones": "return_p.png",
-        "Ordenes (A)": "order_p.png",
-        "Proveedores (A)": "providers_p.png",
-        "Configuraciones (A)": "settings.png",
+        "DB": "DB.png",
+        "Notificaciones": "Notificacion.png",
+        "Settings": "Settings.png",
+        "Fichajes": "RH/Fichajes.png",
+        "Cuenta": "Cuenta.png",
+        "Examenes": "RH/Examenes.png",
+        "Emp. Detalles": "RH/DetallesEmpleados.png",
+        "Home": "Inicio.png",
+        "Clientes": "Almacenes/Clientes.png",
+        "Inventario": "Almacenes/Inventario.png",
+        "Entradas": "Almacenes/Entradas.png",
+        "Salidas": "Almacenes/Salidas.png",
+        "Proveedores": "Almacenes/proveedores.png",
         "messenger": "messenger.png",
-        "whasapp": "whasapp.png",
+        "whatsapp": "whasapp.png",
         "telegram": "telegram.png",
+        "facebook":  "messenger.png",
         "webchat": "webchat.png",
-        "logo": "telintec-500.png",
-        "Empleados": "customers_ligth.png",
-        "Clientes": "employees_ligth.png",
-        "Departamentos": "departments_ligth.png",
-        "Encargados": "heads_ligth.png",
-        "Proveedores": "suppliers_ligth.png",
-        "Productos": "products_ligth.png",
-        "Ordenes": "orders_img.png",
-        "Compras": "purchases_img.png",
-        "Tickets": "ticket_img.png",
-        "Chat": "chats_img.png",
-        "O. Virtuales": "v_orders_img.png",
-        "Usuarios": "add_user_light.png"
+        "logo": "LogoTelintec.png",
+        "Empleados": "RH/Empleados.png",
+        "Inicio": "Inicio.png",
+        "Encuestas": "RH/Encuestas.png",
+        "Exámenes": "RH/Examenes.png",
+        "Vacaciones": "RH/Vacaciones.png",
+        "Procesar SM": "Almacenes/ProcesamientoSM.png",
+        "Movimientos": "Almacenes/Movimientos.png",
+        "SM": "Almacenes/SM.png",
+        "Departamentos": "DB/Departamentos.png",
+        "Encargados": "DB/Encargados.png",
+        "Productos": "DB/Productos.png",
+        "Ordenes": "DB/Ordenes.png",
+        "Tickets": "DB/tickets.png",
+        "O. Virtuales": "DB/Ordenes.png"
     }
     if wname in images.keys():
         if wname == "logo":
@@ -75,6 +78,7 @@ def get_image_side_menu(wname, image_path=carpeta_principal):
         # return CTkImage(light_image=Image.open(os.path.join(image_path, images[wname])),
         #                 size=(30, 30))
     else:
+        print(f"image for icon not found: {wname}")
         image = Image.open(image_path + "/" + images["DB"])
         resize_img = image.resize((30, 30))
         out_img = ImageTk.PhotoImage(resize_img)
@@ -135,7 +139,7 @@ def update_bitacora(emp_id: int, event, data):
                 event_dic = json.loads(result[7])
     else:
         print("error at getting data from db or not data found for the employee")
-        new_registry=True
+        new_registry = True
     date = datetime.strptime(data[0], "%Y-%m-%d")
     if str(date.year) not in event_dic.keys():
         event_dic[str(date.year)] = {}
@@ -511,10 +515,9 @@ def read_setting_file(file_path: str) -> dict:
 def get_all_sm_entries(filter_status=False, is_supper=False, emp_id=None):
     flag, error, result = get_sm_entries()
     if flag:
-        status_dic = {0: "Pendiente", 1: "En Proceso", 2: "Terminado", -1: "Cancelado"}
         columns = (
-        "ID", "Codigo", "Folio", "Contrato", "Planta", "Ubicación", "Cliente", "Empleado", "Orden/Cotización", "Fecha",
-        "Fecha Limite", "Items", "Estado", "Historial", "Comentario")
+            "ID", "Codigo", "Folio", "Contrato", "Planta", "Ubicación", "Cliente", "Empleado", "Orden/Cotización",
+            "Fecha", "Fecha Limite", "Items", "Estado", "Historial", "Comentario")
         if filter_status:
             result = [row for row in result if row[12] == 0]
         if not is_supper:
@@ -541,3 +544,49 @@ def get_all_sm_products():
         return result, columns
     else:
         return None, None
+
+
+def load_quizzes_names(path_directory: str):
+    # look for pdf filees in the directory
+    quizzes_names_pdf = []
+    quizzes_names_json = []
+    path = path_directory
+    try:
+        for file in os.listdir(path_directory):
+            if file.endswith(".pdf"):
+                quizzes_names_pdf.append(file)
+            elif file.endswith(".json"):
+                quizzes_names_json.append(file)
+    except Exception as e:
+        print(e)
+        print(path_directory)
+        print(quizz_out_path)
+        print("Error al cargar los quizzes, verifique la direccion del directorio en settings")
+        print("intentando con directorio por defecto")
+        for file in os.listdir(quizz_out_path):
+            if file.endswith(".pdf"):
+                quizzes_names_pdf.append(file)
+            elif file.endswith(".json"):
+                quizzes_names_json.append(file)
+        path = quizz_out_path
+    return quizzes_names_pdf,  quizzes_names_json, path
+
+
+def get_data_files_quizzes(path_quizzes: str):
+    """
+    Get the data files.
+    :param path_quizzes: The path quizzes.
+    :return: The data files.
+    """
+    data_files = {}
+    names_files_pdf, names_files_json, path = load_quizzes_names(path_quizzes)
+    for json_name in names_files_json:
+        file = json.load(open(path + json_name, "r"))
+        name_emp = file["metadata"]["name_emp"]
+        name_emp = name_emp.replace(" ", "")
+        print(name_emp, names_files_pdf)
+        for name_pdf in names_files_pdf:
+            if name_emp in name_pdf:
+                print(file["metadata"])
+                break
+    return names_files_pdf

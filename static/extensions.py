@@ -7,7 +7,6 @@ import json
 from dotenv import dotenv_values
 from flask_restx import Api
 from pathlib import Path
-import ttkbootstrap as ttk
 
 paths_dpb_folders = json.load(open("files/paths_general.json"))
 local_father_path_dpb = "C:/Users/Edisson/Telintec Dropbox/SOFTWARE TELINTEC"
@@ -16,66 +15,7 @@ api = Api()
 # url_api = "http://127.0.0.1:5000/AuthAPI/api/v1/auth/loginUP"
 url_api = "https://ec2-3-144-117-149.us-east-2.compute.amazonaws.com/AuthAPI/api/v1/auth/loginUP"
 IMG_PATH_COLLAPSING = Path("./img")
-ventanasApp = {
-    "App.Department.Director": [
-        "DB",
-        "Notificaciones",
-        "Chats",
-        "Settings",
-        "Tickets",
-        "Cuenta",
-    ],
-    "App.Department.RRHH": [
-        "Fichajes",
-        "Examenes",
-        "Emp. Detalles",
-        "Vacaciones",
-        "Empleados",
-        "Encuestas",
-        "Cuenta",
-    ],
-    "App.Department.Administrator": [
-        "DB",
-        "Notificaciones",
-        "Fichajes",
-        "Settings",
-        "Cuenta",
-    ],
-    "App.Department.ALMACEN": [
-        "Home",
-        "Entradas",
-        "Salidas",
-        "Inventario",
-        "Suministros Diarios",
-        "Inventario Int.",
-        "Ordenes (A)",
-        "Clients (A)",
-        "Proveedores (A)",
-        "Configuraciones (A)",
-        "SM",
-        "Procesar SM",
-        "Cuenta",
-    ],
-    "App.Department.Bitacoras": [
-        "Bitacora",
-        "Cuenta",
-    ],
-    "App.Department.Default": ["Settings", "Cuenta"],
-    "App.Department.SM": [
-        "SM",
-        "Cuenta",
-    ],
-}
-permissions_allowed_AV = [
-    "App.Department.RRHH",
-    "App.Department.Administrator",
-    "App.Department.ALMACEN",
-]
-permissions_supper_SM = [
-    "App.Department.Administrator",
-    "App.Department.Administracion",
-    "App.Department.Operaciones",
-]
+ventanasApp_path = "static/ventanasAppGUI.json"
 cache_file_EM_path = "files/EM_cache.pkl"
 cache_file_Fichajes_path = "files/Fichajes_cache.pkl"
 cache_file_Tickets_path = "files/Tickets_cache.pkl"
@@ -89,7 +29,11 @@ cache_oct_fichaje_path = "files/contracts_cache.pkl"
 filepath_settings = "files/settings.json"
 filepath_recomendations = "files/recomendations.json"
 quizzes_RRHH = {
-    "0": {"name": "Encuesta de Salida", "path": "files/quizz_salida.json", "type": 0},
+    "0": {
+        "name": "Encuesta de Salida", 
+        "path": "files/quizz_salida.json", 
+        "type": 0
+    },
     "1": {
         "name": "Encuesta de Norma_035_50",
         "path": "files/quizz_norma035_50_v1.json",
@@ -189,3 +133,8 @@ windows_names_db_frame = [
     "O. Virtuales",
 ]
 delta_bitacora_edit = 14
+status_dic = {0: "Pendiente", 1: "En Proceso", 2: "Completado", 3: "Finalizado", -1: "Cancelado"}
+format_timestamps = "%Y-%m-%d %H:%M:%S"
+format_date = "%Y-%m-%d"
+dict_deps = {"Dirección": 1, "Operaciones": 2, "Administración": 3, "RRHH": 4, "REPSE": 5, "IA": 6, "Otros": 7}
+format_timestamps_filename = '%Y-%m-%d'
