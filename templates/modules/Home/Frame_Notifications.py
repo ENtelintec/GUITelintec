@@ -6,13 +6,6 @@ import ttkbootstrap as ttk
 
 from static.extensions import filepath_settings
 from templates.Functions_Files import open_file_settings
-from templates.modules.Home.SubFrame_GeneralNoti import NotificationsUser
-from templates.modules.Home.SubFrame_NotificationsChatbot import NotificationsChatbot
-
-frames_notifications_avaliable = {
-    "chatbot": NotificationsChatbot,
-    "administracion": NotificationsUser
-}
 
 
 class NotificationsFrame(ttk.Frame):
@@ -22,7 +15,7 @@ class NotificationsFrame(ttk.Frame):
         flag, self.settings = open_file_settings(filepath_settings)
         self.data_emp = data_emp
         self.permissions = self.data_emp["permissions"]
-        apps = []
+        apps = kw["data"]["data_notifications"]["apps"] if "data_notifications" in kw["data"] else []
         for value in self.permissions.values():
             apps.append(value.split(".")[-1].lower())
         self.create_widgets(apps, kw)
@@ -32,6 +25,7 @@ class NotificationsFrame(ttk.Frame):
         kw["settings"] = self.settings
         kw["data_emp"] = self.data_emp
         for frame in apps:
+            from static.FramesClasses import frames_notifications_avaliable
             if frame in frames_notifications_avaliable.keys():
                 frame_created = frames_notifications_avaliable[frame](self, **kw)
                 frame_created.grid(row=index, column=0, sticky="nsew", padx=(0, 10))

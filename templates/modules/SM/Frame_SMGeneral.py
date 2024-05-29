@@ -46,7 +46,7 @@ class SMFrame(ScrolledFrame):
         self.data_emp = data_emp
         self.department = department
         self.settings = settings
-        data_dic = load_data(self.is_supper_user, self.id_emp)
+        data_dic = load_data(self.is_supper_user, self.id_emp) if "data" not in kwargs else kwargs["data"]
         nb = ttk.Notebook(self)
         # frame_1 = SMDashboard(nb, data=data_dic, data_emp=data_emp)
         frame_2 = FrameSMCreate(nb, id_emp=self.id_emp, permissions=data_emp["permissions"], settings=self.settings, data=data_dic)

@@ -20,7 +20,7 @@ class ProvidersScreen(ttk.Frame):
         self.master = master
         self.columnconfigure(0, weight=1)
         self._data = DataHandler()
-        self._providers = self._data.get_all_suppliers()
+        self._providers = self._data.get_all_suppliers() if "data_providers_gen" not in kwargs["data"] else kwargs["data"]["data_providers_gen"]
         self._table = Tableview(self)
         self.create_content(self)
 

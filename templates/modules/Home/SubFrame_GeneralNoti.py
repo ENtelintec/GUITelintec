@@ -56,7 +56,7 @@ class NotificationsUser(ttk.Frame):
         self.settings = settings
         self.user_data = username_data if username_data is not None else kwargs["data_emp"]
         self.filepath_cache = settings["sm"]["cache"]
-        self.data_dict = load_notifications(self.user_data["id"], self.user_data["permissions"])
+        self.data_dict = kwargs["data"]["data_notifications"]["frame_notifications"]
         self.data = self.data_dict["data"]
         self.notifications_complete, self.notifications_pending = get_notifications_tables(self.data)
         self.columns = self.data_dict["columns"]

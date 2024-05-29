@@ -21,6 +21,7 @@ class EmployeesFrame(ScrolledFrame):
         self.columnconfigure(0, weight=1)
         self.rowconfigure(3, weight=1)
         self._id_emp_update = None
+        self.data = kwargs["data"]["data_emps_gen"] if "data_emps_gen" in kwargs["data"] else None
         # -----------------------label-----------------------
         self.label = ttk.Label(self, text="Employees Table",
                                font=("Helvetica", 30, "bold"))
@@ -49,7 +50,7 @@ class EmployeesFrame(ScrolledFrame):
         self.employee_insert, self.data = create_visualizer_treeview(
             self.visual_frame, "employees",
             row=1, column=0, style="primary",
-            pad_x=25, pad_y=10)
+            pad_x=25, pad_y=10, data=self.data)
         self.employee_insert.view.bind("<Double-1>", self._emp_selected_table)
 
     def _emp_selected_table(self, event):

@@ -77,7 +77,8 @@ class VacationsFrame(ScrolledFrame):
             row=0, column=0, columnspan=2, padx=20, pady=30)
         # -------------------create varaibles-----------------
         self.var_label_id_name = ttk.StringVar(value="")
-        self.data, columns = self.load_data_vacations(1)
+        self.data, columns = self.load_data_vacations(1) if "vacaciones" not in kwargs["data"] else (
+            kwargs["data"]["vacaciones"]["data"], kwargs["data"]["vacaciones"]["columns"])
         self.name_emp = ttk.StringVar()
         self.aptitud_act = ttk.StringVar()
         self.examen_prox = ttk.StringVar()

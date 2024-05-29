@@ -70,61 +70,32 @@ class FrameEncuestas(ttk.Frame):
         options = []
         for item in self.quizzes.values():
             options.append(item["name"])
-        self.quizz_selector = create_Combobox(
-            frame_inputs,
-            values=options,
-            state="readonly",
-            row=0,
-            column=0,
-            sticky="n",
-            width=50,
-            columnspan=2,
-        )
+        self.quizz_selector = create_Combobox(frame_inputs, values=options, state="readonly", row=0, column=0,
+                                              sticky="n", width=50, columnspan=2)
         self.quizz_selector.bind("<<ComboboxSelected>>", self.select_quiz)
         self.quizz_selector.set("Seleccione una encuesta")
-
         # employee making the quizz data
-        self.names, self.emps_metadata = get_name_id_employees_list(1, True)
+        self.names, self.emps_metadata = get_name_id_employees_list(1, True) if "encuestas" not in kwargs[
+            "data"] else (
+            kwargs["data"]["encuestas"]["names"], kwargs["data"]["encuestas"]["emps_metadata"])
         create_label(
             frame_inputs, text="Empleado encuestado: ", row=1, column=0, sticky="w"
         )
-        self.name_emp_selector = create_Combobox(
-            frame_inputs,
-            values=self.names,
-            state="readonly",
-            width=40,
-            row=1,
-            column=1,
-            sticky="w",
-        )
+        self.name_emp_selector = create_Combobox(frame_inputs, values=self.names, state="readonly", width=40, row=1,
+                                                 column=1, sticky="w")
         # evaluated employee
         self.label_evaluated = create_label(
-            frame_inputs, text="Empleado evaluado: ", row=0, column=2, sticky="w"
-        )
+            frame_inputs, text="Empleado evaluado: ", row=0, column=2, sticky="w")
         self.label_evaluated.grid_remove()
-        self.name_emp_evaluated = create_Combobox(
-            frame_inputs,
-            values=self.names,
-            state="readonly",
-            width=40,
-            row=0,
-            column=3,
-            sticky="w",
-        )
+        self.name_emp_evaluated = create_Combobox(frame_inputs, values=self.names, state="readonly", width=40, row=0,
+                                                  column=3, sticky="w")
         self.name_emp_evaluated.grid_remove()
         self.label_pos_evaluator = create_label(
-            frame_inputs, text="Nivel del evaluado: ", row=1, column=2, sticky="w"
-        )
+            frame_inputs, text="Nivel del evaluado: ", row=1, column=2, sticky="w")
         self.label_pos_evaluator.grid_remove()
-        self.pos_evaluator = create_Combobox(
-            frame_inputs,
-            values=["Autoevaluación", "Jefe Inmediato", "Colega", "Subordinado"],
-            state="readonly",
-            width=40,
-            row=1,
-            column=3,
-            sticky="w",
-        )
+        self.pos_evaluator = create_Combobox(frame_inputs,
+                                             values=["Autoevaluación", "Jefe Inmediato", "Colega", "Subordinado"],
+                                             state="readonly", width=40, row=1, column=3, sticky="w")
         self.pos_evaluator.grid_remove()
         # ------------buttons------------
         frame_btns = ttk.Frame(self)
@@ -203,6 +174,7 @@ class FrameEncuestas(ttk.Frame):
         }
         name_quizz = self.quizz_selector.get()
         self.dict_quizz = json.load(open(self.filepath, encoding="utf-8"))
+
         QuizMaker(
             self.dict_quizz,
             title=name_quizz,

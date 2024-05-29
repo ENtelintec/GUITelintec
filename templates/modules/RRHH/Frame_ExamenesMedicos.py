@@ -75,7 +75,8 @@ class ExamenesMedicos(ScrolledFrame):
             row=0, column=0, columnspan=2, padx=20, pady=30)
         # -------------------create varaibles-----------------
         self.var_label_id_name = ttk.StringVar(value="")
-        self.data, columns = load_data_EM(1)
+        self.data, columns = load_data_EM(1) if "examenes" not in kwargs["data"] else (
+            kwargs["data"]["examenes"]["data"], kwargs["data"]["examenes"]["columns"])
         self.name_emp = ttk.StringVar()
         self.aptitud_act = ttk.StringVar()
         self.examen_prox = ttk.StringVar()

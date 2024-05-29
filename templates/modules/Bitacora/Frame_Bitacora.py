@@ -9,7 +9,7 @@ import ttkbootstrap as ttk
 from ttkbootstrap.scrolled import ScrolledFrame
 from ttkbootstrap.tableview import Tableview
 
-from static.extensions import log_file_bitacora_path, delta_bitacora_edit
+from static.extensions import log_file_bitacora_path, delta_bitacora_edit, format_date
 from templates.Functions_AuxFiles import update_bitacora, get_events_op_date, \
     erase_value_bitacora, split_commment, update_bitacora_value
 from templates.Functions_Files import write_log_file
@@ -36,13 +36,17 @@ def check_date_difference(date_modify, delta):
 class BitacoraEditFrame(ScrolledFrame):
     def __init__(self, master, username="default", contrato="default", delta=delta_bitacora_edit, setting: dict = None, *args, **kwargs):
         super().__init__(master)
+        
         self.columnconfigure(0, weight=1)
         self.rowconfigure(4, weight=1)
         # --------------------------variables----------------------------------
         self.username = username
         self.contrato = contrato
         self.delta = delta
-        self.emp_id, self.data_emp, self.events = create_var_none(3)
+        self.emps_names = kwargs["data"]["bitacora"]["emp_data"] if "bitacora" in kwargs["data"] else None
+        self.events = kwargs["data"]["bitacora"]["events"] if "bitacora" in kwargs["data"] else None
+        self.columns = kwargs["data"]["bitacora"]["columns"] if "bitacora" in kwargs["data"] else None
+        self.emp_id, self.data_emp = create_var_none(2)
         self.svar_info, self.svar_out, self.svar_activity, self.location = create_stringvar(4, "")
         self.bvar_prima = ttk.BooleanVar()
         # ----------------------------title------------------------------------
@@ -72,7 +76,7 @@ class BitacoraEditFrame(ScrolledFrame):
 
     def create_inputs(self, master):
         # ----data -----------
-        flag, error, emp_data = get_employees_op_names()
+        flag, error, emp_data = get_employees_op_names() if self.emps_names is None else (True, "", self.emps_names)
         emp_ids = [i[0] for i in emp_data]
         contratos = [i[3] for i in emp_data]
         contratos_display = list(set(contratos))
@@ -368,7 +372,7 @@ class BitacoraEditFrame(ScrolledFrame):
     def create_table(self, master, hard_update=False):
         # label title
         date = self.date_selector.entry.get()
-        date = datetime.strptime(date, "%Y-%m-%d")
+        date = datetime.strptime(date, format_date)
         month = date.month
         # month name
         month_name = calendar.month_name[month]
@@ -377,10 +381,10 @@ class BitacoraEditFrame(ScrolledFrame):
             row=0, column=0, columnspan=4, padx=10, pady=10)
         # tableview de eventos
         date = self.date_selector.entry.get()
-        date = datetime.strptime(date, "%Y-%m-%d")
-        self.events, columns = get_events_op_date(date, hard_update)
+        date = datetime.strptime(date, format_date)
+        self.events, self.columns = get_events_op_date(date, hard_update) if self.events is None else (self.events, self.columns)
         table_events = Tableview(master,
-                                 coldata=columns,
+                                 coldata=self.columns,
                                  rowdata=self.events,
                                  paginated=True,
                                  searchable=True,
@@ -389,18 +393,6 @@ class BitacoraEditFrame(ScrolledFrame):
                                  pagesize=20)
         table_events.grid(row=1, column=0, padx=20, pady=10, sticky="n")
         table_events.view.bind("<Double-1>", self.on_double_click_table)
-        # ttk.Label(
-        #     master, text='Resumen general de empleados', font=("Helvetica", 22, "bold")).grid(
-        #     row=2, column=0, columnspan=4, padx=10, pady=10)
-        # # tableview de empleados
-        # self.data_emp, columns = get_data_employees_ids(self.emp_ids)
-        # table_resume = Tableview(master,
-        #                          coldata=columns,
-        #                          rowdata=self.data_emp,
-        #                          paginated=True,
-        #                          searchable=True,
-        #                          autofit=True)
-        # table_resume.grid(row=3, column=0, padx=20, pady=10)
         return table_events
 
     def update_table(self):

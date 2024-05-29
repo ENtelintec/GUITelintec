@@ -47,10 +47,6 @@ def get_key_display(key: str):
 
 
 def create_data_for_table(pdf_files, json_files, path):
-    # {metadata: {'name_emp': 'ALEJANDRO REGINO RUIZ ORTIZ ', 'date': '2024-05-13', 'interviewer': 'EDISSON ANDRES  NAULA DUCHI',
-    #  'ID_emp': 1, 'position': 'NONE', 'admision': '2023-11-13', 'departure': '2024-03-27', 'departure_reason': '',
-    #  'evaluated_emp': 'ALEJANDRO REGINO RUIZ ORTIZ ', 'pos_evaluator': 'Autoevaluación', 'evaluated_emp_ID': 1,
-    #  'type_q': 0}}
     columns = ("Nombre", "ID", "Nombre del Quiz", "Evaluador", "Fecha", "Archivo PDF", "Archivo RAW")
     data = []
     for json_name in json_files:

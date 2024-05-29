@@ -28,6 +28,7 @@ cache_oct_file_temp_path = "files/OCT_cache.csv"
 cache_oct_fichaje_path = "files/contracts_cache.pkl"
 filepath_settings = "files/settings.json"
 filepath_recomendations = "files/recomendations.json"
+quizzes_dir_path = "static/quizzes_dir.json"
 quizzes_RRHH = {
     "0": {
         "name": "Encuesta de Salida", 

@@ -26,7 +26,8 @@ class EmployeeDetailsScrolled(ScrolledFrame):
                   font=("Helvetica", 32, "bold")).grid(row=0, column=0,
                                                        columnspan=4,
                                                        padx=10, pady=10)
-        self.data_emp, columns = get_data_employees(status="ACTIVO")
+        self.data_emp, columns = get_data_employees(status="ACTIVO") if "emp_detalles" not in kwargs["data"] else (kwargs[
+            "data"]["emp_detalles"]["data"], kwargs["data"]["emp_detalles"]["columns"])
         # tableview de empleados
         self.table = Tableview(self,
                                coldata=columns,
@@ -80,7 +81,8 @@ class EmployeeDetails(ttk.Frame):
                   font=("Helvetica", 32, "bold")).grid(row=0, column=0,
                                                        columnspan=4,
                                                        padx=10, pady=10)
-        self.data_emp, columns = get_data_employees(status="ACTIVO")
+        self.data_emp, columns = get_data_employees(status="ACTIVO") if "emp_detalles" not in kwargs["data"] else (
+            kwargs["data"]["emp_detalles"]["data"], kwargs["data"]["emp_detalles"]["columns"])
         # tableview de empleados
         self.table = Tableview(self,
                                coldata=columns,

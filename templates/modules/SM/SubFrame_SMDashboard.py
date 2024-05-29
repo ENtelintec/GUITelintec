@@ -18,19 +18,10 @@ from templates.modules.Misc.SubFrame_Plots import FramePlot
 permissions_supper_SM = json.load(open(ventanasApp_path, encoding="utf-8"))["permissions_supper_SM"]
 
 
-def create_plots(master, range_selected):
-    data_chart = get_data_sm_per_range(range_selected, "normal")
+def create_plots(master, range_selected, data_chart=None):
+    data_chart = get_data_sm_per_range(range_selected, "normal") if data_chart is None else data_chart
     plot1_1 = FramePlot(master, data_chart, "normal")
     plot1_1.grid(row=1, column=0, padx=10, pady=10, sticky="nswe")
-    # data_chart = {
-    #     "val_x": [1, 2, 3, 4, 5, 6, 7],
-    #     "val_y": [[10, 1], [2, 1], [15, 12], [12, 5], [3, 3], [1, 1], [10, 8]],
-    #     "title": "SMs por dia de la ultima semana",
-    #     "ylabel": "# de SMs",
-    #     "legend": ("Creadas", "Procesadas")
-    # }
-    # plot1_2 = FramePlot(master, data_chart)
-    # plot1_2.grid(row=0, column=1, padx=10, pady=10, sticky="nswe")
     return plot1_1
 
 
@@ -45,7 +36,7 @@ class SMDashboard(ttk.Frame):
         self.history = None
         self.data_sm = None
         self.status_sm = None
-        self.columns_sm = data["columns_sm"]
+        self.columns_sm = data["sm"]["columns_sm"]
         self.columnconfigure(0, weight=1)
         self.rowconfigure((0, 1), weight=1)
         self.style_gui = kwargs["style_gui"]
@@ -64,7 +55,7 @@ class SMDashboard(ttk.Frame):
         self.range_selector.bind("<<ComboboxSelected>>", self.change_plot_type)
         # create_Combobox(master=frame_selector, row=0, column=1, values=["normal", "all"],
         #                 command=self.change_plot_type, width=10)
-        self.plots = create_plots(self.frame_graphs, self.svar_range_selector.get())
+        self.plots = create_plots(self.frame_graphs, self.svar_range_selector.get(), data["data_dashboard"]["sm"]["data_chart"])
         # --------------------------table SMs---------------------+--------------
         self.frame_table = ttk.Frame(self)
         self.frame_table.grid(row=1, column=0, padx=20, pady=(0, 20), sticky="nswe")
@@ -72,9 +63,11 @@ class SMDashboard(ttk.Frame):
         create_label(self.frame_table, 0, 0, text="SMs en la base de datos", font=("Arial", 24, "bold"), columnspan=2)
         ttk.Button(self.frame_table, text="Marca de recibido", command=self._on_recieved_sm).grid(row=1, column=0, sticky="n")
         if self.is_supper_user:
-            self.table_events = self.create_table(self.frame_table, data=data["data_sm"], columns=data["columns_sm"])
+            self.table_events = self.create_table(
+                self.frame_table, data=data["sm"]["data_sm"], columns=data["sm"]["columns_sm"])
         else:
-            self.table_events = self.create_table(self.frame_table, data=data["data_sm_not_supper"], columns=data["columns_sm"])
+            self.table_events = self.create_table(
+                self.frame_table, data=data["sm"]["data_sm_not_supper"], columns=data["sm"]["columns_sm"])
         # ----------------------- history sm-----------------------------------
         self.info_history = ScrolledText(self.frame_table, padding=5, height=10, autohide=True)
         self.info_history.grid(row=2, column=1, padx=5, pady=10, sticky="n")

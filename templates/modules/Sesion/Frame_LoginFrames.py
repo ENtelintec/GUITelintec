@@ -3,7 +3,9 @@ __author__ = 'Edisson Naula'
 __date__ = '$ 08/nov./2023  at 15:22 $'
 
 import hashlib
+import json
 import os
+
 import requests
 import ttkbootstrap as ttk
 from dotenv import dotenv_values
@@ -11,6 +13,11 @@ from ttkbootstrap import Style
 import customtkinter as ctk
 import tkinter as tk
 from PIL import Image
+
+from static.extensions import ventanasApp_path
+from templates.Funtions_Utils import compare_permissions_windows
+from templates.LoadData import DataLoader
+from templates.controllers.employees.us_controller import get_username_data
 
 # from templates.GUIGeneral import load_default_images
 carpeta_principal = "./img"
@@ -55,13 +62,16 @@ def image_load():
 
 class LoginGUI(ttk.Frame):
     def __init__(self, master=None, *args, **kwargs):
-        super().__init__(master, *args, **kwargs)
+        super().__init__(master)
         self.columnconfigure(1, weight=1)
-
+        self.style_gui = kwargs.get("style_gui")
         self.images = {}
+        self.permissions = None
+        self.username_data = None
         (self.logo_image, self.employees_img, self.iso_claro) = image_load()
         self.frame_login = ttk.Frame(self)
         self.frame_login.place(relx=0.5, rely=0.5, anchor="center")  # Centrar el nuevo frame
+        self._svar_info_login = ttk.StringVar(value="")
         # ----------------Agregar imagen -----------------=
         imagen = ctk.CTkButton(self.frame_login, image=self.iso_claro, fg_color="transparent", text=None, hover=None)
         imagen.grid(row=0, column=0, columnspan=2)
@@ -82,8 +92,9 @@ class LoginGUI(ttk.Frame):
         self.button = ttk.Button(self.frame_login, text='Login', command=self.button_login_click, width=50)
         self.button.grid(row=6, column=0, sticky="nsew", padx=50, pady=30)
         # -------------------create message----------------
-        self.message = ttk.Label(self, text='', font=('Helvetica', 36))
+        self.message = ttk.Label(self, text='', font=('Helvetica', 36), textvariable=self._svar_info_login)
         self.message.grid(row=7, column=1)
+        self.message["foreground"] = self.style_gui.colors.get("secondary")
 
     def button_login_click(self):
         username = self.user_entry.get()
@@ -93,17 +104,20 @@ class LoginGUI(ttk.Frame):
         # call API
         verified, permissions = call_authApi(username, pass_key, url=url_api)
         if verified or permissions is not None:
+            self.permissions = permissions
+            self.username_data = get_username_data(username)
             self.message['text'] = f'Welcome! **{username}**'
-            self.message['foreground'] = 'white'
-            self.message['font'] = ('Helvetica', 16)
             self.master.permissions = permissions
             self.master.username = username
-            self.master.get_username_data()
-            self.master.update_side_menu()
-            self.master.update_side_menu_windows()
-            # print(f"Permissions: {self.master.permissions}")
-            self.destroy()
-            # self.quit()
+            self.master.get_username_data(self.username_data, self.permissions)
+            flag, windows_names = compare_permissions_windows(list(self.permissions.values()))
+            windows_names = windows_names if windows_names is not None else ["Cuenta"]
+            self.master.update_side_menu(windows_names)
+            data_loader = DataLoader(self.check_permissions(), self.username_data["id"], windows_names,
+                                     permissions, self)
+            # data_dic = load_data(self.check_permissions(), self.username_data["id"], self.names_side_menu, self.permissions)
+            data_loader.daemon = True
+            data_loader.start()
         else:
             self.message['text'] = 'Invalid user or password'
             self.message['foreground'] = 'red'
@@ -111,6 +125,21 @@ class LoginGUI(ttk.Frame):
             self.user_entry.delete(0, 'end')
             self.user_entry.focus()
             self.pass_entry.focus()
+    
+    def update_info_loading(self, loaded, total):
+        self._svar_info_login.set(f"Cargando {loaded} de {total}")
+
+    def close_login_frame(self, data_dic):
+        self.master.update_side_menu_data(data_dic)
+        self.destroy()
+        # self.quit()
+    
+    def check_permissions(self):
+        permissions_supper_sm = json.load(open(ventanasApp_path, encoding="utf-8"))["permissions_supper_SM"]
+        for item in self.permissions.values():
+            if item in permissions_supper_sm:
+                return True
+        return False
 
 
 class LogOptionsFrame(ttk.Frame):
