@@ -8,7 +8,7 @@ from datetime import datetime
 
 from PIL import Image, ImageTk
 
-from static.extensions import cache_file_resume_fichaje, status_dic, quizz_out_path
+from static.extensions import cache_file_resume_fichaje, status_dic, quizz_out_path, format_date, format_timestamps
 from templates.Functions_Files import get_fichajes_resume_cache, update_fichajes_resume_cache
 from templates.controllers.employees.employees_controller import get_name_employee
 from templates.controllers.fichajes.fichajes_controller import get_fichaje_DB
@@ -168,6 +168,8 @@ def update_bitacora(emp_id: int, event, data):
         return False, "error at getting data resume", result
     if new_registry:
         name = get_name_employee(emp_id)
+        # if name is None:
+        #     return False, "error at getting name of the employee", result
         fichajes_resume.append([emp_id, name.title(), contract_sel, 0, 0, 0, 0, 0, 0, {}, {}, {}, {}, {}])
     for i, row in enumerate(fichajes_resume):
         (id_emp, name, contract, new_faltas, new_tardanzas, new_tardanzas_values,
@@ -207,9 +209,10 @@ def update_bitacora(emp_id: int, event, data):
     return flag, error, result
 
 
-def update_bitacora_value(emp_id: int, event, data):
+def update_bitacora_value(emp_id: int, event, data, id_event=None):
     """
         Update the bitacora for just values.
+        :param id_event: 
         :param emp_id: The id of the employee.
         :param event: The event.
         :param data: The data.
@@ -232,12 +235,12 @@ def update_bitacora_value(emp_id: int, event, data):
                 event_dic = json.loads(result[7])
     else:
         print("error at getting data from db or not data found for the employee")
-    date = datetime.strptime(data[0], "%Y-%m-%d")
+    date = datetime.strptime(data[0], format_date)
     try:
         event_dic[str(date.year)][str(date.month)][str(date.day)] = {
             "value": data[1],
             "comment": data[2],
-            "timestamp": date.strftime("%Y-%m-%d %H:%M:%S")
+            "timestamp": date.strftime(format_timestamps)
         }
     except KeyError:
         print(f"error at updating the value for {date}")

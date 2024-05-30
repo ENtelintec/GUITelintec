@@ -127,7 +127,8 @@ class LoginGUI(ttk.Frame):
             self.pass_entry.focus()
     
     def update_info_loading(self, loaded, total):
-        self._svar_info_login.set(f"Cargando {loaded} de {total}")
+        percentage_loaded = (loaded / total) * 100
+        self._svar_info_login.set(f'Cargando {percentage_loaded:.2f}%')
 
     def close_login_frame(self, data_dic):
         self.master.update_side_menu_data(data_dic)

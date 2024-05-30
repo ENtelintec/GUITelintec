@@ -1311,6 +1311,11 @@ def transform_hours_to_str(hours: float):
 
 
 def get_days_work(date: datetime):
+    """
+    Get the days of the month that are not sundays.
+    :param date: The date.
+    :return: The list of days.
+    """
     n_days_month = monthrange(date.year, date.month)
     last_day = n_days_month[1] if n_days_month[1] <= date.day else date.day
     days_of_the_month = [i for i in range(1, last_day+1)]

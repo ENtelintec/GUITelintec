@@ -2,7 +2,6 @@ Flask-SQLAlchemy
 flask
 mysql-connector-python
 python-dotenv
-CTkTable~=0.8
 flask-restx
 pyjwt~=2.8.0
 numpy
