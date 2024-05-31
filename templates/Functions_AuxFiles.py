@@ -121,6 +121,7 @@ def update_bitacora(emp_id: int, event, data):
     :param data: The data.
     :return: None.
     """
+    emp_id = int(emp_id)
     event_dic = {}
     new_registry = False
     contract_sel = data[3]
@@ -140,33 +141,41 @@ def update_bitacora(emp_id: int, event, data):
     else:
         print("error at getting data from db or not data found for the employee")
         new_registry = True
-    date = datetime.strptime(data[0], "%Y-%m-%d")
+    date = datetime.strptime(data[0], format_date)
     if str(date.year) not in event_dic.keys():
         event_dic[str(date.year)] = {}
         event_dic[str(date.year)][str(date.month)] = {}
         event_dic[str(date.year)][str(date.month)][str(date.day)] = {
             "value": data[1],
             "comment": data[2],
-            "timestamp": date.strftime("%Y-%m-%d %H:%M:%S")
+            "timestamp": date.strftime(format_timestamps)
         }
     elif str(date.month) not in event_dic[str(date.year)].keys():
         event_dic[str(date.year)][str(date.month)] = {}
         event_dic[str(date.year)][str(date.month)][str(date.day)] = {
             "value": data[1],
             "comment": data[2],
-            "timestamp": date.strftime("%Y-%m-%d %H:%M:%S")
+            "timestamp": date.strftime(format_timestamps)
         }
     elif str(date.day) not in event_dic[str(date.year)][str(date.month)].keys():
         event_dic[str(date.year)][str(date.month)][str(date.day)] = {
             "value": data[1],
             "comment": data[2],
-            "timestamp": date.strftime("%Y-%m-%d %H:%M:%S")
+            "timestamp": date.strftime(format_timestamps)
         }
-
+    else:
+        print("update event", data, emp_id)
+        event_dic[str(date.year)][str(date.month)][str(date.day)] = {
+            "value": data[1],
+            "comment": data[2],
+            "timestamp": date.strftime(format_timestamps)
+        }
+    print("getting cache")
     fichajes_resume, flag = get_fichajes_resume_cache(cache_file_resume_fichaje)
     if not flag:
         return False, "error at getting data resume", result
     if new_registry:
+        print("new registry")
         name = get_name_employee(emp_id)
         # if name is None:
         #     return False, "error at getting name of the employee", result
@@ -202,7 +211,6 @@ def update_bitacora(emp_id: int, event, data):
                                new_extras, new_extras_value, new_primas, absences,
                                lates, extras, primes, event_dic]
                     fichajes_resume[i] = new_row
-            print(fichajes_resume)
             update_fichajes_resume_cache(cache_file_resume_fichaje, fichajes_resume, id_emp_up=id_emp)
             print("updated cache")
             break
@@ -308,7 +316,7 @@ def erase_value_bitacora(emp_id: int, event, data):
                 event_dic = json.loads(result[7])
     else:
         print("error at getting data from db or not data found for the employee")
-    date = datetime.strptime(data[0], "%Y-%m-%d")
+    date = datetime.strptime(data[0], format_date)
     if str(date.year) in event_dic.keys():
         if str(date.month) in event_dic[str(date.year)].keys():
             if str(date.day) in event_dic[str(date.year)][str(date.month)].keys():
@@ -415,6 +423,7 @@ def get_events_op_date(date: datetime, hard_update, only_op=True):
     :param date: The date.
     :return: The events.
     """
+    print("hard update", hard_update)
     data_events = []
     fichajes_resume, flag = get_fichajes_resume_cache(cache_file_resume_fichaje, hard_update=hard_update)
     for row in fichajes_resume:
@@ -587,9 +596,7 @@ def get_data_files_quizzes(path_quizzes: str):
         file = json.load(open(path + json_name, "r"))
         name_emp = file["metadata"]["name_emp"]
         name_emp = name_emp.replace(" ", "")
-        print(name_emp, names_files_pdf)
         for name_pdf in names_files_pdf:
             if name_emp in name_pdf:
-                print(file["metadata"])
                 break
     return names_files_pdf

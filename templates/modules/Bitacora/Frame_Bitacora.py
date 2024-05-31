@@ -270,7 +270,6 @@ class BitacoraEditFrame(ScrolledFrame):
                 self.svar_info.set(error)
                 return
         else:
-            print(self.emp_id, event)
             flag, error, result = update_bitacora(self.emp_id, event, (date, value, comment, contract))
             if flag:
                 msg = f"Record inserted--> Empleado: {name}, Contrato: {contract}, Fecha: {date}, Evento: {event}, Valor: {value}, Comentario: {comment}--> by {self.username}"
@@ -382,7 +381,7 @@ class BitacoraEditFrame(ScrolledFrame):
         # tableview de eventos
         date = self.date_selector.entry.get()
         date = datetime.strptime(date, format_date)
-        self.events, self.columns = get_events_op_date(date, hard_update) if self.events is None else (self.events, self.columns)
+        self.events, self.columns = get_events_op_date(date, hard_update) if self.events is None or hard_update else (self.events, self.columns)
         table_events = Tableview(master,
                                  coldata=self.columns,
                                  rowdata=self.events,

@@ -874,6 +874,7 @@ def update_fichajes_resume_cache(filepath: str, data, just_file=False, id_emp_up
                     (id_emp2, name2, contract2, faltas2, lates2, total_lates2, extras2, total_extra2, primas2,
                      faltas_dic2, lates_dic2, extras_dic2, primas_dic2, normal_dic2) = data[index_1]
                     faltas_dic.update(faltas_dic2)
+                    print(faltas_dic2)
                     lates_dic.update(lates_dic2)
                     extras_dic.update(extras_dic2)
                     primas_dic.update(primas_dic2)
@@ -885,7 +886,7 @@ def update_fichajes_resume_cache(filepath: str, data, just_file=False, id_emp_up
                     aux = (id_emp, name, contract, new_faltas, new_lates, new_extras, new_extras_value, new_primas,
                            faltas_dic, lates_dic, extras_dic, primas_dic, normal_dic)
                     flag, error, result = update_fichaje_DB(
-                        id_new, contract, faltas_dic, lates_dic, extras_dic, primas_dic, normal_dic)
+                        id_emp, contract, faltas_dic, lates_dic, extras_dic, primas_dic, normal_dic)
                     if flag:
                         print("Fichaje updated DB: ", id_emp)
                         fichajes_resume[index_0] = aux
@@ -982,7 +983,7 @@ def get_fichajes_resume_cache(filepath, hard_update=False) -> tuple[list, bool]:
     """
     fichajes_resume = []
     flag = False
-    if hard_update:
+    if not hard_update:
         try:
             with open(filepath, 'rb') as file:
                 fichajes_resume = pickle.load(file)
