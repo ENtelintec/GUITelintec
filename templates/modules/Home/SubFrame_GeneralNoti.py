@@ -140,8 +140,9 @@ class NotificationsUser(ttk.Frame):
             item_to_add[1] = dict_status[1]
             self.notifications_complete.insert(0, item_to_add)
             # eliminate row from the pending not
+            
             for index, noti in enumerate(self.notifications_pending):
-                if int(noti[3]) == id_not:
+                if int(noti[4]) == id_not:
                     flag, error, result = update_status_notification(id_not, 1)
                     self.notifications_pending.pop(index) if flag else None
                     break

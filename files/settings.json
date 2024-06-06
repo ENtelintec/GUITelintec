@@ -30,5 +30,6 @@
   },
   "sm": {
     "cache": "files/Notificaciones_cache.pkl"
-  }
+  },
+  "pmodels_files": "files/Pmodels/"
 }

@@ -842,51 +842,119 @@ def get_cumulative_data_fichajes_dict(dic_data: dict, date=None) -> tuple[int, i
     return total_days, total_value
 
 
-def update_fichajes_resume_cache(filepath: str, data, just_file=False, id_emp_up=None, deletion=False):
+def retrieve_file_cache_data(filepath):
+    try:
+        with open(filepath, 'rb') as file:
+            data = pickle.load(file)
+        return True, None, data
+    except Exception as e:
+        print(f"Error at reading file: {filepath}--{str(e)}")
+        return False, e, []
+
+
+def save_file_cache_data(filepath, data):
+    try:
+        with open(filepath, 'wb') as file:
+            pickle.dump(data, file)
+        return True, None
+    except Exception as e:
+        print(f"Error at saving file: {filepath}--{str(e)}")
+        return False, e
+
+
+def update_cache_data(cache_data, new_data, id_emp_up=None, deletion=False):
+    ids_old = [item[0] for item in cache_data]
+    ids_new = [item[0] for item in new_data]
+    data_insert = []
+    if id_emp_up not in ids_old:
+        for index_1, item_new in enumerate(new_data):
+            (id_emp, name, contract, faltas, lates, total_lates, extras, total_extra, primas,
+             faltas_dic, lates_dic, extras_dic, primas_dic, normal_dic) = item_new
+            if id_emp == id_emp_up:
+                flag, error, result = insert_new_fichaje_DB(id_emp, contract, faltas_dic, lates_dic, extras_dic,
+                                                            primas_dic, normal_dic)
+                data_insert.append(result)
+                if flag:
+                    cache_data.append(item_new)
+                    print("Fichaje added DB")
+                else:
+                    print("Error at creating new registry at DB")
+                    print(error)
+                break
+    else:
+        for index_1, item_new in enumerate(new_data):
+            (id_emp, name, contract2, faltas2, lates2, total_lates2, extras2, total_extra2, primas2,
+             faltas_dic2, lates_dic2, extras_dic2, primas_dic2, normal_dic2) = item_new
+            if id_emp_up == id_emp:
+                for index_0, item_0 in enumerate(cache_data):
+                    if id_emp == item_0[0]:
+                        (id_emp_0, name, contract, faltas, lates, total_lates, extras, total_extra, primas,
+                         faltas_dic, lates_dic, extras_dic, primas_dic, normal_dic) = cache_data[index_0]
+                        if deletion:
+                            faltas_dic = faltas_dic2
+                            lates_dic = lates_dic2
+                            extras_dic = extras_dic2
+                            primas_dic = primas_dic2
+                            normal_dic = normal_dic2
+                        else:
+                            faltas_dic.update(faltas_dic2)
+                            lates_dic.update(lates_dic2)
+                            extras_dic.update(extras_dic2)
+                            primas_dic.update(primas_dic2)
+                            normal_dic.update(normal_dic2)
+                        new_faltas, new_faltas_value = get_cumulative_data_fichajes_dict(faltas_dic)
+                        new_lates, new_lates_value = get_cumulative_data_fichajes_dict(lates_dic)
+                        new_extras, new_extras_value = get_cumulative_data_fichajes_dict(extras_dic)
+                        new_primas, new_primas_value = get_cumulative_data_fichajes_dict(primas_dic)
+                        aux = (id_emp, name, contract,
+                               new_faltas, new_lates, new_lates_value, new_extras, new_extras_value, new_primas,
+                               faltas_dic, lates_dic, extras_dic, primas_dic, normal_dic)
+                        flag, error, result = update_fichaje_DB(
+                            id_emp, contract, faltas_dic, lates_dic, extras_dic, primas_dic, normal_dic)
+                        if flag:
+                            print(f"Fichaje updated DB: {id_emp}")
+                            cache_data[index_0] = aux
+                        else:
+                            print("Error at updating DB")
+                            print(error)
+                        break
+                break
+
+
+def update_fichajes_resume_cache(filepath: str, data, just_file=False):
     """
     Updates the fichajes resume cache
-    :param deletion:
-    :param id_emp_up: id for update only one registry
     :param just_file:
     :param filepath:
     :param data:
     :return:
     """
-    update = True
-    try:
-        with open(filepath, 'rb') as file:
-            fichajes_resume = pickle.load(file)
-    except Exception as e:
-        print("Error at getting cache file to update: ", e)
-        update = False
+    update, error, fichajes_resume = retrieve_file_cache_data(filepath)
+    if len(fichajes_resume) == 0 or error is not None:
         fichajes_resume = data
-    if update and not just_file and id_emp_up is None and not deletion:
-        ids_old = [item[0] for item in fichajes_resume]
-        ids_new = [item[0] for item in data]
-        new_insert_ids = list(set(ids_new) - set(ids_old))
+        print("Replazing cache into db")
+    if just_file:
+        fichajes_resume = data
+    else:
+        ids_old = {item[0] for item in fichajes_resume}
+        ids_new = {item[0] for item in data}
+        new_insert_ids = ids_new - ids_old
         for index_1, item_1 in enumerate(data):
             for index_0, item_0 in enumerate(fichajes_resume):
-                id_new = item_1[0]
-                id_old = item_0[0]
-                if id_new == id_old and item_0[2] == item_1[2]:
+                if item_1[0] == item_0[0] and item_0[2] == item_1[2]:
                     (id_emp, name, contract, faltas, lates, total_lates, extras, total_extra, primas,
-                     faltas_dic, lates_dic, extras_dic, primas_dic, normal_dic) = fichajes_resume[index_0]
+                     *dicts_old) = fichajes_resume[index_0]
                     (id_emp2, name2, contract2, faltas2, lates2, total_lates2, extras2, total_extra2, primas2,
-                     faltas_dic2, lates_dic2, extras_dic2, primas_dic2, normal_dic2) = data[index_1]
-                    faltas_dic.update(faltas_dic2)
-                    print(faltas_dic2)
-                    lates_dic.update(lates_dic2)
-                    extras_dic.update(extras_dic2)
-                    primas_dic.update(primas_dic2)
-                    normal_dic.update(normal_dic2)
-                    new_faltas, new_faltas_value = get_cumulative_data_fichajes_dict(faltas_dic)
-                    new_lates, new_lates_value = get_cumulative_data_fichajes_dict(lates_dic)
-                    new_extras, new_extras_value = get_cumulative_data_fichajes_dict(extras_dic)
-                    new_primas, new_primas_value = get_cumulative_data_fichajes_dict(primas_dic)
-                    aux = (id_emp, name, contract, new_faltas, new_lates, new_extras, new_extras_value, new_primas,
-                           faltas_dic, lates_dic, extras_dic, primas_dic, normal_dic)
-                    flag, error, result = update_fichaje_DB(
-                        id_emp, contract, faltas_dic, lates_dic, extras_dic, primas_dic, normal_dic)
+                     *dicts_new) = data[index_1]
+                    new_total = []
+                    new_value = []
+                    for i in range(len(dicts_old)):
+                        dicts_old[i].update(dicts_new[i])
+                        new_total.append(get_cumulative_data_fichajes_dict(dicts_old[i]))
+                        new_value.append(get_cumulative_data_fichajes_dict(dicts_old[i], "value"))
+                    aux = (id_emp, name, contract, new_total[0], new_total[1], new_value[1], new_total[3], new_value[3], new_total[4],
+                           dicts_new[0], dicts_new[1], dicts_new[2], dicts_new[3], dicts_new[4])                    
+                    flag, error, result = update_fichaje_DB(id_emp, contract, dicts_new[0], dicts_new[1], dicts_new[2], dicts_new[3], dicts_new[4])
                     if flag:
                         print("Fichaje updated DB: ", id_emp)
                         fichajes_resume[index_0] = aux
@@ -909,81 +977,24 @@ def update_fichajes_resume_cache(filepath: str, data, just_file=False, id_emp_up
                     else:
                         print("Error at creating new registry at DB")
                         print(error)
-                    break
-    if just_file:
-        fichajes_resume = data
-    if id_emp_up is not None:
-        ids_old = [item[0] for item in fichajes_resume]
-        ids_new = [item[0] for item in data]
-        if id_emp_up not in ids_old:
-            for index_1, item_1 in enumerate(data):
-                (id_emp, name, contract, faltas, lates, total_lates, extras, total_extra, primas,
-                 faltas_dic, lates_dic, extras_dic, primas_dic, normal_dic) = item_1
-                if id_emp == id_emp_up:
-                    flag, error, result = insert_new_fichaje_DB(id_emp, contract, faltas_dic, lates_dic, extras_dic,
-                                                                primas_dic, normal_dic)
-                    if flag:
-                        fichajes_resume.append(item_1)
-                        print("Fichaje added DB")
-                    else:
-                        print("Error at creating new registry at DB")
-                        print(error)
-                    break
-        else:
-            for index_1, item_1 in enumerate(data):
-                (id_emp, name, contract2, faltas2, lates2, total_lates2, extras2, total_extra2, primas2,
-                 faltas_dic2, lates_dic2, extras_dic2, primas_dic2, normal_dic2) = item_1
-                if id_emp_up == id_emp:
-                    for index_0, item_0 in enumerate(fichajes_resume):
-                        if id_emp == item_0[0]:
-                            (id_emp_0, name, contract, faltas, lates, total_lates, extras, total_extra, primas,
-                             faltas_dic, lates_dic, extras_dic, primas_dic, normal_dic) = fichajes_resume[index_0]
-                            if deletion:
-                                faltas_dic = faltas_dic2
-                                lates_dic = lates_dic2
-                                extras_dic = extras_dic2
-                                primas_dic = primas_dic2
-                                normal_dic = normal_dic2
-                            else:
-                                faltas_dic.update(faltas_dic2)
-                                lates_dic.update(lates_dic2)
-                                extras_dic.update(extras_dic2)
-                                primas_dic.update(primas_dic2)
-                                normal_dic.update(normal_dic2)
-                            new_faltas, new_faltas_value = get_cumulative_data_fichajes_dict(faltas_dic)
-                            new_lates, new_lates_value = get_cumulative_data_fichajes_dict(lates_dic)
-                            new_extras, new_extras_value = get_cumulative_data_fichajes_dict(extras_dic)
-                            new_primas, new_primas_value = get_cumulative_data_fichajes_dict(primas_dic)
-                            aux = (id_emp, name, contract,
-                                   new_faltas, new_lates, new_lates_value, new_extras, new_extras_value, new_primas,
-                                   faltas_dic, lates_dic, extras_dic, primas_dic, normal_dic)
-                            flag, error, result = update_fichaje_DB(
-                                id_emp, contract, faltas_dic, lates_dic, extras_dic, primas_dic, normal_dic)
-                            if flag:
-                                print(f"Fichaje updated DB: {id_emp}")
-                                fichajes_resume[index_0] = aux
-                            else:
-                                print("Error at updating DB")
-                                print(error)
-                            break
-                    break
-    with open(filepath, 'wb') as file:
-        pickle.dump(fichajes_resume, file)
-    print("Fichajes resume cache file rewrited")
+                    break    
+    flag, error = save_file_cache_data(filepath, fichajes_resume)
+    print("Fichajes resume cache file rewrited function files")
+    return flag, error
 
 
-def get_fichajes_resume_cache(filepath, hard_update=False) -> tuple[list, bool]:
+def get_fichajes_resume_cache(filepath, is_hard_update=False) -> tuple[list, bool]:
     """
     Gets the fichajes resume cache if exists else the data is obtained from the
     db, and then the cumulative values of absences, delays, extra hours and primes
     are calculated.
-    :param hard_update:
+    :param is_hard_update:
     :param filepath:
     :return:
     """
     fichajes_resume = []
     flag = False
-    if not hard_update:
+    if not is_hard_update:
         try:
             with open(filepath, 'rb') as file:
                 fichajes_resume = pickle.load(file)

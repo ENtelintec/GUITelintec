@@ -8,10 +8,10 @@ from datetime import datetime
 
 from PIL import Image, ImageTk
 
-from static.extensions import cache_file_resume_fichaje, status_dic, quizz_out_path, format_date, format_timestamps
+from static.extensions import cache_file_resume_fichaje_path, status_dic, quizz_out_path, format_date, format_timestamps
 from templates.Functions_Files import get_fichajes_resume_cache, update_fichajes_resume_cache
 from templates.controllers.employees.employees_controller import get_name_employee
-from templates.controllers.fichajes.fichajes_controller import get_fichaje_DB
+from templates.controllers.fichajes.fichajes_controller import get_fichaje_DB, update_fichaje_DB, insert_new_fichaje_DB
 from templates.controllers.material_request.sm_controller import get_sm_entries
 from templates.controllers.product.p_and_s_controller import get_sm_products
 
@@ -91,7 +91,7 @@ def get_data_employees(status="ACTIVO"):
     columns = (
         "ID", "Nombre", "Contrato", "Faltas", "Tardanzas", "Total tardanzas", "Dias Extra", "Total extra", "Primas",
         "Detalles Faltas", "Detalles Tardanzas", "Detalles Extras", "Detalles Primas", "Detalles Normal")
-    fichajes_resume, flag = get_fichajes_resume_cache(cache_file_resume_fichaje)
+    fichajes_resume, flag = get_fichajes_resume_cache(cache_file_resume_fichaje_path)
     if flag:
         return fichajes_resume, columns
     else:
@@ -102,7 +102,7 @@ def get_data_employees(status="ACTIVO"):
 def get_data_employees_ids(ids: list):
     columns = ("ID", "Nombre", "Contrato", "Faltas", "Tardanzas", "Dias Extra", "Total", "Primas",
                "Detalles Faltas", "Detalles Tardanzas", "Detalles Extras", "Detalles Primas")
-    fichajes_resume, flag = get_fichajes_resume_cache(cache_file_resume_fichaje)
+    fichajes_resume, flag = get_fichajes_resume_cache(cache_file_resume_fichaje_path)
     if flag:
         for row in fichajes_resume:
             if row[0] not in ids:
@@ -113,34 +113,7 @@ def get_data_employees_ids(ids: list):
         return None, None
 
 
-def update_bitacora(emp_id: int, event, data):
-    """
-    Update the bitacora.
-    :param emp_id: The id of the employee.
-    :param event: The event.
-    :param data: The data.
-    :return: None.
-    """
-    emp_id = int(emp_id)
-    event_dic = {}
-    new_registry = False
-    contract_sel = data[3]
-    flag, error, result = get_fichaje_DB(emp_id)
-    if flag and len(result) > 0:
-        match event:
-            case "falta":
-                event_dic = json.loads(result[3])
-            case "atraso":
-                event_dic = json.loads(result[4])
-            case "extra":
-                event_dic = json.loads(result[5])
-            case "prima":
-                event_dic = json.loads(result[6])
-            case "normal":
-                event_dic = json.loads(result[7])
-    else:
-        print("error at getting data from db or not data found for the employee")
-        new_registry = True
+def update_event_dict(event_dic, data):
     date = datetime.strptime(data[0], format_date)
     if str(date.year) not in event_dic.keys():
         event_dic[str(date.year)] = {}
@@ -164,83 +137,95 @@ def update_bitacora(emp_id: int, event, data):
             "timestamp": date.strftime(format_timestamps)
         }
     else:
-        print("update event", data, emp_id)
         event_dic[str(date.year)][str(date.month)][str(date.day)] = {
             "value": data[1],
             "comment": data[2],
             "timestamp": date.strftime(format_timestamps)
         }
-    print("getting cache")
-    fichajes_resume, flag = get_fichajes_resume_cache(cache_file_resume_fichaje)
+    return event_dic
+
+
+def update_bitacora(emp_id: int, event, data):
+    """
+    Update the bitacora.
+    :param emp_id: The id of the employee.
+    :param event: The event.
+    :param data: The data.
+    :return: None.
+    """
+    events_indexes_db = {"falta": 3, "atraso": 4, "extra": 5, "prima": 6, "normal": 7}
+    events_cache_indexes = {"falta": 9, "atraso": 10, "extra": 11, "prima": 12, "normal": 13}
+    emp_id = int(emp_id)
+    event_dic = {}
+    new_registry = False
+    contract_sel = data[3]
+    # -----------------------retrieve fichaje from db--------------------------
+    flag, error, result = get_fichaje_DB(emp_id)
+    # --------------------------check event -----------------------------------
+    if flag and len(result) > 0:
+        event_dic = json.loads(result[events_indexes_db[event]])
+    else:
+        print("error at getting data from db or not data found for the employee")
+        new_registry = True
+    # ------------------update dictionary event-----------------------------
+    event_dic = update_event_dict(event_dic, data)
+    print("getting cache to update event")
+    fichajes_resume, flag = get_fichajes_resume_cache(cache_file_resume_fichaje_path)
     if not flag:
-        return False, "error at getting data resume", result
+        return False, "error at getting cache file to update", result
+    # ----------------- if new registry on db---------------------------------
     if new_registry:
-        print("new registry")
+        print("new registry in fichajes db")
         name = get_name_employee(emp_id)
         # if name is None:
         #     return False, "error at getting name of the employee", result
         fichajes_resume.append([emp_id, name.title(), contract_sel, 0, 0, 0, 0, 0, 0, {}, {}, {}, {}, {}])
+    # -----------------------------updates cache data and db--------------------------------
+    flag = False
     for i, row in enumerate(fichajes_resume):
-        (id_emp, name, contract, new_faltas, new_tardanzas, new_tardanzas_values,
-         new_extras, new_extras_value, new_primas, absences,
-         lates, extras, primes, normal) = row
-        if id_emp == emp_id:
-            match event:
-                case "falta":
-                    new_row = [id_emp, name, contract_sel, new_faltas, new_tardanzas, new_tardanzas_values,
-                               new_extras, new_extras_value, new_primas, event_dic,
-                               lates, extras, primes, normal]
-                    fichajes_resume[i] = new_row
-                case "atraso":
-                    new_row = [id_emp, name, contract_sel, new_faltas, new_tardanzas, new_tardanzas_values,
-                               new_extras, new_extras_value, new_primas, absences,
-                               event_dic, extras, primes, normal]
-                    fichajes_resume[i] = new_row
-                case "extra":
-                    new_row = [id_emp, name, contract_sel, new_faltas, new_tardanzas, new_tardanzas_values,
-                               new_extras, new_extras_value, new_primas, absences,
-                               lates, event_dic, primes, normal]
-                    fichajes_resume[i] = new_row
-                case "prima":
-                    new_row = [id_emp, name, contract_sel, new_faltas, new_tardanzas, new_tardanzas_values,
-                               new_extras, new_extras_value, new_primas, absences,
-                               lates, extras, event_dic, normal]
-                    fichajes_resume[i] = new_row
-                case "normal":
-                    new_row = [id_emp, name, contract_sel, new_faltas, new_tardanzas, new_tardanzas_values,
-                               new_extras, new_extras_value, new_primas, absences,
-                               lates, extras, primes, event_dic]
-                    fichajes_resume[i] = new_row
-            update_fichajes_resume_cache(cache_file_resume_fichaje, fichajes_resume, id_emp_up=id_emp)
-            print("updated cache")
-            break
+        # data in cache
+        new_row = list(row)
+        if row[0] == emp_id:
+            new_row[events_cache_indexes[event]] = event_dic
+            fichajes_resume[i] = new_row
+            flag, error, result = update_fichaje_DB(
+                emp_id, new_row[2],
+                new_row[9], new_row[10], new_row[11], new_row[12], new_row[13])
+            if flag:
+                print("value updated in DB")
+                flag, error = update_fichajes_resume_cache(cache_file_resume_fichaje_path, fichajes_resume, just_file=True)
+                return flag, error, result
+            else:
+                print("error at updating the value in DB")
+                return False, "error at updating the value in DB", None
+    new_row = [emp_id, contract_sel, 0, 0, 0, 0, 0, 0, {}, {}, {}, {}, {}]
+    new_row[events_cache_indexes[event]] = event_dic
+    fichajes_resume.append(new_row)
+    flag, error, result = insert_new_fichaje_DB(new_row[0], new_row[1], new_row[9], new_row[10],
+                                                new_row[11], new_row[12], new_row[13])
+    if flag:
+        print("value inserted in DB")
+        flag, error = update_fichajes_resume_cache(cache_file_resume_fichaje_path, fichajes_resume, just_file=True)
+        return flag, error, result
     return flag, error, result
 
 
 def update_bitacora_value(emp_id: int, event, data, id_event=None):
     """
-        Update the bitacora for just values.
-        :param id_event: 
-        :param emp_id: The id of the employee.
-        :param event: The event.
-        :param data: The data.
-        :return: None.
-        """
+    Update the bitacora for just values.
+    :param id_event: 
+    :param emp_id: The id of the employee.
+    :param event: The event.
+    :param data: The data.
+    :return: None.
+    """
+    events_indexes_db = {"falta": 3, "atraso": 4, "extra": 5, "prima": 6, "normal": 7}
+    events_cache_indexes = {"falta": 9, "atraso": 10, "extra": 11, "prima": 12, "normal": 13}
     event_dic = {}
     contract_sel = data[3]
     flag, error, result = get_fichaje_DB(emp_id)
     if flag and len(result) > 0:
-        match event:
-            case "falta":
-                event_dic = json.loads(result[3])
-            case "atraso":
-                event_dic = json.loads(result[4])
-            case "extra":
-                event_dic = json.loads(result[5])
-            case "prima":
-                event_dic = json.loads(result[6])
-            case "normal":
-                event_dic = json.loads(result[7])
+        event_dic = json.loads(result[events_indexes_db[event]])
     else:
         print("error at getting data from db or not data found for the employee")
     date = datetime.strptime(data[0], format_date)
@@ -253,42 +238,28 @@ def update_bitacora_value(emp_id: int, event, data, id_event=None):
     except KeyError:
         print(f"error at updating the value for {date}")
         return False, f"error at updating the value for {date}", None
-    fichajes_resume, flag = get_fichajes_resume_cache(cache_file_resume_fichaje)
-    if flag:
-        for i, row in enumerate(fichajes_resume):
-            (id_emp, name, contract, new_faltas, new_tardanzas, new_tardanzas_value,
-             new_extras, new_extras_value, new_primas, absences,
-             lates, extras, primes, normal) = row
-            if id_emp == emp_id:
-                match event:
-                    case "falta":
-                        new_row = [id_emp, name, contract_sel, new_faltas, new_tardanzas, new_tardanzas_value,
-                                   new_extras, new_extras_value, new_primas, event_dic,
-                                   lates, extras, primes, normal]
-                        fichajes_resume[i] = new_row
-                    case "atraso":
-                        new_row = [id_emp, name, contract_sel, new_faltas, new_tardanzas, new_tardanzas_value,
-                                   new_extras, new_extras_value, new_primas, absences,
-                                   event_dic, extras, primes, normal]
-                        fichajes_resume[i] = new_row
-                    case "extra":
-                        new_row = [id_emp, name, contract_sel, new_faltas, new_tardanzas, new_tardanzas_value,
-                                   new_extras, new_extras_value, new_primas, absences,
-                                   lates, event_dic, primes, normal]
-                        fichajes_resume[i] = new_row
-                    case "prima":
-                        new_row = [id_emp, name, contract_sel, new_faltas, new_tardanzas, new_tardanzas_value,
-                                   new_extras, new_extras_value, new_primas, absences,
-                                   lates, extras, event_dic, normal]
-                        fichajes_resume[i] = new_row
-                    case "normal":
-                        new_row = [id_emp, name, contract_sel, new_faltas, new_tardanzas, new_tardanzas_value,
-                                   new_extras, new_extras_value, new_primas, absences,
-                                   lates, extras, primes, event_dic]
-                        fichajes_resume[i] = new_row
-                update_fichajes_resume_cache(cache_file_resume_fichaje, fichajes_resume, id_emp_up=id_emp)
-                break
-    return flag, error, result
+    
+    fichajes_resume, flag = get_fichajes_resume_cache(cache_file_resume_fichaje_path)
+    if not flag:
+        print("error at getting data from cache")
+        return False, "error at getting data from cache", None
+    # -----------------------update fichaje cache and db-----------------------------
+    for i, row in enumerate(fichajes_resume):
+        new_row = list(row)
+        if row[0] == emp_id:
+            new_row[events_cache_indexes[event]] = event_dic
+            fichajes_resume[i] = new_row
+            flag, error, result = update_fichaje_DB(
+                emp_id, new_row[2],
+                new_row[9], new_row[10], new_row[11], new_row[12], new_row[13])
+            if flag:
+                print("value updated in DB")
+                flag, error = update_fichajes_resume_cache(cache_file_resume_fichaje_path, fichajes_resume, just_file=True)
+                return flag, error, result
+            else:
+                print("error at updating the value in DB")
+                return False, "error at updating the value in DB", None
+    return False, "error at updating the value in DB", None
 
 
 def erase_value_bitacora(emp_id: int, event, data):
@@ -299,21 +270,13 @@ def erase_value_bitacora(emp_id: int, event, data):
     :param data: The data.
     :return: None.
     """
+    events_indexes_db = {"falta": 3, "atraso": 4, "extra": 5, "prima": 6, "normal": 7}
+    events_cache_indexes = {"falta": 9, "atraso": 10, "extra": 11, "prima": 12, "normal": 13}
     event_dic = {}
     contract_sel = data[1]
     flag, error, result = get_fichaje_DB(emp_id)
     if flag and len(result) > 0:
-        match event:
-            case "falta":
-                event_dic = json.loads(result[3])
-            case "atraso":
-                event_dic = json.loads(result[4])
-            case "extra":
-                event_dic = json.loads(result[5])
-            case "prima":
-                event_dic = json.loads(result[6])
-            case "normal":
-                event_dic = json.loads(result[7])
+        event_dic = json.loads(result[events_indexes_db[event]])
     else:
         print("error at getting data from db or not data found for the employee")
     date = datetime.strptime(data[0], format_date)
@@ -321,45 +284,27 @@ def erase_value_bitacora(emp_id: int, event, data):
         if str(date.month) in event_dic[str(date.year)].keys():
             if str(date.day) in event_dic[str(date.year)][str(date.month)].keys():
                 del event_dic[str(date.year)][str(date.month)][str(date.day)]
-    fichajes_resume, flag = get_fichajes_resume_cache(cache_file_resume_fichaje)
-    if flag:
-        for i, row in enumerate(fichajes_resume):
-            (id_emp, name, contract, new_faltas, new_tardanzas, new_tardanzas_value,
-             new_extras, new_extras_value, new_primas, absences,
-             lates, extras, primes, normal) = row
-            if id_emp == emp_id:
-                flag = False
-                match event:
-                    case "falta":
-                        new_row = [id_emp, name, contract_sel, new_faltas, new_tardanzas, new_tardanzas_value,
-                                   new_extras, new_extras_value, new_primas, event_dic,
-                                   lates, extras, primes, normal]
-                        fichajes_resume[i] = new_row
-                    case "atraso":
-                        new_row = [id_emp, name, contract_sel, new_faltas, new_tardanzas, new_tardanzas_value,
-                                   new_extras, new_extras_value, new_primas, absences,
-                                   event_dic, extras, primes, normal]
-                        fichajes_resume[i] = new_row
-                    case "extra":
-                        new_row = [id_emp, name, contract_sel, new_faltas, new_tardanzas, new_tardanzas_value,
-                                   new_extras, new_extras_value, new_primas, absences,
-                                   lates, event_dic, primes, normal]
-                        fichajes_resume[i] = new_row
-                    case "prima":
-                        new_row = [id_emp, name, contract_sel, new_faltas, new_tardanzas, new_tardanzas_value,
-                                   new_extras, new_extras_value, new_primas, absences,
-                                   lates, extras, event_dic, normal]
-                        fichajes_resume[i] = new_row
-                    case "normal":
-                        new_row = [id_emp, name, contract_sel, new_faltas, new_tardanzas, new_tardanzas_value,
-                                   new_extras, new_extras_value, new_primas, absences,
-                                   lates, extras, primes, event_dic]
-                        fichajes_resume[i] = new_row
-                update_fichajes_resume_cache(cache_file_resume_fichaje, fichajes_resume, id_emp_up=id_emp,
-                                             deletion=True)
-                flag = True
-                break
-    return flag, error, result
+    fichajes_resume, flag = get_fichajes_resume_cache(cache_file_resume_fichaje_path)
+    if not flag:
+        print("error at getting data from cache")
+        return False, "error at getting data from cache", None
+    # -------------- updatin cache file and db------------------------------------
+    for i, row in enumerate(fichajes_resume):
+        new_row = list(row)
+        if row[0] == emp_id:
+            new_row[events_cache_indexes[event]] = event_dic
+            fichajes_resume[i] = new_row
+            flag, error, result = update_fichaje_DB(
+                emp_id, new_row[2],
+                new_row[9], new_row[10], new_row[11], new_row[12], new_row[13])
+            if flag:
+                print("value updated in DB")        
+                flag, error = update_fichajes_resume_cache(cache_file_resume_fichaje_path, fichajes_resume, just_file=True)
+                return flag, error, result
+            else:
+                print("error at updating the value in DB")
+                return False, "error at updating the value in DB", None
+    return False, "error at deleting the value in DB", None
 
 
 def get_data_from_dict_by_date(data: dict, date: datetime, stamp: str):
@@ -423,9 +368,8 @@ def get_events_op_date(date: datetime, hard_update, only_op=True):
     :param date: The date.
     :return: The events.
     """
-    print("hard update", hard_update)
     data_events = []
-    fichajes_resume, flag = get_fichajes_resume_cache(cache_file_resume_fichaje, hard_update=hard_update)
+    fichajes_resume, flag = get_fichajes_resume_cache(cache_file_resume_fichaje_path, is_hard_update=hard_update)
     for row in fichajes_resume:
         (id_emp, name, contract, faltas, tardanzas, tardanzas_value, extras, extras_value, primas,
          absences_dic, lates_dic, extras_dic, primes_dic, normal_dic) = row

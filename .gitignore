@@ -29,3 +29,4 @@ __pycache__/
 .env_*
 /tester_code.py
 /fill_sm_dummy_data.py
+/files/Pmodels/*
