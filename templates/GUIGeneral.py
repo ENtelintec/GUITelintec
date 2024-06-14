@@ -8,7 +8,8 @@ from ttkbootstrap.scrolled import ScrolledFrame
 import templates.modules.Sesion.Frame_LoginFrames as Login
 from static.FramesClasses import available_frames
 from static.extensions import filepath_settings, ventanasApp_path
-from templates.Functions_AuxFiles import carpeta_principal, get_image_side_menu, read_setting_file
+from templates.Functions_AuxFiles import read_setting_file
+from templates.Functions_AuxFilesGUI import carpeta_principal, get_image_side_menu
 from templates.Functions_Files import read_file_not
 from templates.Funtions_Utils import create_button_side_menu, compare_permissions_windows
 from templates.controllers.chatbot.chatbot_controller import get_chats_w_limit
