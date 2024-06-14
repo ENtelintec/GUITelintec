@@ -13,7 +13,7 @@ class InventoryScreen(ttk.Frame):
         self._data = DataHandler()
         self._ivar_tool = ttk.IntVar(value=0)
         self._ivar_internal = ttk.IntVar(value=0)
-        self._products = self.fetch_products()
+        self._products = self.fetch_products() if "data_products_gen" not in kwargs["data"] else kwargs["data"]["data_products_gen"]
         self._table = Tableview(self)
         self.create_content(self)
 

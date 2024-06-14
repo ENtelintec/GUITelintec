@@ -105,9 +105,9 @@ class FrameSMCreate(ttk.Frame):
             self.list_to_disable = [0, 3]
         self._id_emp = id_emp if id_emp is not None else 60
         self.svar_info, svar_test = create_stringvar(2, "")
-        self.employees = data["employees"]
-        self.clients = data["clients"]
-        self.data_emp_dic = get_user_data_by_ID(self._id_emp)
+        self.employees = data["sm"]["employees"]
+        self.clients = data["sm"]["clients"]
+        self.data_emp_dic = get_user_data_by_ID(self._id_emp) if "username_data" not in kw else kw["username_data"]
         """-------------------------title------------------------------------"""
         create_label(self, 0, 0, text="Solicitudes de material",
                      font=("Helvetica", 30, "bold"), columnspan=2)
@@ -134,7 +134,7 @@ class FrameSMCreate(ttk.Frame):
         self.frame_table.grid(row=4, column=0, padx=50, pady=10, sticky="nswe")
         self.frame_table.columnconfigure(0, weight=1)
         self.frame_table.rowconfigure(1, weight=1)
-        self.table_events = self.create_table(self.frame_table, data=data["data_sm"], columns=data["columns_sm"])
+        self.table_events = self.create_table(self.frame_table, data=data["sm"]["data_sm"], columns=data["sm"]["columns_sm"])
 
     def create_inputs(self, master):
         entries = []
@@ -511,8 +511,8 @@ class FrameSMProdcuts(ttk.Frame):
         self.columnconfigure((0, 1), weight=1)
         self.svar_info = create_stringvar(1, "")
         self.bvar_is_new = ttk.BooleanVar(value=False)
-        self.products = data["products"]
-        self.columns_products = data["columns_products"]
+        self.products = data["sm"]["products"]
+        self.columns_products = data["sm"]["columns_products"]
         """-------------------------title------------------------------------"""
         create_label(self, 0, 0, text="Editar Productos",
                      font=("Helvetica", 14, "bold"), columnspan=2)

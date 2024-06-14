@@ -11,8 +11,8 @@ class OutScreen(ttk.Frame):
         self.master = master
         self.columnconfigure(0, weight=1)
         self._data = DataHandler()
-        self._products = self._data.get_all_products()
-        self._outs = self._data.get_outs()
+        self._products = self._data.get_all_products() if "data_products_gen" not in kwargs["data"] else kwargs["data"]["data_products_gen"]
+        self._outs = self._data.get_outs() if "data_movements" not in kwargs["data"] else kwargs["data"]["data_movements"]["data_outs"]
         self._table = Tableview(self)
         self.create_content(self)
         self.movetement_id = None

@@ -1011,3 +1011,57 @@ def create_notification_permission(msg: str, permissions: list, title: str, send
     }
     flag, error, result = insert_notification(body)
     return flag
+
+
+def validate_digits_numbers(new_value) -> bool:
+    """
+    Validates that the new value is a number.
+    This function is called when the user types in a new value in the
+    spinbox.
+    It checks if the new value is a number and returns True or
+    False accordingly.
+    :param new_value: New value to be validated
+    :return: True if the new value is a number, False otherwise
+    """
+    return new_value.isdigit()
+
+
+def create_spinboxes_time(master: Misc, father, row: int, column: int,
+                          pad_x: int = 5, pad_y: int = 5,
+                          style: str = 'primary', title: str = "",
+                          mins_defaul=0, hours_default=8) -> tuple[Frame, dict[Any, Any]]:
+    """ Creates a clock with two spinboxes for minutes and hours
+    :param title:
+    :param father:
+    :param master: <Misc> father instance where the object is created
+    :param row: <int> row to be placed
+    :param column: <int> column to be placed
+    :param pad_x: <int> pad in x for the group, not for individual object
+    :param pad_y: <int> pad in y for the group, not for individual object
+    :param style: <str> bootstrap style selected
+    :param mins_defaul: <int> default value for minutes
+    :param hours_default: <int> deafult value for hours
+    :return: Frame tkinter frame containing the spinboxes
+    """
+    clock = ttk.Frame(master)
+    clock.grid(row=row, column=column, padx=pad_x, pady=pad_y, sticky="w")
+    # minutes spinboxes
+    # noinspection PyArgumentList
+    minutes_spinbox = ttk.Spinbox(clock, from_=0, to=59, bootstyle=style,
+                                  width=2, justify="center")
+    minutes_spinbox.grid(row=0, column=1, padx=1, pady=1, sticky="w")
+    # hours spinbox
+    # noinspection PyArgumentList
+    hours_spinbox = ttk.Spinbox(clock, from_=0, to=23, bootstyle=style,
+                                width=2, justify="center")
+    hours_spinbox.grid(row=0, column=0, padx=1, pady=1, sticky="w")
+    # add valitation to spinbox
+    vcmd_mins = (master.register(validate_digits_numbers), '%P')
+    minutes_spinbox.configure(validate="key", validatecommand=vcmd_mins)
+    vcmd_hours = (master.register(validate_digits_numbers), '%P')
+    hours_spinbox.configure(validate="key", validatecommand=vcmd_hours)
+    # set default values
+    minutes_spinbox.set(mins_defaul)
+    hours_spinbox.set(hours_default)
+    # father.clocks.append({title: [minutes_spinbox, hours_spinbox]})
+    return clock, {title: [minutes_spinbox, hours_spinbox]}

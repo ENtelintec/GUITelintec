@@ -1,9 +1,11 @@
 {
   "language": "spanish",
-  "max_chats": "40",
+  "max_chats": 40,
   "start_date": "19\/oct.\/2023",
   "end_date": "19\/oct.\/2023",
   "sampling_time": 1,
+  "filepath_notifications": "files\/notifications.txt",
+  "time_window": 5,
   "gui": {
     "null": {
       "theme": "litera"
@@ -28,5 +30,6 @@
   },
   "sm": {
     "cache": "files/Notificaciones_cache.pkl"
-  }
+  },
+  "pmodels_files": "files/Pmodels/"
 }

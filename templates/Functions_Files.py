@@ -10,14 +10,10 @@ import re
 import warnings
 from calendar import monthrange
 from datetime import datetime
-from tkinter import Misc, messagebox
-from tkinter.ttk import Frame
 from typing import Any
 
 import dropbox
 import pandas as pd
-import ttkbootstrap as ttk
-from ttkbootstrap.toast import ToastNotification
 
 from static.extensions import secrets, cache_oct_file_temp_path, cache_oct_fichaje_path
 from templates.Functions_Text import clean_accents, compare_employee_name
@@ -228,60 +224,6 @@ def clean_text(texts: list) -> tuple[list, list, list, list]:
     return status, name, card, in_out
 
 
-def validate_digits_numbers(new_value) -> bool:
-    """
-    Validates that the new value is a number.
-    This function is called when the user types in a new value in the
-    spinbox.
-    It checks if the new value is a number and returns True or
-    False accordingly.
-    :param new_value: New value to be validated
-    :return: True if the new value is a number, False otherwise
-    """
-    return new_value.isdigit()
-
-
-def create_spinboxes_time(master: Misc, father, row: int, column: int,
-                          pad_x: int = 5, pad_y: int = 5,
-                          style: str = 'primary', title: str = "",
-                          mins_defaul=0, hours_default=8) -> tuple[Frame, dict[Any, Any]]:
-    """ Creates a clock with two spinboxes for minutes and hours
-    :param title:
-    :param father:
-    :param master: <Misc> father instance where the object is created
-    :param row: <int> row to be placed
-    :param column: <int> column to be placed
-    :param pad_x: <int> pad in x for the group, not for individual object
-    :param pad_y: <int> pad in y for the group, not for individual object
-    :param style: <str> bootstrap style selected
-    :param mins_defaul: <int> default value for minutes
-    :param hours_default: <int> deafult value for hours
-    :return: Frame tkinter frame containing the spinboxes
-    """
-    clock = ttk.Frame(master)
-    clock.grid(row=row, column=column, padx=pad_x, pady=pad_y, sticky="w")
-    # minutes spinboxes
-    # noinspection PyArgumentList
-    minutes_spinbox = ttk.Spinbox(clock, from_=0, to=59, bootstyle=style,
-                                  width=2, justify="center")
-    minutes_spinbox.grid(row=0, column=1, padx=1, pady=1, sticky="w")
-    # hours spinbox
-    # noinspection PyArgumentList
-    hours_spinbox = ttk.Spinbox(clock, from_=0, to=23, bootstyle=style,
-                                width=2, justify="center")
-    hours_spinbox.grid(row=0, column=0, padx=1, pady=1, sticky="w")
-    # add valitation to spinbox
-    vcmd_mins = (master.register(validate_digits_numbers), '%P')
-    minutes_spinbox.configure(validate="key", validatecommand=vcmd_mins)
-    vcmd_hours = (master.register(validate_digits_numbers), '%P')
-    hours_spinbox.configure(validate="key", validatecommand=vcmd_hours)
-    # set default values
-    minutes_spinbox.set(mins_defaul)
-    hours_spinbox.set(hours_default)
-    # father.clocks.append({title: [minutes_spinbox, hours_spinbox]})
-    return clock, {title: [minutes_spinbox, hours_spinbox]}
-
-
 def make_empty_zeros(txt: str) -> float:
     """
     Makes empty strings into 0.0
@@ -460,29 +402,18 @@ def extract_data_file_contracts(filename: str) -> dict:
                         contracts[sheet][name]["out_door"] = out_door
             except Exception as e:
                 print(e)
-                messagebox.showerror(
-                    "Error", f"Error al leer la pagina. {sheet}\n"
-                             " Asegurese sea el archivo correcto, con el formato correcto.\n" + str(e))
+                print(f"Error: {e}")
                 continue
     except Exception as e:
-        print(e)
-        messagebox.showerror("Error",
-                             "Error al leer el archivo.\n"
-                             " Asegurese sea el archivo correcto, con el formato correcto.\n" + str(e)
-                             )
+        print(f"Error: {e}")
     with open(cache_oct_fichaje_path, 'wb') as file:
         pickle.dump(contracts, file)
     if len(bad_names) > 0:
         msg = "Se han encontrado los siguientes empleados no registrados:\n"
         for ename in bad_names:
             msg += ename + "\n"
-        messagebox.showinfo("Error", msg)
-        toast = ToastNotification(
-            title="Error en nombres",
-            message=msg,
-            duration=8000,
-        )
-        toast.show_toast()
+        # messagebox.showinfo("Error", msg)
+        print(f"Error: {msg}")
     return contracts
 
 
@@ -575,9 +506,7 @@ def extract_fichajes_file(filename: str):
             df.drop(columns=["Nombre", "Apellido"], inplace=True)
         return df
     except Exception as e:
-        messagebox.showerror("Error",
-                             "Error al leer el archivo.\n Asegurese sea el archivo correcto, con el formato correcto.")
-        print(e)
+        print(f"Error: {e}")
         return None
 
 
@@ -710,7 +639,8 @@ def get_dict_fichaje(dict_list: list[dict], data: list[dict]):
         dict_f = dict_list[i]
         if item_dict is not None:
             for timestamp_key, item in item_dict.items():
-                timestamp = datetime.strptime(timestamp_key, '%Y-%m-%d %H:%M:%S') if isinstance(timestamp_key, str) else timestamp_key
+                timestamp = datetime.strptime(timestamp_key, '%Y-%m-%d %H:%M:%S') if isinstance(timestamp_key,
+                                                                                                str) else timestamp_key
                 year = str(timestamp.year)
                 month = str(timestamp.month)
                 day = str(timestamp.day)
@@ -834,7 +764,7 @@ def get_cumulative_data_fichajes_dict(dic_data: dict, date=None) -> tuple[int, i
         for year in dic_data.keys():
             for month in dic_data[year].keys():
                 for day in dic_data[year][month].keys():
-                    if date.month <= int(month) and date.year <= int(year) and date.day <=int(day):
+                    if date.month <= int(month) and date.year <= int(year) and date.day <= int(day):
                         value = dic_data[year][month][day]["value"]
                         total_days += 1
                         if value is not None and value != "":
@@ -842,50 +772,121 @@ def get_cumulative_data_fichajes_dict(dic_data: dict, date=None) -> tuple[int, i
     return total_days, total_value
 
 
-def update_fichajes_resume_cache(filepath: str, data, just_file=False, id_emp_up=None, deletion=False):
+def retrieve_file_cache_data(filepath):
+    try:
+        with open(filepath, 'rb') as file:
+            data = pickle.load(file)
+        return True, None, data
+    except Exception as e:
+        print(f"Error at reading file: {filepath}--{str(e)}")
+        return False, e, []
+
+
+def save_file_cache_data(filepath, data):
+    try:
+        with open(filepath, 'wb') as file:
+            pickle.dump(data, file)
+        return True, None
+    except Exception as e:
+        print(f"Error at saving file: {filepath}--{str(e)}")
+        return False, e
+
+
+def update_cache_data(cache_data, new_data, id_emp_up=None, deletion=False):
+    ids_old = [item[0] for item in cache_data]
+    ids_new = [item[0] for item in new_data]
+    data_insert = []
+    if id_emp_up not in ids_old:
+        for index_1, item_new in enumerate(new_data):
+            (id_emp, name, contract, faltas, lates, total_lates, extras, total_extra, primas,
+             faltas_dic, lates_dic, extras_dic, primas_dic, normal_dic) = item_new
+            if id_emp == id_emp_up:
+                flag, error, result = insert_new_fichaje_DB(id_emp, contract, faltas_dic, lates_dic, extras_dic,
+                                                            primas_dic, normal_dic)
+                data_insert.append(result)
+                if flag:
+                    cache_data.append(item_new)
+                    print("Fichaje added DB")
+                else:
+                    print("Error at creating new registry at DB")
+                    print(error)
+                break
+    else:
+        for index_1, item_new in enumerate(new_data):
+            (id_emp, name, contract2, faltas2, lates2, total_lates2, extras2, total_extra2, primas2,
+             faltas_dic2, lates_dic2, extras_dic2, primas_dic2, normal_dic2) = item_new
+            if id_emp_up == id_emp:
+                for index_0, item_0 in enumerate(cache_data):
+                    if id_emp == item_0[0]:
+                        (id_emp_0, name, contract, faltas, lates, total_lates, extras, total_extra, primas,
+                         faltas_dic, lates_dic, extras_dic, primas_dic, normal_dic) = cache_data[index_0]
+                        if deletion:
+                            faltas_dic = faltas_dic2
+                            lates_dic = lates_dic2
+                            extras_dic = extras_dic2
+                            primas_dic = primas_dic2
+                            normal_dic = normal_dic2
+                        else:
+                            faltas_dic.update(faltas_dic2)
+                            lates_dic.update(lates_dic2)
+                            extras_dic.update(extras_dic2)
+                            primas_dic.update(primas_dic2)
+                            normal_dic.update(normal_dic2)
+                        new_faltas, new_faltas_value = get_cumulative_data_fichajes_dict(faltas_dic)
+                        new_lates, new_lates_value = get_cumulative_data_fichajes_dict(lates_dic)
+                        new_extras, new_extras_value = get_cumulative_data_fichajes_dict(extras_dic)
+                        new_primas, new_primas_value = get_cumulative_data_fichajes_dict(primas_dic)
+                        aux = (id_emp, name, contract,
+                               new_faltas, new_lates, new_lates_value, new_extras, new_extras_value, new_primas,
+                               faltas_dic, lates_dic, extras_dic, primas_dic, normal_dic)
+                        flag, error, result = update_fichaje_DB(
+                            id_emp, contract, faltas_dic, lates_dic, extras_dic, primas_dic, normal_dic)
+                        if flag:
+                            print(f"Fichaje updated DB: {id_emp}")
+                            cache_data[index_0] = aux
+                        else:
+                            print("Error at updating DB")
+                            print(error)
+                        break
+                break
+
+
+def update_fichajes_resume_cache(filepath: str, data, just_file=False):
     """
     Updates the fichajes resume cache
-    :param deletion:
-    :param id_emp_up: id for update only one registry
     :param just_file:
     :param filepath:
     :param data:
     :return:
     """
-    update = True
-    try:
-        with open(filepath, 'rb') as file:
-            fichajes_resume = pickle.load(file)
-    except Exception as e:
-        print("Error at getting cache file to update: ", e)
-        update = False
+    update, error, fichajes_resume = retrieve_file_cache_data(filepath)
+    if len(fichajes_resume) == 0 or error is not None:
         fichajes_resume = data
-    if update and not just_file and id_emp_up is None and not deletion:
-        ids_old = [item[0] for item in fichajes_resume]
-        ids_new = [item[0] for item in data]
-        new_insert_ids = list(set(ids_new) - set(ids_old))
+        print("Replazing cache into db")
+    if just_file:
+        fichajes_resume = data
+    else:
+        ids_old = {item[0] for item in fichajes_resume}
+        ids_new = {item[0] for item in data}
+        new_insert_ids = ids_new - ids_old
         for index_1, item_1 in enumerate(data):
             for index_0, item_0 in enumerate(fichajes_resume):
-                id_new = item_1[0]
-                id_old = item_0[0]
-                if id_new == id_old and item_0[2] == item_1[2]:
+                if item_1[0] == item_0[0] and item_0[2] == item_1[2]:
                     (id_emp, name, contract, faltas, lates, total_lates, extras, total_extra, primas,
-                     faltas_dic, lates_dic, extras_dic, primas_dic, normal_dic) = fichajes_resume[index_0]
+                     *dicts_old) = fichajes_resume[index_0]
                     (id_emp2, name2, contract2, faltas2, lates2, total_lates2, extras2, total_extra2, primas2,
-                     faltas_dic2, lates_dic2, extras_dic2, primas_dic2, normal_dic2) = data[index_1]
-                    faltas_dic.update(faltas_dic2)
-                    lates_dic.update(lates_dic2)
-                    extras_dic.update(extras_dic2)
-                    primas_dic.update(primas_dic2)
-                    normal_dic.update(normal_dic2)
-                    new_faltas, new_faltas_value = get_cumulative_data_fichajes_dict(faltas_dic)
-                    new_lates, new_lates_value = get_cumulative_data_fichajes_dict(lates_dic)
-                    new_extras, new_extras_value = get_cumulative_data_fichajes_dict(extras_dic)
-                    new_primas, new_primas_value = get_cumulative_data_fichajes_dict(primas_dic)
-                    aux = (id_emp, name, contract, new_faltas, new_lates, new_extras, new_extras_value, new_primas,
-                           faltas_dic, lates_dic, extras_dic, primas_dic, normal_dic)
-                    flag, error, result = update_fichaje_DB(
-                        id_new, contract, faltas_dic, lates_dic, extras_dic, primas_dic, normal_dic)
+                     *dicts_new) = data[index_1]
+                    new_total = []
+                    new_value = []
+                    for i in range(len(dicts_old)):
+                        dicts_old[i].update(dicts_new[i])
+                        new_total.append(get_cumulative_data_fichajes_dict(dicts_old[i]))
+                        new_value.append(get_cumulative_data_fichajes_dict(dicts_old[i], "value"))
+                    aux = (id_emp, name, contract, new_total[0], new_total[1], new_value[1], new_total[3], new_value[3],
+                           new_total[4],
+                           dicts_new[0], dicts_new[1], dicts_new[2], dicts_new[3], dicts_new[4])
+                    flag, error, result = update_fichaje_DB(id_emp, contract, dicts_new[0], dicts_new[1], dicts_new[2],
+                                                            dicts_new[3], dicts_new[4])
                     if flag:
                         print("Fichaje updated DB: ", id_emp)
                         fichajes_resume[index_0] = aux
@@ -909,80 +910,23 @@ def update_fichajes_resume_cache(filepath: str, data, just_file=False, id_emp_up
                         print("Error at creating new registry at DB")
                         print(error)
                     break
-    if just_file:
-        fichajes_resume = data
-    if id_emp_up is not None:
-        ids_old = [item[0] for item in fichajes_resume]
-        ids_new = [item[0] for item in data]
-        if id_emp_up not in ids_old:
-            for index_1, item_1 in enumerate(data):
-                (id_emp, name, contract, faltas, lates, total_lates, extras, total_extra, primas,
-                 faltas_dic, lates_dic, extras_dic, primas_dic, normal_dic) = item_1
-                if id_emp == id_emp_up:
-                    flag, error, result = insert_new_fichaje_DB(id_emp, contract, faltas_dic, lates_dic, extras_dic,
-                                                                primas_dic, normal_dic)
-                    if flag:
-                        fichajes_resume.append(item_1)
-                        print("Fichaje added DB")
-                    else:
-                        print("Error at creating new registry at DB")
-                        print(error)
-                    break
-        else:
-            for index_1, item_1 in enumerate(data):
-                (id_emp, name, contract2, faltas2, lates2, total_lates2, extras2, total_extra2, primas2,
-                 faltas_dic2, lates_dic2, extras_dic2, primas_dic2, normal_dic2) = item_1
-                if id_emp_up == id_emp:
-                    for index_0, item_0 in enumerate(fichajes_resume):
-                        if id_emp == item_0[0]:
-                            (id_emp_0, name, contract, faltas, lates, total_lates, extras, total_extra, primas,
-                             faltas_dic, lates_dic, extras_dic, primas_dic, normal_dic) = fichajes_resume[index_0]
-                            if deletion:
-                                faltas_dic = faltas_dic2
-                                lates_dic = lates_dic2
-                                extras_dic = extras_dic2
-                                primas_dic = primas_dic2
-                                normal_dic = normal_dic2
-                            else:
-                                faltas_dic.update(faltas_dic2)
-                                lates_dic.update(lates_dic2)
-                                extras_dic.update(extras_dic2)
-                                primas_dic.update(primas_dic2)
-                                normal_dic.update(normal_dic2)
-                            new_faltas, new_faltas_value = get_cumulative_data_fichajes_dict(faltas_dic)
-                            new_lates, new_lates_value = get_cumulative_data_fichajes_dict(lates_dic)
-                            new_extras, new_extras_value = get_cumulative_data_fichajes_dict(extras_dic)
-                            new_primas, new_primas_value = get_cumulative_data_fichajes_dict(primas_dic)
-                            aux = (id_emp, name, contract,
-                                   new_faltas, new_lates, new_lates_value, new_extras, new_extras_value, new_primas,
-                                   faltas_dic, lates_dic, extras_dic, primas_dic, normal_dic)
-                            flag, error, result = update_fichaje_DB(
-                                id_emp, contract, faltas_dic, lates_dic, extras_dic, primas_dic, normal_dic)
-                            if flag:
-                                print(f"Fichaje updated DB: {id_emp}")
-                                fichajes_resume[index_0] = aux
-                            else:
-                                print("Error at updating DB")
-                                print(error)
-                            break
-                    break
-    with open(filepath, 'wb') as file:
-        pickle.dump(fichajes_resume, file)
-    print("Fichajes resume cache file rewrited")
+    flag, error = save_file_cache_data(filepath, fichajes_resume)
+    print("Fichajes resume cache file rewrited function files")
+    return flag, error
 
 
-def get_fichajes_resume_cache(filepath, hard_update=False) -> tuple[list, bool]:
+def get_fichajes_resume_cache(filepath, is_hard_update=False) -> tuple[list, bool]:
     """
     Gets the fichajes resume cache if exists else the data is obtained from the
     db, and then the cumulative values of absences, delays, extra hours and primes
     are calculated.
-    :param hard_update:
+    :param is_hard_update:
     :param filepath:
     :return:
     """
     fichajes_resume = []
     flag = False
-    if hard_update:
+    if not is_hard_update:
         try:
             with open(filepath, 'rb') as file:
                 fichajes_resume = pickle.load(file)
@@ -1132,7 +1076,7 @@ def open_file_settings(filepath: str) -> tuple[bool, dict]:
                 "theme": "morph",
                 "files_procces": "C:\/Users\/Edisson\/OneDrive\/Documentos\/Telintec_files_departments\/RH",
                 "files_cache": "C:\/Users\/Edisson\/OneDrive\/Documentos\/Telintec_files_departments\/RH",
-                "files_quizz_out": "files\/quizz_out\/"            
+                "files_quizz_out": "files\/quizz_out\/"
             },
             "default": {
                 "theme": "morph"
@@ -1199,7 +1143,8 @@ def unify_data_display_fichaje(data: list[tuple[any, float, str]]) -> dict:
     return dic_out
 
 
-def correct_repetitions(normal_data_emp: dict, absence_data_emp: dict, prime_data_emp: dict, late_data_emp: dict, extra_data_emp: dict):
+def correct_repetitions(normal_data_emp: dict, absence_data_emp: dict, prime_data_emp: dict, late_data_emp: dict,
+                        extra_data_emp: dict):
     keys_absence = absence_data_emp.keys()
     for key in normal_data_emp.keys():
         if key in keys_absence:
@@ -1311,9 +1256,14 @@ def transform_hours_to_str(hours: float):
 
 
 def get_days_work(date: datetime):
+    """
+    Get the days of the month that are not sundays.
+    :param date: The date.
+    :return: The list of days.
+    """
     n_days_month = monthrange(date.year, date.month)
     last_day = n_days_month[1] if n_days_month[1] <= date.day else date.day
-    days_of_the_month = [i for i in range(1, last_day+1)]
+    days_of_the_month = [i for i in range(1, last_day + 1)]
     # exclude sundays from the list
     work_days = []
     for day in days_of_the_month:
@@ -1394,7 +1344,8 @@ def get_info_f_file_name(df: pd.DataFrame, name: str, clocks, window_time_in, wi
     aux_min = int(min_out) + int(window_time_out.get() % 60)
     limit_hour = pd.Timestamp(year=1, month=1, day=1, hour=aux_hour, minute=aux_min, second=0)
     # count the number of rows where the person is late
-    extra_name = df_name[(df_name["Fecha/hora_out"].dt.time > limit_hour.time()) & (df_name["Fecha/hora_out"] <= date_max)]
+    extra_name = df_name[
+        (df_name["Fecha/hora_out"].dt.time > limit_hour.time()) & (df_name["Fecha/hora_out"] <= date_max)]
     count_extra = len(extra_name)
     # calculate the time difference between the entrance hour and the late hour
     extra_dic = {}
@@ -1404,14 +1355,17 @@ def get_info_f_file_name(df: pd.DataFrame, name: str, clocks, window_time_in, wi
     return days_worked, days_not_worked, count_late, count_extra, late_dic, extra_dic
 
 
-def get_info_t_file_name(df: pd.DataFrame, name: str, clocks, window_time_in, window_time_out, flag, month=None, date_max=None):
+def get_info_t_file_name(df: pd.DataFrame, name: str, clocks, window_time_in, window_time_out, flag, month=None,
+                         date_max=None):
     if flag:
         return "NA", "NA", "NA", "NA", {}, {}, [], []
     date_min = pd.Timestamp(year=date_max.year, month=date_max.month, day=1, hour=0, minute=0, second=0)
     df_name = df[(df["name"] == name) & (df["Fecha/hora"] <= date_max) & (df["Fecha/hora"] >= date_min)]
     days_worked, days_not_worked = get_worked_days(df_name, 2, month, date_max=date_max)
-    df_name_entrada = df_name[(df_name["in_out"] == "DENTRO") & (df["Fecha/hora"] <= date_max) & (df["Fecha/hora"] >= date_min)]
-    df_name_salida = df_name[(df_name["in_out"] == "FUERA") & (df["Fecha/hora"] <= date_max) & (df["Fecha/hora"] >= date_min)]
+    df_name_entrada = df_name[
+        (df_name["in_out"] == "DENTRO") & (df["Fecha/hora"] <= date_max) & (df["Fecha/hora"] >= date_min)]
+    df_name_salida = df_name[
+        (df_name["in_out"] == "FUERA") & (df["Fecha/hora"] <= date_max) & (df["Fecha/hora"] >= date_min)]
     worked_days = len(df_name["name"].to_list())
     min_in = clocks[0]["entrada"][0].get()
     hour_in = clocks[0]["entrada"][1].get()
@@ -1427,7 +1381,8 @@ def get_info_t_file_name(df: pd.DataFrame, name: str, clocks, window_time_in, wi
     aux_min = int(min_in) + int(window_time_in.get() % 60)
     limit_hour = pd.Timestamp(year=1, month=1, day=1, hour=aux_hour, minute=aux_min, second=0)
     # count the number of rows where the person is late
-    late_name = df_name_entrada[(df_name_entrada["Fecha/hora"].dt.time > limit_hour.time()) & (df_name_entrada["Fecha/hora"] <= date_max)]
+    late_name = df_name_entrada[
+        (df_name_entrada["Fecha/hora"].dt.time > limit_hour.time()) & (df_name_entrada["Fecha/hora"] <= date_max)]
     count = len(late_name)
     # calculate the time difference between the entrance hour and the late hour
     time_late = {}
@@ -1439,7 +1394,8 @@ def get_info_t_file_name(df: pd.DataFrame, name: str, clocks, window_time_in, wi
     aux_hour = int(hour_out) + int(window_time_out.get() / 60)
     aux_min = int(min_out) + int(window_time_out.get() % 60)
     limit_hour2 = pd.Timestamp(year=1, month=1, day=1, hour=aux_hour, minute=aux_min, second=0)
-    extra_name = df_name_salida[(df_name_salida["Fecha/hora"].dt.time > limit_hour2.time()) & (df_name_salida["Fecha/hora"] <= date_max)]
+    extra_name = df_name_salida[
+        (df_name_salida["Fecha/hora"].dt.time > limit_hour2.time()) & (df_name_salida["Fecha/hora"] <= date_max)]
     count2 = len(extra_name)
     extra_time = {}
     for i in extra_name[["Fecha/hora", "Puerta"]].values:

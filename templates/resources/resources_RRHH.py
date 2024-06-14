@@ -13,7 +13,7 @@ from static.Models.api_employee_models import employees_info_model, employee_mod
     employee_exam_model_insert, employee_exam_model_delete, employee_exam_model_update, employees_vacations_model, \
     vacations_model, employee_vacation_model_insert, employee_vacation_model_delete
 from static.Models.api_models import employees_resume_model, resume_model
-from static.extensions import cache_file_resume_fichaje, quizzes_RRHH
+from static.extensions import cache_file_resume_fichaje_path, quizzes_RRHH
 from templates.Functions_DB_midleware import get_info_employees_with_status, get_info_employee_id, get_all_vacations, \
     get_vacations_employee, create_csv_file_employees
 from templates.Functions_Files import get_fichajes_resume_cache
@@ -246,7 +246,7 @@ class EmployeesVacationRegistry(Resource):
 class EmployeesResume(Resource):
     @ns.marshal_with(employees_resume_model)
     def get(self):
-        fichajes_resume, flag = get_fichajes_resume_cache(cache_file_resume_fichaje)
+        fichajes_resume, flag = get_fichajes_resume_cache(cache_file_resume_fichaje_path)
         print(fichajes_resume)
         if flag:
             out_aux = []
@@ -281,7 +281,7 @@ class EmployeesResume(Resource):
 class EmployeesResume(Resource):  # noqa: F811
     @ns.marshal_with(resume_model)
     def get(self, id_emp):
-        fichajes_resume, flag = get_fichajes_resume_cache(cache_file_resume_fichaje)
+        fichajes_resume, flag = get_fichajes_resume_cache(cache_file_resume_fichaje_path)
         if flag:
             out = {}
             code = 404

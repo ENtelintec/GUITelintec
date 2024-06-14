@@ -1,0 +1,27 @@
+{
+  "0": {
+    "name": "Encuesta de Salida",
+    "path": "files/quizz_salida.json",
+    "type": 0
+  },
+  "1": {
+    "name": "Encuesta de Norma_035_50",
+    "path": "files/quizz_norma035_50_v1.json",
+    "type": 1
+  },
+  "2": {
+    "name": "Encuesta de Norma_035_+50",
+    "path": "files/quizz_norma035_+50_v2.json",
+    "type": 2
+  },
+  "3": {
+    "name": "Encuesta de clima laboral",
+    "path": "files/quizz_clima_laboral.json",
+    "type": 3
+  },
+  "4": {
+    "name": "Encuesta eva 360",
+    "path": "files/quizz_eva_360.json",
+    "type": 4
+  }
+}

@@ -37,8 +37,8 @@ def create_datos_personales(
     master.drawString(dim_x + 70, dim_y - 55 - pady, term)
     master.drawString(dim_x + 110, dim_y - 70 - pady, start)
     master.drawString(dim_x + 95, dim_y - 85 - pady, end)
-    master.drawString(dim_x + 105, dim_y - 100 - pady, interview)
-    master.drawString(dim_x + 215, dim_y - 115 - pady, interviewer)
+    master.drawString(dim_x + 105, dim_y - 100 - pady, f"{interview}")
+    master.drawString(dim_x + 215, dim_y - 115 - pady, f"{interview}")
 
 
 def display_result(master: canvas.Canvas, dict_quizz, dim_x, dim_y):

@@ -3,29 +3,16 @@ __author__ = 'Edisson Naula'
 __date__ = '$ 23/abr./2024  at 15:34 $'
 
 from ttkbootstrap.scrolled import ScrolledFrame
-
 from templates.Funtions_Utils import create_label
 from templates.modules.Home.Frame_Notifications import NotificationsFrame
-from templates.modules.RRHH.Frame_EmployeeDetail import EmployeeDetails
-from templates.modules.SM.SubFrame_SMDashboard import SMDashboard
-from templates.modules.Almacen.DashboardStorage import StorageDashboard
-
-avaliable_dashboards = {
-    "sm": [SMDashboard],
-    "almacen": [StorageDashboard],
-    "rrhh": [EmployeeDetails],
-    "administracion": [SMDashboard]
-}
 
 
 class HomeFrame(ScrolledFrame):
-    def __init__(self, master=None, data=None, data_emp=None, *args, **kwargs):
+    def __init__(self, master=None, data_emp=None, *args, **kwargs):
         super().__init__(master, autohide=True)
         self.columnconfigure(0, weight=1)
         self.master = master
-        self.data = data if data is not None else None
         self.data_emp = data_emp if data_emp is not None else None
-        kwargs["data"] = self.data
         kwargs["data_emp"] = self.data_emp
         # -----------------Title-------------------------------
         create_label(self, 0, 0, text="Inicio", font=("Helvetica", 30, "bold"), columnspan=2)
@@ -40,9 +27,10 @@ class HomeFrame(ScrolledFrame):
             txt = permission.split(".")
             self.dashboard_key.append(txt[-1].lower())
         index_offset = 3
-        indexes = []
+        indexes = [index_offset]
         created_windows = []
         for index, dashboard in enumerate(self.dashboard_key):
+            from static.FramesClasses import avaliable_dashboards
             if dashboard not in avaliable_dashboards.keys():
                 continue
             for window in avaliable_dashboards[dashboard]:

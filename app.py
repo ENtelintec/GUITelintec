@@ -8,7 +8,8 @@ from templates.resources.resources_Bitacora import ns as ns_bitacora
 from templates.resources.resources_Almacen import ns as ns_almacen
 from templates.resources.resources_Misc import ns as ns_misc
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "*"}})
+cors = CORS(app, resources={r"/*": {"origins": "*"}})
+app.config['CORS_HEADERS'] = 'Content-Type'
 
 
 @app.route('/GUI/hello')

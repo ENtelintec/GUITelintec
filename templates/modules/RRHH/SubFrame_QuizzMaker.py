@@ -19,12 +19,14 @@ class QuizMaker(ttk.Toplevel):
     def __init__(self, dict_quizz, title=None, tipo_id=0, out_path=quizz_out_path, 
                  metadata: dict = None, master=None, **kwargs):
         super().__init__(master)
+        self.master = master
         self.title(title)
         self.state("zoomed")
         self.quizz_out_path = out_path
         self.q_no = 0
         self.title_str = title if title is not None else "Quiz"
         self.dict_quizz = dict_quizz
+        self.id_task = kwargs.get("id_task")
         self.metadata = metadata
         print(self.metadata)
         self.questions_label = None
@@ -368,6 +370,12 @@ class QuizMaker(ttk.Toplevel):
         self.metadata["title"] = self.title_str
         self.dict_quizz["metadata"] = self.metadata
         save_json_file_quizz(self.dict_quizz, quizz_out_path + result_name)
+        data_out = {
+            "id":  self.id_task,
+            "path_out": quizz_out_path + result_name,
+            "metadata": self.metadata,
+        }
+        self.master.end_task(data_out)
 
     def check_especial_case(self):
         match self.tipo_quizz:

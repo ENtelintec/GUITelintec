@@ -1,13 +1,11 @@
 {
   "ventanasApp": {
     "App.Department.Director": [
-      "Inicio",
       "DB",
       "Notificaciones",
       "Chats",
       "Settings",
-      "Tickets",
-      "Cuenta"
+      "Tickets"
     ],
     "App.Department.RRHH": [
       "Fichajes",
@@ -15,41 +13,33 @@
       "Emp. Detalles",
       "Vacaciones",
       "Empleados",
-      "Encuestas",
-      "Cuenta"
+      "Encuestas"
     ],
     "App.Department.Administrator": [
-      "Inicio",
       "DB",
-      "Settings",
-      "Cuenta"
+      "Settings"
     ],
     "App.Department.ALMACEN": [
-      "Inicio",
       "Movimientos",
       "Inventario",
-      "Procesar SM",
-      "Cuenta"
+      "Procesar SM"
     ],
     "App.Department.Bitacoras": [
-      "Inicio",
-      "Bitacora",
-      "Cuenta"
-    ],
-    "App.Department.Default": [
-      "Settings",
-      "Cuenta"
+      "Bitacora"
     ],
     "App.Department.SM": [
-      "Inicio",
-      "SM",
-      "Cuenta"
+      "SM"
     ],
     "App.Department.Administracion": [
-      "Inicio",
       "Clientes",
       "Proveedores",
-      "SM",
+      "SM"
+    ],
+    "App.Department.Common": [
+      "Tasks"
+    ],
+    "App.Department.Basic": [
+      "Inicio",
       "Cuenta"
     ]
   },

@@ -7,10 +7,18 @@ import ttkbootstrap as ttk
 class ClientsScreen(ttk.Frame):
     def __init__(self, master, setting: dict = None, *args, **kwargs):
         super().__init__(master)
+        self.input_client_address = None
+        self.input_client_rfc = None
+        self.input_client_phone = None
+        self.input_client_email = None
+        self.input_client_name = None
+        self.input_client_id = None
+        self.table = None
+        self.col_data = None
         self.master = master
         self.columnconfigure(0, weight=1)
         self._data = DataHandler()
-        self._clients = self._data.get_all_customers()
+        self._clients = self._data.get_all_customers() if "data_clients_gen" not in kwargs["data"] else kwargs["data"]["data_clients_gen"]
         self._table = Tableview(self)
         self.create_content(self)
 

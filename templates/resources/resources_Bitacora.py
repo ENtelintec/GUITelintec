@@ -54,7 +54,7 @@ class FichajeAPI(Resource):
         if not out:
             return {"answer": "No se puede alterar la bitcaora en esta fecha."}, 403
         flag, error, result = update_bitacora(
-            data["id"], data["event"], (data["date"], data["value"], data["comment"], data["contract"]))
+            data["id_emp"], data["event"], (data["date"], data["value"], data["comment"], data["contract"]))
         if flag:
             return {"answer": "The event has been added"}, 201
         elif error is not None:
@@ -72,7 +72,7 @@ class FichajeAPI(Resource):
         if not out:
             return {"answer": "No se puede alterar la bitcaora en esta fecha."}, 403
         flag, error, result = update_bitacora_value(
-            data["id"], data["event"], (data["date"], data["value"], data["comment"], data["contract"]))
+            data["id_emp"], data["event"], (data["date"], data["value"], data["comment"], data["contract"]))
         if flag:
             return {"answer": "The event has been updated"}, 200
         elif error is not None:
@@ -89,7 +89,7 @@ class FichajeAPI(Resource):
         out = check_date_difference(data["date"], delta_bitacora_edit)
         if not out:
             return {"answer": "No se puede alterar la bitcaora en esta fecha."}, 403
-        flag, error, result = erase_value_bitacora(data["id"], data["event"], (data["date"], data["contract"]))
+        flag, error, result = erase_value_bitacora(data["id_emp"], data["event"], (data["date"], data["contract"]))
         if flag:
             return {"answer": "The event has been deleted"}, 200
         elif error is not None:

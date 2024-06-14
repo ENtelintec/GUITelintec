@@ -7,13 +7,17 @@ import mysql.connector
 
 from static.extensions import secrets
 
+host_db_default = "HOST_DB"
+user_db_default = "USER_SQL"
+pass_db_default = "PASS_SQL"
+
 
 def connectionDB():
     try:
         connection = mysql.connector.connect(
-            host=secrets["HOST_DB_AWS"],
-            user=secrets["USER_SQL_AWS"],
-            password=secrets["PASS_SQL_AWS"],
+            host=secrets[host_db_default],
+            user=secrets[user_db_default],
+            password=secrets[pass_db_default],
             database="sql_telintec",
         )
         if connection.is_connected():
@@ -35,9 +39,9 @@ def execute_sql(sql: str, values: tuple = None, type_sql=1):
     """
     try:
         mydb = mysql.connector.connect(
-            host=secrets["HOST_DB_AWS"],
-            user=secrets["USER_SQL_AWS"],
-            password=secrets["PASS_SQL_AWS"],
+            host=secrets[host_db_default],
+            user=secrets[user_db_default],
+            password=secrets[pass_db_default],
             database="sql_telintec",
         )
         my_cursor = mydb.cursor(buffered=True)
@@ -92,9 +96,9 @@ def execute_sql_multiple(sql: str, values_list: list = None, type_sql=1):
     """
     try:
         mydb = mysql.connector.connect(
-            host=secrets["HOST_DB_AWS"],
-            user=secrets["USER_SQL_AWS"],
-            password=secrets["PASS_SQL_AWS"],
+            host=secrets[host_db_default],
+            user=secrets[user_db_default],
+            password=secrets[pass_db_default],
             database="sql_telintec",
         )
         my_cursor = mydb.cursor(buffered=True)

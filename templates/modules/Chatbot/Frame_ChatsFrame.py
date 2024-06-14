@@ -8,7 +8,7 @@ import re
 import customtkinter as ctk
 import ttkbootstrap as ttk
 
-from templates.Functions_AuxFiles import get_image_side_menu
+from templates.Functions_AuxFilesGUI import get_image_side_menu
 from templates.controllers.chatbot.chatbot_controller import get_chats_w_limit
 from templates.modules.Chatbot.SubFrame_DisplayChatSubframe import ChatsDisplay
 

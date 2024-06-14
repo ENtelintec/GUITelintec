@@ -21,8 +21,8 @@ class InScreen(ttk.Frame):
         self.columnconfigure(0, weight=1)
         # handlers
         self._data = DataHandler()
-        self._products = self._data.get_all_products()
-        self._ins = self._data.get_ins()
+        self._products = self._data.get_all_products() if "data_products_gen" not in kwargs["data"] else kwargs["data"]["data_products_gen"]
+        self._ins = self._data.get_ins() if "data_movements" not in kwargs["data"] else kwargs["data"]["data_movements"]["data_ins"]
         self._table = Tableview(self)
         # content
         self.create_content(self)

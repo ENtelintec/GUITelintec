@@ -12,12 +12,13 @@ from ttkbootstrap.scrolled import ScrolledText
 from ttkbootstrap.tableview import Tableview
 
 from static.extensions import files_fichaje_path, patterns_files_fichaje, cache_file_emp_fichaje, \
-    cache_file_resume_fichaje
+    cache_file_resume_fichaje_path
 from templates.Functions_AuxFiles import get_events_op_date
-from templates.Functions_Files import create_spinboxes_time, get_info_f_file_name, get_info_bitacora, \
+from templates.Functions_Files import get_info_f_file_name, get_info_bitacora, \
     unify_data_employee, get_info_t_file_name, check_fichajes_files_in_directory, get_list_files, extract_fichajes_file, \
     check_names_employees_in_cache, update_fichajes_resume_cache, get_dic_from_list_fichajes
-from templates.Funtions_Utils import create_var_none, create_Combobox, create_label, create_stringvar, update_stringvars
+from templates.Funtions_Utils import create_var_none, create_Combobox, create_label, create_stringvar, \
+    update_stringvars, create_spinboxes_time
 from templates.modules.Misc.Frame_CollapsingFrame import CollapsingFrame
 
 
@@ -534,7 +535,7 @@ class FichajesAuto(ttk.Frame):
         path = asksaveasfilename(defaultextension=".csv",
                                  filetypes=[("CSV", "*.csv")])
         df.to_csv(path, index=False)
-        update_fichajes_resume_cache(cache_file_resume_fichaje, data_resume)
+        update_fichajes_resume_cache(cache_file_resume_fichaje_path, data_resume)
         Messagebox.show_info(title="Info", message=f"Archivo exportado:\n{path}")
 
     def read_bitacora(self, date: str):

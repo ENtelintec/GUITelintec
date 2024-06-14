@@ -5,7 +5,7 @@ __date__ = '$ 18/oct./2023  at 10:25 $'
 import ttkbootstrap as ttk
 
 from static.extensions import windows_names_db_frame
-from templates.Functions_AuxFiles import get_image_side_menu
+from templates.Functions_AuxFilesGUI import get_image_side_menu
 from templates.Funtions_Utils import create_button_side_menu
 from templates.modules.DB.SubFrame_Chats import ChatsFrame
 from templates.modules.DB.SubFrame_Customer import CustomersFrame
@@ -27,6 +27,8 @@ class DBFrame(ttk.Frame):
         self.settings = setting
         self._active_window = None
         self.names_side_menu = windows_names_db_frame
+        kwargs["settings"] = self.settings
+        self.kwargs = kwargs
         frame_side_menu = ttk.Frame(self)
         frame_side_menu.grid(row=0, column=0, sticky="nsew")
         self.widgets = self._create_side_menu_widgets(frame_side_menu)
@@ -65,34 +67,34 @@ class DBFrame(ttk.Frame):
         for i, window in enumerate(self.names_side_menu):
             match window:
                 case "Encargados":
-                    windows[window] = HeadsFrame(self, setting=self.settings)
+                    windows[window] = HeadsFrame(self, setting=self.settings, **self.kwargs)
                     print("heads frame created")
                 case "Clientes":
-                    windows[window] = CustomersFrame(self, setting=self.settings)
+                    windows[window] = CustomersFrame(self, setting=self.settings, **self.kwargs)
                     print("customers frame created")
                 case "Empleados":
-                    windows[window] = EmployeesFrame(self, setting=self.settings)
+                    windows[window] = EmployeesFrame(self, setting=self.settings, **self.kwargs)
                     print("employees frame created")
                 case "Departamentos":
-                    windows[window] = DepartmentsFrame(self, setting=self.settings)
+                    windows[window] = DepartmentsFrame(self, setting=self.settings, **self.kwargs)
                     print("departments frame created")
                 case "Proveedores":
-                    windows[window] = SuppliersFrame(self, setting=self.settings)
+                    windows[window] = SuppliersFrame(self, setting=self.settings, **self.kwargs)
                     print("suppliers frame created")
                 case "Productos":
-                    windows[window] = ProductsFrame(self, setting=self.settings)
+                    windows[window] = ProductsFrame(self, setting=self.settings, **self.kwargs)
                     print("products frame created")
                 case "Ordenes":
-                    windows[window] = OrdersFrame(self, setting=self.settings)
+                    windows[window] = OrdersFrame(self, setting=self.settings, **self.kwargs)
                     print("orders frame created")
                 case "O. Virtuales":
-                    windows[window] = VOrdersFrame(self, setting=self.settings)
+                    windows[window] = VOrdersFrame(self, setting=self.settings, **self.kwargs)
                     print("virtual orders frame created")
                 case "Chats":
-                    windows[window] = ChatsFrame(self, setting=self.settings)
+                    windows[window] = ChatsFrame(self, setting=self.settings, **self.kwargs)
                     print("chats frame created")
                 case "Tickets":
-                    windows[window] = TicketsFrame(self, setting=self.settings)
+                    windows[window] = TicketsFrame(self, setting=self.settings, **self.kwargs)
                     print("tickets frame created")
                 case _:
                     pass
