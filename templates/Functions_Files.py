@@ -10,14 +10,10 @@ import re
 import warnings
 from calendar import monthrange
 from datetime import datetime
-from tkinter import Misc, messagebox
-from tkinter.ttk import Frame
 from typing import Any
 
 import dropbox
 import pandas as pd
-import ttkbootstrap as ttk
-from ttkbootstrap.toast import ToastNotification
 
 from static.extensions import secrets, cache_oct_file_temp_path, cache_oct_fichaje_path
 from templates.Functions_Text import clean_accents, compare_employee_name
@@ -228,60 +224,6 @@ def clean_text(texts: list) -> tuple[list, list, list, list]:
     return status, name, card, in_out
 
 
-def validate_digits_numbers(new_value) -> bool:
-    """
-    Validates that the new value is a number.
-    This function is called when the user types in a new value in the
-    spinbox.
-    It checks if the new value is a number and returns True or
-    False accordingly.
-    :param new_value: New value to be validated
-    :return: True if the new value is a number, False otherwise
-    """
-    return new_value.isdigit()
-
-
-def create_spinboxes_time(master: Misc, father, row: int, column: int,
-                          pad_x: int = 5, pad_y: int = 5,
-                          style: str = 'primary', title: str = "",
-                          mins_defaul=0, hours_default=8) -> tuple[Frame, dict[Any, Any]]:
-    """ Creates a clock with two spinboxes for minutes and hours
-    :param title:
-    :param father:
-    :param master: <Misc> father instance where the object is created
-    :param row: <int> row to be placed
-    :param column: <int> column to be placed
-    :param pad_x: <int> pad in x for the group, not for individual object
-    :param pad_y: <int> pad in y for the group, not for individual object
-    :param style: <str> bootstrap style selected
-    :param mins_defaul: <int> default value for minutes
-    :param hours_default: <int> deafult value for hours
-    :return: Frame tkinter frame containing the spinboxes
-    """
-    clock = ttk.Frame(master)
-    clock.grid(row=row, column=column, padx=pad_x, pady=pad_y, sticky="w")
-    # minutes spinboxes
-    # noinspection PyArgumentList
-    minutes_spinbox = ttk.Spinbox(clock, from_=0, to=59, bootstyle=style,
-                                  width=2, justify="center")
-    minutes_spinbox.grid(row=0, column=1, padx=1, pady=1, sticky="w")
-    # hours spinbox
-    # noinspection PyArgumentList
-    hours_spinbox = ttk.Spinbox(clock, from_=0, to=23, bootstyle=style,
-                                width=2, justify="center")
-    hours_spinbox.grid(row=0, column=0, padx=1, pady=1, sticky="w")
-    # add valitation to spinbox
-    vcmd_mins = (master.register(validate_digits_numbers), '%P')
-    minutes_spinbox.configure(validate="key", validatecommand=vcmd_mins)
-    vcmd_hours = (master.register(validate_digits_numbers), '%P')
-    hours_spinbox.configure(validate="key", validatecommand=vcmd_hours)
-    # set default values
-    minutes_spinbox.set(mins_defaul)
-    hours_spinbox.set(hours_default)
-    # father.clocks.append({title: [minutes_spinbox, hours_spinbox]})
-    return clock, {title: [minutes_spinbox, hours_spinbox]}
-
-
 def make_empty_zeros(txt: str) -> float:
     """
     Makes empty strings into 0.0
@@ -460,29 +402,18 @@ def extract_data_file_contracts(filename: str) -> dict:
                         contracts[sheet][name]["out_door"] = out_door
             except Exception as e:
                 print(e)
-                messagebox.showerror(
-                    "Error", f"Error al leer la pagina. {sheet}\n"
-                             " Asegurese sea el archivo correcto, con el formato correcto.\n" + str(e))
+                print(f"Error: {e}")
                 continue
     except Exception as e:
-        print(e)
-        messagebox.showerror("Error",
-                             "Error al leer el archivo.\n"
-                             " Asegurese sea el archivo correcto, con el formato correcto.\n" + str(e)
-                             )
+        print(f"Error: {e}")
     with open(cache_oct_fichaje_path, 'wb') as file:
         pickle.dump(contracts, file)
     if len(bad_names) > 0:
         msg = "Se han encontrado los siguientes empleados no registrados:\n"
         for ename in bad_names:
             msg += ename + "\n"
-        messagebox.showinfo("Error", msg)
-        toast = ToastNotification(
-            title="Error en nombres",
-            message=msg,
-            duration=8000,
-        )
-        toast.show_toast()
+        # messagebox.showinfo("Error", msg)
+        print(f"Error: {msg}")
     return contracts
 
 
@@ -575,9 +506,7 @@ def extract_fichajes_file(filename: str):
             df.drop(columns=["Nombre", "Apellido"], inplace=True)
         return df
     except Exception as e:
-        messagebox.showerror("Error",
-                             "Error al leer el archivo.\n Asegurese sea el archivo correcto, con el formato correcto.")
-        print(e)
+        print(f"Error: {e}")
         return None
 
 
@@ -710,7 +639,8 @@ def get_dict_fichaje(dict_list: list[dict], data: list[dict]):
         dict_f = dict_list[i]
         if item_dict is not None:
             for timestamp_key, item in item_dict.items():
-                timestamp = datetime.strptime(timestamp_key, '%Y-%m-%d %H:%M:%S') if isinstance(timestamp_key, str) else timestamp_key
+                timestamp = datetime.strptime(timestamp_key, '%Y-%m-%d %H:%M:%S') if isinstance(timestamp_key,
+                                                                                                str) else timestamp_key
                 year = str(timestamp.year)
                 month = str(timestamp.month)
                 day = str(timestamp.day)
@@ -834,7 +764,7 @@ def get_cumulative_data_fichajes_dict(dic_data: dict, date=None) -> tuple[int, i
         for year in dic_data.keys():
             for month in dic_data[year].keys():
                 for day in dic_data[year][month].keys():
-                    if date.month <= int(month) and date.year <= int(year) and date.day <=int(day):
+                    if date.month <= int(month) and date.year <= int(year) and date.day <= int(day):
                         value = dic_data[year][month][day]["value"]
                         total_days += 1
                         if value is not None and value != "":
@@ -952,9 +882,11 @@ def update_fichajes_resume_cache(filepath: str, data, just_file=False):
                         dicts_old[i].update(dicts_new[i])
                         new_total.append(get_cumulative_data_fichajes_dict(dicts_old[i]))
                         new_value.append(get_cumulative_data_fichajes_dict(dicts_old[i], "value"))
-                    aux = (id_emp, name, contract, new_total[0], new_total[1], new_value[1], new_total[3], new_value[3], new_total[4],
-                           dicts_new[0], dicts_new[1], dicts_new[2], dicts_new[3], dicts_new[4])                    
-                    flag, error, result = update_fichaje_DB(id_emp, contract, dicts_new[0], dicts_new[1], dicts_new[2], dicts_new[3], dicts_new[4])
+                    aux = (id_emp, name, contract, new_total[0], new_total[1], new_value[1], new_total[3], new_value[3],
+                           new_total[4],
+                           dicts_new[0], dicts_new[1], dicts_new[2], dicts_new[3], dicts_new[4])
+                    flag, error, result = update_fichaje_DB(id_emp, contract, dicts_new[0], dicts_new[1], dicts_new[2],
+                                                            dicts_new[3], dicts_new[4])
                     if flag:
                         print("Fichaje updated DB: ", id_emp)
                         fichajes_resume[index_0] = aux
@@ -977,7 +909,7 @@ def update_fichajes_resume_cache(filepath: str, data, just_file=False):
                     else:
                         print("Error at creating new registry at DB")
                         print(error)
-                    break    
+                    break
     flag, error = save_file_cache_data(filepath, fichajes_resume)
     print("Fichajes resume cache file rewrited function files")
     return flag, error
@@ -1144,7 +1076,7 @@ def open_file_settings(filepath: str) -> tuple[bool, dict]:
                 "theme": "morph",
                 "files_procces": "C:\/Users\/Edisson\/OneDrive\/Documentos\/Telintec_files_departments\/RH",
                 "files_cache": "C:\/Users\/Edisson\/OneDrive\/Documentos\/Telintec_files_departments\/RH",
-                "files_quizz_out": "files\/quizz_out\/"            
+                "files_quizz_out": "files\/quizz_out\/"
             },
             "default": {
                 "theme": "morph"
@@ -1211,7 +1143,8 @@ def unify_data_display_fichaje(data: list[tuple[any, float, str]]) -> dict:
     return dic_out
 
 
-def correct_repetitions(normal_data_emp: dict, absence_data_emp: dict, prime_data_emp: dict, late_data_emp: dict, extra_data_emp: dict):
+def correct_repetitions(normal_data_emp: dict, absence_data_emp: dict, prime_data_emp: dict, late_data_emp: dict,
+                        extra_data_emp: dict):
     keys_absence = absence_data_emp.keys()
     for key in normal_data_emp.keys():
         if key in keys_absence:
@@ -1330,7 +1263,7 @@ def get_days_work(date: datetime):
     """
     n_days_month = monthrange(date.year, date.month)
     last_day = n_days_month[1] if n_days_month[1] <= date.day else date.day
-    days_of_the_month = [i for i in range(1, last_day+1)]
+    days_of_the_month = [i for i in range(1, last_day + 1)]
     # exclude sundays from the list
     work_days = []
     for day in days_of_the_month:
@@ -1411,7 +1344,8 @@ def get_info_f_file_name(df: pd.DataFrame, name: str, clocks, window_time_in, wi
     aux_min = int(min_out) + int(window_time_out.get() % 60)
     limit_hour = pd.Timestamp(year=1, month=1, day=1, hour=aux_hour, minute=aux_min, second=0)
     # count the number of rows where the person is late
-    extra_name = df_name[(df_name["Fecha/hora_out"].dt.time > limit_hour.time()) & (df_name["Fecha/hora_out"] <= date_max)]
+    extra_name = df_name[
+        (df_name["Fecha/hora_out"].dt.time > limit_hour.time()) & (df_name["Fecha/hora_out"] <= date_max)]
     count_extra = len(extra_name)
     # calculate the time difference between the entrance hour and the late hour
     extra_dic = {}
@@ -1421,14 +1355,17 @@ def get_info_f_file_name(df: pd.DataFrame, name: str, clocks, window_time_in, wi
     return days_worked, days_not_worked, count_late, count_extra, late_dic, extra_dic
 
 
-def get_info_t_file_name(df: pd.DataFrame, name: str, clocks, window_time_in, window_time_out, flag, month=None, date_max=None):
+def get_info_t_file_name(df: pd.DataFrame, name: str, clocks, window_time_in, window_time_out, flag, month=None,
+                         date_max=None):
     if flag:
         return "NA", "NA", "NA", "NA", {}, {}, [], []
     date_min = pd.Timestamp(year=date_max.year, month=date_max.month, day=1, hour=0, minute=0, second=0)
     df_name = df[(df["name"] == name) & (df["Fecha/hora"] <= date_max) & (df["Fecha/hora"] >= date_min)]
     days_worked, days_not_worked = get_worked_days(df_name, 2, month, date_max=date_max)
-    df_name_entrada = df_name[(df_name["in_out"] == "DENTRO") & (df["Fecha/hora"] <= date_max) & (df["Fecha/hora"] >= date_min)]
-    df_name_salida = df_name[(df_name["in_out"] == "FUERA") & (df["Fecha/hora"] <= date_max) & (df["Fecha/hora"] >= date_min)]
+    df_name_entrada = df_name[
+        (df_name["in_out"] == "DENTRO") & (df["Fecha/hora"] <= date_max) & (df["Fecha/hora"] >= date_min)]
+    df_name_salida = df_name[
+        (df_name["in_out"] == "FUERA") & (df["Fecha/hora"] <= date_max) & (df["Fecha/hora"] >= date_min)]
     worked_days = len(df_name["name"].to_list())
     min_in = clocks[0]["entrada"][0].get()
     hour_in = clocks[0]["entrada"][1].get()
@@ -1444,7 +1381,8 @@ def get_info_t_file_name(df: pd.DataFrame, name: str, clocks, window_time_in, wi
     aux_min = int(min_in) + int(window_time_in.get() % 60)
     limit_hour = pd.Timestamp(year=1, month=1, day=1, hour=aux_hour, minute=aux_min, second=0)
     # count the number of rows where the person is late
-    late_name = df_name_entrada[(df_name_entrada["Fecha/hora"].dt.time > limit_hour.time()) & (df_name_entrada["Fecha/hora"] <= date_max)]
+    late_name = df_name_entrada[
+        (df_name_entrada["Fecha/hora"].dt.time > limit_hour.time()) & (df_name_entrada["Fecha/hora"] <= date_max)]
     count = len(late_name)
     # calculate the time difference between the entrance hour and the late hour
     time_late = {}
@@ -1456,7 +1394,8 @@ def get_info_t_file_name(df: pd.DataFrame, name: str, clocks, window_time_in, wi
     aux_hour = int(hour_out) + int(window_time_out.get() / 60)
     aux_min = int(min_out) + int(window_time_out.get() % 60)
     limit_hour2 = pd.Timestamp(year=1, month=1, day=1, hour=aux_hour, minute=aux_min, second=0)
-    extra_name = df_name_salida[(df_name_salida["Fecha/hora"].dt.time > limit_hour2.time()) & (df_name_salida["Fecha/hora"] <= date_max)]
+    extra_name = df_name_salida[
+        (df_name_salida["Fecha/hora"].dt.time > limit_hour2.time()) & (df_name_salida["Fecha/hora"] <= date_max)]
     count2 = len(extra_name)
     extra_time = {}
     for i in extra_name[["Fecha/hora", "Puerta"]].values:
