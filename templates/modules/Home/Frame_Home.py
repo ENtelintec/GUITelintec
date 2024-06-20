@@ -3,7 +3,7 @@ __author__ = 'Edisson Naula'
 __date__ = '$ 23/abr./2024  at 15:34 $'
 
 from ttkbootstrap.scrolled import ScrolledFrame
-from templates.Funtions_Utils import create_label
+from templates.Functions_Utils import create_label
 from templates.modules.Home.Frame_Notifications import NotificationsFrame
 
 

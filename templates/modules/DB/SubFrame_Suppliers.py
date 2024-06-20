@@ -6,7 +6,7 @@ import ttkbootstrap as ttk
 from ttkbootstrap.dialogs import Messagebox
 from ttkbootstrap.scrolled import ScrolledFrame
 
-from templates.Funtions_Utils import create_widget_input_DB, create_btns_DB, create_visualizer_treeview, \
+from templates.Functions_Utils import create_widget_input_DB, create_btns_DB, create_visualizer_treeview, \
     set_entry_value
 from templates.controllers.supplier.suppliers_controller import insert_supplier, update_supplier_DB, delete_supplier_DB
 

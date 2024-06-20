@@ -10,7 +10,7 @@ from ttkbootstrap.tableview import Tableview
 from ttkbootstrap.dialogs import Messagebox
 
 from templates.Functions_AuxFiles import load_quizzes_names
-from templates.Funtions_Utils import create_label, create_button
+from templates.Functions_Utils import create_label, create_button
 from templates.PDFGenerator import create_pdf_quizz_salida, create_pdf__quizz_nor035_v1, \
     create_pdf_quizz_nor035_50_plus, create_quizz_clima_laboral, create_quizz_eva_360
 

@@ -15,7 +15,7 @@ import tkinter as tk
 from PIL import Image
 
 from static.extensions import ventanasApp_path
-from templates.Funtions_Utils import compare_permissions_windows
+from templates.Functions_Utils import compare_permissions_windows
 from templates.LoadData import DataLoader
 from templates.controllers.employees.us_controller import get_username_data
 

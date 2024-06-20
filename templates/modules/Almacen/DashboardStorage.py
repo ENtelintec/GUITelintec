@@ -2,7 +2,7 @@ import ttkbootstrap as ttk
 from PIL import Image
 
 from templates.Functions_AuxPlots import get_data_movements_type
-from templates.Funtions_Utils import create_label, create_Combobox
+from templates.Functions_Utils import create_label, create_Combobox
 from templates.modules.Misc.SubFrame_Plots import FramePlot
 
 Image.CUBIC = Image.BICUBIC

@@ -8,7 +8,7 @@ import ttkbootstrap as ttk
 from ttkbootstrap.tableview import Tableview
 
 from static.extensions import quizzes_dir_path, filepath_settings
-from templates.Funtions_Utils import create_label, create_button
+from templates.Functions_Utils import create_label, create_button
 from templates.controllers.misc.tasks_controller import get_all_tasks_by_status, update_task
 from templates.modules.RRHH.SubFrame_QuizzMaker import QuizMaker
 

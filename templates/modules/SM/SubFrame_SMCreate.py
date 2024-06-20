@@ -13,7 +13,7 @@ from ttkbootstrap.tableview import Tableview
 from static.extensions import log_file_sm_path, ventanasApp_path
 from templates.Functions_AuxFiles import get_all_sm_entries, get_all_sm_products
 from templates.Functions_Files import write_log_file
-from templates.Funtions_Utils import create_label, create_button, create_stringvar, create_Combobox, create_entry, \
+from templates.Functions_Utils import create_label, create_button, create_stringvar, create_Combobox, create_entry, \
     create_date_entry, create_notification_permission
 from templates.controllers.employees.us_controller import get_user_data_by_ID
 from templates.controllers.index import DataHandler

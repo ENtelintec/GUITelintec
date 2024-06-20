@@ -5,6 +5,7 @@ __date__ = '$ 01/may./2024  at 20:19 $'
 import json
 from datetime import datetime
 
+from static.extensions import format_timestamps
 from templates.database.connection import execute_sql
 
 
@@ -20,7 +21,7 @@ def get_sm_entries():
 
 def insert_sm_db(data):
     event = [{"event": "creation",
-              "date": datetime.now().strftime('%Y-%m-%d %H:%M:%S'), "user": data['info']['emp_id']}]
+              "date": datetime.now().strftime(format_timestamps), "user": data['info']['emp_id']}]
     sql = ("INSERT INTO materials_request "
            "(sm_code, folio, contract, facility, location, "
            "client_id, emp_id, pedido_cotizacion, date, limit_date, items, status, history, comment)"

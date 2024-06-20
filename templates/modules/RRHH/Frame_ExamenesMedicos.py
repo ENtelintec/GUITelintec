@@ -14,7 +14,7 @@ from ttkbootstrap.tableview import Tableview
 
 from static.extensions import cache_file_EM_path, format_date, format_timestamps
 from templates.Functions_Files import get_ExMed_cache_file, update_ExMed_cache_file
-from templates.Funtions_Utils import create_label, set_dateEntry_new_value
+from templates.Functions_Utils import create_label, set_dateEntry_new_value
 from templates.controllers.employees.em_controller import get_all_examenes, update_status_EM, update_aptitud, \
     update_renovacion, insert_new_exam_med
 from templates.controllers.employees.employees_controller import get_id_employee

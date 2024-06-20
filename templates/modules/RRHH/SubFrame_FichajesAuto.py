@@ -17,7 +17,7 @@ from templates.Functions_AuxFiles import get_events_op_date
 from templates.Functions_Files import get_info_f_file_name, get_info_bitacora, \
     unify_data_employee, get_info_t_file_name, check_fichajes_files_in_directory, get_list_files, extract_fichajes_file, \
     check_names_employees_in_cache, update_fichajes_resume_cache, get_dic_from_list_fichajes
-from templates.Funtions_Utils import create_var_none, create_Combobox, create_label, create_stringvar, \
+from templates.Functions_Utils import create_var_none, create_Combobox, create_label, create_stringvar, \
     update_stringvars, create_spinboxes_time
 from templates.modules.Misc.Frame_CollapsingFrame import CollapsingFrame
 
