@@ -40,7 +40,7 @@ def delete_exam_med(exm_id: int):
 
 def get_aptitud_renovacion(emp_id: int):
     sql = ("SELECT aptitud, renovacion "
-           "FROM examenes_med "
+           "FROM sql_telintec.examenes_med "
            "WHERE empleado_id = %s")
     val = (emp_id,)
     flag, e, out = execute_sql(sql, val, 1)
@@ -48,7 +48,7 @@ def get_aptitud_renovacion(emp_id: int):
 
 
 def update_aptitud(aptitud: list, apt_actual: int, emp_id: int):
-    sql = ("UPDATE examenes_med "
+    sql = ("UPDATE sql_telintec.examenes_med "
            "SET aptitud = %s, aptitude_actual = %s "
            "WHERE empleado_id = %s")
     val = (json.dumps(aptitud), apt_actual, emp_id)
@@ -59,7 +59,7 @@ def update_aptitud(aptitud: list, apt_actual: int, emp_id: int):
 
 def get_aptitud(emp_id: int):
     sql = ("SELECT aptitud "
-           "FROM examenes_med "
+           "FROM sql_telintec.examenes_med "
            "WHERE empleado_id = %s")
     val = (emp_id,)
     flag, e, out = execute_sql(sql, val, 1)
@@ -68,7 +68,7 @@ def get_aptitud(emp_id: int):
 
 # option 3
 def update_renovacion(renovaciones: list, last_date: str, emp_id: int):
-    sql = ("UPDATE examenes_med "
+    sql = ("UPDATE sql_telintec.examenes_med "
            "SET renovacion = %s "
            "WHERE empleado_id = %s")
     val = (json.dumps(renovaciones), last_date, emp_id)
@@ -79,7 +79,7 @@ def update_renovacion(renovaciones: list, last_date: str, emp_id: int):
 
 def get_renovacion(emp_id: int):
     sql = ("SELECT renovacion "
-           "FROM examenes_med "
+           "FROM sql_telintec.examenes_med "
            "WHERE empleado_id = %s")
     val = (emp_id,)
     flag, e, out = execute_sql(sql, val, 1)
@@ -88,13 +88,13 @@ def get_renovacion(emp_id: int):
 
 def get_all_examenes():
     sql = ("SELECT examen_id, name, blood, status, aptitud, renovacion, aptitude_actual, empleado_id "
-           "FROM examenes_med ")
+           "FROM sql_telintec.examenes_med ")
     flag, e, out = execute_sql(sql, type_sql=5)
     return flag, e, out
 
 
 def update_status_EM(status, emp_id):
-    sql = ("UPDATE examenes_med "
+    sql = ("UPDATE sql_telintec.examenes_med "
            "SET status = %s "
            "WHERE empleado_id = %s")
     val = (status, emp_id)

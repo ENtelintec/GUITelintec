@@ -24,17 +24,17 @@ def get_users(limit=(0, 100)):
 
 def get_username_data(username: str):
     sql = ("select "
-           "users_system.exp, "
-           "users_system.timestamp_token, "
-           "employees.name, "
-           "employees.l_name, "
-           "employees.department_id, "
-           "departments.name, "
-           "employees.contrato,"
-           " employees.employee_id "
-           "FROM users_system "
-           "INNER JOIN employees ON users_system.emp_id = employee_id "
-           "INNER JOIN departments on employees.department_id = departments.department_id "
+           "sql_telintec.users_system.exp, "
+           "sql_telintec.users_system.timestamp_token, "
+           "sql_telintec.employees.name, "
+           "sql_telintec.employees.l_name, "
+           "sql_telintec.employees.department_id, "
+           "sql_telintec.departments.name, "
+           "sql_telintec.employees.contrato, "
+           "sql_telintec.employees.employee_id "
+           "FROM sql_telintec.users_system "
+           "INNER JOIN sql_telintec.employees ON users_system.emp_id = employee_id "
+           "INNER JOIN sql_telintec.departments on sql_telintec.employees.department_id = sql_telintec.departments.department_id "
            "WHERE users_system.usernames = %s")
     val = (username,)
     flag, error, result = execute_sql(sql, val)
@@ -55,17 +55,17 @@ def get_username_data(username: str):
 
 def get_user_data_by_ID(user_id: int):
     sql = ("SELECT "
-           "users_system.exp, "
-           "users_system.timestamp_token, "
-           "employees.name,"
-           " employees.l_name, "
-           "employees.department_id, "
-           "departments.name, "
-           "employees.contrato "
-           "FROM users_system "
-           "INNER JOIN employees ON users_system.emp_id = employee_id "
-           "INNER JOIN departments on employees.department_id = departments.department_id "
-           "WHERE users_system.emp_id = %s ")
+           "sql_telintec.users_system.exp, "
+           "sql_telintec.users_system.timestamp_token, "
+           "sql_telintec.employees.name, "
+           "sql_telintec.employees.l_name, "
+           "sql_telintec.employees.department_id, "
+           "sql_telintec.departments.name, "
+           "sql_telintec.employees.contrato "
+           "FROM sql_telintec.users_system "
+           "INNER JOIN sql_telintec.employees ON sql_telintec.users_system.emp_id = employee_id "
+           "INNER JOIN sql_telintec.departments on sql_telintec.employees.department_id = sql_telintec.departments.department_id "
+           "WHERE sql_telintec.users_system.emp_id = %s ")
     val = (user_id,)
     flag, error, result = execute_sql(sql, val)
     out = None
@@ -90,7 +90,7 @@ def verify_user_DB(user: str, password: str) -> bool:
     :return: <Boolean>
     """
     sql = ("SELECT usernames "
-           "FROM users_system "
+           "FROM sql_telintec.users_system "
            "WHERE usernames = %s AND password = %s")
     val = (user, password)
     flag, error, result = execute_sql(sql, val)
@@ -108,13 +108,13 @@ def get_permissions_user_password(user: str, password: str):
     """
     sql = (
         "SELECT "
-        "users_system.permissions, "
-        "users_system.emp_id, "
-        "employees.name, "
-        "employees.l_name, "
-        "employees.contrato  "
-        "FROM users_system "
-        "INNER JOIN employees ON (users_system.emp_id = employees.employee_id) "
+        "sql_telintec.users_system.permissions, "
+        "sql_telintec.users_system.emp_id, "
+        "sql_telintec.employees.name, "
+        "sql_telintec.employees.l_name, "
+        "sql_telintec.employees.contrato  "
+        "FROM sql_telintec.users_system "
+        "INNER JOIN sql_telintec.employees ON (sql_telintec.users_system.emp_id = sql_telintec.employees.employee_id) "
         "WHERE usernames = %s AND password = %s ")
     val = (user, password)
     flag, error, result = execute_sql(sql, val, 1)

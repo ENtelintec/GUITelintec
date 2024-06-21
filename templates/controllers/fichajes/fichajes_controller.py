@@ -41,11 +41,19 @@ def get_fichaje_DB(emp_id: int):
 
 def get_all_fichajes():
     # (name, lastname, id_fich, id_emp, contract, absences, lates, extras, primes, normal)
-    sql = ("SELECT employees.name, employees.l_name, "
-           "fichajes.ficha_id, fichajes.emp_id, fichajes.contract, "
-           "fichajes.absences, fichajes.lates, fichajes.extras, fichajes.primes, fichajes.normal "
+    sql = ("SELECT "
+           "sql_telintec.employees.name, "
+           "sql_telintec.employees.l_name, "
+           "sql_telintec.fichajes.ficha_id, "
+           "sql_telintec.fichajes.emp_id, "
+           "sql_telintec.fichajes.contract, "
+           "sql_telintec.fichajes.absences, "
+           "sql_telintec.fichajes.lates, "
+           "sql_telintec.fichajes.extras, "
+           "sql_telintec.fichajes.primes, "
+           "sql_telintec.fichajes.normal "
            "FROM sql_telintec.fichajes "
-           "INNER JOIN employees ON (fichajes.emp_id = employees.employee_id)")
+           "INNER JOIN sql_telintec.employees ON (sql_telintec.fichajes.emp_id = sql_telintec.employees.employee_id)")
     flag, error, result = execute_sql(sql, type_sql=2)
     return flag, error, result
 
@@ -53,7 +61,8 @@ def get_all_fichajes():
 def get_fichaje_emp_AV(name: str, id_e: int):
     columns = ("id_employee", "absences", "lates", "lates_value[h]", "extras", "extras_value[h]", "primes")
     sql = ("SELECT emp_id, absences, lates, extras, primes "
-           "FROM fichajes WHERE emp_id = %s")
+           "FROM sql_telintec.fichajes "
+           "WHERE emp_id = %s")
     if id_e is None:
         id_e, name_db = get_employee_id_name(name)
         if id_e is None:
