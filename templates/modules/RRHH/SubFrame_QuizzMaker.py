@@ -9,7 +9,7 @@ from ttkbootstrap.dialogs import Messagebox
 from ttkbootstrap.scrolled import ScrolledFrame
 
 from static.extensions import quizz_out_path, format_timestamps_filename
-from templates.Functions_AuxFiles import save_json_file_quizz
+from templates.misc.Functions_AuxFiles import save_json_file_quizz
 from templates.Functions_Utils import calculate_results_quizzes, recommendations_results_quizzes
 from templates.PDFGenerator import create_pdf_quizz_salida, create_pdf__quizz_nor035_v1, \
     create_pdf_quizz_nor035_50_plus, create_quizz_clima_laboral, create_quizz_eva_360  

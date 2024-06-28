@@ -7,7 +7,7 @@ from flask_restx import Namespace, Resource
 from static.Models.api_inventory_models import products_output_model, product_insert_model, product_delete_model, \
     categories_output_model, suppliers_output_model
 from static.Models.api_movements_models import movements_output_model, movement_insert_model, movement_delete_model
-from templates.Functions_midleware_almacen import get_all_movements, insert_movement, update_movement, \
+from templates.resources.midleware.Functions_midleware_almacen import get_all_movements, insert_movement, update_movement, \
     get_all_products_DB, insert_product_db, update_product_amc, get_categories_db, get_suppliers_db
 from templates.Functions_Text import parse_data
 from templates.controllers.product.p_and_s_controller import delete_movement_db, delete_product_db

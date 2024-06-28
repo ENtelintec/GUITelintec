@@ -1,7 +1,7 @@
 import ttkbootstrap as ttk
 from ttkbootstrap.tableview import Tableview
 
-from templates.Functions_Files import get_cache_notifications
+from templates.misc.Functions_Files import get_cache_notifications
 from templates.Functions_Utils import create_label, Reverse
 
 

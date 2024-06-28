@@ -94,7 +94,9 @@ def parse_data(data: dict, mode: int):
                     items.append({
                         'id': item['id'],
                         "quantity": item['quantity'],
-                        "comment": item['comment']
+                        "comment": item['comment'],
+                        "stock": item['stock'],
+                        "name": item
                     })
                 out = {
                     "info": info,

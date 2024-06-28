@@ -6,7 +6,7 @@ __date__ = '$ 28/may./2024  at 17:04 $'
 
 from datetime import datetime
 
-from templates.Functions_AuxFiles import get_all_sm_entries, \
+from templates.misc.Functions_AuxFiles import get_all_sm_entries, \
     get_all_sm_products, get_events_op_date, get_data_employees
 from templates.Functions_AuxPlots import get_data_movements_type, get_data_sm_per_range
 from templates.controllers.customer.customers_controller import get_sm_clients, get_all_customers_db

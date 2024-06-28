@@ -1029,7 +1029,7 @@ def validate_digits_numbers(new_value) -> bool:
 def create_spinboxes_time(master: Misc, father, row: int, column: int,
                           pad_x: int = 5, pad_y: int = 5,
                           style: str = 'primary', title: str = "",
-                          mins_defaul=0, hours_default=8) -> tuple[Frame, dict[Any, Any]]:
+                          mins_defaul=0, hours_default=8) -> tuple:
     """ Creates a clock with two spinboxes for minutes and hours
     :param title:
     :param father:

@@ -9,7 +9,7 @@ from static.Models.api_models import notification_insert_model, notification_req
     response_av_model, response_files_av_model
 from static.extensions import filepath_settings
 from templates.Functions_Text import parse_data
-from templates.Functions_midleware_misc import get_all_notification_db_user_status, get_response_AV, get_files_openai
+from templates.resources.midleware.Functions_midleware_misc import get_all_notification_db_user_status, get_response_AV, get_files_openai
 from templates.controllers.notifications.Notifications_controller import insert_notification, update_status_notification
 
 ns = Namespace('GUI/api/v1/misc')

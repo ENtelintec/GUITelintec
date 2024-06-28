@@ -7,10 +7,10 @@ from flask_restx import Namespace, Resource
 from static.Models.api_contracts_models import answer_quotation_model, quotation_model_insert, \
     quotation_model_update, quotation_model_delete, answer_contract_model, contract_model_insert, contract_model_update, \
     contract_model_delete
-from templates.Functions_midleware_admin import get_quotations, get_contracts
+from templates.resources.midleware.Functions_midleware_admin import get_quotations, get_contracts
 from templates.controllers.contracts.contracts_controller import create_contract, update_contract
 from templates.controllers.contracts.quotations_controller import create_quotation, update_quotation, delete_quotation
-from templates.resources.Functions_Aux_Admin import parse_data
+from templates.resources.methods.Functions_Aux_Admin import parse_data
 
 ns = Namespace('GUI/api/v1/admin/presales')
 
@@ -57,7 +57,7 @@ class Quotation(Resource):
 
 
 @ns.route('/contract/<string:id_c>')
-class Contract(Resource):
+class Contracts(Resource):
     @ns.marshal_with(answer_contract_model)
     def get(self, id_c):
         data, code = get_contracts(id_c)
@@ -65,7 +65,7 @@ class Contract(Resource):
     
 
 @ns.route('/contract')
-class Contracts(Resource):
+class Contract(Resource):
     @ns.expect(contract_model_insert)
     def post(self):
         code, data = parse_data(ns.payload, 2)

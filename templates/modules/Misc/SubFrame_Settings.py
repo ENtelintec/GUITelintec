@@ -10,7 +10,7 @@ import pandas as pd
 import ttkbootstrap as ttk
 
 from static.extensions import filepath_settings
-from templates.Functions_Files import update_file_settings, open_file_settings
+from templates.misc.Functions_Files import update_file_settings, open_file_settings
 from templates.Functions_Utils import create_button, create_label, select_path, set_dateEntry_new_value, create_Combobox
 from templates.controllers.index import DataHandler
 

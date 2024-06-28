@@ -3,7 +3,7 @@ from pathlib import Path
 import ttkbootstrap as ttk
 
 from static.extensions import filepath_settings
-from templates.Functions_Files import open_file_settings
+from templates.misc.Functions_Files import open_file_settings
 from templates.Functions_Utils import create_label, create_button
 from templates.modules.Misc.SubFrame_Settings import SettingsRRHH, SettingsChatbot, SettingsGeneral, \
     SettingsScreenAlmacen

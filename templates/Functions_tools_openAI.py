@@ -5,7 +5,7 @@ __date__ = '$ 20/mar./2024  at 15:24 $'
 import json
 
 from static.extensions import tools_AV_avaliable
-from templates.Functions_Files import get_cumulative_data_fichajes_dict
+from templates.misc.Functions_Files import get_cumulative_data_fichajes_dict
 from templates.controllers.customer.customers_controller import get_costumers_amc
 from templates.controllers.employees.employees_controller import get_employees_w_status, get_employee_info
 from templates.controllers.fichajes.fichajes_controller import get_fichaje_emp_AV

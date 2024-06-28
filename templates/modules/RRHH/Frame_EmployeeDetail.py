@@ -6,7 +6,7 @@ import ttkbootstrap as ttk
 from ttkbootstrap.scrolled import ScrolledFrame
 from ttkbootstrap.tableview import Tableview
 
-from templates.Functions_AuxFiles import get_data_employees
+from templates.misc.Functions_AuxFiles import get_data_employees
 from templates.Functions_Utils import create_stringvar
 from templates.modules.Misc.SubFrame_Plots import FramePlot
 

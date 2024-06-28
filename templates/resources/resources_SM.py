@@ -7,7 +7,7 @@ from static.Models.api_sm_models import client_emp_sm_response_model, products_a
     sm_post_model, delete_request_sm_model, sm_put_model, table_sm_model, table_request_model, new_cliente_model, \
     new_product_model, request_sm_plot_data_model
 from templates.Functions_AuxPlots import get_data_sm_per_range
-from templates.Functions_DB_midleware import get_products_sm, get_all_sm
+from templates.resources.midleware.Functions_DB_midleware import get_products_sm, get_all_sm
 from templates.Functions_Text import parse_data
 from templates.controllers.customer.customers_controller import get_sm_clients
 from templates.controllers.employees.employees_controller import get_sm_employees

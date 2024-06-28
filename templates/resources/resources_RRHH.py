@@ -12,17 +12,19 @@ from static.Models.api_employee_models import employees_info_model, employee_mod
     employee_model_update, employee_model_delete, examenes_medicos_model, employees_examenes_model, \
     employee_exam_model_insert, employee_exam_model_delete, employee_exam_model_update, employees_vacations_model, \
     vacations_model, employee_vacation_model_insert, employee_vacation_model_delete
+from static.Models.api_fichajes_models import answer_files_fichajes_model
 from static.Models.api_models import employees_resume_model, resume_model
 from static.extensions import cache_file_resume_fichaje_path, quizzes_RRHH
-from templates.Functions_DB_midleware import get_info_employees_with_status, get_info_employee_id, get_all_vacations, \
+from templates.resources.midleware.Functions_DB_midleware import get_info_employees_with_status, get_info_employee_id, get_all_vacations, \
     get_vacations_employee, create_csv_file_employees
-from templates.Functions_Files import get_fichajes_resume_cache
+from templates.misc.Functions_Files import get_fichajes_resume_cache
 from templates.Functions_Text import parse_data
 from templates.controllers.employees.em_controller import get_all_examenes, insert_new_exam_med, \
     update_aptitud_renovacion, delete_exam_med
 from templates.controllers.employees.employees_controller import new_employee, update_employee, delete_employee
 from templates.controllers.employees.vacations_controller import insert_vacation, update_registry_vac, delete_vacation, \
     get_vacations_data
+from templates.resources.midleware.Functions_midleware_RRHH import get_files_fichaje
 
 ns = Namespace('GUI/api/v1/rrhh')
 
@@ -307,6 +309,18 @@ class EmployeesResume(Resource):  # noqa: F811
             out = None
             code = 400
         return out, code
+
+
+@ns.route('/fichajes/files')
+class DownloadFileFichaje(Resource):
+    @ns.marshal_with(answer_files_fichajes_model)
+    def get(self):
+        flag, files = get_files_fichaje()
+        if flag:
+            return {"data": files, "msg": "ok"}, 200
+        else:
+            return {"data": None, "msg": "No files"}, 400
+
 
 
 @ns.route('/download/employees/<string:status>')

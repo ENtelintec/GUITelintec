@@ -5,7 +5,7 @@ __date__ = '$ 26/abr./2024  at 16:42 $'
 import ttkbootstrap as ttk
 
 from static.extensions import filepath_settings
-from templates.Functions_Files import open_file_settings
+from templates.misc.Functions_Files import open_file_settings
 
 
 class NotificationsFrame(ttk.Frame):
