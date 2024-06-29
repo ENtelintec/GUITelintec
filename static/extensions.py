@@ -137,5 +137,6 @@ delta_bitacora_edit = 14
 status_dic = {0: "Pendiente", 1: "En Proceso", 2: "Completado", 3: "Finalizado", -1: "Cancelado"}
 format_timestamps = "%Y-%m-%d %H:%M:%S"
 format_date = "%Y-%m-%d"
+format_date_fichaje_file = "%d-%m-%Y"
 dict_deps = {"Dirección": 1, "Operaciones": 2, "Administración": 3, "RRHH": 4, "REPSE": 5, "IA": 6, "Otros": 7}
 format_timestamps_filename = '%Y-%m-%d'

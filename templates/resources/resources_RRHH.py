@@ -12,19 +12,19 @@ from static.Models.api_employee_models import employees_info_model, employee_mod
     employee_model_update, employee_model_delete, examenes_medicos_model, employees_examenes_model, \
     employee_exam_model_insert, employee_exam_model_delete, employee_exam_model_update, employees_vacations_model, \
     vacations_model, employee_vacation_model_insert, employee_vacation_model_delete
-from static.Models.api_fichajes_models import answer_files_fichajes_model
+from static.Models.api_fichajes_models import answer_files_fichajes_model, request_data_fichaje_files_model
 from static.Models.api_models import employees_resume_model, resume_model
 from static.extensions import cache_file_resume_fichaje_path, quizzes_RRHH
+from templates.resources.methods.Functions_Aux_RH import parse_data
 from templates.resources.midleware.Functions_DB_midleware import get_info_employees_with_status, get_info_employee_id, get_all_vacations, \
     get_vacations_employee, create_csv_file_employees
 from templates.misc.Functions_Files import get_fichajes_resume_cache
-from templates.Functions_Text import parse_data
 from templates.controllers.employees.em_controller import get_all_examenes, insert_new_exam_med, \
     update_aptitud_renovacion, delete_exam_med
 from templates.controllers.employees.employees_controller import new_employee, update_employee, delete_employee
 from templates.controllers.employees.vacations_controller import insert_vacation, update_registry_vac, delete_vacation, \
     get_vacations_data
-from templates.resources.midleware.Functions_midleware_RRHH import get_files_fichaje
+from templates.resources.midleware.Functions_midleware_RRHH import get_files_fichaje, get_fichaje_data
 
 ns = Namespace('GUI/api/v1/rrhh')
 
@@ -49,7 +49,7 @@ class Employee(Resource):
 
     @ns.expect(employee_model_update)
     def put(self):
-        code, data = parse_data(ns.payload, 14)
+        code, data = parse_data(ns.payload, 1)
         if code == 400:
             return {"data": None}, code
         flag, error, result = update_employee(data["id"], data["info"]["name"], data["info"]["lastname"],
@@ -67,7 +67,7 @@ class Employee(Resource):
 
     @ns.expect(employee_model_delete)
     def delete(self):
-        code, data = parse_data(ns.payload, 14)
+        code, data = parse_data(ns.payload, 1)
         if code == 400:
             return {"data": None}, code
         flag, error, result = delete_employee(data["id"])
@@ -159,7 +159,7 @@ class EmployeesEMResume(Resource):  # noqa: F811
 class EmployeesEMRegistry(Resource):
     @ns.expect(employee_exam_model_insert)
     def post(self):
-        code, data = parse_data(ns.payload, 15)
+        code, data = parse_data(ns.payload, 2)
         flag, error, result = insert_new_exam_med(data["info"]["name"], data["info"]["blood"], data["info"]["status"],
                                                   data["info"]["aptitudes"], data["info"]["dates"],
                                                   data["info"]["apt_actual"], data["info"]["emp_id"])
@@ -170,7 +170,7 @@ class EmployeesEMRegistry(Resource):
 
     @ns.expect(employee_exam_model_update)
     def put(self):
-        code, data = parse_data(ns.payload, 15)
+        code, data = parse_data(ns.payload, 2)
         flag, error, result = update_aptitud_renovacion(data["info"]["aptitudes"], data["info"]["dates"],
                                                         data["info"]["apt_actual"], data["id"])
         if flag:
@@ -180,7 +180,7 @@ class EmployeesEMRegistry(Resource):
 
     @ns.expect(employee_exam_model_delete)
     def delete(self):
-        code, data = parse_data(ns.payload, 15)
+        code, data = parse_data(ns.payload, 2)
         flag, error, result = delete_exam_med(data["id"])
         if flag:
             return {"data": str(result)}, 200
@@ -214,7 +214,7 @@ class EmployeesVacationsID(Resource):
 class EmployeesVacationRegistry(Resource):
     @ns.expect(employee_vacation_model_insert)
     def post(self):
-        code, data = parse_data(ns.payload, 16)
+        code, data = parse_data(ns.payload, 3)
         if data["seniority"] is None:
             return {"data": "Error en la estructura del diccionario seniority"}, 400
         flag, error, result = insert_vacation(data["emp_id"], data["seniority"])
@@ -225,7 +225,7 @@ class EmployeesVacationRegistry(Resource):
 
     @ns.expect(employee_vacation_model_insert)
     def put(self):
-        code, data = parse_data(ns.payload, 16)
+        code, data = parse_data(ns.payload, 3)
         if data["seniority"] is None:
             return {"data": "Error en la estructura del diccionario seniority"}, 400
         flag, error, result = update_registry_vac(data["emp_id"], data["seniority"])
@@ -236,7 +236,7 @@ class EmployeesVacationRegistry(Resource):
 
     @ns.expect(employee_vacation_model_delete)
     def delete(self):
-        code, data = parse_data(ns.payload, 16)
+        code, data = parse_data(ns.payload, 3)
         flag, error, result = delete_vacation(data["emp_id"])
         if flag:
             return {"data": str(result)}, 200
@@ -321,6 +321,17 @@ class DownloadFileFichaje(Resource):
         else:
             return {"data": None, "msg": "No files"}, 400
 
+
+@ns.route('/fichajes/data/files')
+class DownloadFileFichajeID(Resource):
+    @ns.expect(request_data_fichaje_files_model)
+    def post(self):
+        code, data = parse_data(ns.payload, 4)
+        code, out = get_fichaje_data(data)
+        if code == 400:
+            return {"data": None, "msg": out}, code
+        else:
+            return {"data": out, "msg": "ok"}, code
 
 
 @ns.route('/download/employees/<string:status>')

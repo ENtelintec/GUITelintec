@@ -21,3 +21,10 @@ answer_files_fichajes_model = api.model('FichFiles', {
     "data": fields.List(fields.Nested(file_model)),
     "msg": fields.String()
     })
+
+
+request_data_fichaje_files_model = api.model('FichFilesRequest', {
+    "files": fields.List(fields.Nested(file_model)),
+    "grace_init": fields.Integer(required=True, description='The time grace at the beggining of the day'),
+    "grace_end": fields.Integer(required=True, description='The time grace at the end of the day'),
+    })
