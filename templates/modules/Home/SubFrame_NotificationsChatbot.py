@@ -2,7 +2,7 @@ import ttkbootstrap as ttk
 from ttkbootstrap.tableview import Tableview
 
 from templates.misc.Functions_Files import get_cache_notifications
-from templates.Functions_Utils import create_label, Reverse
+from templates.Functions_GUI_Utils import create_label, Reverse
 
 
 def read_file(filepath) -> list[tuple]:

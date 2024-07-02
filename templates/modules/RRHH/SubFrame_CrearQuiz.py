@@ -9,7 +9,7 @@ import ttkbootstrap as ttk
 from ttkbootstrap.dialogs import Messagebox
 
 from static.extensions import quizzes_RRHH, quizz_out_path, format_date
-from templates.Functions_Utils import (
+from templates.Functions_GUI_Utils import (
     create_Combobox,
     create_label,
 )

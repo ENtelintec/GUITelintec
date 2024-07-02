@@ -3,6 +3,7 @@ __author__ = 'Edisson Naula'
 __date__ = '$ 28/may./2024  at 10:34 $'
 
 from templates.modules.Administration.Frame_ContractDocs import ContractsDocsFrame
+from templates.modules.Administration.Frame_ControlSaldos import ControlSaldos
 from templates.modules.Administration.Frame_Quotations import QuotationsFrame
 from templates.modules.Almacen.DashboardStorage import StorageDashboard
 from templates.modules.Almacen.Frame_Movements import MovementsFrame
@@ -56,7 +57,8 @@ available_frames = {
     "Settings":  SettingsFrameGUI,
     "Tasks": FrameTasks,
     "Cotizaciones": QuotationsFrame,
-    "Documentos Contrato": ContractsDocsFrame
+    "Documentos Contrato": ContractsDocsFrame,
+    "Control Saldos": ControlSaldos
 }
 
 frames_notifications_avaliable = {

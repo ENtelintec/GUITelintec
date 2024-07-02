@@ -13,7 +13,7 @@ from static.extensions import log_file_bitacora_path, delta_bitacora_edit, forma
 from templates.misc.Functions_AuxFiles import update_bitacora, get_events_op_date, \
     erase_value_bitacora, split_commment, update_bitacora_value
 from templates.misc.Functions_Files import write_log_file
-from templates.Functions_Utils import create_label, create_var_none, create_stringvar, create_button, \
+from templates.Functions_GUI_Utils import create_label, create_var_none, create_stringvar, create_button, \
     set_dateEntry_new_value, create_notification_permission
 from templates.controllers.employees.employees_controller import get_employees_op_names
 

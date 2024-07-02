@@ -4,7 +4,7 @@ __date__ = '$ 01/may./2024  at 21:03 $'
 
 import ttkbootstrap as ttk
 
-from templates.Functions_Utils import create_visualizer_treeview
+from templates.Functions_GUI_Utils import create_visualizer_treeview
 
 
 class ChatsFrame(ttk.Frame):

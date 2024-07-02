@@ -7,7 +7,7 @@ from tkinter.filedialog import askopenfilename
 import ttkbootstrap as ttk
 
 from static.extensions import path_contract_files
-from templates.Functions_Utils import create_label, create_Combobox, create_button
+from templates.Functions_GUI_Utils import create_label, create_Combobox, create_button
 from templates.resources.methods.Functions_Aux_Admin import get_filenames_contracts
 
 import json
@@ -22,11 +22,13 @@ def procces_quotation_list(data):
 
 
 def create_widgets(master, data):
+    create_label(master, row=0, column=0, text="Contrato", font=("Helvetica", 12, "normal"), columnspan=1)
+    create_label(master, row=0, column=1, text="Cotización", font=("Helvetica", 12, "normal"))
     contract_list = ["cargar..."] + get_filenames_contracts()
-    contract_selector = create_Combobox(master, row=0, column=0, values=contract_list)
+    contract_selector = create_Combobox(master, row=1, column=0, values=contract_list)
     contract_selector.set("")
     quotations_list = procces_quotation_list(data)
-    cotization_selector = create_Combobox(master, row=0, column=1, values=quotations_list)
+    cotization_selector = create_Combobox(master, row=1, column=1, values=quotations_list)
     cotization_selector.set("")
     return [contract_selector, cotization_selector]
 
@@ -50,21 +52,24 @@ def load_contract_file():
 class ContractsDocsFrame(ttk.Frame):
     def __init__(self, master, **kwargs):
         super().__init__(master)
+        self.columnconfigure(0, weight=1)
         self.data_quotations = kwargs["data"]["quotations"] if "quotations" in kwargs["data"] else []
         # ---------------------------title-------------------------------------
         create_label(self, row=0, column=0, text="Crear contrato", font=("Helvetica", 30, "bold"), columnspan=1)
         # -------------------------inputs--------------------------------------
         frame_inputs = ttk.Frame(self)
         frame_inputs.grid(row=1, column=0, sticky="nswe")
+        frame_inputs.columnconfigure((0, 1), weight=1)
         self.entries = create_widgets(frame_inputs, self.data_quotations)
         # -------------------------btns---------------------------------------
         frame_buttons = ttk.Frame(self)
         frame_buttons.grid(row=2, column=0, sticky="nswe")
+        frame_buttons.columnconfigure((0, 1), weight=1)
         self.create_button_widgets(frame_buttons)
 
     def create_button_widgets(self, master):
-        create_button(master, 0, 0, text="Crear", command=self.compare_doc_quotation)
-        create_button(master, 0, 1, text="Cargar Contrato", command=load_contract_file)
+        create_button(master, 0, 0, sticky="n", text="Crear", command=self.compare_doc_quotation)
+        create_button(master, 0, 1, sticky="n", text="Cargar Contrato", command=load_contract_file)
 
     def compare_doc_quotation(self):
         pass

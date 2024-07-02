@@ -11,7 +11,7 @@ from static.extensions import filepath_settings, ventanasApp_path
 from templates.misc.Functions_AuxFiles import read_setting_file
 from templates.Functions_AuxFilesGUI import carpeta_principal, get_image_side_menu
 from templates.misc.Functions_Files import read_file_not
-from templates.Functions_Utils import create_button_side_menu, compare_permissions_windows
+from templates.Functions_GUI_Utils import create_button_side_menu, compare_permissions_windows
 from templates.controllers.chatbot.chatbot_controller import get_chats_w_limit
 from templates.controllers.employees.us_controller import get_username_data
 from templates.modules.Assistant.Frame_vAssistantGUI import AssistantGUI

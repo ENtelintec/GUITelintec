@@ -11,7 +11,7 @@ import ttkbootstrap as ttk
 
 from static.extensions import filepath_settings
 from templates.Functions_Pmodels import test_model_fichajes
-from templates.Functions_Utils import create_label, create_Combobox, create_button
+from templates.Functions_GUI_Utils import create_label, create_Combobox, create_button
 
 days_of_week_dict = {"Lunes": 0, "Martes": 1, "Miercoles": 2, "Jueves": 3, "Viernes": 4, "Sabado": 5,
                      "Domingo": 6}

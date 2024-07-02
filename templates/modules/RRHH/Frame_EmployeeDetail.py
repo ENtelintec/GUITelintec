@@ -7,7 +7,7 @@ from ttkbootstrap.scrolled import ScrolledFrame
 from ttkbootstrap.tableview import Tableview
 
 from templates.misc.Functions_AuxFiles import get_data_employees
-from templates.Functions_Utils import create_stringvar
+from templates.Functions_GUI_Utils import create_stringvar
 from templates.modules.Misc.SubFrame_Plots import FramePlot
 
 

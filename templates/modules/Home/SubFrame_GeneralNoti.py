@@ -7,7 +7,7 @@ import ttkbootstrap as ttk
 from ttkbootstrap.scrolled import ScrolledText
 from ttkbootstrap.tableview import Tableview
 
-from templates.Functions_Utils import create_label, Reverse, create_button
+from templates.Functions_GUI_Utils import create_label, Reverse, create_button
 from templates.controllers.notifications.Notifications_controller import update_status_notification, get_notification_by_permission
 
 dict_status = {0: "Pendiente", 1: "Leido"}

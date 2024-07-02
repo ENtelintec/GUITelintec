@@ -6,7 +6,7 @@ import ttkbootstrap as ttk
 
 from static.extensions import windows_names_db_frame
 from templates.Functions_AuxFilesGUI import get_image_side_menu
-from templates.Functions_Utils import create_button_side_menu
+from templates.Functions_GUI_Utils import create_button_side_menu
 from templates.modules.DB.SubFrame_Chats import ChatsFrame
 from templates.modules.DB.SubFrame_Customer import CustomersFrame
 from templates.modules.DB.SubFrame_Departments import DepartmentsFrame

@@ -6,6 +6,7 @@ __date__ = '$ 28/may./2024  at 17:04 $'
 
 from datetime import datetime
 
+from templates.controllers.contracts.contracts_controller import get_contract
 from templates.controllers.contracts.quotations_controller import get_quotation
 from templates.misc.Functions_AuxFiles import get_all_sm_entries, \
     get_all_sm_products, get_events_op_date, get_data_employees
@@ -164,6 +165,10 @@ def load_data(data_dic, is_super=False, emp_id=None, item=None, permissions=None
             if "quotations" not in data_dic:
                 flag, error, data_quotations = get_quotation(None)
                 data_dic["quotations"] = data_quotations
+        case "Control Saldos":
+            if "contracts" not in data_dic:
+                flag, error, contracts = get_contract(None)
+                data_dic["contracts"] = contracts
         case _:
             pass
     return data_dic
