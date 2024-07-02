@@ -160,7 +160,8 @@ def get_all_products_db():
            "FROM sql_telintec.products_amc "
            "LEFT JOIN sql_telintec.supplier_product_amc ON (sql_telintec.products_amc.id_product = sql_telintec.supplier_product_amc.id_product) "
            "LEFT JOIN sql_telintec.product_categories_amc ON (sql_telintec.products_amc.id_category = sql_telintec.product_categories_amc.id_category) "
-           "LEFT JOIN sql_telintec.suppliers_amc ON (sql_telintec.supplier_product_amc.id_supplier = sql_telintec.suppliers_amc.id_supplier)")
+           "LEFT JOIN sql_telintec.suppliers_amc ON (sql_telintec.supplier_product_amc.id_supplier = sql_telintec.suppliers_amc.id_supplier) "
+           "ORDER BY products_amc.name ")
     flag, error, result = execute_sql(sql, None, 5)
     return flag, error, result
 

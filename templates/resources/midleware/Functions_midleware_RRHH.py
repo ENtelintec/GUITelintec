@@ -86,18 +86,18 @@ def get_data_name_fichaje(name: str, dff, dft, dfb):
     # -----------file fichaje------------
     (worked_days_f, days_absence, count_l_f, count_e_f,
      days_late, days_extra) = get_info_f_file_name(
-        dff, name, clocks, window_time_in, window_time_out, file_selected_1, date_max=date_max)
+        dff, name, clocks, window_time_in, window_time_out, True, date_max=date_max)
     date_example = pd.to_datetime(worked_days_f[0][0])
     # ------------file ternium-----------
     (worked_days_t, worked_intime_t, count_l_t, count_e_t,
      days_late_t, days_extra_t, days_worked_t, days_not_worked_t) = get_info_t_file_name(
-        dft, name_emp_selector.get(), clocks, window_time_in, window_time_out,
+        dft, name, clocks, window_time_in, window_time_out,
         file_selected_3, month=date_example.month, date_max=date_max)
     # ------------info bitacora-----------
     (days_absence_bit, days_extra_bit, days_primes_bit, days_lates_bit,
      absences_bit, extras_bit, primes_bit, lates_bit, normals_bit,
      contract) = get_info_bitacora(
-        dfb, name=name_emp_selector.get(), id_emp=id_emp, flag=file_selected_2, date_limit=date_max)
+        dfb, name=name, id_emp=id_emp, flag=True, date_limit=date_max)
     (normal_data_emp, absence_data_emp, prime_data_emp,
      late_data_emp, extra_data_emp) = unify_data_employee(
         [worked_days_f, days_worked_t, normals_bit],
@@ -129,6 +129,5 @@ def get_fichaje_data(data: dict):
         if file["report"].lower() == 'fichaje':
             date_file = file["date"]
     date_file = datetime.strptime(date_file, format_date_fichaje_file)
-    flag,  data_bitac
-    ora = get_bitacora_data(date_file)
+    flag,  data_bitacora = get_bitacora_data(date_file)
     return []

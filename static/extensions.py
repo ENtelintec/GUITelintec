@@ -61,6 +61,7 @@ filepath_recommendations = "files/recommendations.json"
 quizz_out_path = "files/quizz_out/"
 log_file_bitacora_path = "files/logs/bitacora"
 log_file_sm_path = "files/logs/sm"
+path_contract_files = "files/contracts"
 patterns_files_fichaje = ["Fichaje", "Ternium"]
 department_tools_openAI = {
     "director": "files/tools_AV_default.json",

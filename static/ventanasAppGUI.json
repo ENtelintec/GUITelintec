@@ -33,7 +33,9 @@
     "App.Department.Administracion": [
       "Clientes",
       "Proveedores",
-      "SM"
+      "SM",
+      "Cotizaciones",
+      "Documentos Contrato"
     ],
     "App.Department.Common": [
       "Tasks"

@@ -2,6 +2,8 @@
 __author__ = 'Edisson Naula'
 __date__ = '$ 28/may./2024  at 10:34 $'
 
+from templates.modules.Administration.Frame_ContractDocs import ContractsDocsFrame
+from templates.modules.Administration.Frame_Quotations import QuotationsFrame
 from templates.modules.Almacen.DashboardStorage import StorageDashboard
 from templates.modules.Almacen.Frame_Movements import MovementsFrame
 from templates.modules.Bitacora.Frame_Bitacora import BitacoraEditFrame
@@ -52,7 +54,9 @@ available_frames = {
     "Procesar SM": SMManagement,
     "Movimientos": MovementsFrame,
     "Settings":  SettingsFrameGUI,
-    "Tasks": FrameTasks
+    "Tasks": FrameTasks,
+    "Cotizaciones": QuotationsFrame,
+    "Documentos Contrato": ContractsDocsFrame
 }
 
 frames_notifications_avaliable = {

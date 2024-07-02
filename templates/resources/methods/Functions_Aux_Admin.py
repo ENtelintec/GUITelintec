@@ -2,6 +2,8 @@
 __author__ = 'Edisson Naula'
 __date__ = '$ 20/jun./2024  at 15:40 $'
 
+from static.extensions import path_contract_files
+
 
 def parse_data(data: dict, mode: int):
     """
@@ -43,3 +45,17 @@ def parse_data(data: dict, mode: int):
             "error": "Invalid sintaxis" + str(e)
         }
     return code, out
+
+
+def get_filenames_contracts(path=path_contract_files):
+    """
+    Gets the filenames of the contracts.
+    :return: <list>
+    """
+    import os
+    filenames = os.listdir(path)
+    # check if the filenames are valid
+    for filename in filenames:
+        if not filename.endswith(".pdf"):
+            filenames.remove(filename)
+    return filenames

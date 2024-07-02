@@ -57,3 +57,30 @@ def get_quotation(id_quotation=None):
         return False, "Quotation not found", None
     else:
         return True, None, result[0]
+
+
+def get_quotation_data_display(id_quotation=None):
+    if id_quotation is None:
+        sql = ("SELECT id, "
+               "metadata->'$.company', "
+               "metadata->'$.quotation_code', "
+               "metadata->'$.codigo', "
+               "creation "
+               "FROM sql_telintec_mod_admin.quotations")
+        flag, error, result = execute_sql(sql, None, 5)
+        if not flag:
+            return False, error, None
+        return True, None, result
+    sql = ("SELECT id, "
+           "metadata->'$.company', "
+           "metadata->'$.quotation_code', "
+           "metadata->'$.codigo', "
+           "creation "
+           "FROM sql_telintec_mod_admin.quotations "
+           "WHERE id = %s")
+    val = (id_quotation,)
+    flag, error, result = execute_sql(sql, val, 1)
+    if len(result) == 0:
+        return False, "Quotation not found", None
+    else:
+        return True, None, result[0]
