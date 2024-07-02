@@ -1,20 +1,23 @@
 import json
+import os
 
-from flask import send_file
+from flask import send_file, request
 
 # -*- coding: utf-8 -*-
 __author__ = 'Edisson Naula'
 __date__ = '$ 02/nov./2023  at 17:29 $'
 
 from flask_restx import Namespace, Resource
+from werkzeug.utils import secure_filename
 
 from static.Models.api_employee_models import employees_info_model, employee_model, employee_model_insert, \
     employee_model_update, employee_model_delete, examenes_medicos_model, employees_examenes_model, \
     employee_exam_model_insert, employee_exam_model_delete, employee_exam_model_update, employees_vacations_model, \
     vacations_model, employee_vacation_model_insert, employee_vacation_model_delete
-from static.Models.api_fichajes_models import answer_files_fichajes_model, request_data_fichaje_files_model
+from static.Models.api_fichajes_models import answer_files_fichajes_model, request_data_fichaje_files_model, \
+    answer_fichajes_model, expected_files
 from static.Models.api_models import employees_resume_model, resume_model
-from static.extensions import cache_file_resume_fichaje_path, quizzes_RRHH
+from static.extensions import cache_file_resume_fichaje_path, quizzes_RRHH, path_contract_files
 from templates.resources.methods.Functions_Aux_RH import parse_data
 from templates.resources.midleware.Functions_DB_midleware import get_info_employees_with_status, get_info_employee_id, get_all_vacations, \
     get_vacations_employee, create_csv_file_employees
@@ -325,6 +328,7 @@ class DownloadFileFichaje(Resource):
 @ns.route('/fichajes/data/files')
 class DownloadFileFichajeID(Resource):
     @ns.expect(request_data_fichaje_files_model)
+    @ns.marshal_with(answer_fichajes_model)
     def post(self):
         code, data = parse_data(ns.payload, 4)
         code, out = get_fichaje_data(data)
@@ -332,6 +336,23 @@ class DownloadFileFichajeID(Resource):
             return {"data": None, "msg": out}, code
         else:
             return {"data": out, "msg": "ok"}, code
+
+
+@ns.route('/upload/fichaje/file')
+class UploadFicahjeFile(Resource):
+    @ns.expect(expected_files)
+    def post(self):
+        
+        if 'file' not in request.files:
+            return {"data": "No se detecto un archivo"}, 400
+        file = request.files['file']
+        
+        if file:
+            filename = secure_filename(file.filename)
+            file.save(os.path.join(path_contract_files, filename))
+            return {"data": "Archivo subido correctamente"}, 200
+        else:
+            return {"data": "No se subio el archivo"}, 400
 
 
 @ns.route('/download/employees/<string:status>')

@@ -55,7 +55,9 @@ def parse_data(data: dict, mode: int):
                 out = {
                     "files": data["files"] if "files" in data.keys() else None,
                     "grace_init": data["grace_init"] if "grace_init" in data.keys() else 10,
-                    "grace_end": data["grace_end"] if "grace_end" in data.keys() else 10
+                    "grace_end": data["grace_end"] if "grace_end" in data.keys() else 10,
+                    "time_in":  data["time_in"] if "time_in" in data.keys() else "08:00",
+                    "time_out": data["time_out"] if "time_out" in data.keys() else "18:00"
                 }
             case _:
                 print("Invalid mode")

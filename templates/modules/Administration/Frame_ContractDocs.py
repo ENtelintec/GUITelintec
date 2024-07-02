@@ -31,6 +31,22 @@ def create_widgets(master, data):
     return [contract_selector, cotization_selector]
 
 
+def load_contract_file():
+    filename = askopenfilename(filetypes=[("PDF files", "*.pdf")])
+    if filename:
+        print(f"Selected file: {filename}")
+        # move file to directory
+        with open(filename, "rb") as file:
+            data = file.read()
+        # save file in directory
+        just_name = filename.split("/")[-1]
+        with open(path_contract_files+"/"+just_name, "wb") as file:
+            file.write(data)
+        print(f"File saved successfully: {path_contract_files+'/'+just_name}")
+    else:
+        print("No file selected")
+
+
 class ContractsDocsFrame(ttk.Frame):
     def __init__(self, master, **kwargs):
         super().__init__(master)
@@ -48,22 +64,7 @@ class ContractsDocsFrame(ttk.Frame):
 
     def create_button_widgets(self, master):
         create_button(master, 0, 0, text="Crear", command=self.compare_doc_quotation)
-        create_button(master, 0, 1, text="Cargar Contrato", command=self.load_contract_file)
+        create_button(master, 0, 1, text="Cargar Contrato", command=load_contract_file)
 
     def compare_doc_quotation(self):
         pass
-
-    def load_contract_file(self):
-        filename = askopenfilename(filetypes=[("PDF files", "*.pdf")])
-        if filename:
-            print(f"Selected file: {filename}")
-            # move file to directory
-            with open(filename, "rb") as file:
-                data = file.read()
-            # save file in directory
-            just_name = filename.split("/")[-1]
-            with open(path_contract_files+"/"+just_name, "wb") as file:
-                file.write(data)
-            print(f"File saved successfully: {path_contract_files+'/'+just_name}")
-        else:
-            print("No file selected")
