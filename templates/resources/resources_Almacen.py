@@ -2,13 +2,19 @@
 __author__ = 'Edisson Naula'
 __date__ = '$ 03/may./2024  at 15:22 $'
 
+import os
+
+from flask import request
 from flask_restx import Namespace, Resource
+from werkzeug.utils import secure_filename
 
 from static.Models.api_inventory_models import products_output_model, product_insert_model, product_delete_model, \
-    categories_output_model, suppliers_output_model
+    categories_output_model, suppliers_output_model, expected_files_almacen
 from static.Models.api_movements_models import movements_output_model, movement_insert_model, movement_delete_model
-from templates.resources.midleware.Functions_midleware_almacen import get_all_movements, insert_movement, update_movement, \
-    get_all_products_DB, insert_product_db, update_product_amc, get_categories_db, get_suppliers_db
+from templates.resources.midleware.Functions_midleware_almacen import get_all_movements, insert_movement, \
+    update_movement, \
+    get_all_products_DB, insert_product_db, update_product_amc, get_categories_db, get_suppliers_db, \
+    upload_product_db_from_file
 from templates.Functions_Text import parse_data
 from templates.controllers.product.p_and_s_controller import delete_movement_db, delete_product_db
 
@@ -80,6 +86,24 @@ class InventoryProduct(Resource):
         code, data = parse_data(ns.payload, 18)
         flag, error, data_out = delete_product_db(data["id"])
         return {"data": str(data_out), "msg": "Ok" if flag else "Error"}, 200 if flag else 400
+
+
+@ns.route('/inventory/file/upload')
+class UploadFicahjeFile(Resource):
+    @ns.expect(expected_files_almacen)
+    def post(self):
+        if 'file' not in request.files:
+            return {"data": "No se detecto un archivo"}, 400
+        file = request.files['file']
+        if file:
+            filename = secure_filename(file.filename)
+            file.save(os.path.join("files", filename))
+            code, data = upload_product_db_from_file(os.path.join("files", filename))
+            if code != 200:
+                return {"data": data, "msg": "Error at file structure"}, 400
+            return {"data": data, "msg": f"Ok with filaname: {filename}"}, 200
+        else:
+            return {"msg": "No se subio el archivo"}, 400
 
 
 @ns.route('/inventory/categories/all')

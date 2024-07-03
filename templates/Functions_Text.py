@@ -167,7 +167,8 @@ def parse_data(data: dict, mode: int):
                     "category_name": data["info"]["category_name"],
                     "supplier_name": data["info"]["supplier_name"],
                     "is_tool": data["info"]["is_tool"],
-                    "is_internal": data["info"]["is_internal"]
+                    "is_internal": data["info"]["is_internal"],
+                    "quantity_move": data["info"]["quantity_move"] if "quantity_move" in data["info"].keys() else 0
                 } if "info" in data.keys() else {}}
             case 19:
                 out = {"id": data["id"] if "id" in data.keys() else None, "info": {
