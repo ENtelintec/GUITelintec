@@ -22,6 +22,7 @@ def get_ins_db():
 
 
 def create_in_movement_db(id_product, movement_type, quantity, movement_date, sm_id):
+    print("create_in_movement_db", id_product, movement_type, quantity, movement_date, sm_id)
     insert_sql = (
         "INSERT INTO sql_telintec.product_movements_amc (id_product, movement_type, quantity, movement_date, sm_id) "
         "VALUES (%s, %s, %s, %s, %s)"

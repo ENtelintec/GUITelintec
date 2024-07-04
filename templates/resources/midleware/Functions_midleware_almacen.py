@@ -122,7 +122,7 @@ def insert_product_db(data):
         return False, error
     timestamp = datetime.now().strftime(format_timestamps)
     flag, e, result = create_in_movement_db(result, "entrada", data["info"]["stock"],
-                                            timestamp, "")
+                                            timestamp, None)
     return True, result
 
 
@@ -136,8 +136,8 @@ def update_product_amc(data):
     timestamp = datetime.now().strftime(format_timestamps)
     if data["info"]["quantity_move"] == 0:
         return True, result
-    flag, e, result = create_in_movement_db(result, "entrada", data["info"]["quantity_move"],
-                                            timestamp, "")
+    flag, e, result = create_in_movement_db(data["id"], "entrada", data["info"]["quantity_move"],
+                                            timestamp, None)
     return True, result
 
 
