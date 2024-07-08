@@ -5,19 +5,15 @@ __date__ = "$ 27/jul./2023  at 16:41 $"
 
 import mysql.connector
 
-from static.extensions import secrets
-
-host_db_default = "HOST_DB"
-user_db_default = "USER_SQL"
-pass_db_default = "PASS_SQL"
+from static.extensions import secrets, HOST_DB_DEFAULT, USER_DB_DEFAULT, PASS_DB_DEFAULT
 
 
 def connectionDB():
     try:
         connection = mysql.connector.connect(
-            host=secrets[host_db_default],
-            user=secrets[user_db_default],
-            password=secrets[pass_db_default],
+            host=secrets[HOST_DB_DEFAULT],
+            user=secrets[USER_DB_DEFAULT],
+            password=secrets[PASS_DB_DEFAULT],
         )
         if connection.is_connected():
             return connection
@@ -38,9 +34,9 @@ def execute_sql(sql: str, values: tuple = None, type_sql=1):
     """
     try:
         mydb = mysql.connector.connect(
-            host=secrets[host_db_default],
-            user=secrets[user_db_default],
-            password=secrets[pass_db_default],
+            host=secrets[HOST_DB_DEFAULT],
+            user=secrets[USER_DB_DEFAULT],
+            password=secrets[PASS_DB_DEFAULT],
         )
         my_cursor = mydb.cursor(buffered=True)
     except Exception as e:
@@ -86,7 +82,7 @@ def execute_sql_multiple(sql: str, values_list: list = None, type_sql=1):
     """
     Execute the sql with the values provides (OR not) AND returns a value
     depending on the type of query.
-    In case of exception returns None
+    In case of exception, returns None
     :param values_list: values for sql query
     :param type_sql: type of query to execute
     :param sql: sql query
@@ -94,9 +90,9 @@ def execute_sql_multiple(sql: str, values_list: list = None, type_sql=1):
     """
     try:
         mydb = mysql.connector.connect(
-            host=secrets[host_db_default],
-            user=secrets[user_db_default],
-            password=secrets[pass_db_default],
+            host=secrets[HOST_DB_DEFAULT],
+            user=secrets[USER_DB_DEFAULT],
+            password=secrets[PASS_DB_DEFAULT],
             database="sql_telintec",
         )
         my_cursor = mydb.cursor(buffered=True)

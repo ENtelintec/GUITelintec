@@ -97,6 +97,8 @@ class GUIAsistente(ttk.Window):
 
     def get_username_data(self, username_data=None, permissions=None):
         self.username_data = get_username_data(self.username) if username_data is None else username_data
+        print("user data", self.username_data, self.username)
+        print("perm", permissions)
         self.username_data["permissions"] = self.permissions if permissions is None else permissions
 
     def update_side_menu(self, windows_names):

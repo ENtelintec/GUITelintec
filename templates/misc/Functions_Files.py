@@ -1239,19 +1239,27 @@ def get_info_f_file_name(df: pd.DataFrame, name: str, clocks, window_time_in, wi
         time_str = pd.Timestamp(year=1, month=1, day=1, hour=i[0].hour, minute=i[0].minute, second=0)
         late_dic[i[0]] = (time_str - limit_hour, i[1])
     # filter extra hours
+    extra_name_in = df_name[
+        (df_name["Fecha/hora_in"].dt.time <= limit_hour.time()) & (df_name["Fecha/hora_in"] <= date_max)]
+    count_extra = 0
+    count_extra += len(extra_name_in)
+    extra_dic = {}
+    for i in extra_name_in[["Fecha/hora_in", "Dispositivo de fichaje de entrada"]].values:
+        time_str = pd.Timestamp(year=1, month=1, day=1, hour=i[0].hour, minute=i[0].minute, second=0)
+        extra_dic[i[0]] = (limit_hour - time_str, f"Entrada-->{i[1]}")
     # set exit hour
     aux_hour = int(hour_out) + int(window_time_out.get() / 60)
     aux_min = int(min_out) + int(window_time_out.get() % 60)
     limit_hour = pd.Timestamp(year=1, month=1, day=1, hour=aux_hour, minute=aux_min, second=0)
     # count the number of rows where the person is late
-    extra_name = df_name[
+    extra_name_out = df_name[
         (df_name["Fecha/hora_out"].dt.time > limit_hour.time()) & (df_name["Fecha/hora_out"] <= date_max)]
-    count_extra = len(extra_name)
+    count_extra += len(extra_name_out)
     # calculate the time difference between the entrance hour and the late hour
-    extra_dic = {}
-    for i in extra_name[["Fecha/hora_out", "Dispositivo de fichaje de salida"]].values:
+    extra_dic = {} if extra_dic is None else extra_dic
+    for i in extra_name_out[["Fecha/hora_out", "Dispositivo de fichaje de salida"]].values:
         time_str = pd.Timestamp(year=1, month=1, day=1, hour=i[0].hour, minute=i[0].minute, second=0)
-        extra_dic[i[0]] = (time_str - limit_hour, i[1])
+        extra_dic[i[0]] = (time_str - limit_hour, f"Salida-->{i[1]}")    
     return days_worked, days_not_worked, count_late, count_extra, late_dic, extra_dic
 
 
