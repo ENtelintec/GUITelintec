@@ -9,7 +9,7 @@ from ttkbootstrap.dialogs import Messagebox
 from ttkbootstrap.scrolled import ScrolledFrame
 
 from static.extensions import format_timestamps, format_date
-from templates.Funtions_Utils import create_visualizer_treeview, create_widget_input_DB, create_btns_DB, \
+from templates.Functions_GUI_Utils import create_visualizer_treeview, create_widget_input_DB, create_btns_DB, \
     set_entry_value, set_dateEntry_new_value
 from templates.controllers.order.orders_controller import update_order_db, delete_order_db, insert_vorder_db, \
     update_vorder_db, delete_vorder_db, insert_order

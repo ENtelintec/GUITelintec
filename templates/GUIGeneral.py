@@ -8,10 +8,10 @@ from ttkbootstrap.scrolled import ScrolledFrame
 import templates.modules.Sesion.Frame_LoginFrames as Login
 from static.FramesClasses import available_frames
 from static.extensions import filepath_settings, ventanasApp_path
-from templates.Functions_AuxFiles import read_setting_file
+from templates.misc.Functions_AuxFiles import read_setting_file
 from templates.Functions_AuxFilesGUI import carpeta_principal, get_image_side_menu
-from templates.Functions_Files import read_file_not
-from templates.Funtions_Utils import create_button_side_menu, compare_permissions_windows
+from templates.misc.Functions_Files import read_file_not
+from templates.Functions_GUI_Utils import create_button_side_menu, compare_permissions_windows
 from templates.controllers.chatbot.chatbot_controller import get_chats_w_limit
 from templates.controllers.employees.us_controller import get_username_data
 from templates.modules.Assistant.Frame_vAssistantGUI import AssistantGUI
@@ -97,6 +97,8 @@ class GUIAsistente(ttk.Window):
 
     def get_username_data(self, username_data=None, permissions=None):
         self.username_data = get_username_data(self.username) if username_data is None else username_data
+        print("user data", self.username_data, self.username)
+        print("perm", permissions)
         self.username_data["permissions"] = self.permissions if permissions is None else permissions
 
     def update_side_menu(self, windows_names):

@@ -8,7 +8,7 @@ import ttkbootstrap as ttk
 from ttkbootstrap.dialogs import Messagebox
 
 from static.extensions import format_date
-from templates.Funtions_Utils import set_dateEntry_new_value, create_widget_input_DB, create_visualizer_treeview, \
+from templates.Functions_GUI_Utils import set_dateEntry_new_value, create_widget_input_DB, create_visualizer_treeview, \
     create_btns_DB, set_entry_value
 from templates.controllers.tickets.tickets_controller import insert_ticket_db, update_ticket_db, delete_ticket_db
 

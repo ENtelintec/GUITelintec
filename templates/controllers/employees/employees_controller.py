@@ -38,7 +38,7 @@ def get_employees(limit=(0, 100)) -> list[list]:
 
 def new_employee(name, lastname, curp, phone, modality, department, contract, entry_date,
                  rfc, nss, puesto, estatus, departure, birthday, legajo, email, emergency):
-    sql = ("INSERT INTO employees (name, l_name, curp, phone_number, email, department_id,"
+    sql = ("INSERT INTO sql_telintec.employees (name, l_name, curp, phone_number, email, department_id,"
            " contrato, date_admission, rfc, nss, emergency_contact, modality, puesto, status, "
            " departure, birthday, legajo) "
            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)")
@@ -51,7 +51,7 @@ def new_employee(name, lastname, curp, phone, modality, department, contract, en
 
 def update_employee(employee_id, name, lastname, curp, phone, modality, department, contract, entry_date,
                     rfc, nss, puesto, estatus, departure, birthday, legajo, email, emergency):
-    sql = ("UPDATE employees SET name = %s, l_name = %s, curp = %s, phone_number = %s, email = %s, department_id = %s,"
+    sql = ("UPDATE sql_telintec.employees SET name = %s, l_name = %s, curp = %s, phone_number = %s, email = %s, department_id = %s,"
            "contrato = %s, date_admission = %s, rfc = %s, nss = %s, emergency_contact = %s, modality = %s , "
            "puesto = %s, status = %s, departure = %s, birthday = %s, legajo = %s "
            "WHERE employee_id = %s")
@@ -67,7 +67,7 @@ def delete_employee(employee_id: int):
         employee_id = int(employee_id)
     except ValueError:
         return False, None, None
-    sql = "DELETE FROM employees WHERE employee_id = %s"
+    sql = "DELETE FROM sql_telintec.employees WHERE employee_id = %s"
     values = (employee_id,)
     flag, e, out = execute_sql(sql, values, 3)
     return flag, e, out
@@ -79,7 +79,9 @@ def get_employee_id_name(name: str) -> tuple[None, str] | tuple[int, str]:
         :param name: name of the employee
         :return: id of the employee
         """
-    sql = ("SELECT employee_id, name, l_name FROM employees WHERE "
+    sql = ("SELECT employee_id, name, l_name "
+           "FROM sql_telintec.employees "
+           "WHERE "
            "MATCH(l_name) AGAINST (%s IN NATURAL LANGUAGE MODE ) AND "
            "MATCH(name) AGAINST (%s IN NATURAL LANGUAGE MODE )")
     # lowercase names
@@ -95,7 +97,7 @@ def get_employee_id_name(name: str) -> tuple[None, str] | tuple[int, str]:
 def get_employees_w_status(status: str, quantity: int, date: str):
     columns = ("employee_id", "name", "l_name", "date_admission", "status")
     sql = ("SELECT employee_id, name, l_name, date_admission, status "
-           "FROM employees "
+           "FROM sql_telintec.employees "
            "WHERE status LIKE %s ")
     if date is not None:
         sql = sql + " AND date_admission >= %s "
@@ -108,7 +110,7 @@ def get_employees_w_status(status: str, quantity: int, date: str):
 def get_employee_info(id_e: int):
     columns = ("employee_id", "name", "l_name", "date_admission", "status", "department", "phone", "email", "contrato")
     sql = ("SELECT employee_id, name, l_name, date_admission, status, department_id, phone_number, email, contrato "
-           "FROM employees "
+           "FROM sql_telintec.employees "
            "WHERE employee_id = %s")
     val = (id_e,)
     flag, error, result = execute_sql(sql, val, 1)
@@ -122,7 +124,7 @@ def get_id_employee(name: str) -> None | int:
     :return: id of the employee
     """
     sql = ("SELECT employee_id "
-           "FROM employees "
+           "FROM sql_telintec.employees "
            "WHERE "
            "MATCH(l_name) AGAINST (%s IN NATURAL LANGUAGE MODE ) AND "
            "MATCH(name) AGAINST (%s IN NATURAL LANGUAGE MODE )")
@@ -144,7 +146,7 @@ def get_name_employee(id_employee: int) -> None | str:
     :return: name of the employee
     """
     sql = ("SELECT name, l_name "
-           "FROM employees "
+           "FROM sql_telintec.employees "
            "WHERE employee_id = %s")
     values = (id_employee,)
     flag, e, out = execute_sql(sql, values, 1)
@@ -161,11 +163,11 @@ def get_id_name_employee(department: int, is_all=False):
     :return:
     """
     sql = ("SELECT employee_id, name, l_name, puesto, date_admission, departure "
-           "FROM employees "
+           "FROM sql_telintec.employees "
            "WHERE department_id = %s")
     if is_all:
         sql = ("SELECT employee_id, name, l_name, puesto, date_admission, departure "
-               "FROM employees")
+               "FROM sql_telintec.employees")
         flag, e, out = execute_sql(sql, None, 5)
     else:
         values = (department,)
@@ -175,7 +177,7 @@ def get_id_name_employee(department: int, is_all=False):
 
 def get_employees_op_names():
     sql = ("SELECT employee_id, name, l_name, contrato "
-           "FROM employees "
+           "FROM sql_telintec.employees "
            "WHERE  department_id = 2")
     flag, e, out = execute_sql(sql, None, 5)
     if e is not None:
@@ -191,7 +193,7 @@ def get_ids_employees(names: list):
     :return: id of the employee
     """
     sql = ("SELECT employee_id "
-           "FROM employees "
+           "FROM sql_telintec.employees "
            "WHERE "
            "MATCH(l_name) AGAINST (%s IN NATURAL LANGUAGE MODE ) AND "
            "MATCH(name) AGAINST (%s IN NATURAL LANGUAGE MODE )")
@@ -208,7 +210,7 @@ def get_ids_employees(names: list):
 
 def get_sm_employees():
     sql = ("SELECT employee_id, name, l_name "
-           "FROM employees "
+           "FROM sql_telintec.employees "
            "WHERE status = 'activo' ")
     flag, error, result = execute_sql(sql, None, 5)
     return flag, error, result
@@ -216,7 +218,8 @@ def get_sm_employees():
 
 def get_all_employees_active():
     sql = ("SELECT employee_id, name, l_name, date_admission "
-           "FROM employees WHERE status = 'activo'")
+           "FROM sql_telintec.employees "
+           "WHERE status = 'activo'")
     flag, error, result = execute_sql(sql, type_sql=5)
     return flag, error, result
 
@@ -233,7 +236,7 @@ def get_all_data_employees(status: str):
            "employees.name, "
            "employees.l_name, "
            "employees.phone_number, "
-           "departments.name, "
+           "sql_telintec.departments.name, "
            "employees.modality, "
            "employees.email, "
            "employees.contrato, "
@@ -245,14 +248,14 @@ def get_all_data_employees(status: str):
            "employees.puesto, "
            "employees.status, "
            "employees.departure, "
-           "examenes_med.examen_id, "
+           "sql_telintec.examenes_med.examen_id, "
            "employees.birthday, "
            "employees.legajo "
            "FROM sql_telintec.employees "
-           "LEFT JOIN departments "
-           "ON sql_telintec.employees.department_id = departments.department_id "
-           "LEFT JOIN examenes_med "
-           "ON (sql_telintec.employees.employee_id = examenes_med.empleado_id) "
+           "LEFT JOIN sql_telintec.departments "
+           "ON sql_telintec.employees.department_id = sql_telintec.departments.department_id "
+           "LEFT JOIN sql_telintec.examenes_med "
+           "ON (sql_telintec.employees.employee_id = sql_telintec.examenes_med.empleado_id) "
            "WHERE employees.status LIKE %s ")
     val = (status,)
     flag, error, result = execute_sql(sql, val, type_sql=2)
@@ -265,7 +268,7 @@ def get_all_data_employee(id_employee: int):
            "employees.name, "
            "employees.l_name, "
            "employees.phone_number, "
-           "departments.name, "
+           "sql_telintec.departments.name, "
            "employees.modality, "
            "employees.email, "
            "employees.contrato, "
@@ -277,14 +280,14 @@ def get_all_data_employee(id_employee: int):
            "employees.puesto, "
            "employees.status, "
            "employees.departure, "
-           "examenes_med.examen_id, "
+           "sql_telintec.examenes_med.examen_id, "
            "employees.birthday, "
            "employees.legajo "
            "FROM sql_telintec.employees "
-           "LEFT JOIN departments "
-           "ON sql_telintec.employees.department_id = departments.department_id "
-           "LEFT JOIN examenes_med "
-           "ON (sql_telintec.employees.employee_id = examenes_med.empleado_id)"
+           "LEFT JOIN sql_telintec.departments "
+           "ON sql_telintec.employees.department_id = sql_telintec.departments.department_id "
+           "LEFT JOIN sql_telintec.examenes_med "
+           "ON (sql_telintec.employees.employee_id = sql_telintec.examenes_med.empleado_id)"
            "WHERE employee_id = %s")
     val = (id_employee,)
     flag, error, result = execute_sql(sql, val, type_sql=1)

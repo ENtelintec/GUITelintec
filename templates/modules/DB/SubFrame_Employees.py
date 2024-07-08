@@ -11,7 +11,7 @@ from ttkbootstrap.dialogs import Messagebox
 from ttkbootstrap.scrolled import ScrolledFrame
 from templates.controllers.employees.employees_controller import new_employee, update_employee, delete_employee
 from static.extensions import format_date, dict_deps
-from templates.Funtions_Utils import create_widget_input_DB, create_btns_DB, create_visualizer_treeview, \
+from templates.Functions_GUI_Utils import create_widget_input_DB, create_btns_DB, create_visualizer_treeview, \
     set_entry_value, set_dateEntry_new_value, clean_entries
 
 

@@ -7,7 +7,7 @@ from templates.database.connection import execute_sql
 
 def get_orders(limit=(0, 100)):
     sql = ("SELECT order_id, product_id, quantity, date_order, customer_id, employee_id "
-           "FROM orders "
+           "FROM sql_telintec.orders "
            "LIMIT %s, %s")
     val = (limit[0], limit[1])
     flag, e, my_result = execute_sql(sql, val, 2)
@@ -17,7 +17,7 @@ def get_orders(limit=(0, 100)):
 
 def get_v_orders(limit=(0, 100)):
     sql = ("SELECT vo_id, products, date_order, customer_id, employee_id, chat_id "
-           "FROM virtual_orders "
+           "FROM sql_telintec.virtual_orders "
            "LIMIT %s, %s")
     val = (limit[0], limit[1])
     flag, e, my_result = execute_sql(sql, val, 2)
@@ -107,7 +107,7 @@ def get_orders_amc(id_o: int, id_c: int, status: str, name_c: str, date: str):
     if id_c is None:
         # get id customer FROM name_c
         sql = ("SELECT id_customer "
-               "FROM customers_amc "
+               "FROM sql_telintec.customers_amc "
                "WHERE match(name) against (%s IN NATURAL LANGUAGE MODE ) ")
         val = (name_c,)
         flag, error, result = execute_sql(sql, val, 1)
@@ -116,7 +116,7 @@ def get_orders_amc(id_o: int, id_c: int, status: str, name_c: str, date: str):
         else:
             id_c = "%"
     sql = ("SELECT id_order, id_customer, status, sm_code, order_date, id_customer "
-           "FROM orders_amc "
+           "FROM sql_telintec.orders_amc "
            "WHERE (id_order = %s OR "
            "id_customer = %s) AND status LIKE %s ")
     if date is not None:
@@ -128,7 +128,8 @@ def get_orders_amc(id_o: int, id_c: int, status: str, name_c: str, date: str):
 
 
 def get_all_amc_orders():
-    sql = ("SELECT id_order, id_customer, order_date, sm_code, contract, order_number, operation_plant, ubication, requester, personal, estimated_date, status "
-           "FROM orders_amc ")
+    sql = ("SELECT id_order, id_customer, order_date, sm_code, contract, "
+           "order_number, operation_plant, ubication, requester, personal, estimated_date, status "
+           "FROM sql_telintec.orders_amc ")
     flag, error, result = execute_sql(sql, None, 2)
     return flag, error, result

@@ -7,6 +7,7 @@ from templates.resources.resources_SM import ns as ns_sm
 from templates.resources.resources_Bitacora import ns as ns_bitacora
 from templates.resources.resources_Almacen import ns as ns_almacen
 from templates.resources.resources_Misc import ns as ns_misc
+from templates.resources.resources_Admin_presales import ns as ns_admin_presales
 app = Flask(__name__)
 cors = CORS(app, resources={r"/*": {"origins": "*"}})
 app.config['CORS_HEADERS'] = 'Content-Type'
@@ -14,7 +15,7 @@ app.config['CORS_HEADERS'] = 'Content-Type'
 
 @app.route('/GUI/hello')
 def hello_world():  # put application's code here
-    return 'Hello World!'
+    return 'Hello World! GUI'
 
 
 api.init_app(app)
@@ -24,6 +25,7 @@ api.add_namespace(ns_sm)
 api.add_namespace(ns_bitacora)
 api.add_namespace(ns_almacen)
 api.add_namespace(ns_misc)
+api.add_namespace(ns_admin_presales)
 
 
 if __name__ == '__main__':

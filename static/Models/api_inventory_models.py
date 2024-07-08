@@ -3,6 +3,8 @@ __author__ = 'Edisson Naula'
 __date__ = '$ 03/may./2024  at 17:04 $'
 
 from flask_restx import fields
+from werkzeug.datastructures import FileStorage
+
 from static.extensions import api
 
 
@@ -15,7 +17,8 @@ product_model = api.model('ProductAMC', {
     "category_name": fields.String(required=True, description="The product category name or id for edition"),
     "supplier_name": fields.String(required=True, description="The product supplier name or id for edition"),
     "is_tool": fields.Integer(required=True, description="The product is tool"),
-    "is_internal": fields.Integer(required=True, description="The product is internal")
+    "is_internal": fields.Integer(required=True, description="The product is internal"),
+    "quantity_move": fields.Integer(required=True, description="The product quantity movement in")
 })
 
 products_output_model = api.model('ProductsOutAMC', {
@@ -59,3 +62,6 @@ suppliers_output_model = api.model('SuppliersOutAMC', {
     "data": fields.List(fields.Nested(supplier_model)),
     "msg": fields.String(required=True, description="The message")
 })
+
+expected_files_almacen = api.parser()
+expected_files_almacen.add_argument('file', type=FileStorage, location='files', required=True)

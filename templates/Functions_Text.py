@@ -94,7 +94,9 @@ def parse_data(data: dict, mode: int):
                     items.append({
                         'id': item['id'],
                         "quantity": item['quantity'],
-                        "comment": item['comment']
+                        "comment": item['comment'],
+                        "stock": item['stock'],
+                        "name": item
                     })
                 out = {
                     "info": info,
@@ -139,42 +141,6 @@ def parse_data(data: dict, mode: int):
                     'category': data["category"],
                     'sku': data["sku"]
                 }
-            case 14:
-                out = {"id": data["id"] if "id" in data.keys() else None, "info": {
-                    "name": data["info"]["name"],
-                    "lastname": data["info"]["lastname"],
-                    "phone": data["info"]["phone"],
-                    "dep": data["info"]["dep"],
-                    "modality": data["info"]["modality"],
-                    "email": data["info"]["email"],
-                    "contract": data["info"]["contract"],
-                    "admission": data["info"]["admission"],
-                    "rfc": data["info"]["rfc"],
-                    "curp": data["info"]["curp"],
-                    "nss": data["info"]["nss"],
-                    "emergency": data["info"]["emergency"],
-                    "position": data["info"]["position"],
-                    "status": data["info"]["status"],
-                    "departure": data["info"]["departure"],
-                    "birthday": data["info"]["birthday"],
-                    "legajo": data["info"]["legajo"]
-                } if "info" in data.keys() else {}}
-
-            case 15:
-                out = {"id": data["id"] if "id" in data.keys() else None, "info": {
-                    "name": data["info"]["name"],
-                    "blood": data["info"]["blood"],
-                    "status": data["info"]["status"],
-                    "aptitudes": data["info"]["aptitudes"],
-                    "dates": data["info"]["dates"],
-                    "apt_actual": data["info"]["apt_actual"],
-                    "emp_id": data["info"]["emp_id"]
-                } if "info" in data.keys() else {}}
-            case 16:
-                out = {
-                    "emp_id": data["emp_id"],
-                    "seniority": data["seniority"] if validate_seniority_dict(data) and "seniority" in data.keys() else None
-                }
             case 17:
                 "id"
                 "id_product"
@@ -201,7 +167,8 @@ def parse_data(data: dict, mode: int):
                     "category_name": data["info"]["category_name"],
                     "supplier_name": data["info"]["supplier_name"],
                     "is_tool": data["info"]["is_tool"],
-                    "is_internal": data["info"]["is_internal"]
+                    "is_internal": data["info"]["is_internal"],
+                    "quantity_move": data["info"]["quantity_move"] if "quantity_move" in data["info"].keys() else 0
                 } if "info" in data.keys() else {}}
             case 19:
                 out = {"id": data["id"] if "id" in data.keys() else None, "info": {

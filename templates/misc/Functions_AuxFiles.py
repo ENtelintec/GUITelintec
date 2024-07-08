@@ -7,7 +7,7 @@ import os
 from datetime import datetime
 
 from static.extensions import cache_file_resume_fichaje_path, status_dic, quizz_out_path, format_date, format_timestamps
-from templates.Functions_Files import get_fichajes_resume_cache, update_fichajes_resume_cache
+from templates.misc.Functions_Files import get_fichajes_resume_cache, update_fichajes_resume_cache
 from templates.controllers.employees.employees_controller import get_name_employee
 from templates.controllers.fichajes.fichajes_controller import get_fichaje_DB, update_fichaje_DB, insert_new_fichaje_DB
 from templates.controllers.material_request.sm_controller import get_sm_entries

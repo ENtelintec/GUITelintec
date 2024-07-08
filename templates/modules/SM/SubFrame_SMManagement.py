@@ -11,9 +11,9 @@ from ttkbootstrap.scrolled import ScrolledText
 from ttkbootstrap.tableview import Tableview
 
 from static.extensions import status_dic
-from templates.Functions_AuxFiles import get_all_sm_entries, get_all_sm_products
-from templates.Functions_DB_midleware import dispatch_products
-from templates.Funtions_Utils import create_label, create_button, create_entry, create_notification_permission
+from templates.misc.Functions_AuxFiles import get_all_sm_entries, get_all_sm_products
+from templates.resources.midleware.Functions_DB_midleware import dispatch_products
+from templates.Functions_GUI_Utils import create_label, create_button, create_entry, create_notification_permission
 from templates.controllers.employees.employees_controller import get_sm_employees
 from templates.controllers.material_request.sm_controller import update_history_sm, cancel_sm_db
 

@@ -153,7 +153,6 @@ def dispatch_products(
 def get_info_employees_with_status(status: str):
     flag, error, result = get_all_data_employees(status)
     data_out = []
-    print(result)
     for item in result:
         (id_emp, name, lastname, phone, department, modality, email, contract, admission, rfc, curp, nss,
          emergency_contact, position, status, departure, examen, birthday, legajo) = item

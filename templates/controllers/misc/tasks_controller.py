@@ -20,7 +20,7 @@ def create_task(task_title, emp_destiny, emp_origin, task_date, metadata):
         "status": 0,
         "changes": {timestamp: "creation"}
     }
-    sql = ("INSERT INTO tasks_gui (body, timestamp) "
+    sql = ("INSERT INTO sql_telintec.tasks_gui (body, timestamp) "
            "VALUES (%s, %s)")
     val = (json.dumps(body), timestamp)
     flag, error, id_task = execute_sql(sql, val, 4)
@@ -33,7 +33,7 @@ def update_task(id_task, body: dict, status=None, metadata=None):
     body["status"] = status if status is not None else body["status"]
     body["metadata"] = metadata if metadata is not None else body["metadata"]
     body["changes"][timestamp] = "update"
-    sql = ("UPDATE tasks_gui "
+    sql = ("UPDATE sql_telintec.tasks_gui "
            "SET body = %s, "
            "timestamp = %s "
            "WHERE id = %s")
@@ -43,7 +43,7 @@ def update_task(id_task, body: dict, status=None, metadata=None):
 
 
 def delete_task(id_task):
-    sql = ("DELETE FROM tasks_gui "
+    sql = ("DELETE FROM sql_telintec.tasks_gui "
            "WHERE id = %s")
     val = (id_task,)
     flag, error, out = execute_sql(sql, val, 3)
@@ -54,7 +54,7 @@ def get_all_tasks_by_status(status, id_task=None, id_destiny=None, id_origin=Non
     if status is None or status == -1 or id_task is not None:
         status = '%'
     sql = ("SELECT id, body "
-           "FROM tasks_gui "
+           "FROM sql_telintec.tasks_gui "
            "WHERE body->'$.status' LIKE %s ")
     vals = (status,)
     if id_task is not None:

@@ -6,7 +6,9 @@ __date__ = '$ 28/may./2024  at 17:04 $'
 
 from datetime import datetime
 
-from templates.Functions_AuxFiles import get_all_sm_entries, \
+from templates.controllers.contracts.contracts_controller import get_contract
+from templates.controllers.contracts.quotations_controller import get_quotation
+from templates.misc.Functions_AuxFiles import get_all_sm_entries, \
     get_all_sm_products, get_events_op_date, get_data_employees
 from templates.Functions_AuxPlots import get_data_movements_type, get_data_sm_per_range
 from templates.controllers.customer.customers_controller import get_sm_clients, get_all_customers_db
@@ -37,6 +39,7 @@ def load_data(data_dic, is_super=False, emp_id=None, item=None, permissions=None
             for permission in permissions.values():
                 txt = permission.split(".")
                 dashboard_key.append(txt[-1].lower())
+            print(dashboard_key)
             data_dic["data_dashboard"] = {
                 "dashboard_key": dashboard_key
             }
@@ -46,15 +49,23 @@ def load_data(data_dic, is_super=False, emp_id=None, item=None, permissions=None
                     continue
                 match dashboard:
                     case "sm":
+                        print("sm dashboard data")
                         data_chart = get_data_sm_per_range("year", "normal")
                         data_dic["data_dashboard"][dashboard] = {
                             "data_chart": data_chart
                         }
                     case "almacen":
+                        print("almacen dashboard data")
                         data_chart = get_data_movements_type("Entrada", 10)
                         data_dic["data_dashboard"][dashboard] = {
                             "data_chart": data_chart
                         }
+                    case "administracion":
+                        if "sm" not in data_dic["data_dashboard"].keys():
+                            data_chart = get_data_sm_per_range("year", "normal")
+                            data_dic["data_dashboard"]["sm"] = {
+                                "data_chart": data_chart
+                            }
                 for window in avaliable_dashboards[dashboard]:
                     if window in created_windows:
                         continue
@@ -153,6 +164,20 @@ def load_data(data_dic, is_super=False, emp_id=None, item=None, permissions=None
             data_dic["tasks"] = {
                 "data": tasks
             }
+        case "Cotizaciones":
+            if "data_products_gen" not in data_dic:
+                flag, error, products = get_all_products_db()
+                data_dic["data_products_gen"] = products
+            flag, error, data_quotations = get_quotation(None)
+            data_dic["quotations"] = data_quotations
+        case "Documentos Contrato":
+            if "quotations" not in data_dic:
+                flag, error, data_quotations = get_quotation(None)
+                data_dic["quotations"] = data_quotations
+        case "Control Saldos":
+            if "contracts" not in data_dic:
+                flag, error, contracts = get_contract(None)
+                data_dic["contracts"] = contracts
         case _:
             pass
     return data_dic

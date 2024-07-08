@@ -61,6 +61,7 @@ filepath_recommendations = "files/recommendations.json"
 quizz_out_path = "files/quizz_out/"
 log_file_bitacora_path = "files/logs/bitacora"
 log_file_sm_path = "files/logs/sm"
+path_contract_files = "files/contracts"
 patterns_files_fichaje = ["Fichaje", "Ternium"]
 department_tools_openAI = {
     "director": "files/tools_AV_default.json",
@@ -137,5 +138,9 @@ delta_bitacora_edit = 14
 status_dic = {0: "Pendiente", 1: "En Proceso", 2: "Completado", 3: "Finalizado", -1: "Cancelado"}
 format_timestamps = "%Y-%m-%d %H:%M:%S"
 format_date = "%Y-%m-%d"
+format_date_fichaje_file = "%d-%m-%Y"
 dict_deps = {"Dirección": 1, "Operaciones": 2, "Administración": 3, "RRHH": 4, "REPSE": 5, "IA": 6, "Otros": 7}
 format_timestamps_filename = '%Y-%m-%d'
+HOST_DB_DEFAULT = "HOST_DB_AWS"
+USER_DB_DEFAULT = "USER_SQL_AWS"
+PASS_DB_DEFAULT = "PASS_SQL_AWS"

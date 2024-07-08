@@ -9,7 +9,7 @@ import ttkbootstrap as ttk
 
 from static.extensions import format_date
 from templates.controllers.employees.employees_controller import get_all_employees_active
-from templates.Funtions_Utils import create_Combobox, create_label
+from templates.Functions_GUI_Utils import create_Combobox, create_label
 from ttkbootstrap.dialogs import Messagebox
 from ttkbootstrap.scrolled import ScrolledFrame
 from ttkbootstrap.tableview import Tableview

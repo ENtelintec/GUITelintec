@@ -2,6 +2,12 @@
 __author__ = 'Edisson Naula'
 __date__ = '$ 03/may./2024  at 15:31 $'
 
+import os
+from datetime import datetime
+
+import pandas as pd
+
+from static.extensions import format_timestamps
 from templates.controllers.product.p_and_s_controller import get_movements_type_db, create_out_movement_db, \
     create_in_movement_db, get_stock_db, update_movement_db, update_stock_db, get_all_products_db_tool_internal, \
     create_product_db, update_product_db, get_all_categories_db, get_all_suppliers, create_product_db_admin
@@ -111,8 +117,12 @@ def insert_product_db(data):
     else:
         flag, error, result = create_product_db_admin(data["info"]["sku"], data["info"]["name"], data["info"]["udm"],
                                                       data["info"]["stock"], data["info"]["category_name"])
+    
     if not flag:
         return False, error
+    timestamp = datetime.now().strftime(format_timestamps)
+    flag, e, result = create_in_movement_db(result, "entrada", data["info"]["stock"],
+                                            timestamp, None)
     return True, result
 
 
@@ -123,6 +133,11 @@ def update_product_amc(data):
                                             data["info"]["is_internal"])
     if not flag:
         return False, error
+    timestamp = datetime.now().strftime(format_timestamps)
+    if data["info"]["quantity_move"] == 0:
+        return True, result
+    flag, e, result = create_in_movement_db(data["id"], "entrada", data["info"]["quantity_move"],
+                                            timestamp, None)
     return True, result
 
 
@@ -158,3 +173,20 @@ def get_suppliers_db():
             "type": type_s
         })
     return 200, out
+
+
+def upload_product_db_from_file(file: str):
+    if not file.lower().endswith(".csv") or os.path.basename(file) != "inventario.csv":
+        return 400,  ["El archivo debe ser un .csv y llamarse inventario.csv"]
+
+    df = pd.read_csv(file, header=None)
+
+    if len(df.columns) != 9:
+        return 400, ["El archivo debe contener 9 columnas"]
+    data_result = []
+    for indice, fila in enumerate(df.values):
+        if indice == 0:
+            continue
+        flag, error, result = create_product_db(fila[0], fila[1], fila[2], fila[3], fila[7], fila[8], 0, 0)
+        data_result.append(result) if flag else data_result.append(error)        
+    return 200, data_result

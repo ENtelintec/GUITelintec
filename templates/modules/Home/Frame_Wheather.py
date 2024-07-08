@@ -6,7 +6,7 @@ import ttkbootstrap as ttk
 import python_weather
 import asyncio
 
-from templates.Funtions_Utils import create_label
+from templates.Functions_GUI_Utils import create_label
 
 days_of_week = {
     0: "Monday",

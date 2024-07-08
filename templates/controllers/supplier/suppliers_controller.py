@@ -44,7 +44,7 @@ def delete_supplier_DB(supplier_id: int) -> tuple[bool, Exception | None, int | 
 def get_supplier_amc(name: str, id_s: int):
     columns = ("id_supplier", "name", "phone", "type", "address")
     sql = ("SELECT id_supplier, name, phone, type, address "
-           "FROM suppliers_amc "
+           "FROM sql_telintec.suppliers_amc "
            "WHERE id_supplier = %s OR "
            "match(name) against (%s IN NATURAL LANGUAGE MODE ) "
            "LIMIT 10")
@@ -61,7 +61,7 @@ def create_supplier_amc(name_provider, seller_provider, email_provider, phone_pr
     address_provider = str(address_provider)
     web_provider = str(web_provider)
     type_provider = str(type_provider)
-    insert_sql = ("INSERT INTO suppliers_amc "
+    insert_sql = ("INSERT INTO sql_telintec.suppliers_amc "
                   "(name, seller_name, seller_email, phone, address, web_url, type) "
                   "VALUES (%s, %s, %s, %s, %s, %s, %s)")
     vals = (name_provider, seller_provider, email_provider, phone_provider, address_provider, web_provider, type_provider)
@@ -70,7 +70,7 @@ def create_supplier_amc(name_provider, seller_provider, email_provider, phone_pr
 
 
 def update_supplier_amc(id_provider, name_provider, seller_provider, email_provider, phone_provider, address_provider, web_provider, type_provider):
-    update_sql = ("UPDATE suppliers_amc "
+    update_sql = ("UPDATE sql_telintec.suppliers_amc "
                   "SET name = %s, seller_name = %s, seller_email = %s, phone = %s, address = %s, web_url = %s, type = %s "
                   "WHERE id_supplier = %s")
     vals = (name_provider, seller_provider, email_provider, phone_provider, address_provider, web_provider, type_provider, id_provider)
@@ -79,7 +79,7 @@ def update_supplier_amc(id_provider, name_provider, seller_provider, email_provi
 
 
 def delete_supplier_amc(id_supplier):
-    delete_sql = ("DELETE FROM suppliers_amc "
+    delete_sql = ("DELETE FROM sql_telintec.suppliers_amc "
                   "WHERE id_supplier = %s")
     vals = (id_supplier,)
     flag, error, result = execute_sql(delete_sql, vals, 4)

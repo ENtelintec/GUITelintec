@@ -13,13 +13,13 @@ def get_all_customers_db():
            "phone, "
            "rfc, "
            "address "
-           "FROM customers_amc")
+           "FROM sql_telintec.customers_amc")
     flag, error, result = execute_sql(sql, None, 5)
     return flag, error, result
 
 
 def create_customer_db(name, email, phone, rfc, address):
-    insert_sql = ("INSERT INTO customers_amc (name, email, phone, rfc, address) "
+    insert_sql = ("INSERT INTO sql_telintec.customers_amc (name, email, phone, rfc, address) "
                   "VALUES (%s, %s, %s, %s, %s)")
     vals = (name, email, phone, rfc, address)
     flag, error, result = execute_sql(insert_sql, vals, 4)
@@ -27,7 +27,7 @@ def create_customer_db(name, email, phone, rfc, address):
 
 
 def update_customer_db(id_customer, name, email, phone, rfc, address):
-    update_sql = ("UPDATE customers_amc "
+    update_sql = ("UPDATE sql_telintec.customers_amc "
                   "SET name = %s, email = %s, phone = %s, rfc = %s, address = %s "
                   "WHERE id_customer = %s")
     vals = (name, email, phone, rfc, address, id_customer)
@@ -36,7 +36,7 @@ def update_customer_db(id_customer, name, email, phone, rfc, address):
 
 
 def delete_customer_db(id_customer):
-    delete_sql = ("DELETE FROM customers_amc "
+    delete_sql = ("DELETE FROM sql_telintec.customers_amc "
                   "WHERE id_customer = %s")
     vals = (id_customer,)
     flag, error, result = execute_sql(delete_sql, vals, 4)
@@ -56,7 +56,7 @@ def get_customers(limit=(0, 100)) -> list[list]:
 def insert_customer(name: str, lastname: str, phone: str, city: str,
                     email: str) -> tuple[bool, Exception | None, int | None]:
     sql = ("INSERT "
-           "INTO customers (name, l_name, phone_number, city, email) "
+           "INTO sql_telintec.customers (name, l_name, phone_number, city, email) "
            "VALUES (%s, %s, %s, %s, %s)")
     val = (name, lastname, phone, city, email)
     flag, e, out = execute_sql(sql, val, 3)
@@ -66,7 +66,7 @@ def insert_customer(name: str, lastname: str, phone: str, city: str,
 def update_customer_DB(
         name: str, lastname: str, phone: str, city: str,
         email: str, customer_id: int) -> tuple[bool, Exception | None, int | None]:
-    sql = ("UPDATE customers "
+    sql = ("UPDATE sql_telintec.customers "
            "SET name = %s, "
            "l_name = %s, "
            "phone_number = %s, "
@@ -79,7 +79,7 @@ def update_customer_DB(
 
 
 def delete_customer_DB(customer_id: int) -> tuple[bool, Exception | None, int | None]:
-    sql = ("DELETE FROM customers "
+    sql = ("DELETE FROM sql_telintec.customers "
            "WHERE customer_id = %s")
     val = (customer_id,)
     flag, e, out = execute_sql(sql, val, 3)
@@ -89,7 +89,7 @@ def delete_customer_DB(customer_id: int) -> tuple[bool, Exception | None, int | 
 def get_costumers_amc(name: str, id_c: int):
     columns = ("id_customer", "name", "phone", "email", "address")
     sql = ("SELECT id_customer, name, phone, email, address "
-           "FROM customers_amc "
+           "FROM sql_telintec.customers_amc "
            "WHERE id_customer = %s OR match(name) against (%s IN NATURAL LANGUAGE MODE ) "
            "LIMIT 10")
     val = (id_c, name)
@@ -99,6 +99,6 @@ def get_costumers_amc(name: str, id_c: int):
 
 def get_sm_clients():
     sql = ("SELECT id_customer, name "
-           "FROM customers_amc  ")
+           "FROM sql_telintec.customers_amc  ")
     flag, error, result = execute_sql(sql, None, 5)
     return flag, error, result

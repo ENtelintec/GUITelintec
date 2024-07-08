@@ -9,7 +9,7 @@ import openai
 from openai import OpenAI
 
 from static.extensions import secrets, department_tools_openAI
-from templates.Function_tools_openAI import getProductCategories, getProductsAlmacen, getHighStockProducts, \
+from templates.Functions_tools_openAI import getProductCategories, getProductsAlmacen, getHighStockProducts, \
     getLowStockProducts, getCostumer, getSupplier, getOrder, getProductMovement, getSupplyInventory, getNoStockProducts, \
     getTotalFichajeEmployee, getActiveEmployees, getEmployeeInfo, getToolsForDepartment
 

@@ -10,9 +10,9 @@ from ttkbootstrap.scrolled import ScrolledText
 from ttkbootstrap.tableview import Tableview
 
 from static.extensions import ventanasApp_path, status_dic
-from templates.Functions_AuxFiles import get_all_sm_entries
+from templates.misc.Functions_AuxFiles import get_all_sm_entries
 from templates.Functions_AuxPlots import get_data_sm_per_range
-from templates.Funtions_Utils import create_label, create_Combobox, create_notification_permission
+from templates.Functions_GUI_Utils import create_label, create_Combobox, create_notification_permission
 from templates.controllers.material_request.sm_controller import finalize_status_sm
 from templates.modules.Misc.SubFrame_Plots import FramePlot
 permissions_supper_SM = json.load(open(ventanasApp_path, encoding="utf-8"))["permissions_supper_SM"]

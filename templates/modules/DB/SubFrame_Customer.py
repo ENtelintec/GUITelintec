@@ -5,7 +5,7 @@ __date__ = '$ 01/may./2024  at 20:51 $'
 import ttkbootstrap as ttk
 from ttkbootstrap.dialogs import Messagebox
 
-from templates.Funtions_Utils import create_widget_input_DB, create_btns_DB, create_visualizer_treeview, \
+from templates.Functions_GUI_Utils import create_widget_input_DB, create_btns_DB, create_visualizer_treeview, \
     set_entry_value, clean_entries
 from templates.controllers.customer.customers_controller import insert_customer, update_customer_DB, delete_customer_DB
 

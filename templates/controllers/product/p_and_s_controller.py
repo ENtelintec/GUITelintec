@@ -6,23 +6,24 @@ from templates.database.connection import execute_sql
 
 
 def get_ins_db():
-    sql = ("SELECT product_movements_amc.id_movement, "
-           "product_movements_amc.id_product, "
-           "product_movements_amc.movement_type, "
-           "product_movements_amc.quantity, "
-           "product_movements_amc.movement_date, "
-           "product_movements_amc.sm_id, "
-           "products_amc.name as product_name "
-           "FROM product_movements_amc "
-           "JOIN products_amc ON product_movements_amc.id_product = products_amc.id_product "
-           "WHERE product_movements_amc.movement_type = 'entrada'")
+    sql = ("SELECT "
+           "sql_telintec.product_movements_amc.id_movement, "
+           "sql_telintec.product_movements_amc.id_product, "
+           "sql_telintec.product_movements_amc.movement_type, "
+           "sql_telintec.product_movements_amc.quantity, "
+           "sql_telintec.product_movements_amc.movement_date, "
+           "sql_telintec.product_movements_amc.sm_id, "
+           "sql_telintec.products_amc.name as product_name "
+           "FROM sql_telintec.product_movements_amc "
+           "JOIN sql_telintec.products_amc ON sql_telintec.product_movements_amc.id_product = sql_telintec.products_amc.id_product "
+           "WHERE sql_telintec.product_movements_amc.movement_type = 'entrada'")
     flag, error, my_result = execute_sql(sql, None, 5)
     return flag, error, my_result
 
 
 def create_in_movement_db(id_product, movement_type, quantity, movement_date, sm_id):
     insert_sql = (
-        "INSERT INTO product_movements_amc (id_product, movement_type, quantity, movement_date, sm_id) "
+        "INSERT INTO sql_telintec.product_movements_amc (id_product, movement_type, quantity, movement_date, sm_id) "
         "VALUES (%s, %s, %s, %s, %s)"
     )
     vals = (id_product, movement_type, quantity, movement_date, sm_id)
@@ -31,7 +32,7 @@ def create_in_movement_db(id_product, movement_type, quantity, movement_date, sm
 
 
 def update_movement_db(id_movement, quantity, movement_date, sm_id, type_m=None, id_product=None):
-    update_sql = ("UPDATE product_movements_amc "
+    update_sql = ("UPDATE sql_telintec.product_movements_amc "
                   "SET quantity = %s, movement_date = %s, sm_id = %s , movement_type = %s, id_product = %s "
                   "WHERE id_movement = %s ")
     vals = (quantity, movement_date, sm_id, type_m, id_product, id_movement)
@@ -40,7 +41,7 @@ def update_movement_db(id_movement, quantity, movement_date, sm_id, type_m=None,
 
 
 def delete_movement_db(id_movement):
-    delete_sql = "DELETE FROM product_movements_amc WHERE id_movement = %s"
+    delete_sql = "DELETE FROM sql_telintec.product_movements_amc WHERE id_movement = %s"
     vals = (id_movement,)
     flag, error, result = execute_sql(delete_sql, vals, 4)
     return flag, error, result
@@ -48,16 +49,16 @@ def delete_movement_db(id_movement):
 
 def get_outs_db():
     sql = ("SELECT "
-           "product_movements_amc.id_movement, "
-           "product_movements_amc.id_product, "
-           "product_movements_amc.movement_type, "
-           "product_movements_amc.quantity, "
-           "product_movements_amc.movement_date, "
-           "product_movements_amc.sm_id, "
-           "products_amc.name as product_name "
-           "FROM product_movements_amc "
-           "JOIN products_amc ON product_movements_amc.id_product = products_amc.id_product "
-           "WHERE product_movements_amc.movement_type = 'salida'")
+           "sql_telintec.product_movements_amc.id_movement, "
+           "sql_telintec.product_movements_amc.id_product, "
+           "sql_telintec.product_movements_amc.movement_type, "
+           "sql_telintec.product_movements_amc.quantity, "
+           "sql_telintec.product_movements_amc.movement_date, "
+           "sql_telintec.product_movements_amc.sm_id, "
+           "sql_telintec.products_amc.name as product_name "
+           "FROM sql_telintec.product_movements_amc "
+           "JOIN sql_telintec.products_amc ON sql_telintec.product_movements_amc.id_product = sql_telintec.products_amc.id_product "
+           "WHERE sql_telintec.product_movements_amc.movement_type = 'salida'")
     flag, error, result = execute_sql(sql, None, 5)
     return flag, error, result
 
@@ -70,7 +71,7 @@ def get_movements_type_db(type_m: str):
            "quantity, "
            "movement_date, "
            "sm_id "
-           "FROM product_movements_amc "
+           "FROM sql_telintec.product_movements_amc "
            "WHERE movement_type LIKE %s ")
     vals = (type_m,)
     flag, error, result = execute_sql(sql, vals, 2)
@@ -78,7 +79,7 @@ def get_movements_type_db(type_m: str):
 
 
 def create_out_movement_db(id_product, movement_type, quantity, movement_date, sm_id):
-    sql = ("INSERT  INTO product_movements_amc (id_product, movement_type, quantity, movement_date, sm_id) "
+    sql = ("INSERT  INTO sql_telintec.product_movements_amc (id_product, movement_type, quantity, movement_date, sm_id) "
            "VALUES (%s, %s, %s, %s, %s)")
     vals = (id_product, movement_type, quantity, movement_date, sm_id)
     flag, error, result = execute_sql(sql, vals, 4)
@@ -87,27 +88,30 @@ def create_out_movement_db(id_product, movement_type, quantity, movement_date, s
 
 def get_all_categories_db():
     sql = ("SELECT  id_category, name "
-           "FROM product_categories_amc")
+           "FROM sql_telintec.product_categories_amc")
     flag, error, result = execute_sql(sql, None, 5)
     return flag, error, result
 
 
 def create_category_db(name: str):
-    insert_sql = "INSERT INTO product_categories_amc (name) VALUES (%s)"
+    insert_sql = "INSERT INTO sql_telintec.product_categories_amc (name) VALUES (%s)"
     vals = (name,)
     flag, error, result = execute_sql(insert_sql, vals, 4)
     return flag, error, result
 
 
 def update_category_db(id_category, name):
-    update_sql = "UPDATE product_categories_amc SET name = %s WHERE id_category = %s"
+    update_sql = ("UPDATE sql_telintec.product_categories_amc "
+                  "SET name = %s "
+                  "WHERE id_category = %s")
     vals = (name, id_category)
     flag, error, result = execute_sql(update_sql, vals, 4)
     return flag, error, result
 
 
 def delete_category_db(id_category):
-    delete_sql = "DELETE FROM product_categories_amc WHERE id_category = %s"
+    delete_sql = ("DELETE FROM sql_telintec.product_categories_amc "
+                  "WHERE id_category = %s")
     vals = (id_category,)
     flag, error, result = execute_sql(delete_sql, vals, 4)
     return flag, error, result
@@ -120,7 +124,7 @@ def create_product_db(sku, name, udm, stock, id_category, id_supplier, is_tool, 
     stock = int(stock)
     id_category = int(id_category)
     id_supplier = int(id_supplier)
-    insert_sql = ("INSERT INTO products_amc "
+    insert_sql = ("INSERT INTO sql_telintec.products_amc "
                   "(sku, name, udm, stock, id_category, is_tool, is_internal, id_supplier) "
                   "VALUES (%s, %s, %s, %s, %s, %s, %s, %s)")
     vals = (sku, name, udm, stock, id_category, is_tool, is_internal, id_supplier)
@@ -134,7 +138,7 @@ def create_product_db_admin(sku, name, udm, stock, id_category):
     udm = str(udm)
     stock = int(stock)
     id_category = int(id_category)
-    insert_sql = ("INSERT INTO products_amc "
+    insert_sql = ("INSERT INTO sql_telintec.products_amc "
                   "(sku, name, udm, stock, id_category) "
                   "VALUES (%s, %s, %s, %s, %s)")
     vals = (sku, name, udm, stock, id_category)
@@ -156,7 +160,8 @@ def get_all_products_db():
            "FROM sql_telintec.products_amc "
            "LEFT JOIN sql_telintec.supplier_product_amc ON (sql_telintec.products_amc.id_product = sql_telintec.supplier_product_amc.id_product) "
            "LEFT JOIN sql_telintec.product_categories_amc ON (sql_telintec.products_amc.id_category = sql_telintec.product_categories_amc.id_category) "
-           "LEFT JOIN sql_telintec.suppliers_amc ON (sql_telintec.supplier_product_amc.id_supplier = sql_telintec.suppliers_amc.id_supplier)")
+           "LEFT JOIN sql_telintec.suppliers_amc ON (sql_telintec.supplier_product_amc.id_supplier = sql_telintec.suppliers_amc.id_supplier) "
+           "ORDER BY products_amc.name ")
     flag, error, result = execute_sql(sql, None, 5)
     return flag, error, result
 
@@ -184,7 +189,7 @@ def get_all_products_db_tool_internal(is_tool: int, is_internal: int):
 
 
 def update_product_db(id_product, sku, name, udm, stock, id_category, id_supplier, is_tool=0, is_internal=0):
-    update_sql = ("UPDATE products_amc "
+    update_sql = ("UPDATE sql_telintec.products_amc "
                   "SET sku = %s, name = %s, udm = %s, stock = %s, id_category = %s, id_supplier = %s , is_tool = %s, is_internal = %s "
                   "WHERE id_product = %s")
     vals = (sku, name, udm, stock, id_category, id_supplier, is_tool, is_internal, id_product)
@@ -193,7 +198,7 @@ def update_product_db(id_product, sku, name, udm, stock, id_category, id_supplie
 
 
 def delete_product_db(id_product):
-    delete_sql = ("DELETE FROM products_amc "
+    delete_sql = ("DELETE FROM sql_telintec.products_amc "
                   "WHERE id_product = %s")
     vals = (id_product,)
     flag, error, result = execute_sql(delete_sql, vals, 4)
@@ -201,7 +206,7 @@ def delete_product_db(id_product):
 
 
 def update_stock_db(id_product, stock):
-    update_sql = ("UPDATE products_amc "
+    update_sql = ("UPDATE sql_telintec.products_amc "
                   "SET stock = %s "
                   "WHERE id_product = %s")
     vals = (stock, id_product)
@@ -211,7 +216,7 @@ def update_stock_db(id_product, stock):
 
 def get_stock_db(id_product):
     sql = ("SELECT stock "
-           "FROM products_amc "
+           "FROM sql_telintec.products_amc "
            "WHERE id_product = %s")
     vals = (id_product,)
     flag, error, result = execute_sql(sql, vals, 1)
@@ -281,9 +286,9 @@ def delete_product_and_service(id_ps: int):
 def get_product_categories():
     columns = ("id_category", "name")
     sql = ("SELECT "
-           "product_categories_amc.id_category, "
-           "product_categories_amc.name "
-           "FROM product_categories_amc "
+           "sql_telintec.product_categories_amc.id_category, "
+           "sql_telintec.product_categories_amc.name "
+           "FROM sql_telintec.product_categories_amc "
            "LIMIT 20 ")
     flag, error, result = execute_sql(sql, type_sql=5)
     return flag, error, result, columns
@@ -297,7 +302,7 @@ def get_products_almacen(id_p: int, name: str, category: str, limit: int = 10):
            "udm, "
            "stock, "
            "id_category "
-           "FROM products_amc "
+           "FROM sql_telintec.products_amc "
            "WHERE id_product = %s OR (match(name) against (%s IN NATURAL LANGUAGE MODE ) AND id_category = %s ) "
            "LIMIT %s")
     val = (id_p, name, category, limit)
@@ -309,14 +314,14 @@ def get_high_stock_products(category: str, quantity: int):
     columns = ("id_product", "name", "udm", "stock", "id_category")
     # get category
     sql = ("SELECT id_category, name "
-           "FROM product_categories_amc "
+           "FROM sql_telintec.product_categories_amc "
            "WHERE name = %s")
     val = (category.lower(),)
     flag, error, result = execute_sql(sql, val, 1)
     if len(result) > 0:
         category_id = result[0]
         sql = ("SELECT id_product, name, udm, stock, id_category "
-               "FROM products_amc "
+               "FROM sql_telintec.products_amc "
                "WHERE id_category = %s "
                "ORDER BY stock DESC "
                "LIMIT %s")
@@ -331,14 +336,14 @@ def get_low_stock_products(category: str, quantity: int):
     columns = ("id_product", "name", "udm", "stock", "id_category")
     # get category
     sql = ("SELECT id_category, name "
-           "FROM product_categories_amc "
+           "FROM sql_telintec.product_categories_amc "
            "WHERE name = %s")
     val = (category.lower(),)
     flag, error, result = execute_sql(sql, val, 1)
     if len(result) > 0:
         category_id = result[0]
         sql = ("SELECT id_product, name, udm, stock, id_category "
-               "FROM products_amc "
+               "FROM sql_telintec.products_amc "
                "WHERE id_category = %s "
                "ORDER BY stock "
                "LIMIT %s")
@@ -353,14 +358,14 @@ def get_no_stock_products(category: str, quantity: int = 10):
     columns = ("id_product", "name", "udm", "stock", "id_category")
     # get category
     sql = ("SELECT id_category, name "
-           "FROM product_categories_amc "
+           "FROM sql_telintec.product_categories_amc "
            "WHERE name = %s")
     val = (category.lower(),)
     flag, error, result = execute_sql(sql, val, 1)
     if len(result) > 0:
         category_id = result[0]
         sql = ("SELECT id_product, name, udm, stock, id_category "
-               "FROM products_amc "
+               "FROM sql_telintec.products_amc "
                "WHERE id_category = %s "
                "AND stock=0 "
                "LIMIT %s")
@@ -374,7 +379,7 @@ def get_no_stock_products(category: str, quantity: int = 10):
 def get_product_movement_amc(type_m: str, id_m: int, id_p: int, date: str):
     columns = ("id_movement", "id_product", "type", "quantity", "date")
     sql = ("SELECT id_movement, id_product, movement_type, quantity, movement_date "
-           "FROM product_movements_amc "
+           "FROM sql_telintec.product_movements_amc "
            "WHERE (id_movement = %s OR "
            "id_product = %s) AND movement_type LIKE %s ")
     if date is not None:
@@ -388,7 +393,7 @@ def get_product_movement_amc(type_m: str, id_m: int, id_p: int, date: str):
 def get_supply_inv_amc(id_s: int, name: str):
     columns = ("id_supply", "name", "id_supplier", "date", "status")
     sql = ("SELECT id_supply, name, stock "
-           "FROM supply_inventory_amc "
+           "FROM sql_telintec.supply_inventory_amc "
            "WHERE (id_supply = %s OR "
            "match(name) against (%s IN NATURAL LANGUAGE MODE ) ) "
            "LIMIT 10")
@@ -399,14 +404,14 @@ def get_supply_inv_amc(id_s: int, name: str):
 
 def get_sm_products():
     sql = ("SELECT id_product, name, udm, stock "
-           "FROM products_amc ")
+           "FROM sql_telintec.products_amc ")
     flag, error, result = execute_sql(sql, None, 5)
     return flag, error, result
 
 
 def get_all_suppliers():
     sql = ("SELECT id_supplier, name, seller_name, seller_email, phone, address, web_url, type "
-           "FROM suppliers_amc ")
+           "FROM sql_telintec.suppliers_amc ")
     flag, error, result = execute_sql(sql, None, 5)
     return flag, error, result
 
@@ -416,8 +421,8 @@ def get_movements_type(type_m: str, limit=10):
            "sum(sql_telintec.product_movements_amc.quantity) as total_move, "
            "sql_telintec.products_amc.name, "
            "sql_telintec.products_amc.udm "
-           "FROM product_movements_amc "
-           "INNER JOIN sql_telintec.products_amc ON (products_amc.id_product = product_movements_amc.id_product) "
+           "FROM sql_telintec.product_movements_amc "
+           "INNER JOIN sql_telintec.products_amc ON (sql_telintec.products_amc.id_product = sql_telintec.product_movements_amc.id_product) "
            "WHERE movement_type LIKE %s "
            "GROUP BY id_product "
            "ORDER BY total_move "

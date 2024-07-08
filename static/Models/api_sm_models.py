@@ -23,7 +23,8 @@ items_model_sm = api.model('ItemsModel', {
     'name': fields.String(required=True, description='The product name'),
     'stock':  fields.Integer(required=True, description='The product stock'),
     'comment': fields.String(required=True, description='The product comment'),
-    'quantity': fields.Float(required=True, description='The product quantity')
+    'quantity': fields.Float(required=True, description='The product quantity'),
+    'movement': fields.Integer(required=False, description='The product movement')
 })
 history_model_sm = api.model('HistoryModel', {
     'date': fields.String(required=True, description='The product id'),
@@ -57,8 +58,7 @@ sm_model = api.model('Material_request', {
     'limit_date': fields.String(required=True, description='The limit date'),
     'status': fields.Integer(required=True, description='The status of the sm'),
     'history':  fields.List(fields.Nested(history_model_sm)),
-    'comment': fields.String(required=True, description='The comment'),
-    'items':  fields.List(fields.Nested(items_model_sm))
+    'comment': fields.String(required=True, description='The comment')
 })
 
 table_sm_model = api.model('TableMaterialRequest', {
@@ -81,12 +81,12 @@ sm_product_request_model = api.model('material_requestProductRequest', {
 
 sm_post_model = api.model('material_requestPost', {
     "info":  fields.Nested(sm_model),
-    "items": fields.List(fields.Nested(sm_product_request_model))
+    'items':  fields.List(fields.Nested(items_model_sm))
 })
 
 sm_put_model = api.model('material_requestPut', {
     "info":  fields.Nested(sm_model),
-    "items": fields.List(fields.Nested(sm_product_request_model)),
+    'items':  fields.List(fields.Nested(items_model_sm)),
     "id": fields.Integer(required=True, description='The id')
 })
 
@@ -126,5 +126,3 @@ request_sm_plot_data_model = api.model('RequestSMPlotData', {
     'data': fields.List(fields.Nested(data_sm_plots)),
     'type': fields.String(required=True, description='The type of plot')
 })
-
-
