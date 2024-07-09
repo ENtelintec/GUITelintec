@@ -70,7 +70,9 @@ fichaje_add_update_request_model = api.model('Fichaje Add Request', {
     'value':  fields.Float(required=True, description='The value', example=1.0),
     'comment':  fields.String(required=True, description='The comment', example="This is a comment"),
     'id_emp':  fields.Integer(required=True, description='The id of the editor employee ', example=1),
-    'contract':  fields.String(required=True, description='The contract of the empployee', example="INFRA")
+    'contract':  fields.String(required=True, description='The contract of the empployee', example="INFRA"),
+    'hour_in': fields.String(required=False, description='The hour in for extraordinary event', example="08:00-->08:15-->8:20"),
+    'hour_out': fields.String(required=False, description='The hour out for extraordinary event', example="18:00-->18:15-->18:20")
 })
 
 fichaje_delete_request_model = api.model('Fichaje Delete Request', {

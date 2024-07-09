@@ -374,6 +374,24 @@ def split_commment(txt: str, type_fun=0) -> dict:
     return comment_dict
 
 
+def unify_comment_dict(comment_dict: dict):
+    """
+    Unify the comment dict.
+    :param comment_dict: The comment dict.
+    :return: The comment dict.
+    """
+    comment = comment_dict["comment"]
+    if comment_dict["incidence"] != "":
+        comment += "\nincidencia-->" + comment_dict["incidence"]
+    if comment_dict["activity"] != "":
+        comment += "\nactividad-->" + comment_dict["activity"]
+    if comment_dict["place"] != "":
+        comment += "\nlugar-->" + comment_dict["place"]
+    if comment_dict["contract"] is not None:
+        comment += "\ncontrato-->" + str(comment_dict["contract"])
+    return comment
+
+
 def save_json_file_quizz(dict_quizz: dict, file_name: str):
     """
     Save the json file.
