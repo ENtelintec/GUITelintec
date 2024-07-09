@@ -60,7 +60,7 @@ def check_date_difference(date_modify, delta):
     date_now = date_now.date()
     week_now = date_now.isocalendar()[1]
     date_modify = date_modify + timedelta(days=delta)
-    if week_now - week_modify > 1:
+    if week_now - week_modify < 1:
         flag = False
     return flag
 

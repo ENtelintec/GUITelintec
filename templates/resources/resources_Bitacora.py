@@ -69,7 +69,7 @@ class FichajeEvent(Resource):
             if flag:
                 events_updated.append(f"{data['event']}_{data['value']}, result: {result}")
         if flag:
-            return {"answer": "The event has been added"}, 201
+            return {"answer": "The event has been added", "data": events_updated}, 201
         elif error is not None:
             print(error)
             return {"answer": "There has been an error at adding the bitacora"}, 404

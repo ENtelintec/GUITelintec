@@ -92,7 +92,7 @@ def get_events_from_extraordinary_sources(hour_in: str, hour_out: str, data: dic
             hours_late = timestamp_limit_hour_in - timestamp_hour_in 
             hours_late = hours_late.total_seconds() / 3600.0
             print(f"event: late, date: {data['date']}, value: {int(hours_late)} hours {int(hours_late % 1 * 60)} minutes, comment: {data['comment']}")
-            events.append("late")            
+            events.append("atraso")            
             data_events.append((data["date"], hours_late, data["comment"], data["contract"]))
         elif timestamp_hour_in > normal_hour_in > timestamp_limit_hour_in:
             hours_early = timestamp_hour_in - normal_hour_in
