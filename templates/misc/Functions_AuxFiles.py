@@ -276,6 +276,8 @@ def get_place_incidence_from_comment(comment: str):
     rows = comment.split("\n")
     place = ""
     activity = ""
+    incidence = ""
+    comment_out = ""
     for i, row in enumerate(rows):
         if i >= 1:
             if "actividad" in row:
@@ -285,8 +287,8 @@ def get_place_incidence_from_comment(comment: str):
             elif "incidencia" in row:
                 incidence = row.split("-->")[1]
             elif "-->" not in row:
-                comment = row
-    return place, activity, incidence, comment
+                comment_out = row
+    return place, activity, incidence, comment_out
 
 
 def get_events_op_date(date: datetime, hard_update, only_op=True):
