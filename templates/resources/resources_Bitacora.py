@@ -15,6 +15,7 @@ from templates.misc.Functions_AuxFiles import get_events_op_date, update_bitacor
 from templates.resources.midleware.Functions_DB_midleware import check_date_difference
 from templates.Functions_Text import parse_data
 from templates.controllers.employees.employees_controller import get_employees_op_names
+from templates.resources.midleware.Functions_midleware_misc import get_events_from_extraordinary_sources
 
 ns = Namespace('GUI/api/v1/bitacora')
 
@@ -31,7 +32,7 @@ class Employees(Resource):
 
 
 @ns.route('/fichaje/table')
-class Fichaje(Resource):
+class FichajeTable(Resource):
     @ns.expect(fichaje_request_model)
     def post(self):
         code, data = parse_data(ns.payload, 9)
@@ -44,19 +45,31 @@ class Fichaje(Resource):
 
 
 @ns.route('/fichaje/event')
-class FichajeAPI(Resource):
+class FichajeEvent(Resource):
     @ns.expect(fichaje_add_update_request_model)
     def post(self):
         code, data = parse_data(ns.payload, 10)
         if code == 400:
             return {"answer": "The data has a bad structure"}, code
         out = check_date_difference(data["date"], delta_bitacora_edit)
+        flag = False
+        error = None
+        events_updated = []
         if not out:
             return {"answer": "No se puede alterar la bitcaora en esta fecha."}, 403
-        flag, error, result = update_bitacora(
-            data["id_emp"], data["event"], (data["date"], data["value"], data["comment"], data["contract"]))
+        if data["event"].lower() == "extraordinary":
+            event, data_events = get_events_from_extraordinary_sources(data["hour_in"], data["hour_out"], data)
+            for index, item in enumerate(data_events):
+                flag, error, result = update_bitacora(data["id_emp"], event[index], item)
+                if flag:
+                    events_updated.append(f"{event[index]}_{item[1]}, result: {result}")
+        else:
+            flag, error, result = update_bitacora(
+                data["id_emp"], data["event"], (data["date"], data["value"], data["comment"], data["contract"]))
+            if flag:
+                events_updated.append(f"{data['event']}_{data['value']}, result: {result}")
         if flag:
-            return {"answer": "The event has been added"}, 201
+            return {"answer": "The event has been added", "data": events_updated}, 201
         elif error is not None:
             print(error)
             return {"answer": "There has been an error at adding the bitacora"}, 404

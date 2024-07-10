@@ -126,22 +126,18 @@ def dispatch_products(
             sm_id
         )
         _data.update_stock(product['id'], product["stock"] - product['quantity'])
-        print(f"producto {product['id']} en salida {product['quantity']}")
-        print(f"producto {product['id']} actualizado stock {product['stock'] - product['quantity']}")
         product['comment'] += " ;(Despachado) "
         avaliable[i] = product
     # ------------------------------products to request------------------------------------------
     for i, product in enumerate(to_request):
         _ins = _data.create_in_movement(
             product['id'], "entrada", product['quantity'], date, sm_id)
-        print(f"producto {product['id']} pedido {product['quantity']}")
         product['comment'] += " ;(Pedido) "
         to_request[i] = product
     # ------------------------------products to request for admin-----------------------------------
     for i, product in enumerate(new_products):
         _ins = _data.create_in_movement(
             product['id'], "entrada", product['quantity'], date, sm_id)
-        print(f"producto {product['id']} nuevo {product['quantity']}")
         product['comment'] += " ;(Pedido) "
         new_products[i] = product
     return avaliable, to_request, new_products

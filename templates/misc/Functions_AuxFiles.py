@@ -104,8 +104,6 @@ def update_bitacora(emp_id: int, event, data):
     if new_registry:
         print("new registry in fichajes db")
         name = get_name_employee(emp_id)
-        # if name is None:
-        #     return False, "error at getting name of the employee", result
         fichajes_resume.append([emp_id, name.title(), contract_sel, 0, 0, 0, 0, 0, 0, {}, {}, {}, {}, {}])
     # -----------------------------updates cache data and db--------------------------------
     flag = False
@@ -246,8 +244,8 @@ def get_data_from_dict_by_date(data: dict, date: datetime, stamp: str):
     if str(date.year) in data.keys():
         if str(date.month) in data[str(date.year)].keys():
             for day in data[str(date.year)][str(date.month)].values():
-                place, activity = get_place_incidence_from_comment(day["comment"])
-                data_out.append([stamp, place, activity, day["timestamp"], day["value"], day["comment"]])
+                place, activity, incidence, comment = get_place_incidence_from_comment(day["comment"])
+                data_out.append([stamp, place, activity, incidence, day["timestamp"], day["value"], comment])
             return data_out
     return None
 
@@ -278,13 +276,21 @@ def get_place_incidence_from_comment(comment: str):
     rows = comment.split("\n")
     place = ""
     activity = ""
+    incidence = ""
+    comment_out = ""
     for i, row in enumerate(rows):
         if i >= 1:
             if "actividad" in row:
                 activity = row.split("-->")[1]
             elif "lugar" in row:
                 place = row.split("-->")[1]
-    return place, activity
+            elif "incidencia" in row:
+                incidence = row.split("-->")[1]
+            elif "-->" not in row:
+                comment_out = row
+        elif "-->" not in row:
+            comment_out = row
+    return place, activity, incidence, comment_out
 
 
 def get_events_op_date(date: datetime, hard_update, only_op=True):
@@ -311,7 +317,7 @@ def get_events_op_date(date: datetime, hard_update, only_op=True):
             if item is not None:
                 if item[2] != "None" or not only_op:
                     data_events.append(item)
-    columns = ("ID", "Nombre", "Contrato", "Evento", "Lugar", "Actividad", "Timestamp", "Valor", "Comentario")
+    columns = ("ID", "Nombre", "Contrato", "Evento", "Lugar", "Actividad", "Incidencia", "Timestamp", "Valor", "Comentario")
     return data_events, columns
 
 
@@ -372,6 +378,24 @@ def split_commment(txt: str, type_fun=0) -> dict:
         case _:
             comment_dict = {"comment": txt}
     return comment_dict
+
+
+def unify_comment_dict(comment_dict: dict):
+    """
+    Unify the comment dict.
+    :param comment_dict: The comment dict.
+    :return: The comment dict.
+    """
+    comment = comment_dict["comment"]
+    if comment_dict["incidence"] != "":
+        comment += "\nincidencia-->" + comment_dict["incidence"]
+    if comment_dict["activity"] != "":
+        comment += "\nactividad-->" + comment_dict["activity"]
+    if comment_dict["place"] != "":
+        comment += "\nlugar-->" + comment_dict["place"]
+    if comment_dict["contract"] is not None:
+        comment += "\ncontrato-->" + str(comment_dict["contract"])
+    return comment
 
 
 def save_json_file_quizz(dict_quizz: dict, file_name: str):

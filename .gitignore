@@ -8,14 +8,14 @@ __pycache__/
 /files/dpb_chache/
 /files/Ternium*
 /files/*cache.pkl
-/fill_exams.py
-/fill_fichajes.py
+/scripts_db_handle/fill_exams.py
+/scripts_db_handle/fill_fichajes.py
 /files/OCT*
 /files/*cache*
 /files/*.csv
 /files/fichaje*.xlsx
 *csv
-/Fill_Vacations.py
+/scripts_db_handle/Fill_Vacations.py
 /app_gui.spec
 /dist/
 /build/
@@ -29,6 +29,7 @@ __pycache__/
 /files/files_fichaje/*
 .env_*
 /tester_code.py
-/fill_sm_dummy_data.py
+/scripts_db_handle/fill_sm_dummy_data.py
 /files/Pmodels/*
 /test.json
+/scripts_db_handle/

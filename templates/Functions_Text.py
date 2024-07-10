@@ -116,13 +116,15 @@ def parse_data(data: dict, mode: int):
                 value = data['value'] if mode == 10 else None
                 comment = data['comment'] if mode == 10 else None
                 out = {
-                    'id': data['id'],
-                    "date": data['date'],
-                    "event": data['event'],
-                    "value": value,
-                    "comment": comment,
-                    "contract": data['contract'],
-                    "id_emp": data['id_emp']
+                    'id': data['id'] if "id" in data.keys() else None,
+                    "date": data['date'] if "date" in data.keys() else None,
+                    "event": data['event'] if "event" in data.keys() else None,
+                    "value": value if "value" in data.keys() else None,
+                    "comment": comment if "comment" in data.keys() else None,
+                    "contract": data['contract'] if "contract" in data.keys() else None,
+                    "id_emp": data['id_emp'] if "id_emp" in data.keys() else None,
+                    "hour_in": data['hour_in'] if "hour_in" in data.keys() else None,
+                    "hour_out": data['hour_out'] if "hour_out" in data.keys() else None
                 }
             case 12:
                 out = {

@@ -649,6 +649,7 @@ def get_cumulative_data_fichajes_dict(dic_data: dict, date=None) -> tuple[int, i
     :return:
     """
     if date is not None:
+        print("date____", date)
         date = pd.to_datetime(date)
     total_days = 0
     total_value = 0
@@ -780,8 +781,8 @@ def update_fichajes_resume_cache(filepath: str, data, just_file=False):
                     new_value = []
                     for i in range(len(dicts_old)):
                         dicts_old[i].update(dicts_new[i])
-                        new_total.append(get_cumulative_data_fichajes_dict(dicts_old[i]))
-                        new_value.append(get_cumulative_data_fichajes_dict(dicts_old[i], "value"))
+                        new_total.append(get_cumulative_data_fichajes_dict(dicts_old[i])[0])
+                        new_value.append(get_cumulative_data_fichajes_dict(dicts_old[i])[1])
                     aux = (id_emp, name, contract, new_total[0], new_total[1], new_value[1], new_total[3], new_value[3],
                            new_total[4],
                            dicts_new[0], dicts_new[1], dicts_new[2], dicts_new[3], dicts_new[4])

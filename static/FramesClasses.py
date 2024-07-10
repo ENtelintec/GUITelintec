@@ -5,6 +5,7 @@ __date__ = '$ 28/may./2024  at 10:34 $'
 from templates.modules.Administration.Frame_ContractDocs import ContractsDocsFrame
 from templates.modules.Administration.Frame_ControlSaldos import ControlSaldos
 from templates.modules.Administration.Frame_Quotations import QuotationsFrame
+from templates.modules.Administration.Frame_Remisions import RemisionsFrame
 from templates.modules.Almacen.DashboardStorage import StorageDashboard
 from templates.modules.Almacen.Frame_Movements import MovementsFrame
 from templates.modules.Bitacora.Frame_Bitacora import BitacoraEditFrame
@@ -58,7 +59,8 @@ available_frames = {
     "Tasks": FrameTasks,
     "Cotizaciones": QuotationsFrame,
     "Documentos Contrato": ContractsDocsFrame,
-    "Control Saldos": ControlSaldos
+    "Control Saldos": ControlSaldos,
+    "Remisiones": RemisionsFrame
 }
 
 frames_notifications_avaliable = {

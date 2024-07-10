@@ -36,7 +36,8 @@
       "SM",
       "Cotizaciones",
       "Documentos Contrato",
-      "Control Saldos"
+      "Control Saldos",
+      "Remisiones"
     ],
     "App.Department.Common": [
       "Tasks"
