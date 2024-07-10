@@ -244,8 +244,8 @@ def get_data_from_dict_by_date(data: dict, date: datetime, stamp: str):
     if str(date.year) in data.keys():
         if str(date.month) in data[str(date.year)].keys():
             for day in data[str(date.year)][str(date.month)].values():
-                place, activity = get_place_incidence_from_comment(day["comment"])
-                data_out.append([stamp, place, activity, day["timestamp"], day["value"], day["comment"]])
+                place, activity, incidence, comment = get_place_incidence_from_comment(day["comment"])
+                data_out.append([stamp, place, activity, incidence, day["timestamp"], day["value"], comment])
             return data_out
     return None
 
@@ -282,7 +282,11 @@ def get_place_incidence_from_comment(comment: str):
                 activity = row.split("-->")[1]
             elif "lugar" in row:
                 place = row.split("-->")[1]
-    return place, activity
+            elif "incidencia" in row:
+                incidence = row.split("-->")[1]
+            elif "-->" not in row:
+                comment = row
+    return place, activity, incidence, comment
 
 
 def get_events_op_date(date: datetime, hard_update, only_op=True):
@@ -309,7 +313,7 @@ def get_events_op_date(date: datetime, hard_update, only_op=True):
             if item is not None:
                 if item[2] != "None" or not only_op:
                     data_events.append(item)
-    columns = ("ID", "Nombre", "Contrato", "Evento", "Lugar", "Actividad", "Timestamp", "Valor", "Comentario")
+    columns = ("ID", "Nombre", "Contrato", "Evento", "Lugar", "Actividad", "Incidencia", "Timestamp", "Valor", "Comentario")
     return data_events, columns
 
 
