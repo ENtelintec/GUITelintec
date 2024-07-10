@@ -288,6 +288,8 @@ def get_place_incidence_from_comment(comment: str):
                 incidence = row.split("-->")[1]
             elif "-->" not in row:
                 comment_out = row
+        elif "-->" not in row:
+            comment_out = row
     return place, activity, incidence, comment_out
 
 
