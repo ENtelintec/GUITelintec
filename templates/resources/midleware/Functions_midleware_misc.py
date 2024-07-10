@@ -6,6 +6,7 @@ import json
 import pickle
 from datetime import datetime
 
+
 from static.extensions import filepath_settings
 from templates.Functions_openAI import get_response_assistant, get_files_list_openai
 from templates.controllers.notifications.Notifications_controller import get_notifications_by_user
@@ -76,6 +77,7 @@ def get_events_from_extraordinary_sources(hour_in: str, hour_out: str, data: dic
     # data["event"], (data["date"], data["value"], data["comment"], data["contract"])
     events = []
     data_events = []
+    
     normal_hour_in = datetime.strptime(hour_in.split("-->")[0], "%H:%M")
     normal_hour_out = datetime.strptime(hour_out.split("-->")[0], "%H:%M")
     timestamp_hour_in = datetime.strptime(hour_in.split("-->")[1], "%H:%M")

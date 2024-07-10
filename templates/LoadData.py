@@ -178,6 +178,8 @@ def load_data(data_dic, is_super=False, emp_id=None, item=None, permissions=None
             if "contracts" not in data_dic:
                 flag, error, contracts = get_contract(None)
                 data_dic["contracts"] = contracts
+        case "Remisiones":
+            data_dic["remisions"] = {}
         case _:
             pass
     return data_dic
