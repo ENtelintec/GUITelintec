@@ -178,7 +178,7 @@ def get_id_name_employee(department: int, is_all=False):
 def get_employees_op_names():
     sql = ("SELECT employee_id, name, l_name, contrato "
            "FROM sql_telintec.employees "
-           "WHERE  department_id = 2")
+           "WHERE  department_id = 2 and status = 'activo' ")
     flag, e, out = execute_sql(sql, None, 5)
     if e is not None:
         return False, e, None
