@@ -2,17 +2,18 @@
 __author__ = 'Edisson Naula'
 __date__ = '$ 02/abr./2024  at 9:53 $'
 
+import csv
 from datetime import datetime
 
+from flask import send_file
 from flask_restx import Resource, Namespace
 
 from static.Models.api_models import fichaje_request_model, fichaje_add_update_request_model, \
     fichaje_delete_request_model, bitacora_dowmload_report_model
 from static.Models.api_sm_models import client_emp_sm_response_model
-from static.extensions import delta_bitacora_edit, format_date, format_timestamps
+from static.extensions import delta_bitacora_edit, format_date, format_timestamps, filepath_bitacora_download
 from templates.misc.Functions_AuxFiles import get_events_op_date, update_bitacora, update_bitacora_value, \
     erase_value_bitacora
-from templates.resources.midleware.Bitacora import transform_bitacora_data_to_dict
 from templates.resources.midleware.Functions_DB_midleware import check_date_difference
 from templates.Functions_Text import parse_data
 from templates.controllers.employees.employees_controller import get_employees_op_names
@@ -139,5 +140,15 @@ class BitacoraDownloadReport(Resource):
                 for item in events:
                     if datetime.strptime(item[7], format_timestamps).month == date.month:
                         event_filtered.append(item)
-        data_out = transform_bitacora_data_to_dict(event_filtered, columns)
-        return {"data": data_out}, 200
+        # save csv
+        with open(filepath_bitacora_download, "w") as file:
+            writer = csv.writer(file)
+            writer.writerow(columns)
+            for item in event_filtered:
+                writer.writerow(item)
+
+        # data_out = transform_bitacora_data_to_dict(event_filtered, columns)
+        try:
+            return send_file(filepath_bitacora_download, as_attachment=True)
+        except Exception as e:
+            return {"data": f"Error en el tipo de quizz: {str(e)}"}, 400
