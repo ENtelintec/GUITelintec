@@ -76,7 +76,6 @@ def parse_data(data: dict, mode: int):
                 id_sm = data['info']['id'] if mode == 8 else None
                 info = {
                     'id': id_sm,
-                    "sm_code": data['info']['sm_code'],
                     "folio": data['info']['folio'],
                     "contract": data['info']['contract'],
                     "facility": data['info']['facility'],
