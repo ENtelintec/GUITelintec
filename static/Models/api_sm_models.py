@@ -56,16 +56,17 @@ products_request_model = api.model('ProductSearch', {
 
 sm_model = api.model('Material_request', {
     'id': fields.Integer(required=True, description='The id <ignored on add event>'),
-    'sm_code': fields.String(required=True, description='The sm code'),
     'folio': fields.String(required=True, description='The folio'),
     'contract': fields.String(required=True, description='The contract'),
     'facility': fields.String(required=True, description='The facility'),
-    'location': fields.String(required=True, description='The location'),
+    'contract_contact':  fields.String(required=True, description='The contract contact'),
     'client_id': fields.Integer(required=True, description='The client id', example=1),
+    'location': fields.String(required=True, description='The location'),
     'order_quotation': fields.String(required=True, description='The order or quotation'),
     'emp_id': fields.String(required=True, description='The employee id', example=1),
-    'date': fields.String(required=True, description='The date'),
-    'limit_date': fields.String(required=True, description='The limit date'),
+    'date': fields.String(required=True, description='The date', example="2024-06-29"),
+    'limit_date': fields.String(required=True, description='The limit date', example="2024-07-12"),
+    'critical_date': fields.String(required=True, description='The critical date', example="2024-07-15"),
     'status': fields.Integer(required=True, description='The status of the sm'),
     'history':  fields.List(fields.Nested(history_model_sm)),
     'comment': fields.String(required=True, description='The comment')
