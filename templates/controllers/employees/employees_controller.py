@@ -301,3 +301,12 @@ def get_contract_employes(emp_id):
     val = (emp_id,)
     flag, error, result = execute_sql(sql, val, type_sql=1)
     return flag, error, result
+
+
+def get_emp_contract(contract: str):
+    sql = ("SELECT employee_id, name, l_name "
+           "FROM sql_telintec.employees "
+           "WHERE UPPER(contrato) LIKE %s OR LOWER(contrato) LIKE %s")
+    val = (contract.upper(), contract.lower())
+    flag, error, result = execute_sql(sql, val, type_sql=2)
+    return flag, error, result

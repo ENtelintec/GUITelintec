@@ -6,7 +6,8 @@ import json
 import math
 from datetime import datetime, timedelta
 
-from templates.controllers.employees.employees_controller import get_all_data_employees, get_all_data_employee
+from templates.controllers.employees.employees_controller import get_all_data_employees, get_all_data_employee, \
+    get_emp_contract
 from templates.controllers.employees.vacations_controller import get_vacations_data, get_vacations_data_emp
 from templates.controllers.index import DataHandler
 from templates.controllers.material_request.sm_controller import get_sm_entries
@@ -108,6 +109,19 @@ def get_all_sm(limit, page=0, emp_id=-1):
         'page': page,
         'pages': pages + 1
     }
+    return data_out, 200
+
+
+def get_employees_almacen():
+    flag, error, result = get_emp_contract("almacen")
+    print(flag, error, result)
+    data_out = []
+    for item in result:
+        id_emp, name, lastname = item
+        data_out.append({
+            "id": id_emp,
+            "name": name.upper() + " " + lastname.upper()
+        })
     return data_out, 200
 
 

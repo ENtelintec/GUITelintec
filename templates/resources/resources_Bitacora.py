@@ -7,11 +7,12 @@ from datetime import datetime
 from flask_restx import Resource, Namespace
 
 from static.Models.api_models import fichaje_request_model, fichaje_add_update_request_model, \
-    fichaje_delete_request_model
+    fichaje_delete_request_model, bitacora_dowmload_report_model
 from static.Models.api_sm_models import client_emp_sm_response_model
-from static.extensions import delta_bitacora_edit, format_date
+from static.extensions import delta_bitacora_edit, format_date, format_timestamps
 from templates.misc.Functions_AuxFiles import get_events_op_date, update_bitacora, update_bitacora_value, \
     erase_value_bitacora
+from templates.resources.midleware.Bitacora import transform_bitacora_data_to_dict
 from templates.resources.midleware.Functions_DB_midleware import check_date_difference
 from templates.Functions_Text import parse_data
 from templates.controllers.employees.employees_controller import get_employees_op_names
@@ -110,3 +111,33 @@ class FichajeEvent(Resource):
             return {"answer": "There has been an error at deleting the bitacora"}, 404
         else:
             return {"answer": "Fail to delete registry"}, 404
+
+
+@ns.route('/bitacor/dowload/report')
+class BitacoraDownloadReport(Resource):
+    @ns.expect(bitacora_dowmload_report_model)
+    def post(self):
+        code, data = parse_data(ns.payload, 14)
+        if code == 400:
+            return {"answer": "The data has a bad structure"}, code
+        date = data["date"]
+        date = datetime.strptime(date, format_date)
+        events, columns = get_events_op_date(date, False, emp_id=data["id_emp"])
+        # columns = (
+        # "ID", "Nombre", "Contrato", "Evento", "Lugar", "Actividad", "Incidencia", "Timestamp", "Valor", "Comentario")
+        event_filtered = []
+        match data["span"]:
+            case "day":
+                for item in events:
+                    if datetime.strptime(item[7], format_timestamps).day == date.day:
+                        event_filtered.append(item)
+            case "week":
+                for item in events:
+                    if datetime.strptime(item[7], format_timestamps).isocalendar()[1] == date.isocalendar()[1]:
+                        event_filtered.append(item)
+            case "month":
+                for item in events:
+                    if datetime.strptime(item[7], format_timestamps).month == date.month:
+                        event_filtered.append(item)
+        data_out = transform_bitacora_data_to_dict(event_filtered, columns)
+        return {"data": data_out}, 200

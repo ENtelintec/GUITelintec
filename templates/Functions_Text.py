@@ -145,6 +145,12 @@ def parse_data(data: dict, mode: int):
                     'category': data["category"],
                     'sku': data["sku"]
                 }
+            case 14:
+                out = {
+                    'date': data["date"],
+                    'id_emp': data["id_emp"],
+                    'span': data["span"]
+                }
             case 17:
                 "id"
                 "id_product"

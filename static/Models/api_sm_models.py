@@ -39,6 +39,16 @@ products_answer_model = api.model('AnswerProducts', {
                                                        ' pages with the selected limit')
 })
 
+emp_almacen_model = api.model('EmployeeAlmacen', {
+    'id': fields.Integer(required=True, description='The employee id'),
+    'name': fields.String(required=True, description='The employee name')
+})
+
+employees_answer_model = api.model('AnswerEmployees', {
+    "data": fields.List(fields.Nested(emp_almacen_model)),
+    'msg':  fields.String(required=True, description='The message')
+})
+
 products_request_model = api.model('ProductSearch', {
     'limit':  fields.Integer(required=True, description='The results limit', example=10),
     'page': fields.Integer(required=True, description='The output page default: 1', example=0)

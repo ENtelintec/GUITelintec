@@ -138,3 +138,9 @@ files_av_model = api.model('ResponseFilesAV', {
 response_files_av_model = api.model('ResponseFilesAV', {
     'files': fields.List(fields.Nested(files_av_model)),
 })
+
+bitacora_dowmload_report_model = api.model('BitacoraDownloadReport', {
+    'date': fields.String(required=True, description='The date', example="2024-03-01"),
+    'id_emp':  fields.Integer(required=True, description='The id of the employee to require the contract', example=-1),
+    'span':  fields.String(required=True, description='The span of the report', example="month")
+})
