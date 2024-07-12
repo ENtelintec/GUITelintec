@@ -403,6 +403,7 @@ def get_supply_inv_amc(id_s: int, name: str):
 
 
 def get_sm_products():
+    
     sql = ("SELECT id_product, name, udm, stock "
            "FROM sql_telintec.products_amc ")
     flag, error, result = execute_sql(sql, None, 5)

@@ -65,18 +65,18 @@ def check_date_difference(date_modify, delta):
     return flag
 
 
-def get_all_sm(limit, page=0):
-    flag, error, result = get_sm_entries()
+def get_all_sm(limit, page=0, emp_id=-1):
+    flag, error, result = get_sm_entries(emp_id)
     if limit == -1:
         limit = len(result) + 1
     limit = limit if limit > 0 else 10
     page = page if page >= 0 else 0
     if len(result) <= 0:
-        return [None, 204]
+        return {"data":[], "page":0, "pages":0}, 200
     pages = math.floor(len(result) / limit)
     if page > pages:
         print("page > pages")
-        return [None, 204]
+        return None, 204
     items = []
     if pages == 0:
         limit_up = len(result)

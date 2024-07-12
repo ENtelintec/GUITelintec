@@ -69,7 +69,8 @@ def parse_data(data: dict, mode: int):
             case 5:
                 out = {
                     "limit": data['limit'],
-                    "page": data['page']
+                    "page": data['page'],
+                    "emp_id": data['emp_id'] if "emp_id" in data.keys() else -1
                 }
             case 6 | 8:
                 id_sm = data['info']['id'] if mode == 8 else None

@@ -70,7 +70,8 @@ table_sm_model = api.model('TableMaterialRequest', {
 
 table_request_model = api.model('TableRequest', {
     'limit':  fields.Integer(required=True, description='The results limit', example=10),
-    'page': fields.Integer(required=True, description='The output page default: 1', example=0)
+    'page': fields.Integer(required=True, description='The output page default: 1', example=0),
+    'emp_id': fields.Integer(required=True, description='The employee id', example=-1)
 })
 
 sm_product_request_model = api.model('material_requestProductRequest', {

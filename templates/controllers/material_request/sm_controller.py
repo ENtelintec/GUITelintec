@@ -9,15 +9,35 @@ from static.extensions import format_timestamps
 from templates.database.connection import execute_sql
 
 
-def get_sm_entries():
-    sql = (
-        "SELECT sm_id, sm_code, folio, contract, facility, location, client_id, emp_id, "
-        "pedido_cotizacion, date, limit_date, "
-        "items, status, history, comment "
-        "FROM sql_telintec.materials_request ")
-    flag, error, result = execute_sql(sql, None, 5)
+def get_sm_entries(emp_id=-1):
+    try:
+        emp_id = int(emp_id)
+    except ValueError:
+        return False, "Invalid employee ID", []
+    if emp_id <= -1:
+        sql = (
+            "SELECT sm_id, sm_code, folio, contract, facility, location, client_id, emp_id, "
+            "pedido_cotizacion, date, limit_date, "
+            "items, status, history, comment "
+            "FROM sql_telintec.materials_request ")
+        flag, error, result = execute_sql(sql, None, 5)
+    else:
+        sql = "SELECT contrato from sql_telintec.employees where employee_id = %s "
+        val = (emp_id,)
+        flag, error, result = execute_sql(sql, val, 1)
+        print(result)
+        if flag and len(result) > 0:
+            sql = (
+                "SELECT sm_id, sm_code, folio, contract, facility, location, client_id, emp_id, "
+                "pedido_cotizacion, date, limit_date, "
+                "items, status, history, comment "
+                "FROM sql_telintec.materials_request "
+                "WHERE contract = %s")
+            val = (result[0],)
+            flag, error, result = execute_sql(sql, val, 2)
+        else:
+            return False, "Invalid employee ID", []
     return flag, error, result
-
 
 def insert_sm_db(data):
     event = [{"event": "creation",

@@ -59,7 +59,7 @@ class AllSm(Resource):
         code, data = parse_data(ns.payload, 5)
         if code == 400:
             return {"data": None, "page": 0, "pages": 0}, code
-        data, code = get_all_sm(data['limit'], data['page'])
+        data, code = get_all_sm(data['limit'], data['page'], data["emp_id"])
         return data, code
 
 
