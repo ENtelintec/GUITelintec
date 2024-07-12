@@ -112,6 +112,7 @@ def parse_data(data: dict, mode: int):
             case 9:
                 out = {
                     'date': data['date'],
+                    'emp_id': data['emp_id']
                 }
             case 10 | 11:
                 value = data['value'] if mode == 10 else None

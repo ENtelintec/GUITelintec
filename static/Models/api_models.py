@@ -61,6 +61,7 @@ expected_headers_bot.add_argument('Authorization', location='headers', required=
 
 fichaje_request_model = api.model('FichajeRequest', {
     'date': fields.String(required=True, description='The date', example="2024-03-01"),
+    'emp_id':  fields.Integer(required=True, description='The id of the employee', example=-1)
 })
 
 fichaje_add_update_request_model = api.model('Fichaje Add Request', {

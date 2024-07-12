@@ -25,7 +25,6 @@ def get_sm_entries(emp_id=-1):
         sql = "SELECT contrato from sql_telintec.employees where employee_id = %s "
         val = (emp_id,)
         flag, error, result = execute_sql(sql, val, 1)
-        print(result)
         if flag and len(result) > 0:
             sql = (
                 "SELECT sm_id, sm_code, folio, contract, facility, location, client_id, emp_id, "
@@ -38,6 +37,7 @@ def get_sm_entries(emp_id=-1):
         else:
             return False, "Invalid employee ID", []
     return flag, error, result
+
 
 def insert_sm_db(data):
     event = [{"event": "creation",

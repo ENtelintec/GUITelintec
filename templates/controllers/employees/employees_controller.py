@@ -292,3 +292,12 @@ def get_all_data_employee(id_employee: int):
     val = (id_employee,)
     flag, error, result = execute_sql(sql, val, type_sql=1)
     return flag, error, result
+
+
+def get_contract_employes(emp_id):
+    sql = ("SELECT contrato "
+           "FROM sql_telintec.employees "
+           "WHERE employee_id = %s")
+    val = (emp_id,)
+    flag, error, result = execute_sql(sql, val, type_sql=1)
+    return flag, error, result

@@ -8,7 +8,7 @@ from datetime import datetime
 
 from static.extensions import cache_file_resume_fichaje_path, status_dic, quizz_out_path, format_date, format_timestamps
 from templates.misc.Functions_Files import get_fichajes_resume_cache, update_fichajes_resume_cache
-from templates.controllers.employees.employees_controller import get_name_employee
+from templates.controllers.employees.employees_controller import get_name_employee, get_contract_employes
 from templates.controllers.fichajes.fichajes_controller import get_fichaje_DB, update_fichaje_DB, insert_new_fichaje_DB
 from templates.controllers.material_request.sm_controller import get_sm_entries
 from templates.controllers.product.p_and_s_controller import get_sm_products
@@ -293,9 +293,10 @@ def get_place_incidence_from_comment(comment: str):
     return place, activity, incidence, comment_out
 
 
-def get_events_op_date(date: datetime, hard_update, only_op=True):
+def get_events_op_date(date: datetime, hard_update, only_op=True, emp_id=-1):
     """
     Get the events of the date.
+    :param emp_id: 
     :param only_op:
     :param hard_update: Update from db
     :param date: The date.
@@ -303,6 +304,7 @@ def get_events_op_date(date: datetime, hard_update, only_op=True):
     """
     data_events = []
     fichajes_resume, flag = get_fichajes_resume_cache(cache_file_resume_fichaje_path, is_hard_update=hard_update)
+    flag, error, result = get_contract_employes(emp_id) if emp_id != -1 else (True, "", [])
     for row in fichajes_resume:
         (id_emp, name, contract, faltas, tardanzas, tardanzas_value, extras, extras_value, primas,
          absences_dic, lates_dic, extras_dic, primes_dic, normal_dic) = row
@@ -316,7 +318,11 @@ def get_events_op_date(date: datetime, hard_update, only_op=True):
         for item in data_events_emp:
             if item is not None:
                 if item[2] != "None" or not only_op:
-                    data_events.append(item)
+                    if len(result) > 0:
+                        if item[2] == result[0]:
+                            data_events.append(item)
+                    else:
+                        data_events.append(item)
     columns = ("ID", "Nombre", "Contrato", "Evento", "Lugar", "Actividad", "Incidencia", "Timestamp", "Valor", "Comentario")
     return data_events, columns
 

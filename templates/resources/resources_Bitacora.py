@@ -9,7 +9,7 @@ from flask_restx import Resource, Namespace
 from static.Models.api_models import fichaje_request_model, fichaje_add_update_request_model, \
     fichaje_delete_request_model
 from static.Models.api_sm_models import client_emp_sm_response_model
-from static.extensions import delta_bitacora_edit
+from static.extensions import delta_bitacora_edit, format_date
 from templates.misc.Functions_AuxFiles import get_events_op_date, update_bitacora, update_bitacora_value, \
     erase_value_bitacora
 from templates.resources.midleware.Functions_DB_midleware import check_date_difference
@@ -39,8 +39,8 @@ class FichajeTable(Resource):
         if code == 400:
             return {"answer": "The data has a bad structure"}, code
         date = data["date"]
-        date = datetime.strptime(date, '%Y-%m-%d')
-        events, columns = get_events_op_date(date, False)
+        date = datetime.strptime(date, format_date)
+        events, columns = get_events_op_date(date, False, emp_id=data["emp_id"])
         return {"data": events, "columns": columns}, 200
 
 
