@@ -9,19 +9,28 @@ from static.Models.api_models import notification_insert_model, notification_req
     response_av_model, response_files_av_model
 from static.extensions import filepath_settings
 from templates.Functions_Text import parse_data
-from templates.resources.midleware.Functions_midleware_misc import get_all_notification_db_user_status, get_response_AV, get_files_openai
+from templates.resources.midleware.Functions_midleware_misc import get_all_notification_db_user_status, get_response_AV, \
+    get_files_openai, get_all_notification_db_permission
 from templates.controllers.notifications.Notifications_controller import insert_notification, update_status_notification
 
 ns = Namespace('GUI/api/v1/misc')
 
 
-@ns.route('/notifications/<int:id_emp>&<int:status>')
+@ns.route('/notifications/employee/<int:id_emp>&<int:status>')
 class Notifications(Resource):
     @ns.marshal_with(notification_request_model)
     def get(self, id_emp, status):
         status = status if status in [0, 1] else "%"
         code, result = get_all_notification_db_user_status(id_emp, status)
-        print(result)
+        return {"data": result, "msg": "Ok" if code == 200 else "Error"}, code
+
+
+@ns.route('/notifications/permission/<string:permission>&<int:status>')
+class NotificationsPermission(Resource):
+    @ns.marshal_with(notification_request_model)
+    def get(self, permission, status):
+        status = status if status in [0, 1] else "%"
+        code, result = get_all_notification_db_permission(permission, status)
         return {"data": result, "msg": "Ok" if code == 200 else "Error"}, code
 
 

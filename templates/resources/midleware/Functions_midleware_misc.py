@@ -9,13 +9,25 @@ from datetime import datetime
 
 from static.extensions import filepath_settings
 from templates.Functions_openAI import get_response_assistant, get_files_list_openai
-from templates.controllers.notifications.Notifications_controller import get_notifications_by_user
+from templates.controllers.notifications.Notifications_controller import get_notifications_by_user, \
+    get_notifications_by_permission
 from templates.misc.Functions_AuxFiles import split_commment, unify_comment_dict
 
 
 def get_all_notification_db_user_status(id_emp, status):
     code = 200
     flag, error, result = get_notifications_by_user(id_emp, status)
+    data_out = []
+    for item in result:
+        body = json.loads(item[2])
+        body["id"] = item[1]
+        data_out.append(body)
+    return code if flag else 400, data_out if flag else error
+
+
+def get_all_notification_db_permission(permission, status):
+    code = 200
+    flag, error, result = get_notifications_by_permission(permission.split(".")[-1].lower(), status)
     data_out = []
     for item in result:
         body = json.loads(item[2])
