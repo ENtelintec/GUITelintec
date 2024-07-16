@@ -88,7 +88,8 @@ def parse_data(data: dict, mode: int):
                     "status": data['info']['status'],
                     "order_quotation": data['info']['order_quotation'],
                     "comment": data['info']['comment'],
-                    "history": data['info']['history']
+                    "history": data['info']['history'],
+                    'emp_id_storage': data['info']['emp_id_storage']
                 }
                 items = []
                 for item in data['items']:
@@ -108,6 +109,7 @@ def parse_data(data: dict, mode: int):
                 out = {
                     "id": data['id'],
                     "sm_code": data['sm_code'],
+                    "id_emp": data['id_emp'] if "id_emp" in data.keys() else None
                 }
             case 9:
                 out = {
@@ -126,7 +128,8 @@ def parse_data(data: dict, mode: int):
                     "contract": data['contract'] if "contract" in data.keys() else None,
                     "id_emp": data['id_emp'] if "id_emp" in data.keys() else None,
                     "hour_in": data['hour_in'] if "hour_in" in data.keys() else None,
-                    "hour_out": data['hour_out'] if "hour_out" in data.keys() else None
+                    "hour_out": data['hour_out'] if "hour_out" in data.keys() else None,
+                    "id_leader": data['id_leader'] if "id_leader" in data.keys() else None
                 }
             case 12:
                 out = {

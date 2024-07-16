@@ -6,7 +6,10 @@ from flask_restx import Resource, Namespace
 from static.Models.api_sm_models import client_emp_sm_response_model, products_answer_model, products_request_model, \
     sm_post_model, delete_request_sm_model, sm_put_model, table_sm_model, table_request_model, new_cliente_model, \
     new_product_model, request_sm_plot_data_model, employees_answer_model
+from static.extensions import log_file_sm_path
 from templates.Functions_AuxPlots import get_data_sm_per_range
+from templates.misc.Functions_Files import write_log_file
+from templates.resources.Functions_Utils import create_notification_permission
 from templates.resources.midleware.Functions_DB_midleware import get_products_sm, get_all_sm, get_employees_almacen
 from templates.Functions_Text import parse_data
 from templates.controllers.customer.customers_controller import get_sm_clients
@@ -72,6 +75,13 @@ class AddSM(Resource):
             return {"answer": "The data has a bad structure"}, code
         flag, error, result = insert_sm_db(data)
         if flag:
+            msg = (f"Nueva SM creada #{data['info']['id']}, folio: {data['info']['folio']}, "
+                   f"fecha limite: {data['info']['limit_date']}, "
+                   f"empleado con id: {data['info']['emp_id']}, "
+                   f"comentario: {data['info']['comment']}")
+            create_notification_permission(msg, ["sm", "administracion", "almacen"], "Nueva SM Recibida",
+                                           data["info"]["emp_id"], data['info']["emp_id_storage"])
+            write_log_file(log_file_sm_path, msg)
             return {"answer": "ok", "msg": result}, 201
         else:
             print(error)
@@ -84,6 +94,11 @@ class AddSM(Resource):
             return {"answer": "The data has a bad structure"}, code
         flag, error, result = delete_sm_db(data["id"], data["sm_code"])
         if flag:
+            msg = (f"SM #{data['id']} eliminada, "
+                   f"empleado con id: {data['emp_id']}")
+            create_notification_permission(msg, ["sm", "administracion", "almacen"], "SM Eliminada", 
+                                           sender_id=data["emp_id"])
+            write_log_file(log_file_sm_path, msg)
             return {"answer": "ok", "msg": error}, 200
         else:
             print(error)
@@ -96,6 +111,13 @@ class AddSM(Resource):
             return {"answer": "The data has a bad structure"}, code
         flag, error, result = update_sm_db(data)
         if flag:
+            msg = (f"Nueva SM creada #{data['info']['id']}, folio: {data['info']['folio']}, "
+                   f"fecha limite: {data['info']['limit_date']}, "
+                   f"empleado con id: {data['info']['emp_id']}, "
+                   f"comentario: {data['info']['comment']}")
+            create_notification_permission(msg, ["sm", "administracion", "almacen"], "Nueva SM Recibida",
+                                           data["info"]["emp_id"], data['info']["emp_id_storage"])
+            write_log_file(log_file_sm_path, msg)
             return {"answer": "ok", "msg": error}, 200
         else:
             return {"answer": "error at updating db"}, 400

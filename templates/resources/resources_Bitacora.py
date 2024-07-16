@@ -11,9 +11,12 @@ from flask_restx import Resource, Namespace
 from static.Models.api_models import fichaje_request_model, fichaje_add_update_request_model, \
     fichaje_delete_request_model, bitacora_dowmload_report_model
 from static.Models.api_sm_models import client_emp_sm_response_model
-from static.extensions import delta_bitacora_edit, format_date, format_timestamps, filepath_bitacora_download
+from static.extensions import delta_bitacora_edit, format_date, format_timestamps, filepath_bitacora_download, \
+    log_file_bitacora_path
 from templates.misc.Functions_AuxFiles import get_events_op_date, update_bitacora, update_bitacora_value, \
     erase_value_bitacora
+from templates.misc.Functions_Files import write_log_file
+from templates.resources.Functions_Utils import create_notification_permission
 from templates.resources.midleware.Functions_DB_midleware import check_date_difference
 from templates.Functions_Text import parse_data
 from templates.controllers.employees.employees_controller import get_employees_op_names
@@ -71,6 +74,10 @@ class FichajeEvent(Resource):
             if flag:
                 events_updated.append(f"{data['event']}_{data['value']}, result: {result}")
         if flag:
+            msg = (f"Record inserted-->Por: {data['id_leader']}, para empleado: {data['id_emp']}, Fecha: {data['date']}, "
+                   f"Evento: {data['event']}, Valor: {data['value']}, Comentario: {data['comment']}")
+            create_notification_permission(msg, ["bitacora", "operaciones"], "Nuevo evento bitacora", data["id_leader"], data["id_emp"])
+            write_log_file(log_file_bitacora_path, msg)
             return {"answer": "The event has been added", "data": events_updated}, 201
         elif error is not None:
             print(error)
@@ -89,6 +96,10 @@ class FichajeEvent(Resource):
         flag, error, result = update_bitacora_value(
             data["id_emp"], data["event"], (data["date"], data["value"], data["comment"], data["contract"]))
         if flag:
+            msg = (f"Record updated-->Por: {data['id_leader']}, para empleado: {data['id_emp']}, Fecha: {data['date']}, "
+                   f"Evento: {data['event']}, Valor: {data['value']}, Comentario: {data['comment']}")
+            create_notification_permission(msg, ["bitacora", "operaciones"], "Evento bitacora actualizado", data["id_leader"], data["id_emp"])
+            write_log_file(log_file_bitacora_path, msg)
             return {"answer": "The event has been updated"}, 200
         elif error is not None:
             print(error)
@@ -106,6 +117,10 @@ class FichajeEvent(Resource):
             return {"answer": "No se puede alterar la bitcaora en esta fecha."}, 403
         flag, error, result = erase_value_bitacora(data["id_emp"], data["event"], (data["date"], data["contract"]))
         if flag:
+            msg = (f"Record deleted-->Por: {data['id_leader']}, para empleado: {data['id_emp']}, Fecha: {data['date']}, "
+                   f"Evento: {data['event']}, Valor: {data['value']}, Comentario: {data['comment']}")
+            create_notification_permission(msg, ["bitacora", "operaciones"], "Evento bitacora eliminado", data["id_leader"], data["id_emp"])
+            write_log_file(log_file_bitacora_path, msg)
             return {"answer": "The event has been deleted"}, 200
         elif error is not None:
             print(error)
@@ -146,7 +161,6 @@ class BitacoraDownloadReport(Resource):
             writer.writerow(columns)
             for item in event_filtered:
                 writer.writerow(item)
-
         # data_out = transform_bitacora_data_to_dict(event_filtered, columns)
         try:
             return send_file(filepath_bitacora_download, as_attachment=True)

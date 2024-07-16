@@ -69,7 +69,8 @@ sm_model = api.model('Material_request', {
     'critical_date': fields.String(required=True, description='The critical date', example="2024-07-15"),
     'status': fields.Integer(required=True, description='The status of the sm'),
     'history':  fields.List(fields.Nested(history_model_sm)),
-    'comment': fields.String(required=True, description='The comment')
+    'comment': fields.String(required=True, description='The comment'),
+    'emp_id_storage': fields.Integer(required=True, description='The employee id storage', example=1)
 })
 
 table_sm_model = api.model('TableMaterialRequest', {
@@ -105,7 +106,8 @@ sm_put_model = api.model('material_requestPut', {
 
 delete_request_sm_model = api.model('DeleteRequestmaterial_request', {
     'id': fields.Integer(required=True, description='The id'),
-    'sm_code': fields.String(required=True, description='The sm code')
+    'sm_code': fields.String(required=True, description='The sm code'),
+    'id_emp': fields.Integer(required=True, description='The employee id')
 })
 
 new_cliente_model = api.model('NewClienteSM', {
