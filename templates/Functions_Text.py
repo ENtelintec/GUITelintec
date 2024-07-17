@@ -156,6 +156,12 @@ def parse_data(data: dict, mode: int):
                     'id_emp': data["id_emp"],
                     'span': data["span"]
                 }
+            case 15:
+                out = {
+                    'id': data["id"],
+                    'emp_id': data["emp_id"],
+                    'comment': data["comment"]
+                }
             case 17:
                 "id"
                 "id_product"

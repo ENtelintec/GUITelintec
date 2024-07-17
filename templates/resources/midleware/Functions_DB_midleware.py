@@ -6,12 +6,15 @@ import json
 import math
 from datetime import datetime, timedelta
 
+from static.extensions import format_timestamps, log_file_sm_path
 from templates.controllers.employees.employees_controller import get_all_data_employees, get_all_data_employee, \
     get_emp_contract
 from templates.controllers.employees.vacations_controller import get_vacations_data, get_vacations_data_emp
 from templates.controllers.index import DataHandler
-from templates.controllers.material_request.sm_controller import get_sm_entries
+from templates.controllers.material_request.sm_controller import get_sm_entries, get_sm_by_id, update_history_sm
 from templates.controllers.product.p_and_s_controller import get_sm_products
+from templates.misc.Functions_Files import write_log_file
+from templates.resources.Functions_Utils import create_notification_permission
 
 """---------------------------API material_request-----------------------------------------"""
 
@@ -73,7 +76,7 @@ def get_all_sm(limit, page=0, emp_id=-1):
     limit = limit if limit > 0 else 10
     page = page if page >= 0 else 0
     if len(result) <= 0:
-        return {"data":[], "page":0, "pages":0}, 200
+        return {"data": [], "page": 0, "pages": 0}, 200
     pages = math.floor(len(result) / limit)
     if page > pages:
         print("page > pages")
@@ -110,6 +113,75 @@ def get_all_sm(limit, page=0, emp_id=-1):
         'pages': pages + 1
     }
     return data_out, 200
+
+
+def update_data_dicts(products: list, products_sm):    
+    for list_items in products:
+        for item in list_items:
+            for i, item_p in enumerate(products_sm):
+                if item["id"] == item_p["id"]:
+                    products_sm[i] = item
+                    break
+    return products_sm
+
+
+def dispatch_sm(data):
+    flag, error, result = get_sm_by_id(data['id'])
+    if not flag or len(result) <= 0:
+        return 400, ["sm not foud"]
+    history_sm = json.loads(result[0][13])
+    emp_id_creation = result[0][7]
+    history_sm.append(
+        {"user": data["emp_id"], "event": "dispatch", "date": datetime.now().strftime(format_timestamps),
+         "comment": data["comment"]})
+    products_sm = json.loads(result[0][11])
+    products_to_dispacth = []
+    products_to_request = []
+    new_products = []
+    for item in products_sm:
+        if "(Nuevo)" in item["comment"] and "(Pedido)" not in item["comment"]:
+            new_products.append(item)
+            continue
+        if ((item["stock"] >= item["quantity"] or
+            "(Pedido)" in item["comment"]) and 
+                "(Despachado)" not in item["comment"]):
+            products_to_dispacth.append(item)
+        elif "(Pedido)" not in item["comment"] and "(Despachado)" not in item["comment"]:
+            products_to_request.append(item)
+    # update db with corresponding movements
+    (products_to_dispacth, products_to_request, new_products) = dispatch_products(
+        products_to_dispacth, products_to_request, data['id'], new_products)
+    # update table with new stock
+    products_sm = update_data_dicts([products_to_dispacth, products_to_request, new_products], products_sm)
+    is_complete = True if len(products_to_request) == 0 and len(new_products) == 0 else False
+    flag, error, result = update_history_sm(data['id'], history_sm, products_sm, is_complete)
+    if flag:
+        msg = f"SM con ID-{data['id']} despachada"
+        create_notification_permission(msg, ["sm"], "SM Despachada", data["emp_id"], emp_id_creation)
+        write_log_file(log_file_sm_path, msg)
+        return 200, {"to_dispatch": products_to_dispacth, "to_request": products_to_request,
+                     "new_products": new_products}
+    else:
+        return 400, {"msg": str(error)}
+
+
+def cancel_sm(data):
+    flag, error, result = get_sm_by_id(data['id'])
+    if not flag or len(result) <= 0:
+        return 400, ["sm not foud"]
+    history_sm = json.loads(result[0][13])
+    emp_id_creation = result[0][7]
+    history_sm.append(
+        {"user": data["emp_id"], "event": "cancelation", "date": datetime.now().strftime(format_timestamps),
+         "comment": data["comment"]})
+    flag, error, result = update_history_sm(data['id'], history_sm, [], True)
+    if flag:
+        msg = f"SM con ID-{data['id']} cancelada"
+        create_notification_permission(msg, ["sm"], "SM Cancelada", data["emp_id"], emp_id_creation)
+        write_log_file(log_file_sm_path, msg)
+        return 200, {"msg": "ok"}
+    else:
+        return 400, {"msg": str(error)}
 
 
 def get_employees_almacen():
@@ -196,11 +268,13 @@ def create_csv_file_employees(status: str):
     # create file
     filepath = "files/emp.csv"
     with (open(filepath, "w")) as file:
-        file.write("id,name,phone,department,modality,email,contract,admission,rfc,curp,nss,emergency,position,status,departure,exam_id,birthday,legajo\n")
+        file.write(
+            "id,name,phone,department,modality,email,contract,admission,rfc,curp,nss,emergency,position,status,departure,exam_id,birthday,legajo\n")
         for item in result:
             (id_emp, name, lastname, phone, department, modality, email, contract, admission, rfc, curp, nss,
              emergency_contact, position, status, departure, examen, birthday, legajo) = item
-            file.write(f"{id_emp},{name},{phone},{department},{modality},{email},{contract},{admission},{rfc},{curp},{nss},{emergency_contact},{position},{status},{departure},{examen},{birthday},{legajo}\n")
+            file.write(
+                f"{id_emp},{name},{phone},{department},{modality},{email},{contract},{admission},{rfc},{curp},{nss},{emergency_contact},{position},{status},{departure},{examen},{birthday},{legajo}\n")
     return filepath
 
 

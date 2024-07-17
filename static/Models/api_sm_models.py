@@ -142,3 +142,21 @@ request_sm_plot_data_model = api.model('RequestSMPlotData', {
     'data': fields.List(fields.Nested(data_sm_plots)),
     'type': fields.String(required=True, description='The type of plot')
 })
+
+request_sm_dispatch_model = api.model('RequestSMDispatch', {
+    'id': fields.Integer(required=True, description='The id'),
+    'emp_id': fields.Integer(required=True, description='The employee id'),
+    'comment': fields.String(required=True, description='The date')
+})
+
+data_response_dispatch_model = api.model('DataResponseDispatch', {
+    "to_dispatch": fields.List(fields.Nested(items_model_sm)),
+    "to_request": fields.List(fields.Nested(items_model_sm)),
+    "new_products": fields.List(fields.Nested(new_product_model)),
+    "msg":  fields.String(required=False, description='The message')
+})
+
+response_sm_dispatch_model = api.model('ResponseSMDispatch', {
+    'msg': fields.String(required=True, description='The message'),
+    'data': fields.Nested(data_response_dispatch_model)
+})

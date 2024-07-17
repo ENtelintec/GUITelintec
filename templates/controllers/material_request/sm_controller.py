@@ -160,3 +160,14 @@ def update_only_status(status: int, sm_id: int):
     val = (status, sm_id)
     flag, error, result = execute_sql(sql, val, 4)
     return flag, error, result
+
+
+def get_sm_by_id(sm_id: int):
+    sql = ("SELECT "
+           "sm_id, sm_code, folio, contract, facility, location, client_id, emp_id, pedido_cotizacion, date, "
+           "limit_date, items, status, history, comment "
+           "FROM sql_telintec.materials_request "
+           "WHERE sm_id = %s")
+    val = (sm_id,)
+    flag, error, result = execute_sql(sql, val, 1)
+    return flag, error, result
