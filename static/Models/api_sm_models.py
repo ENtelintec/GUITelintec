@@ -24,7 +24,9 @@ items_model_sm = api.model('ItemsModel', {
     'stock':  fields.Integer(required=True, description='The product stock'),
     'comment': fields.String(required=True, description='The product comment'),
     'quantity': fields.Float(required=True, description='The product quantity'),
-    'movement': fields.Integer(required=False, description='The product movement')
+    'movement': fields.Integer(required=False, description='The product movement'),
+    'url':  fields.String(required=True, description='The product url'),
+    'sku':  fields.String(required=False, description='The product sku')
 })
 history_model_sm = api.model('HistoryModel', {
     'date': fields.String(required=True, description='The product id'),

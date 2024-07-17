@@ -98,7 +98,9 @@ def parse_data(data: dict, mode: int):
                         "quantity": item['quantity'],
                         "comment": item['comment'],
                         "stock": item['stock'],
-                        "name": item
+                        "name": item,
+                        "url": item['url'],
+                        "sku": item['sku'] if "sku" in item.keys() else None
                     })
                 out = {
                     "info": info,
