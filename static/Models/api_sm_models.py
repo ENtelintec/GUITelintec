@@ -153,7 +153,7 @@ data_response_dispatch_model = api.model('DataResponseDispatch', {
     "to_dispatch": fields.List(fields.Nested(items_model_sm)),
     "to_request": fields.List(fields.Nested(items_model_sm)),
     "new_products": fields.List(fields.Nested(new_product_model)),
-    "msg":  fields.String(required=False, description='The message')
+    "msg":  fields.String(required=True, description='The message')
 })
 
 response_sm_dispatch_model = api.model('ResponseSMDispatch', {
