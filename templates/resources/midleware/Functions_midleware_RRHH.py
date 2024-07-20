@@ -2,12 +2,14 @@
 __author__ = 'Edisson Naula'
 __date__ = '$ 28/jun./2024  at 16:28 $'
 
+import json
 from datetime import datetime
 
 import pandas as pd
 
 from static.extensions import files_fichaje_path, patterns_files_fichaje, cache_file_emp_fichaje, format_date_fichaje_file
-from templates.misc.Functions_AuxFiles import get_events_op_date
+from templates.Functions_Sharepoint import get_files_site, download_files_site
+from templates.misc.Functions_AuxFiles import get_events_op_date, get_pairs_nomina_docs, get_data_xml_file_nomina
 from templates.misc.Functions_Files import extract_fichajes_file, check_names_employees_in_cache, get_info_f_file_name, \
     get_info_t_file_name, get_info_bitacora, unify_data_employee
 from templates.misc.Functions_Files_RH import check_fichajes_files_in_directory
@@ -173,3 +175,23 @@ def get_fichaje_data(data: dict):
         data_emp = get_data_name_fichaje(name, dff, dft, data_bitacora["df"], clocks, grace_in, grace_out)
         data_out.append(data_emp)
     return 200, data_out
+
+
+def upload_nomina_doc(data):
+    pass
+    return 200, None
+
+
+def update_data_docs_nomina():
+    settings = json.load(open("files/settings.json", "r"))
+    url_shrpt = settings["gui"]["RRHH"]["url_shrpt"]
+    folder_rrhh = settings["gui"]["RRHH"]["folder_rrhh"]
+    folder_nominas = settings["gui"]["RRHH"]["folder_nominas"]
+    data, code = get_files_site(url_shrpt+folder_rrhh, folder_nominas)
+    data_dict = get_pairs_nomina_docs(data)
+    print(data_dict)
+    for k, v in data_dict.items():
+        download_path, code = download_files_site(url_shrpt+folder_rrhh, v["xml"])
+        if code == 200:
+            data_file = get_data_xml_file_nomina(download_path)
+            print(data_file)

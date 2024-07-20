@@ -10,7 +10,7 @@ from static.Models.api_sm_models import client_emp_sm_response_model, products_a
 from static.extensions import log_file_sm_path
 from templates.Functions_AuxPlots import get_data_sm_per_range
 from templates.misc.Functions_Files import write_log_file
-from templates.resources.Functions_Utils import create_notification_permission
+from templates.Functions_Utils import create_notification_permission
 from templates.resources.midleware.Functions_DB_midleware import get_products_sm, get_all_sm, get_employees_almacen, \
     dispatch_sm, cancel_sm
 from templates.Functions_Text import parse_data

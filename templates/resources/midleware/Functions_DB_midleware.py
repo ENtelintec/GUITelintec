@@ -14,7 +14,7 @@ from templates.controllers.index import DataHandler
 from templates.controllers.material_request.sm_controller import get_sm_entries, get_sm_by_id, update_history_sm
 from templates.controllers.product.p_and_s_controller import get_sm_products
 from templates.misc.Functions_Files import write_log_file
-from templates.resources.Functions_Utils import create_notification_permission
+from templates.Functions_Utils import create_notification_permission
 
 """---------------------------API material_request-----------------------------------------"""
 

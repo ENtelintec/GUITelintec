@@ -33,3 +33,7 @@ __pycache__/
 /files/Pmodels/*
 /test.json
 /scripts_db_handle/
+/domain.crt
+*.pem
+*.cer
+*.pfx

@@ -16,7 +16,7 @@ from static.extensions import delta_bitacora_edit, format_date, format_timestamp
 from templates.misc.Functions_AuxFiles import get_events_op_date, update_bitacora, update_bitacora_value, \
     erase_value_bitacora
 from templates.misc.Functions_Files import write_log_file
-from templates.resources.Functions_Utils import create_notification_permission
+from templates.Functions_Utils import create_notification_permission
 from templates.resources.midleware.Functions_DB_midleware import check_date_difference
 from templates.Functions_Text import parse_data
 from templates.controllers.employees.employees_controller import get_employees_op_names
