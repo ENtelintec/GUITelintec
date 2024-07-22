@@ -110,7 +110,6 @@ def parse_data(data: dict, mode: int):
             case 7:
                 out = {
                     "id": data['id'],
-                    "sm_code": data['sm_code'],
                     "id_emp": data['id_emp'] if "id_emp" in data.keys() else None
                 }
             case 9:

@@ -108,7 +108,6 @@ sm_put_model = api.model('material_requestPut', {
 
 delete_request_sm_model = api.model('DeleteRequestmaterial_request', {
     'id': fields.Integer(required=True, description='The id'),
-    'sm_code': fields.String(required=True, description='The sm code'),
     'id_emp': fields.Integer(required=True, description='The employee id')
 })
 
