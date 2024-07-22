@@ -97,9 +97,9 @@ class AddSM(Resource):
         flag, error, result = delete_sm_db(data["id"])
         if flag:
             msg = (f"SM #{data['id']} eliminada, "
-                   f"empleado con id: {data['emp_id']}")
+                   f"empleado con id: {data['id_emp']}")
             create_notification_permission(msg, ["sm", "administracion", "almacen"], "SM Eliminada", 
-                                           sender_id=data["emp_id"])
+                                           sender_id=data["id_emp"])
             write_log_file(log_file_sm_path, msg)
             return {"answer": "ok", "msg": error}, 200
         else:
