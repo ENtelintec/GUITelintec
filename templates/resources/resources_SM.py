@@ -94,7 +94,7 @@ class AddSM(Resource):
         code, data = parse_data(ns.payload, 7)
         if code == 400:
             return {"answer": "The data has a bad structure"}, code
-        flag, error, result = delete_sm_db(data["id"], data["sm_code"])
+        flag, error, result = delete_sm_db(data["id"])
         if flag:
             msg = (f"SM #{data['id']} eliminada, "
                    f"empleado con id: {data['emp_id']}")

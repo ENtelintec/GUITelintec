@@ -9,6 +9,7 @@ import pandas as pd
 
 from static.extensions import files_fichaje_path, patterns_files_fichaje, cache_file_emp_fichaje, format_date_fichaje_file
 from templates.Functions_Sharepoint import get_files_site, download_files_site
+from templates.controllers.payroll.payroll_controller import get_payrolls, update_payroll
 from templates.misc.Functions_AuxFiles import get_events_op_date, get_pairs_nomina_docs, get_data_xml_file_nomina
 from templates.misc.Functions_Files import extract_fichajes_file, check_names_employees_in_cache, get_info_f_file_name, \
     get_info_t_file_name, get_info_bitacora, unify_data_employee
@@ -182,6 +183,25 @@ def upload_nomina_doc(data):
     return 200, None
 
 
+def update_files_data_nominas(key: str, paths_pdf_xml: dict, data_xml: dict):
+    flag, error, result = get_payrolls(data_xml["emp_id"])
+    data_emp = {} if not flag or len(result) == 0 else json.loads(result[1])
+    date = pd.to_datetime(data_xml["date"])
+    year = str(date.year)
+    month = str(date.month)
+    if year in data_emp.keys():
+        if month in data_emp[year].keys():
+            data_emp[year][month][key] = paths_pdf_xml
+        else:
+            data_emp[year][month] = {key: paths_pdf_xml}
+        return data_emp
+    if month in data_emp.keys():
+        data_emp[year][month][key] = paths_pdf_xml
+    else:
+        data_emp[year] = {month: {key: paths_pdf_xml}}
+    return data_emp
+
+
 def update_data_docs_nomina():
     settings = json.load(open("files/settings.json", "r"))
     url_shrpt = settings["gui"]["RRHH"]["url_shrpt"]
@@ -189,9 +209,40 @@ def update_data_docs_nomina():
     folder_nominas = settings["gui"]["RRHH"]["folder_nominas"]
     data, code = get_files_site(url_shrpt+folder_rrhh, folder_nominas)
     data_dict = get_pairs_nomina_docs(data)
-    print(data_dict)
+    data_emps = {}
+    results = []
     for k, v in data_dict.items():
         download_path, code = download_files_site(url_shrpt+folder_rrhh, v["xml"])
         if code == 200:
             data_file = get_data_xml_file_nomina(download_path)
-            print(data_file)
+            data_emps[data_file["emp_id"]] = update_files_data_nominas(k, v, data_file)
+            flag, error, result = update_payroll(data_emps[data_file["emp_id"]], data_file["emp_id"])
+            results.append((flag, error, result))
+    return results
+
+
+def download_nomina_doc(data):
+    settings = json.load(open("files/settings.json", "r"))
+    url_shrpt = settings["gui"]["RRHH"]["url_shrpt"]
+    folder_rrhh = settings["gui"]["RRHH"]["folder_rrhh"]
+    download_path, code = download_files_site(url_shrpt+folder_rrhh, data["file_url"])
+    return download_path, code
+
+
+def get_files_list_nomina(emp_id):
+    flag, error, result = get_payrolls(emp_id)
+    files = []
+    for item in result:
+        emp_id = int(item[0])
+        dict_data = json.loads(item[1])
+        for year in dict_data.keys():
+            for month in dict_data[year].keys():
+                for file in dict_data[year][month].keys():
+                    files.append({
+                        "year": year,
+                        "month": month,
+                        "files": dict_data[year][month][file],
+                        "name":  file,
+                        "emp_id": emp_id
+                    })
+    return 200, files

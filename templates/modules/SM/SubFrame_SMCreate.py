@@ -61,11 +61,10 @@ def search_client(clients_data, client_key: int | str):
 
 
 def create_dict_sm(info, products):
-    id_sm, code, folio, contract, plant, location, client, order_quotation, date, date_limit, comment = info
+    id_sm, folio, contract, plant, location, client, order_quotation, date, date_limit, comment = info
     dict_data = {
         "info": {
             "id": id_sm,
-            "sm_code": code,
             "folio": folio,
             "contract": contract,
             "facility": plant,
@@ -212,16 +211,15 @@ class FrameSMCreate(ttk.Frame):
 
     def formart_values_info(self, info, action=0):
         id_sm = info[0] if action != 0 else None
-        code = info[1]
-        folio = info[2]
-        contract = info[3]
-        plant = info[4]
-        location = info[5]
-        client = info[6]
-        order_quotation = info[7]
-        date = info[8]
-        date_limit = info[9]
-        comment = info[10]
+        folio = info[1]
+        contract = info[2]
+        plant = info[3]
+        location = info[4]
+        client = info[5]
+        order_quotation = info[6]
+        date = info[7]
+        date_limit = info[8]
+        comment = info[9]
         try:
             date = datetime.strptime(date, "%Y-%m-%d %H:%M:%S") if len(date) > 10 else datetime.strptime(
                 date, "%Y-%m-%d")
@@ -248,7 +246,7 @@ class FrameSMCreate(ttk.Frame):
         if client_out is None:
             self.svar_info.set("!!!Revise los datos del cliente¡¡¡")
             return
-        return (self._id_sm_to_edit, code, folio, contract, plant, location, client_out, order_quotation,
+        return (self._id_sm_to_edit,folio, contract, plant, location, client_out, order_quotation,
                 date, date_limit, comment)
 
     def get_sm_values_row(self, row):
@@ -282,7 +280,7 @@ class FrameSMCreate(ttk.Frame):
                 self.svar_info.set(f"{error}")
             else:
                 msg = (
-                    f"Record inserted--> material_request: {dict_data['info']['sm_code']} --> by {self.data_emp_dic['name'].title()} "
+                    f"Record inserted--> material_request: {dict_data['info']['id']} --> by {self.data_emp_dic['name'].title()} "
                     f"{self.data_emp_dic['lastname'].title()} at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
                 write_log_file(log_file_sm_path, msg)
                 create_notification_permission(msg, ["sm"], "SM creada", self._id_emp, 0)
@@ -333,7 +331,7 @@ class FrameSMCreate(ttk.Frame):
             self.svar_info.set(error)
 
     def on_erase_click(self):
-        sm_code = self.entries[1].get()
+        sm_code = self.entries[0].get()
         if self._id_sm_to_edit is None:
             self.svar_info.set("!!!Debe seleccionar un registro¡¡¡")
             return
@@ -343,7 +341,7 @@ class FrameSMCreate(ttk.Frame):
             message=msg)
         if answer == "No":
             return
-        flag, error, result = delete_sm_db(self._id_sm_to_edit, sm_code)
+        flag, error, result = delete_sm_db(self._id_sm_to_edit)
         if flag:
             if error is not None:
                 self.svar_info.set(f"{error}")

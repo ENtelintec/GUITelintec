@@ -310,3 +310,12 @@ def get_emp_contract(contract: str):
     val = (contract.upper(), contract.lower())
     flag, error, result = execute_sql(sql, val, type_sql=2)
     return flag, error, result
+
+
+def get_emp_mail(emp_id):
+    sql = ("SELECT email "
+           "FROM sql_telintec.employees "
+           "WHERE employee_id = %s")
+    val = (emp_id,)
+    flag, error, result = execute_sql(sql, val, type_sql=1)
+    return flag, error, result

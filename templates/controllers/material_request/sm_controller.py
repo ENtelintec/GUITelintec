@@ -16,7 +16,7 @@ def get_sm_entries(emp_id=-1):
         return False, "Invalid employee ID", []
     if emp_id <= -1:
         sql = (
-            "SELECT sm_id, sm_code, folio, contract, facility, location, client_id, emp_id, "
+            "SELECT sm_id, folio, contract, facility, location, client_id, emp_id, "
             "pedido_cotizacion, date, limit_date, "
             "items, status, history, comment "
             "FROM sql_telintec.materials_request ")
@@ -27,7 +27,7 @@ def get_sm_entries(emp_id=-1):
         flag, error, result = execute_sql(sql, val, 1)
         if flag and len(result) > 0:
             sql = (
-                "SELECT sm_id, sm_code, folio, contract, facility, location, client_id, emp_id, "
+                "SELECT sm_id, folio, contract, facility, location, client_id, emp_id, "
                 "pedido_cotizacion, date, limit_date, "
                 "items, status, history, comment "
                 "FROM sql_telintec.materials_request "
@@ -43,10 +43,10 @@ def insert_sm_db(data):
     event = [{"event": "creation",
               "date": datetime.now().strftime(format_timestamps), "user": data['info']['emp_id']}]
     sql = ("INSERT INTO sql_telintec.materials_request "
-           "(sm_code, folio, contract, facility, location, "
+           "(folio, contract, facility, location, "
            "client_id, emp_id, pedido_cotizacion, date, limit_date, items, status, history, comment)"
-           "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)")
-    val = (data['info']['sm_code'], data['info']['folio'], data['info']['contract'], data['info']['facility'],
+           "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)")
+    val = (data['info']['folio'], data['info']['contract'], data['info']['facility'],
            data['info']['location'], data['info']['client_id'], data['info']['emp_id'],
            data['info']['order_quotation'], data['info']['date'], data['info']['limit_date'],
            json.dumps(data['items']), 0, json.dumps(event), data['info']['comment'])
@@ -54,18 +54,18 @@ def insert_sm_db(data):
     return flag, error, result
 
 
-def delete_sm_db(id_m: int, sm_code: str):
+def delete_sm_db(id_m: int):
     sql = ("DELETE FROM sql_telintec.materials_request "
-           "WHERE sm_id = %s AND sm_code = %s ")
-    val = (id_m, sm_code)
+           "WHERE sm_id = %s")
+    val = (id_m,)
     flag, error, result = execute_sql(sql, val, 3)
     if not flag:
         return False, error, None
-    sql = ("SELECT sm_id, sm_code, folio, contract, facility, location, client_id, emp_id, date, limit_date, "
+    sql = ("SELECT sm_id, folio, contract, facility, location, client_id, emp_id, date, limit_date, "
            "items, status, history, comment, pedido_cotizacion "
            "FROM sql_telintec.materials_request "
-           "WHERE sm_id = %s AND sm_code = %s")
-    val = (id_m, sm_code)
+           "WHERE sm_id = %s ")
+    val = (id_m,)
     flag, error, result = execute_sql(sql, val, 1)
     if len(result) == 0:
         return True, "Material request deleted", None
@@ -83,11 +83,11 @@ def update_sm_db(data):
     if data['id_sm'] not in ids_sm:
         return True, "Material request not found", None
     sql = ("UPDATE sql_telintec.materials_request "
-           "SET sm_code = %s, folio = %s, contract = %s, facility = %s, location = %s, "
+           "SET folio = %s, contract = %s, facility = %s, location = %s, "
            "client_id = %s, emp_id = %s, date = %s, limit_date = %s, items = %s, status = 0, pedido_cotizacion = %s, "
            "history = %s, comment = %s "
            "WHERE sm_id = %s")
-    val = (data['info']['sm_code'], data['info']['folio'], data['info']['contract'], data['info']['facility'],
+    val = (data['info']['folio'], data['info']['contract'], data['info']['facility'],
            data['info']['location'], data['info']['client_id'], data['info']['emp_id'], data['info']['date'],
            data['info']['limit_date'], json.dumps(data['items']),
            data['info']['order_quotation'], json.dumps(data['info']['history']),
@@ -164,7 +164,7 @@ def update_only_status(status: int, sm_id: int):
 
 def get_sm_by_id(sm_id: int):
     sql = ("SELECT "
-           "sm_id, sm_code, folio, contract, facility, location, client_id, emp_id, pedido_cotizacion, date, "
+           "sm_id, folio, contract, facility, location, client_id, emp_id, pedido_cotizacion, date, "
            "limit_date, items, status, history, comment "
            "FROM sql_telintec.materials_request "
            "WHERE sm_id = %s")

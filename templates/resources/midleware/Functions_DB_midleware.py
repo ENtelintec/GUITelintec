@@ -92,20 +92,19 @@ def get_all_sm(limit, page=0, emp_id=-1):
     for i in range(limit_down, limit_up):
         items.append({
             'id': result[i][0],
-            'sm_code': result[i][1],
-            'folio': result[i][2],
-            'contract': result[i][3],
-            'facility': result[i][4],
-            'location': result[i][5],
-            'client_id': result[i][6],
-            'emp_id': result[i][7],
-            'order_quotation': result[i][8],
-            'date': result[i][9],
-            'limit_date': result[i][10],
-            'items': json.loads(result[i][11]),
-            'status': result[i][12],
-            'history': json.loads(result[i][13]),
-            'comment': result[i][14],
+            'folio': result[i][1],
+            'contract': result[i][2],
+            'facility': result[i][3],
+            'location': result[i][4],
+            'client_id': result[i][5],
+            'emp_id': result[i][6],
+            'order_quotation': result[i][7],
+            'date': result[i][8],
+            'limit_date': result[i][9],
+            'items': json.loads(result[i][10]),
+            'status': result[i][11],
+            'history': json.loads(result[i][12]),
+            'comment': result[i][13],
         })
     data_out = {
         'data': items,
@@ -157,8 +156,11 @@ def dispatch_sm(data):
     flag, error, result = update_history_sm(data['id'], history_sm, products_sm, is_complete)
     if flag:
         msg = f"SM con ID-{data['id']} despachada"
-        create_notification_permission(msg, ["sm"], "SM Despachada", data["emp_id"], emp_id_creation)
         write_log_file(log_file_sm_path, msg)
+        msg += "\n Productos a despachar:  " + "\n".join([f"{item['quantity']} {item['name']}" for item in products_to_dispacth])
+        msg += "\n Productos a solicitar:  " + "\n".join([f"{item['quantity']} {item['name']}" for item in products_to_request])
+        msg += "\n Productos nuevos:  " + "\n".join([f"{item['quantity']} {item['name']} {item['url']}" for item in new_products])
+        create_notification_permission(msg, ["sm"], "SM Despachada", data["emp_id"], emp_id_creation)
         return 200, {"to_dispatch": products_to_dispacth, "to_request": products_to_request,
                      "new_products": new_products}
     else:

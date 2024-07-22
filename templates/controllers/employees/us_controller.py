@@ -134,6 +134,6 @@ def get_permissions_user_password(user: str, password: str):
         contrato = None
     out = {"permissions": permissions,
            "emp_id": emp_id,
-           "name": name + " " + l_name,
+           "name": str(name) + " " + str(l_name),
            "contract": contrato}
     return out
