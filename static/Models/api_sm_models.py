@@ -72,7 +72,8 @@ sm_model = api.model('Material_request', {
     'status': fields.Integer(required=True, description='The status of the sm'),
     'history':  fields.List(fields.Nested(history_model_sm)),
     'comment': fields.String(required=True, description='The comment'),
-    'emp_id_storage': fields.Integer(required=True, description='The employee id storage', example=1)
+    'emp_id_storage': fields.Integer(required=True, description='The employee id storage', example=1),
+    'items': fields.List(fields.Nested(items_model_sm), required=False)
 })
 
 table_sm_model = api.model('TableMaterialRequest', {
