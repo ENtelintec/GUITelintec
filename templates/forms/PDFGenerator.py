@@ -13,7 +13,7 @@ image_logo = "img/logo_docs.png"
 dict_codes_forms = {
     1: "FO-GRH-08 R0",
     2: "FO-ALM-03 R0",
-    3: "FO-GRH-08 R0",
+    3: "FO-ALM-04 R0",
 }
 
 
@@ -183,6 +183,121 @@ def create_header(master: canvas.Canvas, img=None, title=None, page_x=None, date
     )
 
 
+def create_header_materials(
+        master: canvas.Canvas, img=None, title=None, page_x=None, date_int=None,
+        type_form=1, orientation="vertical", title_font=None, info_dict=None):
+    position_header_y = 770 if orientation == "vertical" else 535
+    position_header_x = 25 if orientation == "vertical" else 25
+    height_logo = 30
+    title_height = 16 if title_font is None else title_font
+    codes_h_height = 10
+    codes_width = 140
+    start_box_x = 10 if orientation == "vertical" else 10
+    height_box = 50
+    pady = 10
+    padx = 15
+    width_logo = 106.6
+    img = img if img is not None else image_logo
+    # header
+    # bottom line
+    master.line(
+        start_box_x,
+        position_header_y + height_box - pady,
+        page_x - start_box_x,
+        position_header_y + height_box - pady,
+    )
+    # first vertical line
+    master.line(
+        start_box_x,
+        position_header_y + height_box - pady,
+        start_box_x,
+        position_header_y - pady,
+    )
+    # last vertical line
+    master.line(
+        page_x - start_box_x,
+        position_header_y + height_box - pady,
+        page_x - start_box_x,
+        position_header_y - pady,
+    )
+    # top line
+    master.line(
+        start_box_x,
+        position_header_y - pady,
+        page_x - start_box_x,
+        position_header_y - pady,
+    )
+    # first separator
+    master.line(
+        start_box_x + (position_header_x - start_box_x) + width_logo + padx,
+        position_header_y + height_box - pady,
+        start_box_x + (position_header_x - start_box_x) + width_logo + padx,
+        position_header_y - pady,
+    )
+    # second separator
+    master.line(
+        page_x - start_box_x - codes_width - padx,
+        position_header_y + height_box - pady,
+        page_x - start_box_x - codes_width - padx,
+        position_header_y - pady,
+    )
+    # logo
+    master.drawInlineImage(
+        img,
+        position_header_x,
+        position_header_y,
+        height=30,
+        width=106.6,
+        preserveAspectRatio=False,
+        showBoundary=False,
+    )
+    if isinstance(title, str):
+        title = title.upper()
+        master.setFont("Courier-Bold", title_height)
+        master.drawCentredString(
+            page_x / 2,
+            position_header_y + height_logo / 2 - title_height / 2,
+            title.upper(),
+        )
+    else:
+        nlines = len(title)
+        x_title = page_x / 2
+        y_title = position_header_y + height_logo / 2 + ((nlines - 1) * title_height) / 2
+        for index, line in enumerate(title):
+            master.setFont("Courier-Bold", title_height - 2 * index)
+            master.drawCentredString(x_title, y_title, line)
+            y_title -= title_height
+    master.setFont("Courier", codes_h_height)
+    master.drawString(
+        page_x - codes_width - padx,
+        position_header_y + height_logo - codes_h_height,
+        f"Codigo: {dict_codes_forms[type_form]}",
+    )
+    master.drawString(
+        page_x - codes_width - padx, position_header_y, f"I. Vigencia: {date_int}"
+    )
+    # --------------------------------datos quien devuelve------------------------------------
+    font_size = 10
+    position_header_y -= font_size * 1.5
+    master.setFont("Courier-Bold", font_size)
+    master.drawString(position_header_x, position_header_y - 10, "Datos del empleado que realiza la devolución")
+    position_header_y -= font_size * 2.5
+    master.setFont("Courier", font_size)
+    master.drawString(position_header_x, position_header_y, f"Nombre:  {info_dict['emp_name']}")
+    master.drawString(position_header_x, position_header_y - font_size*1.5, f"Contrato:  {info_dict['contrato']}")
+    master.drawString(page_x-codes_width-padx, position_header_y, f"Fecha:  {info_dict['date']}")
+    master.drawString(page_x-codes_width-padx, position_header_y - font_size*1.5, f"Lugar:  {info_dict['lugar']}")
+    position_header_y -= font_size * 3.5
+    master.setFont("Courier-Bold", font_size)
+    master.drawString(position_header_x, position_header_y, "Datos del quien recibe la devolucion")
+    position_header_y -= font_size * 2.5
+    master.setFont("Courier", font_size)
+    master.drawString(position_header_x, position_header_y, f"Nombre:  {info_dict['emp_storage_name']}")
+    master.drawString(position_header_x, position_header_y - font_size*1.5, f"Puesto:  {info_dict['puesto']}")
+    master.drawString(page_x-codes_width-padx, position_header_y, "Tipo de devolición:")
+    master.drawString(page_x-codes_width-padx, position_header_y - font_size*1.5, f"{info_dict['type_return']}")
+
+
 def draw_option(x, y, k, options, answers, pdf):
     if not isinstance(answers, (list, set)):
         answers = [answers]  # Convertir a lista si es un entero
@@ -194,5 +309,3 @@ def draw_option(x, y, k, options, answers, pdf):
         else:
             pdf.setFillColorRGB(0, 0, 0)
             pdf.drawCentredString(x + j * 55, y, "O")
-
-
