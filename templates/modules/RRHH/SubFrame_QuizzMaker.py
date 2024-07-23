@@ -9,10 +9,13 @@ from ttkbootstrap.dialogs import Messagebox
 from ttkbootstrap.scrolled import ScrolledFrame
 
 from static.extensions import quizz_out_path, format_timestamps_filename
+from templates.forms.ClimaLaboral import create_quizz_clima_laboral
+from templates.forms.Eva360 import create_quizz_eva_360
+from templates.forms.QuizzNorm35 import QuizzNor035_v1, QuizzNor035_50Plus
+from templates.forms.QuizzSalida import QuizzSalidaPDF
 from templates.misc.Functions_AuxFiles import save_json_file_quizz
 from templates.Functions_GUI_Utils import calculate_results_quizzes, recommendations_results_quizzes
-from templates.PDFGenerator import create_pdf_quizz_salida, create_pdf__quizz_nor035_v1, \
-    create_pdf_quizz_nor035_50_plus, create_quizz_clima_laboral, create_quizz_eva_360  
+
 
 
 class QuizMaker(ttk.Toplevel):
@@ -293,7 +296,7 @@ class QuizMaker(ttk.Toplevel):
                 + f"{name_emp.replace(' ', '')}_{date_inteview.replace('/', '-')}_type_{tipo_op}.pdf"
         )
         if tipo_op == 0:
-            create_pdf_quizz_salida(
+            QuizzSalidaPDF(
                 self.dict_quizz,
                 None,
                 file_out,
@@ -306,7 +309,7 @@ class QuizMaker(ttk.Toplevel):
                 name_interviewer,
             )
         elif tipo_op == 1:
-            create_pdf__quizz_nor035_v1(
+            QuizzNor035_v1(
                 self.dict_quizz,
                 None,
                 file_out,
@@ -319,7 +322,7 @@ class QuizMaker(ttk.Toplevel):
                 name_interviewer,
             )
         elif tipo_op == 2:
-            create_pdf_quizz_nor035_50_plus(
+            QuizzNor035_50Plus(
                 self.dict_quizz,
                 None,
                 file_out,

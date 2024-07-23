@@ -1,18 +1,20 @@
-import os
-  # -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 __author__ = 'Edisson Naula'
 __date__ = '$ 13/may./2024  at 16:40 $'
 
 import json
-
+import os
 import ttkbootstrap as ttk
 from ttkbootstrap.tableview import Tableview
 from ttkbootstrap.dialogs import Messagebox
 
+from templates.forms.ClimaLaboral import create_quizz_clima_laboral
+from templates.forms.Eva360 import create_quizz_eva_360
+from templates.forms.QuizzNorm35 import QuizzNor035_v1, QuizzNor035_50Plus
+from templates.forms.QuizzSalida import QuizzSalidaPDF
 from templates.misc.Functions_AuxFiles import load_quizzes_names
 from templates.Functions_GUI_Utils import create_label, create_button
-from templates.PDFGenerator import create_pdf_quizz_salida, create_pdf__quizz_nor035_v1, \
-    create_pdf_quizz_nor035_50_plus, create_quizz_clima_laboral, create_quizz_eva_360
+
 
 dict_keys = {
     "name_emp": "Empleado",
@@ -31,9 +33,9 @@ dict_keys = {
 
 
 dict_typer_quizz_generator = {
-    0: create_pdf_quizz_salida,
-    1: create_pdf__quizz_nor035_v1,
-    2: create_pdf_quizz_nor035_50_plus,
+    0: QuizzSalidaPDF,
+    1: QuizzNor035_v1,
+    2: QuizzNor035_50Plus,
     3: create_quizz_clima_laboral,
     4: create_quizz_eva_360
 }
