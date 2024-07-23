@@ -1436,7 +1436,7 @@ def get_list_files(files, filename=None) -> tuple[tuple[list[Any], list[Any]], l
 
 
 def write_log_file(path, text):
-    with open(f"{path}bitacora_log.txt", "a") as f:
+    with open(f"{path}_log.txt", "a") as f:
         f.write(text + "\n")
     return True
 

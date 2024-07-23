@@ -10,7 +10,7 @@ import ttkbootstrap as ttk
 from ttkbootstrap.dialogs import Messagebox
 from ttkbootstrap.tableview import Tableview
 
-from static.extensions import log_file_sm_path, ventanasApp_path
+from static.extensions import log_file_sm_path, ventanasApp_path, format_timestamps, format_date
 from templates.misc.Functions_AuxFiles import get_all_sm_entries, get_all_sm_products
 from templates.misc.Functions_Files import write_log_file
 from templates.Functions_GUI_Utils import create_label, create_button, create_stringvar, create_Combobox, create_entry, \
@@ -61,11 +61,10 @@ def search_client(clients_data, client_key: int | str):
 
 
 def create_dict_sm(info, products):
-    id_sm, code, folio, contract, plant, location, client, order_quotation, date, date_limit, comment = info
+    id_sm, sm_code, folio, contract, plant, location, client, order_quotation, date, date_limit, comment = info
     dict_data = {
         "info": {
             "id": id_sm,
-            "sm_code": code,
             "folio": folio,
             "contract": contract,
             "facility": plant,
@@ -162,10 +161,10 @@ class FrameSMCreate(ttk.Frame):
         entries.append(create_entry(master, row=4, column=1, padx=3, pady=5, sticky="nswe"))
         entries.append(create_Combobox(master, client_list, 25, row=4, column=2, sticky="we", padx=3, pady=5))
         entries.append(create_entry(master, row=4, column=3, padx=3, pady=5, sticky="nswe"))
-        entries.append(create_date_entry(master, firstweekday=0, dateformat="%Y-%m-%d", row=6, column=0, padx=3, pady=5,
+        entries.append(create_date_entry(master, firstweekday=0, dateformat=format_date, row=6, column=0, padx=3, pady=5,
                                          sticky="w"))
         entries.append(
-            create_date_entry(master, firstweekday=0, dateformat="%Y-%m-%d", row=6, column=1, padx=3, pady=5,
+            create_date_entry(master, firstweekday=0, dateformat=format_date, row=6, column=1, padx=3, pady=5,
                               sticky="w"))
         entries.append(create_entry(master, row=6, column=2, padx=3, pady=5, sticky="nswe"))
         create_label(master, 6, 3, text=f"{self.data_emp_dic['name'].title()} {self.data_emp_dic['lastname'].title()}",
@@ -212,27 +211,26 @@ class FrameSMCreate(ttk.Frame):
 
     def formart_values_info(self, info, action=0):
         id_sm = info[0] if action != 0 else None
-        code = info[1]
-        folio = info[2]
-        contract = info[3]
-        plant = info[4]
-        location = info[5]
-        client = info[6]
-        order_quotation = info[7]
-        date = info[8]
-        date_limit = info[9]
-        comment = info[10]
+        folio = info[1]
+        contract = info[2]
+        plant = info[3]
+        location = info[4]
+        client = info[5]
+        order_quotation = info[6]
+        date = info[7]
+        date_limit = info[8]
+        comment = info[9]
         try:
-            date = datetime.strptime(date, "%Y-%m-%d %H:%M:%S") if len(date) > 10 else datetime.strptime(
-                date, "%Y-%m-%d")
+            date = datetime.strptime(date, format_timestamps) if len(date) > 10 else datetime.strptime(
+                date, format_date)
             date_limit = datetime.strptime(date_limit,
-                                           "%Y-%m-%d %H:%M:%S") if len(date_limit) > 10 else datetime.strptime(
-                date_limit, "%Y-%m-%d")
+                                           format_timestamps) if len(date_limit) > 10 else datetime.strptime(
+                date_limit, format_date)
             if date > date_limit:
                 self.svar_info.set("!!!La fecha de inicio no puede ser mayor a la fecha limite¡¡¡")
                 raise Exception("La fecha de inicio no puede ser mayor a la fecha de fin")
-            date = date.strftime("%Y-%m-%d %H:%M:%S") if action != 1 else date
-            date_limit = date_limit.strftime("%Y-%m-%d %H:%M:%S") if action != 1 else date_limit
+            date = date.strftime(format_timestamps) if action != 1 else date
+            date_limit = date_limit.strftime(format_timestamps) if action != 1 else date_limit
         except Exception as e:
             print(e)
             print("!!!Error con el formato o valores de la fecha¡¡¡")
@@ -248,12 +246,12 @@ class FrameSMCreate(ttk.Frame):
         if client_out is None:
             self.svar_info.set("!!!Revise los datos del cliente¡¡¡")
             return
-        return (self._id_sm_to_edit, code, folio, contract, plant, location, client_out, order_quotation,
+        return (self._id_sm_to_edit, folio, contract, plant, location, client_out, order_quotation,
                 date, date_limit, comment)
 
     def get_sm_values_row(self, row):
-        id_sm, code, folio, contract, plant, location, client, employee, order_quotation, date, date_limit, items, status, history, comment = row
-        dict_data = {"id": id_sm, "code": code, "folio": folio, "contract": contract, "plant": plant,
+        id_sm, folio, contract, plant, location, client, employee, order_quotation, date, date_limit, items, status, history, comment = row
+        dict_data = {"id": id_sm, "folio": folio, "contract": contract, "plant": plant,
                      "location": location, "client": client, "employee": self._id_emp, "date": date,
                      "date_limit": date_limit, "items": items, "status": status, "history": history,
                      "order_quotation": order_quotation, "comment": comment}
@@ -282,8 +280,8 @@ class FrameSMCreate(ttk.Frame):
                 self.svar_info.set(f"{error}")
             else:
                 msg = (
-                    f"Record inserted--> material_request: {dict_data['info']['sm_code']} --> by {self.data_emp_dic['name'].title()} "
-                    f"{self.data_emp_dic['lastname'].title()} at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+                    f"Record inserted--> material_request: {dict_data['info']['id']} --> by {self.data_emp_dic['name'].title()} "
+                    f"{self.data_emp_dic['lastname'].title()} at {datetime.now().strftime('format_timestamps')}")
                 write_log_file(log_file_sm_path, msg)
                 create_notification_permission(msg, ["sm"], "SM creada", self._id_emp, 0)
                 self.svar_info.set(f"material_request {result} agregado correctamente")
@@ -304,7 +302,7 @@ class FrameSMCreate(ttk.Frame):
         dict_data['id_sm'] = dict_data["info"]['id']
         try:
             self.history.append({"event": "update",
-                                 "date": datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                                 "date": datetime.now().strftime('format_timestamps'),
                                  "user": dict_data['info']['emp_id']})
             dict_data['info']['history'] = self.history
         except Exception as e:
@@ -322,7 +320,7 @@ class FrameSMCreate(ttk.Frame):
                 self.svar_info.set(f"{error}")
             else:
                 msg = (f"Record updated--> material_request: {dict_data['id_sm']} --> by {self.data_emp_dic['name'].title()} "
-                       f"{self.data_emp_dic['lastname'].title()} at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+                       f"{self.data_emp_dic['lastname'].title()} at {datetime.now().strftime('format_timestamps')}")
                 write_log_file(log_file_sm_path, msg)
                 create_notification_permission(msg, ["sm"], "SM actualizada", self._id_emp, 0)
                 self.svar_info.set("material_request actualizado correctamente")
@@ -333,7 +331,7 @@ class FrameSMCreate(ttk.Frame):
             self.svar_info.set(error)
 
     def on_erase_click(self):
-        sm_code = self.entries[1].get()
+        sm_code = self.entries[0].get()
         if self._id_sm_to_edit is None:
             self.svar_info.set("!!!Debe seleccionar un registro¡¡¡")
             return
@@ -343,14 +341,14 @@ class FrameSMCreate(ttk.Frame):
             message=msg)
         if answer == "No":
             return
-        flag, error, result = delete_sm_db(self._id_sm_to_edit, sm_code)
+        flag, error, result = delete_sm_db(self._id_sm_to_edit)
         if flag:
             if error is not None:
                 self.svar_info.set(f"{error}")
             else:
                 msg = (
                     f"Record deleted--> material_request: {sm_code} --> by {self.data_emp_dic['name'].title()} {self.data_emp_dic['lastname'].title()} "
-                    f"at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+                    f"at {datetime.now().strftime('format_timestamps')}")
                 write_log_file(log_file_sm_path, msg)
                 create_notification_permission(msg, ["sm"], "SM borrada", self._id_emp, 0)
                 self.svar_info.set("material_request eliminado correctamente")
@@ -383,7 +381,7 @@ class FrameSMCreate(ttk.Frame):
             items_table.append((product["id"], product["quantity"], product["comment"],))
         self.frame_products.put_data_resumen(items_table)
         data_info = self.formart_values_info(
-            (data_dic["id"], data_dic["code"], data_dic["folio"], data_dic["contract"], data_dic["plant"],
+            (data_dic["id"], data_dic["folio"], data_dic["contract"], data_dic["plant"],
              data_dic["location"], data_dic["client"], data_dic["order_quotation"], data_dic["date"],
              data_dic["date_limit"],
              data_dic["comment"]), action=1)
@@ -398,19 +396,19 @@ class FrameSMCreate(ttk.Frame):
             elif isinstance(item, ttk.DateEntry):
                 self.entries[index].destroy()
                 self.entries[index] = create_date_entry(self.frame_inputs, firstweekday=0,
-                                                        dateformat="%Y-%m-%d", startdate=data_info[index],
+                                                        dateformat=format_date, startdate=data_info[index],
                                                         row=index + 1, column=1, padx=3, pady=5, sticky="w")
         self.set_disabled_entries(self.list_to_disable)
 
     def get_entries_values(self):
         data_products = self.frame_products.get_resumen_table_data()
-        out = []
+        out_info = []
         for entry in self.entries:
             if isinstance(entry, ttk.DateEntry):
-                out.append(entry.entry.get())
+                out_info.append(entry.entry.get())
             else:
-                out.append(entry.get())
-        return out, data_products
+                out_info.append(entry.get())
+        return out_info, data_products
 
     def set_conditions(self):
         self.set_normal_entries()

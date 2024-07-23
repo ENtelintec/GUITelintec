@@ -24,7 +24,9 @@ items_model_sm = api.model('ItemsModel', {
     'stock':  fields.Integer(required=True, description='The product stock'),
     'comment': fields.String(required=True, description='The product comment'),
     'quantity': fields.Float(required=True, description='The product quantity'),
-    'movement': fields.Integer(required=False, description='The product movement')
+    'movement': fields.Integer(required=False, description='The product movement'),
+    'url':  fields.String(required=True, description='The product url'),
+    'sku':  fields.String(required=False, description='The product sku')
 })
 history_model_sm = api.model('HistoryModel', {
     'date': fields.String(required=True, description='The product id'),
@@ -39,6 +41,16 @@ products_answer_model = api.model('AnswerProducts', {
                                                        ' pages with the selected limit')
 })
 
+emp_almacen_model = api.model('EmployeeAlmacen', {
+    'id': fields.Integer(required=True, description='The employee id'),
+    'name': fields.String(required=True, description='The employee name')
+})
+
+employees_answer_model = api.model('AnswerEmployees', {
+    "data": fields.List(fields.Nested(emp_almacen_model)),
+    'msg':  fields.String(required=True, description='The message')
+})
+
 products_request_model = api.model('ProductSearch', {
     'limit':  fields.Integer(required=True, description='The results limit', example=10),
     'page': fields.Integer(required=True, description='The output page default: 1', example=0)
@@ -46,19 +58,21 @@ products_request_model = api.model('ProductSearch', {
 
 sm_model = api.model('Material_request', {
     'id': fields.Integer(required=True, description='The id <ignored on add event>'),
-    'sm_code': fields.String(required=True, description='The sm code'),
     'folio': fields.String(required=True, description='The folio'),
     'contract': fields.String(required=True, description='The contract'),
     'facility': fields.String(required=True, description='The facility'),
-    'location': fields.String(required=True, description='The location'),
+    'contract_contact':  fields.String(required=True, description='The contract contact'),
     'client_id': fields.Integer(required=True, description='The client id', example=1),
+    'location': fields.String(required=True, description='The location'),
     'order_quotation': fields.String(required=True, description='The order or quotation'),
     'emp_id': fields.String(required=True, description='The employee id', example=1),
-    'date': fields.String(required=True, description='The date'),
-    'limit_date': fields.String(required=True, description='The limit date'),
+    'date': fields.String(required=True, description='The date', example="2024-06-29"),
+    'limit_date': fields.String(required=True, description='The limit date', example="2024-07-12"),
+    'critical_date': fields.String(required=True, description='The critical date', example="2024-07-15"),
     'status': fields.Integer(required=True, description='The status of the sm'),
     'history':  fields.List(fields.Nested(history_model_sm)),
-    'comment': fields.String(required=True, description='The comment')
+    'comment': fields.String(required=True, description='The comment'),
+    'emp_id_storage': fields.Integer(required=True, description='The employee id storage', example=1)
 })
 
 table_sm_model = api.model('TableMaterialRequest', {
@@ -70,7 +84,8 @@ table_sm_model = api.model('TableMaterialRequest', {
 
 table_request_model = api.model('TableRequest', {
     'limit':  fields.Integer(required=True, description='The results limit', example=10),
-    'page': fields.Integer(required=True, description='The output page default: 1', example=0)
+    'page': fields.Integer(required=True, description='The output page default: 1', example=0),
+    'emp_id': fields.Integer(required=True, description='The employee id', example=-1)
 })
 
 sm_product_request_model = api.model('material_requestProductRequest', {
@@ -93,7 +108,7 @@ sm_put_model = api.model('material_requestPut', {
 
 delete_request_sm_model = api.model('DeleteRequestmaterial_request', {
     'id': fields.Integer(required=True, description='The id'),
-    'sm_code': fields.String(required=True, description='The sm code')
+    'id_emp': fields.Integer(required=True, description='The employee id')
 })
 
 new_cliente_model = api.model('NewClienteSM', {
@@ -125,4 +140,22 @@ data_sm_plots = api.model('DataSMBoard', {
 request_sm_plot_data_model = api.model('RequestSMPlotData', {
     'data': fields.List(fields.Nested(data_sm_plots)),
     'type': fields.String(required=True, description='The type of plot')
+})
+
+request_sm_dispatch_model = api.model('RequestSMDispatch', {
+    'id': fields.Integer(required=True, description='The id'),
+    'emp_id': fields.Integer(required=True, description='The employee id'),
+    'comment': fields.String(required=True, description='The date')
+})
+
+data_response_dispatch_model = api.model('DataResponseDispatch', {
+    "to_dispatch": fields.List(fields.Nested(items_model_sm)),
+    "to_request": fields.List(fields.Nested(items_model_sm)),
+    "new_products": fields.List(fields.Nested(new_product_model)),
+    "msg":  fields.String(required=True, description='The message')
+})
+
+response_sm_dispatch_model = api.model('ResponseSMDispatch', {
+    'msg': fields.String(required=True, description='The message'),
+    'data': fields.Nested(data_response_dispatch_model)
 })

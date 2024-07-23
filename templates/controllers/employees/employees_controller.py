@@ -178,7 +178,7 @@ def get_id_name_employee(department: int, is_all=False):
 def get_employees_op_names():
     sql = ("SELECT employee_id, name, l_name, contrato "
            "FROM sql_telintec.employees "
-           "WHERE  department_id = 2")
+           "WHERE  department_id = 2 and status = 'activo' ")
     flag, e, out = execute_sql(sql, None, 5)
     if e is not None:
         return False, e, None
@@ -290,5 +290,32 @@ def get_all_data_employee(id_employee: int):
            "ON (sql_telintec.employees.employee_id = sql_telintec.examenes_med.empleado_id)"
            "WHERE employee_id = %s")
     val = (id_employee,)
+    flag, error, result = execute_sql(sql, val, type_sql=1)
+    return flag, error, result
+
+
+def get_contract_employes(emp_id):
+    sql = ("SELECT contrato "
+           "FROM sql_telintec.employees "
+           "WHERE employee_id = %s")
+    val = (emp_id,)
+    flag, error, result = execute_sql(sql, val, type_sql=1)
+    return flag, error, result
+
+
+def get_emp_contract(contract: str):
+    sql = ("SELECT employee_id, name, l_name "
+           "FROM sql_telintec.employees "
+           "WHERE UPPER(contrato) LIKE %s OR LOWER(contrato) LIKE %s")
+    val = (contract.upper(), contract.lower())
+    flag, error, result = execute_sql(sql, val, type_sql=2)
+    return flag, error, result
+
+
+def get_emp_mail(emp_id):
+    sql = ("SELECT email "
+           "FROM sql_telintec.employees "
+           "WHERE employee_id = %s")
+    val = (emp_id,)
     flag, error, result = execute_sql(sql, val, type_sql=1)
     return flag, error, result

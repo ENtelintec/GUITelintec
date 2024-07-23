@@ -2,7 +2,10 @@
 __author__ = 'Edisson Naula'
 __date__ = '$ 28/jun./2024  at 17:07 $'
 
+from static.extensions import cache_file_nominas
 from templates.Functions_Text import validate_seniority_dict
+
+import json
 
 
 def parse_data(data: dict, mode: int):
@@ -73,3 +76,13 @@ def parse_data(data: dict, mode: int):
         }
 
     return code, out
+
+
+def write_file_cache_nominas(data: dict):
+    """
+    writes a JSON file with the data of the payrolls    
+    :param data: 
+    :return: 
+    """
+    json.dump(data, open(cache_file_nominas, "w"))
+    return 200, "OK"

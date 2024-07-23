@@ -5,9 +5,14 @@ __date__ = '$ 01/abr./2024  at 10:26 $'
 from flask_restx import Resource, Namespace
 from static.Models.api_sm_models import client_emp_sm_response_model, products_answer_model, products_request_model, \
     sm_post_model, delete_request_sm_model, sm_put_model, table_sm_model, table_request_model, new_cliente_model, \
-    new_product_model, request_sm_plot_data_model
+    new_product_model, request_sm_plot_data_model, employees_answer_model, request_sm_dispatch_model, \
+    response_sm_dispatch_model
+from static.extensions import log_file_sm_path
 from templates.Functions_AuxPlots import get_data_sm_per_range
-from templates.resources.midleware.Functions_DB_midleware import get_products_sm, get_all_sm
+from templates.misc.Functions_Files import write_log_file
+from templates.Functions_Utils import create_notification_permission
+from templates.resources.midleware.Functions_DB_midleware import get_products_sm, get_all_sm, get_employees_almacen, \
+    dispatch_sm, cancel_sm
 from templates.Functions_Text import parse_data
 from templates.controllers.customer.customers_controller import get_sm_clients
 from templates.controllers.employees.employees_controller import get_sm_employees
@@ -59,7 +64,7 @@ class AllSm(Resource):
         code, data = parse_data(ns.payload, 5)
         if code == 400:
             return {"data": None, "page": 0, "pages": 0}, code
-        data, code = get_all_sm(data['limit'], data['page'])
+        data, code = get_all_sm(data['limit'], data['page'], data["emp_id"])
         return data, code
 
 
@@ -72,6 +77,13 @@ class AddSM(Resource):
             return {"answer": "The data has a bad structure"}, code
         flag, error, result = insert_sm_db(data)
         if flag:
+            msg = (f"Nueva SM creada #{data['info']['id']}, folio: {data['info']['folio']}, "
+                   f"fecha limite: {data['info']['limit_date']}, "
+                   f"empleado con id: {data['info']['emp_id']}, "
+                   f"comentario: {data['info']['comment']}")
+            create_notification_permission(msg, ["sm", "administracion", "almacen"], "Nueva SM Recibida",
+                                           data["info"]["emp_id"], data['info']["emp_id_storage"])
+            write_log_file(log_file_sm_path, msg)
             return {"answer": "ok", "msg": result}, 201
         else:
             print(error)
@@ -82,8 +94,13 @@ class AddSM(Resource):
         code, data = parse_data(ns.payload, 7)
         if code == 400:
             return {"answer": "The data has a bad structure"}, code
-        flag, error, result = delete_sm_db(data["id"], data["sm_code"])
+        flag, error, result = delete_sm_db(data["id"])
         if flag:
+            msg = (f"SM #{data['id']} eliminada, "
+                   f"empleado con id: {data['id_emp']}")
+            create_notification_permission(msg, ["sm", "administracion", "almacen"], "SM Eliminada", 
+                                           sender_id=data["id_emp"])
+            write_log_file(log_file_sm_path, msg)
             return {"answer": "ok", "msg": error}, 200
         else:
             print(error)
@@ -96,6 +113,13 @@ class AddSM(Resource):
             return {"answer": "The data has a bad structure"}, code
         flag, error, result = update_sm_db(data)
         if flag:
+            msg = (f"Nueva SM creada #{data['info']['id']}, folio: {data['info']['folio']}, "
+                   f"fecha limite: {data['info']['limit_date']}, "
+                   f"empleado con id: {data['info']['emp_id']}, "
+                   f"comentario: {data['info']['comment']}")
+            create_notification_permission(msg, ["sm", "administracion", "almacen"], "Nueva SM Recibida",
+                                           data["info"]["emp_id"], data['info']["emp_id_storage"])
+            write_log_file(log_file_sm_path, msg)
             return {"answer": "ok", "msg": error}, 200
         else:
             return {"answer": "error at updating db"}, 400
@@ -139,3 +163,40 @@ class PlotSMData(Resource):
     def get(self, typerange):
         data_out = get_data_sm_per_range(typerange, "normal")
         return {"data": data_out, "type": "normal plot lines"}, 200
+
+
+@ns.route('/almacen/employees')
+class AlmacenEmployees(Resource):
+    @ns.marshal_with(employees_answer_model)
+    def get(self):
+        data_out, code = get_employees_almacen()
+        if code == 200:
+            return {"data": data_out, "msg": "ok"}, code
+        else:
+            return {"data": [], "msg": "error"}, code
+
+
+@ns.route('/manage/dispatch')
+class ManageSMDispatch(Resource):
+    @ns.marshal_with(response_sm_dispatch_model)
+    @ns.expect(request_sm_dispatch_model)
+    def post(self):
+        code, data = parse_data(ns.payload, 15)
+        if code == 400:
+            return {"answer": "The data has a bad structure"}, code
+        code, data_out = dispatch_sm(data)
+        if code == 200:
+            return {"msg": "ok", "data": data_out}, code
+        else:
+            return {"msg": "error at dispaching", "data": data_out}, code
+    
+    @ns.expect(request_sm_dispatch_model)
+    def delete(self):
+        code, data = parse_data(ns.payload, 15)
+        if code == 400:
+            return {"answer": "The data has a bad structure"}, code
+        code, data_out = cancel_sm(data)
+        if code == 200:
+            return {"msg": "SM cancel"}, code
+        else:
+            return {"msg": "error at canceling", "data": data_out}, code

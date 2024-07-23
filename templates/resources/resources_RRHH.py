@@ -27,7 +27,8 @@ from templates.controllers.employees.em_controller import get_all_examenes, inse
 from templates.controllers.employees.employees_controller import new_employee, update_employee, delete_employee
 from templates.controllers.employees.vacations_controller import insert_vacation, update_registry_vac, delete_vacation, \
     get_vacations_data
-from templates.resources.midleware.Functions_midleware_RRHH import get_files_fichaje, get_fichaje_data
+from templates.resources.midleware.Functions_midleware_RRHH import get_files_fichaje, get_fichaje_data, \
+    get_files_list_nomina
 
 ns = Namespace('GUI/api/v1/rrhh')
 
@@ -312,6 +313,15 @@ class EmployeesResume(Resource):  # noqa: F811
             out = None
             code = 400
         return out, code
+
+
+@ns.route('/payroll/files/list/<int:emp_id>')
+class DownloadFilesPayroll(Resource):
+    def get(self, emp_id):
+        code, data_out = get_files_list_nomina(emp_id)
+        if code != 200:
+            return {"data": None, "msg": "No files"}, code
+        return {"data": data_out, "msg": "ok"}, code
 
 
 @ns.route('/fichajes/files')

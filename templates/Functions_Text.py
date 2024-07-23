@@ -69,13 +69,13 @@ def parse_data(data: dict, mode: int):
             case 5:
                 out = {
                     "limit": data['limit'],
-                    "page": data['page']
+                    "page": data['page'],
+                    "emp_id": data['emp_id'] if "emp_id" in data.keys() else -1
                 }
             case 6 | 8:
                 id_sm = data['info']['id'] if mode == 8 else None
                 info = {
                     'id': id_sm,
-                    "sm_code": data['info']['sm_code'],
                     "folio": data['info']['folio'],
                     "contract": data['info']['contract'],
                     "facility": data['info']['facility'],
@@ -84,10 +84,12 @@ def parse_data(data: dict, mode: int):
                     "emp_id": data['info']['emp_id'],
                     "date": data['info']['date'],
                     "limit_date": data['info']['limit_date'],
+                    "critical_date": data['info']['critical_date'],
                     "status": data['info']['status'],
                     "order_quotation": data['info']['order_quotation'],
                     "comment": data['info']['comment'],
-                    "history": data['info']['history']
+                    "history": data['info']['history'],
+                    'emp_id_storage': data['info']['emp_id_storage']
                 }
                 items = []
                 for item in data['items']:
@@ -96,7 +98,9 @@ def parse_data(data: dict, mode: int):
                         "quantity": item['quantity'],
                         "comment": item['comment'],
                         "stock": item['stock'],
-                        "name": item
+                        "name": item,
+                        "url": item['url'],
+                        "sku": item['sku'] if "sku" in item.keys() else None
                     })
                 out = {
                     "info": info,
@@ -106,11 +110,12 @@ def parse_data(data: dict, mode: int):
             case 7:
                 out = {
                     "id": data['id'],
-                    "sm_code": data['sm_code'],
+                    "id_emp": data['id_emp'] if "id_emp" in data.keys() else None
                 }
             case 9:
                 out = {
                     'date': data['date'],
+                    'emp_id': data['emp_id']
                 }
             case 10 | 11:
                 value = data['value'] if mode == 10 else None
@@ -124,7 +129,8 @@ def parse_data(data: dict, mode: int):
                     "contract": data['contract'] if "contract" in data.keys() else None,
                     "id_emp": data['id_emp'] if "id_emp" in data.keys() else None,
                     "hour_in": data['hour_in'] if "hour_in" in data.keys() else None,
-                    "hour_out": data['hour_out'] if "hour_out" in data.keys() else None
+                    "hour_out": data['hour_out'] if "hour_out" in data.keys() else None,
+                    "id_leader": data['id_leader'] if "id_leader" in data.keys() else None
                 }
             case 12:
                 out = {
@@ -142,6 +148,18 @@ def parse_data(data: dict, mode: int):
                     'supplier': data["supplier"],
                     'category': data["category"],
                     'sku': data["sku"]
+                }
+            case 14:
+                out = {
+                    'date': data["date"],
+                    'id_emp': data["id_emp"],
+                    'span': data["span"]
+                }
+            case 15:
+                out = {
+                    'id': data["id"],
+                    'emp_id': data["emp_id"],
+                    'comment': data["comment"]
                 }
             case 17:
                 "id"

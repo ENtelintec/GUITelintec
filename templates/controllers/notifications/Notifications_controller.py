@@ -18,6 +18,15 @@ def get_notifications_by_user(user_id: int, status="%"):
     return flag, error, result
 
 
+def get_notifications_by_permission(permissions_key: str, status="%"):
+    sql = ("SELECT timestamp, id, body "
+           "FROM sql_telintec.notifications_gui "
+           "WHERE body->'$.app' REGEXP %s and body->'$.status' like %s ")
+    vals = (permissions_key, status)
+    flag, error, result = execute_sql(sql, vals, 2)
+    return flag, error, result
+
+
 def get_notification_by_permission(user_id: int, permissions=None):
     sql = ("SELECT timestamp, id, body "
            "FROM sql_telintec.notifications_gui "

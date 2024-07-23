@@ -6,11 +6,15 @@ import json
 import math
 from datetime import datetime, timedelta
 
-from templates.controllers.employees.employees_controller import get_all_data_employees, get_all_data_employee
+from static.extensions import format_timestamps, log_file_sm_path
+from templates.controllers.employees.employees_controller import get_all_data_employees, get_all_data_employee, \
+    get_emp_contract
 from templates.controllers.employees.vacations_controller import get_vacations_data, get_vacations_data_emp
 from templates.controllers.index import DataHandler
-from templates.controllers.material_request.sm_controller import get_sm_entries
+from templates.controllers.material_request.sm_controller import get_sm_entries, get_sm_by_id, update_history_sm
 from templates.controllers.product.p_and_s_controller import get_sm_products
+from templates.misc.Functions_Files import write_log_file
+from templates.Functions_Utils import create_notification_permission
 
 """---------------------------API material_request-----------------------------------------"""
 
@@ -65,18 +69,18 @@ def check_date_difference(date_modify, delta):
     return flag
 
 
-def get_all_sm(limit, page=0):
-    flag, error, result = get_sm_entries()
+def get_all_sm(limit, page=0, emp_id=-1):
+    flag, error, result = get_sm_entries(emp_id)
     if limit == -1:
         limit = len(result) + 1
     limit = limit if limit > 0 else 10
     page = page if page >= 0 else 0
     if len(result) <= 0:
-        return [None, 204]
+        return {"data": [], "page": 0, "pages": 0}, 200
     pages = math.floor(len(result) / limit)
     if page > pages:
         print("page > pages")
-        return [None, 204]
+        return None, 204
     items = []
     if pages == 0:
         limit_up = len(result)
@@ -88,26 +92,110 @@ def get_all_sm(limit, page=0):
     for i in range(limit_down, limit_up):
         items.append({
             'id': result[i][0],
-            'sm_code': result[i][1],
-            'folio': result[i][2],
-            'contract': result[i][3],
-            'facility': result[i][4],
-            'location': result[i][5],
-            'client_id': result[i][6],
-            'emp_id': result[i][7],
-            'order_quotation': result[i][8],
-            'date': result[i][9],
-            'limit_date': result[i][10],
-            'items': json.loads(result[i][11]),
-            'status': result[i][12],
-            'history': json.loads(result[i][13]),
-            'comment': result[i][14],
+            'folio': result[i][1],
+            'contract': result[i][2],
+            'facility': result[i][3],
+            'location': result[i][4],
+            'client_id': result[i][5],
+            'emp_id': result[i][6],
+            'order_quotation': result[i][7],
+            'date': result[i][8],
+            'limit_date': result[i][9],
+            'items': json.loads(result[i][10]),
+            'status': result[i][11],
+            'history': json.loads(result[i][12]),
+            'comment': result[i][13],
         })
     data_out = {
         'data': items,
         'page': page,
         'pages': pages + 1
     }
+    return data_out, 200
+
+
+def update_data_dicts(products: list, products_sm):    
+    for list_items in products:
+        for item in list_items:
+            for i, item_p in enumerate(products_sm):
+                if item["id"] == item_p["id"]:
+                    products_sm[i] = item
+                    break
+    return products_sm
+
+
+def dispatch_sm(data):
+    flag, error, result = get_sm_by_id(data['id'])
+    if not flag or len(result) <= 0:
+        return 400, ["sm not foud"]
+    history_sm = json.loads(result[0][13])
+    emp_id_creation = result[0][7]
+    history_sm.append(
+        {"user": data["emp_id"], "event": "dispatch", "date": datetime.now().strftime(format_timestamps),
+         "comment": data["comment"]})
+    products_sm = json.loads(result[0][11])
+    products_to_dispacth = []
+    products_to_request = []
+    new_products = []
+    for item in products_sm:
+        if "(Nuevo)" in item["comment"] and "(Pedido)" not in item["comment"]:
+            new_products.append(item)
+            continue
+        if ((item["stock"] >= item["quantity"] or
+            "(Pedido)" in item["comment"]) and 
+                "(Despachado)" not in item["comment"]):
+            products_to_dispacth.append(item)
+        elif "(Pedido)" not in item["comment"] and "(Despachado)" not in item["comment"]:
+            products_to_request.append(item)
+    # update db with corresponding movements
+    (products_to_dispacth, products_to_request, new_products) = dispatch_products(
+        products_to_dispacth, products_to_request, data['id'], new_products)
+    # update table with new stock
+    products_sm = update_data_dicts([products_to_dispacth, products_to_request, new_products], products_sm)
+    is_complete = True if len(products_to_request) == 0 and len(new_products) == 0 else False
+    flag, error, result = update_history_sm(data['id'], history_sm, products_sm, is_complete)
+    if flag:
+        msg = f"SM con ID-{data['id']} despachada"
+        write_log_file(log_file_sm_path, msg)
+        msg += "\n Productos a despachar:  " + "\n".join([f"{item['quantity']} {item['name']}" for item in products_to_dispacth])
+        msg += "\n Productos a solicitar:  " + "\n".join([f"{item['quantity']} {item['name']}" for item in products_to_request])
+        msg += "\n Productos nuevos:  " + "\n".join([f"{item['quantity']} {item['name']} {item['url']}" for item in new_products])
+        create_notification_permission(msg, ["sm"], "SM Despachada", data["emp_id"], emp_id_creation)
+        return 200, {"to_dispatch": products_to_dispacth, "to_request": products_to_request,
+                     "new_products": new_products}
+    else:
+        return 400, {"msg": str(error)}
+
+
+def cancel_sm(data):
+    flag, error, result = get_sm_by_id(data['id'])
+    if not flag or len(result) <= 0:
+        return 400, ["sm not foud"]
+    history_sm = json.loads(result[0][13])
+    emp_id_creation = result[0][7]
+    history_sm.append(
+        {"user": data["emp_id"], "event": "cancelation", "date": datetime.now().strftime(format_timestamps),
+         "comment": data["comment"]})
+    flag, error, result = update_history_sm(data['id'], history_sm, [], True)
+    if flag:
+        msg = f"SM con ID-{data['id']} cancelada"
+        create_notification_permission(msg, ["sm"], "SM Cancelada", data["emp_id"], emp_id_creation)
+        write_log_file(log_file_sm_path, msg)
+        return 200, {"msg": "ok"}
+    else:
+        return 400, {"msg": str(error)}
+
+
+def get_employees_almacen():
+    flag, error, result = get_emp_contract("almacen")
+    print(flag, error, result)
+    data_out = []
+    for item in result:
+        id_emp, name, lastname = item
+        data_out.append({
+            "id": id_emp,
+            "name": name.upper() + " " + lastname.upper()
+        })
     return data_out, 200
 
 
@@ -182,11 +270,13 @@ def create_csv_file_employees(status: str):
     # create file
     filepath = "files/emp.csv"
     with (open(filepath, "w")) as file:
-        file.write("id,name,phone,department,modality,email,contract,admission,rfc,curp,nss,emergency,position,status,departure,exam_id,birthday,legajo\n")
+        file.write(
+            "id,name,phone,department,modality,email,contract,admission,rfc,curp,nss,emergency,position,status,departure,exam_id,birthday,legajo\n")
         for item in result:
             (id_emp, name, lastname, phone, department, modality, email, contract, admission, rfc, curp, nss,
              emergency_contact, position, status, departure, examen, birthday, legajo) = item
-            file.write(f"{id_emp},{name},{phone},{department},{modality},{email},{contract},{admission},{rfc},{curp},{nss},{emergency_contact},{position},{status},{departure},{examen},{birthday},{legajo}\n")
+            file.write(
+                f"{id_emp},{name},{phone},{department},{modality},{email},{contract},{admission},{rfc},{curp},{nss},{emergency_contact},{position},{status},{departure},{examen},{birthday},{legajo}\n")
     return filepath
 
 

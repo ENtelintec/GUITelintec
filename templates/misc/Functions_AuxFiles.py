@@ -4,14 +4,18 @@ __date__ = '$ 22/ene./2024  at 16:09 $'
 
 import json
 import os
+import re
 from datetime import datetime
 
 from static.extensions import cache_file_resume_fichaje_path, status_dic, quizz_out_path, format_date, format_timestamps
 from templates.misc.Functions_Files import get_fichajes_resume_cache, update_fichajes_resume_cache
-from templates.controllers.employees.employees_controller import get_name_employee
+from templates.controllers.employees.employees_controller import get_name_employee, get_contract_employes, \
+    get_id_employee
 from templates.controllers.fichajes.fichajes_controller import get_fichaje_DB, update_fichaje_DB, insert_new_fichaje_DB
 from templates.controllers.material_request.sm_controller import get_sm_entries
 from templates.controllers.product.p_and_s_controller import get_sm_products
+
+import xml.etree.ElementTree as ET
 
 
 def get_data_employees(status="ACTIVO"):
@@ -118,7 +122,8 @@ def update_bitacora(emp_id: int, event, data):
                 new_row[9], new_row[10], new_row[11], new_row[12], new_row[13])
             if flag:
                 print("value updated in DB")
-                flag, error = update_fichajes_resume_cache(cache_file_resume_fichaje_path, fichajes_resume, just_file=True)
+                flag, error = update_fichajes_resume_cache(cache_file_resume_fichaje_path, fichajes_resume,
+                                                           just_file=True)
                 return flag, error, result
             else:
                 print("error at updating the value in DB")
@@ -163,7 +168,7 @@ def update_bitacora_value(emp_id: int, event, data, id_event=None):
     except KeyError:
         print(f"error at updating the value for {date}")
         return False, f"error at updating the value for {date}", None
-    
+
     fichajes_resume, flag = get_fichajes_resume_cache(cache_file_resume_fichaje_path)
     if not flag:
         print("error at getting data from cache")
@@ -179,7 +184,8 @@ def update_bitacora_value(emp_id: int, event, data, id_event=None):
                 new_row[9], new_row[10], new_row[11], new_row[12], new_row[13])
             if flag:
                 print("value updated in DB")
-                flag, error = update_fichajes_resume_cache(cache_file_resume_fichaje_path, fichajes_resume, just_file=True)
+                flag, error = update_fichajes_resume_cache(cache_file_resume_fichaje_path, fichajes_resume,
+                                                           just_file=True)
                 return flag, error, result
             else:
                 print("error at updating the value in DB")
@@ -223,8 +229,9 @@ def erase_value_bitacora(emp_id: int, event, data):
                 emp_id, new_row[2],
                 new_row[9], new_row[10], new_row[11], new_row[12], new_row[13])
             if flag:
-                print("value updated in DB")        
-                flag, error = update_fichajes_resume_cache(cache_file_resume_fichaje_path, fichajes_resume, just_file=True)
+                print("value updated in DB")
+                flag, error = update_fichajes_resume_cache(cache_file_resume_fichaje_path, fichajes_resume,
+                                                           just_file=True)
                 return flag, error, result
             else:
                 print("error at updating the value in DB")
@@ -293,9 +300,10 @@ def get_place_incidence_from_comment(comment: str):
     return place, activity, incidence, comment_out
 
 
-def get_events_op_date(date: datetime, hard_update, only_op=True):
+def get_events_op_date(date: datetime, hard_update, only_op=True, emp_id=-1):
     """
     Get the events of the date.
+    :param emp_id: 
     :param only_op:
     :param hard_update: Update from db
     :param date: The date.
@@ -303,6 +311,7 @@ def get_events_op_date(date: datetime, hard_update, only_op=True):
     """
     data_events = []
     fichajes_resume, flag = get_fichajes_resume_cache(cache_file_resume_fichaje_path, is_hard_update=hard_update)
+    flag, error, result = get_contract_employes(emp_id) if emp_id != -1 else (True, "", [])
     for row in fichajes_resume:
         (id_emp, name, contract, faltas, tardanzas, tardanzas_value, extras, extras_value, primas,
          absences_dic, lates_dic, extras_dic, primes_dic, normal_dic) = row
@@ -316,8 +325,13 @@ def get_events_op_date(date: datetime, hard_update, only_op=True):
         for item in data_events_emp:
             if item is not None:
                 if item[2] != "None" or not only_op:
-                    data_events.append(item)
-    columns = ("ID", "Nombre", "Contrato", "Evento", "Lugar", "Actividad", "Incidencia", "Timestamp", "Valor", "Comentario")
+                    if len(result) > 0:
+                        if item[2] == result[0]:
+                            data_events.append(item)
+                    else:
+                        data_events.append(item)
+    columns = (
+        "ID", "Nombre", "Contrato", "Evento", "Lugar", "Actividad", "Incidencia", "Timestamp", "Valor", "Comentario")
     return data_events, columns
 
 
@@ -476,7 +490,7 @@ def load_quizzes_names(path_directory: str):
             elif file.endswith(".json"):
                 quizzes_names_json.append(file)
         path = quizz_out_path
-    return quizzes_names_pdf,  quizzes_names_json, path
+    return quizzes_names_pdf, quizzes_names_json, path
 
 
 def get_data_files_quizzes(path_quizzes: str):
@@ -495,3 +509,48 @@ def get_data_files_quizzes(path_quizzes: str):
             if name_emp in name_pdf:
                 break
     return names_files_pdf
+
+
+def get_data_xml_file_nomina(path_file: str):
+    """
+    Get the data xml file.
+    :param path_file: The path file.
+    :return: The data xml file.
+    """
+    data = {}
+    tree = ET.parse(path_file)
+    root = tree.getroot()
+    pattern = "\{.*\}"
+    data = {}
+    for child in root:
+        match = re.search(pattern, child.tag)
+        last_part_tag = child.tag[match.span()[1]:]
+        match last_part_tag.lower():
+            case "emisor" | "emissor":
+                data["emisor"] = child.attrib
+            case "receptor":
+                data["receptor"] = child.attrib
+            case "concept" | "conceptos" | "concepts":
+                data["conceptos"] = child.attrib
+            case _:
+                data["other"] = child.attrib
+    name = data["receptor"]["Nombre"] if "receptor" in data.keys() else None
+    name_id = get_id_employee(data["receptor"]["Nombre"])
+    date = root.attrib["Fecha"] if "Fecha" in root.attrib.keys() else None
+    if name is not None:
+        data["emp_name"] = name
+        data["emp_id"] = name_id
+        data["date"] = date
+    return data
+
+
+def get_pairs_nomina_docs(files: list):
+    files_out = {}
+    for file in files:
+        filename = file.split("/")[-1].lower()
+        if filename.endswith(".pdf") or filename.endswith(".xml"):
+            name, ext = filename.split(".")
+            if name not in files_out.keys():
+                files_out[name] = {}
+            files_out[name][ext] = file
+    return files_out
