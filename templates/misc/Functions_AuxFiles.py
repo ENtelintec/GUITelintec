@@ -444,8 +444,8 @@ def get_all_sm_entries(filter_status=False, is_supper=False, emp_id=None):
         if not is_supper:
             result = [row for row in result if row[7] == emp_id]
         for index, row in enumerate(result):
-            id_sm, code, folio, contract, plant, location, client, employee, order, date, date_limit, items, status, history, comment = row
-            new_row = (id_sm, code, folio, contract, plant, location, client, employee, order, date, date_limit, items,
+            id_sm, folio, contract, plant, location, client, employee, order, date, date_limit, items, status, history, comment = row
+            new_row = (id_sm, folio, contract, plant, location, client, employee, order, date, date_limit, items,
                        status_dic[status], history, comment)
             result[index] = new_row
         return result, columns

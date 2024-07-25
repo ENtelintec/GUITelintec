@@ -82,7 +82,7 @@ class AddSM(Resource):
                    f"empleado con id: {data['info']['emp_id']}, "
                    f"comentario: {data['info']['comment']}")
             create_notification_permission(msg, ["sm", "administracion", "almacen"], "Nueva SM Recibida",
-                                           data["info"]["emp_id"], data['info']["emp_id_storage"])
+                                           data["info"]["emp_id"], 0)
             write_log_file(log_file_sm_path, msg)
             return {"answer": "ok", "msg": result}, 201
         else:
@@ -118,7 +118,7 @@ class AddSM(Resource):
                    f"empleado con id: {data['info']['emp_id']}, "
                    f"comentario: {data['info']['comment']}")
             create_notification_permission(msg, ["sm", "administracion", "almacen"], "Nueva SM Recibida",
-                                           data["info"]["emp_id"], data['info']["emp_id_storage"])
+                                           data["info"]["emp_id"], 0)
             write_log_file(log_file_sm_path, msg)
             return {"answer": "ok", "msg": error}, 200
         else:

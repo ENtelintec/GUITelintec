@@ -100,7 +100,7 @@ def get_all_sm(limit, page=0, emp_id=-1):
             'emp_id': result[i][6],
             'order_quotation': result[i][7],
             'date': result[i][8],
-            'limit_date': result[i][9],
+            'critical_date': result[i][9],
             'items': json.loads(result[i][10]),
             'status': result[i][11],
             'history': json.loads(result[i][12]),

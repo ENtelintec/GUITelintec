@@ -97,14 +97,9 @@ class GUIAsistente(ttk.Window):
 
     def get_username_data(self, username_data=None, permissions=None):
         self.username_data = get_username_data(self.username) if username_data is None else username_data
-        print("user data", self.username_data, self.username)
-        print("perm", permissions)
         self.username_data["permissions"] = self.permissions if permissions is None else permissions
 
     def update_side_menu(self, windows_names):
-        print(f"side menu for: {self.username} with {self.permissions}")
-        for widget in self.buttons_side_menu:
-            widget.destroy()
         self.buttons_side_menu, self.names_side_menu = self._create_side_menu_widgets(self.side_menu_frame, windows_names)
     
     def update_side_menu_data(self, data_dic):
@@ -166,6 +161,9 @@ class GUIAsistente(ttk.Window):
     def _destroy_side_menu_widgets(self):
         for widget in self.buttons_side_menu:
             widget.destroy()
+        self.windows_frames = None
+        self.names_side_menu = None
+        self.buttons_side_menu = None
 
     def update_style_department(self):
         if self.department in self.settings["gui"]:

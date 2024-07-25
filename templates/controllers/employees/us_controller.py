@@ -38,7 +38,6 @@ def get_username_data(username: str):
            "WHERE users_system.usernames = %s")
     val = (username,)
     flag, error, result = execute_sql(sql, val)
-    print(result, sql, val)
     out = None
     if len(result) > 0:
         out = {

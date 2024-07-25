@@ -26,6 +26,7 @@ class HomeFrame(ScrolledFrame):
         for permission in self.permissions.values():
             txt = permission.split(".")
             self.dashboard_key.append(txt[-1].lower())
+        print(self.dashboard_key)
         index_offset = 3
         indexes = [index_offset]
         created_windows = []

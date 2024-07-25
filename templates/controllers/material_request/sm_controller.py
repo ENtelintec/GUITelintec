@@ -48,7 +48,7 @@ def insert_sm_db(data):
            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)")
     val = (data['info']['folio'], data['info']['contract'], data['info']['facility'],
            data['info']['location'], data['info']['client_id'], data['info']['emp_id'],
-           data['info']['order_quotation'], data['info']['date'], data['info']['limit_date'],
+           data['info']['order_quotation'], data['info']['date'], data['info']['critical_date'],
            json.dumps(data['items']), 0, json.dumps(event), data['info']['comment'])
     flag, error, result = execute_sql(sql, val, 4)
     return flag, error, result
@@ -89,7 +89,7 @@ def update_sm_db(data):
            "WHERE sm_id = %s")
     val = (data['info']['folio'], data['info']['contract'], data['info']['facility'],
            data['info']['location'], data['info']['client_id'], data['info']['emp_id'], data['info']['date'],
-           data['info']['limit_date'], json.dumps(data['items']),
+           data['info']['critical_date'], json.dumps(data['items']),
            data['info']['order_quotation'], json.dumps(data['info']['history']),
            data['info']['comment'],
            data['id_sm'])
