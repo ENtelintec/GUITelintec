@@ -38,20 +38,20 @@ dict_wrappers_headers = {
             8: 5
         },
         "Descripción": {
-            10: 15,
-            8: 18
+            10: 32,
+            8: 40
         },
         "Cantidad Solicitada": {
-            10: 8,
-            8: 10
+            10: 10,
+            8: 13
         },
         "UDM": {
-            10: 4,
-            8: 5
+            10: 5,
+            8: 6
         },
         "Cantidad Suministrada": {
-            10: 8,
-            8: 10
+            10: 12,
+            8: 14
         },
         "Estado": {
             10: 10,
@@ -196,6 +196,7 @@ def MaterialsRequest(dict_data: dict, type_form="MaterialsRequest"):
     print_headers_table_inventory(pdf, type_form=type_form, y_init=y_init)
     # ---------------------------------------------products---------------------------------------------------------
     headers = list(dict_wrappers_headers[type_form].keys())
+    print(headers, type_form)
     font_size = 8
     pdf.setFont("Courier", font_size)
     y_init = 640

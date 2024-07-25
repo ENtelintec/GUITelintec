@@ -71,6 +71,7 @@ sm_model = api.model('Material_request', {
     'status': fields.Integer(required=True, description='The status of the sm'),
     'history':  fields.List(fields.Nested(history_model_sm)),
     'comment': fields.String(required=True, description='The comment'),
+    'destination': fields.String(required=True, description='The destination area in telintec'),
     'items': fields.List(fields.Nested(items_model_sm), required=False)
 })
 

@@ -4,6 +4,8 @@ __date__ = '$ 01/abr./2024  at 11:38 $'
 
 import json
 import math
+import os
+import tempfile
 from datetime import datetime, timedelta
 
 from static.extensions import format_timestamps, log_file_sm_path
@@ -13,6 +15,7 @@ from templates.controllers.employees.vacations_controller import get_vacations_d
 from templates.controllers.index import DataHandler
 from templates.controllers.material_request.sm_controller import get_sm_entries, get_sm_by_id, update_history_sm
 from templates.controllers.product.p_and_s_controller import get_sm_products
+from templates.forms.Materials import MaterialsRequest
 from templates.misc.Functions_Files import write_log_file
 from templates.Functions_Utils import create_notification_permission
 
@@ -338,3 +341,53 @@ def get_vacations_employee(emp_id: int):
         "seniority": json.loads(seniority)
     }
     return out, 200
+
+
+def dowload_file_sm(sm_id: int):
+    flag, error, result = get_sm_by_id(sm_id)
+    if not flag or len(result) == 0:
+        return None, 400
+    (id_sm, folio, contract, facility, location, client_id, emp_id, order_quotation, date, critical_date, items, status,
+     history, comment) = result[0]
+    download_path = os.path.join(tempfile.mkdtemp(), os.path.basename(f"sm_{id_sm}_{date}.pdf"))
+    items = json.loads(items)
+    products = []
+    # 'id': fields.String(required=True, description='The product id'),
+    # 'name': fields.String(required=True, description='The product name'),
+    # 'stock': fields.Integer(required=True, description='The product stock'),
+    # 'comment': fields.String(required=True, description='The product comment'),
+    # 'quantity': fields.Float(required=True, description='The product quantity'),
+    # 'movement': fields.Integer(required=False, description='The product movement'),
+    # 'url': fields.String(required=True, description='The product url'),
+    # 'sku': fields.String(required=False, description='The product sku')
+    counter = 1
+    for item in items:
+        name = item['name']
+        quantity = item['quantity']
+        comment = item['comment']
+        udm = item['udm']
+        stock = item['dispached']
+        status = "Entregado"
+        products.append((counter, name, quantity, udm, stock, status))
+    flag = MaterialsRequest({
+        "filename_out": download_path,
+        "products": products,
+        "info": {
+            "fecha de solictud": date,
+            "contrato": contract,
+            "numero de pedido": order_quotation,
+            "planta": facility,
+            "Area/ubicacion": location,
+            "folio": folio,
+            "usuario solicitante": client_id,
+            "personal telintec": emp_id,
+            "area dirigida telintec": "Almacen",
+            "fecha critica de entrega": "2023-06-10",
+        },
+        "observations": "This is a dummy text for observation section on the return document. zx"
+                        "This is a dummy text for observation section on the return document. <z\n"
+                        "This is a dummy text for observation section on the return document",
+        "date_complete_delivery": "2023-06-01",
+        "date_first_delivery": "2023-06-01",
+    },
+        type_form="ReturnMaterials")

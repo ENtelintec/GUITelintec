@@ -88,6 +88,7 @@ def parse_data(data: dict, mode: int):
                     "order_quotation": data['info']['order_quotation'] if "order_quotation" in data["info"].keys() else None,
                     "comment": data['info']['comment'] if "comment" in data["info"].keys() else None,
                     "history": data['info']['history'] if "history" in data["info"].keys() else None,
+                    "destination": data['info']['destination'] if "destination" in data["info"].keys() else None,
                 }
                 items = []
                 for item in data['items']:

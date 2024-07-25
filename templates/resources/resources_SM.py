@@ -200,3 +200,10 @@ class ManageSMDispatch(Resource):
             return {"msg": "SM cancel"}, code
         else:
             return {"msg": "error at canceling", "data": data_out}, code
+
+
+@ns.route('/download/sm/pdf/<int:sm_id>')
+class DownloadPDFSM(Resource):
+    def get(self, sm_id):
+        pass
+        

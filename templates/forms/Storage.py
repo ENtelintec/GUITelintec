@@ -149,7 +149,7 @@ def ReturnMaterials(dict_data: dict):
     pdf = canvas.Canvas(file_name, pagesize=(a4_y, a4_x))
     pdf.setTitle("Devolucion de Materiales")
     products = dict_data["products"]
-    create_header(pdf, title="DEVOLUCION DE MATERIALES", page_x=a4_y, date_int=dict_data["date_emision"])
+    create_header(pdf, title="DEVOLUCION DE MATERIALES", page_x=a4_y, date_int="2023-06-14")
     pages = 1
     # ----------------------------------------header table of products-----------------------------------------------
     print_headers_table_inventory(pdf, type_form="Materials")
