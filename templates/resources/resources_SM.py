@@ -205,5 +205,6 @@ class ManageSMDispatch(Resource):
 @ns.route('/download/sm/pdf/<int:sm_id>')
 class DownloadPDFSM(Resource):
     def get(self, sm_id):
+        print("print")
         pass
         
