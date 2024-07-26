@@ -129,7 +129,7 @@ class FichajeEvent(Resource):
             return {"answer": "Fail to delete registry"}, 404
 
 
-@ns.route('/bitacor/dowload/report')
+@ns.route('/bitacora/dowload/report')
 class BitacoraDownloadReport(Resource):
     @ns.expect(bitacora_dowmload_report_model)
     def post(self):
