@@ -156,9 +156,10 @@ def parse_data(data: dict, mode: int):
                 }
             case 15:
                 out = {
-                    'id': data["id"],
-                    'emp_id': data["emp_id"],
-                    'comment': data["comment"]
+                    'id': data["id"] if "id" in data.keys() else None,
+                    'emp_id': data["emp_id"] if "emp_id" in data.keys() else None,
+                    'comment': data["comment"] if "comment" in data.keys() else None,
+                    'items': data["items"] if "items" in data.keys() else []
                 }
             case 17:
                 "id"

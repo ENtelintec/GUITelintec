@@ -102,3 +102,12 @@ def get_sm_clients():
            "FROM sql_telintec.customers_amc  ")
     flag, error, result = execute_sql(sql, None, 5)
     return flag, error, result
+
+
+def get_customer_by_id(id_customer):
+    sql = ("SELECT customer_id, name, l_name, phone_number, city, email "
+           "FROM sql_telintec.customers "
+           "WHERE customer_id = %s")
+    val = (id_customer,)
+    flag, error, result = execute_sql(sql, val, 1)
+    return flag, error, result[0] if result else None

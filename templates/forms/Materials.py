@@ -95,6 +95,7 @@ def print_footer_page_count(pdf, page, font_size=6):
 
 def calculate_last_y(item, y_limit, font_size, y_position, type_form="Movements", width=None):
     headers = list(dict_wrappers_headers[type_form].keys())
+    print(headers, type_form, item)
     for index, key in enumerate(item):
         if width is None:
             value = textwrap.wrap(str(key), width=dict_wrappers_headers[type_form][headers[index]][font_size])
@@ -188,7 +189,7 @@ def MaterialsRequest(dict_data: dict, type_form="MaterialsRequest"):
     limit_y = 10
     pdf.setTitle("Solicitud de Material")
     products = dict_data["products"]
-    create_header(pdf, title="SOLICITUD DE MATERIALES", page_x=a4_x, date_int=dict_data["date_emision"], type_form=4)
+    create_header(pdf, title="SOLICITUD DE MATERIALES", page_x=a4_x, date_int="2023-06-14", type_form=4)
     create_info_materials_request(pdf, dict_data["info"], 20, 740)
     pages = 0
     # ----------------------------------------header table of products-----------------------------------------------
@@ -246,3 +247,4 @@ def MaterialsRequest(dict_data: dict, type_form="MaterialsRequest"):
     create_footer_sign(pdf, 50, 30, "Nombre y firma de quien entrega")
     create_footer_sign(pdf, 350, 30, "Nombre y firma de quien recibe")
     pdf.save()
+    return True

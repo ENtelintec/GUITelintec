@@ -72,7 +72,8 @@ sm_model = api.model('Material_request', {
     'history':  fields.List(fields.Nested(history_model_sm)),
     'comment': fields.String(required=True, description='The comment'),
     'destination': fields.String(required=True, description='The destination area in telintec'),
-    'items': fields.List(fields.Nested(items_model_sm), required=False)
+    'items': fields.List(fields.Nested(items_model_sm), required=False),
+    'items_new': fields.List(fields.Nested(items_model_sm), required=False)
 })
 
 table_sm_model = api.model('TableMaterialRequest', {
@@ -145,7 +146,8 @@ request_sm_plot_data_model = api.model('RequestSMPlotData', {
 request_sm_dispatch_model = api.model('RequestSMDispatch', {
     'id': fields.Integer(required=True, description='The id'),
     'emp_id': fields.Integer(required=True, description='The employee id'),
-    'comment': fields.String(required=True, description='The date')
+    'comment': fields.String(required=True, description='The date'),
+    'items': fields.List(fields.Nested(items_model_sm), required=False)
 })
 
 data_response_dispatch_model = api.model('DataResponseDispatch', {

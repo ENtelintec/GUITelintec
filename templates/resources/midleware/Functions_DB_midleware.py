@@ -8,12 +8,15 @@ import os
 import tempfile
 from datetime import datetime, timedelta
 
+import pandas as pd
+
 from static.extensions import format_timestamps, log_file_sm_path
 from templates.controllers.employees.employees_controller import get_all_data_employees, get_all_data_employee, \
     get_emp_contract
 from templates.controllers.employees.vacations_controller import get_vacations_data, get_vacations_data_emp
 from templates.controllers.index import DataHandler
-from templates.controllers.material_request.sm_controller import get_sm_entries, get_sm_by_id, update_history_sm
+from templates.controllers.material_request.sm_controller import get_sm_entries, get_sm_by_id, update_history_sm, \
+    get_info_names_by_sm_id, update_sm_products_by_id
 from templates.controllers.product.p_and_s_controller import get_sm_products
 from templates.forms.Materials import MaterialsRequest
 from templates.misc.Functions_Files import write_log_file
@@ -93,6 +96,11 @@ def get_all_sm(limit, page=0, emp_id=-1):
         limit_up = limit * (page + 1)
         limit_up = limit_up if limit_up < len(result) else len(result)
     for i in range(limit_down, limit_up):
+        products = json.loads(result[i][10])
+        new_products = []
+        for product in products:
+            if "(Nuevo)" in product["comment"] and "(Pedido)" not in product["comment"]:
+                new_products.append(product)
         items.append({
             'id': result[i][0],
             'folio': result[i][1],
@@ -105,6 +113,7 @@ def get_all_sm(limit, page=0, emp_id=-1):
             'date': result[i][8],
             'critical_date': result[i][9],
             'items': json.loads(result[i][10]),
+            'items_new': new_products,
             'status': result[i][11],
             'history': json.loads(result[i][12]),
             'comment': result[i][13],
@@ -128,6 +137,10 @@ def update_data_dicts(products: list, products_sm):
 
 
 def dispatch_sm(data):
+    if len(data["items"]) > 0:
+        flag, error, result = update_sm_products_by_id(data["items"], data["id"])
+        if not flag:
+            return 400, f"Not posible to update products in sm, error: {error}"
     flag, error, result = get_sm_by_id(data['id'])
     if not flag or len(result) <= 0:
         return 400, ["sm not foud"]
@@ -225,8 +238,10 @@ def dispatch_products(
             product['id'], "entrada", product['quantity'], date, sm_id)
         product['comment'] += " ;(Pedido) "
         to_request[i] = product
-    # ------------------------------products to request for admin-----------------------------------
+    # ------------------------------products to request for new-----------------------------------
     for i, product in enumerate(new_products):
+        if product["id"] == -1:
+            continue
         _ins = _data.create_in_movement(
             product['id'], "entrada", product['quantity'], date, sm_id)
         product['comment'] += " ;(Pedido) "
@@ -346,48 +361,68 @@ def get_vacations_employee(emp_id: int):
 def dowload_file_sm(sm_id: int):
     flag, error, result = get_sm_by_id(sm_id)
     if not flag or len(result) == 0:
-        return None, 400
-    (id_sm, folio, contract, facility, location, client_id, emp_id, order_quotation, date, critical_date, items, status,
-     history, comment) = result[0]
-    download_path = os.path.join(tempfile.mkdtemp(), os.path.basename(f"sm_{id_sm}_{date}.pdf"))
-    items = json.loads(items)
+        return None, 400    
+    folio = result[1]
+    contract = result[2]
+    facility = result[3]
+    location = result[4]
+    client_id = result[5]
+    emp_id = result[6]
+    order_quotation = result[7]
+    date = pd.to_datetime(result[8])
+    critical_date = pd.to_datetime(result[9])
+    items = json.loads(result[10])
+    status = result[11]
+    history = json.loads(result[12])
+    observations = result[13]
+    extra_info = json.loads(result[14])
+    download_path = os.path.join(tempfile.mkdtemp(), os.path.basename(f"sm_{result[0]}_{date.date()}.pdf"))
     products = []
-    # 'id': fields.String(required=True, description='The product id'),
-    # 'name': fields.String(required=True, description='The product name'),
-    # 'stock': fields.Integer(required=True, description='The product stock'),
-    # 'comment': fields.String(required=True, description='The product comment'),
-    # 'quantity': fields.Float(required=True, description='The product quantity'),
-    # 'movement': fields.Integer(required=False, description='The product movement'),
-    # 'url': fields.String(required=True, description='The product url'),
-    # 'sku': fields.String(required=False, description='The product sku')
+    flag, error, result = get_info_names_by_sm_id(result[0])
+    if flag and len(result) == 0:
+        customer_name = result[0]
+        emp_name = result[1] + " " + result[2]
+    else:
+        customer_name = "None"
+        emp_name = "None"
     counter = 1
     for item in items:
-        name = item['name']
-        quantity = item['quantity']
-        comment = item['comment']
-        udm = item['udm']
-        stock = item['dispached']
-        status = "Entregado"
-        products.append((counter, name, quantity, udm, stock, status))
+        name = item['name'] if "name" in item.keys() else "None"
+        quantity = item['quantity'] if "quantity" in item.keys() else "None"
+        comment = item['comment'] if "comment" in item.keys() else "None"
+        udm = item['udm'] if "udm" in item.keys() else "None"
+        stock = item['dispached'] if "dispached" in item.keys() else "None"
+        if "(despachado)" in comment.lower():
+            status = "Despachado"
+        elif "(pedido)" in comment.lower():
+            status = "Pedido"
+        elif "(nuevo)" in comment.lower():
+            status = "Nuevo-Pedido"
+        else:
+            status = "pendiente"
+        products.append((counter, name, quantity, udm, stock, status))        
     flag = MaterialsRequest({
         "filename_out": download_path,
         "products": products,
         "info": {
-            "fecha de solictud": date,
+            "fecha de solictud": date.date(),
             "contrato": contract,
             "numero de pedido": order_quotation,
             "planta": facility,
             "Area/ubicacion": location,
             "folio": folio,
-            "usuario solicitante": client_id,
-            "personal telintec": emp_id,
-            "area dirigida telintec": "Almacen",
-            "fecha critica de entrega": "2023-06-10",
+            "usuario solicitante": customer_name,
+            "personal telintec": emp_name,
+            "area dirigida telintec": extra_info["destination"],
+            "fecha critica de entrega": critical_date.date(),
+            "history": history,
         },
-        "observations": "This is a dummy text for observation section on the return document. zx"
-                        "This is a dummy text for observation section on the return document. <z\n"
-                        "This is a dummy text for observation section on the return document",
+        "observations": observations,
         "date_complete_delivery": "2023-06-01",
         "date_first_delivery": "2023-06-01",
     },
-        type_form="ReturnMaterials")
+        type_form="MaterialsRequest")
+    if not flag:
+        print("error at generating pdf", download_path)
+        return None, 400
+    return download_path, 200
