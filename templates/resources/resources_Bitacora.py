@@ -19,7 +19,7 @@ from templates.misc.Functions_Files import write_log_file
 from templates.Functions_Utils import create_notification_permission
 from templates.resources.midleware.Functions_DB_midleware import check_date_difference
 from templates.Functions_Text import parse_data
-from templates.controllers.employees.employees_controller import get_employees_op_names
+from templates.controllers.employees.employees_controller import get_employees_op_names, get_contracts_operaciones
 from templates.resources.midleware.Functions_midleware_misc import get_events_from_extraordinary_sources
 
 ns = Namespace('GUI/api/v1/bitacora')
@@ -130,7 +130,7 @@ class FichajeEvent(Resource):
             return {"answer": "Fail to delete registry"}, 404
 
 
-@ns.route('/bitacora/dowload/report')
+@ns.route('/dowload/report')
 class BitacoraDownloadReport(Resource):
     @ns.expect(bitacora_dowmload_report_model)
     def post(self):
@@ -167,3 +167,15 @@ class BitacoraDownloadReport(Resource):
             return send_file(filepath_bitacora_download, as_attachment=True)
         except Exception as e:
             return {"data": f"Error en el tipo de quizz: {str(e)}"}, 400
+
+
+@ns.route('/contract_list')
+class BitacoraEmployeesList(Resource):
+    def get(self):
+        flag, error, result = get_contracts_operaciones()
+        # filtering unique contracts
+        contracts = list(set([item[0] for item in result]))
+        if flag:
+            return {"data": contracts, "comment": error}, 200
+        else:
+            return {"data": [contracts], "comment": error}, 400

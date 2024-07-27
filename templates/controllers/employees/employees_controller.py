@@ -319,3 +319,11 @@ def get_emp_mail(emp_id):
     val = (emp_id,)
     flag, error, result = execute_sql(sql, val, type_sql=1)
     return flag, error, result
+
+
+def get_contracts_operaciones():
+    sql = ("SELECT contrato "
+           "FROM sql_telintec.employees "
+           "WHERE department_id = 2")
+    flag, error, result = execute_sql(sql, type_sql=5)
+    return flag, error, result
