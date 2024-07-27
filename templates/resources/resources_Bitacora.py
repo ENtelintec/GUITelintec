@@ -175,6 +175,7 @@ class BitacoraEmployeesList(Resource):
         flag, error, result = get_contracts_operaciones()
         # filtering unique contracts
         contracts = list(set([item[0] for item in result]))
+        contracts.sort()
         if flag:
             return {"data": contracts, "comment": error}, 200
         else:
