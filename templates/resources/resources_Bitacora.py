@@ -45,7 +45,7 @@ class FichajeTable(Resource):
             return {"answer": "The data has a bad structure"}, code
         date = data["date"]
         date = datetime.strptime(date, format_date)
-        events, columns = get_events_op_date(date, False, emp_id=data["emp_id"])
+        events, columns = get_events_op_date(date, True, emp_id=data["emp_id"])
         return {"data": events, "columns": columns}, 200
 
 
