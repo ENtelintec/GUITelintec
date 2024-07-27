@@ -363,16 +363,17 @@ class FichajesAuto(ttk.Frame):
                 self.file_selected_3, month=date_example.month, date_max=date_max)
             # ------------info bitacora-----------
             (days_absence_bit, days_extra_bit, days_primes_bit, days_lates_bit,
-             absences_bit, extras_bit, primes_bit, lates_bit, normals_bit,
+             absences_bit, extras_bit, primes_bit, lates_bit, normals_bit, early_bit,
              contract) = get_info_bitacora(
                 self.dfb, name=self.name_emp_selector.get(), id_emp=id_emp, flag=self.file_selected_2, date_limit=date_max)
             (self.normal_data_emp, self.absence_data_emp, self.prime_data_emp,
-             self.late_data_emp, self.extra_data_emp) = unify_data_employee(
+             self.late_data_emp, self.extra_data_emp, self.early_data_emp) = unify_data_employee(
                 [worked_days_f, days_worked_t, normals_bit],
                 [days_absence, None, absences_bit],
                 [None, None, primes_bit],
                 [days_late, days_late_t, lates_bit],
-                [days_extra, days_extra_t, extras_bit]
+                [days_extra, days_extra_t, extras_bit],
+                [None, None, early_bit]
             )
             # update vars for fichaje file
             update_stringvars(

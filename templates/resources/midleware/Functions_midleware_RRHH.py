@@ -124,26 +124,28 @@ def get_data_name_fichaje(name: str, dff, dft, dfb, clocks, window_time_in, wind
         True if dft is not None else False, month=date_example.month, date_max=date_max)
     # ------------info bitacora-----------
     (days_absence_bit, days_extra_bit, days_primes_bit, days_lates_bit,
-     absences_bit, extras_bit, primes_bit, lates_bit, normals_bit,
+     absences_bit, extras_bit, primes_bit, lates_bit, normals_bit, early_bit,
      contract) = get_info_bitacora(
         dfb, name=name, id_emp=id_emp, flag=True, date_limit=date_max)
     (normal_data_emp, absence_data_emp, prime_data_emp,
-     late_data_emp, extra_data_emp) = unify_data_employee(
+     late_data_emp, extra_data_emp, early_data_emp) = unify_data_employee(
         [worked_days_f, days_worked_t, normals_bit],
         [days_absence, None, absences_bit],
         [None, None, primes_bit],
         [days_late, days_late_t, lates_bit],
-        [days_extra, days_extra_t, extras_bit]
-    )
+        [days_extra, days_extra_t, extras_bit],
+        [None, None, early_bit])
     list_normal_data = [{"timestamp": k, "value": v[0], "comment": v[1], "timestamps_extra": v[2]} for k, v in normal_data_emp.items()]
     list_absence_data = [{"timestamp": k, "value": v[0], "comment": v[1], "timestamps_extra": v[2]} for k, v in absence_data_emp.items()]
     list_primer_data = [{"timestamp": k, "value": v[0], "comment": v[1], "timestamps_extra": v[2]} for k, v in prime_data_emp.items()]
     list_late_data = [{"timestamp": k, "value": v[0], "comment": v[1], "timestamps_extra": v[2]} for k, v in late_data_emp.items()]
     list_extra_data = [{"timestamp": k, "value": v[0], "comment": v[1], "timestamps_extra": v[2]} for k, v in extra_data_emp.items()]
-    
+    list_early_data = [{"timestamp": k, "value": v[0], "comment": v[1], "timestamps_extra": v[2]} for k, v in early_data_emp.items()]
     return {"name": name, "ID": id_emp, "contract": contract,
             "normal_data": list_normal_data, "absence_data": list_absence_data,
-            "prime_data": list_primer_data, "late_data": list_late_data, "extra_data": list_extra_data}
+            "prime_data": list_primer_data, "late_data": list_late_data, 
+            "extra_data": list_extra_data, 
+            "early_data": list_early_data}
 
 
 def get_fichaje_data(data: dict):

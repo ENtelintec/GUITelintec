@@ -120,4 +120,10 @@ def get_events_from_extraordinary_sources(hour_in: str, hour_out: str, data: dic
             print(f"event: extra, date: {data['date']}, value: {int(hours_extra)} hours {int(hours_extra % 1 * 60)} minutes, comment: {data['comment']}")
             events.append("extra")
             data_events.append((data["date"], hours_extra, handle_comment_extra(0, data["comment"]), data["contract"]))
+        # early leaving
+        if timestamp_hour_out > normal_hour_out:
+            early_hours = timestamp_hour_out - normal_hour_out
+            early_hours = early_hours.total_seconds() / 3600.0
+            print(f"event: early, date: {data['date']}, value: {int(-early_hours)} hours {int(-early_hours % 1 * 60)} minutes, comment: {data['comment']}")
+            events.append("early")
     return events, data_events

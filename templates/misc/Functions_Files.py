@@ -752,7 +752,7 @@ def update_cache_data(cache_data, new_data, id_emp_up=None, deletion=False):
                 break
 
 
-def update_fichajes_resume_cache(filepath: str, data, just_file=False):
+def update_fichajes_resume_cache(filepath: str, data=None, just_file=False):
     """
     Updates the fichajes resume cache
     :param just_file:
@@ -760,13 +760,15 @@ def update_fichajes_resume_cache(filepath: str, data, just_file=False):
     :param data:
     :return:
     """
-    update, error, fichajes_resume = retrieve_file_cache_data(filepath)
+    if not just_file:
+        update, error, fichajes_resume = retrieve_file_cache_data(filepath)
+    else:
+        error = None
+        fichajes_resume = data
     if len(fichajes_resume) == 0 or error is not None:
         fichajes_resume = data
         print("Replazing cache into db")
-    if just_file:
-        fichajes_resume = data
-    else:
+    elif not just_file:
         ids_old = {item[0] for item in fichajes_resume}
         ids_new = {item[0] for item in data}
         new_insert_ids = ids_new - ids_old
@@ -787,7 +789,7 @@ def update_fichajes_resume_cache(filepath: str, data, just_file=False):
                            new_total[4],
                            dicts_new[0], dicts_new[1], dicts_new[2], dicts_new[3], dicts_new[4])
                     flag, error, result = update_fichaje_DB(id_emp, contract, dicts_new[0], dicts_new[1], dicts_new[2],
-                                                            dicts_new[3], dicts_new[4])
+                                                            dicts_new[3], dicts_new[4], dicts_new[5])
                     if flag:
                         print("Fichaje updated DB: ", id_emp)
                         fichajes_resume[index_0] = aux
@@ -798,12 +800,12 @@ def update_fichajes_resume_cache(filepath: str, data, just_file=False):
         for id_new in new_insert_ids:
             for item in data:
                 (id_emp2, name2, contract2, faltas2, lates2, total_lates2, extras2, total_extra2, primas2,
-                 faltas_dic2, lates_dic2, extras_dic2, primas_dic2, normal_dic2) = item
+                 faltas_dic2, lates_dic2, extras_dic2, primas_dic2, normal_dic2, early_dic2) = item
                 if id_new == id_emp2:
                     aux = (id_new, name2, contract2, faltas2, lates2, total_lates2, extras2, total_extra2, primas2,
-                           faltas_dic2, lates_dic2, extras_dic2, primas_dic2, normal_dic2)
+                           faltas_dic2, lates_dic2, extras_dic2, primas_dic2, normal_dic2, early_dic2)
                     flag, error, result = insert_new_fichaje_DB(id_new, contract2, faltas_dic2, lates_dic2, extras_dic2,
-                                                                primas_dic2, normal_dic2)
+                                                                primas_dic2, normal_dic2, early_dic2)
                     if flag:
                         fichajes_resume.append(aux)
                         print("Fichaje added DB")
@@ -839,21 +841,36 @@ def get_fichajes_resume_cache(filepath, is_hard_update=False) -> tuple[list, boo
     else:
         flag = False
     if not flag:
-        "calling db, because file not founded"
+        "calling db, because file not founded or api request"
         flag, error, result = get_all_fichajes()
         if flag and len(result) > 0:
             fichajes_resume = []
             for row in result:
-                (name, lastname, id_fich, id_emp, contract, absences, lates, extras, primes, normal) = row
+                name = row[0]
+                lastname = row[1]
+                id_fich = row[2]
+                id_emp = row[3]
+                contract = row[4]
+                absences = row[5]
+                lates = row[6]
+                extras = row[7]
+                primes = row[8]
+                normal = row[9]
+                if len(row) <= 10:
+                    early = '{}'  
+                else:
+                    early = row[10]
                 new_faltas, new_faltas_value = get_cumulative_data_fichajes_dict(json.loads(absences))
                 new_tardanzas, new_tardanzas_value = get_cumulative_data_fichajes_dict(json.loads(lates))
                 new_extras, new_extras_value = get_cumulative_data_fichajes_dict(json.loads(extras))
                 new_primas, new_primas_value = get_cumulative_data_fichajes_dict(json.loads(primes))
+                new_early, new_early_value = get_cumulative_data_fichajes_dict(json.loads(early))
                 new_row = (id_emp, name.title() + lastname.title(), contract,
                            new_faltas, new_faltas_value, new_tardanzas,
                            new_extras, new_extras_value, new_primas,
                            json.loads(absences), json.loads(lates),
-                           json.loads(extras), json.loads(primes), json.loads(normal))
+                           json.loads(extras), json.loads(primes), 
+                           json.loads(normal), json.loads(early))
                 fichajes_resume.append(new_row)
             update_fichajes_resume_cache(filepath, fichajes_resume, just_file=True)
         else:
@@ -1045,17 +1062,18 @@ def unify_data_display_fichaje(data: list[tuple[any, float, str]]) -> dict:
 
 
 def correct_repetitions(normal_data_emp: dict, absence_data_emp: dict, prime_data_emp: dict, late_data_emp: dict,
-                        extra_data_emp: dict):
+                        extra_data_emp: dict, early_data_emp=None):
     keys_absence = absence_data_emp.keys()
     for key in normal_data_emp.keys():
         if key in keys_absence:
             res = absence_data_emp.pop(key, None)
             print("res----", res)
-    return normal_data_emp, absence_data_emp, prime_data_emp, late_data_emp, extra_data_emp
+    return normal_data_emp, absence_data_emp, prime_data_emp, late_data_emp, extra_data_emp, early_data_emp
 
 
 def unify_data_employee(data_normal: list, data_absence: list,
-                        data_prime: list, data_late: list, data_extra: list) -> tuple[dict, dict, dict, dict, dict]:
+                        data_prime: list, data_late: list, data_extra: list,
+                        data_early=None) -> tuple:
     # normal data
     normal_data = []
     for group in data_normal:
@@ -1134,9 +1152,19 @@ def unify_data_employee(data_normal: list, data_absence: list,
                     comment = f"------Bitacora------\n{comment}"
                     extra_data.append((timestamp, value, comment))
     extra_data_emp = unify_data_display_fichaje(extra_data)
-    normal_data_emp, absence_data_emp, prime_data_emp, late_data_emp, extra_data_emp = correct_repetitions(
+    early_data = []
+    for group in data_early:
+        if group is None:
+            continue
+        for item in group:
+            if isinstance(item, tuple):
+                timestamp, comment, value = item
+                comment = f"------Bitacora------\n{comment}"
+                early_data.append((timestamp, value, comment))
+    (normal_data_emp, absence_data_emp, prime_data_emp, late_data_emp, 
+     extra_data_emp, early_data_emp) = correct_repetitions(
         normal_data_emp, absence_data_emp, prime_data_emp, late_data_emp, extra_data_emp)
-    return normal_data_emp, absence_data_emp, prime_data_emp, late_data_emp, extra_data_emp
+    return normal_data_emp, absence_data_emp, prime_data_emp, late_data_emp, extra_data_emp, early_data_emp
 
 
 def transform_hours_to_float(hours: list[str]):
@@ -1338,6 +1366,8 @@ def get_info_bitacora(df: pd.DataFrame, name: str, id_emp: int, flag, date_limit
     # count the number of days when the person is normal in event column
     df_normal = df_name[df_name["Evento"] == "normal"]
     normals = (len(df_normal), sum(df_normal["Valor"]))
+    df_early = df_name[df_name["Evento"] == "early"]
+    earlies = (len(df_early), sum(df_early["Valor"]))
     # generate tuple containing (timestamp, comment, value) for each event
     faltas = []
     for i, val in enumerate(df_falta["Timestamp"]):
@@ -1354,9 +1384,12 @@ def get_info_bitacora(df: pd.DataFrame, name: str, id_emp: int, flag, date_limit
     normals = []
     for i, val in enumerate(df_normal["Timestamp"]):
         normals.append((val, df_normal["Comentario"].iloc[i], df_normal["Valor"].iloc[i]))
+    early = []
+    for i, val in enumerate(df_early["Timestamp"]):
+        early.append((val, df_early["Comentario"].iloc[i], df_early["Valor"].iloc[i]))
     contract = df_name["Contrato"].iloc[0] if len(df_name) > 0 else "NA"
     return (days_falta, days_extra, days_prima, days_late,
-            faltas, extras, primas, lates, normals, contract)
+            faltas, extras, primas, lates, normals, early, contract)
 
 
 def get_info_o_file_name(contracts, name: str, id_2=None, flag=False) -> tuple[str, list, list, list, float, list]:

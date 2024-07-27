@@ -252,8 +252,7 @@ class EmployeesVacationRegistry(Resource):
 class EmployeesResume(Resource):
     @ns.marshal_with(employees_resume_model)
     def get(self):
-        fichajes_resume, flag = get_fichajes_resume_cache(cache_file_resume_fichaje_path)
-        print(fichajes_resume)
+        fichajes_resume, flag = get_fichajes_resume_cache(cache_file_resume_fichaje_path, is_hard_update=True)
         if flag:
             out_aux = []
             for item in fichajes_resume:
@@ -263,13 +262,16 @@ class EmployeesResume(Resource):
                     "contract": item[2],
                     "absences": item[3],
                     "late": item[4],
-                    "extra": item[5],
-                    "total_h_extra": item[6],
-                    "primes": item[7],
-                    "absences_details": item[8],
-                    "late_details": item[9],
-                    "extra_details": item[10],
-                    "primes_details": item[11]
+                    "total_late": item[5],
+                    "extra": item[6],
+                    "total_h_extra": item[7],
+                    "primes": item[8],
+                    "absences_details": item[9],
+                    "late_details": item[10],
+                    "extra_details": item[11],
+                    "primes_details": item[12],
+                    "normals_details": item[13],
+                    "earlies_details": item[14]
                 })
             out = {
                 "data": out_aux
@@ -287,11 +289,12 @@ class EmployeesResume(Resource):
 class EmployeesResume(Resource):  # noqa: F811
     @ns.marshal_with(resume_model)
     def get(self, id_emp):
-        fichajes_resume, flag = get_fichajes_resume_cache(cache_file_resume_fichaje_path)
+        fichajes_resume, flag = get_fichajes_resume_cache(cache_file_resume_fichaje_path, is_hard_update=True)
         if flag:
             out = {}
             code = 404
             for item in fichajes_resume:
+                print(item[14])
                 if str(item[0]) == id_emp:
                     out = {
                         "id": item[0],
@@ -299,13 +302,16 @@ class EmployeesResume(Resource):  # noqa: F811
                         "contract": item[2],
                         "absences": item[3],
                         "late": item[4],
-                        "extra": item[5],
-                        "total_h_extra": item[6],
-                        "primes": item[7],
-                        "absences_details": item[8],
-                        "late_details": item[9],
-                        "extra_details": item[10],
-                        "primes_details": item[11]
+                        "total_late": item[5],
+                        "extra": item[6],
+                        "total_h_extra": item[7],
+                        "primes": item[8],
+                        "absences_details": item[9],
+                        "late_details": item[10],
+                        "extra_details": item[11],
+                        "primes_details": item[12],
+                        "normals_details": item[13],
+                        "earlies_details": item[14]
                     }
                     code = 200
                     break
@@ -335,7 +341,7 @@ class DownloadFileFichaje(Resource):
             return {"data": None, "msg": "No files"}, 400
 
 
-@ns.route('/fichajes/data/files')
+@ns.route('/fichajes/data/fromfiles')
 class DownloadFileFichajeID(Resource):
     @ns.expect(request_data_fichaje_files_model)
     @ns.marshal_with(answer_fichajes_model)

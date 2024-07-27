@@ -22,13 +22,16 @@ resume_model = api.model('Resume', {
     "contract": fields.String(required=True, description="The contract"),
     "absences": fields.Integer(required=True, description="The absences"),
     "late": fields.Integer(required=True, description="The late"),
+    "total_late":  fields.Integer(required=True, description="The total late"),
     "extra": fields.Integer(required=True, description="The extra"),
     "total_h_extra": fields.Integer(required=True, description="The total"),
     "primes": fields.Integer(required=True, description="The primes"),
     "absences_details": fields.String(required=True, description="The absences details"),
     "late_details": fields.String(required=True, description="The late details"),
     "extra_details": fields.String(required=True, description="The extra details"),
-    "primes_details": fields.String(required=True, description="The primes details")
+    "primes_details": fields.String(required=True, description="The primes details"),
+    "normals_details": fields.String(required=True, description="The normals details"),
+    "earlies_details":  fields.String(required=True, description="The early data details")
     })
 
 

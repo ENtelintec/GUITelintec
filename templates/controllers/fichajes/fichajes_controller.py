@@ -9,29 +9,34 @@ from templates.controllers.employees.employees_controller import get_employee_id
 
 
 def update_fichaje_DB(emp_id: int, contract: str, absences: dict, lates: dict, extras: dict,
-                      primes: dict, normal: dict):
+                      primes: dict, normal: dict, early=None):
+    early = early if early is not None else {}
     sql = ("UPDATE sql_telintec.fichajes "
-           "SET contract = %s, absences = %s, lates = %s, extras = %s, primes = %s, normal = %s "
+           "SET contract = %s, absences = %s, lates = %s, extras = %s, primes = %s, normal = %s, early = %s "
            "WHERE emp_id = %s")
     val = (contract, json.dumps(absences), json.dumps(lates), json.dumps(extras),
-           json.dumps(primes), json.dumps(normal), emp_id)
+           json.dumps(primes), json.dumps(normal), json.dumps(early), 
+           emp_id)
     flag, error, result = execute_sql(sql, val, 3)
     return flag, error, result
 
 
 def insert_new_fichaje_DB(emp_id: int, contract: str, absences: dict, lates: dict, extras: dict,
-                          primes: dict, normals: dict):
+                          primes: dict, normals: dict, early=None):
+    early = early if early is not None else {}
     sql = ("INSERT INTO sql_telintec.fichajes "
-           "(emp_id, contract, absences, lates, extras, primes, normal) "
-           "VALUES (%s, %s, %s, %s, %s, %s, %s)")
+           "(emp_id, contract, absences, lates, extras, primes, normal, early) "
+           "VALUES (%s, %s, %s, %s, %s, %s, %s, %s)")
     val = (emp_id, contract, json.dumps(absences), json.dumps(lates),
-           json.dumps(extras), json.dumps(primes), json.dumps(normals))
+           json.dumps(extras), json.dumps(primes), json.dumps(normals), json.dumps(early))
     flag, error, result = execute_sql(sql, val, 4)
     return flag, error, result
 
 
 def get_fichaje_DB(emp_id: int):
-    sql = ("SELECT ficha_id, emp_id, contract, absences, lates, extras, primes, normal "
+    sql = ("SELECT "
+           "ficha_id, emp_id, contract, "
+           "absences, lates, extras, primes, normal, early "
            "FROM sql_telintec.fichajes "
            "WHERE emp_id = %s")
     val = (emp_id,)
@@ -40,7 +45,6 @@ def get_fichaje_DB(emp_id: int):
 
 
 def get_all_fichajes():
-    # (name, lastname, id_fich, id_emp, contract, absences, lates, extras, primes, normal)
     sql = ("SELECT "
            "sql_telintec.employees.name, "
            "sql_telintec.employees.l_name, "
@@ -51,7 +55,8 @@ def get_all_fichajes():
            "sql_telintec.fichajes.lates, "
            "sql_telintec.fichajes.extras, "
            "sql_telintec.fichajes.primes, "
-           "sql_telintec.fichajes.normal "
+           "sql_telintec.fichajes.normal, "
+           "sql_telintec.fichajes.early "
            "FROM sql_telintec.fichajes "
            "INNER JOIN sql_telintec.employees ON (sql_telintec.fichajes.emp_id = sql_telintec.employees.employee_id)")
     flag, error, result = execute_sql(sql, type_sql=2)
