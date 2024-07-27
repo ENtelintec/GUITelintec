@@ -314,13 +314,13 @@ def get_events_op_date(date: datetime, hard_update, only_op=True, emp_id=-1):
     flag, error, result = get_contract_employes(emp_id) if emp_id != -1 else (True, "", [])
     for row in fichajes_resume:
         (id_emp, name, contract, faltas, tardanzas, tardanzas_value, extras, extras_value, primas,
-         absences_dic, lates_dic, extras_dic, primes_dic, normal_dic) = row
+         absences_dic, lates_dic, extras_dic, primes_dic, normal_dic, early_dic) = row
         data_absences = get_data_from_dict_by_date(absences_dic, date, "falta")
         data_lates = get_data_from_dict_by_date(lates_dic, date, "atraso")
         data_extras = get_data_from_dict_by_date(extras_dic, date, "extra")
         data_primes = get_data_from_dict_by_date(primes_dic, date, "prima")
         data_normal = get_data_from_dict_by_date(normal_dic, date, "normal")
-        data_early = get_data_from_dict_by_date(lates_dic, date, "early")
+        data_early = get_data_from_dict_by_date(early_dic, date, "early")
         data_events_emp = unify_data_list_events([id_emp, name, contract],
                                                  [data_absences, data_lates, data_extras, data_primes, data_normal, data_early])
         for item in data_events_emp:

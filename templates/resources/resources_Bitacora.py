@@ -65,6 +65,7 @@ class FichajeEvent(Resource):
         if data["event"].lower() == "extraordinary":
             event, data_events = get_events_from_extraordinary_sources(data["hour_in"], data["hour_out"], data)
             for index, item in enumerate(data_events):
+                print(event[index], item)
                 flag, error, result = update_bitacora(data["id_emp"], event[index], item)
                 if flag:
                     events_updated.append(f"{event[index]}_{item[1]}, result: {result}")

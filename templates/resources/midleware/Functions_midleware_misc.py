@@ -126,4 +126,5 @@ def get_events_from_extraordinary_sources(hour_in: str, hour_out: str, data: dic
             early_hours = early_hours.total_seconds() / 3600.0
             print(f"event: early, date: {data['date']}, value: {int(-early_hours)} hours {int(-early_hours % 1 * 60)} minutes, comment: {data['comment']}")
             events.append("early")
+            data_events.append((data["date"], early_hours, data["comment"], data["contract"]))
     return events, data_events
