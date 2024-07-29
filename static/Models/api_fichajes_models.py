@@ -45,7 +45,8 @@ data_emp_fichajes_model = api.model('DataEmpFichajes', {
     "prime_data": fields.List(fields.Nested(data_dict_emp_fichaje_model)),
     "late_data": fields.List(fields.Nested(data_dict_emp_fichaje_model)),
     "extra_data": fields.List(fields.Nested(data_dict_emp_fichaje_model)),
-    "early_data":  fields.List(fields.Nested(data_dict_emp_fichaje_model))
+    "early_data":  fields.List(fields.Nested(data_dict_emp_fichaje_model)),
+    "pasive_data":  fields.List(fields.Nested(data_dict_emp_fichaje_model))
     })
 
 request_data_fichaje_files_model = api.model('FichFilesRequest', {

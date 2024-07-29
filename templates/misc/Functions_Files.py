@@ -620,9 +620,9 @@ def get_dic_from_list_fichajes(data_fichaje: tuple, **kwargs) -> tuple:
     Right now just acepted type of files is oct and ternium data.
     :return: Tuple(dic_list_missing, dic_list_late, dic_list_extra, dic_list_primes)
     """
-    days_missing_o, days_late_o, days_extra_o, primes_o, normal_o = (None, None, None, None, None)
-    days_missing_t, days_late_t, days_extra_t, primes_t, normal_t = (None, None, None, None, None)
-    days_missing_f, days_late_f, days_extra_f, primes_f, normal_f = data_fichaje
+    days_missing_o, days_late_o, days_extra_o, primes_o, normal_o, early_o, pasive_o = (None, None, None, None, None, None, None)
+    days_missing_t, days_late_t, days_extra_t, primes_t, normal_t, early_t, pasive_t = (None, None, None, None, None, None, None)
+    days_missing_f, days_late_f, days_extra_f, primes_f, normal_f, early_f, pasive_f = data_fichaje
     for key, value in kwargs.items():
         if key == "oct_file":
             days_missing_o, days_late_o, days_extra_o, primes_o, normal_o = value
@@ -1075,7 +1075,7 @@ def correct_repetitions(normal_data_emp: dict, absence_data_emp: dict, prime_dat
 
 def unify_data_employee(data_normal: list, data_absence: list,
                         data_prime: list, data_late: list, data_extra: list,
-                        data_early=None) -> tuple:
+                        data_early=None, data_pasive=None) -> tuple:
     # normal data
     normal_data = []
     for group in data_normal:
@@ -1166,7 +1166,16 @@ def unify_data_employee(data_normal: list, data_absence: list,
     (normal_data_emp, absence_data_emp, prime_data_emp, late_data_emp, 
      extra_data_emp, early_data_emp) = correct_repetitions(
         normal_data_emp, absence_data_emp, prime_data_emp, late_data_emp, extra_data_emp)
-    return normal_data_emp, absence_data_emp, prime_data_emp, late_data_emp, extra_data_emp, early_data_emp
+    pasive_data = []
+    for group in data_pasive:
+        if group is None:
+            continue
+        for item in group:
+            if isinstance(item, tuple):
+                timestamp, comment, value = item
+                comment = f"------Bitacora------\n{comment}"
+                pasive_data.append((timestamp, value, comment))
+    return normal_data_emp, absence_data_emp, prime_data_emp, late_data_emp, extra_data_emp, early_data_emp, data_pasive
 
 
 def transform_hours_to_float(hours: list[str]):
@@ -1392,7 +1401,7 @@ def get_info_t_file_name(df: pd.DataFrame, name: str, clocks, window_time_in, wi
 
 def get_info_bitacora(df: pd.DataFrame, name: str, id_emp: int, flag, date_limit=None):
     if not flag:
-        return 0.0, 0.0, 0.0, 0.0, [], [], [], []
+        return 0.0, 0.0, 0.0, 0.0, [], [], [], [],[],[],[]
     df_name = df[df["ID"] == id_emp]
     # convert timestamp to datetime format
     df_name["Timestamp"] = pd.to_datetime(df_name["Timestamp"])
@@ -1416,6 +1425,8 @@ def get_info_bitacora(df: pd.DataFrame, name: str, id_emp: int, flag, date_limit
     normals = (len(df_normal), sum(df_normal["Valor"]))
     df_early = df_name[df_name["Evento"] == "early"]
     earlies = (len(df_early), sum(df_early["Valor"]))
+    df_pasive = df_name[df_name["Evento"] == "pasiva"]
+    pasives = (len(df_pasive), sum(df_pasive["Valor"]))
     # generate tuple containing (timestamp, comment, value) for each event
     faltas = []
     for i, val in enumerate(df_falta["Timestamp"]):
@@ -1436,8 +1447,11 @@ def get_info_bitacora(df: pd.DataFrame, name: str, id_emp: int, flag, date_limit
     for i, val in enumerate(df_early["Timestamp"]):
         early.append((val, df_early["Comentario"].iloc[i], df_early["Valor"].iloc[i]))
     contract = df_name["Contrato"].iloc[0] if len(df_name) > 0 else "NA"
+    pasive = []
+    for i, val in enumerate(df_pasive["Timestamp"]):
+        pasive.append((val, df_pasive["Comentario"].iloc[i], df_pasive["Valor"].iloc[i]))
     return (days_falta, days_extra, days_prima, days_late,
-            faltas, extras, primas, lates, normals, early, contract)
+            faltas, extras, primas, lates, normals, early, pasive, contract)
 
 
 def get_info_o_file_name(contracts, name: str, id_2=None, flag=False) -> tuple[str, list, list, list, float, list]:
