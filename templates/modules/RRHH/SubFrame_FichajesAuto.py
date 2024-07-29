@@ -363,15 +363,23 @@ class FichajesAuto(ttk.Frame):
              contract) = get_info_bitacora(
                 self.dfb, name=self.name_emp_selector.get(), id_emp=id_emp, flag=self.file_selected_2, date_limit=date_max)
             (self.normal_data_emp, self.absence_data_emp, self.prime_data_emp,
-             self.late_data_emp, self.extra_data_emp, self.early_data_emp) = unify_data_employee(
+             self.late_data_emp, self.extra_data_emp, self.early_data_emp, self.pasive_data_emp) = unify_data_employee(
                 [worked_days_f, days_worked_t, normals_bit],
                 [days_absence, None, absences_bit],
                 [None, None, primes_bit],
                 [days_late, days_late_t, lates_bit],
                 [days_extra, days_extra_t, extras_bit],
-                [early_dic_f, days_early_t, early_bit]
+                [early_dic_f, days_early_t, early_bit],
+                [None, None, pasive_bit]
             )
             # update vars for fichaje file
+            print(self.normal_data_emp)
+            print(self.absence_data_emp)
+            print(self.prime_data_emp)
+            print(self.late_data_emp)
+            print(self.extra_data_emp)
+            print(self.early_data_emp)
+            print(self.pasive_data_emp)
             self.table_display = self.create_table_display(date_max)
 
     def on_name_emp_sel_action(self, event):

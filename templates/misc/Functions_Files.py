@@ -1163,7 +1163,7 @@ def unify_data_employee(data_normal: list, data_absence: list,
                 timestamp, comment, value = item
                 comment = f"------Bitacora------\n{comment}"
                 early_data.append((timestamp, value, comment))
-    
+    early_data = unify_data_display_fichaje(early_data)
     pasive_data = []
     for group in data_pasive:
         if group is None:
@@ -1173,10 +1173,11 @@ def unify_data_employee(data_normal: list, data_absence: list,
                 timestamp, comment, value = item
                 comment = f"------Bitacora------\n{comment}"
                 pasive_data.append((timestamp, value, comment))
+    pasive_data = unify_data_display_fichaje(pasive_data)
     (normal_data_emp, absence_data_emp, prime_data_emp, late_data_emp,
      extra_data_emp, early_data_emp, data_pasive_emp) = correct_repetitions(
         normal_data_emp, absence_data_emp, prime_data_emp, late_data_emp, extra_data_emp, early_data, pasive_data)
-    return normal_data_emp, absence_data_emp, prime_data_emp, late_data_emp, extra_data_emp, early_data_emp, data_pasive
+    return normal_data_emp, absence_data_emp, prime_data_emp, late_data_emp, extra_data_emp, early_data_emp, data_pasive_emp
 
 
 def transform_hours_to_float(hours: list[str]):
@@ -1283,7 +1284,7 @@ def get_info_f_file_name(df: pd.DataFrame, name: str, clocks, window_time_in, wi
     :return: 
     """
     if not flag:
-        return [], [], 0, 0, {}, {}
+        return [], [], 0, 0, {}, {}, {}
     df_name = df[(df["name"] == name) & (df["Fecha/hora_in"] <= date_max)]
     days_worked, days_not_worked = get_worked_days(df_name, date_max=date_max)
     min_in = clocks[0]["entrada"][0].get()
@@ -1337,7 +1338,7 @@ def get_info_f_file_name(df: pd.DataFrame, name: str, clocks, window_time_in, wi
 def get_info_t_file_name(df: pd.DataFrame, name: str, clocks, window_time_in, window_time_out, flag, month=None,
                          date_max=None):
     if flag:
-        return "NA", "NA", "NA", "NA", {}, {}, [], []
+        return "NA", "NA", "NA", "NA", {}, {}, [], [], {}
     date_min = pd.Timestamp(year=date_max.year, month=date_max.month, day=1, hour=0, minute=0, second=0)
     df_name = df[(df["name"] == name) & (df["Fecha/hora"] <= date_max) & (df["Fecha/hora"] >= date_min)]
     days_worked, days_not_worked = get_worked_days(df_name, 2, month, date_max=date_max)
@@ -1397,7 +1398,9 @@ def get_info_t_file_name(df: pd.DataFrame, name: str, clocks, window_time_in, wi
         time_str = pd.Timestamp(year=1, month=1, day=1, hour=i[0].hour, minute=i[0].minute, second=i[0].second)
         diff = time_str - limit_hour2
         early_time[i[0]] = (diff, i[1])
-    return worked_days, worked_intime, count, count2, time_late, extra_time, days_worked, days_not_worked, early_time
+    return (worked_days, worked_intime, count, count2, 
+            time_late, extra_time, days_worked, days_not_worked, 
+            early_time)
 
 
 def get_info_bitacora(df: pd.DataFrame, name: str, id_emp: int, flag, date_limit=None):
