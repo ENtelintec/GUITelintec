@@ -1064,13 +1064,13 @@ def unify_data_display_fichaje(data: list[tuple[any, float, str]]) -> dict:
 
 
 def correct_repetitions(normal_data_emp: dict, absence_data_emp: dict, prime_data_emp: dict, late_data_emp: dict,
-                        extra_data_emp: dict, early_data_emp=None):
+                        extra_data_emp: dict, early_data_emp=None, pasive_data_emp=None):
     keys_absence = absence_data_emp.keys()
     for key in normal_data_emp.keys():
         if key in keys_absence:
             res = absence_data_emp.pop(key, None)
             print("res----", res)
-    return normal_data_emp, absence_data_emp, prime_data_emp, late_data_emp, extra_data_emp, early_data_emp
+    return normal_data_emp, absence_data_emp, prime_data_emp, late_data_emp, extra_data_emp, early_data_emp, pasive_data_emp
 
 
 def unify_data_employee(data_normal: list, data_absence: list,
@@ -1163,9 +1163,7 @@ def unify_data_employee(data_normal: list, data_absence: list,
                 timestamp, comment, value = item
                 comment = f"------Bitacora------\n{comment}"
                 early_data.append((timestamp, value, comment))
-    (normal_data_emp, absence_data_emp, prime_data_emp, late_data_emp, 
-     extra_data_emp, early_data_emp) = correct_repetitions(
-        normal_data_emp, absence_data_emp, prime_data_emp, late_data_emp, extra_data_emp)
+    
     pasive_data = []
     for group in data_pasive:
         if group is None:
@@ -1175,6 +1173,9 @@ def unify_data_employee(data_normal: list, data_absence: list,
                 timestamp, comment, value = item
                 comment = f"------Bitacora------\n{comment}"
                 pasive_data.append((timestamp, value, comment))
+    (normal_data_emp, absence_data_emp, prime_data_emp, late_data_emp,
+     extra_data_emp, early_data_emp, data_pasive_emp) = correct_repetitions(
+        normal_data_emp, absence_data_emp, prime_data_emp, late_data_emp, extra_data_emp, early_data, pasive_data)
     return normal_data_emp, absence_data_emp, prime_data_emp, late_data_emp, extra_data_emp, early_data_emp, data_pasive
 
 
