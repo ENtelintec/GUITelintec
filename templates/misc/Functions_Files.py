@@ -1246,6 +1246,30 @@ def get_worked_days(df_name: pd.DataFrame, type_f=1, month=None, date_max=None):
 
 
 def get_info_f_file_name(df: pd.DataFrame, name: str, clocks, window_time_in, window_time_out, flag, date_max=None):
+    """
+        Get the information of the filename.
+        Consider the most recent time is greater than the oldest time.
+        Example:  if the fichaje time is 10:00 and the limit time is 09:00, then the function will return that 
+        timestamp as a late event.
+        If the fichaje time is 08:00 and the limit time is 09:00, then the function
+        will return that timestamp as an extra event.
+        If the fichaje time is 19:00 and the limit time is 18:00,
+        then the function will return that timestamp as an extra event.
+        If the fichaje time is 17:00 and the limit
+        time is 18:00, then the function will return that timestamp as an early event.
+        
+    :param df:
+    :param name:
+    :param date_max:
+    :param df: 
+    :param name: 
+    :param clocks: 
+    :param window_time_in: 
+    :param window_time_out: 
+    :param flag: 
+    :param date_max: Most recent date to consider (.max())
+    :return: 
+    """
     if not flag:
         return [], [], 0, 0, {}, {}
     df_name = df[(df["name"] == name) & (df["Fecha/hora_in"] <= date_max)]
@@ -1267,7 +1291,7 @@ def get_info_f_file_name(df: pd.DataFrame, name: str, clocks, window_time_in, wi
     for i in late_name[["Fecha/hora_in", "Dispositivo de fichaje de entrada"]].values:
         time_str = pd.Timestamp(year=1, month=1, day=1, hour=i[0].hour, minute=i[0].minute, second=0)
         late_dic[i[0]] = (time_str - limit_hour, i[1])
-    # filter extra hours
+    # filter extra hours at entrance
     extra_name_in = df_name[
         (df_name["Fecha/hora_in"].dt.time <= limit_hour.time()) & (df_name["Fecha/hora_in"] <= date_max)]
     count_extra = 0
@@ -1280,16 +1304,22 @@ def get_info_f_file_name(df: pd.DataFrame, name: str, clocks, window_time_in, wi
     aux_hour = int(hour_out) + int(window_time_out.get() / 60)
     aux_min = int(min_out) + int(window_time_out.get() % 60)
     limit_hour = pd.Timestamp(year=1, month=1, day=1, hour=aux_hour, minute=aux_min, second=0)
-    # count the number of rows where the person is late
+    # count the number of rows where the person is with extra time
     extra_name_out = df_name[
         (df_name["Fecha/hora_out"].dt.time > limit_hour.time()) & (df_name["Fecha/hora_out"] <= date_max)]
     count_extra += len(extra_name_out)
-    # calculate the time difference between the entrance hour and the late hour
+    # calculate the time difference between the entrance hour and the extra hour
     extra_dic = {} if extra_dic is None else extra_dic
     for i in extra_name_out[["Fecha/hora_out", "Dispositivo de fichaje de salida"]].values:
         time_str = pd.Timestamp(year=1, month=1, day=1, hour=i[0].hour, minute=i[0].minute, second=0)
-        extra_dic[i[0]] = (time_str - limit_hour, f"Salida-->{i[1]}")    
-    return days_worked, days_not_worked, count_late, count_extra, late_dic, extra_dic
+        extra_dic[i[0]] = (time_str - limit_hour, f"Salida-->{i[1]}")
+    # early leavings
+    early_name = df_name[(df_name["Fecha/hora_out"].dt.time < limit_hour.time()) & (df_name["Fecha/hora_out"] <= date_max)]
+    early_dic = {}
+    for i in early_name[["Fecha/hora_out", "Dispositivo de fichaje de salida"]].values:
+        time_str = pd.Timestamp(year=1, month=1, day=1, hour=i[0].hour, minute=i[0].minute, second=0)
+        early_dic[i[0]] = (limit_hour - time_str, f"Salida {i[1]}")
+    return days_worked, days_not_worked, count_late, count_extra, late_dic, extra_dic, early_dic
 
 
 def get_info_t_file_name(df: pd.DataFrame, name: str, clocks, window_time_in, window_time_out, flag, month=None,
@@ -1328,18 +1358,34 @@ def get_info_t_file_name(df: pd.DataFrame, name: str, clocks, window_time_in, wi
         diff = time_str - limit_hour
         time_late[i[0]] = (diff, i[1])
     # calculate the number of days when the person worked extra hours
+    extra_time = {}
+    extra_name_in = df_name_salida[
+        (df_name_salida["Fecha/hora"].dt.time < limit_hour.time()) & (df_name_salida["Fecha/hora"] <= date_max)]
+    count2 = len(extra_name_in)
+    for i in extra_name_in[["Fecha/hora", "Puerta"]].values:
+        time_str = pd.Timestamp(year=1, month=1, day=1, hour=i[0].hour, minute=i[0].minute, second=i[0].second)
+        diff = time_str - limit_hour
+        extra_time[i[0]] = (diff, i[1])
+    # set hour for leaving
     aux_hour = int(hour_out) + int(window_time_out.get() / 60)
     aux_min = int(min_out) + int(window_time_out.get() % 60)
     limit_hour2 = pd.Timestamp(year=1, month=1, day=1, hour=aux_hour, minute=aux_min, second=0)
     extra_name = df_name_salida[
         (df_name_salida["Fecha/hora"].dt.time > limit_hour2.time()) & (df_name_salida["Fecha/hora"] <= date_max)]
-    count2 = len(extra_name)
-    extra_time = {}
+    count2 += len(extra_name)
+    extra_time = {} if extra_time is None else extra_time
     for i in extra_name[["Fecha/hora", "Puerta"]].values:
         time_str = pd.Timestamp(year=1, month=1, day=1, hour=i[0].hour, minute=i[0].minute, second=i[0].second)
         diff = time_str - limit_hour2
         extra_time[i[0]] = (diff, i[1])
-    return worked_days, worked_intime, count, count2, time_late, extra_time, days_worked, days_not_worked
+    ealy_name = df_name_salida[
+        (df_name_salida["Fecha/hora"].dt.time < limit_hour2.time()) & (df_name_salida["Fecha/hora"] <= date_max)]
+    early_time = {}
+    for i in ealy_name[["Fecha/hora", "Puerta"]].values:
+        time_str = pd.Timestamp(year=1, month=1, day=1, hour=i[0].hour, minute=i[0].minute, second=i[0].second)
+        diff = time_str - limit_hour2
+        early_time[i[0]] = (diff, i[1])
+    return worked_days, worked_intime, count, count2, time_late, extra_time, days_worked, days_not_worked, early_time
 
 
 def get_info_bitacora(df: pd.DataFrame, name: str, id_emp: int, flag, date_limit=None):

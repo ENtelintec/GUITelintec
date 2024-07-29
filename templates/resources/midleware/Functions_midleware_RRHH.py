@@ -111,15 +111,15 @@ def get_bitacora_data(date_file):
 def get_data_name_fichaje(name: str, dff, dft, dfb, clocks, window_time_in, window_time_out):
     df_name = dff[dff["name"] == name]
     id_emp = df_name["ID"].values[0]
-    date_max = dff["Fecha"].max()
+    date_max = dff["Fecha"].max()  # most recent date
     # -----------file fichaje------------
     (worked_days_f, days_absence, count_l_f, count_e_f,
-     days_late, days_extra) = get_info_f_file_name(
+     days_late_dic_f, days_extra_dic_f, days_early_dic_f) = get_info_f_file_name(
         dff, name, clocks, window_time_in, window_time_out, True if dff is not None else False, date_max=date_max)
     date_example = pd.to_datetime(worked_days_f[0][0]) if len(worked_days_f) > 0 else datetime.now()
     # ------------file ternium-----------
     (worked_days_t, worked_intime_t, count_l_t, count_e_t,
-     days_late_t, days_extra_t, days_worked_t, days_not_worked_t) = get_info_t_file_name(
+     days_late_t, days_extra_t, days_worked_t, days_not_worked_t, days_early_t) = get_info_t_file_name(
         dft, name, clocks, window_time_in, window_time_out,
         True if dft is not None else False, month=date_example.month, date_max=date_max)
     # ------------info bitacora-----------
@@ -132,9 +132,9 @@ def get_data_name_fichaje(name: str, dff, dft, dfb, clocks, window_time_in, wind
         [worked_days_f, days_worked_t, normals_bit],
         [days_absence, None, absences_bit],
         [None, None, primes_bit],
-        [days_late, days_late_t, lates_bit],
-        [days_extra, days_extra_t, extras_bit],
-        [None, None, early_bit])
+        [days_late_dic_f, days_late_t, lates_bit],
+        [days_extra_dic_f, days_extra_t, extras_bit],
+        [days_early_dic_f, days_early_t, early_bit])
     list_normal_data = [{"timestamp": k, "value": v[0], "comment": v[1], "timestamps_extra": v[2]} for k, v in normal_data_emp.items()]
     list_absence_data = [{"timestamp": k, "value": v[0], "comment": v[1], "timestamps_extra": v[2]} for k, v in absence_data_emp.items()]
     list_primer_data = [{"timestamp": k, "value": v[0], "comment": v[1], "timestamps_extra": v[2]} for k, v in prime_data_emp.items()]

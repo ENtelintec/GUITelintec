@@ -353,12 +353,12 @@ class FichajesAuto(ttk.Frame):
             date_max = self.dff["Fecha"].max()
             # -----------file fichaje------------
             (worked_days_f, days_absence, count_l_f, count_e_f,
-             days_late, days_extra) = get_info_f_file_name(
+             days_late, days_extra, early_dic_f) = get_info_f_file_name(
                 self.dff, name, self.clocks, self.window_time_in, self.window_time_out, self.file_selected_1, date_max=date_max)
             date_example = pd.to_datetime(worked_days_f[0][0])
             # ------------file ternium-----------
             (worked_days_t, worked_intime_t, count_l_t, count_e_t,
-             days_late_t, days_extra_t, days_worked_t, days_not_worked_t) = get_info_t_file_name(
+             days_late_t, days_extra_t, days_worked_t, days_not_worked_t, days_early_t) = get_info_t_file_name(
                 self.dft, self.name_emp_selector.get(), self.clocks, self.window_time_in, self.window_time_out,
                 self.file_selected_3, month=date_example.month, date_max=date_max)
             # ------------info bitacora-----------
@@ -373,7 +373,7 @@ class FichajesAuto(ttk.Frame):
                 [None, None, primes_bit],
                 [days_late, days_late_t, lates_bit],
                 [days_extra, days_extra_t, extras_bit],
-                [None, None, early_bit]
+                [early_dic_f, days_early_t, early_bit]
             )
             # update vars for fichaje file
             update_stringvars(
@@ -495,10 +495,10 @@ class FichajesAuto(ttk.Frame):
             contract_emp = "otros"
             # get data for an employee
             (worked_days_f, worked_intime_f, count_l_f, count_e_f,
-             days_late, days_extra) = get_info_f_file_name(
+             days_late, days_extra, early_dic_f) = get_info_f_file_name(
                 self.dff, name, self.clocks, self.window_time_in, self.window_time_out, self.file_selected_1)
             (worked_days_t, worked_intime_t, count_l_t, count_e_t,
-             days_late_t, days_extra_t) = get_info_t_file_name(
+             days_late_t, days_extra_t, days_early_t) = get_info_t_file_name(
                 self.dft, name, self.clocks, self.window_time_in, self.window_time_out, self.file_selected_3)
             if id_emp is not None:
                 (days_absence_bit, days_extra_bit, days_primes_bit, days_lates_bit,
