@@ -271,7 +271,8 @@ class EmployeesResume(Resource):
                     "extra_details": item[11],
                     "primes_details": item[12],
                     "normals_details": item[13],
-                    "earlies_details": item[14]
+                    "earlies_details": item[14],
+                    "pasiva_details":  item[15]
                 })
             out = {
                 "data": out_aux
@@ -311,7 +312,8 @@ class EmployeesResume(Resource):  # noqa: F811
                         "extra_details": item[11],
                         "primes_details": item[12],
                         "normals_details": item[13],
-                        "earlies_details": item[14]
+                        "earlies_details": item[14],
+                        "pasiva_details": item[15]
                     }
                     code = 200
                     break

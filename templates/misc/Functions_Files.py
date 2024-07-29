@@ -700,10 +700,10 @@ def update_cache_data(cache_data, new_data, id_emp_up=None, deletion=False):
     if id_emp_up not in ids_old:
         for index_1, item_new in enumerate(new_data):
             (id_emp, name, contract, faltas, lates, total_lates, extras, total_extra, primas,
-             faltas_dic, lates_dic, extras_dic, primas_dic, normal_dic) = item_new
+             faltas_dic, lates_dic, extras_dic, primas_dic, normal_dic, early_dic, pasiva_dic) = item_new
             if id_emp == id_emp_up:
                 flag, error, result = insert_new_fichaje_DB(id_emp, contract, faltas_dic, lates_dic, extras_dic,
-                                                            primas_dic, normal_dic)
+                                                            primas_dic, normal_dic, early_dic, pasiva_dic)
                 data_insert.append(result)
                 if flag:
                     cache_data.append(item_new)
@@ -720,7 +720,7 @@ def update_cache_data(cache_data, new_data, id_emp_up=None, deletion=False):
                 for index_0, item_0 in enumerate(cache_data):
                     if id_emp == item_0[0]:
                         (id_emp_0, name, contract, faltas, lates, total_lates, extras, total_extra, primas,
-                         faltas_dic, lates_dic, extras_dic, primas_dic, normal_dic) = cache_data[index_0]
+                         faltas_dic, lates_dic, extras_dic, primas_dic, normal_dic, early_dic, pasiva_dic) = cache_data[index_0]
                         if deletion:
                             faltas_dic = faltas_dic2
                             lates_dic = lates_dic2
@@ -739,9 +739,10 @@ def update_cache_data(cache_data, new_data, id_emp_up=None, deletion=False):
                         new_primas, new_primas_value = get_cumulative_data_fichajes_dict(primas_dic)
                         aux = (id_emp, name, contract,
                                new_faltas, new_lates, new_lates_value, new_extras, new_extras_value, new_primas,
-                               faltas_dic, lates_dic, extras_dic, primas_dic, normal_dic)
+                               faltas_dic, lates_dic, extras_dic, primas_dic, normal_dic, early_dic, pasiva_dic)
                         flag, error, result = update_fichaje_DB(
-                            id_emp, contract, faltas_dic, lates_dic, extras_dic, primas_dic, normal_dic)
+                            id_emp, contract, faltas_dic, lates_dic, extras_dic, primas_dic, normal_dic, early_dic,
+                            pasiva_dic)
                         if flag:
                             print(f"Fichaje updated DB: {id_emp}")
                             cache_data[index_0] = aux
@@ -785,11 +786,13 @@ def update_fichajes_resume_cache(filepath: str, data=None, just_file=False):
                         dicts_old[i].update(dicts_new[i])
                         new_total.append(get_cumulative_data_fichajes_dict(dicts_old[i])[0])
                         new_value.append(get_cumulative_data_fichajes_dict(dicts_old[i])[1])
-                    aux = (id_emp, name, contract, new_total[0], new_total[1], new_value[1], new_total[3], new_value[3],
-                           new_total[4],
-                           dicts_new[0], dicts_new[1], dicts_new[2], dicts_new[3], dicts_new[4])
-                    flag, error, result = update_fichaje_DB(id_emp, contract, dicts_new[0], dicts_new[1], dicts_new[2],
-                                                            dicts_new[3], dicts_new[4], dicts_new[5])
+                    aux = (id_emp, name, contract, new_total[0], new_total[1], new_value[1], 
+                           new_total[3], new_value[3], new_total[4],
+                           dicts_new[0], dicts_new[1], dicts_new[2], dicts_new[3], dicts_new[4], 
+                           dicts_new[5], dicts_new[6])
+                    flag, error, result = update_fichaje_DB(
+                        id_emp, contract, dicts_new[0], dicts_new[1], dicts_new[2],
+                        dicts_new[3], dicts_new[4], dicts_new[5], dicts_new[6])
                     if flag:
                         print("Fichaje updated DB: ", id_emp)
                         fichajes_resume[index_0] = aux
@@ -800,12 +803,12 @@ def update_fichajes_resume_cache(filepath: str, data=None, just_file=False):
         for id_new in new_insert_ids:
             for item in data:
                 (id_emp2, name2, contract2, faltas2, lates2, total_lates2, extras2, total_extra2, primas2,
-                 faltas_dic2, lates_dic2, extras_dic2, primas_dic2, normal_dic2, early_dic2) = item
+                 faltas_dic2, lates_dic2, extras_dic2, primas_dic2, normal_dic2, early_dic2, pasiva_dic2) = item
                 if id_new == id_emp2:
                     aux = (id_new, name2, contract2, faltas2, lates2, total_lates2, extras2, total_extra2, primas2,
                            faltas_dic2, lates_dic2, extras_dic2, primas_dic2, normal_dic2, early_dic2)
                     flag, error, result = insert_new_fichaje_DB(id_new, contract2, faltas_dic2, lates_dic2, extras_dic2,
-                                                                primas_dic2, normal_dic2, early_dic2)
+                                                                primas_dic2, normal_dic2, early_dic2,  pasiva_dic2)
                     if flag:
                         fichajes_resume.append(aux)
                         print("Fichaje added DB")
@@ -856,21 +859,20 @@ def get_fichajes_resume_cache(filepath, is_hard_update=False) -> tuple[list, boo
                 extras = row[7]
                 primes = row[8]
                 normal = row[9]
-                if len(row) <= 10:
-                    early = '{}'  
-                else:
-                    early = row[10]
+                early = row[10]
+                pasiva = row[11]
                 new_faltas, new_faltas_value = get_cumulative_data_fichajes_dict(json.loads(absences))
                 new_tardanzas, new_tardanzas_value = get_cumulative_data_fichajes_dict(json.loads(lates))
                 new_extras, new_extras_value = get_cumulative_data_fichajes_dict(json.loads(extras))
                 new_primas, new_primas_value = get_cumulative_data_fichajes_dict(json.loads(primes))
                 new_early, new_early_value = get_cumulative_data_fichajes_dict(json.loads(early))
+                new_pasiva, new_pasiva_value = get_cumulative_data_fichajes_dict(json.loads(pasiva))
                 new_row = (id_emp, name.title() + lastname.title(), contract,
                            new_faltas, new_faltas_value, new_tardanzas,
                            new_extras, new_extras_value, new_primas,
                            json.loads(absences), json.loads(lates),
                            json.loads(extras), json.loads(primes), 
-                           json.loads(normal), json.loads(early))
+                           json.loads(normal), json.loads(early),  json.loads(pasiva))
                 fichajes_resume.append(new_row)
             update_fichajes_resume_cache(filepath, fichajes_resume, just_file=True)
         else:

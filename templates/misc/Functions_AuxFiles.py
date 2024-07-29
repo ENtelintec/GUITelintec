@@ -21,7 +21,8 @@ import xml.etree.ElementTree as ET
 def get_data_employees(status="ACTIVO"):
     columns = (
         "ID", "Nombre", "Contrato", "Faltas", "Tardanzas", "Total tardanzas", "Dias Extra", "Total extra", "Primas",
-        "Detalles Faltas", "Detalles Tardanzas", "Detalles Extras", "Detalles Primas", "Detalles Normal", "Detalles Temprano")
+        "Detalles Faltas", "Detalles Tardanzas", "Detalles Extras", "Detalles Primas", "Detalles Normal", 
+        "Detalles Temprano", "Detalles Pasivas")
     fichajes_resume, flag = get_fichajes_resume_cache(cache_file_resume_fichaje_path)
     if flag:
         return fichajes_resume, columns
@@ -32,7 +33,8 @@ def get_data_employees(status="ACTIVO"):
 
 def get_data_employees_ids(ids: list):
     columns = ("ID", "Nombre", "Contrato", "Faltas", "Tardanzas", "Dias Extra", "Total", "Primas",
-               "Detalles Faltas", "Detalles Tardanzas", "Detalles Extras", "Detalles Primas", "Detalles Normal", "Detalles Temprano")
+               "Detalles Faltas", "Detalles Tardanzas", "Detalles Extras", "Detalles Primas", "Detalles Normal", 
+               "Detalles Temprano", "Detalles Pasivas")
     fichajes_resume, flag = get_fichajes_resume_cache(cache_file_resume_fichaje_path)
     if flag:
         for row in fichajes_resume:
@@ -84,8 +86,8 @@ def update_bitacora(emp_id: int, event, data):
     :param data: The data.
     :return: None.
     """
-    events_indexes_db = {"falta": 3, "atraso": 4, "extra": 5, "prima": 6, "normal": 7, "early": 8}
-    events_cache_indexes = {"falta": 9, "atraso": 10, "extra": 11, "prima": 12, "normal": 13, "early": 14}
+    events_indexes_db = {"falta": 3, "atraso": 4, "extra": 5, "prima": 6, "normal": 7, "early": 8, "pasiva": 9}
+    events_cache_indexes = {"falta": 9, "atraso": 10, "extra": 11, "prima": 12, "normal": 13, "early": 14, "pasiva": 15}
     emp_id = int(emp_id)
     event_dic = {}
     new_registry = False
@@ -108,7 +110,7 @@ def update_bitacora(emp_id: int, event, data):
     if new_registry:
         print("new registry in fichajes db")
         name = get_name_employee(emp_id)
-        fichajes_resume.append([emp_id, name.title(), contract_sel, 0, 0, 0, 0, 0, 0, {}, {}, {}, {}, {}, {}])
+        fichajes_resume.append([emp_id, name.title(), contract_sel, 0, 0, 0, 0, 0, 0, {}, {}, {}, {}, {}, {}, {}])
     # -----------------------------updates cache data and db--------------------------------
     flag = False
     for i, row in enumerate(fichajes_resume):
@@ -119,7 +121,7 @@ def update_bitacora(emp_id: int, event, data):
             fichajes_resume[i] = new_row
             flag, error, result = update_fichaje_DB(
                 emp_id, new_row[2],
-                new_row[9], new_row[10], new_row[11], new_row[12], new_row[13], new_row[14])
+                new_row[9], new_row[10], new_row[11], new_row[12], new_row[13], new_row[14], new_row[15])
             if flag:
                 print("value updated in DB")
                 flag, error = update_fichajes_resume_cache(cache_file_resume_fichaje_path, fichajes_resume,
@@ -128,11 +130,12 @@ def update_bitacora(emp_id: int, event, data):
             else:
                 print("error at updating the value in DB")
                 return False, "error at updating the value in DB", None
-    new_row = [emp_id, contract_sel, 0, 0, 0, 0, 0, 0, {}, {}, {}, {}, {}, {}]
+    new_row = [emp_id, contract_sel, 0, 0, 0, 0, 0, 0, {}, {}, {}, {}, {}, {}, {}]
     new_row[events_cache_indexes[event]] = event_dic
     fichajes_resume.append(new_row)
     flag, error, result = insert_new_fichaje_DB(new_row[0], new_row[1], new_row[9], new_row[10],
-                                                new_row[11], new_row[12], new_row[13], new_row[14])
+                                                new_row[11], new_row[12], new_row[13], new_row[14],
+                                                new_row[15])
     if flag:
         print("value inserted in DB and not found in cache")
         flag, error = update_fichajes_resume_cache(cache_file_resume_fichaje_path, fichajes_resume, just_file=True)
@@ -149,8 +152,8 @@ def update_bitacora_value(emp_id: int, event, data, id_event=None):
     :param data: The data.
     :return: None.
     """
-    events_indexes_db = {"falta": 3, "atraso": 4, "extra": 5, "prima": 6, "normal": 7, "early": 8}
-    events_cache_indexes = {"falta": 9, "atraso": 10, "extra": 11, "prima": 12, "normal": 13, "early": 14}
+    events_indexes_db = {"falta": 3, "atraso": 4, "extra": 5, "prima": 6, "normal": 7, "early": 8, "pasiva": 9}
+    events_cache_indexes = {"falta": 9, "atraso": 10, "extra": 11, "prima": 12, "normal": 13, "early": 14, "pasiva": 15}
     event_dic = {}
     contract_sel = data[3]
     flag, error, result = get_fichaje_DB(emp_id)
@@ -181,7 +184,7 @@ def update_bitacora_value(emp_id: int, event, data, id_event=None):
             fichajes_resume[i] = new_row
             flag, error, result = update_fichaje_DB(
                 emp_id, new_row[2],
-                new_row[9], new_row[10], new_row[11], new_row[12], new_row[13], new_row[14])
+                new_row[9], new_row[10], new_row[11], new_row[12], new_row[13], new_row[14], new_row[15])
             if flag:
                 print("value updated in DB")
                 flag, error = update_fichajes_resume_cache(cache_file_resume_fichaje_path, fichajes_resume,
@@ -201,8 +204,8 @@ def erase_value_bitacora(emp_id: int, event, data):
     :param data: The data.
     :return: None.
     """
-    events_indexes_db = {"falta": 3, "atraso": 4, "extra": 5, "prima": 6, "normal": 7,  "early": 8}
-    events_cache_indexes = {"falta": 9, "atraso": 10, "extra": 11, "prima": 12, "normal": 13,  "early": 14}
+    events_indexes_db = {"falta": 3, "atraso": 4, "extra": 5, "prima": 6, "normal": 7,  "early": 8, "pasiva": 9}
+    events_cache_indexes = {"falta": 9, "atraso": 10, "extra": 11, "prima": 12, "normal": 13,  "early": 14, "pasiva": 15}
     event_dic = {}
     contract_sel = data[1]
     flag, error, result = get_fichaje_DB(emp_id)
@@ -227,7 +230,7 @@ def erase_value_bitacora(emp_id: int, event, data):
             fichajes_resume[i] = new_row
             flag, error, result = update_fichaje_DB(
                 emp_id, new_row[2],
-                new_row[9], new_row[10], new_row[11], new_row[12], new_row[13], new_row[14])
+                new_row[9], new_row[10], new_row[11], new_row[12], new_row[13], new_row[14], new_row[15])
             if flag:
                 print("value updated in DB")
                 flag, error = update_fichajes_resume_cache(cache_file_resume_fichaje_path, fichajes_resume,
@@ -314,15 +317,17 @@ def get_events_op_date(date: datetime, hard_update, only_op=True, emp_id=-1):
     flag, error, result = get_contract_employes(emp_id) if emp_id != -1 else (True, "", [])
     for row in fichajes_resume:
         (id_emp, name, contract, faltas, tardanzas, tardanzas_value, extras, extras_value, primas,
-         absences_dic, lates_dic, extras_dic, primes_dic, normal_dic, early_dic) = row
+         absences_dic, lates_dic, extras_dic, primes_dic, normal_dic, early_dic, pasiva_dic) = row
         data_absences = get_data_from_dict_by_date(absences_dic, date, "falta")
         data_lates = get_data_from_dict_by_date(lates_dic, date, "atraso")
         data_extras = get_data_from_dict_by_date(extras_dic, date, "extra")
         data_primes = get_data_from_dict_by_date(primes_dic, date, "prima")
         data_normal = get_data_from_dict_by_date(normal_dic, date, "normal")
         data_early = get_data_from_dict_by_date(early_dic, date, "early")
+        data_pasiva = get_data_from_dict_by_date(pasiva_dic, date, "pasiva")
         data_events_emp = unify_data_list_events([id_emp, name, contract],
-                                                 [data_absences, data_lates, data_extras, data_primes, data_normal, data_early])
+                                                 [data_absences, data_lates, data_extras, data_primes, 
+                                                  data_normal, data_early, data_pasiva])
         for item in data_events_emp:
             if item is not None:
                 if item[2] != "None" or not only_op:

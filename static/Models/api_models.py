@@ -31,7 +31,8 @@ resume_model = api.model('Resume', {
     "extra_details": fields.String(required=True, description="The extra details"),
     "primes_details": fields.String(required=True, description="The primes details"),
     "normals_details": fields.String(required=True, description="The normals details"),
-    "earlies_details":  fields.String(required=True, description="The early data details")
+    "earlies_details":  fields.String(required=True, description="The early data details"),
+    "pasives_details": fields.String(required=True, description="The pasives details")
     })
 
 
