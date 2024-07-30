@@ -79,7 +79,7 @@ class AddSM(Resource):
         flag, error, result = insert_sm_db(data)
         if flag:
             msg = (f"Nueva SM creada #{data['info']['id']}, folio: {data['info']['folio']}, "
-                   f"fecha limite: {data['info']['limit_date']}, "
+                   f"fecha limite: {data['info']['critical_date']}, "
                    f"empleado con id: {data['info']['emp_id']}, "
                    f"comentario: {data['info']['comment']}")
             create_notification_permission(msg, ["sm", "administracion", "almacen"], "Nueva SM Recibida",
@@ -115,7 +115,7 @@ class AddSM(Resource):
         flag, error, result = update_sm_db(data)
         if flag:
             msg = (f"Nueva SM creada #{data['info']['id']}, folio: {data['info']['folio']}, "
-                   f"fecha limite: {data['info']['limit_date']}, "
+                   f"fecha limite: {data['info']['critical_date']}, "
                    f"empleado con id: {data['info']['emp_id']}, "
                    f"comentario: {data['info']['comment']}")
             create_notification_permission(msg, ["sm", "administracion", "almacen"], "Nueva SM Recibida",
