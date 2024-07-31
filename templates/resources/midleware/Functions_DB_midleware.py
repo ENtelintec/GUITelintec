@@ -153,7 +153,6 @@ def dispatch_sm(data):
         {"user": data["emp_id"], "event": "dispatch", "date": datetime.now().strftime(format_timestamps),
          "comment": data["comment"]})
     products_sm = json.loads(result[10])
-
     products_to_dispacth = []
     products_to_request = []
     new_products = []
@@ -244,7 +243,12 @@ def dispatch_products(
         to_request[i] = product
     # ------------------------------products to request for new-----------------------------------
     for i, product in enumerate(new_products):
-        if product["id"] == -1 or product["id"] < 0:
+        try:
+            int(product["id"])
+            if int(product["id"]) == -1 or int(product["id"]) < 0:
+                continue
+        except Exception as e:
+            print(e)
             continue
         _ins = _data.create_in_movement(
             product['id'], "entrada", product['quantity'], date, sm_id)
