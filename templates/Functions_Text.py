@@ -89,7 +89,7 @@ def parse_data(data: dict, mode: int):
                     "comment": data['info']['comment'] if "comment" in data["info"].keys() else None,
                     "history": data['info']['history'] if "history" in data["info"].keys() else None,
                     "destination": data['info']['destination'] if "destination" in data["info"].keys() else None,
-                    "contract_contract":  data['info']['contract_contract'] if "contract_contract" in data["info"].keys() else None,
+                    "contract_contact":  data['info']['contract_contact'] if "contract_contact" in data["info"].keys() else None,
                 }
                 items = []
                 for item in data['items']:
