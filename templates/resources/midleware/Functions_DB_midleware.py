@@ -99,8 +99,9 @@ def get_all_sm(limit, page=0, emp_id=-1):
         products = json.loads(result[i][10])
         new_products = []
         for product in products:
-            if "(Nuevo)" in product["comment"] and "(Pedido)" not in product["comment"]:
+            if ("(Nuevo)" in product["comment"] and "(Pedido)" not in product["comment"]) or product["url"]!="":
                 new_products.append(product)
+        extra_info = json.loads(result[i][14])
         items.append({
             'id': result[i][0],
             'folio': result[i][1],
@@ -117,6 +118,7 @@ def get_all_sm(limit, page=0, emp_id=-1):
             'status': result[i][11],
             'history': json.loads(result[i][12]),
             'comment': result[i][13],
+            'destination':  extra_info["destination"]
         })
     data_out = {
         'data': items,

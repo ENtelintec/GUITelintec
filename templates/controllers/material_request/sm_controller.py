@@ -18,7 +18,7 @@ def get_sm_entries(emp_id=-1):
         sql = (
             "SELECT sm_id, folio, contract, facility, location, client_id, emp_id, "
             "pedido_cotizacion, date, limit_date, "
-            "items, status, history, comment "
+            "items, status, history, comment, extra_info "
             "FROM sql_telintec.materials_request ")
         flag, error, result = execute_sql(sql, None, 5)
     else:
@@ -29,7 +29,7 @@ def get_sm_entries(emp_id=-1):
             sql = (
                 "SELECT sm_id, folio, contract, facility, location, client_id, emp_id, "
                 "pedido_cotizacion, date, limit_date, "
-                "items, status, history, comment "
+                "items, status, history, comment, extra_info "
                 "FROM sql_telintec.materials_request "
                 "WHERE contract = %s")
             val = (result[0],)

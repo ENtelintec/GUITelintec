@@ -7,7 +7,8 @@ from datetime import datetime
 
 import pandas as pd
 
-from static.extensions import files_fichaje_path, patterns_files_fichaje, cache_file_emp_fichaje, format_date_fichaje_file
+from static.extensions import files_fichaje_path, patterns_files_fichaje, cache_file_emp_fichaje, \
+    format_date_fichaje_file, index_file_nominas
 from templates.Functions_Sharepoint import get_files_site, download_files_site
 from templates.controllers.payroll.payroll_controller import get_payrolls, update_payroll
 from templates.misc.Functions_AuxFiles import get_events_op_date, get_pairs_nomina_docs, get_data_xml_file_nomina
@@ -47,7 +48,6 @@ def get_files_fichaje():
     if not flag:
         return False, files
     files_list = [v for k, v in files.items()]
-    print(files_list)
     return True, files_list
 
 
@@ -208,22 +208,37 @@ def update_files_data_nominas(key: str, paths_pdf_xml: dict, data_xml: dict):
     return data_emp
 
 
-def update_data_docs_nomina():
+def update_data_docs_nomina(patterns=None, use_index=False):
     settings = json.load(open("files/settings.json", "r"))
     url_shrpt = settings["gui"]["RRHH"]["url_shrpt"]
     folder_rrhh = settings["gui"]["RRHH"]["folder_rrhh"]
     folder_nominas = settings["gui"]["RRHH"]["folder_nominas"]
-    data, code = get_files_site(url_shrpt+folder_rrhh, folder_nominas)
-    data_dict = get_pairs_nomina_docs(data)
+    patterns = patterns if patterns is not None else []
+    folder_patterns = [folder_nominas] + patterns
+    if not use_index:
+        data, code = get_files_site(url_shrpt+folder_rrhh, folder_patterns)
+        data_dict = get_pairs_nomina_docs(data)
+    else:
+        data_dict = json.load(open(index_file_nominas, "r"))
     data_emps = {}
     results = []
     for k, v in data_dict.items():
+        if "xml" not in v.keys() or "pdf" not in v.keys():
+            results.append((False, "No se encontraron los archivos necesarios", None))
+            continue
         download_path, code = download_files_site(url_shrpt+folder_rrhh, v["xml"])
-        if code == 200:
-            data_file = get_data_xml_file_nomina(download_path)
-            data_emps[data_file["emp_id"]] = update_files_data_nominas(k, v, data_file)
-            flag, error, result = update_payroll(data_emps[data_file["emp_id"]], data_file["emp_id"])
-            results.append((flag, error, result))
+        if code != 200:
+            results.append((False, f"Error al descargar el archivo XML: {download_path}", None))
+            continue
+        data_file = get_data_xml_file_nomina(download_path)
+        if data_file["emp_id"] is None:
+            print(f"No se encontro el empleado datos de {data_file}")
+            results.append((False, f"No se encontro el empleado datos de {data_file['receptor']['Nombre']}", None))
+            continue
+        print(f"Employee found: {data_file['emp_id']}")
+        data_emps[data_file["emp_id"]] = update_files_data_nominas(k, v, data_file)
+        flag, error, result = update_payroll(data_emps[data_file["emp_id"]], data_file["emp_id"])
+        results.append((flag, error, result))
     return results
 
 
