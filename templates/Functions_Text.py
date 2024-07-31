@@ -217,7 +217,7 @@ def parse_data(data: dict, mode: int):
                     "error": "Invalid mode"
                 }
     except Exception as e:
-        print(e)
+        print("Error at parsing: ", str(e))
         code = 400
         out = {
             "error": "Invalid sintaxis" + str(e)
