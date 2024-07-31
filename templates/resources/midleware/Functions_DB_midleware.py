@@ -248,7 +248,7 @@ def dispatch_products(
             if int(product["id"]) == -1 or int(product["id"]) < 0:
                 continue
         except Exception as e:
-            print(str(e))
+            print("Error in the format of the id: ", str(e))
             continue
         _ins = _data.create_in_movement(
             product['id'], "entrada", product['quantity'], date, sm_id)
