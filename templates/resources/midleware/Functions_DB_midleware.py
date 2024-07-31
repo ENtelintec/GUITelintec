@@ -118,7 +118,7 @@ def get_all_sm(limit, page=0, emp_id=-1):
             'status': result[i][11],
             'history': json.loads(result[i][12]),
             'comment': result[i][13],
-            'destination':  extra_info["destination"]
+            'destination':  extra_info["destination"] if "destination" in extra_info else ""
         })
     data_out = {
         'data': items,
