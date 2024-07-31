@@ -31,8 +31,8 @@ def get_sm_entries(emp_id=-1):
                 "pedido_cotizacion, date, limit_date, "
                 "items, status, history, comment, extra_info "
                 "FROM sql_telintec.materials_request "
-                "WHERE contract = %s")
-            val = (result[0],)
+                "WHERE contract = %s or emp_id = %s ")
+            val = (result[0], emp_id,)
             flag, error, result = execute_sql(sql, val, 2)
         else:
             return False, "Invalid employee ID", []
