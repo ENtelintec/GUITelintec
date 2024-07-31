@@ -141,7 +141,7 @@ def update_data_dicts(products: list, products_sm):
 
 def dispatch_sm(data):
     if len(data["items"]) > 0:
-        flag, error, result = update_sm_products_by_id(data["items"], data["id"])
+        flag, error, result = update_sm_products_by_id(data["id"], data["items"])
         if not flag:
             return 400, f"Not posible to update products in sm, error: {error}"
     flag, error, result = get_sm_by_id(data['id'])
