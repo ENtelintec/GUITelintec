@@ -153,6 +153,7 @@ def dispatch_sm(data):
         {"user": data["emp_id"], "event": "dispatch", "date": datetime.now().strftime(format_timestamps),
          "comment": data["comment"]})
     products_sm = json.loads(result[10])
+
     products_to_dispacth = []
     products_to_request = []
     new_products = []
