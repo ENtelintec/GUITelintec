@@ -243,7 +243,7 @@ def dispatch_products(
         to_request[i] = product
     # ------------------------------products to request for new-----------------------------------
     for i, product in enumerate(new_products):
-        if product["id"] == -1:
+        if product["id"] == -1 or product["id"] < 0:
             continue
         _ins = _data.create_in_movement(
             product['id'], "entrada", product['quantity'], date, sm_id)
