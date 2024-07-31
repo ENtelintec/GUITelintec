@@ -67,7 +67,7 @@ def execute_sql(sql: str, values: tuple = None, type_sql=1):
             case _:
                 out = []
     except Exception as e:
-        print("Error at executing sql: ", str(e))
+        print("Error at executing sql: ", str(e), str(sql))
         out = []
         flag = False
         exception = e
