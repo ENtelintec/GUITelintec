@@ -42,7 +42,8 @@ def get_sm_entries(emp_id=-1):
 def insert_sm_db(data):
     event = [{"event": "creation",
               "date": datetime.now().strftime(format_timestamps), "user": data['info']['emp_id']}]
-    extra_info = {"destination": data['info']['destination']}
+    extra_info = {"destination": data['info']['destination'],
+                  "contract_contact": data['info']['contract_contact']}
     sql = ("INSERT INTO sql_telintec.materials_request "
            "(folio, contract, facility, location, "
            "client_id, emp_id, pedido_cotizacion, date, limit_date, items, status, history, comment, extra_info)"
@@ -83,7 +84,8 @@ def update_sm_db(data):
     ids_sm = [i[0] for i in result]
     if data['id_sm'] not in ids_sm:
         return True, "Material request not found", None
-    extra_info = {"destination": data['info']['destination']}
+    extra_info = {"destination": data['info']['destination'],
+                  "contract_contact": data['info']['contract_contact']}
     sql = ("UPDATE sql_telintec.materials_request "
            "SET folio = %s, contract = %s, facility = %s, location = %s, "
            "client_id = %s, emp_id = %s, date = %s, limit_date = %s, items = %s, status = 0, pedido_cotizacion = %s, "
