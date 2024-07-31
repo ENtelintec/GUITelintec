@@ -147,12 +147,12 @@ def dispatch_sm(data):
     flag, error, result = get_sm_by_id(data['id'])
     if not flag or len(result) <= 0:
         return 400, ["sm not foud"]
-    history_sm = json.loads(result[0][13])
-    emp_id_creation = result[0][7]
+    history_sm = json.loads(result[0][12])
+    emp_id_creation = result[0][6]
     history_sm.append(
         {"user": data["emp_id"], "event": "dispatch", "date": datetime.now().strftime(format_timestamps),
          "comment": data["comment"]})
-    products_sm = json.loads(result[0][11])
+    products_sm = json.loads(result[0][10])
     products_to_dispacth = []
     products_to_request = []
     new_products = []
