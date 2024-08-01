@@ -10,7 +10,7 @@ from pathlib import Path
 
 paths_dpb_folders = json.load(open("files/paths_general.json"))
 local_father_path_dpb = "C:/Users/Edisson/Telintec Dropbox/SOFTWARE TELINTEC"
-secrets = dotenv_values(".env")
+secrets = dotenv_values("../.env")
 api = Api()
 # url_api = "http://127.0.0.1:5000/AuthAPI/api/v1/auth/loginUP"
 url_api = "https://ec2-18-119-125-94.us-east-2.compute.amazonaws.com/AuthAPI/api/v1/auth/loginUP"
@@ -145,6 +145,6 @@ format_date = "%Y-%m-%d"
 format_date_fichaje_file = "%d-%m-%Y"
 dict_deps = {"Dirección": 1, "Operaciones": 2, "Administración": 3, "RRHH": 4, "REPSE": 5, "IA": 6, "Otros": 7}
 format_timestamps_filename = '%Y-%m-%d'
-HOST_DB_DEFAULT = "HOST_DB"
-USER_DB_DEFAULT = "USER_SQL"
-PASS_DB_DEFAULT = "PASS_SQL"
+HOST_DB_DEFAULT = "HOST_DB_AWS"
+USER_DB_DEFAULT = "USER_SQL_AWS"
+PASS_DB_DEFAULT = "PASS_SQL_AWS"

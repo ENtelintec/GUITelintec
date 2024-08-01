@@ -3,7 +3,14 @@ __author__ = 'Edisson Naula'
 __date__ = '$ 02/nov./2023  at 17:32 $'
 
 from flask_restx import fields
+from wtforms.fields.simple import PasswordField
+from wtforms.form import Form
+
 from static.extensions import api
+
+from wtforms.validators import DataRequired
+
+from wtforms import StringField, validators, IntegerField
 
 permission_model = api.model('Permission', {
     'name': fields.String(required=True, description='The name'),
@@ -14,6 +21,11 @@ token_model = api.model('Token', {
     'username': fields.String(required=True, description='The username'),
     'password': fields.String(required=True, description='The password or pass_key')
     })
+
+
+class TokenModelForm(Form):
+    username = StringField('username', validators=[validators.input_required()])
+    password = PasswordField('password', validators=[validators.input_required()])
 
 
 resume_model = api.model('Resume', {
