@@ -136,7 +136,6 @@ def update_product_amc(data):
     timestamp = datetime.now().strftime(format_timestamps)
     if data["info"]["quantity_move"] == 0:
         return True, result
-    print(data["info"]["quantity_move"], data["id"])
     flag, e, result = create_in_movement_db(data["info"]["id"], "entrada", data["info"]["quantity_move"],
                                             timestamp, None)
     return True, result
