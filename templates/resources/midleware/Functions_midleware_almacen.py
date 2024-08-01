@@ -127,7 +127,7 @@ def insert_product_db(data):
 
 
 def update_product_amc(data):
-    flag, error, result = update_product_db(data["id"], data["info"]["sku"], data["info"]["name"], data["info"]["udm"],
+    flag, error, result = update_product_db(data["info"]["id"], data["info"]["sku"], data["info"]["name"], data["info"]["udm"],
                                             data["info"]["stock"], data["info"]["category_name"],
                                             data["info"]["supplier_name"], data["info"]["is_tool"],
                                             data["info"]["is_internal"])
@@ -136,7 +136,8 @@ def update_product_amc(data):
     timestamp = datetime.now().strftime(format_timestamps)
     if data["info"]["quantity_move"] == 0:
         return True, result
-    flag, e, result = create_in_movement_db(data["id"], "entrada", data["info"]["quantity_move"],
+    print(data["info"]["quantity_move"], data["id"])
+    flag, e, result = create_in_movement_db(data["info"]["id"], "entrada", data["info"]["quantity_move"],
                                             timestamp, None)
     return True, result
 
