@@ -4,15 +4,21 @@ __date__ = '$ 01/abr./2024  at 11:38 $'
 
 import json
 import math
+import os
+import tempfile
 from datetime import datetime, timedelta
+
+import pandas as pd
 
 from static.extensions import format_timestamps, log_file_sm_path
 from templates.controllers.employees.employees_controller import get_all_data_employees, get_all_data_employee, \
     get_emp_contract
 from templates.controllers.employees.vacations_controller import get_vacations_data, get_vacations_data_emp
 from templates.controllers.index import DataHandler
-from templates.controllers.material_request.sm_controller import get_sm_entries, get_sm_by_id, update_history_sm
+from templates.controllers.material_request.sm_controller import get_sm_entries, get_sm_by_id, update_history_sm, \
+    get_info_names_by_sm_id, update_sm_products_by_id
 from templates.controllers.product.p_and_s_controller import get_sm_products
+from templates.forms.Materials import MaterialsRequest
 from templates.misc.Functions_Files import write_log_file
 from templates.Functions_Utils import create_notification_permission
 
@@ -90,6 +96,12 @@ def get_all_sm(limit, page=0, emp_id=-1):
         limit_up = limit * (page + 1)
         limit_up = limit_up if limit_up < len(result) else len(result)
     for i in range(limit_down, limit_up):
+        products = json.loads(result[i][10])
+        new_products = []
+        for product in products:
+            if "(Nuevo)" in product["comment"] and "(Pedido)" not in product["comment"]:
+                new_products.append(product)
+        extra_info = json.loads(result[i][14])
         items.append({
             'id': result[i][0],
             'folio': result[i][1],
@@ -100,11 +112,14 @@ def get_all_sm(limit, page=0, emp_id=-1):
             'emp_id': result[i][6],
             'order_quotation': result[i][7],
             'date': result[i][8],
-            'limit_date': result[i][9],
+            'critical_date': result[i][9],
             'items': json.loads(result[i][10]),
+            'items_new': new_products,
             'status': result[i][11],
             'history': json.loads(result[i][12]),
             'comment': result[i][13],
+            'destination':  extra_info["destination"] if "destination" in extra_info.keys() else "",
+            'contract_contact':  extra_info["contract_contact"] if "contract_contact" in extra_info.keys() else ""
         })
     data_out = {
         'data': items,
@@ -125,15 +140,19 @@ def update_data_dicts(products: list, products_sm):
 
 
 def dispatch_sm(data):
+    if len(data["items"]) > 0:
+        flag, error, result = update_sm_products_by_id(data["id"], data["items"])
+        if not flag:
+            return 400, f"Not posible to update products in sm, error: {error}"
     flag, error, result = get_sm_by_id(data['id'])
     if not flag or len(result) <= 0:
         return 400, ["sm not foud"]
-    history_sm = json.loads(result[0][13])
-    emp_id_creation = result[0][7]
+    history_sm = json.loads(result[12])
+    emp_id_creation = result[6]
     history_sm.append(
         {"user": data["emp_id"], "event": "dispatch", "date": datetime.now().strftime(format_timestamps),
          "comment": data["comment"]})
-    products_sm = json.loads(result[0][11])
+    products_sm = json.loads(result[10])
     products_to_dispacth = []
     products_to_request = []
     new_products = []
@@ -222,8 +241,15 @@ def dispatch_products(
             product['id'], "entrada", product['quantity'], date, sm_id)
         product['comment'] += " ;(Pedido) "
         to_request[i] = product
-    # ------------------------------products to request for admin-----------------------------------
+    # ------------------------------products to request for new-----------------------------------
     for i, product in enumerate(new_products):
+        try:
+            int(product["id"])
+            if int(product["id"]) == -1 or int(product["id"]) < 0:
+                continue
+        except Exception as e:
+            print("Error in the format of the id: ", str(e))
+            continue
         _ins = _data.create_in_movement(
             product['id'], "entrada", product['quantity'], date, sm_id)
         product['comment'] += " ;(Pedido) "
@@ -338,3 +364,73 @@ def get_vacations_employee(emp_id: int):
         "seniority": json.loads(seniority)
     }
     return out, 200
+
+
+def dowload_file_sm(sm_id: int):
+    flag, error, result = get_sm_by_id(sm_id)
+    if not flag or len(result) == 0:
+        return None, 400    
+    folio = result[1]
+    contract = result[2]
+    facility = result[3]
+    location = result[4]
+    client_id = result[5]
+    emp_id = result[6]
+    order_quotation = result[7]
+    date = pd.to_datetime(result[8])
+    critical_date = pd.to_datetime(result[9])
+    items = json.loads(result[10])
+    status = result[11]
+    history = json.loads(result[12])
+    observations = result[13]
+    extra_info = json.loads(result[14])
+    download_path = os.path.join(tempfile.mkdtemp(), os.path.basename(f"sm_{result[0]}_{date.date()}.pdf"))
+    products = []
+    flag, error, result = get_info_names_by_sm_id(result[0])
+    if flag and len(result) == 0:
+        customer_name = result[0]
+        emp_name = result[1] + " " + result[2]
+    else:
+        customer_name = "None"
+        emp_name = "None"
+    counter = 1
+    for item in items:
+        name = item['name'] if "name" in item.keys() else "None"
+        quantity = item['quantity'] if "quantity" in item.keys() else "None"
+        comment = item['comment'] if "comment" in item.keys() else "None"
+        udm = item['udm'] if "udm" in item.keys() else "None"
+        stock = item['dispached'] if "dispached" in item.keys() else "None"
+        if "(despachado)" in comment.lower():
+            status = "Despachado"
+        elif "(pedido)" in comment.lower():
+            status = "Pedido"
+        elif "(nuevo)" in comment.lower():
+            status = "Nuevo-Pedido"
+        else:
+            status = "pendiente"
+        products.append((counter, name, quantity, udm, stock, status))        
+    flag = MaterialsRequest({
+        "filename_out": download_path,
+        "products": products,
+        "info": {
+            "fecha de solictud": date.date(),
+            "contrato": contract,
+            "numero de pedido": order_quotation,
+            "planta": facility,
+            "Area/ubicacion": location,
+            "folio": folio,
+            "usuario solicitante": customer_name,
+            "personal telintec": emp_name,
+            "area dirigida telintec": extra_info["destination"],
+            "fecha critica de entrega": critical_date.date(),
+            "history": history,
+        },
+        "observations": observations,
+        "date_complete_delivery": "2023-06-01",
+        "date_first_delivery": "2023-06-01",
+    },
+        type_form="MaterialsRequest")
+    if not flag:
+        print("error at generating pdf", download_path)
+        return None, 400
+    return download_path, 200

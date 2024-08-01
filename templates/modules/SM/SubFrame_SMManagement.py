@@ -19,12 +19,12 @@ from templates.controllers.material_request.sm_controller import update_history_
 
 
 def reorder_data_table(data):
-    columns = ["Estado", "ID", "Codigo", "Folio", "Contrato", "Planta", "Ubicación", "Cliente", "Empleado",
+    columns = ["Estado", "ID", "Folio", "Contrato", "Planta", "Ubicación", "Cliente", "Empleado",
                "Orden/Cotización", "Fecha", "Fecha Limite", "Items", "Historial", "Comentario"]
     new_data = []
     for row in data:
-        id_sm, code, folio, contract, plant, location, client, employee, order, date, date_limit, items, status, history, comment = row
-        new_data.append((status, id_sm, code, folio, contract, plant, location, client, employee, order, date,
+        id_sm, folio, contract, plant, location, client, employee, order, date, date_limit, items, status, history, comment = row
+        new_data.append((status, id_sm, folio, contract, plant, location, client, employee, order, date,
                          date_limit, items, history, comment))
 
     return new_data, columns

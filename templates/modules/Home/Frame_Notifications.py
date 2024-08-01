@@ -24,9 +24,11 @@ class NotificationsFrame(ttk.Frame):
         index = 0
         kw["settings"] = self.settings
         kw["data_emp"] = self.data_emp
+        created_frames = []
         for frame in apps:
             from static.FramesClasses import frames_notifications_avaliable
-            if frame in frames_notifications_avaliable.keys():
+            if frame in frames_notifications_avaliable.keys() and frame not in created_frames:
                 frame_created = frames_notifications_avaliable[frame](self, **kw)
                 frame_created.grid(row=index, column=0, sticky="nsew", padx=(0, 10))
                 index += 1                
+                created_frames.append(frame)

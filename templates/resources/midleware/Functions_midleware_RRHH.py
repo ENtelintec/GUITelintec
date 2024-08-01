@@ -7,7 +7,8 @@ from datetime import datetime
 
 import pandas as pd
 
-from static.extensions import files_fichaje_path, patterns_files_fichaje, cache_file_emp_fichaje, format_date_fichaje_file
+from static.extensions import files_fichaje_path, patterns_files_fichaje, cache_file_emp_fichaje, \
+    format_date_fichaje_file, index_file_nominas
 from templates.Functions_Sharepoint import get_files_site, download_files_site
 from templates.controllers.payroll.payroll_controller import get_payrolls, update_payroll
 from templates.misc.Functions_AuxFiles import get_events_op_date, get_pairs_nomina_docs, get_data_xml_file_nomina
@@ -47,7 +48,6 @@ def get_files_fichaje():
     if not flag:
         return False, files
     files_list = [v for k, v in files.items()]
-    print(files_list)
     return True, files_list
 
 
@@ -111,39 +111,45 @@ def get_bitacora_data(date_file):
 def get_data_name_fichaje(name: str, dff, dft, dfb, clocks, window_time_in, window_time_out):
     df_name = dff[dff["name"] == name]
     id_emp = df_name["ID"].values[0]
-    date_max = dff["Fecha"].max()
+    date_max = dff["Fecha"].max()  # most recent date
     # -----------file fichaje------------
     (worked_days_f, days_absence, count_l_f, count_e_f,
-     days_late, days_extra) = get_info_f_file_name(
+     days_late_dic_f, days_extra_dic_f, days_early_dic_f) = get_info_f_file_name(
         dff, name, clocks, window_time_in, window_time_out, True if dff is not None else False, date_max=date_max)
     date_example = pd.to_datetime(worked_days_f[0][0]) if len(worked_days_f) > 0 else datetime.now()
     # ------------file ternium-----------
     (worked_days_t, worked_intime_t, count_l_t, count_e_t,
-     days_late_t, days_extra_t, days_worked_t, days_not_worked_t) = get_info_t_file_name(
+     days_late_t, days_extra_t, days_worked_t, days_not_worked_t, days_early_t) = get_info_t_file_name(
         dft, name, clocks, window_time_in, window_time_out,
         True if dft is not None else False, month=date_example.month, date_max=date_max)
     # ------------info bitacora-----------
     (days_absence_bit, days_extra_bit, days_primes_bit, days_lates_bit,
-     absences_bit, extras_bit, primes_bit, lates_bit, normals_bit,
+     absences_bit, extras_bit, primes_bit, lates_bit, normals_bit, early_bit, pasive_bit,
      contract) = get_info_bitacora(
         dfb, name=name, id_emp=id_emp, flag=True, date_limit=date_max)
     (normal_data_emp, absence_data_emp, prime_data_emp,
-     late_data_emp, extra_data_emp) = unify_data_employee(
+     late_data_emp, extra_data_emp, early_data_emp, pasive_data_emp) = unify_data_employee(
         [worked_days_f, days_worked_t, normals_bit],
         [days_absence, None, absences_bit],
         [None, None, primes_bit],
-        [days_late, days_late_t, lates_bit],
-        [days_extra, days_extra_t, extras_bit]
+        [days_late_dic_f, days_late_t, lates_bit],
+        [days_extra_dic_f, days_extra_t, extras_bit],
+        [days_early_dic_f, days_early_t, early_bit],
+        [None, None, pasive_bit],
     )
     list_normal_data = [{"timestamp": k, "value": v[0], "comment": v[1], "timestamps_extra": v[2]} for k, v in normal_data_emp.items()]
     list_absence_data = [{"timestamp": k, "value": v[0], "comment": v[1], "timestamps_extra": v[2]} for k, v in absence_data_emp.items()]
     list_primer_data = [{"timestamp": k, "value": v[0], "comment": v[1], "timestamps_extra": v[2]} for k, v in prime_data_emp.items()]
     list_late_data = [{"timestamp": k, "value": v[0], "comment": v[1], "timestamps_extra": v[2]} for k, v in late_data_emp.items()]
     list_extra_data = [{"timestamp": k, "value": v[0], "comment": v[1], "timestamps_extra": v[2]} for k, v in extra_data_emp.items()]
-    
+    list_early_data = [{"timestamp": k, "value": v[0], "comment": v[1], "timestamps_extra": v[2]} for k, v in early_data_emp.items()]
+    list_pasive_data = [{"timestamp": k, "value": v[0], "comment": v[1], "timestamps_extra": v[2]} for k, v in pasive_data_emp.items()]
     return {"name": name, "ID": id_emp, "contract": contract,
             "normal_data": list_normal_data, "absence_data": list_absence_data,
-            "prime_data": list_primer_data, "late_data": list_late_data, "extra_data": list_extra_data}
+            "prime_data": list_primer_data, "late_data": list_late_data, 
+            "extra_data": list_extra_data, 
+            "early_data": list_early_data, 
+            "pasive_data": list_pasive_data}
 
 
 def get_fichaje_data(data: dict):
@@ -202,22 +208,37 @@ def update_files_data_nominas(key: str, paths_pdf_xml: dict, data_xml: dict):
     return data_emp
 
 
-def update_data_docs_nomina():
+def update_data_docs_nomina(patterns=None, use_index=False):
     settings = json.load(open("files/settings.json", "r"))
     url_shrpt = settings["gui"]["RRHH"]["url_shrpt"]
     folder_rrhh = settings["gui"]["RRHH"]["folder_rrhh"]
     folder_nominas = settings["gui"]["RRHH"]["folder_nominas"]
-    data, code = get_files_site(url_shrpt+folder_rrhh, folder_nominas)
-    data_dict = get_pairs_nomina_docs(data)
+    patterns = patterns if patterns is not None else []
+    folder_patterns = [folder_nominas] + patterns
+    if not use_index:
+        data, code = get_files_site(url_shrpt+folder_rrhh, folder_patterns)
+        data_dict = get_pairs_nomina_docs(data)
+    else:
+        data_dict = json.load(open(index_file_nominas, "r"))
     data_emps = {}
     results = []
     for k, v in data_dict.items():
+        if "xml" not in v.keys() or "pdf" not in v.keys():
+            results.append((False, "No se encontraron los archivos necesarios", None))
+            continue
         download_path, code = download_files_site(url_shrpt+folder_rrhh, v["xml"])
-        if code == 200:
-            data_file = get_data_xml_file_nomina(download_path)
-            data_emps[data_file["emp_id"]] = update_files_data_nominas(k, v, data_file)
-            flag, error, result = update_payroll(data_emps[data_file["emp_id"]], data_file["emp_id"])
-            results.append((flag, error, result))
+        if code != 200:
+            results.append((False, f"Error al descargar el archivo XML: {download_path}", None))
+            continue
+        data_file = get_data_xml_file_nomina(download_path)
+        if data_file["emp_id"] is None:
+            print(f"No se encontro el empleado datos de {data_file}")
+            results.append((False, f"No se encontro el empleado datos de {data_file['receptor']['Nombre']}", None))
+            continue
+        print(f"Employee found: {data_file['emp_id']}")
+        data_emps[data_file["emp_id"]] = update_files_data_nominas(k, v, data_file)
+        flag, error, result = update_payroll(data_emps[data_file["emp_id"]], data_file["emp_id"])
+        results.append((flag, error, result))
     return results
 
 

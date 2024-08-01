@@ -105,19 +105,26 @@ def get_events_from_extraordinary_sources(hour_in: str, hour_out: str, data: dic
         if timestamp_hour_in < timestamp_limit_hour_in:
             hours_late = timestamp_limit_hour_in - timestamp_hour_in 
             hours_late = hours_late.total_seconds() / 3600.0
-            print(f"event: late, date: {data['date']}, value: {int(hours_late)} hours {int(hours_late % 1 * 60)} minutes, comment: {data['comment']}")
+            # print(f"event: late, date: {data['date']}, value: {int(hours_late)} hours {int(hours_late % 1 * 60)} minutes, comment: {data['comment']}")
             events.append("atraso")            
             data_events.append((data["date"], hours_late, data["comment"], data["contract"]))
         elif timestamp_hour_in > normal_hour_in > timestamp_limit_hour_in:
             hours_early = timestamp_hour_in - normal_hour_in
             hours_early = hours_early.total_seconds() / 3600.0
-            print(f"event: extra, date: {data['date']}, value: {int(-hours_early)} hours {int(-hours_early % 1 * 60)} minutes, comment: {data['comment']}")
+            # print(f"event: extra, date: {data['date']}, value: {int(-hours_early)} hours {int(-hours_early % 1 * 60)} minutes, comment: {data['comment']}")
             events.append("extra")
             data_events.append((data["date"], hours_early, handle_comment_extra(1, data["comment"]), data["contract"]))
         if timestamp_hour_out < timestamp_limit_hour_out:
             hours_extra = timestamp_limit_hour_out - timestamp_hour_out
             hours_extra = hours_extra.total_seconds() / 3600.0
-            print(f"event: extra, date: {data['date']}, value: {int(hours_extra)} hours {int(hours_extra % 1 * 60)} minutes, comment: {data['comment']}")
+            # print(f"event: extra, date: {data['date']}, value: {int(hours_extra)} hours {int(hours_extra % 1 * 60)} minutes, comment: {data['comment']}")
             events.append("extra")
             data_events.append((data["date"], hours_extra, handle_comment_extra(0, data["comment"]), data["contract"]))
+        # early leaving
+        if timestamp_hour_out > normal_hour_out:
+            early_hours = timestamp_hour_out - normal_hour_out
+            early_hours = early_hours.total_seconds() / 3600.0
+            # print(f"event: early, date: {data['date']}, value: {int(-early_hours)} hours {int(-early_hours % 1 * 60)} minutes, comment: {data['comment']}")
+            events.append("early")
+            data_events.append((data["date"], early_hours, data["comment"], data["contract"]))
     return events, data_events

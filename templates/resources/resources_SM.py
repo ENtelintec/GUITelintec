@@ -2,6 +2,7 @@
 __author__ = 'Edisson Naula'
 __date__ = '$ 01/abr./2024  at 10:26 $'
 
+from flask import send_file
 from flask_restx import Resource, Namespace
 from static.Models.api_sm_models import client_emp_sm_response_model, products_answer_model, products_request_model, \
     sm_post_model, delete_request_sm_model, sm_put_model, table_sm_model, table_request_model, new_cliente_model, \
@@ -12,7 +13,7 @@ from templates.Functions_AuxPlots import get_data_sm_per_range
 from templates.misc.Functions_Files import write_log_file
 from templates.Functions_Utils import create_notification_permission
 from templates.resources.midleware.Functions_DB_midleware import get_products_sm, get_all_sm, get_employees_almacen, \
-    dispatch_sm, cancel_sm
+    dispatch_sm, cancel_sm, dowload_file_sm
 from templates.Functions_Text import parse_data
 from templates.controllers.customer.customers_controller import get_sm_clients
 from templates.controllers.employees.employees_controller import get_sm_employees
@@ -78,11 +79,11 @@ class AddSM(Resource):
         flag, error, result = insert_sm_db(data)
         if flag:
             msg = (f"Nueva SM creada #{data['info']['id']}, folio: {data['info']['folio']}, "
-                   f"fecha limite: {data['info']['limit_date']}, "
+                   f"fecha limite: {data['info']['critical_date']}, "
                    f"empleado con id: {data['info']['emp_id']}, "
                    f"comentario: {data['info']['comment']}")
             create_notification_permission(msg, ["sm", "administracion", "almacen"], "Nueva SM Recibida",
-                                           data["info"]["emp_id"], data['info']["emp_id_storage"])
+                                           data["info"]["emp_id"], 0)
             write_log_file(log_file_sm_path, msg)
             return {"answer": "ok", "msg": result}, 201
         else:
@@ -114,11 +115,11 @@ class AddSM(Resource):
         flag, error, result = update_sm_db(data)
         if flag:
             msg = (f"Nueva SM creada #{data['info']['id']}, folio: {data['info']['folio']}, "
-                   f"fecha limite: {data['info']['limit_date']}, "
+                   f"fecha limite: {data['info']['critical_date']}, "
                    f"empleado con id: {data['info']['emp_id']}, "
                    f"comentario: {data['info']['comment']}")
             create_notification_permission(msg, ["sm", "administracion", "almacen"], "Nueva SM Recibida",
-                                           data["info"]["emp_id"], data['info']["emp_id_storage"])
+                                           data["info"]["emp_id"], 0)
             write_log_file(log_file_sm_path, msg)
             return {"answer": "ok", "msg": error}, 200
         else:
@@ -200,3 +201,14 @@ class ManageSMDispatch(Resource):
             return {"msg": "SM cancel"}, code
         else:
             return {"msg": "error at canceling", "data": data_out}, code
+
+
+@ns.route('/download/pdf/<int:sm_id>')
+class DownloadPDFSM(Resource):
+    def get(self, sm_id):
+        data, code = dowload_file_sm(sm_id)
+        print(data, code)
+        if code == 200:
+            return send_file(data, as_attachment=True)
+        else:
+            return {"msg": "error at downloading"}, code

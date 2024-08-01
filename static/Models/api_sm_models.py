@@ -67,12 +67,13 @@ sm_model = api.model('Material_request', {
     'order_quotation': fields.String(required=True, description='The order or quotation'),
     'emp_id': fields.String(required=True, description='The employee id', example=1),
     'date': fields.String(required=True, description='The date', example="2024-06-29"),
-    'limit_date': fields.String(required=True, description='The limit date', example="2024-07-12"),
     'critical_date': fields.String(required=True, description='The critical date', example="2024-07-15"),
     'status': fields.Integer(required=True, description='The status of the sm'),
     'history':  fields.List(fields.Nested(history_model_sm)),
     'comment': fields.String(required=True, description='The comment'),
-    'emp_id_storage': fields.Integer(required=True, description='The employee id storage', example=1)
+    'destination': fields.String(required=True, description='The destination area in telintec'),
+    'items': fields.List(fields.Nested(items_model_sm), required=False),
+    'items_new': fields.List(fields.Nested(items_model_sm), required=False)
 })
 
 table_sm_model = api.model('TableMaterialRequest', {
@@ -145,7 +146,8 @@ request_sm_plot_data_model = api.model('RequestSMPlotData', {
 request_sm_dispatch_model = api.model('RequestSMDispatch', {
     'id': fields.Integer(required=True, description='The id'),
     'emp_id': fields.Integer(required=True, description='The employee id'),
-    'comment': fields.String(required=True, description='The date')
+    'comment': fields.String(required=True, description='The date'),
+    'items': fields.List(fields.Nested(items_model_sm), required=False)
 })
 
 data_response_dispatch_model = api.model('DataResponseDispatch', {

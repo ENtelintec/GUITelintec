@@ -414,7 +414,7 @@ class FichajesManual(ttk.Frame):
     def select_name_emp_f(self, event):
         if event.widget.get() != "no name selected":
             (worked_days, worked_intime, count, count2,
-             self.days_late_f, self.days_extra_f) = get_info_f_file_name(
+             self.days_late_f, self.days_extra_f, self.early_dic_f) = get_info_f_file_name(
                 self.dff, self.name_emp_selector_f.get(), self.clocks_f,
                 self.window_time_in_f, self.window_time_out_f,
                 self.file_selected_1)
@@ -437,7 +437,7 @@ class FichajesManual(ttk.Frame):
     def select_name_emp_t(self, event):
         if event.widget.get() != "no name selected":
             (worked_days, worked_intime, count, count2,
-             self.days_late_t, self.days_extra_t) = get_info_t_file_name(
+             self.days_late_t, self.days_extra_t, self.days_early_t) = get_info_t_file_name(
                 self.dft, self.name_emp_selector_t.get(), self.clocks_t, self.window_time_in_t, self.window_time_out_t,
                 self.file_selected_3)
             update_stringvars(

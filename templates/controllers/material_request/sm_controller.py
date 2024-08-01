@@ -18,7 +18,7 @@ def get_sm_entries(emp_id=-1):
         sql = (
             "SELECT sm_id, folio, contract, facility, location, client_id, emp_id, "
             "pedido_cotizacion, date, limit_date, "
-            "items, status, history, comment "
+            "items, status, history, comment, extra_info "
             "FROM sql_telintec.materials_request ")
         flag, error, result = execute_sql(sql, None, 5)
     else:
@@ -29,10 +29,10 @@ def get_sm_entries(emp_id=-1):
             sql = (
                 "SELECT sm_id, folio, contract, facility, location, client_id, emp_id, "
                 "pedido_cotizacion, date, limit_date, "
-                "items, status, history, comment "
+                "items, status, history, comment, extra_info "
                 "FROM sql_telintec.materials_request "
-                "WHERE contract = %s")
-            val = (result[0],)
+                "WHERE contract = %s or emp_id = %s ")
+            val = (result[0], emp_id,)
             flag, error, result = execute_sql(sql, val, 2)
         else:
             return False, "Invalid employee ID", []
@@ -42,14 +42,16 @@ def get_sm_entries(emp_id=-1):
 def insert_sm_db(data):
     event = [{"event": "creation",
               "date": datetime.now().strftime(format_timestamps), "user": data['info']['emp_id']}]
+    extra_info = {"destination": data['info']['destination'],
+                  "contract_contact": data['info']['contract_contact']}
     sql = ("INSERT INTO sql_telintec.materials_request "
            "(folio, contract, facility, location, "
-           "client_id, emp_id, pedido_cotizacion, date, limit_date, items, status, history, comment)"
-           "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)")
+           "client_id, emp_id, pedido_cotizacion, date, limit_date, items, status, history, comment, extra_info)"
+           "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)")
     val = (data['info']['folio'], data['info']['contract'], data['info']['facility'],
            data['info']['location'], data['info']['client_id'], data['info']['emp_id'],
-           data['info']['order_quotation'], data['info']['date'], data['info']['limit_date'],
-           json.dumps(data['items']), 0, json.dumps(event), data['info']['comment'])
+           data['info']['order_quotation'], data['info']['date'], data['info']['critical_date'],
+           json.dumps(data['items']), 0, json.dumps(event), data['info']['comment'], json.dumps(extra_info))
     flag, error, result = execute_sql(sql, val, 4)
     return flag, error, result
 
@@ -82,16 +84,18 @@ def update_sm_db(data):
     ids_sm = [i[0] for i in result]
     if data['id_sm'] not in ids_sm:
         return True, "Material request not found", None
+    extra_info = {"destination": data['info']['destination'],
+                  "contract_contact": data['info']['contract_contact']}
     sql = ("UPDATE sql_telintec.materials_request "
            "SET folio = %s, contract = %s, facility = %s, location = %s, "
            "client_id = %s, emp_id = %s, date = %s, limit_date = %s, items = %s, status = 0, pedido_cotizacion = %s, "
-           "history = %s, comment = %s "
+           "history = %s, comment = %s, extra_info = %s "
            "WHERE sm_id = %s")
     val = (data['info']['folio'], data['info']['contract'], data['info']['facility'],
            data['info']['location'], data['info']['client_id'], data['info']['emp_id'], data['info']['date'],
-           data['info']['limit_date'], json.dumps(data['items']),
+           data['info']['critical_date'], json.dumps(data['items']),
            data['info']['order_quotation'], json.dumps(data['info']['history']),
-           data['info']['comment'],
+           data['info']['comment'], json.dumps(extra_info),
            data['id_sm'])
     flag, error, result = execute_sql(sql, val, 4)
     return flag, error, result
@@ -165,9 +169,32 @@ def update_only_status(status: int, sm_id: int):
 def get_sm_by_id(sm_id: int):
     sql = ("SELECT "
            "sm_id, folio, contract, facility, location, client_id, emp_id, pedido_cotizacion, date, "
-           "limit_date, items, status, history, comment "
+           "limit_date, items, status, history, comment, extra_info "
            "FROM sql_telintec.materials_request "
            "WHERE sm_id = %s")
     val = (sm_id,)
     flag, error, result = execute_sql(sql, val, 1)
+    return flag, error, result
+
+
+def get_info_names_by_sm_id(sm_id: int):
+    sql = ("SELECT "
+           "sql_telintec.customers_amc.name, "
+           "sql_telintec.employees.name, "
+           "sql_telintec.employees.l_name "
+           "FROM sql_telintec.materials_request "
+           "INNER JOIN sql_telintec.customers_amc ON sql_telintec.materials_request.client_id = sql_telintec.customers_amc.id_customer "
+           "INNER JOIN sql_telintec.employees ON sql_telintec.materials_request.emp_id = sql_telintec.employees.employee_id "
+           "WHERE sm_id = %s")
+    val = (sm_id,)
+    flag, error, result = execute_sql(sql, val, 1)
+    return flag, error, result
+
+
+def update_sm_products_by_id(sm_id: int, items: list):
+    sql = ("UPDATE sql_telintec.materials_request "
+           "SET items = %s "
+           "WHERE sm_id = %s ")
+    val = (json.dumps(items), sm_id)
+    flag, error, result = execute_sql(sql, val, 4)
     return flag, error, result

@@ -8,9 +8,12 @@ from templates.resources.resources_Bitacora import ns as ns_bitacora
 from templates.resources.resources_Almacen import ns as ns_almacen
 from templates.resources.resources_Misc import ns as ns_misc
 from templates.resources.resources_Admin_presales import ns as ns_admin_presales
+from wtforms_json import init as init_wtforms_json
+
 app = Flask(__name__)
 cors = CORS(app, resources={r"/*": {"origins": "*"}})
 app.config['CORS_HEADERS'] = 'Content-Type'
+init_wtforms_json()
 
 
 @app.route('/GUI/hello')

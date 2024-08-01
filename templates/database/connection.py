@@ -67,7 +67,7 @@ def execute_sql(sql: str, values: tuple = None, type_sql=1):
             case _:
                 out = []
     except Exception as e:
-        print(e)
+        print("Error at executing sql: ", str(e), str(sql))
         out = []
         flag = False
         exception = e
@@ -97,7 +97,7 @@ def execute_sql_multiple(sql: str, values_list: list = None, type_sql=1):
         )
         my_cursor = mydb.cursor(buffered=True)
     except Exception as e:
-        print(e)
+        print("Error at executing sql: ", str(e))
         return False, e, []
     out = []
     flag = True

@@ -3,7 +3,14 @@ __author__ = 'Edisson Naula'
 __date__ = '$ 02/nov./2023  at 17:32 $'
 
 from flask_restx import fields
+from wtforms.fields.simple import PasswordField
+from wtforms.form import Form
+
 from static.extensions import api
+
+from wtforms.validators import DataRequired
+
+from wtforms import StringField, validators, IntegerField
 
 permission_model = api.model('Permission', {
     'name': fields.String(required=True, description='The name'),
@@ -16,19 +23,28 @@ token_model = api.model('Token', {
     })
 
 
+class TokenModelForm(Form):
+    username = StringField('username', validators=[validators.input_required()])
+    password = PasswordField('password', validators=[validators.input_required()])
+
+
 resume_model = api.model('Resume', {
     "id": fields.Integer(required=True, description="The id"),
     "name": fields.String(required=True, description="The name"),
     "contract": fields.String(required=True, description="The contract"),
     "absences": fields.Integer(required=True, description="The absences"),
     "late": fields.Integer(required=True, description="The late"),
+    "total_late":  fields.Integer(required=True, description="The total late"),
     "extra": fields.Integer(required=True, description="The extra"),
     "total_h_extra": fields.Integer(required=True, description="The total"),
     "primes": fields.Integer(required=True, description="The primes"),
     "absences_details": fields.String(required=True, description="The absences details"),
     "late_details": fields.String(required=True, description="The late details"),
     "extra_details": fields.String(required=True, description="The extra details"),
-    "primes_details": fields.String(required=True, description="The primes details")
+    "primes_details": fields.String(required=True, description="The primes details"),
+    "normals_details": fields.String(required=True, description="The normals details"),
+    "earlies_details":  fields.String(required=True, description="The early data details"),
+    "pasives_details": fields.String(required=True, description="The pasives details")
     })
 
 

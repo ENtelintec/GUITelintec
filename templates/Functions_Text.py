@@ -76,20 +76,20 @@ def parse_data(data: dict, mode: int):
                 id_sm = data['info']['id'] if mode == 8 else None
                 info = {
                     'id': id_sm,
-                    "folio": data['info']['folio'],
-                    "contract": data['info']['contract'],
-                    "facility": data['info']['facility'],
-                    "location": data['info']['location'],
-                    "client_id": data['info']['client_id'],
-                    "emp_id": data['info']['emp_id'],
-                    "date": data['info']['date'],
-                    "limit_date": data['info']['limit_date'],
-                    "critical_date": data['info']['critical_date'],
-                    "status": data['info']['status'],
-                    "order_quotation": data['info']['order_quotation'],
-                    "comment": data['info']['comment'],
-                    "history": data['info']['history'],
-                    'emp_id_storage': data['info']['emp_id_storage']
+                    "folio": data['info']['folio'] if "folio" in data["info"].keys() else None,
+                    "contract": data['info']['contract'] if "contract" in data["info"].keys() else None,
+                    "facility": data['info']['facility'] if "facility" in data["info"].keys() else None,
+                    "location": data['info']['location'] if "location" in data["info"].keys() else None,
+                    "client_id": data['info']['client_id'] if "client_id" in data["info"].keys() else None,
+                    "emp_id": data['info']['emp_id'] if "emp_id" in data["info"].keys() else None,
+                    "date": data['info']['date'] if "date" in data["info"].keys() else None,
+                    "critical_date": data['info']['critical_date'] if "critical_date" in data["info"].keys() else None,
+                    "status": data['info']['status'] if "status" in data["info"].keys() else None,
+                    "order_quotation": data['info']['order_quotation'] if "order_quotation" in data["info"].keys() else None,
+                    "comment": data['info']['comment'] if "comment" in data["info"].keys() else None,
+                    "history": data['info']['history'] if "history" in data["info"].keys() else None,
+                    "destination": data['info']['destination'] if "destination" in data["info"].keys() else None,
+                    "contract_contact":  data['info']['contract_contact'] if "contract_contact" in data["info"].keys() else None,
                 }
                 items = []
                 for item in data['items']:
@@ -157,9 +157,10 @@ def parse_data(data: dict, mode: int):
                 }
             case 15:
                 out = {
-                    'id': data["id"],
-                    'emp_id': data["emp_id"],
-                    'comment': data["comment"]
+                    'id': data["id"] if "id" in data.keys() else None,
+                    'emp_id': data["emp_id"] if "emp_id" in data.keys() else None,
+                    'comment': data["comment"] if "comment" in data.keys() else None,
+                    'items': data["items"] if "items" in data.keys() else []
                 }
             case 17:
                 "id"
@@ -216,7 +217,7 @@ def parse_data(data: dict, mode: int):
                     "error": "Invalid mode"
                 }
     except Exception as e:
-        print(e)
+        print("Error at parsing: ", str(e))
         code = 400
         out = {
             "error": "Invalid sintaxis" + str(e)

@@ -14,7 +14,7 @@ import customtkinter as ctk
 import tkinter as tk
 from PIL import Image
 
-from static.extensions import ventanasApp_path
+from static.extensions import ventanasApp_path, filepath_settings
 from templates.Functions_GUI_Utils import compare_permissions_windows
 from templates.LoadData import DataLoader
 from templates.controllers.employees.us_controller import get_username_data
@@ -23,7 +23,6 @@ from templates.controllers.employees.us_controller import get_username_data
 carpeta_principal = "./img"
 
 secrets = dotenv_values(".env")
-url_api = "https://ec2-3-144-117-149.us-east-2.compute.amazonaws.com/AuthAPI/api/v1/auth/loginUP"
 
 
 def call_authApi(user, pass_key, url=None):
@@ -34,7 +33,8 @@ def call_authApi(user, pass_key, url=None):
     :param pass_key:
     :return:
     """
-    url = url if url is not None else url_api
+    settings = json.load(open(filepath_settings))
+    url = url if url is not None else settings["url_auth_api"]
     data = {"username": user, "password": pass_key}
     response = requests.post(url, json=data)
     permissions = None
@@ -102,7 +102,7 @@ class LoginGUI(ttk.Frame):
         # hash password
         pass_key = hashlib.md5(password.encode()).hexdigest()
         # call API
-        verified, permissions = call_authApi(username, pass_key, url=url_api)
+        verified, permissions = call_authApi(username, pass_key)
         if verified or permissions is not None:
             self.permissions = permissions
             self.username_data = get_username_data(username)
