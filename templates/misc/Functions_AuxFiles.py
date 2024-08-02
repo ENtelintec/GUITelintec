@@ -444,15 +444,16 @@ def get_all_sm_entries(filter_status=False, is_supper=False, emp_id=None):
     if flag:
         columns = (
             "ID", "Codigo", "Folio", "Contrato", "Planta", "Ubicación", "Cliente", "Empleado", "Orden/Cotización",
-            "Fecha", "Fecha Limite", "Items", "Estado", "Historial", "Comentario")
+            "Fecha", "Fecha Limite", "Items", "Estado", "Historial", "Comentario", "Extra info")
         if filter_status:
             result = [row for row in result if row[12] == 0]
         if not is_supper:
             result = [row for row in result if row[7] == emp_id]
         for index, row in enumerate(result):
-            id_sm, folio, contract, plant, location, client, employee, order, date, date_limit, items, status, history, comment = row
+            (id_sm, folio, contract, plant, location, client, employee, order, date,
+             date_limit, items, status, history, comment, extra_info) = row
             new_row = (id_sm, folio, contract, plant, location, client, employee, order, date, date_limit, items,
-                       status_dic[status], history, comment)
+                       status_dic[status], history, comment, extra_info)
             result[index] = new_row
         return result, columns
     else:
@@ -524,29 +525,47 @@ def get_data_xml_file_nomina(path_file: str):
     :return: The data xml file.
     """
     data = {}
-    tree = ET.parse(path_file)
-    root = tree.getroot()
+    tree = ET.parse(path_file,  parser=ET.XMLParser(encoding='utf-8'))
     pattern = "\{.*\}"
     data = {}
-    for child in root:
+    for child in tree.iter():
         match = re.search(pattern, child.tag)
         last_part_tag = child.tag[match.span()[1]:]
         match last_part_tag.lower():
             case "emisor" | "emissor":
-                data["emisor"] = child.attrib
+                if "emisor" not in data.keys():
+                    data["emisor"] = child.attrib
+                else:
+                    data["emisor"].update(child.attrib)
             case "receptor":
-                data["receptor"] = child.attrib
+                if "receptor" not in data.keys():
+                    data["receptor"] = child.attrib
+                else:
+                    data["receptor"].update(child.attrib)
             case "concept" | "conceptos" | "concepts":
-                data["conceptos"] = child.attrib
+                if "conceptos" not in data.keys():
+                    data["conceptos"] = child.attrib
+                else:
+                    data["conceptos"].update(child.attrib)
             case _:
-                data["other"] = child.attrib
+                data[last_part_tag] = child.attrib
     name = data["receptor"]["Nombre"] if "receptor" in data.keys() else None
     name_id = get_id_employee(data["receptor"]["Nombre"])
-    date = root.attrib["Fecha"] if "Fecha" in root.attrib.keys() else None
+    date = None
+    for value in data.values():
+        for key, value2 in value.items():
+            if "Fecha" == key or "fecha" == key.lower() or "date" == key:
+                date = value2
+                break
+    date_pago = None
+    if "Nomina" in data.keys():
+        date_pago = data["Nomina"]["FechaPago"] if "FechaPago" in data["Nomina"].keys() else None
+
     if name is not None:
         data["emp_name"] = name
         data["emp_id"] = name_id
         data["date"] = date
+        data["date_pay"] = date_pago
     return data
 
 

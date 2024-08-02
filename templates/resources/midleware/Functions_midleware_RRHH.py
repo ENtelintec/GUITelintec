@@ -192,7 +192,11 @@ def upload_nomina_doc(data):
 def update_files_data_nominas(key: str, paths_pdf_xml: dict, data_xml: dict):
     flag, error, result = get_payrolls(data_xml["emp_id"])
     data_emp = {} if not flag or len(result) == 0 else json.loads(result[1])
-    date = pd.to_datetime(data_xml["date"])
+    try:
+        date = pd.to_datetime(data_xml["date"])
+    except Exception as e:
+        print("Error, date not found in file xml. DB not updated", e)
+        return data_emp, False
     year = str(date.year)
     month = str(date.month)
     if year in data_emp.keys():
@@ -200,12 +204,12 @@ def update_files_data_nominas(key: str, paths_pdf_xml: dict, data_xml: dict):
             data_emp[year][month][key] = paths_pdf_xml
         else:
             data_emp[year][month] = {key: paths_pdf_xml}
-        return data_emp
+        return data_emp, True
     if month in data_emp.keys():
         data_emp[year][month][key] = paths_pdf_xml
     else:
         data_emp[year] = {month: {key: paths_pdf_xml}}
-    return data_emp
+    return data_emp, True
 
 
 def update_data_docs_nomina(patterns=None, use_index=False):
@@ -216,8 +220,11 @@ def update_data_docs_nomina(patterns=None, use_index=False):
     patterns = patterns if patterns is not None else []
     folder_patterns = [folder_nominas] + patterns
     if not use_index:
-        data, code = get_files_site(url_shrpt+folder_rrhh, folder_patterns)
+        data, code, all_items = get_files_site(url_shrpt+folder_rrhh, folder_patterns)
         data_dict = get_pairs_nomina_docs(data)
+        data_dict_old = json.load(open(index_file_nominas, "r"))
+        data_dict_old.update(data_dict)
+        json.dump(data_dict_old, open(index_file_nominas, "w"))
     else:
         data_dict = json.load(open(index_file_nominas, "r"))
     data_emps = {}
@@ -226,19 +233,25 @@ def update_data_docs_nomina(patterns=None, use_index=False):
         if "xml" not in v.keys() or "pdf" not in v.keys():
             results.append((False, "No se encontraron los archivos necesarios", None))
             continue
-        download_path, code = download_files_site(url_shrpt+folder_rrhh, v["xml"])
+        if folder_patterns[1] in v["xml"] and folder_patterns[2].lower() in v["xml"].lower():
+            download_path, code = download_files_site(url_shrpt+folder_rrhh, v["xml"])
+        else:
+            print(f"Not pass the filter {folder_patterns}", v["xml"])
+            continue
         if code != 200:
             results.append((False, f"Error al descargar el archivo XML: {download_path}", None))
             continue
         data_file = get_data_xml_file_nomina(download_path)
         if data_file["emp_id"] is None:
-            print(f"No se encontro el empleado datos de {data_file}")
-            results.append((False, f"No se encontro el empleado datos de {data_file['receptor']['Nombre']}", None))
+            print(f"No se encontro el empleado con datos {data_file['emp_name']}")
+            results.append((False, f"No se encontro el empleado: {data_file['emp_name']}", None))
             continue
-        print(f"Employee found: {data_file['emp_id']}")
-        data_emps[data_file["emp_id"]] = update_files_data_nominas(k, v, data_file)
-        flag, error, result = update_payroll(data_emps[data_file["emp_id"]], data_file["emp_id"])
-        results.append((flag, error, result))
+        data_emps[data_file["emp_id"]], flag = update_files_data_nominas(k, v, data_file)
+        if flag:
+            flag, error, result = update_payroll(data_emps[data_file["emp_id"]], data_file["emp_id"])
+            results.append((flag, error, result))
+        else:
+            results.append((False, "Error al generar dict de empleado", None))
     return results
 
 

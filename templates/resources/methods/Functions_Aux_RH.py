@@ -19,25 +19,27 @@ def parse_data(data: dict, mode: int):
     try:
         match mode:
             case 1:
-                out = {"id": data["id"] if "id" in data.keys() else None, "info": {
-                    "name": data["info"]["name"],
-                    "lastname": data["info"]["lastname"],
-                    "phone": data["info"]["phone"],
-                    "dep": data["info"]["dep"],
-                    "modality": data["info"]["modality"],
-                    "email": data["info"]["email"],
-                    "contract": data["info"]["contract"],
-                    "admission": data["info"]["admission"],
-                    "rfc": data["info"]["rfc"],
-                    "curp": data["info"]["curp"],
-                    "nss": data["info"]["nss"],
-                    "emergency": data["info"]["emergency"],
-                    "position": data["info"]["position"],
-                    "status": data["info"]["status"],
-                    "departure": data["info"]["departure"],
-                    "birthday": data["info"]["birthday"],
-                    "legajo": data["info"]["legajo"]
-                } if "info" in data.keys() else {}}
+                out = {
+                    "id": data["id"] if "id" in data.keys() else None,
+                    "info": {
+                        "name": data["info"]["name"],
+                        "lastname": data["info"]["lastname"],
+                        "phone": data["info"]["phone"],
+                        "dep": data["info"]["dep"],
+                        "modality": data["info"]["modality"],
+                        "email": data["info"]["email"],
+                        "contract": data["info"]["contract"],
+                        "admission": data["info"]["admission"],
+                        "rfc": data["info"]["rfc"],
+                        "curp": data["info"]["curp"],
+                        "nss": data["info"]["nss"],
+                        "emergency": data["info"]["emergency"],
+                        "position": data["info"]["position"],
+                        "status": data["info"]["status"],
+                        "departure": data["info"]["departure"],
+                        "birthday": data["info"]["birthday"],
+                        "legajo": data["info"]["legajo"]
+                    } if "info" in data.keys() else {}}
 
             case 2:
                 out = {"id": data["id"] if "id" in data.keys() else None, "info": {

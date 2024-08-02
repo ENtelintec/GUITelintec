@@ -148,6 +148,7 @@ def dispatch_sm(data):
     if not flag or len(result) <= 0:
         return 400, ["sm not foud"]
     history_sm = json.loads(result[12])
+    print("history ", history_sm)
     emp_id_creation = result[6]
     history_sm.append(
         {"user": data["emp_id"], "event": "dispatch", "date": datetime.now().strftime(format_timestamps),

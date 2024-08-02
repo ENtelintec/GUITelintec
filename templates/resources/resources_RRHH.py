@@ -37,7 +37,7 @@ ns = Namespace('GUI/api/v1/rrhh')
 class Employee(Resource):
     @ns.expect(employee_model_insert)
     def post(self):
-        code, data = parse_data(ns.payload, 14)
+        code, data = parse_data(ns.payload, 1)
         if code == 400:
             return {"data": None}, code
         flag, error, result = new_employee(data["info"]["name"], data["info"]["lastname"], data["info"]["curp"],

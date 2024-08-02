@@ -31,7 +31,8 @@ def get_username_data(username: str):
            "sql_telintec.employees.department_id, "
            "sql_telintec.departments.name, "
            "sql_telintec.employees.contrato, "
-           "sql_telintec.employees.employee_id "
+           "sql_telintec.employees.employee_id, "
+           "sql_telintec.employees.email "
            "FROM sql_telintec.users_system "
            "INNER JOIN sql_telintec.employees ON users_system.emp_id = employee_id "
            "INNER JOIN sql_telintec.departments on sql_telintec.employees.department_id = sql_telintec.departments.department_id "
@@ -48,7 +49,8 @@ def get_username_data(username: str):
             "department_id": result[4],
             "department_name": result[5],
             "contract": result[6],
-            "id": result[7]
+            "id": result[7],
+            "email": result[8]
         }
     return out
 

@@ -13,6 +13,7 @@ __pycache__/
 /files/OCT*
 /files/*cache*
 /files/*.csv
+/files/*.xml
 /files/fichaje*.xlsx
 *csv
 /scripts_db_handle/Fill_Vacations.py
@@ -37,3 +38,4 @@ __pycache__/
 *.pem
 *.cer
 *.pfx
+/files/nominas_index.json
