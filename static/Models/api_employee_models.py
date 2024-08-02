@@ -38,10 +38,10 @@ employee_model_input = api.model('Employee', {
     "rfc": fields.String(required=True, description="The employee rfc"),
     "curp": fields.String(required=True, description="The employee curp"),
     "nss": fields.String(required=True, description="The employee nss"),
-    "emergency": fields.String(required=True, description="The employee emergency contact", example="{'name': null, 'phone_number': '81 0000 0000'}"),
+    "emergency": fields.String(required=True, description="The employee emergency contact", example='{"name": null, "phone_number": "81 0000 0000"}'),
     "position": fields.String(required=True, description="The employee puesto"),
     "status": fields.String(required=True, description="The employee status"),
-    "departure": fields.String(required=True, description="The employee departure", example="{'date': '2024-03-01', 'reason': ''}"),
+    "departure": fields.String(required=True, description="The employee departure", example='{"date": "2024-03-01", "reason": ""}'),
     "birthday": fields.String(required=True, description="The employee birthday", example="2024-03-01"),
     "legajo":  fields.String(required=True, description="The employee legajo")
     })
