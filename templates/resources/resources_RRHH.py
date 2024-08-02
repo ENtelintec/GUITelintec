@@ -40,6 +40,7 @@ class Employee(Resource):
         code, data = parse_data(ns.payload, 1)
         if code == 400:
             return {"data": None}, code
+        print(data)
         flag, error, result = new_employee(data["info"]["name"], data["info"]["lastname"], data["info"]["curp"],
                                            data["info"]["phone"], data["info"]["modality"], data["info"]["dep"],
                                            data["info"]["contract"], data["info"]["admission"], data["info"]["rfc"],
