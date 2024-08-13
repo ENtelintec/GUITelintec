@@ -110,6 +110,8 @@ def update_bitacora(emp_id: int, event, data):
     if new_registry:
         print("new registry in fichajes db")
         name = get_name_employee(emp_id)
+        if name is None:
+            return False, "error at getting employee name, check de id or that the employee is register in the db.", None
         fichajes_resume.append([emp_id, name.title(), contract_sel, 0, 0, 0, 0, 0, 0, {}, {}, {}, {}, {}, {}, {}])
     # -----------------------------updates cache data and db--------------------------------
     flag = False
