@@ -12,13 +12,13 @@ from wtforms_json import init as init_wtforms_json
 
 app = Flask(__name__)
 cors = CORS(app, resources={r"/*": {"origins": "*"}})
-app.config['CORS_HEADERS'] = 'Content-Type'
+app.config["CORS_HEADERS"] = "Content-Type"
 init_wtforms_json()
 
 
-@app.route('/GUI/hello')
+@app.route("/GUI/hello")
 def hello_world():  # put application's code here
-    return 'Hello World! GUI'
+    return "Hello World! GUI"
 
 
 api.init_app(app)
@@ -31,5 +31,5 @@ api.add_namespace(ns_misc)
 api.add_namespace(ns_admin_presales)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     app.run()
