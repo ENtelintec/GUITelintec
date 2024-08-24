@@ -20,6 +20,7 @@ from templates.modules.RRHH.Frame_ExamenesMedicos import ExamenesMedicos
 from templates.modules.RRHH.Frame_FichajeFilesFrames import FichajesFilesGUI
 from templates.modules.Home.Frame_Home import HomeFrame
 from templates.modules.Chatbot.Frame_PedidosFrame import PedidosFrame
+from templates.modules.RRHH.Frame_Payroll import PayrollFilesGUI
 from templates.modules.SM.Frame_SMGeneral import SMFrame
 from templates.modules.Misc.Frame_SettingsFrame import SettingsFrameGUI
 from templates.modules.RRHH.Frame_Vacations import VacationsFrame
@@ -60,7 +61,8 @@ available_frames = {
     "Cotizaciones": QuotationsFrame,
     "Documentos Contrato": ContractsDocsFrame,
     "Control Saldos": ControlSaldos,
-    "Remisiones": RemisionsFrame
+    "Remisiones": RemisionsFrame,
+    "Nominas": PayrollFilesGUI
 }
 
 frames_notifications_avaliable = {

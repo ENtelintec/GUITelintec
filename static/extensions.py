@@ -10,7 +10,7 @@ from pathlib import Path
 
 paths_dpb_folders = json.load(open("files/paths_general.json"))
 local_father_path_dpb = "C:/Users/Edisson/Telintec Dropbox/SOFTWARE TELINTEC"
-secrets = dotenv_values("../.env")
+secrets = dotenv_values(".env")
 api = Api()
 # url_api = "http://127.0.0.1:5000/AuthAPI/api/v1/auth/loginUP"
 url_api = "https://ec2-18-119-125-94.us-east-2.compute.amazonaws.com/AuthAPI/api/v1/auth/loginUP"
@@ -34,11 +34,7 @@ filepath_recomendations = "files/recomendations.json"
 quizzes_dir_path = "static/quizzes_dir.json"
 files_user = "files/users.json"
 quizzes_RRHH = {
-    "0": {
-        "name": "Encuesta de Salida", 
-        "path": "files/quizz_salida.json", 
-        "type": 0
-    },
+    "0": {"name": "Encuesta de Salida", "path": "files/quizz_salida.json", "type": 0},
     "1": {
         "name": "Encuesta de Norma_035_50",
         "path": "files/quizz_norma035_50_v1.json",
@@ -140,12 +136,26 @@ windows_names_db_frame = [
     "O. Virtuales",
 ]
 delta_bitacora_edit = 14
-status_dic = {0: "Pendiente", 1: "En Proceso", 2: "Completado", 3: "Finalizado", -1: "Cancelado"}
+status_dic = {
+    0: "Pendiente",
+    1: "En Proceso",
+    2: "Completado",
+    3: "Finalizado",
+    -1: "Cancelado",
+}
 format_timestamps = "%Y-%m-%d %H:%M:%S"
 format_date = "%Y-%m-%d"
 format_date_fichaje_file = "%d-%m-%Y"
-dict_deps = {"Dirección": 1, "Operaciones": 2, "Administración": 3, "RRHH": 4, "REPSE": 5, "IA": 6, "Otros": 7}
-format_timestamps_filename = '%Y-%m-%d'
+dict_deps = {
+    "Dirección": 1,
+    "Operaciones": 2,
+    "Administración": 3,
+    "RRHH": 4,
+    "REPSE": 5,
+    "IA": 6,
+    "Otros": 7,
+}
+format_timestamps_filename = "%Y-%m-%d"
 HOST_DB_DEFAULT = "HOST_DB_AWS"
 USER_DB_DEFAULT = "USER_SQL_AWS"
 PASS_DB_DEFAULT = "PASS_SQL_AWS"

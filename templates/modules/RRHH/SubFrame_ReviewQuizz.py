@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
-__author__ = 'Edisson Naula'
-__date__ = '$ 13/may./2024  at 16:40 $'
+__author__ = "Edisson Naula"
+__date__ = "$ 13/may./2024  at 16:40 $"
 
 import json
 import os
+from tkinter import filedialog
+
 import ttkbootstrap as ttk
 from ttkbootstrap.tableview import Tableview
 from ttkbootstrap.dialogs import Messagebox
@@ -13,8 +15,16 @@ from templates.forms.Eva360 import create_quizz_eva_360
 from templates.forms.QuizzNorm35 import QuizzNor035_v1, QuizzNor035_50Plus
 from templates.forms.QuizzSalida import QuizzSalidaPDF
 from templates.misc.Functions_AuxFiles import load_quizzes_names
-from templates.Functions_GUI_Utils import create_label, create_button
-
+from templates.Functions_GUI_Utils import (
+    create_label,
+    create_button,
+    calculate_results_quizzes,
+)
+from templates.misc.Functions_Files import (
+    get_data_encuesta,
+    extract_data_encuesta,
+    create_report_encuesta,
+)
 
 dict_keys = {
     "name_emp": "Empleado",
@@ -28,7 +38,7 @@ dict_keys = {
     "evaluated_emp": "Evaluado",
     "pos_evaluator": "Posicion Evaluador",
     "evaluated_emp_ID": "ID Evaluado",
-    "type_q": "Tipo de Quiz"
+    "type_q": "Tipo de Quiz",
 }
 
 
@@ -37,7 +47,7 @@ dict_typer_quizz_generator = {
     1: QuizzNor035_v1,
     2: QuizzNor035_50Plus,
     3: create_quizz_clima_laboral,
-    4: create_quizz_eva_360
+    4: create_quizz_eva_360,
 }
 
 
@@ -49,15 +59,28 @@ def get_key_display(key: str):
 
 
 def create_data_for_table(pdf_files, json_files, path):
-    columns = ("Nombre", "ID", "Nombre del Quiz", "Evaluador", "Fecha", "Archivo PDF", "Archivo RAW")
+    columns = (
+        "Nombre",
+        "ID",
+        "Nombre del Quiz",
+        "Evaluador",
+        "Fecha",
+        "Archivo PDF",
+        "Archivo RAW",
+    )
     data = []
     for json_name in json_files:
         file = json.load(open(path + json_name, "r"))
         name_emp = file["metadata"]["name_emp"]
         evaluated_emp_id = file["metadata"]["evaluated_emp_ID"]
         title = file["metadata"]["title"] if "title" in file["metadata"] else ""
-        row = [name_emp, evaluated_emp_id, title,
-               file["metadata"]["interviewer"], file["metadata"]["date"]]
+        row = [
+            name_emp,
+            evaluated_emp_id,
+            title,
+            file["metadata"]["interviewer"],
+            file["metadata"]["date"],
+        ]
         name_emp = name_emp.replace(" ", "")
         pdf_name_to_add = "No se encuentra el pdf"
         for pdf_name in pdf_files:
@@ -75,7 +98,7 @@ class ViewQuizz(ttk.Frame):
         super().__init__(master)
         self.columnconfigure(0, weight=1)
         # -------------------------------variables------------------------------
-        self.settings = kwargs.get('settings')
+        self.settings = kwargs.get("settings")
         self._svar_info = ttk.StringVar()
         self._pdf_file_selected = None
         self._json_file_selected = None
@@ -83,7 +106,9 @@ class ViewQuizz(ttk.Frame):
         self.selectors = None
         # ------------title------------------------------
         create_label(self, 0, 0, text="Revisión de Quizzes", font=("Helvetica", 20))
-        self.names_files_pdf, self.names_files_json, self.path = load_quizzes_names(self.settings["gui"]["RRHH"]["files_quizz_out"])
+        self.names_files_pdf, self.names_files_json, self.path = load_quizzes_names(
+            self.settings["gui"]["RRHH"]["files_quizz_out"]
+        )
         # -------------------create widgets--------------------------------------
         self.frame_selectors = ttk.Frame(self)
         self.frame_selectors.grid(row=1, column=0, padx=10, pady=10, sticky="nswe")
@@ -96,7 +121,9 @@ class ViewQuizz(ttk.Frame):
 
     def create_table_selector(self, master):
         self.selectors.destroy() if self.selectors is not None else None
-        data, columns = create_data_for_table(self.names_files_pdf, self.names_files_json, self.path)
+        data, columns = create_data_for_table(
+            self.names_files_pdf, self.names_files_json, self.path
+        )
         coldata = []
         for column in columns:
             if "Fecha" in column:
@@ -107,20 +134,46 @@ class ViewQuizz(ttk.Frame):
                 coldata.append({"text": column, "stretch": False, "width": 80})
             else:
                 coldata.append({"text": column, "stretch": True})
-        table = Tableview(master, coldata=coldata, rowdata=data, height=10,
-                          autofit=False,
-                          paginated=True,
-                          searchable=False)
+        table = Tableview(
+            master,
+            coldata=coldata,
+            rowdata=data,
+            height=10,
+            autofit=False,
+            paginated=True,
+            searchable=False,
+        )
         table.grid(row=0, column=0, sticky="nswe", padx=(5, 30))
         table.view.bind("<Double-1>", self.quizz_selected)
         return table
 
     def create_buttons(self, master):
         txt = ttk.ScrolledText(master, height=20, width=60, wrap=ttk.WORD)
-        txt.grid(row=0, column=0, padx=5, pady=5, rowspan=3, sticky="nswe")
-        create_button(master, 0, 1, text="Abrir PDF", command=self.view_pdf_action, sticky="n")
-        create_button(master, 1, 1, text="Generar PDF", command=self.create_pdf_action, sticky="n", bootstyle="warning")
-        create_button(master, 2, 1, text="Actualizar", command=self.update_action, sticky="n")
+        txt.grid(row=0, column=0, padx=5, pady=5, rowspan=4, sticky="nswe")
+        create_button(
+            master, 0, 1, text="Abrir PDF", command=self.view_pdf_action, sticky="n"
+        )
+        create_button(
+            master,
+            1,
+            1,
+            text="Generar PDF",
+            command=self.create_pdf_action,
+            sticky="n",
+            bootstyle="warning",
+        )
+        create_button(
+            master, 2, 1, text="Actualizar", command=self.update_action, sticky="n"
+        )
+        create_button(
+            master,
+            3,
+            1,
+            text="Subir archivo",
+            command=self.upload_file,
+            sticky="n",
+            bootstyle="secondary",
+        )
         return txt
 
     def quizz_selected(self, event):
@@ -139,20 +192,24 @@ class ViewQuizz(ttk.Frame):
         for k, v in json_dict["metadata"].items():
             self.text_info.insert("end", f"{get_key_display(k)} : ", "key")
             self.text_info.insert("end", f"{v}\n", "value")
-        self.text_info.tag_config("key", foreground=self.style_gui.colors.get("warning"))
+        self.text_info.tag_config(
+            "key", foreground=self.style_gui.colors.get("warning")
+        )
         self.text_info.tag_config("value", foreground=self.style_gui.colors.get("fg"))
-    
+
     def view_pdf_action(self):
-        if os.name == 'nt':
+        if os.name == "nt":
             if self._pdf_file_selected is not None:
                 # complete file
                 dir_name = os.path.dirname(self._pdf_file_selected)
-                os.startfile(os.path.join(dir_name, os.path.basename(self._pdf_file_selected)))
+                os.startfile(
+                    os.path.join(dir_name, os.path.basename(self._pdf_file_selected))
+                )
             else:
                 Messagebox.show_error("No se encuentra el pdf", "Error")
         else:
             print("Not running on Windows")
-    
+
     def create_pdf_action(self):
         if self._json_file_selected is None:
             Messagebox.show_error("No se ha seleccionado un archivo", "Error")
@@ -161,18 +218,80 @@ class ViewQuizz(ttk.Frame):
         answer = Messagebox.show_question(title="Confirmacion", message=msg)
         if answer == "No":
             return
+        path = filedialog.askdirectory()
+        print("path ", path)
+        self.path = path + "/" if path != "" else self.path
         json_dict = json.load(open(self._json_file_selected, "r"))
-        file_out = (self.path + f"{json_dict['metadata']['name_emp'].replace(' ', '')}_{json_dict['metadata']['date'].replace('/', '-')}_type_{json_dict['metadata']['type_q']}.pdf")
+        file_out = (
+            self.path
+            + f"{json_dict['metadata']['name_emp'].replace(' ', '')}_{json_dict['metadata']['date'].replace('/', '-')}_type_{json_dict['metadata']['type_q']}.pdf"
+        )
         tipo_op = json_dict["metadata"]["type_q"]
         generator = dict_typer_quizz_generator[tipo_op]
-        generator(json_dict, None, file_out, json_dict["metadata"]["name_emp"], json_dict["metadata"]["position"],
-                  "terminal", json_dict["metadata"]["admision"], json_dict["metadata"]["departure"],
-                  json_dict["metadata"]["date"], json_dict["metadata"]["interviewer"])
+        generator(
+            json_dict,
+            None,
+            file_out,
+            json_dict["metadata"]["name_emp"],
+            json_dict["metadata"]["position"],
+            "terminal",
+            json_dict["metadata"]["admision"],
+            json_dict["metadata"]["departure"],
+            json_dict["metadata"]["date"],
+            json_dict["metadata"]["interviewer"],
+        )
 
         dir_name = os.path.dirname(self._pdf_file_selected)
         filepath = os.path.join(dir_name, os.path.basename(self._pdf_file_selected))
         Messagebox.show_info(f"PDF creado en: {filepath}", "Info")
-    
+
     def update_action(self):
-        self.names_files_pdf, self.names_files_json, self.path = load_quizzes_names(self.settings["gui"]["RRHH"]["files_quizz_out"])
+        self.names_files_pdf, self.names_files_json, self.path = load_quizzes_names(
+            self.settings["gui"]["RRHH"]["files_quizz_out"]
+        )
         self.selectors = self.create_table_selector(self.frame_selectors)
+
+    def upload_file(self):
+        # select excel
+        file_path = filedialog.askopenfilename(
+            filetypes=[
+                ("Comma separated values", "*.csv"),
+                ("Excel", "*.xls"),
+                ("Excel", "*.xlsx"),
+            ]
+        )
+        if file_path == "":
+            return
+        # file_path = "files/NOM-035 STPS 2018.csv"
+        # file_path = "files/NOM-035 STPS 2018.csv"
+        data, df = get_data_encuesta(file_path)
+        dict_quizz_list, metadata_list = extract_data_encuesta(data)
+        dict_results_list = []
+        msg = ""
+        msg += f"Se han encontrado {len(dict_quizz_list)} encuestas"
+        for dict_quizz, metadata in zip(dict_quizz_list, metadata_list):
+            dict_results = calculate_results_quizzes(dict_quizz, 2)
+            dict_results_list.append(dict_results)
+            msg += "------------------------------------------Encuesta--------------------------------------"
+            msg += "\n"
+            msg += "---------------------------------------------------------------------------------------"
+            msg += "\n -------------Resultados de la encuesta-----------"
+            for key, value in dict_results.items():
+                if "detail" in key:
+                    continue
+                if isinstance(value, dict):
+                    msg += f"\n--{key} :"
+                    for k, v in value.items():
+                        msg += f"\n---{k} : {v}"
+                else:
+                    msg += f"\n-{key} : {value}"
+            msg += "\n -------------Informacion en el archivo-----------"
+            for index, key in enumerate(metadata.keys()):
+                if index < 12:
+                    msg += f"\n-{key} : {metadata[key]}"
+                else:
+                    break
+        self.text_info.delete("1.0", "end")
+        self.text_info.insert("end", msg)
+        path_out = create_report_encuesta(metadata_list, 2, dict_results_list)
+        print("report in: ", path_out)

@@ -2,12 +2,14 @@
 __author__ = 'Edisson Naula'
 __date__ = '$ 19/jul./2024  at 9:49 $'
 
+import base64
 import os
 import tempfile
 
 from office365.graph_client import GraphClient
 from office365.sharepoint.client_context import ClientContext
 from office365.sharepoint.files.system_object_type import FileSystemObjectType
+from office365.sharepoint.listitems.caml.query import CamlQuery
 from office365.sharepoint.sharing.links.kind import SharingLinkKind
 
 from static.extensions import secrets
@@ -31,42 +33,49 @@ def connect_sharepoint(url_shrpt):
 
 
 def connect_graph_client():
-    client = GraphClient.with_client_secret(secrets["TENANT_GRAPH"], secrets["CLIENT_ID_GRAPH"], secrets["SECRET_GRAPH"])
+    client = GraphClient.with_client_secret(secrets["TENANT_GRAPH"], secrets["CLIENT_ID_GRAPH"],
+                                            secrets["SECRET_GRAPH"])
     return client, 200
+
+
+def create_custom_query_folder_name(folder_name: str):
+    qry = CamlQuery()
+    qry.FolderServerRelativeUrl = folder_name
+    return qry
 
 
 def get_files_site(site_url, folder_patters: list):
     try:
         ctx, code = connect_sharepoint(site_url)
         if code == 400:
-            return None, 400
-        doc_lib = ctx.web.default_document_library()
-        items = (
-            doc_lib.items.select(["FileSystemObjectType"])
-            .expand(["File", "Folder"])
-            .get_all()
-            .execute_query()
+            return None, 400, None
+        folders = (
+            ctx.web
+            .get_folder_by_server_relative_url(folder_patters[0]+"/"+folder_patters[1])
+            .get_folders(True).execute_query()
         )
+        files = []
+        for folder in folders:
+            files += folder.files.get_all().execute_query()
     except Exception as e:
+        files_paths_out = []
         print(e)
-        return None, 400
+        return files_paths_out, 400, []
     files_paths_out = []
-    for idx, item in enumerate(items):
-        if item.file_system_object_type != FileSystemObjectType.Folder:
-            total_confirmations = 0
-            for pattern in folder_patters:
-                if pattern.lower() in item.file.serverRelativeUrl.lower():
-                    total_confirmations += 1
-                if total_confirmations == len(folder_patters):
-                    files_paths_out.append(item.file.serverRelativeUrl)
-    return files_paths_out, 200
+    for idx, item in enumerate(files):
+        if folder_patters[2].lower() in item.serverRelativeUrl.lower():
+            files_paths_out.append(item.serverRelativeUrl)
+    return files_paths_out, 200, files
 
 
-def download_files_site(site_url, file_url):
+def download_files_site(site_url, file_url, temp_filepath=None):
     ctx, code = connect_sharepoint(site_url)
     if code == 400:
         return None, 400
-    download_path = os.path.join(tempfile.mkdtemp(), os.path.basename(file_url))
+    if temp_filepath is None:
+        download_path = os.path.join(tempfile.mkdtemp(), os.path.basename(file_url))
+    else:
+        download_path = temp_filepath
     try:
         with open(download_path, "wb") as local_file:
             file = (
@@ -142,22 +151,27 @@ def print_progress(range_pos):
     print("{0} bytes uploaded".format(range_pos))
 
 
-def create_mail_draft_with_attachment(emp_id, from_mail, subject, body, file_path, to_recipients=None):
+def create_mail_draft_with_attachment(emp_id, from_mail, subject, body, file_paths, to_recipients=None):
     graph_client, code = connect_graph_client()
     if code == 400:
         return None, 400
-    flag, error, result = get_emp_mail(emp_id)
-    if not flag:
-        return None, 400
+    # flag, error, result = get_emp_mail(emp_id)
+    # if not flag:
+    #     return None, 400
     to_recipients = to_recipients if to_recipients is not None else []
-    mails = result[0].split(", ")
-    for mail in mails:
-        to_recipients.append(mail)
     email_subject = subject if subject is not None else f"Automatic Subject for {emp_id}"
     email_body = body
-    response = (graph_client.users[from_mail].messages.add(
+    mail = graph_client.users[from_mail].messages.add(
         email_subject,
         email_body,
         to_recipients
-    ).upload_attachment(file_path, print_progress).execute_query())
+    )
+    for filepath in file_paths:
+        with open(filepath, "rb") as file:
+            content = file.read()
+            mail.add_file_attachment(os.path.basename(filepath),
+                                     base64_content=base64.b64encode(content).decode("utf-8"))
+            # mail.add_file_attachment(os.path.basename(filepath), base64_content=base64.b64encode(content).decode("utf-8"),
+            #                          content_type="application/pdf" if ".pdf" in filepath else "application/xml")
+    response = mail.execute_query()
     return response, 200

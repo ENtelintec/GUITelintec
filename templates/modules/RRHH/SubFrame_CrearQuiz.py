@@ -14,6 +14,7 @@ from templates.Functions_GUI_Utils import (
     create_label,
 )
 from templates.controllers.employees.employees_controller import get_id_name_employee
+from templates.controllers.misc.tasks_controller import create_task
 from templates.modules.RRHH.SubFrame_QuizzMaker import QuizMaker
 
 
@@ -91,7 +92,7 @@ class FrameEncuestas(ttk.Frame):
                                                   column=3, sticky="w")
         self.name_emp_evaluated.grid_remove()
         self.label_pos_evaluator = create_label(
-            frame_inputs, text="Nivel del evaluado: ", row=1, column=2, sticky="w")
+            frame_inputs, text="Nivel del ecuestado: ", row=1, column=2, sticky="w")
         self.label_pos_evaluator.grid_remove()
         self.pos_evaluator = create_Combobox(frame_inputs,
                                              values=["Autoevaluación", "Jefe Inmediato", "Colega", "Subordinado"],
@@ -165,20 +166,28 @@ class FrameEncuestas(ttk.Frame):
             "interviewer": self.interviewer,
             "ID_emp": data_emp_questioned[1],
             "position": data_emp_questioned[2],
-            "admision": data_emp_questioned[3],
+            "admision": data_emp_questioned[3].strftime(format_date),
             "departure": data_emp_questioned[4]["date"],
             "departure_reason": data_emp_questioned[4]["reason"],
-            "evaluated_emp": self.name_emp_evaluated.get(),
+            "evaluated_emp": self.name_emp_evaluated.get() if self.tipo_id == 4 else "",
             "pos_evaluator": self.pos_evaluator.get(),
-            "evaluated_emp_ID": data_emp_evaluated[1]
+            "evaluated_emp_ID": data_emp_evaluated[1],
+            "type_quizz": self.tipo_id,
         }
         name_quizz = self.quizz_selector.get()
         self.dict_quizz = json.load(open(self.filepath, encoding="utf-8"))
-
-        QuizMaker(
-            self.dict_quizz,
-            title=name_quizz,
-            tipo_id=self.tipo_id,
-            out_path=self.quizz_out_path,
-            metadata=metadata
-        )
+        # QuizMaker(
+        #     self.dict_quizz,
+        #     title=name_quizz,
+        #     tipo_id=self.tipo_id,
+        #     out_path=self.quizz_out_path,
+        #     metadata=metadata
+        # )
+        task_title = "quizz"
+        flag, error, data = create_task(
+            task_title, metadata["ID_emp"], self.username_data["id"], metadata["date"], metadata)
+        if flag:
+            msg = f"Se creo la encuesta {name_quizz} para {self.name_emp_selector.get()}"
+            Messagebox.show_info(title="Exito", message=msg)
+        else:
+            print(error)
