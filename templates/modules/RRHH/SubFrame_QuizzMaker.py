@@ -17,7 +17,6 @@ from templates.misc.Functions_AuxFiles import save_json_file_quizz
 from templates.Functions_GUI_Utils import calculate_results_quizzes, recommendations_results_quizzes
 
 
-
 class QuizMaker(ttk.Toplevel):
     def __init__(self, dict_quizz, title=None, tipo_id=0, out_path=quizz_out_path, 
                  metadata: dict = None, master=None, **kwargs):

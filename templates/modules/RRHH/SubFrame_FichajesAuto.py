@@ -12,7 +12,7 @@ from ttkbootstrap.scrolled import ScrolledText
 from ttkbootstrap.tableview import Tableview
 
 from static.extensions import files_fichaje_path, patterns_files_fichaje, cache_file_emp_fichaje, \
-    cache_file_resume_fichaje_path, format_timestamps
+    cache_file_resume_fichaje_path, format_date
 from templates.misc.Functions_AuxFiles import get_events_op_date
 from templates.misc.Functions_Files import get_info_f_file_name, get_info_bitacora, \
     unify_data_employee, get_info_t_file_name, get_list_files, extract_fichajes_file, \
@@ -98,12 +98,12 @@ class FichajesAuto(ttk.Frame):
         # ------------------------create display data employee----------------
         self.frame_info_file_1 = ttk.Frame(group_1)
         self.frame_info_file_1.grid(row=2, column=0, sticky="nswe")
-        self.frame_info_file_1.columnconfigure((0, 1, 2, 3, 4), weight=1)
-        # (self.days_normal_selector_f, self.days_absence_selector_f, self.days_prime_selector_f,
-        #  self.days_late_selector_f, self.days_extra_selector_f,
-        #  self.txt_c_normal, self.txt_c_absence, self.txt_c_prime,
-        #  self.txt_c_late, self.txt_c_extra) = self.create_info_display_file1(self.frame_info_file_1)
+        self.frame_info_file_1.columnconfigure((0, 1), weight=1)
         self.table_display = self.create_table_display()
+        create_label(
+            self.frame_info_file_1, text='Información resumida Sist. Fichaje', row=0, column=0,
+            font=("Arial", 14, "bold"), columnspan=2)
+        (self.txt_details) = self.create_info_display_file1(self.frame_info_file_1)
         # ------------------------create collapsable-----------------
         self.frame_collapse.add(group_1, title="Informacion")
         self.frame_collapse.add(self.group_2, title="Tablas")
@@ -136,200 +136,15 @@ class FichajesAuto(ttk.Frame):
         return (clocks, window_time_in, window_time_out, label_time_in,
                 label_time_out, name_emp_selector)
 
-    def create_info_display_file1(self, master):
-        create_label(
-            master, text='Información resumida Sist. Fichaje', row=0, column=0,
-            font=("Arial", 14, "bold"), columnspan=6)
-        # labels days for employee
-        create_label(master, textvariable=self.svar_worked_days_f, row=1, column=0, sticky="we")
-        create_label(master, textvariable=self.svar_absence_days_f, row=2, column=0, sticky="we")
-        create_label(master, textvariable=self.svar_primes_days_f, row=3, column=0, sticky="we")
-        create_label(master, textvariable=self.svar_late_days_f, row=4, column=0, sticky="we")
-        create_label(master, textvariable=self.svar_late_hours_f, row=4, column=1, sticky="we")
-        create_label(master, textvariable=self.svar_extra_days_f, row=5, column=0, sticky="we")
-        create_label(master, textvariable=self.svar_extra_hours_f, row=5, column=1, sticky="we")
-        # comments
-        comment_text_normal_days = ScrolledText(master, height=6, autohide=True)
-        comment_text_normal_days.grid(row=1, column=3, sticky="nswe", padx=2, pady=5)
-        comment_text_absence_days = ScrolledText(master, height=6, autohide=True)
-        comment_text_absence_days.grid(row=2, column=3, sticky="nswe", padx=2, pady=5)
-        comment_text_primes_days = ScrolledText(master, height=6, autohide=True)
-        comment_text_primes_days.grid(row=3, column=3, sticky="nswe", padx=2, pady=5)
-        comment_text_late_days = ScrolledText(master, height=6, autohide=True)
-        comment_text_late_days.grid(row=4, column=3, sticky="nswe", padx=2, pady=5)
-        comment_text_extra_days = ScrolledText(master, height=6, autohide=True)
-        comment_text_extra_days.grid(row=5, column=3, sticky="nswe", padx=2, pady=5)
-
-        # days selectors
-        days_normal_selector = create_Combobox(
-            master, values=["no data"], state="readonly", row=1, column=2, sticky="we")
-        days_normal_selector.bind("<<ComboboxSelected>>", self.select_day_normal_fun_f)
-        days_absence_selector = create_Combobox(
-            master, values=["no data"], state="readonly", row=2, column=2, sticky="we")
-        days_absence_selector.bind("<<ComboboxSelected>>", self.select_day_absence_fun_f)
-        days_primes_selector = create_Combobox(
-            master, values=["no data"], state="readonly", row=3, column=2, sticky="we")
-        days_primes_selector.bind("<<ComboboxSelected>>", self.select_day_prime_fun_f)
-        days_late_selector = create_Combobox(
-            master, values=["no data"], state="readonly", row=4, column=2, sticky="we")
-        days_late_selector.bind("<<ComboboxSelected>>", self.select_day_late_fun_f)
-        days_extra_selector = create_Combobox(
-            master, values=["no data"], state="readonly", row=5, column=2, sticky="we")
-        days_extra_selector.bind("<<ComboboxSelected>>", self.select_day_extra_fun_f)
-        return (
-            days_normal_selector, days_absence_selector, days_primes_selector, days_late_selector, days_extra_selector,
-            comment_text_normal_days, comment_text_absence_days, comment_text_primes_days, comment_text_late_days,
-            comment_text_extra_days)
-
-    def select_day_normal_fun_f(self, event):
-        if "no data" in event.widget.get() :
-            print("no data", event.widget.get())
-            return
-        if event.widget.get() != "no data":
-            # date = pd.Timestamp(event.widget.get())
-            date = event.widget.get()
-            for day_key in self.normal_data_emp.keys():
-                if date in day_key:
-                    self.txt_c_normal.text.delete('1.0', 'end')
-                    self.txt_c_normal.text.insert(ttk.END, "Horas trabajadas: \n", "keys")
-                    self.txt_c_normal.text.insert(ttk.END, f"{self.normal_data_emp[day_key][0]}", "values")
-                    self.txt_c_normal.text.insert(ttk.END, "\nDetalle: \n", "keys")
-                    self.txt_c_normal.text.insert(ttk.END, f"{self.normal_data_emp[day_key][1]}", "values")
-                    self.txt_c_normal.text.insert(ttk.END, "\nTimestamp: ", "keys")
-                    self.txt_c_normal.text.insert(ttk.END, f"{self.normal_data_emp[day_key][2]}", "values")
-                    self.txt_c_normal.text.tag_config("keys", foreground="green")
-                    self.txt_c_normal.text.tag_config("values", foreground="black")
-                    break
-
-    def select_day_absence_fun_f(self, event):
-        if "no data" in event.widget.get() :
-            print("no data", event.widget.get())
-            return
-        date = event.widget.get()
-        for day_key in self.absence_data_emp.keys():
-            if date in day_key:
-                self.txt_c_absence.text.delete('1.0', 'end')
-                self.txt_c_absence.text.insert(ttk.END, "Detalle: \n", "keys")
-                self.txt_c_absence.text.insert(ttk.END, f"{self.absence_data_emp[day_key][1]}", "values")
-                self.txt_c_absence.text.insert(ttk.END, "\nTimestamp: ", "keys")
-                for i, timestamp in enumerate(self.absence_data_emp[day_key][2]):
-                    self.txt_c_absence.text.insert(ttk.END, f"{timestamp}", "values")
-                    if i != len(self.absence_data_emp[day_key][2]) - 1:
-                        self.txt_c_absence.text.insert(ttk.END, ", ", "values")
-                self.txt_c_absence.text.tag_config("keys", foreground="green")
-                self.txt_c_absence.text.tag_config("values", foreground="black")
-                break
-
-    def select_day_prime_fun_f(self, event):
-        if "no data" in event.widget.get() :
-            print("no data", event.widget.get())
-            return
-        date = event.widget.get()
-        for day_key in self.prime_data_emp.keys():
-            if date in day_key:
-                self.txt_c_prime.text.delete('1.0', 'end')
-                self.txt_c_prime.text.insert(ttk.END, "Detalle: \n", "keys")
-                self.txt_c_prime.text.insert(ttk.END, f"{self.prime_data_emp[day_key][1]}", "values")
-                self.txt_c_prime.text.insert(ttk.END, "\nTimestamp: ", "keys")
-                for i, timestamp in enumerate(self.prime_data_emp[day_key][2]):
-                    self.txt_c_prime.text.insert(ttk.END, f"{timestamp}", "values")
-                    if i != len(self.prime_data_emp[day_key][2]) - 1:
-                        self.txt_c_prime.text.insert(ttk.END, ", ", "values")
-                self.txt_c_prime.text.tag_config("keys", foreground="green")
-                self.txt_c_prime.text.tag_config("values", foreground="black")
-                break
-
-    def select_day_late_fun_f(self, event):
-        if event.widget.get() == "no data":
-            return
-        date = event.widget.get()
-        for day_key in self.late_data_emp.keys():
-            if date in day_key:
-                horas_float = self.late_data_emp[day_key][0]
-                self.txt_c_late.text.delete('1.0', 'end')
-                self.txt_c_late.text.insert(ttk.END, "Horas tarde: \n", "keys")
-                self.txt_c_late.text.insert(ttk.END, f"{int(horas_float)} horas y {int(horas_float * 60 % 60)} minutos",
-                                            "values")
-                self.txt_c_late.text.insert(ttk.END, "\nDetalle: \n", "keys")
-                self.txt_c_late.text.insert(ttk.END, f"{self.late_data_emp[day_key][1]}", "values")
-                self.txt_c_late.text.insert(ttk.END, "\nTimestamp: ", "keys")
-                for i, timestamp in enumerate(self.late_data_emp[day_key][2]):
-                    self.txt_c_late.text.insert(ttk.END, f"{timestamp}", "values")
-                    if i != len(self.late_data_emp[day_key][2]) - 1:
-                        self.txt_c_late.text.insert(ttk.END, ", ", "values")
-                self.txt_c_late.text.tag_config("keys", foreground="green")
-                self.txt_c_late.text.tag_config("values", foreground="black")
-                break
-
-    def select_day_extra_fun_f(self, event):
-        if "no data" in event.widget.get() :
-            print("no data", event.widget.get())
-            return
-        date = event.widget.get()
-        for day_key in self.extra_data_emp.keys():
-            if date in day_key:
-                horas_float = self.extra_data_emp[day_key][0]
-                self.txt_c_extra.text.delete('1.0', 'end')
-                self.txt_c_extra.text.insert(ttk.END, "Horas extra: \n", "keys")
-                self.txt_c_extra.text.insert(ttk.END,
-                                             f"{int(horas_float)} horas y {int(horas_float * 60 % 60)} minutos",
-                                             "values")
-                self.txt_c_extra.text.insert(ttk.END, "\nDetalle: \n", "keys")
-                self.txt_c_extra.text.insert(ttk.END, f"{self.extra_data_emp[day_key][1]}", "values")
-                self.txt_c_extra.text.insert(ttk.END, "\nTimestamp: ", "keys")
-                for i, timestamp in enumerate(self.extra_data_emp[day_key][2]):
-                    self.txt_c_extra.text.insert(ttk.END, f"{timestamp}", "values")
-                    if i != len(self.extra_data_emp[day_key][2]) - 1:
-                        self.txt_c_extra.text.insert(ttk.END, ", ", "values")
-                self.txt_c_extra.text.tag_config("keys", foreground="green")
-                self.txt_c_extra.text.tag_config("values", foreground="black")
-                break
+    def create_info_display_file1(self, master, row_offset=1):
+        comment_text_extra_days = ScrolledText(master, height=10, autohide=True)
+        comment_text_extra_days.grid(row=0+row_offset, column=1, sticky="nswe", padx=2, pady=5)
+        return comment_text_extra_days
 
     def change_time_grace(self, event):
         if self.file_selected_1:
             self.label_time_in.configure(text=f'Gracia: {int(self.window_time_in.get())} mins')
             self.label_time_out.configure(text=f'Gracia: {int(self.window_time_out.get())} mins')
-
-    def update_days_selectors(self):
-        # -------------file 1---------------
-        late_keys = []
-        extra_keys = []
-        absence_keys = []
-        prime_keys = []
-        total_late = 0
-        total_extra = 0
-        normal_keys = []
-        for i in self.late_data_emp.keys():
-            late_keys.append(str(i))
-            total_late += self.late_data_emp[i][0]
-        for i in self.extra_data_emp.keys():
-            extra_keys.append(str(i))
-            total_extra += self.extra_data_emp[i][0]
-        for i in self.absence_data_emp.keys():
-            absence_keys.append(str(i))
-        for i in self.prime_data_emp.keys():
-            prime_keys.append(str(i))
-        for i in self.normal_data_emp.keys():
-            normal_keys.append(str(i))
-        late_keys = late_keys if len(late_keys) > 0 else ["no data"]
-        extra_keys = extra_keys if len(extra_keys) > 0 else ["no data"]
-        absence_keys = absence_keys if len(absence_keys) > 0 else ["no data"]
-        prime_keys = prime_keys if len(prime_keys) > 0 else ["no data"]
-        normal_keys = normal_keys if len(normal_keys) > 0 else ["no data"]
-        self.days_normal_selector_f.configure(values=normal_keys)
-        self.days_late_selector_f.configure(values=late_keys)
-        self.days_extra_selector_f.configure(values=extra_keys)
-        self.days_absence_selector_f.configure(values=absence_keys)
-        self.days_prime_selector_f.configure(values=prime_keys)
-        self.days_late_selector_f.configure(state="readonly")
-        self.days_extra_selector_f.configure(state="readonly")
-        self.days_absence_selector_f.configure(state="readonly")
-        self.days_prime_selector_f.configure(state="readonly")
-        self.days_normal_selector_f.configure(state="readonly")
-        update_stringvars([
-            (self.svar_late_hours_f, f'Total horas tarde: \n{round(total_late , 2)}'),
-            (self.svar_extra_hours_f, f'Total horas extras: \n{round(total_extra , 2)}')
-        ])
 
     def update_info_displayed(self, name):
         if name == "reset":
@@ -350,7 +165,8 @@ class FichajesAuto(ttk.Frame):
             # -----------file fichaje------------
             (worked_days_f, days_absence, count_l_f, count_e_f,
              days_late, days_extra, early_dic_f) = get_info_f_file_name(
-                self.dff, name, self.clocks, self.window_time_in, self.window_time_out, self.file_selected_1, date_max=date_max)
+                self.dff, name, self.clocks, self.window_time_in, self.window_time_out, self.file_selected_1,
+                date_max=date_max)
             date_example = pd.to_datetime(worked_days_f[0][0])
             # ------------file ternium-----------
             (worked_days_t, worked_intime_t, count_l_t, count_e_t,
@@ -361,7 +177,8 @@ class FichajesAuto(ttk.Frame):
             (days_absence_bit, days_extra_bit, days_primes_bit, days_lates_bit,
              absences_bit, extras_bit, primes_bit, lates_bit, normals_bit, early_bit, pasive_bit,
              contract) = get_info_bitacora(
-                self.dfb, name=self.name_emp_selector.get(), id_emp=id_emp, flag=self.file_selected_2, date_limit=date_max)
+                self.dfb, name=self.name_emp_selector.get(), id_emp=id_emp, flag=self.file_selected_2,
+                date_limit=date_max)
             (self.normal_data_emp, self.absence_data_emp, self.prime_data_emp,
              self.late_data_emp, self.extra_data_emp, self.early_data_emp, self.pasive_data_emp) = unify_data_employee(
                 [worked_days_f, days_worked_t, normals_bit],
@@ -373,14 +190,7 @@ class FichajesAuto(ttk.Frame):
                 [None, None, pasive_bit]
             )
             # update vars for fichaje file
-            print(self.normal_data_emp)
-            print(self.absence_data_emp)
-            print(self.prime_data_emp)
-            print(self.late_data_emp)
-            print(self.extra_data_emp)
-            print(self.early_data_emp)
-            print(self.pasive_data_emp)
-            self.table_display = self.create_table_display(date_max)
+            self.table_display = self.create_table_display(date_max, is_first=False)
 
     def on_name_emp_sel_action(self, event):
         if event.widget.get() != "no file selected":
@@ -500,7 +310,8 @@ class FichajesAuto(ttk.Frame):
                 self.dft, name, self.clocks, self.window_time_in, self.window_time_out, self.file_selected_3)
             if id_emp is not None:
                 (days_absence_bit, days_extra_bit, days_primes_bit, days_lates_bit,
-                 absences_bit, extras_bit, primes_bit, lates_bit, normals_bit, early_bit, pasive_bit, contract_emp) = get_info_bitacora(
+                 absences_bit, extras_bit, primes_bit, lates_bit, normals_bit, early_bit, pasive_bit,
+                 contract_emp) = get_info_bitacora(
                     self.dfb, name=self.name_emp_selector.get(), id_emp=id_emp, flag=self.file_selected_2)
             else:
                 (days_absence_bit, days_extra_bit, days_primes_bit, days_lates_bit,
@@ -518,9 +329,12 @@ class FichajesAuto(ttk.Frame):
             days_extra = ["0", "0"] if days_extra is None else days_extra
             primes_bit = ["0", "0"] if primes_bit is None else primes_bit
             normal_bit = ["0", "0"] if normals_bit is None else normals_bit
+            early_bit = ["0", "0"] if early_bit is None else early_bit
+            pasive_bit = ["0", "0"] if pasive_bit is None else pasive_bit
             row = (id_emp, name, contract_emp,
                    days_absence_bit[0], days_lates_bit[0], days_lates_bit[1], days_extra_bit[0], days_extra_bit[1],
-                   days_primes_bit[0], dict_faltas, dict_late, dict_extra, dict_prima, dict_normal, dict_early, dict_pasive)
+                   days_primes_bit[0], dict_faltas, dict_late, dict_extra, dict_prima, dict_normal, dict_early,
+                   dict_pasive)
             data_resume.append(row)
         columns = ["ID", "Nombre", "Contrato", "Faltas", "Tardanzas", "Total horas tarde", "Dias Extra",
                    "Total horas extras", "Primas",
@@ -547,7 +361,7 @@ class FichajesAuto(ttk.Frame):
                                  rowdata=self.events_bitacora,
                                  paginated=True,
                                  searchable=True,
-                                 autofit=True)
+                                 autofit=False)
         self.table_2.grid(row=1, column=0, padx=20, pady=10, sticky="n")
         # create dataframe pandas
         data_f = {}
@@ -561,19 +375,37 @@ class FichajesAuto(ttk.Frame):
         self.dfb = pd.DataFrame.from_dict(data_f)
         self.file_selected_2 = True
 
-    def create_table_display(self, date_max=None):
+    def create_table_display(self, date_max=None, is_first=True, row_offset=1, col_offset=0):
         self.table_display.destroy() if self.table_display is not None else None
         days_month = range(1, 32)
         columns = ["Dia", "Retardos", "Extras", "Salidas Temprano", "Faltas", "Primas", "Comentario", "timestamp"]
-        data = self.generate_data_table_display(days_month, columns, date_max)
+        coldata = []
+        for column in columns:
+            if "Comentario" in column:
+                coldata.append({"text": column, "stretch": False, "width": 150})
+            elif "Dia" in column:
+                coldata.append({"text": column, "stretch": False, "width": 30})
+            elif "Extras" in column:
+                coldata.append({"text": column, "stretch": False, "width": 65})
+            elif "Retardos" in column:
+                coldata.append({"text": column, "stretch": False, "width": 65})
+            elif "Salidas Temprano" in column:
+                coldata.append({"text": column, "stretch": False, "width": 105})
+            elif "Faltas" in column:
+                coldata.append({"text": column, "stretch": False, "width": 65})
+            elif "Primas" in column:
+                coldata.append({"text": column, "stretch": False, "width": 65})
+            else:
+                coldata.append({"text": column, "stretch": True})
+        data = self.generate_data_table_display(days_month, columns, date_max) if not is_first else []
         master = self.frame_info_file_1
-        table = Tableview(master, 
-                          coldata=columns, rowdata=data, 
-                          paginated=False, 
+        table = Tableview(master, bootstyle="primary",
+                          coldata=coldata, rowdata=data,
+                          paginated=False,
                           searchable=True,
-                          autofit=True,
+                          autofit=False,
                           height=32)
-        table.grid(row=0, column=0, sticky='nsew')
+        table.grid(row=0+row_offset, column=0+col_offset, sticky='nswe')
         table.view.bind("<Double-1>", self._on_double_click_table)
         columns_header = table.get_columns()
         for item in columns_header:
@@ -590,23 +422,60 @@ class FichajesAuto(ttk.Frame):
         year = date_max.year
         for day in days:
             row = []
+            comment = ""
             for header in columns:
                 match header:
                     case "Retardos":
-                        date_row = datetime(year, month, day)
-                        
+                        date_row = datetime(year, month, day).strftime(format_date)
+                        dates_keys = self.late_data_emp.keys()
+                        if date_row in dates_keys:
+                            row.append(self.late_data_emp[date_row][0])
+                            comment += self.late_data_emp[date_row][1] + "\n"
+                            comment += f"{self.late_data_emp[date_row][2]}\n"
+                        else:
+                            row.append("")
                     case "Extras":
-                        row.append("0")
+                        date_row = datetime(year, month, day).strftime(format_date)
+                        dates_keys = self.extra_data_emp.keys()
+                        if date_row in dates_keys:
+                            row.append(self.extra_data_emp[date_row][0])
+                            comment += self.extra_data_emp[date_row][1] + "\n"
+                            comment += f"{self.extra_data_emp[date_row][2]}\n"
+                        else:
+                            row.append("")
                     case "Salidas Temprano":
-                        row.append("0")
+                        date_row = datetime(year, month, day).strftime(format_date)
+                        dates_keys = self.early_data_emp.keys()
+                        if date_row in dates_keys:
+                            row.append(self.early_data_emp[date_row][0])
+                            comment += self.early_data_emp[date_row][1] + "\n"
+                            comment += f"{self.early_data_emp[date_row][2]}\n"
+                        else:
+                            row.append("")
                     case "Faltas":
-                        row.append("0")
+                        date_row = datetime(year, month, day).strftime(format_date)
+                        dates_keys = self.absence_data_emp.keys()
+                        if date_row in dates_keys:
+                            row.append(self.absence_data_emp[date_row][0])
+                            comment += self.absence_data_emp[date_row][1] + "\n"
+                            comment += f"{self.absence_data_emp[date_row][2]}\n"
+                        else:
+                            row.append("")
                     case "Primas":
-                        row.append("0")
+                        date_row = datetime(year, month, day).strftime(format_date)
+                        dates_keys = self.prime_data_emp.keys()
+                        if date_row in dates_keys:
+                            row.append(self.prime_data_emp[date_row][0])
+                            comment += self.prime_data_emp[date_row][1] + "\n"
+                            comment += f"{self.prime_data_emp[date_row][2]}\n"
+                        else:
+                            row.append("")
                     case "timestamp":
-                        row.append(datetime.now().strftime(format_timestamps)),
+                        row.append(datetime.now().strftime(format_date)),
                     case "Dia":
                         row.append(day)
+                    case "Comentario":
+                        row.append(comment)
                     case _:
                         row.append("")
             data.append(row)
@@ -617,4 +486,29 @@ class FichajesAuto(ttk.Frame):
         column = event.widget.identify_column(event.x)
         col_index = int(column[1:]) - 1
         item_data = event.widget.item(item, "values")
-        print(item, item_data, column, type(column), col_index)
+        self.display_content_info(item_data, col_index)
+
+    def display_content_info(self, data, column):
+        value = float(data[column]) if data[column] != "" and column < 6 else 0
+        event = ""
+        match column:
+            case 1:
+                event = "Retardo"
+                value_txt = f"Horas: {int(value)}, {int(value%1*60)} minutos" if value != 0 else ""
+            case 2:
+                event = "Horas Extras"
+                value_txt = f"Horas: {int(value)}, {int(value%1*60)} minutos" if value != 0 else ""
+            case 3:
+                event = "Salida Temprano"
+                value_txt = f"Horas: {int(value)}, {int(value%1*60)} minutos" if value != 0 else ""
+            case 4:
+                value_txt = f"Dias: {1}" if data[column] != "" else ""
+            case 5:
+                value_txt = f"Dias: {1}" if data[column] != "" else ""
+            case _:
+                event = ""
+                value_txt = ""
+        self.txt_details.delete("1.0", "end")
+        if event != "":
+            self.txt_details.insert("end", f"{event}--> {value_txt}\n")
+        self.txt_details.insert("end", f"---Comentarios y detalles---\n {data[6]}\n")

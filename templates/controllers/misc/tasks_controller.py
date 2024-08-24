@@ -20,6 +20,7 @@ def create_task(task_title, emp_destiny, emp_origin, task_date, metadata):
         "status": 0,
         "changes": {timestamp: "creation"}
     }
+    print(body)
     sql = ("INSERT INTO sql_telintec.tasks_gui (body, timestamp) "
            "VALUES (%s, %s)")
     val = (json.dumps(body), timestamp)

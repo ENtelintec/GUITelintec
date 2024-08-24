@@ -8,6 +8,7 @@ from datetime import datetime
 
 from templates.controllers.contracts.contracts_controller import get_contract
 from templates.controllers.contracts.quotations_controller import get_quotation
+from templates.controllers.payroll.payroll_controller import get_payrolls_with_info
 from templates.misc.Functions_AuxFiles import get_all_sm_entries, \
     get_all_sm_products, get_events_op_date, get_data_employees
 from templates.Functions_AuxPlots import get_data_movements_type, get_data_sm_per_range
@@ -180,6 +181,12 @@ def load_data(data_dic, is_super=False, emp_id=None, item=None, permissions=None
                 data_dic["contracts"] = contracts
         case "Remisiones":
             data_dic["remisions"] = {}
+        case "Nominas":
+            flag, error, result = get_payrolls_with_info(-1)
+            data_dic["nominas"] = {
+                "payrolls": result,
+                "columns_payroll": ["Id", "Nombre", "Apellido", "Datos"]
+            }
         case _:
             pass
     return data_dic

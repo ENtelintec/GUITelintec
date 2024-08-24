@@ -148,5 +148,6 @@ class FrameTasks(ttk.Frame):
         self.update_table()
 
     def update_table(self):
+        flag, error, self.tasks = get_all_tasks_by_status(status=-1, id_destiny=self.id_emp)
         self.task_selector.destroy() if self.task_selector is not None else None
         self.task_selector = self.create_table_tasks(self.frame_selector)
