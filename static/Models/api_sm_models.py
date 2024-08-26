@@ -150,7 +150,7 @@ sm_model = api.model(
         "order_quotation": fields.String(
             required=True, description="The order or quotation"
         ),
-        "emp_id": fields.String(
+        "emp_id": fields.Integer(
             required=True, description="The employee id", example=1
         ),
         "date": fields.String(
