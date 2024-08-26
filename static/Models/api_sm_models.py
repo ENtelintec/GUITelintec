@@ -54,7 +54,7 @@ class ItemsFormSM(Form):
     stock = IntegerField(
         "stock", validators=[validators.number_range(min=-100, message="Invalid stock")]
     )
-    comment = StringField("comment", validators=[])
+    comment = StringField("comment", validators=[], default="")
     quantity = FloatField(
         "quantity", validators=[validators.number_range(min=0, message="Invalid id")]
     )

@@ -211,6 +211,7 @@ class Product(Resource):
             return {"answer": "The data has a bad structure"}, code
         print(data)
         _data = DataHandler()
+        print(data)
         result = _data.create_product(
             data["sku"],
             data["name"],
@@ -219,6 +220,7 @@ class Product(Resource):
             data["category"],
             data["supplier"],
         )
+        print(result)
         if isinstance(result, str):
             return {"answer": "Error", "msg": result}, 400
         else:

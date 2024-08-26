@@ -1,11 +1,33 @@
-from templates.controllers.customer.customers_controller import delete_customer_db, update_customer_db, \
-    create_customer_db, get_all_customers_db
-from templates.controllers.product.p_and_s_controller import get_all_suppliers, create_product_db, \
-    create_product_db_admin, update_product_db, delete_product_db, get_all_products_db, update_stock_db, \
-    get_all_categories_db, create_category_db, update_category_db, delete_category_db, create_in_movement_db, \
-    update_movement_db, delete_movement_db, get_outs_db, create_out_movement_db, get_ins_db
-from templates.controllers.supplier.suppliers_controller import create_supplier_amc, update_supplier_amc, \
-    delete_supplier_amc
+from templates.controllers.customer.customers_controller import (
+    delete_customer_db,
+    update_customer_db,
+    create_customer_db,
+    get_all_customers_db,
+)
+from templates.controllers.product.p_and_s_controller import (
+    get_all_suppliers,
+    create_product_db,
+    create_product_db_admin,
+    update_product_db,
+    delete_product_db,
+    get_all_products_db,
+    update_stock_db,
+    get_all_categories_db,
+    create_category_db,
+    update_category_db,
+    delete_category_db,
+    create_in_movement_db,
+    update_movement_db,
+    delete_movement_db,
+    get_outs_db,
+    create_out_movement_db,
+    get_ins_db,
+)
+from templates.controllers.supplier.suppliers_controller import (
+    create_supplier_amc,
+    update_supplier_amc,
+    delete_supplier_amc,
+)
 
 
 class DataHandler:
@@ -14,7 +36,7 @@ class DataHandler:
             "createCustomer": create_customer_db,
             "updateCustomer": update_customer_db,
             "deleteCustomer": delete_customer_db,
-            "getAllCustomers": get_all_customers_db
+            "getAllCustomers": get_all_customers_db,
         }
         self._product = {
             "createProduct": create_product_db,
@@ -28,7 +50,7 @@ class DataHandler:
             "getAllCategories": get_all_categories_db,
             "createCategory": create_category_db,
             "updateCategory": update_category_db,
-            "deleteCategory": delete_category_db
+            "deleteCategory": delete_category_db,
         }
         self._product_movements = {
             "createInMovement": create_in_movement_db,
@@ -43,7 +65,6 @@ class DataHandler:
             "createSupplier": create_supplier_amc,
             "updateSupplier": update_supplier_amc,
             "deleteSupplier": delete_supplier_amc,
-
         }
 
     def get_all_products(self):
@@ -55,13 +76,18 @@ class DataHandler:
         flag, e, result = self._product_movements["get_ins"]()
         return result if flag else []
 
-    def create_in_movement(self, id_product, movement_type, quantity, movement_date, sm_id):
-        flag, e, result = self._product_movements["createInMovement"](id_product, movement_type, quantity,
-                                                                      movement_date, sm_id)
+    def create_in_movement(
+        self, id_product, movement_type, quantity, movement_date, sm_id
+    ):
+        flag, e, result = self._product_movements["createInMovement"](
+            id_product, movement_type, quantity, movement_date, sm_id
+        )
         return flag
 
     def update_in_movement(self, id_movement, quantity, movement_date, sm_id):
-        flag, e, result = self._product_movements["updateMovement"](id_movement, quantity, movement_date, sm_id)
+        flag, e, result = self._product_movements["updateMovement"](
+            id_movement, quantity, movement_date, sm_id
+        )
         return flag
 
     def delete_in_movement(self, id_movement):
@@ -72,13 +98,18 @@ class DataHandler:
         flag, e, result = self._product_movements["get_outs"]()
         return result if flag else []
 
-    def create_out_movement(self, id_product, movement_type, quantity, movement_date, sm_id):
-        flag, e, result = self._product_movements["createOutMovement"](id_product, movement_type, quantity,
-                                                                       movement_date, sm_id)
+    def create_out_movement(
+        self, id_product, movement_type, quantity, movement_date, sm_id
+    ):
+        flag, e, result = self._product_movements["createOutMovement"](
+            id_product, movement_type, quantity, movement_date, sm_id
+        )
         return flag
 
     def update_out_movement(self, id_movement, quantity, movement_date, sm_id):
-        flag, e, result = self._product_movements["updateMovement"](id_movement, quantity, movement_date, sm_id)
+        flag, e, result = self._product_movements["updateMovement"](
+            id_movement, quantity, movement_date, sm_id
+        )
         return flag
 
     def delete_out_movement(self, id_movement):
@@ -94,33 +125,58 @@ class DataHandler:
         return flag
 
     def update_category(self, id_category, name):
-        flag, error, result = self._product_categories["updateCategory"](id_category, name)
+        flag, error, result = self._product_categories["updateCategory"](
+            id_category, name
+        )
         return flag
 
     def delete_category(self, id_category):
         flag, error, result = self._product_categories["deleteCategory"](id_category)
         return flag
 
-    def create_product(self, sku, name, udm, stock, id_category, id_supplier, is_tool=0, is_internal=0):
+    def create_product(
+        self, sku, name, udm, stock, id_category, id_supplier, is_tool=0, is_internal=0
+    ):
         if id_supplier is not None:
             function = self._product["createProduct"]
-            flag, error, result = function(sku, name, udm, stock, id_category, id_supplier, is_tool, is_internal)
-            return result if flag else []
+            flag, error, result = function(
+                sku, name, udm, stock, id_category, id_supplier, is_tool, is_internal
+            )
+            return result if flag else str(error)
         else:
             function = self._product["createProductAdmin"]
             flag, error, result = function(sku, name, udm, stock, id_category)
-            return result if flag else []
+            return result if flag else str(error)
 
     def delete_product(self, product_id):
         function = self._product["deleteProduct"]
         flag, error, result = function(product_id)
         return flag
 
-    def update_product(self, product_id, product_name, product_description, product_price,
-                       product_stock, product_category, product_supplier, is_tool=0, is_internal=0):
+    def update_product(
+        self,
+        product_id,
+        product_name,
+        product_description,
+        product_price,
+        product_stock,
+        product_category,
+        product_supplier,
+        is_tool=0,
+        is_internal=0,
+    ):
         function = self._product["updateProduct"]
-        flag, error, result = function(product_id, product_name, product_description, product_price,
-                                       product_stock, product_category, product_supplier, is_tool, is_internal)
+        flag, error, result = function(
+            product_id,
+            product_name,
+            product_description,
+            product_price,
+            product_stock,
+            product_category,
+            product_supplier,
+            is_tool,
+            is_internal,
+        )
         return flag
 
     def update_stock(self, id_product, stock):
@@ -153,18 +209,50 @@ class DataHandler:
         flag, error, result = function()
         return result if flag else []
 
-    def create_supplier(self, name_provider, seller_provider, email_provider, phone_provider, address_provider,
-                        web_provider, type_provider):
+    def create_supplier(
+        self,
+        name_provider,
+        seller_provider,
+        email_provider,
+        phone_provider,
+        address_provider,
+        web_provider,
+        type_provider,
+    ):
         function = self._supplier["createSupplier"]
-        flag, error, result = function(name_provider, seller_provider, email_provider, phone_provider, address_provider,
-                                       web_provider, type_provider)
+        flag, error, result = function(
+            name_provider,
+            seller_provider,
+            email_provider,
+            phone_provider,
+            address_provider,
+            web_provider,
+            type_provider,
+        )
         return flag
 
-    def update_supplier(self, id_provider, name_provider, seller_provider, email_provider, phone_provider,
-                        address_provider, web_provider, type_provider):
+    def update_supplier(
+        self,
+        id_provider,
+        name_provider,
+        seller_provider,
+        email_provider,
+        phone_provider,
+        address_provider,
+        web_provider,
+        type_provider,
+    ):
         function = self._supplier["updateSupplier"]
-        flag, error, result = function(id_provider, name_provider, seller_provider, email_provider, phone_provider,
-                                       address_provider, web_provider, type_provider)
+        flag, error, result = function(
+            id_provider,
+            name_provider,
+            seller_provider,
+            email_provider,
+            phone_provider,
+            address_provider,
+            web_provider,
+            type_provider,
+        )
         return flag
 
     def delete_supplier(self, id_supplier):
