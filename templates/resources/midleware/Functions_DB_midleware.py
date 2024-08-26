@@ -107,9 +107,13 @@ def get_all_sm(limit, page=0, emp_id=-1):
     for i in range(limit_down, limit_up):
         products = json.loads(result[i][10])
         new_products = []
-        for product in products:
-            if "(Nuevo)" in product["comment"] and "(Pedido)" not in product["comment"]:
-                new_products.append(product)
+        if products is not None:
+            for product in products:
+                if (
+                    "(Nuevo)" in product["comment"]
+                    and "(Pedido)" not in product["comment"]
+                ):
+                    new_products.append(product)
         extra_info = json.loads(result[i][14])
         items.append(
             {
