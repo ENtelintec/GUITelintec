@@ -52,10 +52,12 @@ class ItemsFormSM(Form):
     id = StringField("id", validators=[InputRequired()])
     name = StringField("name", validators=[InputRequired()])
     stock = IntegerField(
-        "stock", validators=[validators.number_range(min=0, message="Invalid id")]
+        "stock", validators=[validators.number_range(min=-100, message="Invalid stock")]
     )
-    comment = StringField("comment", validators=[InputRequired()])
-    quantity = FloatField("quantity", validators=[InputRequired()])
+    comment = StringField("comment", validators=[])
+    quantity = FloatField(
+        "quantity", validators=[validators.number_range(min=0, message="Invalid id")]
+    )
     movement = StringField("movement")
     url = URLField("url", validators=[InputRequired()])
     sku = StringField("sku")
@@ -183,7 +185,7 @@ class SMInfoForm(Form):
     emp_id = IntegerField("emp_id", validators=[InputRequired()])
     date = StringField("date", validators=[InputRequired()])
     critical_date = StringField("critical_date", validators=[InputRequired()])
-    status = StringField(
+    status = IntegerField(
         "status", validators=[validators.number_range(min=0, message="Invalid id")]
     )
     comment = StringField("comment", validators=[InputRequired()])
