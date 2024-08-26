@@ -77,10 +77,8 @@ class Products(Resource):
     @ns.expect(products_request_model)
     @ns.marshal_with(products_answer_model)
     def post(self):
-        print(ns.payload)
         validator = ProductRequestForm.from_json(ns.payload)
         if not validator.validate():
-            print(validator.errors)
             return {"error": validator.errors}, 400
         data = validator.data
         data_out, code = get_products_sm(data["limit"], data["page"])
@@ -209,9 +207,7 @@ class Product(Resource):
         code, data = parse_data(ns.payload, 13)
         if code == 400:
             return {"answer": "The data has a bad structure"}, code
-        print(data)
         _data = DataHandler()
-        print(data)
         result = _data.create_product(
             data["sku"],
             data["name"],
@@ -220,7 +216,6 @@ class Product(Resource):
             data["category"],
             data["supplier"],
         )
-        print(result)
         if isinstance(result, str):
             return {"answer": "Error", "msg": result}, 400
         else:
@@ -276,7 +271,6 @@ class ManageSMDispatch(Resource):
 class DownloadPDFSM(Resource):
     def get(self, sm_id):
         data, code = dowload_file_sm(sm_id)
-        print(data, code)
         if code == 200:
             return send_file(data, as_attachment=True)
         else:

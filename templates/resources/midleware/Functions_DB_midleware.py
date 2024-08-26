@@ -46,7 +46,6 @@ def get_products_sm(limit, page=0):
         return [None, 204]
     pages = math.floor(result.__len__() / limit)
     if page > pages:
-        print("page > pages")
         return [None, 204]
     items = []
     if pages == 0:
@@ -94,7 +93,6 @@ def get_all_sm(limit, page=0, emp_id=-1):
         return {"data": [], "page": 0, "pages": 0}, 200
     pages = math.floor(len(result) / limit)
     if page > pages:
-        print("page > pages")
         return None, 204
     items = []
     if pages == 0:
@@ -163,7 +161,6 @@ def dispatch_sm(data):
     if not flag or len(result) <= 0:
         return 400, ["sm not foud"]
     history_sm = json.loads(result[12])
-    print("history ", history_sm)
     emp_id_creation = result[6]
     history_sm.append(
         {
@@ -261,7 +258,6 @@ def cancel_sm(data):
 
 def get_employees_almacen():
     flag, error, result = get_emp_contract("almacen")
-    print(flag, error, result)
     data_out = []
     for item in result:
         id_emp, name, lastname = item
