@@ -39,7 +39,7 @@ items_model_sm = api.model(
         "stock": fields.Integer(required=True, description="The product stock"),
         "comment": fields.String(required=True, description="The product comment"),
         "quantity": fields.Float(required=True, description="The product quantity"),
-        "movement": fields.Integer(required=False, description="The product movement"),
+        "movement": fields.String(required=False, description="The product movement"),
         "url": fields.String(
             required=True, description="The product url", example="https://example.com"
         ),
@@ -54,7 +54,7 @@ class ItemsFormSM(Form):
     stock = IntegerField("stock", validators=[InputRequired()])
     comment = StringField("comment", validators=[InputRequired()])
     quantity = FloatField("quantity", validators=[InputRequired()])
-    movement = IntegerField("movement")
+    movement = StringField("movement")
     url = URLField("url", validators=[InputRequired()])
     sku = StringField("sku")
 
@@ -169,19 +169,19 @@ sm_model = api.model(
 
 class SMInfoForm(Form):
     id = IntegerField("id", validators=[InputRequired()])
-    folio = IntegerField("folio", validators=[InputRequired()])
-    contract = IntegerField("contract", validators=[InputRequired()])
-    facility = IntegerField("facility", validators=[InputRequired()])
-    contract_contact = IntegerField("contract_contact", validators=[InputRequired()])
+    folio = StringField("folio", validators=[InputRequired()])
+    contract = StringField("contract", validators=[InputRequired()])
+    facility = StringField("facility", validators=[InputRequired()])
+    contract_contact = StringField("contract_contact", validators=[InputRequired()])
     client_id = IntegerField("client_id", validators=[InputRequired()])
-    location = IntegerField("location", validators=[InputRequired()])
-    order_quotation = IntegerField("order_quotation", validators=[InputRequired()])
+    location = StringField("location", validators=[InputRequired()])
+    order_quotation = StringField("order_quotation", validators=[InputRequired()])
     emp_id = IntegerField("emp_id", validators=[InputRequired()])
-    date = IntegerField("date", validators=[InputRequired()])
-    critical_date = IntegerField("critical_date", validators=[InputRequired()])
-    status = IntegerField("status", validators=[InputRequired()])
+    date = StringField("date", validators=[InputRequired()])
+    critical_date = StringField("critical_date", validators=[InputRequired()])
+    status = StringField("status", validators=[InputRequired()])
     comment = StringField("comment", validators=[InputRequired()])
-    destination = IntegerField("destination", validators=[InputRequired()])
+    destination = StringField("destination", validators=[InputRequired()])
     items = FieldList(FormField(ItemsFormSM, "items"))
     items_new = FieldList(FormField(ItemsFormSM, "items_new"))
 
