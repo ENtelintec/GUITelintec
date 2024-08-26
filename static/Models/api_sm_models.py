@@ -59,7 +59,7 @@ class ItemsFormSM(Form):
         "quantity", validators=[validators.number_range(min=0, message="Invalid id")]
     )
     movement = StringField("movement")
-    url = URLField("url", validators=[InputRequired()])
+    url = URLField("url", validators=[])
     sku = StringField("sku")
 
 
