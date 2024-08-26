@@ -176,7 +176,7 @@ class SMInfoForm(Form):
     folio = StringField("folio", validators=[InputRequired()])
     contract = StringField("contract", validators=[InputRequired()])
     facility = StringField("facility", validators=[InputRequired()])
-    contract_contact = StringField("contract_contact", validators=[InputRequired()])
+    contract_contact = StringField("contract_contact")
     client_id = IntegerField("client_id", validators=[InputRequired()])
     location = StringField("location", validators=[InputRequired()])
     order_quotation = StringField("order_quotation", validators=[InputRequired()])
@@ -273,7 +273,9 @@ sm_put_model = api.model(
 class SMPutForm(Form):
     info = FormField(SMInfoForm, "info")
     items = FieldList(FormField(ItemsFormSM, "items"))
-    id = IntegerField("id", validators=[InputRequired()])
+    id = IntegerField(
+        "id", validators=[validators.number_range(min=0, message="Invalid id")]
+    )
 
 
 delete_request_sm_model = api.model(
