@@ -51,7 +51,9 @@ items_model_sm = api.model(
 class ItemsFormSM(Form):
     id = StringField("id", validators=[InputRequired()])
     name = StringField("name", validators=[InputRequired()])
-    stock = IntegerField("stock", validators=[InputRequired()])
+    stock = IntegerField(
+        "stock", validators=[validators.number_range(min=0, message="Invalid id")]
+    )
     comment = StringField("comment", validators=[InputRequired()])
     quantity = FloatField("quantity", validators=[InputRequired()])
     movement = StringField("movement")
@@ -181,7 +183,9 @@ class SMInfoForm(Form):
     emp_id = IntegerField("emp_id", validators=[InputRequired()])
     date = StringField("date", validators=[InputRequired()])
     critical_date = StringField("critical_date", validators=[InputRequired()])
-    status = StringField("status", validators=[InputRequired()])
+    status = StringField(
+        "status", validators=[validators.number_range(min=0, message="Invalid id")]
+    )
     comment = StringField("comment", validators=[InputRequired()])
     destination = StringField("destination", validators=[InputRequired()])
     items = FieldList(FormField(ItemsFormSM, "items"))
