@@ -168,7 +168,9 @@ sm_model = api.model(
 
 
 class SMInfoForm(Form):
-    id = IntegerField("id", validators=[InputRequired()])
+    id = IntegerField(
+        "id", validators=[validators.number_range(min=0, message="Invalid id")]
+    )
     folio = StringField("folio", validators=[InputRequired()])
     contract = StringField("contract", validators=[InputRequired()])
     facility = StringField("facility", validators=[InputRequired()])
