@@ -320,7 +320,9 @@ response_sm_dispatch_model = api.model(
 
 class ItemsFormSM(Form):
     id = IntegerField(
-        "id", validators=[validators.number_range(min=-10, message="Invalid id")]
+        "id",
+        validators=[],
+        default=-1,
     )
     name = StringField("name", validators=[InputRequired()])
     stock = IntegerField(
