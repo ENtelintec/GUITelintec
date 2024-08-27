@@ -35,7 +35,7 @@ product_model_SM_selection = api.model(
 items_model_sm = api.model(
     "ItemsModel",
     {
-        "id": fields.String(required=True, description="The product id"),
+        "id": fields.Integer(required=True, description="The product id"),
         "name": fields.String(required=True, description="The product name"),
         "stock": fields.Integer(required=True, description="The product stock"),
         "comment": fields.String(required=True, description="The product comment"),
@@ -349,6 +349,12 @@ class ProductRequestForm(Form):
     )
 
 
+class HistoryFormSM(Form):
+    date = StringField("date", validators=[InputRequired()])
+    event = StringField("event", validators=[InputRequired()])
+    user = IntegerField("user", validators=[InputRequired()])
+
+
 class SMInfoForm(Form):
     id = IntegerField(
         "id", validators=[validators.number_range(min=0, message="Invalid id")]
@@ -372,6 +378,7 @@ class SMInfoForm(Form):
     )
     comment = StringField("comment", validators=[], default="")
     destination = StringField("destination", validators=[InputRequired()])
+    history = FieldList(FormField(HistoryFormSM, "history"))
     items = FieldList(FormField(ItemsFormSM, "items"))
     items_new = FieldList(FormField(ItemsFormSM, "items_new"))
 
