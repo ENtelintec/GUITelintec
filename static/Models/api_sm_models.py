@@ -103,7 +103,43 @@ products_request_model = api.model(
     },
 )
 
-sm_model = api.model(
+sm_model_post = api.model(
+    "MaterialRequest",
+    {
+        "id": fields.Integer(
+            required=True, description="The id <ignored on add event>"
+        ),
+        "folio": fields.String(required=True, description="The folio"),
+        "contract": fields.String(required=True, description="The contract"),
+        "facility": fields.String(required=True, description="The facility"),
+        "contract_contact": fields.String(
+            required=True, description="The contract contact"
+        ),
+        "client_id": fields.Integer(
+            required=True, description="The client id", example=1
+        ),
+        "location": fields.String(required=True, description="The location"),
+        "order_quotation": fields.String(
+            required=True, description="The order or quotation"
+        ),
+        "emp_id": fields.Integer(
+            required=True, description="The employee id", example=1
+        ),
+        "date": fields.String(
+            required=True, description="The date", example="2024-06-29"
+        ),
+        "critical_date": fields.String(
+            required=True, description="The critical date", example="2024-07-15"
+        ),
+        "status": fields.Integer(required=True, description="The status of the sm"),
+        "comment": fields.String(required=True, description="The comment"),
+        "destination": fields.String(
+            required=True, description="The destination area in telintec"
+        ),
+    },
+)
+
+sm_model_put = api.model(
     "MaterialRequest",
     {
         "id": fields.Integer(
@@ -222,7 +258,7 @@ sm_product_request_model = api.model(
 sm_post_model = api.model(
     "material_requestPost",
     {
-        "info": fields.Nested(sm_model),
+        "info": fields.Nested(sm_model_post),
         "items": fields.List(fields.Nested(items_model_sm)),
     },
 )
@@ -230,7 +266,7 @@ sm_post_model = api.model(
 sm_put_model = api.model(
     "material_requestPut",
     {
-        "info": fields.Nested(sm_model),
+        "info": fields.Nested(sm_model_put),
         "items": fields.List(fields.Nested(items_model_sm)),
         "id": fields.Integer(required=True, description="The id"),
     },
