@@ -149,74 +149,6 @@ expected_headers_bot = api.parser()
 expected_headers_bot.add_argument("Authorization", location="headers", required=True)
 
 
-fichaje_request_model = api.model(
-    "FichajeRequest",
-    {
-        "date": fields.String(
-            required=True, description="Thedate", example="2024-03-01"
-        ),
-        "emp_id": fields.Integer(
-            required=True, description="The id of the employee", example=-1
-        ),
-    },
-)
-
-fichaje_add_update_request_model = api.model(
-    "FichajeAddRequest",
-    {
-        "id": fields.Integer(
-            required=True, description="The id <ignored when adding event>"
-        ),
-        "date": fields.String(
-            required=True, description="The date", example="2024-03-01"
-        ),
-        "event": fields.String(required=True, description="The event", example="falta"),
-        "value": fields.Float(required=True, description="The value", example=1.0),
-        "comment": fields.String(
-            required=True, description="The comment", example="This is a comment"
-        ),
-        "id_emp": fields.Integer(
-            required=True,
-            description="The id of employee that has the event",
-            example=1,
-        ),
-        "contract": fields.String(
-            required=True, description="The contract of the empployee", example="INFRA"
-        ),
-        "hour_in": fields.String(
-            required=False,
-            description="The hour in for extraordinary event",
-            example="08:00-->08:15-->8:20",
-        ),
-        "hour_out": fields.String(
-            required=False,
-            description="The hour out for extraordinary event",
-            example="18:00-->18:15-->18:20",
-        ),
-        "id_leader": fields.Integer(
-            required=True, description="The id of the group leader", example=1
-        ),
-    },
-)
-
-fichaje_delete_request_model = api.model(
-    "FichajeDeleteRequest",
-    {
-        "id": fields.Integer(required=True, description="The id"),
-        "date": fields.String(
-            required=True, description="The date", example="2024-03-01"
-        ),
-        "event": fields.String(required=True, description="The event", example="falta"),
-        "id_emp": fields.Integer(
-            required=True, description="The id of the editor employee ", example=1
-        ),
-        "contract": fields.String(
-            required=True, description="The contract of the empployee", example="INFRA"
-        ),
-    },
-)
-
-
 notification_model = api.model(
     "Notification",
     {
@@ -314,22 +246,5 @@ response_files_av_model = api.model(
     "ResponseFilesAV",
     {
         "files": fields.List(fields.Nested(files_av_model)),
-    },
-)
-
-bitacora_dowmload_report_model = api.model(
-    "BitacoraDownloadReport",
-    {
-        "date": fields.String(
-            required=True, description="The date", example="2024-03-01"
-        ),
-        "id_emp": fields.Integer(
-            required=True,
-            description="The id of the employee to require the contract",
-            example=-1,
-        ),
-        "span": fields.String(
-            required=True, description="The span of the report", example="month"
-        ),
     },
 )

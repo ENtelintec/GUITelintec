@@ -1,17 +1,35 @@
 # -*- coding: utf-8 -*-
-__author__ = 'Edisson Naula'
-__date__ = '$ 22/ene./2024  at 16:09 $'
+__author__ = "Edisson Naula"
+__date__ = "$ 22/ene./2024  at 16:09 $"
 
 import json
 import os
 import re
 from datetime import datetime
 
-from static.extensions import cache_file_resume_fichaje_path, status_dic, quizz_out_path, format_date, format_timestamps
-from templates.misc.Functions_Files import get_fichajes_resume_cache, update_fichajes_resume_cache
-from templates.controllers.employees.employees_controller import get_name_employee, get_contract_employes, \
-    get_id_employee
-from templates.controllers.fichajes.fichajes_controller import get_fichaje_DB, update_fichaje_DB, insert_new_fichaje_DB
+from static.extensions import (
+    cache_file_resume_fichaje_path,
+    status_dic,
+    quizz_out_path,
+    format_date,
+    format_timestamps,
+)
+from templates.misc.Functions_Files import (
+    get_fichajes_resume_cache,
+    update_fichajes_resume_cache,
+)
+from templates.controllers.employees.employees_controller import (
+    get_name_employee,
+    get_contract_employes,
+    get_id_employee,
+    test_id_employee,
+)
+from templates.controllers.fichajes.fichajes_controller import (
+    get_fichaje_DB,
+    update_fichaje_DB,
+    insert_new_fichaje_DB,
+    create_new_emp_fichaje,
+)
 from templates.controllers.material_request.sm_controller import get_sm_entries
 from templates.controllers.product.p_and_s_controller import get_sm_products
 
@@ -20,9 +38,23 @@ import xml.etree.ElementTree as ET
 
 def get_data_employees(status="ACTIVO"):
     columns = (
-        "ID", "Nombre", "Contrato", "Faltas", "Tardanzas", "Total tardanzas", "Dias Extra", "Total extra", "Primas",
-        "Detalles Faltas", "Detalles Tardanzas", "Detalles Extras", "Detalles Primas", "Detalles Normal", 
-        "Detalles Temprano", "Detalles Pasivas")
+        "ID",
+        "Nombre",
+        "Contrato",
+        "Faltas",
+        "Tardanzas",
+        "Total tardanzas",
+        "Dias Extra",
+        "Total extra",
+        "Primas",
+        "Detalles Faltas",
+        "Detalles Tardanzas",
+        "Detalles Extras",
+        "Detalles Primas",
+        "Detalles Normal",
+        "Detalles Temprano",
+        "Detalles Pasivas",
+    )
     fichajes_resume, flag = get_fichajes_resume_cache(cache_file_resume_fichaje_path)
     if flag:
         return fichajes_resume, columns
@@ -32,9 +64,23 @@ def get_data_employees(status="ACTIVO"):
 
 
 def get_data_employees_ids(ids: list):
-    columns = ("ID", "Nombre", "Contrato", "Faltas", "Tardanzas", "Dias Extra", "Total", "Primas",
-               "Detalles Faltas", "Detalles Tardanzas", "Detalles Extras", "Detalles Primas", "Detalles Normal", 
-               "Detalles Temprano", "Detalles Pasivas")
+    columns = (
+        "ID",
+        "Nombre",
+        "Contrato",
+        "Faltas",
+        "Tardanzas",
+        "Dias Extra",
+        "Total",
+        "Primas",
+        "Detalles Faltas",
+        "Detalles Tardanzas",
+        "Detalles Extras",
+        "Detalles Primas",
+        "Detalles Normal",
+        "Detalles Temprano",
+        "Detalles Pasivas",
+    )
     fichajes_resume, flag = get_fichajes_resume_cache(cache_file_resume_fichaje_path)
     if flag:
         for row in fichajes_resume:
@@ -47,33 +93,35 @@ def get_data_employees_ids(ids: list):
 
 
 def update_event_dict(event_dic, data):
-    date = datetime.strptime(data[0], format_date)
+    date = (
+        datetime.strptime(data[0], format_date) if isinstance(data[0], str) else data[0]
+    )
     if str(date.year) not in event_dic.keys():
         event_dic[str(date.year)] = {}
         event_dic[str(date.year)][str(date.month)] = {}
         event_dic[str(date.year)][str(date.month)][str(date.day)] = {
             "value": data[1],
             "comment": data[2],
-            "timestamp": date.strftime(format_timestamps)
+            "timestamp": date.strftime(format_timestamps),
         }
     elif str(date.month) not in event_dic[str(date.year)].keys():
         event_dic[str(date.year)][str(date.month)] = {}
         event_dic[str(date.year)][str(date.month)][str(date.day)] = {
             "value": data[1],
             "comment": data[2],
-            "timestamp": date.strftime(format_timestamps)
+            "timestamp": date.strftime(format_timestamps),
         }
     elif str(date.day) not in event_dic[str(date.year)][str(date.month)].keys():
         event_dic[str(date.year)][str(date.month)][str(date.day)] = {
             "value": data[1],
             "comment": data[2],
-            "timestamp": date.strftime(format_timestamps)
+            "timestamp": date.strftime(format_timestamps),
         }
     else:
         event_dic[str(date.year)][str(date.month)][str(date.day)] = {
             "value": data[1],
             "comment": data[2],
-            "timestamp": date.strftime(format_timestamps)
+            "timestamp": date.strftime(format_timestamps),
         }
     return event_dic
 
@@ -86,8 +134,24 @@ def update_bitacora(emp_id: int, event, data):
     :param data: The data.
     :return: None.
     """
-    events_indexes_db = {"falta": 3, "atraso": 4, "extra": 5, "prima": 6, "normal": 7, "early": 8, "pasiva": 9}
-    events_cache_indexes = {"falta": 9, "atraso": 10, "extra": 11, "prima": 12, "normal": 13, "early": 14, "pasiva": 15}
+    events_indexes_db = {
+        "falta": 3,
+        "atraso": 4,
+        "extra": 5,
+        "prima": 6,
+        "normal": 7,
+        "early": 8,
+        "pasiva": 9,
+    }
+    events_cache_indexes = {
+        "falta": 9,
+        "atraso": 10,
+        "extra": 11,
+        "prima": 12,
+        "normal": 13,
+        "early": 14,
+        "pasiva": 15,
+    }
     emp_id = int(emp_id)
     event_dic = {}
     new_registry = False
@@ -98,21 +162,52 @@ def update_bitacora(emp_id: int, event, data):
     if flag and len(result) > 0:
         event_dic = json.loads(result[events_indexes_db[event]])
     else:
-        print("error at getting data from db or not data found for the employee")
+        flag, error, result = test_id_employee(emp_id)
+        if flag and len(result) > 0:
+            if result[1] == "activo":
+                contract_sel = result[2]
+                flag, error, result = create_new_emp_fichaje(emp_id, contract_sel)
+                if not flag:
+                    return False, error, result
+            else:
+                return False, "error, the employee is not active", result
+        else:
+            return False, "error, the employee id is not register in the db", result
         new_registry = True
     # ------------------update dictionary event-----------------------------
     event_dic = update_event_dict(event_dic, data)
-    print("getting cache to update event")
     fichajes_resume, flag = get_fichajes_resume_cache(cache_file_resume_fichaje_path)
     if not flag:
         return False, "error at getting cache file to update", result
     # ----------------- if new registry on db---------------------------------
     if new_registry:
-        print("new registry in fichajes db")
         name = get_name_employee(emp_id)
         if name is None:
-            return False, "error at getting employee name, check de id or that the employee is register in the db.", None
-        fichajes_resume.append([emp_id, name.title(), contract_sel, 0, 0, 0, 0, 0, 0, {}, {}, {}, {}, {}, {}, {}])
+            return (
+                False,
+                "error at getting employee name, check de id or that the employee is register in the db.",
+                None,
+            )
+        fichajes_resume.append(
+            [
+                emp_id,
+                name.title(),
+                contract_sel,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+            ]
+        )
     # -----------------------------updates cache data and db--------------------------------
     flag = False
     for i, row in enumerate(fichajes_resume):
@@ -122,12 +217,20 @@ def update_bitacora(emp_id: int, event, data):
             new_row[events_cache_indexes[event]] = event_dic
             fichajes_resume[i] = new_row
             flag, error, result = update_fichaje_DB(
-                emp_id, new_row[2],
-                new_row[9], new_row[10], new_row[11], new_row[12], new_row[13], new_row[14], new_row[15])
+                emp_id,
+                new_row[2],
+                new_row[9],
+                new_row[10],
+                new_row[11],
+                new_row[12],
+                new_row[13],
+                new_row[14],
+                new_row[15],
+            )
             if flag:
-                print("value updated in DB")
-                flag, error = update_fichajes_resume_cache(cache_file_resume_fichaje_path, fichajes_resume,
-                                                           just_file=True)
+                flag, error = update_fichajes_resume_cache(
+                    cache_file_resume_fichaje_path, fichajes_resume, just_file=True
+                )
                 return flag, error, result
             else:
                 print("error at updating the value in DB")
@@ -135,12 +238,22 @@ def update_bitacora(emp_id: int, event, data):
     new_row = [emp_id, contract_sel, 0, 0, 0, 0, 0, 0, {}, {}, {}, {}, {}, {}, {}]
     new_row[events_cache_indexes[event]] = event_dic
     fichajes_resume.append(new_row)
-    flag, error, result = insert_new_fichaje_DB(new_row[0], new_row[1], new_row[9], new_row[10],
-                                                new_row[11], new_row[12], new_row[13], new_row[14],
-                                                new_row[15])
+    flag, error, result = insert_new_fichaje_DB(
+        new_row[0],
+        new_row[1],
+        new_row[9],
+        new_row[10],
+        new_row[11],
+        new_row[12],
+        new_row[13],
+        new_row[14],
+        new_row[15],
+    )
     if flag:
         print("value inserted in DB and not found in cache")
-        flag, error = update_fichajes_resume_cache(cache_file_resume_fichaje_path, fichajes_resume, just_file=True)
+        flag, error = update_fichajes_resume_cache(
+            cache_file_resume_fichaje_path, fichajes_resume, just_file=True
+        )
         return flag, error, result
     return flag, error, result
 
@@ -148,14 +261,30 @@ def update_bitacora(emp_id: int, event, data):
 def update_bitacora_value(emp_id: int, event, data, id_event=None):
     """
     Update the bitacora for just values.
-    :param id_event: 
+    :param id_event:
     :param emp_id: The id of the employee.
     :param event: The event.
     :param data: The data.
     :return: None.
     """
-    events_indexes_db = {"falta": 3, "atraso": 4, "extra": 5, "prima": 6, "normal": 7, "early": 8, "pasiva": 9}
-    events_cache_indexes = {"falta": 9, "atraso": 10, "extra": 11, "prima": 12, "normal": 13, "early": 14, "pasiva": 15}
+    events_indexes_db = {
+        "falta": 3,
+        "atraso": 4,
+        "extra": 5,
+        "prima": 6,
+        "normal": 7,
+        "early": 8,
+        "pasiva": 9,
+    }
+    events_cache_indexes = {
+        "falta": 9,
+        "atraso": 10,
+        "extra": 11,
+        "prima": 12,
+        "normal": 13,
+        "early": 14,
+        "pasiva": 15,
+    }
     event_dic = {}
     contract_sel = data[3]
     flag, error, result = get_fichaje_DB(emp_id)
@@ -163,12 +292,14 @@ def update_bitacora_value(emp_id: int, event, data, id_event=None):
         event_dic = json.loads(result[events_indexes_db[event]])
     else:
         print("error at getting data from db or not data found for the employee")
-    date = datetime.strptime(data[0], format_date)
+    date = (
+        datetime.strptime(data[0], format_date) if isinstance(data[0], str) else data[0]
+    )
     try:
         event_dic[str(date.year)][str(date.month)][str(date.day)] = {
             "value": data[1],
             "comment": data[2],
-            "timestamp": date.strftime(format_timestamps)
+            "timestamp": date.strftime(format_timestamps),
         }
     except KeyError:
         print(f"error at updating the value for {date}")
@@ -185,12 +316,20 @@ def update_bitacora_value(emp_id: int, event, data, id_event=None):
             new_row[events_cache_indexes[event]] = event_dic
             fichajes_resume[i] = new_row
             flag, error, result = update_fichaje_DB(
-                emp_id, new_row[2],
-                new_row[9], new_row[10], new_row[11], new_row[12], new_row[13], new_row[14], new_row[15])
+                emp_id,
+                new_row[2],
+                new_row[9],
+                new_row[10],
+                new_row[11],
+                new_row[12],
+                new_row[13],
+                new_row[14],
+                new_row[15],
+            )
             if flag:
-                print("value updated in DB")
-                flag, error = update_fichajes_resume_cache(cache_file_resume_fichaje_path, fichajes_resume,
-                                                           just_file=True)
+                flag, error = update_fichajes_resume_cache(
+                    cache_file_resume_fichaje_path, fichajes_resume, just_file=True
+                )
                 return flag, error, result
             else:
                 print("error at updating the value in DB")
@@ -206,8 +345,24 @@ def erase_value_bitacora(emp_id: int, event, data):
     :param data: The data.
     :return: None.
     """
-    events_indexes_db = {"falta": 3, "atraso": 4, "extra": 5, "prima": 6, "normal": 7,  "early": 8, "pasiva": 9}
-    events_cache_indexes = {"falta": 9, "atraso": 10, "extra": 11, "prima": 12, "normal": 13,  "early": 14, "pasiva": 15}
+    events_indexes_db = {
+        "falta": 3,
+        "atraso": 4,
+        "extra": 5,
+        "prima": 6,
+        "normal": 7,
+        "early": 8,
+        "pasiva": 9,
+    }
+    events_cache_indexes = {
+        "falta": 9,
+        "atraso": 10,
+        "extra": 11,
+        "prima": 12,
+        "normal": 13,
+        "early": 14,
+        "pasiva": 15,
+    }
     event_dic = {}
     contract_sel = data[1]
     flag, error, result = get_fichaje_DB(emp_id)
@@ -215,7 +370,9 @@ def erase_value_bitacora(emp_id: int, event, data):
         event_dic = json.loads(result[events_indexes_db[event]])
     else:
         print("error at getting data from db or not data found for the employee")
-    date = datetime.strptime(data[0], format_date)
+    date = (
+        datetime.strptime(data[0], format_date) if isinstance(data[0], str) else data[0]
+    )
     if str(date.year) in event_dic.keys():
         if str(date.month) in event_dic[str(date.year)].keys():
             if str(date.day) in event_dic[str(date.year)][str(date.month)].keys():
@@ -231,12 +388,20 @@ def erase_value_bitacora(emp_id: int, event, data):
             new_row[events_cache_indexes[event]] = event_dic
             fichajes_resume[i] = new_row
             flag, error, result = update_fichaje_DB(
-                emp_id, new_row[2],
-                new_row[9], new_row[10], new_row[11], new_row[12], new_row[13], new_row[14], new_row[15])
+                emp_id,
+                new_row[2],
+                new_row[9],
+                new_row[10],
+                new_row[11],
+                new_row[12],
+                new_row[13],
+                new_row[14],
+                new_row[15],
+            )
             if flag:
-                print("value updated in DB")
-                flag, error = update_fichajes_resume_cache(cache_file_resume_fichaje_path, fichajes_resume,
-                                                           just_file=True)
+                flag, error = update_fichajes_resume_cache(
+                    cache_file_resume_fichaje_path, fichajes_resume, just_file=True
+                )
                 return flag, error, result
             else:
                 print("error at updating the value in DB")
@@ -256,8 +421,20 @@ def get_data_from_dict_by_date(data: dict, date: datetime, stamp: str):
     if str(date.year) in data.keys():
         if str(date.month) in data[str(date.year)].keys():
             for day in data[str(date.year)][str(date.month)].values():
-                place, activity, incidence, comment = get_place_incidence_from_comment(day["comment"])
-                data_out.append([stamp, place, activity, incidence, day["timestamp"], day["value"], comment])
+                place, activity, incidence, comment = get_place_incidence_from_comment(
+                    day["comment"]
+                )
+                data_out.append(
+                    [
+                        stamp,
+                        place,
+                        activity,
+                        incidence,
+                        day["timestamp"],
+                        day["value"],
+                        comment,
+                    ]
+                )
             return data_out
     return None
 
@@ -308,18 +485,38 @@ def get_place_incidence_from_comment(comment: str):
 def get_events_op_date(date: datetime, hard_update, only_op=True, emp_id=-1):
     """
     Get the events of the date.
-    :param emp_id: 
+    :param emp_id:
     :param only_op:
     :param hard_update: Update from db
     :param date: The date.
     :return: The events.
     """
     data_events = []
-    fichajes_resume, flag = get_fichajes_resume_cache(cache_file_resume_fichaje_path, is_hard_update=hard_update)
-    flag, error, result = get_contract_employes(emp_id) if emp_id != -1 else (True, "", [])
+    fichajes_resume, flag = get_fichajes_resume_cache(
+        cache_file_resume_fichaje_path, is_hard_update=hard_update
+    )
+    flag, error, result = (
+        get_contract_employes(emp_id) if emp_id != -1 else (True, "", [])
+    )
     for row in fichajes_resume:
-        (id_emp, name, contract, faltas, tardanzas, tardanzas_value, extras, extras_value, primas,
-         absences_dic, lates_dic, extras_dic, primes_dic, normal_dic, early_dic, pasiva_dic) = row
+        (
+            id_emp,
+            name,
+            contract,
+            faltas,
+            tardanzas,
+            tardanzas_value,
+            extras,
+            extras_value,
+            primas,
+            absences_dic,
+            lates_dic,
+            extras_dic,
+            primes_dic,
+            normal_dic,
+            early_dic,
+            pasiva_dic,
+        ) = row
         data_absences = get_data_from_dict_by_date(absences_dic, date, "falta")
         data_lates = get_data_from_dict_by_date(lates_dic, date, "atraso")
         data_extras = get_data_from_dict_by_date(extras_dic, date, "extra")
@@ -327,9 +524,18 @@ def get_events_op_date(date: datetime, hard_update, only_op=True, emp_id=-1):
         data_normal = get_data_from_dict_by_date(normal_dic, date, "normal")
         data_early = get_data_from_dict_by_date(early_dic, date, "early")
         data_pasiva = get_data_from_dict_by_date(pasiva_dic, date, "pasiva")
-        data_events_emp = unify_data_list_events([id_emp, name, contract],
-                                                 [data_absences, data_lates, data_extras, data_primes, 
-                                                  data_normal, data_early, data_pasiva])
+        data_events_emp = unify_data_list_events(
+            [id_emp, name, contract],
+            [
+                data_absences,
+                data_lates,
+                data_extras,
+                data_primes,
+                data_normal,
+                data_early,
+                data_pasiva,
+            ],
+        )
         for item in data_events_emp:
             if item is not None:
                 if item[2] != "None" or not only_op:
@@ -339,7 +545,17 @@ def get_events_op_date(date: datetime, hard_update, only_op=True, emp_id=-1):
                     else:
                         data_events.append(item)
     columns = (
-        "ID", "Nombre", "Contrato", "Evento", "Lugar", "Actividad", "Incidencia", "Timestamp", "Valor", "Comentario")
+        "ID",
+        "Nombre",
+        "Contrato",
+        "Evento",
+        "Lugar",
+        "Actividad",
+        "Incidencia",
+        "Timestamp",
+        "Valor",
+        "Comentario",
+    )
     return data_events, columns
 
 
@@ -357,7 +573,7 @@ def split_commment(txt: str, type_fun=0) -> dict:
                 "incidence": "",
                 "activity": "",
                 "place": "",
-                "contract": None
+                "contract": None,
             }
             rows = txt.split("\n")
             for i, row in enumerate(rows):
@@ -380,7 +596,7 @@ def split_commment(txt: str, type_fun=0) -> dict:
                 "pedido_cotizacion": "",
                 "activity": "",
                 "place": "",
-                "contract": None
+                "contract": None,
             }
             rows = txt.split("\n")
             for i, row in enumerate(rows):
@@ -445,17 +661,62 @@ def get_all_sm_entries(filter_status=False, is_supper=False, emp_id=None):
     flag, error, result = get_sm_entries()
     if flag:
         columns = (
-            "ID", "Codigo", "Folio", "Contrato", "Planta", "Ubicación", "Cliente", "Empleado", "Orden/Cotización",
-            "Fecha", "Fecha Limite", "Items", "Estado", "Historial", "Comentario", "Extra info")
+            "ID",
+            "Codigo",
+            "Folio",
+            "Contrato",
+            "Planta",
+            "Ubicación",
+            "Cliente",
+            "Empleado",
+            "Orden/Cotización",
+            "Fecha",
+            "Fecha Limite",
+            "Items",
+            "Estado",
+            "Historial",
+            "Comentario",
+            "Extra info",
+        )
         if filter_status:
             result = [row for row in result if row[12] == 0]
         if not is_supper:
             result = [row for row in result if row[7] == emp_id]
         for index, row in enumerate(result):
-            (id_sm, folio, contract, plant, location, client, employee, order, date,
-             date_limit, items, status, history, comment, extra_info) = row
-            new_row = (id_sm, folio, contract, plant, location, client, employee, order, date, date_limit, items,
-                       status_dic[status], history, comment, extra_info)
+            (
+                id_sm,
+                folio,
+                contract,
+                plant,
+                location,
+                client,
+                employee,
+                order,
+                date,
+                date_limit,
+                items,
+                status,
+                history,
+                comment,
+                extra_info,
+            ) = row
+            new_row = (
+                id_sm,
+                folio,
+                contract,
+                plant,
+                location,
+                client,
+                employee,
+                order,
+                date,
+                date_limit,
+                items,
+                status_dic[status],
+                history,
+                comment,
+                extra_info,
+            )
             result[index] = new_row
         return result, columns
     else:
@@ -488,10 +749,10 @@ def load_quizzes_names(path_directory: str):
             elif file.endswith(".json"):
                 quizzes_names_json.append(file)
     except Exception as e:
-        print(e)
-        print(path_directory)
-        print(quizz_out_path)
-        print("Error al cargar los quizzes, verifique la direccion del directorio en settings")
+        print(
+            "Error al cargar los quizzes, verifique la direccion del directorio en settings",
+            str(e),
+        )
         print("intentando con directorio por defecto")
         for file in os.listdir(quizz_out_path):
             if file.endswith(".pdf"):
@@ -527,12 +788,12 @@ def get_data_xml_file_nomina(path_file: str):
     :return: The data xml file.
     """
     data = {}
-    tree = ET.parse(path_file,  parser=ET.XMLParser(encoding='utf-8'))
+    tree = ET.parse(path_file, parser=ET.XMLParser(encoding="utf-8"))
     pattern = "\{.*\}"
     data = {}
     for child in tree.iter():
         match = re.search(pattern, child.tag)
-        last_part_tag = child.tag[match.span()[1]:]
+        last_part_tag = child.tag[match.span()[1] :]
         match last_part_tag.lower():
             case "emisor" | "emissor":
                 if "emisor" not in data.keys():
@@ -561,7 +822,11 @@ def get_data_xml_file_nomina(path_file: str):
                 break
     date_pago = None
     if "Nomina" in data.keys():
-        date_pago = data["Nomina"]["FechaPago"] if "FechaPago" in data["Nomina"].keys() else None
+        date_pago = (
+            data["Nomina"]["FechaPago"]
+            if "FechaPago" in data["Nomina"].keys()
+            else None
+        )
 
     if name is not None:
         data["emp_name"] = name

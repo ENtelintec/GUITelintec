@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 
 import pandas as pd
 
-from static.extensions import format_timestamps, log_file_sm_path
+from static.extensions import format_timestamps, log_file_sm_path, format_date
 from templates.controllers.employees.employees_controller import (
     get_all_data_employees,
     get_all_data_employee,
@@ -71,8 +71,14 @@ def get_products_sm(limit, page=0):
 def check_date_difference(date_modify, delta):
     flag = True
     date_now = datetime.now()
-    date_modify = datetime.strptime(date_modify, "%Y-%m-%d")
-    date_modify = date_modify.date()
+    date_modify = (
+        datetime.strptime(date_modify, format_date)
+        if isinstance(date_modify, str)
+        else date_modify
+    )
+    date_modify = (
+        date_modify.date() if isinstance(date_modify, datetime) else date_modify
+    )
     # week of the month
     week_modify = date_modify.isocalendar()[1]
     date_now = date_now.date()
