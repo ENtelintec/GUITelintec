@@ -208,7 +208,10 @@ def get_all_sm_plots(emp_id: int, is_supper=False):
 
 def update_only_status(status: int, sm_id: int):
     sql = (
-        "UPDATE sql_telintec.materials_request " "SET status = %s " "WHERE sm_id = %s "
+        "UPDATE "
+        "sql_telintec.materials_request "
+        "SET status = %s "
+        "WHERE sm_id = %s "
     )
     val = (status, sm_id)
     flag, error, result = execute_sql(sql, val, 4)
@@ -247,7 +250,19 @@ def get_info_names_by_sm_id(sm_id: int):
 
 
 def update_sm_products_by_id(sm_id: int, items: list):
-    sql = "UPDATE sql_telintec.materials_request " "SET items = %s " "WHERE sm_id = %s "
+    sql = (
+        "UPDATE "
+        "sql_telintec.materials_request "
+        "SET items = %s "
+        "WHERE sm_id = %s "
+    )
     val = (json.dumps(items), sm_id)
     flag, error, result = execute_sql(sql, val, 4)
+    return flag, error, result
+
+
+def get_folios_by_pattern(pattern: str):
+    sql = "SELECT folio " "FROM sql_telintec.materials_request " "WHERE folio LIKE %s"
+    val = (f"{pattern}%",)
+    flag, error, result = execute_sql(sql, val, 2)
     return flag, error, result

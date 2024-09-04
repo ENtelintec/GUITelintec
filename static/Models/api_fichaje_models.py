@@ -11,8 +11,7 @@ from wtforms.fields.numeric import FloatField
 from wtforms.validators import InputRequired
 from wtforms.form import Form
 from wtforms import IntegerField, StringField
-from static.extensions import api
-
+from static.extensions import api, format_date
 
 fichaje_request_model = api.model(
     "FichajeRequest",
@@ -142,8 +141,13 @@ FichajeRequestMultipleEvents_model = api.model(
 )
 
 
+def date_filter(date):
+    # Example filter function to format the date
+    return date.strftime(format_date) if not isinstance(date, str) else date
+
+
 class FichajeRequestFormr(Form):
-    date = DateField("date", validators=[InputRequired()])
+    date = DateField("date", validators=[InputRequired()], filters=[date_filter])
     emp_id = IntegerField(
         "emp_id",
         validators=[InputRequired(message="emp_id is required or 0 not accepted")],
@@ -151,7 +155,7 @@ class FichajeRequestFormr(Form):
 
 
 class FichajeAddUpdateRequestForm(Form):
-    date = DateField("date", validators=[InputRequired()])
+    date = DateField("date", validators=[InputRequired()], filters=[date_filter])
     event = StringField("event", validators=[InputRequired()])
     value = FloatField("value", validators=[InputRequired()])
     comment = StringField("comment", validators=[InputRequired()])
@@ -169,7 +173,7 @@ class FichajeAddUpdateRequestForm(Form):
 
 
 class FichajePostRequestMultiForm(Form):
-    date = DateField("date", validators=[InputRequired()])
+    date = DateField("date", validators=[InputRequired()], filters=[date_filter])
     event = StringField("event", validators=[InputRequired()])
     value = FloatField("value", validators=[InputRequired()])
     comment = StringField("comment", validators=[InputRequired()])
@@ -183,7 +187,7 @@ class FichajePostRequestMultiForm(Form):
 
 
 class FichajeDeleteRequestForm(Form):
-    date = DateField("date", validators=[InputRequired()])
+    date = DateField("date", validators=[InputRequired()], filters=[date_filter])
     event = StringField("event", validators=[InputRequired()])
     id_emp = IntegerField(
         "id_emp",
@@ -197,7 +201,7 @@ class FichajeDeleteRequestForm(Form):
 
 
 class BitacoraDownloadReportForm(Form):
-    date = DateField("date", validators=[InputRequired()])
+    date = DateField("date", validators=[InputRequired()], filters=[date_filter])
     id_emp = IntegerField("id_emp", default=-1)
     span = StringField("span", validators=[InputRequired()])
 

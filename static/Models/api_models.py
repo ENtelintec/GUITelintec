@@ -2,11 +2,12 @@
 __author__ = "Edisson Naula"
 __date__ = "$ 02/nov./2023  at 17:32 $"
 
+from static.extensions import api, format_timestamps
 from flask_restx import fields
-from static.extensions import api
+from wtforms.fields.datetime import DateTimeField
+from wtforms.validators import InputRequired
 from wtforms import FormField, IntegerField, StringField, validators
 from wtforms.fields.list import FieldList
-from wtforms.fields.simple import PasswordField
 from wtforms.form import Form
 
 permission_model = api.model(
@@ -16,21 +17,6 @@ permission_model = api.model(
         "description": fields.String(required=True, description="The description"),
     },
 )
-
-token_model = api.model(
-    "Token",
-    {
-        "username": fields.String(required=True, description="The username"),
-        "password": fields.String(
-            required=True, description="The password or pass_key"
-        ),
-    },
-)
-
-
-class TokenModelForm(Form):
-    username = StringField("username", validators=[validators.input_required()])
-    password = PasswordField("password", validators=[validators.input_required()])
 
 
 class ResumeModelForm(Form):
@@ -248,3 +234,47 @@ response_files_av_model = api.model(
         "files": fields.List(fields.Nested(files_av_model)),
     },
 )
+
+
+def datetime_filer(datetime_obj):
+    return (
+        datetime_obj.strftime(format_timestamps)
+        if not isinstance(datetime_obj, str)
+        else datetime_obj
+    )
+
+
+class NotificationForm(Form):
+    id = IntegerField(
+        "id", validators=[InputRequired(message="id required or value 0 not accepted")]
+    )
+    title = StringField("title", validators=[InputRequired()])
+    msg = StringField("msg", validators=[InputRequired()])
+    status = IntegerField("status", validators=[], default=0)
+    sender_id = IntegerField("sender_id", validators=[], default=0)
+    timestamp = DateTimeField(
+        "timestamp", validators=[InputRequired()], filters=[datetime_filer]
+    )
+    receiver_id = IntegerField("receiver_id", validators=[], default=0)
+    app = FieldList(StringField(), validators=[], default=[])
+
+
+class NotificationInsertForm(Form):
+    info = FormField(NotificationForm)
+    id = IntegerField(
+        "id", validators=[InputRequired(message="id required or value 0 not accepted")]
+    )
+
+
+class NotificationDeleteForm(Form):
+    id = IntegerField(
+        "id", validators=[InputRequired(message="id required or value 0 not accepted")]
+    )
+
+
+class RequestAVResponseForm(Form):
+    msg = StringField("msg", validators=[InputRequired()])
+    department = StringField("department", validators=[InputRequired()])
+    filename = StringField("filename", validators=[InputRequired()])
+    files = FieldList(StringField(), validators=[], default=[])
+    id = IntegerField("id", validators=[], default=0)

@@ -8,7 +8,7 @@ from wtforms.fields.list import FieldList
 from wtforms.fields.numeric import FloatField
 from wtforms.fields.simple import StringField, URLField
 
-from static.extensions import api
+from static.extensions import api, format_date
 from wtforms.form import Form
 from wtforms import validators, IntegerField, FormField
 
@@ -354,6 +354,11 @@ response_sm_dispatch_model = api.model(
 )
 
 
+def date_filter(date):
+    # Example filter function to format the date
+    return date.strftime(format_date) if not isinstance(date, str) else date
+
+
 class ItemsFormSM(Form):
     id = IntegerField(
         "id",
@@ -409,7 +414,7 @@ class SMInfoForm(Form):
     emp_id = IntegerField(
         "emp_id", validators=[InputRequired(message="Invalid id or 0 not acepted")]
     )
-    date = DateField("date", validators=[InputRequired()])
+    date = DateField("date", validators=[InputRequired()], filters=[date_filter])
     critical_date = StringField("critical_date", validators=[InputRequired()])
     status = IntegerField(
         "status", validators=[validators.number_range(min=0, message="Invalid id")]

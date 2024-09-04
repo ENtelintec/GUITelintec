@@ -4,7 +4,7 @@ __date__ = "$ 16/ene./2024  at 18:49 $"
 
 from flask_restx import Resource, Namespace
 
-from static.Models.api_models import token_model, TokenModelForm
+from static.Models.api_login_models import TokenModelForm, token_model
 from templates.controllers.employees.us_controller import (
     verify_user_DB,
     get_permissions_user_password,

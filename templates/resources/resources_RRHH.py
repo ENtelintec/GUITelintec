@@ -4,48 +4,108 @@ import os
 from flask import send_file, request
 
 # -*- coding: utf-8 -*-
-__author__ = 'Edisson Naula'
-__date__ = '$ 02/nov./2023  at 17:29 $'
+__author__ = "Edisson Naula"
+__date__ = "$ 02/nov./2023  at 17:29 $"
 
 from flask_restx import Namespace, Resource
 from werkzeug.utils import secure_filename
 
-from static.Models.api_employee_models import employees_info_model, employee_model, employee_model_insert, \
-    employee_model_update, employee_model_delete, examenes_medicos_model, employees_examenes_model, \
-    employee_exam_model_insert, employee_exam_model_delete, employee_exam_model_update, employees_vacations_model, \
-    vacations_model, employee_vacation_model_insert, employee_vacation_model_delete
-from static.Models.api_fichajes_models import answer_files_fichajes_model, request_data_fichaje_files_model, \
-    answer_fichajes_model, expected_files
+from static.Models.api_employee_models import (
+    employees_info_model,
+    employee_model,
+    employee_model_insert,
+    employee_model_update,
+    employee_model_delete,
+    examenes_medicos_model,
+    employees_examenes_model,
+    employee_exam_model_insert,
+    employee_exam_model_delete,
+    employee_exam_model_update,
+    employees_vacations_model,
+    vacations_model,
+    employee_vacation_model_insert,
+    employee_vacation_model_delete,
+    EmployeeInsertForm,
+    EmployeeUpdateForm,
+    EmployeeDeleteForm,
+    EmployeeMedInsertForm,
+    EmployeeMedUpdateForm,
+    EmployeeMedDeleteForm,
+)
+from static.Models.api_fichajes_models import (
+    answer_files_fichajes_model,
+    request_data_fichaje_files_model,
+    answer_fichajes_model,
+    expected_files,
+)
 from static.Models.api_models import employees_resume_model, resume_model
-from static.extensions import cache_file_resume_fichaje_path, quizzes_RRHH, path_contract_files
+from static.extensions import (
+    cache_file_resume_fichaje_path,
+    quizzes_RRHH,
+    path_contract_files,
+)
 from templates.resources.methods.Functions_Aux_RH import parse_data
-from templates.resources.midleware.Functions_DB_midleware import get_info_employees_with_status, get_info_employee_id, get_all_vacations, \
-    get_vacations_employee, create_csv_file_employees
+from templates.resources.midleware.Functions_DB_midleware import (
+    get_info_employees_with_status,
+    get_info_employee_id,
+    get_all_vacations,
+    get_vacations_employee,
+    create_csv_file_employees,
+)
 from templates.misc.Functions_Files import get_fichajes_resume_cache
-from templates.controllers.employees.em_controller import get_all_examenes, insert_new_exam_med, \
-    update_aptitud_renovacion, delete_exam_med
-from templates.controllers.employees.employees_controller import new_employee, update_employee, delete_employee
-from templates.controllers.employees.vacations_controller import insert_vacation, update_registry_vac, delete_vacation, \
-    get_vacations_data
-from templates.resources.midleware.Functions_midleware_RRHH import get_files_fichaje, get_fichaje_data, \
-    get_files_list_nomina
+from templates.controllers.employees.em_controller import (
+    get_all_examenes,
+    insert_new_exam_med,
+    update_aptitud_renovacion,
+    delete_exam_med,
+)
+from templates.controllers.employees.employees_controller import (
+    new_employee,
+    update_employee,
+    delete_employee,
+)
+from templates.controllers.employees.vacations_controller import (
+    insert_vacation,
+    update_registry_vac,
+    delete_vacation,
+    get_vacations_data,
+)
+from templates.resources.midleware.Functions_midleware_RRHH import (
+    get_files_fichaje,
+    get_fichaje_data,
+    get_files_list_nomina,
+)
 
-ns = Namespace('GUI/api/v1/rrhh')
+ns = Namespace("GUI/api/v1/rrhh")
 
 
-@ns.route('/employee')
+@ns.route("/employee")
 class Employee(Resource):
     @ns.expect(employee_model_insert)
     def post(self):
-        code, data = parse_data(ns.payload, 1)
-        if code == 400:
-            return {"data": None}, code
-        flag, error, result = new_employee(data["info"]["name"], data["info"]["lastname"], data["info"]["curp"],
-                                           data["info"]["phone"], data["info"]["modality"], data["info"]["dep"],
-                                           data["info"]["contract"], data["info"]["admission"], data["info"]["rfc"],
-                                           data["info"]["nss"], data["info"]["position"], data["info"]["status"],
-                                           data["info"]["departure"], data["info"]["birthday"], data["info"]["legajo"],
-                                           data["info"]["email"], data["info"]["emergency"])
+        validator = EmployeeInsertForm.from_json(ns.payload)
+        if not validator.validate():
+            return {"errors": validator.errors}, 400
+        data = validator.data
+        flag, error, result = new_employee(
+            data["info"]["name"],
+            data["info"]["lastname"],
+            data["info"]["curp"],
+            data["info"]["phone"],
+            data["info"]["modality"],
+            data["info"]["dep"],
+            data["info"]["contract"],
+            data["info"]["admission"],
+            data["info"]["rfc"],
+            data["info"]["nss"],
+            data["info"]["position"],
+            data["info"]["status"],
+            data["info"]["departure"],
+            data["info"]["birthday"],
+            data["info"]["legajo"],
+            data["info"]["email"],
+            data["info"]["emergency"],
+        )
         if flag:
             return {"data": str(result)}, 201
         else:
@@ -53,17 +113,30 @@ class Employee(Resource):
 
     @ns.expect(employee_model_update)
     def put(self):
-        code, data = parse_data(ns.payload, 1)
-        if code == 400:
-            return {"data": None}, code
-        flag, error, result = update_employee(data["id"], data["info"]["name"], data["info"]["lastname"],
-                                              data["info"]["curp"],
-                                              data["info"]["phone"], data["info"]["modality"], data["info"]["dep"],
-                                              data["info"]["contract"], data["info"]["admission"], data["info"]["rfc"],
-                                              data["info"]["nss"], data["info"]["position"], data["info"]["status"],
-                                              data["info"]["departure"], data["info"]["birthday"],
-                                              data["info"]["legajo"],
-                                              data["info"]["email"], data["info"]["emergency"])
+        validator = EmployeeUpdateForm.from_json(ns.payload)
+        if not validator.validate():
+            return {"errors": validator.errors}, 400
+        data = validator.data
+        flag, error, result = update_employee(
+            data["id"],
+            data["info"]["name"],
+            data["info"]["lastname"],
+            data["info"]["curp"],
+            data["info"]["phone"],
+            data["info"]["modality"],
+            data["info"]["dep"],
+            data["info"]["contract"],
+            data["info"]["admission"],
+            data["info"]["rfc"],
+            data["info"]["nss"],
+            data["info"]["position"],
+            data["info"]["status"],
+            data["info"]["departure"],
+            data["info"]["birthday"],
+            data["info"]["legajo"],
+            data["info"]["email"],
+            data["info"]["emergency"],
+        )
         if flag:
             return {"data": str(result)}, 200
         else:
@@ -71,9 +144,10 @@ class Employee(Resource):
 
     @ns.expect(employee_model_delete)
     def delete(self):
-        code, data = parse_data(ns.payload, 1)
-        if code == 400:
-            return {"data": None}, code
+        validator = EmployeeDeleteForm.from_json(ns.payload)
+        if not validator.validate():
+            return {"errors": validator.errors}, 400
+        data = validator.data
         flag, error, result = delete_employee(data["id"])
         if flag:
             return {"data": str(result)}, 200
@@ -81,7 +155,7 @@ class Employee(Resource):
             return {"error": str(error)}, 400
 
 
-@ns.route('/employee/info/<string:id_emp>')
+@ns.route("/employee/info/<string:id_emp>")
 class EmployeeInfo(Resource):
     @ns.marshal_with(employee_model)
     def get(self, id_emp):
@@ -89,16 +163,15 @@ class EmployeeInfo(Resource):
         return data_out, code
 
 
-@ns.route('/employees/info/<string:status>')
+@ns.route("/employees/info/<string:status>")
 class EmployeesInfo(Resource):
-
     @ns.marshal_with(employees_info_model)
     def get(self, status):
         data_out, code = get_info_employees_with_status(status)
         return {"data": data_out}, code
 
 
-@ns.route('/employee/medical/<string:id_emp>')
+@ns.route("/employee/medical/<string:id_emp>")
 class EmployeesEMResume(Resource):
     @ns.marshal_with(examenes_medicos_model)
     def get(self, id_emp):
@@ -107,7 +180,9 @@ class EmployeesEMResume(Resource):
         if flag:
             code = 200
             for row in result:
-                id_exam, nombre, sangre, status, aptitud, fechas, apt_actual, emp_id = row
+                id_exam, nombre, sangre, status, aptitud, fechas, apt_actual, emp_id = (
+                    row
+                )
                 print(row)
                 if str(emp_id) == id_emp:
                     out = {
@@ -119,7 +194,7 @@ class EmployeesEMResume(Resource):
                         "aptitudes": aptitud,
                         "dates": fechas,
                         "apt_last": apt_actual,
-                        "emp_id": emp_id
+                        "emp_id": emp_id,
                     }
                     break
         else:
@@ -128,7 +203,7 @@ class EmployeesEMResume(Resource):
         return out, code
 
 
-@ns.route('/employees/medical/all')
+@ns.route("/employees/medical/all")
 class EmployeesEMResume(Resource):  # noqa: F811
     @ns.marshal_with(employees_examenes_model)
     def get(self):
@@ -139,18 +214,22 @@ class EmployeesEMResume(Resource):  # noqa: F811
             data_out = []
             for row in result:
                 print(row)
-                id_exam, nombre, sangre, status, aptitud, fechas, apt_actual, emp_id = row
-                data_out.append({
-                    "exist": True,
-                    "id_exam": id_exam,
-                    "name": nombre,
-                    "blood": sangre,
-                    "status": status,
-                    "aptitudes": json.loads(aptitud),
-                    "dates": json.loads(fechas),
-                    "apt_last": apt_actual,
-                    "emp_id": emp_id
-                })
+                id_exam, nombre, sangre, status, aptitud, fechas, apt_actual, emp_id = (
+                    row
+                )
+                data_out.append(
+                    {
+                        "exist": True,
+                        "id_exam": id_exam,
+                        "name": nombre,
+                        "blood": sangre,
+                        "status": status,
+                        "aptitudes": json.loads(aptitud),
+                        "dates": json.loads(fechas),
+                        "apt_last": apt_actual,
+                        "emp_id": emp_id,
+                    }
+                )
             out["data"] = data_out
             print(out)
         else:
@@ -159,14 +238,23 @@ class EmployeesEMResume(Resource):  # noqa: F811
         return out, code
 
 
-@ns.route('/employee/medical')
+@ns.route("/employee/medical")
 class EmployeesEMRegistry(Resource):
     @ns.expect(employee_exam_model_insert)
     def post(self):
-        code, data = parse_data(ns.payload, 2)
-        flag, error, result = insert_new_exam_med(data["info"]["name"], data["info"]["blood"], data["info"]["status"],
-                                                  data["info"]["aptitudes"], data["info"]["dates"],
-                                                  data["info"]["apt_actual"], data["info"]["emp_id"])
+        validator = EmployeeMedInsertForm.from_json(ns.payload)
+        if not validator.validate():
+            return {"errors": validator.errors}, 400
+        data = validator.data
+        flag, error, result = insert_new_exam_med(
+            data["info"]["name"],
+            data["info"]["blood"],
+            data["info"]["status"],
+            data["info"]["aptitudes"],
+            data["info"]["dates"],
+            data["info"]["apt_actual"],
+            data["info"]["emp_id"],
+        )
         if flag:
             return {"data": str(result)}, 201
         else:
@@ -174,9 +262,16 @@ class EmployeesEMRegistry(Resource):
 
     @ns.expect(employee_exam_model_update)
     def put(self):
-        code, data = parse_data(ns.payload, 2)
-        flag, error, result = update_aptitud_renovacion(data["info"]["aptitudes"], data["info"]["dates"],
-                                                        data["info"]["apt_actual"], data["id"])
+        validator = EmployeeMedUpdateForm.from_json(ns.payload)
+        if not validator.validate():
+            return {"errors": validator.errors}, 400
+        data = validator.data
+        flag, error, result = update_aptitud_renovacion(
+            data["info"]["aptitudes"],
+            data["info"]["dates"],
+            data["info"]["apt_actual"],
+            data["id"],
+        )
         if flag:
             return {"data": str(result)}, 200
         else:
@@ -184,7 +279,10 @@ class EmployeesEMRegistry(Resource):
 
     @ns.expect(employee_exam_model_delete)
     def delete(self):
-        code, data = parse_data(ns.payload, 2)
+        validator = EmployeeMedDeleteForm.from_json(ns.payload)
+        if not validator.validate():
+            return {"errors": validator.errors}, 400
+        data = validator.data
         flag, error, result = delete_exam_med(data["id"])
         if flag:
             return {"data": str(result)}, 200
@@ -192,7 +290,7 @@ class EmployeesEMRegistry(Resource):
             return {"error": str(error)}, 400
 
 
-@ns.route('/employees/vacations/all')
+@ns.route("/employees/vacations/all")
 class EmployeesVacations(Resource):
     @ns.marshal_with(employees_vacations_model)
     def get(self):
@@ -203,7 +301,7 @@ class EmployeesVacations(Resource):
             return {"data": None}, code
 
 
-@ns.route('/employee/vacations/<string:id_emp>')
+@ns.route("/employee/vacations/<string:id_emp>")
 class EmployeesVacationsID(Resource):
     @ns.marshal_with(vacations_model)
     def get(self, id_emp):
@@ -214,7 +312,7 @@ class EmployeesVacationsID(Resource):
             return data, code
 
 
-@ns.route('/employee/vacation')
+@ns.route("/employee/vacation")
 class EmployeesVacationRegistry(Resource):
     @ns.expect(employee_vacation_model_insert)
     def post(self):
@@ -248,49 +346,51 @@ class EmployeesVacationRegistry(Resource):
             return {"error": str(error)}, 400
 
 
-@ns.route('/employees/fichaje/all')
+@ns.route("/employees/fichaje/all")
 class EmployeesResume(Resource):
     @ns.marshal_with(employees_resume_model)
     def get(self):
-        fichajes_resume, flag = get_fichajes_resume_cache(cache_file_resume_fichaje_path, is_hard_update=True)
+        fichajes_resume, flag = get_fichajes_resume_cache(
+            cache_file_resume_fichaje_path, is_hard_update=True
+        )
         if flag:
             out_aux = []
             for item in fichajes_resume:
-                out_aux.append({
-                    "id": item[0],
-                    "name": item[1],
-                    "contract": item[2],
-                    "absences": item[3],
-                    "late": item[4],
-                    "total_late": item[5],
-                    "extra": item[6],
-                    "total_h_extra": item[7],
-                    "primes": item[8],
-                    "absences_details": item[9],
-                    "late_details": item[10],
-                    "extra_details": item[11],
-                    "primes_details": item[12],
-                    "normals_details": item[13],
-                    "earlies_details": item[14],
-                    "pasiva_details":  item[15]
-                })
-            out = {
-                "data": out_aux
-            }
+                out_aux.append(
+                    {
+                        "id": item[0],
+                        "name": item[1],
+                        "contract": item[2],
+                        "absences": item[3],
+                        "late": item[4],
+                        "total_late": item[5],
+                        "extra": item[6],
+                        "total_h_extra": item[7],
+                        "primes": item[8],
+                        "absences_details": item[9],
+                        "late_details": item[10],
+                        "extra_details": item[11],
+                        "primes_details": item[12],
+                        "normals_details": item[13],
+                        "earlies_details": item[14],
+                        "pasiva_details": item[15],
+                    }
+                )
+            out = {"data": out_aux}
             code = 200
         else:
-            out = {
-                "data": [None]
-            }
+            out = {"data": [None]}
             code = 400
         return out, code
 
 
-@ns.route('/employee/fichaje/<string:id_emp>')
+@ns.route("/employee/fichaje/<string:id_emp>")
 class EmployeesResume(Resource):  # noqa: F811
     @ns.marshal_with(resume_model)
     def get(self, id_emp):
-        fichajes_resume, flag = get_fichajes_resume_cache(cache_file_resume_fichaje_path, is_hard_update=True)
+        fichajes_resume, flag = get_fichajes_resume_cache(
+            cache_file_resume_fichaje_path, is_hard_update=True
+        )
         if flag:
             out = {}
             code = 404
@@ -313,7 +413,7 @@ class EmployeesResume(Resource):  # noqa: F811
                         "primes_details": item[12],
                         "normals_details": item[13],
                         "earlies_details": item[14],
-                        "pasiva_details": item[15]
+                        "pasiva_details": item[15],
                     }
                     code = 200
                     break
@@ -323,7 +423,7 @@ class EmployeesResume(Resource):  # noqa: F811
         return out, code
 
 
-@ns.route('/payroll/files/list/<int:emp_id>')
+@ns.route("/payroll/files/list/<int:emp_id>")
 class DownloadFilesPayroll(Resource):
     def get(self, emp_id):
         code, data_out = get_files_list_nomina(emp_id)
@@ -332,7 +432,7 @@ class DownloadFilesPayroll(Resource):
         return {"data": data_out, "msg": "ok"}, code
 
 
-@ns.route('/fichajes/files')
+@ns.route("/fichajes/files")
 class DownloadFileFichaje(Resource):
     @ns.marshal_with(answer_files_fichajes_model)
     def get(self):
@@ -343,7 +443,7 @@ class DownloadFileFichaje(Resource):
             return {"data": None, "msg": "No files"}, 400
 
 
-@ns.route('/fichajes/data/fromfiles')
+@ns.route("/fichajes/data/fromfiles")
 class DownloadFileFichajeID(Resource):
     @ns.expect(request_data_fichaje_files_model)
     @ns.marshal_with(answer_fichajes_model)
@@ -356,15 +456,14 @@ class DownloadFileFichajeID(Resource):
             return {"data": out, "msg": "ok"}, code
 
 
-@ns.route('/upload/fichaje/file')
+@ns.route("/upload/fichaje/file")
 class UploadFicahjeFile(Resource):
     @ns.expect(expected_files)
     def post(self):
-        
-        if 'file' not in request.files:
+        if "file" not in request.files:
             return {"data": "No se detecto un archivo"}, 400
-        file = request.files['file']
-        
+        file = request.files["file"]
+
         if file:
             filename = secure_filename(file.filename)
             file.save(os.path.join(path_contract_files, filename))
@@ -373,43 +472,51 @@ class UploadFicahjeFile(Resource):
             return {"data": "No se subio el archivo"}, 400
 
 
-@ns.route('/download/employees/<string:status>')
+@ns.route("/download/employees/<string:status>")
 class DownloadFileEMPs(Resource):
     def get(self, status):
         filepath = create_csv_file_employees(status)
         return send_file(filepath, as_attachment=True)
 
 
-@ns.route('/download/employees/medical')
+@ns.route("/download/employees/medical")
 class DownloadFileMedical(Resource):
     def get(self):
         flag, e, result = get_all_examenes()
         filepath = "files/medical.csv"
-        with (open(filepath, "w")) as file:
-            file.write("id_exam,nombre,sangre,estatus,aptitudes,fechas,apt_actual,emp_id\n")
+        with open(filepath, "w") as file:
+            file.write(
+                "id_exam,nombre,sangre,estatus,aptitudes,fechas,apt_actual,emp_id\n"
+            )
             for item in result:
-                id_exam, nombre, sangre, status, aptitud, fechas, apt_actual, emp_id = item
+                id_exam, nombre, sangre, status, aptitud, fechas, apt_actual, emp_id = (
+                    item
+                )
                 fechas = fechas.replace(",", ";")
                 aptitud = aptitud.replace(",", ";")
-                file.write(f"{id_exam},{nombre},{sangre},{status},{aptitud},{fechas},{apt_actual},{emp_id}\n")
+                file.write(
+                    f"{id_exam},{nombre},{sangre},{status},{aptitud},{fechas},{apt_actual},{emp_id}\n"
+                )
         return send_file(filepath, as_attachment=True)
 
 
-@ns.route('/download/employees/vacations')
+@ns.route("/download/employees/vacations")
 class DownloadFileVacations(Resource):
     def get(self):
         flag, error, data = get_vacations_data()
         filepath = "files/vacations.csv"
-        with (open(filepath, "w")) as file:
+        with open(filepath, "w") as file:
             file.write("emp_id, Nombre, Apellido, fecha_inicio, body\n")
             for item in data:
                 emp_id, name, l_name, date_admission, seniority = item
                 seniority = seniority.replace(",", ";")
-                file.write(f"{emp_id}, {name}, {l_name}, {date_admission}, {seniority}\n")
+                file.write(
+                    f"{emp_id}, {name}, {l_name}, {date_admission}, {seniority}\n"
+                )
         return send_file(filepath, as_attachment=True)
 
 
-@ns.route('/download/quizz/<int:type_q>')
+@ns.route("/download/quizz/<int:type_q>")
 class DownloadFileQuizz(Resource):
     def get(self, type_q):
         try:

@@ -11,9 +11,10 @@ from static.Models.api_models import (
     request_av_response_model,
     response_av_model,
     response_files_av_model,
+    NotificationInsertForm,
+    RequestAVResponseForm,
 )
 from static.extensions import filepath_settings
-from templates.Functions_Text import parse_data
 from templates.resources.midleware.Functions_midleware_misc import (
     get_all_notification_db_user_status,
     get_response_AV,
@@ -50,9 +51,10 @@ class NotificationsPermission(Resource):
 class Notification(Resource):
     @ns.expect(notification_insert_model)
     def post(self):
-        code, data = parse_data(ns.payload, 19)
-        if code != 200:
-            return {"error": data}, code
+        validator = NotificationInsertForm.from_json(ns.payload)
+        if not validator.validate():
+            return {"errors": validator.errors}, 400
+        data = validator.data
         flag, error, result = insert_notification(data["info"])
         if flag:
             return {"msg": "Ok", "data": str(result)}, 200
@@ -61,9 +63,11 @@ class Notification(Resource):
 
     @ns.expect(notification_insert_model)
     def put(self):
-        code, data = parse_data(ns.payload, 19)
-        if code != 200:
-            return {"error": data}, code
+        validator = NotificationInsertForm.from_json(ns.payload)
+        if not validator.validate():
+            return {"errors": validator.errors}, 400
+        data = validator.data
+        data["id"] = data["info"]["id"]
         flag, error, result = update_status_notification(
             data["id"], data["info"]["status"]
         )
@@ -87,9 +91,10 @@ class ResponseAV(Resource):
     @ns.marshal_with(response_av_model)
     @ns.expect(request_av_response_model)
     def post(self):
-        code, data = parse_data(ns.payload, 20)
-        if code != 200:
-            return {"msg": f"Error in the data structure: {str(data)}"}, code
+        validator = RequestAVResponseForm.from_json(ns.payload)
+        if not validator.validate():
+            return {"errors": validator.errors}, 400
+        data = validator.data
         try:
             files, res, id_chat = get_response_AV(
                 data["department"],
