@@ -83,13 +83,14 @@ def get_folio_from_contract_ternium(contract_abb: str):
     contract_number = metadata["contract_number"]
     idn_contract = contract_number[-4:]
     folio = folio_sm + "-" + idn_contract
-    folios = get_folios_by_pattern(folio)
+    flag, error, folios = get_folios_by_pattern(folio)
     numbers = []
+    print("folios:  ", folios)
     for item in folios:
         try:
             numbers.append(int(item[-3:]))
         except Exception as e:
-            print(e)
+            print(e, "item: ", item)
             continue
     numbers = numbers if len(numbers) > 0 else [0]
     numbers.sort()

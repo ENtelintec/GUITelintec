@@ -7,8 +7,8 @@ from datetime import datetime
 import ttkbootstrap as ttk
 from ttkbootstrap.tableview import Tableview
 
-from static.Models.api_contracts_models import ContractInsertForm
-from static.extensions import format_date
+from static.Models.api_contracts_models import ContractInsertForm, ContractUpdateForm
+from static.extensions import format_date, format_timestamps
 from templates.Functions_GUI_Utils import (
     create_label,
     create_button,
@@ -19,6 +19,7 @@ from templates.Functions_GUI_Utils import (
 from templates.controllers.contracts.contracts_controller import (
     create_contract,
     get_contract,
+    update_contract,
 )
 
 import tkinter.messagebox as msgbox
@@ -224,10 +225,10 @@ class ContractsCreateFrame(ttk.Frame):
         frame_buttons.columnconfigure((0, 1, 2, 3), weight=1)
         self.create_button_widgets(frame_buttons)
         # -------------------------table--------------------------------------
-        frame_table = ttk.Frame(self)
-        frame_table.grid(row=3, column=0, padx=50, pady=10, sticky="nswe")
-        frame_table.columnconfigure(0, weight=1)
-        self.table_contracts = self.create_table(frame_table, True)
+        self.frame_table = ttk.Frame(self)
+        self.frame_table.grid(row=3, column=0, padx=50, pady=10, sticky="nswe")
+        self.frame_table.columnconfigure(0, weight=1)
+        self.table_contracts = self.create_table(self.frame_table, True)
 
     def create_button_widgets(self, master):
         create_button(
@@ -265,10 +266,38 @@ class ContractsCreateFrame(ttk.Frame):
             msgbox.showinfo(
                 title="Exito", message=f"Contrato creado correctamente {result}"
             )
-        self.table_contracts = self.create_table(self.table_contracts, True)
+        self.table_contracts = self.create_table(self.frame_table, True)
 
     def update_contract(self):
-        pass
+        metadata = self.get_entries_values()
+        timestamp = datetime.now().strftime(format_timestamps)
+        timestamps = {
+            "complete": {"timestamp": None, "comment": ""},
+            "update": [{"timestamp": timestamp, "comment": "update"}],
+        }
+        validator = ContractUpdateForm.from_json(
+            {
+                "id": self.id_contract_edit,
+                "metadata": metadata,
+                "timestamps": timestamps,
+                "quotation_id": metadata["quotation_code"],
+            }
+        )
+        if not validator.validate():
+            print(validator.errors)
+            return
+        data = validator.data
+        flag, error, result = update_contract(
+            data["id"], data["metadata"], data["timestamps"]
+        )
+        if not flag:
+            msg = f"Error al actualizar el contrato: {error}"
+            msgbox.showerror(title="Error", message=msg)
+        else:
+            msgbox.showinfo(
+                title="Exito", message=f"Contrato actualizado correctamente {result}"
+            )
+        self.table_contracts = self.create_table(self.frame_table, True)
 
     def load_contract_file(self):
         pass

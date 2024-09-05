@@ -205,7 +205,9 @@ contract_model_delete = api.model(
 
 def date_filter(date):
     # Example filter function to format the date
-    return date.strftime(format_date) if not isinstance(date, str) else date
+    if date is not None:
+        return date.strftime(format_date) if not isinstance(date, str) else date
+    return None
 
 
 class MetadataQuotationForm(Form):
@@ -247,7 +249,7 @@ class QuotationInsertForm(Form):
 
 class TimestampsAdminForm(Form):
     timestamps = DateTimeField(
-        "timestamps", validators=[InputRequired()], filters=[date_filter]
+        "timestamps", validators=[], filters=[date_filter], default=None
     )
     comment = StringField("comment", validators=[], default="")
 
