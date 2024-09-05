@@ -75,7 +75,7 @@ def get_contract_from_abb(contract_abb: str):
         "FROM sql_telintec_mod_admin.contracts "
         "WHERE metadata->'$.abbreviation' = %s"
     )
-    val = (contract_abb,)
+    val = (contract_abb.upper(),)
     flag, error, result = execute_sql(sql, val, 1)
     if len(result) == 0:
         return False, "Contract not found", None
