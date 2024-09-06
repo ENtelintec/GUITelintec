@@ -9,6 +9,7 @@ from templates.controllers.contracts.contracts_controller import (
     get_contract_from_abb,
 )
 from templates.controllers.contracts.quotations_controller import get_quotation
+from templates.controllers.customer.customers_controller import get_customer_amc_by_id
 from templates.controllers.material_request.sm_controller import get_folios_by_pattern
 
 
@@ -95,7 +96,23 @@ def get_folio_from_contract_ternium(contract_abb: str):
     numbers = numbers if len(numbers) > 0 else [0]
     numbers.sort()
     folio = folio + "-" + str(numbers[-1] + 1).zfill(3)
+    flag, error, client_data = get_customer_amc_by_id(metadata["client_id"])
+    # id_customer, name, email, phone, rfc, address
+    print("client_data: ", client_data)
+    client_data = client_data if flag else [metadata["client_id"], "", "", "", "", ""]
     data = {
         "folio": folio,
+        "planta": metadata["planta"],
+        "area": metadata["area"],
+        "location": metadata["location"],
+        "client": {
+            "id": metadata["client_id"],
+            "name": client_data[1],
+            "email": client_data[2],
+            "phone": client_data[3],
+            "rfc": client_data[4],
+            "address": client_data[5],
+        },
+        "identifier": metadata["identifier"],
     }
     return {"data": data, "msg": "Ok"}, 200
