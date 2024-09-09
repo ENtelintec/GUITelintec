@@ -25,11 +25,14 @@ dict_depts_identifiers = {
 
 
 def get_quotations(id_quotation=None):
-    id_quotation = id_quotation if id_quotation != -1 else None
+    try:
+        id_quotation = id_quotation if int(id_quotation) != -1 else None
+    except ValueError:
+        return {"data": None, "msg": "Id invalido"}, 400
     flag, error, result = get_quotation(id_quotation)
     if not flag:
         return {"data": None, "msg": str(error)}, 400
-    if id_quotation is None:
+    if id_quotation is not None:
         id_q, metadata, products, creation, timestamps = result
         data_out = {
             "id": id_q,
