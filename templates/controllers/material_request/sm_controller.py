@@ -262,9 +262,7 @@ def update_sm_products_by_id(sm_id: int, items: list):
 
 
 def get_folios_by_pattern(pattern: str):
-    sql = (
-        "SELECT folio " "FROM sql_telintec.materials_request " "WHERE folio " "LIKE %s"
-    )
+    sql = "SELECT folio FROM sql_telintec.materials_request WHERE folio LIKE %s"
     val = (f"{pattern}%",)
     flag, error, result = execute_sql(sql, val, 2)
     return flag, error, result

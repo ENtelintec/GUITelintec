@@ -24,6 +24,7 @@ from templates.resources.midleware.Functions_midleware_admin import (
     get_quotations,
     get_contracts,
     get_folio_from_contract_ternium,
+    folio_from_department,
 )
 from templates.controllers.contracts.contracts_controller import (
     create_contract,
@@ -134,4 +135,11 @@ class Contract(Resource):
 class FolioTernium(Resource):
     def get(self, contract):
         data_out, code = get_folio_from_contract_ternium(contract)
+        return data_out, code
+
+
+@ns.route("/folio/cotfc/<string:key>")
+class FolioCotfc(Resource):
+    def get(self, key):
+        data_out, code = folio_from_department(key)
         return data_out, code

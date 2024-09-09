@@ -12,6 +12,17 @@ from templates.controllers.contracts.quotations_controller import get_quotation
 from templates.controllers.customer.customers_controller import get_customer_amc_by_id
 from templates.controllers.material_request.sm_controller import get_folios_by_pattern
 
+dict_depts_identifiers = {
+    "administracion": "ADMON",
+    "almacen": "ALM",
+    "control de activos": ["CDA-VEH", "TI"],
+    "direccion": "DIRE",
+    "operaciones": "OP",
+    "recursos humanos": "RH",
+    "seguridad": "sst",
+    "sistema de gestion integral": "sgi",
+}
+
 
 def get_quotations(id_quotation=None):
     id_quotation = id_quotation if id_quotation != -1 else None
@@ -86,7 +97,6 @@ def get_folio_from_contract_ternium(contract_abb: str):
     folio = folio_sm + "-" + idn_contract
     flag, error, folios = get_folios_by_pattern(folio)
     numbers = []
-    print("folios:  ", folios)
     for item in folios:
         try:
             numbers.append(int(item[-3:]))
@@ -98,7 +108,6 @@ def get_folio_from_contract_ternium(contract_abb: str):
     folio = folio + "-" + str(numbers[-1] + 1).zfill(3)
     flag, error, client_data = get_customer_amc_by_id(metadata["client_id"])
     # id_customer, name, email, phone, rfc, address
-    print("client_data: ", client_data)
     client_data = client_data if flag else [metadata["client_id"], "", "", "", "", ""]
     data = {
         "folio": folio,
@@ -115,4 +124,34 @@ def get_folio_from_contract_ternium(contract_abb: str):
         },
         "identifier": metadata["identifier"],
     }
+    return {"data": data, "msg": "Ok"}, 200
+
+
+def folio_from_department(department_key: str):
+    identifier = dict_depts_identifiers.get(department_key.lower())
+    if identifier is None:
+        return {"data": None, "msg": "Department not found"}, 400
+    folio_list = []
+    if isinstance(identifier, str):
+        folio = f"SM-{identifier.upper()}"
+        folio_list.append(folio)
+    elif isinstance(identifier, list):
+        for idd in identifier:
+            folio = f"SM-{idd.upper()}"
+            folio_list.append(folio)
+    folios_out = []
+    for folio in folio_list:
+        flag, error, folios = get_folios_by_pattern(folio)
+        numbers = []
+        for item in folios:
+            try:
+                numbers.append(int(item[-3:]))
+            except Exception as e:
+                print(e, "item: ", item)
+                continue
+        numbers = numbers if len(numbers) > 0 else [0]
+        numbers.sort()
+        folio = folio + "-" + str(numbers[-1] + 1).zfill(3)
+        folios_out.append(folio)
+    data = {"folios": folios_out}
     return {"data": data, "msg": "Ok"}, 200
