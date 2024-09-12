@@ -126,7 +126,6 @@ def create_widgets(master, data):
         master, row=1, column=0, firstweekday=0, dateformat=format_date
     )
     quotation_data = data["quotations"]
-    print("data quotations", quotation_data)
     quotations_list = [f"{quotation[0]}" for quotation in quotation_data]
     quotation_code = create_Combobox(
         master,

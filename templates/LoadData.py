@@ -56,7 +56,6 @@ def load_data(data_dic, is_super=False, emp_id=None, item=None, permissions=None
             for permission in permissions.values():
                 txt = permission.split(".")
                 dashboard_key.append(txt[-1].lower())
-            print(dashboard_key)
             data_dic["data_dashboard"] = {"dashboard_key": dashboard_key}
             created_windows = []
             for dashboard in dashboard_key:

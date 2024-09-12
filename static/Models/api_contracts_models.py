@@ -9,7 +9,7 @@ from flask_restx import fields
 from wtforms.fields.datetime import DateField, DateTimeField
 from wtforms.fields.list import FieldList
 from wtforms.fields.numeric import FloatField, IntegerField
-from wtforms.fields.simple import StringField, EmailField
+from wtforms.fields.simple import StringField, EmailField, BooleanField
 
 from wtforms import FormField
 
@@ -40,20 +40,35 @@ metadata_quotation_model = api.model(
         ),
     },
 )
-
 products_quotation_model = api.model(
     "ProductsQuotation",
     {
-        "id": fields.Integer(required=True, description="The quotation id"),
-        "description": fields.String(
-            required=True, description="The quotation description"
+        "partida": fields.Integer(
+            required=True,
+            description="The product partida (numeration item)",
+            example=1,
         ),
-        "quantity": fields.Integer(required=True, description="The quotation quantity"),
-        "udm": fields.String(required=True, description="The quotation udm"),
+        "revision": fields.Boolean(
+            required=True, description="The product revision", example=False
+        ),
+        "type": fields.String(required=True, description="The product type"),
+        "marca": fields.String(required=True, description="The product marca"),
+        "n_parte": fields.String(required=True, description="The product part number"),
+        "description_small": fields.String(
+            required=True, description="The product descripcion_corta"
+        ),
+        "description": fields.String(
+            required=True, description="The product description"
+        ),
+        "quantity": fields.Integer(required=True, description="The product quantity"),
+        "udm": fields.String(required=True, description="The product udm"),
         "price_unit": fields.Float(
             required=True, description="The quotation price unit"
         ),
-        "comment": fields.String(required=True, description="The quotation comment"),
+        "comment": fields.String(required=False, description="The product comment"),
+        "id": fields.Integer(
+            required=False, description="The product id in the database"
+        ),
     },
 )
 
@@ -232,13 +247,17 @@ class MetadataQuotationForm(Form):
 
 
 class ProductsQuotationForm(Form):
-    id = IntegerField(
-        "id", validators=[InputRequired(message="Invalid id or 0 not acepted")]
-    )
-    description = StringField("description", validators=[InputRequired()])
+    partida = IntegerField("partida", validators=[InputRequired()])
+    revision = BooleanField("revision", validators=[], default=False)
+    type_p = StringField("type", validators=[InputRequired()])
+    marca = StringField("marca", validators=[InputRequired()])
+    n_parte = StringField("n_parte", validators=[InputRequired()])
+    description = StringField("description", validators=[], default="")
+    description_small = StringField("description_small", validators=[], default="")
     quantity = IntegerField("quantity", validators=[], default=0)
     udm = StringField("udm", validators=[InputRequired()])
     price_unit = FloatField("price_unit", validators=[], default=0.0)
+    id = IntegerField("id", validators=[], default=None)
     comment = StringField("comment", validators=[], default="")
 
 
