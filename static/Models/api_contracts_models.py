@@ -2,6 +2,7 @@
 __author__ = "Edisson Naula"
 __date__ = "$ 20/jun./2024  at 15:08 $"
 
+from werkzeug.datastructures import FileStorage
 from wtforms.form import Form
 from wtforms.validators import InputRequired
 from static.extensions import api, format_date
@@ -218,6 +219,45 @@ contract_model_delete = api.model(
 )
 
 
+expected_files_quotation = api.parser()
+expected_files_quotation.add_argument(
+    "file",
+    type=FileStorage,
+    location="files",
+    required=True,
+)
+
+expected_files_contract = api.parser()
+expected_files_contract.add_argument(
+    "file",
+    type=FileStorage,
+    location="files",
+    required=True,
+)
+
+expected_files_contract_comparison = api.parser()
+expected_files_contract_comparison.add_argument(
+    "file",
+    type=FileStorage,
+    location="files",
+    required=True,
+)
+expected_files_contract_comparison.add_argument(
+    "id_quotation",
+    type=int,
+    location="form",
+    required=True,
+)
+
+contract_settings_model = api.model(
+    "ContractSettings",
+    {
+        "phrase": fields.String(required=True, description="The contract phrase"),
+        "pattern": fields.String(required=True, description="The contract pattern"),
+    },
+)
+
+
 def date_filter(date):
     # Example filter function to format the date
     if date is not None:
@@ -333,3 +373,8 @@ class ContractDeleteForm(Form):
     id = IntegerField(
         "id", validators=[InputRequired(message="Invalid id or 0 not acepted")]
     )
+
+
+class ContractSettingsForm(Form):
+    phrase = StringField("phrase", validators=[InputRequired()])
+    pattern = StringField("pattern", validators=[InputRequired()])

@@ -4,6 +4,7 @@ __date__ = "$ 20/jun./2024  at 15:23 $"
 
 import json
 
+from static.extensions import filepath_settings
 from templates.controllers.contracts.contracts_controller import (
     get_contract,
     get_contract_from_abb,
@@ -11,6 +12,11 @@ from templates.controllers.contracts.contracts_controller import (
 from templates.controllers.contracts.quotations_controller import get_quotation
 from templates.controllers.customer.customers_controller import get_customer_amc_by_id
 from templates.controllers.material_request.sm_controller import get_folios_by_pattern
+from templates.resources.methods.Functions_Aux_Admin import (
+    read_file_tenium_contract,
+    read_exel_products_quotation,
+    compare_file_quotation,
+)
 
 dict_depts_identifiers = {
     "administracion": "ADMON",
@@ -110,7 +116,6 @@ def get_folio_from_contract_ternium(contract_abb: str):
     numbers.sort()
     folio = folio + "-" + str(numbers[-1] + 1).zfill(3)
     flag, error, client_data = get_customer_amc_by_id(metadata["client_id"])
-    # id_customer, name, email, phone, rfc, address
     client_data = client_data if flag else [metadata["client_id"], "", "", "", "", ""]
     data = {
         "folio": folio,
@@ -158,3 +163,55 @@ def folio_from_department(department_key: str):
         folios_out.append(folio)
     data = {"folios": folios_out}
     return {"data": data, "msg": "Ok"}, 200
+
+
+def products_quotation_from_file(path: str):
+    products = read_exel_products_quotation(path)
+    return {"data": products, "msg": "Ok"}, 200
+
+
+def products_contract_from_file(data: dict):
+    settings = json.loads(filepath_settings)
+    flag = False
+    data["phrase"] = settings.get("phrase_pdf_contract")
+    data["pattern"] = settings.get("pattern_pdf_contract")
+    if data["phrase"] is None or data["pattern"] is None:
+        flag = True
+        data["phrase"] = settings.get("phrase_pdf_contract_default")
+        data["pattern"] = settings.get("pattern_pdf_contract_default")
+    products = read_file_tenium_contract(data["path"], data["pattern"], data["phrase"])
+    if len(products) == 0 and not flag:
+        data["phrase"] = settings.get("phrase_pdf_contract_default")
+        data["pattern"] = settings.get("pattern_pdf_contract_default")
+        products = read_file_tenium_contract(
+            data["path"], data["pattern"], data["phrase"]
+        )
+    return {"data": products, "msg": "Ok"}, 200
+
+
+def modify_pattern_phrase_contract_pdf(data: dict):
+    e = None
+    try:
+        settings = json.loads(filepath_settings)
+        settings["phrase_pdf_contract"] = data["phrase"]
+        settings["pattern_pdf_contract"] = data["pattern"]
+        with open(filepath_settings, "w") as file:
+            json.dump(settings, file, indent=4)
+    except Exception as e:
+        print(e)
+    return True, str(e)
+
+
+def compare_file_and_quotation(data: dict):
+    settings = json.loads(filepath_settings)
+    data["phrase"] = settings.get("phrase_pdf_contract")
+    data["pattern"] = settings.get("pattern_pdf_contract")
+    if data["phrase"] is None or data["pattern"] is None:
+        data["phrase"] = settings.get("phrase_pdf_contract_default")
+        data["pattern"] = settings.get("pattern_pdf_contract_default")
+    flag, error, data_quotation = get_quotation(data["id_quotation"])
+    products_contract = read_file_tenium_contract(
+        data["path"], data["pattern"], data["phrase"]
+    )
+    data_out, code = compare_file_quotation(data_quotation, products_contract)
+    return data_out, code

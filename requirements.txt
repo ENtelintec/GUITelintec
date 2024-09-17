@@ -24,9 +24,10 @@ setuptools
 keras~=3.3.3
 tensorflow~=2.16.1
 scikit-learn~=1.5.0
-Office365-REST-Python-Client
+Office365-REST-Python-Client~=2.5.11
 Werkzeug~=2.3.8
 Flask-WTF
 WTForms~=3.1.2
-WTForms-JSON
+WTForms-JSON~=0.3.5
 xlsxwriter
+PyPDF2~=3.0.1

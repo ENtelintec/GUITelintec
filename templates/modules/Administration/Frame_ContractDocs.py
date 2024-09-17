@@ -6,11 +6,13 @@ from tkinter.filedialog import askopenfilename
 
 import pandas as pd
 import ttkbootstrap as ttk
+from ttkbootstrap.scrolled import ScrolledFrame
 from ttkbootstrap.tableview import Tableview
 
 from templates.Functions_GUI_Utils import create_label, create_Combobox, create_button
 from templates.resources.methods.Functions_Aux_Admin import (
     read_file_tenium_contract,
+    compare_vectors_quotation_contract,
 )
 
 import json
@@ -44,40 +46,11 @@ def create_widgets(master, data):
     return [cotization_selector]
 
 
-def compare_vectors_quotation_contract(vector1, vector2):
-    # coldata_c = ["Partida","Descripción","Cantidad","Unidad","Precio Unitario","Total","Tipo","Marca","Nro. Parte","Descripción Larga",
-    #              " ", "Partida", "Descripción", "Cantidad", "Unidad", "Precio Unitario", "Importe"]
-    # out = vector1 + ["<-->"] + vector2
-    out = [
-        vector2[6],
-        vector2[11],
-        vector2[7],
-        vector2[1],
-        vector2[9],
-        round(vector2[9] * vector2[7], 2),
-        vector2[3],
-        vector2[2],
-        vector2[5],
-        vector2[10],
-        "<-->",
-        vector1[0],
-        vector1[1],
-        vector1[2],
-        vector1[3],
-        vector1[4],
-        vector1[5],
-    ]
-    flag = False
-    if (
-        round(vector2[9], 2) - 0.01 <= vector1[4] <= round(vector2[9], 2) + 0.01
-    ):  # company
-        flag = True
-    return flag, out
-
-
-class ContractsDocsFrame(ttk.Frame):
+class ContractsDocsFrame(ScrolledFrame):
     def __init__(self, master, **kwargs):
         super().__init__(master)
+        self.txt1 = None
+        self.txt2 = None
         self.id_quotation_selected = None
         self.products_contract = None
         self.columnconfigure(0, weight=1)
@@ -86,6 +59,8 @@ class ContractsDocsFrame(ttk.Frame):
         )
         self.data_quotation = None
         self.table_comparision = None
+        self.flags = None
+        self.table_rows = None
         # ---------------------------title-------------------------------------
         create_label(
             self,
@@ -97,20 +72,20 @@ class ContractsDocsFrame(ttk.Frame):
         )
         # -------------------------inputs--------------------------------------
         frame_inputs = ttk.Frame(self)
-        frame_inputs.grid(row=1, column=0, sticky="nswe")
+        frame_inputs.grid(row=1, column=0, sticky="nswe", padx=(1, 15))
         frame_inputs.columnconfigure((0, 1), weight=1)
         self.entries = create_widgets(frame_inputs, self.data_quotations)
         quotation_selector = self.entries[0]
         quotation_selector.bind("<<ComboboxSelected>>", self.on_quotation_selected)
         # -------------------------btns---------------------------------------
         frame_buttons = ttk.Frame(self)
-        frame_buttons.grid(row=2, column=0, sticky="nswe")
+        frame_buttons.grid(row=2, column=0, sticky="nswe", padx=(1, 15))
         frame_buttons.columnconfigure((0, 1, 2), weight=1)
         self.create_button_widgets(frame_buttons)
         # -------------------------displayProducts-----------------------------
         self.frame_display_p = ttk.Frame(self)
-        self.frame_display_p.grid(row=3, column=0, sticky="nswe")
-        self.frame_display_p.columnconfigure(0, weight=1)
+        self.frame_display_p.grid(row=3, column=0, sticky="nswe", padx=(1, 15))
+        self.frame_display_p.columnconfigure((0, 1), weight=1)
         self.display_outputs = self.create_display_widgets()
 
     def create_button_widgets(self, master):
@@ -160,7 +135,8 @@ class ContractsDocsFrame(ttk.Frame):
             print("No hay datos para comparar")
             return
         products_quotation = json.loads(self.data_quotation[2])
-        table_rows = []
+        self.table_rows = []
+        self.flags = {}
         flags = []
         if len(self.products_contract) >= len(products_quotation):
             df = pd.DataFrame.from_records(products_quotation)
@@ -172,15 +148,29 @@ class ContractsDocsFrame(ttk.Frame):
                     if item2
                     else [None, "", "", "", "", "", 0, 0, False, 0.0, "", ""]
                 )
-                flag, result = compare_vectors_quotation_contract(
+                flag, result, columns = compare_vectors_quotation_contract(
                     list(item1.values()), item2
                 )
-                table_rows.append(result)
+                self.table_rows.append(result)
+                self.flags[result[0]] = flag
                 flags.append(flag)
-            self.table_comparision = self.create_display_widgets(table_rows, flags)
         else:
             df = pd.DataFrame.from_records(self.products_contract)
-        # self.table_comparision = self.create_display_widgets()
+            for index, item1 in enumerate(products_quotation):
+                partida_1 = int(item1["partida"])
+                item2 = df.loc[df["partida"] == partida_1].values.tolist()
+                item2 = (
+                    item2[0]
+                    if item2
+                    else [None, "", "", "", "", "", 0, 0, False, 0.0, "", ""]
+                )
+                flag, result, columns = compare_vectors_quotation_contract(
+                    list(item2.values()), item1
+                )
+                self.table_rows.append(result)
+                self.flags[result[0]] = flag
+                flags.append(flag)
+        self.table_comparision = self.create_display_widgets(self.table_rows, flags)
 
     def create_display_widgets(self, rowdata=None, flags=None):
         rowdata = rowdata if rowdata is not None else []
@@ -207,7 +197,7 @@ class ContractsDocsFrame(ttk.Frame):
             {"text": "Marca", "stretch": False, "width": 110},
             {"text": "Nro. Parte", "stretch": False, "width": 85},
             {"text": "Descripción Larga", "stretch": False, "width": 150},
-            {"text": " ", "stretch": False, "width": 25},
+            {"text": " ", "stretch": False, "width": 35},
             {"text": "Partida", "stretch": False, "width": 85},
             {"text": "Descripción", "stretch": False, "width": 150},
             {"text": "Cantidad", "stretch": False, "width": 55},
@@ -224,7 +214,7 @@ class ContractsDocsFrame(ttk.Frame):
             bootstyle="primary",
             height=20,
         )
-        tpc.grid(row=1, column=0, sticky="we")
+        tpc.grid(row=1, column=0, sticky="we", columnspan=2)
         tpc.view.tag_configure(
             "complete", font=("Arial", 10, "normal"), background="white"
         )
@@ -238,6 +228,7 @@ class ContractsDocsFrame(ttk.Frame):
                 tpc.view.item(item_t, tags="complete")
             else:
                 tpc.view.item(item_t, tags="incomplete")
+        tpc.view.bind("<Double-1>", self._on_double_click_table)
         return tpc
 
     def create_contract(self):
@@ -255,3 +246,41 @@ class ContractsDocsFrame(ttk.Frame):
                         print("quotation selected: ", self.id_quotation_selected)
             except ValueError:
                 self.id_quotation_selected = None
+
+    def _on_double_click_table(self, event):
+        value = event.widget.item(event.widget.selection(), "values")
+        print(self.flags[int(value[0])])
+        self.create_display_comparison(value)
+
+    def create_display_comparison(self, data_vector):
+        if self.txt1 is not None:
+            self.txt1.destroy()
+        if self.txt2 is not None:
+            self.txt2.destroy()
+        self.txt1 = ttk.ScrolledText(self.frame_display_p)
+        self.txt1.grid(row=2, column=0, sticky="nswe", padx=(5, 10))
+        self.txt2 = ttk.ScrolledText(self.frame_display_p)
+        self.txt2.grid(row=2, column=1, sticky="nswe", padx=(5, 10))
+        dict_vector1 = {
+            0: "Partida",
+            1: "Descripción",
+            2: "Cantidad",
+            3: "Unidad",
+            4: "Precio Unitario",
+            5: "Total",
+            6: "Tipo",
+            7: "Marca",
+            8: "Nro. Parte",
+            9: "Descripción Larga",
+            11: "Partida",
+            12: "Descripción",
+            13: "Cantidad",
+            14: "Unidad",
+            15: "Precio Unitario",
+            16: "Importe",
+        }
+        for index, item in enumerate(data_vector):
+            if index < 10:
+                self.txt1.insert("end", f"{dict_vector1[index]}: {item}\n")
+            elif index > 10:
+                self.txt2.insert("end", f"{dict_vector1[index]}: {item}\n")

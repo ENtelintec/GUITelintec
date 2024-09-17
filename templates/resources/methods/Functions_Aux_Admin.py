@@ -2,8 +2,10 @@
 __author__ = "Edisson Naula"
 __date__ = "$ 20/jun./2024  at 15:40 $"
 
+import json
 import re
 
+import pandas as pd
 from PyPDF2 import PdfReader
 
 
@@ -156,3 +158,106 @@ def read_file_tenium_contract(path: str, pattern, phrase):
             }
         )
     return products
+
+
+def read_exel_products_quotation(path: str):
+    df = pd.read_excel(path, skiprows=[0])
+    df = df.fillna("")
+    data_excel = df.to_dict("records")
+    products = []
+    for item in data_excel:
+        if item["PARTIDA"] == "":
+            continue
+        product = {
+            "partida": item["PARTIDA"],
+            "revision": True if item["REVISAR"] == "REVISAR" else False,
+            "type_p": item["TIPO"],
+            "marca": item["MARCA"],
+            "n_parte": item["NRO. PARTE"],
+            "description_small": item["DESCRIPCIÓN CORTA"],
+            "description": item["DESCRIPCIÓN LARGA"],
+            "quantity": item["CANTIDAD"],
+            "udm": item["UND"],
+            "price_unit": item["PRECIO"],
+            "comment": "",
+            "id": None,
+        }
+        products.append(product)
+    return products
+
+
+def compare_vectors_quotation_contract(vector1, vector2):
+    out = [
+        vector2[6],
+        vector2[11],
+        vector2[7],
+        vector2[1],
+        vector2[9],
+        round(vector2[9] * vector2[7], 2),
+        vector2[3],
+        vector2[2],
+        vector2[5],
+        vector2[10],
+        "<-->",
+        vector1[0],
+        vector1[1],
+        vector1[2],
+        vector1[3],
+        vector1[4],
+        vector1[5],
+    ]
+    coldata_c = [
+        "Partida", "Descripción",  "Cantidad",  "Unidad",  "Precio Unitario",  "Total",  "Tipo",  "Marca",
+        "Nro. Parte",  "Descripción Larga",
+        " ",
+        "Partida",  "Descripción",  "Cantidad",  "Unidad",  "Precio Unitario",  "Importe",
+    ]
+    flag = False
+    if (
+        round(vector2[9], 2) - 0.01 <= vector1[4] <= round(vector2[9], 2) + 0.01
+    ):  # company
+        flag = True
+    return flag, out, coldata_c
+
+
+def compare_file_quotation(data_quotation, products_contract):
+    if products_contract is None or len(products_contract) == 0:
+        return {"data": [], "flags": [], "msg": "No data detected"}, 200
+    products_quotation = json.loads(data_quotation[2])
+    table_rows = []
+    flags = []
+    columns = []
+    if len(products_contract) >= len(products_quotation):
+        df = pd.DataFrame.from_records(products_quotation)
+        for index, item1 in enumerate(products_contract):
+            partida_1 = int(item1["partida"])
+            item2 = df.loc[df["partida"] == partida_1].values.tolist()
+            item2 = (
+                item2[0]
+                if item2
+                else [None, "", "", "", "", "", 0, 0, False, 0.0, "", ""]
+            )
+            flag, result, columns = compare_vectors_quotation_contract(
+                list(item1.values()), item2
+            )
+            table_rows.append(result)
+            flags.append(flag)
+    else:
+        df = pd.DataFrame.from_records(products_contract)
+        for index, item1 in enumerate(products_quotation):
+            partida_1 = int(item1["partida"])
+            item2 = df.loc[df["partida"] == partida_1].values.tolist()
+            item2 = (
+                item2[0]
+                if item2
+                else [None, "", "", "", "", "", 0, 0, False, 0.0, "", ""]
+            )
+            flag, result, columns = compare_vectors_quotation_contract(
+                list(item2.values()), item1
+            )
+            table_rows.append(result)
+            flags.append(flag)
+    # replace item " " in columns
+    columns = [item if item != " " else "Separator" for item in columns]
+    data_out = {"data": table_rows, "columns": columns, "flags": flags, "msg": "Ok"}
+    return data_out, 200
