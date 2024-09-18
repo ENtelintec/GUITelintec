@@ -194,13 +194,13 @@ class Task(Resource):
         data = validator.data
         flag, error, result = delete_task(data["id"])
         if flag:
-            msg = f"Se elimino la tarea ({result}) {data['body']['title']} para {data['body']['metadata']['name_emp']}"
+            msg = f"Se elimino la tarea {data['id']}"
             create_notification_permission(
                 msg,
                 ["RRHH"],
                 "Tarea quizz eliminada",
-                data["body"]["emp_origin"],
-                data["body"]["emp_destiny"],
+                data["emp_origin"],
+                data["emp_destiny"],
             )
             return {"msg": f"Ok-->{msg}"}, 200
         else:

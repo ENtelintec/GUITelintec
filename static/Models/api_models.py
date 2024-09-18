@@ -358,7 +358,14 @@ task_update_model = api.model(
 
 task_delete_model = api.model(
     "TaskDelete",
-    {"id": fields.Integer(required=True, description="The id of the task")},
+    {
+        "id": fields.Integer(required=True, description="The id of the task"),
+        "emp_origin": fields.Integer(required=True, description="The origin employee"),
+        "emp_destiny": fields.Integer(
+            required=True, description="The destination employee"
+        ),
+    },
+
 )
 
 
@@ -429,6 +436,8 @@ class TaskUpdateForm(Form):
 
 class TaskDeleteForm(Form):
     id = IntegerField("id", validators=[InputRequired()])
+    emp_origin = IntegerField("emp_origin", validators=[InputRequired()])
+    emp_destiny = IntegerField("emp_destiny", validators=[InputRequired()])
 
 
 class NotificationForm(Form):
