@@ -13,13 +13,26 @@ from static.Models.api_models import (
     response_files_av_model,
     NotificationInsertForm,
     RequestAVResponseForm,
+    task_insert_model,
+    TaskInsertForm,
+    task_update_model,
+    TaskUpdateForm,
+    task_delete_model,
+    TaskDeleteForm,
 )
 from static.extensions import filepath_settings
+from templates.Functions_GUI_Utils import create_notification_permission
+from templates.controllers.misc.tasks_controller import (
+    create_task,
+    update_task,
+    delete_task,
+)
 from templates.resources.midleware.Functions_midleware_misc import (
     get_all_notification_db_user_status,
     get_response_AV,
     get_files_openai,
     get_all_notification_db_permission,
+    get_task_by_id_employee,
 )
 from templates.controllers.notifications.Notifications_controller import (
     insert_notification,
@@ -119,3 +132,83 @@ class FilesAV(Resource):
             return {"files": files}, 200
         except Exception as e:
             return {"files": [], "error": str(e)}, 400
+
+
+@ns.route("/task/quizz")
+class Task(Resource):
+    @ns.expect(task_insert_model)
+    def post(self):
+        validator = TaskInsertForm.from_json(ns.payload)
+        if not validator.validate():
+            return {"errors": validator.errors}, 400
+        data = validator.data
+        flag, error, result = create_task(
+            data["title"],
+            data["emp_destiny"],
+            data["emp_origin"],
+            data["date_limit"],
+            data["metadata"],
+        )
+        if flag:
+            msg = f"Se creo una tarea ({result}) {data['title']} para {data['metadata']['name_emp']}"
+            create_notification_permission(
+                msg,
+                ["RRHH"],
+                "Nuevo tarea quizz creada",
+                data["emp_origin"],
+                data["emp_destiny"],
+            )
+            return {"msg": f"Ok-->{msg}"}, 201
+        else:
+            print(error)
+            return {"msg": "Ok", "data": str(error)}, 400
+
+    @ns.expect(task_update_model)
+    def put(self):
+        validator = TaskUpdateForm.from_json(ns.payload)
+        if not validator.validate():
+            return {"errors": validator.errors}, 400
+        data = validator.data
+        flag, error, result = update_task(data["id"], data["body"])
+        if flag:
+            msg = f"Se actualizo la tarea ({result}) {data['body']['title']} para {data['body']['metadata']['name_emp']}"
+            create_notification_permission(
+                msg,
+                ["RRHH"],
+                "Tarea quizz actualizada",
+                data["body"]["emp_origin"],
+                data["body"]["emp_destiny"],
+            )
+            return {"msg": f"Ok-->{msg}"}, 200
+        else:
+            return {"msg": "Fail", "data": str(error)}, 400
+
+    @ns.expect(task_delete_model)
+    def delete(self):
+        validator = TaskDeleteForm.from_json(ns.payload)
+        if not validator.validate():
+            return {"errors": validator.errors}, 400
+        data = validator.data
+        flag, error, result = delete_task(data["id"])
+        if flag:
+            msg = f"Se elimino la tarea ({result}) {data['body']['title']} para {data['body']['metadata']['name_emp']}"
+            create_notification_permission(
+                msg,
+                ["RRHH"],
+                "Tarea quizz eliminada",
+                data["body"]["emp_origin"],
+                data["body"]["emp_destiny"],
+            )
+            return {"msg": f"Ok-->{msg}"}, 200
+        else:
+            return {"msg": "Fail", "data": str(error)}, 400
+
+
+@ns.route("/task/<int:emp_id>")
+class TaskGui(Resource):
+    def get(self, emp_id):
+        data, code = get_task_by_id_employee(emp_id)
+        if code == 200:
+            return {"data": data}, 200
+        else:
+            return {"data": data, "msg": "Error"}, code
