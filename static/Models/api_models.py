@@ -311,6 +311,20 @@ task_insert_model = api.model(
     },
 )
 
+changes_model = api.model(
+    "Changes",
+    {
+        "timestamp": fields.String(
+            required=True,
+            description="The timestamp of the change",
+            example="2024-04-30 17:48:26",
+        ),
+        "action": fields.String(
+            required=True, description="The action of the change", example="update"
+        ),
+    },
+)
+
 body_task_model = api.model(
     "BodyTask",
     {
@@ -330,6 +344,7 @@ body_task_model = api.model(
         "status": fields.Integer(
             required=False, description="The status of the task", example=0
         ),
+        "changes": fields.List(fields.Nested(changes_model)),
     },
 )
 
@@ -388,6 +403,13 @@ class TaskInsertForm(Form):
     metadata = FormField(MetadataTasksForm)
 
 
+class ChangesForm(Form):
+    timestamp = DateTimeField(
+        "timestamp", validators=[InputRequired()], filters=[datetime_filter]
+    )
+    action = StringField("action", validators=[InputRequired()])
+
+
 class BodyTaskForm(Form):
     title = StringField("title", validators=[InputRequired()])
     emp_destiny = IntegerField("emp_destiny", validators=[InputRequired()])
@@ -396,6 +418,8 @@ class BodyTaskForm(Form):
         "date_limit", validators=[InputRequired()], filters=[date_filter]
     )
     metadata = FormField(MetadataTasksForm)
+    status = IntegerField("status", validators=[], default=0)
+    changes = FieldList(FormField(ChangesForm), validators=[], default=[])
 
 
 class TaskUpdateForm(Form):

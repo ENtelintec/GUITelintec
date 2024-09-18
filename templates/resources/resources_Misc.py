@@ -165,13 +165,16 @@ class Task(Resource):
 
     @ns.expect(task_update_model)
     def put(self):
+        print(ns.payload)
         validator = TaskUpdateForm.from_json(ns.payload)
+
         if not validator.validate():
             return {"errors": validator.errors}, 400
         data = validator.data
+        print(data["body"].keys())
         flag, error, result = update_task(data["id"], data["body"])
         if flag:
-            msg = f"Se actualizo la tarea ({result}) {data['body']['title']} para {data['body']['metadata']['name_emp']}"
+            msg = f"Se actualizo la tarea {data['body']['title']} para {data['body']['metadata']['name_emp']}"
             create_notification_permission(
                 msg,
                 ["RRHH"],
