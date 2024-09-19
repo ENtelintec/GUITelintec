@@ -10,13 +10,14 @@ from static.Models.api_dashboards_models import (
 )
 from templates.resources.midleware.Functions_midleware_dashboard import (
     get_data_chart_movements,
+    get_data_chart_sm,
 )
 
 ns = Namespace("GUI/api/v1/dashboard")
 
 
 @ns.route("/inventory/movements")
-class Notification(Resource):
+class MovementenInventoryChart(Resource):
     @ns.expect(movements_charts_model)
     def post(self):
         validator = MovementsChartsForm.from_json(ns.payload)
@@ -24,6 +25,17 @@ class Notification(Resource):
             return {"errors": validator.errors}, 400
         data = validator.data
         data_chart, code = get_data_chart_movements(data)
+        if code == 200:
+            return data_chart, 200
+        else:
+            return {"message": f"Error al obtener los datos {data_chart}"}, 400
+
+
+@ns.route("/inventory/sm/<string:range_g>/<string:type_chart>")
+class SMChart(Resource):
+    def get(self, range_g, type_chart):
+        data = {"range": range_g, "type_chart": type_chart}
+        data_chart, code = get_data_chart_sm(data)
         if code == 200:
             return data_chart, 200
         else:
