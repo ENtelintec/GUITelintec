@@ -89,6 +89,7 @@ def get_data_chart_fichaje_emp(data):
         extras_dict,
         primes_dict,
         normal_dict,
+        early_dict,
         pasive_dict,
     ) = result
     faltas, faltas_value = get_cumulative_data_fichajes_dict(
@@ -102,6 +103,9 @@ def get_data_chart_fichaje_emp(data):
     )
     primas, primas_value = get_cumulative_data_fichajes_dict(
         json.loads(primes_dict), date=data["date"]
+    )
+    earlies, early_value = get_cumulative_data_fichajes_dict(
+        json.loads(early_dict), date=data["date"]
     )
     normal, normal_value = get_cumulative_data_fichajes_dict(
         json.loads(normal_dict), date=data["date"]
@@ -139,6 +143,16 @@ def get_data_chart_fichaje_emp(data):
             "value": primas,
             "tag": "Primas",
             "legend": "Evento",
+        },
+        "early": {
+            "value": earlies,
+            "tag": "Early",
+            "legend": "Evento",
+        },
+        "early_value": {
+            "value": early_value,
+            "tag": "Early",
+            "legend": "Hora",
         },
         "normal": {
             "value": normal,

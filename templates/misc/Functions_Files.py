@@ -799,7 +799,6 @@ def get_cumulative_data_fichajes_dict(dic_data: dict, date=None) -> tuple[int, i
     :return:
     """
     if date is not None:
-        print("date____", date)
         date = pd.to_datetime(date)
     total_days = 0
     total_value = 0
