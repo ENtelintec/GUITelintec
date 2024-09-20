@@ -80,89 +80,93 @@ def get_data_chart_fichaje_emp(data):
         return {"message": str(error)}, 400
     if len(result) <= 0:
         return {"message": "No data found"}, 400
-    (
-        ficha_id,
-        emp_id,
-        contract,
-        absences_dict,
-        lates_dict,
-        extras_dict,
-        primes_dict,
-        normal_dict,
-        early_dict,
-        pasive_dict,
-    ) = result
-    faltas, faltas_value = get_cumulative_data_fichajes_dict(
-        json.loads(absences_dict), date=data["date"]
-    )
-    atrasos, atrasos_value = get_cumulative_data_fichajes_dict(
-        json.loads(lates_dict), date=data["date"]
-    )
-    extras, extras_value = get_cumulative_data_fichajes_dict(
-        json.loads(extras_dict), date=data["date"]
-    )
-    primas, primas_value = get_cumulative_data_fichajes_dict(
-        json.loads(primes_dict), date=data["date"]
-    )
-    earlies, early_value = get_cumulative_data_fichajes_dict(
-        json.loads(early_dict), date=data["date"]
-    )
-    normal, normal_value = get_cumulative_data_fichajes_dict(
-        json.loads(normal_dict), date=data["date"]
-    )
-    pasiva, pasiva_value = get_cumulative_data_fichajes_dict(
-        json.loads(pasive_dict), date=data["date"]
-    )
-    data_out = {
-        "lates_event": {
-            "value": atrasos,
-            "tag": "Atrasos",
-            "legend": "Evento",
-        },
-        "lates_value": {
-            "value": atrasos_value,
-            "tag": "Atrasos",
-            "legend": "Hora",
-        },
-        "extras_event": {
-            "value": extras,
-            "tag": "Extras",
-            "legend": "Horas",
-        },
-        "extras_value": {
-            "value": extras_value,
-            "tag": "Extras",
-            "legend": "Hora",
-        },
-        "absences": {
-            "value": faltas_value,
-            "tag": "Faltas",
-            "legend": "Evento",
-        },
-        "primes": {
-            "value": primas,
-            "tag": "Primas",
-            "legend": "Evento",
-        },
-        "early": {
-            "value": earlies,
-            "tag": "Early",
-            "legend": "Evento",
-        },
-        "early_value": {
-            "value": early_value,
-            "tag": "Early",
-            "legend": "Hora",
-        },
-        "normal": {
-            "value": normal,
-            "tag": "Normal",
-            "legend": "Evento",
-        },
-        "pasive": {
-            "value": pasiva,
-            "tag": "Pasive",
-            "legend": "Evento",
-        },
-    }
+    data_fichaje = [result] if data["emp_id"] != -1 else result
+    data_out = []
+    for emp in data_fichaje:
+        (
+            ficha_id,
+            emp_id,
+            contract,
+            absences_dict,
+            lates_dict,
+            extras_dict,
+            primes_dict,
+            normal_dict,
+            early_dict,
+            pasive_dict,
+        ) = emp
+        faltas, faltas_value = get_cumulative_data_fichajes_dict(
+            json.loads(absences_dict), date=data["date"]
+        )
+        atrasos, atrasos_value = get_cumulative_data_fichajes_dict(
+            json.loads(lates_dict), date=data["date"]
+        )
+        extras, extras_value = get_cumulative_data_fichajes_dict(
+            json.loads(extras_dict), date=data["date"]
+        )
+        primas, primas_value = get_cumulative_data_fichajes_dict(
+            json.loads(primes_dict), date=data["date"]
+        )
+        earlies, early_value = get_cumulative_data_fichajes_dict(
+            json.loads(early_dict), date=data["date"]
+        )
+        normal, normal_value = get_cumulative_data_fichajes_dict(
+            json.loads(normal_dict), date=data["date"]
+        )
+        pasiva, pasiva_value = get_cumulative_data_fichajes_dict(
+            json.loads(pasive_dict), date=data["date"]
+        )
+        data_out_dict = {
+            "lates_event": {
+                "value": atrasos,
+                "tag": "Atrasos",
+                "legend": "Evento",
+            },
+            "lates_value": {
+                "value": atrasos_value,
+                "tag": "Atrasos",
+                "legend": "Hora",
+            },
+            "extras_event": {
+                "value": extras,
+                "tag": "Extras",
+                "legend": "Horas",
+            },
+            "extras_value": {
+                "value": extras_value,
+                "tag": "Extras",
+                "legend": "Hora",
+            },
+            "absences": {
+                "value": faltas_value,
+                "tag": "Faltas",
+                "legend": "Evento",
+            },
+            "primes": {
+                "value": primas,
+                "tag": "Primas",
+                "legend": "Evento",
+            },
+            "early": {
+                "value": earlies,
+                "tag": "Early",
+                "legend": "Evento",
+            },
+            "early_value": {
+                "value": early_value,
+                "tag": "Early",
+                "legend": "Hora",
+            },
+            "normal": {
+                "value": normal,
+                "tag": "Normal",
+                "legend": "Evento",
+            },
+            "pasive": {
+                "value": pasiva,
+                "tag": "Pasive",
+                "legend": "Evento",
+            },
+        }
+        data_out.append({"emp_id": emp_id, "data": data_out_dict, "contract": contract})
     return data_out, 200

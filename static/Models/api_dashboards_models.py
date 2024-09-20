@@ -5,7 +5,7 @@ __date__ = "$ 18/sept/2024  at 17:17 $"
 
 from static.extensions import api, format_date
 from flask_restx import fields
-from wtforms.validators import InputRequired
+from wtforms.validators import InputRequired, NumberRange
 from wtforms import IntegerField, StringField
 from wtforms.form import Form
 
@@ -50,5 +50,11 @@ class MovementsChartsForm(Form):
 
 
 class FichajeEmpForm(Form):
-    emp_id = IntegerField("emp_id", validators=[InputRequired()])
+    emp_id = IntegerField(
+        "emp_id",
+        validators=[
+            InputRequired(message="id required or value 0 not acepted"),
+            NumberRange(min=-1),
+        ],
+    )
     date = StringField("date", validators=[InputRequired()], filters=[date_filter])

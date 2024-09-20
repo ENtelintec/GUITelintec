@@ -81,15 +81,27 @@ def insert_new_fichaje_DB(
 
 
 def get_fichaje_DB(emp_id: int):
-    sql = (
-        "SELECT "
-        "ficha_id, emp_id, contract, "
-        "absences, lates, extras, primes, normal, early, pasiva "
-        "FROM sql_telintec.fichajes "
-        "WHERE emp_id = %s"
-    )
-    val = (emp_id,)
-    flag, error, result = execute_sql(sql, val, 1)
+    if emp_id == -1:
+        emp_id = "%"
+        sql = (
+            "SELECT "
+            "ficha_id, emp_id, contract, "
+            "absences, lates, extras, primes, normal, early, pasiva "
+            "FROM sql_telintec.fichajes "
+            "WHERE emp_id like %s"
+        )
+        val = (emp_id,)
+        flag, error, result = execute_sql(sql, val, 2)
+    else:
+        sql = (
+            "SELECT "
+            "ficha_id, emp_id, contract, "
+            "absences, lates, extras, primes, normal, early, pasiva "
+            "FROM sql_telintec.fichajes "
+            "WHERE emp_id = %s"
+        )
+        val = (emp_id,)
+        flag, error, result = execute_sql(sql, val, 1)
     return flag, error, result
 
 
