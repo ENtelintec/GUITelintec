@@ -80,7 +80,6 @@ def get_data_chart_fichaje_emp(data):
         return {"message": str(error)}, 400
     if len(result) <= 0:
         return {"message": "No data found"}, 400
-
     (
         ficha_id,
         emp_id,
