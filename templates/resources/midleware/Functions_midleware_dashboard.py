@@ -2,9 +2,13 @@
 __author__ = "Edisson Naula"
 __date__ = "$ 18/sept/2024  at 17:33 $"
 
+import json
+
 import numpy as np
 
 from templates.Functions_AuxPlots import get_data_movements_type, get_data_sm_per_range
+from templates.controllers.fichajes.fichajes_controller import get_fichaje_DB
+from templates.misc.Functions_Files import get_cumulative_data_fichajes_dict
 
 
 def get_data_chart_movements(data):
@@ -68,3 +72,84 @@ def get_data_chart_sm(data):
     del data_chart["legend"]
     del data_chart["line_style"]
     return data_chart, 200
+
+
+def get_data_chart_fichaje_emp(data):
+    flag, error, result = get_fichaje_DB(data["emp_id"])
+    if not flag:
+        return {"message": str(error)}, 400
+    if len(result) <= 0:
+        return {"message": "No data found"}, 400
+
+    (
+        ficha_id,
+        emp_id,
+        contract,
+        absences_dict,
+        lates_dict,
+        extras_dict,
+        primes_dict,
+        normal_dict,
+        pasive_dict,
+    ) = result
+    faltas, faltas_value = get_cumulative_data_fichajes_dict(
+        json.loads(absences_dict), date=data["date"]
+    )
+    atrasos, atrasos_value = get_cumulative_data_fichajes_dict(
+        json.loads(lates_dict), date=data["date"]
+    )
+    extras, extras_value = get_cumulative_data_fichajes_dict(
+        json.loads(extras_dict), date=data["date"]
+    )
+    primas, primas_value = get_cumulative_data_fichajes_dict(
+        json.loads(primes_dict), date=data["date"]
+    )
+    normal, normal_value = get_cumulative_data_fichajes_dict(
+        json.loads(normal_dict), date=data["date"]
+    )
+    pasiva, pasiva_value = get_cumulative_data_fichajes_dict(
+        json.loads(pasive_dict), date=data["date"]
+    )
+    data_out = {
+        "lates_event": {
+            "value": atrasos,
+            "tag": "Atrasos",
+            "legend": "Evento",
+        },
+        "lates_value": {
+            "value": atrasos_value,
+            "tag": "Atrasos",
+            "legend": "Hora",
+        },
+        "extras_event": {
+            "value": extras,
+            "tag": "Extras",
+            "legend": "Horas",
+        },
+        "extras_value": {
+            "value": extras_value,
+            "tag": "Extras",
+            "legend": "Hora",
+        },
+        "absences": {
+            "value": faltas_value,
+            "tag": "Faltas",
+            "legend": "Evento",
+        },
+        "primes": {
+            "value": primas,
+            "tag": "Primas",
+            "legend": "Evento",
+        },
+        "normal": {
+            "value": normal,
+            "tag": "Normal",
+            "legend": "Evento",
+        },
+        "pasive": {
+            "value": pasiva,
+            "tag": "Pasive",
+            "legend": "Evento",
+        },
+    }
+    return data_out, 200
