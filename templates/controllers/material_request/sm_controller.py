@@ -181,6 +181,13 @@ def update_history_sm(sm_id, history: dict, items: list, is_complete=False):
     return flag, error, result
 
 
+def update_products_sm(sm_id, items: list):
+    sql = "UPDATE sql_telintec.materials_request " "SET items = %s " "WHERE sm_id = %s "
+    val = (json.dumps(items), sm_id)
+    flag, error, result = execute_sql(sql, val, 4)
+    return flag, error, result
+
+
 def finalize_status_sm(sm_id: int):
     sql = "UPDATE sql_telintec.materials_request " "SET status = 3 " "WHERE sm_id = %s "
     val = (sm_id,)

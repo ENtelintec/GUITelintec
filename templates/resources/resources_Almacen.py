@@ -15,8 +15,9 @@ from static.Models.api_inventory_models import (
     categories_output_model,
     suppliers_output_model,
     expected_files_almacen,
-    ProductInsertForm,
     ProductDeleteForm,
+    ProductPostForm,
+    ProductPutForm,
 )
 from static.Models.api_movements_models import (
     movements_output_model,
@@ -104,7 +105,7 @@ class InventoryProducts(Resource):
 class InventoryProduct(Resource):
     @ns.expect(product_insert_model)
     def post(self):
-        validator = ProductInsertForm.from_json(ns.payload)
+        validator = ProductPostForm.from_json(ns.payload)
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
@@ -116,7 +117,7 @@ class InventoryProduct(Resource):
 
     @ns.expect(product_insert_model)
     def put(self):
-        validator = ProductInsertForm.from_json(ns.payload)
+        validator = ProductPutForm.from_json(ns.payload)
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data

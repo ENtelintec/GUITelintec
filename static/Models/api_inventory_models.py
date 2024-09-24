@@ -106,7 +106,7 @@ expected_files_almacen.add_argument(
 )
 
 
-class ProductForm(Form):
+class ProductInsertForm(Form):
     name = StringField("name", validators=[InputRequired()])
     sku = StringField("sku", validators=[InputRequired()])
     udm = StringField("udm", validators=[InputRequired()])
@@ -123,12 +123,33 @@ class ProductForm(Form):
     )
 
 
-class ProductInsertForm(Form):
-    info = FormField(ProductForm)
+class ProductUpdateForm(Form):
+    name = StringField("name", validators=[InputRequired()])
+    sku = StringField("sku", validators=[InputRequired()])
+    udm = StringField("udm", validators=[InputRequired()])
+    stock = FloatField("stock", validators=[InputRequired()])
+    category_name = StringField("category_name", validators=[InputRequired()])
+    supplier_name = StringField("supplier_name", validators=[InputRequired()])
+    is_tool = IntegerField("is_tool", validators=[], default=0)
+    is_internal = IntegerField("is_internal", validators=[], default=0)
+    quantity_move = IntegerField(
+        "quantity_move",
+        validators=[
+            InputRequired(message="Quantity move is required or value 0 not accepted")
+        ],
+    )
     id = IntegerField(
         "id",
         validators=[InputRequired(message="Id is required or value 0 not accepted")],
     )
+
+
+class ProductPostForm(Form):
+    info = FormField(ProductInsertForm)
+
+
+class ProductPutForm(Form):
+    info = FormField(ProductUpdateForm)
 
 
 class ProductDeleteForm(Form):
