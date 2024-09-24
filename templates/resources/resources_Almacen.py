@@ -141,7 +141,7 @@ class InventoryProduct(Resource):
 
 
 @ns.route("/inventory/file/upload")
-class UploadFicahjeFile(Resource):
+class UploadInventoryeFile(Resource):
     @ns.expect(expected_files_almacen)
     def post(self):
         if "file" not in request.files:
