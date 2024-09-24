@@ -6,7 +6,29 @@ import json
 from datetime import datetime
 
 from static.extensions import format_timestamps
+from templates.controllers.product.p_and_s_controller import get_stock_db_products
 from templates.database.connection import execute_sql
+
+
+def update_sm_items_stock(tuple_sm):
+    flag, error, result = get_stock_db_products()
+    tuple_out = []
+    if flag:
+        for sm_data in tuple_sm:
+            items = json.loads(sm_data[10])
+            items_out = []
+            for item in items:
+                for product in result:
+                    if item["id"] == product[0]:
+                        item["stock"] = product[1]
+                        items_out.append(item)
+                        break
+            sm_data = list(sm_data)
+            sm_data[10] = json.dumps(items_out)
+            tuple_out.append(sm_data)
+    else:
+        return tuple
+    return tuple_out
 
 
 def get_sm_entries(emp_id=-1):
@@ -41,6 +63,8 @@ def get_sm_entries(emp_id=-1):
             flag, error, result = execute_sql(sql, val, 2)
         else:
             return False, "Invalid employee ID", []
+
+    result = update_sm_items_stock(result)
     return flag, error, result
 
 
