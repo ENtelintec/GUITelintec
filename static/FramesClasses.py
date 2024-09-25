@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
-__author__ = 'Edisson Naula'
-__date__ = '$ 28/may./2024  at 10:34 $'
+__author__ = "Edisson Naula"
+__date__ = "$ 28/may./2024  at 10:34 $"
 
+from templates.modules.Administration.Frame_ContractCreate import ContractsCreateFrame
 from templates.modules.Administration.Frame_ContractDocs import ContractsDocsFrame
 from templates.modules.Administration.Frame_ControlSaldos import ControlSaldos
 from templates.modules.Administration.Frame_Quotations import QuotationsFrame
@@ -51,27 +52,28 @@ available_frames = {
     "Inventario": InventoryScreen,
     "Suministros Diarios": SuppliesScreen,
     "Ventana Asistente": AssistantGUI,
-    "Examenes":  ExamenesMedicos,
+    "Examenes": ExamenesMedicos,
     "Emp. Detalles": EmployeeDetailsScrolled,
-    "Cuenta":  LogOptionsFrame,
+    "Cuenta": LogOptionsFrame,
     "Procesar SM": SMManagement,
     "Movimientos": MovementsFrame,
-    "Settings":  SettingsFrameGUI,
+    "Settings": SettingsFrameGUI,
     "Tasks": FrameTasks,
     "Cotizaciones": QuotationsFrame,
     "Documentos Contrato": ContractsDocsFrame,
     "Control Saldos": ControlSaldos,
     "Remisiones": RemisionsFrame,
-    "Nominas": PayrollFilesGUI
+    "Nominas": PayrollFilesGUI,
+    "Crear Contratos": ContractsCreateFrame,
 }
 
 frames_notifications_avaliable = {
     "chatbot": NotificationsChatbot,
-    "basic": NotificationsUser
+    "basic": NotificationsUser,
 }
 
 avaliable_dashboards = {
     "sm": [SMDashboard],
     "almacen": [StorageDashboard],
-    "administracion": [SMDashboard]
+    "administracion": [SMDashboard],
 }

@@ -50,24 +50,23 @@ def reorder_data_table(data):
     new_data = []
     for row in data:
         for index, objectss in enumerate(row):
-            print(index, objectss, "sd")
-        (
-            id_sm,
-            folio,
-            contract,
-            plant,
-            location,
-            client,
-            employee,
-            order,
-            date,
-            date_limit,
-            items,
-            status,
-            history,
-            comment,
-            destinations,
-        ) = row
+            (
+                id_sm,
+                folio,
+                contract,
+                plant,
+                location,
+                client,
+                employee,
+                order,
+                date,
+                date_limit,
+                items,
+                status,
+                history,
+                comment,
+                destinations,
+            ) = row
         new_data.append(
             (
                 status,

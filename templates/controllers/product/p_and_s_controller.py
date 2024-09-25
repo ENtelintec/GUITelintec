@@ -530,7 +530,7 @@ def get_all_suppliers():
 def get_movements_type(type_m: str, limit=10):
     sql = (
         "SELECT sql_telintec.product_movements_amc.id_product, "
-        "sum(sql_telintec.product_movements_amc.quantity) as total_move, "
+        "cast(sum(sql_telintec.product_movements_amc.quantity) as float) as total_move, "
         "sql_telintec.products_amc.name, "
         "sql_telintec.products_amc.udm "
         "FROM sql_telintec.product_movements_amc "

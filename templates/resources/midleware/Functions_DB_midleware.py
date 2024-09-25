@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 
 import pandas as pd
 
-from static.extensions import format_timestamps, log_file_sm_path
+from static.extensions import format_timestamps, log_file_sm_path, format_date
 from templates.controllers.employees.employees_controller import (
     get_all_data_employees,
     get_all_data_employee,
@@ -46,7 +46,6 @@ def get_products_sm(limit, page=0):
         return [None, 204]
     pages = math.floor(result.__len__() / limit)
     if page > pages:
-        print("page > pages")
         return [None, 204]
     items = []
     if pages == 0:
@@ -72,8 +71,14 @@ def get_products_sm(limit, page=0):
 def check_date_difference(date_modify, delta):
     flag = True
     date_now = datetime.now()
-    date_modify = datetime.strptime(date_modify, "%Y-%m-%d")
-    date_modify = date_modify.date()
+    date_modify = (
+        datetime.strptime(date_modify, format_date)
+        if isinstance(date_modify, str)
+        else date_modify
+    )
+    date_modify = (
+        date_modify.date() if isinstance(date_modify, datetime) else date_modify
+    )
     # week of the month
     week_modify = date_modify.isocalendar()[1]
     date_now = date_now.date()
@@ -94,7 +99,6 @@ def get_all_sm(limit, page=0, emp_id=-1):
         return {"data": [], "page": 0, "pages": 0}, 200
     pages = math.floor(len(result) / limit)
     if page > pages:
-        print("page > pages")
         return None, 204
     items = []
     if pages == 0:
@@ -107,9 +111,13 @@ def get_all_sm(limit, page=0, emp_id=-1):
     for i in range(limit_down, limit_up):
         products = json.loads(result[i][10])
         new_products = []
-        for product in products:
-            if "(Nuevo)" in product["comment"] and "(Pedido)" not in product["comment"]:
-                new_products.append(product)
+        if products is not None:
+            for product in products:
+                if (
+                    "(Nuevo)" in product["comment"]
+                    and "(Pedido)" not in product["comment"]
+                ):
+                    new_products.append(product)
         extra_info = json.loads(result[i][14])
         items.append(
             {
@@ -159,7 +167,6 @@ def dispatch_sm(data):
     if not flag or len(result) <= 0:
         return 400, ["sm not foud"]
     history_sm = json.loads(result[12])
-    print("history ", history_sm)
     emp_id_creation = result[6]
     history_sm.append(
         {
@@ -202,20 +209,34 @@ def dispatch_sm(data):
     flag, error, result = update_history_sm(
         data["id"], history_sm, products_sm, is_complete
     )
+    if is_complete:
+        print("complete dispatch sm")
     if flag:
         msg = f"SM con ID-{data['id']} despachada"
         write_log_file(log_file_sm_path, msg)
-        msg += "\n Productos a despachar:  " + "\n".join(
-            [f"{item['quantity']} {item['name']}" for item in products_to_dispacth]
+        msg += (
+            "\n Productos a despachar:  "
+            + "\n".join(
+                [f"{item['quantity']} {item['name']}" for item in products_to_dispacth]
+            )
+            + "--"
         )
-        msg += "\n Productos a solicitar:  " + "\n".join(
-            [f"{item['quantity']} {item['name']}" for item in products_to_request]
+        msg += (
+            "\n Productos a solicitar:  "
+            + "\n".join(
+                [f"{item['quantity']} {item['name']}" for item in products_to_request]
+            )
+            + "--"
         )
-        msg += "\n Productos nuevos:  " + "\n".join(
-            [
-                f"{item['quantity']} {item['name']} {item['url']}"
-                for item in new_products
-            ]
+        msg += (
+            "\n Productos nuevos:  "
+            + "\n".join(
+                [
+                    f"{item['quantity']} {item['name']} {item['url']}"
+                    for item in new_products
+                ]
+            )
+            + "--"
         )
         create_notification_permission(
             msg, ["sm"], "SM Despachada", data["emp_id"], emp_id_creation
@@ -257,7 +278,6 @@ def cancel_sm(data):
 
 def get_employees_almacen():
     flag, error, result = get_emp_contract("almacen")
-    print(flag, error, result)
     data_out = []
     for item in result:
         id_emp, name, lastname = item
@@ -273,45 +293,44 @@ def dispatch_products(
     data=None,
 ) -> tuple[list[dict], list[dict], list[dict]]:
     _data = DataHandler()
-    date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    date = datetime.now().strftime(format_timestamps)
     # ------------------------------avaliable products------------------------------------------
     msg = ""
     for i, product in enumerate(avaliable):
         # create out movements
-        if "delivered" in product.keys() and product["delivered"] > 0:
-            if "remanent" in product.keys() and product["remanent"] > 0:
+        if "remanent" not in product.keys():
+            if product["stock"] >= product["quantity"]:
                 _data.create_out_movement(
-                    product["id"], "remanent", product["remanent"], date, sm_id
+                    product["id"], "salida", product["quantity"], date, sm_id
                 )
-                delivered_trans = product["remanent"]
                 product["comment"] += " ;(Despachado) "
+                delivered_trans = product["quantity"]
             else:
                 _data.create_out_movement(
-                    product["id"], "salida", product["delivered"], date, sm_id
+                    product["id"], "salida", product["stock"], date, sm_id
                 )
-                delivered_trans = product["delivered"]
+                delivered_trans = product["stock"]
+                product["remanent"] = product["quantity"] - product["stock"]
                 product["comment"] += " ;(Semidespachado) "
-                _ins = _data.create_in_movement(
-                    product["id"],
-                    "entrada",
-                    product["stock"] - delivered_trans,
-                    date,
-                    sm_id,
-                )
-                product["comment"] += " ;(Pedido) "
-                product["remanent"] = product["stock"] - delivered_trans
-                msg += f"{product['stock']-delivered_trans}-{product['name']} movimiento de entrada."
+        elif "remanent" in product.keys() and product["remanent"] > 0:
+            _data.create_out_movement(
+                product["id"], "remanent", product["remanent"], date, sm_id
+            )
+            delivered_trans = product["remanent"]
+            product["comment"] += " ;(Despachado) "
         else:
+            # cuando el remante es menor que cero
+            product["comment"] += " ;(Despachado) "
             continue
         # update stock avaliable
         _data.update_stock(product["id"], product["stock"] - delivered_trans)
         product["stock"] -= delivered_trans
         avaliable[i] = product
-        msg += f"{delivered_trans}-{product['name']} movimiento de salida."
+        msg += f"Cantidad: {delivered_trans}-{product['name']}, movimiento de salida al despachar."
     emp_id = data["emp_id"] if data is not None else 0
     emp_id_creation = data["emp_id_creation"] if data is not None else 0
     create_notification_permission(
-        msg, ["almacen"], "Movimiento de salida", emp_id, emp_id_creation
+        msg, ["almacen"], "Movimientos almacen despachar sm", emp_id, emp_id_creation
     )
     # ------------------------------products to request------------------------------------------
     msg = ""
@@ -324,7 +343,7 @@ def dispatch_products(
         msg += f"{product['quantity']} {product['name']} movimiento de entrada."
         product["stock"] += product["quantity"]
     create_notification_permission(
-        msg, ["almacen"], "Movimiento de entrada", emp_id, emp_id_creation
+        msg, ["almacen"], "Movimiento pedidos al despachar sm", emp_id, emp_id_creation
     )
     # ------------------------------products to request for new-----------------------------------
     msg = ""

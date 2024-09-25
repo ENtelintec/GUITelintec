@@ -8,6 +8,7 @@ from templates.resources.resources_Bitacora import ns as ns_bitacora
 from templates.resources.resources_Almacen import ns as ns_almacen
 from templates.resources.resources_Misc import ns as ns_misc
 from templates.resources.resources_Admin_presales import ns as ns_admin_presales
+from templates.resources.resources_Dashboards import ns as ns_dashboard
 from wtforms_json import init as init_wtforms_json
 
 app = Flask(__name__)
@@ -29,6 +30,7 @@ api.add_namespace(ns_bitacora)
 api.add_namespace(ns_almacen)
 api.add_namespace(ns_misc)
 api.add_namespace(ns_admin_presales)
+api.add_namespace(ns_dashboard)
 
 
 if __name__ == "__main__":

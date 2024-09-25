@@ -3,11 +3,12 @@ __author__ = "Edisson Naula"
 __date__ = "$ 10/may./2024  at 16:31 $"
 
 from flask_restx import fields
+from wtforms.fields.datetime import DateField
 from wtforms.fields.list import FieldList
 from wtforms.fields.numeric import FloatField
 from wtforms.fields.simple import StringField, URLField
 
-from static.extensions import api
+from static.extensions import api, format_date
 from wtforms.form import Form
 from wtforms import validators, IntegerField, FormField
 
@@ -34,30 +35,18 @@ product_model_SM_selection = api.model(
 items_model_sm = api.model(
     "ItemsModel",
     {
-        "id": fields.String(required=True, description="The product id"),
+        "id": fields.Integer(required=True, description="The product id"),
         "name": fields.String(required=True, description="The product name"),
         "stock": fields.Integer(required=True, description="The product stock"),
         "comment": fields.String(required=True, description="The product comment"),
         "quantity": fields.Float(required=True, description="The product quantity"),
-        "movement": fields.Integer(required=False, description="The product movement"),
+        "movement": fields.String(required=False, description="The product movement"),
         "url": fields.String(
             required=True, description="The product url", example="https://example.com"
         ),
         "sku": fields.String(required=False, description="The product sku"),
     },
 )
-
-
-class ItemsFormSM(Form):
-    id = StringField("id", validators=[InputRequired()])
-    name = StringField("name", validators=[InputRequired()])
-    stock = IntegerField("stock", validators=[InputRequired()])
-    comment = StringField("comment", validators=[InputRequired()])
-    quantity = FloatField("quantity", validators=[InputRequired()])
-    movement = IntegerField("movement")
-    url = URLField("url", validators=[InputRequired()])
-    sku = StringField("sku")
-
 
 history_model_sm = api.model(
     "HistoryModel",
@@ -114,21 +103,8 @@ products_request_model = api.model(
     },
 )
 
-
-class ProductRequestForm(Form):
-    limit = IntegerField("limit", validators=[InputRequired()])
-    page = IntegerField(
-        "page",
-        validators=[
-            validators.number_range(
-                min=0, message="Invalid page value o missing 'page' field"
-            )
-        ],
-    )
-
-
-sm_model = api.model(
-    "Material_request",
+sm_model_post = api.model(
+    "MaterialRequest",
     {
         "id": fields.Integer(
             required=True, description="The id <ignored on add event>"
@@ -146,7 +122,80 @@ sm_model = api.model(
         "order_quotation": fields.String(
             required=True, description="The order or quotation"
         ),
-        "emp_id": fields.String(
+        "emp_id": fields.Integer(
+            required=True, description="The employee id", example=1
+        ),
+        "date": fields.String(
+            required=True, description="The date", example="2024-06-29"
+        ),
+        "critical_date": fields.String(
+            required=True, description="The critical date", example="2024-07-15"
+        ),
+        "status": fields.Integer(required=True, description="The status of the sm"),
+        "comment": fields.String(required=True, description="The comment"),
+        "destination": fields.String(
+            required=True, description="The destination area in telintec"
+        ),
+    },
+)
+
+sm_model_put = api.model(
+    "MaterialRequest",
+    {
+        "id": fields.Integer(
+            required=True, description="The id <ignored on add event>"
+        ),
+        "folio": fields.String(required=True, description="The folio"),
+        "contract": fields.String(required=True, description="The contract"),
+        "facility": fields.String(required=True, description="The facility"),
+        "contract_contact": fields.String(
+            required=True, description="The contract contact"
+        ),
+        "client_id": fields.Integer(
+            required=True, description="The client id", example=1
+        ),
+        "location": fields.String(required=True, description="The location"),
+        "order_quotation": fields.String(
+            required=True, description="The order or quotation"
+        ),
+        "emp_id": fields.Integer(
+            required=True, description="The employee id", example=1
+        ),
+        "date": fields.String(
+            required=True, description="The date", example="2024-06-29"
+        ),
+        "critical_date": fields.String(
+            required=True, description="The critical date", example="2024-07-15"
+        ),
+        "status": fields.Integer(required=True, description="The status of the sm"),
+        "history": fields.List(fields.Nested(history_model_sm)),
+        "comment": fields.String(required=True, description="The comment"),
+        "destination": fields.String(
+            required=True, description="The destination area in telintec"
+        ),
+    },
+)
+
+sm_model_out = api.model(
+    "MaterialRequestTable",
+    {
+        "id": fields.Integer(
+            required=True, description="The id <ignored on add event>"
+        ),
+        "folio": fields.String(required=True, description="The folio"),
+        "contract": fields.String(required=True, description="The contract"),
+        "facility": fields.String(required=True, description="The facility"),
+        "contract_contact": fields.String(
+            required=True, description="The contract contact"
+        ),
+        "client_id": fields.Integer(
+            required=True, description="The client id", example=1
+        ),
+        "location": fields.String(required=True, description="The location"),
+        "order_quotation": fields.String(
+            required=True, description="The order or quotation"
+        ),
+        "emp_id": fields.Integer(
             required=True, description="The employee id", example=1
         ),
         "date": fields.String(
@@ -166,30 +215,10 @@ sm_model = api.model(
     },
 )
 
-
-class SMInfoForm(Form):
-    id = IntegerField("id", validators=[InputRequired()])
-    folio = IntegerField("folio", validators=[InputRequired()])
-    contract = IntegerField("contract", validators=[InputRequired()])
-    facility = IntegerField("facility", validators=[InputRequired()])
-    contract_contact = IntegerField("contract_contact", validators=[InputRequired()])
-    client_id = IntegerField("client_id", validators=[InputRequired()])
-    location = IntegerField("location", validators=[InputRequired()])
-    order_quotation = IntegerField("order_quotation", validators=[InputRequired()])
-    emp_id = IntegerField("emp_id", validators=[InputRequired()])
-    date = IntegerField("date", validators=[InputRequired()])
-    critical_date = IntegerField("critical_date", validators=[InputRequired()])
-    status = IntegerField("status", validators=[InputRequired()])
-    comment = StringField("comment", validators=[InputRequired()])
-    destination = IntegerField("destination", validators=[InputRequired()])
-    items = FieldList(FormField(ItemsFormSM, "items"))
-    items_new = FieldList(FormField(ItemsFormSM, "items_new"))
-
-
 table_sm_model = api.model(
     "TableMaterialRequest",
     {
-        "data": fields.List(fields.Nested(sm_model)),
+        "data": fields.List(fields.Nested(sm_model_out)),
         "page": fields.Integer(required=True, description="The page number send"),
         "pages": fields.Integer(
             required=True,
@@ -217,20 +246,6 @@ table_request_model = api.model(
     },
 )
 
-
-class TableRequestForm(Form):
-    limit = IntegerField("limit", validators=[InputRequired()])
-    page = IntegerField(
-        "page",
-        validators=[
-            validators.number_range(
-                min=0, message="Invalid page value o missing 'page' field"
-            )
-        ],
-    )
-    emp_id = IntegerField("emp_id", validators=[InputRequired()])
-
-
 sm_product_request_model = api.model(
     "material_requestProductRequest",
     {
@@ -243,32 +258,19 @@ sm_product_request_model = api.model(
 sm_post_model = api.model(
     "material_requestPost",
     {
-        "info": fields.Nested(sm_model),
+        "info": fields.Nested(sm_model_post),
         "items": fields.List(fields.Nested(items_model_sm)),
     },
 )
-
-
-class SMPostForm(Form):
-    info = FormField(SMInfoForm, "info")
-    items = FieldList(FormField(ItemsFormSM, "items"))
-
 
 sm_put_model = api.model(
     "material_requestPut",
     {
-        "info": fields.Nested(sm_model),
+        "info": fields.Nested(sm_model_put),
         "items": fields.List(fields.Nested(items_model_sm)),
         "id": fields.Integer(required=True, description="The id"),
     },
 )
-
-
-class SMPutForm(Form):
-    info = FormField(SMInfoForm, "info")
-    items = FieldList(FormField(ItemsFormSM, "items"))
-    id = IntegerField("id", validators=[InputRequired()])
-
 
 delete_request_sm_model = api.model(
     "DeleteRequestmaterial_request",
@@ -277,12 +279,6 @@ delete_request_sm_model = api.model(
         "id_emp": fields.Integer(required=True, description="The employee id"),
     },
 )
-
-
-class SMDeleteForm(Form):
-    id = IntegerField("id", validators=[InputRequired()])
-    id_emp = IntegerField("id_emp", validators=[InputRequired()])
-
 
 new_cliente_model = api.model(
     "NewClienteSM",
@@ -356,3 +352,114 @@ response_sm_dispatch_model = api.model(
         "data": fields.Nested(data_response_dispatch_model),
     },
 )
+
+
+def date_filter(date):
+    # Example filter function to format the date
+    return date.strftime(format_date) if not isinstance(date, str) else date
+
+
+class ItemsFormSM(Form):
+    id = IntegerField(
+        "id",
+        validators=[],
+        default=-1,
+    )
+    name = StringField("name", validators=[InputRequired()])
+    stock = IntegerField(
+        "stock", validators=[validators.number_range(min=-100, message="Invalid stock")]
+    )
+    comment = StringField("comment", validators=[], default="")
+    quantity = FloatField(
+        "quantity", validators=[validators.number_range(min=0, message="Invalid id")]
+    )
+    movement = StringField("movement", validators=[], default="")
+    url = URLField("url", validators=[], default="")
+    sku = StringField("sku", validators=[], default="")
+
+
+class ProductRequestForm(Form):
+    limit = IntegerField(
+        "limit", validators=[InputRequired(message="Invalid limit or 0 not acepted")]
+    )
+    page = IntegerField(
+        "page",
+        validators=[
+            validators.number_range(
+                min=0, message="Invalid page value o missing 'page' field"
+            )
+        ],
+    )
+
+
+class HistoryFormSM(Form):
+    date = StringField("date", validators=[InputRequired()])
+    event = StringField("event", validators=[InputRequired()])
+    user = IntegerField("user", validators=[InputRequired()])
+
+
+class SMInfoForm(Form):
+    id = IntegerField(
+        "id", validators=[validators.number_range(min=0, message="Invalid id")]
+    )
+    folio = StringField("folio", validators=[InputRequired()])
+    contract = StringField("contract", validators=[InputRequired()])
+    facility = StringField("facility", validators=[InputRequired()])
+    contract_contact = StringField("contract_contact", default="")
+    client_id = IntegerField(
+        "client_id", validators=[InputRequired(message="Invalid id or 0 not acepted")]
+    )
+    location = StringField("location", validators=[InputRequired()])
+    order_quotation = StringField("order_quotation", validators=[InputRequired()])
+    emp_id = IntegerField(
+        "emp_id", validators=[InputRequired(message="Invalid id or 0 not acepted")]
+    )
+    date = DateField("date", validators=[InputRequired()], filters=[date_filter])
+    critical_date = StringField("critical_date", validators=[InputRequired()])
+    status = IntegerField(
+        "status", validators=[validators.number_range(min=0, message="Invalid id")]
+    )
+    comment = StringField("comment", validators=[], default="")
+    destination = StringField("destination", validators=[InputRequired()])
+    history = FieldList(FormField(HistoryFormSM, "history"))
+    items = FieldList(FormField(ItemsFormSM, "items"))
+    items_new = FieldList(FormField(ItemsFormSM, "items_new"))
+
+
+class TableRequestForm(Form):
+    limit = IntegerField(
+        "limit", validators=[InputRequired(message="Invalid limit or 0 not acepted")]
+    )
+    page = IntegerField(
+        "page",
+        validators=[
+            validators.number_range(
+                min=0, message="Invalid page value o missing 'page' field"
+            )
+        ],
+    )
+    emp_id = IntegerField(
+        "emp_id", validators=[InputRequired(message="Invalid id or 0 not acepted")]
+    )
+
+
+class SMPostForm(Form):
+    info = FormField(SMInfoForm, "info")
+    items = FieldList(FormField(ItemsFormSM, "items"))
+
+
+class SMPutForm(Form):
+    info = FormField(SMInfoForm, "info")
+    items = FieldList(FormField(ItemsFormSM, "items"))
+    id = IntegerField(
+        "id", validators=[validators.number_range(min=0, message="Invalid id")]
+    )
+
+
+class SMDeleteForm(Form):
+    id = IntegerField(
+        "id", validators=[InputRequired(message="Invalid id or 0 not acepted")]
+    )
+    id_emp = IntegerField(
+        "id_emp", validators=[InputRequired(message="Invalid id or 0 not acepted")]
+    )

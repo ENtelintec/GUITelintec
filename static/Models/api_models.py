@@ -2,11 +2,13 @@
 __author__ = "Edisson Naula"
 __date__ = "$ 02/nov./2023  at 17:32 $"
 
+
+from static.extensions import api, format_timestamps, format_date
 from flask_restx import fields
-from static.extensions import api
+from wtforms.fields.datetime import DateTimeField, DateField
+from wtforms.validators import InputRequired
 from wtforms import FormField, IntegerField, StringField, validators
 from wtforms.fields.list import FieldList
-from wtforms.fields.simple import PasswordField
 from wtforms.form import Form
 
 permission_model = api.model(
@@ -16,21 +18,6 @@ permission_model = api.model(
         "description": fields.String(required=True, description="The description"),
     },
 )
-
-token_model = api.model(
-    "Token",
-    {
-        "username": fields.String(required=True, description="The username"),
-        "password": fields.String(
-            required=True, description="The password or pass_key"
-        ),
-    },
-)
-
-
-class TokenModelForm(Form):
-    username = StringField("username", validators=[validators.input_required()])
-    password = PasswordField("password", validators=[validators.input_required()])
 
 
 class ResumeModelForm(Form):
@@ -149,74 +136,6 @@ expected_headers_bot = api.parser()
 expected_headers_bot.add_argument("Authorization", location="headers", required=True)
 
 
-fichaje_request_model = api.model(
-    "FichajeRequest",
-    {
-        "date": fields.String(
-            required=True, description="Thedate", example="2024-03-01"
-        ),
-        "emp_id": fields.Integer(
-            required=True, description="The id of the employee", example=-1
-        ),
-    },
-)
-
-fichaje_add_update_request_model = api.model(
-    "FichajeAddRequest",
-    {
-        "id": fields.Integer(
-            required=True, description="The id <ignored when adding event>"
-        ),
-        "date": fields.String(
-            required=True, description="The date", example="2024-03-01"
-        ),
-        "event": fields.String(required=True, description="The event", example="falta"),
-        "value": fields.Float(required=True, description="The value", example=1.0),
-        "comment": fields.String(
-            required=True, description="The comment", example="This is a comment"
-        ),
-        "id_emp": fields.Integer(
-            required=True,
-            description="The id of employee that has the event",
-            example=1,
-        ),
-        "contract": fields.String(
-            required=True, description="The contract of the empployee", example="INFRA"
-        ),
-        "hour_in": fields.String(
-            required=False,
-            description="The hour in for extraordinary event",
-            example="08:00-->08:15-->8:20",
-        ),
-        "hour_out": fields.String(
-            required=False,
-            description="The hour out for extraordinary event",
-            example="18:00-->18:15-->18:20",
-        ),
-        "id_leader": fields.Integer(
-            required=True, description="The id of the group leader", example=1
-        ),
-    },
-)
-
-fichaje_delete_request_model = api.model(
-    "FichajeDeleteRequest",
-    {
-        "id": fields.Integer(required=True, description="The id"),
-        "date": fields.String(
-            required=True, description="The date", example="2024-03-01"
-        ),
-        "event": fields.String(required=True, description="The event", example="falta"),
-        "id_emp": fields.Integer(
-            required=True, description="The id of the editor employee ", example=1
-        ),
-        "contract": fields.String(
-            required=True, description="The contract of the empployee", example="INFRA"
-        ),
-    },
-)
-
-
 notification_model = api.model(
     "Notification",
     {
@@ -317,19 +236,241 @@ response_files_av_model = api.model(
     },
 )
 
-bitacora_dowmload_report_model = api.model(
-    "BitacoraDownloadReport",
+metadata_task_model = api.model(
+    "MetadataTasks",
     {
+        "name_emp": fields.String(
+            required=True, description="The name of the employee"
+        ),
         "date": fields.String(
-            required=True, description="The date", example="2024-03-01"
+            required=False, description="The date of the quizz", example="2024-04-30"
+        ),
+        "interviewer": fields.String(
+            required=False, description="The interviewer", example="John Doe"
         ),
         "id_emp": fields.Integer(
-            required=True,
-            description="The id of the employee to require the contract",
-            example=-1,
+            required=False, description="The ID of the employee", example=1
         ),
-        "span": fields.String(
-            required=True, description="The span of the report", example="month"
+        "position": fields.String(
+            required=False,
+            description="The position of the employee",
+            example="Manager",
+        ),
+        "admision": fields.String(
+            required=False,
+            description="The admission date of the employee",
+            example="2023-01-01",
+        ),
+        "departure": fields.String(
+            required=False,
+            description="The departure date of the employee",
+            example="2023-06-30",
+        ),
+        "departure_reason": fields.String(
+            required=False,
+            description="The departure reason of the employee",
+            example="Family reasons",
+        ),
+        "evaluated_emp": fields.String(
+            required=False,
+            description="The name of the employee evaluated",
+            example="Jane Smith",
+        ),
+        "pos_evaluator": fields.String(
+            required=False,
+            description="The position of the evaluator",
+            example="HR Manager",
+        ),
+        "evaluated_emp_id": fields.Integer(
+            required=False,
+            description="The ID of the employee evaluated",
+            example=1,
+        ),
+        "type_quizz": fields.Integer(
+            required=False, description="The type of the quizz", example=1
         ),
     },
 )
+
+task_insert_model = api.model(
+    "TaskInsert",
+    {
+        "title": fields.String(required=True, description="The title of the task"),
+        "emp_destiny": fields.Integer(
+            required=True, description="The destination employee"
+        ),
+        "emp_origin": fields.Integer(required=True, description="The origin employee"),
+        "date_limit": fields.String(
+            required=True,
+            description="The date limit of the task",
+            example="2024-04-30",
+        ),
+        "metadata": fields.Nested(
+            metadata_task_model, description="The metadata of the task"
+        ),
+    },
+)
+
+changes_model = api.model(
+    "Changes",
+    {
+        "timestamp": fields.String(
+            required=True,
+            description="The timestamp of the change",
+            example="2024-04-30 17:48:26",
+        ),
+        "action": fields.String(
+            required=True, description="The action of the change", example="update"
+        ),
+    },
+)
+
+body_task_model = api.model(
+    "BodyTask",
+    {
+        "title": fields.String(required=True, description="The title of the task"),
+        "emp_destiny": fields.Integer(
+            required=True, description="The destination employee"
+        ),
+        "emp_origin": fields.Integer(required=True, description="The origin employee"),
+        "date_limit": fields.String(
+            required=True,
+            description="The date limit of the task",
+            example="2024-04-30",
+        ),
+        "metadata": fields.Nested(
+            metadata_task_model, description="The metadata of the task"
+        ),
+        "status": fields.Integer(
+            required=False, description="The status of the task", example=0
+        ),
+        "changes": fields.List(fields.Nested(changes_model)),
+    },
+)
+
+task_update_model = api.model(
+    "TaskUpdate",
+    {
+        "id": fields.Integer(required=True, description="The id of the task"),
+        "body": fields.Nested(body_task_model, description="The body of the task"),
+    },
+)
+
+task_delete_model = api.model(
+    "TaskDelete",
+    {
+        "id": fields.Integer(required=True, description="The id of the task"),
+        "emp_origin": fields.Integer(required=True, description="The origin employee"),
+        "emp_destiny": fields.Integer(
+            required=True, description="The destination employee"
+        ),
+    },
+
+)
+
+
+def datetime_filter(datetime_obj):
+    return (
+        datetime_obj.strftime(format_timestamps)
+        if not isinstance(datetime_obj, str)
+        else datetime_obj
+    )
+
+
+def date_filter(datetime_obj):
+    return (
+        datetime_obj.strftime(format_date)
+        if not isinstance(datetime_obj, str)
+        else datetime_obj
+    )
+
+
+class MetadataTasksForm(Form):
+    name_emp = StringField("name_emp", validators=[])
+    date = DateField("date", validators=[], filters=[date_filter])
+    interviewer = StringField("interviewer", validators=[])
+    id_emp = IntegerField("id_emp", validators=[])
+    position = StringField("position", validators=[])
+    admision = DateField("admision", validators=[], filters=[date_filter])
+    departure = DateField("departure", validators=[], filters=[date_filter])
+    departure_reason = StringField("departure_reason", validators=[])
+    evaluated_emp = StringField("evaluated_emp", validators=[])
+    pos_evaluator = StringField("pos_evaluator", validators=[])
+    evaluated_emp_id = IntegerField("evaluated_emp_id", validators=[])
+    type_quizz = IntegerField("type_quizz", validators=[])
+
+
+class TaskInsertForm(Form):
+    title = StringField("title", validators=[InputRequired()])
+    emp_destiny = IntegerField("emp_destiny", validators=[InputRequired()])
+    emp_origin = IntegerField("emp_origin", validators=[InputRequired()])
+    date_limit = DateField(
+        "date_limit", validators=[InputRequired()], filters=[date_filter]
+    )
+    metadata = FormField(MetadataTasksForm)
+
+
+class ChangesForm(Form):
+    timestamp = DateTimeField(
+        "timestamp", validators=[InputRequired()], filters=[datetime_filter]
+    )
+    action = StringField("action", validators=[InputRequired()])
+
+
+class BodyTaskForm(Form):
+    title = StringField("title", validators=[InputRequired()])
+    emp_destiny = IntegerField("emp_destiny", validators=[InputRequired()])
+    emp_origin = IntegerField("emp_origin", validators=[InputRequired()])
+    date_limit = DateField(
+        "date_limit", validators=[InputRequired()], filters=[date_filter]
+    )
+    metadata = FormField(MetadataTasksForm)
+    status = IntegerField("status", validators=[], default=0)
+    changes = FieldList(FormField(ChangesForm), validators=[], default=[])
+
+
+class TaskUpdateForm(Form):
+    id = IntegerField("id", validators=[InputRequired()])
+    body = FormField(BodyTaskForm)
+
+
+class TaskDeleteForm(Form):
+    id = IntegerField("id", validators=[InputRequired()])
+    emp_origin = IntegerField("emp_origin", validators=[InputRequired()])
+    emp_destiny = IntegerField("emp_destiny", validators=[InputRequired()])
+
+
+class NotificationForm(Form):
+    id = IntegerField(
+        "id", validators=[InputRequired(message="id required or value 0 not accepted")]
+    )
+    title = StringField("title", validators=[InputRequired()])
+    msg = StringField("msg", validators=[InputRequired()])
+    status = IntegerField("status", validators=[], default=0)
+    sender_id = IntegerField("sender_id", validators=[], default=0)
+    timestamp = DateTimeField(
+        "timestamp", validators=[InputRequired()], filters=[datetime_filter]
+    )
+    receiver_id = IntegerField("receiver_id", validators=[], default=0)
+    app = FieldList(StringField(), validators=[], default=[])
+
+
+class NotificationInsertForm(Form):
+    info = FormField(NotificationForm)
+    id = IntegerField(
+        "id", validators=[InputRequired(message="id required or value 0 not accepted")]
+    )
+
+
+class NotificationDeleteForm(Form):
+    id = IntegerField(
+        "id", validators=[InputRequired(message="id required or value 0 not accepted")]
+    )
+
+
+class RequestAVResponseForm(Form):
+    msg = StringField("msg", validators=[InputRequired()])
+    department = StringField("department", validators=[InputRequired()])
+    filename = StringField("filename", validators=[InputRequired()])
+    files = FieldList(StringField(), validators=[], default=[])
+    id = IntegerField("id", validators=[], default=0)
