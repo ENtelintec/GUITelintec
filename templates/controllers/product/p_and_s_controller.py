@@ -544,3 +544,13 @@ def get_movements_type(type_m: str, limit=10):
     val = (type_m, limit)
     flag, error, result = execute_sql(sql, val, 2)
     return flag, error, result
+
+
+def get_stock_db_products():
+    sql = (
+        "SELECT id_product,stock "
+        "FROM sql_telintec.products_amc "
+        "WHERE products_amc.id_product like '%' "
+    )
+    flag, error, result = execute_sql(sql, None, 5)
+    return flag, error, result
