@@ -21,7 +21,7 @@ from static.Models.api_models import (
     TaskDeleteForm,
 )
 from static.extensions import filepath_settings
-from templates.Functions_GUI_Utils import create_notification_permission
+from templates.Functions_Utils import create_notification_permission_notGUI
 from templates.controllers.misc.tasks_controller import (
     create_task,
     update_task,
@@ -151,7 +151,7 @@ class Task(Resource):
         )
         if flag:
             msg = f"Se creo una tarea ({result}) {data['title']} para {data['metadata']['name_emp']}"
-            create_notification_permission(
+            create_notification_permission_notGUI(
                 msg,
                 ["RRHH"],
                 "Nuevo tarea quizz creada",
@@ -175,7 +175,7 @@ class Task(Resource):
         flag, error, result = update_task(data["id"], data["body"])
         if flag:
             msg = f"Se actualizo la tarea {data['body']['title']} para {data['body']['metadata']['name_emp']}"
-            create_notification_permission(
+            create_notification_permission_notGUI(
                 msg,
                 ["RRHH"],
                 "Tarea quizz actualizada",
@@ -195,7 +195,7 @@ class Task(Resource):
         flag, error, result = delete_task(data["id"])
         if flag:
             msg = f"Se elimino la tarea {data['id']}"
-            create_notification_permission(
+            create_notification_permission_notGUI(
                 msg,
                 ["RRHH"],
                 "Tarea quizz eliminada",
