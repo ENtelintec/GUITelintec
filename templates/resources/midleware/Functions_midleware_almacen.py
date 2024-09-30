@@ -2,12 +2,12 @@
 __author__ = "Edisson Naula"
 __date__ = "$ 03/may./2024  at 15:31 $"
 
-import os
 from datetime import datetime
 
 import pandas as pd
 
 from static.extensions import format_timestamps
+from templates.Functions_Utils import create_notification_permission_notGUI
 from templates.controllers.product.p_and_s_controller import (
     get_movements_type_db,
     create_out_movement_db,
@@ -21,6 +21,10 @@ from templates.controllers.product.p_and_s_controller import (
     get_all_categories_db,
     get_all_suppliers,
     create_product_db_admin,
+    get_skus,
+    insert_multiple_row_products_amc,
+    update_stock_db_sku,
+    insert_multiple_row_movements_amc,
 )
 
 
@@ -252,20 +256,77 @@ def get_suppliers_db():
     return 200, out
 
 
-def upload_product_db_from_file(file: str):
-    if not file.lower().endswith(".csv") or os.path.basename(file) != "inventario.csv":
-        return 400, ["El archivo debe ser un .csv y llamarse inventario.csv"]
+def read_excel_file_regular(file: str, is_tool=False, is_internal=0):
+    df = pd.read_excel(file, skiprows=[0, 1, 2, 3], sheet_name="INVENTARIO")
+    df = df.fillna("")
+    items = df.values.tolist()
+    flag, error, result_sku = get_skus()
+    skus = [sku[0] for sku in result_sku]
+    new_items = []
+    update_items = []
+    stocks_update = []
+    new_input_quantity = []
+    for item in items:
+        if str(item[0]) not in skus:
+            tool = 0 if not is_tool else 1
+            new_items.append(
+                (
+                    str(item[0]),
+                    item[2],
+                    item[3],
+                    item[6],
+                    None,
+                    None,
+                    tool,
+                    is_internal,
+                )
+            )
+        else:
+            index = skus.index(str(item[0]))
+            stock_old = result_sku[index][1]
+            update_items.append(item[0])
+            stocks_update.append(item[6] + stock_old)
+            new_input_quantity.append(item[6])
+            new_input_quantity.append(item[6])
+    return new_items, update_items, stocks_update, new_input_quantity, result_sku, skus
 
-    df = pd.read_csv(file, header=None)
 
-    if len(df.columns) != 9:
-        return 400, ["El archivo debe contener 9 columnas"]
-    data_result = []
-    for indice, fila in enumerate(df.values):
-        if indice == 0:
-            continue
-        flag, error, result = create_product_db(
-            fila[0], fila[1], fila[2], fila[3], fila[7], fila[8], 0, 0
+def upload_product_db_from_file(file: str, is_internal=0, is_tool=False):
+    (new_items, update_items, stocks_update,
+     new_input_quantity, result_sku, skus) = read_excel_file_regular(file, is_tool, is_internal)
+    data_result = {}
+    flag, error, result = insert_multiple_row_products_amc(tuple(new_items))
+    data_result["new"] = str(error) if not flag else new_items
+    movements = []
+    for item in new_items:
+        id_product = result_sku[skus.index(str(item[0]))][2]
+        movements.append((id_product, "entrada", item[6]))
+    flag, error, result = insert_multiple_row_movements_amc(tuple(movements))
+    if flag:
+        msg = f"Se crearon nuevos items y movimientos de entrada al inventario.\nf{new_items}"
+        create_notification_permission_notGUI(
+            msg,
+            ["Almacen"],
+            "Nuevos items y movimientos de entrada.",
+            0,
+            0,
         )
-        data_result.append(result) if flag else data_result.append(error)
+    data_result["new_notification"] = flag
+    flag, error, result = update_stock_db_sku(update_items, stocks_update)
+    data_result["update"] = str(error) if not flag else update_items
+    movements = []
+    for item, quantity in zip(update_items, new_input_quantity):
+        id_product = result_sku[skus.index(str(item))][2]
+        movements.append((id_product, "entrada", quantity))
+    flag, error, result = insert_multiple_row_movements_amc(tuple(movements))
+    if flag:
+        msg = f"Se actualizó stock de items al inventario.\nf{update_items}"
+        create_notification_permission_notGUI(
+            msg,
+            ["Almacen"],
+            "Actualizacion de items y movimientos de entrada",
+            0,
+            0,
+        )
+    data_result["update_notification"] = flag
     return 200, data_result

@@ -140,24 +140,6 @@ class InventoryProduct(Resource):
         }, 200 if flag else 400
 
 
-@ns.route("/inventory/file/upload")
-class UploadInventoryeFile(Resource):
-    @ns.expect(expected_files_almacen)
-    def post(self):
-        if "file" not in request.files:
-            return {"data": "No se detecto un archivo"}, 400
-        file = request.files["file"]
-        if file:
-            filename = secure_filename(file.filename)
-            file.save(os.path.join("files", filename))
-            code, data = upload_product_db_from_file(os.path.join("files", filename))
-            if code != 200:
-                return {"data": data, "msg": "Error at file structure"}, 400
-            return {"data": data, "msg": f"Ok with filaname: {filename}"}, 200
-        else:
-            return {"msg": "No se subio el archivo"}, 400
-
-
 @ns.route("/inventory/categories/all")
 class InventoryCategories(Resource):
     @ns.marshal_with(categories_output_model)
@@ -172,3 +154,70 @@ class InventorySuppliers(Resource):
     def get(self):
         code, data = get_suppliers_db()
         return {"data": data, "msg": "Ok" if code == 200 else "Error"}, code
+
+
+@ns.route("/inventory/file/upload/regular")
+class UploadInventoryeFile(Resource):
+    @ns.expect(expected_files_almacen)
+    def post(self):
+        if "file" not in request.files:
+            return {"data": "No se detecto un archivo"}, 400
+        file = request.files["file"]
+        if file:
+            filename = secure_filename(file.filename)
+            if not filename.lower().endswith(".xlsx"):
+                return {"data": "No se detecto un archivo xlsx valido"}, 400
+            new_name = "inventario.xlsx"
+            file.save(os.path.join("files", new_name))
+            code, data = upload_product_db_from_file(os.path.join("files", new_name))
+            if code != 200:
+                return {"data": data, "msg": "Error at file structure"}, 400
+            return {"data": data, "msg": f"Ok with filaname: {new_name}"}, 200
+        else:
+            return {"msg": "No se subio el archivo"}, 400
+
+
+@ns.route("/inventory/file/upload/tool")
+class UploadInventoryeFileTool(Resource):
+    @ns.expect(expected_files_almacen)
+    def post(self):
+        if "file" not in request.files:
+            return {"data": "No se detecto un archivo"}, 400
+        file = request.files["file"]
+        if file:
+            filename = secure_filename(file.filename)
+            if not filename.lower().endswith(".xlsx"):
+                return {"data": "No se detecto un archivo xlsx valido"}, 400
+            new_name = "inventario.xlsx"
+            file.save(os.path.join("files", new_name))
+            code, data = upload_product_db_from_file(
+                os.path.join("files", new_name), is_tool=True
+            )
+            if code != 200:
+                return {"data": data, "msg": "Error at file structure"}, 400
+            return {"data": data, "msg": f"Ok with filaname: {new_name}"}, 200
+        else:
+            return {"msg": "No se subio el archivo"}, 400
+
+
+@ns.route("/inventory/file/upload/internal")
+class UploadInventoryeFileInternal(Resource):
+    @ns.expect(expected_files_almacen)
+    def post(self):
+        if "file" not in request.files:
+            return {"data": "No se detecto un archivo"}, 400
+        file = request.files["file"]
+        if file:
+            filename = secure_filename(file.filename)
+            if not filename.lower().endswith(".xlsx"):
+                return {"data": "No se detecto un archivo xlsx valido"}, 400
+            new_name = "inventario.xlsx"
+            file.save(os.path.join("files", new_name))
+            code, data = upload_product_db_from_file(
+                os.path.join("files", new_name), is_internal=1
+            )
+            if code != 200:
+                return {"data": data, "msg": "Error at file structure"}, 400
+            return {"data": data, "msg": f"Ok with filaname: {new_name}"}, 200
+        else:
+            return {"msg": "No se subio el archivo"}, 400
