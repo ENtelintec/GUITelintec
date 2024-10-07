@@ -7,7 +7,7 @@ __pycache__/
 *$py.class
 /files/dpb_chache/
 /files/Ternium*
-/files/*cache.pkl
+/files/*.pkl
 /scripts_db_handle/fill_exams.py
 /scripts_db_handle/fill_fichajes.py
 /files/OCT*
