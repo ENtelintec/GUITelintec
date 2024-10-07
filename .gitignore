@@ -11,7 +11,7 @@ __pycache__/
 /scripts_db_handle/fill_exams.py
 /scripts_db_handle/fill_fichajes.py
 /files/OCT*
-/files/*cache*
+/files/*.*
 /files/*.csv
 /files/*.xml
 /files/fichaje*.xlsx
