@@ -6,11 +6,10 @@ __pycache__/
 *.py[cod]
 *$py.class
 /files/dpb_chache/
-
 /scripts_db_handle/fill_exams.py
 /scripts_db_handle/fill_fichajes.py
 /files/OCT*
-/files/*.*
+/files/*\.*
 /files/fichaje*.xlsx
 *csv
 /scripts_db_handle/Fill_Vacations.py
