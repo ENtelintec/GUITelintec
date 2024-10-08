@@ -168,7 +168,6 @@ def update_sm_db(data):
         json.dumps(extra_info),
         data["id"],
     )
-    print(data["items"])
     flag, error, result = execute_sql(sql, val, 4)
     return flag, error, result
 
