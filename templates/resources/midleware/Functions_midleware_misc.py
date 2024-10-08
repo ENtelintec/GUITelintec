@@ -87,7 +87,6 @@ def get_response_AV(
 def handle_comment_extra(type_extra: int, comment: str):
     comment_dict = split_commment(comment)
     places = comment_dict["place"].split("<**>")
-    print(f"places: {places}")
     if len(places) > 1:
         places[type_extra] = " "
     comment_dict["place"] = "<**>".join(places)
@@ -107,14 +106,13 @@ def get_events_from_extraordinary_sources(hour_in: str, hour_out: str, data: dic
     # timestamp limit hours in and out
     tmp_limit_hour_in = datetime.strptime(hour_in.split("-->")[1], "%H:%M")
     tmp_limit_hour_out = datetime.strptime(hour_out.split("-->")[1], "%H:%M")
-    print(tmp_hour_in < tmp_limit_hour_in)
     if (
         normal_hour_in <= tmp_hour_in <= tmp_limit_hour_in
         and normal_hour_out <= tmp_hour_out <= tmp_limit_hour_out
     ):
-        print(
-            f"event: normal, date: {data['date']}, value: {1.0}, comment: {data['comment']}"
-        )
+        # print(
+        #     f"event: normal, date: {data['date']}, value: {1.0}, comment: {data['comment']}"
+        # )
         events.append("normal")
         data_events.append([data["date"], 1.0, data["comment"], data["contract"]])
     else:
