@@ -257,7 +257,7 @@ def get_suppliers_db():
 
 
 def read_excel_file_regular(file: str, is_tool=False, is_internal=0):
-    df = pd.read_excel(file, skiprows=[0, 1, 2, 3], sheet_name="INVENTARIO")
+    df = pd.read_excel(file, skiprows=[0, 1, 2, 3], sheet_name="PRODUCTOS")
     df = df.fillna("")
     items = df.values.tolist()
     flag, error, result_sku = get_skus()
@@ -272,8 +272,8 @@ def read_excel_file_regular(file: str, is_tool=False, is_internal=0):
             new_items.append(
                 (
                     str(item[0]),
+                    item[1],
                     item[2],
-                    item[3],
                     item[6],
                     None,
                     None,
@@ -287,20 +287,19 @@ def read_excel_file_regular(file: str, is_tool=False, is_internal=0):
             update_items.append(item[0])
             stocks_update.append(item[6] + stock_old)
             new_input_quantity.append(item[6])
-            new_input_quantity.append(item[6])
     return new_items, update_items, stocks_update, new_input_quantity, result_sku, skus
 
 
 def upload_product_db_from_file(file: str, is_internal=0, is_tool=False):
-    (new_items, update_items, stocks_update,
-     new_input_quantity, result_sku, skus) = read_excel_file_regular(file, is_tool, is_internal)
+    (new_items, update_items, stocks_update, new_input_quantity, result_sku, skus) = (
+        read_excel_file_regular(file, is_tool, is_internal)
+    )
     data_result = {}
     flag, error, result = insert_multiple_row_products_amc(tuple(new_items))
     data_result["new"] = str(error) if not flag else new_items
     movements = []
     for item in new_items:
-        id_product = result_sku[skus.index(str(item[0]))][2]
-        movements.append((id_product, "entrada", item[6]))
+        movements.append((item[0], "entrada", item[3]))
     flag, error, result = insert_multiple_row_movements_amc(tuple(movements))
     if flag:
         msg = f"Se crearon nuevos items y movimientos de entrada al inventario.\nf{new_items}"

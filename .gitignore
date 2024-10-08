@@ -43,3 +43,4 @@ __pycache__/
 *.cer
 *.pfx
 /files/nominas_index.json
+/files/inventario.xlsx
