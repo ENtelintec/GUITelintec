@@ -138,6 +138,13 @@ def update_sm_db(data):
         "destination": data["info"]["destination"],
         "contract_contact": data["info"]["contract_contact"],
     }
+    history = json.loads(data["info"]["history"])
+    event = {
+        "event": "update",
+        "date": datetime.now().strftime(format_timestamps),
+        "user": data["info"]["emp_id"],
+    }
+    history.append(event)
     sql = (
         "UPDATE sql_telintec.materials_request "
         "SET folio = %s, contract = %s, facility = %s, location = %s, "
@@ -156,7 +163,7 @@ def update_sm_db(data):
         data["info"]["critical_date"],
         json.dumps(data["items"]),
         data["info"]["order_quotation"],
-        json.dumps(data["info"]["history"]),
+        json.dumps(history),
         data["info"]["comment"],
         json.dumps(extra_info),
         data["id"],
