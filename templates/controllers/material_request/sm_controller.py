@@ -139,7 +139,7 @@ def update_sm_db(data):
         "contract_contact": data["info"]["contract_contact"],
     }
     print(data["info"]["history"])
-    history = json.loads(data["info"]["history"])
+    history = data["info"]["history"]
     event = {
         "event": "update",
         "date": datetime.now().strftime(format_timestamps),

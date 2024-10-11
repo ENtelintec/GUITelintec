@@ -422,6 +422,7 @@ class SMInfoForm(Form):
     )
     comment = StringField("comment", validators=[], default="")
     destination = StringField("destination", validators=[InputRequired()])
+    # history = StringField("history", validators=[], default="[]")
     history = FieldList(FormField(HistoryFormSM, "history"))
     items = FieldList(FormField(ItemsFormSM, "items"))
     items_new = FieldList(FormField(ItemsFormSM, "items_new"))
