@@ -144,12 +144,15 @@ def get_skus():
 def create_product_db(
     sku, name, udm, stock, id_category, id_supplier, is_tool, is_internal
 ):
-    sku = str(sku)
-    name = str(name)
-    udm = str(udm)
-    stock = int(stock)
-    id_category = int(id_category) if id_category else None
-    id_supplier = int(id_supplier) if id_supplier else None
+    try:
+        sku = str(sku)
+        name = str(name)
+        udm = str(udm)
+        stock = int(stock)
+        id_category = int(id_category) if id_category else None
+        id_supplier = int(id_supplier) if id_supplier else None
+    except Exception as e:
+        return False, str(e), None
     insert_sql = (
         "INSERT INTO sql_telintec.products_amc "
         "(sku, name, udm, stock, id_category, is_tool, is_internal, id_supplier) "
@@ -163,11 +166,14 @@ def create_product_db(
 def update_product_db(
     id_product, sku, name, udm, stock, id_category, id_supplier, is_tool, is_internal
 ):
-    sku = str(sku)
-    name = str(name)
-    udm = str(udm)
-    stock = int(stock)
-    id_category = int(id_category)
+    try:
+        sku = str(sku)
+        name = str(name)
+        udm = str(udm)
+        stock = int(stock)
+        id_category = int(id_category)
+    except Exception as e:
+        return False, str(e), None
     update_sql = (
         "UPDATE sql_telintec.products_amc "
         "SET sku = %s, name = %s, udm = %s, stock = %s, id_category = %s, id_supplier = %s, is_tool = %s, is_internal = %s "
@@ -189,11 +195,14 @@ def update_product_db(
 
 
 def create_product_db_admin(sku, name, udm, stock, id_category):
-    sku = str(sku)
-    name = str(name)
-    udm = str(udm)
-    stock = int(stock)
-    id_category = int(id_category)
+    try:
+        sku = str(sku)
+        name = str(name)
+        udm = str(udm)
+        stock = int(stock)
+        id_category = int(id_category)
+    except Exception as e:
+        return False, str(e), None
     insert_sql = (
         "INSERT INTO sql_telintec.products_amc "
         "(sku, name, udm, stock, id_category) "
