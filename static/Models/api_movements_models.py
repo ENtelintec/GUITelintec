@@ -10,7 +10,7 @@ from wtforms.fields.numeric import FloatField
 from wtforms.fields.simple import StringField
 from wtforms.form import Form
 from wtforms import IntegerField
-from wtforms.validators import InputRequired
+from wtforms.validators import InputRequired, NumberRange
 
 movement_model = api.model(
     "MovementAMC",
@@ -80,7 +80,7 @@ class MovementForm(Form):
     )
     sm_id = IntegerField(
         "sm_id",
-        validators=[InputRequired(message="Id is required or value 0 not accepted")],
+        validators=[NumberRange(min=0, message="Invalid sm id")],
     )
     previous_q = FloatField("previous_q", validators=[], default=0.0)
 

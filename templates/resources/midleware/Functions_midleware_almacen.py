@@ -93,9 +93,15 @@ def update_movement(data):
         return False, "Invalid type"
     flag, error, actual_stock = get_stock_db(data["info"]["id_product"])
     if not flag or isinstance(actual_stock, list):
-        return False, error + " " + actual_stock
+        return False, str(
+            error
+        ) + f" -No se encontro el producto {data['info']['id_product']}- " + str(
+            actual_stock
+        )
     quantity = data["info"]["quantity"]
     p_quantity = data["info"]["previous_q"]
+    if data["info"]["sm_id"] == 0:
+        data["info"]["sm_id"] = None
     flag, e, result = update_movement_db(
         data["id"],
         data["info"]["quantity"],
