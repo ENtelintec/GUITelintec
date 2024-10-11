@@ -138,6 +138,7 @@ def update_sm_db(data):
         "destination": data["info"]["destination"],
         "contract_contact": data["info"]["contract_contact"],
     }
+    print(data["info"]["history"])
     history = json.loads(data["info"]["history"])
     event = {
         "event": "update",
