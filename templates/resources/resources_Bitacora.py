@@ -84,9 +84,6 @@ class FichajeEvent(Resource):
         if not validator.validate():
             return {"error": validator.errors}, 400
         data = validator.data
-        # code, data = parse_data(ns.payload, 10)
-        # if code == 400:
-        #     return {"answer": "The data has a bad structure"}, code
         out = check_date_difference(data["date"], delta_bitacora_edit)
         flag = False
         error = None
@@ -278,15 +275,34 @@ class FichajeMultipleEvent(Resource):
         events_added = []
         msg = f"---Agregando nuevos eventos por el lider {data['id_leader']}---"
         for event in events_recieved:
-            flag, error, result = update_bitacora(
-                event["id_emp"],
-                event["event"],
-                (event["date"], event["value"], event["comment"], event["contract"]),
-            )
-            events_added.append(
-                f"id_emp: {event['id_emp']}, {event['event']}_{event['value']}, flag: {flag}, error: {str(error)}, result: {result}"
-            )
-            msg += f"\nid_emp: {event['id_emp']}, {event['event']}_{event['value']}, flag: {flag}, error: {str(error)}, result: {result}"
+            if event["event"].lower() == "extraordinary":
+                event_e, data_events = get_events_from_extraordinary_sources(
+                    event["hour_in"], event["hour_out"], event
+                )
+                for index, item in enumerate(data_events):
+                    flag, error, result = update_bitacora(
+                        event["id_emp"], event_e[index], item
+                    )
+                    if flag:
+                        events_added.append(
+                            f"id_emp: {event['id_emp']}, {event_e[index]}_{item[1]}, flag: {flag}, error: {str(error)}, result: {result}"
+                        )
+                        msg += f"\nid_emp: {event['id_emp']}, {event_e[index]}_{item[1]}, flag: {flag}, error: {str(error)}, result: {result}"
+            else:
+                flag, error, result = update_bitacora(
+                    event["id_emp"],
+                    event["event"],
+                    (
+                        event["date"],
+                        event["value"],
+                        event["comment"],
+                        event["contract"],
+                    ),
+                )
+                events_added.append(
+                    f"id_emp: {event['id_emp']}, {event['event']}_{event['value']}, flag: {flag}, error: {str(error)}, result: {result}"
+                )
+                msg += f"\nid_emp: {event['id_emp']}, {event['event']}_{event['value']}, flag: {flag}, error: {str(error)}, result: {result}"
         create_notification_permission(
             msg,
             ["bitacora", "operaciones"],
