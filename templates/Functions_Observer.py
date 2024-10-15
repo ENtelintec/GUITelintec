@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-__author__ = 'Edisson Naula'
-__date__ = '$ 16/06/2023  at 12:03 p.m. $'
+__author__ = "Edisson Naula"
+__date__ = "$ 16/06/2023  at 12:03 p.m. $"
 
 import json
 import os
@@ -8,7 +8,6 @@ import re
 import threading
 import time
 from datetime import datetime, timezone
-from typing import List
 
 import openai
 import requests
@@ -16,8 +15,12 @@ from bardapi import Bard
 from bardapi.constants import SESSION_HEADERS
 
 from static.extensions import secrets
-from templates.controllers.chatbot.chatbot_controller import get_isAlive, update_isAlive, get_only_context, \
-    set_finish_chat
+from templates.controllers.chatbot.chatbot_controller import (
+    get_isAlive,
+    update_isAlive,
+    get_only_context,
+    set_finish_chat,
+)
 
 openai.api_key = secrets["OPENAI_API_KEY_1"]
 session = requests.Session()
@@ -40,71 +43,6 @@ def get_response_bard(prompt: str) -> str:
         print(e)
         response = "Error in Bard API:  " + str(e)
     return response
-
-
-def normalize_command(s: str):
-    replacements = (
-        ("á", "a"),
-        ("é", "e"),
-        ("í", "i"),
-        ("ó", "o"),
-        ("ú", "u"),
-    )
-    for a, b in replacements:
-        s = s.replace(a, b).replace(a.upper(), b.upper())
-    s = s.lower()
-    return s
-
-
-def clean_command(command: str) -> str:
-    """
-
-    :param command: command for sql bot
-    :return: cleaned command without special characters
-    """
-    message = normalize_command(command)
-    message = message.replace("'''", "")
-    numbers = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
-    ignore = ["a", "ante", "bajo", "con", "contra", "de", "desde", "durante", "en", "entre", "hacia", "hasta",
-              "mediante", "para", "por", "según", "sin", "sobre", "tras", "y", "e", "ni", "que", "o", "u", "pero",
-              "aunque", "sino"]
-    for item in ignore:
-        message = message.replace(f" {item} ", " ")
-    for number in numbers:
-        match = re.search(f"{number}", message)
-        if match is not None:
-            index = match.regs[0][0]
-            message = message[:index] + "" + message[index + 1:]
-    message = message.replace("''", "'%'")
-    message = message.replace("/", "")
-    message = message.replace("  ", " ")
-    message = message.replace("=", " like ")
-    msg_list = message.split(",")
-    message = " AND ".join(msg_list)
-    matches = re.findall(r"'(.*?)'", message)
-    if matches.__len__() != 0:
-        for item in matches:
-            message = message.replace(item, item.replace(" ", " OR "))
-    return message
-
-
-def clean_name(name: str) -> List:
-    """
-
-    :param name: name to be cleaned and make an iterable
-    :return: cleaned message list without special characters
-    """
-    message = normalize_command(name)
-    ignore = ["a", "ante", "bajo", "con", "contra", "de", "desde", "durante", "en", "entre", "hacia", "hasta",
-              "mediante", "para", "por", "según", "sin", "sobre", "tras", "y", "e", "ni", "que", "o", "u", "pero",
-              "aunque", "sino"]
-    for item in ignore:
-        message = message.replace(f" {item} ", " ")
-    message = message.replace("''", "'%'")
-    message = message.replace("'generic'", "'%'")
-    message = message.replace("  ", " ")
-    msg_list = message.split(" ")
-    return msg_list
 
 
 def get_response(messages: list, temperature: float = 0.0) -> str:
@@ -195,7 +133,7 @@ def follow_conversation(data: list) -> str:
     """
     chat_id = data[0]
     sender_id = data[1]
-    time_start = datetime.strptime(data[2], '%Y-%m-%d %H:%M:%S.%f')
+    time_start = datetime.strptime(data[2], "%Y-%m-%d %H:%M:%S.%f")
     result = get_isAlive(chat_id, sender_id)
     if result is None:
         print("Chat not found")
@@ -203,7 +141,9 @@ def follow_conversation(data: list) -> str:
     else:
         is_alive = result[0]
         print("chat is alive: ", is_alive)
-        t1 = threading.Thread(target=observer_chats_msg, args=(chat_id, sender_id, time_start))
+        t1 = threading.Thread(
+            target=observer_chats_msg, args=(chat_id, sender_id, time_start)
+        )
         t1.start()
         return "Observer initiated"
 
@@ -226,7 +166,9 @@ def update_log_file(filename: str, content: list, type_update: int = 1, thread=N
         case 2:
             timestamp, chat_id, products = content
             with open(filename, "a") as file:
-                file.write(timestamp + ",;" + str(chat_id) + ",;" + str(products) + "\n")
+                file.write(
+                    timestamp + ",;" + str(chat_id) + ",;" + str(products) + "\n"
+                )
 
 
 def retrieve_content_chat_id(chat_id: str) -> tuple:
@@ -262,9 +204,12 @@ def search_keyword_end_chat(chat):
     :param chat: list with the context of the conversation
     """
     ending_terms = {
-        "bot": {"Gracias por elegir Telintec": 0.7, "Te enviaremos": 0.8,
-                "ha sido confirmado": 0.9},
-        "user": {"/end": 1.0, "seria todo": 0.7, "adios": 0.9}
+        "bot": {
+            "Gracias por elegir Telintec": 0.7,
+            "Te enviaremos": 0.8,
+            "ha sido confirmado": 0.9,
+        },
+        "user": {"/end": 1.0, "seria todo": 0.7, "adios": 0.9},
     }
     if len(chat) >= 2:
         for index, item in enumerate(chat[2:]):
@@ -289,10 +234,12 @@ def check_conversation(chat_id: str, ia_tool="BARD") -> tuple[bool, list]:
     print("getting products from: ", chat_id)
     list_items_res = []
     if ia_tool == "BARD" and len(conversation) > 4:
-        context = json.loads(open('files/context_list_generator.json', encoding='utf-8').read())["context"]
+        context = json.loads(
+            open("files/context_list_generator.json", encoding="utf-8").read()
+        )["context"]
         message = context["content"]
         try:
-            out = bard.get_answer(message + "\n" + str(conversation))['content']
+            out = bard.get_answer(message + "\n" + str(conversation))["content"]
             print("out: ", out)
         except Exception as e:
             print("Error bard: ", e)
@@ -300,12 +247,15 @@ def check_conversation(chat_id: str, ia_tool="BARD") -> tuple[bool, list]:
         # noinspection RegExpRedundantEscape
         list_items_res = re.findall(r"\[(.*?)\]", out)
     elif ia_tool == "CHATGPT" and len(conversation) > 4:
-        context_list = [json.loads(open('files/context_list_generator.json', encoding='utf-8').read())["context"], {
-            'role': 'user',
-            'content': f"{str(conversation[1:])}"}]
+        context_list = [
+            json.loads(
+                open("files/context_list_generator.json", encoding="utf-8").read()
+            )["context"],
+            {"role": "user", "content": f"{str(conversation[1:])}"},
+        ]
         out = get_response(context_list)
         # noinspection RegExpRedundantEscape
-        list_items_res = re.findall(r'\[(.*?)\]', out)
+        list_items_res = re.findall(r"\[(.*?)\]", out)
     if len(list_items_res) > 0:
         list_items_res = list_items_res[0].split(",")
         is_finish = True
@@ -315,7 +265,9 @@ def check_conversation(chat_id: str, ia_tool="BARD") -> tuple[bool, list]:
     return is_finish, list_items_res
 
 
-def handle_if_products(thread, products: list, chat_id: str, is_finish: bool, timestamp, time_window):
+def handle_if_products(
+    thread, products: list, chat_id: str, is_finish: bool, timestamp, time_window
+):
     """
     This method is used to handle the status of the chats in the database.
     :param time_window:
@@ -329,22 +281,23 @@ def handle_if_products(thread, products: list, chat_id: str, is_finish: bool, ti
         print("Products: ", products)
         filename = "Pedidos_{}.txt".format(datetime.now().strftime("%Y-%m-%d"))
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        update_log_file(filename,
-                        [timestamp,
-                         chat_id, products], 2, thread)
+        update_log_file(filename, [timestamp, chat_id, products], 2, thread)
         # put here code to notify the user
         message = "Hay pedidos del chat: {} y se guardo en el archivo.".format(chat_id)
-        notifier = NotificationsUpdater(thread,
-                                        [chat_id, message, 0, products, timestamp],
-                                        0)
+        notifier = NotificationsUpdater(
+            thread, [chat_id, message, 0, products, timestamp], 0
+        )
         notifier.start()
         print("Chat {} is not alive", chat_id)
         finish_chat(chat_id)
     else:
         # check if enough time has passed
-        if (datetime.now(timezone.utc) -
-            datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S").replace(
-                tzinfo=timezone.utc)).seconds / 60 > time_window:
+        if (
+            datetime.now(timezone.utc)
+            - datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S").replace(
+                tzinfo=timezone.utc
+            )
+        ).seconds / 60 > time_window:
             print("Chat {} is not alive", chat_id)
             finish_chat(chat_id)
 
@@ -360,15 +313,19 @@ def handle_chat_status(thread, result: str, last_timestamp: str, time_wait):
     print("handle_chat_status: ", result)
     if len(result) > 0:
         message = f"Hay {len(result)} chats por revisar."
-        notifier = NotificationsUpdater(thread,
-                                        [0, message, 0, [], datetime.now().strftime("%Y-%m-%d %H:%M:%S")],
-                                        delay=0.5)
+        notifier = NotificationsUpdater(
+            thread,
+            [0, message, 0, [], datetime.now().strftime("%Y-%m-%d %H:%M:%S")],
+            delay=0.5,
+        )
         notifier.start()
         for chat in result:
             # check for products
             print("Chat is alive", chat[1])
             is_finish, products = check_conversation(chat[1])
-            handle_if_products(thread, products, chat[1], is_finish, last_timestamp, time_wait)
+            handle_if_products(
+                thread, products, chat[1], is_finish, last_timestamp, time_wait
+            )
 
 
 def read_last_line_file(filename: str) -> str:
@@ -380,7 +337,7 @@ def read_last_line_file(filename: str) -> str:
     with open(filename, "rb") as file:
         try:
             file.seek(-2, os.SEEK_END)
-            while file.read(1) != b'\n':
+            while file.read(1) != b"\n":
                 file.seek(-2, os.SEEK_CUR)
         except OSError:
             file.seek(0)
@@ -400,7 +357,9 @@ def read_last_timestamp(filename: str) -> str | None:
         return None
 
 
-def get_timestamp_difference(timestamp_last: str, is_utc=True, scale="MINUTES") -> float:
+def get_timestamp_difference(
+    timestamp_last: str, is_utc=True, scale="MINUTES"
+) -> float:
     """
     This method is used to calculate the difference between two timestamps.
     :param scale: scale of the difference
@@ -409,12 +368,12 @@ def get_timestamp_difference(timestamp_last: str, is_utc=True, scale="MINUTES") 
     :return: int with the difference in minutes
     """
     if is_utc:
-        timestamp_last = datetime.strptime(
-            timestamp_last, "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
+        timestamp_last = datetime.strptime(timestamp_last, "%Y-%m-%d %H:%M:%S").replace(
+            tzinfo=timezone.utc
+        )
         timestamp_now = datetime.now(timezone.utc)
     else:
-        timestamp_last = datetime.strptime(
-            timestamp_last, "%Y-%m-%d %H:%M:%S")
+        timestamp_last = datetime.strptime(timestamp_last, "%Y-%m-%d %H:%M:%S")
         timestamp_now = datetime.now()
     match scale:
         case "MINUTES":
