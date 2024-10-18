@@ -2,7 +2,7 @@
 __author__ = "Edisson Naula"
 __date__ = "$ 16/ene./2024  at 18:49 $"
 
-from flask_restx import Resource, Namespace
+from flask_restx import Namespace, Resource
 
 from static.Models.api_login_models import TokenModelForm, token_model
 from templates.controllers.employees.us_controller import (

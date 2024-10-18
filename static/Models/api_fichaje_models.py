@@ -141,6 +141,12 @@ FichajeRequestMultipleEvents_model = api.model(
 )
 
 
+FichajeRequestExtras_model = api.model(
+    "FichajeRequestExtras",
+    {"date": fields.String(required=True, description="Thedate", example="2024-03-30")},
+)
+
+
 def date_filter(date):
     # Example filter function to format the date
     return date.strftime(format_date) if not isinstance(date, str) else date
@@ -212,3 +218,7 @@ class FichajeRequestMultipleEvents(Form):
         "id_leader",
         validators=[InputRequired(message="id_leader is required or 0 not accepted")],
     )
+
+
+class FichajeRequestExtras(Form):
+    date = DateField("date", validators=[InputRequired()], filters=[date_filter])
