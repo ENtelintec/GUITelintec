@@ -127,6 +127,30 @@ def get_all_fichajes():
     return flag, error, result
 
 
+def get_all_fichajes_op():
+    sql = (
+        "SELECT "
+        "upper(sql_telintec.employees.name), "
+        "upper(sql_telintec.employees.l_name), "
+        "sql_telintec.fichajes.ficha_id, "
+        "sql_telintec.fichajes.emp_id, "
+        "sql_telintec.fichajes.contract, "
+        "sql_telintec.employees.department_id, "
+        "sql_telintec.fichajes.absences, "
+        "sql_telintec.fichajes.lates, "
+        "sql_telintec.fichajes.extras, "
+        "sql_telintec.fichajes.primes, "
+        "sql_telintec.fichajes.normal, "
+        "sql_telintec.fichajes.early,"
+        "sql_telintec.fichajes.pasiva "
+        "FROM sql_telintec.fichajes "
+        "INNER JOIN sql_telintec.employees ON (sql_telintec.fichajes.emp_id = sql_telintec.employees.employee_id)"
+        "WHERE department_id = 2 AND status='activo' "
+    )
+    flag, error, result = execute_sql(sql, type_sql=2)
+    return flag, error, result
+
+
 def get_fichaje_emp_AV(name: str, id_e: int):
     columns = (
         "id_employee",

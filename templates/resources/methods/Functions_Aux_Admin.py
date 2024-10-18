@@ -160,6 +160,26 @@ def read_file_tenium_contract(path: str, pattern, phrase):
     return products
 
 
+def read_exel_products_bidding(path: str):
+    df = pd.read_excel(path, skiprows=[0])
+    df = df.fillna("")
+    data_excel = df.to_dict("records")
+    products = []
+    for item in data_excel:
+        product = {
+            "partida": item[" # "],
+            "description_small": item["Description"],
+            "description": item["Long Description"],
+            "client": item["Client"],
+            "quantity": item["Requested quantity"],
+            "udm": item["Unit of measure"],
+            "date_needed": item["Date needed"],
+            "price_unit": item["Unit price"],
+        }
+        products.append(product)
+    return products
+
+
 def read_exel_products_quotation(path: str):
     df = pd.read_excel(path, skiprows=[0])
     df = df.fillna("")
@@ -207,10 +227,23 @@ def compare_vectors_quotation_contract(vector1, vector2):
         vector1[5],
     ]
     coldata_c = [
-        "Partida", "Descripción",  "Cantidad",  "Unidad",  "Precio Unitario",  "Total",  "Tipo",  "Marca",
-        "Nro. Parte",  "Descripción Larga",
+        "Partida",
+        "Descripción",
+        "Cantidad",
+        "Unidad",
+        "Precio Unitario",
+        "Total",
+        "Tipo",
+        "Marca",
+        "Nro. Parte",
+        "Descripción Larga",
         " ",
-        "Partida",  "Descripción",  "Cantidad",  "Unidad",  "Precio Unitario",  "Importe",
+        "Partida",
+        "Descripción",
+        "Cantidad",
+        "Unidad",
+        "Precio Unitario",
+        "Importe",
     ]
     flag = False
     if (

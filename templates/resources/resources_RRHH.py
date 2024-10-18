@@ -38,12 +38,17 @@ from static.Models.api_fichajes_models import (
     answer_fichajes_model,
     expected_files,
 )
-from static.Models.api_models import employees_resume_model, resume_model
+from static.Models.api_models import (
+    employees_resume_model,
+    resume_model,
+    expected_headers_per,
+)
 from static.extensions import (
     cache_file_resume_fichaje_path,
     quizzes_RRHH,
     path_contract_files,
 )
+from templates.resources.methods.Functions_Aux_Login import verify_token
 from templates.resources.methods.Functions_Aux_RH import parse_data
 from templates.resources.midleware.Functions_DB_midleware import (
     get_info_employees_with_status,
@@ -425,7 +430,12 @@ class EmployeesResume(Resource):  # noqa: F811
 
 @ns.route("/payroll/files/list/<int:emp_id>")
 class DownloadFilesPayroll(Resource):
+    @ns.expect(expected_headers_per)
     def get(self, emp_id):
+        token = request.headers["Authorization"]
+        flag, data_token = verify_token(token, department="RRHH")
+        if not flag:
+            return {"data": None, "msg": "Token invalido"}, 401
         code, data_out = get_files_list_nomina(emp_id)
         if code != 200:
             return {"data": None, "msg": "No files"}, code

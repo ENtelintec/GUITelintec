@@ -19,6 +19,8 @@ from static.Models.api_fichaje_models import (
     BitacoraDownloadReportForm,
     FichajeRequestMultipleEvents_model,
     FichajeRequestMultipleEvents,
+    FichajeRequestExtras_model,
+    FichajeRequestExtras,
 )
 from static.Models.api_sm_models import client_emp_sm_response_model
 from static.extensions import (
@@ -44,6 +46,7 @@ from templates.controllers.employees.employees_controller import (
 from templates.resources.midleware.Functions_midleware_misc import (
     get_events_from_extraordinary_sources,
 )
+from templates.resources.midleware.MD_Bitacora import get_events_extra
 
 ns = Namespace("GUI/api/v1/bitacora")
 
@@ -312,3 +315,15 @@ class FichajeMultipleEvent(Resource):
         )
         write_log_file(log_file_bitacora_path, msg)
         return {"answer": "The events were proccessed.", "data": events_added}, 200
+
+
+@ns.route("/fichajes/extra")
+class FichajesGetExtra(Resource):
+    @ns.expect(FichajeRequestExtras_model)
+    def post(self):
+        validator = FichajeRequestExtras.from_json(ns.payload)
+        if not validator.validate():
+            return {"error": validator.errors}, 400
+        data = validator.data
+        data, code = get_events_extra(data)
+        return {"data": data}, code

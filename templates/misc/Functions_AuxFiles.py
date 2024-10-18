@@ -92,10 +92,11 @@ def get_data_employees_ids(ids: list):
         return None, None
 
 
-def update_event_dict(event_dic, data):
+def update_event_dict(event_dic, data, event=None):
     date = (
         datetime.strptime(data[0], format_date) if isinstance(data[0], str) else data[0]
     )
+
     if str(date.year) not in event_dic.keys():
         event_dic[str(date.year)] = {}
         event_dic[str(date.year)][str(date.month)] = {}
@@ -574,6 +575,8 @@ def split_commment(txt: str, type_fun=0) -> dict:
                 "activity": "",
                 "place": "",
                 "contract": None,
+                "times": None,
+                "aproved": None,
             }
             rows = txt.split("\n")
             for i, row in enumerate(rows):
@@ -588,6 +591,10 @@ def split_commment(txt: str, type_fun=0) -> dict:
                         comment_dict["incidence"] = row.split("-->")[1]
                     elif "contrato" in row:
                         comment_dict["contract"] = row.split("-->")[1]
+                    elif "times" in row:
+                        comment_dict["times"] = row.split("-->")[1]
+                    elif "aproved" in row:
+                        comment_dict["aproved"] = row.split("-->")[1]
                     else:
                         comment_dict["comment"] += "\t" + row
         case 1:
@@ -597,6 +604,8 @@ def split_commment(txt: str, type_fun=0) -> dict:
                 "activity": "",
                 "place": "",
                 "contract": None,
+                "times": None,
+                "aproved": None,
             }
             rows = txt.split("\n")
             for i, row in enumerate(rows):
@@ -611,6 +620,10 @@ def split_commment(txt: str, type_fun=0) -> dict:
                         comment_dict["incidence"] = row.split("-->")[1]
                     elif "contrato" in row:
                         comment_dict["contract"] = row.split("-->")[1]
+                    elif "times" in row:
+                        comment_dict["times"] = row.split("-->")[1]
+                    elif "aproved" in row:
+                        comment_dict["aproved"] = row.split("-->")[1]
                     else:
                         comment_dict["comment"] += "\t" + row
         case _:
@@ -633,6 +646,10 @@ def unify_comment_dict(comment_dict: dict):
         comment += "\nlugar-->" + comment_dict["place"]
     if comment_dict["contract"] is not None:
         comment += "\ncontrato-->" + str(comment_dict["contract"])
+    if comment_dict["times"] is not None:
+        comment += "\ntimes-->" + str(comment_dict["times"])
+    if comment_dict["aproved"] is not None:
+        comment += "\naproved-->" + str(comment_dict["aproved"])
     return comment
 
 

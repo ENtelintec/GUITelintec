@@ -115,12 +115,6 @@ class ProductInsertForm(Form):
     supplier_name = StringField("supplier_name", validators=[InputRequired()])
     is_tool = IntegerField("is_tool", validators=[], default=0)
     is_internal = IntegerField("is_internal", validators=[], default=0)
-    quantity_move = IntegerField(
-        "quantity_move",
-        validators=[
-            InputRequired(message="Quantity move is required or value 0 not accepted")
-        ],
-    )
 
 
 class ProductUpdateForm(Form):
