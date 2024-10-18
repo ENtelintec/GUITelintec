@@ -7,7 +7,7 @@ from datetime import datetime
 
 from static.extensions import format_date
 from templates.controllers.fichajes.fichajes_controller import get_all_fichajes_op
-from templates.misc.Functions_AuxFiles import split_commment
+from templates.misc.Functions_AuxFiles import split_commment, unify_comment_dict
 
 
 def transform_bitacora_data_to_dict(data, columns):
@@ -71,3 +71,11 @@ def get_events_extra(data):
             event["contract"] = row[4]
             events_out.append(event)
     return events_out, 200
+
+
+def add_aproved_to_comment(comment_str):
+    comment_dict = split_commment(comment_str)
+    if comment_dict["aproved"] is not None:
+        comment_dict["comment"] += "\naproved-->" + str(1)
+    comment = unify_comment_dict(comment_dict)
+    return comment

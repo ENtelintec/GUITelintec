@@ -20,7 +20,7 @@ from static.Models.api_fichaje_models import (
     FichajeRequestMultipleEvents_model,
     FichajeRequestMultipleEvents,
     FichajeRequestExtras_model,
-    FichajeRequestExtras,
+    FichajeRequestExtras, FichajeAproveExtras_model, FichajeAproveExtras,
 )
 from static.Models.api_sm_models import client_emp_sm_response_model
 from static.extensions import (
@@ -46,7 +46,7 @@ from templates.controllers.employees.employees_controller import (
 from templates.resources.midleware.Functions_midleware_misc import (
     get_events_from_extraordinary_sources,
 )
-from templates.resources.midleware.MD_Bitacora import get_events_extra
+from templates.resources.midleware.MD_Bitacora import get_events_extra, add_aproved_to_comment
 
 ns = Namespace("GUI/api/v1/bitacora")
 
@@ -327,3 +327,35 @@ class FichajesGetExtra(Resource):
         data = validator.data
         data, code = get_events_extra(data)
         return {"data": data}, code
+
+
+@ns.route("/fichajes/extra/aprove")
+class FichajesAproveExtra(Resource):
+    @ns.expect(FichajeAproveExtras_model)
+    def post(self):
+        validator = FichajeAproveExtras.from_json(ns.payload)
+        if not validator.validate():
+            return {"error": validator.errors}, 400
+        data = validator.data
+        flag, error, result = update_bitacora(
+            data["id_emp"],
+            "extra",
+            [data["date"], data["value"], data["comment"], data["contract"]]
+        )
+        data["comment"] = add_aproved_to_comment(data["comment"])
+        if flag:
+            msg = f"Evento extra aprovado: {data['id_emp']}, {data['date']}, {data['value']}, {data['comment']}"
+            create_notification_permission(
+                msg,
+                ["bitacora", "operaciones"],
+                "Evento extra aprovado bitacora",
+                data["id_leader"],
+                data["id_emp"],
+            )
+            write_log_file(log_file_bitacora_path, msg)
+            return {"answer": "The event has been updated"}, 200
+        elif error is not None:
+            print(error)
+            return {"answer": "There has been an error at aproving the bitacora"}, 404
+        else:
+            return {"answer": "Fail to update registry"}, 404

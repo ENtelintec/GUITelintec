@@ -146,6 +146,30 @@ FichajeRequestExtras_model = api.model(
     {"date": fields.String(required=True, description="Thedate", example="2024-03-30")},
 )
 
+FichajeAproveExtras_model = api.model(
+    "FichajeAproveExtras",
+    {
+        "date": fields.String(required=True, description="Thedate", example="2024-03-30"),
+        "value": fields.Float(required=True, description="The value", example=1.0),
+        "comment": fields.String(
+            required=True, description="The comment", example="This is a comment"
+        ),
+        "id_emp": fields.Integer(
+            required=True,
+            description="The id of employee that has the event",
+            example=1,
+        ),
+        "contract": fields.String(
+            required=True, description="The contract of the empployee", example="INFRA"
+        ),
+        "id_leader": fields.Integer(
+            required=True, description="The id of the leader aproving the event", example=1
+        ),
+    },
+
+
+)
+
 
 def date_filter(date):
     # Example filter function to format the date
@@ -222,3 +246,18 @@ class FichajeRequestMultipleEvents(Form):
 
 class FichajeRequestExtras(Form):
     date = DateField("date", validators=[InputRequired()], filters=[date_filter])
+
+
+class FichajeAproveExtras(Form):
+    date = DateField("date", validators=[InputRequired()], filters=[date_filter])
+    value = FloatField("value", validators=[InputRequired()])
+    comment = StringField("comment", validators=[InputRequired()])
+    id_emp = IntegerField(
+        "id_emp",
+        validators=[InputRequired(message="id_emp is required or 0 not accepted")],
+    )
+    contract = StringField("contract", validators=[InputRequired()])
+    id_leader = IntegerField(
+        "id_leader",
+        validators=[InputRequired(message="id_leader is required or 0 not accepted")],
+    )
