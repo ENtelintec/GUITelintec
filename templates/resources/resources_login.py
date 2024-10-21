@@ -2,7 +2,7 @@
 __author__ = "Edisson Naula"
 __date__ = "$ 16/ene./2024  at 18:49 $"
 
-from flask_restx import Resource, Namespace
+from flask_restx import Namespace, Resource
 
 from static.Models.api_login_models import TokenModelForm, token_model
 from templates.controllers.employees.us_controller import (
@@ -30,7 +30,6 @@ class LoginUP(Resource):
         pass_key = data["password"]
         is_real_user = verify_user_DB(data["username"], pass_key)
         out_dict = get_permissions_user_password(data["username"], pass_key)
-        print(out_dict)
         permissions = (
             out_dict["permissions"] if out_dict["permissions"] is not None else {}
         )
@@ -46,5 +45,10 @@ class LoginUP(Resource):
             "name": out_dict["name"],
             "contract": out_dict["contract"],
             "emp_id": out_dict["emp_id"],
+            "token": out_dict["token"],
+            "timestamp_token": out_dict["timestamp_token"].strftime("%Y-%m-%d %H:%M:%S")
+            if out_dict["timestamp_token"] is not None
+            else None,
         }
+        print(out)
         return out, 200

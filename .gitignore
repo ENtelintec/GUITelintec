@@ -21,9 +21,12 @@ __pycache__/
 /dist/
 /build/
 /venv/
-/files/contracts/*
-/files/logs/*
-/files/quizz_out/*
+/files/contracts/*.pdf
+/files/logs/*.txt
+/files/quizz_out/*.json
+/files/quizz_out/*.pdf
+/files/quizz_out/*.xlsx
+/files/quizz_out/*.csv
 /app_gui.exe
 /files/samplev2.pdf
 /files/*.pdf
@@ -31,7 +34,8 @@ __pycache__/
 .env_*
 /tester_code.py
 /scripts_db_handle/fill_sm_dummy_data.py
-/files/Pmodels/*
+/files/Pmodels/*.pkl
+/files/Pmodels/*.keras
 /test.json
 /scripts_db_handle/
 /domain.crt
@@ -39,3 +43,4 @@ __pycache__/
 *.cer
 *.pfx
 /files/nominas_index.json
+/files/inventario.xlsx

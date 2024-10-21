@@ -13,16 +13,16 @@ from templates.database.connection import execute_sql
 def update_sm_items_stock(tuple_sm):
     flag, error, result = get_stock_db_products()
     tuple_out = []
+    product_ids = [product[0] for product in result]
     if flag:
         for sm_data in tuple_sm:
-            items = json.loads(sm_data[10])
+            items_db = json.loads(sm_data[10])
             items_out = []
-            for item in items:
-                for product in result:
-                    if item["id"] == product[0]:
-                        item["stock"] = product[1]
-                        items_out.append(item)
-                        break
+            for item in items_db:
+                if item["id"] in product_ids:
+                    index = product_ids.index(item["id"])
+                    item["stock"] = result[index][1]
+                items_out.append(item)
             sm_data = list(sm_data)
             sm_data[10] = json.dumps(items_out)
             tuple_out.append(sm_data)
@@ -41,7 +41,7 @@ def get_sm_entries(emp_id=-1):
             "SELECT sm_id, folio, contract, facility, location, client_id, emp_id, "
             "pedido_cotizacion, date, limit_date, "
             "items, status, history, comment, extra_info "
-            "FROM sql_telintec.materials_request "
+            "FROM sql_telintec.materials_request where emp_id like '%'"
         )
         flag, error, result = execute_sql(sql, None, 5)
     else:
@@ -63,7 +63,6 @@ def get_sm_entries(emp_id=-1):
             flag, error, result = execute_sql(sql, val, 2)
         else:
             return False, "Invalid employee ID", []
-
     result = update_sm_items_stock(result)
     return flag, error, result
 
@@ -139,6 +138,14 @@ def update_sm_db(data):
         "destination": data["info"]["destination"],
         "contract_contact": data["info"]["contract_contact"],
     }
+    print(data["info"]["history"])
+    history = data["info"]["history"]
+    event = {
+        "event": "update",
+        "date": datetime.now().strftime(format_timestamps),
+        "user": data["info"]["emp_id"],
+    }
+    history.append(event)
     sql = (
         "UPDATE sql_telintec.materials_request "
         "SET folio = %s, contract = %s, facility = %s, location = %s, "
@@ -146,7 +153,6 @@ def update_sm_db(data):
         "history = %s, comment = %s, extra_info = %s "
         "WHERE sm_id = %s"
     )
-    print(data["info"])
     val = (
         data["info"]["folio"],
         data["info"]["contract"],
@@ -158,7 +164,7 @@ def update_sm_db(data):
         data["info"]["critical_date"],
         json.dumps(data["items"]),
         data["info"]["order_quotation"],
-        json.dumps(data["info"]["history"]),
+        json.dumps(history),
         data["info"]["comment"],
         json.dumps(extra_info),
         data["id"],

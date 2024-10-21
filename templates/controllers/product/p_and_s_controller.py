@@ -5,6 +5,7 @@ __date__ = "$ 29/abr./2024  at 16:40 $"
 from datetime import datetime
 
 from static.extensions import format_timestamps
+from templates.Functions_Utils import clean_name
 from templates.database.connection import execute_sql
 
 
@@ -143,12 +144,15 @@ def get_skus():
 def create_product_db(
     sku, name, udm, stock, id_category, id_supplier, is_tool, is_internal
 ):
-    sku = str(sku)
-    name = str(name)
-    udm = str(udm)
-    stock = int(stock)
-    id_category = int(id_category) if id_category else None
-    id_supplier = int(id_supplier) if id_supplier else None
+    try:
+        sku = str(sku)
+        name = str(name)
+        udm = str(udm)
+        stock = int(stock)
+        id_category = int(id_category) if id_category else None
+        id_supplier = int(id_supplier) if id_supplier else None
+    except Exception as e:
+        return False, str(e), None
     insert_sql = (
         "INSERT INTO sql_telintec.products_amc "
         "(sku, name, udm, stock, id_category, is_tool, is_internal, id_supplier) "
@@ -160,29 +164,45 @@ def create_product_db(
 
 
 def update_product_db(
-    id_product, sku, name, udm, stock, id_category, is_tool, is_internal
+    id_product, sku, name, udm, stock, id_category, id_supplier, is_tool, is_internal
 ):
-    sku = str(sku)
-    name = str(name)
-    udm = str(udm)
-    stock = int(stock)
-    id_category = int(id_category)
+    try:
+        sku = str(sku)
+        name = str(name)
+        udm = str(udm)
+        stock = int(stock)
+        id_category = int(id_category)
+    except Exception as e:
+        return False, str(e), None
     update_sql = (
         "UPDATE sql_telintec.products_amc "
-        "SET sku = %s, name = %s, udm = %s, stock = %s, id_category = %s, is_tool = %s, is_internal = %s "
+        "SET sku = %s, name = %s, udm = %s, stock = %s, id_category = %s, id_supplier = %s, is_tool = %s, is_internal = %s "
         "WHERE id_product = %s"
     )
-    vals = (sku, name, udm, stock, id_category, is_tool, is_internal, id_product)
+    vals = (
+        sku,
+        name,
+        udm,
+        stock,
+        id_category,
+        id_supplier,
+        is_tool,
+        is_internal,
+        id_product,
+    )
     flag, error, result = execute_sql(update_sql, vals, 4)
     return flag, error, result
 
 
 def create_product_db_admin(sku, name, udm, stock, id_category):
-    sku = str(sku)
-    name = str(name)
-    udm = str(udm)
-    stock = int(stock)
-    id_category = int(id_category)
+    try:
+        sku = str(sku)
+        name = str(name)
+        udm = str(udm)
+        stock = int(stock)
+        id_category = int(id_category)
+    except Exception as e:
+        return False, str(e), None
     insert_sql = (
         "INSERT INTO sql_telintec.products_amc "
         "(sku, name, udm, stock, id_category) "
@@ -569,13 +589,16 @@ def update_stock_db_sku(skus: list, stocks: list):
 
 
 def insert_multiple_row_products_amc(products: tuple):
+    codec = "ASCII"
     if len(products) == 0:
         return False, "No products to insert", None
     sql = "INSERT INTO sql_telintec.products_amc (sku, name, udm, stock, id_category, id_supplier, is_tool, is_internal) VALUES "
     for index, product in enumerate(products):
+        sku = clean_name(product[0].encode(codec, errors="ignore").decode(codec))[0]
+        name = clean_name(product[1].encode(codec, errors="ignore").decode(codec))[0]
         if index > 0:
             sql += ", "
-        sql += f"({product[0]}, '{product[1]}', '{product[2]}', {product[3]}, {product[4]}, {product[5]}, {product[6]}, {product[7]})"
+        sql += f"('{str(sku.upper())}', '{str(name)}', '{product[2]}', {product[3]}, {product[4]}, {product[5]}, {product[6]}, {product[7]})"
     sql = sql.replace("None", "NULL")
     flag, error, result = execute_sql(sql, None, 4)
     return flag, error, result
@@ -590,6 +613,51 @@ def insert_multiple_row_movements_amc(movements: tuple):
         if index > 0:
             sql += ", "
         sql += f"({movement[0]}, '{movement[1]}', {movement[2]}, '{date}')"
+    sql = sql.replace("None", "NULL")
+    flag, error, result = execute_sql(sql, None, 4)
+    return flag, error, result
+
+
+def update_multiple_products_suppliers(products: tuple):
+    if len(products) == 0:
+        return False, "No products to update", None
+    sql = "UPDATE sql_telintec.products_amc SET id_supplier = CASE "
+    for product in products:
+        sql += f"WHEN sku = '{product[0]}' THEN {product[1]} "
+    sql += (
+        "ELSE sku "
+        "END "
+        "WHERE sku IN (" + ", ".join([f"'{product[0]}'" for product in products]) + ");"
+    )
+    sql = sql.replace("None", "NULL")
+    flag, error, result = execute_sql(sql, None, 4)
+    return flag, error, result
+
+
+def insert_multiple_categories_amc(categories: tuple):
+    if len(categories) == 0:
+        return False, "No categories to insert", None
+    sql = "INSERT INTO sql_telintec.product_categories_amc (name) VALUES "
+    for index, category in enumerate(categories):
+        if index > 0:
+            sql += ", "
+        sql += f"('{category}')"
+    sql = sql.replace("None", "NULL")
+    flag, error, result = execute_sql(sql, None, 4)
+    return flag, error, result
+
+
+def update_multiple_products_categories(products: tuple):
+    if len(products) == 0:
+        return False, "No products to update", None
+    sql = "UPDATE sql_telintec.products_amc SET id_category = CASE "
+    for product in products:
+        sql += f"WHEN sku = '{product[0]}' THEN {product[1]} "
+    sql += (
+        "ELSE sku "
+        "END "
+        "WHERE sku IN (" + ", ".join([f"'{product[0]}'" for product in products]) + ");"
+    )
     sql = sql.replace("None", "NULL")
     flag, error, result = execute_sql(sql, None, 4)
     return flag, error, result

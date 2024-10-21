@@ -113,10 +113,7 @@ def get_all_sm(limit, page=0, emp_id=-1):
         new_products = []
         if products is not None:
             for product in products:
-                if (
-                    "(Nuevo)" in product["comment"]
-                    and "(Pedido)" not in product["comment"]
-                ):
+                if product["id"] == -1:
                     new_products.append(product)
         extra_info = json.loads(result[i][14])
         items.append(

@@ -20,7 +20,7 @@ def create_quotation(metadata: dict, products: dict):
     return flag, error, id_quotation
 
 
-def update_quotation(id_quotation, metadata: dict, products: dict, timestamps=None):
+def update_quotation(id_quotation, metadata: dict, products: list, timestamps=None):
     timestamp = datetime.now().strftime(format_timestamps)
     if timestamps is None:
         timestamps = {

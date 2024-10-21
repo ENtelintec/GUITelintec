@@ -365,7 +365,14 @@ task_delete_model = api.model(
             required=True, description="The destination employee"
         ),
     },
+)
 
+request_file_model = api.model(
+    "RequestFile",
+    {
+        "file_url": fields.String(required=True, description="The file url"),
+        "emp_id": fields.Integer(required=True, description="The employee id"),
+    },
 )
 
 
@@ -474,3 +481,8 @@ class RequestAVResponseForm(Form):
     filename = StringField("filename", validators=[InputRequired()])
     files = FieldList(StringField(), validators=[], default=[])
     id = IntegerField("id", validators=[], default=0)
+
+
+class RequestFileForm(Form):
+    file_url = StringField("file_url", validators=[InputRequired()])
+    emp_id = IntegerField("emp_id", validators=[InputRequired()])
