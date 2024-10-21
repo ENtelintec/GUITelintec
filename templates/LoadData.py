@@ -29,10 +29,10 @@ from templates.controllers.employees.employees_controller import (
 from templates.controllers.employees.vacations_controller import get_vacations_data
 from templates.controllers.misc.tasks_controller import get_all_tasks_by_status
 from templates.controllers.product.p_and_s_controller import (
-    get_ins_db,
     get_all_suppliers,
     get_all_products_db,
-    get_outs_db,
+    get_ins_db_detail,
+    get_outs_db_detail,
 )
 from templates.modules.Home.SubFrame_GeneralNoti import load_notifications
 from templates.modules.RRHH.SubFrame_CrearQuiz import get_name_id_employees_list
@@ -162,8 +162,8 @@ def load_data(data_dic, is_super=False, emp_id=None, item=None, permissions=None
             data_emp, columns = get_data_employees(status="ACTIVO")
             data_dic["emp_detalles"] = {"data": data_emp, "columns": columns}
         case "Movimientos":
-            flag, error, data_movements_in = get_ins_db()
-            flag, error, data_movements_out = get_outs_db()
+            flag, error, data_movements_in = get_ins_db_detail()
+            flag, error, data_movements_out = get_outs_db_detail()
             data_dic["data_movements"] = {
                 "data_ins": data_movements_in,
                 "data_outs": data_movements_out,

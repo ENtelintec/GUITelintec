@@ -27,6 +27,25 @@ def get_ins_db():
     return flag, error, my_result
 
 
+def get_ins_db_detail():
+    sql = (
+        "SELECT "
+        "sql_telintec.product_movements_amc.id_movement, "
+        "sql_telintec.product_movements_amc.id_product, "
+        "sql_telintec.products_amc.sku, "
+        "sql_telintec.product_movements_amc.movement_type, "
+        "sql_telintec.product_movements_amc.quantity, "
+        "sql_telintec.product_movements_amc.movement_date, "
+        "sql_telintec.product_movements_amc.sm_id, "
+        "sql_telintec.products_amc.name as product_name "
+        "FROM sql_telintec.product_movements_amc "
+        "JOIN sql_telintec.products_amc ON sql_telintec.product_movements_amc.id_product = sql_telintec.products_amc.id_product "
+        "WHERE sql_telintec.product_movements_amc.movement_type = 'entrada'"
+    )
+    flag, error, my_result = execute_sql(sql, None, 5)
+    return flag, error, my_result
+
+
 def create_in_movement_db(id_product, movement_type, quantity, movement_date, sm_id):
     insert_sql = (
         "INSERT INTO sql_telintec.product_movements_amc (id_product, movement_type, quantity, movement_date, sm_id) "
@@ -62,6 +81,25 @@ def get_outs_db():
         "SELECT "
         "sql_telintec.product_movements_amc.id_movement, "
         "sql_telintec.product_movements_amc.id_product, "
+        "sql_telintec.product_movements_amc.movement_type, "
+        "sql_telintec.product_movements_amc.quantity, "
+        "sql_telintec.product_movements_amc.movement_date, "
+        "sql_telintec.product_movements_amc.sm_id, "
+        "sql_telintec.products_amc.name as product_name "
+        "FROM sql_telintec.product_movements_amc "
+        "JOIN sql_telintec.products_amc ON sql_telintec.product_movements_amc.id_product = sql_telintec.products_amc.id_product "
+        "WHERE sql_telintec.product_movements_amc.movement_type = 'salida'"
+    )
+    flag, error, result = execute_sql(sql, None, 5)
+    return flag, error, result
+
+
+def get_outs_db_detail():
+    sql = (
+        "SELECT "
+        "sql_telintec.product_movements_amc.id_movement, "
+        "sql_telintec.product_movements_amc.id_product,"
+        "sql_telintec.products_amc.sku, "
         "sql_telintec.product_movements_amc.movement_type, "
         "sql_telintec.product_movements_amc.quantity, "
         "sql_telintec.product_movements_amc.movement_date, "
