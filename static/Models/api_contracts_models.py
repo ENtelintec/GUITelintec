@@ -39,6 +39,14 @@ metadata_quotation_model = api.model(
         "client_id": fields.Integer(
             required=True, description="The quotation client id"
         ),
+        "emp_id": fields.Integer(required=True, description="The quotation emp id"),
+        "emp_name": fields.String(required=True, description="The quotation emp name"),
+        "emp_email": fields.String(
+            required=True, description="The quotation emp email"
+        ),
+        "emp_phone": fields.String(
+            required=True, description="The quotation emp phone"
+        ),
     },
 )
 products_quotation_model = api.model(
@@ -181,7 +189,9 @@ contract_model = api.model(
             example="2024-03-01",
         ),
         "timestamps": fields.Nested(timestamps_quotation_model),
-        "quotation_id": fields.Nested(quotation_model),
+        "quotation_id": fields.Integer(
+            required=True, description="The quotation id", example=1
+        ),
     },
 )
 
@@ -281,9 +291,15 @@ class MetadataQuotationForm(Form):
     planta = StringField("planta", validators=[InputRequired()])
     area = StringField("area", validators=[InputRequired()])
     location = StringField("location", validators=[InputRequired()])
-    client_id = FloatField(
+    client_id = IntegerField(
         "client_id", validators=[InputRequired(message="Invalid id or 0 not acepted")]
     )
+    emp_id = IntegerField(
+        "emp_id", validators=[InputRequired(message="Invalid id or 0 not acepted")]
+    )
+    emp_name = StringField("emp_name", validators=[InputRequired()])
+    emp_phone = StringField("emp_phone", validators=[InputRequired()])
+    emp_email = EmailField("emp_email", validators=[InputRequired()])
 
 
 class ProductsQuotationForm(Form):
