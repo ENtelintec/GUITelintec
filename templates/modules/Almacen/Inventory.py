@@ -1,8 +1,21 @@
+import json
 import time
 import ttkbootstrap as ttk
 
 from templates.controllers.index import DataHandler
 from ttkbootstrap.tableview import Tableview
+
+from templates.modules.Almacen.SubFrameLector import ProductsLector
+
+
+def get_row_data_inventory(data_raw):
+    data = []
+    for row in data_raw:
+        codes = json.loads(row[9])
+        data.append(
+            (row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8], codes)
+        )
+    return data
 
 
 class InventoryScreen(ttk.Frame):
@@ -22,9 +35,9 @@ class InventoryScreen(ttk.Frame):
             else kwargs["data"]["data_products_gen"]
         )
         self._table = Tableview(self)
-        self.entries = self.create_content(self)
+        self.entries = self.create_content(self, **kwargs)
 
-    def create_content(self, parent):
+    def create_content(self, parent, **kwargs):
         """Creates the content of the Inventory screen, includes the table of products and the inputs to add a new product"""
         content = ttk.Frame(parent)
         content.grid(row=0, column=0, sticky="nswe")
@@ -51,6 +64,7 @@ class InventoryScreen(ttk.Frame):
             {"text": "Proveedor", "stretch": True},
             {"text": "Herramienta", "stretch": True},
             {"text": "Interno", "stretch": True},
+            {"text": "Codigos", "stretch": True},
         ]
 
         self.table = Tableview(
@@ -149,8 +163,8 @@ class InventoryScreen(ttk.Frame):
 
         # Buttons
         buttons = ttk.Frame(content)
-        buttons.grid(row=3, column=0, sticky="w")
-        buttons.columnconfigure((0, 1, 2, 3), weight=1)
+        buttons.grid(row=3, column=0, sticky="nswe")
+        buttons.columnconfigure((0, 1, 2, 3, 4), weight=1)
         ttk.Button(
             buttons,
             text="Agregar Producto",
@@ -161,24 +175,23 @@ class InventoryScreen(ttk.Frame):
         ttk.Button(
             buttons,
             text="Actualizar Producto",
-            style="bg.TButton",
-            width=25,
             command=self.update_product,
         ).grid(row=0, column=1, sticky="w", ipady=5, pady=(16, 0), padx=10)
         ttk.Button(
             buttons,
             text="Eliminar Producto",
-            style="bg.TButton",
-            width=25,
             command=self.delete_product,
         ).grid(row=0, column=2, sticky="w", ipady=5, pady=(16, 0), padx=10)
         ttk.Button(
             buttons,
             text="Limpiar Campos",
-            style="bg.TButton",
-            width=25,
             command=self.clear_fields,
         ).grid(row=0, column=3, sticky="w", ipady=5, pady=(16, 0), padx=10)
+        ttk.Button(
+            buttons,
+            text="Lector",
+            command=self.lector,
+        ).grid(row=0, column=4, sticky="n", ipady=5, pady=(16, 0), padx=10)
         return [
             self.input_product_id,
             self.input_product_name,
@@ -190,6 +203,10 @@ class InventoryScreen(ttk.Frame):
             self._ivar_tool,
             self._ivar_internal,
         ]
+
+    def lector(self):
+        data = {"data_products_gen": self._products}
+        ProductsLector(self, **data)
 
     def fetch_products(self):
         return self._data.get_all_products()

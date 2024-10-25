@@ -32,3 +32,4 @@ WTForms-JSON~=0.3.5
 xlsxwriter
 PyPDF2~=3.0.1
 openpyxl
+pyserial

@@ -185,12 +185,24 @@ class InScreen(ttk.Frame):
         self._data.create_in_movement(
             id_product, id_movement_type, quantity, movement_date, None
         )
+        new_stock = self.new_stock(int(quantity), id_product)
+        self._data.update_stock(id_product, new_stock)
         self.update_table()
         self.clear_fields()
+
+    def new_stock(self, value_to_add, id_product):
+        for product in self._products:
+            if product[0] == int(id_product):
+                return product[4] + value_to_add
+        return value_to_add
 
     def delete_in_item(self):
         if self.movetement_id is None:
             return
         self._data.delete_in_movement(self.movetement_id)
+        quantity = self.quantity.get()
+        id_product = self.products_selector.get().split()[0]
+        new_stock = self.new_stock(-int(quantity), id_product)
+        self._data.update_stock(id_product, new_stock)
         self.update_table()
         self.clear_fields()

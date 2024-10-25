@@ -12,6 +12,16 @@ from wtforms.form import Form
 from wtforms import IntegerField
 from wtforms.validators import InputRequired
 
+
+code_model = api.model(
+    "CodeAMC",
+    {
+        "tag": fields.String(required=True, description="The code tag"),
+        "value": fields.String(required=True, description="The code value"),
+    },
+)
+
+
 product_model = api.model(
     "ProductAMC",
     {
@@ -31,8 +41,9 @@ product_model = api.model(
             required=True, description="The product is internal"
         ),
         "quantity_move": fields.Integer(
-            required=True, description="The product quantity movement in"
+            required=False, description="The product quantity movement in"
         ),
+        "codes": fields.List(fields.Nested(code_model), required=False),
     },
 )
 

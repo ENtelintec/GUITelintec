@@ -2,6 +2,7 @@
 __author__ = "Edisson Naula"
 __date__ = "$ 03/may./2024  at 15:31 $"
 
+import json
 from datetime import datetime
 
 import pandas as pd
@@ -135,28 +136,21 @@ def get_all_products_DB(type_p):
         return [], 400
     out = []
     for item in result:
-        (
-            id_product,
-            sku,
-            name,
-            udm,
-            stock,
-            category_name,
-            supplier_name,
-            is_tool,
-            is_internal,
-        ) = item
+        # (id_product, sku, name, udm, stock, category_name, supplier_name, is_tool, is_internal, codes) = item
+        codes_raw = json.loads(item[9])
+        codes = [{"tag": k, "value": v} for k, v in codes_raw.items()]
         out.append(
             {
-                "id": id_product,
-                "name": name,
-                "sku": sku,
-                "udm": udm,
-                "stock": stock,
-                "category_name": category_name,
-                "supplier_name": supplier_name,
-                "is_tool": is_tool,
-                "is_internal": is_internal,
+                "id": item[0],
+                "name": item[1],
+                "sku": item[2],
+                "udm": item[3],
+                "stock": item[4],
+                "category_name": item[5],
+                "supplier_name": item[6],
+                "is_tool": item[7],
+                "is_internal": item[8],
+                "codes": codes,
             }
         )
     return out, 200

@@ -40,7 +40,13 @@ def BarCode128(c, code, y_offset, pagesize=default_size_page):
     """
     Create barcode examples and embed in a PDF
     """
-    barcode128 = code128.Code128(code)
+    bar_height = 10 * mm
+    bar_width = 0.5 * mm
+    barcode128 = code128.Code128(
+        code,
+        barHeight=bar_height,
+        barWidth=bar_width,
+    )
     width, height = (barcode128.width, barcode128.height)
     x = (pagesize[0] - width) / 2
     y = ((pagesize[1] - height) / 2) - y_offset
@@ -124,9 +130,9 @@ def BarCodeQR(filepath, code, x, y, size=default_size_page):
 def create_BarCodeFormat(code, filepath, type_code, pagesize=default_size_page):
     c = canvas.Canvas(filepath, pagesize=pagesize)
     c.setFont("Helvetica", 14)
-    c.drawCentredString(pagesize[0] / 2, pagesize[1] - 10, data_company["name"])
+    c.drawCentredString(pagesize[0] / 2, pagesize[1] - 14, data_company["name"])
     c.setFont("Helvetica", 10)
-    c.drawCentredString(pagesize[0] / 2, pagesize[1] - 20, data_company["department"])
+    c.drawCentredString(pagesize[0] / 2, pagesize[1] - 24, data_company["department"])
     match type_code:
         case "39":
             BarCode39(filepath, code, 5 * mm, 5 * mm, pagesize)
@@ -135,7 +141,7 @@ def create_BarCodeFormat(code, filepath, type_code, pagesize=default_size_page):
         case "93":
             BarCode93(filepath, code, 5 * mm, 5 * mm, pagesize)
         case "128":
-            BarCode128(c, code, 5 * mm, pagesize)
+            barcode = BarCode128(c, code, 0 * mm, pagesize)
         case "usps":
             BarCodeUSPS(filepath, code, 5 * mm, 5 * mm, pagesize)
         case "eanbc8":
@@ -146,5 +152,8 @@ def create_BarCodeFormat(code, filepath, type_code, pagesize=default_size_page):
             BarCodeQR(filepath, code, 5 * mm, 5 * mm, pagesize)
         case _:
             print("Error at creating barcode")
+    height_barcode = barcode.height
+    c.setFont("Helvetica", 6)
+    c.drawCentredString(pagesize[0] / 2, pagesize[1] / 2 - height_barcode / 2 - 8, code)
     c.save()
     print("Barcode created: ", filepath)
