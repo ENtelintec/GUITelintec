@@ -33,6 +33,7 @@ from templates.controllers.product.p_and_s_controller import (
     get_all_products_db,
     get_ins_db_detail,
     get_outs_db_detail,
+    get_all_categories_db,
 )
 from templates.modules.Home.SubFrame_GeneralNoti import load_notifications
 from templates.modules.RRHH.SubFrame_CrearQuiz import get_name_id_employees_list
@@ -158,6 +159,12 @@ def load_data(data_dic, is_super=False, emp_id=None, item=None, permissions=None
             if "data_products_gen" not in data_dic:
                 flag, error, products = get_all_products_db()
                 data_dic["data_products_gen"] = products
+            if "data_providers_amc" not in data_dic:
+                flag, error, providers = get_all_suppliers()
+                data_dic["data_providers_gen"] = providers
+            if "data_categories_gen":
+                flag, error, categories = get_all_categories_db()
+                data_dic["data_categories_gen"] = categories
         case "Emp. Detalles":
             data_emp, columns = get_data_employees(status="ACTIVO")
             data_dic["emp_detalles"] = {"data": data_emp, "columns": columns}

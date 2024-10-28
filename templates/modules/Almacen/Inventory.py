@@ -1,11 +1,19 @@
 import json
 import time
+
 import ttkbootstrap as ttk
 
+from templates.Functions_GUI_Utils import create_label, create_entry, create_Combobox
 from templates.controllers.index import DataHandler
 from ttkbootstrap.tableview import Tableview
 
-from templates.modules.Almacen.SubFrameLector import ProductsLector
+from templates.controllers.product.p_and_s_controller import (
+    insert_multiple_row_products_amc,
+    update_multiple_row_products_amc,
+    get_all_categories_db,
+)
+from templates.controllers.supplier.suppliers_controller import get_all_suppliers_amc
+from templates.modules.Almacen.SubFrameLector import LectorScreen
 
 
 def get_row_data_inventory(data_raw):
@@ -13,10 +21,85 @@ def get_row_data_inventory(data_raw):
     for row in data_raw:
         codes = json.loads(row[9])
         data.append(
-            (row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8], codes)
+            (
+                row[0],
+                row[1],
+                row[2],
+                row[3],
+                row[4],
+                row[5],
+                row[6],
+                row[7],
+                row[8],
+                codes,
+            )
         )
     return data
 
+
+def get_providers_dict(data_raw):
+    # id_supplier, name, seller_name, seller_email, phone, address, web_url, type
+    data = {}
+    for row in data_raw:
+        data[row[1]] = row[0]
+    return data
+
+
+def get_categories_dict(data_raw):
+    # id_supplier, name
+    data = {}
+    for row in data_raw:
+        data[row[1]] = row[0]
+    return data
+    pass
+
+
+def create_input_widgets(master, _ivar_tool, _ivar_internal, categories_dict, providers_dict_amc):
+    entries = []
+    master.columnconfigure((0, 1, 2, 3, 4), weight=1)
+    # Inputs left
+    create_label(master, 1, 1, text="ID", sticky="w")
+    input_id = create_entry(master, 1, 2, width=15)
+    input_id.configure(state="readonly")
+    entries.append(input_id)
+    create_label(master, 2, 1, text="SKU", sticky="w")
+    input_sku = create_entry(master, 2, 2, width=15)
+    entries.append(input_sku)
+    create_label(master, 3, 1, text="Nombre", sticky="w")
+    input_name = create_entry(master, 3, 2, width=15)
+    entries.append(input_name)
+    create_label(master, 4, 1, text="UDM", sticky="w")
+    input_udm = create_entry(master, 4, 2, width=15)
+    entries.append(input_udm)
+    # Inputs right
+    create_label(master, 1, 3, text="Stock", sticky="w")
+    input_stock = create_entry(master, 1, 4, width=15)
+    entries.append(input_stock)
+    create_label(master, 2, 3, text="Categoría", sticky="w")
+    values_cat = list(categories_dict.keys())
+    cat_selector = create_Combobox(master, values=values_cat, row=2, column=3)
+    entries.append(cat_selector)
+    create_label(master, 3, 3, text="Proveedor", sticky="w")
+    values_supp = list(providers_dict_amc.keys())
+    supp_selector = create_Combobox(master, values=values_supp, row=3, column=3)
+    entries.append(supp_selector)
+    ttk.Checkbutton(
+        master,
+        text="Es herramienta?",
+        variable=_ivar_tool,
+        onvalue=1,
+        offvalue=0,
+        bootstyle="success, round-toggle",
+    ).grid(row=1, column=4, sticky="w", padx=5, pady=5, columnspan=2)
+    ttk.Checkbutton(
+        master,
+        text="Es interno?",
+        variable=_ivar_internal,
+        onvalue=1,
+        offvalue=0,
+        bootstyle="success, round-toggle",
+    ).grid(row=2, column=4, sticky="w", padx=5, pady=5, columnspan=2)
+    return entries
 
 class InventoryScreen(ttk.Frame):
     def __init__(self, master, setting: dict = None, *args, **kwargs):
@@ -34,26 +117,49 @@ class InventoryScreen(ttk.Frame):
             if "data_products_gen" not in kwargs["data"]
             else kwargs["data"]["data_products_gen"]
         )
-        self._table = Tableview(self)
-        self.entries = self.create_content(self, **kwargs)
-
-    def create_content(self, parent, **kwargs):
-        """Creates the content of the Inventory screen, includes the table of products and the inputs to add a new product"""
-        content = ttk.Frame(parent)
-        content.grid(row=0, column=0, sticky="nswe")
-        content.columnconfigure(0, weight=1)
-        ttk.Label(content, text="Inventario", font=("Arial Black", 25)).grid(
-            row=0, column=0, sticky="nswe", padx=5, pady=10
+        flag, error, data_raw_providers = (
+            get_all_suppliers_amc()
+            if "data" not in kwargs
+            else (True, None, kwargs["data"]["data_providers_gen"])
         )
+        self._providers_dict_amc = get_providers_dict(data_raw_providers)
+        flag, error, data_raw_categories = (
+            get_all_categories_db()
+            if "data" not in kwargs
+            else (True, None, kwargs["data"]["data_categories_gen"])
+        )
+        self._categories_dict = get_categories_dict(data_raw_categories)
+        self._table = Tableview(self)
+        # -------------------------------Title----------------------------------------------
+        create_label(self, 0, 0, text="Inventario", font=("Helvetica", 22, "bold"))
+        # -------------------------------Table-------------------------------------------------
+        self.frame_table = ttk.Frame(self)
+        self.frame_table.grid(row=2, column=0, sticky="nswe")
+        self.frame_table.columnconfigure(0, weight=1)
+        self.create_table(self.frame_table)
+        # -------------------------------inputs-------------------------------------------------
+        frame_inputs = ttk.Frame(self)
+        frame_inputs.grid(row=1, column=0, sticky="nswe")
+        frame_inputs.columnconfigure((0, 1, 2, 3, 4), weight=1)
+        self.entries = create_input_widgets(
+            frame_inputs,
+            self._ivar_tool,
+            self._ivar_internal,
+            self._categories_dict,
+            self._providers_dict_amc,
+        )
+        # --------------------------------btns-------------------------------------------------
+        frame_btns = ttk.Frame(self)
+        frame_btns.grid(row=3, column=0, sticky="nswe")
+        frame_btns.columnconfigure((0, 1, 2, 3, 4), weight=1)
+        self.create_buttons(frame_btns)
 
-        # Table
-        table = ttk.Frame(content)
-        table.grid(row=1, column=0, sticky="nswe")
-        table.columnconfigure(0, weight=1)
+    def create_table(self, master):
+        if self.table is not None:
+            self.table.destroy()
         ttk.Label(
-            table, text="Tabla de Productos", style="bg.TLabel", font=("Arial", 20)
+            master, text="Tabla de Productos", font=("Arial", 20)
         ).grid(row=0, column=0, sticky="w", padx=5, pady=10)
-
         self.col_data = [
             {"text": "ID Producto", "stretch": True},
             {"text": "SKU", "stretch": True},
@@ -66,100 +172,27 @@ class InventoryScreen(ttk.Frame):
             {"text": "Interno", "stretch": True},
             {"text": "Codigos", "stretch": True},
         ]
-
         self.table = Tableview(
-            master=table,
+            master,
             bootstyle="primary",
             paginated=True,
             pagesize=10,
             searchable=True,
             autofit=True,
+            coldata=self.col_data,
+            rowdata=self._products,
         )
-        self.table.build_table_data(self.col_data, self._products)
         self.table.grid(row=1, column=0, sticky="nswe", padx=15, pady=5)
         self.table.view.bind("<Double-1>", self.events)
 
+    def create_buttons(self, master):
+        pass
+
+    def create_content(self, parent, **kwargs):
         # Inputs
-        inputs = ttk.Frame(content)
-        inputs.grid(row=2, column=0, sticky="nswe")
-        inputs.columnconfigure((0, 1, 2, 3, 4), weight=1)
-        ttk.Label(
-            inputs, text="Agregar nuevo producto", style="bg.TLabel", font=("Arial", 20)
-        ).grid(
-            row=0, column=0, sticky="w", ipady=5, pady=(16, 0), padx=10, columnspan=5
-        )
 
-        # Inputs left
-        ttk.Label(inputs, text="ID", style="bg.TLabel").grid(
-            row=1, column=0, sticky="w", padx=5, pady=5
-        )
-        self.input_product_id = ttk.Entry(inputs, style="bg.TEntry")
-        self.input_product_id.grid(row=1, column=1, sticky="w", padx=5, pady=5)
 
-        ttk.Label(inputs, text="SKU", style="bg.TLabel").grid(
-            row=2, column=0, sticky="w", padx=5, pady=5
-        )
-        self.input_product_name = ttk.Entry(inputs, style="bg.TEntry")
-        self.input_product_name.grid(row=2, column=1, sticky="w", padx=5, pady=5)
 
-        ttk.Label(inputs, text="Nombre", style="bg.TLabel").grid(
-            row=3, column=0, sticky="w", padx=5, pady=5
-        )
-        self.input_produt_description = ttk.Entry(inputs, style="bg.TEntry")
-        self.input_produt_description.grid(row=3, column=1, sticky="w", padx=5, pady=5)
-
-        ttk.Label(inputs, text="UDM", style="bg.TLabel").grid(
-            row=4, column=0, sticky="w", padx=5, pady=5
-        )
-        self.input_product_udm = ttk.Entry(inputs, style="bg.TEntry")
-        self.input_product_udm.grid(row=4, column=1, sticky="w", padx=5, pady=5)
-
-        # inputs right
-        ttk.Label(inputs, text="Stock", style="bg.TLabel").grid(
-            row=1, column=2, sticky="w", padx=5, pady=5
-        )
-        self.input_product_stock = ttk.Entry(inputs, style="bg.TEntry")
-        self.input_product_stock.grid(row=1, column=3, sticky="w", padx=5, pady=5)
-
-        ttk.Label(inputs, text="Categoría", style="bg.TLabel").grid(
-            row=2, column=2, sticky="w", padx=5, pady=5
-        )
-        self.values_cat = self._data.get_all_categories()
-        # self.values_cat_filter = [name for _, name in self.values_cat]
-        self.dropdown_category_selector = ttk.Combobox(
-            inputs, values=self.values_cat, style="bg.TCombobox"
-        )
-        self.dropdown_category_selector.grid(
-            row=2, column=3, sticky="w", padx=5, pady=5
-        )
-
-        ttk.Label(inputs, text="Proveedor", style="bg.TLabel").grid(
-            row=3, column=2, sticky="w", padx=5, pady=5
-        )
-        self.values_supp = self._data.get_all_suppliers()
-        self.dropdown_supplier_selector = ttk.Combobox(
-            inputs, values=self.values_supp, style="bg.TCombobox"
-        )
-        self.dropdown_supplier_selector.grid(
-            row=3, column=3, sticky="w", padx=5, pady=5
-        )
-
-        ttk.Checkbutton(
-            inputs,
-            text="Es herramienta?",
-            variable=self._ivar_tool,
-            onvalue=1,
-            offvalue=0,
-            bootstyle="success, round-toggle",
-        ).grid(row=1, column=4, sticky="w", padx=5, pady=5, columnspan=2)
-        ttk.Checkbutton(
-            inputs,
-            text="Es interno?",
-            variable=self._ivar_internal,
-            onvalue=1,
-            offvalue=0,
-            bootstyle="success, round-toggle",
-        ).grid(row=2, column=4, sticky="w", padx=5, pady=5, columnspan=2)
 
         # Buttons
         buttons = ttk.Frame(content)
@@ -205,8 +238,22 @@ class InventoryScreen(ttk.Frame):
         ]
 
     def lector(self):
-        data = {"data_products_gen": self._products}
-        ProductsLector(self, **data)
+        data = {
+            "data_products_gen": self._products,
+            "screen": "inventory",
+            "callback_lector": self.save_data_lector,
+        }
+        LectorScreen(self, **data)
+
+    def save_data_lector(self, data_lector):
+        product_update, product_new = data_lector
+        print("update: ", product_update)
+        flag, error, result = self.update_products(product_update)
+        print(flag, error, result)
+        print("new: ", product_new)
+        flag, error, result = self.create_new_products(product_new)
+        print(flag, error, result)
+        self.update_table()
 
     def fetch_products(self):
         return self._data.get_all_products()
@@ -238,8 +285,8 @@ class InventoryScreen(ttk.Frame):
         product_description = self.input_produt_description.get()
         product_price = self.input_product_udm.get()
         product_stock = self.input_product_stock.get()
-        product_category = self.dropdown_category_selector.get().split(" ")[0]
-        product_supplier = self.dropdown_supplier_selector.get().split(" ")[0]
+        product_category = self.dropdown_category_selector.get()
+        product_supplier = self.dropdown_supplier_selector.get()
         is_tool = self._ivar_tool.get()
         is_internal = self._ivar_internal.get()
         return (
@@ -266,28 +313,18 @@ class InventoryScreen(ttk.Frame):
             is_tool,
             is_internal,
         ) = self.get_inputs_valus()
-
-        if product_category.__contains__(" "):
-            product_category = product_category.split(" ")[0]
-        else:
-            for item in self.values_cat:
-                if item[1] == product_category:
-                    product_category = item[0]
-        if product_supplier.__len__() > 11:
-            product_supplier = product_supplier.split(" ")[0]
-        else:
-            for item in self.values_supp:
-                if item[1] == product_supplier:
-                    product_supplier = item[0]
-
         self._data.update_product(
             product_id,
             product_name,
             product_description,
             product_price,
             product_stock,
-            product_category,
-            product_supplier,
+            self._categories_dict[product_category]
+            if product_category != "None"
+            else None,
+            self._providers_dict_amc[product_supplier]
+            if product_supplier != "None"
+            else None,
             is_tool,
             is_internal,
         )
@@ -331,8 +368,12 @@ class InventoryScreen(ttk.Frame):
                 product_description,
                 product_price,
                 product_stock,
-                product_category[0],
-                product_supplier[0],
+                self._categories_dict[product_category]
+                if product_category != "None"
+                else None,
+                self._providers_dict_amc[product_supplier]
+                if product_supplier != "None"
+                else None,
                 is_tool,
                 is_internal,
             )
@@ -346,3 +387,17 @@ class InventoryScreen(ttk.Frame):
         self._data.delete_product(product_id)
         self.clear_fields()
         self.update_table()
+
+    def update_products(self, products_data):
+        flag, error, result = update_multiple_row_products_amc(
+            products_data, self._categories_dict, self._providers_dict_amc
+        )
+        return flag, error, result
+
+    def create_new_products(self, products_new_data):
+        flag, error, result = insert_multiple_row_products_amc(
+            products_new_data, self._categories_dict, self._providers_dict_amc
+        )
+        return flag, error, result
+
+

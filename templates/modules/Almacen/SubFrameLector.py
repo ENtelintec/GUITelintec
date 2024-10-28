@@ -2,13 +2,14 @@
 __author__ = "Edisson Naula"
 __date__ = "$ 25/oct/2024  at 13:52 $"
 
-import threading
+import json
 from tkinter import messagebox
 
 import ttkbootstrap as ttk
 from ttkbootstrap.scrolled import ScrolledFrame
 
 from templates.Functions_GUI_Utils import create_label, create_button
+from templates.daemons.Peripherals import SerialPortListener
 from templates.misc.PortsSearcher import serial_ports
 
 columns_inventory = [
@@ -18,20 +19,23 @@ columns_inventory = [
     "UDM",
     "Cantidad",
     "Categoria",
-    "ID SM",
+    "ID Proveedor",
     "Herramienta?",
     "Interno?",
+    "Codigos",
 ]
 
 
-class ProductsLector(ttk.Toplevel):
+class LectorScreen(ttk.Toplevel):
     def __init__(self, master=None, **kw):
         super().__init__(master)
         self.ports, self.ports_d = serial_ports()
+        self.columnconfigure(0, weight=1)
+        self.screen = kw.get("screen", None)
+        self.callback_lector = kw.get("callback_lector", None)
         self.title("Lector de Productos")
         self.resizable(True, True)
         self.geometry("800x600")
-        self.columnconfigure(0, weight=1)
         # ---------------------------------Port selector-----------------------------------------
         frame_port = ttk.Frame(self)
         frame_port.grid(row=0, column=0, sticky="nswe")
@@ -49,15 +53,26 @@ class ProductsLector(ttk.Toplevel):
             "selector": self.port_selector,
             "ports": self.ports,
             "ports_d": self.ports_d,
+            "callback": self.callback_lector,
         }
         create_button(frame_port, 0, 2, text="Actualizar", command=self.update_ports)
         # ---------------------------------SubWindows-------------------------------------------
-        notebook = ttk.Notebook(self)
-        notebook.grid(row=1, column=0, sticky="nsew")
-        self.frame1 = InventoryLector(notebook, **kw)
-        notebook.add(self.frame1, text="Inventario")
+        match self.screen:
+            case "inventory":
+                self.frame_lector = InventoryLector(self, **kw)
+                self.frame_lector.grid(row=1, column=0, sticky="nsew")
+            case _:
+                create_label(self, 1, 0, text="No hay ventana para mostrar")
+        # -----------------------------------Close Settings--------------------------------------
         self.protocol("WM_DELETE_WINDOW", self.on_close)
         self.grab_set()
+
+    def on_close(self):
+        msg = "¿Desea cerrar la ventana?"
+        if messagebox.askyesno("Cerrar ventana", msg):
+            if self.frame_lector.port_listener is not None:
+                self.frame_lector.port_listener.stop()
+            self.destroy()
 
     def update_ports(self):
         self.ports, self.ports_d = serial_ports()
@@ -66,16 +81,9 @@ class ProductsLector(ttk.Toplevel):
         ]
         self.port_selector.configure(values=values_ports)
         self.port_selector.set(values_ports[0])
-        self.frame1.port_selector = self.port_selector
-        self.frame1.ports = self.ports
-        self.frame1.ports_d = self.ports_d
-
-    def on_close(self):
-        msg = "¿Desea cerrar la ventana?"
-        if messagebox.askyesno("Cerrar ventana", msg):
-            if self.frame1.port_listener is not None:
-                self.frame1.port_listener.stop()
-            self.destroy()
+        self.frame_lector.port_selector = self.port_selector
+        self.frame_lector.ports = self.ports
+        self.frame_lector.ports_d = self.ports_d
 
 
 class InventoryLector(ttk.Frame):
@@ -84,6 +92,7 @@ class InventoryLector(ttk.Frame):
         self.ports, self.ports_d = serial_ports()
         self.btn_listen = None
         self.port_listener = None
+        self.callback_lector = kw.get("callback_lector", None)
         self.entries = None
         self.ids_product_added = []
         self.port_selector = kw["port"]["selector"]
@@ -93,7 +102,6 @@ class InventoryLector(ttk.Frame):
         self.data_products_gen = (
             kw["data_products_gen"] if "data_products_gen" in kw else []
         )
-        print(self.data_products_gen)
         self.data_products = []
         self.columns = columns_inventory
         # create_button(self, 6, 0, "Guardar", command=self.on_save_click, sticky="n", width=15)
@@ -110,6 +118,9 @@ class InventoryLector(ttk.Frame):
         self.btn_listen = create_button(
             master, 0, 0, sticky="n", text="Agregar items", command=self.add_registry
         )
+        create_button(
+            master, 0, 1, sticky="n", text="Guardar", command=self.on_save_click
+        )
 
     def create_entries_widgets(self, master):
         entries_array = []
@@ -120,6 +131,7 @@ class InventoryLector(ttk.Frame):
         master.columnconfigure(tuple(range(1, n_columns + 1)), weight=1)
         for i in range(n_rows):
             row_entries = []
+            # noinspection PyArgumentList
             checkbutton = ttk.Checkbutton(master, text="", bootstyle="round-toggle")
             checkbutton.grid(row=i + 1, column=0)
             for j in range(n_columns):
@@ -156,36 +168,37 @@ class InventoryLector(ttk.Frame):
     def product_detected_serial(self, product):
         print(product)
         for item in self.data_products_gen:
-            if item[1] == product:
+            codes = json.loads(item[9])
+            if item[1] == product or product in codes:
                 print("Encontrado")
-                if product in self.ids_product_added:
+                if item[1] in self.ids_product_added:
                     print("Ya agregado")
                     return
-                self.ids_product_added.append(product)
+                self.ids_product_added.append(item[1])
                 self.data_products.append(item)
                 self.recreate_entry()
                 return
         self.ids_product_added.append(product)
-        self.data_products.append(["", product, "", "", "", "", "", "", ""])
+        self.data_products.append(
+            ["", product, "Name", "pza", "0", "None", "None", "0", "0", "[]"]
+        )
         self.recreate_entry()
 
-
-class SerialPortListener(threading.Thread):
-    def __init__(self, port, baudrate, callback):
-        super().__init__()
-        self.port = port
-        self.baudrate = baudrate
-        self.callback = callback
-        self.stop_event = threading.Event()
-
-    def run(self):
-        import serial
-
-        with serial.Serial(self.port, self.baudrate, timeout=1) as ser:
-            while not self.stop_event.is_set():
-                line = ser.readline().decode("utf-8").strip()
-                if line:
-                    self.callback(line)
-
-    def stop(self):
-        self.stop_event.set()
+    def on_save_click(self):
+        if len(self.entries) <= 0:
+            return
+        products_update = []
+        products_new = []
+        for entry in self.entries:
+            row = [entry[i].get() for i in range(len(entry))]
+            if row[0] != "":
+                products_update.append(row)
+            else:
+                products_new.append(row)
+        if self.callback_lector is None:
+            print("No hay callback")
+            return
+        self.callback_lector((products_update, products_new))
+        self.ids_product_added = []
+        self.data_products = []
+        self.recreate_entry()

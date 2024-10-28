@@ -12,6 +12,7 @@ def serial_ports():
         A list of the serial ports available on the system
     """
     ports = list(serial.tools.list_ports.comports())
+    ports.sort()
     ports_names = [port.device for port in ports]
     ports_descriptions = [port.description for port in ports]
     result = []

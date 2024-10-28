@@ -271,6 +271,7 @@ def read_excel_file_regular(file: str, is_tool=False, is_internal=0):
             tool = 0 if not is_tool else 1
             new_items.append(
                 (
+                    None,
                     str(item[0]),
                     item[1],
                     item[2],
@@ -299,7 +300,7 @@ def upload_product_db_from_file(file: str, is_internal=0, is_tool=False):
     data_result["new"] = str(error) if not flag else new_items
     movements = []
     for item in new_items:
-        movements.append((item[0], "entrada", item[3]))
+        movements.append((item[1], "entrada", item[4]))
     flag, error, result = insert_multiple_row_movements_amc(tuple(movements))
     if flag:
         msg = f"Se crearon nuevos items y movimientos de entrada al inventario.\nf{new_items}"

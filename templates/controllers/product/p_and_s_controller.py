@@ -2,6 +2,7 @@
 __author__ = "Edisson Naula"
 __date__ = "$ 29/abr./2024  at 16:40 $"
 
+import json
 from datetime import datetime
 
 from static.extensions import format_timestamps
@@ -141,7 +142,7 @@ def create_out_movement_db(id_product, movement_type, quantity, movement_date, s
 
 
 def get_all_categories_db():
-    sql = "SELECT  id_category, name " "FROM sql_telintec.product_categories_amc"
+    sql = "SELECT  id_category, name FROM sql_telintec.product_categories_amc"
     flag, error, result = execute_sql(sql, None, 5)
     return flag, error, result
 
@@ -628,17 +629,66 @@ def update_stock_db_sku(skus: list, stocks: list):
     return flag, error, result
 
 
-def insert_multiple_row_products_amc(products: tuple):
+def insert_multiple_row_products_amc(products: tuple, dict_cat=None, dict_supp=None):
     codec = "ASCII"
     if len(products) == 0:
         return False, "No products to insert", None
-    sql = "INSERT INTO sql_telintec.products_amc (sku, name, udm, stock, id_category, id_supplier, is_tool, is_internal) VALUES "
+    if len(products) < 10:
+        codes = json.dumps([])
+    else:
+        codes = json.dumps(products[9])
+    sql = "INSERT INTO sql_telintec.products_amc (sku, name, udm, stock, id_category, id_supplier, is_tool, is_internal, codes) VALUES "
     for index, product in enumerate(products):
-        sku = clean_name(product[0].encode(codec, errors="ignore").decode(codec))[0]
-        name = clean_name(product[1].encode(codec, errors="ignore").decode(codec))[0]
+        sku = clean_name(product[1].encode(codec, errors="ignore").decode(codec))[0]
+        name = clean_name(product[2].encode(codec, errors="ignore").decode(codec))[0]
         if index > 0:
             sql += ", "
-        sql += f"('{str(sku.upper())}', '{str(name)}', '{product[2]}', {product[3]}, {product[4]}, {product[5]}, {product[6]}, {product[7]})"
+        if dict_cat is not None:
+            category_id = dict_cat[product[5]] if product[5] != "None" else "None"
+        else:
+            category_id = product[5]
+        if dict_supp is not None:
+            supplier_id = dict_supp[product[6]] if product[6] != "None" else "None"
+        else:
+            supplier_id = product[6]
+        sql += f"('{str(sku.upper())}', '{str(name)}', '{product[3]}', {product[4]}, {category_id}, {supplier_id}, {product[7]}, {product[8]}, '{codes}')"
+    sql = sql.replace("None", "NULL")
+    flag, error, result = execute_sql(sql, None, 4)
+    return flag, error, result
+
+
+def update_multiple_row_products_amc(products: tuple, dict_cat=None, dict_supp=None):
+    if len(products) == 0:
+        return False, "No products to update", None
+    if len(products) < 10:
+        codes = json.dumps([])
+    else:
+        codes = json.dumps(products[9])
+    sql = "INSERT INTO sql_telintec.products_amc (id_product, sku, name, udm, stock, id_category, id_supplier, is_tool, is_internal, codes) VALUES "
+    for index, product in enumerate(products):
+        if index > 0:
+            sql += ", "
+        if dict_cat is not None:
+            category_id = dict_cat[product[5]] if product[5] != "None" else "None"
+        else:
+            category_id = product[5]
+        if dict_supp is not None:
+            supplier_id = dict_supp[product[6]] if product[6] != "None" else "None"
+        else:
+            supplier_id = product[6]
+        sql += f"({product[0]}, '{product[1]}', '{product[2]}', '{product[3]}', {product[4]}, {category_id}, {supplier_id}, {product[7]}, {product[8]}, '{codes}')"
+    sql += (
+        "AS new ON DUPLICATE KEY UPDATE "
+        "sku = new.sku, "
+        "name = new.name, "
+        "udm = new.udm, "
+        "stock = new.stock, "
+        "id_category = new.id_category, "
+        "id_supplier = new.id_supplier, "
+        "is_tool = new.is_tool, "
+        "is_internal = new.is_internal, "
+        "codes = new.codes; "
+    )
     sql = sql.replace("None", "NULL")
     flag, error, result = execute_sql(sql, None, 4)
     return flag, error, result
