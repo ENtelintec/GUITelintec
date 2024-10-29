@@ -3,7 +3,12 @@ import time
 
 import ttkbootstrap as ttk
 
-from templates.Functions_GUI_Utils import create_label, create_entry, create_Combobox
+from templates.Functions_GUI_Utils import (
+    create_label,
+    create_entry,
+    create_Combobox,
+    create_button,
+)
 from templates.controllers.index import DataHandler
 from ttkbootstrap.tableview import Tableview
 
@@ -54,35 +59,37 @@ def get_categories_dict(data_raw):
     pass
 
 
-def create_input_widgets(master, _ivar_tool, _ivar_internal, categories_dict, providers_dict_amc):
+def create_input_widgets(
+    master, _ivar_tool, _ivar_internal, categories_dict, providers_dict_amc
+):
     entries = []
     master.columnconfigure((0, 1, 2, 3, 4), weight=1)
     # Inputs left
-    create_label(master, 1, 1, text="ID", sticky="w")
-    input_id = create_entry(master, 1, 2, width=15)
-    input_id.configure(state="readonly")
+    create_label(master, 0, 0, text="ID", sticky="w")
+    input_id = create_entry(master, row=0, column=1)
     entries.append(input_id)
-    create_label(master, 2, 1, text="SKU", sticky="w")
-    input_sku = create_entry(master, 2, 2, width=15)
+    create_label(master, 1, 0, text="SKU", sticky="w")
+    input_sku = create_entry(master, row=1, column=1)
     entries.append(input_sku)
-    create_label(master, 3, 1, text="Nombre", sticky="w")
-    input_name = create_entry(master, 3, 2, width=15)
+    create_label(master, 2, 0, text="Nombre", sticky="w")
+    input_name = create_entry(master, row=2, column=1)
     entries.append(input_name)
-    create_label(master, 4, 1, text="UDM", sticky="w")
-    input_udm = create_entry(master, 4, 2, width=15)
+    create_label(master, 3, 0, text="UDM", sticky="w")
+    input_udm = create_entry(master, row=3, column=1)
     entries.append(input_udm)
     # Inputs right
-    create_label(master, 1, 3, text="Stock", sticky="w")
-    input_stock = create_entry(master, 1, 4, width=15)
+    create_label(master, 0, 2, text="Stock", sticky="w")
+    input_stock = create_entry(master, row=0, column=3)
     entries.append(input_stock)
-    create_label(master, 2, 3, text="Categoría", sticky="w")
+    create_label(master, 1, 2, text="Categoría", sticky="w")
     values_cat = list(categories_dict.keys())
-    cat_selector = create_Combobox(master, values=values_cat, row=2, column=3)
+    cat_selector = create_Combobox(master, values=values_cat, row=1, column=3)
     entries.append(cat_selector)
-    create_label(master, 3, 3, text="Proveedor", sticky="w")
+    create_label(master, 2, 2, text="Proveedor", sticky="w")
     values_supp = list(providers_dict_amc.keys())
-    supp_selector = create_Combobox(master, values=values_supp, row=3, column=3)
+    supp_selector = create_Combobox(master, values=values_supp, row=2, column=3)
     entries.append(supp_selector)
+    # noinspection PyArgumentList
     ttk.Checkbutton(
         master,
         text="Es herramienta?",
@@ -90,7 +97,8 @@ def create_input_widgets(master, _ivar_tool, _ivar_internal, categories_dict, pr
         onvalue=1,
         offvalue=0,
         bootstyle="success, round-toggle",
-    ).grid(row=1, column=4, sticky="w", padx=5, pady=5, columnspan=2)
+    ).grid(row=0, column=4, sticky="w", padx=5, pady=5, columnspan=2)
+    # noinspection PyArgumentList
     ttk.Checkbutton(
         master,
         text="Es interno?",
@@ -98,11 +106,12 @@ def create_input_widgets(master, _ivar_tool, _ivar_internal, categories_dict, pr
         onvalue=1,
         offvalue=0,
         bootstyle="success, round-toggle",
-    ).grid(row=2, column=4, sticky="w", padx=5, pady=5, columnspan=2)
+    ).grid(row=1, column=4, sticky="w", padx=5, pady=5, columnspan=2)
     return entries
 
+
 class InventoryScreen(ttk.Frame):
-    def __init__(self, master, setting: dict = None, *args, **kwargs):
+    def __init__(self, master, *args, **kwargs):
         super().__init__(master)
         self.table = None
         self.col_data = None
@@ -157,9 +166,9 @@ class InventoryScreen(ttk.Frame):
     def create_table(self, master):
         if self.table is not None:
             self.table.destroy()
-        ttk.Label(
-            master, text="Tabla de Productos", font=("Arial", 20)
-        ).grid(row=0, column=0, sticky="w", padx=5, pady=10)
+        ttk.Label(master, text="Tabla de Productos", font=("Arial", 20)).grid(
+            row=0, column=0, sticky="w", padx=5, pady=10
+        )
         self.col_data = [
             {"text": "ID Producto", "stretch": True},
             {"text": "SKU", "stretch": True},
@@ -186,56 +195,46 @@ class InventoryScreen(ttk.Frame):
         self.table.view.bind("<Double-1>", self.events)
 
     def create_buttons(self, master):
-        pass
-
-    def create_content(self, parent, **kwargs):
-        # Inputs
-
-
-
-
-        # Buttons
-        buttons = ttk.Frame(content)
-        buttons.grid(row=3, column=0, sticky="nswe")
-        buttons.columnconfigure((0, 1, 2, 3, 4), weight=1)
-        ttk.Button(
-            buttons,
+        create_button(
+            master,
+            0,
+            0,
             text="Agregar Producto",
-            style="bg.TButton",
-            width=25,
             command=self.add_product,
-        ).grid(row=0, column=0, sticky="w", ipady=5, pady=(16, 0), padx=10)
-        ttk.Button(
-            buttons,
+            style="primary",
+        )
+        create_button(
+            master,
+            0,
+            1,
             text="Actualizar Producto",
             command=self.update_product,
-        ).grid(row=0, column=1, sticky="w", ipady=5, pady=(16, 0), padx=10)
-        ttk.Button(
-            buttons,
+            style="primary",
+        )
+        create_button(
+            master,
+            0,
+            2,
             text="Eliminar Producto",
             command=self.delete_product,
-        ).grid(row=0, column=2, sticky="w", ipady=5, pady=(16, 0), padx=10)
-        ttk.Button(
-            buttons,
+            style="primary",
+        )
+        create_button(
+            master,
+            0,
+            3,
             text="Limpiar Campos",
             command=self.clear_fields,
-        ).grid(row=0, column=3, sticky="w", ipady=5, pady=(16, 0), padx=10)
-        ttk.Button(
-            buttons,
+            style="primary",
+        )
+        create_button(
+            master,
+            0,
+            4,
             text="Lector",
             command=self.lector,
-        ).grid(row=0, column=4, sticky="n", ipady=5, pady=(16, 0), padx=10)
-        return [
-            self.input_product_id,
-            self.input_product_name,
-            self.input_produt_description,
-            self.input_product_udm,
-            self.input_product_stock,
-            self.dropdown_category_selector.set(""),
-            self.dropdown_supplier_selector.set(""),
-            self._ivar_tool,
-            self._ivar_internal,
-        ]
+            style="primary",
+        )
 
     def lector(self):
         data = {
@@ -261,14 +260,15 @@ class InventoryScreen(ttk.Frame):
     def events(self, event):
         item = event.widget.item(event.widget.selection()[0])
         data = item["values"]
+        self.id_to_modify = data[0]
+        self.entries[0].configure(state="normal")
         self.clear_fields()
-        self.input_product_id.insert(0, data[0])
-        self.input_product_name.insert(0, data[1])
-        self.input_produt_description.insert(0, data[2])
-        self.input_product_udm.insert(0, data[3])
-        self.input_product_stock.insert(0, data[4])
-        self.dropdown_category_selector.set(data[5])
-        self.dropdown_supplier_selector.set(data[6])
+        for entry, value in zip(self.entries, data):
+            if isinstance(entry, ttk.Entry):
+                entry.insert(0, value)
+            elif isinstance(entry, ttk.Combobox):
+                entry.set(value)
+        self.entries[0].configure(state="disabled")
         self._ivar_tool.set(data[7])
         self._ivar_internal.set(data[8])
 
@@ -280,23 +280,22 @@ class InventoryScreen(ttk.Frame):
         self.table.autofit_columns()
 
     def get_inputs_valus(self):
-        product_id = self.input_product_id.get()
-        product_name = self.input_product_name.get()
-        product_description = self.input_produt_description.get()
-        product_price = self.input_product_udm.get()
-        product_stock = self.input_product_stock.get()
-        product_category = self.dropdown_category_selector.get()
-        product_supplier = self.dropdown_supplier_selector.get()
+        data = []
+        for entry in self.entries:
+            if isinstance(entry, ttk.Entry):
+                data.append(entry.get())
+            elif isinstance(entry, ttk.Combobox):
+                data.append(entry.get())
         is_tool = self._ivar_tool.get()
         is_internal = self._ivar_internal.get()
         return (
-            product_id,
-            product_name,
-            product_description,
-            product_price,
-            product_stock,
-            product_category,
-            product_supplier,
+            data[0],
+            data[1],
+            data[2],
+            data[3],
+            data[4],
+            data[5],
+            data[6],
             is_tool,
             is_internal,
         )
@@ -381,7 +380,7 @@ class InventoryScreen(ttk.Frame):
             self.update_table()
 
     def delete_product(self):
-        product_id = self.input_product_id.get()
+        product_id = self.entries[0].get()
         if product_id == "":
             return
         self._data.delete_product(product_id)
@@ -399,5 +398,3 @@ class InventoryScreen(ttk.Frame):
             products_new_data, self._categories_dict, self._providers_dict_amc
         )
         return flag, error, result
-
-
