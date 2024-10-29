@@ -135,7 +135,7 @@ class LoginGUI(ttk.Frame):
         # call API
         verified, permissions = call_authApi(username, pass_key)
         print(verified, permissions)
-        if verified or permissions is not None:
+        if verified or len(permissions) > 0:
             self.permissions = permissions
             self.username_data = get_username_data(username)
             self.message["text"] = f"Welcome! **{username}**"
@@ -158,7 +158,8 @@ class LoginGUI(ttk.Frame):
             data_loader.daemon = True
             data_loader.start()
         else:
-            self.message["text"] = "Invalid user or password"
+            print("Invalid user or password")
+            self._svar_info_login.set("Invalid user or password")
             self.message["foreground"] = "red"
             self.pass_entry.delete(0, "end")
             self.user_entry.delete(0, "end")

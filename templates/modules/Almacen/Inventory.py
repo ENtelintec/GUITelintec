@@ -77,7 +77,6 @@ def create_input_widgets(
     create_label(master, 3, 0, text="UDM", sticky="w")
     input_udm = create_entry(master, row=3, column=1)
     entries.append(input_udm)
-    # Inputs right
     create_label(master, 0, 2, text="Stock", sticky="w")
     input_stock = create_entry(master, row=0, column=3)
     entries.append(input_stock)
@@ -89,6 +88,9 @@ def create_input_widgets(
     values_supp = list(providers_dict_amc.keys())
     supp_selector = create_Combobox(master, values=values_supp, row=2, column=3)
     entries.append(supp_selector)
+    create_label(master, 3, 2, text="Codigos", sticky="w")
+    input_codes = create_entry(master, row=3, column=3)
+    entries.append(input_codes)
     # noinspection PyArgumentList
     ttk.Checkbutton(
         master,
@@ -97,7 +99,7 @@ def create_input_widgets(
         onvalue=1,
         offvalue=0,
         bootstyle="success, round-toggle",
-    ).grid(row=0, column=4, sticky="w", padx=5, pady=5, columnspan=2)
+    ).grid(row=0, column=4, sticky="we", padx=5, pady=5, columnspan=2)
     # noinspection PyArgumentList
     ttk.Checkbutton(
         master,
@@ -106,7 +108,7 @@ def create_input_widgets(
         onvalue=1,
         offvalue=0,
         bootstyle="success, round-toggle",
-    ).grid(row=1, column=4, sticky="w", padx=5, pady=5, columnspan=2)
+    ).grid(row=1, column=4, sticky="we", padx=5, pady=5, columnspan=2)
     return entries
 
 
@@ -145,6 +147,9 @@ class InventoryScreen(ttk.Frame):
         self.frame_table = ttk.Frame(self)
         self.frame_table.grid(row=2, column=0, sticky="nswe")
         self.frame_table.columnconfigure(0, weight=1)
+        ttk.Label(self.frame_table, text="Tabla de Productos", font=("Arial", 20)).grid(
+            row=0, column=0, sticky="w", padx=5, pady=10
+        )
         self.create_table(self.frame_table)
         # -------------------------------inputs-------------------------------------------------
         frame_inputs = ttk.Frame(self)
@@ -166,9 +171,6 @@ class InventoryScreen(ttk.Frame):
     def create_table(self, master):
         if self.table is not None:
             self.table.destroy()
-        ttk.Label(master, text="Tabla de Productos", font=("Arial", 20)).grid(
-            row=0, column=0, sticky="w", padx=5, pady=10
-        )
         self.col_data = [
             {"text": "ID Producto", "stretch": True},
             {"text": "SKU", "stretch": True},

@@ -311,7 +311,7 @@ def dispatch_products(
                 product["comment"] += " ;(Semidespachado) "
         elif "remanent" in product.keys() and product["remanent"] > 0:
             _data.create_out_movement(
-                product["id"], "remanent", product["remanent"], date, sm_id
+                product["id"], "salida", product["remanent"], date, sm_id
             )
             delivered_trans = product["remanent"]
             product["comment"] += " ;(Despachado) "

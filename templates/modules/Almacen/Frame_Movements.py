@@ -1,18 +1,394 @@
 # -*- coding: utf-8 -*-
-__author__ = 'Edisson Naula'
-__date__ = '$ 08/may./2024  at 15:14 $'
+__author__ = "Edisson Naula"
+__date__ = "$ 08/may./2024  at 15:14 $"
+
+import time
+from datetime import datetime
 
 import ttkbootstrap as ttk
+from ttkbootstrap.tableview import Tableview
 
-from templates.modules.Almacen.In import InScreen
-from templates.modules.Almacen.Out import OutScreen
+from static.extensions import format_date, format_timestamps
+from templates.Functions_GUI_Utils import (
+    create_label,
+    create_entry,
+    create_Combobox,
+    create_button,
+)
+from templates.controllers.index import DataHandler
+from templates.controllers.product.p_and_s_controller import (
+    get_ins_db_detail,
+    get_outs_db_detail,
+)
+
+coldata_movementes = [
+    {"text": "ID Movimiento", "stretch": False},
+    {"text": "ID Producto", "stretch": False},
+    {"text": "SKU", "stretch": False},
+    {"text": "Tipo de Movimiento", "stretch": True},
+    {"text": "Cantidad", "stretch": False},
+    {"text": "Fecha", "stretch": False},
+    {"text": "ID SM", "stretch": True},
+    {"text": "Nombre", "stretch": False},
+]
+
+
+def create_movement_widgets(master, values_products):
+    entries = []
+    master.columnconfigure((0, 1, 2, 3, 4), weight=1)
+    # Inputs left
+    create_label(master, 0, 0, text="Fecha de entrega", sticky="w")
+    date_delivered = create_entry(master, row=0, column=1)
+    entries.append(date_delivered)
+    create_label(master, 1, 0, text="Cantidad", sticky="w")
+    input_quantity = create_entry(master, row=1, column=1)
+    entries.append(input_quantity)
+    create_label(master, 2, 0, text="Producto", sticky="w")
+    supp_selector = create_Combobox(master, values=values_products, row=2, column=1)
+    entries.append(supp_selector)
+    return entries
 
 
 class MovementsFrame(ttk.Notebook):
     def __init__(self, master, **kwargs):
         super().__init__(master)
         self.columnconfigure(0, weight=1)
+        kwargs["coldata_moves"] = coldata_movementes
         frame_1 = InScreen(self, **kwargs)
-        self.add(frame_1, text='Entradas')
+        self.add(frame_1, text="Entradas")
         frame_2 = OutScreen(self, **kwargs)
-        self.add(frame_2, text='Salidas')
+        self.add(frame_2, text="Salidas")
+
+
+class InScreen(ttk.Frame):
+    def __init__(self, master, setting: dict = None, *args, **kwargs):
+        super().__init__(master)
+        # variables
+        self.table = None
+        self.col_data = coldata_movementes
+        self.movetement_id = None
+        self.master = master
+        self.columnconfigure(0, weight=1)
+        # handlers
+        self._data = DataHandler()
+        self._products = (
+            self._data.get_all_products()
+            if "data_products_gen" not in kwargs["data"]
+            else kwargs["data"]["data_products_gen"]
+        )
+        flag, error, self._ins = (
+            get_ins_db_detail()
+            if "data_movements" not in kwargs["data"]
+            else (True, None, kwargs["data"]["data_movements"]["data_ins"])
+        )
+        # -------------------------------Title----------------------------------------------
+        create_label(self, 0, 0, text="Entradas", font=("Helvetica", 22, "bold"))
+        # -------------------------------Table-------------------------------------------------
+        self.frame_table = ttk.Frame(self)
+        self.frame_table.grid(row=1, column=0, sticky="nswe")
+        self.frame_table.columnconfigure(0, weight=1)
+        ttk.Label(self.frame_table, text="Tabla de Entradas", font=("Arial", 20)).grid(
+            row=0, column=0, sticky="w", padx=5, pady=10
+        )
+        self.create_table(self.frame_table)
+        # -------------------------------inputs-------------------------------------------------
+        frame_inputs = ttk.Frame(self)
+        frame_inputs.grid(row=2, column=0, sticky="nswe")
+        frame_inputs.columnconfigure((0, 1, 2, 3, 4), weight=1)
+        values_products = [
+            f"{product[0]}--{product[1]}--{product[2]}" for product in self._products
+        ]
+        self.entries = create_movement_widgets(frame_inputs, values_products)
+        # --------------------------------btns-------------------------------------------------
+        frame_btns = ttk.Frame(self)
+        frame_btns.grid(row=3, column=0, sticky="nswe")
+        frame_btns.columnconfigure((0, 1, 2, 3, 4), weight=1)
+        self.create_buttons(frame_btns)
+
+    def create_table(self, master):
+        if self.table is not None:
+            self.table.destroy()
+        self.table = Tableview(
+            master,
+            bootstyle="primary",
+            paginated=True,
+            pagesize=10,
+            searchable=True,
+            autofit=True,
+            coldata=self.col_data,
+            rowdata=self._ins,
+        )
+        self.table.grid(row=1, column=0, sticky="nswe", padx=15, pady=5)
+        self.table.view.bind("<Double-1>", self.on_double_click_in_table)
+
+    def create_buttons(self, master):
+        """Creates the buttons of the Inputs screen, includes the buttons to add, update and delete inputs"""
+        create_button(
+            master,
+            0,
+            0,
+            text="Agregar Entrada",
+            command=self.add_in_item,
+            style="primary",
+        )
+        create_button(
+            master,
+            0,
+            1,
+            text="Actualizar Entrada",
+            command=self.update_in_item,
+            style="primary",
+        )
+        create_button(
+            master,
+            0,
+            2,
+            text="Eliminar Entrada",
+            command=self.delete_in_item,
+            style="primary",
+        )
+        create_button(
+            master,
+            0,
+            3,
+            text="Limpiar Campos",
+            command=self.clear_fields,
+            style="primary",
+        )
+
+    def clear_fields(self):
+        for entry in self.entries:
+            if isinstance(entry, ttk.Entry):
+                entry.delete(0, "end")
+            elif isinstance(entry, ttk.Combobox):
+                entry.set("")
+        self.movetement_id = None
+
+    def on_double_click_in_table(self, event):
+        data = self.table.view.item(self.table.view.focus())["values"]
+        self.clear_fields()
+        self.entries[2].set(data[1])
+        self.movetement_id = data[0]
+        self.entries[1].insert(0, data[4])
+        date = datetime.strptime(data[5], format_timestamps)
+        date = date.strftime(format_date)
+        self.entries[0].insert(0, date)
+
+    def update_table(self):
+        flag, error, self._ins = get_ins_db_detail()
+        self.table.unload_table_data()
+        time.sleep(0.5)
+        self.table.build_table_data(self.col_data, self._ins)
+        self.table.autofit_columns()
+
+    def update_in_item(self):
+        if self.movetement_id is None:
+            return
+        new_date = datetime.now().strftime(format_date)
+        quantity = self.entries[1].get()
+        self._data.update_in_movement(self.movetement_id, quantity, new_date, None)
+        self.update_table()
+        self.clear_fields()
+        current_date = datetime.now().strftime(format_date)
+        self.entries[0].insert(0, current_date)
+
+    def add_in_item(self):
+        id_product = self.entries[2].get().split("--")[0]
+        id_movement_type = "entrada"
+        quantity = self.entries[1].get()
+        movement_date = self.entries[0].get()
+        self._data.create_in_movement(
+            id_product, id_movement_type, quantity, movement_date, None
+        )
+        new_stock = self.new_stock(int(quantity), id_product)
+        self._data.update_stock(id_product, new_stock)
+        self.update_table()
+        self.clear_fields()
+        current_date = datetime.now().strftime(format_date)
+        self.entries[0].insert(0, current_date)
+
+    def new_stock(self, value_to_add, id_product):
+        for product in self._products:
+            if product[0] == int(id_product):
+                return product[4] + value_to_add
+        return value_to_add
+
+    def delete_in_item(self):
+        if self.movetement_id is None:
+            return
+        self._data.delete_in_movement(self.movetement_id)
+        quantity = self.entries[1].get()
+        id_product = self.entries[2].get().split("--")[0]
+        new_stock = self.new_stock(-int(quantity), id_product)
+        self._data.update_stock(id_product, new_stock)
+        self.update_table()
+        self.clear_fields()
+        current_date = datetime.now().strftime(format_date)
+        self.entries[0].insert(0, current_date)
+
+
+class OutScreen(ttk.Frame):
+    def __init__(self, master, setting: dict = None, *args, **kwargs):
+        super().__init__(master)
+        # variables
+        self.table = None
+        self.col_data = coldata_movementes
+        self.movetement_id = None
+        self.master = master
+        self.columnconfigure(0, weight=1)
+        # handlers
+        self._data = DataHandler()
+        self._products = (
+            self._data.get_all_products()
+            if "data_products_gen" not in kwargs["data"]
+            else kwargs["data"]["data_products_gen"]
+        )
+        flag, error, self._outs = (
+            get_outs_db_detail()
+            if "data_movements" not in kwargs["data"]
+            else (True, None, kwargs["data"]["data_movements"]["data_outs"])
+        )
+        # -------------------------------Title----------------------------------------------
+        create_label(self, 0, 0, text="Salidas", font=("Helvetica", 22, "bold"))
+        # -------------------------------Table-------------------------------------------------
+        self.frame_table = ttk.Frame(self)
+        self.frame_table.grid(row=1, column=0, sticky="nswe")
+        self.frame_table.columnconfigure(0, weight=1)
+        ttk.Label(self.frame_table, text="Tabla de Salidas", font=("Arial", 20)).grid(
+            row=0, column=0, sticky="w", padx=5, pady=10
+        )
+        self.create_table(self.frame_table)
+        # -------------------------------inputs-------------------------------------------------
+        frame_inputs = ttk.Frame(self)
+        frame_inputs.grid(row=2, column=0, sticky="nswe")
+        frame_inputs.columnconfigure((0, 1, 2, 3, 4), weight=1)
+        values_products = [
+            f"{product[0]}--{product[1]}--{product[2]}" for product in self._products
+        ]
+        self.entries = create_movement_widgets(frame_inputs, values_products)
+        # --------------------------------btns-------------------------------------------------
+        frame_btns = ttk.Frame(self)
+        frame_btns.grid(row=3, column=0, sticky="nswe")
+        frame_btns.columnconfigure((0, 1, 2, 3, 4), weight=1)
+        self.create_buttons(frame_btns)
+
+    def create_table(self, master):
+        if self.table is not None:
+            self.table.destroy()
+        self.table = Tableview(
+            master,
+            bootstyle="primary",
+            paginated=True,
+            pagesize=10,
+            searchable=True,
+            autofit=True,
+            coldata=self.col_data,
+            rowdata=self._outs,
+        )
+        self.table.grid(row=1, column=0, sticky="nswe", padx=15, pady=5)
+        self.table.view.bind("<Double-1>", self.on_double_click_in_table)
+
+    def create_buttons(self, master):
+        """Creates the buttons of the Inputs screen, includes the buttons to add, update and delete inputs"""
+        create_button(
+            master,
+            0,
+            0,
+            text="Agregar Salida",
+            command=self.add_out_item,
+            style="primary",
+        )
+        create_button(
+            master,
+            0,
+            1,
+            text="Actualizar Salida",
+            command=self.update_out_item,
+            style="primary",
+        )
+        create_button(
+            master,
+            0,
+            2,
+            text="Eliminar Salida",
+            command=self.delete_out_item,
+            style="primary",
+        )
+        create_button(
+            master,
+            0,
+            3,
+            text="Limpiar Campos",
+            command=self.clear_fields,
+            style="primary",
+        )
+
+    def clear_fields(self):
+        for entry in self.entries:
+            if isinstance(entry, ttk.Entry):
+                entry.delete(0, "end")
+            elif isinstance(entry, ttk.Combobox):
+                entry.set("")
+        self.movetement_id = None
+
+    def on_double_click_in_table(self, event):
+        data = self.table.view.item(self.table.view.focus())["values"]
+        self.clear_fields()
+        self.entries[2].set(data[1])
+        self.movetement_id = data[0]
+        self.entries[1].insert(0, data[4])
+        date = datetime.strptime(data[5], format_timestamps)
+        date = date.strftime(format_date)
+        self.entries[0].insert(0, date)
+
+    def update_table(self):
+        flag, error, self._outs = get_outs_db_detail()
+        self.table.unload_table_data()
+        time.sleep(0.5)
+        self.table.build_table_data(self.col_data, self._outs)
+        self.table.autofit_columns()
+
+    def update_out_item(self):
+        if self.movetement_id is None:
+            return
+        new_date = datetime.now().strftime(format_date)
+        quantity = self.entries[1].get()
+        self._data.update_out_movement(self.movetement_id, quantity, new_date, None)
+        self.update_table()
+        self.clear_fields()
+        current_date = datetime.now().strftime(format_date)
+        self.entries[0].insert(0, current_date)
+
+    def add_out_item(self):
+        id_product = self.entries[2].get().split("--")[0]
+        id_movement_type = "salida"
+        quantity = self.entries[1].get()
+        movement_date = self.entries[0].get()
+        self._data.create_out_movement(
+            id_product, id_movement_type, quantity, movement_date, None
+        )
+        new_stock = self.new_stock(int(quantity), id_product)
+        self._data.update_stock(id_product, new_stock)
+        self.update_table()
+        self.clear_fields()
+        current_date = datetime.now().strftime(format_date)
+        self.entries[0].insert(0, current_date)
+
+    def new_stock(self, value_to_add, id_product):
+        for product in self._products:
+            if product[0] == int(id_product):
+                return product[4] + value_to_add
+        return value_to_add
+
+    def delete_out_item(self):
+        if self.movetement_id is None:
+            return
+        self._data.delete_out_movement(self.movetement_id)
+        quantity = self.entries[1].get()
+        id_product = self.entries[2].get().split("--")[0]
+        new_stock = self.new_stock(-int(quantity), id_product)
+        self._data.update_stock(id_product, new_stock)
+        self.update_table()
+        self.clear_fields()
+        current_date = datetime.now().strftime(format_date)
+        self.entries[0].insert(0, current_date)
