@@ -229,10 +229,23 @@ class GUIAsistente(ttk.Window):
                 "username_data": self.username_data,
                 "data_emp": self.username_data,
                 "id_emp": self.username_data["id"],
+                "triger_actions_main_callback": self.triger_actions,
+                "name_frame": window,
             }
             windows[window] = window_to_create(**arguments)
             print(f"{window} frame created")
         return windows
+
+    def triger_actions(self, **events):
+        if "action" in events:
+            if events["action"] == "update":
+                for frame in events["frames"]:
+                    window = self.windows_frames[frame]
+                    window.update_procedure()
+            else:
+                print(f"action {events['action']} not implemented")
+        else:
+            print(f"action not implemented--{events}")
 
 
 class LogoFrame(tk.Frame):

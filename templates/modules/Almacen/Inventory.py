@@ -133,6 +133,7 @@ class InventoryScreen(ttk.Frame):
             if "data" not in kwargs
             else (True, None, kwargs["data"]["data_providers_gen"])
         )
+        self._trigger_actions_main_callback = kwargs["triger_actions_main_callback"]
         self._providers_dict_amc = get_providers_dict(data_raw_providers)
         flag, error, data_raw_categories = (
             get_all_categories_db()
@@ -231,7 +232,7 @@ class InventoryScreen(ttk.Frame):
             0,
             4,
             text="Actualizar Tabla",
-            command=self.update_table(),
+            command=self.update_table,
         )
         create_button(
             master,
@@ -403,3 +404,6 @@ class InventoryScreen(ttk.Frame):
             products_new_data, self._categories_dict, self._providers_dict_amc
         )
         return flag, error, result
+
+    def event_procedure(self):
+        self.update_table()

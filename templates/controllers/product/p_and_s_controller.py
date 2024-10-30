@@ -719,12 +719,25 @@ def update_multiple_row_products_amc(products: tuple, dict_cat=None, dict_supp=N
 def insert_multiple_row_movements_amc(movements: tuple):
     if len(movements) == 0:
         return False, "No movements to insert", None
-    date = datetime.now().strftime(format_timestamps)
-    sql = "INSERT INTO sql_telintec.product_movements_amc (id_product, movement_type, quantity, movement_date) VALUES "
+    if len(movements) < 4:
+        date = datetime.now().strftime(format_timestamps)
+        sm_id = "None"
+    else:
+        date = movements[3]
+        sm_id = movements[4] if movements[4] != "None" else "None"
+    sql = "INSERT INTO sql_telintec.product_movements_amc (id_product, movement_type, quantity, movement_date, sm_id) VALUES "
     for index, movement in enumerate(movements):
         if index > 0:
             sql += ", "
-        sql += f"({movement[0]}, '{movement[1]}', {movement[2]}, '{date}')"
+        sql += f"({movement[0]}, '{movement[1]}', {movement[2]}, '{date}', {sm_id})"
+        sql += (
+            "AS new ON DUPLICATE KEY UPDATE "
+            "id_product = new.id_product, "
+            "movement_type = new.movement_type, "
+            "quantity = new.quantity, "
+            "movement_date = new.movement_date,"
+            "sm_id = new.sm_id; "
+        )
     sql = sql.replace("None", "NULL")
     flag, error, result = execute_sql(sql, None, 4)
     return flag, error, result
@@ -769,6 +782,22 @@ def update_multiple_products_categories(products: tuple):
         "ELSE sku "
         "END "
         "WHERE sku IN (" + ", ".join([f"'{product[0]}'" for product in products]) + ");"
+    )
+    sql = sql.replace("None", "NULL")
+    flag, error, result = execute_sql(sql, None, 4)
+    return flag, error, result
+
+
+def udpate_multiple_row_stock_ids(data):
+    if len(data) == 0:
+        return False, "No products to update", None
+    sql = "UPDATE sql_telintec.products_amc SET stock = CASE "
+    for product in data:
+        sql += f"WHEN id_product = '{product[0]}' THEN {product[1]} "
+    sql += (
+        "ELSE id_product "
+        "END "
+        "WHERE id_product IN (" + ", ".join([f"'{product[0]}'" for product in data]) + ");"
     )
     sql = sql.replace("None", "NULL")
     flag, error, result = execute_sql(sql, None, 4)

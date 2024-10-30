@@ -19,7 +19,10 @@ from templates.controllers.index import DataHandler
 from templates.controllers.product.p_and_s_controller import (
     get_ins_db_detail,
     get_outs_db_detail,
+    insert_multiple_row_movements_amc,
+    udpate_multiple_row_stock_ids,
 )
+from templates.modules.Almacen.SubFrameLector import LectorScreen
 
 coldata_movementes = [
     {"text": "ID Movimiento", "stretch": False},
@@ -64,10 +67,19 @@ class MovementsFrame(ttk.Notebook):
         super().__init__(master)
         self.columnconfigure(0, weight=1)
         kwargs["coldata_moves"] = coldata_movementes
-        frame_1 = InScreen(self, **kwargs)
-        self.add(frame_1, text="Entradas")
-        frame_2 = OutScreen(self, **kwargs)
-        self.add(frame_2, text="Salidas")
+        self.frame_1 = InScreen(self, **kwargs)
+        self.add(self.frame_1, text="Entradas")
+        self.frame_2 = OutScreen(self, **kwargs)
+        self.add(self.frame_2, text="Salidas")
+
+    def event_procedure(self):
+        self.frame_1.update_table()
+        self.frame_2.update_table()
+
+
+def create_new_movements(data):
+    flag, error, result = insert_multiple_row_movements_amc(data)
+    return flag, error, result
 
 
 class InScreen(ttk.Frame):
@@ -81,6 +93,7 @@ class InScreen(ttk.Frame):
         self.movetement_id = None
         self.master = master
         self.columnconfigure(0, weight=1)
+        self.triger_actions_callback = kwargs["triger_actions_main_callback"]
         # handlers
         self._data = DataHandler()
         self._products = (
@@ -114,7 +127,7 @@ class InScreen(ttk.Frame):
         # --------------------------------btns-------------------------------------------------
         frame_btns = ttk.Frame(self)
         frame_btns.grid(row=3, column=0, sticky="nswe")
-        frame_btns.columnconfigure((0, 1, 2, 3, 4), weight=1)
+        frame_btns.columnconfigure((0, 1, 2, 3, 4, 5), weight=1)
         self.create_buttons(frame_btns)
 
     def create_table(self, master):
@@ -175,6 +188,33 @@ class InScreen(ttk.Frame):
             command=self.update_table,
             style="primary",
         )
+        create_button(
+            master,
+            0,
+            5,
+            text="Lector",
+            command=self.lector,
+            style="primary",
+        )
+
+    def lector(self):
+        data = {
+            "data_products_gen": self._products,
+            "screen": "movements_in",
+            "callback_lector": self.save_data_lector,
+        }
+        LectorScreen(self, **data)
+
+    def save_data_lector(self, data_lector):
+        product_new = data_lector
+        flag, error, result = create_new_movements(product_new)
+        print(flag, error, result)
+        data_update_stocks = [
+            [item[0], int(item[5]) + int(item[2])] for item in product_new
+        ]
+        flag, error, result = udpate_multiple_row_stock_ids(data_update_stocks)
+        print(flag, error, result)
+        self.update_table()
 
     def clear_fields(self):
         for entry in self.entries:
@@ -204,11 +244,14 @@ class InScreen(ttk.Frame):
         self.entries[4].set(f"ID Producto: {data[1]}")
 
     def update_table(self):
+        self._products = self._data.get_all_products()
         flag, error, self._ins = get_ins_db_detail()
         self.table.unload_table_data()
         time.sleep(0.5)
         self.table.build_table_data(self.col_data, self._ins)
         self.table.autofit_columns()
+        event = {"action": "update", "frames": ["inventory", "movements"]}
+        self.triger_actions_callback(**event)
 
     def update_in_item(self):
         if self.movetement_id is None or self._id_product_to_modify is None:
@@ -366,6 +409,34 @@ class OutScreen(ttk.Frame):
             command=self.update_table,
             style="primary",
         )
+        create_button(
+            master,
+            0,
+            5,
+            text="Lector",
+            command=self.lector,
+            style="primary",
+        )
+
+    def lector(self):
+        data = {
+            "data_products_gen": self._products,
+            "screen": "movements_out",
+            "callback_lector": self.save_data_lector,
+        }
+        LectorScreen(self, **data)
+
+    def save_data_lector(self, data_lector):
+        product_new = data_lector
+        print(f"data: {data_lector}")
+        flag, error, result = create_new_movements(product_new)
+        print(flag, error, result)
+        data_update_stocks = [
+            [item[0], int(item[5]) - int(item[2])] for item in product_new
+        ]
+        flag, error, result = udpate_multiple_row_stock_ids(data_update_stocks)
+        print(flag, error, result)
+        self.update_table()
 
     def clear_fields(self):
         for entry in self.entries:
@@ -395,6 +466,7 @@ class OutScreen(ttk.Frame):
         self.entries[4].set(f"ID Producto: {data[1]}")
 
     def update_table(self):
+        self._products = self._data.get_all_products()
         flag, error, self._outs = get_outs_db_detail()
         self.table.unload_table_data()
         time.sleep(0.5)
