@@ -60,12 +60,34 @@ def create_in_movement_db(id_product, movement_type, quantity, movement_date, sm
 def update_movement_db(
     id_movement, quantity, movement_date, sm_id, type_m=None, id_product=None
 ):
-    update_sql = (
-        "UPDATE sql_telintec.product_movements_amc "
-        "SET quantity = %s, movement_date = %s, sm_id = %s , movement_type = %s, id_product = %s "
-        "WHERE id_movement = %s "
-    )
-    vals = (quantity, movement_date, sm_id, type_m, id_product, id_movement)
+    if type_m is not None and id_product is not None:
+        update_sql = (
+            "UPDATE sql_telintec.product_movements_amc "
+            "SET quantity = %s, movement_date = %s, sm_id = %s , movement_type = %s, id_product = %s "
+            "WHERE id_movement = %s "
+        )
+        vals = (quantity, movement_date, sm_id, type_m, id_product, id_movement)
+    elif type_m is not None:
+        update_sql = (
+            "UPDATE sql_telintec.product_movements_amc "
+            "SET quantity = %s, movement_date = %s, sm_id = %s , movement_type = %s "
+            "WHERE id_movement = %s "
+        )
+        vals = (quantity, movement_date, sm_id, type_m, id_movement)
+    elif id_product is not None:
+        update_sql = (
+            "UPDATE sql_telintec.product_movements_amc "
+            "SET quantity = %s, movement_date = %s, sm_id = %s , id_product = %s "
+            "WHERE id_movement = %s "
+        )
+        vals = (quantity, movement_date, sm_id, id_product, id_movement)
+    else:
+        update_sql = (
+            "UPDATE sql_telintec.product_movements_amc "
+            "SET quantity = %s, movement_date = %s, sm_id = %s "
+            "WHERE id_movement = %s "
+        )
+        vals = (quantity, movement_date, sm_id, id_movement)
     flag, error, result = execute_sql(update_sql, vals, 4)
     return flag, error, result
 

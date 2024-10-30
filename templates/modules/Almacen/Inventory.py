@@ -165,7 +165,7 @@ class InventoryScreen(ttk.Frame):
         # --------------------------------btns-------------------------------------------------
         frame_btns = ttk.Frame(self)
         frame_btns.grid(row=3, column=0, sticky="nswe")
-        frame_btns.columnconfigure((0, 1, 2, 3, 4), weight=1)
+        frame_btns.columnconfigure((0, 1, 2, 3, 4, 5), weight=1)
         self.create_buttons(frame_btns)
 
     def create_table(self, master):
@@ -203,7 +203,6 @@ class InventoryScreen(ttk.Frame):
             0,
             text="Agregar Producto",
             command=self.add_product,
-            style="primary",
         )
         create_button(
             master,
@@ -211,7 +210,6 @@ class InventoryScreen(ttk.Frame):
             1,
             text="Actualizar Producto",
             command=self.update_product,
-            style="primary",
         )
         create_button(
             master,
@@ -219,7 +217,7 @@ class InventoryScreen(ttk.Frame):
             2,
             text="Eliminar Producto",
             command=self.delete_product,
-            style="primary",
+            style="warning",
         )
         create_button(
             master,
@@ -227,15 +225,20 @@ class InventoryScreen(ttk.Frame):
             3,
             text="Limpiar Campos",
             command=self.clear_fields,
-            style="primary",
         )
         create_button(
             master,
             0,
             4,
+            text="Actualizar Tabla",
+            command=self.update_table(),
+        )
+        create_button(
+            master,
+            0,
+            5,
             text="Lector",
             command=self.lector,
-            style="primary",
         )
 
     def lector(self):

@@ -39,6 +39,7 @@ def create_movement_widgets(master, values_products):
     # Inputs left
     create_label(master, 0, 0, text="Fecha de entrega", sticky="w")
     date_delivered = create_entry(master, row=0, column=1)
+    date_delivered.insert(0, datetime.now().strftime(format_date))
     entries.append(date_delivered)
     create_label(master, 1, 0, text="Cantidad", sticky="w")
     input_quantity = create_entry(master, row=1, column=1)
@@ -46,6 +47,15 @@ def create_movement_widgets(master, values_products):
     create_label(master, 2, 0, text="Producto", sticky="w")
     supp_selector = create_Combobox(master, values=values_products, row=2, column=1)
     entries.append(supp_selector)
+    _svar_id_move_info = ttk.StringVar(value="")
+    create_label(master, 3, 0, textvariable=_svar_id_move_info, sticky="n")
+    entries.append(_svar_id_move_info)
+    _svar_id_product_info = ttk.StringVar(value="")
+    create_label(master, 3, 1, textvariable=_svar_id_product_info, sticky="n")
+    entries.append(_svar_id_product_info)
+    _svar_sku_info = ttk.StringVar(value="")
+    create_label(master, 3, 2, textvariable=_svar_sku_info, sticky="n")
+    entries.append(_svar_sku_info)
     return entries
 
 
@@ -61,9 +71,11 @@ class MovementsFrame(ttk.Notebook):
 
 
 class InScreen(ttk.Frame):
-    def __init__(self, master, setting: dict = None, *args, **kwargs):
+    def __init__(self, master, *args, **kwargs):
         super().__init__(master)
         # variables
+        self._id_product_to_modify = None
+        self._old_data_movement = None
         self.table = None
         self.col_data = coldata_movementes
         self.movetement_id = None
@@ -94,7 +106,7 @@ class InScreen(ttk.Frame):
         # -------------------------------inputs-------------------------------------------------
         frame_inputs = ttk.Frame(self)
         frame_inputs.grid(row=2, column=0, sticky="nswe")
-        frame_inputs.columnconfigure((0, 1, 2, 3, 4), weight=1)
+        frame_inputs.columnconfigure((0, 1), weight=1)
         values_products = [
             f"{product[0]}--{product[1]}--{product[2]}" for product in self._products
         ]
@@ -145,7 +157,7 @@ class InScreen(ttk.Frame):
             2,
             text="Eliminar Entrada",
             command=self.delete_in_item,
-            style="primary",
+            style="warning",
         )
         create_button(
             master,
@@ -155,6 +167,14 @@ class InScreen(ttk.Frame):
             command=self.clear_fields,
             style="primary",
         )
+        create_button(
+            master,
+            0,
+            4,
+            text="Actualizar Tabla",
+            command=self.update_table,
+            style="primary",
+        )
 
     def clear_fields(self):
         for entry in self.entries:
@@ -162,17 +182,26 @@ class InScreen(ttk.Frame):
                 entry.delete(0, "end")
             elif isinstance(entry, ttk.Combobox):
                 entry.set("")
+            elif isinstance(entry, ttk.StringVar):
+                entry.set("")
         self.movetement_id = None
+        self._id_product_to_modify = None
+        self._old_data_movement = None
 
     def on_double_click_in_table(self, event):
         data = self.table.view.item(self.table.view.focus())["values"]
         self.clear_fields()
-        self.entries[2].set(data[1])
+        self._old_data_movement = data
+        self._id_product_to_modify = data[1]
+        product_name = f"{data[1]}--{data[2]}--{data[3]}"
+        self.entries[2].set(product_name)
         self.movetement_id = data[0]
         self.entries[1].insert(0, data[4])
         date = datetime.strptime(data[5], format_timestamps)
         date = date.strftime(format_date)
         self.entries[0].insert(0, date)
+        self.entries[3].set(f"ID Movimiento: {data[0]}")
+        self.entries[4].set(f"ID Producto: {data[1]}")
 
     def update_table(self):
         flag, error, self._ins = get_ins_db_detail()
@@ -182,11 +211,16 @@ class InScreen(ttk.Frame):
         self.table.autofit_columns()
 
     def update_in_item(self):
-        if self.movetement_id is None:
+        if self.movetement_id is None or self._id_product_to_modify is None:
             return
+        old_quantity = self._old_data_movement[4]
         new_date = datetime.now().strftime(format_date)
         quantity = self.entries[1].get()
         self._data.update_in_movement(self.movetement_id, quantity, new_date, None)
+        new_stock = self.new_stock(
+            int(quantity) - int(old_quantity), self._id_product_to_modify
+        )
+        self._data.update_stock(self._id_product_to_modify, new_stock)
         self.update_table()
         self.clear_fields()
         current_date = datetime.now().strftime(format_date)
@@ -228,9 +262,11 @@ class InScreen(ttk.Frame):
 
 
 class OutScreen(ttk.Frame):
-    def __init__(self, master, setting: dict = None, *args, **kwargs):
+    def __init__(self, master, *args, **kwargs):
         super().__init__(master)
         # variables
+        self._old_data_movement = None
+        self._id_product_to_modify = None
         self.table = None
         self.col_data = coldata_movementes
         self.movetement_id = None
@@ -261,7 +297,7 @@ class OutScreen(ttk.Frame):
         # -------------------------------inputs-------------------------------------------------
         frame_inputs = ttk.Frame(self)
         frame_inputs.grid(row=2, column=0, sticky="nswe")
-        frame_inputs.columnconfigure((0, 1, 2, 3, 4), weight=1)
+        frame_inputs.columnconfigure((0, 1), weight=1)
         values_products = [
             f"{product[0]}--{product[1]}--{product[2]}" for product in self._products
         ]
@@ -312,7 +348,7 @@ class OutScreen(ttk.Frame):
             2,
             text="Eliminar Salida",
             command=self.delete_out_item,
-            style="primary",
+            style="warning",
         )
         create_button(
             master,
@@ -322,6 +358,14 @@ class OutScreen(ttk.Frame):
             command=self.clear_fields,
             style="primary",
         )
+        create_button(
+            master,
+            0,
+            4,
+            text="Actualizar Tabla",
+            command=self.update_table,
+            style="primary",
+        )
 
     def clear_fields(self):
         for entry in self.entries:
@@ -329,17 +373,26 @@ class OutScreen(ttk.Frame):
                 entry.delete(0, "end")
             elif isinstance(entry, ttk.Combobox):
                 entry.set("")
+            elif isinstance(entry, ttk.StringVar):
+                entry.set("")
         self.movetement_id = None
+        self._id_product_to_modify = None
+        self._old_data_movement = None
 
     def on_double_click_in_table(self, event):
         data = self.table.view.item(self.table.view.focus())["values"]
         self.clear_fields()
-        self.entries[2].set(data[1])
+        self._old_data_movement = data
+        self._id_product_to_modify = data[1]
+        product_name = f"{data[1]}--{data[2]}--{data[3]}"
+        self.entries[2].set(product_name)
         self.movetement_id = data[0]
         self.entries[1].insert(0, data[4])
         date = datetime.strptime(data[5], format_timestamps)
         date = date.strftime(format_date)
         self.entries[0].insert(0, date)
+        self.entries[3].set(f"ID Movimiento: {data[0]}")
+        self.entries[4].set(f"ID Producto: {data[1]}")
 
     def update_table(self):
         flag, error, self._outs = get_outs_db_detail()
@@ -349,11 +402,16 @@ class OutScreen(ttk.Frame):
         self.table.autofit_columns()
 
     def update_out_item(self):
-        if self.movetement_id is None:
+        if self.movetement_id is None or self._id_product_to_modify is None:
             return
         new_date = datetime.now().strftime(format_date)
         quantity = self.entries[1].get()
+        old_quantity = self._old_data_movement[4]
         self._data.update_out_movement(self.movetement_id, quantity, new_date, None)
+        new_stock = self.new_stock(
+            int(quantity) - int(old_quantity), self._id_product_to_modify
+        )
+        self._data.update_stock(self._id_product_to_modify, new_stock)
         self.update_table()
         self.clear_fields()
         current_date = datetime.now().strftime(format_date)
