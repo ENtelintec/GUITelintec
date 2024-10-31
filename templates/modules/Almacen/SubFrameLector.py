@@ -38,7 +38,7 @@ columns_movements = [
 ]
 
 
-class LectorScreen(ttk.Toplevel):
+class LectorScreenSelector(ttk.Toplevel):
     def __init__(self, master=None, **kw):
         super().__init__(master)
         self.ports, self.ports_d = serial_ports()
@@ -115,6 +115,7 @@ class InventoryLector(ttk.Frame):
         self.callback_lector = kw.get("callback_lector", None)
         self.entries = None
         self.ids_product_added = []
+        self.dict_old_stock = []
         self.port_selector = kw["port"]["selector"]
         self.ports = kw["port"]["ports"]
         self.ports_d = kw["port"]["ports_d"]
@@ -187,7 +188,7 @@ class InventoryLector(ttk.Frame):
 
     def product_detected_serial(self, product):
         print(product)
-        for item in self.data_products_gen:
+        for index, item in enumerate(self.data_products_gen):
             codes = json.loads(item[9])
             if item[1] == product or product in codes:
                 print("Encontrado")
@@ -196,6 +197,7 @@ class InventoryLector(ttk.Frame):
                     return
                 self.ids_product_added.append(item[1])
                 self.data_products.append(item)
+                self.dict_old_stock[item[0]] = item[4]
                 self.recreate_entry()
                 return
         self.ids_product_added.append(product)
@@ -212,6 +214,7 @@ class InventoryLector(ttk.Frame):
         for entry in self.entries:
             row = [entry[i].get() for i in range(len(entry))]
             if row[0] != "":
+                row += [self.dict_old_stock[row[0]]]
                 products_update.append(row)
             else:
                 products_new.append(row)

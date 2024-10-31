@@ -15,6 +15,7 @@ from templates.Functions_GUI_Utils import (
     create_Combobox,
     create_button,
 )
+from templates.Functions_Utils import create_notification_permission_notGUI
 from templates.controllers.index import DataHandler
 from templates.controllers.product.p_and_s_controller import (
     get_ins_db_detail,
@@ -22,7 +23,8 @@ from templates.controllers.product.p_and_s_controller import (
     insert_multiple_row_movements_amc,
     udpate_multiple_row_stock_ids,
 )
-from templates.modules.Almacen.SubFrameLector import LectorScreen
+from templates.modules.Almacen.SubFrameLector import LectorScreenSelector
+
 
 coldata_movementes = [
     {"text": "ID Movimiento", "stretch": False},
@@ -72,9 +74,15 @@ class MovementsFrame(ttk.Notebook):
         self.frame_2 = OutScreen(self, **kwargs)
         self.add(self.frame_2, text="Salidas")
 
-    def event_procedure(self):
-        self.frame_1.update_table()
-        self.frame_2.update_table()
+    def update_procedure(self, **events):
+        if "sender" in events:
+            if "movements_in" == events["sender"]:
+                self.frame_2.update_table(ignore_triger=True)
+            elif "movements_out":
+                self.frame_1.update_table(ignore_triger=True)
+        else:
+            self.frame_1.update_table(ignore_triger=True)
+            self.frame_2.update_table(ignore_triger=True)
 
 
 def create_new_movements(data):
@@ -203,17 +211,29 @@ class InScreen(ttk.Frame):
             "screen": "movements_in",
             "callback_lector": self.save_data_lector,
         }
-        LectorScreen(self, **data)
+        LectorScreenSelector(self, **data)
 
     def save_data_lector(self, data_lector):
+        msg = ""
         product_new = data_lector
         flag, error, result = create_new_movements(product_new)
-        print(flag, error, result)
-        data_update_stocks = [
-            [item[0], int(item[5]) + int(item[2])] for item in product_new
-        ]
-        flag, error, result = udpate_multiple_row_stock_ids(data_update_stocks)
-        print(flag, error, result)
+        if flag:
+            msg += f"\nMovimientos registrados: {len(product_new)}"
+            data_update_stocks = [
+                [item[0], int(item[5]) + int(item[2])] for item in product_new
+            ]
+            flag, error, result = udpate_multiple_row_stock_ids(data_update_stocks)
+            msg += (
+                "\nStock actualizado"
+                if flag
+                else f"\nError al actualizar stock: {str(error)}"
+            )
+        else:
+            msg += f"\nError al registrar movimientos: {str(error)}"
+        print(msg)
+        create_notification_permission_notGUI(
+            msg, ["almacen"], "Creacion de Movimientos de Entrada", 0, 0
+        )
         self.update_table()
 
     def clear_fields(self):
@@ -243,33 +263,46 @@ class InScreen(ttk.Frame):
         self.entries[3].set(f"ID Movimiento: {data[0]}")
         self.entries[4].set(f"ID Producto: {data[1]}")
 
-    def update_table(self):
+    def update_table(self, ignore_triger=False):
         self._products = self._data.get_all_products()
         flag, error, self._ins = get_ins_db_detail()
         self.table.unload_table_data()
         time.sleep(0.5)
         self.table.build_table_data(self.col_data, self._ins)
         self.table.autofit_columns()
-        event = {"action": "update", "frames": ["inventory", "movements"]}
-        self.triger_actions_callback(**event)
+        if not ignore_triger:
+            event = {
+                "action": "update",
+                "frames": ["Inventario", "Movimientos"],
+                "sender": "movements_in",
+            }
+            self.triger_actions_callback(**event)
 
     def update_in_item(self):
         if self.movetement_id is None or self._id_product_to_modify is None:
             return
+        msg = ""
         old_quantity = self._old_data_movement[4]
         new_date = datetime.now().strftime(format_date)
         quantity = self.entries[1].get()
         self._data.update_in_movement(self.movetement_id, quantity, new_date, None)
+        msg += f"\nMovimiento actualizado producto {self._id_product_to_modify}, valor de entrada {old_quantity}-->{quantity}."
         new_stock = self.new_stock(
             int(quantity) - int(old_quantity), self._id_product_to_modify
         )
         self._data.update_stock(self._id_product_to_modify, new_stock)
+        msg += "\nStock actualizado producto."
+        print(msg)
+        create_notification_permission_notGUI(
+            msg, ["almacen"], "Creacion de Movimiento de Entrada", 0, 0
+        )
         self.update_table()
         self.clear_fields()
         current_date = datetime.now().strftime(format_date)
         self.entries[0].insert(0, current_date)
 
     def add_in_item(self):
+        msg = ""
         id_product = self.entries[2].get().split("--")[0]
         id_movement_type = "entrada"
         quantity = self.entries[1].get()
@@ -277,8 +310,14 @@ class InScreen(ttk.Frame):
         self._data.create_in_movement(
             id_product, id_movement_type, quantity, movement_date, None
         )
+        msg += f"\nMovimiento registrado producto {id_product}, valor de entrada {quantity}."
         new_stock = self.new_stock(int(quantity), id_product)
         self._data.update_stock(id_product, new_stock)
+        msg += "\nStock actualizado producto."
+        print(msg)
+        create_notification_permission_notGUI(
+            msg, ["almacen"], "Actualización de Movimiento de Entrada", 0, 0
+        )
         self.update_table()
         self.clear_fields()
         current_date = datetime.now().strftime(format_date)
@@ -293,11 +332,18 @@ class InScreen(ttk.Frame):
     def delete_in_item(self):
         if self.movetement_id is None:
             return
+        msg = ""
         self._data.delete_in_movement(self.movetement_id)
         quantity = self.entries[1].get()
         id_product = self.entries[2].get().split("--")[0]
+        msg += f"\nMovimiento eliminado producto {id_product}, valor de movimiento {quantity}."
         new_stock = self.new_stock(-int(quantity), id_product)
         self._data.update_stock(id_product, new_stock)
+        msg += "\nStock actualizado producto."
+        print(msg)
+        create_notification_permission_notGUI(
+            msg, ["almacen"], "Eliminación de Movimiento de Entrada", 0, 0
+        )
         self.update_table()
         self.clear_fields()
         current_date = datetime.now().strftime(format_date)
@@ -327,6 +373,7 @@ class OutScreen(ttk.Frame):
             if "data_movements" not in kwargs["data"]
             else (True, None, kwargs["data"]["data_movements"]["data_outs"])
         )
+        self.triger_actions_callback = kwargs["triger_actions_main_callback"]
         # -------------------------------Title----------------------------------------------
         create_label(self, 0, 0, text="Salidas", font=("Helvetica", 22, "bold"))
         # -------------------------------Table-------------------------------------------------
@@ -424,18 +471,29 @@ class OutScreen(ttk.Frame):
             "screen": "movements_out",
             "callback_lector": self.save_data_lector,
         }
-        LectorScreen(self, **data)
+        LectorScreenSelector(self, **data)
 
     def save_data_lector(self, data_lector):
+        msg = ""
         product_new = data_lector
-        print(f"data: {data_lector}")
         flag, error, result = create_new_movements(product_new)
-        print(flag, error, result)
-        data_update_stocks = [
-            [item[0], int(item[5]) - int(item[2])] for item in product_new
-        ]
-        flag, error, result = udpate_multiple_row_stock_ids(data_update_stocks)
-        print(flag, error, result)
+        if flag:
+            msg += f"\nMovimientos registrados: {len(product_new)}"
+            data_update_stocks = [
+                [item[0], int(item[5]) - int(item[2])] for item in product_new
+            ]
+            flag, error, result = udpate_multiple_row_stock_ids(data_update_stocks)
+            msg += (
+                "\nStock actualizado"
+                if flag
+                else f"\nError al actualizar stock: {str(error)}"
+            )
+        else:
+            msg += f"\nError al registrar movimientos: {str(error)}"
+        print(msg)
+        create_notification_permission_notGUI(
+            msg, ["almacen"], "Creacion de Movimientos de Salida", 0, 0
+        )
         self.update_table()
 
     def clear_fields(self):
@@ -465,31 +523,46 @@ class OutScreen(ttk.Frame):
         self.entries[3].set(f"ID Movimiento: {data[0]}")
         self.entries[4].set(f"ID Producto: {data[1]}")
 
-    def update_table(self):
+    def update_table(self, ignore_triger=False):
         self._products = self._data.get_all_products()
         flag, error, self._outs = get_outs_db_detail()
         self.table.unload_table_data()
         time.sleep(0.5)
         self.table.build_table_data(self.col_data, self._outs)
         self.table.autofit_columns()
+        if not ignore_triger:
+            event = {
+                "action": "update",
+                "frames": ["Inventario", "Movimientos"],
+                "sender": "movements_out",
+            }
+            self.triger_actions_callback(**event)
 
     def update_out_item(self):
         if self.movetement_id is None or self._id_product_to_modify is None:
             return
+        msg = ""
         new_date = datetime.now().strftime(format_date)
         quantity = self.entries[1].get()
         old_quantity = self._old_data_movement[4]
         self._data.update_out_movement(self.movetement_id, quantity, new_date, None)
+        msg += f"\nMovimiento actualizado producto {self._id_product_to_modify}, valor de movimiento {old_quantity}-->{quantity}."
         new_stock = self.new_stock(
             int(quantity) - int(old_quantity), self._id_product_to_modify
         )
         self._data.update_stock(self._id_product_to_modify, new_stock)
+        msg += "\nStock actualizado producto."
+        print(msg)
+        create_notification_permission_notGUI(
+            msg, ["almacen"], "Actualización de Movimiento de Salida", 0, 0
+        )
         self.update_table()
         self.clear_fields()
         current_date = datetime.now().strftime(format_date)
         self.entries[0].insert(0, current_date)
 
     def add_out_item(self):
+        msg = ""
         id_product = self.entries[2].get().split("--")[0]
         id_movement_type = "salida"
         quantity = self.entries[1].get()
@@ -497,8 +570,14 @@ class OutScreen(ttk.Frame):
         self._data.create_out_movement(
             id_product, id_movement_type, quantity, movement_date, None
         )
+        msg += f"\nMovimiento registrado producto {id_product}, valor de movimiento {quantity}."
         new_stock = self.new_stock(int(quantity), id_product)
         self._data.update_stock(id_product, new_stock)
+        msg += "\nStock actualizado"
+        print(msg)
+        create_notification_permission_notGUI(
+            msg, ["almacen"], "Creacion de Movimiento de Salida", 0, 0
+        )
         self.update_table()
         self.clear_fields()
         current_date = datetime.now().strftime(format_date)
@@ -513,11 +592,18 @@ class OutScreen(ttk.Frame):
     def delete_out_item(self):
         if self.movetement_id is None:
             return
+        msg = ""
         self._data.delete_out_movement(self.movetement_id)
         quantity = self.entries[1].get()
         id_product = self.entries[2].get().split("--")[0]
         new_stock = self.new_stock(-int(quantity), id_product)
+        msg += f"\nMovimiento eliminado producto {id_product}, valor de movimiento {quantity}."
         self._data.update_stock(id_product, new_stock)
+        msg += "\nStock actualizado producto."
+        print(msg)
+        create_notification_permission_notGUI(
+            msg, ["almacen"], "Eliminación de Movimiento de Salida", 0, 0
+        )
         self.update_table()
         self.clear_fields()
         current_date = datetime.now().strftime(format_date)

@@ -1,14 +1,17 @@
 import json
 import time
+from datetime import datetime
 
 import ttkbootstrap as ttk
 
+from static.extensions import format_date
 from templates.Functions_GUI_Utils import (
     create_label,
     create_entry,
     create_Combobox,
     create_button,
 )
+from templates.Functions_Utils import create_notification_permission_notGUI
 from templates.controllers.index import DataHandler
 from ttkbootstrap.tableview import Tableview
 
@@ -16,9 +19,10 @@ from templates.controllers.product.p_and_s_controller import (
     insert_multiple_row_products_amc,
     update_multiple_row_products_amc,
     get_all_categories_db,
+    insert_multiple_row_movements_amc,
 )
 from templates.controllers.supplier.suppliers_controller import get_all_suppliers_amc
-from templates.modules.Almacen.SubFrameLector import LectorScreen
+from templates.modules.Almacen.SubFrameLector import LectorScreenSelector
 
 
 def get_row_data_inventory(data_raw):
@@ -113,7 +117,7 @@ def create_input_widgets(
 
 
 class InventoryScreen(ttk.Frame):
-    def __init__(self, master, *args, **kwargs):
+    def __init__(self, master, **kwargs):
         super().__init__(master)
         self.table = None
         self.col_data = None
@@ -248,16 +252,22 @@ class InventoryScreen(ttk.Frame):
             "screen": "inventory",
             "callback_lector": self.save_data_lector,
         }
-        LectorScreen(self, **data)
+        LectorScreenSelector(self, **data)
 
     def save_data_lector(self, data_lector):
         product_update, product_new = data_lector
-        print("update: ", product_update)
-        flag, error, result = self.update_products(product_update)
-        print(flag, error, result)
-        print("new: ", product_new)
-        flag, error, result = self.create_new_products(product_new)
-        print(flag, error, result)
+        msg = ""
+        flag, error, result, msg_update = self.update_products(product_update)
+        msg += msg_update
+        flag, error, result, msg_create = self.create_new_products(product_new)
+        msg += msg_create
+        create_notification_permission_notGUI(
+            msg,
+            ["almacen"],
+            "Actualizacion de inventario",
+            0,
+            0,
+        )
         self.update_table()
 
     def fetch_products(self):
@@ -278,12 +288,19 @@ class InventoryScreen(ttk.Frame):
         self._ivar_tool.set(data[7])
         self._ivar_internal.set(data[8])
 
-    def update_table(self):
+    def update_table(self, ignore_triger=False):
         self._products = self.fetch_products()
         self.table.unload_table_data()
         time.sleep(0.5)
         self.table.build_table_data(self.col_data, self._products)
         self.table.autofit_columns()
+        if not ignore_triger:
+            event = {
+                "action": "update",
+                "frames": ["Movimientos"],
+                "sender": "Inventario",
+            }
+            self._trigger_actions_main_callback(**event)
 
     def get_inputs_valus(self):
         data = []
@@ -394,16 +411,55 @@ class InventoryScreen(ttk.Frame):
         self.update_table()
 
     def update_products(self, products_data):
+        msg = ""
         flag, error, result = update_multiple_row_products_amc(
             products_data, self._categories_dict, self._providers_dict_amc
         )
-        return flag, error, result
+        msg = (
+            "Inventario actualizado"
+            if flag
+            else f"Error al actualizar inventario: {str(error)}"
+        )
+        if not flag:
+            return flag, error, result, msg
+        # generate data movements from stock value
+        date = datetime.now().strftime(format_date)
+        data_movements = [
+            [item[0], "salida", abs(int(item[4] - item[-1])), date, "None"]
+            if int(item[4] - item[-1]) < 0
+            else [item[0], "entrada", int(item[4] - item[-1]), date, "None"]
+            for item in products_data
+        ]
+        flag, error, result = insert_multiple_row_movements_amc(tuple(data_movements))
+        msg += (
+            "\nMovimientos registrados"
+            if flag
+            else f"\nError al registrar movimientos: {str(error)}"
+        )
+        return flag, error, result, msg
 
     def create_new_products(self, products_new_data):
-        flag, error, result = insert_multiple_row_products_amc(
+        msg = ""
+        flag, error, lastrow_id = insert_multiple_row_products_amc(
             products_new_data, self._categories_dict, self._providers_dict_amc
         )
-        return flag, error, result
+        msg = "Productos creados" if flag else f"Error al crear productos: {str(error)}"
+        if not flag:
+            return flag, error, lastrow_id, msg
+        # generate data movements from stock value
+        date = datetime.now().strftime(format_date)
+        new_ids = range(lastrow_id - len(products_new_data) + 1, lastrow_id + 1)
+        data_movements = [
+            [new_ids[index], "entrada", int(item[4]), date, "None"]
+            for index, item in products_new_data
+        ]
+        flag, error, result = insert_multiple_row_movements_amc(tuple(data_movements))
+        msg += (
+            "\nMovimientos registrados"
+            if flag
+            else f"\nError al registrar movimientos: {str(error)}"
+        )
+        return flag, error, result, msg
 
-    def event_procedure(self):
-        self.update_table()
+    def update_procedure(self, **events):
+        self.update_table(ignore_triger=True)

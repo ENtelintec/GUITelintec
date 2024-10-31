@@ -241,7 +241,7 @@ class GUIAsistente(ttk.Window):
             if events["action"] == "update":
                 for frame in events["frames"]:
                     window = self.windows_frames[frame]
-                    window.update_procedure()
+                    window.update_procedure(**events)
             else:
                 print(f"action {events['action']} not implemented")
         else:
