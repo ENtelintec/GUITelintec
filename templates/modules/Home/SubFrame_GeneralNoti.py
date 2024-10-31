@@ -156,3 +156,6 @@ class NotificationsUser(ttk.Frame):
         self.notifications_complete, self.notifications_pending = get_notifications_tables(self.data)
         self.columns = self.data_dict["columns"]
         self.create_tables(self.frame_tables, data=self.notifications_pending+self.notifications_complete)
+
+    def update_procedure(self, **events):
+        self._on_update_notifications()

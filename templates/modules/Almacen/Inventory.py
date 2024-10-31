@@ -256,6 +256,8 @@ class InventoryScreen(ttk.Frame):
 
     def save_data_lector(self, data_lector):
         product_update, product_new = data_lector
+        print(product_update)
+        print(product_new)
         msg = ""
         flag, error, result, msg_update = self.update_products(product_update)
         msg += msg_update
@@ -297,7 +299,7 @@ class InventoryScreen(ttk.Frame):
         if not ignore_triger:
             event = {
                 "action": "update",
-                "frames": ["Movimientos"],
+                "frames": ["Movimientos", "Inicio"],
                 "sender": "Inventario",
             }
             self._trigger_actions_main_callback(**event)
@@ -321,6 +323,7 @@ class InventoryScreen(ttk.Frame):
             data[6],
             is_tool,
             is_internal,
+            data[7],
         )
 
     def update_product(self):
@@ -334,6 +337,7 @@ class InventoryScreen(ttk.Frame):
             product_supplier,
             is_tool,
             is_internal,
+            codes,
         ) = self.get_inputs_valus()
         self._data.update_product(
             product_id,
@@ -349,6 +353,7 @@ class InventoryScreen(ttk.Frame):
             else None,
             is_tool,
             is_internal,
+            codes,
         )
         self.clear_fields()
         self.update_table()
@@ -372,6 +377,7 @@ class InventoryScreen(ttk.Frame):
             product_supplier,
             is_tool,
             is_internal,
+            codes,
         ) = self.get_inputs_valus()
         if (
             product_name == ""
@@ -398,6 +404,7 @@ class InventoryScreen(ttk.Frame):
                 else None,
                 is_tool,
                 is_internal,
+                codes,
             )
             self.clear_fields()
             self.update_table()
@@ -436,6 +443,13 @@ class InventoryScreen(ttk.Frame):
             if flag
             else f"\nError al registrar movimientos: {str(error)}"
         )
+        create_notification_permission_notGUI(
+            msg,
+            ["almacen"],
+            "Actualizacion de inventario",
+            0,
+            0,
+        )
         return flag, error, result, msg
 
     def create_new_products(self, products_new_data):
@@ -458,6 +472,13 @@ class InventoryScreen(ttk.Frame):
             "\nMovimientos registrados"
             if flag
             else f"\nError al registrar movimientos: {str(error)}"
+        )
+        create_notification_permission_notGUI(
+            msg,
+            ["almacen"],
+            "Actualizacion de inventario",
+            0,
+            0,
         )
         return flag, error, result, msg
 

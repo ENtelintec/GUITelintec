@@ -172,3 +172,10 @@ class SMDashboard(ttk.Frame):
         else:
             self.plots.destroy()
         self.plots = create_plots(self.frame_graphs, range_selected)
+
+    def update_procedure(self, **events):
+        self.on_reset_widgets_click()
+        self.table_events.destroy()
+        self.table_events = self.create_table(self.frame_table)
+        self.plots.destroy()
+        self.plots = create_plots(self.frame_graphs, self.svar_range_selector.get())

@@ -203,7 +203,7 @@ def get_skus():
 
 
 def create_product_db(
-    sku, name, udm, stock, id_category, id_supplier, is_tool, is_internal
+    sku, name, udm, stock, id_category, id_supplier, is_tool, is_internal, codes=None
 ):
     try:
         sku = str(sku)
@@ -212,20 +212,40 @@ def create_product_db(
         stock = int(stock)
         id_category = int(id_category) if id_category else None
         id_supplier = int(id_supplier) if id_supplier else None
+        codes = "[]" if codes is None else codes
     except Exception as e:
         return False, str(e), None
     insert_sql = (
         "INSERT INTO sql_telintec.products_amc "
-        "(sku, name, udm, stock, id_category, is_tool, is_internal, id_supplier) "
-        "VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
+        "(sku, name, udm, stock, id_category, is_tool, is_internal, id_supplier, codes) "
+        "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)"
     )
-    vals = (sku, name, udm, stock, id_category, is_tool, is_internal, id_supplier)
+    vals = (
+        sku,
+        name,
+        udm,
+        stock,
+        id_category,
+        is_tool,
+        is_internal,
+        id_supplier,
+        codes,
+    )
     flag, error, result = execute_sql(insert_sql, vals, 4)
     return flag, error, result
 
 
 def update_product_db(
-    id_product, sku, name, udm, stock, id_category, id_supplier, is_tool, is_internal
+    id_product,
+    sku,
+    name,
+    udm,
+    stock,
+    id_category,
+    id_supplier,
+    is_tool,
+    is_internal,
+    codes=None,
 ):
     try:
         sku = str(sku)
@@ -233,12 +253,14 @@ def update_product_db(
         udm = str(udm)
         stock = int(stock)
         id_category = int(id_category)
+        codes = "[]" if codes is None else codes
     except Exception as e:
         return False, str(e), None
     update_sql = (
         "UPDATE sql_telintec.products_amc "
-        "SET sku = %s, name = %s, udm = %s, stock = %s, id_category = %s, id_supplier = %s, is_tool = %s, is_internal = %s "
-        "WHERE id_product = %s"
+        "SET sku = %s, name = %s, udm = %s, stock = %s, id_category = %s, id_supplier = %s, "
+        "is_tool = %s, is_internal = %s, codes = %s "
+        "WHERE id_product = %s;"
     )
     vals = (
         sku,
@@ -250,26 +272,35 @@ def update_product_db(
         is_tool,
         is_internal,
         id_product,
+        codes,
     )
     flag, error, result = execute_sql(update_sql, vals, 4)
     return flag, error, result
 
 
-def create_product_db_admin(sku, name, udm, stock, id_category):
+def create_product_db_admin(sku, name, udm, stock, id_category, codes=None):
     try:
         sku = str(sku)
         name = str(name)
         udm = str(udm)
         stock = int(stock)
         id_category = int(id_category)
+        codes = "[]" if codes is None else codes
     except Exception as e:
         return False, str(e), None
     insert_sql = (
         "INSERT INTO sql_telintec.products_amc "
-        "(sku, name, udm, stock, id_category) "
-        "VALUES (%s, %s, %s, %s, %s)"
+        "(sku, name, udm, stock, id_category, codes) "
+        "VALUES (%s, %s, %s, %s, %s, %s) as new "
+        "ON DUPLICATE KEY UPDATE "
+        "sku = new.sku, "
+        "name = new.name, "
+        "udm = new.udm, "
+        "stock = new.stock, "
+        "id_category = new.id_category, "
+        "codes = new.codes; "
     )
-    vals = (sku, name, udm, stock, id_category)
+    vals = (sku, name, udm, stock, id_category, codes)
     flag, error, result = execute_sql(insert_sql, vals, 4)
     return flag, error, result
 
@@ -655,12 +686,13 @@ def insert_multiple_row_products_amc(products: tuple, dict_cat=None, dict_supp=N
     codec = "ASCII"
     if len(products) == 0:
         return False, "No products to insert", None
-    if len(products) < 10:
-        codes = json.dumps([])
-    else:
-        codes = json.dumps(products[9])
+
     sql = "INSERT INTO sql_telintec.products_amc (sku, name, udm, stock, id_category, id_supplier, is_tool, is_internal, codes) VALUES "
     for index, product in enumerate(products):
+        if len(product) < 10:
+            codes = json.dumps([])
+        else:
+            codes = product[9]
         sku = clean_name(product[1].encode(codec, errors="ignore").decode(codec))[0]
         name = clean_name(product[2].encode(codec, errors="ignore").decode(codec))[0]
         if index > 0:
@@ -682,12 +714,13 @@ def insert_multiple_row_products_amc(products: tuple, dict_cat=None, dict_supp=N
 def update_multiple_row_products_amc(products: tuple, dict_cat=None, dict_supp=None):
     if len(products) == 0:
         return False, "No products to update", None
-    if len(products) < 10:
-        codes = json.dumps([])
-    else:
-        codes = json.dumps(products[9])
+
     sql = "INSERT INTO sql_telintec.products_amc (id_product, sku, name, udm, stock, id_category, id_supplier, is_tool, is_internal, codes) VALUES "
     for index, product in enumerate(products):
+        if len(product) < 10:
+            codes = json.dumps([])
+        else:
+            codes = product[9]
         if index > 0:
             sql += ", "
         if dict_cat is not None:
@@ -797,7 +830,9 @@ def udpate_multiple_row_stock_ids(data):
     sql += (
         "ELSE id_product "
         "END "
-        "WHERE id_product IN (" + ", ".join([f"'{product[0]}'" for product in data]) + ");"
+        "WHERE id_product IN ("
+        + ", ".join([f"'{product[0]}'" for product in data])
+        + ");"
     )
     sql = sql.replace("None", "NULL")
     flag, error, result = execute_sql(sql, None, 4)

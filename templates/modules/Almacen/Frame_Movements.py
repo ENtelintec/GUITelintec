@@ -273,7 +273,7 @@ class InScreen(ttk.Frame):
         if not ignore_triger:
             event = {
                 "action": "update",
-                "frames": ["Inventario", "Movimientos"],
+                "frames": ["Inventario", "Movimientos", "Inicio"],
                 "sender": "movements_in",
             }
             self.triger_actions_callback(**event)
@@ -533,7 +533,7 @@ class OutScreen(ttk.Frame):
         if not ignore_triger:
             event = {
                 "action": "update",
-                "frames": ["Inventario", "Movimientos"],
+                "frames": ["Inventario", "Movimientos", "Inicio"],
                 "sender": "movements_out",
             }
             self.triger_actions_callback(**event)

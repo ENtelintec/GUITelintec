@@ -105,6 +105,11 @@ class LectorScreenSelector(ttk.Toplevel):
         self.frame_lector.ports = self.ports
         self.frame_lector.ports_d = self.ports_d
 
+    def on_close_after_save(self):
+        if self.frame_lector.port_listener is not None:
+            self.frame_lector.port_listener.stop()
+        self.destroy()
+
 
 class InventoryLector(ttk.Frame):
     def __init__(self, master=None, **kw):
@@ -222,9 +227,8 @@ class InventoryLector(ttk.Frame):
             print("No hay callback")
             return
         self.callback_lector((products_update, products_new))
-        self.ids_product_added = []
-        self.data_products = []
-        self.recreate_entry()
+        # close self
+        self.master.on_close_after_save()
 
 
 class MovementsLector(ttk.Frame):
@@ -337,6 +341,4 @@ class MovementsLector(ttk.Frame):
             print("No hay callback")
             return
         self.callback_lector(products_new)
-        self.ids_product_added = []
-        self.data_products = []
-        self.recreate_entry()
+        self.master.on_close_after_save()
