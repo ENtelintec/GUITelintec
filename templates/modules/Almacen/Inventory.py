@@ -425,9 +425,9 @@ class InventoryScreen(ttk.Frame):
         # generate data movements from stock value
         date = datetime.now().strftime(format_date)
         data_movements = [
-            [item[0], "salida", abs(int(item[4] - item[-1])), date, "None"]
-            if int(item[4] - item[-1]) < 0
-            else [item[0], "entrada", int(item[4] - item[-1]), date, "None"]
+            [item[0], "salida", abs(int(item[4]) - int(item[-1])), date, "None"]
+            if int(item[4]) - int(item[-1]) < 0
+            else [item[0], "entrada", int(item[4]) - int(item[-1]), date, "None"]
             for item in products_data
         ]
         flag, error, result = insert_multiple_row_movements_amc(tuple(data_movements))

@@ -211,30 +211,39 @@ def dispatch_sm(data):
     if flag:
         msg = f"SM con ID-{data['id']} despachada"
         write_log_file(log_file_sm_path, msg)
-        msg += (
-            "\n Productos a despachar:  "
-            + "\n".join(
-                [f"{item['quantity']} {item['name']}" for item in products_to_dispacth]
+        if not is_complete:
+            msg += (
+                "\n Productos a despachar:  "
+                + "\n".join(
+                    [
+                        f"{item['quantity']} {item['name']}"
+                        for item in products_to_dispacth
+                    ]
+                )
+                + "--"
             )
-            + "--"
-        )
-        msg += (
-            "\n Productos a solicitar:  "
-            + "\n".join(
-                [f"{item['quantity']} {item['name']}" for item in products_to_request]
+            msg += (
+                "\n Productos a solicitar:  "
+                + "\n".join(
+                    [
+                        f"{item['quantity']} {item['name']}"
+                        for item in products_to_request
+                    ]
+                )
+                + "--"
             )
-            + "--"
-        )
-        msg += (
-            "\n Productos nuevos:  "
-            + "\n".join(
-                [
-                    f"{item['quantity']} {item['name']} {item['url']}"
-                    for item in new_products
-                ]
+            msg += (
+                "\n Productos nuevos:  "
+                + "\n".join(
+                    [
+                        f"{item['quantity']} {item['name']} {item['url']}"
+                        for item in new_products
+                    ]
+                )
+                + "--"
             )
-            + "--"
-        )
+        else:
+            msg += "\nTodos los productos han sido despachados"
         create_notification_permission(
             msg, ["sm"], "SM Despachada", data["emp_id"], emp_id_creation
         )
@@ -326,9 +335,14 @@ def dispatch_products(
         msg += f"Cantidad: {delivered_trans}-{product['name']}, movimiento de salida al despachar."
     emp_id = data["emp_id"] if data is not None else 0
     emp_id_creation = data["emp_id_creation"] if data is not None else 0
-    create_notification_permission(
-        msg, ["almacen"], "Movimientos almacen despachar sm", emp_id, emp_id_creation
-    )
+    if len(avaliable) > 0:
+        create_notification_permission(
+            msg,
+            ["almacen"],
+            "Movimientos almacen despachar sm",
+            emp_id,
+            emp_id_creation,
+        )
     # ------------------------------products to request------------------------------------------
     msg = ""
     for i, product in enumerate(to_request):
@@ -339,9 +353,14 @@ def dispatch_products(
         to_request[i] = product
         msg += f"{product['quantity']} {product['name']} movimiento de entrada."
         product["stock"] += product["quantity"]
-    create_notification_permission(
-        msg, ["almacen"], "Movimiento pedidos al despachar sm", emp_id, emp_id_creation
-    )
+    if len(to_request) > 0:
+        create_notification_permission(
+            msg,
+            ["almacen"],
+            "Movimiento pedidos al despachar sm",
+            emp_id,
+            emp_id_creation,
+        )
     # ------------------------------products to request for new-----------------------------------
     msg = ""
     for i, product in enumerate(new_products):
@@ -359,13 +378,14 @@ def dispatch_products(
         product["comment"] += " ;(Pedido) "
         new_products[i] = product
         msg += f"{product['quantity']} {product['name']} movimiento de entrada de producto nuevo."
-    create_notification_permission(
-        msg,
-        ["almacen"],
-        "Movimiento de entrada (Productos Nuevos)",
-        emp_id,
-        emp_id_creation,
-    )
+    if len(new_products) > 0:
+        create_notification_permission(
+            msg,
+            ["almacen"],
+            "Movimiento de entrada (Productos Nuevos)",
+            emp_id,
+            emp_id_creation,
+        )
     return avaliable, to_request, new_products
 
 
