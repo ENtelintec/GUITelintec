@@ -44,3 +44,4 @@ __pycache__/
 *.pfx
 /files/nominas_index.json
 /files/inventario.xlsx
+.vscode/*
