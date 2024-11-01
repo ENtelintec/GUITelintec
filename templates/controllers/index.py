@@ -135,12 +135,29 @@ class DataHandler:
         return flag
 
     def create_product(
-        self, sku, name, udm, stock, id_category, id_supplier, is_tool=0, is_internal=0, codes=None
+        self,
+        sku,
+        name,
+        udm,
+        stock,
+        id_category,
+        id_supplier,
+        is_tool=0,
+        is_internal=0,
+        codes=None,
     ):
         if id_supplier is not None:
             function = self._product["createProduct"]
             flag, error, result = function(
-                sku, name, udm, stock, id_category, id_supplier, is_tool, is_internal, codes
+                sku,
+                name,
+                udm,
+                stock,
+                id_category,
+                id_supplier,
+                is_tool,
+                is_internal,
+                codes,
             )
             return result if flag else str(error)
         else:
@@ -164,7 +181,7 @@ class DataHandler:
         product_supplier,
         is_tool=0,
         is_internal=0,
-        codes=None
+        codes=None,
     ):
         function = self._product["updateProduct"]
         flag, error, result = function(
@@ -177,8 +194,9 @@ class DataHandler:
             product_supplier,
             is_tool,
             is_internal,
-            codes
+            codes,
         )
+        print(flag, error, result)
         return flag
 
     def update_stock(self, id_product, stock):

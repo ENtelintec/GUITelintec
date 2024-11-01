@@ -271,10 +271,11 @@ def update_product_db(
         id_supplier,
         is_tool,
         is_internal,
-        id_product,
         codes,
+        id_product,
     )
     flag, error, result = execute_sql(update_sql, vals, 4)
+    print(flag, error, result, update_sql, vals)
     return flag, error, result
 
 

@@ -200,11 +200,14 @@ class InventoryLector(ttk.Frame):
                 if item[1] in self.ids_product_added:
                     print("Ya agregado")
                     return
-                self.ids_product_added.append(item[1])
+                self.ids_product_added.append(product)
                 self.data_products.append(item)
                 self.dict_old_stock[int(item[0])] = item[4]
                 self.recreate_entry()
                 return
+        if product in self.ids_product_added:
+            print("Ya agregado")
+            return
         self.ids_product_added.append(product)
         self.data_products.append(
             ["", product, "Name", "pza", "0", "None", "None", "0", "0", "[]"]

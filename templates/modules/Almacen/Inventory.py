@@ -359,6 +359,7 @@ class InventoryScreen(ttk.Frame):
         self.update_table()
 
     def clear_fields(self):
+        self.entries[0].configure(state="normal")
         for entry in self.entries:
             if isinstance(entry, ttk.Entry):
                 entry.delete(0, "end")
