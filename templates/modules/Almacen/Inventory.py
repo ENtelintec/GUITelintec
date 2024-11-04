@@ -256,8 +256,6 @@ class InventoryScreen(ttk.Frame):
 
     def save_data_lector(self, data_lector):
         product_update, product_new = data_lector
-        print(product_update)
-        print(product_new)
         msg = ""
         flag, error, result, msg_update = self.update_products(product_update)
         msg += msg_update

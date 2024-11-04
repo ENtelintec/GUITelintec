@@ -69,6 +69,7 @@ class LectorScreenSelector(ttk.Toplevel):
         }
         create_button(frame_port, 0, 2, text="Actualizar", command=self.update_ports)
         # ---------------------------------SubWindows-------------------------------------------
+        kw["on_save_callback"] = self.on_close_after_save
         match self.screen:
             case "inventory":
                 self.frame_lector = InventoryLector(self, **kw)
@@ -118,6 +119,7 @@ class InventoryLector(ttk.Frame):
         self.btn_listen = None
         self.port_listener = None
         self.callback_lector = kw.get("callback_lector", None)
+        self.on_save_callback = kw.get("on_save_callback", None)
         self.entries = None
         self.ids_product_added = []
         self.dict_old_stock = {}
@@ -231,7 +233,8 @@ class InventoryLector(ttk.Frame):
             return
         self.callback_lector((products_update, products_new))
         # close self
-        self.master.on_close_after_save()
+        self.on_save_callback() if self.on_save_callback is not None else self.master.destroy()
+        # self.master.on_close_after_save()
 
 
 class MovementsLector(ttk.Frame):
@@ -241,6 +244,7 @@ class MovementsLector(ttk.Frame):
         self.btn_listen = None
         self.port_listener = None
         self.callback_lector = kw.get("callback_lector", None)
+        self.on_save_callback = kw.get("on_save_callback", None)
         self.entries = None
         self.ids_product_added = []
         self.port_selector = kw["port"]["selector"]
@@ -344,4 +348,4 @@ class MovementsLector(ttk.Frame):
             print("No hay callback")
             return
         self.callback_lector(products_new)
-        self.master.on_close_after_save()
+        self.on_save_callback() if self.on_save_callback is not None else self.master.destroy()
