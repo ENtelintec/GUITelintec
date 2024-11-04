@@ -22,7 +22,11 @@ from templates.controllers.product.p_and_s_controller import (
     insert_multiple_row_movements_amc,
 )
 from templates.controllers.supplier.suppliers_controller import get_all_suppliers_amc
+from templates.forms.BarCodeGenerator import create_BarCodeFormat
+from templates.modules.Almacen.SubFrameBarcode import BarcodeFrame
 from templates.modules.Almacen.SubFrameLector import LectorScreenSelector
+
+from tkinter import filedialog
 
 
 def get_row_data_inventory(data_raw):
@@ -233,18 +237,44 @@ class InventoryScreen(ttk.Frame):
         )
         create_button(
             master,
+            1,
             0,
-            4,
             text="Actualizar Tabla",
             command=self.update_table,
         )
         create_button(
             master,
-            0,
-            5,
+            1,
+            1,
             text="Lector",
             command=self.lector,
         )
+        create_button(
+            master,
+            1,
+            2,
+            text="Imprimir Codigo",
+            command=self.print_code,
+        )
+
+    def print_code(self):
+        print(self.id_to_modify)
+        if self.id_to_modify is None:
+            return
+        print(self.id_to_modify)
+        sku = self.entries[1].get()
+        filepath = filedialog.asksaveasfilename(
+            defaultextension=".pdf",
+            filetypes=[("PDF files", "*.pdf")],
+            title="Guardar como",
+        )
+        if not filepath:
+            return
+        create_BarCodeFormat(sku, filepath, "128")
+        kw = {
+            "pdf_filepath": filepath,
+        }
+        BarcodeFrame(self, sku, **kw)
 
     def lector(self):
         data = {
@@ -276,7 +306,6 @@ class InventoryScreen(ttk.Frame):
     def events(self, event):
         item = event.widget.item(event.widget.selection()[0])
         data = item["values"]
-        self.id_to_modify = data[0]
         self.entries[0].configure(state="normal")
         self.clear_fields()
         for entry, value in zip(self.entries, data):
@@ -287,6 +316,7 @@ class InventoryScreen(ttk.Frame):
         self.entries[0].configure(state="disabled")
         self._ivar_tool.set(data[7])
         self._ivar_internal.set(data[8])
+        self.id_to_modify = data[0]
 
     def update_table(self, ignore_triger=False):
         self._products = self.fetch_products()
