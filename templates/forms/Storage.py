@@ -99,8 +99,7 @@ def InventoryStorage(dict_data: dict, type_form="Movements"):
         pdf,
         title=["Inventario", "Registro de Entradas y Salidas", "Almacen-Nogalar"],
         page_x=a4_y,
-        date_int=dict_data["date_emision"],
-        type_form=2,
+        iso_form=2,
         orientation="Horizontal",
         title_font=14,
     )

@@ -2,18 +2,16 @@
 __author__ = "Edisson Naula"
 __date__ = "$ 14/feb./2024  at 15:54 $"
 
+import json
 import textwrap
 
 from reportlab.pdfgen import canvas
 
+from static.extensions import filepath_settings
+
 a4_x = 595.27
 a4_y = 841.89
 image_logo = "img/logo_docs.png"
-dict_codes_forms = {
-    1: "FO-GRH-08 R0",
-    2: "FO-ALM-03 R0",
-    3: "FO-PRE-01 R1",
-}
 
 
 def create_datos_personales(
@@ -104,7 +102,7 @@ def create_header(
     title=None,
     page_x=None,
     date_int=None,
-    type_form=1,
+    iso_form=1,
     orientation="vertical",
     title_font=None,
 ):
@@ -192,13 +190,18 @@ def create_header(
             master.drawCentredString(x_title, y_title, line)
             y_title -= title_height
     master.setFont("Courier", codes_h_height)
+    settings = json.load(open(filepath_settings, "r"))
+    dict_codes_forms = settings["formats"]["dict_codes_forms"]
     master.drawString(
         page_x - codes_width - padx,
         position_header_y + height_logo - codes_h_height,
-        f"Codigo: {dict_codes_forms[type_form]}",
+        f"Codigo: {dict_codes_forms[str(iso_form)]}",
     )
+    dict_dates = settings["formats"]["dates_emision"]
     master.drawString(
-        page_x - codes_width - padx, position_header_y, f"Emisión: {date_int}"
+        page_x - codes_width - padx,
+        position_header_y,
+        f"Emisión: {dict_dates[str(iso_form)]}",
     )
 
 
@@ -297,16 +300,19 @@ def create_header_materials(
             master.drawCentredString(x_title, y_title, line)
             y_title -= title_height
     master.setFont("Courier", codes_h_height)
+    settings = json.load(open(filepath_settings, "r"))
+    dict_codes_forms = settings["formats"]["dict_codes_forms"]
     master.drawString(
         page_x - codes_width - padx,
         position_header_y + height_logo - codes_h_height,
-        f"Codigo: {dict_codes_forms[type_form]}",
+        f"Codigo: {dict_codes_forms[str(type_form)]}",
     )
+    dict_dates = settings["formats"]["dates_emision"]
     master.setFont("Courier", 8)
     master.drawString(
         page_x - codes_width - padx * 1.2,
         position_header_y,
-        f"Inicio de Vigencia: {date_int}",
+        f"Inicio de Vigencia: {dict_dates[str(type_form)]}",
     )
     # --------------------------------datos quien devuelve------------------------------------
     font_size = 10

@@ -23,6 +23,7 @@ from templates.controllers.product.p_and_s_controller import (
 )
 from templates.controllers.supplier.suppliers_controller import get_all_suppliers_amc
 from templates.forms.BarCodeGenerator import create_BarCodeFormat
+from templates.forms.Storage import InventoryStorage
 from templates.modules.Almacen.SubFrameBarcode import BarcodeFrame
 from templates.modules.Almacen.SubFrameLector import LectorScreenSelector
 
@@ -75,6 +76,7 @@ def create_input_widgets(
     # Inputs left
     create_label(master, 0, 0, text="ID", sticky="w")
     input_id = create_entry(master, row=0, column=1)
+    input_id.configure(state="disabled")
     entries.append(input_id)
     create_label(master, 1, 0, text="SKU", sticky="w")
     input_sku = create_entry(master, row=1, column=1)
@@ -174,7 +176,7 @@ class InventoryScreen(ttk.Frame):
         # --------------------------------btns-------------------------------------------------
         frame_btns = ttk.Frame(self)
         frame_btns.grid(row=3, column=0, sticky="nswe")
-        frame_btns.columnconfigure((0, 1, 2, 3, 4, 5), weight=1)
+        frame_btns.columnconfigure((0, 1, 2, 3), weight=1)
         self.create_buttons(frame_btns)
 
     def create_table(self, master):
@@ -203,7 +205,7 @@ class InventoryScreen(ttk.Frame):
             rowdata=self._products,
         )
         self.table.grid(row=1, column=0, sticky="nswe", padx=15, pady=5)
-        self.table.view.bind("<Double-1>", self.events)
+        self.table.view.bind("<Double-1>", self.on_click_table_item)
 
     def create_buttons(self, master):
         create_button(
@@ -212,6 +214,7 @@ class InventoryScreen(ttk.Frame):
             0,
             text="Agregar Producto",
             command=self.add_product,
+            style="success",
         )
         create_button(
             master,
@@ -219,6 +222,7 @@ class InventoryScreen(ttk.Frame):
             1,
             text="Actualizar Producto",
             command=self.update_product,
+            style="info",
         )
         create_button(
             master,
@@ -253,15 +257,20 @@ class InventoryScreen(ttk.Frame):
             master,
             1,
             2,
+            text="Imprimir listado",
+            command=self.print_products,
+        )
+        create_button(
+            master,
+            1,
+            3,
             text="Imprimir Codigo",
             command=self.print_code,
         )
 
     def print_code(self):
-        print(self.id_to_modify)
         if self.id_to_modify is None:
             return
-        print(self.id_to_modify)
         sku = self.entries[1].get()
         filepath = filedialog.asksaveasfilename(
             defaultextension=".pdf",
@@ -275,6 +284,27 @@ class InventoryScreen(ttk.Frame):
             "pdf_filepath": filepath,
         }
         BarcodeFrame(self, sku, **kw)
+
+    def print_products(self):
+        filepath = filedialog.asksaveasfilename(
+            defaultextension=".pdf",
+            filetypes=[("PDF files", "*.pdf")],
+            title="Guardar como",
+        )
+        if not filepath:
+            return
+        # products = ["ID", "Description", "UDM", "Categoria", "Stock Min", "Stock", "Solicitar"]
+        products = [
+            (item[0], item[2], item[3], item[5], " ", item[4], " ")
+            for item in self._products
+        ]
+        # sort by ID
+        products.sort(key=lambda x: x[0])
+        InventoryStorage(
+            dict_data={"filename_out": filepath, "products": products},
+            type_form="Materials",
+        )
+        print(f"Se guardo el pdf en: {filepath}")
 
     def lector(self):
         data = {
@@ -303,7 +333,7 @@ class InventoryScreen(ttk.Frame):
     def fetch_products(self):
         return self._data.get_all_products()
 
-    def events(self, event):
+    def on_click_table_item(self, event):
         item = event.widget.item(event.widget.selection()[0])
         data = item["values"]
         self.entries[0].configure(state="normal")

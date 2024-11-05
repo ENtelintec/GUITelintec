@@ -234,7 +234,7 @@ def QuotationForm(dict_data: dict, type_form="Movements"):
         title="Cotización",
         page_x=a4_y,
         date_int=date_emision,
-        type_form=3,
+        iso_form=3,
         orientation="Vertical",
         title_font=14,
     )

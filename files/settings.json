@@ -42,5 +42,17 @@
   "sm": {
     "cache": "files/Notificaciones_cache.pkl"
   },
-  "pmodels_files": "files/Pmodels/"
+  "pmodels_files": "files/Pmodels/",
+  "formats": {
+    "dates_emision": {
+      "1": "2024-08-05",
+      "2": "2024-08-05",
+      "3": "2024-08-22"
+    },
+    "dict_codes_forms": {
+      "1": "FO-GRH-08 R1",
+      "2": "FO-ALM-03 R1",
+      "3": "FO-PRE-01 R1"
+    }
+  }
 }
