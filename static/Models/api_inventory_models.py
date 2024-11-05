@@ -4,7 +4,7 @@ __date__ = "$ 03/may./2024  at 17:04 $"
 
 from flask_restx import fields
 from werkzeug.datastructures import FileStorage
-from static.extensions import api
+from static.extensions import api, format_timestamps, format_date
 from wtforms.fields.form import FormField
 from wtforms.fields.numeric import FloatField
 from wtforms.fields.simple import StringField
@@ -116,6 +116,37 @@ expected_files_almacen.add_argument(
     "file", type=FileStorage, location="files", required=True
 )
 
+file_movements_request_model = api.model(
+    "FileMovementsAMC",
+    {
+        "date_init":  fields.String(
+            required=True, description="The date init for movements", example="2024-01-01"
+        ),
+        "date_end": fields.String(
+            required=True, description="The date end for movements", example="2024-01-01"
+        ),
+        "type": fields.String(
+            required=True, description="The type of movements", example="entrada"
+        ),
+    },
+)
+
+
+def datetime_filter(datetime_obj):
+    return (
+        datetime_obj.strftime(format_timestamps)
+        if not isinstance(datetime_obj, str)
+        else datetime_obj
+    )
+
+
+def date_filter(datetime_obj):
+    return (
+        datetime_obj.strftime(format_date)
+        if not isinstance(datetime_obj, str)
+        else datetime_obj
+    )
+
 
 class ProductInsertForm(Form):
     name = StringField("name", validators=[InputRequired()])
@@ -162,3 +193,9 @@ class ProductDeleteForm(Form):
         "id",
         validators=[InputRequired(message="Id is required or value 0 not accepted")],
     )
+
+
+class FileMovementsForm(Form):
+    date_init = StringField("date_init", validators=[InputRequired()], filters=[date_filter])
+    date_end = StringField("date_end", validators=[InputRequired()], filters=[date_filter])
+    type_m = StringField("type", validators=[], default="all")

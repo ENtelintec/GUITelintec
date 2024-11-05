@@ -4,7 +4,7 @@ __date__ = "$ 03/may./2024  at 15:22 $"
 
 import os
 
-from flask import request
+from flask import request, send_file
 from flask_restx import Namespace, Resource
 from werkzeug.utils import secure_filename
 
@@ -17,7 +17,7 @@ from static.Models.api_inventory_models import (
     expected_files_almacen,
     ProductDeleteForm,
     ProductPostForm,
-    ProductPutForm,
+    ProductPutForm, FileMovementsForm, file_movements_request_model,
 )
 from static.Models.api_movements_models import (
     movements_output_model,
@@ -36,6 +36,7 @@ from templates.resources.midleware.Functions_midleware_almacen import (
     get_categories_db,
     get_suppliers_db,
     upload_product_db_from_file,
+    create_file_inventory, create_file_movements_amc,
 )
 from templates.controllers.product.p_and_s_controller import (
     delete_movement_db,
@@ -46,7 +47,7 @@ ns = Namespace("GUI/api/v1/almacen")
 
 
 @ns.route("/movements/<string:type_m>")
-class Movements(Resource):
+class GetMovements(Resource):
     @ns.marshal_with(movements_output_model)
     def get(self, type_m):
         data, code = get_all_movements(type_m)
@@ -221,3 +222,26 @@ class UploadInventoryeFileInternal(Resource):
             return {"data": data, "msg": f"Ok with filaname: {new_name}"}, 200
         else:
             return {"msg": "No se subio el archivo"}, 400
+
+
+@ns.route("/inventory/file/download/products")
+class DownloadInventoryFile(Resource):
+    def get(self):
+        filepath, code = create_file_inventory()
+        if code != 200:
+            return {"data": filepath, "msg": "Error at creating file"}, 400
+        return send_file(filepath, as_attachment=True)
+
+
+@ns.route("/inventory/file/download/movements")
+class DownloadMovementsFile(Resource):
+    @ns.expect(file_movements_request_model)
+    def post(self):
+        validator = FileMovementsForm.from_json(ns.payload)
+        if not validator.validate():
+            return {"data": validator.errors, "msg": "Error at structure"}, 400
+        data = validator.data
+        filepath, code = create_file_movements_amc(data)
+        if code != 200:
+            return {"data": filepath, "msg": "Error at creating file"}, 400
+        return send_file(filepath, as_attachment=True)

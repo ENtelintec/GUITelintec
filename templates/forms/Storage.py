@@ -10,15 +10,15 @@ from templates.forms.PDFGenerator import a4_x, a4_y, create_header
 
 dict_wrappers_headers = {
     "Movements": {
-        "Hoja de Registro": {10: 8, 8: 10},
-        "Fecha": {10: 10, 8: 12},
-        "Codigo": {10: 6, 8: 7},
+        "Codigo": {10: 7, 8: 8},
+        "Fecha": {10: 9, 8: 12},
         "Descripción": {10: 20, 8: 26},
-        "Fabricante": {10: 15, 8: 19},
+        "Fabricante": {10: 12, 8: 14},
         "UDM": {10: 4, 8: 5},
         "Movimiento": {10: 10, 8: 12},
-        "Entregado A": {10: 15, 8: 18},
+        "SM": {10: 8, 8: 11},
         "Observaciones": {10: 20, 8: 24},
+        "Ubicacion": {10: 10, 8: 12},
     },
     "Materials": {
         "Codigo": {10: 6, 8: 7},

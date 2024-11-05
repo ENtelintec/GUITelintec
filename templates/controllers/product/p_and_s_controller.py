@@ -38,10 +38,12 @@ def get_ins_db_detail():
         "sql_telintec.product_movements_amc.quantity, "
         "sql_telintec.product_movements_amc.movement_date, "
         "sql_telintec.product_movements_amc.sm_id, "
-        "sql_telintec.products_amc.name as product_name "
+        "sql_telintec.products_amc.name as product_name, "
+        "sql_telintec.suppliers_amc.name AS supplier_name "
         "FROM sql_telintec.product_movements_amc "
-        "JOIN sql_telintec.products_amc ON sql_telintec.product_movements_amc.id_product = sql_telintec.products_amc.id_product "
-        "WHERE sql_telintec.product_movements_amc.movement_type = 'entrada'"
+        "INNER JOIN sql_telintec.products_amc ON sql_telintec.product_movements_amc.id_product = sql_telintec.products_amc.id_product "
+        "LEFT JOIN sql_telintec.suppliers_amc ON sql_telintec.products_amc.id_supplier = sql_telintec.suppliers_amc.id_supplier "
+        "WHERE sql_telintec.product_movements_amc.movement_type = 'entrada';"
     )
     flag, error, my_result = execute_sql(sql, None, 5)
     return flag, error, my_result
@@ -127,10 +129,35 @@ def get_outs_db_detail():
         "sql_telintec.product_movements_amc.quantity, "
         "sql_telintec.product_movements_amc.movement_date, "
         "sql_telintec.product_movements_amc.sm_id, "
-        "sql_telintec.products_amc.name as product_name "
+        "sql_telintec.products_amc.name as product_name, "
+        "sql_telintec.products_amc.udm, "
+        "sql_telintec.suppliers_amc.name AS supplier_name "
         "FROM sql_telintec.product_movements_amc "
-        "JOIN sql_telintec.products_amc ON sql_telintec.product_movements_amc.id_product = sql_telintec.products_amc.id_product "
-        "WHERE sql_telintec.product_movements_amc.movement_type = 'salida'"
+        "INNER JOIN sql_telintec.products_amc ON sql_telintec.product_movements_amc.id_product = sql_telintec.products_amc.id_product "
+        "LEFT JOIN sql_telintec.suppliers_amc ON sql_telintec.products_amc.id_supplier = sql_telintec.suppliers_amc.id_supplier "
+        "WHERE sql_telintec.product_movements_amc.movement_type = 'salida';"
+    )
+    flag, error, result = execute_sql(sql, None, 5)
+    return flag, error, result
+
+
+def get_all_movements_db_detail():
+    sql = (
+        "SELECT "
+        "sql_telintec.product_movements_amc.id_movement, "
+        "sql_telintec.product_movements_amc.id_product, "
+        "sql_telintec.products_amc.sku, "
+        "sql_telintec.product_movements_amc.movement_type, "
+        "sql_telintec.product_movements_amc.quantity, "
+        "sql_telintec.product_movements_amc.movement_date, "
+        "sql_telintec.product_movements_amc.sm_id, "
+        "sql_telintec.products_amc.name as product_name,"
+        "sql_telintec.products_amc.udm, "
+        "sql_telintec.suppliers_amc.name AS supplier_name, "
+        "sql_telintec.products_amc.locations "
+        "FROM sql_telintec.product_movements_amc "
+        "INNER JOIN sql_telintec.products_amc ON sql_telintec.product_movements_amc.id_product = sql_telintec.products_amc.id_product "
+        "LEFT JOIN sql_telintec.suppliers_amc ON sql_telintec.products_amc.id_supplier = sql_telintec.suppliers_amc.id_supplier;"
     )
     flag, error, result = execute_sql(sql, None, 5)
     return flag, error, result

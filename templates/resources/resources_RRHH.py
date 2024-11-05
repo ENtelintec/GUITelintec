@@ -443,7 +443,7 @@ class DownloadFilesPayroll(Resource):
 
 
 @ns.route("/fichajes/files")
-class DownloadFileFichaje(Resource):
+class FilesFichaje(Resource):
     @ns.marshal_with(answer_files_fichajes_model)
     def get(self):
         flag, files = get_files_fichaje()
@@ -454,7 +454,7 @@ class DownloadFileFichaje(Resource):
 
 
 @ns.route("/fichajes/data/fromfiles")
-class DownloadFileFichajeID(Resource):
+class FileFichajeID(Resource):
     @ns.expect(request_data_fichaje_files_model)
     @ns.marshal_with(answer_fichajes_model)
     def post(self):

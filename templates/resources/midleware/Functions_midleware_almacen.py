@@ -7,7 +7,12 @@ from datetime import datetime
 
 import pandas as pd
 
-from static.extensions import format_timestamps
+from static.extensions import (
+    format_timestamps,
+    filepath_inventory_form,
+    filepath_inventory_form_movements,
+    format_date,
+)
 from templates.Functions_Utils import create_notification_permission_notGUI
 from templates.controllers.product.p_and_s_controller import (
     get_movements_type_db,
@@ -26,7 +31,12 @@ from templates.controllers.product.p_and_s_controller import (
     insert_multiple_row_products_amc,
     update_stock_db_sku,
     insert_multiple_row_movements_amc,
+    get_all_products_db,
+    get_ins_db_detail,
+    get_outs_db_detail,
+    get_all_movements_db_detail,
 )
+from templates.forms.Storage import InventoryStorage
 
 
 def get_all_movements(type_m: str):
@@ -330,3 +340,80 @@ def upload_product_db_from_file(file: str, is_internal=0, is_tool=False):
         )
     data_result["update_notification"] = flag
     return 200, data_result
+
+
+def create_file_inventory():
+    flag, error, _products = get_all_products_db()
+    try:
+        products = [
+            (item[0], item[2], item[3], item[5], " ", item[4], " ")
+            for item in _products
+        ]
+    except Exception as e:
+        print(e)
+        return None, 400
+    # sort by ID
+    products.sort(key=lambda x: x[0])
+    flag = InventoryStorage(
+        dict_data={"filename_out": filepath_inventory_form, "products": products},
+        type_form="Materials",
+    )
+    return (filepath_inventory_form, 200) if flag else (None, 400)
+
+
+def create_file_movements_amc(data):
+    type_m = data["type"]
+    match type_m:
+        case "entrada":
+            flag, error, _movements = get_ins_db_detail()
+        case "salida":
+            flag, error, _movements = get_outs_db_detail()
+        case _:
+            flag, error, _movements = get_all_movements_db_detail()
+
+    date_init = datetime.strptime(data["date_init"], format_date)
+    date_end = datetime.strptime(data["date_end"], format_date)
+    try:
+        movements = []
+        for item in _movements:
+            date = item[5]
+            if date < date_init or date > date_end:
+                continue
+            # 0"sql_telintec.product_movements_amc.id_movement, "
+            # 1"sql_telintec.product_movements_amc.id_product, "
+            # 2"sql_telintec.products_amc.sku, "
+            # 3"sql_telintec.product_movements_amc.movement_type, "
+            # 4"sql_telintec.product_movements_amc.quantity, "
+            # 5"sql_telintec.product_movements_amc.movement_date, "
+            # 6"sql_telintec.product_movements_amc.sm_id, "
+            # 7"sql_telintec.products_amc.name as product_name,"
+            # 8"sql_telintec.products_amc.udm, "
+            # 9"sql_telintec.suppliers_amc.name AS supplier_name, "
+            # 10"sql_telintec.products_amc.locations "
+            # movements = ["sku", "date", "description", "Fabricante", "UDM", "Movimientos", "SM", "Observaciones", "Ubicacion"]
+            movements.append(
+                (
+                    item[2],
+                    date.strftime(format_date),
+                    item[7],
+                    item[8],
+                    item[9],
+                    f"{item[3]}: {item[4]}",
+                    item[6],
+                    "",
+                    f"{json.loads(item[10])['location_1']}: {json.loads(item[10])['location_2']}",
+                )
+            )
+    except Exception as e:
+        print(e)
+        return None, 400
+    # sort by ID
+    movements.sort(key=lambda x: x[1])
+    flag = InventoryStorage(
+        dict_data={
+            "filename_out": filepath_inventory_form_movements,
+            "products": movements,
+        },
+        type_form="Movements",
+    )
+    return (filepath_inventory_form_movements, 200) if flag else (None, 400)
