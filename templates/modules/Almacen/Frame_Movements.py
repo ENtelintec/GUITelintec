@@ -3,7 +3,6 @@ __author__ = "Edisson Naula"
 __date__ = "$ 08/may./2024  at 15:14 $"
 
 import time
-import tkinter
 from datetime import datetime
 
 import ttkbootstrap as ttk
@@ -275,7 +274,6 @@ class InScreen(ttk.Frame):
         self.table.unload_table_data()
         time.sleep(0.5)
         self.table.build_table_data(self.col_data, self._ins)
-        self.table.autofit_columns()
         if not ignore_triger:
             event = {
                 "action": "update",

@@ -376,7 +376,6 @@ class InventoryScreen(ttk.Frame):
         self.table.unload_table_data()
         time.sleep(0.5)
         self.table.build_table_data(self.col_data, self._products)
-        self.table.autofit_columns()
         if not ignore_triger:
             event = {
                 "action": "update",
