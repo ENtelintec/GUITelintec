@@ -35,6 +35,9 @@ coldata_movementes = [
     {"text": "Fecha", "stretch": False},
     {"text": "ID SM", "stretch": True},
     {"text": "Nombre", "stretch": False},
+    {"text": "UDM", "stretch": False},
+    {"text": "Fabricante", "stretch": False},
+    {"text": "locations", "stretch": False},
 ]
 
 

@@ -17,7 +17,9 @@ from static.Models.api_inventory_models import (
     expected_files_almacen,
     ProductDeleteForm,
     ProductPostForm,
-    ProductPutForm, FileMovementsForm, file_movements_request_model,
+    ProductPutForm,
+    FileMovementsForm,
+    file_movements_request_model,
 )
 from static.Models.api_movements_models import (
     movements_output_model,
@@ -36,7 +38,8 @@ from templates.resources.midleware.Functions_midleware_almacen import (
     get_categories_db,
     get_suppliers_db,
     upload_product_db_from_file,
-    create_file_inventory, create_file_movements_amc,
+    create_file_inventory,
+    create_file_movements_amc,
 )
 from templates.controllers.product.p_and_s_controller import (
     delete_movement_db,

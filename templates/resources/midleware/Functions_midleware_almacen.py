@@ -379,18 +379,6 @@ def create_file_movements_amc(data):
             date = item[5]
             if date < date_init or date > date_end:
                 continue
-            # 0"sql_telintec.product_movements_amc.id_movement, "
-            # 1"sql_telintec.product_movements_amc.id_product, "
-            # 2"sql_telintec.products_amc.sku, "
-            # 3"sql_telintec.product_movements_amc.movement_type, "
-            # 4"sql_telintec.product_movements_amc.quantity, "
-            # 5"sql_telintec.product_movements_amc.movement_date, "
-            # 6"sql_telintec.product_movements_amc.sm_id, "
-            # 7"sql_telintec.products_amc.name as product_name,"
-            # 8"sql_telintec.products_amc.udm, "
-            # 9"sql_telintec.suppliers_amc.name AS supplier_name, "
-            # 10"sql_telintec.products_amc.locations "
-            # movements = ["sku", "date", "description", "Fabricante", "UDM", "Movimientos", "SM", "Observaciones", "Ubicacion"]
             movements.append(
                 (
                     item[2],
