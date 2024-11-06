@@ -25,6 +25,8 @@ columns_inventory = [
     "Herramienta?",
     "Interno?",
     "Codigos",
+    "Ubicacion 1",
+    "Ubicacion 2",
 ]
 
 columns_movements = [
@@ -197,22 +199,39 @@ class InventoryLector(ttk.Frame):
         print(product)
         for index, item in enumerate(self.data_products_gen):
             codes = json.loads(item[9])
-            if item[1] == product or product in codes:
+            locations = json.loads(item[10])
+            if item[1] == product.upper() or product in codes:
                 print("Encontrado")
                 if item[1] in self.ids_product_added:
                     print("Ya agregado")
                     return
-                self.ids_product_added.append(product)
-                self.data_products.append(item)
+                self.ids_product_added.append(product.upper())
+                self.data_products.append(
+                    list(item[0:-1])
+                    + [locations["location_1"], locations["location_2"]]
+                )
                 self.dict_old_stock[int(item[0])] = item[4]
                 self.recreate_entry()
                 return
-        if product in self.ids_product_added:
+        if product.upper() in self.ids_product_added:
             print("Ya agregado")
             return
-        self.ids_product_added.append(product)
+        self.ids_product_added.append(product.upper())
         self.data_products.append(
-            ["", product, "Name", "pza", "0", "None", "None", "0", "0", "[]"]
+            [
+                "",
+                product.upper(),
+                "Name",
+                "pza",
+                "0",
+                "None",
+                "None",
+                "0",
+                "0",
+                "[]",
+                "",
+                "",
+            ]
         )
         self.recreate_entry()
 

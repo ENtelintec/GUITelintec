@@ -145,6 +145,7 @@ class DataHandler:
         is_tool=0,
         is_internal=0,
         codes=None,
+        locations=None
     ):
         if id_supplier is not None:
             function = self._product["createProduct"]
@@ -158,6 +159,7 @@ class DataHandler:
                 is_tool,
                 is_internal,
                 codes,
+                locations
             )
             return result if flag else str(error)
         else:
@@ -182,6 +184,7 @@ class DataHandler:
         is_tool=0,
         is_internal=0,
         codes=None,
+        locations=None,
     ):
         function = self._product["updateProduct"]
         flag, error, result = function(
@@ -195,8 +198,8 @@ class DataHandler:
             is_tool,
             is_internal,
             codes,
+            locations,
         )
-        print(flag, error, result)
         return flag
 
     def update_stock(self, id_product, stock):

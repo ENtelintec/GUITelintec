@@ -29,6 +29,20 @@ from templates.modules.Almacen.SubFrameLector import LectorScreenSelector
 
 from tkinter import filedialog
 
+coldata_inventory = [
+    {"text": "ID Producto", "stretch": True},
+    {"text": "SKU", "stretch": True},
+    {"text": "Nombre", "stretch": True},
+    {"text": "UDM", "stretch": True},
+    {"text": "Stock", "stretch": True},
+    {"text": "Categoría", "stretch": True},
+    {"text": "Proveedor", "stretch": True},
+    {"text": "Herramienta", "stretch": True},
+    {"text": "Interno", "stretch": True},
+    {"text": "Codigos", "stretch": True},
+    {"text": "Ubicaciones", "stretch": True},
+]
+
 
 def get_row_data_inventory(data_raw):
     data = []
@@ -87,20 +101,18 @@ def create_input_widgets(
     create_label(master, 3, 0, text="UDM", sticky="w")
     input_udm = create_entry(master, row=3, column=1)
     entries.append(input_udm)
-    create_label(master, 0, 2, text="Stock", sticky="w")
-    input_stock = create_entry(master, row=0, column=3)
+    create_label(master, 4, 0, text="Stock", sticky="w")
+    input_stock = create_entry(master, row=4, column=1)
     entries.append(input_stock)
-    create_label(master, 1, 2, text="Categoría", sticky="w")
+    create_label(master, 0, 2, text="Categoría", sticky="w")
     values_cat = list(categories_dict.keys())
-    cat_selector = create_Combobox(master, values=values_cat, row=1, column=3)
+
+    cat_selector = create_Combobox(master, values=values_cat, row=0, column=3)
     entries.append(cat_selector)
-    create_label(master, 2, 2, text="Proveedor", sticky="w")
+    create_label(master, 1, 2, text="Proveedor", sticky="w")
     values_supp = list(providers_dict_amc.keys())
-    supp_selector = create_Combobox(master, values=values_supp, row=2, column=3)
+    supp_selector = create_Combobox(master, values=values_supp, row=1, column=3)
     entries.append(supp_selector)
-    create_label(master, 3, 2, text="Codigos", sticky="w")
-    input_codes = create_entry(master, row=3, column=3)
-    entries.append(input_codes)
     # noinspection PyArgumentList
     ttk.Checkbutton(
         master,
@@ -110,6 +122,7 @@ def create_input_widgets(
         offvalue=0,
         bootstyle="success, round-toggle",
     ).grid(row=0, column=4, sticky="we", padx=5, pady=5, columnspan=2)
+    entries.append(_ivar_tool)
     # noinspection PyArgumentList
     ttk.Checkbutton(
         master,
@@ -119,6 +132,16 @@ def create_input_widgets(
         offvalue=0,
         bootstyle="success, round-toggle",
     ).grid(row=1, column=4, sticky="we", padx=5, pady=5, columnspan=2)
+    entries.append(_ivar_internal)
+    create_label(master, 2, 2, text="Codigos", sticky="w")
+    input_codes = create_entry(master, row=2, column=3)
+    entries.append(input_codes)
+    create_label(master, 3, 2, text="Ubicacion 1", sticky="w")
+    input_location_1 = create_entry(master, row=3, column=3)
+    entries.append(input_location_1)
+    create_label(master, 4, 2, text="Ubicacion 2", sticky="w")
+    input_location_2 = create_entry(master, row=4, column=3)
+    entries.append(input_location_2)
     return entries
 
 
@@ -182,18 +205,7 @@ class InventoryScreen(ttk.Frame):
     def create_table(self, master):
         if self.table is not None:
             self.table.destroy()
-        self.col_data = [
-            {"text": "ID Producto", "stretch": True},
-            {"text": "SKU", "stretch": True},
-            {"text": "Nombre", "stretch": True},
-            {"text": "UDM", "stretch": True},
-            {"text": "Stock", "stretch": True},
-            {"text": "Categoría", "stretch": True},
-            {"text": "Proveedor", "stretch": True},
-            {"text": "Herramienta", "stretch": True},
-            {"text": "Interno", "stretch": True},
-            {"text": "Codigos", "stretch": True},
-        ]
+        self.col_data = coldata_inventory
         self.table = Tableview(
             master,
             bootstyle="primary",
@@ -335,18 +347,29 @@ class InventoryScreen(ttk.Frame):
 
     def on_click_table_item(self, event):
         item = event.widget.item(event.widget.selection()[0])
-        data = item["values"]
-        self.entries[0].configure(state="normal")
+        locations = json.loads(item["values"][10])
+        codes = json.loads(item["values"][9])
+        try:
+            loc_1 = locations["location_1"]
+            loc_2 = locations["location_2"]
+        except Exception as e:
+            print("bad structure: ", e)
+            loc_1 = ""
+            loc_2 = ""
+        data = item["values"][0:-2] + [str(codes), loc_1, loc_2]
         self.clear_fields()
+        self.entries[0].configure(state="normal")
         for entry, value in zip(self.entries, data):
-            if isinstance(entry, ttk.Entry):
-                entry.insert(0, value)
-            elif isinstance(entry, ttk.Combobox):
+            if isinstance(entry, ttk.Combobox):
+                entry.configure(state="normal")
                 entry.set(value)
+                entry.configure(state="readonly")
+            elif isinstance(entry, ttk.IntVar):
+                entry.set(value)
+            elif isinstance(entry, ttk.Entry):
+                entry.insert(0, value)
         self.entries[0].configure(state="disabled")
-        self._ivar_tool.set(data[7])
-        self._ivar_internal.set(data[8])
-        self.id_to_modify = data[0]
+        self.id_to_modify = int(data[0])
 
     def update_table(self, ignore_triger=False):
         self._products = self.fetch_products()
@@ -365,14 +388,18 @@ class InventoryScreen(ttk.Frame):
     def get_inputs_valus(self):
         data = []
         for entry in self.entries:
-            if isinstance(entry, ttk.Entry):
+            if isinstance(entry, ttk.Combobox):
                 data.append(entry.get())
-            elif isinstance(entry, ttk.Combobox):
+            elif isinstance(entry, ttk.IntVar):
                 data.append(entry.get())
-        is_tool = self._ivar_tool.get()
-        is_internal = self._ivar_internal.get()
+            elif isinstance(entry, ttk.Entry):
+                data.append(entry.get())
+        is_tool = data[7]
+        is_internal = data[8]
+        locations = {"location_1": data[10], "location_2": data[11]}
+        codes = json.loads(data[9]) if data[9] != "" else []
         return (
-            data[0],
+            int(data[0]) if data[0] != "" else "",
             data[1],
             data[2],
             data[3],
@@ -381,7 +408,8 @@ class InventoryScreen(ttk.Frame):
             data[6],
             is_tool,
             is_internal,
-            data[7],
+            codes,
+            locations,
         )
 
     def update_product(self):
@@ -396,6 +424,7 @@ class InventoryScreen(ttk.Frame):
             is_tool,
             is_internal,
             codes,
+            locations,
         ) = self.get_inputs_valus()
         self._data.update_product(
             product_id,
@@ -412,18 +441,24 @@ class InventoryScreen(ttk.Frame):
             is_tool,
             is_internal,
             codes,
+            locations,
         )
         self.clear_fields()
         self.update_table()
 
     def clear_fields(self):
         self.entries[0].configure(state="normal")
-        for entry in self.entries:
-            if isinstance(entry, ttk.Entry):
-                entry.delete(0, "end")
-            elif isinstance(entry, ttk.Combobox):
+        for index, entry in enumerate(self.entries):
+            if isinstance(entry, ttk.Combobox):
+                entry.configure(state="normal")
+                entry.set("None")
+                entry.configure(state="readonly")
+            elif isinstance(entry, ttk.IntVar):
                 entry.set(0)
+            elif isinstance(entry, ttk.Entry):
+                entry.delete(0, "end")
         self.id_to_modify = None
+        self.entries[0].configure(state="disabled")
 
     def add_product(self):
         (
@@ -437,6 +472,7 @@ class InventoryScreen(ttk.Frame):
             is_tool,
             is_internal,
             codes,
+            locations,
         ) = self.get_inputs_valus()
         if (
             product_name == ""
@@ -464,6 +500,7 @@ class InventoryScreen(ttk.Frame):
                 is_tool,
                 is_internal,
                 codes,
+                locations,
             )
             self.clear_fields()
             self.update_table()
@@ -490,18 +527,21 @@ class InventoryScreen(ttk.Frame):
             return flag, error, result, msg
         # generate data movements from stock value
         date = datetime.now().strftime(format_date)
-        data_movements = [
-            [item[0], "salida", abs(int(item[4]) - int(item[-1])), date, "None"]
-            if int(item[4]) - int(item[-1]) < 0
-            else [item[0], "entrada", int(item[4]) - int(item[-1]), date, "None"]
-            for item in products_data
-        ]
-        flag, error, result = insert_multiple_row_movements_amc(tuple(data_movements))
-        msg += (
-            "\nMovimientos registrados"
-            if flag
-            else f"\nError al registrar movimientos: {str(error)}"
-        )
+        data_movements = []
+        for item in products_data:
+            if int(item[4]) - int(item[-1]) == 0:
+                continue
+            elif int(item[4]) - int(item[-1]) < 0:
+                data_movements.append([item[0], "salida", abs(int(item[4]) - int(item[-1])), date, "None"])
+            else:
+                data_movements.append([item[0], "entrada", int(item[4]) - int(item[-1]), date, "None"])
+        if len(data_movements) != 0:
+            flag, error, result = insert_multiple_row_movements_amc(tuple(data_movements))
+            msg += (
+                "\nMovimientos registrados"
+                if flag
+                else f"\nError al registrar movimientos: {str(error)}"
+            )
         create_notification_permission_notGUI(
             msg,
             ["almacen"],
@@ -513,25 +553,31 @@ class InventoryScreen(ttk.Frame):
 
     def create_new_products(self, products_new_data):
         msg = ""
+        result = 0
         flag, error, lastrow_id = insert_multiple_row_products_amc(
             products_new_data, self._categories_dict, self._providers_dict_amc
         )
         msg = "Productos creados" if flag else f"Error al crear productos: {str(error)}"
         if not flag:
+            print("error at insert multiple: ", flag, error, lastrow_id)
             return flag, error, lastrow_id, msg
         # generate data movements from stock value
         date = datetime.now().strftime(format_date)
         new_ids = range(lastrow_id - len(products_new_data) + 1, lastrow_id + 1)
-        data_movements = [
-            [new_ids[index], "entrada", int(item[4]), date, "None"]
-            for index, item in products_new_data
-        ]
-        flag, error, result = insert_multiple_row_movements_amc(tuple(data_movements))
-        msg += (
-            "\nMovimientos registrados"
-            if flag
-            else f"\nError al registrar movimientos: {str(error)}"
-        )
+        data_movements = []
+        for index, item in enumerate(products_new_data):
+            if int(item[4]) == 0:
+                continue
+            data_movements.append(
+                [new_ids[index], "entrada", int(item[4]), date, "None"]
+            )
+        if len(data_movements) != 0:
+            flag, error, result = insert_multiple_row_movements_amc(tuple(data_movements))
+            msg += (
+                "\nMovimientos registrados"
+                if flag
+                else f"\nError al registrar movimientos: {str(error)}"
+            )
         create_notification_permission_notGUI(
             msg,
             ["almacen"],

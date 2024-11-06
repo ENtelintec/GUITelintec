@@ -233,7 +233,16 @@ def get_skus():
 
 
 def create_product_db(
-    sku, name, udm, stock, id_category, id_supplier, is_tool, is_internal, codes=None
+    sku,
+    name,
+    udm,
+    stock,
+    id_category,
+    id_supplier,
+    is_tool,
+    is_internal,
+    codes=None,
+    locations=None,
 ):
     try:
         sku = str(sku)
@@ -242,13 +251,16 @@ def create_product_db(
         stock = int(stock)
         id_category = int(id_category) if id_category else None
         id_supplier = int(id_supplier) if id_supplier else None
-        codes = "[]" if codes is None else codes
+        codes = codes if codes is not None else []
+        locations = (
+            {"location_1": "", "location_2": ""} if locations is None else locations
+        )
     except Exception as e:
         return False, str(e), None
     insert_sql = (
         "INSERT INTO sql_telintec.products_amc "
-        "(sku, name, udm, stock, id_category, is_tool, is_internal, id_supplier, codes) "
-        "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)"
+        "(sku, name, udm, stock, id_category, is_tool, is_internal, id_supplier, codes, locations) "
+        "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
     )
     vals = (
         sku,
@@ -259,7 +271,8 @@ def create_product_db(
         is_tool,
         is_internal,
         id_supplier,
-        codes,
+        json.dumps(codes),
+        json.dumps(locations),
     )
     flag, error, result = execute_sql(insert_sql, vals, 4)
     return flag, error, result
@@ -276,6 +289,7 @@ def update_product_db(
     is_tool,
     is_internal,
     codes=None,
+    locations=None,
 ):
     try:
         sku = str(sku)
@@ -284,12 +298,17 @@ def update_product_db(
         stock = int(stock)
         id_category = int(id_category)
         codes = "[]" if codes is None else codes
+        locations = (
+            "{'location_1': " ",  'location_2': " "}"
+            if locations is None
+            else locations
+        )
     except Exception as e:
         return False, str(e), None
     update_sql = (
         "UPDATE sql_telintec.products_amc "
         "SET sku = %s, name = %s, udm = %s, stock = %s, id_category = %s, id_supplier = %s, "
-        "is_tool = %s, is_internal = %s, codes = %s "
+        "is_tool = %s, is_internal = %s, codes = %s, locations = %s "
         "WHERE id_product = %s;"
     )
     vals = (
@@ -301,11 +320,11 @@ def update_product_db(
         id_supplier,
         is_tool,
         is_internal,
-        codes,
+        json.dumps(codes),
+        json.dumps(locations),
         id_product,
     )
-    flag, error, result = execute_sql(update_sql, vals, 4)
-    print(flag, error, result, update_sql, vals)
+    flag, error, result = execute_sql(update_sql, vals, 3)
     return flag, error, result
 
 
@@ -348,11 +367,11 @@ def get_all_products_db():
         "sql_telintec.suppliers_amc.name AS supplier_name, "
         "sql_telintec.products_amc.is_tool,"
         "sql_telintec.products_amc.is_internal, "
-        "sql_telintec.products_amc.codes "
+        "sql_telintec.products_amc.codes,"
+        "sql_telintec.products_amc.locations "
         "FROM sql_telintec.products_amc "
-        "LEFT JOIN sql_telintec.supplier_product_amc ON (sql_telintec.products_amc.id_product = sql_telintec.supplier_product_amc.id_product) "
         "LEFT JOIN sql_telintec.product_categories_amc ON (sql_telintec.products_amc.id_category = sql_telintec.product_categories_amc.id_category) "
-        "LEFT JOIN sql_telintec.suppliers_amc ON (sql_telintec.supplier_product_amc.id_supplier = sql_telintec.suppliers_amc.id_supplier) "
+        "LEFT JOIN sql_telintec.suppliers_amc ON (sql_telintec.products_amc.id_supplier = sql_telintec.suppliers_amc.id_supplier) "
         "ORDER BY products_amc.name "
     )
     flag, error, result = execute_sql(sql, None, 5)
@@ -373,7 +392,6 @@ def get_all_products_db_tool_internal(is_tool: int, is_internal: int):
         "sql_telintec.products_amc.is_internal, "
         "sql_telintec.products_amc.codes "
         "FROM sql_telintec.products_amc "
-        "LEFT JOIN sql_telintec.supplier_product_amc ON (sql_telintec.products_amc.id_product = sql_telintec.supplier_product_amc.id_product) "
         "LEFT JOIN sql_telintec.product_categories_amc ON (sql_telintec.products_amc.id_category = sql_telintec.product_categories_amc.id_category) "
         "LEFT JOIN sql_telintec.suppliers_amc ON (sql_telintec.products_amc.id_supplier = sql_telintec.suppliers_amc.id_supplier)"
         "WHERE products_amc.is_internal like %s AND products_amc.is_tool like %s "
@@ -718,12 +736,16 @@ def insert_multiple_row_products_amc(products: tuple, dict_cat=None, dict_supp=N
     if len(products) == 0:
         return False, "No products to insert", None
 
-    sql = "INSERT INTO sql_telintec.products_amc (sku, name, udm, stock, id_category, id_supplier, is_tool, is_internal, codes) VALUES "
+    sql = "INSERT INTO sql_telintec.products_amc (sku, name, udm, stock, id_category, id_supplier, is_tool, is_internal, codes, locations) VALUES "
     for index, product in enumerate(products):
         if len(product) < 10:
             codes = json.dumps([])
+            locations = json.dumps({"location_1": "", "location_2": ""})
         else:
             codes = product[9]
+            location_1 = product[10]
+            location_2 = product[11]
+            locations = json.dumps({"location_1": location_1, "location_2": location_2})
         sku = clean_name(product[1].encode(codec, errors="ignore").decode(codec))[0]
         name = clean_name(product[2].encode(codec, errors="ignore").decode(codec))[0]
         if index > 0:
@@ -736,7 +758,15 @@ def insert_multiple_row_products_amc(products: tuple, dict_cat=None, dict_supp=N
             supplier_id = dict_supp[product[6]] if product[6] != "None" else "None"
         else:
             supplier_id = product[6]
-        sql += f"('{str(sku.upper())}', '{str(name)}', '{product[3]}', {product[4]}, {category_id}, {supplier_id}, {product[7]}, {product[8]}, '{codes}')"
+        sql += f"('{str(sku.upper())}', '{str(name)}', '{product[3]}', {product[4]}, {category_id}, {supplier_id}, {product[7]}, {product[8]}, ('{codes}'), ('{locations}'))"
+    sql += (
+        "as new ON DUPLICATE KEY UPDATE "
+        "name = new.name, "
+        "udm = new.udm, stock = new.stock, "
+        "id_category = new.id_category, id_supplier = new.id_supplier, "
+        "is_tool = new.is_tool, is_internal = new.is_internal, "
+        "codes = new.codes, locations = new.locations;"
+    )
     sql = sql.replace("None", "NULL")
     flag, error, result = execute_sql(sql, None, 4)
     return flag, error, result
@@ -746,12 +776,16 @@ def update_multiple_row_products_amc(products: tuple, dict_cat=None, dict_supp=N
     if len(products) == 0:
         return False, "No products to update", None
 
-    sql = "INSERT INTO sql_telintec.products_amc (id_product, sku, name, udm, stock, id_category, id_supplier, is_tool, is_internal, codes) VALUES "
+    sql = "INSERT INTO sql_telintec.products_amc (id_product, sku, name, udm, stock, id_category, id_supplier, is_tool, is_internal, codes, locations) VALUES "
     for index, product in enumerate(products):
         if len(product) < 10:
             codes = json.dumps([])
+            locations = json.dumps({"location_1": "", "location_2": ""})
         else:
             codes = product[9]
+            location_1 = product[10]
+            location_2 = product[11]
+            locations = json.dumps({"location_1": location_1, "location_2": location_2})
         if index > 0:
             sql += ", "
         if dict_cat is not None:
@@ -762,7 +796,7 @@ def update_multiple_row_products_amc(products: tuple, dict_cat=None, dict_supp=N
             supplier_id = dict_supp[product[6]] if product[6] != "None" else "None"
         else:
             supplier_id = product[6]
-        sql += f"({product[0]}, '{product[1]}', '{product[2]}', '{product[3]}', {product[4]}, {category_id}, {supplier_id}, {product[7]}, {product[8]}, '{codes}')"
+        sql += f"({product[0]}, '{product[1]}', '{product[2]}', '{product[3]}', {product[4]}, {category_id}, {supplier_id}, {product[7]}, {product[8]}, ('{codes}'), ('{locations}')) "
     sql += (
         "AS new ON DUPLICATE KEY UPDATE "
         "sku = new.sku, "
@@ -773,7 +807,8 @@ def update_multiple_row_products_amc(products: tuple, dict_cat=None, dict_supp=N
         "id_supplier = new.id_supplier, "
         "is_tool = new.is_tool, "
         "is_internal = new.is_internal, "
-        "codes = new.codes; "
+        "codes = new.codes, "
+        "locations = new.locations; "
     )
     sql = sql.replace("None", "NULL")
     flag, error, result = execute_sql(sql, None, 4)

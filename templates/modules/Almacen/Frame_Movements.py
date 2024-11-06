@@ -3,6 +3,7 @@ __author__ = "Edisson Naula"
 __date__ = "$ 08/may./2024  at 15:14 $"
 
 import time
+import tkinter
 from datetime import datetime
 
 import ttkbootstrap as ttk
@@ -241,12 +242,14 @@ class InScreen(ttk.Frame):
 
     def clear_fields(self):
         for entry in self.entries:
-            if isinstance(entry, ttk.Entry):
-                entry.delete(0, "end")
-            elif isinstance(entry, ttk.Combobox):
+            if isinstance(entry, ttk.Combobox):
+                entry.configure(state="normal")
                 entry.set("")
+                entry.configure(state="readonly")
             elif isinstance(entry, ttk.StringVar):
                 entry.set("")
+            elif isinstance(entry, ttk.Entry):
+                entry.delete(0, "end")
         self.movetement_id = None
         self._id_product_to_modify = None
         self._old_data_movement = None
@@ -256,7 +259,7 @@ class InScreen(ttk.Frame):
         self.clear_fields()
         self._old_data_movement = data
         self._id_product_to_modify = data[1]
-        product_name = f"{data[1]}--{data[2]}--{data[3]}"
+        product_name = f"{data[1]}--{data[2]}--{data[7]}"
         self.entries[2].set(product_name)
         self.movetement_id = data[0]
         self.entries[1].insert(0, data[4])
@@ -501,12 +504,15 @@ class OutScreen(ttk.Frame):
 
     def clear_fields(self):
         for entry in self.entries:
-            if isinstance(entry, ttk.Entry):
-                entry.delete(0, "end")
-            elif isinstance(entry, ttk.Combobox):
+            if isinstance(entry, ttk.Combobox):
+                entry.configure(state="normal")
                 entry.set("")
+                entry.configure(state="readonly")
             elif isinstance(entry, ttk.StringVar):
                 entry.set("")
+            elif isinstance(entry, ttk.Entry):
+                entry.delete(0, "end")
+
         self.movetement_id = None
         self._id_product_to_modify = None
         self._old_data_movement = None
@@ -516,7 +522,7 @@ class OutScreen(ttk.Frame):
         self.clear_fields()
         self._old_data_movement = data
         self._id_product_to_modify = data[1]
-        product_name = f"{data[1]}--{data[2]}--{data[3]}"
+        product_name = f"{data[1]}--{data[2]}--{data[7]}"
         self.entries[2].set(product_name)
         self.movetement_id = data[0]
         self.entries[1].insert(0, data[4])
