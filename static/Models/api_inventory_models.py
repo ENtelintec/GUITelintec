@@ -4,6 +4,8 @@ __date__ = "$ 03/may./2024  at 17:04 $"
 
 from flask_restx import fields
 from werkzeug.datastructures import FileStorage
+from wtforms.fields.list import FieldList
+
 from static.extensions import api, format_timestamps, format_date
 from wtforms.fields.form import FormField
 from wtforms.fields.numeric import FloatField
@@ -18,6 +20,13 @@ code_model = api.model(
     {
         "tag": fields.String(required=True, description="The code tag"),
         "value": fields.String(required=True, description="The code value"),
+    },
+)
+locations_model = api.model(
+    "LocationAMC",
+    {
+        "location_1": fields.String(required=True, description="The location 1"),
+        "location_2": fields.String(required=True, description="The location 2"),
     },
 )
 
@@ -44,6 +53,7 @@ product_model = api.model(
             required=False, description="The product quantity movement in"
         ),
         "codes": fields.List(fields.Nested(code_model), required=False),
+        "locations": fields.Nested(locations_model, required=False),
     },
 )
 
@@ -119,11 +129,15 @@ expected_files_almacen.add_argument(
 file_movements_request_model = api.model(
     "FileMovementsAMC",
     {
-        "date_init":  fields.String(
-            required=True, description="The date init for movements", example="2024-01-01"
+        "date_init": fields.String(
+            required=True,
+            description="The date init for movements",
+            example="2024-01-01",
         ),
         "date_end": fields.String(
-            required=True, description="The date end for movements", example="2024-01-01"
+            required=True,
+            description="The date end for movements",
+            example="2024-01-01",
         ),
         "type": fields.String(
             required=True, description="The type of movements", example="entrada"
@@ -148,6 +162,16 @@ def date_filter(datetime_obj):
     )
 
 
+class CodesForm(Form):
+    tag = StringField("tag", validators=[InputRequired()])
+    value = StringField("value", validators=[InputRequired()])
+
+
+class LocationsForm(Form):
+    location_1 = StringField("location_1", validators=[], default="")
+    location_2 = StringField("location_2", validators=[], default="")
+
+
 class ProductInsertForm(Form):
     name = StringField("name", validators=[InputRequired()])
     sku = StringField("sku", validators=[InputRequired()])
@@ -157,6 +181,8 @@ class ProductInsertForm(Form):
     supplier_name = StringField("supplier_name", validators=[InputRequired()])
     is_tool = IntegerField("is_tool", validators=[], default=0)
     is_internal = IntegerField("is_internal", validators=[], default=0)
+    codes = FieldList(FormField(CodesForm), validators=[], default=[])
+    locations = FormField(LocationsForm)
 
 
 class ProductUpdateForm(Form):
@@ -178,6 +204,8 @@ class ProductUpdateForm(Form):
         "id",
         validators=[InputRequired(message="Id is required or value 0 not accepted")],
     )
+    codes = FieldList(FormField(CodesForm), validators=[], default=[])
+    locations = FormField(LocationsForm)
 
 
 class ProductPostForm(Form):
@@ -196,6 +224,10 @@ class ProductDeleteForm(Form):
 
 
 class FileMovementsForm(Form):
-    date_init = StringField("date_init", validators=[InputRequired()], filters=[date_filter])
-    date_end = StringField("date_end", validators=[InputRequired()], filters=[date_filter])
+    date_init = StringField(
+        "date_init", validators=[InputRequired()], filters=[date_filter]
+    )
+    date_end = StringField(
+        "date_end", validators=[InputRequired()], filters=[date_filter]
+    )
     type_m = StringField("type", validators=[], default="all")

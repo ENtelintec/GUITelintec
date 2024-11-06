@@ -149,6 +149,7 @@ def get_all_products_DB(type_p):
         # (id_product, sku, name, udm, stock, category_name, supplier_name, is_tool, is_internal, codes) = item
         codes_raw = json.loads(item[9])
         codes = [{"tag": k, "value": v} for k, v in codes_raw.items()]
+        locations = json.loads(item[10])
         out.append(
             {
                 "id": item[0],
@@ -161,6 +162,7 @@ def get_all_products_DB(type_p):
                 "is_tool": item[7],
                 "is_internal": item[8],
                 "codes": codes,
+                "locations": locations,
             }
         )
     return out, 200
