@@ -731,6 +731,26 @@ def update_stock_db_sku(skus: list, stocks: list):
     return flag, error, result
 
 
+def update_stock_db_ids(ids: list, stocks: list):
+    if len(ids) != len(stocks) or len(ids) == 0:
+        return False, "No products to update", None
+    sql = "UPDATE sql_telintec.products_amc SET stock = CASE "
+    try:
+        for _id, stock in zip(ids, stocks):
+            sql += f"WHEN id_product = '{_id}' THEN {stock} "
+        sql += (
+            "ELSE stock "
+            "END "
+            "WHERE id_product IN (" + ", ".join([f"'{_id}'" for _id in ids]) + ");"
+        )
+    except Exception as e:
+        # noinspection PyUnboundLocalVariable
+        msg_error = f"Error in update_stock_db_ids: {str(e)} at id: {_id}, stock: {stock}"
+        return False, msg_error, None
+    flag, error, result = execute_sql(sql, None, 4)
+    return flag, error, result
+
+
 def insert_multiple_row_products_amc(products: tuple, dict_cat=None, dict_supp=None):
     codec = "ASCII"
     if len(products) == 0:

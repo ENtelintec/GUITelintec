@@ -176,6 +176,9 @@ movement_model = api.model(
         "sm_id": fields.Integer(
             required=True, description="The movement id", example=1
         ),
+        "old_stock":  fields.Float(
+            required=True, description="The movement old stock", example=1
+        )
     },
 )
 
@@ -297,6 +300,7 @@ class MovementForm(Form):
         "sm_id",
         validators=[InputRequired(message="Id is required or value 0 not accepted")],
     )
+    old_stock = FloatField("old_stock", validators=[],  default=0.0)
 
 
 class MovementsListPostForm(Form):

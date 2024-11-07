@@ -34,7 +34,9 @@ from templates.controllers.product.p_and_s_controller import (
     get_all_products_db,
     get_ins_db_detail,
     get_outs_db_detail,
-    get_all_movements_db_detail, update_multiple_row_products_amc,
+    get_all_movements_db_detail,
+    update_multiple_row_products_amc,
+    update_stock_db_ids,
 )
 from templates.forms.Storage import InventoryStorage
 
@@ -188,7 +190,6 @@ def insert_product_db(data):
             data["info"]["stock"],
             data["info"]["category_name"],
         )
-
     if not flag:
         return False, error
     timestamp = datetime.now().strftime(format_timestamps)
@@ -237,8 +238,9 @@ def insert_and_update_multiple_products_amc(data):
             item["is_tool"],
             item["is_internal"],
             item["codes"],
-            item["locations"]
-        ) for item in products_new
+            item["locations"],
+        )
+        for item in products_new
     ]
     flag, error, lastrowid = insert_multiple_row_products_amc(tuple(products_aux))
     if not flag:
@@ -246,19 +248,18 @@ def insert_and_update_multiple_products_amc(data):
             f"Insert multiple rows failed. Error: {str(error)}. Result: {lastrowid}"
         )
     else:
-        data_out.append(
-            f"Insert multiple rows success. Result: {lastrowid}"
-        )
+        data_out.append(f"Insert multiple rows success. Result: {lastrowid}")
         n_products = len(products_new)
         # (id_product, movement_type, quantity, movement_date, sm_id)
         movements = [
             (
-                lastrowid-n_products+index+1,
+                lastrowid - n_products + index + 1,
                 "entrada",
                 item["stock"],
                 datetime.now().strftime(format_timestamps),
-                None
-            ) for index, item in enumerate(products_new)
+                None,
+            )
+            for index, item in enumerate(products_new)
         ]
         flag, error, result = insert_multiple_row_movements_amc(tuple(movements))
         if not flag:
@@ -266,9 +267,7 @@ def insert_and_update_multiple_products_amc(data):
                 f"Insert multiple movements failed. Error: {str(error)}. Result: {result}"
             )
         else:
-            data_out.append(
-                f"Insert multiple movements success. Result: {result}"
-            )
+            data_out.append(f"Insert multiple movements success. Result: {result}")
     products_aux = [
         (
             item["id"],
@@ -281,8 +280,9 @@ def insert_and_update_multiple_products_amc(data):
             item["is_tool"],
             item["is_internal"],
             item["codes"],
-            item["locations"]
-        ) for item in products_update
+            item["locations"],
+        )
+        for item in products_update
     ]
     flag, error, result = update_multiple_row_products_amc(tuple(products_aux))
     if not flag:
@@ -290,9 +290,7 @@ def insert_and_update_multiple_products_amc(data):
             f"Update multiple rows failed. Error: {str(error)}. Result: {result}"
         )
     else:
-        data_out.append(
-            f"Update multiple rows success. Result: {result}"
-        )
+        data_out.append(f"Update multiple rows success. Result: {result}")
         n_products = len(products_update)
         # (id_product, movement_type, quantity, movement_date, sm_id)
         movements = [
@@ -301,8 +299,9 @@ def insert_and_update_multiple_products_amc(data):
                 "entrada" if item["quantity_move"] > 0 else "salida",
                 abs(item["quantity_move"]),
                 datetime.now().strftime(format_timestamps),
-                None
-            ) for item in products_update
+                None,
+            )
+            for item in products_update
         ]
         flag, error, result = insert_multiple_row_movements_amc(tuple(movements))
         if not flag:
@@ -310,9 +309,11 @@ def insert_and_update_multiple_products_amc(data):
                 f"Insert multiple movements failed. Error: {str(error)}. Result: {result}"
             )
         else:
-            data_out.append(
-                f"Insert multiple movements success. Result: {result}"
-            )
+            data_out.append(f"Insert multiple movements success. Result: {result}")
+    msg_notification = "--System Notification--\n" + "\n".join(data_out)
+    create_notification_permission_notGUI(
+        msg_notification, ["almacen"], "Notifaction de Inventario", 0, 0
+    )
     return True, data_out
 
 
@@ -321,13 +322,8 @@ def insert_multiple_movements(data):
     data_out = []
     date = datetime.now().strftime(format_timestamps)
     movements_aux = [
-        (
-            item["id_product"],
-            item["type_m"],
-            item["quantity"],
-            date,
-            item["sm_id"]
-        ) for item in movements
+        (item["id_product"], item["type_m"], item["quantity"], date, item["sm_id"])
+        for item in movements
     ]
     flag, error, result = insert_multiple_row_movements_amc(tuple(movements_aux))
     if not flag:
@@ -335,9 +331,29 @@ def insert_multiple_movements(data):
             f"Insert multiple movements failed. Error: {str(error)}. Result: {result}"
         )
     else:
-        data_out.append(
-            f"Insert multiple movements success. Result: {result}"
+        data_out.append(f"Insert multiple movements success. Result: {result}")
+        stock_update = [
+            (
+                item["id_product"],
+                item["quantity"] + item["old_stock"]
+                if item["type_m"] == "entrada"
+                else item["old_stock"] - item["quantity"],
+            )
+            for item in movements
+        ]
+        flag, error, result = update_stock_db_ids(
+            stock_update[0, :], stock_update[1, :]
         )
+        if not flag:
+            data_out.append(
+                f"Update stock failed. Error: {str(error)}. Result: {result}"
+            )
+        else:
+            data_out.append(f"Update stock success. Result: {result}")
+    msg_notification = "--System Notification--\n" + "\n".join(data_out)
+    create_notification_permission_notGUI(
+        msg_notification, ["almacen"], "Notifaction de Movimientos", 0, 0
+    )
     return True, data_out
 
 
