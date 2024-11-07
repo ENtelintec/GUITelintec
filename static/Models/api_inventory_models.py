@@ -52,7 +52,7 @@ product_model_update = api.model(
         "quantity_move": fields.Integer(
             required=False,
             description="The product quantity movement in or out, for movements creation. "
-                        "If negative, out movements with abs(value), else in movements with value",
+            "If negative, out movements with abs(value), else in movements with value",
         ),
         "codes": fields.List(fields.Nested(code_model), required=False),
         "locations": fields.Nested(locations_model, required=False),
@@ -77,7 +77,8 @@ product_model_new = api.model(
             required=True, description="The product is internal"
         ),
         "quantity_move": fields.Integer(
-            required=False, description="The product quantity movement in for news (optional)"
+            required=False,
+            description="The product quantity movement in for news (optional)",
         ),
         "codes": fields.List(fields.Nested(code_model), required=False),
         "locations": fields.Nested(locations_model, required=False),
@@ -164,7 +165,7 @@ suppliers_output_model = api.model(
 #             item["movement_date"],
 #             item["sm_id"]
 movement_model = api.model(
-    "MovementAMC",
+    "MovementSAMC",
     {
         "id_product": fields.Integer(
             required=True, description="The product id", example=1
@@ -176,9 +177,9 @@ movement_model = api.model(
         "sm_id": fields.Integer(
             required=True, description="The movement id", example=1
         ),
-        "old_stock":  fields.Float(
+        "old_stock": fields.Float(
             required=True, description="The movement old stock", example=1
-        )
+        ),
     },
 )
 
@@ -292,7 +293,9 @@ class ProductsListPostForm(Form):
 class MovementForm(Form):
     id_product = IntegerField(
         "id_product",
-        validators=[InputRequired(message="Id product is required or value 0 not accepted")],
+        validators=[
+            InputRequired(message="Id product is required or value 0 not accepted")
+        ],
     )
     type_m = StringField("type", validators=[InputRequired()], default="entrada")
     quantity = FloatField("quantity", validators=[InputRequired()])
@@ -300,7 +303,7 @@ class MovementForm(Form):
         "sm_id",
         validators=[InputRequired(message="Id is required or value 0 not accepted")],
     )
-    old_stock = FloatField("old_stock", validators=[],  default=0.0)
+    old_stock = FloatField("old_stock", validators=[], default=0.0)
 
 
 class MovementsListPostForm(Form):
