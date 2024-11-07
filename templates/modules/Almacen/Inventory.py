@@ -1,8 +1,10 @@
 import json
 import time
 from datetime import datetime
+from tkinter import filedialog
 
 import ttkbootstrap as ttk
+from ttkbootstrap.tableview import Tableview
 
 from static.extensions import format_date
 from templates.Functions_GUI_Utils import (
@@ -12,22 +14,22 @@ from templates.Functions_GUI_Utils import (
     create_button,
 )
 from templates.Functions_Utils import create_notification_permission_notGUI
-from templates.controllers.index import DataHandler
-from ttkbootstrap.tableview import Tableview
-
 from templates.controllers.product.p_and_s_controller import (
     insert_multiple_row_products_amc,
     update_multiple_row_products_amc,
     get_all_categories_db,
     insert_multiple_row_movements_amc,
+    create_product_db,
+    create_in_movement_db,
+    update_product_db,
+    get_all_products_db,
+    delete_product_db,
 )
 from templates.controllers.supplier.suppliers_controller import get_all_suppliers_amc
 from templates.forms.BarCodeGenerator import create_BarCodeFormat
 from templates.forms.Storage import InventoryStorage
 from templates.modules.Almacen.SubFrameBarcode import BarcodeFrame
 from templates.modules.Almacen.SubFrameLector import LectorScreenSelector
-
-from tkinter import filedialog
 
 coldata_inventory = [
     {"text": "ID Producto", "stretch": True},
@@ -42,6 +44,14 @@ coldata_inventory = [
     {"text": "Codigos", "stretch": True},
     {"text": "Ubicaciones", "stretch": True},
 ]
+
+
+def fetch_products():
+    flag, error, result = get_all_products_db()
+    if not flag:
+        print(error)
+        return []
+    return result
 
 
 def get_row_data_inventory(data_raw):
@@ -148,16 +158,16 @@ def create_input_widgets(
 class InventoryScreen(ttk.Frame):
     def __init__(self, master, **kwargs):
         super().__init__(master)
+        self.old_stock = None
         self.table = None
         self.col_data = None
         self.id_to_modify = None
         self.master = master
         self.columnconfigure(0, weight=1)
-        self._data = DataHandler()
         self._ivar_tool = ttk.IntVar(value=0)
         self._ivar_internal = ttk.IntVar(value=0)
         self._products = (
-            self.fetch_products()
+            fetch_products()
             if "data_products_gen" not in kwargs["data"]
             else kwargs["data"]["data_products_gen"]
         )
@@ -342,9 +352,6 @@ class InventoryScreen(ttk.Frame):
         )
         self.update_table()
 
-    def fetch_products(self):
-        return self._data.get_all_products()
-
     def on_click_table_item(self, event):
         item = event.widget.item(event.widget.selection()[0])
         locations = json.loads(item["values"][10])
@@ -370,9 +377,10 @@ class InventoryScreen(ttk.Frame):
                 entry.insert(0, value)
         self.entries[0].configure(state="disabled")
         self.id_to_modify = int(data[0])
+        self.old_stock = float(data[4])
 
     def update_table(self, ignore_triger=False):
-        self._products = self.fetch_products()
+        self._products = fetch_products()
         self.table.unload_table_data()
         time.sleep(0.5)
         self.table.build_table_data(self.col_data, self._products)
@@ -414,10 +422,10 @@ class InventoryScreen(ttk.Frame):
     def update_product(self):
         (
             product_id,
+            product_sku,
             product_name,
-            product_description,
             product_price,
-            product_stock,
+            new_stock,
             product_category,
             product_supplier,
             is_tool,
@@ -425,12 +433,12 @@ class InventoryScreen(ttk.Frame):
             codes,
             locations,
         ) = self.get_inputs_valus()
-        self._data.update_product(
+        flag, error, n_rows = update_product_db(
             product_id,
+            product_sku,
             product_name,
-            product_description,
             product_price,
-            product_stock,
+            new_stock,
             self._categories_dict[product_category]
             if product_category != "None"
             else None,
@@ -441,6 +449,30 @@ class InventoryScreen(ttk.Frame):
             is_internal,
             codes,
             locations,
+        )
+        if not flag:
+            msg = f"Error al actualizar producto: {product_sku}--{product_id}"
+        else:
+            msg = f"Producto actualizado: {product_sku}--{product_id}"
+            quantity_moved = float(new_stock) - self.old_stock
+            movement = "entrada" if quantity_moved > 0 else "salida"
+            date = datetime.now().strftime(format_date)
+            flag, error, result = create_in_movement_db(
+                product_id, movement, abs(quantity_moved), date, None
+            )
+            if not flag:
+                msg += (
+                    f"\nError al crear movimiento: {product_sku}--{product_id}--{error}"
+                )
+            else:
+                msg += f"\nMovimiento creado: {product_sku}--{product_id}--{result}"
+        msg_not = "System Notification\n" + msg
+        create_notification_permission_notGUI(
+            msg_not,
+            ["almacen"],
+            "Actualización de producto",
+            0,
+            0,
         )
         self.clear_fields()
         self.update_table()
@@ -457,13 +489,14 @@ class InventoryScreen(ttk.Frame):
             elif isinstance(entry, ttk.Entry):
                 entry.delete(0, "end")
         self.id_to_modify = None
+        self.old_stock = None
         self.entries[0].configure(state="disabled")
 
     def add_product(self):
         (
             product_id,
+            product_sku,
             product_name,
-            product_description,
             product_price,
             product_stock,
             product_category,
@@ -474,46 +507,83 @@ class InventoryScreen(ttk.Frame):
             locations,
         ) = self.get_inputs_valus()
         if (
-            product_name == ""
-            or product_description == ""
+            product_sku == ""
+            or product_name == ""
             or product_price == ""
             or product_stock == ""
+            or int(product_stock) <= 0
             or product_category == ""
             or product_supplier == ""
         ):
-            print("Error")
+            print("Error, values must not be empty.")
             return
 
-        if product_id == "":
-            self._data.create_product(
-                product_name,
-                product_description,
-                product_price,
-                product_stock,
-                self._categories_dict[product_category]
-                if product_category != "None"
-                else None,
-                self._providers_dict_amc[product_supplier]
-                if product_supplier != "None"
-                else None,
-                is_tool,
-                is_internal,
-                codes,
-                locations,
+        if product_id != "":
+            print("Error, product id must be empty.")
+            return
+        flag, error, lastrowid = create_product_db(
+            product_sku,
+            product_name,
+            product_price,
+            product_stock,
+            self._categories_dict[product_category]
+            if product_category != "None"
+            else None,
+            self._providers_dict_amc[product_supplier]
+            if product_supplier != "None"
+            else None,
+            is_tool,
+            is_internal,
+            codes,
+            locations,
+        )
+        if not flag:
+            msg = f"Error al crear producto: {product_sku}--{lastrowid}--{error}"
+        else:
+            msg = f"Producto creado: {product_sku}--id: {lastrowid}"
+            movement = "entrada"
+            date = datetime.now().strftime(format_date)
+            quantity = product_stock
+            flag, error, result = create_in_movement_db(
+                product_id, movement, quantity, date, None
             )
-            self.clear_fields()
-            self.update_table()
+            if not flag:
+                msg += (
+                    f"\nError al crear movimiento: {product_sku}--{lastrowid}--{error}"
+                )
+            else:
+                msg += f"\nMovimiento creado: {product_sku}--{lastrowid}"
+        msg_not = "System Notification\n" + msg
+        create_notification_permission_notGUI(
+            msg_not,
+            ["almacen"],
+            "Creación de producto",
+            0,
+            0,
+        )
+        self.clear_fields()
+        self.update_table()
 
     def delete_product(self):
         product_id = self.entries[0].get()
         if product_id == "":
             return
-        self._data.delete_product(product_id)
+        flag, error, result = delete_product_db(product_id)
+        if not flag:
+            msg = f"Error al eliminar producto: {product_id}"
+        else:
+            msg = f"Producto eliminado: {product_id}"
+        create_notification_permission_notGUI(
+            msg,
+            ["almacen"],
+            "Eliminación de producto",
+            0,
+            0,
+        )
         self.clear_fields()
         self.update_table()
 
     def update_products(self, products_data):
-        msg = ""
         flag, error, result = update_multiple_row_products_amc(
             products_data, self._categories_dict, self._providers_dict_amc
         )
@@ -531,11 +601,17 @@ class InventoryScreen(ttk.Frame):
             if int(item[4]) - int(item[-1]) == 0:
                 continue
             elif int(item[4]) - int(item[-1]) < 0:
-                data_movements.append([item[0], "salida", abs(int(item[4]) - int(item[-1])), date, "None"])
+                data_movements.append(
+                    [item[0], "salida", abs(int(item[4]) - int(item[-1])), date, "None"]
+                )
             else:
-                data_movements.append([item[0], "entrada", int(item[4]) - int(item[-1]), date, "None"])
+                data_movements.append(
+                    [item[0], "entrada", int(item[4]) - int(item[-1]), date, "None"]
+                )
         if len(data_movements) != 0:
-            flag, error, result = insert_multiple_row_movements_amc(tuple(data_movements))
+            flag, error, result = insert_multiple_row_movements_amc(
+                tuple(data_movements)
+            )
             msg += (
                 "\nMovimientos registrados"
                 if flag
@@ -551,7 +627,6 @@ class InventoryScreen(ttk.Frame):
         return flag, error, result, msg
 
     def create_new_products(self, products_new_data):
-        msg = ""
         result = 0
         flag, error, lastrow_id = insert_multiple_row_products_amc(
             products_new_data, self._categories_dict, self._providers_dict_amc
@@ -571,7 +646,9 @@ class InventoryScreen(ttk.Frame):
                 [new_ids[index], "entrada", int(item[4]), date, "None"]
             )
         if len(data_movements) != 0:
-            flag, error, result = insert_multiple_row_movements_amc(tuple(data_movements))
+            flag, error, result = insert_multiple_row_movements_amc(
+                tuple(data_movements)
+            )
             msg += (
                 "\nMovimientos registrados"
                 if flag
