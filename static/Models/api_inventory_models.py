@@ -158,6 +158,34 @@ suppliers_output_model = api.model(
     },
 )
 
+# item["id_product"],
+#             item["type_m"],
+#             item["quantity"],
+#             item["movement_date"],
+#             item["sm_id"]
+movement_model = api.model(
+    "MovementAMC",
+    {
+        "id_product": fields.Integer(
+            required=True, description="The product id", example=1
+        ),
+        "type_m": fields.String(
+            required=True, description="The movement type", example="entrada"
+        ),
+        "quantity": fields.Float(required=True, description="The movement quantity"),
+        "sm_id": fields.Integer(
+            required=True, description="The movement id", example=1
+        ),
+    },
+)
+
+movements_list_post_model = api.model(
+    "MovementsListPostAMC",
+    {
+        "movements": fields.List(fields.Nested(movement_model)),
+    },
+)
+
 expected_files_almacen = api.parser()
 expected_files_almacen.add_argument(
     "file", type=FileStorage, location="files", required=True
@@ -256,6 +284,23 @@ class ProductPutForm(Form):
 class ProductsListPostForm(Form):
     products_insert = FieldList(FormField(ProductInsertForm))
     products_update = FieldList(FormField(ProductUpdateForm))
+
+
+class MovementForm(Form):
+    id_product = IntegerField(
+        "id_product",
+        validators=[InputRequired(message="Id product is required or value 0 not accepted")],
+    )
+    type_m = StringField("type", validators=[InputRequired()], default="entrada")
+    quantity = FloatField("quantity", validators=[InputRequired()])
+    sm_id = IntegerField(
+        "sm_id",
+        validators=[InputRequired(message="Id is required or value 0 not accepted")],
+    )
+
+
+class MovementsListPostForm(Form):
+    movements = FieldList(FormField(MovementForm))
 
 
 class ProductDeleteForm(Form):

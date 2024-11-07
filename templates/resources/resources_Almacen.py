@@ -21,7 +21,7 @@ from static.Models.api_inventory_models import (
     FileMovementsForm,
     file_movements_request_model,
     products_list_post_model,
-    ProductsListPostForm,
+    ProductsListPostForm, movements_list_post_model, MovementsListPostForm,
 )
 from static.Models.api_movements_models import (
     movements_output_model,
@@ -42,7 +42,7 @@ from templates.resources.midleware.Functions_midleware_almacen import (
     upload_product_db_from_file,
     create_file_inventory,
     create_file_movements_amc,
-    insert_and_update_multiple_products_amc,
+    insert_and_update_multiple_products_amc, insert_multiple_movements,
 )
 from templates.controllers.product.p_and_s_controller import (
     delete_movement_db,
@@ -101,6 +101,22 @@ class MovementDB(Resource):
             "data": str(result),
             "msg": "Ok" if flag else error,
         }, 200 if flag else 400
+
+
+@ns.route("/multiple/movements")
+class MultipleMovementDB(Resource):
+    @ns.expect(movements_list_post_model)
+    def post(self):
+        # noinspection PyUnresolvedReferences
+        validator = MovementsListPostForm.from_json(ns.payload)
+        if not validator.validate():
+            return {"data": validator.errors, "msg": "Error at structure"}, 400
+        data = validator.data
+        flag, result = insert_multiple_movements(data)
+        return {
+            "data": result,
+            "msg": "Ok" if flag else "Error",
+        }, 201 if flag else 400
 
 
 @ns.route("/inventory/products/<string:type_p>")

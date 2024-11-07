@@ -316,6 +316,31 @@ def insert_and_update_multiple_products_amc(data):
     return True, data_out
 
 
+def insert_multiple_movements(data):
+    movements = data["movements"]
+    data_out = []
+    date = datetime.now().strftime(format_timestamps)
+    movements_aux = [
+        (
+            item["id_product"],
+            item["type_m"],
+            item["quantity"],
+            date,
+            item["sm_id"]
+        ) for item in movements
+    ]
+    flag, error, result = insert_multiple_row_movements_amc(tuple(movements_aux))
+    if not flag:
+        data_out.append(
+            f"Insert multiple movements failed. Error: {str(error)}. Result: {result}"
+        )
+    else:
+        data_out.append(
+            f"Insert multiple movements success. Result: {result}"
+        )
+    return True, data_out
+
+
 def get_categories_db():
     flag, error, result = get_all_categories_db()
     if not flag:

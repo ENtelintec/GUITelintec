@@ -834,7 +834,6 @@ def insert_multiple_row_movements_amc(movements: tuple):
     if len(movements) == 0:
         return False, "No movements to insert", None
     try:
-        # noinspection Error
         sql = "INSERT INTO sql_telintec.product_movements_amc (id_product, movement_type, quantity, movement_date, sm_id) VALUES "
         for index, movement in enumerate(movements):
             if index > 0:
