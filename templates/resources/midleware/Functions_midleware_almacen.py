@@ -34,7 +34,7 @@ from templates.controllers.product.p_and_s_controller import (
     get_all_products_db,
     get_ins_db_detail,
     get_outs_db_detail,
-    get_all_movements_db_detail,
+    get_all_movements_db_detail, update_multiple_row_products_amc,
 )
 from templates.forms.Storage import InventoryStorage
 
@@ -219,6 +219,101 @@ def update_product_amc(data):
         data["info"]["id"], "entrada", data["info"]["quantity_move"], timestamp, None
     )
     return True, result
+
+
+def insert_and_update_multiple_products_amc(data):
+    products_new = data["products_insert"]
+    products_update = data["products_update"]
+    data_out = []
+    products_aux = [
+        (
+            None,
+            item["sku"],
+            item["name"],
+            item["udm"],
+            item["stock"],
+            item["category_name"],
+            item["supplier_name"],
+            item["is_tool"],
+            item["is_internal"],
+            item["codes"],
+            item["locations"]
+        ) for item in products_new
+    ]
+    flag, error, lastrowid = insert_multiple_row_products_amc(tuple(products_aux))
+    if not flag:
+        data_out.append(
+            f"Insert multiple rows failed. Error: {str(error)}. Result: {lastrowid}"
+        )
+    else:
+        data_out.append(
+            f"Insert multiple rows success. Result: {lastrowid}"
+        )
+        n_products = len(products_new)
+        # (id_product, movement_type, quantity, movement_date, sm_id)
+        movements = [
+            (
+                lastrowid-n_products+index+1,
+                "entrada",
+                item["stock"],
+                datetime.now().strftime(format_timestamps),
+                None
+            ) for index, item in enumerate(products_new)
+        ]
+        flag, error, result = insert_multiple_row_movements_amc(tuple(movements))
+        if not flag:
+            data_out.append(
+                f"Insert multiple movements failed. Error: {str(error)}. Result: {result}"
+            )
+        else:
+            data_out.append(
+                f"Insert multiple movements success. Result: {result}"
+            )
+    products_aux = [
+        (
+            item["id"],
+            item["sku"],
+            item["name"],
+            item["udm"],
+            item["stock"],
+            item["category_name"],
+            item["supplier_name"],
+            item["is_tool"],
+            item["is_internal"],
+            item["codes"],
+            item["locations"]
+        ) for item in products_update
+    ]
+    flag, error, result = update_multiple_row_products_amc(tuple(products_aux))
+    if not flag:
+        data_out.append(
+            f"Update multiple rows failed. Error: {str(error)}. Result: {result}"
+        )
+    else:
+        data_out.append(
+            f"Update multiple rows success. Result: {result}"
+        )
+        n_products = len(products_update)
+        # (id_product, movement_type, quantity, movement_date, sm_id)
+        movements = [
+            (
+                item["id"],
+                "entrada" if item["quantity_move"] > 0 else "salida",
+                abs(item["quantity_move"]),
+                datetime.now().strftime(format_timestamps),
+                None
+            ) for item in products_update
+        ]
+        flag, error, result = insert_multiple_row_movements_amc(tuple(movements))
+        if not flag:
+            data_out.append(
+                f"Insert multiple movements failed. Error: {str(error)}. Result: {result}"
+            )
+        else:
+            data_out.append(
+                f"Insert multiple movements success. Result: {result}"
+            )
+    return True, data_out
 
 
 def get_categories_db():

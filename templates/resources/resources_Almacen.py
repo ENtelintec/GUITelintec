@@ -20,6 +20,8 @@ from static.Models.api_inventory_models import (
     ProductPutForm,
     FileMovementsForm,
     file_movements_request_model,
+    products_list_post_model,
+    ProductsListPostForm,
 )
 from static.Models.api_movements_models import (
     movements_output_model,
@@ -40,6 +42,7 @@ from templates.resources.midleware.Functions_midleware_almacen import (
     upload_product_db_from_file,
     create_file_inventory,
     create_file_movements_amc,
+    insert_and_update_multiple_products_amc,
 )
 from templates.controllers.product.p_and_s_controller import (
     delete_movement_db,
@@ -62,6 +65,7 @@ class GetMovements(Resource):
 class MovementDB(Resource):
     @ns.expect(movement_insert_model)
     def post(self):
+        # noinspection PyUnresolvedReferences
         validator = MovementInsertForm.from_json(ns.payload)
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
@@ -74,6 +78,7 @@ class MovementDB(Resource):
 
     @ns.expect(movement_insert_model)
     def put(self):
+        # noinspection PyUnresolvedReferences
         validator = MovementInsertForm.from_json(ns.payload)
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
@@ -86,6 +91,7 @@ class MovementDB(Resource):
 
     @ns.expect(movement_delete_model)
     def delete(self):
+        # noinspection PyUnresolvedReferences
         validator = MovementDeleteForm.from_json(ns.payload)
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
@@ -109,6 +115,7 @@ class InventoryProducts(Resource):
 class InventoryProduct(Resource):
     @ns.expect(product_insert_model)
     def post(self):
+        # noinspection PyUnresolvedReferences
         validator = ProductPostForm.from_json(ns.payload)
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
@@ -121,6 +128,7 @@ class InventoryProduct(Resource):
 
     @ns.expect(product_insert_model)
     def put(self):
+        # noinspection PyUnresolvedReferences
         validator = ProductPutForm.from_json(ns.payload)
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
@@ -133,6 +141,7 @@ class InventoryProduct(Resource):
 
     @ns.expect(product_delete_model)
     def delete(self):
+        # noinspection PyUnresolvedReferences
         validator = ProductDeleteForm.from_json(ns.payload)
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
@@ -142,6 +151,21 @@ class InventoryProduct(Resource):
             "data": str(data_out),
             "msg": "Ok" if flag else "Error",
         }, 200 if flag else 400
+
+
+@ns.route("/inventory/multiple/products")
+class InventoryMultipleProducts(Resource):
+    @ns.expect(products_list_post_model)
+    def post(self):
+        # noinspection PyUnresolvedReferences
+        validator = ProductsListPostForm.from_json(ns.payload)
+        if not validator.validate():
+            return {"data": validator.errors, "msg": "Error at structure"}, 400
+        data = validator.data
+        flag, data_out = insert_and_update_multiple_products_amc(data)
+        if not flag:
+            return {"data": data_out, "msg": "Error"}, 400
+        return {"data": data_out, "msg": "Ok"}, 200
 
 
 @ns.route("/inventory/categories/all")
@@ -240,6 +264,7 @@ class DownloadInventoryFile(Resource):
 class DownloadMovementsFile(Resource):
     @ns.expect(file_movements_request_model)
     def post(self):
+        # noinspection PyUnresolvedReferences
         validator = FileMovementsForm.from_json(ns.payload)
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400

@@ -31,8 +31,8 @@ locations_model = api.model(
 )
 
 
-product_model = api.model(
-    "ProductAMC",
+product_model_update = api.model(
+    "ProductAMCUpdate",
     {
         "id": fields.Integer(required=True, description="The product id", example=1),
         "name": fields.String(required=True, description="The product name"),
@@ -50,17 +50,45 @@ product_model = api.model(
             required=True, description="The product is internal"
         ),
         "quantity_move": fields.Integer(
-            required=False, description="The product quantity movement in"
+            required=False,
+            description="The product quantity movement in or out, for movements creation. "
+                        "If negative, out movements with abs(value), else in movements with value",
         ),
         "codes": fields.List(fields.Nested(code_model), required=False),
         "locations": fields.Nested(locations_model, required=False),
     },
 )
 
+product_model_new = api.model(
+    "ProductAMCNew",
+    {
+        "name": fields.String(required=True, description="The product name"),
+        "sku": fields.String(required=True, description="The product sku"),
+        "udm": fields.String(required=True, description="The product udm"),
+        "stock": fields.Float(required=True, description="The product stock"),
+        "category_name": fields.String(
+            required=True, description="The product category name or id for edition"
+        ),
+        "supplier_name": fields.String(
+            required=True, description="The product supplier name or id for edition"
+        ),
+        "is_tool": fields.Integer(required=True, description="The product is tool"),
+        "is_internal": fields.Integer(
+            required=True, description="The product is internal"
+        ),
+        "quantity_move": fields.Integer(
+            required=False, description="The product quantity movement in for news (optional)"
+        ),
+        "codes": fields.List(fields.Nested(code_model), required=False),
+        "locations": fields.Nested(locations_model, required=False),
+    },
+)
+
+
 products_output_model = api.model(
     "ProductsOutAMC",
     {
-        "data": fields.List(fields.Nested(product_model)),
+        "data": fields.List(fields.Nested(product_model_update)),
         "msg": fields.String(required=True, description="The message"),
     },
 )
@@ -68,13 +96,22 @@ products_output_model = api.model(
 product_insert_model = api.model(
     "ProductInputAMC",
     {
-        "info": fields.Nested(product_model),
+        "info": fields.Nested(product_model_new),
     },
 )
 
 product_delete_model = api.model(
     "ProductDeleteAMC",
     {"id": fields.Integer(required=True, description="The product id to delete")},
+)
+
+
+products_list_post_model = api.model(
+    "ProductsListPostAMC",
+    {
+        "products_insert": fields.List(fields.Nested(product_model_new)),
+        "products_update": fields.List(fields.Nested(product_model_update)),
+    },
 )
 
 
@@ -186,6 +223,10 @@ class ProductInsertForm(Form):
 
 
 class ProductUpdateForm(Form):
+    id = IntegerField(
+        "id",
+        validators=[InputRequired(message="Id is required or value 0 not accepted")],
+    )
     name = StringField("name", validators=[InputRequired()])
     sku = StringField("sku", validators=[InputRequired()])
     udm = StringField("udm", validators=[InputRequired()])
@@ -200,10 +241,6 @@ class ProductUpdateForm(Form):
             InputRequired(message="Quantity move is required or value 0 not accepted")
         ],
     )
-    id = IntegerField(
-        "id",
-        validators=[InputRequired(message="Id is required or value 0 not accepted")],
-    )
     codes = FieldList(FormField(CodesForm), validators=[], default=[])
     locations = FormField(LocationsForm)
 
@@ -214,6 +251,11 @@ class ProductPostForm(Form):
 
 class ProductPutForm(Form):
     info = FormField(ProductUpdateForm)
+
+
+class ProductsListPostForm(Form):
+    products_insert = FieldList(FormField(ProductInsertForm))
+    products_update = FieldList(FormField(ProductUpdateForm))
 
 
 class ProductDeleteForm(Form):

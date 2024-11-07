@@ -735,30 +735,38 @@ def insert_multiple_row_products_amc(products: tuple, dict_cat=None, dict_supp=N
     codec = "ASCII"
     if len(products) == 0:
         return False, "No products to insert", None
-
     sql = "INSERT INTO sql_telintec.products_amc (sku, name, udm, stock, id_category, id_supplier, is_tool, is_internal, codes, locations) VALUES "
-    for index, product in enumerate(products):
-        if len(product) < 10:
-            codes = json.dumps([])
-            locations = json.dumps({"location_1": "", "location_2": ""})
-        else:
-            codes = product[9]
-            location_1 = product[10]
-            location_2 = product[11]
-            locations = json.dumps({"location_1": location_1, "location_2": location_2})
-        sku = clean_name(product[1].encode(codec, errors="ignore").decode(codec))[0]
-        name = clean_name(product[2].encode(codec, errors="ignore").decode(codec))[0]
-        if index > 0:
-            sql += ", "
-        if dict_cat is not None:
-            category_id = dict_cat[product[5]] if product[5] != "None" else "None"
-        else:
-            category_id = product[5]
-        if dict_supp is not None:
-            supplier_id = dict_supp[product[6]] if product[6] != "None" else "None"
-        else:
-            supplier_id = product[6]
-        sql += f"('{str(sku.upper())}', '{str(name)}', '{product[3]}', {product[4]}, {category_id}, {supplier_id}, {product[7]}, {product[8]}, ('{codes}'), ('{locations}'))"
+    try:
+        for index, product in enumerate(products):
+            if len(product) < 10:
+                codes = json.dumps([])
+                locations = json.dumps({"location_1": "", "location_2": ""})
+            else:
+                codes = product[9]
+                location_1 = product[10]
+                location_2 = product[11]
+                locations = json.dumps(
+                    {"location_1": location_1, "location_2": location_2}
+                )
+            sku = clean_name(product[1].encode(codec, errors="ignore").decode(codec))[0]
+            name = clean_name(product[2].encode(codec, errors="ignore").decode(codec))[
+                0
+            ]
+            if index > 0:
+                sql += ", "
+            if dict_cat is not None:
+                category_id = dict_cat[product[5]] if product[5] != "None" else "None"
+            else:
+                category_id = product[5]
+            if dict_supp is not None:
+                supplier_id = dict_supp[product[6]] if product[6] != "None" else "None"
+            else:
+                supplier_id = product[6]
+            sql += f"('{str(sku.upper())}', '{str(name)}', '{product[3]}', {product[4]}, {category_id}, {supplier_id}, {product[7]}, {product[8]}, ('{codes}'), ('{locations}'))"
+    except Exception as e:
+        # noinspection PyUnboundLocalVariable
+        msg_error = f"Error in insert_multiple_row_products_amc: {str(e)} at index: {index}, product: {product}"
+        return False, msg_error, None
     sql += (
         "as new ON DUPLICATE KEY UPDATE "
         "name = new.name, "
@@ -767,6 +775,7 @@ def insert_multiple_row_products_amc(products: tuple, dict_cat=None, dict_supp=N
         "is_tool = new.is_tool, is_internal = new.is_internal, "
         "codes = new.codes, locations = new.locations;"
     )
+
     sql = sql.replace("None", "NULL")
     flag, error, result = execute_sql(sql, None, 4)
     return flag, error, result
@@ -775,28 +784,34 @@ def insert_multiple_row_products_amc(products: tuple, dict_cat=None, dict_supp=N
 def update_multiple_row_products_amc(products: tuple, dict_cat=None, dict_supp=None):
     if len(products) == 0:
         return False, "No products to update", None
-
-    sql = "INSERT INTO sql_telintec.products_amc (id_product, sku, name, udm, stock, id_category, id_supplier, is_tool, is_internal, codes, locations) VALUES "
-    for index, product in enumerate(products):
-        if len(product) < 10:
-            codes = json.dumps([])
-            locations = json.dumps({"location_1": "", "location_2": ""})
-        else:
-            codes = product[9]
-            location_1 = product[10]
-            location_2 = product[11]
-            locations = json.dumps({"location_1": location_1, "location_2": location_2})
-        if index > 0:
-            sql += ", "
-        if dict_cat is not None:
-            category_id = dict_cat[product[5]] if product[5] != "None" else "None"
-        else:
-            category_id = product[5]
-        if dict_supp is not None:
-            supplier_id = dict_supp[product[6]] if product[6] != "None" else "None"
-        else:
-            supplier_id = product[6]
-        sql += f"({product[0]}, '{product[1]}', '{product[2]}', '{product[3]}', {product[4]}, {category_id}, {supplier_id}, {product[7]}, {product[8]}, ('{codes}'), ('{locations}')) "
+    try:
+        sql = "INSERT INTO sql_telintec.products_amc (id_product, sku, name, udm, stock, id_category, id_supplier, is_tool, is_internal, codes, locations) VALUES "
+        for index, product in enumerate(products):
+            if len(product) < 10:
+                codes = json.dumps([])
+                locations = json.dumps({"location_1": "", "location_2": ""})
+            else:
+                codes = product[9]
+                location_1 = product[10]
+                location_2 = product[11]
+                locations = json.dumps(
+                    {"location_1": location_1, "location_2": location_2}
+                )
+            if index > 0:
+                sql += ", "
+            if dict_cat is not None:
+                category_id = dict_cat[product[5]] if product[5] != "None" else "None"
+            else:
+                category_id = product[5]
+            if dict_supp is not None:
+                supplier_id = dict_supp[product[6]] if product[6] != "None" else "None"
+            else:
+                supplier_id = product[6]
+            sql += f"({product[0]}, '{product[1]}', '{product[2]}', '{product[3]}', {product[4]}, {category_id}, {supplier_id}, {product[7]}, {product[8]}, ('{codes}'), ('{locations}')) "
+    except Exception as e:
+        # noinspection PyUnboundLocalVariable
+        msg_error = f"Error in update_multiple_row_products_amc: {str(e)} at index: {index}, product: {product}"
+        return False, msg_error, None
     sql += (
         "AS new ON DUPLICATE KEY UPDATE "
         "sku = new.sku, "
@@ -811,32 +826,38 @@ def update_multiple_row_products_amc(products: tuple, dict_cat=None, dict_supp=N
         "locations = new.locations; "
     )
     sql = sql.replace("None", "NULL")
-    flag, error, result = execute_sql(sql, None, 4)
+    flag, error, result = execute_sql(sql, None, 3)
     return flag, error, result
 
 
 def insert_multiple_row_movements_amc(movements: tuple):
     if len(movements) == 0:
         return False, "No movements to insert", None
-    if len(movements) < 4:
-        date = datetime.now().strftime(format_timestamps)
-        sm_id = "None"
-    else:
-        date = movements[3]
-        sm_id = movements[4] if movements[4] != "None" else "None"
-    sql = "INSERT INTO sql_telintec.product_movements_amc (id_product, movement_type, quantity, movement_date, sm_id) VALUES "
-    for index, movement in enumerate(movements):
-        if index > 0:
-            sql += ", "
-        sql += f"({movement[0]}, '{movement[1]}', {movement[2]}, '{date}', {sm_id})"
-        sql += (
-            "AS new ON DUPLICATE KEY UPDATE "
-            "id_product = new.id_product, "
-            "movement_type = new.movement_type, "
-            "quantity = new.quantity, "
-            "movement_date = new.movement_date,"
-            "sm_id = new.sm_id; "
-        )
+    try:
+        # noinspection Error
+        sql = "INSERT INTO sql_telintec.product_movements_amc (id_product, movement_type, quantity, movement_date, sm_id) VALUES "
+        for index, movement in enumerate(movements):
+            if index > 0:
+                sql += ", "
+            if len(movement) < 4:
+                date = datetime.now().strftime(format_timestamps)
+                sm_id = "None"
+            else:
+                date = movement[3]
+                sm_id = movement[4] if movement[4] != "None" else "None"
+            sql += f"({movement[0]}, '{movement[1]}', {movement[2]}, '{date}', {sm_id})"
+    except Exception as e:
+        # noinspection PyUnboundLocalVariable
+        msg_error = f"Error in insert_multiple_row_movements_amc: {str(e)} at index: {index}, movement: {movement}"
+        return False, msg_error, None
+    sql += (
+        "AS new ON DUPLICATE KEY UPDATE "
+        "id_product = new.id_product, "
+        "movement_type = new.movement_type, "
+        "quantity = new.quantity, "
+        "movement_date = new.movement_date,"
+        "sm_id = new.sm_id; "
+    )
     sql = sql.replace("None", "NULL")
     flag, error, result = execute_sql(sql, None, 4)
     return flag, error, result
