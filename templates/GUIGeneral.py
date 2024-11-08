@@ -8,6 +8,7 @@ from ttkbootstrap.scrolled import ScrolledFrame
 import templates.modules.Sesion.Frame_LoginFrames as Login
 from static.FramesClasses import available_frames
 from static.extensions import filepath_settings, ventanasApp_path
+from templates.controllers.chatbot.chatbot_controller import get_chats_w_limit
 from templates.misc.Functions_AuxFiles import read_setting_file
 from templates.Functions_AuxFilesGUI import carpeta_principal, get_image_side_menu
 from templates.misc.Functions_Files import read_file_not
@@ -15,7 +16,6 @@ from templates.Functions_GUI_Utils import (
     create_button_side_menu,
     compare_permissions_windows,
 )
-from templates.controllers.chatbot.chatbot_controller import get_chats_w_limit
 from templates.controllers.employees.us_controller import get_username_data
 from templates.modules.Assistant.Frame_vAssistantGUI import AssistantGUI
 
@@ -56,6 +56,7 @@ class GUIAsistente(ttk.Window):
         self.sample_time = int(self.settings["sampling_time"])
         self.time_window = int(self.settings["time_window"])
         self.chats = get_chats_w_limit(limit=(0, self.chats_to_show))
+        # self.chats = None
         self.virtual_assistant_window = None
         self.VA_frame = None
         self._active_window = None
