@@ -457,15 +457,14 @@ class InventoryScreen(ttk.Frame):
             quantity_moved = float(new_stock) - self.old_stock
             movement = "entrada" if quantity_moved > 0 else "salida"
             date = datetime.now().strftime(format_date)
-            flag, error, result = create_in_movement_db(
-                product_id, movement, abs(quantity_moved), date, None
-            )
-            if not flag:
-                msg += (
-                    f"\nError al crear movimiento: {product_sku}--{product_id}--{error}"
+            if quantity_moved != 0:
+                flag, error, result = create_in_movement_db(
+                    product_id, movement, abs(quantity_moved), date, None
                 )
-            else:
-                msg += f"\nMovimiento creado: {product_sku}--{product_id}--{result}"
+                if not flag:
+                    msg += f"\nError al crear movimiento: {product_sku}--{product_id}--{error}"
+                else:
+                    msg += f"\nMovimiento creado: {product_sku}--{product_id}--{result}"
         msg_not = "System Notification\n" + msg
         create_notification_permission_notGUI(
             msg_not,
