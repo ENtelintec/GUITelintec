@@ -31,8 +31,9 @@ class LoginUP(Resource):
         is_real_user = verify_user_DB(data["username"], pass_key)
         out_dict = get_permissions_user_password(data["username"], pass_key)
         permissions = (
-            out_dict["permissions"] if out_dict["permissions"] is not None else {}
+            out_dict["permissions"] if "permissions" in out_dict.keys() else {}
         )
+        permissions = permissions if permissions is not None else {}
         permissions_list = []
         for v in permissions.values():
             permissions_list.append({"role": v})
