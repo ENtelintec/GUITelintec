@@ -168,16 +168,19 @@ employee_exam_model_delete = api.model(
 prima_vacation_model = api.model(
     "PrimaVacation",
     {
-        "status": fields.String(required=True, description="The vacation prime status"),
+        "status": fields.String(
+            required=True, description="The vacation prime status", example="Si"
+        ),
         "fecha_pago": fields.String(
             required=True, description="The employee name", example="2Q JUL 23"
         ),
     },
 )
 
-status_vacation_model = api.model(
-    "StatusVacation",
+seniority_dict_model = api.model(
+    "SeniorityDict",
     {
+        "year": fields.Integer(required=True, description="The year"),
         "prima": fields.Nested(prima_vacation_model),
         "status": fields.String(
             required=True, description="The status of days taken", example="7 PTES"
@@ -185,8 +188,6 @@ status_vacation_model = api.model(
         "comentarios": fields.String(required=True, description="Any comentary"),
     },
 )
-
-seniority_dict_model = api.model("SeniorityDict", {"0": fields.Nested(employee_model)})
 
 vacations_model = api.model(
     "Vacations",
@@ -210,18 +211,15 @@ employee_vacation_model_insert = api.model(
     "EmployeeVacationInsert",
     {
         "emp_id": fields.Integer(required=True, description="The employee id"),
-        "seniority": fields.Nested(
-            seniority_dict_model,
-            example={
-                "0": {
-                    "prima": {"status": "SI", "fecha_pago": "2Q JUL 23"},
-                    "status": "7 PTES",
-                    "comentarios": "31 ago 23\n29 sep 23\n27 dic 23 - 29 dic 23",
-                }
-            },
+        "seniority": fields.List(
+            fields.Nested(seniority_dict_model),
+            required=True,
+            description="The employee seniority",
         ),
     },
 )
+
+
 employee_vacation_model_delete = api.model(
     "EmployeeVacationDelete",
     {"emp_id": fields.Integer(required=True, description="The employee id")},
@@ -263,7 +261,7 @@ class EmployeeInputForm(Form):
 
 
 class EmployeeInsertForm(Form):
-    info = FormField(EmployeeInputForm)
+    info = FormField(EmployeeInputForm,  "info")
 
 
 class EmployeeUpdateForm(Form):
@@ -271,7 +269,7 @@ class EmployeeUpdateForm(Form):
         "id",
         validators=[InputRequired(message="id is required or value 0 not accepted")],
     )
-    info = FormField(EmployeeInputForm)
+    info = FormField(EmployeeInputForm,  "info")
 
 
 class EmployeeDeleteForm(Form):
@@ -317,5 +315,31 @@ class EmployeeMedUpdateForm(Form):
 class EmployeeMedDeleteForm(Form):
     id = IntegerField(
         "id",
+        validators=[InputRequired(message="id is required or value 0 not accepted")],
+    )
+
+
+class PrimaVacForm(Form):
+    status = StringField("status", validators=[], default="No")
+    fecha_pago = DateField("fecha_pago", validators=[InputRequired()], filters=[date_filter])
+
+
+class SeniorityForm(Form):
+    prima = FormField(PrimaVacForm,  "prima")
+    status = StringField("status", validators=[InputRequired()])
+    comentarios = StringField("comentarios", validators=[],  default="")
+
+
+class EmployeeVacInsertForm(Form):
+    emp_id = IntegerField(
+        "emp_id",
+        validators=[InputRequired(message="id is required or value 0 not accepted")],
+    )
+    seniority = FieldList(FormField(SeniorityForm), "seniority")
+
+
+class DeleteVacationForm(Form):
+    emp_id = IntegerField(
+        "emp_id",
         validators=[InputRequired(message="id is required or value 0 not accepted")],
     )

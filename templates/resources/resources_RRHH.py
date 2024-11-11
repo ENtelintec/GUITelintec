@@ -31,12 +31,15 @@ from static.Models.api_employee_models import (
     EmployeeMedInsertForm,
     EmployeeMedUpdateForm,
     EmployeeMedDeleteForm,
+    EmployeeVacInsertForm,
+    DeleteVacationForm,
 )
 from static.Models.api_fichajes_models import (
     answer_files_fichajes_model,
     request_data_fichaje_files_model,
     answer_fichajes_model,
     expected_files,
+    DataFichajesFileForm,
 )
 from static.Models.api_models import (
     employees_resume_model,
@@ -49,7 +52,6 @@ from static.extensions import (
     path_contract_files,
 )
 from templates.resources.methods.Functions_Aux_Login import verify_token
-from templates.resources.methods.Functions_Aux_RH import parse_data
 from templates.resources.midleware.Functions_DB_midleware import (
     get_info_employees_with_status,
     get_info_employee_id,
@@ -70,8 +72,6 @@ from templates.controllers.employees.employees_controller import (
     delete_employee,
 )
 from templates.controllers.employees.vacations_controller import (
-    insert_vacation,
-    update_registry_vac,
     delete_vacation,
     get_vacations_data,
 )
@@ -79,6 +79,8 @@ from templates.resources.midleware.Functions_midleware_RRHH import (
     get_files_fichaje,
     get_fichaje_data,
     get_files_list_nomina,
+    insert_new_vacation,
+    update_vacation,
 )
 
 ns = Namespace("GUI/api/v1/rrhh")
@@ -86,12 +88,19 @@ ns = Namespace("GUI/api/v1/rrhh")
 
 @ns.route("/employee")
 class Employee(Resource):
-    @ns.expect(employee_model_insert)
+    @ns.expect(expected_headers_per, employee_model_insert)
     def post(self):
+        token = request.headers["Authorization"]
+        flag, data_token = verify_token(token, department="RRHH")
+        if not flag:
+            return {"error": "No autorizado. Token invalido"}, 400
         validator = EmployeeInsertForm.from_json(ns.payload)
         if not validator.validate():
             return {"errors": validator.errors}, 400
         data = validator.data
+
+        if not flag:
+            return {"error": data_token}, 400
         flag, error, result = new_employee(
             data["info"]["name"],
             data["info"]["lastname"],
@@ -116,8 +125,12 @@ class Employee(Resource):
         else:
             return {"error": str(error)}, 400
 
-    @ns.expect(employee_model_update)
+    @ns.expect(expected_headers_per, employee_model_update)
     def put(self):
+        token = request.headers["Authorization"]
+        flag, data_token = verify_token(token, department="RRHH")
+        if not flag:
+            return {"error": "No autorizado. Token invalido"}, 400
         validator = EmployeeUpdateForm.from_json(ns.payload)
         if not validator.validate():
             return {"errors": validator.errors}, 400
@@ -147,8 +160,12 @@ class Employee(Resource):
         else:
             return {"error": str(error)}, 400
 
-    @ns.expect(employee_model_delete)
+    @ns.expect(expected_headers_per, employee_model_delete)
     def delete(self):
+        token = request.headers["Authorization"]
+        flag, data_token = verify_token(token, department="RRHH")
+        if not flag:
+            return {"error": "No autorizado. Token invalido"}, 400
         validator = EmployeeDeleteForm.from_json(ns.payload)
         if not validator.validate():
             return {"errors": validator.errors}, 400
@@ -163,7 +180,12 @@ class Employee(Resource):
 @ns.route("/employee/info/<string:id_emp>")
 class EmployeeInfo(Resource):
     @ns.marshal_with(employee_model)
+    @ns.expect(expected_headers_per)
     def get(self, id_emp):
+        token = request.headers["Authorization"]
+        flag, data_token = verify_token(token, department="RRHH")
+        if not flag:
+            return {"error": "No autorizado. Token invalido"}, 400
         data_out, code = get_info_employee_id(id_emp)
         return data_out, code
 
@@ -171,7 +193,12 @@ class EmployeeInfo(Resource):
 @ns.route("/employees/info/<string:status>")
 class EmployeesInfo(Resource):
     @ns.marshal_with(employees_info_model)
+    @ns.expect(expected_headers_per)
     def get(self, status):
+        token = request.headers["Authorization"]
+        flag, data_token = verify_token(token, department="RRHH")
+        if not flag:
+            return {"error": "No autorizado. Token invalido"}, 400
         data_out, code = get_info_employees_with_status(status)
         return {"data": data_out}, code
 
@@ -179,7 +206,12 @@ class EmployeesInfo(Resource):
 @ns.route("/employee/medical/<string:id_emp>")
 class EmployeesEMResume(Resource):
     @ns.marshal_with(examenes_medicos_model)
+    @ns.expect(expected_headers_per)
     def get(self, id_emp):
+        token = request.headers["Authorization"]
+        flag, data_token = verify_token(token, department="RRHH")
+        if not flag:
+            return {"error": "No autorizado. Token invalido"}, 400
         flag, e, result = get_all_examenes()
         out = {"exist": False}
         if flag:
@@ -211,7 +243,12 @@ class EmployeesEMResume(Resource):
 @ns.route("/employees/medical/all")
 class EmployeesEMResume(Resource):  # noqa: F811
     @ns.marshal_with(employees_examenes_model)
+    @ns.expect(expected_headers_per)
     def get(self):
+        token = request.headers["Authorization"]
+        flag, data_token = verify_token(token, department="RRHH")
+        if not flag:
+            return {"error": "No autorizado. Token invalido"}, 400
         flag, e, result = get_all_examenes()
         out = {"data": None}
         if flag:
@@ -245,8 +282,12 @@ class EmployeesEMResume(Resource):  # noqa: F811
 
 @ns.route("/employee/medical")
 class EmployeesEMRegistry(Resource):
-    @ns.expect(employee_exam_model_insert)
+    @ns.expect(expected_headers_per, employee_exam_model_insert)
     def post(self):
+        token = request.headers["Authorization"]
+        flag, data_token = verify_token(token, department="RRHH")
+        if not flag:
+            return {"error": "No autorizado. Token invalido"}, 400
         validator = EmployeeMedInsertForm.from_json(ns.payload)
         if not validator.validate():
             return {"errors": validator.errors}, 400
@@ -265,8 +306,12 @@ class EmployeesEMRegistry(Resource):
         else:
             return {"error": str(error)}, 400
 
-    @ns.expect(employee_exam_model_update)
+    @ns.expect(expected_headers_per, employee_exam_model_update)
     def put(self):
+        token = request.headers["Authorization"]
+        flag, data_token = verify_token(token, department="RRHH")
+        if not flag:
+            return {"error": "No autorizado. Token invalido"}, 400
         validator = EmployeeMedUpdateForm.from_json(ns.payload)
         if not validator.validate():
             return {"errors": validator.errors}, 400
@@ -282,8 +327,12 @@ class EmployeesEMRegistry(Resource):
         else:
             return {"error": str(error)}, 400
 
-    @ns.expect(employee_exam_model_delete)
+    @ns.expect(expected_headers_per, employee_exam_model_delete)
     def delete(self):
+        token = request.headers["Authorization"]
+        flag, data_token = verify_token(token, department="RRHH")
+        if not flag:
+            return {"error": "No autorizado. Token invalido"}, 400
         validator = EmployeeMedDeleteForm.from_json(ns.payload)
         if not validator.validate():
             return {"errors": validator.errors}, 400
@@ -298,7 +347,12 @@ class EmployeesEMRegistry(Resource):
 @ns.route("/employees/vacations/all")
 class EmployeesVacations(Resource):
     @ns.marshal_with(employees_vacations_model)
+    @ns.expect(expected_headers_per)
     def get(self):
+        token = request.headers["Authorization"]
+        flag, data_token = verify_token(token, department="RRHH")
+        if not flag:
+            return {"error": "No autorizado. Token invalido"}, 400
         data, code = get_all_vacations()
         if code == 200:
             return {"data": data}, code
@@ -309,7 +363,12 @@ class EmployeesVacations(Resource):
 @ns.route("/employee/vacations/<string:id_emp>")
 class EmployeesVacationsID(Resource):
     @ns.marshal_with(vacations_model)
+    @ns.expect(expected_headers_per)
     def get(self, id_emp):
+        token = request.headers["Authorization"]
+        flag, data_token = verify_token(token, department="RRHH")
+        if not flag:
+            return {"error": "No autorizado. Token invalido"}, 400
         data, code = get_vacations_employee(id_emp)
         if code == 200:
             return data, code
@@ -319,31 +378,48 @@ class EmployeesVacationsID(Resource):
 
 @ns.route("/employee/vacation")
 class EmployeesVacationRegistry(Resource):
-    @ns.expect(employee_vacation_model_insert)
+    @ns.expect(expected_headers_per, employee_vacation_model_insert)
     def post(self):
-        code, data = parse_data(ns.payload, 3)
-        if data["seniority"] is None:
-            return {"data": "Error en la estructura del diccionario seniority"}, 400
-        flag, error, result = insert_vacation(data["emp_id"], data["seniority"])
+        token = request.headers["Authorization"]
+        flag, data_token = verify_token(token, department="RRHH")
+        if not flag:
+            return {"error": "No autorizado. Token invalido"}, 400
+        validator = EmployeeVacInsertForm.from_json(ns.payload)
+        if not validator.validate():
+            return {"errors": validator.errors}, 400
+        data = validator.data
+        flag, error, result = insert_new_vacation(data)
         if flag:
             return {"data": str(result)}, 201
         else:
             return {"error": str(error)}, 400
 
-    @ns.expect(employee_vacation_model_insert)
+    @ns.expect(expected_headers_per, employee_vacation_model_insert)
     def put(self):
-        code, data = parse_data(ns.payload, 3)
-        if data["seniority"] is None:
-            return {"data": "Error en la estructura del diccionario seniority"}, 400
-        flag, error, result = update_registry_vac(data["emp_id"], data["seniority"])
+        token = request.headers["Authorization"]
+        flag, data_token = verify_token(token, department="RRHH")
+        if not flag:
+            return {"error": "No autorizado. Token invalido"}, 400
+        validator = EmployeeVacInsertForm.from_json(ns.payload)
+        if not validator.validate():
+            return {"errors": validator.errors}, 400
+        data = validator.data
+        flag, error, result = update_vacation(data)
         if flag:
             return {"data": str(result)}, 200
         else:
             return {"error": str(error)}, 400
 
-    @ns.expect(employee_vacation_model_delete)
+    @ns.expect(expected_headers_per, employee_vacation_model_delete)
     def delete(self):
-        code, data = parse_data(ns.payload, 3)
+        token = request.headers["Authorization"]
+        flag, data_token = verify_token(token, department="RRHH")
+        if not flag:
+            return {"error": "No autorizado. Token invalido"}, 400
+        validator = DeleteVacationForm.from_json(ns.payload)
+        if not validator.validate():
+            return {"errors": validator.errors}, 400
+        data = validator.data
         flag, error, result = delete_vacation(data["emp_id"])
         if flag:
             return {"data": str(result)}, 200
@@ -354,7 +430,12 @@ class EmployeesVacationRegistry(Resource):
 @ns.route("/employees/fichaje/all")
 class EmployeesResume(Resource):
     @ns.marshal_with(employees_resume_model)
+    @ns.expect(expected_headers_per)
     def get(self):
+        token = request.headers["Authorization"]
+        flag, data_token = verify_token(token, department="RRHH")
+        if not flag:
+            return {"error": "No autorizado. Token invalido"}, 400
         fichajes_resume, flag = get_fichajes_resume_cache(
             cache_file_resume_fichaje_path, is_hard_update=True
         )
@@ -392,7 +473,12 @@ class EmployeesResume(Resource):
 @ns.route("/employee/fichaje/<string:id_emp>")
 class EmployeesResume(Resource):  # noqa: F811
     @ns.marshal_with(resume_model)
+    @ns.expect(expected_headers_per)
     def get(self, id_emp):
+        token = request.headers["Authorization"]
+        flag, data_token = verify_token(token, department="RRHH")
+        if not flag:
+            return {"error": "No autorizado. Token invalido"}, 400
         fichajes_resume, flag = get_fichajes_resume_cache(
             cache_file_resume_fichaje_path, is_hard_update=True
         )
@@ -445,7 +531,12 @@ class DownloadFilesPayroll(Resource):
 @ns.route("/fichajes/files")
 class FilesFichaje(Resource):
     @ns.marshal_with(answer_files_fichajes_model)
+    @ns.expect(expected_headers_per)
     def get(self):
+        token = request.headers["Authorization"]
+        flag, data_token = verify_token(token, department="RRHH")
+        if not flag:
+            return {"data": None, "msg": "Token invalido"}, 401
         flag, files = get_files_fichaje()
         if flag:
             return {"data": files, "msg": "ok"}, 200
@@ -455,10 +546,18 @@ class FilesFichaje(Resource):
 
 @ns.route("/fichajes/data/fromfiles")
 class FileFichajeID(Resource):
-    @ns.expect(request_data_fichaje_files_model)
+    @ns.expect(expected_headers_per, request_data_fichaje_files_model)
     @ns.marshal_with(answer_fichajes_model)
     def post(self):
-        code, data = parse_data(ns.payload, 4)
+        token = request.headers["Authorization"]
+        flag, data_token = verify_token(token, department="RRHH")
+        if not flag:
+            return {"data": None, "msg": "Token invalido"}, 401
+        # code, data = parse_data(ns.payload, 4)
+        validator = DataFichajesFileForm.from_json(ns.payload)
+        if not validator.validate():
+            return {"data": None, "msg": validator.errors}, 400
+        data = validator.data
         code, out = get_fichaje_data(data)
         if code == 400:
             return {"data": None, "msg": out}, code
@@ -468,12 +567,15 @@ class FileFichajeID(Resource):
 
 @ns.route("/upload/fichaje/file")
 class UploadFicahjeFile(Resource):
-    @ns.expect(expected_files)
+    @ns.expect(expected_headers_per, expected_files)
     def post(self):
+        token = request.headers["Authorization"]
+        flag, data_token = verify_token(token, department="RRHH")
+        if not flag:
+            return {"data": "Token invalido"}, 401
         if "file" not in request.files:
             return {"data": "No se detecto un archivo"}, 400
         file = request.files["file"]
-
         if file:
             filename = secure_filename(file.filename)
             file.save(os.path.join(path_contract_files, filename))
@@ -484,14 +586,24 @@ class UploadFicahjeFile(Resource):
 
 @ns.route("/download/employees/<string:status>")
 class DownloadFileEMPs(Resource):
+    @ns.expect(expected_headers_per)
     def get(self, status):
+        token = request.headers["Authorization"]
+        flag, data_token = verify_token(token, department="RRHH")
+        if not flag:
+            return {"data": None, "msg": "Token invalido"}, 401
         filepath = create_csv_file_employees(status)
         return send_file(filepath, as_attachment=True)
 
 
 @ns.route("/download/employees/medical")
 class DownloadFileMedical(Resource):
+    @ns.expect(expected_headers_per)
     def get(self):
+        token = request.headers["Authorization"]
+        flag, data_token = verify_token(token, department="RRHH")
+        if not flag:
+            return {"data": None, "msg": "Token invalido"}, 401
         flag, e, result = get_all_examenes()
         filepath = "files/medical.csv"
         with open(filepath, "w") as file:
@@ -512,7 +624,12 @@ class DownloadFileMedical(Resource):
 
 @ns.route("/download/employees/vacations")
 class DownloadFileVacations(Resource):
+    @ns.expect(expected_headers_per)
     def get(self):
+        token = request.headers["Authorization"]
+        flag, data_token = verify_token(token, department="RRHH")
+        if not flag:
+            return {"data": None, "msg": "Token invalido"}, 401
         flag, error, data = get_vacations_data()
         filepath = "files/vacations.csv"
         with open(filepath, "w") as file:
@@ -528,7 +645,12 @@ class DownloadFileVacations(Resource):
 
 @ns.route("/download/quizz/<int:type_q>")
 class DownloadFileQuizz(Resource):
+    @ns.expect(expected_headers_per)
     def get(self, type_q):
+        token = request.headers["Authorization"]
+        flag, data_token = verify_token(token, department="RRHH")
+        if not flag:
+            return {"data": "Token invalido"}, 401
         try:
             quizz = quizzes_RRHH[str(type_q)]
             return send_file(quizz["path"], as_attachment=True)

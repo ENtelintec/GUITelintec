@@ -4,9 +4,15 @@ __date__ = '$ 28/jun./2024  at 16:23 $'
 
 from flask_restx import fields
 from werkzeug.datastructures import FileStorage
+from wtforms.fields.datetime import DateField
+from wtforms.fields.numeric import IntegerField
+from wtforms.fields.simple import StringField, EmailField
+from wtforms.form import Form
+from wtforms.validators import InputRequired
 
-from static.extensions import api
+from static.extensions import api, format_date, format_timestamps
 
+from wtforms import FormField, FieldList
 
 file_model = api.model('FileFichaje', {
     'name': fields.String(required=True, description='The name'),
@@ -65,3 +71,54 @@ answer_fichajes_model = api.model('AnsFichFiles', {
 expected_files = api.parser()
 expected_files.add_argument('file', type=FileStorage, location='files', required=True)
 
+
+def date_filter(date):
+    # Example filter function to format the date
+    return date.strftime(format_date) if not isinstance(date, str) else date
+
+
+def datetime_filter(date):
+    # Example filter function to format the date
+    return date.strftime(format_timestamps) if not isinstance(date, str) else date
+
+
+class FilesForm(Form):
+    name = StringField("name", validators=[InputRequired()])
+    path = StringField("path", validators=[InputRequired()])
+    extension = StringField("extension", validators=[InputRequired()])
+    size = StringField("size", validators=[InputRequired()])
+    report = StringField("report", validators=[InputRequired()])
+    date = DateField("date", validators=[InputRequired()], filters=[date_filter])
+    pairs = StringField("pairs", validators=[InputRequired()])
+
+
+class DataFichajesFileForm(Form):
+    files = FieldList(FormField(FilesForm),  "files")
+    grace_init = IntegerField("grace_init", validators=[InputRequired()])
+    grace_end = IntegerField("grace_end", validators=[InputRequired()])
+    time_in = StringField("time_in", validators=[InputRequired()])
+    time_out = StringField("time_out", validators=[InputRequired()])
+
+
+class EmployeeInputForm(Form):
+    name = StringField("name", validators=[InputRequired()])
+    lastname = StringField("lastname", validators=[InputRequired()])
+    phone = StringField("phone", validators=[InputRequired()])
+    dep = IntegerField("dep", validators=[InputRequired()])
+    modality = StringField("modality", validators=[InputRequired()])
+    email = EmailField("email", validators=[InputRequired()])
+    contract = StringField("contract", validators=[InputRequired()])
+    admission = DateField(
+        "admission", validators=[InputRequired()], filters=[date_filter]
+    )
+    rfc = StringField("rfc", validators=[InputRequired()])
+    curp = StringField("curp", validators=[InputRequired()])
+    nss = StringField("nss", validators=[InputRequired()])
+    emergency = StringField("emergency", validators=[InputRequired()])
+    position = StringField("position", validators=[InputRequired()])
+    status = StringField("status", validators=[InputRequired()])
+    departure = StringField("departure", validators=[InputRequired()])
+    birthday = DateField(
+        "birthday", validators=[InputRequired()], filters=[date_filter]
+    )
+    legajo = StringField("legajo", validators=[InputRequired()])

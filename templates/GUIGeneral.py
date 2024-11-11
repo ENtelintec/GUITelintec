@@ -66,7 +66,7 @@ class GUIAsistente(ttk.Window):
         self.navigation_frame.columnconfigure(0, weight=1)
         self.navigation_frame.rowconfigure(2, weight=1)
         # --------------------------------title-------------------------------
-        self.btnTeli = LogoFrame(self.navigation_frame)
+        self.btnTeli = ImageLogoFrame(self.navigation_frame)
         self.btnTeli.grid(row=0, column=0, sticky="nswe")
         theme_names = self.style_gui.theme_names()
         frame_theme = ttk.Frame(self.navigation_frame)
@@ -93,7 +93,13 @@ class GUIAsistente(ttk.Window):
         )
         print("side menu widgets created")
         # ------------------------login frame-------------------------------
-        self.login_frame = Login.LoginGUI(self, style_gui=self.style_gui)
+        kwargs = {
+            "get_username_data_callback":  self.get_username_data,
+            "update_side_menu_windows_callback": self.update_side_menu_windows,
+            "update_side_menu_data_callback": self.update_side_menu_data,
+            "update_side_menu_callback": self.update_side_menu
+        }
+        self.login_frame = Login.LoginGUI(self, style_gui=self.style_gui, **kwargs)
         self.login_frame.grid(
             row=0, column=0, sticky="nsew", pady=10, padx=5, columnspan=2
         )
@@ -107,7 +113,12 @@ class GUIAsistente(ttk.Window):
     def logOut(self):
         self._select_frame_by_name("none")
         self._destroy_side_menu_widgets()
-        self.login_frame = Login.LoginGUI(self, style_gui=self.style_gui)
+        kwargs = {
+            "get_username_data_callback":  self.get_username_data,
+            "update_side_menu_data_callback": self.update_side_menu_data,
+            "update_side_menu_callback": self.update_side_menu
+        }
+        self.login_frame = Login.LoginGUI(self, style_gui=self.style_gui, **kwargs)
         self.login_frame.grid(
             row=0, column=0, sticky="nsew", pady=10, padx=5, columnspan=2
         )
@@ -232,10 +243,13 @@ class GUIAsistente(ttk.Window):
                 "id_emp": self.username_data["id"],
                 "triger_actions_main_callback": self.triger_actions,
                 "name_frame": window,
+                "log_out_callback": self.logOut if window == "Cuenta" else None,
             }
             windows[window] = window_to_create(**arguments)
-            print(f"{window} frame created")
         return windows
+
+    def get_username_value(self):
+        return self.username
 
     def triger_actions(self, **events):
         if "action" in events:
@@ -249,7 +263,7 @@ class GUIAsistente(ttk.Window):
             print(f"action not implemented--{events}")
 
 
-class LogoFrame(tk.Frame):
+class ImageLogoFrame(tk.Frame):
     def __init__(self, master):
         super().__init__(master)
         self.columnconfigure(0, weight=1)
