@@ -526,38 +526,55 @@ def get_info_employee_id(id_emp: int):
     return (data_out, 200) if flag else ({}, 400)
 
 
+def get_vacations_employee(emp_id: int):
+    flag, error, result = get_vacations_data_emp(emp_id)
+    out = None
+    if not flag or len(result) == 0:
+        return out, 400
+    seniority_raw = json.loads(result[4])
+    seniority = [
+        {
+            "year": int(k),
+            "status": v["status"],
+            "comentarios": v["comentarios"],
+            "prima": v["prima"],
+        }
+        for k, v in seniority_raw.items()
+    ]
+    out = {
+        "emp_id": result[0],
+        "name": result[1].upper() + " " + result[2].upper(),
+        "date_admission": result[3],
+        "seniority": seniority,
+    }
+    return out, 200
+
+
 def get_all_vacations():
     flag, error, result = get_vacations_data()
     out = []
     if not flag or len(result) == 0:
         return [], 400
     for item in result:
-        (emp_id, name, l_name, date_admission, seniority) = item
-
+        seniority_raw = json.loads(item[4])
+        seniority = [
+            {
+                "year": int(k),
+                "status": v["status"],
+                "comentarios": v["comentarios"],
+                "prima": v["prima"],
+            }
+            for k, v in seniority_raw.items()
+        ]
         out.append(
             {
-                "emp_id": emp_id,
-                "name": name.upper() + " " + l_name.upper(),
-                "date_admission": date_admission,
-                "seniority": json.loads(seniority),
+                "emp_id": result[0],
+                "name": result[1].upper() + " " + result[2].upper(),
+                "date_admission": result[3],
+                "seniority": seniority,
             }
         )
 
-    return out, 200
-
-
-def get_vacations_employee(emp_id: int):
-    flag, error, result = get_vacations_data_emp(emp_id)
-    out = None
-    if not flag or len(result) == 0:
-        return out, 400
-    (emp_id, name, l_name, date_admission, seniority) = result
-    out = {
-        "emp_id": emp_id,
-        "name": name.upper() + " " + l_name.upper(),
-        "date_admission": date_admission,
-        "seniority": json.loads(seniority),
-    }
     return out, 200
 
 
