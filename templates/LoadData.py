@@ -181,7 +181,7 @@ def load_data(data_dic, is_super=False, emp_id=None, item=None, permissions=None
         case "Tasks":
             flag, error, tasks = get_all_tasks_by_status(status=-1, id_destiny=emp_id)
             data_dic["tasks"] = {"data": tasks}
-        case "Cotizaciones":
+        case "Pre-Venta":
             if "data_products_gen" not in data_dic:
                 flag, error, products = get_all_products_db()
                 data_dic["data_products_gen"] = products
@@ -204,6 +204,23 @@ def load_data(data_dic, is_super=False, emp_id=None, item=None, permissions=None
                 "columns_payroll": ["Id", "Nombre", "Apellido", "Datos"],
             }
         case "Crear Contratos":
+            if "Controlar Saldos" not in data_dic:
+                flag, error, contracts = get_contract(None)
+                data_dic["contracts"] = contracts
+            if "data_clients_gen" not in data_dic:
+                flag, error, clients = get_all_customers_db()
+                data_dic["data_clients_gen"] = clients
+            if "quotations" not in data_dic:
+                flag, error, data_quotations = get_quotation(None)
+                data_dic["quotations"] = data_quotations
+        case "BD Admin":
+            if "data_clients_gen" not in data_dic:
+                flag, error, clients = get_all_customers_db()
+                data_dic["data_clients_gen"] = clients
+            if "data_providers_gen" not in data_dic:
+                flag, error, providers = get_all_suppliers()
+                data_dic["data_providers_gen"] = providers
+        case "Contratos":
             if "Controlar Saldos" not in data_dic:
                 flag, error, contracts = get_contract(None)
                 data_dic["contracts"] = contracts

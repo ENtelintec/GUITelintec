@@ -20,7 +20,7 @@ from static.extensions import (
     cache_oct_file_temp_path,
     cache_oct_fichaje_path,
     quizzes_RRHH,
-    conversion_quizzes_path,
+    conversion_quizzes_path, format_date,
 )
 from templates.Functions_Text import clean_accents, compare_employee_name
 from templates.controllers.employees.employees_controller import get_employee_id_name
@@ -2094,7 +2094,8 @@ def get_list_files(
 
 
 def write_log_file(path, text):
-    with open(f"{path}_log.txt", "a") as f:
+    date = datetime.now().strftime(format_date)
+    with open(f"{path}_log_{date}.txt", "a") as f:
         f.write(text + "\n")
     return True
 

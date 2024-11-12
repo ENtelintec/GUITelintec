@@ -32,14 +32,12 @@
       "SM"
     ],
     "App.Department.Administracion": [
-      "Clientes",
-      "Proveedores",
+      "BD Admin",
       "SM",
-      "Cotizaciones",
-      "Documentos Contrato",
+      "Pre-Venta",
+      "Contratos",
       "Control Saldos",
-      "Remisiones",
-      "Crear Contratos"
+      "Remisiones"
     ],
     "App.Department.Common": [
       "Tasks"

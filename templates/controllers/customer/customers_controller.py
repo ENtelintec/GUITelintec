@@ -22,7 +22,7 @@ def get_all_customers_db():
 
 def create_customer_db(name, email, phone, rfc, address):
     insert_sql = (
-        "INSERT INTO sql_telintec.customers_amc (name, email, phone, rfc, address) "
+        "INSERT INTO sql_telintec.customers_amc (name, , email, phone, rfc, address) "
         "VALUES (%s, %s, %s, %s, %s)"
     )
     vals = (name, email, phone, rfc, address)

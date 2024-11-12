@@ -6,7 +6,7 @@ from tkinter import filedialog
 import ttkbootstrap as ttk
 from ttkbootstrap.tableview import Tableview
 
-from static.extensions import format_date
+from static.extensions import format_date, log_file_db
 from templates.Functions_GUI_Utils import (
     create_label,
     create_entry,
@@ -28,6 +28,7 @@ from templates.controllers.product.p_and_s_controller import (
 from templates.controllers.supplier.suppliers_controller import get_all_suppliers_amc
 from templates.forms.BarCodeGenerator import create_BarCodeFormat
 from templates.forms.Storage import InventoryStorage
+from templates.misc.Functions_Files import write_log_file
 from templates.modules.Almacen.SubFrameBarcode import BarcodeFrame
 from templates.modules.Almacen.SubFrameLector import LectorScreenSelector
 
@@ -164,6 +165,7 @@ class InventoryScreen(ttk.Frame):
         self.id_to_modify = None
         self.master = master
         self.columnconfigure(0, weight=1)
+        self.usernamedata = kwargs.get("username_data", None)
         self._ivar_tool = ttk.IntVar(value=0)
         self._ivar_internal = ttk.IntVar(value=0)
         self._products = (
@@ -343,13 +345,7 @@ class InventoryScreen(ttk.Frame):
         msg += msg_update
         flag, error, result, msg_create = self.create_new_products(product_new)
         msg += msg_create
-        create_notification_permission_notGUI(
-            msg,
-            ["almacen"],
-            "Actualizacion de inventario",
-            0,
-            0,
-        )
+        self.end_action_db(msg, "Actualizacion de inventario")
         self.update_table()
 
     def on_click_table_item(self, event):
@@ -392,7 +388,22 @@ class InventoryScreen(ttk.Frame):
             }
             self._trigger_actions_main_callback(**event)
 
-    def get_inputs_valus(self):
+    def clear_fields(self):
+        self.entries[0].configure(state="normal")
+        for index, entry in enumerate(self.entries):
+            if isinstance(entry, ttk.Combobox):
+                entry.configure(state="normal")
+                entry.set("None")
+                entry.configure(state="readonly")
+            elif isinstance(entry, ttk.IntVar):
+                entry.set(0)
+            elif isinstance(entry, ttk.Entry):
+                entry.delete(0, "end")
+        self.id_to_modify = None
+        self.old_stock = None
+        self.entries[0].configure(state="disabled")
+
+    def get_inputs_values(self):
         data = []
         for entry in self.entries:
             if isinstance(entry, ttk.Combobox):
@@ -432,7 +443,7 @@ class InventoryScreen(ttk.Frame):
             is_internal,
             codes,
             locations,
-        ) = self.get_inputs_valus()
+        ) = self.get_inputs_values()
         flag, error, n_rows = update_product_db(
             product_id,
             product_sku,
@@ -465,31 +476,10 @@ class InventoryScreen(ttk.Frame):
                     msg += f"\nError al crear movimiento: {product_sku}--{product_id}--{error}"
                 else:
                     msg += f"\nMovimiento creado: {product_sku}--{product_id}--{result}"
+            self.clear_fields()
+            self.update_table()
         msg_not = "System Notification\n" + msg
-        create_notification_permission_notGUI(
-            msg_not,
-            ["almacen"],
-            "Actualización de producto",
-            0,
-            0,
-        )
-        self.clear_fields()
-        self.update_table()
-
-    def clear_fields(self):
-        self.entries[0].configure(state="normal")
-        for index, entry in enumerate(self.entries):
-            if isinstance(entry, ttk.Combobox):
-                entry.configure(state="normal")
-                entry.set("None")
-                entry.configure(state="readonly")
-            elif isinstance(entry, ttk.IntVar):
-                entry.set(0)
-            elif isinstance(entry, ttk.Entry):
-                entry.delete(0, "end")
-        self.id_to_modify = None
-        self.old_stock = None
-        self.entries[0].configure(state="disabled")
+        self.end_action_db(msg_not, "Actualizacion de producto")
 
     def add_product(self):
         (
@@ -504,7 +494,7 @@ class InventoryScreen(ttk.Frame):
             is_internal,
             codes,
             locations,
-        ) = self.get_inputs_valus()
+        ) = self.get_inputs_values()
         if (
             product_sku == ""
             or product_name == ""
@@ -552,16 +542,10 @@ class InventoryScreen(ttk.Frame):
                 )
             else:
                 msg += f"\nMovimiento creado: {product_sku}--{lastrowid}"
+            self.clear_fields()
+            self.update_table()
         msg_not = "System Notification\n" + msg
-        create_notification_permission_notGUI(
-            msg_not,
-            ["almacen"],
-            "Creación de producto",
-            0,
-            0,
-        )
-        self.clear_fields()
-        self.update_table()
+        self.end_action_db(msg_not, "Actualizacion de inventario")
 
     def delete_product(self):
         product_id = self.entries[0].get()
@@ -572,15 +556,10 @@ class InventoryScreen(ttk.Frame):
             msg = f"Error al eliminar producto: {product_id}"
         else:
             msg = f"Producto eliminado: {product_id}"
-        create_notification_permission_notGUI(
-            msg,
-            ["almacen"],
-            "Eliminación de producto",
-            0,
-            0,
-        )
-        self.clear_fields()
-        self.update_table()
+            self.clear_fields()
+            self.update_table()
+        msg_not = "System Notification\n" + msg
+        self.end_action_db(msg_not, "Actualizacion de inventario")
 
     def update_products(self, products_data):
         flag, error, result = update_multiple_row_products_amc(
@@ -616,13 +595,6 @@ class InventoryScreen(ttk.Frame):
                 if flag
                 else f"\nError al registrar movimientos: {str(error)}"
             )
-        create_notification_permission_notGUI(
-            msg,
-            ["almacen"],
-            "Actualizacion de inventario",
-            0,
-            0,
-        )
         return flag, error, result, msg
 
     def create_new_products(self, products_new_data):
@@ -653,14 +625,15 @@ class InventoryScreen(ttk.Frame):
                 if flag
                 else f"\nError al registrar movimientos: {str(error)}"
             )
-        create_notification_permission_notGUI(
-            msg,
-            ["almacen"],
-            "Actualizacion de inventario",
-            0,
-            0,
-        )
         return flag, error, result, msg
+
+    def end_action_db(self, msg, title):
+        if msg is None or msg == "":
+            return
+        create_notification_permission_notGUI(
+            msg, ["Administracion"], title, self.usernamedata["id"], 0
+        )
+        write_log_file(log_file_db, msg)
 
     def update_procedure(self, **events):
         self.update_table(ignore_triger=True)
