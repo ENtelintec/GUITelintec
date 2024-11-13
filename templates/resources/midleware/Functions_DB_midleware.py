@@ -568,9 +568,9 @@ def get_all_vacations():
         ]
         out.append(
             {
-                "emp_id": result[0],
-                "name": result[1].upper() + " " + result[2].upper(),
-                "date_admission": result[3],
+                "emp_id": item[0],
+                "name": item[1].upper() + " " + item[2].upper(),
+                "date_admission": item[3],
                 "seniority": seniority,
             }
         )

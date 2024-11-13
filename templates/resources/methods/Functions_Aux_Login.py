@@ -25,7 +25,6 @@ def verify_department_permission(token_data: dict, department: str) -> bool:
     """
     try:
         permissions = token_data.get("permissions", {})
-        print("permissions: ", permissions)
         for item in permissions.values():
             if department.lower() in item.lower():
                 return True

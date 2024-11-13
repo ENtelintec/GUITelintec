@@ -545,7 +545,7 @@ class FilesFichaje(Resource):
 
 
 @ns.route("/fichajes/data/fromfiles")
-class FileFichajeID(Resource):
+class DataFichajeFiles(Resource):
     @ns.expect(expected_headers_per, request_data_fichaje_files_model)
     @ns.marshal_with(answer_fichajes_model)
     def post(self):

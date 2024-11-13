@@ -228,11 +228,13 @@ employee_vacation_model_delete = api.model(
 
 def date_filter(date):
     # Example filter function to format the date
+    date = date if date is not None else ""
     return date.strftime(format_date) if not isinstance(date, str) else date
 
 
 def datetime_filter(date):
     # Example filter function to format the date
+    date = date if date is not None else ""
     return date.strftime(format_timestamps) if not isinstance(date, str) else date
 
 
@@ -261,7 +263,7 @@ class EmployeeInputForm(Form):
 
 
 class EmployeeInsertForm(Form):
-    info = FormField(EmployeeInputForm,  "info")
+    info = FormField(EmployeeInputForm, "info")
 
 
 class EmployeeUpdateForm(Form):
@@ -269,7 +271,7 @@ class EmployeeUpdateForm(Form):
         "id",
         validators=[InputRequired(message="id is required or value 0 not accepted")],
     )
-    info = FormField(EmployeeInputForm,  "info")
+    info = FormField(EmployeeInputForm, "info")
 
 
 class EmployeeDeleteForm(Form):
@@ -321,13 +323,15 @@ class EmployeeMedDeleteForm(Form):
 
 class PrimaVacForm(Form):
     status = StringField("status", validators=[], default="No")
-    fecha_pago = DateField("fecha_pago", validators=[InputRequired()], filters=[date_filter])
+    fecha_pago = DateField(
+        "fecha_pago", validators=[InputRequired()], filters=[date_filter]
+    )
 
 
 class SeniorityForm(Form):
-    prima = FormField(PrimaVacForm,  "prima")
+    prima = FormField(PrimaVacForm, "prima")
     status = StringField("status", validators=[InputRequired()])
-    comentarios = StringField("comentarios", validators=[],  default="")
+    comentarios = StringField("comentarios", validators=[], default="")
 
 
 class EmployeeVacInsertForm(Form):
