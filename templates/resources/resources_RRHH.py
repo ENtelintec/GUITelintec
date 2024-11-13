@@ -220,7 +220,6 @@ class EmployeesEMResume(Resource):
                 id_exam, nombre, sangre, status, aptitud, fechas, apt_actual, emp_id = (
                     row
                 )
-                print(row)
                 if str(emp_id) == id_emp:
                     out = {
                         "exist": True,
@@ -255,7 +254,6 @@ class EmployeesEMResume(Resource):  # noqa: F811
             code = 200
             data_out = []
             for row in result:
-                print(row)
                 id_exam, nombre, sangre, status, aptitud, fechas, apt_actual, emp_id = (
                     row
                 )
@@ -273,7 +271,6 @@ class EmployeesEMResume(Resource):  # noqa: F811
                     }
                 )
             out["data"] = data_out
-            print(out)
         else:
             out = {"data": []}
             code = 400
@@ -486,7 +483,6 @@ class EmployeesResume(Resource):  # noqa: F811
             out = {}
             code = 404
             for item in fichajes_resume:
-                print(item[14])
                 if str(item[0]) == id_emp:
                     out = {
                         "id": item[0],

@@ -1427,7 +1427,6 @@ def correct_repetitions(
     for key in normal_data_emp.keys():
         if key in keys_absence:
             res = absence_data_emp.pop(key, None)
-            print("res----", res)
     return (
         normal_data_emp,
         absence_data_emp,
@@ -2140,7 +2139,6 @@ def get_data_encuesta(file_path: str):
 def extract_data_encuesta(data: list, type_q=2):
     data_out = []
     path_quizz = quizzes_RRHH[str(type_q)]["path"]
-    print(path_quizz)
     dict_quizz_list = []
     metadata_list = []
     starts_withnumbers_pattern = "\d+\."
