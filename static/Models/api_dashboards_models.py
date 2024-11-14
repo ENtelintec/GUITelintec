@@ -2,7 +2,7 @@
 __author__ = "Edisson Naula"
 __date__ = "$ 18/sept/2024  at 17:17 $"
 
-
+from static.Models.api_models import date_filter
 from static.extensions import api, format_date
 from flask_restx import fields
 from wtforms.validators import InputRequired, NumberRange
@@ -34,14 +34,6 @@ fichaje_emp_model = api.model(
         ),
     },
 )
-
-
-def date_filter(datetime_obj):
-    return (
-        datetime_obj.strftime(format_date)
-        if not isinstance(datetime_obj, str)
-        else datetime_obj
-    )
 
 
 class MovementsChartsForm(Form):

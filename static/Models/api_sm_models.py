@@ -9,6 +9,7 @@ from wtforms.fields.list import FieldList
 from wtforms.fields.numeric import FloatField
 from wtforms.fields.simple import StringField, URLField
 
+from static.Models.api_models import date_filter
 from static.extensions import api, format_date
 from wtforms.form import Form
 from wtforms import validators, IntegerField, FormField
@@ -353,11 +354,6 @@ response_sm_dispatch_model = api.model(
         "data": fields.Nested(data_response_dispatch_model),
     },
 )
-
-
-def date_filter(date):
-    # Example filter function to format the date
-    return date.strftime(format_date) if not isinstance(date, str) else date
 
 
 class ItemsFormSM(Form):

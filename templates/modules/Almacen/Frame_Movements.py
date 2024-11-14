@@ -6,6 +6,7 @@ import time
 from datetime import datetime
 
 import ttkbootstrap as ttk
+from ttkbootstrap.dialogs import Messagebox
 from ttkbootstrap.tableview import Tableview
 
 from static.extensions import format_date, format_timestamps, log_file_db
@@ -25,7 +26,8 @@ from templates.controllers.product.p_and_s_controller import (
     delete_movement_db,
     create_in_movement_db,
     create_out_movement_db,
-    get_all_products_db, update_stock_db,
+    get_all_products_db,
+    update_stock_db,
 )
 from templates.misc.Functions_Files import write_log_file
 from templates.modules.Almacen.SubFrameLector import LectorScreenSelector
@@ -46,7 +48,7 @@ coldata_movementes = [
 
 
 def fetch_all_products():
-    flag, error, result = get_all_products_db
+    flag, error, result = get_all_products_db()
     if not flag:
         print("Error al obtener los productos:", str(error))
         return []
@@ -88,6 +90,11 @@ def create_movement_widgets(master, values_products):
     return entries
 
 
+def create_new_movements(data):
+    flag, error, result = insert_multiple_row_movements_amc(data)
+    return flag, error, result
+
+
 class MovementsFrame(ttk.Notebook):
     def __init__(self, master, **kwargs):
         super().__init__(master)
@@ -109,11 +116,6 @@ class MovementsFrame(ttk.Notebook):
             self.frame_2.update_table(ignore_triger=True)
 
 
-def create_new_movements(data):
-    flag, error, result = insert_multiple_row_movements_amc(data)
-    return flag, error, result
-
-
 class InScreen(ttk.Frame):
     def __init__(self, master, **kwargs):
         super().__init__(master)
@@ -128,7 +130,7 @@ class InScreen(ttk.Frame):
         self.triger_actions_callback = kwargs["triger_actions_main_callback"]
         self.usernamedata = kwargs.get("username_data", None)
         # handlers
-        flag, error, self._products = (
+        self._products = (
             fetch_all_products()
             if "data_products_gen" not in kwargs["data"]
             else kwargs["data"]["data_products_gen"]
@@ -289,7 +291,7 @@ class InScreen(ttk.Frame):
         self.entries[4].set(f"ID Producto: {data[1]}")
 
     def update_table(self, ignore_triger=False):
-        flag, error, self._products = fetch_all_products()
+        self._products = fetch_all_products()
         flag, error, self._ins = get_ins_db_detail()
         self.table.unload_table_data()
         time.sleep(0.5)
@@ -301,32 +303,6 @@ class InScreen(ttk.Frame):
                 "sender": "movements_in",
             }
             self.triger_actions_callback(**event)
-
-    def update_in_item(self):
-        if self.movetement_id is None or self._id_product_to_modify is None:
-            return
-        msg = ""
-        old_quantity = self._old_data_movement[4]
-        new_date = datetime.now().strftime(format_date)
-        quantity = self.entries[1].get()
-        flag, error, result = update_movement_db(
-            self.movetement_id, quantity, new_date, None
-        )
-        if not flag:
-            msg += f"\nError al actualizar movimiento: {self.movetement_id}--{self._id_product_to_modify}"
-        else:
-            msg += f"\nMovimiento actualizado producto {self._id_product_to_modify}, valor de entrada {old_quantity}-->{quantity}."
-            new_stock = self.new_stock(
-                int(quantity) - int(old_quantity), self._id_product_to_modify
-            )
-            flag, error, result = update_stock_db(self._id_product_to_modify, new_stock)
-            if not flag:
-                msg += f"\nError al actualizar stock: {self._id_product_to_modify}"
-            else:
-                msg += f"\nStock actualizado producto {self._id_product_to_modify}."
-            self.update_table()
-            self.clear_fields()
-        end_action_db(msg, "Actualizacion de Movimiento de Entrada", self.usernamedata)
 
     def add_in_item(self):
         msg = ""
@@ -351,14 +327,38 @@ class InScreen(ttk.Frame):
             self.clear_fields()
         end_action_db(msg, "Creacion de Movimiento de Entrada", self.usernamedata)
 
-    def new_stock(self, value_to_add, id_product):
-        for product in self._products:
-            if product[0] == int(id_product):
-                return product[4] + value_to_add
-        return value_to_add
+    def update_in_item(self):
+        if self.movetement_id is None or self._id_product_to_modify is None:
+            Messagebox.show_error(
+                "No se ha seleccionado un movimiento para actualizar", "Error"
+            )
+            return
+        msg = ""
+        old_quantity = self._old_data_movement[4]
+        new_date = datetime.now().strftime(format_date)
+        quantity = self.entries[1].get()
+        flag, error, result = update_movement_db(
+            self.movetement_id, quantity, new_date, None
+        )
+        if not flag:
+            msg += f"\nError al actualizar movimiento: {self.movetement_id}--{self._id_product_to_modify}"
+        else:
+            msg += f"\nMovimiento actualizado producto {self._id_product_to_modify}, valor de entrada {old_quantity}-->{quantity}."
+            new_stock = self.new_stock(
+                int(quantity) - int(old_quantity), self._id_product_to_modify
+            )
+            flag, error, result = update_stock_db(self._id_product_to_modify, new_stock)
+            if not flag:
+                msg += f"\nError al actualizar stock: {self._id_product_to_modify}"
+            else:
+                msg += f"\nStock actualizado producto {self._id_product_to_modify}."
+            self.update_table()
+            self.clear_fields()
+        end_action_db(msg, "Actualizacion de Movimiento de Entrada", self.usernamedata)
 
     def delete_in_item(self):
         if self.movetement_id is None:
+            Messagebox.show_error("No se ha seleccionado un movimiento", "Error")
             return
         msg = ""
         quantity = self.entries[1].get()
@@ -378,6 +378,12 @@ class InScreen(ttk.Frame):
             self.clear_fields()
         end_action_db(msg, "Eliminacion de Movimiento de Entrada", self.usernamedata)
 
+    def new_stock(self, value_to_add, id_product):
+        for product in self._products:
+            if product[0] == int(id_product):
+                return product[4] + value_to_add
+        return value_to_add
+
 
 class OutScreen(ttk.Frame):
     def __init__(self, master, **kwargs):
@@ -392,7 +398,7 @@ class OutScreen(ttk.Frame):
         self.master = master
         self.columnconfigure(0, weight=1)
         # handlers
-        flag, error, self._products = (
+        self._products = (
             fetch_all_products()
             if "data_products_gen" not in kwargs["data"]
             else kwargs["data"]["data_products_gen"]
@@ -554,7 +560,7 @@ class OutScreen(ttk.Frame):
         self.entries[4].set(f"ID Producto: {data[1]}")
 
     def update_table(self, ignore_triger=False):
-        flag, error, self._products = fetch_all_products()
+        self._products = fetch_all_products()
         flag, error, self._outs = get_outs_db_detail()
         self.table.unload_table_data()
         time.sleep(0.5)
@@ -567,32 +573,6 @@ class OutScreen(ttk.Frame):
                 "sender": "movements_out",
             }
             self.triger_actions_callback(**event)
-
-    def update_out_item(self):
-        if self.movetement_id is None or self._id_product_to_modify is None:
-            return
-        msg = ""
-        new_date = datetime.now().strftime(format_date)
-        quantity = self.entries[1].get()
-        old_quantity = self._old_data_movement[4]
-        flag, error, result = update_movement_db(
-            self.movetement_id, quantity, new_date, None
-        )
-        if not flag:
-            msg += f"\nError al actualizar movimiento: {self.movetement_id}"
-        else:
-            msg += f"\nMovimiento actualizado producto {self._id_product_to_modify}, valor de movimiento {old_quantity}-->{quantity}."
-            new_stock = self.new_stock(
-                int(quantity) - int(old_quantity), self._id_product_to_modify
-            )
-            flag, error, result = update_stock_db(self._id_product_to_modify, new_stock)
-            if not flag:
-                msg += f"\nError al actualizar stock: {self._id_product_to_modify}"
-            else:
-                msg += f"\nStock actualizado producto {self._id_product_to_modify}."
-            self.update_table()
-            self.clear_fields()
-        end_action_db(msg, "Actualizacion de Movimiento de Salida", self.usernamedata)
 
     def add_out_item(self):
         msg = ""
@@ -617,14 +597,36 @@ class OutScreen(ttk.Frame):
             self.clear_fields()
         end_action_db(msg, "Creacion de Movimiento de Salida", self.usernamedata)
 
-    def new_stock(self, value_to_add, id_product):
-        for product in self._products:
-            if product[0] == int(id_product):
-                return product[4] + value_to_add
-        return value_to_add
+    def update_out_item(self):
+        if self.movetement_id is None or self._id_product_to_modify is None:
+            Messagebox.show_error("No se ha seleccionado un movimiento", "Error")
+            return
+        msg = ""
+        new_date = datetime.now().strftime(format_date)
+        quantity = self.entries[1].get()
+        old_quantity = self._old_data_movement[4]
+        flag, error, result = update_movement_db(
+            self.movetement_id, quantity, new_date, None
+        )
+        if not flag:
+            msg += f"\nError al actualizar movimiento: {self.movetement_id}"
+        else:
+            msg += f"\nMovimiento actualizado producto {self._id_product_to_modify}, valor de movimiento {old_quantity}-->{quantity}."
+            new_stock = self.new_stock(
+                int(quantity) - int(old_quantity), self._id_product_to_modify
+            )
+            flag, error, result = update_stock_db(self._id_product_to_modify, new_stock)
+            if not flag:
+                msg += f"\nError al actualizar stock: {self._id_product_to_modify}"
+            else:
+                msg += f"\nStock actualizado producto {self._id_product_to_modify}."
+            self.update_table()
+            self.clear_fields()
+        end_action_db(msg, "Actualizacion de Movimiento de Salida", self.usernamedata)
 
     def delete_out_item(self):
         if self.movetement_id is None:
+            Messagebox.show_error("No se ha seleccionado un movimiento", "Error")
             return
         msg = ""
         quantity = self.entries[1].get()
@@ -643,3 +645,9 @@ class OutScreen(ttk.Frame):
             self.update_table()
             self.clear_fields()
         end_action_db(msg, "Eliminacion de Movimiento de Salida", self.usernamedata)
+
+    def new_stock(self, value_to_add, id_product):
+        for product in self._products:
+            if product[0] == int(id_product):
+                return product[4] + value_to_add
+        return value_to_add

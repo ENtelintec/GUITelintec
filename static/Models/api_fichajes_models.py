@@ -10,6 +10,7 @@ from wtforms.fields.simple import StringField, EmailField
 from wtforms.form import Form
 from wtforms.validators import InputRequired
 
+from static.Models.api_models import date_filter
 from static.extensions import api, format_date, format_timestamps
 
 from wtforms import FormField, FieldList
@@ -98,18 +99,6 @@ answer_fichajes_model = api.model(
 
 expected_files = api.parser()
 expected_files.add_argument("file", type=FileStorage, location="files", required=True)
-
-
-def date_filter(date):
-    # Example filter function to format the date
-    date = date if date is not None else ""
-    print("----------", date)
-    return date.strftime(format_date) if not isinstance(date, str) else date
-
-
-def datetime_filter(date):
-    # Example filter function to format the date
-    return date.strftime(format_timestamps) if not isinstance(date, str) else date
 
 
 class FilesForm(Form):

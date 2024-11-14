@@ -4,6 +4,7 @@ from datetime import datetime
 from tkinter import filedialog
 
 import ttkbootstrap as ttk
+from ttkbootstrap.dialogs import Messagebox
 from ttkbootstrap.tableview import Tableview
 
 from static.extensions import format_date, log_file_db
@@ -294,8 +295,10 @@ class InventoryScreen(ttk.Frame):
 
     def print_code(self):
         if self.id_to_modify is None:
+            Messagebox.show_error("No se ha seleccionado un producto", title="Error")
             return
         sku = self.entries[1].get()
+        name = self.entries[2].get()
         filepath = filedialog.asksaveasfilename(
             defaultextension=".pdf",
             filetypes=[("PDF files", "*.pdf")],
@@ -303,7 +306,7 @@ class InventoryScreen(ttk.Frame):
         )
         if not filepath:
             return
-        create_BarCodeFormat(sku, filepath, "128")
+        create_BarCodeFormat(sku, sku, name, filepath, "128")
         kw = {
             "pdf_filepath": filepath,
         }
@@ -444,6 +447,17 @@ class InventoryScreen(ttk.Frame):
             codes,
             locations,
         ) = self.get_inputs_values()
+        if (
+            product_sku == ""
+            or product_name == ""
+            or product_price == ""
+            or product_category == ""
+            or product_supplier == ""
+        ):
+            Messagebox.show_error("Todos los campos deben estar llenos", title="Error")
+            return
+        if product_id == "":
+            Messagebox.show_error("No se ha seleccionado un producto", title="Error")
         flag, error, n_rows = update_product_db(
             product_id,
             product_sku,
@@ -504,11 +518,11 @@ class InventoryScreen(ttk.Frame):
             or product_category == ""
             or product_supplier == ""
         ):
-            print("Error, values must not be empty.")
+            Messagebox.show_error("Todos los campos deben estar llenos", title="Error")
             return
 
-        if product_id != "":
-            print("Error, product id must be empty.")
+        if product_id != "" or self.id_to_modify is not None:
+            Messagebox.show_error("Error, product id must be empty.", title="Error")
             return
         flag, error, lastrowid = create_product_db(
             product_sku,
@@ -549,7 +563,13 @@ class InventoryScreen(ttk.Frame):
 
     def delete_product(self):
         product_id = self.entries[0].get()
-        if product_id == "":
+        if product_id == "" or self.id_to_modify is None:
+            Messagebox.show_error("No se ha seleccionado un producto", title="Error")
+            return
+        answer = Messagebox.yesno(
+            "Esta seguro que desea eliminar el producto?", "Alerta"
+        )
+        if answer == "No":
             return
         flag, error, result = delete_product_db(product_id)
         if not flag:

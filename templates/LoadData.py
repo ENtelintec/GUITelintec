@@ -37,6 +37,9 @@ from templates.controllers.product.p_and_s_controller import (
 )
 from templates.modules.Home.SubFrame_GeneralNoti import load_notifications
 from templates.modules.RRHH.SubFrame_CrearQuiz import get_name_id_employees_list
+from templates.resources.midleware.Functions_midleware_admin import (
+    get_data_table_purchases,
+)
 
 
 def load_data(data_dic, is_super=False, emp_id=None, item=None, permissions=None):
@@ -230,6 +233,13 @@ def load_data(data_dic, is_super=False, emp_id=None, item=None, permissions=None
             if "quotations" not in data_dic:
                 flag, error, data_quotations = get_quotation(None)
                 data_dic["quotations"] = data_quotations
+        case "Compras":
+            if "data_providers_gen" not in data_dic:
+                flag, error, providers = get_all_suppliers()
+                print("load compras", providers)
+                data_dic["data_providers_gen"] = providers
+            data, code = get_data_table_purchases({"limit_min": 0, "limit_max": 100})
+            data_dic["data_purchases_admin"] = data
         case _:
             pass
     return data_dic

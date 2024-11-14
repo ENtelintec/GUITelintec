@@ -5,6 +5,8 @@ __date__ = "$ 20/jun./2024  at 15:08 $"
 from werkzeug.datastructures import FileStorage
 from wtforms.form import Form
 from wtforms.validators import InputRequired
+
+from static.Models.api_models import date_filter
 from static.extensions import api, format_date
 from flask_restx import fields
 from wtforms.fields.datetime import DateField, DateTimeField
@@ -266,13 +268,6 @@ contract_settings_model = api.model(
         "pattern": fields.String(required=True, description="The contract pattern"),
     },
 )
-
-
-def date_filter(date):
-    # Example filter function to format the date
-    if date is not None:
-        return date.strftime(format_date) if not isinstance(date, str) else date
-    return None
 
 
 class MetadataQuotationForm(Form):

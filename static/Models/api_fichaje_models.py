@@ -11,6 +11,8 @@ from wtforms.fields.numeric import FloatField
 from wtforms.validators import InputRequired
 from wtforms.form import Form
 from wtforms import IntegerField, StringField
+
+from static.Models.api_models import date_filter
 from static.extensions import api, format_date
 
 fichaje_request_model = api.model(
@@ -169,11 +171,6 @@ FichajeAproveExtras_model = api.model(
 
 
 )
-
-
-def date_filter(date):
-    # Example filter function to format the date
-    return date.strftime(format_date) if not isinstance(date, str) else date
 
 
 class FichajeRequestFormr(Form):

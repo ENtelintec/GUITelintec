@@ -376,20 +376,16 @@ request_file_model = api.model(
 )
 
 
-def datetime_filter(datetime_obj):
-    return (
-        datetime_obj.strftime(format_timestamps)
-        if not isinstance(datetime_obj, str)
-        else datetime_obj
-    )
+def date_filter(date):
+    # Example filter function to format the date
+    date = date if date is not None else ""
+    return date.strftime(format_date) if not isinstance(date, str) else date
 
 
-def date_filter(datetime_obj):
-    return (
-        datetime_obj.strftime(format_date)
-        if not isinstance(datetime_obj, str)
-        else datetime_obj
-    )
+def datetime_filter(date):
+    # Example filter function to format the date
+    date = date if date is not None else ""
+    return date.strftime(format_timestamps) if not isinstance(date, str) else date
 
 
 class MetadataTasksForm(Form):

@@ -5,13 +5,15 @@ __date__ = "$ 12/nov/2024  at 16:07 $"
 import ttkbootstrap as ttk
 from ttkbootstrap.scrolled import ScrolledFrame
 
-from templates.modules.Administration.Frame_ContractCreate import ContractsCreateFrame
-from templates.modules.Administration.Frame_ContractDocs import ContractsDocsFrame
+from templates.modules.Administration.SubFrame_ContractCreate import (
+    ContractsCreateFrame,
+)
+from templates.modules.Administration.SubFrame_ContractDocs import ContractsDocsFrame
 
 
 class MainContractFrame(ScrolledFrame):
     def __init__(self, master, **kwargs):
-        super().__init__(master)
+        super().__init__(master, autohide=True)
         self.columnconfigure(0, weight=1)
         notebook = ttk.Notebook(self)
         notebook.grid(row=0, column=0, sticky="nswe", padx=(5, 20))

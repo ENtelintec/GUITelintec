@@ -37,7 +37,8 @@
       "Pre-Venta",
       "Contratos",
       "Control Saldos",
-      "Remisiones"
+      "Remisiones",
+      "Compras"
     ],
     "App.Department.Common": [
       "Tasks"

@@ -3,12 +3,15 @@ __author__ = "Edisson Naula"
 __date__ = "$ 28/may./2024  at 10:34 $"
 
 from templates.modules.Administration.DB_Managment import AdminDBFrame
-from templates.modules.Administration.Frame_ContractCreate import ContractsCreateFrame
-from templates.modules.Administration.Frame_ContractDocs import ContractsDocsFrame
+from templates.modules.Administration.SubFrame_ContractCreate import (
+    ContractsCreateFrame,
+)
+from templates.modules.Administration.SubFrame_ContractDocs import ContractsDocsFrame
 from templates.modules.Administration.Frame_ControlSaldos import ControlSaldos
 from templates.modules.Administration.Frame_Quotations import QuotationsBiddingsFrame
 from templates.modules.Administration.Frame_Remisions import RemisionsFrame
 from templates.modules.Administration.MainContracts import MainContractFrame
+from templates.modules.Administration.PruchaseSales import PurchasesFrame
 from templates.modules.Almacen.DashboardStorage import StorageDashboard
 from templates.modules.Almacen.Frame_Movements import MovementsFrame
 from templates.modules.Bitacora.Frame_Bitacora import BitacoraEditFrame
@@ -67,8 +70,9 @@ available_frames = {
     "Remisiones": RemisionsFrame,
     "Nominas": PayrollFilesGUI,
     "Crear Contratos": ContractsCreateFrame,
-    "BD Admin":  AdminDBFrame,
-    "Contratos": MainContractFrame
+    "BD Admin": AdminDBFrame,
+    "Contratos": MainContractFrame,
+    "Compras": PurchasesFrame,
 }
 
 frames_notifications_avaliable = {

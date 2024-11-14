@@ -8,6 +8,7 @@ from wtforms.fields.form import FormField
 from wtforms.fields.list import FieldList
 from wtforms.fields.simple import EmailField
 
+from static.Models.api_models import date_filter, datetime_filter
 from static.extensions import api, format_date, format_timestamps
 from wtforms.validators import InputRequired
 from wtforms import IntegerField, StringField
@@ -224,18 +225,6 @@ employee_vacation_model_delete = api.model(
     "EmployeeVacationDelete",
     {"emp_id": fields.Integer(required=True, description="The employee id")},
 )
-
-
-def date_filter(date):
-    # Example filter function to format the date
-    date = date if date is not None else ""
-    return date.strftime(format_date) if not isinstance(date, str) else date
-
-
-def datetime_filter(date):
-    # Example filter function to format the date
-    date = date if date is not None else ""
-    return date.strftime(format_timestamps) if not isinstance(date, str) else date
 
 
 class EmployeeInputForm(Form):

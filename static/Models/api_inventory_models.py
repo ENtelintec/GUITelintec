@@ -6,6 +6,7 @@ from flask_restx import fields
 from werkzeug.datastructures import FileStorage
 from wtforms.fields.list import FieldList
 
+from static.Models.api_models import date_filter
 from static.extensions import api, format_timestamps, format_date
 from wtforms.fields.form import FormField
 from wtforms.fields.numeric import FloatField
@@ -213,22 +214,6 @@ file_movements_request_model = api.model(
         ),
     },
 )
-
-
-def datetime_filter(datetime_obj):
-    return (
-        datetime_obj.strftime(format_timestamps)
-        if not isinstance(datetime_obj, str)
-        else datetime_obj
-    )
-
-
-def date_filter(datetime_obj):
-    return (
-        datetime_obj.strftime(format_date)
-        if not isinstance(datetime_obj, str)
-        else datetime_obj
-    )
 
 
 class CodesForm(Form):

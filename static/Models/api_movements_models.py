@@ -3,6 +3,8 @@ __author__ = "Edisson Naula"
 __date__ = "$ 03/may./2024  at 15:33 $"
 
 from flask_restx import fields
+
+from static.Models.api_models import date_filter
 from static.extensions import api, format_date
 from wtforms.fields.form import FormField
 from wtforms.fields.datetime import DateField
@@ -57,11 +59,6 @@ movement_delete_model = api.model(
         )
     },
 )
-
-
-def date_filter(date):
-    # Example filter function to format the date
-    return date.strftime(format_date) if not isinstance(date, str) else date
 
 
 class MovementForm(Form):
