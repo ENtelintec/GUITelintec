@@ -8,6 +8,7 @@ from reportlab.graphics.shapes import Drawing
 from reportlab.lib.units import mm
 from reportlab.pdfgen import canvas
 from reportlab.graphics import renderPDF
+from reportlab.platypus import Flowable
 
 from templates.forms.PDFGenerator import wrap_text
 
@@ -24,6 +25,26 @@ sizes_page = {
 }
 
 data_company = {"name": "Telintec", "department": "Almacen"}
+
+
+class VerticalText(Flowable):
+    """Rotates a text."""
+
+    def __init__(self, text):
+        Flowable.__init__(self)
+        self.text = text
+
+    def draw(self):
+        c = self.canv
+        c.rotate(90)
+        fs = c._fontsize
+        c.translate(1, -fs / 1.2)  # canvas._leading?
+        c.drawString(0, 0, self.text)
+
+    def wrap(self, aW, aH):
+        canv = self.canv
+        fn, fs = canv._fontname, canv._fontsize
+        return canv._leading, 1 + canv.stringWidth(self.text, fn, fs)
 
 
 def BarCode39(filepath, code, x, y, size=default_size_page):
@@ -306,31 +327,30 @@ def create_two_code_one_page_multiple(
             pagesize_whole[1] / 2,
         )
 
-        # name_list = wrap_text(name.upper(), pagesize_whole[0] - 5 * mm)
-        # name_list = name_list.split("\n")
-        # font_name = 9
-        # c.setFont("Courier-Bold", font_name)
-        # for i, line in enumerate(name_list):
-        #     c.drawString(
-        #         2 * mm,
-        #         pagesize_whole[1]
-        #         - 30
-        #         - i * font_name
-        #         - (pagesize_whole[1] / 2) * counter,
-        #         line,
-        #     )
-        c.setFont("Helvetica", 7)
-        c.drawCentredString(
-            pagesize_whole[0] / 2,
-            pagesize_whole[1] - 3 * mm - (pagesize_whole[1] / 2) * counter,
-            f"SKU: {sku}",
-        )
-        c.drawCentredString(
-            pagesize_whole[0] / 2,
-            pagesize_whole[1] - 3 * mm - (pagesize_whole[1] / 2) * counter - 8,
-            text=str(code),
-        )
-        # BarCodeQR(filepath, code_list[0], 0, 0, 0, width_q=40 * mm, height_q=40 * mm)
+        name_list = wrap_text(name.upper(), 25)
+        name_list = name_list.split("\n")
+        font_name = 8
+        c.setFont("Courier-Bold", font_name)
+        for i, line in enumerate(name_list[0:2]):
+            c.drawString(
+                2 * mm,
+                pagesize_whole[1]
+                - 3 * mm
+                - (pagesize_whole[1] / 2) * counter
+                - i * font_name,
+                line,
+            )
+        # c.setFont("Helvetica", 7)
+        # c.drawCentredString(
+        #     pagesize_whole[0] / 2,
+        #     pagesize_whole[1] - 3 * mm - (pagesize_whole[1] / 2) * counter,
+        #     f"SKU: {sku}",
+        # )
+        # c.drawCentredString(
+        #     pagesize_whole[0] / 2,
+        #     pagesize_whole[1] - 3 * mm - (pagesize_whole[1] / 2) * counter - 8,
+        #     text=str(code),
+        # )
         barcode = selectBarcodeType(
             c,
             type_code,
@@ -342,6 +362,24 @@ def create_two_code_one_page_multiple(
             y=0,
             bar_height=height_barcode,
             bar_width=width_barcode,
+        )
+        text_sku = VerticalText(f"SKU: {sku}")
+        text_sku.drawOn(
+            c,
+            2 * mm,
+            pagesize_whole[1]
+            - pagesize_whole[1] / 2
+            + 1 * mm
+            - (pagesize_whole[1] / 2) * counter,
+        )
+        text_code = VerticalText(text=str(code))
+        text_code.drawOn(
+            c,
+            pagesize_whole[0] - 5 * mm,
+            pagesize_whole[1]
+            - pagesize_whole[1] / 2
+            + 1 * mm
+            - (pagesize_whole[1] / 2) * counter,
         )
 
         counter += 1
