@@ -50,3 +50,4 @@ __pycache__/
 /FO-ALM-*.xlsx
 /swager_specs.json
 /files/test_result.txt
+/templates/forms/barcodes.pdf

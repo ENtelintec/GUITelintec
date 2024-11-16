@@ -11,7 +11,7 @@ from reportlab.graphics import renderPDF
 
 from templates.forms.PDFGenerator import wrap_text
 
-default_size_page = (40.00 * mm, 76.00 * mm)
+default_size_page = (50.00 * mm, 75.00 * mm)
 sizes_page = {
     "A4": (210 * mm, 297 * mm),
     "A5": (148 * mm, 210 * mm),
@@ -48,12 +48,17 @@ def BarCode39Std(filepath, code, x, y, size=default_size_page):
     return barcode39
 
 
-def BarCode128(c, code, y_offset, pagesize=default_size_page):
+def BarCode128(
+    c,
+    code,
+    y_offset,
+    bar_height,
+    bar_width,
+    pagesize=default_size_page,
+):
     """
     Create barcode examples and embed in a PDF
     """
-    bar_height = 10 * mm
-    bar_width = 0.5 * mm
     barcode128 = code128.Code128(
         code,
         barHeight=bar_height,
@@ -61,7 +66,7 @@ def BarCode128(c, code, y_offset, pagesize=default_size_page):
     )
     width, height = (barcode128.width, barcode128.height)
     x = (pagesize[0] - width) / 2
-    y = ((pagesize[1] - height) / 2) - y_offset
+    y = ((pagesize[1] - height) / 2) + y_offset
     barcode128.drawOn(c, x, y)
     return barcode128
 
@@ -154,6 +159,41 @@ def draw_NameProduct(master_canvas, x, y, name_product, font_size=10):
     master_canvas.drawString(x, y, name_product)
 
 
+def selectBarcodeType(
+    c,
+    type_code,
+    code,
+    filepath,
+    pagesize,
+    y_offset=0,
+    bar_height=10 * mm,
+    bar_width=0.5 * mm,
+):
+    match type_code:
+        case "39":
+            barcode = BarCode39(filepath, code, 5 * mm, 5 * mm, pagesize)
+        case "39std":
+            barcode = BarCode39Std(filepath, code, 5 * mm, 5 * mm, pagesize)
+        case "93":
+            barcode = BarCode93(filepath, code, 5 * mm, 5 * mm, pagesize)
+        case "128":
+            barcode = BarCode128(
+                c, code, 7 * mm + y_offset, bar_height, bar_width, pagesize
+            )
+        case "usps":
+            barcode = BarCodeUSPS(filepath, code, 5 * mm, 5 * mm, pagesize)
+        case "eanbc8":
+            barcode = BarCodeEANBC8(filepath, code, 5 * mm, 5 * mm, pagesize)
+        case "eanbc13":
+            barcode = BarCodeEANBC13(filepath, code, 5 * mm, 5 * mm, pagesize)
+        case "qr":
+            barcode = BarCodeQR(filepath, code, 5 * mm, 5 * mm, pagesize)
+        case _:
+            barcode = None
+            print("Error at creating barcode")
+    return barcode
+
+
 def create_BarCodeFormat(
     code, sku, name, filepath, type_code, pagesize="default", orientation="horizontal"
 ):
@@ -167,33 +207,14 @@ def create_BarCodeFormat(
         pagesize[1] - 18,
         f"{data_company['name']}-{data_company['department']}",
     )
-    name_list = wrap_text(name.upper(), pagesize[0] - 5 * mm).split("\n")
+    name_list = wrap_text(name.upper(), pagesize[0] - 10 * mm).split("\n")
     font_name = 9
     c.setFont("Courier-Bold", font_name)
     for i, line in enumerate(name_list):
         c.drawString(5 * mm, pagesize[1] - 30 - i * font_name, line)
     c.setFont("Helvetica", 6)
     c.drawString(5 * mm, pagesize[1] - len(name_list) * font_name - 30, f"SKU: {sku}")
-    match type_code:
-        case "39":
-            barcode = BarCode39(filepath, code, 5 * mm, 5 * mm, pagesize)
-        case "39std":
-            barcode = BarCode39Std(filepath, code, 5 * mm, 5 * mm, pagesize)
-        case "93":
-            barcode = BarCode93(filepath, code, 5 * mm, 5 * mm, pagesize)
-        case "128":
-            barcode = BarCode128(c, code, 7 * mm, pagesize)
-        case "usps":
-            barcode = BarCodeUSPS(filepath, code, 5 * mm, 5 * mm, pagesize)
-        case "eanbc8":
-            barcode = BarCodeEANBC8(filepath, code, 5 * mm, 5 * mm, pagesize)
-        case "eanbc13":
-            barcode = BarCodeEANBC13(filepath, code, 5 * mm, 5 * mm, pagesize)
-        case "qr":
-            barcode = BarCodeQR(filepath, code, 5 * mm, 5 * mm, pagesize)
-        case _:
-            barcode = None
-            print("Error at creating barcode")
+    barcode = selectBarcodeType(c, type_code, code, filepath, pagesize)
     height_barcode = barcode.height if barcode else 10
     c.setFont("Helvetica", 7)
     c.drawCentredString(
@@ -201,3 +222,134 @@ def create_BarCodeFormat(
     )
     c.save()
     print("Barcode created: ", filepath)
+
+
+def create_multiple_barcodes(
+    code_list,
+    sku_list,
+    name_list,
+    filepath,
+    type_code,
+    pagesize="default",
+    orientation="horizontal",
+):
+    pagesize = sizes_page[pagesize]
+    pagesize = (pagesize[1], pagesize[0]) if orientation == "horizontal" else pagesize
+    c = canvas.Canvas(filepath, pagesize=pagesize)
+    for code, sku, name in zip(code_list, sku_list, name_list):
+        draw_border(c, 0, 0, pagesize[0], pagesize[1])
+        c.setFont("Helvetica", 14)
+        c.drawCentredString(
+            pagesize[0] / 2,
+            pagesize[1] - 18,
+            f"{data_company['name']}-{data_company['department']}",
+        )
+        name_list = wrap_text(name.upper(), pagesize[0] - 10 * mm).split("\n")
+        font_name = 9
+        c.setFont("Courier-Bold", font_name)
+        for i, line in enumerate(name_list):
+            c.drawString(5 * mm, pagesize[1] - 30 - i * font_name, line)
+        c.setFont("Helvetica", 6)
+        c.drawString(
+            5 * mm, pagesize[1] - len(name_list) * font_name - 30, f"SKU: {sku}"
+        )
+        barcode = selectBarcodeType(c, type_code, code, filepath, pagesize)
+        height_barcode = barcode.height if barcode else 10
+        c.setFont("Helvetica", 7)
+        print("code:", code, "pagesize", pagesize, height_barcode)
+        c.drawCentredString(
+            pagesize[0] / 2,
+            pagesize[1] / 2 - 20 - height_barcode / 2 - 8,
+            text=str(code),
+        )
+        c.showPage()
+    c.save()
+    print("Barcodes created: ", filepath)
+
+
+def create_two_code_one_page_multiple(
+    code_list,
+    sku_list,
+    name_list,
+    filepath,
+    type_code,
+    pagesize="default",
+    orientation="vertical",
+):
+    pagesize_whole = sizes_page[pagesize]
+    print(pagesize_whole)
+    pagesize_whole = (
+        (pagesize_whole[1], pagesize_whole[0])
+        if orientation == "horizontal"
+        else pagesize_whole
+    )
+    c = canvas.Canvas(filepath, pagesize=pagesize_whole)
+    code_per_page = 2
+    counter = 0
+    for code, sku, name in zip(code_list, sku_list, name_list):
+        draw_border(
+            c,
+            0,
+            pagesize_whole[1] / 2 - (pagesize_whole[1] / 2) * counter,
+            pagesize_whole[0],
+            pagesize_whole[1] / 2,
+        )
+        c.setFont("Helvetica", 14)
+        c.drawCentredString(
+            pagesize_whole[0] / 2,
+            pagesize_whole[1] - 18 - (pagesize_whole[1] / 2) * counter,
+            f"{data_company['name']}-{data_company['department']}",
+        )
+        name_list = wrap_text(name.upper(), pagesize_whole[0] - 5 * mm)
+        print(name_list)
+        name_list = name_list.split("\n")
+        print(pagesize_whole[0] - 5 * mm, name_list)
+        font_name = 9
+        c.setFont("Courier-Bold", font_name)
+        for i, line in enumerate(name_list):
+            c.drawString(
+                2 * mm,
+                pagesize_whole[1]
+                - 30
+                - i * font_name
+                - (pagesize_whole[1] / 2) * counter,
+                line,
+            )
+        c.setFont("Helvetica", 7)
+        c.drawString(
+            5 * mm,
+            pagesize_whole[1]
+            - len(name_list) * font_name
+            - 30
+            - (pagesize_whole[1] / 2) * counter,
+            f"SKU: {sku}",
+        )
+        height_barcode = 10 * mm
+        barcode = selectBarcodeType(
+            c,
+            type_code,
+            code,
+            filepath,
+            (pagesize_whole[0], pagesize_whole[1] / 2),
+            y_offset=pagesize_whole[1] / 2
+            - height_barcode
+            - (pagesize_whole[1] / 2) * counter,
+            bar_height=height_barcode,
+            bar_width=0.40 * mm,
+        )
+        height_barcode = barcode.height if barcode else 10
+        c.setFont("Helvetica", 7)
+        c.drawCentredString(
+            pagesize_whole[0] / 2,
+            pagesize_whole[1]
+            - pagesize_whole[1] * 1 / 4
+            - height_barcode / 2
+            - 20
+            - (pagesize_whole[1] / 2) * counter,
+            text=str(code),
+        )
+        counter += 1
+        if counter == code_per_page:
+            c.showPage()
+            counter = 0
+    c.save()
