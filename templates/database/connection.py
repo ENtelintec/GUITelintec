@@ -5,7 +5,7 @@ __date__ = "$ 27/jul./2023  at 16:41 $"
 
 import mysql.connector
 
-from static.extensions import secrets, HOST_DB_DEFAULT, USER_DB_DEFAULT, PASS_DB_DEFAULT
+from static.constants import secrets, HOST_DB_DEFAULT, USER_DB_DEFAULT, PASS_DB_DEFAULT
 
 
 def connectionDB():

@@ -31,8 +31,10 @@ cache_oct_fichaje_path = "files/contracts_cache.pkl"
 filepath_settings = "files/settings.json"
 filepath_daemons = "files/flags_daemons.json"
 filepath_recomendations = "files/recomendations.json"
+file_size_pages = "files/size_pages.json"
 quizzes_dir_path = "static/quizzes_dir.json"
 files_user = "files/users.json"
+file_codebar = "files/codebar.pdf"
 quizzes_RRHH = {
     "0": {"name": "Encuesta de Salida", "path": "files/quizz_salida.json", "type": 0},
     "1": {

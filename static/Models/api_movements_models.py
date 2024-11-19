@@ -5,7 +5,7 @@ __date__ = "$ 03/may./2024  at 15:33 $"
 from flask_restx import fields
 
 from static.Models.api_models import date_filter
-from static.extensions import api, format_date
+from static.constants import api
 from wtforms.fields.form import FormField
 from wtforms.fields.datetime import DateField
 from wtforms.fields.numeric import FloatField

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-__author__ = 'Edisson Naula'
-__date__ = '$ 13/may./2024  at 15:20 $'
+__author__ = "Edisson Naula"
+__date__ = "$ 13/may./2024  at 15:20 $"
 
 from datetime import datetime
 
@@ -8,18 +8,29 @@ import ttkbootstrap as ttk
 from ttkbootstrap.dialogs import Messagebox
 from ttkbootstrap.scrolled import ScrolledFrame
 
-from static.extensions import quizz_out_path, format_timestamps_filename
+from static.constants import quizz_out_path, format_timestamps_filename
 from templates.forms.ClimaLaboral import create_quizz_clima_laboral
 from templates.forms.Eva360 import create_quizz_eva_360
 from templates.forms.QuizzNorm35 import QuizzNor035_v1, QuizzNor035_50Plus
 from templates.forms.QuizzSalida import QuizzSalidaPDF
 from templates.misc.Functions_AuxFiles import save_json_file_quizz
-from templates.Functions_GUI_Utils import calculate_results_quizzes, recommendations_results_quizzes
+from templates.Functions_GUI_Utils import (
+    calculate_results_quizzes,
+    recommendations_results_quizzes,
+)
 
 
 class QuizMaker(ttk.Toplevel):
-    def __init__(self, dict_quizz, title=None, tipo_id=0, out_path=quizz_out_path, 
-                 metadata: dict = None, master=None, **kwargs):
+    def __init__(
+        self,
+        dict_quizz,
+        title=None,
+        tipo_id=0,
+        out_path=quizz_out_path,
+        metadata: dict = None,
+        master=None,
+        **kwargs,
+    ):
         super().__init__(master)
         self.master = master
         self.title(title)
@@ -47,7 +58,9 @@ class QuizMaker(ttk.Toplevel):
         self.frame_questions.columnconfigure(0, weight=1)
         self.frame_questions.rowconfigure(1, weight=1)
         self.scroll_questions_frame = ScrolledFrame(self, autohide=True)
-        self.scroll_questions_frame.grid(row=2, column=0, padx=10, pady=10, sticky="nswe")
+        self.scroll_questions_frame.grid(
+            row=2, column=0, padx=10, pady=10, sticky="nswe"
+        )
         self.scroll_questions_frame.columnconfigure(0, weight=1)
         self.scroll_questions_frame.rowconfigure(0, weight=1)
         self.frame_options = ttk.Frame(self.scroll_questions_frame)
@@ -81,10 +94,10 @@ class QuizMaker(ttk.Toplevel):
         Messagebox.show_info(
             title="Result",
             message=f"Your final result is:\n"
-                    f"Calificación final: {dict_results['c_final']}\n"
-                    f"Calificación de dominio: {dict_results['c_dom']}\n"
-                    f"Calificacion de categoria: {dict_results['c_cat']}\n"
-                    f"----RECOMENDACIONES----",
+            f"Calificación final: {dict_results['c_final']}\n"
+            f"Calificación de dominio: {dict_results['c_dom']}\n"
+            f"Calificacion de categoria: {dict_results['c_cat']}\n"
+            f"----RECOMENDACIONES----",
         )
         return dict_results
 
@@ -95,9 +108,9 @@ class QuizMaker(ttk.Toplevel):
         Messagebox.show_info(
             title="Recommendations",
             message=f"Algunas recomendaciones : \n"
-                    f"Se recomienda Para la calificacion final{dict_recommendations['c_final_r']}\n"
-                    f"Se recomienda Para la calificacion de dominio{dict_recommendations['c_dom_r']}\n"
-                    f"Se recomienda Para la calificacion categoria{dict_recommendations['c_cat_r']}\n",
+            f"Se recomienda Para la calificacion final{dict_recommendations['c_final_r']}\n"
+            f"Se recomienda Para la calificacion de dominio{dict_recommendations['c_dom_r']}\n"
+            f"Se recomienda Para la calificacion categoria{dict_recommendations['c_cat_r']}\n",
         )
         return dict_recommendations
 
@@ -170,7 +183,7 @@ class QuizMaker(ttk.Toplevel):
                         row=index_y + 1, column=index_x, sticky="w", padx=10, pady=10
                     )
                     index_cols.append(index_x)
-                    index_rows.append(index_y+1)
+                    index_rows.append(index_y + 1)
                     q_list.append(var)
                 self.frame_options.columnconfigure(index_cols, weight=1)
                 self.frame_options.rowconfigure(index_rows, weight=1)
@@ -276,9 +289,8 @@ class QuizMaker(ttk.Toplevel):
         self.dict_quizz[str(self.q_no)]["answer"] = self.opt_selected[-1]
 
     def update_dict_quizz(
-            self, new_dict: dict, tipo_op, dict_results, dict_recommendations
+        self, new_dict: dict, tipo_op, dict_results, dict_recommendations
     ):
-
         self.dict_quizz = new_dict
         self.dict_quizz["results"] = dict_results
         self.dict_quizz["recommendations"] = dict_recommendations
@@ -291,8 +303,8 @@ class QuizMaker(ttk.Toplevel):
         date_end = str(self.metadata["departure"])
         date_inteview = str(self.metadata["date"])
         file_out = (
-                self.quizz_out_path
-                + f"{name_emp.replace(' ', '')}_{date_inteview.replace('/', '-')}_type_{tipo_op}.pdf"
+            self.quizz_out_path
+            + f"{name_emp.replace(' ', '')}_{date_inteview.replace('/', '-')}_type_{tipo_op}.pdf"
         )
         if tipo_op == 0:
             QuizzSalidaPDF(
@@ -363,9 +375,7 @@ class QuizMaker(ttk.Toplevel):
             )
             print("create eva360", create_quizz_eva_360)
         print(f"quizz update and pdf generated at {file_out}")
-        result_name = (
-            f"Quiz_{tipo_op}_{id_emp}_{datetime.now().strftime(format_timestamps_filename)}.json"
-        )
+        result_name = f"Quiz_{tipo_op}_{id_emp}_{datetime.now().strftime(format_timestamps_filename)}.json"
         self.metadata["date"] = str(self.metadata["date"])
         self.metadata["admision"] = str(self.metadata["admision"])
         self.metadata["type_q"] = tipo_op
@@ -373,7 +383,7 @@ class QuizMaker(ttk.Toplevel):
         self.dict_quizz["metadata"] = self.metadata
         save_json_file_quizz(self.dict_quizz, quizz_out_path + result_name)
         data_out = {
-            "id":  self.id_task,
+            "id": self.id_task,
             "path_out": quizz_out_path + result_name,
             "metadata": self.metadata,
         }

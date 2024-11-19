@@ -1,6 +1,6 @@
 from flask import Flask
 from flask_cors import CORS
-from static.extensions import api
+from static.constants import api
 from templates.resources.resources_login import ns as ns_login
 from templates.resources.resources_RRHH import ns as ns_rrhh
 from templates.resources.resources_SM import ns as ns_sm

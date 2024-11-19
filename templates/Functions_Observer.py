@@ -14,7 +14,7 @@ import requests
 from bardapi import Bard
 from bardapi.constants import SESSION_HEADERS
 
-from static.extensions import secrets
+from static.constants import secrets
 from templates.controllers.chatbot.chatbot_controller import (
     get_isAlive,
     update_isAlive,

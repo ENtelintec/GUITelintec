@@ -3,7 +3,7 @@ import time
 import ttkbootstrap as ttk
 from ttkbootstrap.tableview import Tableview
 
-from static.extensions import log_file_db
+from static.constants import log_file_db
 from templates.Functions_GUI_Utils import (
     create_label,
     create_entry,

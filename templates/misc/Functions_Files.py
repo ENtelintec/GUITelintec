@@ -15,12 +15,13 @@ from typing import Any
 import dropbox
 import pandas as pd
 
-from static.extensions import (
+from static.constants import (
     secrets,
     cache_oct_file_temp_path,
     cache_oct_fichaje_path,
     quizzes_RRHH,
-    conversion_quizzes_path, format_date,
+    conversion_quizzes_path,
+    format_date,
 )
 from templates.Functions_Text import clean_accents, compare_employee_name
 from templates.controllers.employees.employees_controller import get_employee_id_name

@@ -7,7 +7,7 @@ from ttkbootstrap.scrolled import ScrolledFrame
 
 import templates.modules.Sesion.Frame_LoginFrames as Login
 from static.FramesClasses import available_frames
-from static.extensions import filepath_settings, ventanasApp_path
+from static.constants import filepath_settings, ventanasApp_path
 from templates.controllers.chatbot.chatbot_controller import get_chats_w_limit
 from templates.misc.Functions_AuxFiles import read_setting_file
 from templates.Functions_AuxFilesGUI import carpeta_principal, get_image_side_menu
@@ -94,10 +94,10 @@ class GUIAsistente(ttk.Window):
         print("side menu widgets created")
         # ------------------------login frame-------------------------------
         kwargs = {
-            "get_username_data_callback":  self.get_username_data,
+            "get_username_data_callback": self.get_username_data,
             "update_side_menu_windows_callback": self.update_side_menu_windows,
             "update_side_menu_data_callback": self.update_side_menu_data,
-            "update_side_menu_callback": self.update_side_menu
+            "update_side_menu_callback": self.update_side_menu,
         }
         self.login_frame = Login.LoginGUI(self, style_gui=self.style_gui, **kwargs)
         self.login_frame.grid(
@@ -114,9 +114,9 @@ class GUIAsistente(ttk.Window):
         self._select_frame_by_name("none")
         self._destroy_side_menu_widgets()
         kwargs = {
-            "get_username_data_callback":  self.get_username_data,
+            "get_username_data_callback": self.get_username_data,
             "update_side_menu_data_callback": self.update_side_menu_data,
-            "update_side_menu_callback": self.update_side_menu
+            "update_side_menu_callback": self.update_side_menu,
         }
         self.login_frame = Login.LoginGUI(self, style_gui=self.style_gui, **kwargs)
         self.login_frame.grid(

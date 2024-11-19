@@ -7,7 +7,7 @@ import ttkbootstrap as ttk
 from ttkbootstrap.dialogs import Messagebox
 from ttkbootstrap.tableview import Tableview
 
-from static.extensions import format_date, log_file_db
+from static.constants import format_date, log_file_db
 from templates.Functions_GUI_Utils import (
     create_label,
     create_entry,
@@ -30,7 +30,7 @@ from templates.controllers.supplier.suppliers_controller import get_all_supplier
 from templates.forms.BarCodeGenerator import create_BarCodeFormat
 from templates.forms.Storage import InventoryStorage
 from templates.misc.Functions_Files import write_log_file
-from templates.modules.Almacen.SubFrameBarcode import BarcodeFrame
+from templates.modules.Almacen.SubFrameBarcode import BarcodeSubFrameSelector
 from templates.modules.Almacen.SubFrameLector import LectorScreenSelector
 
 coldata_inventory = [
@@ -295,10 +295,14 @@ class InventoryScreen(ttk.Frame):
 
     def print_code(self):
         if self.id_to_modify is None:
-            Messagebox.show_error("No se ha seleccionado un producto", title="Error")
-            return
-        sku = self.entries[1].get()
-        name = self.entries[2].get()
+            Messagebox.show_info(
+                "No se ha seleccionado un producto, se pondra por defecto el 1.",
+                title="Warning",
+            )
+        code = self._products[0][1]
+        name = self._products[0][2]
+        sku = json.loads(self._products[0][9])
+        sku = "None" if len(sku) == 0 else sku[0]
         filepath = filedialog.asksaveasfilename(
             defaultextension=".pdf",
             filetypes=[("PDF files", "*.pdf")],
@@ -306,11 +310,16 @@ class InventoryScreen(ttk.Frame):
         )
         if not filepath:
             return
-        create_BarCodeFormat(sku, sku, name, filepath, "128")
+        create_BarCodeFormat(code, sku, name, filepath, "128")
         kw = {
             "pdf_filepath": filepath,
+            "id_product": self._products[0][0],
+            "sku": sku,
+            "name": name,
+            "code": code,
+            "products": self._products,
         }
-        BarcodeFrame(self, sku, **kw)
+        BarcodeSubFrameSelector(self, **kw)
 
     def print_products(self):
         filepath = filedialog.asksaveasfilename(

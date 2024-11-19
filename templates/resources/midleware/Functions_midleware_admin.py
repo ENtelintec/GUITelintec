@@ -4,7 +4,7 @@ __date__ = "$ 20/jun./2024  at 15:23 $"
 
 import json
 
-from static.extensions import filepath_settings
+from static.constants import filepath_settings
 from templates.controllers.contracts.contracts_controller import (
     get_contract,
     get_contract_from_abb,

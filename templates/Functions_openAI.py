@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-__author__ = 'Edisson Naula'
-__date__ = '$ 26/dic./2023  at 14:35 $'
+__author__ = "Edisson Naula"
+__date__ = "$ 26/dic./2023  at 14:35 $"
 
 import json
 import time
@@ -8,33 +8,48 @@ import time
 import openai
 from openai import OpenAI
 
-from static.extensions import secrets, department_tools_openAI
-from templates.Functions_tools_openAI import getProductCategories, getProductsAlmacen, getHighStockProducts, \
-    getLowStockProducts, getCostumer, getSupplier, getOrder, getProductMovement, getSupplyInventory, getNoStockProducts, \
-    getTotalFichajeEmployee, getActiveEmployees, getEmployeeInfo, getToolsForDepartment
+from static.constants import secrets, department_tools_openAI
+from templates.Functions_tools_openAI import (
+    getProductCategories,
+    getProductsAlmacen,
+    getHighStockProducts,
+    getLowStockProducts,
+    getCostumer,
+    getSupplier,
+    getOrder,
+    getProductMovement,
+    getSupplyInventory,
+    getNoStockProducts,
+    getTotalFichajeEmployee,
+    getActiveEmployees,
+    getEmployeeInfo,
+    getToolsForDepartment,
+)
 
 client = OpenAI(api_key=secrets.get("OPENAI_API_KEY_AV"))
 openai.api_key = secrets["OPENAI_API_KEY_AV"]
 
 available_functions = {
-        "getProductCategories": getProductCategories,
-        "getProductsAlmacen": getProductsAlmacen,
-        "getHighStockProducts":  getHighStockProducts,
-        "getLowStockProducts": getLowStockProducts,
-        "getCostumer": getCostumer,
-        "getSupplier": getSupplier,
-        "getOrder": getOrder,
-        "getProductMovement": getProductMovement,
-        "getSupplyInventory": getSupplyInventory,
-        "getNoStockProducts": getNoStockProducts,
-        "getTotalFichajeEmployee": getTotalFichajeEmployee,
-        "getActiveEmployees": getActiveEmployees,
-        "getEmployeeInfo": getEmployeeInfo,
-        "getToolsForDepartment": getToolsForDepartment
-    }
+    "getProductCategories": getProductCategories,
+    "getProductsAlmacen": getProductsAlmacen,
+    "getHighStockProducts": getHighStockProducts,
+    "getLowStockProducts": getLowStockProducts,
+    "getCostumer": getCostumer,
+    "getSupplier": getSupplier,
+    "getOrder": getOrder,
+    "getProductMovement": getProductMovement,
+    "getSupplyInventory": getSupplyInventory,
+    "getNoStockProducts": getNoStockProducts,
+    "getTotalFichajeEmployee": getTotalFichajeEmployee,
+    "getActiveEmployees": getActiveEmployees,
+    "getEmployeeInfo": getEmployeeInfo,
+    "getToolsForDepartment": getToolsForDepartment,
+}
 
 
-def create_assistant_openai(model="gpt-4-1106-preview", files=None, instructions=None, tools=None):
+def create_assistant_openai(
+    model="gpt-4-1106-preview", files=None, instructions=None, tools=None
+):
     if tools is None:
         tools = [{"type": "code_interpreter"}, {"type": "retrieval"}]
     e = None
@@ -45,11 +60,7 @@ def create_assistant_openai(model="gpt-4-1106-preview", files=None, instructions
             instructions=instructions,
             model=model,
             tools=tools,
-            tool_resources={
-                "code_interpreter": {
-                    "file_ids": file_ids
-                }
-            }
+            tool_resources={"code_interpreter": {"file_ids": file_ids}},
         )
     except Exception as e:
         print(e)
@@ -71,9 +82,7 @@ def create_message_openai(thread_id, msg, role):
     e = None
     try:
         message = client.beta.threads.messages.create(
-            thread_id=thread_id,
-            role=role,
-            content=msg
+            thread_id=thread_id, role=role, content=msg
         )
     except Exception as e:
         print(e)
@@ -85,8 +94,8 @@ def run_thread_openai(thread_id, assistant_id):
     e = None
     try:
         run = client.beta.threads.runs.create(
-            thread_id=thread_id,
-            assistant_id=assistant_id)
+            thread_id=thread_id, assistant_id=assistant_id
+        )
     except Exception as e:
         print(e)
         run = None
@@ -116,7 +125,7 @@ def complete_required_actions(required_actions, thread_id, run_id):
         complete_actions = client.beta.threads.runs.submit_tool_outputs(
             thread_id=thread_id,
             run_id=run_id,
-            tool_outputs=get_tool_outputs(required_actions)
+            tool_outputs=get_tool_outputs(required_actions),
         )
     except Exception as e:
         print("catch error complete required tool: ", e)
@@ -128,12 +137,13 @@ def retrieve_runs_openai(thread_id, run_id):
     e = None
     try:
         while True:
-            runs = client.beta.threads.runs.retrieve(
-                thread_id=thread_id,
-                run_id=run_id
-            )
+            runs = client.beta.threads.runs.retrieve(thread_id=thread_id, run_id=run_id)
             if runs.status == "requires_action":
-                completed_actions, error = complete_required_actions(runs.required_action.submit_tool_outputs.tool_calls, thread_id, run_id)
+                completed_actions, error = complete_required_actions(
+                    runs.required_action.submit_tool_outputs.tool_calls,
+                    thread_id,
+                    run_id,
+                )
                 if error is not None:
                     print("Error at completing required tool: ", error)
                     runs = None
@@ -151,9 +161,7 @@ def retrieve_runs_openai(thread_id, run_id):
 def retrieve_messages_openai(thread_id):
     e = None
     try:
-        messages = client.beta.threads.messages.list(
-            thread_id=thread_id
-        )
+        messages = client.beta.threads.messages.list(thread_id=thread_id)
     except Exception as e:
         print(e)
         messages = None
@@ -184,7 +192,13 @@ def get_response_chat_completion(messages: list) -> str:
     return out.choices[0].message.content
 
 
-def get_response_assistant(message: str, filename: str, files: list = None, instructions: str = None, department=None) -> tuple[list | None, str]:
+def get_response_assistant(
+    message: str,
+    filename: str,
+    files: list = None,
+    instructions: str = None,
+    department=None,
+) -> tuple[list | None, str]:
     """
     Receives context and conversation with the bot and return a
     message from the bot.
@@ -197,7 +211,9 @@ def get_response_assistant(message: str, filename: str, files: list = None, inst
     :return: answer (string)
     """
     # json.loads(open('context.json', encoding='utf-8').read())["context"]]
-    tools = json.loads(open(department_tools_openAI[department.lower()], encoding='utf-8').read())
+    tools = json.loads(
+        open(department_tools_openAI[department.lower()], encoding="utf-8").read()
+    )
     e = None
     answer = ""
     files_assistat_ids = []
@@ -207,7 +223,9 @@ def get_response_assistant(message: str, filename: str, files: list = None, inst
                 files_assistat_ids.append(item["file_id"])
                 break
     try:
-        assistant, error = create_assistant_openai(files=files_assistat_ids, instructions=instructions, tools=tools)
+        assistant, error = create_assistant_openai(
+            files=files_assistat_ids, instructions=instructions, tools=tools
+        )
     except Exception as e:
         print("Error at creating assistant on openAI: ", e)
         return files, "Error at creating assistant on openAI"
@@ -218,7 +236,9 @@ def get_response_assistant(message: str, filename: str, files: list = None, inst
         run, error = retrieve_runs_openai(thread.id, run.id)
         msgs, error = retrieve_messages_openai(thread.id)
         for msg in reversed(msgs.data):
-            answer += msg.content[0].text.value + "\n" if msg.role == "assistant" else ""
+            answer += (
+                msg.content[0].text.value + "\n" if msg.role == "assistant" else ""
+            )
     except Exception as e:
         print("Catching Error at getting response on openAI: ", e)
         return files, f"Catching Error at getting response on openAI: {e}"
@@ -252,10 +272,7 @@ def delete_file_openai(file_id):
 def upload_file_openai(file_path: str):
     e = None
     try:
-        file = client.files.create(
-            file=open(file_path, "rb"),
-            purpose="assistants"
-        )
+        file = client.files.create(file=open(file_path, "rb"), purpose="assistants")
         while True:
             files, error = get_files_list_openai()
             if len(files) > 0:

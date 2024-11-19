@@ -7,7 +7,7 @@ from wtforms.form import Form
 from wtforms.validators import InputRequired
 
 from static.Models.api_models import date_filter
-from static.extensions import api, format_date
+from static.constants import api
 from flask_restx import fields
 from wtforms.fields.datetime import DateField, DateTimeField
 from wtforms.fields.list import FieldList

@@ -9,7 +9,7 @@ from ttkbootstrap.dialogs import Messagebox
 from ttkbootstrap.tableview import Tableview
 
 from static.Models.api_purchases_models import PurchasePostForm
-from static.extensions import format_date, format_timestamps
+from static.constants import format_date, format_timestamps
 from templates.Functions_GUI_Utils import (
     create_label,
     create_entry,

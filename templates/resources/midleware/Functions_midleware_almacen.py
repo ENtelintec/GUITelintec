@@ -7,7 +7,7 @@ from datetime import datetime
 
 import pandas as pd
 
-from static.extensions import (
+from static.constants import (
     format_timestamps,
     filepath_inventory_form,
     filepath_inventory_form_movements,

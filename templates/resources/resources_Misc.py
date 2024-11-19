@@ -20,7 +20,7 @@ from static.Models.api_models import (
     task_delete_model,
     TaskDeleteForm,
 )
-from static.extensions import filepath_settings
+from static.constants import filepath_settings
 from templates.Functions_Utils import create_notification_permission_notGUI
 from templates.controllers.misc.tasks_controller import (
     create_task,

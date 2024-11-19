@@ -5,7 +5,7 @@ __date__ = "$ 12/jul./2024  at 15:16 $"
 import json
 from datetime import datetime
 
-from static.extensions import format_date
+from static.constants import format_date
 from templates.controllers.fichajes.fichajes_controller import get_all_fichajes_op
 from templates.misc.Functions_AuxFiles import split_commment, unify_comment_dict
 

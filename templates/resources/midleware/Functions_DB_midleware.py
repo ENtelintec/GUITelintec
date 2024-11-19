@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 
 import pandas as pd
 
-from static.extensions import format_timestamps, log_file_sm_path, format_date
+from static.constants import format_timestamps, log_file_sm_path, format_date
 from templates.controllers.employees.employees_controller import (
     get_all_data_employees,
     get_all_data_employee,

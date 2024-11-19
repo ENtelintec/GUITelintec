@@ -46,7 +46,7 @@ from static.Models.api_models import (
     resume_model,
     expected_headers_per,
 )
-from static.extensions import (
+from static.constants import (
     cache_file_resume_fichaje_path,
     quizzes_RRHH,
     path_contract_files,

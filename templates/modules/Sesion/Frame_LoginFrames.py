@@ -13,7 +13,7 @@ import customtkinter as ctk
 import tkinter as tk
 from PIL import Image
 
-from static.extensions import ventanasApp_path, filepath_settings, secrets
+from static.constants import ventanasApp_path, filepath_settings, secrets
 from templates.Functions_GUI_Utils import compare_permissions_windows
 from templates.Functions_Utils import unpack_token
 from templates.LoadData import DataLoader

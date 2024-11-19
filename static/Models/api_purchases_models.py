@@ -3,7 +3,7 @@ __author__ = "Edisson Naula"
 __date__ = "$ 14/nov/2024  at 16:15 $"
 
 from static.Models.api_models import date_filter, datetime_filter
-from static.extensions import api
+from static.constants import api
 from flask_restx import fields
 from wtforms.fields.datetime import DateTimeField, DateField
 from wtforms.validators import InputRequired
@@ -11,7 +11,6 @@ from wtforms import FormField, StringField, URLField, FloatField
 from wtforms.fields.list import FieldList
 from wtforms.form import Form
 
-from templates.controllers.purchases.purchases_admin_controller import insert_new_purchase_db
 
 purchase_metadata_model = api.model(
     "PurchaseMetadata",

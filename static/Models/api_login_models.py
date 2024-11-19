@@ -3,7 +3,7 @@ __author__ = "Edisson Naula"
 __date__ = "$ 29/ago/2024  at 18:01 $"
 
 from flask_restx import fields
-from static.extensions import api
+from static.constants import api
 from wtforms.fields.simple import StringField, PasswordField
 from wtforms.form import Form
 from wtforms.validators import InputRequired

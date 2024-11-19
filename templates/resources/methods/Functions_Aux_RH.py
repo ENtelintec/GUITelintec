@@ -2,7 +2,7 @@
 __author__ = "Edisson Naula"
 __date__ = "$ 28/jun./2024  at 17:07 $"
 
-from static.extensions import cache_file_nominas
+from static.constants import cache_file_nominas
 
 import json
 

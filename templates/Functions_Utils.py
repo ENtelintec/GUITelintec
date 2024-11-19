@@ -2,12 +2,13 @@
 __author__ = "Edisson Naula"
 __date__ = "$ 16/jul./2024  at 15:50 $"
 
+import json
 import re
 from datetime import datetime
 
 import jwt
 
-from static.extensions import format_timestamps, secrets
+from static.constants import format_timestamps, secrets, file_size_pages
 from templates.controllers.notifications.Notifications_controller import (
     insert_notification,
 )
@@ -197,3 +198,51 @@ def clean_name(name: str):
     message = message.replace("  ", " ")
     msg_list = message.split(" ")
     return msg_list
+
+
+def get_page_size_dict():
+    """
+    Función para obtener el tamaño de la página
+    :return: <dict>
+    """
+    dict_pagesize = json.load(open(file_size_pages, "r"))
+    return dict_pagesize
+
+
+def add_pagesize(page_size: str, values: list):
+    """
+    Función para agregar el tamaño de la página
+    :param page_size: <str>
+    :param values: <list>
+    :return: <dict>
+    """
+    dict_pagesize = get_page_size_dict()
+    dict_pagesize[page_size.upper()] = values
+    with open(file_size_pages, "w") as file:
+        # noinspection PyTypeChecker
+        json.dump(dict_pagesize, file, indent=4, sort_keys=True)
+    return dict_pagesize
+
+
+def delete_pagesize(page_size: str):
+    """
+    Función para eliminar el tamaño de la página
+    :param page_size: <str>
+    :return: <dict>
+    """
+    dict_pagesize = get_page_size_dict()
+    dict_pagesize.pop(page_size.upper())
+    with open(file_size_pages, "w") as file:
+        # noinspection PyTypeChecker
+        json.dump(dict_pagesize, file, indent=4, sort_keys=True)
+    return dict_pagesize
+
+
+def get_page_size(page_size: str):
+    """
+    Función para obtener el tamaño de la página
+    :param page_size: <str>
+    :return: <dict>
+    """
+    dict_pagesize = get_page_size_dict()
+    return dict_pagesize[page_size.upper()]

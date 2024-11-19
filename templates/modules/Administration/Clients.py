@@ -1,7 +1,7 @@
 import ttkbootstrap as ttk
 from ttkbootstrap.tableview import Tableview
 
-from static.extensions import log_file_db
+from static.constants import log_file_db
 from templates.Functions_GUI_Utils import (
     create_label,
     create_entry,
@@ -163,7 +163,7 @@ class ClientsScreen(ttk.Frame):
             msg = f"Cliente actualizado: {data[1]}--id: {data[0]} por el usuario: {self.usernamedata['id']}"
             self.update_table()
             self.clear_fields()
-        self.end_action_db(msg,  "Cliente actualizado")
+        self.end_action_db(msg, "Cliente actualizado")
 
     def delete_client(self):
         if self.id_to_modify is None:
@@ -176,7 +176,7 @@ class ClientsScreen(ttk.Frame):
             msg = f"Cliente eliminado: {self.id_to_modify} por el usuario: {self.usernamedata['id']}"
             self.update_table()
             self.clear_fields()
-        self.end_action_db(msg,  "Cliente eliminado")
+        self.end_action_db(msg, "Cliente eliminado")
 
     def create_table(self):
         create_label(

@@ -10,7 +10,7 @@ from wtforms.fields.numeric import FloatField
 from wtforms.fields.simple import StringField, URLField
 
 from static.Models.api_models import date_filter
-from static.extensions import api, format_date
+from static.constants import api
 from wtforms.form import Form
 from wtforms import validators, IntegerField, FormField
 

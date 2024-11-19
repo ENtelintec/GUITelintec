@@ -7,7 +7,7 @@ from datetime import datetime
 
 import pandas as pd
 
-from static.extensions import (
+from static.constants import (
     files_fichaje_path,
     patterns_files_fichaje,
     cache_file_emp_fichaje,
@@ -15,7 +15,10 @@ from static.extensions import (
     index_file_nominas,
 )
 from templates.Functions_Sharepoint import get_files_site, download_files_site
-from templates.controllers.employees.vacations_controller import insert_vacation, update_registry_vac
+from templates.controllers.employees.vacations_controller import (
+    insert_vacation,
+    update_registry_vac,
+)
 from templates.controllers.payroll.payroll_controller import (
     get_payrolls,
     update_payroll,
@@ -402,7 +405,7 @@ def insert_new_vacation(data):
     for item in data["seniority"]:
         seniority_dict[str(item["year"])] = {
             "status": item["status"],
-            "comentarios": item["comentarios"]
+            "comentarios": item["comentarios"],
         }
     if not len(seniority_dict) > 0:
         return False, "No hay informacion que insertar", None
@@ -415,7 +418,7 @@ def update_vacation(data):
     for item in data["seniority"]:
         seniority_dict[str(item["year"])] = {
             "status": item["status"],
-            "comentarios": item["comentarios"]
+            "comentarios": item["comentarios"],
         }
     if not len(seniority_dict) > 0:
         return False, "No hay informacion que actualizar o corrupcion de info.", None

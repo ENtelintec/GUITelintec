@@ -2,7 +2,7 @@
 __author__ = "Edisson Naula"
 __date__ = "$ 09/may./2024  at 16:49 $"
 
-from static.extensions import status_dic
+from static.constants import status_dic
 from templates.controllers.material_request.sm_controller import get_all_sm_plots
 from templates.controllers.product.p_and_s_controller import get_movements_type
 

@@ -20,10 +20,12 @@ from static.Models.api_fichaje_models import (
     FichajeRequestMultipleEvents_model,
     FichajeRequestMultipleEvents,
     FichajeRequestExtras_model,
-    FichajeRequestExtras, FichajeAproveExtras_model, FichajeAproveExtras,
+    FichajeRequestExtras,
+    FichajeAproveExtras_model,
+    FichajeAproveExtras,
 )
 from static.Models.api_sm_models import client_emp_sm_response_model
-from static.extensions import (
+from static.constants import (
     delta_bitacora_edit,
     format_date,
     format_timestamps,
@@ -46,7 +48,10 @@ from templates.controllers.employees.employees_controller import (
 from templates.resources.midleware.Functions_midleware_misc import (
     get_events_from_extraordinary_sources,
 )
-from templates.resources.midleware.MD_Bitacora import get_events_extra, add_aproved_to_comment
+from templates.resources.midleware.MD_Bitacora import (
+    get_events_extra,
+    add_aproved_to_comment,
+)
 
 ns = Namespace("GUI/api/v1/bitacora")
 
@@ -340,7 +345,7 @@ class FichajesAproveExtra(Resource):
         flag, error, result = update_bitacora(
             data["id_emp"],
             "extra",
-            [data["date"], data["value"], data["comment"], data["contract"]]
+            [data["date"], data["value"], data["comment"], data["contract"]],
         )
         data["comment"] = add_aproved_to_comment(data["comment"])
         if flag:

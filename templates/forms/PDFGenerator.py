@@ -7,7 +7,7 @@ import textwrap
 
 from reportlab.pdfgen import canvas
 
-from static.extensions import filepath_settings
+from static.constants import filepath_settings
 
 a4_x = 595.27
 a4_y = 841.89

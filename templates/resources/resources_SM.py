@@ -25,7 +25,7 @@ from static.Models.api_sm_models import (
     SMPutForm,
     SMDeleteForm,
 )
-from static.extensions import log_file_sm_path
+from static.constants import log_file_sm_path
 from templates.Functions_AuxPlots import get_data_sm_per_range
 from templates.misc.Functions_Files import write_log_file
 from templates.Functions_Utils import create_notification_permission

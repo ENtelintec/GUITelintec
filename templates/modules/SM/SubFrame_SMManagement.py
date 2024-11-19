@@ -10,7 +10,7 @@ from ttkbootstrap.dialogs import Messagebox
 from ttkbootstrap.scrolled import ScrolledText
 from ttkbootstrap.tableview import Tableview
 
-from static.extensions import status_dic
+from static.constants import status_dic
 from templates.misc.Functions_AuxFiles import get_all_sm_entries, get_all_sm_products
 from templates.resources.midleware.Functions_DB_midleware import (
     dispatch_products,

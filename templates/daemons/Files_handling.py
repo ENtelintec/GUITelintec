@@ -1,12 +1,14 @@
 # -*- coding: utf-8 -*-
-__author__ = 'Edisson Naula'
-__date__ = '$ 02/ago./2024  at 0:47 $'
+__author__ = "Edisson Naula"
+__date__ = "$ 02/ago./2024  at 0:47 $"
 
 import json
 import threading
 
-from static.extensions import filepath_daemons
-from templates.resources.midleware.Functions_midleware_RRHH import update_data_docs_nomina
+from static.constants import filepath_daemons
+from templates.resources.midleware.Functions_midleware_RRHH import (
+    update_data_docs_nomina,
+)
 
 
 class UpdaterSharepointNomina(threading.Thread):

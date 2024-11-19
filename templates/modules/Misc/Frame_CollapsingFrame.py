@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
-__author__ = 'Edisson Naula'
-__date__ = '$ 15/nov./2023  at 13:03 $'
+__author__ = "Edisson Naula"
+__date__ = "$ 15/nov./2023  at 13:03 $"
 
 import ttkbootstrap as ttk
 from ttkbootstrap import INFO
 from ttkbootstrap.style import Bootstyle
 
-from static.extensions import IMG_PATH_COLLAPSING as IMG_PATH
+from static.constants import IMG_PATH_COLLAPSING as IMG_PATH
 
 
 class CollapsingFrame(ttk.Frame):
@@ -19,8 +19,8 @@ class CollapsingFrame(ttk.Frame):
 
         # widget images
         self.images = [
-            ttk.PhotoImage(file=IMG_PATH / 'arrow__1_a.png'),
-            ttk.PhotoImage(file=IMG_PATH / 'arrow_2_b.png')
+            ttk.PhotoImage(file=IMG_PATH / "arrow__1_a.png"),
+            ttk.PhotoImage(file=IMG_PATH / "arrow_2_b.png"),
         ]
 
     def add(self, child, title="", bootstyle=INFO, **kwargs):
@@ -40,7 +40,7 @@ class CollapsingFrame(ttk.Frame):
             **kwargs (Dict):
                 Other optional keyword arguments.
         """
-        if child.winfo_class() != 'TFrame':
+        if child.winfo_class() != "TFrame":
             return
 
         style_color = Bootstyle.ttkstyle_widget_color(bootstyle)
@@ -52,10 +52,10 @@ class CollapsingFrame(ttk.Frame):
             master=frm,
             text=title,
             bootstyle=(style_color, ttk.INVERSE),
-            font=("Arial", 20)
+            font=("Arial", 20),
         )
-        if kwargs.get('textvariable'):
-            header.configure(textvariable=kwargs.get('textvariable'))
+        if kwargs.get("textvariable"):
+            header.configure(textvariable=kwargs.get("textvariable"))
         header.pack(side=ttk.LEFT, fill=ttk.BOTH, padx=10)
 
         # header toggle button
@@ -63,10 +63,7 @@ class CollapsingFrame(ttk.Frame):
             return self._toggle_open_close(c)
 
         btn = ttk.Button(
-            master=frm,
-            image=self.images[0],
-            bootstyle=style_color,
-            command=_func
+            master=frm, image=self.images[0], bootstyle=style_color, command=_func
         )
         btn.pack(side=ttk.RIGHT)
 

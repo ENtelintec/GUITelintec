@@ -7,7 +7,7 @@ import pickle
 from datetime import datetime
 
 
-from static.extensions import filepath_settings
+from static.constants import filepath_settings
 from templates.Functions_openAI import get_response_assistant, get_files_list_openai
 from templates.controllers.misc.tasks_controller import get_task_by_id_emp
 from templates.controllers.notifications.Notifications_controller import (

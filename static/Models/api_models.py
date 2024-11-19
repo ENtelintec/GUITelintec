@@ -3,7 +3,7 @@ __author__ = "Edisson Naula"
 __date__ = "$ 02/nov./2023  at 17:32 $"
 
 
-from static.extensions import api, format_timestamps, format_date
+from static.constants import api, format_timestamps, format_date
 from flask_restx import fields
 from wtforms.fields.datetime import DateTimeField, DateField
 from wtforms.validators import InputRequired

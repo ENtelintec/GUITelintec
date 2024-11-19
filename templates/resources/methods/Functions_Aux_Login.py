@@ -4,7 +4,7 @@ __date__ = "$ 23/sept/2024  at 14:21 $"
 
 import jwt
 
-from static.extensions import secrets
+from static.constants import secrets
 
 
 def unpack_token(token: str) -> dict:

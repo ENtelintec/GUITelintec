@@ -5,7 +5,7 @@ __date__ = "$ 29/abr./2024  at 16:40 $"
 import json
 from datetime import datetime
 
-from static.extensions import format_timestamps
+from static.constants import format_timestamps
 from templates.Functions_Utils import clean_name
 from templates.database.connection import execute_sql
 
@@ -746,7 +746,9 @@ def update_stock_db_ids(ids: list, stocks: list):
         )
     except Exception as e:
         # noinspection PyUnboundLocalVariable
-        msg_error = f"Error in update_stock_db_ids: {str(e)} at id: {_id}, stock: {stock}"
+        msg_error = (
+            f"Error in update_stock_db_ids: {str(e)} at id: {_id}, stock: {stock}"
+        )
         return False, msg_error, None
     flag, error, result = execute_sql(sql, None, 4)
     return flag, error, result

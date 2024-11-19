@@ -9,7 +9,7 @@ import ttkbootstrap as ttk
 from ttkbootstrap.dialogs import Messagebox
 from ttkbootstrap.tableview import Tableview
 
-from static.extensions import format_date, format_timestamps, log_file_db
+from static.constants import format_date, format_timestamps, log_file_db
 from templates.Functions_GUI_Utils import (
     create_label,
     create_entry,

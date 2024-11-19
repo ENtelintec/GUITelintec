@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-__author__ = 'Edisson Naula'
-__date__ = '$ 02/abr./2024  at 15:59 $'
+__author__ = "Edisson Naula"
+__date__ = "$ 02/abr./2024  at 15:59 $"
 
 import json
 import time
@@ -10,16 +10,34 @@ import ttkbootstrap as ttk
 from ttkbootstrap.dialogs import Messagebox
 from ttkbootstrap.tableview import Tableview
 
-from static.extensions import log_file_sm_path, ventanasApp_path, format_timestamps, format_date
+from static.constants import (
+    log_file_sm_path,
+    ventanasApp_path,
+    format_timestamps,
+    format_date,
+)
 from templates.misc.Functions_AuxFiles import get_all_sm_entries, get_all_sm_products
 from templates.misc.Functions_Files import write_log_file
-from templates.Functions_GUI_Utils import create_label, create_button, create_stringvar, create_Combobox, create_entry, \
-    create_date_entry, create_notification_permission
+from templates.Functions_GUI_Utils import (
+    create_label,
+    create_button,
+    create_stringvar,
+    create_Combobox,
+    create_entry,
+    create_date_entry,
+    create_notification_permission,
+)
 from templates.controllers.employees.us_controller import get_user_data_by_ID
 from templates.controllers.index import DataHandler
-from templates.controllers.material_request.sm_controller import insert_sm_db, update_sm_db, delete_sm_db
+from templates.controllers.material_request.sm_controller import (
+    insert_sm_db,
+    update_sm_db,
+    delete_sm_db,
+)
 
-permissions_supper_SM = json.load(open(ventanasApp_path, encoding="utf-8"))["permissions_supper_SM"]
+permissions_supper_SM = json.load(open(ventanasApp_path, encoding="utf-8"))[
+    "permissions_supper_SM"
+]
 
 
 def search_employee(emps_data, emp_key: int | str):
@@ -61,7 +79,19 @@ def search_client(clients_data, client_key: int | str):
 
 
 def create_dict_sm(info, products):
-    id_sm, sm_code, folio, contract, plant, location, client, order_quotation, date, date_limit, comment = info
+    (
+        id_sm,
+        sm_code,
+        folio,
+        contract,
+        plant,
+        location,
+        client,
+        order_quotation,
+        date,
+        date_limit,
+        comment,
+    ) = info
     dict_data = {
         "info": {
             "id": id_sm,
@@ -73,22 +103,22 @@ def create_dict_sm(info, products):
             "date": date,
             "limit_date": date_limit,
             "comment": comment,
-            "order_quotation": order_quotation
+            "order_quotation": order_quotation,
         }
     }
     products_list = []
     for item in products:
-        products_list.append({
-            "id": int(item[0]),
-            "quantity": float(item[1]),
-            "comment": item[2]
-        })
+        products_list.append(
+            {"id": int(item[0]), "quantity": float(item[1]), "comment": item[2]}
+        )
     dict_data["items"] = products_list
     return dict_data
 
 
 class FrameSMCreate(ttk.Frame):
-    def __init__(self, master=None, permissions=None, settings=None, id_emp=None, data=None, **kw):
+    def __init__(
+        self, master=None, permissions=None, settings=None, id_emp=None, data=None, **kw
+    ):
         super().__init__(master)
         self.columnconfigure(0, weight=1)
         """----------------------------variables-----------------------------"""
@@ -106,10 +136,20 @@ class FrameSMCreate(ttk.Frame):
         self.svar_info, svar_test = create_stringvar(2, "")
         self.employees = data["sm"]["employees"]
         self.clients = data["sm"]["clients"]
-        self.data_emp_dic = get_user_data_by_ID(self._id_emp) if "username_data" not in kw else kw["username_data"]
+        self.data_emp_dic = (
+            get_user_data_by_ID(self._id_emp)
+            if "username_data" not in kw
+            else kw["username_data"]
+        )
         """-------------------------title------------------------------------"""
-        create_label(self, 0, 0, text="Solicitudes de material",
-                     font=("Helvetica", 30, "bold"), columnspan=2)
+        create_label(
+            self,
+            0,
+            0,
+            text="Solicitudes de material",
+            font=("Helvetica", 30, "bold"),
+            columnspan=2,
+        )
         """-------------------Widgets input----------------------------------"""
         frame_input_general = ttk.Frame(self)
         frame_input_general.grid(row=1, column=0, padx=2, pady=5, sticky="nswe")
@@ -121,24 +161,49 @@ class FrameSMCreate(ttk.Frame):
         self.set_conditions()
         self.frame_products = FrameSMProdcuts(frame_input_general, data=data)
         self.frame_products.grid(row=1, column=0, padx=(2, 5), pady=5, sticky="nswe")
-        create_label(self, 2, 0, textvariable=self.svar_info, sticky="n", font=("Helvetica", 15, "bold"))
+        create_label(
+            self,
+            2,
+            0,
+            textvariable=self.svar_info,
+            sticky="n",
+            font=("Helvetica", 15, "bold"),
+        )
         """------------------------buttons-----------------------------------"""
         frame_buttons = ttk.Frame(self)
         frame_buttons.grid(row=3, column=0, padx=5, pady=5, sticky="nswe")
         frame_buttons.columnconfigure((0, 1, 2, 3, 4, 5), weight=1)
-        (self.btn_add, self.btn_update_event, self.btn_cancel,
-         self.btn_update, self.btn_erase, self.btn_add_client) = self.create_buttons(frame_buttons)
+        (
+            self.btn_add,
+            self.btn_update_event,
+            self.btn_cancel,
+            self.btn_update,
+            self.btn_erase,
+            self.btn_add_client,
+        ) = self.create_buttons(frame_buttons)
         """-----------------------------tableview----------------------------"""
         self.frame_table = ttk.Frame(self)
         self.frame_table.grid(row=4, column=0, padx=50, pady=10, sticky="nswe")
         self.frame_table.columnconfigure(0, weight=1)
         self.frame_table.rowconfigure(1, weight=1)
-        self.table_events = self.create_table(self.frame_table, data=data["sm"]["data_sm"], columns=data["sm"]["columns_sm"])
+        self.table_events = self.create_table(
+            self.frame_table,
+            data=data["sm"]["data_sm"],
+            columns=data["sm"]["columns_sm"],
+        )
 
     def create_inputs(self, master):
         entries = []
         # info inputs---------
-        create_label(master, 0, 0, text="Informacion", sticky="n", font=("Helvetica", 12, "bold"), columnspan=4)
+        create_label(
+            master,
+            0,
+            0,
+            text="Informacion",
+            sticky="n",
+            font=("Helvetica", 12, "bold"),
+            columnspan=4,
+        )
         create_label(master, 1, 0, text="SM. ID DB:", sticky="nswe")
         create_label(master, 1, 1, text="SM. code:", sticky="nswe")
         create_label(master, 1, 2, text="Folio:", sticky="nswe")
@@ -153,58 +218,152 @@ class FrameSMCreate(ttk.Frame):
         create_label(master, 5, 3, text="Empleado:", sticky="nswe")
         # entries
         client_list = [client[1] for client in self.clients]
-        entries.append(create_entry(master, row=2, column=0, padx=3, pady=5, sticky="nswe"))
-        entries.append(create_entry(master, row=2, column=1, padx=3, pady=5, sticky="nswe"))
-        entries.append(create_entry(master, row=2, column=2, padx=3, pady=5, sticky="nswe"))
-        entries.append(create_entry(master, row=2, column=3, padx=3, pady=5, sticky="nswe"))
-        entries.append(create_entry(master, row=4, column=0, padx=3, pady=5, sticky="nswe"))
-        entries.append(create_entry(master, row=4, column=1, padx=3, pady=5, sticky="nswe"))
-        entries.append(create_Combobox(master, client_list, 25, row=4, column=2, sticky="we", padx=3, pady=5))
-        entries.append(create_entry(master, row=4, column=3, padx=3, pady=5, sticky="nswe"))
-        entries.append(create_date_entry(master, firstweekday=0, dateformat=format_date, row=6, column=0, padx=3, pady=5,
-                                         sticky="w"))
         entries.append(
-            create_date_entry(master, firstweekday=0, dateformat=format_date, row=6, column=1, padx=3, pady=5,
-                              sticky="w"))
-        entries.append(create_entry(master, row=6, column=2, padx=3, pady=5, sticky="nswe"))
-        create_label(master, 6, 3, text=f"{self.data_emp_dic['name'].title()} {self.data_emp_dic['lastname'].title()}",
-                     sticky="nswe")
+            create_entry(master, row=2, column=0, padx=3, pady=5, sticky="nswe")
+        )
+        entries.append(
+            create_entry(master, row=2, column=1, padx=3, pady=5, sticky="nswe")
+        )
+        entries.append(
+            create_entry(master, row=2, column=2, padx=3, pady=5, sticky="nswe")
+        )
+        entries.append(
+            create_entry(master, row=2, column=3, padx=3, pady=5, sticky="nswe")
+        )
+        entries.append(
+            create_entry(master, row=4, column=0, padx=3, pady=5, sticky="nswe")
+        )
+        entries.append(
+            create_entry(master, row=4, column=1, padx=3, pady=5, sticky="nswe")
+        )
+        entries.append(
+            create_Combobox(
+                master, client_list, 25, row=4, column=2, sticky="we", padx=3, pady=5
+            )
+        )
+        entries.append(
+            create_entry(master, row=4, column=3, padx=3, pady=5, sticky="nswe")
+        )
+        entries.append(
+            create_date_entry(
+                master,
+                firstweekday=0,
+                dateformat=format_date,
+                row=6,
+                column=0,
+                padx=3,
+                pady=5,
+                sticky="w",
+            )
+        )
+        entries.append(
+            create_date_entry(
+                master,
+                firstweekday=0,
+                dateformat=format_date,
+                row=6,
+                column=1,
+                padx=3,
+                pady=5,
+                sticky="w",
+            )
+        )
+        entries.append(
+            create_entry(master, row=6, column=2, padx=3, pady=5, sticky="nswe")
+        )
+        create_label(
+            master,
+            6,
+            3,
+            text=f"{self.data_emp_dic['name'].title()} {self.data_emp_dic['lastname'].title()}",
+            sticky="nswe",
+        )
         return entries
 
     def create_buttons(self, master):
         btn_add = create_button(
-            master, 0, 0, "Agregar material_request", command=self.on_add_click,
-            sticky="n", width=15, bootstyle="success")
+            master,
+            0,
+            0,
+            "Agregar material_request",
+            command=self.on_add_click,
+            sticky="n",
+            width=15,
+            bootstyle="success",
+        )
         btn_update_data = create_button(
-            master, 0, 1, "Actualizar material_request", command=self.on_update_sm_event,
-            sticky="n", width=15)
+            master,
+            0,
+            1,
+            "Actualizar material_request",
+            command=self.on_update_sm_event,
+            sticky="n",
+            width=15,
+        )
         btn_reset = create_button(
-            master, 0, 2, "Reset", command=self.on_reset_widgets_click,
-            sticky="n", width=15)
+            master,
+            0,
+            2,
+            "Reset",
+            command=self.on_reset_widgets_click,
+            sticky="n",
+            width=15,
+        )
         btn_update_table = create_button(
-            master, 0, 3, "Recargar tablas", command=self.update_table_visual,
-            sticky="n", width=15)
+            master,
+            0,
+            3,
+            "Recargar tablas",
+            command=self.update_table_visual,
+            sticky="n",
+            width=15,
+        )
         btn_erase_event = create_button(
-            master, 0, 4, "Borrar material_request", command=self.on_erase_click,
-            sticky="n", width=15, bootstyle="danger")
+            master,
+            0,
+            4,
+            "Borrar material_request",
+            command=self.on_erase_click,
+            sticky="n",
+            width=15,
+            bootstyle="danger",
+        )
         btn_add_client = create_button(
-            master, 0, 5, "(+) cliente", command=self.on_add_client_click,
-            sticky="n", width=15, bootstyle="success")
-        return btn_add, btn_update_data, btn_reset, btn_update_table, btn_erase_event, btn_add_client
+            master,
+            0,
+            5,
+            "(+) cliente",
+            command=self.on_add_client_click,
+            sticky="n",
+            width=15,
+            bootstyle="success",
+        )
+        return (
+            btn_add,
+            btn_update_data,
+            btn_reset,
+            btn_update_table,
+            btn_erase_event,
+            btn_add_client,
+        )
 
     def create_table(self, master, data=None, columns=None):
         if data is None:
-            self.data_sm, columns = get_all_sm_entries(filter_status=True, is_supper=True, emp_id=self._id_emp)
+            self.data_sm, columns = get_all_sm_entries(
+                filter_status=True, is_supper=True, emp_id=self._id_emp
+            )
         else:
             self.data_sm = data
-        table = Tableview(master,
-                          coldata=columns,
-                          rowdata=self.data_sm,
-                          paginated=True,
-                          searchable=True,
-                          autofit=True,
-                          height=11,
-                          pagesize=10)
+        table = Tableview(
+            master,
+            coldata=columns,
+            rowdata=self.data_sm,
+            paginated=True,
+            searchable=True,
+            autofit=True,
+            height=11,
+            pagesize=10,
+        )
         table.grid(row=1, column=0, padx=20, pady=10, sticky="n")
         table.view.bind("<Double-1>", self.on_double_click_table_sm)
         return table
@@ -221,16 +380,27 @@ class FrameSMCreate(ttk.Frame):
         date_limit = info[8]
         comment = info[9]
         try:
-            date = datetime.strptime(date, format_timestamps) if len(date) > 10 else datetime.strptime(
-                date, format_date)
-            date_limit = datetime.strptime(date_limit,
-                                           format_timestamps) if len(date_limit) > 10 else datetime.strptime(
-                date_limit, format_date)
+            date = (
+                datetime.strptime(date, format_timestamps)
+                if len(date) > 10
+                else datetime.strptime(date, format_date)
+            )
+            date_limit = (
+                datetime.strptime(date_limit, format_timestamps)
+                if len(date_limit) > 10
+                else datetime.strptime(date_limit, format_date)
+            )
             if date > date_limit:
-                self.svar_info.set("!!!La fecha de inicio no puede ser mayor a la fecha limite¡¡¡")
-                raise Exception("La fecha de inicio no puede ser mayor a la fecha de fin")
+                self.svar_info.set(
+                    "!!!La fecha de inicio no puede ser mayor a la fecha limite¡¡¡"
+                )
+                raise Exception(
+                    "La fecha de inicio no puede ser mayor a la fecha de fin"
+                )
             date = date.strftime(format_timestamps) if action != 1 else date
-            date_limit = date_limit.strftime(format_timestamps) if action != 1 else date_limit
+            date_limit = (
+                date_limit.strftime(format_timestamps) if action != 1 else date_limit
+            )
         except Exception as e:
             print(e)
             print("!!!Error con el formato o valores de la fecha¡¡¡")
@@ -246,15 +416,52 @@ class FrameSMCreate(ttk.Frame):
         if client_out is None:
             self.svar_info.set("!!!Revise los datos del cliente¡¡¡")
             return
-        return (self._id_sm_to_edit, folio, contract, plant, location, client_out, order_quotation,
-                date, date_limit, comment)
+        return (
+            self._id_sm_to_edit,
+            folio,
+            contract,
+            plant,
+            location,
+            client_out,
+            order_quotation,
+            date,
+            date_limit,
+            comment,
+        )
 
     def get_sm_values_row(self, row):
-        id_sm, folio, contract, plant, location, client, employee, order_quotation, date, date_limit, items, status, history, comment = row
-        dict_data = {"id": id_sm, "folio": folio, "contract": contract, "plant": plant,
-                     "location": location, "client": client, "employee": self._id_emp, "date": date,
-                     "date_limit": date_limit, "items": items, "status": status, "history": history,
-                     "order_quotation": order_quotation, "comment": comment}
+        (
+            id_sm,
+            folio,
+            contract,
+            plant,
+            location,
+            client,
+            employee,
+            order_quotation,
+            date,
+            date_limit,
+            items,
+            status,
+            history,
+            comment,
+        ) = row
+        dict_data = {
+            "id": id_sm,
+            "folio": folio,
+            "contract": contract,
+            "plant": plant,
+            "location": location,
+            "client": client,
+            "employee": self._id_emp,
+            "date": date,
+            "date_limit": date_limit,
+            "items": items,
+            "status": status,
+            "history": history,
+            "order_quotation": order_quotation,
+            "comment": comment,
+        }
         return dict_data
 
     def on_add_click(self):
@@ -266,12 +473,10 @@ class FrameSMCreate(ttk.Frame):
             self.svar_info.set("!!!Debe agregar productos¡¡¡")
             return
         dict_data = create_dict_sm(out_info, data_products)
-        dict_data['info']['emp_id'] = self._id_emp
+        dict_data["info"]["emp_id"] = self._id_emp
         print("pass date")
         msg = "Esto por crear un nuevo registro. Esta de acuerdo con los datos?"
-        answer = Messagebox.show_question(
-            title="Confirmacion",
-            message=msg)
+        answer = Messagebox.show_question(title="Confirmacion", message=msg)
         if answer == "No":
             return
         flag, error, result = insert_sm_db(dict_data)
@@ -281,9 +486,12 @@ class FrameSMCreate(ttk.Frame):
             else:
                 msg = (
                     f"Record inserted--> material_request: {dict_data['info']['id']} --> by {self.data_emp_dic['name'].title()} "
-                    f"{self.data_emp_dic['lastname'].title()} at {datetime.now().strftime('format_timestamps')}")
+                    f"{self.data_emp_dic['lastname'].title()} at {datetime.now().strftime('format_timestamps')}"
+                )
                 write_log_file(log_file_sm_path, msg)
-                create_notification_permission(msg, ["sm"], "SM creada", self._id_emp, 0)
+                create_notification_permission(
+                    msg, ["sm"], "SM creada", self._id_emp, 0
+                )
                 self.svar_info.set(f"material_request {result} agregado correctamente")
             time.sleep(0.5)
             self.update_table_visual()
@@ -298,20 +506,22 @@ class FrameSMCreate(ttk.Frame):
             self.svar_info.set("!!!Debe agregar productos¡¡¡")
             return
         dict_data = create_dict_sm(out_info, data_products)
-        dict_data["info"]['emp_id'] = self._id_emp
-        dict_data['id_sm'] = dict_data["info"]['id']
+        dict_data["info"]["emp_id"] = self._id_emp
+        dict_data["id_sm"] = dict_data["info"]["id"]
         try:
-            self.history.append({"event": "update",
-                                 "date": datetime.now().strftime('format_timestamps'),
-                                 "user": dict_data['info']['emp_id']})
-            dict_data['info']['history'] = self.history
+            self.history.append(
+                {
+                    "event": "update",
+                    "date": datetime.now().strftime("format_timestamps"),
+                    "user": dict_data["info"]["emp_id"],
+                }
+            )
+            dict_data["info"]["history"] = self.history
         except Exception as e:
             print(e, "Error at creating history")
             return
         msg = f"Esto por actualizar un registro con id: {dict_data['id_sm']}. Esta de acuerdo con los datos?"
-        answer = Messagebox.show_question(
-            title="Confirmacion",
-            message=msg)
+        answer = Messagebox.show_question(title="Confirmacion", message=msg)
         if answer == "No":
             return
         flag, error, result = update_sm_db(dict_data)
@@ -319,10 +529,14 @@ class FrameSMCreate(ttk.Frame):
             if error is not None:
                 self.svar_info.set(f"{error}")
             else:
-                msg = (f"Record updated--> material_request: {dict_data['id_sm']} --> by {self.data_emp_dic['name'].title()} "
-                       f"{self.data_emp_dic['lastname'].title()} at {datetime.now().strftime('format_timestamps')}")
+                msg = (
+                    f"Record updated--> material_request: {dict_data['id_sm']} --> by {self.data_emp_dic['name'].title()} "
+                    f"{self.data_emp_dic['lastname'].title()} at {datetime.now().strftime('format_timestamps')}"
+                )
                 write_log_file(log_file_sm_path, msg)
-                create_notification_permission(msg, ["sm"], "SM actualizada", self._id_emp, 0)
+                create_notification_permission(
+                    msg, ["sm"], "SM actualizada", self._id_emp, 0
+                )
                 self.svar_info.set("material_request actualizado correctamente")
             time.sleep(0.5)
             self.update_table_visual()
@@ -336,9 +550,7 @@ class FrameSMCreate(ttk.Frame):
             self.svar_info.set("!!!Debe seleccionar un registro¡¡¡")
             return
         msg = f"Esto por eliminar un registro con id: {self._id_sm_to_edit}. Esta de acuerdo con los datos?"
-        answer = Messagebox.show_question(
-            title="Confirmacion",
-            message=msg)
+        answer = Messagebox.show_question(title="Confirmacion", message=msg)
         if answer == "No":
             return
         flag, error, result = delete_sm_db(self._id_sm_to_edit)
@@ -348,9 +560,12 @@ class FrameSMCreate(ttk.Frame):
             else:
                 msg = (
                     f"Record deleted--> material_request: {sm_code} --> by {self.data_emp_dic['name'].title()} {self.data_emp_dic['lastname'].title()} "
-                    f"at {datetime.now().strftime('format_timestamps')}")
+                    f"at {datetime.now().strftime('format_timestamps')}"
+                )
                 write_log_file(log_file_sm_path, msg)
-                create_notification_permission(msg, ["sm"], "SM borrada", self._id_emp, 0)
+                create_notification_permission(
+                    msg, ["sm"], "SM borrada", self._id_emp, 0
+                )
                 self.svar_info.set("material_request eliminado correctamente")
             time.sleep(0.5)
             self.update_table_visual()
@@ -378,13 +593,29 @@ class FrameSMCreate(ttk.Frame):
         items = json.loads(data_dic["items"])
         items_table = []
         for product in items:
-            items_table.append((product["id"], product["quantity"], product["comment"],))
+            items_table.append(
+                (
+                    product["id"],
+                    product["quantity"],
+                    product["comment"],
+                )
+            )
         self.frame_products.put_data_resumen(items_table)
         data_info = self.formart_values_info(
-            (data_dic["id"], data_dic["folio"], data_dic["contract"], data_dic["plant"],
-             data_dic["location"], data_dic["client"], data_dic["order_quotation"], data_dic["date"],
-             data_dic["date_limit"],
-             data_dic["comment"]), action=1)
+            (
+                data_dic["id"],
+                data_dic["folio"],
+                data_dic["contract"],
+                data_dic["plant"],
+                data_dic["location"],
+                data_dic["client"],
+                data_dic["order_quotation"],
+                data_dic["date"],
+                data_dic["date_limit"],
+                data_dic["comment"],
+            ),
+            action=1,
+        )
         for index, item in enumerate(self.entries):
             if isinstance(item, ttk.Combobox):
                 item.set(data_info[index])
@@ -395,9 +626,17 @@ class FrameSMCreate(ttk.Frame):
                     item.insert(0, data_info[index])
             elif isinstance(item, ttk.DateEntry):
                 self.entries[index].destroy()
-                self.entries[index] = create_date_entry(self.frame_inputs, firstweekday=0,
-                                                        dateformat=format_date, startdate=data_info[index],
-                                                        row=index + 1, column=1, padx=3, pady=5, sticky="w")
+                self.entries[index] = create_date_entry(
+                    self.frame_inputs,
+                    firstweekday=0,
+                    dateformat=format_date,
+                    startdate=data_info[index],
+                    row=index + 1,
+                    column=1,
+                    padx=3,
+                    pady=5,
+                    sticky="w",
+                )
         self.set_disabled_entries(self.list_to_disable)
 
     def get_entries_values(self):
@@ -440,7 +679,9 @@ class NewProduct(ttk.Toplevel):
         self._data = DataHandler()
         self.resizable(False, False)
         self.columnconfigure((0, 1), weight=1)
-        create_button(self, 6, 0, "Guardar", command=self.on_save_click, sticky="n", width=15)
+        create_button(
+            self, 6, 0, "Guardar", command=self.on_save_click, sticky="n", width=15
+        )
         self.entries = self.create_inputs()
 
     def create_inputs(self):
@@ -449,11 +690,21 @@ class NewProduct(ttk.Toplevel):
         create_label(self, 3, 0, text="UDM: ", sticky="w")
         create_label(self, 4, 0, text="Stock: ", sticky="w")
         create_label(self, 5, 0, text="Categoria: ", sticky="w")
-        entry2 = create_entry(self, width=10, row=1, column=1, padx=10, pady=10, sticky="w")
-        entry3 = create_entry(self, width=55, row=2, column=1, padx=10, pady=10, sticky="w")
-        entry4 = create_entry(self, width=5, row=3, column=1, padx=10, pady=10, sticky="w")
-        entry5 = create_entry(self, width=5, row=4, column=1, padx=10, pady=10, sticky="w")
-        entry6 = create_entry(self, width=3, row=5, column=1, padx=10, pady=10, sticky="w")
+        entry2 = create_entry(
+            self, width=10, row=1, column=1, padx=10, pady=10, sticky="w"
+        )
+        entry3 = create_entry(
+            self, width=55, row=2, column=1, padx=10, pady=10, sticky="w"
+        )
+        entry4 = create_entry(
+            self, width=5, row=3, column=1, padx=10, pady=10, sticky="w"
+        )
+        entry5 = create_entry(
+            self, width=5, row=4, column=1, padx=10, pady=10, sticky="w"
+        )
+        entry6 = create_entry(
+            self, width=3, row=5, column=1, padx=10, pady=10, sticky="w"
+        )
         return [entry2, entry3, entry4, entry5, entry6]
 
     def get_data(self):
@@ -475,7 +726,9 @@ class NewClient(ttk.Toplevel):
         self._data = DataHandler()
         self.resizable(False, False)
         self.columnconfigure((0, 1), weight=1)
-        create_button(self, 6, 0, "Guardar", command=self.on_save_click, sticky="n", width=15)
+        create_button(
+            self, 6, 0, "Guardar", command=self.on_save_click, sticky="n", width=15
+        )
         self.entries = self.create_inputs()
 
     def create_inputs(self):
@@ -484,11 +737,21 @@ class NewClient(ttk.Toplevel):
         create_label(self, 3, 0, text="Phone: ", sticky="w")
         create_label(self, 4, 0, text="RFC: ", sticky="w")
         create_label(self, 5, 0, text="Dirección: ", sticky="w")
-        entry2 = create_entry(self, width=30, row=1, column=1, padx=10, pady=10, sticky="w")
-        entry3 = create_entry(self, width=55, row=2, column=1, padx=10, pady=10, sticky="w")
-        entry4 = create_entry(self, width=15, row=3, column=1, padx=10, pady=10, sticky="w")
-        entry5 = create_entry(self, width=20, row=4, column=1, padx=10, pady=10, sticky="w")
-        entry6 = create_entry(self, width=55, row=5, column=1, padx=10, pady=10, sticky="w")
+        entry2 = create_entry(
+            self, width=30, row=1, column=1, padx=10, pady=10, sticky="w"
+        )
+        entry3 = create_entry(
+            self, width=55, row=2, column=1, padx=10, pady=10, sticky="w"
+        )
+        entry4 = create_entry(
+            self, width=15, row=3, column=1, padx=10, pady=10, sticky="w"
+        )
+        entry5 = create_entry(
+            self, width=20, row=4, column=1, padx=10, pady=10, sticky="w"
+        )
+        entry6 = create_entry(
+            self, width=55, row=5, column=1, padx=10, pady=10, sticky="w"
+        )
         return [entry2, entry3, entry4, entry5, entry6]
 
     def get_data(self):
@@ -512,30 +775,49 @@ class FrameSMProdcuts(ttk.Frame):
         self.products = data["sm"]["products"]
         self.columns_products = data["sm"]["columns_products"]
         """-------------------------title------------------------------------"""
-        create_label(self, 0, 0, text="Editar Productos",
-                     font=("Helvetica", 14, "bold"), columnspan=2)
+        create_label(
+            self,
+            0,
+            0,
+            text="Editar Productos",
+            font=("Helvetica", 14, "bold"),
+            columnspan=2,
+        )
         """-------------------------table------------------------------------"""
         self.frame_tabla_products = ttk.Frame(self)
         self.frame_tabla_products.grid(row=1, column=0, padx=1, pady=5, sticky="nswe")
         self.frame_tabla_products.columnconfigure(0, weight=1)
-        create_label(self.frame_tabla_products, 0, 0, text="Productos BD",
-                     font=("Helvetica", 11, "bold"))
+        create_label(
+            self.frame_tabla_products,
+            0,
+            0,
+            text="Productos BD",
+            font=("Helvetica", 11, "bold"),
+        )
         self.table_products = self.create_table(self.frame_tabla_products, type_table=1)
         self.frame_resumen = ttk.Frame(self)
         self.frame_resumen.grid(row=2, column=0, padx=1, pady=5, sticky="nswe")
         self.frame_resumen.columnconfigure(0, weight=1)
-        create_label(self.frame_resumen, 0, 0, text="Resumen",
-                     font=("Helvetica", 12, "bold"))
+        create_label(
+            self.frame_resumen, 0, 0, text="Resumen", font=("Helvetica", 12, "bold")
+        )
         self.table_resumen = self.create_table(self.frame_resumen, type_table=2)
         """-------------------Widgets input----------------------------------"""
         frame_inputs = ttk.Frame(self)
         frame_inputs.grid(row=1, column=1, padx=1, pady=20, sticky="nswe")
         frame_inputs.columnconfigure((0, 1, 2), weight=1)
         self.entries = self.create_inputs(frame_inputs)
-        create_button(frame_inputs, 0, 2, text="(+) Producto", command=self.on_new_product_click)
+        create_button(
+            frame_inputs, 0, 2, text="(+) Producto", command=self.on_new_product_click
+        )
         is_new = ttk.Checkbutton(
-            frame_inputs, text="Nuevo", variable=self.bvar_is_new,
-            onvalue=True, offvalue=False, bootstyle="success, round-toggle")
+            frame_inputs,
+            text="Nuevo",
+            variable=self.bvar_is_new,
+            onvalue=True,
+            offvalue=False,
+            bootstyle="success, round-toggle",
+        )
         is_new.grid(row=1, column=2, padx=10, pady=10, sticky="w")
         """-------------------Widgets buttons--------------------------------"""
         frame_buttons = ttk.Frame(self)
@@ -546,20 +828,30 @@ class FrameSMProdcuts(ttk.Frame):
     def create_table(self, master, type_table=1, data_resumen=None):
         if type_table == 1:
             table = Tableview(
-                master, coldata=self.columns_products,
-                rowdata=self.products, paginated=True,
-                searchable=True, autofit=True,
-                height=5, pagesize=5)
+                master,
+                coldata=self.columns_products,
+                rowdata=self.products,
+                paginated=True,
+                searchable=True,
+                autofit=True,
+                height=5,
+                pagesize=5,
+            )
             table.grid(row=1, column=0, padx=10, pady=5, sticky="n")
             table.view.bind("<Double-1>", self.on_double_click_table_products)
         else:
             columns = ["ID", "Cantidad", "Comentario"]
             data_resume = data_resumen if data_resumen is not None else []
             table = Tableview(
-                master, coldata=columns,
-                rowdata=data_resume, paginated=True,
-                searchable=True, autofit=True,
-                height=5, pagesize=5)
+                master,
+                coldata=columns,
+                rowdata=data_resume,
+                paginated=True,
+                searchable=True,
+                autofit=True,
+                height=5,
+                pagesize=5,
+            )
             table.grid(row=1, column=0, padx=10, pady=5, sticky="n")
             table.view.bind("<Double-1>", self.on_double_click_table_resumen)
         return table
@@ -575,7 +867,9 @@ class FrameSMProdcuts(ttk.Frame):
             item.delete(0, "end")
             if i == 2:
                 value = row[i]
-                self.bvar_is_new.set(True) if "(Nuevo)" in value else self.bvar_is_new.set(False)
+                self.bvar_is_new.set(
+                    True
+                ) if "(Nuevo)" in value else self.bvar_is_new.set(False)
                 value = value.replace(";(Nuevo)", "")
                 item.insert(0, value)
             else:
@@ -603,24 +897,54 @@ class FrameSMProdcuts(ttk.Frame):
 
     def create_buttons(self, master):
         create_button(
-            master, 0, 0, "Agregar", command=self.on_add_click,
-            sticky="n", width=15, bootstyle="success")
+            master,
+            0,
+            0,
+            "Agregar",
+            command=self.on_add_click,
+            sticky="n",
+            width=15,
+            bootstyle="success",
+        )
         create_button(
-            master, 0, 1, "Eliminar", command=self.on_erase_click,
-            sticky="n", width=15, bootstyle="danger")
+            master,
+            0,
+            1,
+            "Eliminar",
+            command=self.on_erase_click,
+            sticky="n",
+            width=15,
+            bootstyle="danger",
+        )
         create_button(
-            master, 1, 0, "Actualizar", command=self.on_update_click,
-            sticky="n", width=15, columnspan=2)
+            master,
+            1,
+            0,
+            "Actualizar",
+            command=self.on_update_click,
+            sticky="n",
+            width=15,
+            columnspan=2,
+        )
         create_button(
-            master, 2, 0, "Limpiar lista", command=self.on_reset_click,
-            sticky="n", width=15, columnspan=2)
+            master,
+            2,
+            0,
+            "Limpiar lista",
+            command=self.on_reset_click,
+            sticky="n",
+            width=15,
+            columnspan=2,
+        )
 
     def on_add_click(self):
         values = []
         for item in self.entries:
             values.append(item.get())
         # add is new as comment
-        values[2] = values[2] if not self.bvar_is_new.get() else values[2] + " ;(Nuevo) "
+        values[2] = (
+            values[2] if not self.bvar_is_new.get() else values[2] + " ;(Nuevo) "
+        )
         data_table = self.table_resumen.view.get_children()
         flag_update = False
         for item in data_table:
@@ -638,7 +962,9 @@ class FrameSMProdcuts(ttk.Frame):
             values.append(item.get())
         if len(self.table_resumen.view.selection()) == 0:
             return
-        self.table_resumen.view.item(self.table_resumen.view.selection()[0], values=values)
+        self.table_resumen.view.item(
+            self.table_resumen.view.selection()[0], values=values
+        )
 
     def on_reset_click(self):
         self.table_resumen = self.create_table(self.frame_resumen, type_table=2)
@@ -664,7 +990,9 @@ class FrameSMProdcuts(ttk.Frame):
 
     def put_data_resumen(self, data):
         self.table_resumen.destroy()
-        self.table_resumen = self.create_table(self.frame_resumen, type_table=2, data_resumen=data)
+        self.table_resumen = self.create_table(
+            self.frame_resumen, type_table=2, data_resumen=data
+        )
 
     def on_new_product_click(self):
         NewProduct()

@@ -10,13 +10,13 @@ from typing import Any
 import ttkbootstrap as ttk
 from ttkbootstrap.tableview import Tableview
 
-from static.extensions import (
+from static.constants import (
     conversion_quizzes_path,
     ventanasApp_path,
     format_timestamps,
     format_date,
 )
-from static.extensions import filepath_recommendations
+from static.constants import filepath_recommendations
 from templates.controllers.chatbot.chatbot_controller import get_chats
 from templates.controllers.customer.customers_controller import get_customers
 from templates.controllers.departments.department_controller import get_departments

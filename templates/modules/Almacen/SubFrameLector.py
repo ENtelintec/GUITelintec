@@ -9,7 +9,7 @@ from tkinter import messagebox
 import ttkbootstrap as ttk
 from ttkbootstrap.scrolled import ScrolledFrame
 
-from static.extensions import format_date
+from static.constants import format_date
 from templates.Functions_GUI_Utils import create_label, create_button
 from templates.daemons.Peripherals import SerialPortListener
 from templates.misc.PortsSearcher import serial_ports

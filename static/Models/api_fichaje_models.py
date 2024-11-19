@@ -13,7 +13,7 @@ from wtforms.form import Form
 from wtforms import IntegerField, StringField
 
 from static.Models.api_models import date_filter
-from static.extensions import api, format_date
+from static.constants import api
 
 fichaje_request_model = api.model(
     "FichajeRequest",
@@ -151,7 +151,9 @@ FichajeRequestExtras_model = api.model(
 FichajeAproveExtras_model = api.model(
     "FichajeAproveExtras",
     {
-        "date": fields.String(required=True, description="Thedate", example="2024-03-30"),
+        "date": fields.String(
+            required=True, description="Thedate", example="2024-03-30"
+        ),
         "value": fields.Float(required=True, description="The value", example=1.0),
         "comment": fields.String(
             required=True, description="The comment", example="This is a comment"
@@ -165,11 +167,11 @@ FichajeAproveExtras_model = api.model(
             required=True, description="The contract of the empployee", example="INFRA"
         ),
         "id_leader": fields.Integer(
-            required=True, description="The id of the leader aproving the event", example=1
+            required=True,
+            description="The id of the leader aproving the event",
+            example=1,
         ),
     },
-
-
 )
 
 
