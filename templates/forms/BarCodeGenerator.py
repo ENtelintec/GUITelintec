@@ -251,43 +251,52 @@ def create_one_code(**kwargs):
     """
     Create one code with the following parameters:
         Example = {
-        "code": "A123456789",
-        "sku": "SKU123456789",
-        "name": "Producto de prueba de numero 2",
-        "filepath": "files/barcode.pdf",
-        "type_code": "128",
-        "pagesize": "default",
-        "orientation": "horizontal",
-        "title": "Titulo de prueba",
-        "font_tile": 14,
-        "font_name": 9,
-        "font_code": 7,
-        "font_sku": 6,
-        "border_on": True,
-        "offset_codebar": (0 * mm, -7 * mm),
-        "width_bars": 40 * mm,
-        "height_bars": 40 * mm,
+            "title": "Titulo de prueba",
+            "title_font": 14,
+            "title_offset": (0 * mm, 0 * mm),
+            "code": "A123456789",
+            "code_font": 7,
+            "code_offset": (0 * mm, 0 * mm),
+            "sku": "SKU123456789",
+            "sku_font": 6,
+            "sku_offset": (0 * mm, 0 * mm),
+            "name": "Producto de prueba de numero 2",
+            "name_font": 9,
+            "name_offset": (0 * mm, 0 * mm),
+            "name_width": 20,
+            "type_code": "128",
+            "pagesize": "default",
+            "orientation": "horizontal",
+            "border": True,
+            "filepath": "files/barcode.pdf",
+
+            "offset_codebar": (0 * mm, -7 * mm),
+            "width_bars": 40 * mm,
+            "height_bars": 40 * mm,
         }
     :param kwargs:
     :return:
     """
-    code = kwargs.get("code", "A123456789")
-    sku = kwargs.get("sku", "SKU123456789")
-    name = kwargs.get("name", "This is a name for a product")
-    filepath = kwargs.get("filepath", file_codebar)
-    type_code = kwargs.get("type_code", "128")
-    pagesize = kwargs.get("pagesize", "default")
-    orientation = kwargs.get("orientation", "horizontal")
     title = kwargs.get("title", "This is a product Title")
-    font_tile = kwargs.get("font_tile", 14)
-    font_name = kwargs.get("font_name", 9)
-    font_code = kwargs.get("font_code", 7)
-    font_sku = kwargs.get("font_sku", 6)
-    border_on = kwargs.get("border_on", True)
-    offset_codebar = kwargs.get("offset_codebar", (0 * mm, -7 * mm))
-    width_bars = kwargs.get("bar_width", 0.4 * mm)
-    height_bars = kwargs.get("bar_height", 20 * mm)
-    pagesize = get_page_size(pagesize)
+    title_font = int(kwargs.get("title_font", 14))
+    title_offset = kwargs.get("title_offset", (0 * mm, 0 * mm))
+    code = kwargs.get("code", "A123456789")
+    font_code = int(kwargs.get("code_font", 7))
+    code_offset = kwargs.get("code_offset", (0 * mm, 0 * mm))
+    sku = kwargs.get("sku", "SKU123456789")
+    sku_offset = kwargs.get("sku_offset", (0 * mm, 0 * mm))
+    font_sku = int(kwargs.get("sku_font", 6))
+    name = kwargs.get("name", "Producto de prueba de numero 2")
+    font_name = int(kwargs.get("name_font", 9))
+    pagesize = get_page_size(kwargs.get("pagesize", "default"))
+    name_width = kwargs.get("name_limit", pagesize[0] - 10 * mm)
+    type_code = kwargs.get("type_code", "128")
+    height_bars = kwargs.get("height_bars", 40 * mm)
+    width_bars = kwargs.get("width_bars", 0.4 * mm)
+    offset_codebar = kwargs.get("codebar_offset", (0 * mm, -7 * mm))
+    orientation = kwargs.get("orientation", "horizontal")
+    border_on = kwargs.get("border", True)
+    filepath = kwargs.get("filepath", file_codebar)
     pagesize = [pagesize[0] * mm, pagesize[1] * mm]
     pagesize = (pagesize[1], pagesize[0]) if orientation == "horizontal" else pagesize
     # -------------------------------------create canvas-------------------------------------
@@ -296,16 +305,14 @@ def create_one_code(**kwargs):
     if border_on:
         draw_border(c, 0, 0, pagesize[0], pagesize[1])
     #  -------------------------------------create title-------------------------------------
-    title_offset = kwargs.get("title_offset", (0 * mm, 0 * mm))
-    c.setFont("Helvetica", font_tile)
+    c.setFont("Helvetica", title_font)
     c.drawCentredString(
         pagesize[0] / 2 + title_offset[0],
-        pagesize[1] - font_tile * 1.5 + title_offset[1],
+        pagesize[1] - title_font * 1.5 + title_offset[1],
         title,
     )
     # -------------------------------------create name-------------------------------------
-    wrap_text_width = kwargs.get("wrap_text_width", pagesize[0] - 10 * mm)
-    name_list = wrap_text(name.upper(), wrap_text_width).split("\n")
+    name_list = wrap_text(name.upper(), name_width).split("\n")
     c.setFont("Courier-Bold", font_name)
     name_offset = kwargs.get("name_offset", (0 * mm, 0 * mm))
     for i, line in enumerate(name_list):
@@ -315,9 +322,9 @@ def create_one_code(**kwargs):
             line,
         )
     # -------------------------------------create sku-------------------------------------
-
-    sku_position = kwargs.get(
-        "sku_position", (5 * mm, pagesize[1] - len(name_list) * font_name - 30)
+    sku_position = (
+        5 * mm + sku_offset[0],
+        pagesize[1] - len(name_list) * font_name - 30 + sku_offset[1],
     )
     c.setFont("Helvetica", font_sku)
     c.drawString(sku_position[0], sku_position[1], f"SKU: {sku}")
@@ -338,10 +345,9 @@ def create_one_code(**kwargs):
     # -------------------------------------create code-------------------------------------
     c.setFont("Helvetica", font_code)
     height_barcode = barcode.height if barcode else 10
-    c.setFont("Helvetica", 7)
-    position_code = kwargs.get(
-        "code_position",
-        (pagesize[0] / 2, pagesize[1] / 2 - 20 - height_barcode / 2 - 8),
+    position_code = (
+        pagesize[0] / 2 + code_offset[0],
+        pagesize[1] / 2 - 20 - height_barcode / 2 - 8 + code_offset[1],
     )
     c.drawCentredString(position_code[0], position_code[1], code)
     c.save()

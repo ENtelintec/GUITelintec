@@ -150,7 +150,12 @@ def get_all_products_DB(type_p):
     for item in result:
         # (id_product, sku, name, udm, stock, category_name, supplier_name, is_tool, is_internal, codes) = item
         codes_raw = json.loads(item[9])
-        codes = [{"tag": k, "value": v} for k, v in codes_raw.items()]
+        if isinstance(codes_raw, list):
+            codes = codes_raw
+        elif isinstance(codes_raw, dict):
+            codes = [{"tag": k, "value": v} for k, v in codes_raw.items()]
+        else:
+            codes = []
         locations = json.loads(item[10])
         out.append(
             {

@@ -289,3 +289,11 @@ class DownloadMovementsFile(Resource):
         if code != 200:
             return {"data": filepath, "msg": "Error at creating file"}, 400
         return send_file(filepath, as_attachment=True)
+
+
+@ns.route("/inventory/file/download/barcode")
+class DownloadBarcodeFile(Resource):
+    @ns.expect(file_movements_request_model)
+    def post(self):
+        filepath = "files/barcode.xlsx"
+        return send_file(filepath, as_attachment=True)

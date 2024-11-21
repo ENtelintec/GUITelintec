@@ -7,7 +7,7 @@ import ttkbootstrap as ttk
 from ttkbootstrap.dialogs import Messagebox
 from ttkbootstrap.tableview import Tableview
 
-from static.constants import format_date, log_file_db
+from static.constants import format_date, log_file_db, file_codebar
 from templates.Functions_GUI_Utils import (
     create_label,
     create_entry,
@@ -27,7 +27,7 @@ from templates.controllers.product.p_and_s_controller import (
     delete_product_db,
 )
 from templates.controllers.supplier.suppliers_controller import get_all_suppliers_amc
-from templates.forms.BarCodeGenerator import create_BarCodeFormat
+from templates.forms.BarCodeGenerator import create_BarCodeFormat, create_one_code
 from templates.forms.Storage import InventoryStorage
 from templates.misc.Functions_Files import write_log_file
 from templates.modules.Almacen.SubFrameBarcode import BarcodeSubFrameSelector
@@ -303,22 +303,15 @@ class InventoryScreen(ttk.Frame):
         name = self._products[0][2]
         sku = json.loads(self._products[0][9])
         sku = "None" if len(sku) == 0 else sku[0]
-        filepath = filedialog.asksaveasfilename(
-            defaultextension=".pdf",
-            filetypes=[("PDF files", "*.pdf")],
-            title="Guardar como",
-        )
-        if not filepath:
-            return
-        create_BarCodeFormat(code, sku, name, filepath, "128")
         kw = {
-            "pdf_filepath": filepath,
+            "pdf_filepath": file_codebar,
             "id_product": self._products[0][0],
             "sku": sku,
             "name": name,
             "code": code,
             "products": self._products,
         }
+        create_one_code(filepath=file_codebar, **kw)
         BarcodeSubFrameSelector(self, **kw)
 
     def print_products(self):
