@@ -23,6 +23,7 @@ from templates.Functions_GUI_Utils import (
 from templates.Functions_Utils import get_page_size
 from templates.forms.BarCodeGenerator import create_one_code
 from templates.modules.Almacen.Frame_Movements import fetch_all_products
+from templates.modules.Almacen.SubFrameBarcodeMultiple import BarcodeMultipleFrame
 
 
 def generate_default_configuration_barcodes(**kwargs):
@@ -194,6 +195,89 @@ def create_input_widgets(master):
     )
 
 
+def create_input_widgets_multiple(master):
+    create_label(master, text="Título: ", row=0, column=0, sticky="w")
+    create_label(master, text="Letra título: ", row=2, column=0, sticky="w")
+    create_label(master, text="Offset título: ", row=4, column=0, sticky="w")
+    create_label(master, text="Codigo: ", row=0, column=1, sticky="w")
+    create_label(master, text="Letra código: ", row=2, column=1, sticky="w")
+    create_label(master, text="Offset código: ", row=4, column=1, sticky="w")
+    create_label(master, text="SKU: ", row=0, column=2, sticky="w")
+    create_label(master, text="Letra SKU: ", row=2, column=2, sticky="w")
+    create_label(master, text="Offset SKU: ", row=4, column=2, sticky="w")
+    create_label(master, text="Descripcion: ", row=0, column=3, sticky="w")
+    create_label(master, text="Letra Descripción: ", row=2, column=3, sticky="w")
+    create_label(master, text="Offset Descripción: ", row=4, column=3, sticky="w")
+    create_label(master, text="Limite descripción: ", row=6, column=3, sticky="w")
+    create_label(master, text="Tipo de Codigo: ", row=0, column=4, sticky="w")
+    create_label(master, text="Tamaño: ", row=2, column=4, sticky="w")
+    create_label(master, text="Offset Codigo de Barras: ", row=4, column=4, sticky="w")
+    create_label(master, text="Tamaño de página: ", row=0, column=5, sticky="w")
+    create_label(master, text="Orientación: ", row=2, column=5, sticky="w")
+    create_label(master, text="Bordes: ", row=4, column=5, sticky="w")
+    create_label(master, text="Ruta: ", row=6, column=5, sticky="w")
+    # inputs
+    input_title = create_entry(master, row=1, column=0, sticky="nswe")
+    input_title_font = create_entry(master, row=3, column=0, sticky="nswe")
+    input_title_offset = create_entry(master, row=5, column=0, sticky="nswe")
+    input_code = create_entry(master, row=1, column=1, sticky="nswe")
+    input_code_font = create_entry(master, row=3, column=1, sticky="nswe")
+    input_code_offset = create_entry(master, row=5, column=1, sticky="nswe")
+    input_sku = create_entry(master, row=1, column=2, sticky="nswe")
+    input_sku_font = create_entry(master, row=3, column=2, sticky="nswe")
+    input_sku_offset = create_entry(master, row=5, column=2, sticky="nswe")
+    input_description = create_entry(master, row=1, column=3, sticky="nswe")
+    input_description_font = create_entry(master, row=3, column=3, sticky="nswe")
+    input_description_offset = create_entry(master, row=5, column=3, sticky="nswe")
+    input_description_limit = create_entry(master, row=7, column=3, sticky="nswe")
+    values = ["39", "39std", "93", "128", "usps", "eanbc8", "eanbc13", "qr"]
+    input_type_code = create_Combobox(
+        master, row=1, column=4, sticky="nswe", values=values
+    )
+    input_size_code = create_entry(master, row=3, column=4, sticky="nswe")
+    input_offset_code = create_entry(master, row=5, column=4, sticky="nswe")
+    input_size_page = create_Combobox(
+        master, row=1, column=5, sticky="nswe", values=["default", "A4", "A5"]
+    )
+    input_orientation = create_Combobox(
+        master, row=3, column=5, sticky="nswe", values=["horizontal", "vertical"]
+    )
+    input_border = create_Combobox(
+        master, row=5, column=5, sticky="nswe", values=[True, False]
+    )
+    svar_title = ttk.StringVar(value=file_codebar)
+    create_entry(
+        master,
+        textvariable=svar_title,
+        row=7,
+        column=5,
+        sticky="nswe",
+        state="readonly",
+    )
+    return (
+        input_title,
+        input_title_font,
+        input_title_offset,
+        input_code,
+        input_code_font,
+        input_code_offset,
+        input_sku,
+        input_sku_font,
+        input_sku_offset,
+        input_description,
+        input_description_font,
+        input_description_offset,
+        input_description_limit,
+        input_type_code,
+        input_size_code,
+        input_offset_code,
+        input_size_page,
+        input_orientation,
+        input_border,
+        svar_title,
+    )
+
+
 def create_btns(master, callbacks):
     create_button(
         master,
@@ -207,14 +291,6 @@ def create_btns(master, callbacks):
         master,
         row=0,
         column=1,
-        text="Generar Codigo",
-        command=callbacks.get("print", None),
-        style="success",
-    )
-    create_button(
-        master,
-        row=0,
-        column=2,
         text="Limpiar",
         command=callbacks.get("clear", None),
         style="warning",
@@ -222,8 +298,8 @@ def create_btns(master, callbacks):
     create_button(
         master,
         row=0,
-        column=3,
-        text="Seleccionar Dirección",
+        column=2,
+        text="Guardar",
         command=callbacks.get("path", None),
         style="info",
     )
@@ -287,8 +363,7 @@ def set_values_entries(entries, values):
             entry.insert(0, values[index])
 
 
-def generate_kw_for_barcode(entries, **kwargs):
-    values = get_entries_values(entries)
+def generate_kw_for_barcode(values, **kwargs):
     temp = {
         "title": kwargs.get("title", values[0]),
         "title_font": kwargs.get("title_font", values[1]),
@@ -315,22 +390,7 @@ def generate_kw_for_barcode(entries, **kwargs):
     return kw
 
 
-class BarcodeSubFrameSelector(ttk.Toplevel):
-    def __init__(self, master, **kwargs):
-        super().__init__(master)
-        self.title("Código de barras")
-        self.columnconfigure(0, weight=1)
-        self.rowconfigure(0, weight=1)
-        frame_notebook = ScrolledFrame(self, autohide=True)
-        frame_notebook.grid(row=0, column=0, sticky="nswe")
-        frame_notebook.columnconfigure(0, weight=1)
-        nb = ttk.Notebook(frame_notebook)
-        nb.grid(row=0, column=0, sticky="nswe", padx=(5, 20), pady=5)
-        nb.columnconfigure(0, weight=1)
-        frame_individual = BarcodeFrame(nb, **kwargs)
-        nb.add(frame_individual, text="Individual")
-        frame_multiple = BarcodeFrame(nb, **kwargs)
-        nb.add(frame_multiple, text="Multiple")
+
 
 
 class BarcodeFrame(ttk.Frame):
@@ -378,8 +438,7 @@ class BarcodeFrame(ttk.Frame):
             frame_btns,
             {
                 "update": self.update_barcode,
-                "print": self.print_barcode,
-                "clear": self.clear_fields,
+                "clear": self.clear_btn_action,
                 "path": self.select_path,
             },
         )
@@ -431,7 +490,8 @@ class BarcodeFrame(ttk.Frame):
         if self.id_to_generate is None:
             Messagebox.show_error("No se ha seleccionado un producto", "Error")
             return
-        self.kw = generate_kw_for_barcode(self.entries)
+        values = get_entries_values(self.entries)
+        self.kw = generate_kw_for_barcode(values)
         create_one_code(**self.kw)
         self.create_canvas()
 
@@ -446,6 +506,22 @@ class BarcodeFrame(ttk.Frame):
             elif isinstance(entry, ttk.Entry):
                 entry.delete(0, "end")
 
+    def clear_btn_action(self):
+        self.id_to_generate = None
+        self.barcode = "None"
+        self.sku = "None"
+        self.name = "None"
+        kw, values = generate_default_configuration_barcodes(
+            code=self.barcode,
+            sku=self.sku,
+            name=self.name,
+            filepath=self.pdf_barcode,
+            title=self.title_pdf,
+        )
+        set_values_entries(self.entries, values)
+        self.clear_fields()
+        set_values_entries(self.entries, values)
+
     def select_path(self):
         filepath = filedialog.asksaveasfilename(
             defaultextension=".pdf",
@@ -455,7 +531,3 @@ class BarcodeFrame(ttk.Frame):
         if not filepath:
             return
         self.pdf_barcode = filepath
-
-    def print_barcode(self):
-        if not self.pdf_barcode:
-            return

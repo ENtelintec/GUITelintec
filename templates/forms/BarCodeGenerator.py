@@ -2,10 +2,15 @@
 __author__ = "Edisson Naula"
 __date__ = "$ 24/oct/2024  at 9:55 $"
 
+from io import BytesIO
+
+import fitz
+from PIL import Image
 from reportlab.graphics.barcode import code39, code128, code93
 from reportlab.graphics.barcode import eanbc, qr, usps
 from reportlab.graphics.shapes import Drawing
 from reportlab.lib.units import mm
+from reportlab.lib.utils import ImageReader
 from reportlab.pdfgen import canvas
 from reportlab.graphics import renderPDF
 from reportlab.platypus import Flowable
@@ -291,7 +296,7 @@ def create_one_code(**kwargs):
     pagesize = get_page_size(kwargs.get("pagesize", "default"))
     name_width = kwargs.get("name_limit", pagesize[0] - 10 * mm)
     type_code = kwargs.get("type_code", "128")
-    height_bars = kwargs.get("height_bars", 40 * mm)
+    height_bars = kwargs.get("height_bars", 20 * mm)
     width_bars = kwargs.get("width_bars", 0.4 * mm)
     offset_codebar = kwargs.get("codebar_offset", (0 * mm, -7 * mm))
     orientation = kwargs.get("orientation", "horizontal")
@@ -481,3 +486,59 @@ def create_two_code_one_page_multiple(
             c.showPage()
             counter = 0
     c.save()
+
+
+def create_multiple_element_from_pdf(pagesize, filepath, **kwargs):
+    pdf_document = fitz.open(filepath)
+    pagesize = get_page_size(pagesize)
+    pagesize_image = get_page_size(kwargs.get("pagesize_image", "default"))
+    orientation_image = kwargs.get("orientation_image", "horizontal")
+    orientation = kwargs.get("orientation", "vertical")
+    pagesize = (pagesize[1], pagesize[0]) if orientation == "horizontal" else pagesize
+    pagesize_image = (
+        (pagesize_image[1], pagesize_image[0])
+        if orientation_image == "horizontal"
+        else pagesize_image
+    )
+    x_init = kwargs.get("x_init", 0)
+    y_init = kwargs.get("y_init", 0)
+    columns = kwargs.get("columns", 2)
+    rows = kwargs.get("rows", 12)
+    pages = pdf_document.page_count
+    c = canvas.Canvas(filepath.replace(".pdf", "_multiple.pdf"), pagesize=pagesize)
+    new_pages = pages // (columns * rows) + 1
+    page_number = 0
+    for page in range(new_pages):
+        for i in range(rows):
+            for j in range(columns):
+                if page_number == pages:
+                    break
+                page = pdf_document.load_page(page_number)
+                pix = page.get_pixmap()
+                image_io = BytesIO()
+                pil_image = Image.frombytes("RGB", (pix.width, pix.height), pix.samples)
+                pil_image.save(image_io, format="PNG")
+                image_io.seek(0)
+                # temp_file_img = "files/temp_img.png"
+                # image.save(temp_file_img)
+                image_reader = ImageReader(image_io)
+                x = pagesize[0] / columns * j + x_init
+                y = (
+                    pagesize[1]
+                    - pagesize_image[1] * 2
+                    - (pagesize[1] / rows * i + y_init)
+                )
+                c.drawImage(
+                    image_reader,
+                    x,
+                    y,
+                    width=pagesize[0] / columns,
+                    height=pagesize[1] / rows,
+                )
+                page_number += 1
+            if page_number == pages:
+                break
+        c.showPage()
+    c.save()
+    pdf_document.close()
+    print("Multiple elements created: ", filepath.replace(".pdf", "_multiple.pdf"))

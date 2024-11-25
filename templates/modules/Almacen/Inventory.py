@@ -30,7 +30,7 @@ from templates.controllers.supplier.suppliers_controller import get_all_supplier
 from templates.forms.BarCodeGenerator import create_BarCodeFormat, create_one_code
 from templates.forms.Storage import InventoryStorage
 from templates.misc.Functions_Files import write_log_file
-from templates.modules.Almacen.SubFrameBarcode import BarcodeSubFrameSelector
+from templates.modules.Almacen.Frame_BarCodes import BarcodeSubFrameSelector
 from templates.modules.Almacen.SubFrameLector import LectorScreenSelector
 
 coldata_inventory = [
