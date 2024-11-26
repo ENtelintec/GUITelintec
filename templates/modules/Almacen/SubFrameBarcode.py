@@ -21,8 +21,8 @@ from templates.Functions_GUI_Utils import (
 )
 from templates.Functions_Utils import get_page_size
 from templates.forms.BarCodeGenerator import create_one_code
-from templates.modules.Almacen.Frame_Movements import fetch_all_products
-from templates.resources.methods.Aux_Inventory import generate_default_configuration_barcodes, generate_kw_for_barcode, coldata_inventory
+from templates.resources.methods.Aux_Inventory import generate_default_configuration_barcodes, generate_kw_for_barcode, coldata_inventory, \
+    fetch_all_products
 
 
 def create_input_widgets(master):
@@ -206,7 +206,11 @@ class BarcodeFrame(ttk.Frame):
         self.sku = kwargs.get("sku", "None")
         self.name = kwargs.get("name", "None")
         self.pdf_barcode = kwargs.get("pdf_filepath", file_codebar)
-
+        self._products = (
+            fetch_all_products()
+            if "data_products_gen" not in kwargs["data"]
+            else kwargs["data"]["data_products_gen"]
+        )
         # ------------------------------title-----------------------------------------
         create_label(
             self, 0, 0, text="Vista previa", font=("Helvetica", 20), sticky="we"
@@ -250,7 +254,7 @@ class BarcodeFrame(ttk.Frame):
         self.table = create_table(
             frame_table,
             coldata_inventory,
-            fetch_all_products(),
+            self._products,
             self.on_double_click,
         )
 

@@ -5,7 +5,7 @@ __date__ = "$ 26/nov/2024  at 14:35 $"
 from reportlab.lib.units import mm
 
 from static.constants import file_codebar
-
+from templates.controllers.product.p_and_s_controller import get_all_products_db
 
 coldata_inventory = [
     {"text": "ID Producto", "stretch": True},
@@ -133,3 +133,11 @@ def generate_kw_for_barcode(values, **kwargs):
     }
     kw, values = generate_default_configuration_barcodes(**temp)
     return kw
+
+
+def fetch_all_products():
+    flag, error, result = get_all_products_db()
+    if not flag:
+        print("Error al obtener los productos:", str(error))
+        return []
+    return result

@@ -26,11 +26,11 @@ from templates.controllers.product.p_and_s_controller import (
     delete_movement_db,
     create_in_movement_db,
     create_out_movement_db,
-    get_all_products_db,
     update_stock_db,
 )
 from templates.misc.Functions_Files import write_log_file
 from templates.modules.Almacen.SubFrameLector import LectorScreenSelector
+from templates.resources.methods.Aux_Inventory import fetch_all_products
 
 coldata_movementes = [
     {"text": "ID Movimiento", "stretch": False},
@@ -45,14 +45,6 @@ coldata_movementes = [
     {"text": "Fabricante", "stretch": False},
     {"text": "locations", "stretch": False},
 ]
-
-
-def fetch_all_products():
-    flag, error, result = get_all_products_db()
-    if not flag:
-        print("Error al obtener los productos:", str(error))
-        return []
-    return result
 
 
 def end_action_db(msg, title, usernamedata):

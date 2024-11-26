@@ -2,6 +2,7 @@
 __author__ = "Edisson Naula"
 __date__ = "$ 25/nov/2024  at 15:54 $"
 
+import json
 from tkinter import filedialog
 
 import fitz
@@ -18,9 +19,16 @@ from templates.Functions_GUI_Utils import (
     create_Combobox,
 )
 from templates.Functions_Utils import get_page_size
-from templates.forms.BarCodeGenerator import create_one_code
+from templates.forms.BarCodeGenerator import (
+    create_one_code,
+    create_multiple_barcodes_products,
+)
 from templates.modules.Almacen.Frame_Movements import fetch_all_products
-from templates.resources.methods.Aux_Inventory import generate_kw_for_barcode, generate_default_configuration_barcodes, coldata_inventory
+from templates.resources.methods.Aux_Inventory import (
+    generate_kw_for_barcode,
+    generate_default_configuration_barcodes,
+    coldata_inventory,
+)
 
 
 def create_input_widgets(master):
@@ -217,7 +225,11 @@ class BarcodeMultipleFrame(ttk.Frame):
         self.sku = kwargs.get("sku", "None")
         self.name = kwargs.get("name", "None")
         self.pdf_barcode = kwargs.get("pdf_filepath", file_codebar)
-
+        self._products = (
+            fetch_all_products()
+            if "data_products_gen" not in kwargs["data"]
+            else kwargs["data"]["data_products_gen"]
+        )
         # ------------------------------title-----------------------------------------
         create_label(
             self, 0, 0, text="Vista previa", font=("Helvetica", 20), sticky="we"
@@ -265,7 +277,7 @@ class BarcodeMultipleFrame(ttk.Frame):
         self.table = create_table(
             frame_table,
             coldata_inventory,
-            fetch_all_products(),
+            self._products,
             self.on_double_click,
         )
 
@@ -341,7 +353,6 @@ class BarcodeMultipleFrame(ttk.Frame):
             item for index, item in enumerate(values) if index not in [3, 6, 9]
         ] + ["Todos", "1"]
         self.clear_fields()
-        print(new_values)
         set_values_entries(self.entries, new_values)
 
     def select_path(self):
@@ -357,8 +368,15 @@ class BarcodeMultipleFrame(ttk.Frame):
     def print_barcode(self):
         list_ids = self.entries[-1].get().replace(" ", "").split(",")
         list_selection = self.entries[-2].get()
+        code_list = []
+        sku_list = []
+        name_list = []
         if list_selection == "Todos":
-            print("Todos")
+            for item in self._products:
+                codes = json.loads(item[9])
+                sku_list.append(codes[0].get("value", "None"))
+                code_list.append(item[1])
+                name_list.append(item[2])
         else:
             ids = []
             for item in list_ids:
@@ -368,4 +386,21 @@ class BarcodeMultipleFrame(ttk.Frame):
                     ids.extend(range(start, end + 1))
                 else:
                     ids.append(int(item))
-            print(ids)
+            for item in self._products:
+                if item[0] in ids:
+                    codes = json.loads(item[9])
+                    sku_list.append(codes[0].get("value", "None"))
+                    code_list.append(item[1])
+                    name_list.append(item[2])
+        values = get_entries_values(self.entries)
+        new_values = (
+            values[0:3]
+            + ["new name example"]
+            + values[3:6]
+            + ["new code example"]
+            + values[6:9]
+            + ["new sku example"]
+            + values[9:-2]
+        )
+        kw, values = generate_kw_for_barcode(new_values)
+        create_multiple_barcodes_products(code_list, sku_list, name_list, **kw)
