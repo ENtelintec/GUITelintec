@@ -10,7 +10,6 @@ import ttkbootstrap as ttk
 from PIL import Image, ImageTk
 from reportlab.lib.units import mm
 from ttkbootstrap.dialogs import Messagebox
-from ttkbootstrap.scrolled import ScrolledFrame
 from ttkbootstrap.tableview import Tableview
 
 from static.constants import file_codebar
@@ -23,179 +22,10 @@ from templates.Functions_GUI_Utils import (
 from templates.Functions_Utils import get_page_size
 from templates.forms.BarCodeGenerator import create_one_code
 from templates.modules.Almacen.Frame_Movements import fetch_all_products
-from templates.modules.Almacen.SubFrameBarcodeMultiple import BarcodeMultipleFrame
-
-
-def generate_default_configuration_barcodes(**kwargs):
-    title_offset = kwargs.get("title_offset", "0, 0")
-    title_offset = (
-        (float(title_offset.split(", ")[0]), float(title_offset.split(", ")[1]))
-        if len(title_offset.split(", ")) != 2
-        else (0, 0)
-    )
-    code_offset = kwargs.get("code_offset", "0, 0")
-    code_offset = (
-        (float(code_offset.split(", ")[0]), float(code_offset.split(", ")[1]))
-        if len(code_offset.split(", ")) != 2
-        else (0, 0)
-    )
-    sku_offset = kwargs.get("sku_offset", "0, 0")
-    sku_offset = (
-        (float(sku_offset.split(", ")[0]), float(sku_offset.split(", ")[1]))
-        if len(sku_offset.split(", ")) != 2
-        else (0, 0)
-    )
-    name_offset = kwargs.get("name_offset", "0, 0")
-    name_offset = (
-        (float(name_offset.split(", ")[0]), float(name_offset.split(", ")[1]))
-        if len(name_offset.split(", ")) != 2
-        else (0, 0)
-    )
-    codebar_size = kwargs.get("codebar_size", "0.4, 20")
-    codebar_size = (
-        (float(codebar_size.split(", ")[0]), float(codebar_size.split(", ")[1]))
-        if len(codebar_size.split(", ")) != 2
-        else (0.4, 20)
-    )
-    codebar_offset = kwargs.get("codebar_offset", "0, -7")
-    codebar_offset = (
-        (float(codebar_offset.split(", ")[0]), float(codebar_offset.split(", ")[1]))
-        if len(codebar_offset.split(", ")) != 2
-        else (0, -7)
-    )
-    kw = {
-        "title": kwargs.get("title", "Titulo de prueba"),
-        "title_font": kwargs.get("title_font", 14),
-        "title_offset": (title_offset[0] * mm, title_offset[1] * mm),
-        "code": kwargs.get("code", "A123456789"),
-        "code_font": kwargs.get("code_font", 7),
-        "code_offset": (code_offset[0] * mm, code_offset[1] * mm),
-        "sku": kwargs.get("sku", "SKU123456789"),
-        "sku_font": kwargs.get("sku_font", 6),
-        "sku_offset": (sku_offset[0] * mm, sku_offset[1] * mm),
-        "name": kwargs.get("name", "Producto de prueba"),
-        "name_font": kwargs.get("name_font", 9),
-        "name_offset": (name_offset[0] * mm, name_offset[1] * mm),
-        "name_width": kwargs.get("name_limit", 20),
-        "type_code": kwargs.get("type_code", "128"),
-        "width_bars": codebar_size[0] * mm,
-        "height_bars": codebar_size[1] * mm,
-        "codebar_offset": (codebar_offset[0] * mm, codebar_offset[1] * mm),
-        "pagesize": kwargs.get("pagesize", "default"),
-        "orientation": kwargs.get("orientation", "horizontal"),
-        "border_on": kwargs.get("border", True),
-        "filepath": kwargs.get("filepath", file_codebar),
-    }
-    # noinspection PyTypeChecker
-    values = (
-        kw["title"],
-        kw["title_font"],
-        ", ".join(map(str, title_offset)),
-        kw["code"],
-        kw["code_font"],
-        ", ".join(map(str, code_offset)),
-        kw["sku"],
-        kw["sku_font"],
-        ", ".join(map(str, sku_offset)),
-        kw["name"],
-        kw["name_font"],
-        ", ".join(map(str, name_offset)),
-        kw["name_width"],
-        kw["type_code"],
-        ", ".join(map(str, codebar_size)),
-        ", ".join(map(str, codebar_offset)),
-        kw["pagesize"],
-        kw["orientation"],
-        kw["border_on"],
-        kw["filepath"],
-    )
-    return kw, values
+from templates.resources.methods.Aux_Inventory import generate_default_configuration_barcodes, generate_kw_for_barcode, coldata_inventory
 
 
 def create_input_widgets(master):
-    create_label(master, text="Título: ", row=0, column=0, sticky="w")
-    create_label(master, text="Letra título: ", row=2, column=0, sticky="w")
-    create_label(master, text="Offset título: ", row=4, column=0, sticky="w")
-    create_label(master, text="Codigo: ", row=0, column=1, sticky="w")
-    create_label(master, text="Letra código: ", row=2, column=1, sticky="w")
-    create_label(master, text="Offset código: ", row=4, column=1, sticky="w")
-    create_label(master, text="SKU: ", row=0, column=2, sticky="w")
-    create_label(master, text="Letra SKU: ", row=2, column=2, sticky="w")
-    create_label(master, text="Offset SKU: ", row=4, column=2, sticky="w")
-    create_label(master, text="Descripcion: ", row=0, column=3, sticky="w")
-    create_label(master, text="Letra Descripción: ", row=2, column=3, sticky="w")
-    create_label(master, text="Offset Descripción: ", row=4, column=3, sticky="w")
-    create_label(master, text="Limite descripción: ", row=6, column=3, sticky="w")
-    create_label(master, text="Tipo de Codigo: ", row=0, column=4, sticky="w")
-    create_label(master, text="Tamaño: ", row=2, column=4, sticky="w")
-    create_label(master, text="Offset Codigo de Barras: ", row=4, column=4, sticky="w")
-    create_label(master, text="Tamaño de página: ", row=0, column=5, sticky="w")
-    create_label(master, text="Orientación: ", row=2, column=5, sticky="w")
-    create_label(master, text="Bordes: ", row=4, column=5, sticky="w")
-    create_label(master, text="Ruta: ", row=6, column=5, sticky="w")
-    # inputs
-    input_title = create_entry(master, row=1, column=0, sticky="nswe")
-    input_title_font = create_entry(master, row=3, column=0, sticky="nswe")
-    input_title_offset = create_entry(master, row=5, column=0, sticky="nswe")
-    input_code = create_entry(master, row=1, column=1, sticky="nswe")
-    input_code_font = create_entry(master, row=3, column=1, sticky="nswe")
-    input_code_offset = create_entry(master, row=5, column=1, sticky="nswe")
-    input_sku = create_entry(master, row=1, column=2, sticky="nswe")
-    input_sku_font = create_entry(master, row=3, column=2, sticky="nswe")
-    input_sku_offset = create_entry(master, row=5, column=2, sticky="nswe")
-    input_description = create_entry(master, row=1, column=3, sticky="nswe")
-    input_description_font = create_entry(master, row=3, column=3, sticky="nswe")
-    input_description_offset = create_entry(master, row=5, column=3, sticky="nswe")
-    input_description_limit = create_entry(master, row=7, column=3, sticky="nswe")
-    values = ["39", "39std", "93", "128", "usps", "eanbc8", "eanbc13", "qr"]
-    input_type_code = create_Combobox(
-        master, row=1, column=4, sticky="nswe", values=values
-    )
-    input_size_code = create_entry(master, row=3, column=4, sticky="nswe")
-    input_offset_code = create_entry(master, row=5, column=4, sticky="nswe")
-    input_size_page = create_Combobox(
-        master, row=1, column=5, sticky="nswe", values=["default", "A4", "A5"]
-    )
-    input_orientation = create_Combobox(
-        master, row=3, column=5, sticky="nswe", values=["horizontal", "vertical"]
-    )
-    input_border = create_Combobox(
-        master, row=5, column=5, sticky="nswe", values=[True, False]
-    )
-    svar_title = ttk.StringVar(value=file_codebar)
-    create_entry(
-        master,
-        textvariable=svar_title,
-        row=7,
-        column=5,
-        sticky="nswe",
-        state="readonly",
-    )
-    return (
-        input_title,
-        input_title_font,
-        input_title_offset,
-        input_code,
-        input_code_font,
-        input_code_offset,
-        input_sku,
-        input_sku_font,
-        input_sku_offset,
-        input_description,
-        input_description_font,
-        input_description_offset,
-        input_description_limit,
-        input_type_code,
-        input_size_code,
-        input_offset_code,
-        input_size_page,
-        input_orientation,
-        input_border,
-        svar_title,
-    )
-
-
-def create_input_widgets_multiple(master):
     create_label(master, text="Título: ", row=0, column=0, sticky="w")
     create_label(master, text="Letra título: ", row=2, column=0, sticky="w")
     create_label(master, text="Offset título: ", row=4, column=0, sticky="w")
@@ -363,36 +193,6 @@ def set_values_entries(entries, values):
             entry.insert(0, values[index])
 
 
-def generate_kw_for_barcode(values, **kwargs):
-    temp = {
-        "title": kwargs.get("title", values[0]),
-        "title_font": kwargs.get("title_font", values[1]),
-        "title_offset": kwargs.get("title_offset", values[2]),
-        "code": kwargs.get("code", values[3]),
-        "code_font": kwargs.get("code_font", values[4]),
-        "code_offset": kwargs.get("code_offset", values[5]),
-        "sku": kwargs.get("sku", values[6]),
-        "sku_font": kwargs.get("sku_font", values[7]),
-        "sku_offset": kwargs.get("sku_offset", values[8]),
-        "name": kwargs.get("name", values[9]),
-        "name_font": kwargs.get("name_font", values[10]),
-        "name_offset": kwargs.get("name_offset", values[11]),
-        "name_limit": kwargs.get("name_limit", values[12]),
-        "type_code": kwargs.get("type_code", values[13]),
-        "codebar_size": kwargs.get("codebar_size", values[14]),
-        "codebar_offset": kwargs.get("codebar_offset", values[15]),
-        "pagesize": kwargs.get("pagesize", values[16]),
-        "orientation": kwargs.get("orientation", values[17]),
-        "border": kwargs.get("border", values[18]),
-        "filepath": kwargs.get("filepath", values[19]),
-    }
-    kw, values = generate_default_configuration_barcodes(**temp)
-    return kw
-
-
-
-
-
 class BarcodeFrame(ttk.Frame):
     def __init__(self, master, **kwargs):
         super().__init__(master)
@@ -446,7 +246,6 @@ class BarcodeFrame(ttk.Frame):
         frame_table = ttk.Frame(self)
         frame_table.grid(row=4, column=0, sticky="nswe")
         frame_table.columnconfigure(0, weight=1)
-        from templates.modules.Almacen.Inventory import coldata_inventory
 
         self.table = create_table(
             frame_table,

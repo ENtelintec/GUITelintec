@@ -11,7 +11,7 @@ from static.constants import (
     format_timestamps,
     filepath_inventory_form,
     filepath_inventory_form_movements,
-    format_date,
+    format_date, file_codebar,
 )
 from templates.Functions_Utils import create_notification_permission_notGUI
 from templates.controllers.product.p_and_s_controller import (
@@ -36,9 +36,11 @@ from templates.controllers.product.p_and_s_controller import (
     get_outs_db_detail,
     get_all_movements_db_detail,
     update_multiple_row_products_amc,
-    update_stock_db_ids,
+    update_stock_db_ids, get_product_barcode_data,
 )
+from templates.forms.BarCodeGenerator import create_one_code
 from templates.forms.Storage import InventoryStorage
+from templates.resources.methods.Aux_Inventory import generate_default_configuration_barcodes
 
 
 def get_all_movements(type_m: str):
@@ -548,3 +550,19 @@ def create_file_movements_amc(data):
         type_form="Movements",
     )
     return (filepath_inventory_form_movements, 200) if flag else (None, 400)
+
+
+def create_pdf_barcode(data):
+    id_product = data.get("id_product", 0)
+    format_dict = data.get("format", {})
+    if format_dict == {}:
+        flag, error, result = get_product_barcode_data(id_product)
+        codes = json.loads(result[2])
+        codigo = codes[0].get("value", "None") if len(codes) > 0 else "None"
+        kw, values = generate_default_configuration_barcodes(
+            name=result[0], code=result[1], sku=codigo
+        )
+    else:
+        kw, values = generate_default_configuration_barcodes(**format_dict)
+    create_one_code(**kw)
+    return kw.get("filepath", file_codebar), 200

@@ -706,6 +706,18 @@ def get_movements_type(type_m: str, limit=10):
     return flag, error, result
 
 
+def get_product_barcode_data(id_product):
+
+    sql = (
+        "SELECT name, sku, codes "
+        "FROM sql_telintec.products_amc "
+        "WHERE id_product = %s"
+    )
+    val = (id_product,)
+    flag, error, result = execute_sql(sql, val, 1)
+    return flag, error, result
+
+
 def get_stock_db_products():
     sql = (
         "SELECT id_product,stock "

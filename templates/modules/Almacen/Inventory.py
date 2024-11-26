@@ -27,25 +27,13 @@ from templates.controllers.product.p_and_s_controller import (
     delete_product_db,
 )
 from templates.controllers.supplier.suppliers_controller import get_all_suppliers_amc
-from templates.forms.BarCodeGenerator import create_BarCodeFormat, create_one_code
+from templates.forms.BarCodeGenerator import create_one_code
 from templates.forms.Storage import InventoryStorage
 from templates.misc.Functions_Files import write_log_file
 from templates.modules.Almacen.Frame_BarCodes import BarcodeSubFrameSelector
 from templates.modules.Almacen.SubFrameLector import LectorScreenSelector
 
-coldata_inventory = [
-    {"text": "ID Producto", "stretch": True},
-    {"text": "SKU", "stretch": True},
-    {"text": "Nombre", "stretch": True},
-    {"text": "UDM", "stretch": True},
-    {"text": "Stock", "stretch": True},
-    {"text": "Categoría", "stretch": True},
-    {"text": "Proveedor", "stretch": True},
-    {"text": "Herramienta", "stretch": True},
-    {"text": "Interno", "stretch": True},
-    {"text": "Codigos", "stretch": True},
-    {"text": "Ubicaciones", "stretch": True},
-]
+
 
 
 def fetch_products():

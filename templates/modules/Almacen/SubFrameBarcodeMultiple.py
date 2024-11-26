@@ -20,6 +20,7 @@ from templates.Functions_GUI_Utils import (
 from templates.Functions_Utils import get_page_size
 from templates.forms.BarCodeGenerator import create_one_code
 from templates.modules.Almacen.Frame_Movements import fetch_all_products
+from templates.resources.methods.Aux_Inventory import generate_kw_for_barcode, generate_default_configuration_barcodes, coldata_inventory
 
 
 def create_input_widgets(master):
@@ -226,10 +227,6 @@ class BarcodeMultipleFrame(ttk.Frame):
         frame_inputs.grid(row=1, column=0, sticky="nswe")
         frame_inputs.columnconfigure((0, 1, 2, 3, 4, 5), weight=1)
         self.entries = create_input_widgets(frame_inputs)
-        from templates.modules.Almacen.SubFrameBarcode import (
-            generate_default_configuration_barcodes,
-        )
-
         kw, values = generate_default_configuration_barcodes(
             code=self.barcode,
             sku=self.sku,
@@ -265,8 +262,6 @@ class BarcodeMultipleFrame(ttk.Frame):
         frame_table = ttk.Frame(self)
         frame_table.grid(row=4, column=0, sticky="nswe")
         frame_table.columnconfigure(0, weight=1)
-        from templates.modules.Almacen.Inventory import coldata_inventory
-
         self.table = create_table(
             frame_table,
             coldata_inventory,
@@ -315,8 +310,6 @@ class BarcodeMultipleFrame(ttk.Frame):
             + ["new sku example"]
             + values[9:-2]
         )
-        from templates.modules.Almacen.SubFrameBarcode import generate_kw_for_barcode
-
         self.kw = generate_kw_for_barcode(new_values)
         create_one_code(**self.kw)
         self.create_canvas()
@@ -337,10 +330,6 @@ class BarcodeMultipleFrame(ttk.Frame):
         self.barcode = "None"
         self.sku = "None"
         self.name = "None"
-        from templates.modules.Almacen.SubFrameBarcode import (
-            generate_default_configuration_barcodes,
-        )
-
         kw, values = generate_default_configuration_barcodes(
             code=self.barcode,
             sku=self.sku,
