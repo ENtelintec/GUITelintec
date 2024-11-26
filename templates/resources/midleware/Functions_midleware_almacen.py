@@ -38,7 +38,7 @@ from templates.controllers.product.p_and_s_controller import (
     update_multiple_row_products_amc,
     update_stock_db_ids, get_product_barcode_data,
 )
-from templates.forms.BarCodeGenerator import create_one_code
+from templates.forms.BarCodeGenerator import create_one_code, create_multiple_barcodes_products
 from templates.forms.Storage import InventoryStorage
 from templates.resources.methods.Aux_Inventory import generate_default_configuration_barcodes
 
@@ -565,4 +565,19 @@ def create_pdf_barcode(data):
     else:
         kw, values = generate_default_configuration_barcodes(**format_dict)
     create_one_code(**kw)
+    return kw.get("filepath", file_codebar), 200
+
+
+def create_pdf_barcode_multiple(data):
+    name_list = data.get("name_list", [])
+    sku_list = data.get("sku_list", [])
+    code_list = data.get("code_list", [])
+    if len(name_list) == 0 or len(sku_list) == 0 or len(code_list) == 0:
+        return "No manes or codes to print", 400
+    format_dict = data.get("format", {})
+    if format_dict == {}:
+        kw, values = generate_default_configuration_barcodes()
+    else:
+        kw, values = generate_default_configuration_barcodes(**format_dict)
+    create_multiple_barcodes_products(code_list, sku_list, name_list, **kw)
     return kw.get("filepath", file_codebar), 200

@@ -215,29 +215,6 @@ file_movements_request_model = api.model(
     },
 )
 
-# {
-#     "title": kwargs.get("title", "Titulo de prueba"),
-#     "title_font": kwargs.get("title_font", 14),
-#     "title_offset": (title_offset[0] * mm, title_offset[1] * mm),
-#     "code": kwargs.get("code", "A123456789"),
-#     "code_font": kwargs.get("code_font", 7),
-#     "code_offset": (code_offset[0] * mm, code_offset[1] * mm),
-#     "sku": kwargs.get("sku", "SKU123456789"),
-#     "sku_font": kwargs.get("sku_font", 6),
-#     "sku_offset": (sku_offset[0] * mm, sku_offset[1] * mm),
-#     "name": kwargs.get("name", "Producto de prueba"),
-#     "name_font": kwargs.get("name_font", 9),
-#     "name_offset": (name_offset[0] * mm, name_offset[1] * mm),
-#     "name_width": kwargs.get("name_limit", 20),
-#     "type_code": kwargs.get("type_code", "128"),
-#     "width_bars": codebar_size[0] * mm,
-#     "height_bars": codebar_size[1] * mm,
-#     "codebar_offset": (codebar_offset[0] * mm, codebar_offset[1] * mm),
-#     "pagesize": kwargs.get("pagesize", "default"),
-#     "orientation": kwargs.get("orientation", "horizontal"),
-#     "border_on": kwargs.get("border", True),
-#     "filepath": kwargs.get("filepath", file_codebar),
-# }
 format_barcode_model = api.model(
     "FormatBarcodeAMC",
     {
@@ -268,6 +245,22 @@ file_barcode_request_model = api.model(
     {
         "id_product": fields.Integer(
             required=True, description="The product id", example=1
+        ),
+        "format": fields.Nested(format_barcode_model),
+    },
+)
+
+file_barcode_multiple_request_model = api.model(
+    "FileBarcodeMultipleRequestAMC",
+    {
+        "name_list": fields.List(
+            fields.String, required=True, description="The list of names"
+        ),
+        "sku_list":  fields.List(
+            fields.String, required=True, description="The list of skus"
+        ),
+        "code_list": fields.List(
+            fields.String, required=True, description="The list of codes"
         ),
         "format": fields.Nested(format_barcode_model),
     },
@@ -399,4 +392,11 @@ class FileBarcodeForm(Form):
             InputRequired(message="Id product is required or value 0 not accepted")
         ],
     )
+    format = FormField(FormatBarcodeForm, "format")
+
+
+class FileBarcodeMultipleForm(Form):
+    name_list = FieldList(StringField(), "name_list", validators=[InputRequired()])
+    sku_list = FieldList(StringField(), "sku_list", validators=[InputRequired()])
+    code_list = FieldList(StringField(), "code_list", validators=[InputRequired()])
     format = FormField(FormatBarcodeForm, "format")

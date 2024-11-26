@@ -359,6 +359,110 @@ def create_one_code(**kwargs):
     print("Barcode created: ", filepath)
 
 
+def create_multiple_barcodes_products(code_list, sku_list, name_list, **kwargs):
+    """
+        Create one code with the following parameters:
+            Example = {
+                "title": "Titulo de prueba",
+                "title_font": 14,
+                "title_offset": (0 * mm, 0 * mm),
+                "code": "A123456789",
+                "code_font": 7,
+                "code_offset": (0 * mm, 0 * mm),
+                "sku": "SKU123456789",
+                "sku_font": 6,
+                "sku_offset": (0 * mm, 0 * mm),
+                "name": "Producto de prueba de numero 2",
+                "name_font": 9,
+                "name_offset": (0 * mm, 0 * mm),
+                "name_width": 20,
+                "type_code": "128",
+                "pagesize": "default",
+                "orientation": "horizontal",
+                "border": True,
+                "filepath": "files/barcode.pdf",
+
+                "offset_codebar": (0 * mm, -7 * mm),
+                "width_bars": 40 * mm,
+                "height_bars": 40 * mm,
+            }
+        :param name_list:
+        :param sku_list:
+        :param code_list:
+        :param kwargs:
+        :return:
+    """
+    title_default = kwargs.get("title", "This is a product Title")
+    title_font = int(kwargs.get("title_font", 14))
+    title_offset = kwargs.get("title_offset", (0 * mm, 0 * mm))
+    code_default = kwargs.get("code", "A123456789")
+    font_code = int(kwargs.get("code_font", 7))
+    code_offset = kwargs.get("code_offset", (0 * mm, 0 * mm))
+    sku_default = kwargs.get("sku", "SKU123456789")
+    sku_offset = kwargs.get("sku_offset", (0 * mm, 0 * mm))
+    font_sku = int(kwargs.get("sku_font", 6))
+    name_default = kwargs.get("name", "Producto de prueba de numero 2")
+    font_name = int(kwargs.get("name_font", 9))
+    pagesize = get_page_size(kwargs.get("pagesize", "default"))
+    name_width = kwargs.get("name_limit", pagesize[0] - 10 * mm)
+    type_code = kwargs.get("type_code", "128")
+    height_bars = kwargs.get("height_bars", 20 * mm)
+    width_bars = kwargs.get("width_bars", 0.4 * mm)
+    offset_codebar = kwargs.get("codebar_offset", (0 * mm, -7 * mm))
+    orientation = kwargs.get("orientation", "horizontal")
+    border_on = kwargs.get("border", True)
+    filepath = kwargs.get("filepath", file_codebar)
+    pagesize = [pagesize[0] * mm, pagesize[1] * mm]
+    pagesize = (pagesize[1], pagesize[0]) if orientation == "horizontal" else pagesize
+    # -------------------------------------create canvas-------------------------------------
+    c = canvas.Canvas(filepath, pagesize=pagesize)
+    for name, code, sku in zip(name_list, code_list, sku_list):
+        # -------------------------------------create border-------------------------------------
+        if border_on:
+            draw_border(c, 0, 0, pagesize[0], pagesize[1])
+        #  -------------------------------------create title-------------------------------------
+        c.setFont("Helvetica", title_font)
+        c.drawCentredString(
+            pagesize[0] / 2 + title_offset[0],
+            pagesize[1] - title_font * 1.5 + title_offset[1],
+            title_default,
+        )
+        # -------------------------------------create name-------------------------------------
+        namelist = wrap_text(name.upper(), name_width).split("\n")
+        c.setFont("Courier-Bold", font_name)
+        for i, line in enumerate(namelist):
+            c.drawString(5 * mm, pagesize[1] - 30 - i * font_name, line)
+        # -------------------------------------create sku-------------------------------------
+        sku_position = (5 * mm + sku_offset[0], pagesize[1] - len(namelist) * font_name - 30 + sku_offset[1])
+        c.setFont("Helvetica", font_sku)
+        c.drawString(sku_position[0], sku_position[1], f"SKU: {sku}")
+        # -------------------------------------create barcode-------------------------------------
+        x = pagesize[0] / 2 - offset_codebar[0]
+        y = pagesize[1] / 2 - offset_codebar[1] - height_bars / 2
+        barcode = selectBarcodeType(
+            c,
+            type_code,
+            code,
+            filepath=filepath,
+            pagesize=pagesize,
+            x=x,
+            y=y,
+            bar_width=width_bars,
+            bar_height=height_bars,
+        )
+        # -------------------------------------create code-------------------------------------
+        c.setFont("Helvetica", font_code)
+        height_barcode = barcode.height if barcode else 10
+        position_code = (
+            pagesize[0] / 2 + code_offset[0],
+            pagesize[1] / 2 - 20 - height_barcode / 2 - 8 + code_offset[1],
+        )
+        c.drawCentredString(position_code[0], position_code[1], code)
+        c.showPage()
+    c.save()
+    print("Barcodes created: ", filepath)
+
+
 def create_multiple_barcodes(
     code_list,
     sku_list,
