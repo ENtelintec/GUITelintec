@@ -2,6 +2,7 @@ import json
 import time
 from datetime import datetime
 from tkinter import filedialog
+from tkinter.filedialog import askopenfilename
 
 import ttkbootstrap as ttk
 from ttkbootstrap.dialogs import Messagebox
@@ -33,6 +34,9 @@ from templates.misc.Functions_Files import write_log_file
 from templates.modules.Almacen.Frame_BarCodes import BarcodeSubFrameSelector
 from templates.modules.Almacen.SubFrameLector import LectorScreenSelector
 from templates.resources.methods.Aux_Inventory import coldata_inventory
+from templates.resources.midleware.Functions_midleware_almacen import (
+    upload_product_db_from_file,
+)
 
 
 def fetch_products():
@@ -199,7 +203,7 @@ class InventoryScreen(ttk.Frame):
         # --------------------------------btns-------------------------------------------------
         frame_btns = ttk.Frame(self)
         frame_btns.grid(row=3, column=0, sticky="nswe")
-        frame_btns.columnconfigure((0, 1, 2, 3), weight=1)
+        frame_btns.columnconfigure((0, 1, 2, 3, 4), weight=1)
         self.create_buttons(frame_btns)
 
     def create_table(self, master):
@@ -278,6 +282,13 @@ class InventoryScreen(ttk.Frame):
             3,
             text="Imprimir Codigo",
             command=self.print_code,
+        )
+        create_button(
+            master,
+            1,
+            5,
+            text="Importar",
+            command=self.import_file,
         )
 
     def print_code(self):
@@ -643,6 +654,15 @@ class InventoryScreen(ttk.Frame):
             msg, ["Administracion"], title, self.usernamedata["id"], 0
         )
         write_log_file(log_file_db, msg)
+
+    def import_file(self):
+        filepath = askopenfilename(
+            title="Seleccionar archivo",
+            filetypes=[("Excel files", "*.xlsx")],
+            initialdir="./",
+        )
+        code, result = upload_product_db_from_file(filepath)
+        print(code, result)
 
     def update_procedure(self, **events):
         self.update_table(ignore_triger=True)
