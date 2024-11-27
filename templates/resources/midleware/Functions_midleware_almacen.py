@@ -436,7 +436,7 @@ def read_excel_file_regular(file: str, is_tool=False, is_internal=0):
     for item in items:
         if str(item[0]) not in skus:
             tool = 0 if not is_tool else 1
-            codes = {"tag": "sku_fabricante", "value": str(item[0])}
+            codes = [{"tag": "sku_fabricante", "value": str(item[0])}]
             new_items.append(
                 (
                     None,
@@ -468,8 +468,9 @@ def upload_product_db_from_file(file: str, is_internal=0, is_tool=False):
     )
     data_result = {}
     flag, error, lastrowid = insert_multiple_row_products_amc(tuple(new_items))
+    print(flag, error, lastrowid)
     data_result["new"] = str(error) if not flag else new_items
-    print(lastrowid)
+    lastrowid = int(lastrowid) if lastrowid is not None else 0
     ids_list = [
         lastrowid - len(new_items) + index + 1 for index in range(len(new_items))
     ]
@@ -478,7 +479,7 @@ def upload_product_db_from_file(file: str, is_internal=0, is_tool=False):
         movements.append((ids_list[index], "entrada", item[4]))
     flag, error, result = insert_multiple_row_movements_amc(tuple(movements))
     if flag:
-        msg = f"Se crearon nuevos items y movimientos de entrada al inventario.\nf{new_items}"
+        msg = f"Se crearon nuevos items y movimientos de entrada al inventario.\n {len(new_items)}"
         create_notification_permission_notGUI(
             msg,
             ["Almacen"],
@@ -496,7 +497,7 @@ def upload_product_db_from_file(file: str, is_internal=0, is_tool=False):
         movements.append((id_product, "entrada", quantity))
     flag, error, result = insert_multiple_row_movements_amc(tuple(movements))
     if flag:
-        msg = f"Se actualizó stock de items al inventario.\nf{update_items}"
+        msg = f"Se actualizó stock de items al inventario.\n {len(update_items)}"
         create_notification_permission_notGUI(
             msg,
             ["Almacen"],

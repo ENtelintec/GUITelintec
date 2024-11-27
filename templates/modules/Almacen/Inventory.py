@@ -283,13 +283,13 @@ class InventoryScreen(ttk.Frame):
             text="Imprimir Codigo",
             command=self.print_code,
         )
-        create_button(
-            master,
-            2,
-            0,
-            text="Importar",
-            command=self.import_file,
-        )
+        # create_button(
+        #     master,
+        #     2,
+        #     0,
+        #     text="Importar",
+        #     command=self.import_file,
+        # )
 
     def print_code(self):
         if self.id_to_modify is None:
@@ -663,7 +663,7 @@ class InventoryScreen(ttk.Frame):
             initialdir="./",
         )
         code, result = upload_product_db_from_file(filepath)
-        print(code, result)
+        print(code)
 
     def update_procedure(self, **events):
         self.update_table(ignore_triger=True)
