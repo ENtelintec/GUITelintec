@@ -32,8 +32,7 @@ from templates.forms.Storage import InventoryStorage
 from templates.misc.Functions_Files import write_log_file
 from templates.modules.Almacen.Frame_BarCodes import BarcodeSubFrameSelector
 from templates.modules.Almacen.SubFrameLector import LectorScreenSelector
-
-
+from templates.resources.methods.Aux_Inventory import coldata_inventory
 
 
 def fetch_products():
