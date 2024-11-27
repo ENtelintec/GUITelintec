@@ -467,13 +467,16 @@ def upload_product_db_from_file(file: str, is_internal=0, is_tool=False):
         read_excel_file_regular(file, is_tool, is_internal)
     )
     data_result = {}
-    flag, error, result = insert_multiple_row_products_amc(tuple(new_items))
+    flag, error, lastrowid = insert_multiple_row_products_amc(tuple(new_items))
     data_result["new"] = str(error) if not flag else new_items
+    print(lastrowid)
+    ids_list = [
+        lastrowid - len(new_items) + index + 1 for index in range(len(new_items))
+    ]
     movements = []
-    for item in new_items:
-        movements.append((item[1], "entrada", item[4]))
-    flag, error, lastrowid = insert_multiple_row_movements_amc(tuple(movements))
-    ids_list = lastrowid - len(new_items) + 1
+    for index, item in enumerate(new_items):
+        movements.append((ids_list[index], "entrada", item[4]))
+    flag, error, result = insert_multiple_row_movements_amc(tuple(movements))
     if flag:
         msg = f"Se crearon nuevos items y movimientos de entrada al inventario.\nf{new_items}"
         create_notification_permission_notGUI(
