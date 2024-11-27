@@ -95,7 +95,7 @@ def create_input_widgets(
     input_id = create_entry(master, row=0, column=1)
     input_id.configure(state="disabled")
     entries.append(input_id)
-    create_label(master, 1, 0, text="SKU", sticky="w")
+    create_label(master, 1, 0, text="Codigo de barras", sticky="w")
     input_sku = create_entry(master, row=1, column=1)
     entries.append(input_sku)
     create_label(master, 2, 0, text="Nombre", sticky="w")
@@ -418,7 +418,7 @@ class InventoryScreen(ttk.Frame):
         is_tool = data[7]
         is_internal = data[8]
         locations = {"location_1": data[10], "location_2": data[11]}
-        codes = json.loads(data[9]) if data[9] != "" else []
+        codes = json.loads(data[9]) if data[9] != "" else {}
         return (
             int(data[0]) if data[0] != "" else "",
             data[1],
@@ -547,6 +547,7 @@ class InventoryScreen(ttk.Frame):
             movement = "entrada"
             date = datetime.now().strftime(format_date)
             quantity = product_stock
+            product_id = lastrowid
             flag, error, result = create_in_movement_db(
                 product_id, movement, quantity, date, None
             )

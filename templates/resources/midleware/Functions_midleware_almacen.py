@@ -472,7 +472,8 @@ def upload_product_db_from_file(file: str, is_internal=0, is_tool=False):
     movements = []
     for item in new_items:
         movements.append((item[1], "entrada", item[4]))
-    flag, error, result = insert_multiple_row_movements_amc(tuple(movements))
+    flag, error, lastrowid = insert_multiple_row_movements_amc(tuple(movements))
+    ids_list = lastrowid - len(new_items) + 1
     if flag:
         msg = f"Se crearon nuevos items y movimientos de entrada al inventario.\nf{new_items}"
         create_notification_permission_notGUI(
@@ -482,6 +483,7 @@ def upload_product_db_from_file(file: str, is_internal=0, is_tool=False):
             0,
             0,
         )
+
     data_result["new_notification"] = flag
     flag, error, result = update_stock_db_sku(update_items, stocks_update)
     data_result["update"] = str(error) if not flag else update_items
