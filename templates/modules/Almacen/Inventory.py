@@ -203,7 +203,7 @@ class InventoryScreen(ttk.Frame):
         # --------------------------------btns-------------------------------------------------
         frame_btns = ttk.Frame(self)
         frame_btns.grid(row=3, column=0, sticky="nswe")
-        frame_btns.columnconfigure((0, 1, 2, 3, 4), weight=1)
+        frame_btns.columnconfigure((0, 1, 2, 3), weight=1)
         self.create_buttons(frame_btns)
 
     def create_table(self, master):
@@ -285,8 +285,8 @@ class InventoryScreen(ttk.Frame):
         )
         create_button(
             master,
-            1,
-            5,
+            2,
+            0,
             text="Importar",
             command=self.import_file,
         )
