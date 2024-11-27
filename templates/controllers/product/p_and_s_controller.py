@@ -707,7 +707,6 @@ def get_movements_type(type_m: str, limit=10):
 
 
 def get_product_barcode_data(id_product):
-
     sql = (
         "SELECT name, sku, codes "
         "FROM sql_telintec.products_amc "
@@ -777,7 +776,7 @@ def insert_multiple_row_products_amc(products: tuple, dict_cat=None, dict_supp=N
                 codes = json.dumps([])
                 locations = json.dumps({"location_1": "", "location_2": ""})
             else:
-                codes = product[9]
+                codes = json.dumps([])
                 location_1 = product[10]
                 location_2 = product[11]
                 locations = json.dumps(
@@ -787,6 +786,7 @@ def insert_multiple_row_products_amc(products: tuple, dict_cat=None, dict_supp=N
             name = clean_name(product[2].encode(codec, errors="ignore").decode(codec))[
                 0
             ]
+
             if index > 0:
                 sql += ", "
             if dict_cat is not None:

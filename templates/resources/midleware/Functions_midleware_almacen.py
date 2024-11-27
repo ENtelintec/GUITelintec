@@ -11,7 +11,8 @@ from static.constants import (
     format_timestamps,
     filepath_inventory_form,
     filepath_inventory_form_movements,
-    format_date, file_codebar,
+    format_date,
+    file_codebar,
 )
 from templates.Functions_Utils import create_notification_permission_notGUI
 from templates.controllers.product.p_and_s_controller import (
@@ -36,12 +37,18 @@ from templates.controllers.product.p_and_s_controller import (
     get_outs_db_detail,
     get_all_movements_db_detail,
     update_multiple_row_products_amc,
-    update_stock_db_ids, get_product_barcode_data,
+    update_stock_db_ids,
+    get_product_barcode_data,
 )
 from templates.controllers.supplier.suppliers_controller import get_all_suppliers_amc
-from templates.forms.BarCodeGenerator import create_one_code, create_multiple_barcodes_products
+from templates.forms.BarCodeGenerator import (
+    create_one_code,
+    create_multiple_barcodes_products,
+)
 from templates.forms.Storage import InventoryStorage
-from templates.resources.methods.Aux_Inventory import generate_default_configuration_barcodes
+from templates.resources.methods.Aux_Inventory import (
+    generate_default_configuration_barcodes,
+)
 
 
 def get_all_movements(type_m: str):
@@ -413,14 +420,14 @@ def get_suppliers_db():
 
 
 def read_excel_file_regular(file: str, is_tool=False, is_internal=0):
-    df = pd.read_excel(file, skiprows=[0, 1, 2, 3], sheet_name="PRODUCTOS")
+    df = pd.read_excel(file, skiprows=[0, 1, 2, 3, 4], sheet_name="PRODUCTOS")
     df = df.fillna("")
     items = df.values.tolist()
     flag, error, result_sku = get_skus()
     skus = [sku[0] for sku in result_sku]
-    suppliers = get_all_suppliers_amc()
+    flag, error, suppliers = get_all_suppliers_amc()
     dict_suppliers = {supplier[1]: supplier[0] for supplier in suppliers}
-    categories = get_all_categories_db()
+    flag, error, categories = get_all_categories_db()
     dict_categories = {category[1]: category[0] for category in categories}
     new_items = []
     update_items = []
@@ -429,25 +436,21 @@ def read_excel_file_regular(file: str, is_tool=False, is_internal=0):
     for item in items:
         if str(item[0]) not in skus:
             tool = 0 if not is_tool else 1
-            locations = (
-                {"location_1": item[7], "location_2": ""}
-            )
-            codes = {
-                "tag": "sku_fabricante", "value": item[0]
-            }
+            codes = {"tag": "sku_fabricante", "value": str(item[0])}
             new_items.append(
                 (
                     None,
                     str(item[8]),
                     item[2],
                     item[3],
-                    item[6],
+                    float(item[6]) if item[6] != "" else 0,
                     dict_categories.get(item[4], None),
                     dict_suppliers.get(item[1], None),
                     tool,
                     is_internal,
-                    locations,
-                    codes
+                    codes,
+                    str(item[7]),
+                    " ",
                 )
             )
         else:
