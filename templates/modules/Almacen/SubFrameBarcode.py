@@ -285,7 +285,7 @@ class BarcodeFrame(ttk.Frame):
         extra_codes = json.loads(row[9])
         self.kw, values = generate_default_configuration_barcodes(
             code=row[1],
-            sku=extra_codes[0] if len(extra_codes) > 0 else "None",
+            sku=extra_codes[0]["value"] if len(extra_codes) > 0 else "None",
             name=row[2],
             filepath=self.pdf_barcode,
             title=self.title_pdf,

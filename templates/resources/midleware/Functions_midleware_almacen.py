@@ -591,15 +591,19 @@ def create_pdf_barcode(data):
 
 
 def create_pdf_barcode_multiple(data):
-    name_list = data.get("name_list", [])
-    sku_list = data.get("sku_list", [])
-    code_list = data.get("code_list", [])
-    if len(name_list) == 0 or len(sku_list) == 0 or len(code_list) == 0:
-        return "No manes or codes to print", 400
-    format_dict = data.get("format", {})
-    if format_dict == {}:
+    if len(data) <= 0:
+        return "No data to print", 400
+    general_format = data.get("format", {})
+    name_list = []
+    sku_list = []
+    code_list = []
+    for index, item in enumerate(data):
+        name_list.append(item["format"].get("name", f"No Name {index}"))
+        sku_list.append(item["format"].get("sku", f"No SKU {index}"))
+        code_list.append(item["format"].get("code", f"No Code {index}"))
+    if len(general_format) == 0:
         kw, values = generate_default_configuration_barcodes()
     else:
-        kw, values = generate_default_configuration_barcodes(**format_dict)
+        kw, values = generate_default_configuration_barcodes(**general_format)
     create_multiple_barcodes_products(code_list, sku_list, name_list, **kw)
     return kw.get("filepath", file_codebar), 200

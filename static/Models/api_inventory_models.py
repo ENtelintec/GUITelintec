@@ -253,16 +253,7 @@ file_barcode_request_model = api.model(
 file_barcode_multiple_request_model = api.model(
     "FileBarcodeMultipleRequestAMC",
     {
-        "name_list": fields.List(
-            fields.String, required=True, description="The list of names"
-        ),
-        "sku_list": fields.List(
-            fields.String, required=True, description="The list of skus"
-        ),
-        "code_list": fields.List(
-            fields.String, required=True, description="The list of codes"
-        ),
-        "format": fields.Nested(format_barcode_model),
+        "data": fields.List(fields.Nested(file_barcode_request_model)),
     },
 )
 
@@ -396,7 +387,4 @@ class FileBarcodeForm(Form):
 
 
 class FileBarcodeMultipleForm(Form):
-    name_list = FieldList(StringField(), "name_list", validators=[InputRequired()])
-    sku_list = FieldList(StringField(), "sku_list", validators=[InputRequired()])
-    code_list = FieldList(StringField(), "code_list", validators=[InputRequired()])
-    format = FormField(FormatBarcodeForm, "format")
+    data = FieldList(FormField(FileBarcodeForm), "data")
