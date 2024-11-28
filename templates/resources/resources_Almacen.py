@@ -50,6 +50,8 @@ from templates.resources.midleware.Functions_midleware_almacen import (
     create_file_movements_amc,
     insert_and_update_multiple_products_amc,
     insert_multiple_movements,
+    create_pdf_barcode,
+    create_pdf_barcode_multiple,
 )
 from templates.controllers.product.p_and_s_controller import (
     delete_movement_db,
@@ -298,35 +300,35 @@ class DownloadMovementsFile(Resource):
         return send_file(filepath, as_attachment=True)
 
 
-# @ns.route("/inventory/file/download/barcode")
-# class DownloadBarcodeFile(Resource):
-#     @ns.expect(file_barcode_request_model)
-#     def post(self):
-#         # noinspection PyUnresolvedReferences
-#         validator = FileBarcodeForm.from_json(ns.payload)
-#         if not validator.validate():
-#             return {"data": validator.errors, "msg": "Error at structure"}, 400
-#         data = validator.data
-#         filepath, code = create_pdf_barcode(data)
-#         return (
-#             send_file(filepath, as_attachment=True)
-#             if code == 200
-#             else ({"data": filepath, "msg": "Error at creating file"}, 400)
-#         )
-#
-#
-# @ns.route("/inventory/file/download/barcode/multiple")
-# class DownloadMultipleBarcodeFile(Resource):
-#     @ns.expect(file_barcode_multiple_request_model)
-#     def post(self):
-#         # noinspection PyUnresolvedReferences
-#         validator = FileBarcodeMultipleForm.from_json(ns.payload)
-#         if not validator.validate():
-#             return {"data": validator.errors, "msg": "Error at structure"}, 400
-#         data = validator.data
-#         filepath, code = create_pdf_barcode_multiple(data)
-#         return (
-#             send_file(filepath, as_attachment=True)
-#             if code == 200
-#             else ({"data": filepath, "msg": "Error at creating file"}, 400)
-#         )
+@ns.route("/inventory/file/download/barcode")
+class DownloadBarcodeFile(Resource):
+    @ns.expect(file_barcode_request_model)
+    def post(self):
+        # noinspection PyUnresolvedReferences
+        validator = FileBarcodeForm.from_json(ns.payload)
+        if not validator.validate():
+            return {"data": validator.errors, "msg": "Error at structure"}, 400
+        data = validator.data
+        filepath, code = create_pdf_barcode(data)
+        return (
+            send_file(filepath, as_attachment=True)
+            if code == 200
+            else ({"data": filepath, "msg": "Error at creating file"}, 400)
+        )
+
+
+@ns.route("/inventory/file/download/barcode/multiple")
+class DownloadMultipleBarcodeFile(Resource):
+    @ns.expect(file_barcode_multiple_request_model)
+    def post(self):
+        # noinspection PyUnresolvedReferences
+        validator = FileBarcodeMultipleForm.from_json(ns.payload)
+        if not validator.validate():
+            return {"data": validator.errors, "msg": "Error at structure"}, 400
+        data = validator.data
+        filepath, code = create_pdf_barcode_multiple(data)
+        return (
+            send_file(filepath, as_attachment=True)
+            if code == 200
+            else ({"data": filepath, "msg": "Error at creating file"}, 400)
+        )

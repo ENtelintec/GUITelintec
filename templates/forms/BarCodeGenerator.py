@@ -280,7 +280,7 @@ def create_one_code(**kwargs):
     name = kwargs.get("name", "Producto de prueba de numero 2")
     font_name = int(kwargs.get("name_font", 9))
     pagesize = get_page_size(kwargs.get("pagesize", "default"))
-    name_width = kwargs.get("name_limit", pagesize[0] - 10 * mm)
+    name_width = kwargs.get("name_width", pagesize[0] - 10 * mm)
     type_code = kwargs.get("type_code", "128")
     height_bars = kwargs.get("height_bars", 20 * mm)
     width_bars = kwargs.get("width_bars", 0.4 * mm)

@@ -21,8 +21,12 @@ from templates.Functions_GUI_Utils import (
 )
 from templates.Functions_Utils import get_page_size
 from templates.forms.BarCodeGenerator import create_one_code
-from templates.resources.methods.Aux_Inventory import generate_default_configuration_barcodes, generate_kw_for_barcode, coldata_inventory, \
-    fetch_all_products
+from templates.resources.methods.Aux_Inventory import (
+    generate_default_configuration_barcodes,
+    generate_kw_for_barcode,
+    coldata_inventory,
+    fetch_all_products,
+)
 
 
 def create_input_widgets(master):

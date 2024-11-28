@@ -307,7 +307,9 @@ class InventoryScreen(ttk.Frame):
             "sku": sku,
             "name": name,
             "code": code,
-            "products": self._products,
+            "data": {
+                "data_products_gen": self._products,
+            },
         }
         create_one_code(filepath=file_codebar, **kw)
         BarcodeSubFrameSelector(self, **kw)

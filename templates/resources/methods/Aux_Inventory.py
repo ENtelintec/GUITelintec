@@ -23,42 +23,43 @@ coldata_inventory = [
 
 
 def generate_default_configuration_barcodes(**kwargs):
-    title_offset = kwargs.get("title_offset", "0, 0")
+    title_offset_t = kwargs.get("title_offset", "0, 0").split(",")
     title_offset = (
-        (float(title_offset.split(", ")[0]), float(title_offset.split(", ")[1]))
-        if len(title_offset.split(", ")) != 2
+        (float(title_offset_t[0]), float(title_offset_t[1]))
+        if len(title_offset_t) == 2
         else (0, 0)
     )
-    code_offset = kwargs.get("code_offset", "0, 0")
+    code_offset_t = kwargs.get("code_offset", "0, 0").split(",")
     code_offset = (
-        (float(code_offset.split(", ")[0]), float(code_offset.split(", ")[1]))
-        if len(code_offset.split(", ")) != 2
+        (float(code_offset_t[0]), float(code_offset_t[1]))
+        if len(code_offset_t) == 2
         else (0, 0)
     )
-    sku_offset = kwargs.get("sku_offset", "0, 0")
+    sku_offset_t = kwargs.get("sku_offset", "0, 0").split(",")
     sku_offset = (
-        (float(sku_offset.split(", ")[0]), float(sku_offset.split(", ")[1]))
-        if len(sku_offset.split(", ")) != 2
+        (float(sku_offset_t[0]), float(sku_offset_t[1]))
+        if len(sku_offset_t) == 2
         else (0, 0)
     )
-    name_offset = kwargs.get("name_offset", "0, 0")
+    name_offset_t = kwargs.get("name_offset", "0, 0").split(",")
     name_offset = (
-        (float(name_offset.split(", ")[0]), float(name_offset.split(", ")[1]))
-        if len(name_offset.split(", ")) != 2
+        (float(name_offset_t[0]), float(name_offset_t[1]))
+        if len(name_offset_t) == 2
         else (0, 0)
     )
-    codebar_size = kwargs.get("codebar_size", "0.4, 20")
+    codebar_size_t = kwargs.get("codebar_size", "0.4, 20").split(",")
     codebar_size = (
-        (float(codebar_size.split(", ")[0]), float(codebar_size.split(", ")[1]))
-        if len(codebar_size.split(", ")) != 2
+        (float(codebar_size_t[0]), float(codebar_size_t[1]))
+        if len(codebar_size_t) == 2
         else (0.4, 20)
     )
-    codebar_offset = kwargs.get("codebar_offset", "0, -7")
+    codebar_offset_t = kwargs.get("codebar_offset", "0, -7").split(",")
     codebar_offset = (
-        (float(codebar_offset.split(", ")[0]), float(codebar_offset.split(", ")[1]))
-        if len(codebar_offset.split(", ")) != 2
+        (float(codebar_offset_t[0]), float(codebar_offset_t[1]))
+        if len(codebar_offset_t) == 2
         else (0, -7)
     )
+    name_width = int(kwargs.get("name_limit", 20))
     kw = {
         "title": kwargs.get("title", "Titulo de prueba"),
         "title_font": kwargs.get("title_font", 14),
@@ -72,7 +73,7 @@ def generate_default_configuration_barcodes(**kwargs):
         "name": kwargs.get("name", "Producto de prueba"),
         "name_font": kwargs.get("name_font", 9),
         "name_offset": (name_offset[0] * mm, name_offset[1] * mm),
-        "name_width": kwargs.get("name_limit", 20),
+        "name_width": name_width,
         "type_code": kwargs.get("type_code", "128"),
         "width_bars": codebar_size[0] * mm,
         "height_bars": codebar_size[1] * mm,
