@@ -773,23 +773,17 @@ def insert_multiple_row_products_amc(products: tuple, dict_cat=None, dict_supp=N
     try:
         for index, product in enumerate(products):
             if len(product) < 10:
-                codes = json.dumps([{"tag": "sku_fabricante", "value": ""}])
+                codes = json.dumps([])
                 locations = json.dumps({"location_1": "", "location_2": ""})
             else:
-                codes = product[9]
-                codes[0]["value"] = (
-                    codes[0]["value"].encode(codec, errors="ignore").decode(codec)
-                )
-                codes = json.dumps(codes)
+                codes = json.dumps([])
                 location_1 = product[10]
                 location_2 = product[11]
                 locations = json.dumps(
                     {"location_1": location_1, "location_2": location_2}
                 )
             sku = clean_name(product[1].encode(codec, errors="ignore").decode(codec))[0]
-            name = clean_name(product[2].encode(codec, errors="ignore").decode(codec))[
-                0
-            ]
+            name = str(product[2]).replace("'", "").replace('"', "")
 
             if index > 0:
                 sql += ", "

@@ -7,7 +7,7 @@ from io import BytesIO
 import fitz
 from PIL import Image
 from reportlab.graphics.barcode import code39, code128, code93
-from reportlab.graphics.barcode import eanbc, qr, usps
+from reportlab.graphics.barcode import eanbc, qr
 from reportlab.graphics.shapes import Drawing
 from reportlab.lib.units import mm
 from reportlab.lib.utils import ImageReader
@@ -100,18 +100,6 @@ def BarCode93(filepath, code, x, y, size):
     return barcode93
 
 
-def BarCodeUSPS(filepath, code, x, y, size):
-    """
-    Create barcode examples and embed in a PDF
-    """
-    c = canvas.Canvas(filepath, pagesize=size)
-
-    barcode_usps = usps.POSTNET(code)
-
-    barcode_usps.drawOn(c, 1 * mm, 1 * mm)
-    return barcode_usps
-
-
 def BarCodeEANBC8(filepath, code, x, y, size):
     """
     Create barcode examples and embed in a PDF
@@ -199,8 +187,6 @@ def selectBarcodeType(
                 kwargs.get("bar_height", 10 * mm),
                 kwargs.get("bar_width", 0.5 * mm),
             )
-        case "usps":
-            barcode = BarCodeUSPS(filepath, code, 5 * mm, 5 * mm, pagesize)
         case "eanbc8":
             barcode = BarCodeEANBC8(filepath, code, 5 * mm, 5 * mm, pagesize)
         case "eanbc13":
@@ -361,36 +347,36 @@ def create_one_code(**kwargs):
 
 def create_multiple_barcodes_products(code_list, sku_list, name_list, **kwargs):
     """
-        Create one code with the following parameters:
-            Example = {
-                "title": "Titulo de prueba",
-                "title_font": 14,
-                "title_offset": (0 * mm, 0 * mm),
-                "code": "A123456789",
-                "code_font": 7,
-                "code_offset": (0 * mm, 0 * mm),
-                "sku": "SKU123456789",
-                "sku_font": 6,
-                "sku_offset": (0 * mm, 0 * mm),
-                "name": "Producto de prueba de numero 2",
-                "name_font": 9,
-                "name_offset": (0 * mm, 0 * mm),
-                "name_width": 20,
-                "type_code": "128",
-                "pagesize": "default",
-                "orientation": "horizontal",
-                "border": True,
-                "filepath": "files/barcode.pdf",
+    Create one code with the following parameters:
+        Example = {
+            "title": "Titulo de prueba",
+            "title_font": 14,
+            "title_offset": (0 * mm, 0 * mm),
+            "code": "A123456789",
+            "code_font": 7,
+            "code_offset": (0 * mm, 0 * mm),
+            "sku": "SKU123456789",
+            "sku_font": 6,
+            "sku_offset": (0 * mm, 0 * mm),
+            "name": "Producto de prueba de numero 2",
+            "name_font": 9,
+            "name_offset": (0 * mm, 0 * mm),
+            "name_width": 20,
+            "type_code": "128",
+            "pagesize": "default",
+            "orientation": "horizontal",
+            "border": True,
+            "filepath": "files/barcode.pdf",
 
-                "offset_codebar": (0 * mm, -7 * mm),
-                "width_bars": 40 * mm,
-                "height_bars": 40 * mm,
-            }
-        :param name_list:
-        :param sku_list:
-        :param code_list:
-        :param kwargs:
-        :return:
+            "offset_codebar": (0 * mm, -7 * mm),
+            "width_bars": 40 * mm,
+            "height_bars": 40 * mm,
+        }
+    :param name_list:
+    :param sku_list:
+    :param code_list:
+    :param kwargs:
+    :return:
     """
     title_default = kwargs.get("title", "This is a product Title")
     title_font = int(kwargs.get("title_font", 14))
@@ -433,7 +419,10 @@ def create_multiple_barcodes_products(code_list, sku_list, name_list, **kwargs):
         for i, line in enumerate(namelist):
             c.drawString(5 * mm, pagesize[1] - 30 - i * font_name, line)
         # -------------------------------------create sku-------------------------------------
-        sku_position = (5 * mm + sku_offset[0], pagesize[1] - len(namelist) * font_name - 30 + sku_offset[1])
+        sku_position = (
+            5 * mm + sku_offset[0],
+            pagesize[1] - len(namelist) * font_name - 30 + sku_offset[1],
+        )
         c.setFont("Helvetica", font_sku)
         c.drawString(sku_position[0], sku_position[1], f"SKU: {sku}")
         # -------------------------------------create barcode-------------------------------------
