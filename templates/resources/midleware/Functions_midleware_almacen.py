@@ -11,7 +11,8 @@ from static.constants import (
     format_timestamps,
     filepath_inventory_form,
     filepath_inventory_form_movements,
-    format_date, file_codebar,
+    format_date,
+    file_codebar,
 )
 from templates.Functions_Utils import create_notification_permission_notGUI
 from templates.controllers.product.p_and_s_controller import (
@@ -36,12 +37,18 @@ from templates.controllers.product.p_and_s_controller import (
     get_outs_db_detail,
     get_all_movements_db_detail,
     update_multiple_row_products_amc,
-    update_stock_db_ids, get_product_barcode_data,
+    update_stock_db_ids,
+    get_product_barcode_data,
 )
 from templates.controllers.supplier.suppliers_controller import get_all_suppliers_amc
-from templates.forms.BarCodeGenerator import create_one_code, create_multiple_barcodes_products
+from templates.forms.BarCodeGenerator import (
+    create_one_code,
+    create_multiple_barcodes_products,
+)
 from templates.forms.Storage import InventoryStorage
-from templates.resources.methods.Aux_Inventory import generate_default_configuration_barcodes
+from templates.resources.methods.Aux_Inventory import (
+    generate_default_configuration_barcodes,
+)
 
 
 def get_all_movements(type_m: str):
@@ -163,8 +170,8 @@ def get_all_products_DB(type_p):
         out.append(
             {
                 "id": item[0],
-                "name": item[1],
-                "sku": item[2],
+                "sku": item[1],
+                "name": item[2],
                 "udm": item[3],
                 "stock": item[4],
                 "category_name": item[5],
