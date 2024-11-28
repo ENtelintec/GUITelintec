@@ -256,7 +256,7 @@ file_barcode_multiple_request_model = api.model(
         "name_list": fields.List(
             fields.String, required=True, description="The list of names"
         ),
-        "sku_list":  fields.List(
+        "sku_list": fields.List(
             fields.String, required=True, description="The list of skus"
         ),
         "code_list": fields.List(

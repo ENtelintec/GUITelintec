@@ -8,7 +8,7 @@ import ttkbootstrap as ttk
 from ttkbootstrap.dialogs import Messagebox
 from ttkbootstrap.tableview import Tableview
 
-from static.constants import format_date, log_file_db
+from static.constants import format_date, log_file_db, file_codebar
 from templates.Functions_GUI_Utils import (
     create_label,
     create_entry,
@@ -28,8 +28,10 @@ from templates.controllers.product.p_and_s_controller import (
     delete_product_db,
 )
 from templates.controllers.supplier.suppliers_controller import get_all_suppliers_amc
+from templates.forms.BarCodeGenerator import create_one_code
 from templates.forms.Storage import InventoryStorage
 from templates.misc.Functions_Files import write_log_file
+from templates.modules.Almacen.Frame_BarCodes import BarcodeSubFrameSelector
 from templates.modules.Almacen.SubFrameLector import LectorScreenSelector
 from templates.resources.methods.Aux_Inventory import coldata_inventory
 from templates.resources.midleware.Functions_midleware_almacen import (
@@ -274,13 +276,13 @@ class InventoryScreen(ttk.Frame):
             text="Imprimir listado",
             command=self.print_products,
         )
-        # create_button(
-        #     master,
-        #     1,
-        #     3,
-        #     text="Imprimir Codigo",
-        #     command=self.print_code,
-        # )
+        create_button(
+            master,
+            1,
+            3,
+            text="Imprimir Codigo",
+            command=self.print_code,
+        )
         # create_button(
         #     master,
         #     2,
@@ -289,26 +291,26 @@ class InventoryScreen(ttk.Frame):
         #     command=self.import_file,
         # )
 
-    # def print_code(self):
-    #     if self.id_to_modify is None:
-    #         Messagebox.show_info(
-    #             "No se ha seleccionado un producto, se pondra por defecto el 1.",
-    #             title="Warning",
-    #         )
-    #     code = self._products[0][1]
-    #     name = self._products[0][2]
-    #     sku = json.loads(self._products[0][9])
-    #     sku = "None" if len(sku) == 0 else sku[0]
-    #     kw = {
-    #         "pdf_filepath": file_codebar,
-    #         "id_product": self._products[0][0],
-    #         "sku": sku,
-    #         "name": name,
-    #         "code": code,
-    #         "products": self._products,
-    #     }
-    #     create_one_code(filepath=file_codebar, **kw)
-    #     BarcodeSubFrameSelector(self, **kw)
+    def print_code(self):
+        if self.id_to_modify is None:
+            Messagebox.show_info(
+                "No se ha seleccionado un producto, se pondra por defecto el 1.",
+                title="Warning",
+            )
+        code = self._products[0][1]
+        name = self._products[0][2]
+        sku = json.loads(self._products[0][9])
+        sku = "None" if len(sku) == 0 else sku[0]
+        kw = {
+            "pdf_filepath": file_codebar,
+            "id_product": self._products[0][0],
+            "sku": sku,
+            "name": name,
+            "code": code,
+            "products": self._products,
+        }
+        create_one_code(filepath=file_codebar, **kw)
+        BarcodeSubFrameSelector(self, **kw)
 
     def print_products(self):
         filepath = filedialog.asksaveasfilename(

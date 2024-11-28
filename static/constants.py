@@ -159,6 +159,6 @@ dict_deps = {
     "Otros": 7,
 }
 format_timestamps_filename = "%Y-%m-%d"
-HOST_DB_DEFAULT = "HOST_DB_AWS"
-USER_DB_DEFAULT = "USER_SQL_AWS"
-PASS_DB_DEFAULT = "PASS_SQL_AWS"
+HOST_DB_DEFAULT = "HOST_DB"
+USER_DB_DEFAULT = "USER_SQL"
+PASS_DB_DEFAULT = "PASS_SQL"
