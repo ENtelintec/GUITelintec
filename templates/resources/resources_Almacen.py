@@ -34,7 +34,7 @@ from static.Models.api_movements_models import (
     movement_insert_model,
     movement_delete_model,
     MovementInsertForm,
-    MovementDeleteForm,
+    MovementDeleteForm, movement_update_model,
 )
 from templates.resources.midleware.Functions_midleware_almacen import (
     get_all_movements,
@@ -85,7 +85,7 @@ class MovementDB(Resource):
             "msg": "Ok" if flag else "Error",
         }, 201 if flag else 400
 
-    @ns.expect(movement_insert_model)
+    @ns.expect(movement_update_model)
     def put(self):
         # noinspection PyUnresolvedReferences
         validator = MovementInsertForm.from_json(ns.payload)

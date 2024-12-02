@@ -17,7 +17,6 @@ from wtforms.validators import InputRequired, NumberRange
 movement_model = api.model(
     "MovementAMC",
     {
-        "id": fields.Integer(required=True, description="The movement id", example=1),
         "id_product": fields.Integer(
             required=True, description="The product id", example=1
         ),
@@ -33,6 +32,7 @@ movement_model = api.model(
     },
 )
 
+
 movements_output_model = api.model(
     "MovementsOutAMC",
     {
@@ -43,6 +43,13 @@ movements_output_model = api.model(
 
 movement_insert_model = api.model(
     "MovementInputAMC",
+    {
+        "info": fields.Nested(movement_model),
+    },
+)
+
+movement_update_model = api.model(
+    "MovementUpdateAMC",
     {
         "info": fields.Nested(movement_model),
         "id": fields.Integer(
@@ -62,10 +69,6 @@ movement_delete_model = api.model(
 
 
 class MovementForm(Form):
-    id = IntegerField(
-        "id",
-        validators=[InputRequired(message="Id is required or value 0 not accepted")],
-    )
     id_product = IntegerField(
         "id_product",
         validators=[InputRequired(message="Id is required or value 0 not accepted")],
@@ -83,6 +86,10 @@ class MovementForm(Form):
 
 
 class MovementInsertForm(Form):
+    info = FormField(MovementForm)
+
+
+class MovementUpdateForm(Form):
     info = FormField(MovementForm)
     id = IntegerField(
         "id",
