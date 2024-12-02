@@ -296,7 +296,8 @@ def update_product_db(
         name = str(name)
         udm = str(udm)
         stock = int(stock)
-        id_category = int(id_category)
+        id_category = int(id_category) if id_category else None
+        id_supplier = int(id_supplier) if id_supplier else None
         codes = "[]" if codes is None else codes
         locations = (
             "{'location_1': " ",  'location_2': " "}"

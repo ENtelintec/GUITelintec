@@ -273,8 +273,8 @@ class ProductInsertForm(Form):
     sku = StringField("sku", validators=[InputRequired()])
     udm = StringField("udm", validators=[InputRequired()])
     stock = FloatField("stock", validators=[InputRequired()])
-    category_name = StringField("category_name", validators=[InputRequired()])
-    supplier_name = StringField("supplier_name", validators=[InputRequired()])
+    category_name = StringField("category_name", validators=[], default=None)
+    supplier_name = StringField("supplier_name", validators=[], default=None)
     is_tool = IntegerField("is_tool", validators=[], default=0)
     is_internal = IntegerField("is_internal", validators=[], default=0)
     codes = FieldList(FormField(CodesForm), validators=[], default=[])
@@ -290,16 +290,11 @@ class ProductUpdateForm(Form):
     sku = StringField("sku", validators=[InputRequired()])
     udm = StringField("udm", validators=[InputRequired()])
     stock = FloatField("stock", validators=[InputRequired()])
-    category_name = StringField("category_name", validators=[InputRequired()])
-    supplier_name = StringField("supplier_name", validators=[InputRequired()])
+    category_name = StringField("category_name", validators=[], default=None)
+    supplier_name = StringField("supplier_name", validators=[], default=None)
     is_tool = IntegerField("is_tool", validators=[], default=0)
     is_internal = IntegerField("is_internal", validators=[], default=0)
-    quantity_move = IntegerField(
-        "quantity_move",
-        validators=[
-            InputRequired(message="Quantity move is required or value 0 not accepted")
-        ],
-    )
+    quantity_move = IntegerField("quantity_move", validators=[], default=0)
     codes = FieldList(FormField(CodesForm), validators=[], default=[])
     locations = FormField(LocationsForm)
 
