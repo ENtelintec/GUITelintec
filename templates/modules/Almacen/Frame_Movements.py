@@ -13,8 +13,8 @@ from static.constants import format_date, format_timestamps, log_file_db
 from templates.Functions_GUI_Utils import (
     create_label,
     create_entry,
-    create_Combobox,
     create_button,
+    create_ComboboxSearch,
 )
 from templates.Functions_Utils import create_notification_permission_notGUI
 from templates.controllers.product.p_and_s_controller import (
@@ -68,7 +68,7 @@ def create_movement_widgets(master, values_products):
     input_quantity = create_entry(master, row=1, column=1)
     entries.append(input_quantity)
     create_label(master, 2, 0, text="Producto", sticky="w")
-    supp_selector = create_Combobox(master, values=values_products, row=2, column=1)
+    supp_selector = create_ComboboxSearch(master, values=values_products, row=2, column=1)
     entries.append(supp_selector)
     _svar_id_move_info = ttk.StringVar(value="")
     create_label(master, 3, 0, textvariable=_svar_id_move_info, sticky="n")
@@ -256,7 +256,6 @@ class InScreen(ttk.Frame):
             if isinstance(entry, ttk.Combobox):
                 entry.configure(state="normal")
                 entry.set("")
-                entry.configure(state="readonly")
             elif isinstance(entry, ttk.StringVar):
                 entry.set("")
             elif isinstance(entry, ttk.Entry):
@@ -525,7 +524,6 @@ class OutScreen(ttk.Frame):
             if isinstance(entry, ttk.Combobox):
                 entry.configure(state="normal")
                 entry.set("")
-                entry.configure(state="readonly")
             elif isinstance(entry, ttk.StringVar):
                 entry.set("")
             elif isinstance(entry, ttk.Entry):

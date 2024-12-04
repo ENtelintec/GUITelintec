@@ -128,10 +128,12 @@ class LoginGUI(ttk.Frame):
             width=50,
         )
         self.pass_entry.grid(row=5, column=0, sticky="nsew", padx=10, pady=5)
+        self.pass_entry.bind("<Return>", lambda event: self.button_login_click())
         # -------------------create button for login-----------------
         self.button = ttk.Button(
             self.frame_login, text="Login", command=self.button_login_click, width=50
         )
+
         self.button.grid(row=6, column=0, sticky="nsew", padx=50, pady=30)
         # -------------------create message----------------
         self.message = ttk.Label(

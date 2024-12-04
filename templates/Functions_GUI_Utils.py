@@ -33,6 +33,36 @@ from templates.controllers.supplier.suppliers_controller import get_supplier
 from templates.controllers.tickets.tickets_controller import get_tickets
 
 
+class ComboBoxSearch(ttk.Combobox):
+    def __init__(self, master, **kwargs):
+        super().__init__(master, **kwargs)
+        self._values = kwargs.get("values", [])
+        self._counter_keys_pressed = 0
+        self.bind("<KeyRelease>", self._on_key_release)
+        # self.bind("<<ComboboxSelected>>", self._on_combobox_selected)
+
+    def _on_key_release(self, event):
+        # self._counter_keys_pressed += 1
+        # if self._counter_keys_pressed <= 2:
+        #     return
+        self._counter_keys_pressed = 0
+        value = self.get()
+        if value == "":
+            self.config(values=self._values)
+            return
+        values = []
+        for item in self._values:
+            if value.lower() in item.lower():
+                values.append(item)
+        self["values"] = values
+        # self.event_generate("<Down>")
+        # self.focus_set()
+
+    def set_values(self, new_values):
+        self._values = new_values
+        self.config(values=self._values)
+
+
 def create_label(
     master,
     row,
@@ -129,6 +159,32 @@ def create_Combobox(
         columnspan=columnspan,
         sticky=sticky,
     )
+    return combobox
+
+
+def create_ComboboxSearch(master, **kwargs):
+
+    """
+    Create a combobox with the values provided
+    :return: Placed combobox in the grid
+    """
+    # kwargs for gripd statement
+    kwargs_grid = {
+        "row": kwargs.get("row", 0),
+        "column": kwargs.get("column", 0),
+        "padx": kwargs.get("padx", 5),
+        "pady": kwargs.get("pady", 5),
+        "columnspan": kwargs.get("columnspan", 1),
+        "sticky": kwargs.get("sticky", "nswe"),
+    }
+    kwargs.pop("row", None)
+    kwargs.pop("column", None)
+    kwargs.pop("padx", None)
+    kwargs.pop("pady", None)
+    kwargs.pop("columnspan", None)
+    kwargs.pop("sticky", None)
+    combobox = ComboBoxSearch(master, **kwargs)
+    combobox.grid(**kwargs_grid)
     return combobox
 
 

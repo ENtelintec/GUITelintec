@@ -174,6 +174,8 @@ class GUIAsistente(ttk.Window):
     def _select_frame_by_name(self, name):
         match name:
             case "none":
+                if self.names_side_menu is None:
+                    return
                 for txt in self.names_side_menu:
                     self.windows_frames[txt].grid_forget()
                 if self.VA_frame is not None:
