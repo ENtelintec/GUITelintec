@@ -33,13 +33,24 @@ from templates.controllers.product.p_and_s_controller import (
     get_all_products_db,
     get_ins_db_detail,
     get_outs_db_detail,
-    get_all_categories_db,
+    get_all_categories_db, get_all_movements_db_detail,
 )
 from templates.modules.Home.SubFrame_GeneralNoti import load_notifications
 from templates.modules.RRHH.SubFrame_CrearQuiz import get_name_id_employees_list
 from templates.resources.midleware.Functions_midleware_admin import (
     get_data_table_purchases,
 )
+
+
+def divide_movements(movements_data):
+    ins = []
+    outs = []
+    for movement in movements_data:
+        if movement[3] == "entrada":
+            ins.append(movement)
+        else:
+            outs.append(movement)
+    return ins, outs
 
 
 def load_data(data_dic, is_super=False, emp_id=None, item=None, permissions=None):
@@ -172,11 +183,12 @@ def load_data(data_dic, is_super=False, emp_id=None, item=None, permissions=None
             data_emp, columns = get_data_employees(status="ACTIVO")
             data_dic["emp_detalles"] = {"data": data_emp, "columns": columns}
         case "Movimientos":
-            flag, error, data_movements_in = get_ins_db_detail()
-            flag, error, data_movements_out = get_outs_db_detail()
+            flag, error, movements = get_all_movements_db_detail()
+            data_movements_in, data_movements_out = divide_movements(movements)
             data_dic["data_movements"] = {
                 "data_ins": data_movements_in,
                 "data_outs": data_movements_out,
+                "data_all":  movements,
             }
             if "data_products_gen" not in data_dic:
                 flag, error, products = get_all_products_db()

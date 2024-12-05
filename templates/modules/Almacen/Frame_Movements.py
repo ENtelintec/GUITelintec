@@ -7,9 +7,10 @@ from datetime import datetime
 
 import ttkbootstrap as ttk
 from ttkbootstrap.dialogs import Messagebox
+from ttkbootstrap.scrolled import ScrolledFrame
 from ttkbootstrap.tableview import Tableview
 
-from static.constants import format_date, format_timestamps, log_file_db
+from static.constants import format_timestamps, log_file_db, format_date
 from templates.Functions_GUI_Utils import (
     create_label,
     create_entry,
@@ -30,21 +31,11 @@ from templates.controllers.product.p_and_s_controller import (
 )
 from templates.misc.Functions_Files import write_log_file
 from templates.modules.Almacen.SubFrameLector import LectorScreenSelector
-from templates.resources.methods.Aux_Inventory import fetch_all_products
-
-coldata_movementes = [
-    {"text": "ID Movimiento", "stretch": False},
-    {"text": "ID Producto", "stretch": False},
-    {"text": "SKU", "stretch": False},
-    {"text": "Tipo de Movimiento", "stretch": True},
-    {"text": "Cantidad", "stretch": False},
-    {"text": "Fecha", "stretch": False},
-    {"text": "ID SM", "stretch": True},
-    {"text": "Nombre", "stretch": False},
-    {"text": "UDM", "stretch": False},
-    {"text": "Fabricante", "stretch": False},
-    {"text": "locations", "stretch": False},
-]
+from templates.modules.Almacen.SubFrame_MultipleMoves import MultipleMovementsScreen
+from templates.resources.methods.Aux_Inventory import (
+    fetch_all_products,
+    coldata_movements,
+)
 
 
 def end_action_db(msg, title, usernamedata):
@@ -58,28 +49,87 @@ def end_action_db(msg, title, usernamedata):
 
 def create_movement_widgets(master, values_products):
     entries = []
-    master.columnconfigure((0, 1, 2, 3, 4), weight=1)
     # Inputs left
     create_label(master, 0, 0, text="Fecha de entrega", sticky="w")
-    date_delivered = create_entry(master, row=0, column=1)
+    date_delivered = create_entry(master, row=0, column=1, sticky="w")
     date_delivered.insert(0, datetime.now().strftime(format_date))
     entries.append(date_delivered)
     create_label(master, 1, 0, text="Cantidad", sticky="w")
-    input_quantity = create_entry(master, row=1, column=1)
+    input_quantity = create_entry(master, row=1, column=1, sticky="w")
     entries.append(input_quantity)
     create_label(master, 2, 0, text="Producto", sticky="w")
-    supp_selector = create_ComboboxSearch(master, values=values_products, row=2, column=1)
+    supp_selector = create_ComboboxSearch(
+        master, values=values_products, row=2, column=1
+    )
     entries.append(supp_selector)
     _svar_id_move_info = ttk.StringVar(value="")
-    create_label(master, 3, 0, textvariable=_svar_id_move_info, sticky="n")
+    create_label(master, 5, 0, textvariable=_svar_id_move_info, sticky="n")
     entries.append(_svar_id_move_info)
     _svar_id_product_info = ttk.StringVar(value="")
-    create_label(master, 3, 1, textvariable=_svar_id_product_info, sticky="n")
+    create_label(master, 5, 1, textvariable=_svar_id_product_info, sticky="n")
     entries.append(_svar_id_product_info)
     _svar_sku_info = ttk.StringVar(value="")
-    create_label(master, 3, 2, textvariable=_svar_sku_info, sticky="n")
+    create_label(master, 5, 2, textvariable=_svar_sku_info, sticky="n")
     entries.append(_svar_sku_info)
+    create_label(master, 3, 0, text="Referencia", sticky="w")
+    input_reference = create_entry(master, row=3, column=1, sticky="w", width=20)
+    entries.append(input_reference)
+    create_label(master, 4, 0, text="SM", sticky="w")
+    entry_sm = create_entry(master, row=4, column=1, sticky="w", width=20)
+    entries.append(entry_sm)
     return entries
+
+
+def crete_btns_movements(master, callbacks):
+    """Creates the buttons of the Inputs screen, includes the buttons to add, update and delete inputs"""
+    create_button(
+        master,
+        0,
+        0,
+        text="Agregar",
+        command=callbacks.get("add_callback", None),
+        style="primary",
+    )
+    create_button(
+        master,
+        0,
+        1,
+        text="Actualizar",
+        command=callbacks.get("update_callback", None),
+        style="primary",
+    )
+    create_button(
+        master,
+        0,
+        2,
+        text="Eliminar",
+        command=callbacks.get("delete_callback", None),
+        style="warning",
+    )
+    create_button(
+        master,
+        0,
+        3,
+        text="Limpiar Campos",
+        command=callbacks.get("clear_callback", None),
+        style="primary",
+    )
+    create_button(
+        master,
+        0,
+        4,
+        text="Actualizar Tabla",
+        command=callbacks.get("update_table_callback", None),
+        style="primary",
+    )
+    create_button(
+        master,
+        0,
+        5,
+        text="Lector",
+        command=callbacks.get("lector_callback", None),
+        style="primary",
+    )
 
 
 def create_new_movements(data):
@@ -87,15 +137,201 @@ def create_new_movements(data):
     return flag, error, result
 
 
-class MovementsFrame(ttk.Notebook):
+def clear_fields(entries, var_none):
+    entries[0].configure(state="normal")
+    for entry in entries:
+        if isinstance(entry, ttk.Combobox):
+            entry.configure(state="normal")
+            entry.set("")
+        elif isinstance(entry, ttk.StringVar):
+            entry.set("")
+        elif isinstance(entry, ttk.Entry):
+            entry.delete(0, "end")
+    new_vars = []
+    for i_var in var_none:
+        new_vars.append(None)
+    current_date = datetime.now().strftime(format_date)
+    entries[0].insert(0, current_date)
+    entries[0].configure(state="disabled")
+    return tuple(new_vars)
+
+
+def add_movement(
+    type_m,
+    entries,
+    new_stock_f,
+    update_table,
+    movetement_id,
+    _id_product_to_modify,
+    _old_data_movement,
+    usernamedata,
+):
+    msg = ""
+    id_product = entries[2].get().split("--")[0]
+    id_movement_type = "salida"
+    quantity = entries[1].get()
+    movement_date = datetime.now().strftime(format_timestamps)
+    reference = entries[-2].get()
+    sm_folio = entries[-1].get()
+    if type_m == "Salida":
+        flag, error, lastrowid = create_out_movement_db(
+            id_product, id_movement_type, quantity, movement_date, sm_folio, reference
+        )
+    else:
+        flag, error, lastrowid = create_in_movement_db(
+            id_product, id_movement_type, quantity, movement_date, sm_folio, reference
+        )
+    if not flag:
+        msg += f"\nError al registrar movimiento para producto: {id_product}"
+    else:
+        msg += f"\nMovimiento registrado producto {id_product}, valor de movimiento {quantity}."
+        new_stock = new_stock_f(int(quantity), id_product)
+        flag, error, result = update_stock_db(id_product, new_stock)
+        if not flag:
+            msg += f"\nError al actualizar stock: {id_product}"
+        else:
+            msg += f"\nStock actualizado producto {id_product}."
+        update_table()
+        movetement_id, _id_product_to_modify, _old_data_movement = clear_fields(
+            entries,
+            [
+                movetement_id,
+                _id_product_to_modify,
+                _old_data_movement,
+            ],
+        )
+    end_action_db(msg, f"Creacion de Movimiento de {type_m}", usernamedata)
+    return movetement_id, _id_product_to_modify, _old_data_movement
+
+
+def update_movement(
+    type_m,
+    entries,
+    new_stock_f,
+    update_table,
+    movetement_id,
+    _id_product_to_modify,
+    _old_data_movement,
+    usernamedata,
+):
+    msg = ""
+    old_quantity = _old_data_movement[4]
+    new_date = datetime.now().strftime(format_timestamps)
+    quantity = entries[1].get()
+    reference = entries[6].get()
+    sm_folio = entries[7].get()
+    flag, error, result = update_movement_db(
+        movetement_id, quantity, new_date, sm_id=sm_folio, reference=reference
+    )
+    if not flag:
+        msg += f"\nError al actualizar movimiento: {movetement_id}--{_id_product_to_modify}"
+    else:
+        msg += (
+            f"\nMovimiento actualizado producto {_id_product_to_modify}, valor de {type_m} {old_quantity}-->{quantity}."
+            f"\n"
+        )
+        if int(quantity) != int(old_quantity):
+            new_stock = new_stock_f(
+                int(quantity) - int(old_quantity), _id_product_to_modify
+            )
+            flag, error, result = update_stock_db(_id_product_to_modify, new_stock)
+            if not flag:
+                msg += f"\nError al actualizar stock: {_id_product_to_modify}"
+            else:
+                msg += f"\nStock actualizado producto {_id_product_to_modify}."
+        update_table()
+        movetement_id, _id_product_to_modify, _old_data_movement = clear_fields(
+            entries,
+            [
+                movetement_id,
+                _id_product_to_modify,
+                _old_data_movement,
+            ],
+        )
+    end_action_db(msg, f"Actualizacion de Movimiento de {type_m}", usernamedata)
+    print(msg)
+    return movetement_id, _id_product_to_modify, _old_data_movement
+
+
+def delete_movement(
+    type_m,
+    entries,
+    new_stock_f,
+    update_table,
+    movetement_id,
+    _id_product_to_modify,
+    _old_data_movement,
+    usernamedata,
+):
+    msg = ""
+    quantity = entries[1].get()
+    id_product = entries[2].get().split("--")[0]
+    flag, error, result = delete_movement_db(movetement_id)
+    if not flag:
+        msg += f"\nError al eliminar movimiento: {movetement_id}--{id_product}"
+    else:
+        msg += f"\nMovimiento eliminado producto {id_product}, valor de movimiento {quantity}."
+        new_stock = new_stock_f(-int(quantity), id_product)
+        flag, error, result = update_stock_db(id_product, new_stock)
+        if not flag:
+            msg += f"\nError al actualizar stock: {id_product}"
+        else:
+            msg += f"\nStock actualizado producto {id_product}."
+        update_table()
+        movetement_id, _id_product_to_modify, _old_data_movement = clear_fields(
+            entries,
+            [
+                movetement_id,
+                _id_product_to_modify,
+                _old_data_movement,
+            ],
+        )
+    end_action_db(msg, f"Eliminacion de Movimiento de {type_m}", usernamedata)
+    return movetement_id, _id_product_to_modify, _old_data_movement
+
+
+def on_double_click_any_table(event, entries):
+    data = event.widget.item(event.widget.selection()[0])["values"]
+    movetement_id, _id_product_to_modify, _old_data_movement = clear_fields(
+        entries,
+        [
+            None,
+            None,
+            None,
+        ],
+    )
+    _old_data_movement = data
+    _id_product_to_modify = data[1]
+    product_name = f"{data[1]}--{data[2]}--{data[7]}"
+    entries[2].set(product_name)
+    movetement_id = data[0]
+    entries[1].insert(0, data[4])
+    date = datetime.strptime(data[5], format_timestamps)
+    date = date.strftime(format_date)
+    entries[0].insert(0, date)
+    entries[3].set(f"ID Movimiento: {data[0]}")
+    entries[4].set(f"ID Producto: {data[1]}")
+    entries[6].insert(0, data[11])
+    entries[7].insert(0, data[6])
+    return movetement_id, _id_product_to_modify, _old_data_movement
+
+
+class MovementsFrame(ScrolledFrame):
     def __init__(self, master, **kwargs):
-        super().__init__(master)
+        super().__init__(master, autohide=True)
         self.columnconfigure(0, weight=1)
-        kwargs["coldata_moves"] = coldata_movementes
+        self.rowconfigure(0, weight=1)
+        self.nb = ttk.Notebook(self)
+        self.nb.grid(row=0, column=0, sticky="nsew")
+        self.nb.columnconfigure(0, weight=1)
+        self.nb.rowconfigure(0, weight=1)
+        kwargs["coldata_moves"] = coldata_movements
         self.frame_1 = InScreen(self, **kwargs)
-        self.add(self.frame_1, text="Entradas")
+        self.nb.add(self.frame_1, text="Entradas")
         self.frame_2 = OutScreen(self, **kwargs)
-        self.add(self.frame_2, text="Salidas")
+        self.nb.add(self.frame_2, text="Salidas")
+        self.frame_3 = MultipleMovementsScreen(self, **kwargs)
+        self.nb.add(self.frame_3, text="Multiple Movimientos")
 
     def update_procedure(self, **events):
         if "sender" in events:
@@ -115,7 +351,7 @@ class InScreen(ttk.Frame):
         self._id_product_to_modify = None
         self._old_data_movement = None
         self.table = None
-        self.col_data = coldata_movementes
+        self.col_data = coldata_movements
         self.movetement_id = None
         self.master = master
         self.columnconfigure(0, weight=1)
@@ -145,7 +381,7 @@ class InScreen(ttk.Frame):
         # -------------------------------inputs-------------------------------------------------
         frame_inputs = ttk.Frame(self)
         frame_inputs.grid(row=2, column=0, sticky="nswe")
-        frame_inputs.columnconfigure((0, 1), weight=1)
+        frame_inputs.columnconfigure(1, weight=1)
         values_products = [
             f"{product[0]}--{product[1]}--{product[2]}" for product in self._products
         ]
@@ -174,53 +410,16 @@ class InScreen(ttk.Frame):
 
     def create_buttons(self, master):
         """Creates the buttons of the Inputs screen, includes the buttons to add, update and delete inputs"""
-        create_button(
+        crete_btns_movements(
             master,
-            0,
-            0,
-            text="Agregar Entrada",
-            command=self.add_in_item,
-            style="primary",
-        )
-        create_button(
-            master,
-            0,
-            1,
-            text="Actualizar Entrada",
-            command=self.update_in_item,
-            style="primary",
-        )
-        create_button(
-            master,
-            0,
-            2,
-            text="Eliminar Entrada",
-            command=self.delete_in_item,
-            style="warning",
-        )
-        create_button(
-            master,
-            0,
-            3,
-            text="Limpiar Campos",
-            command=self.clear_fields,
-            style="primary",
-        )
-        create_button(
-            master,
-            0,
-            4,
-            text="Actualizar Tabla",
-            command=self.update_table,
-            style="primary",
-        )
-        create_button(
-            master,
-            0,
-            5,
-            text="Lector",
-            command=self.lector,
-            style="primary",
+            {
+                "add_callback": self.add_in_item,
+                "update_callback": self.update_in_item,
+                "delete_callback": self.delete_in_item,
+                "clear_callback": self.clear_fields,
+                "update_table_callback": self.update_table,
+                "lector_callback": self.lector,
+            },
         )
 
     def lector(self):
@@ -252,34 +451,21 @@ class InScreen(ttk.Frame):
         end_action_db(msg, "Creacion de Movimientos de Entrada", self.usernamedata)
 
     def clear_fields(self):
-        for entry in self.entries:
-            if isinstance(entry, ttk.Combobox):
-                entry.configure(state="normal")
-                entry.set("")
-            elif isinstance(entry, ttk.StringVar):
-                entry.set("")
-            elif isinstance(entry, ttk.Entry):
-                entry.delete(0, "end")
-        self.movetement_id = None
-        self._id_product_to_modify = None
-        self._old_data_movement = None
-        current_date = datetime.now().strftime(format_date)
-        self.entries[0].insert(0, current_date)
+        self.movetement_id, self._id_product_to_modify, self._old_data_movement = (
+            clear_fields(
+                self.entries,
+                [
+                    self.movetement_id,
+                    self._id_product_to_modify,
+                    self._old_data_movement,
+                ],
+            )
+        )
 
     def on_double_click_in_table(self, event):
-        data = event.widget.item(event.widget.selection()[0])["values"]
-        self.clear_fields()
-        self._old_data_movement = data
-        self._id_product_to_modify = data[1]
-        product_name = f"{data[1]}--{data[2]}--{data[7]}"
-        self.entries[2].set(product_name)
-        self.movetement_id = data[0]
-        self.entries[1].insert(0, data[4])
-        date = datetime.strptime(data[5], format_timestamps)
-        date = date.strftime(format_date)
-        self.entries[0].insert(0, date)
-        self.entries[3].set(f"ID Movimiento: {data[0]}")
-        self.entries[4].set(f"ID Producto: {data[1]}")
+        self.movetement_id, self._id_product_to_modify, self._old_data_movement = (
+            on_double_click_any_table(event, self.entries)
+        )
 
     def update_table(self, ignore_triger=False):
         self._products = fetch_all_products()
@@ -296,27 +482,18 @@ class InScreen(ttk.Frame):
             self.triger_actions_callback(**event)
 
     def add_in_item(self):
-        msg = ""
-        id_product = self.entries[2].get().split("--")[0]
-        id_movement_type = "entrada"
-        quantity = self.entries[1].get()
-        movement_date = self.entries[0].get()
-        flag, error, lastrowid = create_in_movement_db(
-            id_product, id_movement_type, quantity, movement_date, None
+        self.movetement_id, self._id_product_to_modify, self._old_data_movement = (
+            add_movement(
+                "entrada",
+                self.entries,
+                self.new_stock,
+                self.update_table,
+                self.movetement_id,
+                self._id_product_to_modify,
+                self._old_data_movement,
+                self.usernamedata,
+            )
         )
-        if not flag:
-            msg += f"\nError al registrar movimiento: {id_product}"
-        else:
-            msg += f"\nMovimiento registrado producto {id_product}, valor de entrada {quantity}."
-            new_stock = self.new_stock(int(quantity), id_product)
-            flag, error, result = update_stock_db(id_product, new_stock)
-            if not flag:
-                msg += f"\nError al actualizar stock: {id_product}"
-            else:
-                msg += f"\nStock actualizado producto {id_product}."
-            self.update_table()
-            self.clear_fields()
-        end_action_db(msg, "Creacion de Movimiento de Entrada", self.usernamedata)
 
     def update_in_item(self):
         if self.movetement_id is None or self._id_product_to_modify is None:
@@ -324,50 +501,35 @@ class InScreen(ttk.Frame):
                 "No se ha seleccionado un movimiento para actualizar", "Error"
             )
             return
-        msg = ""
-        old_quantity = self._old_data_movement[4]
-        new_date = datetime.now().strftime(format_date)
-        quantity = self.entries[1].get()
-        flag, error, result = update_movement_db(
-            self.movetement_id, quantity, new_date, None
-        )
-        if not flag:
-            msg += f"\nError al actualizar movimiento: {self.movetement_id}--{self._id_product_to_modify}"
-        else:
-            msg += f"\nMovimiento actualizado producto {self._id_product_to_modify}, valor de entrada {old_quantity}-->{quantity}."
-            new_stock = self.new_stock(
-                int(quantity) - int(old_quantity), self._id_product_to_modify
+        self.movetement_id, self._id_product_to_modify, self._old_data_movement = (
+            update_movement(
+                "entrada",
+                self.entries,
+                self.new_stock,
+                self.update_table,
+                self.movetement_id,
+                self._id_product_to_modify,
+                self._old_data_movement,
+                self.usernamedata,
             )
-            flag, error, result = update_stock_db(self._id_product_to_modify, new_stock)
-            if not flag:
-                msg += f"\nError al actualizar stock: {self._id_product_to_modify}"
-            else:
-                msg += f"\nStock actualizado producto {self._id_product_to_modify}."
-            self.update_table()
-            self.clear_fields()
-        end_action_db(msg, "Actualizacion de Movimiento de Entrada", self.usernamedata)
+        )
 
     def delete_in_item(self):
         if self.movetement_id is None:
             Messagebox.show_error("No se ha seleccionado un movimiento", "Error")
             return
-        msg = ""
-        quantity = self.entries[1].get()
-        id_product = self.entries[2].get().split("--")[0]
-        flag, error, result = delete_movement_db(self.movetement_id)
-        if not flag:
-            msg += f"\nError al eliminar movimiento: {self.movetement_id}--{id_product}"
-        else:
-            msg += f"\nMovimiento eliminado producto {id_product}, valor de movimiento {quantity}."
-            new_stock = self.new_stock(-int(quantity), id_product)
-            flag, error, result = update_stock_db(id_product, new_stock)
-            if not flag:
-                msg += f"\nError al actualizar stock: {id_product}"
-            else:
-                msg += f"\nStock actualizado producto {id_product}."
-            self.update_table()
-            self.clear_fields()
-        end_action_db(msg, "Eliminacion de Movimiento de Entrada", self.usernamedata)
+        self.movetement_id, self._id_product_to_modify, self._old_data_movement = (
+            delete_movement(
+                "entrada",
+                self.entries,
+                self.new_stock,
+                self.update_table,
+                self.movetement_id,
+                self._id_product_to_modify,
+                self._old_data_movement,
+                self.usernamedata,
+            )
+        )
 
     def new_stock(self, value_to_add, id_product):
         for product in self._products:
@@ -384,7 +546,7 @@ class OutScreen(ttk.Frame):
         self._old_data_movement = None
         self._id_product_to_modify = None
         self.table = None
-        self.col_data = coldata_movementes
+        self.col_data = coldata_movements
         self.movetement_id = None
         self.master = master
         self.columnconfigure(0, weight=1)
@@ -413,7 +575,7 @@ class OutScreen(ttk.Frame):
         # -------------------------------inputs-------------------------------------------------
         frame_inputs = ttk.Frame(self)
         frame_inputs.grid(row=2, column=0, sticky="nswe")
-        frame_inputs.columnconfigure((0, 1), weight=1)
+        frame_inputs.columnconfigure(1, weight=1)
         values_products = [
             f"{product[0]}--{product[1]}--{product[2]}" for product in self._products
         ]
@@ -421,7 +583,7 @@ class OutScreen(ttk.Frame):
         # --------------------------------btns-------------------------------------------------
         frame_btns = ttk.Frame(self)
         frame_btns.grid(row=3, column=0, sticky="nswe")
-        frame_btns.columnconfigure((0, 1, 2, 3, 4), weight=1)
+        frame_btns.columnconfigure((0, 1, 2, 3, 4, 5), weight=1)
         self.create_buttons(frame_btns)
 
     def create_table(self, master):
@@ -442,53 +604,17 @@ class OutScreen(ttk.Frame):
 
     def create_buttons(self, master):
         """Creates the buttons of the Inputs screen, includes the buttons to add, update and delete inputs"""
-        create_button(
+        crete_btns_movements(
             master,
-            0,
-            0,
-            text="Agregar Salida",
-            command=self.add_out_item,
-            style="primary",
-        )
-        create_button(
-            master,
-            0,
-            1,
-            text="Actualizar Salida",
-            command=self.update_out_item,
-            style="primary",
-        )
-        create_button(
-            master,
-            0,
-            2,
-            text="Eliminar Salida",
-            command=self.delete_out_item,
-            style="warning",
-        )
-        create_button(
-            master,
-            0,
-            3,
-            text="Limpiar Campos",
-            command=self.clear_fields,
-            style="primary",
-        )
-        create_button(
-            master,
-            0,
-            4,
-            text="Actualizar Tabla",
-            command=self.update_table,
-            style="primary",
-        )
-        create_button(
-            master,
-            0,
-            5,
-            text="Lector",
-            command=self.lector,
-            style="primary",
+            {
+                "add_callback": self.add_out_item,
+                "update_callback": self.update_out_item,
+                "delete_callback": self.delete_out_item,
+                "clear_callback": self.clear_fields,
+                "update_table_callback": self.update_table,
+                "lector_callback": self.lector,
+                "screen": "movements_out",
+            },
         )
 
     def lector(self):
@@ -520,34 +646,21 @@ class OutScreen(ttk.Frame):
         end_action_db(msg, "Creacion de Movimientos de Salida", self.usernamedata)
 
     def clear_fields(self):
-        for entry in self.entries:
-            if isinstance(entry, ttk.Combobox):
-                entry.configure(state="normal")
-                entry.set("")
-            elif isinstance(entry, ttk.StringVar):
-                entry.set("")
-            elif isinstance(entry, ttk.Entry):
-                entry.delete(0, "end")
-        self.movetement_id = None
-        self._id_product_to_modify = None
-        self._old_data_movement = None
-        current_date = datetime.now().strftime(format_date)
-        self.entries[0].insert(0, current_date)
+        self.movetement_id, self._id_product_to_modify, self._old_data_movement = (
+            clear_fields(
+                self.entries,
+                [
+                    self.movetement_id,
+                    self._id_product_to_modify,
+                    self._old_data_movement,
+                ],
+            )
+        )
 
     def on_double_click_in_table(self, event):
-        data = event.widget.item(event.widget.selection()[0])["values"]
-        self.clear_fields()
-        self._old_data_movement = data
-        self._id_product_to_modify = data[1]
-        product_name = f"{data[1]}--{data[2]}--{data[7]}"
-        self.entries[2].set(product_name)
-        self.movetement_id = data[0]
-        self.entries[1].insert(0, data[4])
-        date = datetime.strptime(data[5], format_timestamps)
-        date = date.strftime(format_date)
-        self.entries[0].insert(0, date)
-        self.entries[3].set(f"ID Movimiento: {data[0]}")
-        self.entries[4].set(f"ID Producto: {data[1]}")
+        self.movetement_id, self._id_product_to_modify, self._old_data_movement = (
+            on_double_click_any_table(event, self.entries)
+        )
 
     def update_table(self, ignore_triger=False):
         self._products = fetch_all_products()
@@ -565,76 +678,52 @@ class OutScreen(ttk.Frame):
             self.triger_actions_callback(**event)
 
     def add_out_item(self):
-        msg = ""
-        id_product = self.entries[2].get().split("--")[0]
-        id_movement_type = "salida"
-        quantity = self.entries[1].get()
-        movement_date = self.entries[0].get()
-        flag, error, lastrowid = create_out_movement_db(
-            id_product, id_movement_type, quantity, movement_date, None
+        self.movetement_id, self._id_product_to_modify, self._old_data_movement = (
+            add_movement(
+                "salida",
+                self.entries,
+                self.new_stock,
+                self.update_table,
+                self.movetement_id,
+                self._id_product_to_modify,
+                self._old_data_movement,
+                self.usernamedata,
+            )
         )
-        if not flag:
-            msg += f"\nError al registrar movimiento para producto: {id_product}"
-        else:
-            msg += f"\nMovimiento registrado producto {id_product}, valor de movimiento {quantity}."
-            new_stock = self.new_stock(int(quantity), id_product)
-            flag, error, result = update_stock_db(id_product, new_stock)
-            if not flag:
-                msg += f"\nError al actualizar stock: {id_product}"
-            else:
-                msg += f"\nStock actualizado producto {id_product}."
-            self.update_table()
-            self.clear_fields()
-        end_action_db(msg, "Creacion de Movimiento de Salida", self.usernamedata)
 
     def update_out_item(self):
         if self.movetement_id is None or self._id_product_to_modify is None:
             Messagebox.show_error("No se ha seleccionado un movimiento", "Error")
             return
-        msg = ""
-        new_date = datetime.now().strftime(format_date)
-        quantity = self.entries[1].get()
-        old_quantity = self._old_data_movement[4]
-        flag, error, result = update_movement_db(
-            self.movetement_id, quantity, new_date, None
-        )
-        if not flag:
-            msg += f"\nError al actualizar movimiento: {self.movetement_id}"
-        else:
-            msg += f"\nMovimiento actualizado producto {self._id_product_to_modify}, valor de movimiento {old_quantity}-->{quantity}."
-            new_stock = self.new_stock(
-                int(quantity) - int(old_quantity), self._id_product_to_modify
+        self.movetement_id, self._id_product_to_modify, self._old_data_movement = (
+            update_movement(
+                "salida",
+                self.entries,
+                self.new_stock,
+                self.update_table,
+                self.movetement_id,
+                self._id_product_to_modify,
+                self._old_data_movement,
+                self.usernamedata,
             )
-            flag, error, result = update_stock_db(self._id_product_to_modify, new_stock)
-            if not flag:
-                msg += f"\nError al actualizar stock: {self._id_product_to_modify}"
-            else:
-                msg += f"\nStock actualizado producto {self._id_product_to_modify}."
-            self.update_table()
-            self.clear_fields()
-        end_action_db(msg, "Actualizacion de Movimiento de Salida", self.usernamedata)
+        )
 
     def delete_out_item(self):
         if self.movetement_id is None:
             Messagebox.show_error("No se ha seleccionado un movimiento", "Error")
             return
-        msg = ""
-        quantity = self.entries[1].get()
-        id_product = self.entries[2].get().split("--")[0]
-        flag, error, result = delete_movement_db(self.movetement_id)
-        if not flag:
-            msg += f"\nError al eliminar movimiento: {self.movetement_id}--{id_product}"
-        else:
-            new_stock = self.new_stock(-int(quantity), id_product)
-            msg += f"\nMovimiento eliminado producto {id_product}, valor de movimiento {quantity}."
-            flag, error, result = update_stock_db(id_product, new_stock)
-            if not flag:
-                msg += f"\nError al actualizar stock: {id_product}"
-            else:
-                msg += f"\nStock actualizado producto {id_product}."
-            self.update_table()
-            self.clear_fields()
-        end_action_db(msg, "Eliminacion de Movimiento de Salida", self.usernamedata)
+        self.movetement_id, self._id_product_to_modify, self._old_data_movement = (
+            delete_movement(
+                "salida",
+                self.entries,
+                self.new_stock,
+                self.update_table,
+                self.movetement_id,
+                self._id_product_to_modify,
+                self._old_data_movement,
+                self.usernamedata,
+            )
+        )
 
     def new_stock(self, value_to_add, id_product):
         for product in self._products:

@@ -5,7 +5,10 @@ __date__ = "$ 26/nov/2024  at 14:35 $"
 from reportlab.lib.units import mm
 
 from static.constants import file_codebar
-from templates.controllers.product.p_and_s_controller import get_all_products_db
+from templates.controllers.product.p_and_s_controller import (
+    get_all_products_db,
+    get_all_movements_db_detail,
+)
 
 coldata_inventory = [
     {"text": "ID Producto", "stretch": True},
@@ -19,6 +22,44 @@ coldata_inventory = [
     {"text": "Interno", "stretch": True},
     {"text": "Codigos", "stretch": True},
     {"text": "Ubicaciones", "stretch": True},
+]
+coldata_movements = [
+    {"text": "ID Movimiento", "stretch": True},
+    {"text": "ID Producto", "stretch": True},
+    {"text": "SKU", "stretch": False},
+    {"text": "Tipo de Movimiento", "stretch": False},
+    {"text": "Cantidad", "stretch": False},
+    {"text": "Fecha", "stretch": False},
+    {"text": "ID SM", "stretch": False},
+    {"text": "Nombre", "stretch": False},
+    {"text": "UDM", "stretch": False},
+    {"text": "Fabricante", "stretch": False},
+    {"text": "locations", "stretch": False},
+    {"text": "Referencia", "stretch": False},
+]
+columns_inventory = [
+    "ID",
+    "SKU",
+    "Producto",
+    "UDM",
+    "Cantidad",
+    "Categoria",
+    "ID Proveedor",
+    "Herramienta?",
+    "Interno?",
+    "Codigos",
+    "Ubicacion 1",
+    "Ubicacion 2",
+]
+columns_movements_widgets_lector = [
+    "ID Producto",
+    "Nombre",
+    "Tipo",
+    "Cantidad",
+    "Fecha",
+    "SM ID",
+    "Old Stock",
+    "Referencia",
 ]
 
 
@@ -142,3 +183,11 @@ def fetch_all_products():
         print("Error al obtener los productos:", str(error))
         return []
     return result
+
+
+def fetch_all_movements():
+    flag, error, movements = get_all_movements_db_detail()
+    if not flag:
+        print("Error al obtener los movimientos:", str(error))
+        return []
+    return movements

@@ -41,36 +41,57 @@ def get_ins_db_detail():
         "sql_telintec.products_amc.name as product_name, "
         "sql_telintec.products_amc.udm, "
         "sql_telintec.suppliers_amc.name AS supplier_name,"
-        "sql_telintec.products_amc.locations "
+        "sql_telintec.products_amc.locations, "
+        "sql_telintec.product_movements_amc.extra_info->'$.reference' "
         "FROM sql_telintec.product_movements_amc "
         "INNER JOIN sql_telintec.products_amc ON sql_telintec.product_movements_amc.id_product = sql_telintec.products_amc.id_product "
         "LEFT JOIN sql_telintec.suppliers_amc ON sql_telintec.products_amc.id_supplier = sql_telintec.suppliers_amc.id_supplier "
-        "WHERE sql_telintec.product_movements_amc.movement_type = 'entrada';"
+        "WHERE sql_telintec.product_movements_amc.movement_type = 'entrada' ORDER BY movement_date DESC;"
     )
     flag, error, my_result = execute_sql(sql, None, 5)
     return flag, error, my_result
 
 
-def create_in_movement_db(id_product, movement_type, quantity, movement_date, sm_id):
+def create_in_movement_db(
+    id_product, movement_type, quantity, movement_date, sm_id, extra_info=None
+):
+    extra_info = {"reference": extra_info} if extra_info else {"reference": ""}
+    extra_info = json.dumps(extra_info) if extra_info else None
     insert_sql = (
-        "INSERT INTO sql_telintec.product_movements_amc (id_product, movement_type, quantity, movement_date, sm_id) "
-        "VALUES (%s, %s, %s, %s, %s)"
+        "INSERT INTO sql_telintec.product_movements_amc (id_product, movement_type, quantity, movement_date, sm_id, extra_info) "
+        "VALUES (%s, %s, %s, %s, %s, %s)"
     )
-    vals = (id_product, movement_type, quantity, movement_date, sm_id)
+    vals = (id_product, movement_type, quantity, movement_date, sm_id, extra_info)
     flag, error, result = execute_sql(insert_sql, vals, 4)
     return flag, error, result
 
 
 def update_movement_db(
-    id_movement, quantity, movement_date, sm_id, type_m=None, id_product=None
+    id_movement,
+    quantity,
+    movement_date,
+    sm_id,
+    type_m=None,
+    id_product=None,
+    reference=None,
 ):
-    if type_m is not None and id_product is not None:
+    reference = reference if reference is not None else ""
+    if type_m is not None and id_product is not None and reference is not None:
         update_sql = (
             "UPDATE sql_telintec.product_movements_amc "
-            "SET quantity = %s, movement_date = %s, sm_id = %s , movement_type = %s, id_product = %s "
+            "SET quantity = %s, movement_date = %s, sm_id = %s , movement_type = %s, id_product = %s , "
+            "extra_info = JSON_REPLACE(extra_info, '$.reference', %s) "
             "WHERE id_movement = %s "
         )
-        vals = (quantity, movement_date, sm_id, type_m, id_product, id_movement)
+        vals = (
+            quantity,
+            movement_date,
+            sm_id,
+            type_m,
+            id_product,
+            reference,
+            id_movement,
+        )
     elif type_m is not None:
         update_sql = (
             "UPDATE sql_telintec.product_movements_amc "
@@ -85,6 +106,14 @@ def update_movement_db(
             "WHERE id_movement = %s "
         )
         vals = (quantity, movement_date, sm_id, id_product, id_movement)
+    elif reference is not None:
+        update_sql = (
+            "UPDATE sql_telintec.product_movements_amc "
+            "SET quantity = %s, movement_date = %s, sm_id = %s , "
+            "extra_info = JSON_REPLACE(extra_info, '$.reference', %s) "
+            "WHERE id_movement = %s "
+        )
+        vals = (quantity, movement_date, sm_id, reference, id_movement)
     else:
         update_sql = (
             "UPDATE sql_telintec.product_movements_amc "
@@ -134,11 +163,12 @@ def get_outs_db_detail():
         "sql_telintec.products_amc.name as product_name, "
         "sql_telintec.products_amc.udm, "
         "sql_telintec.suppliers_amc.name AS supplier_name,"
-        "sql_telintec.products_amc.locations "
+        "sql_telintec.products_amc.locations, "
+        "sql_telintec.product_movements_amc.extra_info->'$.reference' "
         "FROM sql_telintec.product_movements_amc "
         "INNER JOIN sql_telintec.products_amc ON sql_telintec.product_movements_amc.id_product = sql_telintec.products_amc.id_product "
         "LEFT JOIN sql_telintec.suppliers_amc ON sql_telintec.products_amc.id_supplier = sql_telintec.suppliers_amc.id_supplier "
-        "WHERE sql_telintec.product_movements_amc.movement_type = 'salida';"
+        "WHERE sql_telintec.product_movements_amc.movement_type = 'salida' ORDER BY movement_date DESC;"
     )
     flag, error, result = execute_sql(sql, None, 5)
     return flag, error, result
@@ -157,10 +187,12 @@ def get_all_movements_db_detail():
         "sql_telintec.products_amc.name as product_name,"
         "sql_telintec.products_amc.udm, "
         "sql_telintec.suppliers_amc.name AS supplier_name, "
-        "sql_telintec.products_amc.locations "
+        "sql_telintec.products_amc.locations, "
+        "sql_telintec.product_movements_amc.extra_info->'$.reference' "
         "FROM sql_telintec.product_movements_amc "
         "INNER JOIN sql_telintec.products_amc ON sql_telintec.product_movements_amc.id_product = sql_telintec.products_amc.id_product "
-        "LEFT JOIN sql_telintec.suppliers_amc ON sql_telintec.products_amc.id_supplier = sql_telintec.suppliers_amc.id_supplier;"
+        "LEFT JOIN sql_telintec.suppliers_amc ON sql_telintec.products_amc.id_supplier = sql_telintec.suppliers_amc.id_supplier "
+        "WHERE sql_telintec.product_movements_amc.movement_type like '%' ORDER BY movement_date DESC;"
     )
     flag, error, result = execute_sql(sql, None, 5)
     return flag, error, result
@@ -183,12 +215,16 @@ def get_movements_type_db(type_m: str):
     return flag, error, result
 
 
-def create_out_movement_db(id_product, movement_type, quantity, movement_date, sm_id):
+def create_out_movement_db(
+    id_product, movement_type, quantity, movement_date, sm_id, reference=None
+):
+    extra_info = {"reference": reference} if reference else {"reference": ""}
+    reference = json.dumps(extra_info)
     sql = (
-        "INSERT  INTO sql_telintec.product_movements_amc (id_product, movement_type, quantity, movement_date, sm_id) "
-        "VALUES (%s, %s, %s, %s, %s)"
+        "INSERT  INTO sql_telintec.product_movements_amc (id_product, movement_type, quantity, movement_date, sm_id, extra_info) "
+        "VALUES (%s, %s, %s, %s, %s, %s)"
     )
-    vals = (id_product, movement_type, quantity, movement_date, sm_id)
+    vals = (id_product, movement_type, quantity, movement_date, sm_id, reference)
     flag, error, result = execute_sql(sql, vals, 4)
     return flag, error, result
 

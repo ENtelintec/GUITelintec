@@ -13,31 +13,7 @@ from static.constants import format_date
 from templates.Functions_GUI_Utils import create_label, create_button
 from templates.daemons.Peripherals import SerialPortListener
 from templates.misc.PortsSearcher import serial_ports
-
-columns_inventory = [
-    "ID",
-    "SKU",
-    "Producto",
-    "UDM",
-    "Cantidad",
-    "Categoria",
-    "ID Proveedor",
-    "Herramienta?",
-    "Interno?",
-    "Codigos",
-    "Ubicacion 1",
-    "Ubicacion 2",
-]
-
-columns_movements = [
-    "ID Producto",
-    "Nombre",
-    "Tipo",
-    "Cantidad",
-    "Fecha",
-    "SM ID",
-    "Old Stock",
-]
+from templates.resources.methods.Aux_Inventory import columns_inventory, columns_movements_widgets_lector
 
 
 class LectorScreenSelector(ttk.Toplevel):
@@ -275,7 +251,7 @@ class MovementsLector(ttk.Frame):
             kw["data_products_gen"] if "data_products_gen" in kw else []
         )
         self.data_products = []
-        self.columns = columns_movements
+        self.columns = columns_movements_widgets_lector
         # create_button(self, 6, 0, "Guardar", command=self.on_save_click, sticky="n", width=15)
         self.frame_products = ScrolledFrame(self, autohide=True)
         self.frame_products.grid(
@@ -307,7 +283,6 @@ class MovementsLector(ttk.Frame):
             checkbutton = ttk.Checkbutton(master, text="", bootstyle="round-toggle")
             checkbutton.grid(row=i + 1, column=0)
             for j in range(n_columns):
-                # aqui ver lo de las sm al crear
                 entry = ttk.Entry(master)
                 entry.grid(row=i + 1, column=j + 1, sticky="nsew")
                 entry.insert(0, f"{self.data_products[i][j]}")
