@@ -11,31 +11,33 @@ from templates.controllers.product.p_and_s_controller import (
 )
 
 coldata_inventory = [
-    {"text": "ID Producto", "stretch": True},
-    {"text": "SKU", "stretch": True},
+    {"text": "ID Producto", "stretch": False, "width": 80},
+    {"text": "SKU", "stretch": False, "width": 80},
     {"text": "Nombre", "stretch": True},
-    {"text": "UDM", "stretch": True},
-    {"text": "Stock", "stretch": True},
-    {"text": "Categoría", "stretch": True},
-    {"text": "Proveedor", "stretch": True},
-    {"text": "Herramienta", "stretch": True},
-    {"text": "Interno", "stretch": True},
-    {"text": "Codigos", "stretch": True},
-    {"text": "Ubicaciones", "stretch": True},
+    {"text": "UDM", "stretch": False, "width": 80},
+    {"text": "Stock", "stretch": False, "width": 80},
+    {"text": "Categoría", "stretch": False, "width": 80},
+    {"text": "Proveedor", "stretch": False, "width": 80},
+    {"text": "Herramienta", "stretch": False, "width": 80},
+    {"text": "Interno", "stretch": False, "width": 80},
+    {"text": "Codigos", "stretch": False, "width": 80},
+    {"text": "Ubicaciones", "stretch": False, "width": 80},
+    {"text": "Marca", "stretch": False, "width": 80},
+    {"text": "Brands", "stretch": False, "width": 80},
 ]
 coldata_movements = [
-    {"text": "ID Movimiento", "stretch": True},
-    {"text": "ID Producto", "stretch": True},
-    {"text": "SKU", "stretch": False},
-    {"text": "Tipo de Movimiento", "stretch": False},
-    {"text": "Cantidad", "stretch": False},
-    {"text": "Fecha", "stretch": False},
-    {"text": "ID SM", "stretch": False},
-    {"text": "Nombre", "stretch": False},
-    {"text": "UDM", "stretch": False},
-    {"text": "Fabricante", "stretch": False},
-    {"text": "locations", "stretch": False},
-    {"text": "Referencia", "stretch": False},
+    {"text": "ID Movimiento", "stretch": False, "width": 40},
+    {"text": "ID Producto", "stretch": False, "width": 40},
+    {"text": "SKU", "stretch": False, "width": 90},
+    {"text": "Tipo", "stretch": False, "width": 80},
+    {"text": "Cantidad", "stretch": False, "width": 40},
+    {"text": "Fecha", "stretch": False, "width": 110},
+    {"text": "ID SM", "stretch": False, "width": 70},
+    {"text": "Nombre", "stretch": True},
+    {"text": "UDM", "stretch": False, "width": 40},
+    {"text": "Fabricante", "stretch": False, "width": 120},
+    {"text": "locations", "stretch": False, "width": 120},
+    {"text": "Referencia", "stretch": False, "width": 90},
 ]
 columns_inventory = [
     "ID",
@@ -183,6 +185,24 @@ def fetch_all_products():
         print("Error al obtener los productos:", str(error))
         return []
     return result
+
+
+def divide_movements(movements_data):
+    """
+
+    :param movements_data: data from all movements type
+    :return: <ins>, <outs>  two list, one for ins and other for outs
+    """
+    if movements_data is None:
+        return None, None
+    ins = []
+    outs = []
+    for movement in movements_data:
+        if movement[3] == "entrada":
+            ins.append(movement)
+        else:
+            outs.append(movement)
+    return ins, outs
 
 
 def fetch_all_movements():

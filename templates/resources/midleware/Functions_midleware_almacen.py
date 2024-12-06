@@ -26,7 +26,6 @@ from templates.controllers.product.p_and_s_controller import (
     create_product_db,
     update_product_db,
     get_all_categories_db,
-    get_all_suppliers,
     create_product_db_admin,
     get_skus,
     insert_multiple_row_products_amc,
@@ -389,7 +388,7 @@ def get_categories_db():
 
 
 def get_suppliers_db():
-    flag, error, result = get_all_suppliers()
+    flag, error, result = get_all_suppliers_amc()
     if not flag:
         return [], 400
     out = []
@@ -403,6 +402,7 @@ def get_suppliers_db():
             address,
             web_url,
             type_s,
+            extra_info,
         ) = item
         out.append(
             {

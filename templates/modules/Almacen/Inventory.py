@@ -1,5 +1,4 @@
 import json
-import time
 from datetime import datetime
 from tkinter import filedialog
 from tkinter.filedialog import askopenfilename
@@ -69,11 +68,14 @@ def get_row_data_inventory(data_raw):
 
 
 def get_providers_dict(data_raw):
-    # id_supplier, name, seller_name, seller_email, phone, address, web_url, type
+    # id_supplier, name, seller_name, seller_email, phone, address, web_url, type, extra_info
     data = {}
+    brand_dict = {}
     for row in data_raw:
         data[row[1]] = row[0]
-    return data
+        extra_info = json.loads(row[8])
+        brand_dict[row[1]] = extra_info.get("brands", [])
+    return data, brand_dict
 
 
 def get_categories_dict(data_raw):
@@ -86,7 +88,7 @@ def get_categories_dict(data_raw):
 
 
 def create_input_widgets(
-    master, _ivar_tool, _ivar_internal, categories_dict, providers_dict_amc
+    master, _ivar_tool, _ivar_internal, categories_dict, providers_dict_amc, callbacks
 ):
     entries = []
     master.columnconfigure((0, 1, 2, 3, 4), weight=1)
@@ -109,12 +111,15 @@ def create_input_widgets(
     entries.append(input_stock)
     create_label(master, 0, 2, text="Categoría", sticky="w")
     values_cat = list(categories_dict.keys())
-
     cat_selector = create_Combobox(master, values=values_cat, row=0, column=3)
     entries.append(cat_selector)
     create_label(master, 1, 2, text="Proveedor", sticky="w")
     values_supp = list(providers_dict_amc.keys())
     supp_selector = create_Combobox(master, values=values_supp, row=1, column=3)
+    supp_selector.bind(
+        "<<ComboboxSelected>>",
+        lambda event: callbacks.get("on_brand_selected", None)(event),
+    )
     entries.append(supp_selector)
     # noinspection PyArgumentList
     ttk.Checkbutton(
@@ -142,10 +147,77 @@ def create_input_widgets(
     create_label(master, 3, 2, text="Ubicacion 1", sticky="w")
     input_location_1 = create_entry(master, row=3, column=3)
     entries.append(input_location_1)
-    create_label(master, 4, 2, text="Ubicacion 2", sticky="w")
-    input_location_2 = create_entry(master, row=4, column=3)
-    entries.append(input_location_2)
+    create_label(master, 4, 2, text="Marca", sticky="w")
+    input_brand = create_Combobox(master, values=[], row=4, column=3, state="normal")
+    entries.append(input_brand)
     return entries
+
+
+def create_btns(master, callbacks):
+    create_button(
+        master,
+        0,
+        0,
+        text="Crear",
+        command=callbacks.get("create_callback", None),
+        style="success",
+    )
+    create_button(
+        master,
+        0,
+        1,
+        text="Actualizar",
+        command=callbacks.get("update_callback", None),
+        style="primary",
+    )
+    create_button(
+        master,
+        0,
+        2,
+        text="Eliminar",
+        command=callbacks.get("delete_callback", None),
+        style="warning",
+    )
+    create_button(
+        master,
+        0,
+        3,
+        text="Limpiar Campos",
+        command=callbacks.get("clear_callback", None),
+        style="primary",
+    )
+    create_button(
+        master,
+        1,
+        0,
+        text="Actualizar Tabla",
+        command=callbacks.get("update_table_callback", None),
+        style="primary",
+    )
+    create_button(
+        master,
+        1,
+        1,
+        text="Lector",
+        command=callbacks.get("lector_callback", None),
+        style="primary",
+    )
+    create_button(
+        master,
+        1,
+        2,
+        text="Imprimir listado",
+        command=callbacks.get("print_products_callback", None),
+        style="primary",
+    )
+    create_button(
+        master,
+        1,
+        3,
+        text="Imprimir codigo",
+        command=callbacks.get("generate_code_callback", None),
+        style="primary",
+    )
 
 
 class InventoryScreen(ttk.Frame):
@@ -171,7 +243,9 @@ class InventoryScreen(ttk.Frame):
             else (True, None, kwargs["data"]["data_providers_gen"])
         )
         self._trigger_actions_main_callback = kwargs["triger_actions_main_callback"]
-        self._providers_dict_amc = get_providers_dict(data_raw_providers)
+        self._providers_dict_amc, self.brands_dict = get_providers_dict(
+            data_raw_providers
+        )
         flag, error, data_raw_categories = (
             get_all_categories_db()
             if "data" not in kwargs
@@ -188,7 +262,7 @@ class InventoryScreen(ttk.Frame):
         ttk.Label(self.frame_table, text="Tabla de Productos", font=("Arial", 20)).grid(
             row=0, column=0, sticky="w", padx=5, pady=10
         )
-        self.create_table(self.frame_table)
+        self.create_table()
         # -------------------------------inputs-------------------------------------------------
         frame_inputs = ttk.Frame(self)
         frame_inputs.grid(row=1, column=0, sticky="nswe")
@@ -199,99 +273,46 @@ class InventoryScreen(ttk.Frame):
             self._ivar_internal,
             self._categories_dict,
             self._providers_dict_amc,
+            {
+                "on_brand_selected": self.on_brand_selected,
+            },
         )
         # --------------------------------btns-------------------------------------------------
         frame_btns = ttk.Frame(self)
         frame_btns.grid(row=3, column=0, sticky="nswe")
         frame_btns.columnconfigure((0, 1, 2, 3), weight=1)
-        self.create_buttons(frame_btns)
+        create_btns(
+            frame_btns,
+            {
+                "create_callback": self.on_add_product_click,
+                "update_callback": self.on_update_product_click,
+                "delete_callback": self.on_delete_product_click,
+                "clear_callback": self.on_clear_fields_click,
+                "update_table_callback": self.on_update_table_click,
+                "lector_callback": self.on_lector_click,
+                "generate_code_callback": self.on_print_code_click,
+                "print_products_callback": self.on_print_products_click,
+            },
+        )
 
-    def create_table(self, master):
+    def create_table(self):
         if self.table is not None:
             self.table.destroy()
         self.col_data = coldata_inventory
         self.table = Tableview(
-            master,
+            self.frame_table,
             bootstyle="primary",
             paginated=True,
             pagesize=10,
             searchable=True,
-            autofit=True,
+            autofit=False,
             coldata=self.col_data,
             rowdata=self._products,
         )
         self.table.grid(row=1, column=0, sticky="nswe", padx=15, pady=5)
         self.table.view.bind("<Double-1>", self.on_click_table_item)
 
-    def create_buttons(self, master):
-        create_button(
-            master,
-            0,
-            0,
-            text="Agregar Producto",
-            command=self.add_product,
-            style="success",
-        )
-        create_button(
-            master,
-            0,
-            1,
-            text="Actualizar Producto",
-            command=self.update_product,
-            style="info",
-        )
-        create_button(
-            master,
-            0,
-            2,
-            text="Eliminar Producto",
-            command=self.delete_product,
-            style="warning",
-        )
-        create_button(
-            master,
-            0,
-            3,
-            text="Limpiar Campos",
-            command=self.clear_fields,
-        )
-        create_button(
-            master,
-            1,
-            0,
-            text="Actualizar Tabla",
-            command=self.update_table,
-        )
-        create_button(
-            master,
-            1,
-            1,
-            text="Lector",
-            command=self.lector,
-        )
-        create_button(
-            master,
-            1,
-            2,
-            text="Imprimir listado",
-            command=self.print_products,
-        )
-        create_button(
-            master,
-            1,
-            3,
-            text="Imprimir Codigo",
-            command=self.print_code,
-        )
-        # create_button(
-        #     master,
-        #     2,
-        #     0,
-        #     text="Importar",
-        #     command=self.import_file,
-        # )
-
-    def print_code(self):
+    def on_print_code_click(self):
         if self.id_to_modify is None:
             Messagebox.show_info(
                 "No se ha seleccionado un producto, se pondra por defecto el 1.",
@@ -314,7 +335,7 @@ class InventoryScreen(ttk.Frame):
         create_one_code(filepath=file_codebar, **kw)
         BarcodeSubFrameSelector(self, **kw)
 
-    def print_products(self):
+    def on_print_products_click(self):
         filepath = filedialog.asksaveasfilename(
             defaultextension=".pdf",
             filetypes=[("PDF files", "*.pdf")],
@@ -335,23 +356,18 @@ class InventoryScreen(ttk.Frame):
         )
         print(f"Se guardo el pdf en: {filepath}")
 
-    def lector(self):
+    def on_lector_click(self):
         data = {
             "data_products_gen": self._products,
             "screen": "inventory",
-            "callback_lector": self.save_data_lector,
+            "callback_lector": self.callback_save_data_lector,
         }
         LectorScreenSelector(self, **data)
 
-    def save_data_lector(self, data_lector):
-        product_update, product_new = data_lector
-        msg = ""
-        flag, error, result, msg_update = self.update_products(product_update)
-        msg += msg_update
-        flag, error, result, msg_create = self.create_new_products(product_new)
-        msg += msg_create
-        self.end_action_db(msg, "Actualizacion de inventario")
-        self.update_table()
+    def on_brand_selected(self, event):
+        supplier = event.widget.get()
+        values = self.brands_dict.get(supplier, [])
+        self.entries[11].configure(values=values)
 
     def on_click_table_item(self, event):
         item = event.widget.item(event.widget.selection()[0])
@@ -365,7 +381,7 @@ class InventoryScreen(ttk.Frame):
             loc_1 = ""
             loc_2 = ""
         data = item["values"][0:-2] + [str(codes), loc_1, loc_2]
-        self.clear_fields()
+        self.on_clear_fields_click()
         self.entries[0].configure(state="normal")
         for entry, value in zip(self.entries, data):
             if isinstance(entry, ttk.Combobox):
@@ -380,11 +396,9 @@ class InventoryScreen(ttk.Frame):
         self.id_to_modify = int(data[0])
         self.old_stock = float(data[4])
 
-    def update_table(self, ignore_triger=False):
+    def on_update_table_click(self, ignore_triger=False):
         self._products = fetch_products()
-        self.table.unload_table_data()
-        time.sleep(0.5)
-        self.table.build_table_data(self.col_data, self._products)
+        self.create_table()
         if not ignore_triger:
             event = {
                 "action": "update",
@@ -393,7 +407,7 @@ class InventoryScreen(ttk.Frame):
             }
             self._trigger_actions_main_callback(**event)
 
-    def clear_fields(self):
+    def on_clear_fields_click(self):
         self.entries[0].configure(state="normal")
         for index, entry in enumerate(self.entries):
             if isinstance(entry, ttk.Combobox):
@@ -408,97 +422,7 @@ class InventoryScreen(ttk.Frame):
         self.old_stock = None
         self.entries[0].configure(state="disabled")
 
-    def get_inputs_values(self):
-        data = []
-        for entry in self.entries:
-            if isinstance(entry, ttk.Combobox):
-                data.append(entry.get())
-            elif isinstance(entry, ttk.IntVar):
-                data.append(entry.get())
-            elif isinstance(entry, ttk.Entry):
-                data.append(entry.get())
-        is_tool = data[7]
-        is_internal = data[8]
-        locations = {"location_1": data[10], "location_2": data[11]}
-        codes = json.loads(data[9].replace("'", '"')) if data[9] != "" else []
-        return (
-            int(data[0]) if data[0] != "" else "",
-            data[1],
-            data[2],
-            data[3],
-            data[4],
-            data[5],
-            data[6],
-            is_tool,
-            is_internal,
-            codes,
-            locations,
-        )
-
-    def update_product(self):
-        (
-            product_id,
-            product_sku,
-            product_name,
-            product_price,
-            new_stock,
-            product_category,
-            product_supplier,
-            is_tool,
-            is_internal,
-            codes,
-            locations,
-        ) = self.get_inputs_values()
-        if (
-            product_sku == ""
-            or product_name == ""
-            or product_price == ""
-            or product_category == ""
-            or product_supplier == ""
-            or product_category == "None"
-        ):
-            Messagebox.show_error("Todos los campos deben estar llenos", title="Error")
-            return
-        if product_id == "":
-            Messagebox.show_error("No se ha seleccionado un producto", title="Error")
-        flag, error, n_rows = update_product_db(
-            product_id,
-            product_sku,
-            product_name,
-            product_price,
-            new_stock,
-            self._categories_dict[product_category]
-            if product_category != "None"
-            else None,
-            self._providers_dict_amc[product_supplier]
-            if product_supplier != "None"
-            else None,
-            is_tool,
-            is_internal,
-            codes,
-            locations,
-        )
-        if not flag:
-            msg = f"Error al actualizar producto: {product_sku}--{product_id}"
-        else:
-            msg = f"Producto actualizado: {product_sku}--{product_id}"
-            quantity_moved = float(new_stock) - self.old_stock
-            movement = "entrada" if quantity_moved > 0 else "salida"
-            date = datetime.now().strftime(format_date)
-            if quantity_moved != 0:
-                flag, error, result = create_in_movement_db(
-                    product_id, movement, abs(quantity_moved), date, None
-                )
-                if not flag:
-                    msg += f"\nError al crear movimiento: {product_sku}--{product_id}--{error}"
-                else:
-                    msg += f"\nMovimiento creado: {product_sku}--{product_id}--{result}"
-            self.clear_fields()
-            self.update_table()
-        msg_not = "System Notification\n" + msg
-        self.end_action_db(msg_not, "Actualizacion de producto")
-
-    def add_product(self):
+    def on_add_product_click(self):
         (
             product_id,
             product_sku,
@@ -511,6 +435,7 @@ class InventoryScreen(ttk.Frame):
             is_internal,
             codes,
             locations,
+            brand,
         ) = self.get_inputs_values()
         if (
             product_sku == ""
@@ -543,6 +468,7 @@ class InventoryScreen(ttk.Frame):
             is_internal,
             codes,
             locations,
+            brand,
         )
         if not flag:
             msg = f"Error al crear producto: {product_sku}--{lastrowid}--{error}"
@@ -561,12 +487,77 @@ class InventoryScreen(ttk.Frame):
                 )
             else:
                 msg += f"\nMovimiento creado: {product_sku}--{lastrowid}"
-            self.clear_fields()
-            self.update_table()
+            self.on_clear_fields_click()
+            self.on_update_table_click()
         msg_not = "System Notification\n" + msg
         self.end_action_db(msg_not, "Actualizacion de inventario")
 
-    def delete_product(self):
+    def on_update_product_click(self):
+        (
+            product_id,
+            product_sku,
+            product_name,
+            product_price,
+            new_stock,
+            product_category,
+            product_supplier,
+            is_tool,
+            is_internal,
+            codes,
+            locations,
+            brand,
+        ) = self.get_inputs_values()
+        if (
+            product_sku == ""
+            or product_name == ""
+            or product_price == ""
+            or product_category == ""
+            or product_supplier == ""
+            or product_category == "None"
+        ):
+            Messagebox.show_error("Todos los campos deben estar llenos", title="Error")
+            return
+        if product_id == "":
+            Messagebox.show_error("No se ha seleccionado un producto", title="Error")
+        flag, error, n_rows = update_product_db(
+            product_id,
+            product_sku,
+            product_name,
+            product_price,
+            new_stock,
+            self._categories_dict[product_category]
+            if product_category != "None"
+            else None,
+            self._providers_dict_amc[product_supplier]
+            if product_supplier != "None"
+            else None,
+            is_tool,
+            is_internal,
+            codes,
+            locations,
+            brand,
+        )
+        if not flag:
+            msg = f"Error al actualizar producto: {product_sku}--{product_id}"
+        else:
+            msg = f"Producto actualizado: {product_sku}--{product_id}"
+            quantity_moved = float(new_stock) - self.old_stock
+            movement = "entrada" if quantity_moved > 0 else "salida"
+            date = datetime.now().strftime(format_date)
+            if quantity_moved != 0:
+                flag, error, result = create_in_movement_db(
+                    product_id, movement, abs(quantity_moved), date, None
+                )
+                if not flag:
+                    msg += f"\nError al crear movimiento: {product_sku}--{product_id}--{error}"
+                else:
+                    msg += f"\nMovimiento creado: {product_sku}--{product_id}--{result}"
+            self.on_clear_fields_click()
+            self.on_update_table_click()
+        msg_not = "System Notification\n" + msg
+        self.end_action_db(msg_not, "Actualizacion de producto")
+
+    def on_delete_product_click(self):
         product_id = self.entries[0].get()
         if product_id == "" or self.id_to_modify is None:
             Messagebox.show_error("No se ha seleccionado un producto", title="Error")
@@ -581,12 +572,26 @@ class InventoryScreen(ttk.Frame):
             msg = f"Error al eliminar producto: {product_id}"
         else:
             msg = f"Producto eliminado: {product_id}"
-            self.clear_fields()
-            self.update_table()
+            self.on_clear_fields_click()
+            self.on_update_table_click()
         msg_not = "System Notification\n" + msg
         self.end_action_db(msg_not, "Actualizacion de inventario")
 
-    def update_products(self, products_data):
+    def callback_save_data_lector(self, data_lector):
+        product_update, product_new = data_lector
+        msg = ""
+        flag, error, result, msg_update = self.update_products_from_lector(
+            product_update
+        )
+        msg += msg_update
+        flag, error, result, msg_create = self.create_new_products_from_lector(
+            product_new
+        )
+        msg += msg_create
+        self.end_action_db(msg, "Actualizacion de inventario")
+        self.on_update_table_click()
+
+    def update_products_from_lector(self, products_data):
         flag, error, result = update_multiple_row_products_amc(
             products_data, self._categories_dict, self._providers_dict_amc
         )
@@ -622,7 +627,7 @@ class InventoryScreen(ttk.Frame):
             )
         return flag, error, result, msg
 
-    def create_new_products(self, products_new_data):
+    def create_new_products_from_lector(self, products_new_data):
         result = 0
         flag, error, lastrow_id = insert_multiple_row_products_amc(
             products_new_data, self._categories_dict, self._providers_dict_amc
@@ -660,6 +665,35 @@ class InventoryScreen(ttk.Frame):
         )
         write_log_file(log_file_db, msg)
 
+    def get_inputs_values(self):
+        data = []
+        for entry in self.entries:
+            if isinstance(entry, ttk.Combobox):
+                data.append(entry.get())
+            elif isinstance(entry, ttk.IntVar):
+                data.append(entry.get())
+            elif isinstance(entry, ttk.Entry):
+                data.append(entry.get())
+        is_tool = data[7]
+        is_internal = data[8]
+        locations = {"location_1": data[10]}
+        brand = data[11]
+        codes = json.loads(data[9].replace("'", '"')) if data[9] != "" else []
+        return (
+            int(data[0]) if data[0] != "" else "",
+            data[1],
+            data[2],
+            data[3],
+            data[4],
+            data[5],
+            data[6],
+            is_tool,
+            is_internal,
+            codes,
+            locations,
+            brand,
+        )
+
     def import_file(self):
         filepath = askopenfilename(
             title="Seleccionar archivo",
@@ -670,4 +704,4 @@ class InventoryScreen(ttk.Frame):
         print(code)
 
     def update_procedure(self, **events):
-        self.update_table(ignore_triger=True)
+        self.on_update_table_click(ignore_triger=True)

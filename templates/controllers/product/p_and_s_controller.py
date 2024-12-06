@@ -53,9 +53,9 @@ def get_ins_db_detail():
 
 
 def create_in_movement_db(
-    id_product, movement_type, quantity, movement_date, sm_id, extra_info=None
+    id_product, movement_type, quantity, movement_date, sm_id, reference=None
 ):
-    extra_info = {"reference": extra_info} if extra_info else {"reference": ""}
+    extra_info = {"reference": reference.upper()} if reference else {"reference": ""}
     extra_info = json.dumps(extra_info) if extra_info else None
     insert_sql = (
         "INSERT INTO sql_telintec.product_movements_amc (id_product, movement_type, quantity, movement_date, sm_id, extra_info) "
@@ -89,7 +89,7 @@ def update_movement_db(
             sm_id,
             type_m,
             id_product,
-            reference,
+            reference.upper(),
             id_movement,
         )
     elif type_m is not None:
@@ -113,7 +113,7 @@ def update_movement_db(
             "extra_info = JSON_REPLACE(extra_info, '$.reference', %s) "
             "WHERE id_movement = %s "
         )
-        vals = (quantity, movement_date, sm_id, reference, id_movement)
+        vals = (quantity, movement_date, sm_id, reference.upper(), id_movement)
     else:
         update_sql = (
             "UPDATE sql_telintec.product_movements_amc "
@@ -218,13 +218,13 @@ def get_movements_type_db(type_m: str):
 def create_out_movement_db(
     id_product, movement_type, quantity, movement_date, sm_id, reference=None
 ):
-    extra_info = {"reference": reference} if reference else {"reference": ""}
-    reference = json.dumps(extra_info)
+    extra_info = {"reference": reference.upper()} if reference else {"reference": ""}
+    extra_info = json.dumps(extra_info)
     sql = (
         "INSERT  INTO sql_telintec.product_movements_amc (id_product, movement_type, quantity, movement_date, sm_id, extra_info) "
         "VALUES (%s, %s, %s, %s, %s, %s)"
     )
-    vals = (id_product, movement_type, quantity, movement_date, sm_id, reference)
+    vals = (id_product, movement_type, quantity, movement_date, sm_id, extra_info)
     flag, error, result = execute_sql(sql, vals, 4)
     return flag, error, result
 
@@ -279,6 +279,7 @@ def create_product_db(
     is_internal,
     codes=None,
     locations=None,
+    brand=None,
 ):
     try:
         sku = str(sku)
@@ -291,12 +292,13 @@ def create_product_db(
         locations = (
             {"location_1": "", "location_2": ""} if locations is None else locations
         )
+        extra_info = {"brand": brand} if brand is not None else {"brand": ""}
     except Exception as e:
         return False, str(e), None
     insert_sql = (
         "INSERT INTO sql_telintec.products_amc "
-        "(sku, name, udm, stock, id_category, is_tool, is_internal, id_supplier, codes, locations) "
-        "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+        "(sku, name, udm, stock, id_category, is_tool, is_internal, id_supplier, codes, locations, extra_info) "
+        "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
     )
     vals = (
         sku,
@@ -309,6 +311,7 @@ def create_product_db(
         id_supplier,
         json.dumps(codes),
         json.dumps(locations),
+        json.dumps(extra_info),
     )
     flag, error, result = execute_sql(insert_sql, vals, 4)
     return flag, error, result
@@ -326,6 +329,7 @@ def update_product_db(
     is_internal,
     codes=None,
     locations=None,
+    brand=None,
 ):
     try:
         sku = str(sku)
@@ -340,12 +344,14 @@ def update_product_db(
             if locations is None
             else locations
         )
+        brand = brand if brand is not None else ""
     except Exception as e:
         return False, str(e), None
     update_sql = (
         "UPDATE sql_telintec.products_amc "
         "SET sku = %s, name = %s, udm = %s, stock = %s, id_category = %s, id_supplier = %s, "
-        "is_tool = %s, is_internal = %s, codes = %s, locations = %s "
+        "is_tool = %s, is_internal = %s, codes = %s, locations = %s, "
+        "extra_info = JSON_REPLACE(extra_info, '$.brand', %s) "
         "WHERE id_product = %s;"
     )
     vals = (
@@ -359,6 +365,7 @@ def update_product_db(
         is_internal,
         json.dumps(codes),
         json.dumps(locations),
+        brand,
         id_product,
     )
     flag, error, result = execute_sql(update_sql, vals, 3)
@@ -405,7 +412,9 @@ def get_all_products_db():
         "sql_telintec.products_amc.is_tool,"
         "sql_telintec.products_amc.is_internal, "
         "sql_telintec.products_amc.codes,"
-        "sql_telintec.products_amc.locations "
+        "sql_telintec.products_amc.locations, "
+        "sql_telintec.products_amc.extra_info->'$.brand', "
+        "sql_telintec.suppliers_amc.extra_info->'$.brands' "
         "FROM sql_telintec.products_amc "
         "LEFT JOIN sql_telintec.product_categories_amc ON (sql_telintec.products_amc.id_category = sql_telintec.product_categories_amc.id_category) "
         "LEFT JOIN sql_telintec.suppliers_amc ON (sql_telintec.products_amc.id_supplier = sql_telintec.suppliers_amc.id_supplier) "

@@ -209,6 +209,7 @@ class ProvidersScreen(ttk.Frame):
             {"text": "Direccion", "stretch": True},
             {"text": "Pagina Web", "stretch": True},
             {"text": "Tipo", "stretch": True},
+            {"text": "Extra Info", "stretch": True},
         ]
         if self.table is not None:
             self.table.destroy()

@@ -2,7 +2,7 @@
 __author__ = "Edisson Naula"
 __date__ = "$ 08/may./2024  at 15:14 $"
 
-import time
+import json
 from datetime import datetime
 
 import ttkbootstrap as ttk
@@ -35,6 +35,7 @@ from templates.modules.Almacen.SubFrame_MultipleMoves import MultipleMovementsSc
 from templates.resources.methods.Aux_Inventory import (
     fetch_all_products,
     coldata_movements,
+    divide_movements,
 )
 
 
@@ -171,8 +172,9 @@ def add_movement(
     id_movement_type = "salida"
     quantity = entries[1].get()
     movement_date = datetime.now().strftime(format_timestamps)
-    reference = entries[-2].get()
-    sm_folio = entries[-1].get()
+    reference = entries[6].get()
+    sm_folio = entries[7].get()
+    sm_folio = None if sm_folio == "" or sm_folio == "None" else sm_folio
     if type_m == "Salida":
         flag, error, lastrowid = create_out_movement_db(
             id_product, id_movement_type, quantity, movement_date, sm_folio, reference
@@ -220,6 +222,7 @@ def update_movement(
     quantity = entries[1].get()
     reference = entries[6].get()
     sm_folio = entries[7].get()
+    sm_folio = None if sm_folio == "" or sm_folio == "None" else sm_folio
     flag, error, result = update_movement_db(
         movetement_id, quantity, new_date, sm_id=sm_folio, reference=reference
     )
@@ -308,10 +311,11 @@ def on_double_click_any_table(event, entries):
     entries[1].insert(0, data[4])
     date = datetime.strptime(data[5], format_timestamps)
     date = date.strftime(format_date)
+    reference = json.loads(data[11])
     entries[0].insert(0, date)
     entries[3].set(f"ID Movimiento: {data[0]}")
     entries[4].set(f"ID Producto: {data[1]}")
-    entries[6].insert(0, data[11])
+    entries[6].insert(0, reference if isinstance(reference, str) else str(reference))
     entries[7].insert(0, data[6])
     return movetement_id, _id_product_to_modify, _old_data_movement
 
@@ -325,7 +329,6 @@ class MovementsFrame(ScrolledFrame):
         self.nb.grid(row=0, column=0, sticky="nsew")
         self.nb.columnconfigure(0, weight=1)
         self.nb.rowconfigure(0, weight=1)
-        kwargs["coldata_moves"] = coldata_movements
         self.frame_1 = InScreen(self, **kwargs)
         self.nb.add(self.frame_1, text="Entradas")
         self.frame_2 = OutScreen(self, **kwargs)
@@ -337,11 +340,14 @@ class MovementsFrame(ScrolledFrame):
         if "sender" in events:
             if "movements_in" == events["sender"]:
                 self.frame_2.update_table(ignore_triger=True)
-            elif "movements_out":
+            elif "movements_out" == events["sender"]:
                 self.frame_1.update_table(ignore_triger=True)
+            elif "movements_multiple" == events["sender"]:
+                self.frame_3.update_tables(ignore_triger=True)
         else:
             self.frame_1.update_table(ignore_triger=True)
             self.frame_2.update_table(ignore_triger=True)
+            self.frame_3.update_tables(ignore_triger=True)
 
 
 class InScreen(ttk.Frame):
@@ -377,7 +383,7 @@ class InScreen(ttk.Frame):
         ttk.Label(self.frame_table, text="Tabla de Entradas", font=("Arial", 20)).grid(
             row=0, column=0, sticky="w", padx=5, pady=10
         )
-        self.create_table(self.frame_table)
+        self.create_table()
         # -------------------------------inputs-------------------------------------------------
         frame_inputs = ttk.Frame(self)
         frame_inputs.grid(row=2, column=0, sticky="nswe")
@@ -392,16 +398,16 @@ class InScreen(ttk.Frame):
         frame_btns.columnconfigure((0, 1, 2, 3, 4, 5), weight=1)
         self.create_buttons(frame_btns)
 
-    def create_table(self, master):
+    def create_table(self):
         if self.table is not None:
             self.table.destroy()
         self.table = Tableview(
-            master,
+            self.frame_table,
             bootstyle="primary",
             paginated=True,
             pagesize=10,
             searchable=True,
-            autofit=True,
+            autofit=False,
             coldata=self.col_data,
             rowdata=self._ins,
         )
@@ -467,17 +473,26 @@ class InScreen(ttk.Frame):
             on_double_click_any_table(event, self.entries)
         )
 
-    def update_table(self, ignore_triger=False):
-        self._products = fetch_all_products()
-        flag, error, self._ins = get_ins_db_detail()
-        self.table.unload_table_data()
-        time.sleep(0.5)
-        self.table.build_table_data(self.col_data, self._ins)
+    def update_table(self, ignore_triger=False, **kwargs):
+        data = kwargs.get("data", {})
+        data_products = data.get("products", None)
+        data_ins = data.get("ins", None)
+        if data_ins is None:
+            data_movements = data.get("all", None)
+            data_ins, data_outs = divide_movements(data_movements)
+        self._products = (
+            fetch_all_products() if data_products is None else data_products
+        )
+        flag, error, self._ins = (
+            get_ins_db_detail() if data_ins is None else (True, None, data_ins)
+        )
+        self.create_table()
         if not ignore_triger:
             event = {
                 "action": "update",
                 "frames": ["Inventario", "Movimientos", "Inicio"],
                 "sender": "movements_in",
+                "data": {"ins": self._ins, "products": self._products},
             }
             self.triger_actions_callback(**event)
 
@@ -571,7 +586,7 @@ class OutScreen(ttk.Frame):
         ttk.Label(self.frame_table, text="Tabla de Salidas", font=("Arial", 20)).grid(
             row=0, column=0, sticky="w", padx=5, pady=10
         )
-        self.create_table(self.frame_table)
+        self.create_table()
         # -------------------------------inputs-------------------------------------------------
         frame_inputs = ttk.Frame(self)
         frame_inputs.grid(row=2, column=0, sticky="nswe")
@@ -586,16 +601,16 @@ class OutScreen(ttk.Frame):
         frame_btns.columnconfigure((0, 1, 2, 3, 4, 5), weight=1)
         self.create_buttons(frame_btns)
 
-    def create_table(self, master):
+    def create_table(self):
         if self.table is not None:
             self.table.destroy()
         self.table = Tableview(
-            master,
+            self.frame_table,
             bootstyle="primary",
             paginated=True,
             pagesize=10,
             searchable=True,
-            autofit=True,
+            autofit=False,
             coldata=self.col_data,
             rowdata=self._outs,
         )
@@ -662,18 +677,26 @@ class OutScreen(ttk.Frame):
             on_double_click_any_table(event, self.entries)
         )
 
-    def update_table(self, ignore_triger=False):
-        self._products = fetch_all_products()
-        flag, error, self._outs = get_outs_db_detail()
-        self.table.unload_table_data()
-        time.sleep(0.5)
-        self.table.build_table_data(self.col_data, self._outs)
-        self.table.autofit_columns()
+    def update_table(self, ignore_triger=False, **kwargs):
+        data = kwargs.get("data", {})
+        data_products = data.get("products", None)
+        data_outs = data.get("outs", None)
+        if data_outs is None:
+            data_movements = data.get("all", None)
+            data_ins, data_outs = divide_movements(data_movements)
+        self._products = (
+            fetch_all_products() if data_products is None else data_products
+        )
+        flag, error, self._outs = (
+            get_outs_db_detail() if data_outs is None else (True, None, data_outs)
+        )
+        self.create_table()
         if not ignore_triger:
             event = {
                 "action": "update",
                 "frames": ["Inventario", "Movimientos", "Inicio"],
                 "sender": "movements_out",
+                "data": {"outs": self._outs, "products": self._products},
             }
             self.triger_actions_callback(**event)
 

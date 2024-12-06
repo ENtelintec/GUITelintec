@@ -76,7 +76,7 @@ class MultipleMovementsScreen(ttk.Frame):
         ttk.Label(
             self.frame_table_moves, text="Tabla de movimientos", font=("Arial", 20)
         ).grid(row=0, column=0, sticky="w", padx=5, pady=10)
-        self.create_table_movements(self.frame_table_moves)
+        self.create_table_movements()
 
     def create_buttons(self, master):
         """Creates the buttons of the Inputs screen, includes the buttons to add, update and delete inputs"""
@@ -97,17 +97,17 @@ class MultipleMovementsScreen(ttk.Frame):
             style="info",
         )
 
-    def create_table(self, master):
+    def create_table(self):
         if self.table is not None:
             self.table.destroy()
         self.table = Tableview(
-            master,
+            self.frame_table,
             bootstyle="primary",
             paginated=True,
             pagesize=5,
             height=5,
             searchable=True,
-            autofit=True,
+            autofit=False,
             coldata=self.col_data_products,
             rowdata=self._products,
         )
@@ -130,16 +130,16 @@ class MultipleMovementsScreen(ttk.Frame):
             )
         self.recreate_entry()
 
-    def create_table_movements(self, master):
+    def create_table_movements(self):
         if self.table_moves is not None:
             self.table_moves.destroy()
         self.table_moves = Tableview(
-            master,
+            self.frame_table_moves,
             bootstyle="primary",
             paginated=True,
             pagesize=10,
             searchable=True,
-            autofit=True,
+            autofit=False,
             coldata=self.col_data_moves,
             rowdata=self._movements,
         )
@@ -189,8 +189,27 @@ class MultipleMovementsScreen(ttk.Frame):
             widget.destroy()
         self.create_entries_widgets(self.frame_products)
 
+    def update_tables(self, ignore_triger=False, **kwargs):
+        data = kwargs.get("data", {})
+        data_products = data.get("products", None)
+        self._products = fetch_all_products() if data_products is None else data_products
+        self.create_table()
+        self._movements = fetch_all_movements()
+        self.create_table_movements()
+        if not ignore_triger:
+            event = {
+                "action": "update",
+                "frames": ["Inventario", "Movimientos", "Inicio"],
+                "sender": "movements_multiple",
+                "data": {"all": self._movements, "products": self._products},
+            }
+            self.triger_actions_callback(**event)
+
     def add_movements(self):
         pass
 
     def update_movements(self):
+        pass
+
+    def update_procedure(self, **events):
         pass

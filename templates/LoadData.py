@@ -9,6 +9,7 @@ from datetime import datetime
 from templates.controllers.contracts.contracts_controller import get_contract
 from templates.controllers.contracts.quotations_controller import get_quotation
 from templates.controllers.payroll.payroll_controller import get_payrolls_with_info
+from templates.controllers.supplier.suppliers_controller import get_all_suppliers_amc
 from templates.misc.Functions_AuxFiles import (
     get_all_sm_entries,
     get_all_sm_products,
@@ -29,28 +30,15 @@ from templates.controllers.employees.employees_controller import (
 from templates.controllers.employees.vacations_controller import get_vacations_data
 from templates.controllers.misc.tasks_controller import get_all_tasks_by_status
 from templates.controllers.product.p_and_s_controller import (
-    get_all_suppliers,
     get_all_products_db,
-    get_ins_db_detail,
-    get_outs_db_detail,
     get_all_categories_db, get_all_movements_db_detail,
 )
 from templates.modules.Home.SubFrame_GeneralNoti import load_notifications
 from templates.modules.RRHH.SubFrame_CrearQuiz import get_name_id_employees_list
+from templates.resources.methods.Aux_Inventory import divide_movements
 from templates.resources.midleware.Functions_midleware_admin import (
     get_data_table_purchases,
 )
-
-
-def divide_movements(movements_data):
-    ins = []
-    outs = []
-    for movement in movements_data:
-        if movement[3] == "entrada":
-            ins.append(movement)
-        else:
-            outs.append(movement)
-    return ins, outs
 
 
 def load_data(data_dic, is_super=False, emp_id=None, item=None, permissions=None):
@@ -167,14 +155,14 @@ def load_data(data_dic, is_super=False, emp_id=None, item=None, permissions=None
             flag, error, clients = get_all_customers_db()
             data_dic["data_clients_gen"] = clients
         case "Proveedores":
-            flag, error, providers = get_all_suppliers()
+            flag, error, providers = get_all_suppliers_amc()
             data_dic["data_providers_gen"] = providers
         case "Inventario":
             if "data_products_gen" not in data_dic:
                 flag, error, products = get_all_products_db()
                 data_dic["data_products_gen"] = products
             if "data_providers_amc" not in data_dic:
-                flag, error, providers = get_all_suppliers()
+                flag, error, providers = get_all_suppliers_amc()
                 data_dic["data_providers_gen"] = providers
             if "data_categories_gen":
                 flag, error, categories = get_all_categories_db()
@@ -233,7 +221,7 @@ def load_data(data_dic, is_super=False, emp_id=None, item=None, permissions=None
                 flag, error, clients = get_all_customers_db()
                 data_dic["data_clients_gen"] = clients
             if "data_providers_gen" not in data_dic:
-                flag, error, providers = get_all_suppliers()
+                flag, error, providers = get_all_suppliers_amc()
                 data_dic["data_providers_gen"] = providers
         case "Contratos":
             if "Controlar Saldos" not in data_dic:
@@ -247,7 +235,7 @@ def load_data(data_dic, is_super=False, emp_id=None, item=None, permissions=None
                 data_dic["quotations"] = data_quotations
         case "Compras":
             if "data_providers_gen" not in data_dic:
-                flag, error, providers = get_all_suppliers()
+                flag, error, providers = get_all_suppliers_amc()
                 print("load compras", providers)
                 data_dic["data_providers_gen"] = providers
             data, code = get_data_table_purchases({"limit_min": 0, "limit_max": 100})
