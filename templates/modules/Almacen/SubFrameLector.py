@@ -10,10 +10,18 @@ import ttkbootstrap as ttk
 from ttkbootstrap.scrolled import ScrolledFrame
 
 from static.constants import format_date
-from templates.Functions_GUI_Utils import create_label, create_button
+from templates.Functions_GUI_Utils import (
+    create_label,
+    create_button,
+    create_Combobox,
+    create_entry,
+)
 from templates.daemons.Peripherals import SerialPortListener
 from templates.misc.PortsSearcher import serial_ports
-from templates.resources.methods.Aux_Inventory import columns_inventory, columns_movements_widgets_lector
+from templates.resources.methods.Aux_Inventory import (
+    columns_inventory,
+    columns_movements_widgets_lector,
+)
 
 
 class LectorScreenSelector(ttk.Toplevel):
@@ -99,6 +107,9 @@ class InventoryLector(ttk.Frame):
         self.callback_lector = kw.get("callback_lector", None)
         self.on_save_callback = kw.get("on_save_callback", None)
         self.entries = None
+        self.categories_dict = kw.get("categories_dict", {})
+        self.providers_dict = kw.get("providers_dict", {})
+        self.brands_dict = kw.get("brands_dict", {})
         self.ids_product_added = []
         self.dict_old_stock = {}
         self.port_selector = kw["port"]["selector"]
@@ -141,13 +152,49 @@ class InventoryLector(ttk.Frame):
             checkbutton = ttk.Checkbutton(master, text="", bootstyle="round-toggle")
             checkbutton.grid(row=i + 1, column=0)
             for j in range(n_columns):
-                entry = ttk.Entry(master)
-                entry.grid(row=i + 1, column=j + 1, sticky="nsew")
-                entry.insert(0, f"{self.data_products[i][j]}")
+                if j == 5:
+                    entry = create_Combobox(
+                        master,
+                        values=list(self.categories_dict.keys()),
+                        row=i + 1,
+                        column=j + 1,
+                    )
+                    entry.set(self.data_products[i][j])
+                elif j == 6:
+                    entry = create_Combobox(
+                        master,
+                        values=list(self.providers_dict.keys()),
+                        row=i + 1,
+                        column=j + 1,
+                    )
+                    entry.bind(
+                        "<<ComboboxSelected>>",
+                        lambda event: self._on_provider_selected(event, i),
+                    )
+                    entry.set(self.data_products[i][j])
+                elif j == 11:
+                    entry = create_Combobox(
+                        master,
+                        values=[],
+                        row=i + 1,
+                        column=j + 1,
+                        state="normal",
+                    )
+                    entry.set(self.data_products[i][j])
+                else:
+                    entry = create_entry(master, row=i + 1, column=j + 1)
+                    entry.insert(0, f"{self.data_products[i][j]}")
                 row_entries.append(entry)
             row_entries[0].configure(state="readonly")
             entries_array.append(row_entries)
         self.entries = entries_array
+
+    def _on_provider_selected(self, event, index_row):
+        provider_selected = event.widget.get()
+        print(self.brands_dict)
+        self.entries[index_row][11].configure(
+            values=self.brands_dict[provider_selected]
+        )
 
     def recreate_entry(self, data_products=None, columns=None):
         self.data_products = (

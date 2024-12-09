@@ -7,7 +7,7 @@ import ttkbootstrap as ttk
 from ttkbootstrap.dialogs import Messagebox
 from ttkbootstrap.tableview import Tableview
 
-from static.constants import format_date, log_file_db, file_codebar
+from static.constants import format_date, log_file_db, file_codebar, format_timestamps
 from templates.Functions_GUI_Utils import (
     create_label,
     create_entry,
@@ -26,7 +26,7 @@ from templates.controllers.product.p_and_s_controller import (
     get_all_products_db,
     delete_product_db,
 )
-from templates.controllers.supplier.suppliers_controller import get_all_suppliers_amc
+from templates.controllers.supplier.suppliers_controller import get_all_suppliers_amc, update_brands_supplier
 from templates.forms.BarCodeGenerator import create_one_code
 from templates.forms.Storage import InventoryStorage
 from templates.misc.Functions_Files import write_log_file
@@ -220,6 +220,27 @@ def create_btns(master, callbacks):
     )
 
 
+def update_brand_list(supplier_name, brand_name, providers_dict_amc, brands_dict):
+    msg = ""
+    if supplier_name != "None" and supplier_name != "":
+        brands_list = brands_dict.get(supplier_name, [])
+        if brand_name.upper() not in brands_list:
+            supplier_id = providers_dict_amc.get(supplier_name, None)
+            if supplier_id is None:
+                print("Error, supplier id is None")
+            else:
+                brands_dict[supplier_name] = brands_list
+                brands_list.append(brand_name.upper())
+                flag, error, result = update_brands_supplier(supplier_id, brands_list)
+                if not flag:
+                    print("Error, could not update brands supplier")
+                    msg += f"Error al actualizar marcas: {brands_list} para supplier_id {supplier_id} "
+                else:
+                    print("Brands supplier updated")
+                    msg += f"Marcas actualizadas: {brands_list} para supplier_id {supplier_id} "
+    return msg, providers_dict_amc, brands_dict
+
+
 class InventoryScreen(ttk.Frame):
     def __init__(self, master, **kwargs):
         super().__init__(master)
@@ -311,6 +332,10 @@ class InventoryScreen(ttk.Frame):
         )
         self.table.grid(row=1, column=0, sticky="nswe", padx=15, pady=5)
         self.table.view.bind("<Double-1>", self.on_click_table_item)
+        columns_header = self.table.get_columns()
+        for item in columns_header:
+            if item.headertext in ["Brands"]:
+                item.hide()
 
     def on_print_code_click(self):
         if self.id_to_modify is None:
@@ -359,6 +384,9 @@ class InventoryScreen(ttk.Frame):
     def on_lector_click(self):
         data = {
             "data_products_gen": self._products,
+            "categories_dict": self._categories_dict,
+            "providers_dict": self._providers_dict_amc,
+            "brands_dict": self.brands_dict,
             "screen": "inventory",
             "callback_lector": self.callback_save_data_lector,
         }
@@ -461,7 +489,7 @@ class InventoryScreen(ttk.Frame):
             self._categories_dict[product_category]
             if product_category != "None"
             else None,
-            self._providers_dict_amc[product_supplier]
+            self._providers_dict_amc.get(product_supplier, None)
             if product_supplier != "None"
             else None,
             is_tool,
@@ -470,10 +498,13 @@ class InventoryScreen(ttk.Frame):
             locations,
             brand,
         )
+        msg = ""
+
+        # -------------------------------add movement to supplier-----------------------------------
         if not flag:
-            msg = f"Error al crear producto: {product_sku}--{lastrowid}--{error}"
+            msg += f"Error al crear producto: {product_sku}--{lastrowid}--{error}"
         else:
-            msg = f"Producto creado: {product_sku}--id: {lastrowid}"
+            msg += f"Producto creado: {product_sku}--id: {lastrowid}"
             movement = "entrada"
             date = datetime.now().strftime(format_date)
             quantity = product_stock
@@ -489,6 +520,9 @@ class InventoryScreen(ttk.Frame):
                 msg += f"\nMovimiento creado: {product_sku}--{lastrowid}"
             self.on_clear_fields_click()
             self.on_update_table_click()
+        # -------------------------------add brand to supplier-----------------------------------
+        msg, self._providers_dict_amc, self.brands_dict = update_brand_list(
+            product_supplier, brand, self._providers_dict_amc, self.brands_dict)
         msg_not = "System Notification\n" + msg
         self.end_action_db(msg_not, "Actualizacion de inventario")
 
@@ -554,6 +588,9 @@ class InventoryScreen(ttk.Frame):
                     msg += f"\nMovimiento creado: {product_sku}--{product_id}--{result}"
             self.on_clear_fields_click()
             self.on_update_table_click()
+        # -------------------------------add brand to supplier-----------------------------------
+        msg, self._providers_dict_amc, self.brands_dict = update_brand_list(
+            product_supplier, brand, self._providers_dict_amc, self.brands_dict)
         msg_not = "System Notification\n" + msg
         self.end_action_db(msg_not, "Actualizacion de producto")
 
@@ -580,11 +617,11 @@ class InventoryScreen(ttk.Frame):
     def callback_save_data_lector(self, data_lector):
         product_update, product_new = data_lector
         msg = ""
-        flag, error, result, msg_update = self.update_products_from_lector(
+        flags, errors, results, msg_update = self.update_products_from_lector(
             product_update
         )
         msg += msg_update
-        flag, error, result, msg_create = self.create_new_products_from_lector(
+        flags, errors, results, msg_create = self.create_new_products_from_lector(
             product_new
         )
         msg += msg_create
@@ -592,20 +629,17 @@ class InventoryScreen(ttk.Frame):
         self.on_update_table_click()
 
     def update_products_from_lector(self, products_data):
-        flag, error, result = update_multiple_row_products_amc(
+        flags, errors, results = update_multiple_row_products_amc(
             products_data, self._categories_dict, self._providers_dict_amc
         )
-        msg = (
-            "Inventario actualizado"
-            if flag
-            else f"Error al actualizar inventario: {str(error)}"
-        )
-        if not flag:
-            return flag, error, result, msg
-        # generate data movements from stock value
-        date = datetime.now().strftime(format_date)
+        date = datetime.now().strftime(format_timestamps)
         data_movements = []
-        for item in products_data:
+        msg = "Inventario actualizado"
+        for flag, error, result, item in zip(flags, errors, results, products_data):
+            msg += f"Ok para {item[0]},\n"
+            if not flag:
+                continue
+            # generate data movements from stock value
             if int(item[4]) - int(item[-1]) == 0:
                 continue
             elif int(item[4]) - int(item[-1]) < 0:
@@ -617,45 +651,59 @@ class InventoryScreen(ttk.Frame):
                     [item[0], "entrada", int(item[4]) - int(item[-1]), date, "None"]
                 )
         if len(data_movements) != 0:
-            flag, error, result = insert_multiple_row_movements_amc(
+            flags, errors, results = insert_multiple_row_movements_amc(
                 tuple(data_movements)
             )
-            msg += (
-                "\nMovimientos registrados"
-                if flag
-                else f"\nError al registrar movimientos: {str(error)}"
-            )
-        return flag, error, result, msg
+            count_errors = 0
+            errors_ids = []
+            for flag, error, result, item in zip(flags, errors, results, data_movements):
+                if not flag:
+                    count_errors += 1
+                    errors_ids.append(item[0])
+            if count_errors > 0:
+                msg += f"\nError al registrar movimientos: {errors_ids}"
+            else:
+                msg += f"\nMovimientos registrados {len(data_movements)}"
+        return flags, errors, results, msg
 
     def create_new_products_from_lector(self, products_new_data):
         result = 0
-        flag, error, lastrow_id = insert_multiple_row_products_amc(
+        flags, errors, ids = insert_multiple_row_products_amc(
             products_new_data, self._categories_dict, self._providers_dict_amc
         )
-        msg = "Productos creados" if flag else f"Error al crear productos: {str(error)}"
-        if not flag:
-            print("error at insert multiple: ", flag, error, lastrow_id)
-            return flag, error, lastrow_id, msg
-        # generate data movements from stock value
         date = datetime.now().strftime(format_date)
-        new_ids = range(lastrow_id - len(products_new_data) + 1, lastrow_id + 1)
         data_movements = []
-        for index, item in enumerate(products_new_data):
+        msg = "Inventario actualizado"
+        counter_errors_creation = 0
+        sku_errors_creatio = []
+        for flag, error, id_result, item in zip(flags, errors, ids, products_new_data):
+            if not flag:
+                counter_errors_creation += 1
+                sku_errors_creatio.append(item[1])
+                continue
             if int(item[4]) == 0:
                 continue
             data_movements.append(
-                [new_ids[index], "entrada", int(item[4]), date, "None"]
+                [id_result, "entrada", int(item[4]), date, "None", "None"]
             )
-        if len(data_movements) != 0:
-            flag, error, result = insert_multiple_row_movements_amc(
-                tuple(data_movements)
-            )
-            msg += (
-                "\nMovimientos registrados"
-                if flag
-                else f"\nError al registrar movimientos: {str(error)}"
-            )
-        return flag, error, result, msg
+        if len(counter_errors_creation) == 0:
+            msg += f"\nProductos creados: {len(products_new_data)}"
+        else:
+            msg += f"\nError al crear los siguientes productos: {sku_errors_creatio}"
+        flags, errors, results = insert_multiple_row_movements_amc(
+            tuple(data_movements)
+        )
+        count_errors = 0
+        errors_ids = []
+        for flag, error, result, item in zip(flags, errors, results, data_movements):
+            if not flag:
+                count_errors += 1
+                errors_ids.append(item[0])
+        if len(errors_ids) > 0:
+            msg += f"\nError al registrar movimientos: {errors_ids}"
+        else:
+            msg += f"\nMovimientos registrados {len(data_movements)}"
+        return flags, errors, results, msg
 
     def end_action_db(self, msg, title):
         if msg is None or msg == "":

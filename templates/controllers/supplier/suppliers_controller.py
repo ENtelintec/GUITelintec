@@ -150,3 +150,14 @@ def delete_supplier_amc(id_supplier):
     vals = (id_supplier,)
     flag, error, result = execute_sql(delete_sql, vals, 4)
     return flag, error, result
+
+
+def update_brands_supplier(supplier_id, brands: list):
+    update_sql = (
+        "UPDATE sql_telintec.suppliers_amc "
+        "SET extra_info = JSON_SET(extra_info, '$.brands', %s) "
+        "WHERE id_supplier = %s"
+    )
+    vals = (brands, supplier_id)
+    flag, error, result = execute_sql(update_sql, vals, 4)
+    return flag, error, result

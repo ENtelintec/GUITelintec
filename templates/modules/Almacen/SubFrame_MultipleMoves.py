@@ -58,7 +58,7 @@ class MultipleMovementsScreen(ttk.Frame):
         ttk.Label(self.frame_table, text="Tabla de productos", font=("Arial", 20)).grid(
             row=0, column=0, sticky="w", padx=5, pady=10
         )
-        self.create_table(self.frame_table)
+        self.create_table()
         # -------------------------------inputs-------------------------------------------------
         self.frame_products = ttk.Frame(self)
         self.frame_products.grid(row=2, column=0, sticky="nswe")
@@ -113,6 +113,10 @@ class MultipleMovementsScreen(ttk.Frame):
         )
         self.table.grid(row=1, column=0, sticky="nswe", padx=15, pady=5)
         self.table.view.bind("<Double-1>", self.on_double_click_in_table)
+        columns_header = self.table.get_columns()
+        for item in columns_header:
+            if item.headertext in ["Brands"]:
+                item.hide()
 
     def on_double_click_in_table(self, event):
         row_data = event.widget.item(event.widget.selection()[0])["values"]
@@ -192,7 +196,9 @@ class MultipleMovementsScreen(ttk.Frame):
     def update_tables(self, ignore_triger=False, **kwargs):
         data = kwargs.get("data", {})
         data_products = data.get("products", None)
-        self._products = fetch_all_products() if data_products is None else data_products
+        self._products = (
+            fetch_all_products() if data_products is None else data_products
+        )
         self.create_table()
         self._movements = fetch_all_movements()
         self.create_table_movements()

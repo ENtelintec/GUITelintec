@@ -46,12 +46,12 @@ columns_inventory = [
     "UDM",
     "Cantidad",
     "Categoria",
-    "ID Proveedor",
+    "Proveedor",
     "Herramienta?",
     "Interno?",
     "Codigos",
     "Ubicacion 1",
-    "Ubicacion 2",
+    "Marca",
 ]
 columns_movements_widgets_lector = [
     "ID Producto",
