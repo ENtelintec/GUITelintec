@@ -2,6 +2,8 @@
 __author__ = "Edisson Naula"
 __date__ = "$ 01/may./2024  at 19:30 $"
 
+import json
+
 from templates.database.connection import execute_sql
 
 
@@ -158,6 +160,6 @@ def update_brands_supplier(supplier_id, brands: list):
         "SET extra_info = JSON_SET(extra_info, '$.brands', %s) "
         "WHERE id_supplier = %s"
     )
-    vals = (brands, supplier_id)
+    vals = (json.dumps(brands), supplier_id)
     flag, error, result = execute_sql(update_sql, vals, 4)
     return flag, error, result
