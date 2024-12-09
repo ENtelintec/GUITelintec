@@ -407,7 +407,6 @@ class InventoryScreen(ttk.Frame):
         brand = json.loads(item["values"][11])
         loc_1 = locations.get("location_1", "")
         data = item["values"][0:-4] + [str(codes), loc_1, brand]
-        print(data)
         self.on_clear_fields_click()
         self.entries[0].configure(state="normal")
         for entry, value in zip(self.entries, data):
@@ -449,6 +448,7 @@ class InventoryScreen(ttk.Frame):
         self.id_to_modify = None
         self.old_stock = None
         self.entries[0].configure(state="disabled")
+        self.entries[-1].configure(state="normal")
 
     def on_add_product_click(self):
         (
