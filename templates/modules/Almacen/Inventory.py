@@ -26,7 +26,10 @@ from templates.controllers.product.p_and_s_controller import (
     get_all_products_db,
     delete_product_db,
 )
-from templates.controllers.supplier.suppliers_controller import get_all_suppliers_amc, update_brands_supplier
+from templates.controllers.supplier.suppliers_controller import (
+    get_all_suppliers_amc,
+    update_brands_supplier,
+)
 from templates.forms.BarCodeGenerator import create_one_code
 from templates.forms.Storage import InventoryStorage
 from templates.misc.Functions_Files import write_log_file
@@ -522,7 +525,8 @@ class InventoryScreen(ttk.Frame):
             self.on_update_table_click()
         # -------------------------------add brand to supplier-----------------------------------
         msg, self._providers_dict_amc, self.brands_dict = update_brand_list(
-            product_supplier, brand, self._providers_dict_amc, self.brands_dict)
+            product_supplier, brand, self._providers_dict_amc, self.brands_dict
+        )
         msg_not = "System Notification\n" + msg
         self.end_action_db(msg_not, "Actualizacion de inventario")
 
@@ -590,7 +594,8 @@ class InventoryScreen(ttk.Frame):
             self.on_update_table_click()
         # -------------------------------add brand to supplier-----------------------------------
         msg, self._providers_dict_amc, self.brands_dict = update_brand_list(
-            product_supplier, brand, self._providers_dict_amc, self.brands_dict)
+            product_supplier, brand, self._providers_dict_amc, self.brands_dict
+        )
         msg_not = "System Notification\n" + msg
         self.end_action_db(msg_not, "Actualizacion de producto")
 
@@ -644,7 +649,8 @@ class InventoryScreen(ttk.Frame):
                 id_errors_update.append(item[0])
                 continue
             msg_brand, self._providers_dict_amc, self.brands_dict = update_brand_list(
-                item[5], item[6], self._providers_dict_amc, self.brands_dict)
+                item[5], item[6], self._providers_dict_amc, self.brands_dict
+            )
             msgs_brands.append(msg_brand)
             # generate data movements from stock value
             if int(item[4]) - int(item[-1]) == 0:
@@ -668,7 +674,9 @@ class InventoryScreen(ttk.Frame):
             )
             count_errors = 0
             errors_ids = []
-            for flag, error, result, item in zip(flags, errors, results, data_movements):
+            for flag, error, result, item in zip(
+                flags, errors, results, data_movements
+            ):
                 if not flag:
                     count_errors += 1
                     errors_ids.append(item[0])
@@ -700,7 +708,8 @@ class InventoryScreen(ttk.Frame):
                 [id_result, "entrada", int(item[4]), date, "None", "None"]
             )
             msg_brand, self._providers_dict_amc, self.brands_dict = update_brand_list(
-                item[5], item[6], self._providers_dict_amc, self.brands_dict)
+                item[5], item[6], self._providers_dict_amc, self.brands_dict
+            )
             msgs_brand.append(msg_brand)
         if len(counter_errors_creation) == 0:
             msg += f"\nProductos creados: {len(products_new_data)}"
@@ -720,8 +729,6 @@ class InventoryScreen(ttk.Frame):
             msg += f"\nError al registrar movimientos: {errors_ids}"
         else:
             msg += f"\nMovimientos registrados {len(data_movements)}"
-
-
         return flags, errors, results, msg
 
     def end_action_db(self, msg, title):
