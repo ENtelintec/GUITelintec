@@ -6,7 +6,9 @@ from io import BytesIO
 
 import fitz
 from PIL import Image
-from reportlab.graphics.barcode import code39, code128, code93
+from reportlab.graphics.barcode import code128
+from reportlab.graphics.barcode import code93
+from reportlab.graphics.barcode import code39, usps, usps4s, ecc200datamatrix
 from reportlab.graphics.barcode import eanbc, qr
 from reportlab.graphics.shapes import Drawing
 from reportlab.lib.units import mm
@@ -130,6 +132,41 @@ def BarCodeEANBC13(filepath, code, x, y, size):
     d.add(barcode_eanbc13)
     renderPDF.draw(d, c, 1, 1)
     return barcode_eanbc13
+
+
+def BarCodeUsps(filepath, code, x, y, size):
+    """
+    Create barcode examples and embed in a PDF
+    """
+    c = canvas.Canvas(filepath, pagesize=size)
+    barcode_usps = usps.POSTNET(code)
+    barcode_usps.drawOn(c, 1 * mm, 1 * mm)
+    return barcode_usps
+
+
+def BarcodeUsps4s(filepath, code, x, y, size):
+    """
+    Create barcode examples and embed in a PDF
+    """
+    c = canvas.Canvas(filepath, pagesize=size)
+    barcode_usps4s = usps4s.FIM(code)
+    barcode_usps4s.drawOn(c, 1 * mm, 1 * mm)
+    return barcode_usps4s
+
+
+def BarCodeEcc200DataMatrix(filepath, code, x, y, size):
+    """
+    Create barcode examples and embed in a PDF
+    """
+    c = canvas.Canvas(filepath, pagesize=size)
+    barcode_ecc200datamatrix = ecc200datamatrix.DataMatrixWidget(code)
+    # bounds = barcode_ecc200datamatrix.getBounds()
+    # width = bounds[2] - bounds[0]
+    # height = bounds[3] - bounds[1]
+    d = Drawing(50, 50)
+    d.add(barcode_ecc200datamatrix)
+    renderPDF.draw(d, c, 1, 1)
+    return barcode_ecc200datamatrix
 
 
 def BarCodeQR(c, code, x, y, y_offset, width_q, height_q):

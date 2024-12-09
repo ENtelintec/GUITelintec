@@ -404,14 +404,10 @@ class InventoryScreen(ttk.Frame):
         item = event.widget.item(event.widget.selection()[0])
         locations = json.loads(item["values"][10])
         codes = json.loads(item["values"][9])
-        try:
-            loc_1 = locations["location_1"]
-            loc_2 = locations["location_2"]
-        except Exception as e:
-            print("bad structure: ", e)
-            loc_1 = ""
-            loc_2 = ""
-        data = item["values"][0:-2] + [str(codes), loc_1, loc_2]
+        brand = json.loads(item["values"][11])
+        loc_1 = locations.get("location_1", "")
+        data = item["values"][0:-4] + [str(codes), loc_1, brand]
+        print(data)
         self.on_clear_fields_click()
         self.entries[0].configure(state="normal")
         for entry, value in zip(self.entries, data):
@@ -424,6 +420,7 @@ class InventoryScreen(ttk.Frame):
             elif isinstance(entry, ttk.Entry):
                 entry.insert(0, value)
         self.entries[0].configure(state="disabled")
+        self.entries[-1].configure(state="normal")
         self.id_to_modify = int(data[0])
         self.old_stock = float(data[4])
 
