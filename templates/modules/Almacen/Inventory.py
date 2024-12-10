@@ -399,7 +399,6 @@ class InventoryScreen(ttk.Frame):
     def on_brand_selected(self, event):
         supplier = event.widget.get()
         values = self.brands_dict.get(supplier, [])
-        print(values, type(values))
         self.entries[11].configure(values=values)
 
     def on_click_table_item(self, event):
