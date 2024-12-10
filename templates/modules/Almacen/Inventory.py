@@ -77,7 +77,8 @@ def get_providers_dict(data_raw):
     for row in data_raw:
         data[row[1]] = row[0]
         extra_info = json.loads(row[8])
-        brand_dict[row[1]] = extra_info.get("brands", [])
+        brands = extra_info.get("brands", [])
+        brand_dict[row[1]] = brands if isinstance(brands, list) else json.loads(brands)
     return data, brand_dict
 
 
@@ -398,6 +399,7 @@ class InventoryScreen(ttk.Frame):
     def on_brand_selected(self, event):
         supplier = event.widget.get()
         values = self.brands_dict.get(supplier, [])
+        print(values, type(values))
         self.entries[11].configure(values=values)
 
     def on_click_table_item(self, event):
@@ -420,6 +422,7 @@ class InventoryScreen(ttk.Frame):
                 entry.insert(0, value)
         self.entries[0].configure(state="disabled")
         self.entries[-1].configure(state="normal")
+        self.entries[-1].configure(values=self.brands_dict.get(data[6], []))
         self.id_to_modify = int(data[0])
         self.old_stock = float(data[4])
 
@@ -496,7 +499,7 @@ class InventoryScreen(ttk.Frame):
             is_internal,
             codes,
             locations,
-            brand,
+            brand.upper(),
         )
         msg = ""
 
@@ -570,7 +573,7 @@ class InventoryScreen(ttk.Frame):
             is_internal,
             codes,
             locations,
-            brand,
+            brand.upper(),
         )
         if not flag:
             msg = f"Error al actualizar producto: {product_sku}--{product_id}"
