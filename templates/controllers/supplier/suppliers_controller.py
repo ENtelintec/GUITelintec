@@ -161,5 +161,6 @@ def update_brands_supplier(supplier_id, brands: list):
         "WHERE id_supplier = %s"
     )
     vals = (json.dumps(brands), supplier_id)
+    # vals = (brands, supplier_id)
     flag, error, result = execute_sql(update_sql, vals, 4)
     return flag, error, result

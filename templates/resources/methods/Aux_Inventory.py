@@ -59,7 +59,7 @@ columns_movements_widgets_lector = [
     "Tipo",
     "Cantidad",
     "Fecha",
-    "SM ID",
+    "SM",
     "Old Stock",
     "Referencia",
 ]

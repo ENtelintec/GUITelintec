@@ -7,13 +7,19 @@ from datetime import datetime
 import ttkbootstrap as ttk
 from ttkbootstrap.tableview import Tableview
 
-from static.constants import format_timestamps
+from static.constants import format_timestamps, log_file_db
 from templates.Functions_GUI_Utils import (
     create_label,
     create_button,
     create_Combobox,
     create_entry,
 )
+from templates.Functions_Utils import create_notification_permission_notGUI
+from templates.controllers.product.p_and_s_controller import (
+    insert_multiple_row_movements_amc,
+    udpate_multiple_row_stock_ids,
+)
+from templates.misc.Functions_Files import write_log_file
 from templates.resources.methods.Aux_Inventory import (
     fetch_all_products,
     fetch_all_movements,
@@ -23,11 +29,36 @@ from templates.resources.methods.Aux_Inventory import (
 )
 
 
+def get_values_entries_movement(entries: list):
+    values = []
+    for row in entries:
+        row_values = []
+        for entry in row:
+            if isinstance(entry, ttk.Combobox):
+                val = entry.get()
+                row_values.append(val)
+            elif isinstance(entry, ttk.Entry):
+                val = entry.get()
+                row_values.append(val)
+        values.append(row_values)
+    return values
+
+
+def end_action_db(msg, title, usernamedata):
+    if msg is None or msg == "":
+        return
+    create_notification_permission_notGUI(
+        msg, ["Administracion"], title, usernamedata["id"], 0
+    )
+    write_log_file(log_file_db, msg)
+
+
 class MultipleMovementsScreen(ttk.Frame):
     def __init__(self, master, **kwargs):
         super().__init__(master)
         self.columnconfigure(0, weight=1)
         # variables
+        self.usernamedata = kwargs.get("username_data", None)
         self.entries = None
         self.data_new_movements = []
         self.table = None
@@ -92,9 +123,17 @@ class MultipleMovementsScreen(ttk.Frame):
             master,
             0,
             1,
-            text="Actualizar Movimientos",
-            command=self.update_movements,
+            text="Actualizar Tabla",
+            command=self.update_movements_table,
             style="info",
+        )
+        create_button(
+            master,
+            0,
+            2,
+            text="Reiniciar",
+            command=self.reset_entries,
+            style="warning",
         )
 
     def create_table(self):
@@ -175,6 +214,7 @@ class MultipleMovementsScreen(ttk.Frame):
                         row=i + 2,
                         column=j,
                         state="readonly",
+                        width=10,
                     )
                 else:
                     entry = create_entry(master, row=i + 2, column=j)
@@ -212,10 +252,52 @@ class MultipleMovementsScreen(ttk.Frame):
             self.triger_actions_callback(**event)
 
     def add_movements(self):
-        pass
+        values = get_values_entries_movement(self.entries)
+        movements = []
+        new_stocks = []
+        msg = ""
+        date = datetime.now().strftime(format_timestamps)
+        for row in values:
+            sm_reference = row[5] if row[5] != "" and row[5] != "None" else None
+            movements.append((int(row[0]), row[2], row[3], date, sm_reference, row[7]))
+            new_stocks.append((int(row[0]), float(row[6]) - float(row[3]))) if row[
+                2
+            ] == "salida" else new_stocks.append(
+                (int(row[0]), float(row[6]) + float(row[3]))
+            )
+        flags, errors, results = insert_multiple_row_movements_amc(tuple(movements))
+        final_stock = []
+        count_error_movements = 0
+        ids_error_move = []
+        for flag, error, result, item in zip(flags, errors, results, new_stocks):
+            if flag:
+                final_stock.append(item)
+            else:
+                count_error_movements += 1
+                ids_error_move.append(item[0])
+        if len(ids_error_move) > 0:
+            msg = f"\nError al agregar los movimientos de los siguientes productos: {ids_error_move}"
+        else:
+            msg = f"\nMovimientos agregados correctamente ({len(movements)})."
+        flags, errors, results = udpate_multiple_row_stock_ids(final_stock)
+        count_error_stock = 0
+        ids_error_stock = []
+        for flag, error, result, item in zip(flags, errors, results, final_stock):
+            if not flag:
+                count_error_stock += 1
+                ids_error_stock.append(item[0])
+        if len(ids_error_stock) > 0:
+            msg += f"\nError al actualizar los stocks de los siguientes productos: {ids_error_stock}"
+        else:
+            msg += f"\nStocks actualizados correctamente ({len(final_stock)})."
+        self.update_tables()
+        self.reset_entries()
+        end_action_db(msg, "Multiples movimientos ingresados", self.usernamedata)
 
-    def update_movements(self):
-        pass
+    def update_movements_table(self):
+        self.update_tables(ignore_triger=True)
 
-    def update_procedure(self, **events):
-        pass
+    def reset_entries(self):
+        self.recreate_entry(
+            [],
+        )

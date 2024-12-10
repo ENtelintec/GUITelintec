@@ -326,7 +326,7 @@ class MovementsFrame(ScrolledFrame):
         self.columnconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)
         self.nb = ttk.Notebook(self)
-        self.nb.grid(row=0, column=0, sticky="nsew")
+        self.nb.grid(row=0, column=0, sticky="nsew", padx=(5, 15))
         self.nb.columnconfigure(0, weight=1)
         self.nb.rowconfigure(0, weight=1)
         self.frame_1 = InScreen(self, **kwargs)
@@ -447,12 +447,17 @@ class InScreen(ttk.Frame):
             data_update_stocks = [
                 [item[0], int(item[5]) + int(item[2])] for item in product_new
             ]
-            flag, error, result = udpate_multiple_row_stock_ids(data_update_stocks)
-            msg += (
-                "\nStock actualizado"
-                if flag
-                else f"\nError al actualizar stock: {str(error)}"
-            )
+            flags, errors, results = udpate_multiple_row_stock_ids(data_update_stocks)
+            count_error_stock = 0
+            ids_error = []
+            for index, flag in enumerate(flags):
+                if not flag:
+                    count_error_stock += 1
+                    ids_error.append(results[index][0])
+            if len(count_error_stock) > 0:
+                msg += f"\nError al actualizar stock: {ids_error}"
+            else:
+                msg += f"\nStock actualizado {len(data_update_stocks)}"
             self.update_table()
         end_action_db(msg, "Creacion de Movimientos de Entrada", self.usernamedata)
 
@@ -651,12 +656,17 @@ class OutScreen(ttk.Frame):
             data_update_stocks = [
                 [item[0], int(item[5]) - int(item[2])] for item in product_new
             ]
-            flag, error, result = udpate_multiple_row_stock_ids(data_update_stocks)
-            msg += (
-                "\nStock actualizado"
-                if flag
-                else f"\nError al actualizar stock: {str(error)}"
-            )
+            flags, errors, results = udpate_multiple_row_stock_ids(data_update_stocks)
+            count_error_stock = 0
+            ids_error = []
+            for index, flag in enumerate(flags):
+                if not flag:
+                    count_error_stock += 1
+                    ids_error.append(results[index][0])
+            if len(count_error_stock) > 0:
+                msg += f"\nError al actualizar stock: {ids_error}"
+            else:
+                msg += f"\nStock actualizado {len(data_update_stocks)}"
             self.update_table()
         end_action_db(msg, "Creacion de Movimientos de Salida", self.usernamedata)
 

@@ -983,16 +983,18 @@ def update_multiple_products_categories(products: tuple):
 def udpate_multiple_row_stock_ids(data):
     if len(data) == 0:
         return False, "No products to update", None
-    sql = "UPDATE sql_telintec.products_amc SET stock = CASE "
-    for product in data:
-        sql += f"WHEN id_product = '{product[0]}' THEN {product[1]} "
-    sql += (
-        "ELSE id_product "
-        "END "
-        "WHERE id_product IN ("
-        + ", ".join([f"'{product[0]}'" for product in data])
-        + ");"
-    )
-    sql = sql.replace("None", "NULL")
-    flag, error, result = execute_sql(sql, None, 4)
-    return flag, error, result
+    flags = []
+    errors = []
+    results = []
+    for item in data:
+        sql = (
+            "UPDATE sql_telintec.products_amc "
+            "SET stock = %s "
+            "WHERE id_product = %s"
+        )
+        vals = (item[1], item[0])
+        flag, error, result = execute_sql(sql, vals, 3)
+        flags.append(flag)
+        errors.append(error)
+        results.append(result)
+    return flags, errors, results
