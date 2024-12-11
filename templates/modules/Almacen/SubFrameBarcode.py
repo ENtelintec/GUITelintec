@@ -298,7 +298,7 @@ class BarcodeFrame(ttk.Frame):
             Messagebox.show_error("No se ha seleccionado un producto", "Error")
             return
         values = get_entries_values(self.entries)
-        self.kw = generate_kw_for_barcode(values)
+        self.kw = generate_kw_for_barcode(values, filepath=self.pdf_barcode)
         create_one_code(**self.kw)
         self.create_canvas()
 
@@ -338,3 +338,8 @@ class BarcodeFrame(ttk.Frame):
         if not filepath:
             return
         self.pdf_barcode = filepath
+        values = get_entries_values(self.entries)
+        self.kw = generate_kw_for_barcode(values)
+        self.kw["filepath"] = filepath
+        create_one_code(**self.kw)
+        self.create_canvas()

@@ -556,6 +556,20 @@ class InventoryScreen(ttk.Frame):
             return
         if product_id == "":
             Messagebox.show_error("No se ha seleccionado un producto", title="Error")
+        print(
+            product_id,
+            product_sku,
+            product_name,
+            product_price,
+            new_stock,
+            product_category,
+            product_supplier,
+            is_tool,
+            is_internal,
+            codes,
+            locations,
+            brand,
+        )
         flag, error, n_rows = update_product_db(
             product_id,
             product_sku,
@@ -574,6 +588,7 @@ class InventoryScreen(ttk.Frame):
             locations,
             brand.upper(),
         )
+        print(flag, error, n_rows)
         if not flag:
             msg = f"Error al actualizar producto: {product_sku}--{product_id}"
         else:
@@ -592,9 +607,10 @@ class InventoryScreen(ttk.Frame):
             self.on_clear_fields_click()
             self.on_update_table_click()
         # -------------------------------add brand to supplier-----------------------------------
-        msg, self._providers_dict_amc, self.brands_dict = update_brand_list(
+        msg_b, self._providers_dict_amc, self.brands_dict = update_brand_list(
             product_supplier, brand, self._providers_dict_amc, self.brands_dict
         )
+        msg += msg_b
         msg_not = "System Notification\n" + msg
         self.end_action_db(msg_not, "Actualizacion de producto")
 

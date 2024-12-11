@@ -10,7 +10,7 @@ from pathlib import Path
 
 paths_dpb_folders = json.load(open("files/paths_general.json"))
 local_father_path_dpb = "C:/Users/Edisson/Telintec Dropbox/SOFTWARE TELINTEC"
-secrets = dotenv_values("../.env")
+secrets = dotenv_values(".env")
 api = Api()
 IMG_PATH_COLLAPSING = Path("./img")
 ventanasApp_path = "static/ventanasAppGUI.json"

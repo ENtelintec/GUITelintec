@@ -359,6 +359,10 @@ def create_one_code(**kwargs):
     # -------------------------------------create barcode-------------------------------------
     x = pagesize[0] / 2 - offset_codebar[0]
     y = pagesize[1] / 2 - offset_codebar[1] - height_bars / 2
+    kw = {
+        "width_q": width_bars,
+        "height_q": height_bars,
+    }
     barcode = selectBarcodeType(
         c,
         type_code,
@@ -372,7 +376,7 @@ def create_one_code(**kwargs):
     )
     # -------------------------------------create code-------------------------------------
     c.setFont("Helvetica", font_code)
-    height_barcode = barcode.height if barcode else 10
+    height_barcode = barcode.height if barcode and type_code != "qr" else height_bars
     position_code = (
         pagesize[0] / 2 + code_offset[0],
         pagesize[1] / 2 - 20 - height_barcode / 2 - 8 + code_offset[1],

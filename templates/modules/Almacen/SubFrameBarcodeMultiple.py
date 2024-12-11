@@ -3,12 +3,14 @@ __author__ = "Edisson Naula"
 __date__ = "$ 25/nov/2024  at 15:54 $"
 
 import json
+import shutil
 from tkinter import filedialog
 
 import fitz
 import ttkbootstrap as ttk
 from PIL import Image, ImageTk
 from reportlab.lib.units import mm
+from ttkbootstrap.dialogs import Messagebox
 from ttkbootstrap.tableview import Tableview
 
 from static.constants import file_codebar
@@ -303,7 +305,6 @@ class BarcodeMultipleFrame(ttk.Frame):
         list_ids = self.entries[-1].get().split(",")
         list_selection = self.entries[-2].get()
         if list_selection != "Todos":
-            print(row[0])
             if row[0] not in list_ids:
                 list_ids.append(row[0])
             else:
@@ -315,12 +316,12 @@ class BarcodeMultipleFrame(ttk.Frame):
         values = get_entries_values(self.entries)
         new_values = (
             values[0:3]
-            + ["new name example"]
-            + values[3:6]
             + ["new code example"]
-            + values[6:9]
+            + values[3:5]
             + ["new sku example"]
-            + values[9:-2]
+            + values[5:7]
+            + ["new name example"]
+            + values[7:-2]
         )
         self.kw = generate_kw_for_barcode(new_values)
         create_one_code(**self.kw)
@@ -364,6 +365,8 @@ class BarcodeMultipleFrame(ttk.Frame):
         if not filepath:
             return
         self.pdf_barcode = filepath
+        # copy file in direction
+        shutil.copy(file_codebar, filepath)
 
     def print_barcode(self):
         list_ids = self.entries[-1].get().replace(" ", "").split(",")
@@ -380,7 +383,6 @@ class BarcodeMultipleFrame(ttk.Frame):
         else:
             ids = []
             for item in list_ids:
-                print(item)
                 if "-" in item:
                     start, end = map(int, item.split("-"))
                     ids.extend(range(start, end + 1))
@@ -395,12 +397,14 @@ class BarcodeMultipleFrame(ttk.Frame):
         values = get_entries_values(self.entries)
         new_values = (
             values[0:3]
-            + ["new name example"]
-            + values[3:6]
             + ["new code example"]
-            + values[6:9]
+            + values[3:5]
             + ["new sku example"]
-            + values[9:-2]
+            + values[5:7]
+            + ["new name example"]
+            + values[7:-2]
         )
-        kw, values = generate_kw_for_barcode(new_values)
+        kw = generate_kw_for_barcode(new_values)
         create_multiple_barcodes_products(code_list, sku_list, name_list, **kw)
+        msg = f"Se han generado {len(code_list)} codigos de barra"
+        Messagebox.show_info(msg, title="Informacion")

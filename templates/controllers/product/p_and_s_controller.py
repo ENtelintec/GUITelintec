@@ -335,7 +335,7 @@ def update_product_db(
         sku = str(sku).upper()
         name = str(name)
         udm = str(udm)
-        stock = int(stock)
+        stock = float(stock)
         id_category = int(id_category) if id_category else None
         id_supplier = int(id_supplier) if id_supplier else None
         codes = "[]" if codes is None else codes
