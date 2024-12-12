@@ -79,6 +79,7 @@ def get_all_suppliers_amc():
     sql = (
         "SELECT id_supplier, name, seller_name, seller_email, phone, address, web_url, type, extra_info "
         "FROM sql_telintec.suppliers_amc "
+        "ORDER BY name"
     )
     flag, error, result = execute_sql(sql, None, 5)
     return flag, error, result

@@ -230,7 +230,10 @@ def create_out_movement_db(
 
 
 def get_all_categories_db():
-    sql = "SELECT  id_category, name FROM sql_telintec.product_categories_amc"
+    sql = (
+        "SELECT  id_category, name FROM sql_telintec.product_categories_amc "
+        "ORDER By name;"
+    )
     flag, error, result = execute_sql(sql, None, 5)
     return flag, error, result
 
@@ -826,21 +829,25 @@ def insert_multiple_row_products_amc(products: tuple, dict_cat=None, dict_supp=N
         else:
             codes = json.dumps([])
             location_1 = product[10]
-            locations = json.dumps(
-                {"location_1": location_1}
-            )
+            locations = json.dumps({"location_1": location_1})
             extra_info = json.dumps({"brand": product[11]})
         sku = clean_name(product[1].encode(codec, errors="ignore").decode(codec))[0]
         name = str(product[2]).replace("'", "").replace('"', "")
-        category_id = dict_cat.get(product[5], None) if dict_cat is not None else product[5]
-        supplier_id = dict_supp.get(product[6], None) if dict_supp is not None else product[6]
-        sql = ("INSERT INTO sql_telintec.products_amc "
-               "(sku, name, udm, stock, id_category, is_tool, is_internal, id_supplier, codes, locations, extra_info)"
-               "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) as new "
-               "ON DUPLICATE KEY UPDATE "
-               "sku = new.sku, name = new.name, udm = new.udm, stock = new.stock, id_category = new.id_category, "
-               "is_tool = new.is_tool, is_internal = new.is_internal, id_supplier = new.id_supplier, "
-               "codes = new.codes, locations = new.locations, extra_info = new.extra_info ")
+        category_id = (
+            dict_cat.get(product[5], None) if dict_cat is not None else product[5]
+        )
+        supplier_id = (
+            dict_supp.get(product[6], None) if dict_supp is not None else product[6]
+        )
+        sql = (
+            "INSERT INTO sql_telintec.products_amc "
+            "(sku, name, udm, stock, id_category, is_tool, is_internal, id_supplier, codes, locations, extra_info)"
+            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) as new "
+            "ON DUPLICATE KEY UPDATE "
+            "sku = new.sku, name = new.name, udm = new.udm, stock = new.stock, id_category = new.id_category, "
+            "is_tool = new.is_tool, is_internal = new.is_internal, id_supplier = new.id_supplier, "
+            "codes = new.codes, locations = new.locations, extra_info = new.extra_info "
+        )
         vals = (
             sku.uppper(),
             name,
@@ -875,12 +882,14 @@ def update_multiple_row_products_amc(products: tuple, dict_cat=None, dict_supp=N
         else:
             codes = product[9]
             location_1 = product[10]
-            locations = json.dumps(
-                {"location_1": location_1}
-            )
+            locations = json.dumps({"location_1": location_1})
             brand = product[11]
-        category_id = dict_cat.get(product[5], "None") if dict_cat is not None else product[5]
-        supplier_id = dict_supp.get(product[6], "None") if dict_supp is not None else product[6]
+        category_id = (
+            dict_cat.get(product[5], "None") if dict_cat is not None else product[5]
+        )
+        supplier_id = (
+            dict_supp.get(product[6], "None") if dict_supp is not None else product[6]
+        )
         sql = (
             "UPDATE sql_telintec.products_amc "
             "SET sku = %s, name = %s, udm = %s, stock = %s, id_category = %s, id_supplier = %s, is_tool = %s, is_internal = %s, "

@@ -169,25 +169,39 @@ def add_movement(
 ):
     msg = ""
     id_product = entries[2].get().split("--")[0]
-    id_movement_type = "salida"
+    old_stock = entries[2].get().split("--")[-1]
+    # remove ()
+    old_stock = old_stock.replace("(", "").replace(")", "")
+    old_stock = float(old_stock)
     quantity = entries[1].get()
+    if float(quantity) <= 0:
+        Messagebox.show_error("La cantidad debe ser mayor a 0", title="Error")
+        return movetement_id, _id_product_to_modify, _old_data_movement
+    if float(quantity) > old_stock and type_m == "salida":
+        Messagebox.show_error(
+            "La cantidad no puede ser mayor a la existencia", title="Error"
+        )
+        return movetement_id, _id_product_to_modify, _old_data_movement
     movement_date = datetime.now().strftime(format_timestamps)
     reference = entries[6].get()
     sm_folio = entries[7].get()
     sm_folio = None if sm_folio == "" or sm_folio == "None" else sm_folio
-    if type_m == "Salida":
+    if type_m == "salida":
         flag, error, lastrowid = create_out_movement_db(
-            id_product, id_movement_type, quantity, movement_date, sm_folio, reference
+            id_product, type_m, quantity, movement_date, sm_folio, reference
         )
     else:
+        type_m = "entrada"
         flag, error, lastrowid = create_in_movement_db(
-            id_product, id_movement_type, quantity, movement_date, sm_folio, reference
+            id_product, type_m, quantity, movement_date, sm_folio, reference
         )
     if not flag:
         msg += f"\nError al registrar movimiento para producto: {id_product}"
     else:
-        msg += f"\nMovimiento registrado producto {id_product}, valor de movimiento {quantity}."
-        new_stock = new_stock_f(int(quantity), id_product)
+        msg += f"\nMovimiento registrado producto {id_product}, valor de movimiento {quantity} de {type_m}."
+        new_stock = new_stock_f(
+            float(quantity) if type_m == "entrada" else -float(quantity), id_product
+        )
         flag, error, result = update_stock_db(id_product, new_stock)
         if not flag:
             msg += f"\nError al actualizar stock: {id_product}"
@@ -219,10 +233,22 @@ def update_movement(
     msg = ""
     old_quantity = _old_data_movement[4]
     new_date = datetime.now().strftime(format_timestamps)
+    actual_stock = entries[2].get().split("--")[-1]
+    # remove ()
+    actual_stock = actual_stock.replace("(", "").replace(")", "")
+    actual_stock = float(actual_stock)
     quantity = entries[1].get()
     reference = entries[6].get()
     sm_folio = entries[7].get()
     sm_folio = None if sm_folio == "" or sm_folio == "None" else sm_folio
+    if float(quantity) <= 0:
+        Messagebox.show_error("La cantidad debe ser mayor a 0", title="Error")
+        return movetement_id, _id_product_to_modify, _old_data_movement
+    if float(quantity) > actual_stock and type_m == "salida":
+        Messagebox.show_error(
+            "La cantidad no puede ser mayor a la existencia", title="Error"
+        )
+        return movetement_id, _id_product_to_modify, _old_data_movement
     flag, error, result = update_movement_db(
         movetement_id, quantity, new_date, sm_id=sm_folio, reference=reference
     )
@@ -233,9 +259,12 @@ def update_movement(
             f"\nMovimiento actualizado producto {_id_product_to_modify}, valor de {type_m} {old_quantity}-->{quantity}."
             f"\n"
         )
-        if int(quantity) != int(old_quantity):
+        if float(quantity) != float(old_quantity):
             new_stock = new_stock_f(
-                int(quantity) - int(old_quantity), _id_product_to_modify
+                float(quantity) - float(old_quantity)
+                if type_m == "entrada"
+                else -float(quantity) + float(old_quantity),
+                _id_product_to_modify,
             )
             flag, error, result = update_stock_db(_id_product_to_modify, new_stock)
             if not flag:
@@ -252,7 +281,6 @@ def update_movement(
             ],
         )
     end_action_db(msg, f"Actualizacion de Movimiento de {type_m}", usernamedata)
-    print(msg)
     return movetement_id, _id_product_to_modify, _old_data_movement
 
 
@@ -389,7 +417,8 @@ class InScreen(ttk.Frame):
         frame_inputs.grid(row=2, column=0, sticky="nswe")
         frame_inputs.columnconfigure(1, weight=1)
         values_products = [
-            f"{product[0]}--{product[1]}--{product[2]}" for product in self._products
+            f"{product[0]}--{product[1]}--{product[2]}--({product[4]})"
+            for product in self._products
         ]
         self.entries = create_movement_widgets(frame_inputs, values_products)
         # --------------------------------btns-------------------------------------------------
@@ -491,6 +520,11 @@ class InScreen(ttk.Frame):
         flag, error, self._ins = (
             get_ins_db_detail() if data_ins is None else (True, None, data_ins)
         )
+        values_products = [
+            f"{product[0]}--{product[1]}--{product[2]}--({product[4]})"
+            for product in self._products
+        ]
+        self.entries[2].configure(values=values_products)
         self.create_table()
         if not ignore_triger:
             event = {
@@ -597,7 +631,8 @@ class OutScreen(ttk.Frame):
         frame_inputs.grid(row=2, column=0, sticky="nswe")
         frame_inputs.columnconfigure(1, weight=1)
         values_products = [
-            f"{product[0]}--{product[1]}--{product[2]}" for product in self._products
+            f"{product[0]}--{product[1]}--{product[2]}--({product[4]})"
+            for product in self._products
         ]
         self.entries = create_movement_widgets(frame_inputs, values_products)
         # --------------------------------btns-------------------------------------------------
@@ -700,6 +735,11 @@ class OutScreen(ttk.Frame):
         flag, error, self._outs = (
             get_outs_db_detail() if data_outs is None else (True, None, data_outs)
         )
+        values_products = [
+            f"{product[0]}--{product[1]}--{product[2]}--({product[4]})"
+            for product in self._products
+        ]
+        self.entries[2].configure(values=values_products)
         self.create_table()
         if not ignore_triger:
             event = {

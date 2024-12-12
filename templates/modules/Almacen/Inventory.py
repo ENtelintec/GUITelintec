@@ -13,6 +13,7 @@ from templates.Functions_GUI_Utils import (
     create_entry,
     create_Combobox,
     create_button,
+    create_ComboboxSearch,
 )
 from templates.Functions_Utils import create_notification_permission_notGUI
 from templates.controllers.product.p_and_s_controller import (
@@ -119,7 +120,7 @@ def create_input_widgets(
     entries.append(cat_selector)
     create_label(master, 1, 2, text="Proveedor", sticky="w")
     values_supp = list(providers_dict_amc.keys())
-    supp_selector = create_Combobox(master, values=values_supp, row=1, column=3)
+    supp_selector = create_ComboboxSearch(master, values=values_supp, row=1, column=3)
     supp_selector.bind(
         "<<ComboboxSelected>>",
         lambda event: callbacks.get("on_brand_selected", None)(event),
