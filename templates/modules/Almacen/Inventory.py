@@ -256,7 +256,6 @@ class InventoryScreen(ttk.Frame):
         self.master = master
         self.columnconfigure(0, weight=1)
         self.usernamedata = kwargs.get("username_data", None)
-        print(self.usernamedata)
         self._ivar_tool = ttk.IntVar(value=0)
         self._ivar_internal = ttk.IntVar(value=0)
         self._products = (
