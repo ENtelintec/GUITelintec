@@ -42,9 +42,13 @@ from templates.resources.methods.Aux_Inventory import (
 def end_action_db(msg, title, usernamedata):
     if msg is None or msg == "":
         return
+    msg += f"\n[Usuario: {usernamedata.get('username', 'No username')}]"
     create_notification_permission_notGUI(
         msg, ["Administracion"], title, usernamedata["id"], 0
     )
+    timestamp = datetime.now().strftime(format_timestamps)
+    msg += f"[Timestamp: {timestamp}]"
+    msg += f"[ID: {usernamedata.get('id', 'No id')}]"
     write_log_file(log_file_db, msg)
 
 

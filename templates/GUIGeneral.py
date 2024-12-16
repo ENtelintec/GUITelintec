@@ -227,26 +227,28 @@ class GUIAsistente(ttk.Window):
     def _create_side_menu_windows(self, data_dic):
         self.data_dic = data_dic
         windows = {}
+        self.username_data["username"] = self.username
+        self.username_data["department"] = self.department
+        arguments = {
+            "master": self,
+            "data": data_dic,
+            "style_gui": self.style_gui,
+            "settings": self.settings,
+            "chats_to_show": self.chats_to_show,
+            "images": None,
+            "chats": self.chats,
+            "department": self.department,
+            "username": self.username,
+            "permissions": self.permissions,
+            "username_data": self.username_data,
+            "data_emp": self.username_data,
+            "id_emp": self.username_data["id"],
+            "triger_actions_main_callback": self.triger_actions,
+        }
         for i, window in enumerate(self.names_side_menu):
             window_to_create = available_frames[window]
-            arguments = {
-                "master": self,
-                "data": data_dic,
-                "style_gui": self.style_gui,
-                "settings": self.settings,
-                "chats_to_show": self.chats_to_show,
-                "images": None,
-                "chats": self.chats,
-                "department": self.department,
-                "username": self.username,
-                "permissions": self.permissions,
-                "username_data": self.username_data,
-                "data_emp": self.username_data,
-                "id_emp": self.username_data["id"],
-                "triger_actions_main_callback": self.triger_actions,
-                "name_frame": window,
-                "log_out_callback": self.logOut if window == "Cuenta" else None,
-            }
+            arguments["name_frame"] = window
+            arguments["log_out_callback"] = self.logOut if window == "Cuenta" else None
             windows[window] = window_to_create(**arguments)
         return windows
 

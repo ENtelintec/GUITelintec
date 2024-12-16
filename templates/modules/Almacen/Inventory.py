@@ -256,6 +256,7 @@ class InventoryScreen(ttk.Frame):
         self.master = master
         self.columnconfigure(0, weight=1)
         self.usernamedata = kwargs.get("username_data", None)
+        print(self.usernamedata)
         self._ivar_tool = ttk.IntVar(value=0)
         self._ivar_internal = ttk.IntVar(value=0)
         self._products = (
@@ -749,9 +750,13 @@ class InventoryScreen(ttk.Frame):
     def end_action_db(self, msg, title):
         if msg is None or msg == "":
             return
+        msg += f"\n[Usuario: {self.usernamedata.get('username', 'No username')}]"
         create_notification_permission_notGUI(
             msg, ["Administracion"], title, self.usernamedata["id"], 0
         )
+        timestamp = datetime.now().strftime(format_timestamps)
+        msg += f"[Timestamp: {timestamp}]"
+        msg += f"[ID: {self.usernamedata.get('id', 'No id')}]"
         write_log_file(log_file_db, msg)
 
     def get_inputs_values(self):
