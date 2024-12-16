@@ -473,12 +473,12 @@ class InventoryScreen(ttk.Frame):
             or product_name == ""
             or product_price == ""
             or product_stock == ""
-            or int(product_stock) <= 0
+            or int(product_stock) < 0
             or product_category == ""
             or product_supplier == ""
             or product_category == "None"
         ):
-            Messagebox.show_error("Todos los campos deben estar llenos", title="Error")
+            Messagebox.show_error("Error en el llenado de datos.", title="Error")
             return
 
         if product_id != "" or self.id_to_modify is not None:
@@ -510,24 +510,23 @@ class InventoryScreen(ttk.Frame):
             msg += f"Producto creado: {product_sku}--id: {lastrowid}"
             movement = "entrada"
             date = datetime.now().strftime(format_date)
-            quantity = product_stock
+            quantity = int(product_stock)
             product_id = lastrowid
-            flag, error, result = create_in_movement_db(
-                product_id, movement, quantity, date, None
-            )
-            if not flag:
-                msg += (
-                    f"\nError al crear movimiento: {product_sku}--{lastrowid}--{error}"
+            if quantity > 0:
+                flag, error, result = create_in_movement_db(
+                    product_id, movement, quantity, date, None
                 )
-            else:
-                msg += f"\nMovimiento creado: {product_sku}--{lastrowid}"
+                if not flag:
+                    msg += f"\nError al crear movimiento: {product_sku}--{lastrowid}--{error}"
+                else:
+                    msg += f"\nMovimiento creado: {product_sku}--{lastrowid}"
             self.on_clear_fields_click()
             self.on_update_table_click()
         # -------------------------------add brand to supplier-----------------------------------
-        msg, self._providers_dict_amc, self.brands_dict = update_brand_list(
+        msg_list, self._providers_dict_amc, self.brands_dict = update_brand_list(
             product_supplier, brand, self._providers_dict_amc, self.brands_dict
         )
-        msg_not = "System Notification\n" + msg
+        msg_not = "System Notification\n" + msg + msg_list
         self.end_action_db(msg_not, "Actualizacion de inventario")
 
     def on_update_product_click(self):
