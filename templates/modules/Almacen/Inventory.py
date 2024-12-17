@@ -680,11 +680,12 @@ class InventoryScreen(ttk.Frame):
                         abs(float(item[4]) - float(item[-1])),
                         date,
                         "None",
+                        item[5],
                     ]
                 )
             else:
                 data_movements.append(
-                    [item[0], "entrada", float(item[4]) - float(item[-1]), date, "None"]
+                    [item[0], "entrada", float(item[4]) - float(item[-1]), date, "None", item[5]]
                 )
         if counter_errors_update == 0:
             msg += f"\nProductos actualizados: {len(products_data)}"
