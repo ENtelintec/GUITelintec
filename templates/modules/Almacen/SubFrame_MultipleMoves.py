@@ -272,7 +272,9 @@ class MultipleMovementsScreen(ttk.Frame):
         date = datetime.now().strftime(format_timestamps)
         for row in values:
             sm_reference = row[5] if row[5] != "" and row[5] != "None" else None
-            movements.append((int(row[0]), row[2], row[3], date, sm_reference, row[7]))
+            movements.append(
+                (int(row[0]), row[2], float(row[3]), date, sm_reference, row[7])
+            )
             new_stocks.append((int(row[0]), float(row[6]) - float(row[3]))) if row[
                 2
             ] == "salida" else new_stocks.append(
