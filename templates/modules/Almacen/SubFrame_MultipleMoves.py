@@ -173,7 +173,16 @@ class MultipleMovementsScreen(ttk.Frame):
             self.data_new_movements = new_products
         else:
             self.data_new_movements.append(
-                [id_selected, row_data[2], None, 0, datetime_now, None, row_data[4], ""]
+                [
+                    id_selected,
+                    row_data[2],
+                    None,
+                    0,
+                    datetime_now,
+                    None,
+                    row_data[4],
+                    "",
+                ]
             )
         self.recreate_entry()
 

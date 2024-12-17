@@ -384,9 +384,11 @@ class MovementsLector(ttk.Frame):
             self.btn_listen.configure(text="Agregar items")
 
     def product_detected_serial(self, product):
+        if product == "\n" or product == "":
+            return
         for item in self.data_products_gen:
             codes = json.loads(item[9])
-            if item[1] == product or product in codes:
+            if item[1] == product.upper() or product.upper() in codes:
                 print("Encontrado")
                 if item[1] in self.ids_product_added:
                     print("Ya agregado")
@@ -394,8 +396,9 @@ class MovementsLector(ttk.Frame):
                 date = datetime.now().strftime(format_date)
                 self.ids_product_added.append(item[1])
                 self.data_products.append(
-                    [item[0], item[2], self.screen, 0, date, "None", item[4]]
+                    [item[0], item[2], self.screen, 0, date, "None", item[4], ""]
                 )
+                print(self.data_products)
                 self.recreate_entry()
                 return
         print("No encontrado")

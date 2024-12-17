@@ -22,7 +22,7 @@ class SerialPortListener(threading.Thread):
                     line = ser.readline().decode("utf-8").strip()
                     if line:
                         self.callback(line)
-        except Exception as e:
+        except serial.SerialException as e:
             error = f"Error: {str(e)}"
             self.error_callback(error)
 

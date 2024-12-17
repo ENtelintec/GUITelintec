@@ -306,7 +306,7 @@ def delete_movement(
         msg += f"\nError al eliminar movimiento: {movetement_id}--{id_product}"
     else:
         msg += f"\nMovimiento eliminado producto {id_product}, valor de movimiento {quantity}."
-        new_stock = new_stock_f(-int(quantity), id_product)
+        new_stock = new_stock_f(-float(quantity), id_product)
         flag, error, result = update_stock_db(id_product, new_stock)
         if not flag:
             msg += f"\nError al actualizar stock: {id_product}"
@@ -337,7 +337,6 @@ def on_double_click_any_table(event, entries):
     )
     _old_data_movement = data
     _id_product_to_modify = data[1]
-    print(data)
     product_name = f"{data[1]}--{data[2]}--{data[7]}--({data[4]})"
     entries[2].set(product_name)
     movetement_id = data[0]
@@ -479,7 +478,7 @@ class InScreen(ttk.Frame):
         else:
             msg += f"\nMovimientos registrados: {len(product_new)}"
             data_update_stocks = [
-                [item[0], int(item[5]) + int(item[2])] for item in product_new
+                [item[0], float(item[5]) + float(item[2])] for item in product_new
             ]
             flags, errors, results = udpate_multiple_row_stock_ids(data_update_stocks)
             count_error_stock = 0
@@ -488,7 +487,7 @@ class InScreen(ttk.Frame):
                 if not flag:
                     count_error_stock += 1
                     ids_error.append(results[index][0])
-            if len(count_error_stock) > 0:
+            if count_error_stock > 0:
                 msg += f"\nError al actualizar stock: {ids_error}"
             else:
                 msg += f"\nStock actualizado {len(data_update_stocks)}"
@@ -519,7 +518,6 @@ class InScreen(ttk.Frame):
         if data_ins is None:
             data_movements = data.get("all", None)
             data_ins, data_outs = divide_movements(data_movements)
-        print(data_products)
         self._products = (
             fetch_all_products() if data_products is None else data_products
         )
@@ -695,7 +693,7 @@ class OutScreen(ttk.Frame):
         else:
             msg += f"\nMovimientos registrados: {len(product_new)}"
             data_update_stocks = [
-                [item[0], int(item[5]) - int(item[2])] for item in product_new
+                [item[0], float(item[5]) - float(item[2])] for item in product_new
             ]
             flags, errors, results = udpate_multiple_row_stock_ids(data_update_stocks)
             count_error_stock = 0
@@ -704,7 +702,7 @@ class OutScreen(ttk.Frame):
                 if not flag:
                     count_error_stock += 1
                     ids_error.append(results[index][0])
-            if len(count_error_stock) > 0:
+            if count_error_stock > 0:
                 msg += f"\nError al actualizar stock: {ids_error}"
             else:
                 msg += f"\nStock actualizado {len(data_update_stocks)}"
