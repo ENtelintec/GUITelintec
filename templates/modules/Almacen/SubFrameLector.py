@@ -231,6 +231,7 @@ class InventoryLector(ttk.Frame):
         for index, item in enumerate(self.data_products_gen):
             codes = json.loads(item[9])
             locations = json.loads(item[10])
+            brand = json.loads(item[11])
             if item[1] == product.upper() or product in codes:
                 print("Encontrado")
                 if item[1] in self.ids_product_added:
@@ -238,8 +239,7 @@ class InventoryLector(ttk.Frame):
                     return
                 self.ids_product_added.append(product.upper())
                 self.data_products.append(
-                    list(item[0:-1])
-                    + [locations["location_1"], locations["location_2"]]
+                    list(item[0:-3]) + [locations.get("location_1", ""), brand]
                 )
                 self.dict_old_stock[int(item[0])] = item[4]
                 self.recreate_entry()
