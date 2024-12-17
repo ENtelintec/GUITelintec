@@ -817,7 +817,7 @@ def update_stock_db_ids(ids: list, stocks: list):
 def insert_multiple_row_products_amc(products: tuple, dict_cat=None, dict_supp=None):
     codec = "ASCII"
     if len(products) == 0:
-        return [], "No products to insert", []
+        return [], ["No products to insert"], []
     flags = []
     errors = []
     results = []
@@ -919,7 +919,7 @@ def update_multiple_row_products_amc(products: tuple, dict_cat=None, dict_supp=N
 
 def insert_multiple_row_movements_amc(movements: tuple):
     if len(movements) == 0:
-        return False, "No movements to insert", None
+        return [], ["No movements to insert"], []
     flags = []
     errors = []
     results = []
@@ -991,7 +991,7 @@ def update_multiple_products_categories(products: tuple):
 
 def udpate_multiple_row_stock_ids(data):
     if len(data) == 0:
-        return False, "No products to update", None
+        return [], ["No products to update"], []
     flags = []
     errors = []
     results = []
