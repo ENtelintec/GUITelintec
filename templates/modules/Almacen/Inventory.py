@@ -686,7 +686,7 @@ class InventoryScreen(ttk.Frame):
                 data_movements.append(
                     [item[0], "entrada", float(item[4]) - float(item[-1]), date, "None"]
                 )
-        if len(counter_errors_update) == 0:
+        if counter_errors_update == 0:
             msg += f"\nProductos actualizados: {len(products_data)}"
         else:
             msg += f"\nError al actualizar los siguientes productos: {id_errors_update}"
