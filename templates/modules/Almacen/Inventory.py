@@ -473,7 +473,7 @@ class InventoryScreen(ttk.Frame):
             or product_name == ""
             or product_price == ""
             or product_stock == ""
-            or int(product_stock) < 0
+            or float(product_stock) < 0
             or product_category == ""
             or product_supplier == ""
             or product_category == "None"
@@ -510,7 +510,7 @@ class InventoryScreen(ttk.Frame):
             msg += f"Producto creado: {product_sku}--id: {lastrowid}"
             movement = "entrada"
             date = datetime.now().strftime(format_date)
-            quantity = int(product_stock)
+            quantity = float(product_stock)
             product_id = lastrowid
             if quantity > 0:
                 flag, error, result = create_in_movement_db(
@@ -670,15 +670,21 @@ class InventoryScreen(ttk.Frame):
             )
             msgs_brands.append(msg_brand)
             # generate data movements from stock value
-            if int(item[4]) - int(item[-1]) == 0:
+            if float(item[4]) - float(item[-1]) == 0:
                 continue
-            elif int(item[4]) - int(item[-1]) < 0:
+            elif float(item[4]) - float(item[-1]) < 0:
                 data_movements.append(
-                    [item[0], "salida", abs(int(item[4]) - int(item[-1])), date, "None"]
+                    [
+                        item[0],
+                        "salida",
+                        abs(float(item[4]) - float(item[-1])),
+                        date,
+                        "None",
+                    ]
                 )
             else:
                 data_movements.append(
-                    [item[0], "entrada", int(item[4]) - int(item[-1]), date, "None"]
+                    [item[0], "entrada", float(item[4]) - float(item[-1]), date, "None"]
                 )
         if len(counter_errors_update) == 0:
             msg += f"\nProductos actualizados: {len(products_data)}"
@@ -719,10 +725,10 @@ class InventoryScreen(ttk.Frame):
                 counter_errors_creation += 1
                 sku_errors_creatio.append(item[1])
                 continue
-            if int(item[4]) == 0:
+            if float(item[4]) == 0:
                 continue
             data_movements.append(
-                [id_result, "entrada", int(item[4]), date, "None", "None"]
+                [id_result, "entrada", float(item[4]), date, "None", "None"]
             )
             msg_brand, self._providers_dict_amc, self.brands_dict = update_brand_list(
                 item[5], item[6], self._providers_dict_amc, self.brands_dict
