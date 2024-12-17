@@ -337,7 +337,8 @@ def on_double_click_any_table(event, entries):
     )
     _old_data_movement = data
     _id_product_to_modify = data[1]
-    product_name = f"{data[1]}--{data[2]}--{data[7]}"
+    print(data)
+    product_name = f"{data[1]}--{data[2]}--{data[7]}--({data[4]})"
     entries[2].set(product_name)
     movetement_id = data[0]
     entries[1].insert(0, data[4])
@@ -376,10 +377,10 @@ class MovementsFrame(ScrolledFrame):
                 self.frame_1.update_table(ignore_triger=True)
             elif "movements_multiple" == events["sender"]:
                 self.frame_3.update_tables(ignore_triger=True)
-        else:
-            self.frame_1.update_table(ignore_triger=True)
-            self.frame_2.update_table(ignore_triger=True)
-            self.frame_3.update_tables(ignore_triger=True)
+            elif "inventario" == events["sender"]:
+                self.frame_1.update_table(ignore_triger=True)
+                self.frame_2.update_table(ignore_triger=True)
+                self.frame_3.update_tables(ignore_triger=True)
 
 
 class InScreen(ttk.Frame):
@@ -457,11 +458,11 @@ class InScreen(ttk.Frame):
                 "delete_callback": self.delete_in_item,
                 "clear_callback": self.clear_fields,
                 "update_table_callback": self.update_table,
-                "lector_callback": self.lector,
+                "lector_callback": self.call_lector_frame,
             },
         )
 
-    def lector(self):
+    def call_lector_frame(self):
         data = {
             "data_products_gen": self._products,
             "screen": "movements_in",
@@ -518,6 +519,7 @@ class InScreen(ttk.Frame):
         if data_ins is None:
             data_movements = data.get("all", None)
             data_ins, data_outs = divide_movements(data_movements)
+        print(data_products)
         self._products = (
             fetch_all_products() if data_products is None else data_products
         )
@@ -528,7 +530,7 @@ class InScreen(ttk.Frame):
             f"{product[0]}--{product[1]}--{product[2]}--({product[4]})"
             for product in self._products
         ]
-        self.entries[2].configure(values=values_products)
+        self.entries[2].set_values(values_products)
         self.create_table()
         if not ignore_triger:
             event = {
@@ -743,7 +745,7 @@ class OutScreen(ttk.Frame):
             f"{product[0]}--{product[1]}--{product[2]}--({product[4]})"
             for product in self._products
         ]
-        self.entries[2].configure(values=values_products)
+        self.entries[2].set_values(values_products)
         self.create_table()
         if not ignore_triger:
             event = {

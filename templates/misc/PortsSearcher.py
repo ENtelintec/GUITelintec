@@ -15,15 +15,15 @@ def serial_ports():
     ports.sort()
     ports_names = [port.device for port in ports]
     ports_descriptions = [port.description for port in ports]
-    result = []
-    result_d = []
-    for port, description in zip(ports_names, ports_descriptions):
-        try:
-            s = serial.Serial(port)
-            s.close()
-            result.append(port)
-            result_d.append(description)
-        except serial.SerialException:
-            print("Puerto no disponible: ", port)
+    # result = []
+    # result_d = []
+    # for port, description in zip(ports_names, ports_descriptions):
+    #     try:
+    #         s = serial.Serial(port)
+    #         s.close()
+    #         result.append(port)
+    #         result_d.append(description)
+    #     except serial.SerialException:
+    #         print("Puerto no disponible: ", port)
 
-    return result, result_d
+    return ports_names, ports_descriptions

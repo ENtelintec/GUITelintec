@@ -111,6 +111,7 @@ class InventoryLector(ttk.Frame):
         self.providers_dict = kw.get("providers_dict", {})
         self.brands_dict = kw.get("brands_dict", {})
         self.ids_product_added = []
+        self.svar_error = ttk.StringVar(value="")
         self.dict_old_stock = {}
         self.port_selector = kw["port"]["selector"]
         self.ports = kw["port"]["ports"]
@@ -130,6 +131,9 @@ class InventoryLector(ttk.Frame):
         frame_buttons = ttk.Frame(self)
         frame_buttons.grid(row=1, column=0, sticky="nswe", padx=(30, 30))
         self.create_btns(frame_buttons)
+        frame_error = ttk.Frame(self)
+        frame_error.grid(row=2, column=0, sticky="nswe", padx=(30, 30))
+        create_label(frame_error, 0, 0, textvariable=self.svar_error, style="danger")
 
     def create_btns(self, master):
         self.btn_listen = create_button(
@@ -209,10 +213,14 @@ class InventoryLector(ttk.Frame):
         if self.port_listener is None:
             port_selected = self.port_selector.get().split("-->")[0]
             self.port_listener = SerialPortListener(
-                port_selected, 9600, self.product_detected_serial
+                port_selected,
+                9600,
+                self.product_detected_serial,
+                self.serial_port_error_callback,
             )
             self.port_listener.start()
             self.btn_listen.configure(text="Detener")
+            self.svar_error.set("")
         else:
             self.port_listener.stop()
             self.port_listener = None
@@ -278,6 +286,13 @@ class InventoryLector(ttk.Frame):
         self.on_save_callback() if self.on_save_callback is not None else self.master.destroy()
         # self.master.on_close_after_save()
 
+    def serial_port_error_callback(self, error):
+        print(error)
+        self.port_listener.stop()
+        self.port_listener = None
+        self.btn_listen.configure(text="Agregar items")
+        self.svar_error.set(error)
+
 
 class MovementsLector(ttk.Frame):
     def __init__(self, master=None, **kw):
@@ -289,6 +304,7 @@ class MovementsLector(ttk.Frame):
         self.on_save_callback = kw.get("on_save_callback", None)
         self.entries = None
         self.ids_product_added = []
+        self.svar_error = ttk.StringVar(value="")
         self.port_selector = kw["port"]["selector"]
         self.ports = kw["port"]["ports"]
         self.ports_d = kw["port"]["ports_d"]
@@ -308,6 +324,9 @@ class MovementsLector(ttk.Frame):
         frame_buttons = ttk.Frame(self)
         frame_buttons.grid(row=1, column=0, sticky="nswe", padx=(30, 30))
         self.create_btns(frame_buttons)
+        frame_error = ttk.Frame(self)
+        frame_error.grid(row=2, column=0, sticky="nswe", padx=(30, 30))
+        create_label(frame_error, 0, 0, textvariable=self.svar_error, style="danger")
 
     def create_btns(self, master):
         self.btn_listen = create_button(
@@ -351,17 +370,20 @@ class MovementsLector(ttk.Frame):
         if self.port_listener is None:
             port_selected = self.port_selector.get().split("-->")[0]
             self.port_listener = SerialPortListener(
-                port_selected, 9600, self.product_detected_serial
+                port_selected,
+                9600,
+                self.product_detected_serial,
+                self.serial_port_error_callback,
             )
             self.port_listener.start()
             self.btn_listen.configure(text="Detener")
+            self.svar_error.set("")
         else:
             self.port_listener.stop()
             self.port_listener = None
             self.btn_listen.configure(text="Agregar items")
 
     def product_detected_serial(self, product):
-        print(product)
         for item in self.data_products_gen:
             codes = json.loads(item[9])
             if item[1] == product or product in codes:
@@ -390,3 +412,10 @@ class MovementsLector(ttk.Frame):
             return
         self.callback_lector(products_new)
         self.on_save_callback() if self.on_save_callback is not None else self.master.destroy()
+
+    def serial_port_error_callback(self, error):
+        print(error)
+        self.port_listener.stop()
+        self.port_listener = None
+        self.btn_listen.configure(text="Agregar items")
+        self.svar_error.set(error)

@@ -232,7 +232,7 @@ def update_brand_list(supplier_name, brand_name, providers_dict_amc, brands_dict
         if brand_name.upper() not in brands_list:
             supplier_id = providers_dict_amc.get(supplier_name, None)
             if supplier_id is None:
-                print("Error, supplier id is None")
+                print("Error, supplier id is None, not able to update brand")
             else:
                 brands_dict[supplier_name] = brands_list
                 brands_list.append(brand_name.upper())
@@ -433,7 +433,7 @@ class InventoryScreen(ttk.Frame):
             event = {
                 "action": "update",
                 "frames": ["Movimientos", "Inicio"],
-                "sender": "Inventario",
+                "sender": "inventario",
             }
             self._trigger_actions_main_callback(**event)
 
@@ -522,10 +522,10 @@ class InventoryScreen(ttk.Frame):
                     msg += f"\nMovimiento creado: {product_sku}--{lastrowid}"
             self.on_clear_fields_click()
             self.on_update_table_click()
-        # -------------------------------add brand to supplier-----------------------------------
-        msg_list, self._providers_dict_amc, self.brands_dict = update_brand_list(
-            product_supplier, brand, self._providers_dict_amc, self.brands_dict
-        )
+            # -------------------------------add brand to supplier-----------------------------------
+            msg_list, self._providers_dict_amc, self.brands_dict = update_brand_list(
+                product_supplier, brand, self._providers_dict_amc, self.brands_dict
+            )
         msg_not = "System Notification\n" + msg + msg_list
         self.end_action_db(msg_not, "Actualizacion de inventario")
 
@@ -606,11 +606,11 @@ class InventoryScreen(ttk.Frame):
                     msg += f"\nMovimiento creado: {product_sku}--{product_id}--{result}"
             self.on_clear_fields_click()
             self.on_update_table_click()
-        # -------------------------------add brand to supplier-----------------------------------
-        msg_b, self._providers_dict_amc, self.brands_dict = update_brand_list(
-            product_supplier, brand, self._providers_dict_amc, self.brands_dict
-        )
-        msg += msg_b
+            # -------------------------------add brand to supplier-----------------------------------
+            msg_b, self._providers_dict_amc, self.brands_dict = update_brand_list(
+                product_supplier, brand, self._providers_dict_amc, self.brands_dict
+            )
+            msg += msg_b
         msg_not = "System Notification\n" + msg
         self.end_action_db(msg_not, "Actualizacion de producto")
 
@@ -652,6 +652,8 @@ class InventoryScreen(ttk.Frame):
         flags, errors, results = update_multiple_row_products_amc(
             products_data, self._categories_dict, self._providers_dict_amc
         )
+        if len(flags) == 0:
+            return flags, errors, results, "Error al actualizar productos"
         date = datetime.now().strftime(format_timestamps)
         data_movements = []
         msg = "Inventario actualizado"
@@ -726,7 +728,7 @@ class InventoryScreen(ttk.Frame):
                 item[5], item[6], self._providers_dict_amc, self.brands_dict
             )
             msgs_brand.append(msg_brand)
-        if len(counter_errors_creation) == 0:
+        if counter_errors_creation == 0:
             msg += f"\nProductos creados: {len(products_new_data)}"
         else:
             msg += f"\nError al crear los siguientes productos: {sku_errors_creatio}"
