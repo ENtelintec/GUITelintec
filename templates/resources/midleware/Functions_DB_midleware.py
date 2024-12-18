@@ -3,13 +3,8 @@ __author__ = "Edisson Naula"
 __date__ = "$ 01/abr./2024  at 11:38 $"
 
 import json
-import os
-import tempfile
-from datetime import datetime, timedelta
 
-import pandas as pd
-
-from static.constants import format_date
+from templates.Functions_Utils import create_notification_permission_notGUI
 from templates.controllers.employees.employees_controller import (
     get_all_data_employees,
     get_all_data_employee,
@@ -18,33 +13,7 @@ from templates.controllers.employees.vacations_controller import (
     get_vacations_data,
     get_vacations_data_emp,
 )
-from templates.controllers.material_request.sm_controller import (
-    get_sm_by_id,
-    get_info_names_by_sm_id,
-)
-from templates.forms.Materials import MaterialsRequest
-
-
-def check_date_difference(date_modify, delta):
-    flag = True
-    date_now = datetime.now()
-    date_modify = (
-        datetime.strptime(date_modify, format_date)
-        if isinstance(date_modify, str)
-        else date_modify
-    )
-    date_modify = (
-        date_modify.date() if isinstance(date_modify, datetime) else date_modify
-    )
-    # week of the month
-    week_modify = date_modify.isocalendar()[1]
-    date_now = date_now.date()
-    week_now = date_now.isocalendar()[1]
-    date_modify = date_modify + timedelta(days=delta)
-    if week_now - week_modify > 1:
-        flag = False
-    return flag
-
+from templates.controllers.misc.tasks_controller import create_task, update_task, delete_task
 
 """ --------------------------------------API RRHH----------------------------------------------------------"""
 
@@ -233,3 +202,58 @@ def get_all_vacations():
         )
 
     return out, 200
+
+
+def create_task_from_api(data):
+    flag, error, result = create_task(
+        data["title"],
+        data["emp_destiny"],
+        data["emp_origin"],
+        data["date_limit"],
+        data["metadata"],
+    )
+    if flag:
+        msg = f"Se creo una tarea ({result}) {data['title']} para {data['metadata']['name_emp']}"
+        create_notification_permission_notGUI(
+            msg,
+            ["RRHH"],
+            "Nuevo tarea quizz creada",
+            data["emp_origin"],
+            data["emp_destiny"],
+        )
+        return {"msg": f"Ok-->{msg}"}, 201
+    else:
+        print(error)
+        return {"msg": "Ok", "data": str(error)}, 400
+
+
+def update_task_from_api(data):
+    flag, error, result = update_task(data["id"], data["body"])
+    if flag:
+        msg = f"Se actualizo la tarea {data['body']['title']} para {data['body']['metadata']['name_emp']}"
+        create_notification_permission_notGUI(
+            msg,
+            ["RRHH"],
+            "Tarea quizz actualizada",
+            data["body"]["emp_origin"],
+            data["body"]["emp_destiny"],
+        )
+        return {"msg": f"Ok-->{msg}"}, 200
+    else:
+        return {"msg": "Fail", "data": str(error)}, 400
+
+
+def delete_task_from_api(data):
+    flag, error, result = delete_task(data["id"])
+    if flag:
+        msg = f"Se elimino la tarea {data['id']}"
+        create_notification_permission_notGUI(
+            msg,
+            ["RRHH"],
+            "Tarea quizz eliminada",
+            data["emp_origin"],
+            data["emp_destiny"],
+        )
+        return {"msg": f"Ok-->{msg}"}, 200
+    else:
+        return {"msg": "Fail", "data": str(error)}, 400

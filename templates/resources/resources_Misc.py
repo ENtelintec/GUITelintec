@@ -2,7 +2,7 @@
 __author__ = "Edisson Naula"
 __date__ = "$ 08/may./2024  at 10:00 $"
 
-from flask import send_file
+from flask import send_file, request
 from flask_restx import Namespace, Resource
 
 from static.Models.api_models import (
@@ -19,13 +19,18 @@ from static.Models.api_models import (
     TaskUpdateForm,
     task_delete_model,
     TaskDeleteForm,
+    expected_headers_per,
 )
 from static.constants import filepath_settings
-from templates.Functions_Utils import create_notification_permission_notGUI
-from templates.controllers.misc.tasks_controller import (
-    create_task,
-    update_task,
-    delete_task,
+from templates.controllers.notifications.Notifications_controller import (
+    insert_notification,
+    update_status_notification,
+)
+from templates.resources.methods.Functions_Aux_Login import verify_token
+from templates.resources.midleware.Functions_DB_midleware import (
+    create_task_from_api,
+    update_task_from_api,
+    delete_task_from_api,
 )
 from templates.resources.midleware.Functions_midleware_misc import (
     get_all_notification_db_user_status,
@@ -34,10 +39,6 @@ from templates.resources.midleware.Functions_midleware_misc import (
     get_all_notification_db_permission,
     get_task_by_id_employee,
 )
-from templates.controllers.notifications.Notifications_controller import (
-    insert_notification,
-    update_status_notification,
-)
 
 ns = Namespace("GUI/api/v1/misc")
 
@@ -45,7 +46,12 @@ ns = Namespace("GUI/api/v1/misc")
 @ns.route("/notifications/employee/<int:id_emp>&<int:status>")
 class Notifications(Resource):
     @ns.marshal_with(notification_request_model)
+    @ns.expect(expected_headers_per)
     def get(self, id_emp, status):
+        token = request.headers["Authorization"]
+        flag, data_token = verify_token(token, department="basic")
+        if not flag:
+            return {"error": "No autorizado. Token invalido"}, 400
         status = status if status in [0, 1] else "%"
         code, result = get_all_notification_db_user_status(id_emp, status)
         return {"data": result, "msg": "Ok" if code == 200 else "Error"}, code
@@ -54,7 +60,12 @@ class Notifications(Resource):
 @ns.route("/notifications/permission/<string:permission>&<int:status>")
 class NotificationsPermission(Resource):
     @ns.marshal_with(notification_request_model)
+    @ns.expect(expected_headers_per)
     def get(self, permission, status):
+        token = request.headers["Authorization"]
+        flag, data_token = verify_token(token, department="basic")
+        if not flag:
+            return {"error": "No autorizado. Token invalido"}, 400
         status = status if status in [0, 1] else "%"
         code, result = get_all_notification_db_permission(permission, status)
         return {"data": result, "msg": "Ok" if code == 200 else "Error"}, code
@@ -62,8 +73,13 @@ class NotificationsPermission(Resource):
 
 @ns.route("/notification")
 class Notification(Resource):
-    @ns.expect(notification_insert_model)
+    @ns.expect(expected_headers_per, notification_insert_model)
     def post(self):
+        token = request.headers["Authorization"]
+        flag, data_token = verify_token(token, department="basic")
+        if not flag:
+            return {"error": "No autorizado. Token invalido"}, 400
+        # noinspection PyUnresolvedReferences
         validator = NotificationInsertForm.from_json(ns.payload)
         if not validator.validate():
             return {"errors": validator.errors}, 400
@@ -74,8 +90,13 @@ class Notification(Resource):
         else:
             return {"error": error, "data": str(result)}, 400
 
-    @ns.expect(notification_insert_model)
+    @ns.expect(expected_headers_per, notification_insert_model)
     def put(self):
+        token = request.headers["Authorization"]
+        flag, data_token = verify_token(token, department="basic")
+        if not flag:
+            return {"error": "No autorizado. Token invalido"}, 400
+        # noinspection PyUnresolvedReferences
         validator = NotificationInsertForm.from_json(ns.payload)
         if not validator.validate():
             return {"errors": validator.errors}, 400
@@ -92,7 +113,12 @@ class Notification(Resource):
 
 @ns.route("/download/gui/settings")
 class DownloadFileVacations(Resource):
+    @ns.expect(expected_headers_per)
     def get(self):
+        token = request.headers["Authorization"]
+        flag, data_token = verify_token(token, department="basic")
+        if not flag:
+            return {"error": "No autorizado. Token invalido"}, 400
         try:
             return send_file(filepath_settings, as_attachment=True)
         except Exception as e:
@@ -102,8 +128,15 @@ class DownloadFileVacations(Resource):
 @ns.route("/AV/response")
 class ResponseAV(Resource):
     @ns.marshal_with(response_av_model)
-    @ns.expect(request_av_response_model)
+    @ns.expect(expected_headers_per, request_av_response_model)
     def post(self):
+        token = request.headers["Authorization"]
+        flag, data_token = verify_token(
+            token, department=["almacen", "operaciones", "rrhh", "administracion"]
+        )
+        if not flag:
+            return {"error": "No autorizado. Token invalido"}, 400
+
         validator = RequestAVResponseForm.from_json(ns.payload)
         if not validator.validate():
             return {"errors": validator.errors}, 400
@@ -124,7 +157,14 @@ class ResponseAV(Resource):
 @ns.route("/AV/files/<string:department>")
 class FilesAV(Resource):
     @ns.marshal_with(response_files_av_model)
+    @ns.expect(expected_headers_per)
     def get(self, department):
+        token = request.headers["Authorization"]
+        flag, data_token = verify_token(
+            token, department=["almacen", "operaciones", "rrhh", "administracion"]
+        )
+        if not flag:
+            return {"error": "No autorizado. Token invalido"}, 400
         try:
             files = get_files_openai(department)
             if len(files) == 0:
@@ -136,80 +176,57 @@ class FilesAV(Resource):
 
 @ns.route("/task/quizz")
 class Task(Resource):
-    @ns.expect(task_insert_model)
+    @ns.expect(expected_headers_per, task_insert_model)
     def post(self):
+        token = request.headers["Authorization"]
+        flag, data_token = verify_token(token, department="rrhh")
+        if not flag:
+            return {"error": "No autorizado. Token invalido"}, 400
+        # noinspection PyUnresolvedReferences
         validator = TaskInsertForm.from_json(ns.payload)
         if not validator.validate():
             return {"errors": validator.errors}, 400
         data = validator.data
-        flag, error, result = create_task(
-            data["title"],
-            data["emp_destiny"],
-            data["emp_origin"],
-            data["date_limit"],
-            data["metadata"],
-        )
-        if flag:
-            msg = f"Se creo una tarea ({result}) {data['title']} para {data['metadata']['name_emp']}"
-            create_notification_permission_notGUI(
-                msg,
-                ["RRHH"],
-                "Nuevo tarea quizz creada",
-                data["emp_origin"],
-                data["emp_destiny"],
-            )
-            return {"msg": f"Ok-->{msg}"}, 201
-        else:
-            print(error)
-            return {"msg": "Ok", "data": str(error)}, 400
+        response, code = create_task_from_api(data)
+        return response, code
 
-    @ns.expect(task_update_model)
+    @ns.expect(expected_headers_per, task_update_model)
     def put(self):
-        print(ns.payload)
+        token = request.headers["Authorization"]
+        flag, data_token = verify_token(token, department="rrhh")
+        if not flag:
+            return {"error": "No autorizado. Token invalido"}, 400
+        # noinspection PyUnresolvedReferences
         validator = TaskUpdateForm.from_json(ns.payload)
-
         if not validator.validate():
             return {"errors": validator.errors}, 400
         data = validator.data
-        print(data["body"].keys())
-        flag, error, result = update_task(data["id"], data["body"])
-        if flag:
-            msg = f"Se actualizo la tarea {data['body']['title']} para {data['body']['metadata']['name_emp']}"
-            create_notification_permission_notGUI(
-                msg,
-                ["RRHH"],
-                "Tarea quizz actualizada",
-                data["body"]["emp_origin"],
-                data["body"]["emp_destiny"],
-            )
-            return {"msg": f"Ok-->{msg}"}, 200
-        else:
-            return {"msg": "Fail", "data": str(error)}, 400
+        reponse, code = update_task_from_api(data)
+        return reponse, code
 
-    @ns.expect(task_delete_model)
+    @ns.expect(expected_headers_per, task_delete_model)
     def delete(self):
+        token = request.headers["Authorization"]
+        flag, data_token = verify_token(token, department="rrhh")
+        if not flag:
+            return {"error": "No autorizado. Token invalido"}, 400
+        # noinspection PyUnresolvedReferences
         validator = TaskDeleteForm.from_json(ns.payload)
         if not validator.validate():
             return {"errors": validator.errors}, 400
         data = validator.data
-        flag, error, result = delete_task(data["id"])
-        if flag:
-            msg = f"Se elimino la tarea {data['id']}"
-            create_notification_permission_notGUI(
-                msg,
-                ["RRHH"],
-                "Tarea quizz eliminada",
-                data["emp_origin"],
-                data["emp_destiny"],
-            )
-            return {"msg": f"Ok-->{msg}"}, 200
-        else:
-            return {"msg": "Fail", "data": str(error)}, 400
+        response, code = delete_task_from_api(data)
+        return response, code
 
 
 @ns.route("/task/<int:emp_id>")
 class TaskGui(Resource):
+    @ns.expect(expected_headers_per)
     def get(self, emp_id):
+        token = request.headers["Authorization"]
+        flag, data_token = verify_token(token, emp_id=emp_id)
+        if not flag:
+            return {"error": "No autorizado. Token invalido"}, 400
         data, code = get_task_by_id_employee(emp_id)
         if code == 200:
             return {"data": data}, 200

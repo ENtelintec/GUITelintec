@@ -2,10 +2,7 @@
 __author__ = "Edisson Naula"
 __date__ = "$ 02/abr./2024  at 9:53 $"
 
-import csv
-from datetime import datetime
-
-from flask import send_file
+from flask import send_file, request
 from flask_restx import Resource, Namespace
 
 from static.Models.api_fichaje_models import (
@@ -24,33 +21,19 @@ from static.Models.api_fichaje_models import (
     FichajeAproveExtras_model,
     FichajeAproveExtras,
 )
+from static.Models.api_models import expected_headers_per
 from static.Models.api_sm_models import client_emp_sm_response_model
-from static.constants import (
-    delta_bitacora_edit,
-    format_date,
-    format_timestamps,
-    filepath_bitacora_download,
-    log_file_bitacora_path,
-)
-from templates.misc.Functions_AuxFiles import (
-    get_events_op_date,
-    update_bitacora,
-    update_bitacora_value,
-    erase_value_bitacora,
-)
-from templates.misc.Functions_Files import write_log_file
-from templates.Functions_Utils import create_notification_permission
-from templates.resources.midleware.Functions_DB_midleware import check_date_difference
 from templates.controllers.employees.employees_controller import (
     get_employees_op_names,
     get_contracts_operaciones,
 )
-from templates.resources.midleware.Functions_midleware_misc import (
-    get_events_from_extraordinary_sources,
-)
+from templates.resources.methods.Functions_Aux_Login import verify_token
 from templates.resources.midleware.MD_Bitacora import (
     get_events_extra,
-    add_aproved_to_comment,
+    get_events_bitacora,
+    create_event_bitacora_from_api,
+    update_event_bitacora_from_api,
+    delete_event_bitacora_from_api, get_file_report_bitacora, create_multiple_event_bitacora_from_api, aprove_event_bitacora_from_api,
 )
 
 ns = Namespace("GUI/api/v1/bitacora")
@@ -59,7 +42,12 @@ ns = Namespace("GUI/api/v1/bitacora")
 @ns.route("/employees")
 class Employees(Resource):
     @ns.marshal_with(client_emp_sm_response_model)
+    @ns.expect(expected_headers_per)
     def get(self):
+        token = request.headers["Authorization"]
+        flag, data_token = verify_token(token, department="bitacoras")
+        if not flag:
+            return {"error": "No autorizado. Token invalido"}, 400
         flag, error, result = get_employees_op_names()
         if flag:
             return {"data": result, "comment": error}, 200
@@ -69,198 +57,95 @@ class Employees(Resource):
 
 @ns.route("/fichaje/table")
 class FichajeTable(Resource):
-    @ns.expect(fichaje_request_model)
+    @ns.expect(expected_headers_per, fichaje_request_model)
     def post(self):
+        token = request.headers["Authorization"]
+        flag, data_token = verify_token(token, department="bitacoras")
+        if not flag:
+            return {"error": "No autorizado. Token invalido"}, 400
+        # noinspection PyUnresolvedReferences
         validator = FichajeRequestFormr.from_json(ns.payload)
         if not validator.validate():
             return {"error": validator.errors}, 400
         data = validator.data
-        # code, data = parse_data(ns.payload, 9)
-        # if code == 400:
-        #     return {"answer": "The data has a bad structure"}, code
-        date = data["date"]
-        date = datetime.strptime(date, format_date) if isinstance(date, str) else date
-        events, columns = get_events_op_date(date, True, emp_id=data["emp_id"])
-        return {"data": events, "columns": columns}, 200
+        response, code = get_events_bitacora(data)
+        return response, code
 
 
 @ns.route("/fichaje/event")
 class FichajeEvent(Resource):
-    @ns.expect(fichaje_add_update_request_model)
+    @ns.expect(expected_headers_per, fichaje_add_update_request_model)
     def post(self):
+        token = request.headers["Authorization"]
+        flag, data_token = verify_token(token, department="bitacoras")
+        if not flag:
+            return {"error": "No autorizado. Token invalido"}, 400
+        # noinspection PyUnresolvedReferences
         validator = FichajeAddUpdateRequestForm.from_json(ns.payload)
         if not validator.validate():
             return {"error": validator.errors}, 400
         data = validator.data
-        out = check_date_difference(data["date"], delta_bitacora_edit)
-        flag = False
-        error = None
-        events_added = []
-        if not out:
-            return {"answer": "No se puede alterar la bitcaora en esta fecha."}, 403
-        if data["event"].lower() == "extraordinary":
-            event, data_events = get_events_from_extraordinary_sources(
-                data["hour_in"], data["hour_out"], data
-            )
-            for index, item in enumerate(data_events):
-                flag, error, result = update_bitacora(
-                    data["id_emp"], event[index], item
-                )
-                if flag:
-                    events_added.append(f"{event[index]}_{item[1]}, result: {result}")
-        else:
-            flag, error, result = update_bitacora(
-                data["id_emp"],
-                data["event"],
-                (data["date"], data["value"], data["comment"], data["contract"]),
-            )
-            if flag:
-                events_added.append(
-                    f"{data['event']}_{data['value']}, result: {result}"
-                )
-        if flag:
-            msg = (
-                f"Record inserted-->Por: {data['id_leader']}, para empleado: {data['id_emp']}, Fecha: {data['date']}, "
-                f"Evento: {data['event']}, Valor: {data['value']}, Comentario: {data['comment']}"
-            )
-            create_notification_permission(
-                msg,
-                ["bitacora", "operaciones"],
-                "Nuevo evento bitacora",
-                data["id_leader"],
-                data["id_emp"],
-            )
-            write_log_file(log_file_bitacora_path, msg)
-            return {"answer": "The event has been added", "data": events_added}, 201
-        elif error is not None:
-            print(error)
-            return {"answer": "There has been an error at adding the bitacora"}, 404
-        else:
-            return {"answer": "Fail to add registry"}, 404
+        response, code = create_event_bitacora_from_api(data)
+        return response, code
 
-    @ns.expect(fichaje_add_update_request_model)
+    @ns.expect(expected_headers_per, fichaje_add_update_request_model)
     def put(self):
+        token = request.headers["Authorization"]
+        flag, data_token = verify_token(token, department="bitacoras")
+        if not flag:
+            return {"error": "No autorizado. Token invalido"}, 400
+        # noinspection PyUnresolvedReferences
         validator = FichajeAddUpdateRequestForm.from_json(ns.payload)
         if not validator.validate():
             return {"error": validator.errors}, 400
         data = validator.data
-        # code, data = parse_data(ns.payload, 10)
-        # if code == 400:
-        #     return {"answer": "The data has a bad structure"}, code
-        out = check_date_difference(data["date"], delta_bitacora_edit)
-        if not out:
-            return {"answer": "No se puede alterar la bitcaora en esta fecha."}, 403
-        flag, error, result = update_bitacora_value(
-            data["id_emp"],
-            data["event"],
-            (data["date"], data["value"], data["comment"], data["contract"]),
-        )
-        if flag:
-            msg = (
-                f"Record updated-->Por: {data['id_leader']}, para empleado: {data['id_emp']}, Fecha: {data['date']}, "
-                f"Evento: {data['event']}, Valor: {data['value']}, Comentario: {data['comment']}"
-            )
-            create_notification_permission(
-                msg,
-                ["bitacora", "operaciones"],
-                "Evento bitacora actualizado",
-                data["id_leader"],
-                data["id_emp"],
-            )
-            write_log_file(log_file_bitacora_path, msg)
-            return {"answer": "The event has been updated"}, 200
-        elif error is not None:
-            print(error)
-            return {"answer": "There has been an error at updating the bitacora"}, 404
-        else:
-            return {"answer": "Fail to update registry"}, 404
+        response, code = update_event_bitacora_from_api(data)
+        return response, code
 
-    @ns.expect(fichaje_delete_request_model)
+    @ns.expect(expected_headers_per, fichaje_delete_request_model)
     def delete(self):
+        token = request.headers["Authorization"]
+        flag, data_token = verify_token(token, department="bitacoras")
+        if not flag:
+            return {"error": "No autorizado. Token invalido"}, 400
+        # noinspection PyUnresolvedReferences
         validator = FichajeDeleteRequestForm.from_json(ns.payload)
         if not validator.validate():
             return {"error": validator.errors}, 400
         data = validator.data
-        # code, data = parse_data(ns.payload, 11)
-        # if code == 400:
-        #     return {"answer": "The data has a bad structure"}, code
-        out = check_date_difference(data["date"], delta_bitacora_edit)
-        if not out:
-            return {"answer": "No se puede alterar la bitcaora en esta fecha."}, 403
-        flag, error, result = erase_value_bitacora(
-            data["id_emp"], data["event"], (data["date"], data["contract"])
-        )
-        if flag:
-            msg = (
-                f"Record deleted-->Por: {data['id_leader']}, para empleado: {data['id_emp']}, Fecha: {data['date']}, "
-                f"Evento: {data['event']}"
-            )
-            create_notification_permission(
-                msg,
-                ["bitacora", "operaciones"],
-                "Evento bitacora eliminado",
-                data["id_leader"],
-                data["id_emp"],
-            )
-            write_log_file(log_file_bitacora_path, msg)
-            return {"answer": "The event has been deleted"}, 200
-        elif error is not None:
-            print(error)
-            return {"answer": "There has been an error at deleting the bitacora"}, 404
-        else:
-            return {"answer": "Fail to delete registry"}, 404
+        response, code = delete_event_bitacora_from_api(data)
+        return response, code
 
 
 @ns.route("/dowload/report")
 class BitacoraDownloadReport(Resource):
-    @ns.expect(bitacora_dowmload_report_model)
+    @ns.expect(expected_headers_per, bitacora_dowmload_report_model)
     def post(self):
+        token = request.headers["Authorization"]
+        flag, data_token = verify_token(token, department="bitacoras")
+        if not flag:
+            return {"error": "No autorizado. Token invalido"}, 400
+        # noinspection PyUnresolvedReferences
         validator = BitacoraDownloadReportForm.from_json(ns.payload)
         if not validator.validate():
             return {"error": validator.errors}, 400
         data = validator.data
-        # code, data = parse_data(ns.payload, 14)
-        # if code == 400:
-        #     return {"answer": "The data has a bad structure"}, code
-        date = data["date"]
-        date = datetime.strptime(date, format_date) if isinstance(date, str) else date
-        events, columns = get_events_op_date(date, False, emp_id=data["id_emp"])
-        event_filtered = []
-        match data["span"]:
-            case "day":
-                for item in events:
-                    if datetime.strptime(item[7], format_timestamps).day == date.day:
-                        event_filtered.append(item)
-            case "week":
-                for item in events:
-                    if (
-                        datetime.strptime(item[7], format_timestamps).isocalendar()[1]
-                        == date.isocalendar()[1]
-                    ):
-                        event_filtered.append(item)
-            case "month":
-                for item in events:
-                    if (
-                        datetime.strptime(item[7], format_timestamps).month
-                        == date.month
-                    ):
-                        event_filtered.append(item)
-        # save csv
-        with open(filepath_bitacora_download, "w") as file:
-            writer = csv.writer(file)
-            writer.writerow(columns)
-            for item in event_filtered:
-                writer.writerow(item)
+        filepath, code = get_file_report_bitacora(data)
         # data_out = transform_bitacora_data_to_dict(event_filtered, columns)
         try:
-            return send_file(filepath_bitacora_download, as_attachment=True)
+            return send_file(filepath, as_attachment=True)
         except Exception as e:
             return {"data": f"Error en el tipo de quizz: {str(e)}"}, 400
 
 
 @ns.route("/contract_list")
 class BitacoraEmployeesList(Resource):
+    @ns.expect(expected_headers_per)
     def get(self):
+        token = request.headers["Authorization"]
+        flag, data_token = verify_token(token, department="bitacoras")
+        if not flag:
+            return {"error": "No autorizado. Token invalido"}, 400
         flag, error, result = get_contracts_operaciones()
         # filtering unique contracts
         contracts = list(set([item[0] for item in result]))
@@ -273,59 +158,30 @@ class BitacoraEmployeesList(Resource):
 
 @ns.route("/fichaje/multiple")
 class FichajeMultipleEvent(Resource):
-    @ns.expect(FichajeRequestMultipleEvents_model)
+    @ns.expect(expected_headers_per, FichajeRequestMultipleEvents_model)
     def post(self):
+        token = request.headers["Authorization"]
+        flag, data_token = verify_token(token, department="bitacoras")
+        if not flag:
+            return {"error": "No autorizado. Token invalido"}, 400
+        # noinspection PyUnresolvedReferences
         validator = FichajeRequestMultipleEvents.from_json(ns.payload)
         if not validator.validate():
             return {"error": validator.errors}, 400
         data = validator.data
-        events_recieved = data["events"]
-        events_added = []
-        msg = f"---Agregando nuevos eventos por el lider {data['id_leader']}---"
-        for event in events_recieved:
-            if event["event"].lower() == "extraordinary":
-                event_e, data_events = get_events_from_extraordinary_sources(
-                    event["hour_in"], event["hour_out"], event
-                )
-                for index, item in enumerate(data_events):
-                    flag, error, result = update_bitacora(
-                        event["id_emp"], event_e[index], item
-                    )
-                    if flag:
-                        events_added.append(
-                            f"id_emp: {event['id_emp']}, {event_e[index]}_{item[1]}, flag: {flag}, error: {str(error)}, result: {result}"
-                        )
-                        msg += f"\nid_emp: {event['id_emp']}, {event_e[index]}_{item[1]}, flag: {flag}, error: {str(error)}, result: {result}"
-            else:
-                flag, error, result = update_bitacora(
-                    event["id_emp"],
-                    event["event"],
-                    (
-                        event["date"],
-                        event["value"],
-                        event["comment"],
-                        event["contract"],
-                    ),
-                )
-                events_added.append(
-                    f"id_emp: {event['id_emp']}, {event['event']}_{event['value']}, flag: {flag}, error: {str(error)}, result: {result}"
-                )
-                msg += f"\nid_emp: {event['id_emp']}, {event['event']}_{event['value']}, flag: {flag}, error: {str(error)}, result: {result}"
-        create_notification_permission(
-            msg,
-            ["bitacora", "operaciones"],
-            "Nuevo evento bitacora",
-            data["id_leader"],
-            data["id_leader"],
-        )
-        write_log_file(log_file_bitacora_path, msg)
-        return {"answer": "The events were proccessed.", "data": events_added}, 200
+        response, code = create_multiple_event_bitacora_from_api(data)
+        return response, code
 
 
 @ns.route("/fichajes/extra")
 class FichajesGetExtra(Resource):
-    @ns.expect(FichajeRequestExtras_model)
+    @ns.expect(expected_headers_per, FichajeRequestExtras_model)
     def post(self):
+        token = request.headers["Authorization"]
+        flag, data_token = verify_token(token, department="bitacoras")
+        if not flag:
+            return {"error": "No autorizado. Token invalido"}, 400
+        # noinspection PyUnresolvedReferences
         validator = FichajeRequestExtras.from_json(ns.payload)
         if not validator.validate():
             return {"error": validator.errors}, 400
@@ -336,31 +192,16 @@ class FichajesGetExtra(Resource):
 
 @ns.route("/fichajes/extra/aprove")
 class FichajesAproveExtra(Resource):
-    @ns.expect(FichajeAproveExtras_model)
+    @ns.expect(expected_headers_per, FichajeAproveExtras_model)
     def post(self):
+        token = request.headers["Authorization"]
+        flag, data_token = verify_token(token, department="bitacoras")
+        if not flag:
+            return {"error": "No autorizado. Token invalido"}, 400
+        # noinspection PyUnresolvedReferences
         validator = FichajeAproveExtras.from_json(ns.payload)
         if not validator.validate():
             return {"error": validator.errors}, 400
         data = validator.data
-        flag, error, result = update_bitacora(
-            data["id_emp"],
-            "extra",
-            [data["date"], data["value"], data["comment"], data["contract"]],
-        )
-        data["comment"] = add_aproved_to_comment(data["comment"])
-        if flag:
-            msg = f"Evento extra aprovado: {data['id_emp']}, {data['date']}, {data['value']}, {data['comment']}"
-            create_notification_permission(
-                msg,
-                ["bitacora", "operaciones"],
-                "Evento extra aprovado bitacora",
-                data["id_leader"],
-                data["id_emp"],
-            )
-            write_log_file(log_file_bitacora_path, msg)
-            return {"answer": "The event has been updated"}, 200
-        elif error is not None:
-            print(error)
-            return {"answer": "There has been an error at aproving the bitacora"}, 404
-        else:
-            return {"answer": "Fail to update registry"}, 404
+        response, code = aprove_event_bitacora_from_api(data)
+        return response, code

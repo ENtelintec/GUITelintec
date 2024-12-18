@@ -23,7 +23,7 @@ from templates.controllers.material_request.sm_controller import (
     update_history_sm,
     cancel_sm_db,
 )
-from templates.resources.midleware.Midleware_SM import update_data_dicts, dispatch_products
+from templates.resources.midleware.MD_SM import update_data_dicts, dispatch_products
 
 
 def reorder_data_table(data):

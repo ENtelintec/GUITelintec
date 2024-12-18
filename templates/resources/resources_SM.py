@@ -25,14 +25,16 @@ from static.Models.api_sm_models import (
     TableRequestForm,
     SMPostForm,
     SMPutForm,
-    SMDeleteForm, NewClienteForm, RequestSMDispatchForm,
+    SMDeleteForm,
+    NewClienteForm,
+    RequestSMDispatchForm,
+    NewProductForm,
 )
 from static.constants import log_file_sm_path
 from templates.Functions_AuxPlots import get_data_sm_per_range
 from templates.misc.Functions_Files import write_log_file
 from templates.Functions_Utils import create_notification_permission
 from templates.resources.methods.Functions_Aux_Login import verify_token
-from templates.Functions_Text import parse_data
 from templates.controllers.customer.customers_controller import get_sm_clients
 from templates.controllers.employees.employees_controller import get_sm_employees
 from templates.controllers.index import DataHandler
@@ -41,8 +43,16 @@ from templates.controllers.material_request.sm_controller import (
     delete_sm_db,
     update_sm_db,
 )
-from templates.resources.midleware.Midleware_SM import get_products_sm, get_all_sm, dispatch_sm, get_employees_almacen, cancel_sm, \
-    dowload_file_sm, create_customer, create_product
+from templates.resources.midleware.MD_SM import (
+    get_products_sm,
+    get_all_sm,
+    dispatch_sm,
+    get_employees_almacen,
+    cancel_sm,
+    dowload_file_sm,
+    create_customer,
+    create_product,
+)
 
 ns = Namespace("GUI/api/v1/sm")
 
@@ -234,9 +244,11 @@ class Product(Resource):
         flag, data_token = verify_token(token, department="sm")
         if not flag:
             return {"error": "No autorizado. Token invalido"}, 400
-        code, data = parse_data(ns.payload, 13)
-        if code == 400:
-            return {"answer": "The data has a bad structure"}, code
+        # noinspection PyUnresolvedReferences
+        validator = NewProductForm.from_json(ns.payload)
+        if not validator.validate():
+            return {"error": validator.errors}, 400
+        data = validator.data
         response, code = create_product(
             data["sku"],
             data["name"],
