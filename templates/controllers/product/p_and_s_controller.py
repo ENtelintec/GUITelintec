@@ -291,10 +291,8 @@ def create_product_db(
         stock = int(stock)
         id_category = int(id_category) if id_category else None
         id_supplier = int(id_supplier) if id_supplier else None
-        codes = codes if codes is not None else []
-        locations = (
-            {"location_1": "", "location_2": ""} if locations is None else locations
-        )
+        codes = codes if codes is not None else [{"tag": "sku_fabricante", "value": ""}]
+        locations = locations if locations is not None else {"location_1": "", "location_2": ""}
         extra_info = {"brand": brand} if brand is not None else {"brand": ""}
     except Exception as e:
         return False, str(e), None
@@ -341,12 +339,8 @@ def update_product_db(
         stock = float(stock)
         id_category = int(id_category) if id_category else None
         id_supplier = int(id_supplier) if id_supplier else None
-        codes = "[]" if codes is None else codes
-        locations = (
-            "{'location_1': " ",  'location_2': " "}"
-            if locations is None
-            else locations
-        )
+        codes = codes if codes is not None else [{"tag": "sku_fabricante", "value": ""}]
+        locations = locations if locations is not None else {"location_1": "", "location_2": ""}
         brand = brand if brand is not None else ""
     except Exception as e:
         return False, str(e), None
@@ -382,7 +376,7 @@ def create_product_db_admin(sku, name, udm, stock, id_category, codes=None):
         udm = str(udm)
         stock = int(stock)
         id_category = int(id_category)
-        codes = "[]" if codes is None else codes
+        codes = codes if codes is not None else [{"tag": "sku_fabricante", "value": ""}]
     except Exception as e:
         return False, str(e), None
     insert_sql = (

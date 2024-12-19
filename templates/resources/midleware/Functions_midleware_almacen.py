@@ -189,44 +189,51 @@ def get_all_products_DB(type_p):
 def insert_product_db(data):
     if data["info"]["supplier_name"] is not None:
         flag, error, result = create_product_db(
-            data["info"]["sku"],
-            data["info"]["name"],
-            data["info"]["udm"],
-            data["info"]["stock"],
-            data["info"]["category_name"],
-            data["info"]["supplier_name"],
-            data["info"]["is_tool"],
-            data["info"]["is_internal"],
+            sku=data["info"]["sku"],
+            name=data["info"]["name"],
+            udm=data["info"]["udm"],
+            stock=data["info"]["stock"],
+            id_category=data["info"]["category_name"],
+            id_supplier=data["info"]["supplier_name"],
+            is_tool=data["info"]["is_tool"],
+            is_internal=data["info"]["is_internal"],
+            codes=data["info"]["codes"],
+            locations=data["info"]["locations"],
+            brand=data["info"]["brand"],
         )
     else:
         flag, error, result = create_product_db_admin(
-            data["info"]["sku"],
-            data["info"]["name"],
-            data["info"]["udm"],
-            data["info"]["stock"],
-            data["info"]["category_name"],
+            sku=data["info"]["sku"],
+            name=data["info"]["name"],
+            udm=data["info"]["udm"],
+            stock=data["info"]["stock"],
+            id_category=data["info"]["category_name"],
+            codes=data["info"]["codes"],
         )
     if not flag:
         return False, error
     time_zone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
     flag, e, result = create_in_movement_db(
-        result, "entrada", data["info"]["stock"], timestamp, None
+        result, "entrada", data["info"]["stock"], timestamp, None, "creation"
     )
     return True, result
 
 
 def update_product_amc(data):
     flag, error, result = update_product_db(
-        data["info"]["id"],
-        data["info"]["sku"],
-        data["info"]["name"],
-        data["info"]["udm"],
-        data["info"]["stock"],
-        data["info"]["category_name"],
-        data["info"]["supplier_name"],
-        data["info"]["is_tool"],
-        data["info"]["is_internal"],
+        id_product=data["info"]["id"],
+        sku=data["info"]["sku"],
+        name=data["info"]["name"],
+        udm=data["info"]["udm"],
+        stock=data["info"]["stock"],
+        id_category=data["info"]["category_name"],
+        id_supplier=data["info"]["supplier_name"],
+        is_tool=data["info"]["is_tool"],
+        is_internal=data["info"]["is_internal"],
+        codes=data["info"]["codes"],
+        locations=data["info"]["locations"],
+        brand=data["info"]["brand"],
     )
     if not flag:
         return False, error
@@ -234,8 +241,9 @@ def update_product_amc(data):
     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
     if data["info"]["quantity_move"] == 0:
         return True, result
+    movement_type = "entrada" if data["info"]["quantity_move"] > 0 else "salida"
     flag, e, result = create_in_movement_db(
-        data["info"]["id"], "entrada", data["info"]["quantity_move"], timestamp, None
+        data["info"]["id"], movement_type, data["info"]["quantity_move"], timestamp, None, "update"
     )
     return True, result
 
@@ -256,6 +264,7 @@ def insert_multiple_products_from_api(data):
             item["is_internal"],
             item["codes"],
             item["locations"],
+            item["brand"],
         )
         for item in products_new
     ]
@@ -308,6 +317,7 @@ def update_multiple_products_from_api(data):
             item["is_internal"],
             item["codes"],
             item["locations"],
+            item["brand"],
         )
         for item in products_update
     ]

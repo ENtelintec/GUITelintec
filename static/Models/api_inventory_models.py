@@ -57,6 +57,9 @@ product_model_update = api.model(
         ),
         "codes": fields.List(fields.Nested(code_model), required=False),
         "locations": fields.Nested(locations_model, required=False),
+        "brand": fields.String(
+            required=False, description="The product brand."
+        ),
     },
 )
 
@@ -83,6 +86,9 @@ product_model_new = api.model(
         ),
         "codes": fields.List(fields.Nested(code_model), required=False),
         "locations": fields.Nested(locations_model, required=False),
+        "brand": fields.String(
+            required=False, description="The product brand."
+        ),
     },
 )
 
@@ -160,11 +166,6 @@ suppliers_output_model = api.model(
     },
 )
 
-# item["id_product"],
-#             item["type_m"],
-#             item["quantity"],
-#             item["movement_date"],
-#             item["sm_id"]
 movement_model = api.model(
     "MovementSAMC",
     {
@@ -175,12 +176,15 @@ movement_model = api.model(
             required=True, description="The movement type", example="entrada"
         ),
         "quantity": fields.Float(required=True, description="The movement quantity"),
-        "sm_id": fields.Integer(
-            required=True, description="The movement id", example=1
+        "sm_id": fields.String(
+            required=True, description="The movement id", example="folio-sm"
         ),
         "old_stock": fields.Float(
-            required=True, description="The movement old stock", example=1
+            required=True, description="The movement old stock", example=1.0
         ),
+        "reference":  fields.String(
+            required=True, description="The movement reference", example="reference"
+        )
     },
 )
 
@@ -321,11 +325,9 @@ class MovementForm(Form):
     )
     type_m = StringField("type", validators=[InputRequired()], default="entrada")
     quantity = FloatField("quantity", validators=[InputRequired()])
-    sm_id = IntegerField(
-        "sm_id",
-        validators=[InputRequired(message="Id is required or value 0 not accepted")],
-    )
+    sm_id = StringField("sm_id", validators=[], default="")
     old_stock = FloatField("old_stock", validators=[], default=0.0)
+    reference = StringField("reference", validators=[], default="")
 
 
 class MovementsListPostForm(Form):

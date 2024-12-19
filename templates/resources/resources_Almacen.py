@@ -153,7 +153,8 @@ class MultipleMovementDB(Resource):
 
 @ns.route("/inventory/products/<string:type_p>")
 class InventoryProducts(Resource):
-    @ns.marshal_with(expected_headers_per, products_output_model)
+    @ns.marshal_with(products_output_model)
+    @ns.expect(expected_headers_per)
     def get(self, type_p):
         token = request.headers["Authorization"]
         flag, data_token = verify_token(token, department="almacen")
