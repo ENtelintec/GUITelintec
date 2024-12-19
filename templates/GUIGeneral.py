@@ -7,7 +7,8 @@ from ttkbootstrap.scrolled import ScrolledFrame
 
 import templates.modules.Sesion.Frame_LoginFrames as Login
 from static.FramesClasses import available_frames
-from static.extensions import filepath_settings, ventanasApp_path
+from static.constants import filepath_settings, ventanasApp_path
+from templates.controllers.chatbot.chatbot_controller import get_chats_w_limit
 from templates.misc.Functions_AuxFiles import read_setting_file
 from templates.Functions_AuxFilesGUI import carpeta_principal, get_image_side_menu
 from templates.misc.Functions_Files import read_file_not
@@ -15,7 +16,6 @@ from templates.Functions_GUI_Utils import (
     create_button_side_menu,
     compare_permissions_windows,
 )
-from templates.controllers.chatbot.chatbot_controller import get_chats_w_limit
 from templates.controllers.employees.us_controller import get_username_data
 from templates.modules.Assistant.Frame_vAssistantGUI import AssistantGUI
 
@@ -56,6 +56,7 @@ class GUIAsistente(ttk.Window):
         self.sample_time = int(self.settings["sampling_time"])
         self.time_window = int(self.settings["time_window"])
         self.chats = get_chats_w_limit(limit=(0, self.chats_to_show))
+        # self.chats = None
         self.virtual_assistant_window = None
         self.VA_frame = None
         self._active_window = None
@@ -65,7 +66,7 @@ class GUIAsistente(ttk.Window):
         self.navigation_frame.columnconfigure(0, weight=1)
         self.navigation_frame.rowconfigure(2, weight=1)
         # --------------------------------title-------------------------------
-        self.btnTeli = LogoFrame(self.navigation_frame)
+        self.btnTeli = ImageLogoFrame(self.navigation_frame)
         self.btnTeli.grid(row=0, column=0, sticky="nswe")
         theme_names = self.style_gui.theme_names()
         frame_theme = ttk.Frame(self.navigation_frame)
@@ -92,7 +93,13 @@ class GUIAsistente(ttk.Window):
         )
         print("side menu widgets created")
         # ------------------------login frame-------------------------------
-        self.login_frame = Login.LoginGUI(self, style_gui=self.style_gui)
+        kwargs = {
+            "get_username_data_callback": self.get_username_data,
+            "update_side_menu_windows_callback": self.update_side_menu_windows,
+            "update_side_menu_data_callback": self.update_side_menu_data,
+            "update_side_menu_callback": self.update_side_menu,
+        }
+        self.login_frame = Login.LoginGUI(self, style_gui=self.style_gui, **kwargs)
         self.login_frame.grid(
             row=0, column=0, sticky="nsew", pady=10, padx=5, columnspan=2
         )
@@ -106,7 +113,12 @@ class GUIAsistente(ttk.Window):
     def logOut(self):
         self._select_frame_by_name("none")
         self._destroy_side_menu_widgets()
-        self.login_frame = Login.LoginGUI(self, style_gui=self.style_gui)
+        kwargs = {
+            "get_username_data_callback": self.get_username_data,
+            "update_side_menu_data_callback": self.update_side_menu_data,
+            "update_side_menu_callback": self.update_side_menu,
+        }
+        self.login_frame = Login.LoginGUI(self, style_gui=self.style_gui, **kwargs)
         self.login_frame.grid(
             row=0, column=0, sticky="nsew", pady=10, padx=5, columnspan=2
         )
@@ -162,6 +174,8 @@ class GUIAsistente(ttk.Window):
     def _select_frame_by_name(self, name):
         match name:
             case "none":
+                if self.names_side_menu is None:
+                    return
                 for txt in self.names_side_menu:
                     self.windows_frames[txt].grid_forget()
                 if self.VA_frame is not None:
@@ -213,29 +227,47 @@ class GUIAsistente(ttk.Window):
     def _create_side_menu_windows(self, data_dic):
         self.data_dic = data_dic
         windows = {}
+        self.username_data["username"] = self.username
+        self.username_data["department"] = self.department
+        arguments = {
+            "master": self,
+            "data": data_dic,
+            "style_gui": self.style_gui,
+            "settings": self.settings,
+            "chats_to_show": self.chats_to_show,
+            "images": None,
+            "chats": self.chats,
+            "department": self.department,
+            "username": self.username,
+            "permissions": self.permissions,
+            "username_data": self.username_data,
+            "data_emp": self.username_data,
+            "id_emp": self.username_data["id"],
+            "triger_actions_main_callback": self.triger_actions,
+        }
         for i, window in enumerate(self.names_side_menu):
             window_to_create = available_frames[window]
-            arguments = {
-                "master": self,
-                "data": data_dic,
-                "style_gui": self.style_gui,
-                "settings": self.settings,
-                "chats_to_show": self.chats_to_show,
-                "images": None,
-                "chats": self.chats,
-                "department": self.department,
-                "username": self.username,
-                "permissions": self.permissions,
-                "username_data": self.username_data,
-                "data_emp": self.username_data,
-                "id_emp": self.username_data["id"],
-            }
+            arguments["name_frame"] = window
+            arguments["log_out_callback"] = self.logOut if window == "Cuenta" else None
             windows[window] = window_to_create(**arguments)
-            print(f"{window} frame created")
         return windows
 
+    def get_username_value(self):
+        return self.username
 
-class LogoFrame(tk.Frame):
+    def triger_actions(self, **events):
+        if "action" in events:
+            if events["action"] == "update":
+                for frame in events["frames"]:
+                    window = self.windows_frames[frame]
+                    window.update_procedure(**events)
+            else:
+                print(f"action {events['action']} not implemented")
+        else:
+            print(f"action not implemented--{events}")
+
+
+class ImageLogoFrame(tk.Frame):
     def __init__(self, master):
         super().__init__(master)
         self.columnconfigure(0, weight=1)

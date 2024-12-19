@@ -8,18 +8,18 @@ from datetime import datetime
 import ttkbootstrap as ttk
 from ttkbootstrap.dialogs import Messagebox
 
-from static.extensions import quizzes_RRHH, quizz_out_path, format_date
+from static.constants import quizzes_RRHH, quizz_out_path, format_date
 from templates.Functions_GUI_Utils import (
     create_Combobox,
     create_label,
 )
 from templates.controllers.employees.employees_controller import get_id_name_employee
 from templates.controllers.misc.tasks_controller import create_task
-from templates.modules.RRHH.SubFrame_QuizzMaker import QuizMaker
 
 
 def get_name_id_employees_list(
-        department: int, is_all: bool) -> tuple[list[str], list[tuple[str, int, str, str, dict]]]:
+    department: int, is_all: bool
+) -> tuple[list[str], list[tuple[str, int, str, str, dict]]]:
     flag, error, out = get_id_name_employee(department, is_all)
     names = []
     aux = []
@@ -44,7 +44,14 @@ def get_name_id_employees_list(
 
 class FrameEncuestas(ttk.Frame):
     def __init__(
-            self, master, quizzes=quizzes_RRHH, quizz_out=None, interviewer="default", setting: dict = None, **kwargs):
+        self,
+        master,
+        quizzes=quizzes_RRHH,
+        quizz_out=None,
+        interviewer="default",
+        setting: dict = None,
+        **kwargs,
+    ):
         super().__init__(master)
         self.columnconfigure(0, weight=1)
         self.rowconfigure(3, weight=1)
@@ -63,7 +70,11 @@ class FrameEncuestas(ttk.Frame):
         if "name" not in self.username_data or "lastname" not in self.username_data:
             self.interviewer = "default"
         else:
-            self.interviewer = self.username_data["name"].upper() + " " + self.username_data["lastname"].upper()
+            self.interviewer = (
+                self.username_data["name"].upper()
+                + " "
+                + self.username_data["lastname"].upper()
+            )
         # ----------widgets-------------
         frame_inputs = ttk.Frame(self)
         frame_inputs.grid(row=1, column=0, padx=10, pady=10, sticky="nswe")
@@ -71,32 +82,67 @@ class FrameEncuestas(ttk.Frame):
         options = []
         for item in self.quizzes.values():
             options.append(item["name"])
-        self.quizz_selector = create_Combobox(frame_inputs, values=options, state="readonly", row=0, column=0,
-                                              sticky="n", width=50, columnspan=2)
+        self.quizz_selector = create_Combobox(
+            frame_inputs,
+            values=options,
+            state="readonly",
+            row=0,
+            column=0,
+            sticky="n",
+            width=50,
+            columnspan=2,
+        )
         self.quizz_selector.bind("<<ComboboxSelected>>", self.select_quiz)
         self.quizz_selector.set("Seleccione una encuesta")
         # employee making the quizz data
-        self.names, self.emps_metadata = get_name_id_employees_list(1, True) if "encuestas" not in kwargs[
-            "data"] else (
-            kwargs["data"]["encuestas"]["names"], kwargs["data"]["encuestas"]["emps_metadata"])
+        self.names, self.emps_metadata = (
+            get_name_id_employees_list(1, True)
+            if "encuestas" not in kwargs["data"]
+            else (
+                kwargs["data"]["encuestas"]["names"],
+                kwargs["data"]["encuestas"]["emps_metadata"],
+            )
+        )
         create_label(
             frame_inputs, text="Empleado encuestado: ", row=1, column=0, sticky="w"
         )
-        self.name_emp_selector = create_Combobox(frame_inputs, values=self.names, state="readonly", width=40, row=1,
-                                                 column=1, sticky="w")
+        self.name_emp_selector = create_Combobox(
+            frame_inputs,
+            values=self.names,
+            state="readonly",
+            width=40,
+            row=1,
+            column=1,
+            sticky="w",
+        )
         # evaluated employee
         self.label_evaluated = create_label(
-            frame_inputs, text="Empleado evaluado: ", row=0, column=2, sticky="w")
+            frame_inputs, text="Empleado evaluado: ", row=0, column=2, sticky="w"
+        )
         self.label_evaluated.grid_remove()
-        self.name_emp_evaluated = create_Combobox(frame_inputs, values=self.names, state="readonly", width=40, row=0,
-                                                  column=3, sticky="w")
+        self.name_emp_evaluated = create_Combobox(
+            frame_inputs,
+            values=self.names,
+            state="readonly",
+            width=40,
+            row=0,
+            column=3,
+            sticky="w",
+        )
         self.name_emp_evaluated.grid_remove()
         self.label_pos_evaluator = create_label(
-            frame_inputs, text="Nivel del ecuestado: ", row=1, column=2, sticky="w")
+            frame_inputs, text="Nivel del ecuestado: ", row=1, column=2, sticky="w"
+        )
         self.label_pos_evaluator.grid_remove()
-        self.pos_evaluator = create_Combobox(frame_inputs,
-                                             values=["Autoevaluación", "Jefe Inmediato", "Colega", "Subordinado"],
-                                             state="readonly", width=40, row=1, column=3, sticky="w")
+        self.pos_evaluator = create_Combobox(
+            frame_inputs,
+            values=["Autoevaluación", "Jefe Inmediato", "Colega", "Subordinado"],
+            state="readonly",
+            width=40,
+            row=1,
+            column=3,
+            sticky="w",
+        )
         self.pos_evaluator.grid_remove()
         # ------------buttons------------
         frame_btns = ttk.Frame(self)
@@ -185,9 +231,16 @@ class FrameEncuestas(ttk.Frame):
         # )
         task_title = "quizz"
         flag, error, data = create_task(
-            task_title, metadata["ID_emp"], self.username_data["id"], metadata["date"], metadata)
+            task_title,
+            metadata["ID_emp"],
+            self.username_data["id"],
+            metadata["date"],
+            metadata,
+        )
         if flag:
-            msg = f"Se creo la encuesta {name_quizz} para {self.name_emp_selector.get()}"
+            msg = (
+                f"Se creo la encuesta {name_quizz} para {self.name_emp_selector.get()}"
+            )
             Messagebox.show_info(title="Exito", message=msg)
         else:
             print(error)

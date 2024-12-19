@@ -46,7 +46,7 @@ def create_widgets(master, data):
     return [cotization_selector]
 
 
-class ContractsDocsFrame(ScrolledFrame):
+class ContractsDocsFrame(ttk.Frame):
     def __init__(self, master, **kwargs):
         super().__init__(master)
         self.txt1 = None

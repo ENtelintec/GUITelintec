@@ -2,8 +2,10 @@
 __author__ = "Edisson Naula"
 __date__ = "$ 01/abr./2024  at 10:26 $"
 
-from flask import send_file
+from flask import send_file, request
 from flask_restx import Resource, Namespace
+
+from static.Models.api_models import expected_headers_per
 from static.Models.api_sm_models import (
     client_emp_sm_response_model,
     products_answer_model,
@@ -24,20 +26,15 @@ from static.Models.api_sm_models import (
     SMPostForm,
     SMPutForm,
     SMDeleteForm,
+    NewClienteForm,
+    RequestSMDispatchForm,
+    NewProductForm,
 )
-from static.extensions import log_file_sm_path
+from static.constants import log_file_sm_path
 from templates.Functions_AuxPlots import get_data_sm_per_range
 from templates.misc.Functions_Files import write_log_file
 from templates.Functions_Utils import create_notification_permission
-from templates.resources.midleware.Functions_DB_midleware import (
-    get_products_sm,
-    get_all_sm,
-    get_employees_almacen,
-    dispatch_sm,
-    cancel_sm,
-    dowload_file_sm,
-)
-from templates.Functions_Text import parse_data
+from templates.resources.methods.Functions_Aux_Login import verify_token
 from templates.controllers.customer.customers_controller import get_sm_clients
 from templates.controllers.employees.employees_controller import get_sm_employees
 from templates.controllers.index import DataHandler
@@ -46,6 +43,16 @@ from templates.controllers.material_request.sm_controller import (
     delete_sm_db,
     update_sm_db,
 )
+from templates.resources.midleware.MD_SM import (
+    get_products_sm,
+    get_all_sm,
+    dispatch_sm,
+    get_employees_almacen,
+    cancel_sm,
+    dowload_file_sm,
+    create_customer,
+    create_product,
+)
 
 ns = Namespace("GUI/api/v1/sm")
 
@@ -53,7 +60,12 @@ ns = Namespace("GUI/api/v1/sm")
 @ns.route("/employees")
 class Employees(Resource):
     @ns.marshal_with(client_emp_sm_response_model)
+    @ns.expect(expected_headers_per)
     def get(self):
+        token = request.headers["Authorization"]
+        flag, data_token = verify_token(token, department="sm")
+        if not flag:
+            return {"error": "No autorizado. Token invalido"}, 400
         flag, error, result = get_sm_employees()
         if flag:
             return {"data": result, "comment": error}, 200
@@ -64,7 +76,12 @@ class Employees(Resource):
 @ns.route("/clients")
 class Clients(Resource):
     @ns.marshal_with(client_emp_sm_response_model)
+    @ns.expect(expected_headers_per)
     def get(self):
+        token = request.headers["Authorization"]
+        flag, data_token = verify_token(token, department="sm")
+        if not flag:
+            return {"error": "No autorizado. Token invalido"}, 400
         flag, error, result = get_sm_clients()
         if flag:
             return {"data": result, "comment": error}, 200
@@ -74,9 +91,14 @@ class Clients(Resource):
 
 @ns.route("/products")
 class Products(Resource):
-    @ns.expect(products_request_model)
+    @ns.expect(expected_headers_per, products_request_model)
     @ns.marshal_with(products_answer_model)
     def post(self):
+        token = request.headers["Authorization"]
+        flag, data_token = verify_token(token, department="sm")
+        if not flag:
+            return {"error": "No autorizado. Token invalido"}, 400
+        # noinspection PyUnresolvedReferences
         validator = ProductRequestForm.from_json(ns.payload)
         if not validator.validate():
             return {"error": validator.errors}, 400
@@ -87,9 +109,14 @@ class Products(Resource):
 
 @ns.route("/all")
 class AllSm(Resource):
-    @ns.expect(table_request_model)
+    @ns.expect(expected_headers_per, table_request_model)
     @ns.marshal_with(table_sm_model)
     def post(self):
+        token = request.headers["Authorization"]
+        flag, data_token = verify_token(token, department="sm")
+        if not flag:
+            return {"error": "No autorizado. Token invalido"}, 400
+        # noinspection PyUnresolvedReferences
         validator = TableRequestForm.from_json(ns.payload)
         if not validator.validate():
             return {"error": validator.errors}, 400
@@ -100,15 +127,17 @@ class AllSm(Resource):
 
 @ns.route("/add")
 class AddSM(Resource):
-    @ns.expect(sm_post_model)
+    @ns.expect(expected_headers_per, sm_post_model)
     def post(self):
+        token = request.headers["Authorization"]
+        flag, data_token = verify_token(token, department="sm")
+        if not flag:
+            return {"error": "No autorizado. Token invalido"}, 400
+        # noinspection PyUnresolvedReferences
         validator = SMPostForm.from_json(ns.payload)
         if not validator.validate():
             return {"error": validator.errors}, 400
         data = validator.data
-        # code, data = parse_data(ns.payload, 6)
-        # if code == 400 or code == 204:
-        #     return {"answer": "The data has a bad structure"}, code
         flag, error, result = insert_sm_db(data)
         if not flag:
             print(error)
@@ -129,15 +158,17 @@ class AddSM(Resource):
         write_log_file(log_file_sm_path, msg)
         return {"answer": "ok", "msg": result}, 201
 
-    @ns.expect(delete_request_sm_model)
+    @ns.expect(expected_headers_per, delete_request_sm_model)
     def delete(self):
+        token = request.headers["Authorization"]
+        flag, data_token = verify_token(token, department="sm")
+        if not flag:
+            return {"error": "No autorizado. Token invalido"}, 400
+        # noinspection PyUnresolvedReferences
         validator = SMDeleteForm.from_json(ns.payload)
         if not validator.validate():
             return {"error": validator.errors}, 400
         data = validator.data
-        # code, data = parse_data(ns.payload, 7)
-        # if code == 400:
-        #     return {"answer": "The data has a bad structure"}, code
         flag, error, result = delete_sm_db(data["id"])
         if flag:
             msg = f"SM #{data['id']} eliminada, " f"empleado con id: {data['id_emp']}"
@@ -153,15 +184,17 @@ class AddSM(Resource):
             print(error)
             return {"answer": "error at updating db"}, 400
 
-    @ns.expect(sm_put_model)
+    @ns.expect(expected_headers_per, sm_put_model)
     def put(self):
+        token = request.headers["Authorization"]
+        flag, data_token = verify_token(token, department="sm")
+        if not flag:
+            return {"error": "No autorizado. Token invalido"}, 400
+        # noinspection PyUnresolvedReferences
         validator = SMPutForm.from_json(ns.payload)
         if not validator.validate():
             return {"error": validator.errors}, 400
         data = validator.data
-        # code, data = parse_data(ns.payload, 8)
-        # if code == 400:
-        #     return {"answer": "The data has a bad structure"}, code
         flag, error, result = update_sm_db(data)
         if flag:
             msg = (
@@ -185,30 +218,38 @@ class AddSM(Resource):
 
 @ns.route("/newclient")
 class Client(Resource):
-    @ns.expect(new_cliente_model)
+    @ns.expect(expected_headers_per, new_cliente_model)
     def post(self):
-        code, data = parse_data(ns.payload, 12)
-        if code == 400:
-            return {"answer": "The data has a bad structure"}, code
+        token = request.headers["Authorization"]
+        flag, data_token = verify_token(token, department="sm")
+        if not flag:
+            return {"error": "No autorizado. Token invalido"}, 400
+        # noinspection PyUnresolvedReferences
+        validator = NewClienteForm.from_json(ns.payload)
+        if not validator.validate():
+            return {"error": validator.errors}, 400
+        data = validator.data
         _data = DataHandler()
-        result = _data.create_customer(
+        result, code = create_customer(
             data["name"], data["email"], data["phone"], data["rfc"], data["address"]
         )
-        if isinstance(result, str):
-            return {"answer": "Error", "msg": result}, 400
-        else:
-            return {"answer": "ok", "msg": result}, 201
+        return result, code
 
 
 @ns.route("/newproduct")
 class Product(Resource):
-    @ns.expect(new_product_model)
+    @ns.expect(expected_headers_per, new_product_model)
     def post(self):
-        code, data = parse_data(ns.payload, 13)
-        if code == 400:
-            return {"answer": "The data has a bad structure"}, code
-        _data = DataHandler()
-        result = _data.create_product(
+        token = request.headers["Authorization"]
+        flag, data_token = verify_token(token, department="sm")
+        if not flag:
+            return {"error": "No autorizado. Token invalido"}, 400
+        # noinspection PyUnresolvedReferences
+        validator = NewProductForm.from_json(ns.payload)
+        if not validator.validate():
+            return {"error": validator.errors}, 400
+        data = validator.data
+        response, code = create_product(
             data["sku"],
             data["name"],
             data["udm"],
@@ -216,16 +257,18 @@ class Product(Resource):
             data["category"],
             data["supplier"],
         )
-        if isinstance(result, str):
-            return {"answer": "Error", "msg": result}, 400
-        else:
-            return {"answer": "ok", "msg": result}, 201
+        return response, code
 
 
 @ns.route("/plot/<string:typerange>")
 class PlotSMData(Resource):
     @ns.marshal_with(request_sm_plot_data_model)
+    @ns.expect(expected_headers_per)
     def get(self, typerange):
+        token = request.headers["Authorization"]
+        flag, data_token = verify_token(token, department="sm")
+        if not flag:
+            return {"error": "No autorizado. Token invalido"}, 400
         data_out = get_data_sm_per_range(typerange, "normal")
         return {"data": data_out, "type": "normal plot lines"}, 200
 
@@ -233,7 +276,12 @@ class PlotSMData(Resource):
 @ns.route("/almacen/employees")
 class AlmacenEmployees(Resource):
     @ns.marshal_with(employees_answer_model)
+    @ns.expect(expected_headers_per)
     def get(self):
+        token = request.headers["Authorization"]
+        flag, data_token = verify_token(token, department="sm")
+        if not flag:
+            return {"error": "No autorizado. Token invalido"}, 400
         data_out, code = get_employees_almacen()
         if code == 200:
             return {"data": data_out, "msg": "ok"}, code
@@ -244,22 +292,34 @@ class AlmacenEmployees(Resource):
 @ns.route("/manage/dispatch")
 class ManageSMDispatch(Resource):
     @ns.marshal_with(response_sm_dispatch_model)
-    @ns.expect(request_sm_dispatch_model)
+    @ns.expect(expected_headers_per, request_sm_dispatch_model)
     def post(self):
-        code, data = parse_data(ns.payload, 15)
-        if code == 400:
-            return {"answer": "The data has a bad structure"}, code
+        token = request.headers["Authorization"]
+        flag, data_token = verify_token(token, department="sm")
+        if not flag:
+            return {"error": "No autorizado. Token invalido"}, 400
+        # noinspection PyUnresolvedReferences
+        validator = RequestSMDispatchForm.from_json(ns.payload)
+        if not validator.validate():
+            return {"error": validator.errors}, 400
+        data = validator.data
         code, data_out = dispatch_sm(data)
         if code == 200:
             return {"msg": "ok", "data": data_out}, code
         else:
             return {"msg": "error at dispaching", "data": data_out}, code
 
-    @ns.expect(request_sm_dispatch_model)
+    @ns.expect(expected_headers_per, request_sm_dispatch_model)
     def delete(self):
-        code, data = parse_data(ns.payload, 15)
-        if code == 400:
-            return {"answer": "The data has a bad structure"}, code
+        token = request.headers["Authorization"]
+        flag, data_token = verify_token(token, department="sm")
+        if not flag:
+            return {"error": "No autorizado. Token invalido"}, 400
+        # noinspection PyUnresolvedReferences
+        validator = RequestSMDispatchForm.from_json(ns.payload)
+        if not validator.validate():
+            return {"error": validator.errors}, 400
+        data = validator.data
         code, data_out = cancel_sm(data)
         if code == 200:
             return {"msg": "SM cancel"}, code
@@ -269,7 +329,12 @@ class ManageSMDispatch(Resource):
 
 @ns.route("/download/pdf/<int:sm_id>")
 class DownloadPDFSM(Resource):
+    @ns.expect(expected_headers_per)
     def get(self, sm_id):
+        token = request.headers["Authorization"]
+        flag, data_token = verify_token(token, department="sm")
+        if not flag:
+            return {"error": "No autorizado. Token invalido"}, 400
         data, code = dowload_file_sm(sm_id)
         if code == 200:
             return send_file(data, as_attachment=True)

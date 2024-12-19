@@ -4,7 +4,7 @@ __date__ = "$ 23/sept/2024  at 14:21 $"
 
 import jwt
 
-from static.extensions import secrets
+from static.constants import secrets
 
 
 def unpack_token(token: str) -> dict:
@@ -25,7 +25,6 @@ def verify_department_permission(token_data: dict, department: str) -> bool:
     """
     try:
         permissions = token_data.get("permissions", {})
-        print("permissions: ", permissions)
         for item in permissions.values():
             if department.lower() in item.lower():
                 return True
@@ -52,7 +51,7 @@ def verify_employee_id(token_data: dict, emp_id: int) -> bool:
 
 
 def verify_token(
-    token: str, department: str = None, emp_id: int = None
+    token: str, department: str | list = None, emp_id: int = None
 ) -> tuple[bool, dict]:
     """
     Verifies the token.
@@ -67,8 +66,14 @@ def verify_token(
             if not verify_employee_id(data, emp_id):
                 return False, {}
         elif department:
-            if not verify_department_permission(data, department):
+            if isinstance(department, list):
+                for dep in department:
+                    if verify_department_permission(data, dep):
+                        return True, data
                 return False, {}
+            elif isinstance(department, str):
+                if not verify_department_permission(data, department):
+                    return False, {}
         return True, data
     except Exception as e:
         print("errort at unpack token: ", e)

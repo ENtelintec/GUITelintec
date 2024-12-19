@@ -13,8 +13,9 @@ import customtkinter as ctk
 import tkinter as tk
 from PIL import Image
 
-from static.extensions import ventanasApp_path, filepath_settings
+from static.constants import ventanasApp_path, filepath_settings, secrets
 from templates.Functions_GUI_Utils import compare_permissions_windows
+from templates.Functions_Utils import unpack_token
 from templates.LoadData import DataLoader
 from templates.controllers.employees.us_controller import get_username_data
 
@@ -32,18 +33,26 @@ def call_authApi(user, pass_key, url=None):
     settings = json.load(open(filepath_settings))
     url = url if url is not None else settings["url_auth_api"]
     data = {"username": user, "password": pass_key}
-    response = requests.post(url, json=data)
-    permissions = None
+    token = secrets["KEY_WEBAPP"]
+    headers = {
+        "Authorization": hashlib.md5(token.encode()).hexdigest(),
+        "Content-Type": "application/json",
+    }
+    response = requests.post(url, json=data, headers=headers)
     if response.status_code != 200:
         out = False
         permissions_out = {}
+        print(f"Error: {response.status_code}, response: {response}")
     else:
         out = response.json()["verified"]
-        permissions = response.json()["permissions"]
-        permissions_out = {}
-        for index, item in enumerate(permissions):
-            permissions_out[index] = item["role"]
-    # print(f"Verified: {out} with {permissions}")
+        data_token = unpack_token(response.json()["token"])
+        permissions = data_token["permissions"]
+        if isinstance(permissions, list):
+            permissions_out = {}
+            for index, item in enumerate(permissions):
+                permissions_out[index] = item["role"]
+        else:
+            permissions_out = permissions
     return out, permissions_out
 
 
@@ -68,7 +77,7 @@ def image_load():
 
 
 class LoginGUI(ttk.Frame):
-    def __init__(self, master=None, *args, **kwargs):
+    def __init__(self, master=None, **kwargs):
         super().__init__(master)
         self.columnconfigure(1, weight=1)
         self.style_gui = kwargs.get("style_gui")
@@ -81,7 +90,11 @@ class LoginGUI(ttk.Frame):
             relx=0.5, rely=0.5, anchor="center"
         )  # Centrar el nuevo frame
         self._svar_info_login = ttk.StringVar(value="")
+        self.get_username_data = kwargs.get("get_username_data_callback")
+        self.update_side_menu_data = kwargs.get("update_side_menu_data_callback")
+        self.update_side_menu = kwargs.get("update_side_menu_callback")
         # ----------------Agregar imagen -----------------=
+        # noinspection PyTypeChecker
         imagen = ctk.CTkButton(
             self.frame_login,
             image=self.iso_claro,
@@ -115,10 +128,12 @@ class LoginGUI(ttk.Frame):
             width=50,
         )
         self.pass_entry.grid(row=5, column=0, sticky="nsew", padx=10, pady=5)
+        self.pass_entry.bind("<Return>", lambda event: self.button_login_click())
         # -------------------create button for login-----------------
         self.button = ttk.Button(
             self.frame_login, text="Login", command=self.button_login_click, width=50
         )
+
         self.button.grid(row=6, column=0, sticky="nsew", padx=50, pady=30)
         # -------------------create message----------------
         self.message = ttk.Label(
@@ -134,19 +149,18 @@ class LoginGUI(ttk.Frame):
         pass_key = hashlib.md5(password.encode()).hexdigest()
         # call API
         verified, permissions = call_authApi(username, pass_key)
-        print(verified, permissions)
-        if verified or permissions is not None:
+        if verified or len(permissions) > 0:
             self.permissions = permissions
             self.username_data = get_username_data(username)
             self.message["text"] = f"Welcome! **{username}**"
             self.master.permissions = permissions
             self.master.username = username
-            self.master.get_username_data(self.username_data, self.permissions)
+            self.get_username_data(self.username_data, self.permissions)
             flag, windows_names = compare_permissions_windows(
                 list(self.permissions.values())
             )
             windows_names = windows_names if windows_names is not None else ["Cuenta"]
-            self.master.update_side_menu(windows_names)
+            self.update_side_menu(windows_names)
             data_loader = DataLoader(
                 self.check_permissions(),
                 self.username_data["id"],
@@ -158,7 +172,8 @@ class LoginGUI(ttk.Frame):
             data_loader.daemon = True
             data_loader.start()
         else:
-            self.message["text"] = "Invalid user or password"
+            print("Invalid user or password")
+            self._svar_info_login.set("Invalid user or password")
             self.message["foreground"] = "red"
             self.pass_entry.delete(0, "end")
             self.user_entry.delete(0, "end")
@@ -170,7 +185,7 @@ class LoginGUI(ttk.Frame):
         self._svar_info_login.set(f"Cargando {percentage_loaded:.2f}%")
 
     def close_login_frame(self, data_dic):
-        self.master.update_side_menu_data(data_dic)
+        self.update_side_menu_data(data_dic)
         self.destroy()
         # self.quit()
 
@@ -185,29 +200,32 @@ class LoginGUI(ttk.Frame):
 
 
 class LogOptionsFrame(ttk.Frame):
-    def __init__(self, master=None, setting: dict = None, *args, **kwargs):
+    def __init__(self, master=None, **kwargs):
         super().__init__(master)
         self.columnconfigure(1, weight=1)
-        self.master = master
+        self.username = kwargs.get("username")
+        self.username_data = kwargs.get("username_data")
+        self.permissions = kwargs.get("permissions")
+        self.logOut = kwargs.get("log_out_callback")
         #  -------------------create title-----------------
         self.label_title = ttk.Label(
-            self, text=f"Usuario actual: {self.master.username}", font=("Helvetica", 18)
+            self, text=f"Usuario actual: {self.username}", font=("Helvetica", 18)
         )
         self.label_title.grid(
             row=0, column=0, columnspan=2, sticky="n", padx=10, pady=20
         )
 
         # -------------------create message----------------
-        if self.master.username_data is not None:
-            txt = f"Usuario: {self.master.username}"
+        if self.username_data is not None:
+            txt = f"Usuario: {self.username}"
             txt += "\nPermisos:"
-            for permission in self.master.permissions.values():
+            for permission in self.permissions.values():
                 txt += f"\n{permission}"
-            if self.master.username_data["exp"] is not None:
-                txt += f"\nToken expira en: {self.master.username_data['exp']}"
-                txt += f"\nCreado en: {self.master.username_data['timestamp']}"
-            txt += f"\nEmpleado: {self.master.username_data['name'].upper()} {self.master.username_data['lastname'].upper()}"
-            txt += f"\nDepartamento: {self.master.username_data['department_id']}. {self.master.username_data['department_name']}"
+            if self.username_data["exp"] is not None:
+                txt += f"\nToken expira en: {self.username_data['exp']}"
+                txt += f"\nCreado en: {self.username_data['timestamp']}"
+            txt += f"\nEmpleado: {self.username_data['name'].upper()} {self.username_data['lastname'].upper()}"
+            txt += f"\nDepartamento: {self.username_data['department_id']}. {self.username_data['department_name']}"
         else:
             txt = "No se pudo obtener los datos del usuario"
         self.message = ttk.Label(
@@ -226,4 +244,4 @@ class LogOptionsFrame(ttk.Frame):
         self.button.grid(row=2, column=1, sticky="nsew", padx=10, pady=10)
 
     def button_logout_click(self):
-        self.master.logOut()
+        self.logOut()

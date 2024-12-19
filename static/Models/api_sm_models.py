@@ -7,9 +7,10 @@ from flask_restx import fields
 from wtforms.fields.datetime import DateField
 from wtforms.fields.list import FieldList
 from wtforms.fields.numeric import FloatField
-from wtforms.fields.simple import StringField, URLField
+from wtforms.fields.simple import StringField, URLField, EmailField
 
-from static.extensions import api, format_date
+from static.Models.api_models import date_filter
+from static.constants import api
 from wtforms.form import Form
 from wtforms import validators, IntegerField, FormField
 
@@ -29,7 +30,7 @@ product_model_SM_selection = api.model(
         "id": fields.String(required=True, description="The product id"),
         "name": fields.String(required=True, description="The product name"),
         "udm": fields.String(required=True, description="The product unit of measure"),
-        "stock": fields.Integer(required=True, description="The product stock"),
+        "stock": fields.Float(required=True, description="The product stock"),
     },
 )
 
@@ -38,7 +39,7 @@ items_model_sm = api.model(
     {
         "id": fields.Integer(required=True, description="The product id"),
         "name": fields.String(required=True, description="The product name"),
-        "stock": fields.Integer(required=True, description="The product stock"),
+        "stock": fields.Float(required=True, description="The product stock"),
         "comment": fields.String(required=True, description="The product comment"),
         "quantity": fields.Float(required=True, description="The product quantity"),
         "movement": fields.String(required=False, description="The product movement"),
@@ -297,8 +298,8 @@ new_product_model = api.model(
     {
         "name": fields.String(required=True, description="The name"),
         "udm": fields.String(required=True, description="The udm"),
-        "supplier": fields.Float(required=True, description="The supplier"),
-        "stock": fields.Integer(required=True, description="The stock"),
+        "supplier": fields.Integer(required=True, description="The  id"),
+        "stock": fields.Float(required=True, description="The stock"),
         "sku": fields.String(required=True, description="The sku"),
         "category": fields.Integer(required=True, description="The category"),
     },
@@ -355,11 +356,6 @@ response_sm_dispatch_model = api.model(
 )
 
 
-def date_filter(date):
-    # Example filter function to format the date
-    return date.strftime(format_date) if not isinstance(date, str) else date
-
-
 class ItemsFormSM(Form):
     id = IntegerField(
         "id",
@@ -367,7 +363,7 @@ class ItemsFormSM(Form):
         default=-1,
     )
     name = StringField("name", validators=[InputRequired()])
-    stock = IntegerField(
+    stock = FloatField(
         "stock", validators=[validators.number_range(min=-100, message="Invalid stock")]
     )
     comment = StringField("comment", validators=[], default="")
@@ -465,3 +461,31 @@ class SMDeleteForm(Form):
     id_emp = IntegerField(
         "id_emp", validators=[InputRequired(message="Invalid id or 0 not acepted")]
     )
+
+
+class NewClienteForm(Form):
+    name = StringField("name", validators=[InputRequired()])
+    address = StringField("address", validators=[InputRequired()])
+    phone = StringField("phone", validators=[InputRequired()])
+    email = EmailField("email", validators=[InputRequired()])
+    rfc = StringField("rfc", validators=[])
+
+
+class NewProductForm(Form):
+    name = StringField("name", validators=[InputRequired()])
+    udm = StringField("udm", validators=[InputRequired()])
+    supplier = IntegerField("supplier", validators=[])
+    stock = FloatField("stock", validators=[InputRequired()])
+    sku = StringField("sku", validators=[InputRequired()])
+    category = IntegerField("category", validators=[InputRequired()])
+
+
+class RequestSMDispatchForm(Form):
+    id = IntegerField(
+        "id", validators=[InputRequired(message="Invalid id or 0 not acepted")]
+    )
+    emp_id = IntegerField(
+        "emp_id", validators=[InputRequired(message="Invalid id or 0 not acepted")]
+    )
+    comment = StringField("comment", validators=[InputRequired()])
+    items = FieldList(FormField(ItemsFormSM, "items"))

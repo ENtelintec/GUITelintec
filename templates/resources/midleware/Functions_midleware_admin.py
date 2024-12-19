@@ -4,7 +4,7 @@ __date__ = "$ 20/jun./2024  at 15:23 $"
 
 import json
 
-from static.extensions import filepath_settings
+from static.constants import filepath_settings
 from templates.controllers.contracts.contracts_controller import (
     get_contract,
     get_contract_from_abb,
@@ -12,6 +12,9 @@ from templates.controllers.contracts.contracts_controller import (
 from templates.controllers.contracts.quotations_controller import get_quotation
 from templates.controllers.customer.customers_controller import get_customer_amc_by_id
 from templates.controllers.material_request.sm_controller import get_folios_by_pattern
+from templates.controllers.purchases.purchases_admin_controller import (
+    get_purchases_admin_db,
+)
 from templates.resources.methods.Functions_Aux_Admin import (
     read_file_tenium_contract,
     read_exel_products_quotation,
@@ -215,3 +218,60 @@ def compare_file_and_quotation(data: dict):
     )
     data_out, code = compare_file_quotation(data_quotation, products_contract)
     return data_out, code
+
+
+def get_data_dict_purchases(data):
+    limit = (data.get("limit_min"), data.get("limit_max"))
+    flag, error, result = get_purchases_admin_db(limit)
+    if not flag:
+        return {"data": [], "msg": str(error)}, 400
+    data_out = []
+    for item in result:
+        data_out.append(
+            {
+                "id": item[0],
+                "metadata": json.loads(item[1]),
+                "creation": item[2],
+                "timestamps": json.loads(item[3]),
+            }
+        )
+    return {"data": data_out, "msg": "Ok"}, 200
+
+
+def get_data_table_purchases(data):
+    limit = (data.get("limit_min"), data.get("limit_max"))
+    flag, error, result = get_purchases_admin_db(limit)
+    if not flag:
+        return {"data": [], "msg": str(error)}, 400
+    data_out = []
+    for item in result:
+        metadata = json.loads(item[1])
+        timestamps = json.loads(item[3])
+        data_out.append(
+            [
+                item[0],
+                metadata.get("name", ""),
+                metadata.get("quantity", ""),
+                metadata.get("supplier", ""),
+                metadata.get("link", ""),
+                metadata.get("comments", ""),
+                metadata.get("date_required", ""),
+                item[2],
+                timestamps.get("complete", ""),
+                timestamps.get("update", ""),
+            ]
+        )
+    columns = [
+        "ID",
+        "Nombre",
+        "Cantidad",
+        "Proveedor",
+        "Link",
+        "Comentarios",
+        "Fecha requerida",
+        "Creacion",
+        "Completado",
+        "Actualizado",
+    ]
+
+    return {"data": data_out, "columns": columns, "msg": "Ok"}, 200

@@ -5,7 +5,9 @@ __date__ = "$ 20/jun./2024  at 15:08 $"
 from werkzeug.datastructures import FileStorage
 from wtforms.form import Form
 from wtforms.validators import InputRequired
-from static.extensions import api, format_date
+
+from static.Models.api_models import date_filter
+from static.constants import api
 from flask_restx import fields
 from wtforms.fields.datetime import DateField, DateTimeField
 from wtforms.fields.list import FieldList
@@ -38,6 +40,14 @@ metadata_quotation_model = api.model(
         "location": fields.String(required=True, description="The quotation location"),
         "client_id": fields.Integer(
             required=True, description="The quotation client id"
+        ),
+        "emp_id": fields.Integer(required=True, description="The quotation emp id"),
+        "emp_name": fields.String(required=True, description="The quotation emp name"),
+        "emp_email": fields.String(
+            required=True, description="The quotation emp email"
+        ),
+        "emp_phone": fields.String(
+            required=True, description="The quotation emp phone"
         ),
     },
 )
@@ -181,7 +191,9 @@ contract_model = api.model(
             example="2024-03-01",
         ),
         "timestamps": fields.Nested(timestamps_quotation_model),
-        "quotation_id": fields.Nested(quotation_model),
+        "quotation_id": fields.Integer(
+            required=True, description="The quotation id", example=1
+        ),
     },
 )
 
@@ -258,13 +270,6 @@ contract_settings_model = api.model(
 )
 
 
-def date_filter(date):
-    # Example filter function to format the date
-    if date is not None:
-        return date.strftime(format_date) if not isinstance(date, str) else date
-    return None
-
-
 class MetadataQuotationForm(Form):
     emission = DateField(
         "emission", validators=[InputRequired()], filters=[date_filter]
@@ -281,9 +286,15 @@ class MetadataQuotationForm(Form):
     planta = StringField("planta", validators=[InputRequired()])
     area = StringField("area", validators=[InputRequired()])
     location = StringField("location", validators=[InputRequired()])
-    client_id = FloatField(
+    client_id = IntegerField(
         "client_id", validators=[InputRequired(message="Invalid id or 0 not acepted")]
     )
+    emp_id = IntegerField(
+        "emp_id", validators=[InputRequired(message="Invalid id or 0 not acepted")]
+    )
+    emp_name = StringField("emp_name", validators=[InputRequired()])
+    emp_phone = StringField("emp_phone", validators=[InputRequired()])
+    emp_email = EmailField("emp_email", validators=[InputRequired()])
 
 
 class ProductsQuotationForm(Form):

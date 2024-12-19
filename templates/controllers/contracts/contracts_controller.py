@@ -5,7 +5,7 @@ __date__ = "$ 20/jun./2024  at 14:34 $"
 import json
 from datetime import datetime
 
-from static.extensions import format_timestamps
+from static.constants import format_timestamps
 from templates.database.connection import execute_sql
 
 

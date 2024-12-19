@@ -2,24 +2,30 @@
 __author__ = "Edisson Naula"
 __date__ = "$ 14/feb./2024  at 15:54 $"
 
+import json
 import textwrap
 
 from reportlab.pdfgen import canvas
 
+from static.constants import filepath_settings
+
 a4_x = 595.27
 a4_y = 841.89
 image_logo = "img/logo_docs.png"
-dict_codes_forms = {
-    1: "FO-GRH-08 R0",
-    2: "FO-ALM-03 R0",
-    3: "FO-ALM-04 R0",
-    4: "FO-ALM-01 R0",
-    5: "FO-ALM-02 R0",
-}
 
 
 def create_datos_personales(
-        master: canvas.Canvas, emp, puesto, term, start, end, interview, interviewer, dim_x, dim_y):
+    master: canvas.Canvas,
+    emp,
+    puesto,
+    term,
+    start,
+    end,
+    interview,
+    interviewer,
+    dim_x,
+    dim_y,
+):
     pady = 0
     master.setFont("Courier-Bold", 10)
     master.drawString(dim_x + 10, dim_y - 25 - pady, "Nombre y firma del empleado:")
@@ -90,8 +96,16 @@ def display_recommendations(master: canvas.Canvas, dict_quizz, dim_x, dim_y):
     )
 
 
-def create_header(master: canvas.Canvas, img=None, title=None, page_x=None, date_int=None,
-                  type_form=1, orientation="vertical", title_font=None):
+def create_header(
+    master: canvas.Canvas,
+    img=None,
+    title=None,
+    page_x=None,
+    date_int=None,
+    iso_form=1,
+    orientation="vertical",
+    title_font=None,
+):
     position_header_y = 770 if orientation == "vertical" else 535
     position_header_x = 25 if orientation == "vertical" else 25
     height_logo = 30
@@ -168,25 +182,40 @@ def create_header(master: canvas.Canvas, img=None, title=None, page_x=None, date
     else:
         nlines = len(title)
         x_title = page_x / 2
-        y_title = position_header_y + height_logo / 2 + ((nlines - 1) * title_height) / 2
+        y_title = (
+            position_header_y + height_logo / 2 + ((nlines - 1) * title_height) / 2
+        )
         for index, line in enumerate(title):
             master.setFont("Courier-Bold", title_height - 2 * index)
             master.drawCentredString(x_title, y_title, line)
             y_title -= title_height
     master.setFont("Courier", codes_h_height)
+    settings = json.load(open(filepath_settings, "r"))
+    dict_codes_forms = settings["formats"]["dict_codes_forms"]
     master.drawString(
         page_x - codes_width - padx,
         position_header_y + height_logo - codes_h_height,
-        f"Codigo: {dict_codes_forms[type_form]}",
+        f"Codigo: {dict_codes_forms[str(iso_form)]}",
     )
+    dict_dates = settings["formats"]["dates_emision"]
     master.drawString(
-        page_x - codes_width - padx, position_header_y, f"Emisión: {date_int}"
+        page_x - codes_width - padx,
+        position_header_y,
+        f"Emisión: {dict_dates[str(iso_form)]}",
     )
 
 
 def create_header_materials(
-        master: canvas.Canvas, img=None, title=None, page_x=None, date_int=None,
-        type_form=1, orientation="vertical", title_font=None, info_dict=None):
+    master: canvas.Canvas,
+    img=None,
+    title=None,
+    page_x=None,
+    date_int=None,
+    type_form=1,
+    orientation="vertical",
+    title_font=None,
+    info_dict=None,
+):
     position_header_y = 770 if orientation == "vertical" else 535
     position_header_x = 25 if orientation == "vertical" else 25
     height_logo = 30
@@ -263,45 +292,91 @@ def create_header_materials(
     else:
         nlines = len(title)
         x_title = page_x / 2
-        y_title = position_header_y + height_logo / 2 + ((nlines - 1) * title_height) / 2
+        y_title = (
+            position_header_y + height_logo / 2 + ((nlines - 1) * title_height) / 2
+        )
         for index, line in enumerate(title):
             master.setFont("Courier-Bold", title_height - 2 * index)
             master.drawCentredString(x_title, y_title, line)
             y_title -= title_height
     master.setFont("Courier", codes_h_height)
+    settings = json.load(open(filepath_settings, "r"))
+    dict_codes_forms = settings["formats"]["dict_codes_forms"]
     master.drawString(
         page_x - codes_width - padx,
         position_header_y + height_logo - codes_h_height,
-        f"Codigo: {dict_codes_forms[type_form]}",
+        f"Codigo: {dict_codes_forms[str(type_form)]}",
     )
+    dict_dates = settings["formats"]["dates_emision"]
     master.setFont("Courier", 8)
     master.drawString(
-        page_x - codes_width - padx * 1.2, position_header_y, f"Inicio de Vigencia: {date_int}"
+        page_x - codes_width - padx * 1.2,
+        position_header_y,
+        f"Inicio de Vigencia: {dict_dates[str(type_form)]}",
     )
     # --------------------------------datos quien devuelve------------------------------------
     font_size = 10
     position_header_y -= font_size * 1.5
     master.setFont("Courier-Bold", font_size)
-    master.drawString(position_header_x, position_header_y - 10, "Datos del empleado que realiza la devolución")
+    master.drawString(
+        position_header_x,
+        position_header_y - 10,
+        "Datos del empleado que realiza la devolución",
+    )
     position_header_y -= font_size * 2.5
     master.setFont("Courier", font_size)
-    master.drawString(position_header_x, position_header_y, f"Nombre:  {info_dict['emp_name']}")
-    master.drawString(position_header_x, position_header_y - font_size * 1.5, f"Contrato:  {info_dict['contrato']}")
-    master.drawString(page_x - codes_width - padx, position_header_y, f"Fecha:  {info_dict['date']}")
-    master.drawString(page_x - codes_width - padx, position_header_y - font_size * 1.5, f"Lugar:  {info_dict['lugar']}")
+    master.drawString(
+        position_header_x, position_header_y, f"Nombre:  {info_dict['emp_name']}"
+    )
+    master.drawString(
+        position_header_x,
+        position_header_y - font_size * 1.5,
+        f"Contrato:  {info_dict['contrato']}",
+    )
+    master.drawString(
+        page_x - codes_width - padx, position_header_y, f"Fecha:  {info_dict['date']}"
+    )
+    master.drawString(
+        page_x - codes_width - padx,
+        position_header_y - font_size * 1.5,
+        f"Lugar:  {info_dict['lugar']}",
+    )
     position_header_y -= font_size * 3.5
     master.setFont("Courier-Bold", font_size)
-    master.drawString(position_header_x, position_header_y, "Datos del quien recibe la devolucion")
+    master.drawString(
+        position_header_x, position_header_y, "Datos del quien recibe la devolucion"
+    )
     position_header_y -= font_size * 2.5
     master.setFont("Courier", font_size)
-    master.drawString(position_header_x, position_header_y, f"Nombre:  {info_dict['emp_storage_name']}")
-    master.drawString(position_header_x, position_header_y - font_size * 1.5, f"Puesto:  {info_dict['puesto']}")
-    master.drawString(page_x - codes_width - padx, position_header_y, "Tipo de devolición:")
-    master.drawString(page_x - codes_width - padx, position_header_y - font_size * 1.5, f"{info_dict['type_return']}")
+    master.drawString(
+        position_header_x,
+        position_header_y,
+        f"Nombre:  {info_dict['emp_storage_name']}",
+    )
+    master.drawString(
+        position_header_x,
+        position_header_y - font_size * 1.5,
+        f"Puesto:  {info_dict['puesto']}",
+    )
+    master.drawString(
+        page_x - codes_width - padx, position_header_y, "Tipo de devolición:"
+    )
+    master.drawString(
+        page_x - codes_width - padx,
+        position_header_y - font_size * 1.5,
+        f"{info_dict['type_return']}",
+    )
 
 
-def create_info_materials_request(master: canvas.Canvas, info_dict, position_header_x, position_header_y,
-                                  orientation="vertical", font_size=10, keys_inf=None):
+def create_info_materials_request(
+    master: canvas.Canvas,
+    info_dict,
+    position_header_x,
+    position_header_y,
+    orientation="vertical",
+    font_size=10,
+    keys_inf=None,
+):
     page_x = a4_x if orientation == "vertical" else a4_y
     keys_info = keys_inf if keys_inf is not None else list(info_dict.keys())
     columns = 2
@@ -312,14 +387,18 @@ def create_info_materials_request(master: canvas.Canvas, info_dict, position_hea
         position_header_y = y_init if index % nrows == 0 else position_header_y
         index_y = index % nrows
         master.setFont("Courier-Bold", font_size)
-        master.drawString(position_header_x + (page_x / 2 - 20) * column,
-                          position_header_y,
-                          f"{key.upper()}:")
+        master.drawString(
+            position_header_x + (page_x / 2 - 20) * column,
+            position_header_y,
+            f"{key.upper()}:",
+        )
 
         master.setFont("Courier", font_size)
-        master.drawString(position_header_x + len(key) * font_size * 0.7 + (page_x / 2 - 20) * column,
-                          position_header_y,
-                          f"{info_dict[key]}")
+        master.drawString(
+            position_header_x + len(key) * font_size * 0.7 + (page_x / 2 - 20) * column,
+            position_header_y,
+            f"{info_dict[key]}",
+        )
         position_header_y -= font_size * 1.5
 
 
@@ -339,4 +418,9 @@ def draw_option(x, y, k, options, answers, pdf):
 def create_footer_sign(pdf, position_x, position_y, text="Firma"):
     pdf.setFont("Courier", 10)
     pdf.drawString(position_x, position_y, text)
-    pdf.line(position_x - 20, position_y + 15, position_x + len(text) * 10 * 0.65 + 20, position_y + 15)
+    pdf.line(
+        position_x - 20,
+        position_y + 15,
+        position_x + len(text) * 10 * 0.65 + 20,
+        position_y + 15,
+    )

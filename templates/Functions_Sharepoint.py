@@ -11,7 +11,7 @@ from office365.sharepoint.client_context import ClientContext
 from office365.sharepoint.listitems.caml.query import CamlQuery
 from office365.sharepoint.sharing.links.kind import SharingLinkKind
 
-from static.extensions import secrets
+from static.constants import secrets
 from templates.controllers.employees.employees_controller import get_emp_mail
 
 

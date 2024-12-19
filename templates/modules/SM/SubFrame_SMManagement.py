@@ -10,12 +10,8 @@ from ttkbootstrap.dialogs import Messagebox
 from ttkbootstrap.scrolled import ScrolledText
 from ttkbootstrap.tableview import Tableview
 
-from static.extensions import status_dic
+from static.constants import status_dic
 from templates.misc.Functions_AuxFiles import get_all_sm_entries, get_all_sm_products
-from templates.resources.midleware.Functions_DB_midleware import (
-    dispatch_products,
-    update_data_dicts,
-)
 from templates.Functions_GUI_Utils import (
     create_label,
     create_button,
@@ -27,6 +23,7 @@ from templates.controllers.material_request.sm_controller import (
     update_history_sm,
     cancel_sm_db,
 )
+from templates.resources.midleware.MD_SM import update_data_dicts, dispatch_products
 
 
 def reorder_data_table(data):

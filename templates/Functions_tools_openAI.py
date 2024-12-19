@@ -1,17 +1,27 @@
 # -*- coding: utf-8 -*-
-__author__ = 'Edisson Naula'
-__date__ = '$ 20/mar./2024  at 15:24 $'
+__author__ = "Edisson Naula"
+__date__ = "$ 20/mar./2024  at 15:24 $"
 
 import json
 
-from static.extensions import tools_AV_avaliable
+from static.constants import tools_AV_avaliable
 from templates.misc.Functions_Files import get_cumulative_data_fichajes_dict
 from templates.controllers.customer.customers_controller import get_costumers_amc
-from templates.controllers.employees.employees_controller import get_employees_w_status, get_employee_info
+from templates.controllers.employees.employees_controller import (
+    get_employees_w_status,
+    get_employee_info,
+)
 from templates.controllers.fichajes.fichajes_controller import get_fichaje_emp_AV
 from templates.controllers.order.orders_controller import get_orders_amc
-from templates.controllers.product.p_and_s_controller import get_product_categories, get_products_almacen, \
-    get_high_stock_products, get_low_stock_products, get_no_stock_products, get_product_movement_amc, get_supply_inv_amc
+from templates.controllers.product.p_and_s_controller import (
+    get_product_categories,
+    get_products_almacen,
+    get_high_stock_products,
+    get_low_stock_products,
+    get_no_stock_products,
+    get_product_movement_amc,
+    get_supply_inv_amc,
+)
 from templates.controllers.supplier.suppliers_controller import get_supplier_amc
 
 
@@ -84,7 +94,9 @@ def getHighStockProducts(**kwargs):
                 pass
     category = category if category is not None else "%"
     quantity = quantity if quantity is not None else 10
-    flag, error, result, columns = get_high_stock_products(category=category, quantity=quantity)
+    flag, error, result, columns = get_high_stock_products(
+        category=category, quantity=quantity
+    )
     if flag:
         result.insert(0, columns)
         return result
@@ -106,7 +118,9 @@ def getLowStockProducts(**kwargs):
                 pass
     category = category if category is not None else "%"
     quantity = quantity if quantity is not None else 10
-    flag, error, result, columns = get_low_stock_products(category=category, quantity=quantity)
+    flag, error, result, columns = get_low_stock_products(
+        category=category, quantity=quantity
+    )
     if flag:
         result.insert(0, columns)
         return result
@@ -231,7 +245,9 @@ def getProductMovement(**kwargs):
     type_movement = type_movement if type_movement is not None else "%"
     id_m = id_m if id_m is not None else "%"
     id_p = id_p if id_p is not None else "%"
-    flag, error, result, columns = get_product_movement_amc(type_movement, id_m, id_p, date)
+    flag, error, result, columns = get_product_movement_amc(
+        type_movement, id_m, id_p, date
+    )
     if flag:
         result.insert(0, columns)
         return result
@@ -282,11 +298,27 @@ def getTotalFichajeEmployee(**kwargs):
     if flag:
         if len(result) > 0:
             emp_id, absences_dict, lates_dict, extras_dict, primes_dict = result
-            faltas, faltas_value = get_cumulative_data_fichajes_dict(json.loads(absences_dict), date=date)
-            atrasos, atrasos_value = get_cumulative_data_fichajes_dict(json.loads(lates_dict), date=date)
-            extras, extras_value = get_cumulative_data_fichajes_dict(json.loads(extras_dict), date=date)
-            primas, primas_value = get_cumulative_data_fichajes_dict(json.loads(primes_dict), date=date)
-            data = [emp_id, faltas, atrasos, atrasos_value, extras, extras_value, primas]
+            faltas, faltas_value = get_cumulative_data_fichajes_dict(
+                json.loads(absences_dict), date=date
+            )
+            atrasos, atrasos_value = get_cumulative_data_fichajes_dict(
+                json.loads(lates_dict), date=date
+            )
+            extras, extras_value = get_cumulative_data_fichajes_dict(
+                json.loads(extras_dict), date=date
+            )
+            primas, primas_value = get_cumulative_data_fichajes_dict(
+                json.loads(primes_dict), date=date
+            )
+            data = [
+                emp_id,
+                faltas,
+                atrasos,
+                atrasos_value,
+                extras,
+                extras_value,
+                primas,
+            ]
             data.insert(0, columns)
             return data
         else:

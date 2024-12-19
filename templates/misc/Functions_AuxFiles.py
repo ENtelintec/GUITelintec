@@ -7,7 +7,7 @@ import os
 import re
 from datetime import datetime
 
-from static.extensions import (
+from static.constants import (
     cache_file_resume_fichaje_path,
     status_dic,
     quizz_out_path,

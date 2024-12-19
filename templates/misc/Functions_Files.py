@@ -14,13 +14,15 @@ from typing import Any
 
 import dropbox
 import pandas as pd
+import pytz
 
-from static.extensions import (
+from static.constants import (
     secrets,
     cache_oct_file_temp_path,
     cache_oct_fichaje_path,
     quizzes_RRHH,
     conversion_quizzes_path,
+    format_date, timezone_software,
 )
 from templates.Functions_Text import clean_accents, compare_employee_name
 from templates.controllers.employees.employees_controller import get_employee_id_name
@@ -1427,7 +1429,6 @@ def correct_repetitions(
     for key in normal_data_emp.keys():
         if key in keys_absence:
             res = absence_data_emp.pop(key, None)
-            print("res----", res)
     return (
         normal_data_emp,
         absence_data_emp,
@@ -2093,8 +2094,10 @@ def get_list_files(
     return files_pairs, files_names_f
 
 
-def write_log_file(path, text):
-    with open(f"{path}_log.txt", "a") as f:
+def write_log_file(path, text, username_data=None):
+    time_zone = pytz.timezone(timezone_software)
+    date = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_date)
+    with open(f"{path}_log_{date}.txt", "a") as f:
         f.write(text + "\n")
     return True
 
@@ -2139,7 +2142,6 @@ def get_data_encuesta(file_path: str):
 def extract_data_encuesta(data: list, type_q=2):
     data_out = []
     path_quizz = quizzes_RRHH[str(type_q)]["path"]
-    print(path_quizz)
     dict_quizz_list = []
     metadata_list = []
     starts_withnumbers_pattern = "\d+\."

@@ -135,17 +135,36 @@ class DataHandler:
         return flag
 
     def create_product(
-        self, sku, name, udm, stock, id_category, id_supplier, is_tool=0, is_internal=0
+        self,
+        sku,
+        name,
+        udm,
+        stock,
+        id_category,
+        id_supplier,
+        is_tool=0,
+        is_internal=0,
+        codes=None,
+        locations=None
     ):
         if id_supplier is not None:
             function = self._product["createProduct"]
             flag, error, result = function(
-                sku, name, udm, stock, id_category, id_supplier, is_tool, is_internal
+                sku,
+                name,
+                udm,
+                stock,
+                id_category,
+                id_supplier,
+                is_tool,
+                is_internal,
+                codes,
+                locations
             )
             return result if flag else str(error)
         else:
             function = self._product["createProductAdmin"]
-            flag, error, result = function(sku, name, udm, stock, id_category)
+            flag, error, result = function(sku, name, udm, stock, id_category, codes)
             return result if flag else str(error)
 
     def delete_product(self, product_id):
@@ -164,6 +183,8 @@ class DataHandler:
         product_supplier,
         is_tool=0,
         is_internal=0,
+        codes=None,
+        locations=None,
     ):
         function = self._product["updateProduct"]
         flag, error, result = function(
@@ -176,6 +197,8 @@ class DataHandler:
             product_supplier,
             is_tool,
             is_internal,
+            codes,
+            locations,
         )
         return flag
 

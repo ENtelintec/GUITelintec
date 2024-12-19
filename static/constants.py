@@ -12,8 +12,6 @@ paths_dpb_folders = json.load(open("files/paths_general.json"))
 local_father_path_dpb = "C:/Users/Edisson/Telintec Dropbox/SOFTWARE TELINTEC"
 secrets = dotenv_values("../.env")
 api = Api()
-url_api = "http://127.0.0.1:5005/AuthAPI/api/v1/auth/loginUP"
-# url_api = "https://ec2-18-119-125-94.us-east-2.compute.amazonaws.com/AuthAPI/api/v1/auth/loginUP"
 IMG_PATH_COLLAPSING = Path("./img")
 ventanasApp_path = "static/ventanasAppGUI.json"
 cache_file_EM_path = "files/EM_cache.pkl"
@@ -31,8 +29,10 @@ cache_oct_fichaje_path = "files/contracts_cache.pkl"
 filepath_settings = "files/settings.json"
 filepath_daemons = "files/flags_daemons.json"
 filepath_recomendations = "files/recomendations.json"
+file_size_pages = "files/size_pages.json"
 quizzes_dir_path = "static/quizzes_dir.json"
 files_user = "files/users.json"
+file_codebar = "files/codebar.pdf"
 quizzes_RRHH = {
     "0": {"name": "Encuesta de Salida", "path": "files/quizz_salida.json", "type": 0},
     "1": {
@@ -61,8 +61,12 @@ filepath_recommendations = "files/recommendations.json"
 quizz_out_path = "files/quizz_out/"
 log_file_bitacora_path = "files/logs/bitacora"
 log_file_sm_path = "files/logs/sm"
+log_file_db = "files/logs/db"
+log_file_almacen = "files/logs/almacen"
 path_contract_files = "files/contracts"
 filepath_bitacora_download = "files/quizz_out/temp_bitacora.csv"
+filepath_inventory_form = "files/inventory_temp.pdf"
+filepath_inventory_form_movements = "files/movements_temp.pdf"
 patterns_files_fichaje = ["Fichaje", "Ternium"]
 department_tools_openAI = {
     "director": "files/tools_AV_default.json",
@@ -144,6 +148,8 @@ status_dic = {
     -1: "Cancelado",
 }
 format_timestamps = "%Y-%m-%d %H:%M:%S"
+format_timestamps_tz = "%Y-%m-%d %H:%M:%S"
+timezone_software = "America/Mexico_City"
 format_date = "%Y-%m-%d"
 format_date_fichaje_file = "%d-%m-%Y"
 dict_deps = {

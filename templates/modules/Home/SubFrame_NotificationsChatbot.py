@@ -162,3 +162,6 @@ class NotificationsChatbot(ttk.Frame):
             autoalign=True
         )
         self.table_pending.grid(row=0, column=0, padx=30, pady=10, sticky="n")
+
+    def update_procedure(self, **events):
+        self.update_notifications_frame()

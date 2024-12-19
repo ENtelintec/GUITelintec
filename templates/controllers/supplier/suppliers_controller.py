@@ -2,6 +2,8 @@
 __author__ = "Edisson Naula"
 __date__ = "$ 01/may./2024  at 19:30 $"
 
+import json
+
 from templates.database.connection import execute_sql
 
 
@@ -75,8 +77,9 @@ def get_supplier_amc(name: str, id_s: int):
 
 def get_all_suppliers_amc():
     sql = (
-        "SELECT id_supplier, name, seller_name, seller_email, phone, address, web_url, type "
+        "SELECT id_supplier, name, seller_name, seller_email, phone, address, web_url, type, extra_info "
         "FROM sql_telintec.suppliers_amc "
+        "ORDER BY name"
     )
     flag, error, result = execute_sql(sql, None, 5)
     return flag, error, result
@@ -149,4 +152,16 @@ def delete_supplier_amc(id_supplier):
     delete_sql = "DELETE FROM sql_telintec.suppliers_amc " "WHERE id_supplier = %s"
     vals = (id_supplier,)
     flag, error, result = execute_sql(delete_sql, vals, 4)
+    return flag, error, result
+
+
+def update_brands_supplier(supplier_id, brands: list):
+    update_sql = (
+        "UPDATE sql_telintec.suppliers_amc "
+        "SET extra_info = JSON_SET(extra_info, '$.brands', %s) "
+        "WHERE id_supplier = %s"
+    )
+    vals = (json.dumps(brands), supplier_id)
+    # vals = (brands, supplier_id)
+    flag, error, result = execute_sql(update_sql, vals, 4)
     return flag, error, result

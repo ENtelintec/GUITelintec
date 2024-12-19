@@ -44,3 +44,11 @@ __pycache__/
 *.pfx
 /files/nominas_index.json
 /files/inventario.xlsx
+.vscode/*
+/Tests/Tests_apis_almacen.py
+/tester2.py
+/FO-ALM-*.xlsx
+/swager_specs.json
+/files/test_result.txt
+/templates/forms/barcodes.pdf
+/Tests/

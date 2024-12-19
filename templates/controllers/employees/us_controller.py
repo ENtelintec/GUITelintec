@@ -6,7 +6,7 @@ import json
 
 import jwt
 
-from static.extensions import secrets
+from static.constants import secrets
 from templates.database.connection import execute_sql
 
 
