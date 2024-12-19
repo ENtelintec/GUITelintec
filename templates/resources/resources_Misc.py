@@ -26,7 +26,7 @@ from templates.controllers.notifications.Notifications_controller import (
     insert_notification,
     update_status_notification,
 )
-from templates.resources.methods.Functions_Aux_Login import verify_token
+from templates.resources.methods.Functions_Aux_Login import verify_token, token_verification_procedure
 from templates.resources.midleware.Functions_DB_midleware import (
     create_task_from_api,
     update_task_from_api,
@@ -48,10 +48,9 @@ class Notifications(Resource):
     @ns.marshal_with(notification_request_model)
     @ns.expect(expected_headers_per)
     def get(self, id_emp, status):
-        token = request.headers["Authorization"]
-        flag, data_token = verify_token(token, department="basic")
+        flag, data_token, msg = token_verification_procedure(request, department="basic")
         if not flag:
-            return {"error": "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
         status = status if status in [0, 1] else "%"
         code, result = get_all_notification_db_user_status(id_emp, status)
         return {"data": result, "msg": "Ok" if code == 200 else "Error"}, code
@@ -62,10 +61,9 @@ class NotificationsPermission(Resource):
     @ns.marshal_with(notification_request_model)
     @ns.expect(expected_headers_per)
     def get(self, permission, status):
-        token = request.headers["Authorization"]
-        flag, data_token = verify_token(token, department="basic")
+        flag, data_token, msg = token_verification_procedure(request, department="basic")
         if not flag:
-            return {"error": "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
         status = status if status in [0, 1] else "%"
         code, result = get_all_notification_db_permission(permission, status)
         return {"data": result, "msg": "Ok" if code == 200 else "Error"}, code
@@ -75,10 +73,9 @@ class NotificationsPermission(Resource):
 class Notification(Resource):
     @ns.expect(expected_headers_per, notification_insert_model)
     def post(self):
-        token = request.headers["Authorization"]
-        flag, data_token = verify_token(token, department="basic")
+        flag, data_token, msg = token_verification_procedure(request, department="basic")
         if not flag:
-            return {"error": "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
         # noinspection PyUnresolvedReferences
         validator = NotificationInsertForm.from_json(ns.payload)
         if not validator.validate():
@@ -92,10 +89,9 @@ class Notification(Resource):
 
     @ns.expect(expected_headers_per, notification_insert_model)
     def put(self):
-        token = request.headers["Authorization"]
-        flag, data_token = verify_token(token, department="basic")
+        flag, data_token, msg = token_verification_procedure(request, department="basic")
         if not flag:
-            return {"error": "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
         # noinspection PyUnresolvedReferences
         validator = NotificationInsertForm.from_json(ns.payload)
         if not validator.validate():
@@ -115,10 +111,9 @@ class Notification(Resource):
 class DownloadFileVacations(Resource):
     @ns.expect(expected_headers_per)
     def get(self):
-        token = request.headers["Authorization"]
-        flag, data_token = verify_token(token, department="basic")
+        flag, data_token, msg = token_verification_procedure(request, department="basic")
         if not flag:
-            return {"error": "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
         try:
             return send_file(filepath_settings, as_attachment=True)
         except Exception as e:
@@ -130,13 +125,9 @@ class ResponseAV(Resource):
     @ns.marshal_with(response_av_model)
     @ns.expect(expected_headers_per, request_av_response_model)
     def post(self):
-        token = request.headers["Authorization"]
-        flag, data_token = verify_token(
-            token, department=["almacen", "operaciones", "rrhh", "administracion"]
-        )
+        flag, data_token, msg = token_verification_procedure(request, department=["almacen", "operaciones", "rrhh", "administracion"])
         if not flag:
-            return {"error": "No autorizado. Token invalido"}, 400
-
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
         validator = RequestAVResponseForm.from_json(ns.payload)
         if not validator.validate():
             return {"errors": validator.errors}, 400
@@ -159,12 +150,9 @@ class FilesAV(Resource):
     @ns.marshal_with(response_files_av_model)
     @ns.expect(expected_headers_per)
     def get(self, department):
-        token = request.headers["Authorization"]
-        flag, data_token = verify_token(
-            token, department=["almacen", "operaciones", "rrhh", "administracion"]
-        )
+        flag, data_token, msg = token_verification_procedure(request, department=["almacen", "operaciones", "rrhh", "administracion"])
         if not flag:
-            return {"error": "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
         try:
             files = get_files_openai(department)
             if len(files) == 0:
@@ -178,10 +166,9 @@ class FilesAV(Resource):
 class Task(Resource):
     @ns.expect(expected_headers_per, task_insert_model)
     def post(self):
-        token = request.headers["Authorization"]
-        flag, data_token = verify_token(token, department="rrhh")
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
         if not flag:
-            return {"error": "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
         # noinspection PyUnresolvedReferences
         validator = TaskInsertForm.from_json(ns.payload)
         if not validator.validate():
@@ -192,10 +179,9 @@ class Task(Resource):
 
     @ns.expect(expected_headers_per, task_update_model)
     def put(self):
-        token = request.headers["Authorization"]
-        flag, data_token = verify_token(token, department="rrhh")
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
         if not flag:
-            return {"error": "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
         # noinspection PyUnresolvedReferences
         validator = TaskUpdateForm.from_json(ns.payload)
         if not validator.validate():
@@ -206,10 +192,9 @@ class Task(Resource):
 
     @ns.expect(expected_headers_per, task_delete_model)
     def delete(self):
-        token = request.headers["Authorization"]
-        flag, data_token = verify_token(token, department="rrhh")
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
         if not flag:
-            return {"error": "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
         # noinspection PyUnresolvedReferences
         validator = TaskDeleteForm.from_json(ns.payload)
         if not validator.validate():
@@ -223,10 +208,9 @@ class Task(Resource):
 class TaskGui(Resource):
     @ns.expect(expected_headers_per)
     def get(self, emp_id):
-        token = request.headers["Authorization"]
-        flag, data_token = verify_token(token, emp_id=emp_id)
+        flag, data_token, msg = token_verification_procedure(request, emp_id=emp_id)
         if not flag:
-            return {"error": "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
         data, code = get_task_by_id_employee(emp_id)
         if code == 200:
             return {"data": data}, 200

@@ -34,6 +34,29 @@ def verify_department_permission(token_data: dict, department: str) -> bool:
         return False
 
 
+def verify_department_or_employee_permission(
+    token_data: dict, department: str, emp_id: int
+) -> bool:
+    """
+    Verifies the department or employee permission.
+    :param token_data: <dict>
+    :param department: <string>
+    :param emp_id: <integer>
+    :return: <bool>
+    """
+    try:
+        permissions = token_data.get("permissions", {})
+        if verify_employee_id(token_data, emp_id):
+            return True
+        for item in permissions.values():
+            if department.lower() in item.lower():
+                return True
+        return False
+    except Exception as e:
+        print("errort at verifyin permission for department: ", e)
+        return False
+
+
 def verify_employee_id(token_data: dict, emp_id: int) -> bool:
     """
     Verifies the employee id.
@@ -50,6 +73,25 @@ def verify_employee_id(token_data: dict, emp_id: int) -> bool:
         return False
 
 
+def token_verification_procedure(request, **kwargs):
+    """
+    Verifies the token.
+    :param request: <request>
+    :return: <bool>, <data>
+    """
+    try:
+        token = request.headers.get("Authorization", None)
+        if token is None:
+            return False, {}, "Token not found"
+        department = kwargs.get("department", None)
+        emp_id = kwargs.get("emp_id", None)
+        flag, data_token = verify_token(token, department, emp_id)
+        return flag, data_token, ""
+    except Exception as e:
+        msg = "errort at token verification procedure: " + str(e)
+        return False, {}, msg
+
+
 def verify_token(
     token: str, department: str | list = None, emp_id: int = None
 ) -> tuple[bool, dict]:
@@ -63,18 +105,17 @@ def verify_token(
     try:
         data = unpack_token(token)
         if emp_id:
-            if not verify_employee_id(data, emp_id):
-                return False, {}
-        elif department:
+            if verify_employee_id(data, emp_id):
+                return True, data
+        if department:
             if isinstance(department, list):
                 for dep in department:
                     if verify_department_permission(data, dep):
                         return True, data
-                return False, {}
             elif isinstance(department, str):
-                if not verify_department_permission(data, department):
-                    return False, {}
-        return True, data
+                if verify_department_permission(data, department):
+                    return True, data
+        return False, {}
     except Exception as e:
         print("errort at unpack token: ", e)
         return False, {}
