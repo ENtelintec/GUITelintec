@@ -31,6 +31,34 @@ locations_model = api.model(
     },
 )
 
+product_model_new = api.model(
+    "ProductAMCNew",
+    {
+        "name": fields.String(required=True, description="The product name"),
+        "sku": fields.String(required=True, description="The product sku"),
+        "udm": fields.String(required=True, description="The product udm"),
+        "stock": fields.Float(required=True, description="The product stock"),
+        "category_name": fields.String(
+            required=True, description="The product category name or id for edition"
+        ),
+        "supplier_name": fields.String(
+            required=True, description="The product supplier name or id for edition"
+        ),
+        "is_tool": fields.Integer(required=True, description="The product is tool"),
+        "is_internal": fields.Integer(
+            required=True, description="The product is internal"
+        ),
+        "quantity_move": fields.Float(
+            required=False,
+            description="The product quantity movement in for news (optional)",
+        ),
+        "codes": fields.List(fields.Nested(code_model), required=False),
+        "locations": fields.Nested(locations_model, required=False),
+        "brand": fields.String(
+            required=False, description="The product brand."
+        ),
+    },
+)
 
 product_model_update = api.model(
     "ProductAMCUpdate",
@@ -50,7 +78,7 @@ product_model_update = api.model(
         "is_internal": fields.Integer(
             required=True, description="The product is internal"
         ),
-        "quantity_move": fields.Integer(
+        "quantity_move": fields.Float(
             required=False,
             description="The product quantity movement in or out, for movements creation. "
             "If negative, out movements with abs(value), else in movements with value",
@@ -62,36 +90,6 @@ product_model_update = api.model(
         ),
     },
 )
-
-product_model_new = api.model(
-    "ProductAMCNew",
-    {
-        "name": fields.String(required=True, description="The product name"),
-        "sku": fields.String(required=True, description="The product sku"),
-        "udm": fields.String(required=True, description="The product udm"),
-        "stock": fields.Float(required=True, description="The product stock"),
-        "category_name": fields.String(
-            required=True, description="The product category name or id for edition"
-        ),
-        "supplier_name": fields.String(
-            required=True, description="The product supplier name or id for edition"
-        ),
-        "is_tool": fields.Integer(required=True, description="The product is tool"),
-        "is_internal": fields.Integer(
-            required=True, description="The product is internal"
-        ),
-        "quantity_move": fields.Integer(
-            required=False,
-            description="The product quantity movement in for news (optional)",
-        ),
-        "codes": fields.List(fields.Nested(code_model), required=False),
-        "locations": fields.Nested(locations_model, required=False),
-        "brand": fields.String(
-            required=False, description="The product brand."
-        ),
-    },
-)
-
 
 products_output_model = api.model(
     "ProductsOutAMC",
@@ -298,7 +296,7 @@ class ProductUpdateForm(Form):
     supplier_name = StringField("supplier_name", validators=[], default=None)
     is_tool = IntegerField("is_tool", validators=[], default=0)
     is_internal = IntegerField("is_internal", validators=[], default=0)
-    quantity_move = IntegerField("quantity_move", validators=[], default=0)
+    quantity_move = FloatField("quantity_move", validators=[], default=0)
     codes = FieldList(FormField(CodesForm), validators=[], default=[])
     locations = FormField(LocationsForm)
 

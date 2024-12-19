@@ -66,7 +66,8 @@ ns = Namespace("GUI/api/v1/almacen")
 
 @ns.route("/movements/<string:type_m>")
 class GetMovements(Resource):
-    @ns.marshal_with(expected_headers_per, movements_output_model)
+    @ns.marshal_with(movements_output_model)
+    @ns.expect(expected_headers_per)
     def get(self, type_m):
         token = request.headers["Authorization"]
         flag, data_token = verify_token(token, department="almacen")
@@ -237,7 +238,8 @@ class InventoryMultipleProducts(Resource):
 
 @ns.route("/inventory/categories/all")
 class InventoryCategories(Resource):
-    @ns.marshal_with(expected_headers_per, categories_output_model)
+    @ns.marshal_with(categories_output_model)
+    @ns.expect(expected_headers_per)
     def get(self):
         token = request.headers["Authorization"]
         flag, data_token = verify_token(token, department="almacen")
@@ -249,7 +251,8 @@ class InventoryCategories(Resource):
 
 @ns.route("/inventory/suppliers/all")
 class InventorySuppliers(Resource):
-    @ns.marshal_with(expected_headers_per, suppliers_output_model)
+    @ns.marshal_with(suppliers_output_model)
+    @ns.expect(expected_headers_per)
     def get(self):
         token = request.headers["Authorization"]
         flag, data_token = verify_token(token, department="almacen")

@@ -206,7 +206,8 @@ def get_movements_type_db(type_m: str):
         "movement_type, "
         "quantity, "
         "movement_date, "
-        "sm_id "
+        "sm_id, "
+        "extra_info->'$.reference' "
         "FROM sql_telintec.product_movements_amc "
         "WHERE movement_type LIKE %s "
     )
