@@ -10,7 +10,7 @@ from pathlib import Path
 
 paths_dpb_folders = json.load(open("files/paths_general.json"))
 local_father_path_dpb = "C:/Users/Edisson/Telintec Dropbox/SOFTWARE TELINTEC"
-secrets = dotenv_values(".env")
+secrets = dotenv_values("../.env")
 api = Api()
 IMG_PATH_COLLAPSING = Path("./img")
 ventanasApp_path = "static/ventanasAppGUI.json"
@@ -149,7 +149,7 @@ status_dic = {
 }
 format_timestamps = "%Y-%m-%d %H:%M:%S"
 format_timestamps_tz = "%Y-%m-%d %H:%M:%S"
-timezone_software = 'America/Mexico_City'
+timezone_software = "America/Mexico_City"
 format_date = "%Y-%m-%d"
 format_date_fichaje_file = "%d-%m-%Y"
 dict_deps = {
@@ -162,6 +162,6 @@ dict_deps = {
     "Otros": 7,
 }
 format_timestamps_filename = "%Y-%m-%d"
-HOST_DB_DEFAULT = "HOST_DB"
-USER_DB_DEFAULT = "USER_SQL"
-PASS_DB_DEFAULT = "PASS_SQL"
+HOST_DB_DEFAULT = "HOST_DB_AWS"
+USER_DB_DEFAULT = "USER_SQL_AWS"
+PASS_DB_DEFAULT = "PASS_SQL_AWS"
