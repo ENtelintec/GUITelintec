@@ -7,7 +7,7 @@ import ttkbootstrap as ttk
 from ttkbootstrap.dialogs import Messagebox
 from ttkbootstrap.tableview import Tableview
 
-from static.constants import format_date, log_file_db, file_codebar, format_timestamps
+from static.constants import format_date, log_file_db, file_codebar, format_timestamps, log_file_almacen
 from templates.Functions_GUI_Utils import (
     create_label,
     create_entry,
@@ -765,7 +765,7 @@ class InventoryScreen(ttk.Frame):
         timestamp = datetime.now().strftime(format_timestamps)
         msg += f"[Timestamp: {timestamp}]"
         msg += f"[ID: {self.usernamedata.get('id', 'No id')}]"
-        write_log_file(log_file_db, msg)
+        write_log_file(log_file_almacen, msg)
 
     def get_inputs_values(self):
         data = []

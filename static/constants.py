@@ -62,6 +62,7 @@ quizz_out_path = "files/quizz_out/"
 log_file_bitacora_path = "files/logs/bitacora"
 log_file_sm_path = "files/logs/sm"
 log_file_db = "files/logs/db"
+log_file_almacen = "files/logs/almacen"
 path_contract_files = "files/contracts"
 filepath_bitacora_download = "files/quizz_out/temp_bitacora.csv"
 filepath_inventory_form = "files/inventory_temp.pdf"
@@ -147,6 +148,8 @@ status_dic = {
     -1: "Cancelado",
 }
 format_timestamps = "%Y-%m-%d %H:%M:%S"
+format_timestamps_tz = "%Y-%m-%d %H:%M:%S"
+timezone_software = 'America/Mexico_City'
 format_date = "%Y-%m-%d"
 format_date_fichaje_file = "%d-%m-%Y"
 dict_deps = {

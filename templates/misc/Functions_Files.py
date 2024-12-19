@@ -14,6 +14,7 @@ from typing import Any
 
 import dropbox
 import pandas as pd
+import pytz
 
 from static.constants import (
     secrets,
@@ -21,7 +22,7 @@ from static.constants import (
     cache_oct_fichaje_path,
     quizzes_RRHH,
     conversion_quizzes_path,
-    format_date,
+    format_date, timezone_software,
 )
 from templates.Functions_Text import clean_accents, compare_employee_name
 from templates.controllers.employees.employees_controller import get_employee_id_name
@@ -2093,8 +2094,9 @@ def get_list_files(
     return files_pairs, files_names_f
 
 
-def write_log_file(path, text):
-    date = datetime.now().strftime(format_date)
+def write_log_file(path, text, username_data=None):
+    time_zone = pytz.timezone(timezone_software)
+    date = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_date)
     with open(f"{path}_log_{date}.txt", "a") as f:
         f.write(text + "\n")
     return True

@@ -778,40 +778,34 @@ def get_stock_db_products():
 
 def update_stock_db_sku(skus: list, stocks: list):
     if len(skus) != len(stocks) or len(skus) == 0:
-        return False, "No products to update", None
-    sql = "UPDATE sql_telintec.products_amc SET stock = CASE "
+        return [], "No products to update", []
+    flags = []
+    errors = []
+    results = []
     for sku, stock in zip(skus, stocks):
-        sql += f"WHEN sku = '{sku}' THEN {stock} "
-    sql += (
-        "ELSE stock "
-        "END "
-        "WHERE sku IN (" + ", ".join([f"'{sku}'" for sku in skus]) + ");"
-    )
-
-    flag, error, result = execute_sql(sql, None, 4)
-    return flag, error, result
+        sql = "UPDATE sql_telintec.products_amc " "SET stock = %s " "WHERE sku = %s"
+        vals = (stock, sku)
+        flag, error, result = execute_sql(sql, vals, 3)
+        flags.append(flag)
+        errors.append(error)
+        results.append(result)
+    return flags, errors, results
 
 
 def update_stock_db_ids(ids: list, stocks: list):
     if len(ids) != len(stocks) or len(ids) == 0:
-        return False, "No products to update", None
-    sql = "UPDATE sql_telintec.products_amc SET stock = CASE "
-    try:
-        for _id, stock in zip(ids, stocks):
-            sql += f"WHEN id_product = '{_id}' THEN {stock} "
-        sql += (
-            "ELSE stock "
-            "END "
-            "WHERE id_product IN (" + ", ".join([f"'{_id}'" for _id in ids]) + ");"
-        )
-    except Exception as e:
-        # noinspection PyUnboundLocalVariable
-        msg_error = (
-            f"Error in update_stock_db_ids: {str(e)} at id: {_id}, stock: {stock}"
-        )
-        return False, msg_error, None
-    flag, error, result = execute_sql(sql, None, 4)
-    return flag, error, result
+        return [], "No products to update", []
+    flags = []
+    errors = []
+    results = []
+    for _id, stock in zip(ids, stocks):
+        sql = "UPDATE sql_telintec.products_amc " "SET stock = %s " "WHERE id_product = %s"
+        vals = (stock, _id)
+        flag, error, result = execute_sql(sql, vals, 3)
+        flags.append(flag)
+        errors.append(error)
+        results.append(result)
+    return flags, errors, results
 
 
 def insert_multiple_row_products_amc(products: tuple, dict_cat=None, dict_supp=None):
@@ -946,47 +940,62 @@ def insert_multiple_row_movements_amc(movements: tuple):
 
 def update_multiple_products_suppliers(products: tuple):
     if len(products) == 0:
-        return False, "No products to update", None
-    sql = "UPDATE sql_telintec.products_amc SET id_supplier = CASE "
+        return [], ["No products to update"], []
+    flags = []
+    errors = []
+    results = []
     for product in products:
-        sql += f"WHEN sku = '{product[0]}' THEN {product[1]} "
-    sql += (
-        "ELSE sku "
-        "END "
-        "WHERE sku IN (" + ", ".join([f"'{product[0]}'" for product in products]) + ");"
-    )
-    sql = sql.replace("None", "NULL")
-    flag, error, result = execute_sql(sql, None, 4)
-    return flag, error, result
+        sql = (
+            "UPDATE sql_telintec.products_amc "
+            "SET id_supplier = %s "
+            "WHERE sku = %s"
+        )
+        vals = (product[1], product[0])
+        flag, error, result = execute_sql(sql, vals, 3)
+        flags.append(flag)
+        errors.append(error)
+        results.append(result)
+    return flags, errors, results
 
 
 def insert_multiple_categories_amc(categories: tuple):
     if len(categories) == 0:
-        return False, "No categories to insert", None
-    sql = "INSERT INTO sql_telintec.product_categories_amc (name) VALUES "
-    for index, category in enumerate(categories):
-        if index > 0:
-            sql += ", "
-        sql += f"('{category}')"
-    sql = sql.replace("None", "NULL")
-    flag, error, result = execute_sql(sql, None, 4)
-    return flag, error, result
+        return [], ["No categories to insert"], []
+    flags = []
+    errors = []
+    results = []
+    for category in categories:
+        sql = (
+            "INSERT INTO sql_telintec.product_categories_amc (name) "
+            "VALUES (%s) "
+            "ON DUPLICATE KEY UPDATE name = %s"
+        )
+        vals = (category, category)
+        flag, error, result = execute_sql(sql, vals, 4)
+        flags.append(flag)
+        errors.append(error)
+        results.append(result)
+    return flags, errors, results
 
 
 def update_multiple_products_categories(products: tuple):
     if len(products) == 0:
-        return False, "No products to update", None
-    sql = "UPDATE sql_telintec.products_amc SET id_category = CASE "
+        return [], ["No products to update"], []
+    flags = []
+    errors = []
+    results = []
     for product in products:
-        sql += f"WHEN sku = '{product[0]}' THEN {product[1]} "
-    sql += (
-        "ELSE sku "
-        "END "
-        "WHERE sku IN (" + ", ".join([f"'{product[0]}'" for product in products]) + ");"
-    )
-    sql = sql.replace("None", "NULL")
-    flag, error, result = execute_sql(sql, None, 4)
-    return flag, error, result
+        sql = (
+            "UPDATE sql_telintec.products_amc "
+            "SET id_category = %s "
+            "WHERE sku = %s"
+        )
+        vals = (product[1], product[0])
+        flag, error, result = execute_sql(sql, vals, 3)
+        flags.append(flag)
+        errors.append(error)
+        results.append(result)
+    return flags, errors, results
 
 
 def udpate_multiple_row_stock_ids(data):

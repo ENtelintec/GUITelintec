@@ -51,8 +51,8 @@ from templates.resources.midleware.Functions_midleware_almacen import (
     upload_product_db_from_file,
     create_file_inventory,
     create_file_movements_amc,
-    insert_and_update_multiple_products_amc,
-    insert_multiple_movements,
+    insert_and_update_multiple_products_from_api,
+    insert_multiple_movements_from_api,
     create_pdf_barcode,
     create_pdf_barcode_multiple,
 )
@@ -144,7 +144,7 @@ class MultipleMovementDB(Resource):
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
-        flag, result = insert_multiple_movements(data)
+        flag, result = insert_multiple_movements_from_api(data)
         return {
             "data": result,
             "msg": "Ok" if flag else "Error",
@@ -230,9 +230,7 @@ class InventoryMultipleProducts(Resource):
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
-        flag, data_out = insert_and_update_multiple_products_amc(data)
-        if not flag:
-            return {"data": data_out, "msg": "Error"}, 400
+        data_out = insert_and_update_multiple_products_from_api(data)
         return {"data": data_out, "msg": "Ok"}, 200
 
 
@@ -277,10 +275,12 @@ class UploadInventoryeFile(Resource):
                 return {"data": "No se detecto un archivo xlsx valido"}, 400
             new_name = "inventario.xlsx"
             file.save(os.path.join("files", new_name))
-            code, data = upload_product_db_from_file(os.path.join("files", new_name))
-            if code != 200:
-                return {"data": data, "msg": "Error at file structure"}, 400
-            return {"data": data, "msg": f"Ok with filaname: {new_name}"}, 200
+            try:
+                data_out = upload_product_db_from_file(os.path.join("files", new_name))
+                return {"data": data_out, "msg": f"Ok with filaname: {new_name}"}, 200
+            except Exception as e:
+                print(e)
+                return {"data": str(e), "msg": "Error at file structure"}, 400
         else:
             return {"msg": "No se subio el archivo"}, 400
 
@@ -302,12 +302,14 @@ class UploadInventoryeFileTool(Resource):
                 return {"data": "No se detecto un archivo xlsx valido"}, 400
             new_name = "inventario.xlsx"
             file.save(os.path.join("files", new_name))
-            code, data = upload_product_db_from_file(
-                os.path.join("files", new_name), is_tool=True
-            )
-            if code != 200:
-                return {"data": data, "msg": "Error at file structure"}, 400
-            return {"data": data, "msg": f"Ok with filaname: {new_name}"}, 200
+            try:
+                data_out = upload_product_db_from_file(
+                    os.path.join("files", new_name), is_tool=True
+                )
+                return {"data": data_out, "msg": f"Ok with filaname: {new_name}"}, 200
+            except Exception as e:
+                print(e)
+                return {"data": str(e), "msg": "Error at file structure"}, 400
         else:
             return {"msg": "No se subio el archivo"}, 400
 
@@ -329,12 +331,14 @@ class UploadInventoryeFileInternal(Resource):
                 return {"data": "No se detecto un archivo xlsx valido"}, 400
             new_name = "inventario.xlsx"
             file.save(os.path.join("files", new_name))
-            code, data = upload_product_db_from_file(
-                os.path.join("files", new_name), is_internal=1
-            )
-            if code != 200:
-                return {"data": data, "msg": "Error at file structure"}, 400
-            return {"data": data, "msg": f"Ok with filaname: {new_name}"}, 200
+            try:
+                data_out = upload_product_db_from_file(
+                    os.path.join("files", new_name), is_internal=1
+                )
+                return {"data": data_out, "msg": f"Ok with filaname: {new_name}"}, 200
+            except Exception as e:
+                print(e)
+                return {"data": str(e), "msg": "Error at file structure"}, 400
         else:
             return {"msg": "No se subio el archivo"}, 400
 
