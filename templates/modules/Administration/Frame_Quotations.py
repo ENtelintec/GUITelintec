@@ -6,11 +6,12 @@ import json
 from datetime import datetime
 from tkinter import filedialog
 
+import pytz
 import ttkbootstrap as ttk
 from ttkbootstrap.scrolled import ScrolledFrame
 from ttkbootstrap.tableview import Tableview
 
-from static.constants import format_timestamps
+from static.constants import format_timestamps, timezone_software
 from templates.Functions_GUI_Utils import (
     create_label,
     create_entry,
@@ -76,7 +77,8 @@ def update_procedure(id_bidding, data_bidding, data_info, products):
     products_old = json.loads(data_bidding[2])
     products_new = update_products_from_entries(products, products_old)
     timestamps = json.loads(data_bidding[4])
-    date_now = datetime.now().strftime(format_timestamps)
+    time_zone = pytz.timezone(timezone_software)
+    date_now = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
     timestamps["update"].append(date_now)
     flag, error, result = update_quotation(
         id_bidding, metadata, products_new, timestamps
@@ -85,8 +87,10 @@ def update_procedure(id_bidding, data_bidding, data_info, products):
 
 
 def create_procedure(data_info, products):
+    time_zone = pytz.timezone(timezone_software)
+    timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
     metadata = {
-        "emission": datetime.now().strftime(format_timestamps),
+        "emission": timestamp,
         "limit_date": "",
         "quotation_code": "",
         "codigo": "",

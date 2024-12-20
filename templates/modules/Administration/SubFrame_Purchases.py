@@ -4,12 +4,13 @@ __date__ = "$ 14/nov/2024  at 10:58 $"
 
 from datetime import datetime
 
+import pytz
 import ttkbootstrap as ttk
 from ttkbootstrap.dialogs import Messagebox
 from ttkbootstrap.tableview import Tableview
 
 from static.Models.api_purchases_models import PurchasePostForm
-from static.constants import format_date, format_timestamps
+from static.constants import format_date, format_timestamps, timezone_software
 from templates.Functions_GUI_Utils import (
     create_label,
     create_entry,
@@ -219,6 +220,8 @@ class RequestPurchaseFrame(ttk.Frame):
 
     def clear_entries(self):
         self.entries = list(self.entries)
+        time_zone = pytz.timezone(timezone_software)
+        date = datetime.now(pytz.utc).astimezone(time_zone)
         for index, entry in enumerate(self.entries):
             if isinstance(entry, ttk.Combobox):
                 entry.set("")
@@ -230,7 +233,7 @@ class RequestPurchaseFrame(ttk.Frame):
                     self.frame_inputs,
                     firstweekday=0,
                     dateformat=format_date,
-                    startdate=datetime.now(),
+                    startdate=date,
                     row=5,
                     column=1,
                 )
@@ -253,7 +256,8 @@ class RequestPurchaseFrame(ttk.Frame):
                 "No se puede agregar una solicitud sin nombre o cantidad", "Error"
             )
             return
-        timestamp_now = datetime.now().strftime(format_timestamps)
+        time_zone = pytz.timezone(timezone_software)
+        timestamp_now = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
         data_dict = {
             "metadata": {
                 "name": values[1],

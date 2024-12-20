@@ -5,7 +5,9 @@ __date__ = "$ 29/abr./2024  at 16:40 $"
 import json
 from datetime import datetime
 
-from static.constants import format_timestamps
+import pytz
+
+from static.constants import format_timestamps, timezone_software
 from templates.Functions_Utils import clean_name
 from templates.database.connection import execute_sql
 
@@ -912,13 +914,14 @@ def insert_multiple_row_movements_amc(movements: tuple):
     flags = []
     errors = []
     results = []
-    date = datetime.now().strftime(format_timestamps)
+    time_zone = pytz.timezone(timezone_software)
+    date = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
     for index, movement in enumerate(movements):
         if len(movement) < 4:
             sm_id = "None"
             extra_info = json.dumps({"reference": ""})
         else:
-            date = movement[3]
+            # date = movement[3]
             sm_id = movement[4] if movement[4] != "None" else "None"
             extra_info = json.dumps({"reference": movement[5]})
         sql = (

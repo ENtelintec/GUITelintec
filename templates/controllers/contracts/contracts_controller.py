@@ -5,12 +5,15 @@ __date__ = "$ 20/jun./2024  at 14:34 $"
 import json
 from datetime import datetime
 
-from static.constants import format_timestamps
+import pytz
+
+from static.constants import format_timestamps, timezone_software
 from templates.database.connection import execute_sql
 
 
 def create_contract(id_quotation, metadata: dict):
-    timestamp = datetime.now().strftime(format_timestamps)
+    time_zone = pytz.timezone(timezone_software)
+    timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
     sql = (
         "INSERT INTO sql_telintec_mod_admin.contracts (metadata, creation, quotation_id) "
         "VALUES (%s, %s, %s)"
@@ -21,7 +24,8 @@ def create_contract(id_quotation, metadata: dict):
 
 
 def update_contract(id_contract, metadata: dict, timestamps=None):
-    timestamp = datetime.now().strftime(format_timestamps)
+    time_zone = pytz.timezone(timezone_software)
+    timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
     if timestamps is None:
         timestamps = {
             "complete": {"timestamp": "", "comment": ""},

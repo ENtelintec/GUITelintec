@@ -15,8 +15,6 @@ from templates.controllers.employees.vacations_controller import (
 )
 from templates.controllers.misc.tasks_controller import create_task, update_task, delete_task
 
-""" --------------------------------------API RRHH----------------------------------------------------------"""
-
 
 def get_info_employees_with_status(status: str):
     flag, error, result = get_all_data_employees(status)

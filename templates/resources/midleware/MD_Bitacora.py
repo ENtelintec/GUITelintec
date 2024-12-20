@@ -6,7 +6,10 @@ import csv
 import json
 from datetime import datetime, timedelta
 
-from static.constants import format_date, log_file_bitacora_path, delta_bitacora_edit, filepath_bitacora_download, format_timestamps
+import pytz
+
+from static.constants import format_date, log_file_bitacora_path, delta_bitacora_edit, filepath_bitacora_download, format_timestamps, \
+    timezone_software
 from templates.Functions_Utils import create_notification_permission
 from templates.controllers.fichajes.fichajes_controller import get_all_fichajes_op
 from templates.misc.Functions_AuxFiles import split_commment, unify_comment_dict, get_events_op_date, update_bitacora, \
@@ -16,7 +19,8 @@ from templates.misc.Functions_Files import write_log_file
 
 def check_date_difference(date_modify, delta):
     flag = True
-    date_now = datetime.now()
+    time_zone = pytz.timezone(timezone_software)
+    date_now = datetime.now(pytz.utc).astimezone(time_zone)
     date_modify = (
         datetime.strptime(date_modify, format_date)
         if isinstance(date_modify, str)
@@ -143,7 +147,8 @@ def get_events_from_extraordinary_sources(hour_in: str, hour_out: str, data: dic
 
 
 def get_extras_last_month(extras_dict: dict, date=None):
-    date_today = datetime.now().date() if date is None else date
+    time_zone = pytz.timezone(timezone_software)
+    date_today = datetime.now(pytz.utc).astimezone(time_zone).date() if date is None else date
     year = date_today.year
     month = date_today.month - 1
     day = date_today.day
