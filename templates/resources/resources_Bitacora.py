@@ -27,7 +27,7 @@ from templates.controllers.employees.employees_controller import (
     get_employees_op_names,
     get_contracts_operaciones,
 )
-from templates.resources.methods.Functions_Aux_Login import verify_token
+from templates.resources.methods.Functions_Aux_Login import verify_token, token_verification_procedure
 from templates.resources.midleware.MD_Bitacora import (
     get_events_extra,
     get_events_bitacora,
@@ -44,10 +44,9 @@ class Employees(Resource):
     @ns.marshal_with(client_emp_sm_response_model)
     @ns.expect(expected_headers_per)
     def get(self):
-        token = request.headers["Authorization"]
-        flag, data_token = verify_token(token, department="bitacoras")
+        flag, data_token, msg = token_verification_procedure(request, department="bitacoras")
         if not flag:
-            return {"error": "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
         flag, error, result = get_employees_op_names()
         if flag:
             return {"data": result, "comment": error}, 200
@@ -59,10 +58,9 @@ class Employees(Resource):
 class FichajeTable(Resource):
     @ns.expect(expected_headers_per, fichaje_request_model)
     def post(self):
-        token = request.headers["Authorization"]
-        flag, data_token = verify_token(token, department="bitacoras")
+        flag, data_token, msg = token_verification_procedure(request, department="bitacoras")
         if not flag:
-            return {"error": "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
         # noinspection PyUnresolvedReferences
         validator = FichajeRequestFormr.from_json(ns.payload)
         if not validator.validate():
@@ -76,10 +74,9 @@ class FichajeTable(Resource):
 class FichajeEvent(Resource):
     @ns.expect(expected_headers_per, fichaje_add_update_request_model)
     def post(self):
-        token = request.headers["Authorization"]
-        flag, data_token = verify_token(token, department="bitacoras")
+        flag, data_token, msg = token_verification_procedure(request, department="bitacoras")
         if not flag:
-            return {"error": "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
         # noinspection PyUnresolvedReferences
         validator = FichajeAddUpdateRequestForm.from_json(ns.payload)
         if not validator.validate():
@@ -90,10 +87,9 @@ class FichajeEvent(Resource):
 
     @ns.expect(expected_headers_per, fichaje_add_update_request_model)
     def put(self):
-        token = request.headers["Authorization"]
-        flag, data_token = verify_token(token, department="bitacoras")
+        flag, data_token, msg = token_verification_procedure(request, department="bitacoras")
         if not flag:
-            return {"error": "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
         # noinspection PyUnresolvedReferences
         validator = FichajeAddUpdateRequestForm.from_json(ns.payload)
         if not validator.validate():
@@ -104,10 +100,9 @@ class FichajeEvent(Resource):
 
     @ns.expect(expected_headers_per, fichaje_delete_request_model)
     def delete(self):
-        token = request.headers["Authorization"]
-        flag, data_token = verify_token(token, department="bitacoras")
+        flag, data_token, msg = token_verification_procedure(request, department="bitacoras")
         if not flag:
-            return {"error": "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
         # noinspection PyUnresolvedReferences
         validator = FichajeDeleteRequestForm.from_json(ns.payload)
         if not validator.validate():
@@ -121,10 +116,9 @@ class FichajeEvent(Resource):
 class BitacoraDownloadReport(Resource):
     @ns.expect(expected_headers_per, bitacora_dowmload_report_model)
     def post(self):
-        token = request.headers["Authorization"]
-        flag, data_token = verify_token(token, department="bitacoras")
+        flag, data_token, msg = token_verification_procedure(request, department="bitacoras")
         if not flag:
-            return {"error": "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
         # noinspection PyUnresolvedReferences
         validator = BitacoraDownloadReportForm.from_json(ns.payload)
         if not validator.validate():
@@ -142,10 +136,9 @@ class BitacoraDownloadReport(Resource):
 class BitacoraEmployeesList(Resource):
     @ns.expect(expected_headers_per)
     def get(self):
-        token = request.headers["Authorization"]
-        flag, data_token = verify_token(token, department="bitacoras")
+        flag, data_token, msg = token_verification_procedure(request, department="bitacoras")
         if not flag:
-            return {"error": "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
         flag, error, result = get_contracts_operaciones()
         # filtering unique contracts
         contracts = list(set([item[0] for item in result]))
@@ -160,10 +153,9 @@ class BitacoraEmployeesList(Resource):
 class FichajeMultipleEvent(Resource):
     @ns.expect(expected_headers_per, FichajeRequestMultipleEvents_model)
     def post(self):
-        token = request.headers["Authorization"]
-        flag, data_token = verify_token(token, department="bitacoras")
+        flag, data_token, msg = token_verification_procedure(request, department="bitacoras")
         if not flag:
-            return {"error": "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
         # noinspection PyUnresolvedReferences
         validator = FichajeRequestMultipleEvents.from_json(ns.payload)
         if not validator.validate():
@@ -177,10 +169,9 @@ class FichajeMultipleEvent(Resource):
 class FichajesGetExtra(Resource):
     @ns.expect(expected_headers_per, FichajeRequestExtras_model)
     def post(self):
-        token = request.headers["Authorization"]
-        flag, data_token = verify_token(token, department="bitacoras")
+        flag, data_token, msg = token_verification_procedure(request, department="bitacoras")
         if not flag:
-            return {"error": "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
         # noinspection PyUnresolvedReferences
         validator = FichajeRequestExtras.from_json(ns.payload)
         if not validator.validate():
@@ -194,10 +185,9 @@ class FichajesGetExtra(Resource):
 class FichajesAproveExtra(Resource):
     @ns.expect(expected_headers_per, FichajeAproveExtras_model)
     def post(self):
-        token = request.headers["Authorization"]
-        flag, data_token = verify_token(token, department="bitacoras")
+        flag, data_token, msg = token_verification_procedure(request, department="bitacoras")
         if not flag:
-            return {"error": "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
         # noinspection PyUnresolvedReferences
         validator = FichajeAproveExtras.from_json(ns.payload)
         if not validator.validate():

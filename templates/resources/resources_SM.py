@@ -32,9 +32,7 @@ from static.Models.api_sm_models import (
 )
 from static.constants import log_file_sm_path
 from templates.Functions_AuxPlots import get_data_sm_per_range
-from templates.misc.Functions_Files import write_log_file
 from templates.Functions_Utils import create_notification_permission
-from templates.resources.methods.Functions_Aux_Login import verify_token
 from templates.controllers.customer.customers_controller import get_sm_clients
 from templates.controllers.employees.employees_controller import get_sm_employees
 from templates.controllers.index import DataHandler
@@ -43,6 +41,8 @@ from templates.controllers.material_request.sm_controller import (
     delete_sm_db,
     update_sm_db,
 )
+from templates.misc.Functions_Files import write_log_file
+from templates.resources.methods.Functions_Aux_Login import token_verification_procedure
 from templates.resources.midleware.MD_SM import (
     get_products_sm,
     get_all_sm,
@@ -62,10 +62,9 @@ class Employees(Resource):
     @ns.marshal_with(client_emp_sm_response_model)
     @ns.expect(expected_headers_per)
     def get(self):
-        token = request.headers["Authorization"]
-        flag, data_token = verify_token(token, department="sm")
+        flag, data_token, msg = token_verification_procedure(request, department="sm")
         if not flag:
-            return {"error": "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
         flag, error, result = get_sm_employees()
         if flag:
             return {"data": result, "comment": error}, 200
@@ -78,10 +77,9 @@ class Clients(Resource):
     @ns.marshal_with(client_emp_sm_response_model)
     @ns.expect(expected_headers_per)
     def get(self):
-        token = request.headers["Authorization"]
-        flag, data_token = verify_token(token, department="sm")
+        flag, data_token, msg = token_verification_procedure(request, department="sm")
         if not flag:
-            return {"error": "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
         flag, error, result = get_sm_clients()
         if flag:
             return {"data": result, "comment": error}, 200
@@ -94,10 +92,9 @@ class Products(Resource):
     @ns.expect(expected_headers_per, products_request_model)
     @ns.marshal_with(products_answer_model)
     def post(self):
-        token = request.headers["Authorization"]
-        flag, data_token = verify_token(token, department="sm")
+        flag, data_token, msg = token_verification_procedure(request, department="sm")
         if not flag:
-            return {"error": "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
         # noinspection PyUnresolvedReferences
         validator = ProductRequestForm.from_json(ns.payload)
         if not validator.validate():
@@ -112,10 +109,9 @@ class AllSm(Resource):
     @ns.expect(expected_headers_per, table_request_model)
     @ns.marshal_with(table_sm_model)
     def post(self):
-        token = request.headers["Authorization"]
-        flag, data_token = verify_token(token, department="sm")
+        flag, data_token, msg = token_verification_procedure(request, department="sm")
         if not flag:
-            return {"error": "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
         # noinspection PyUnresolvedReferences
         validator = TableRequestForm.from_json(ns.payload)
         if not validator.validate():
@@ -129,10 +125,9 @@ class AllSm(Resource):
 class AddSM(Resource):
     @ns.expect(expected_headers_per, sm_post_model)
     def post(self):
-        token = request.headers["Authorization"]
-        flag, data_token = verify_token(token, department="sm")
+        flag, data_token, msg = token_verification_procedure(request, department="sm")
         if not flag:
-            return {"error": "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
         # noinspection PyUnresolvedReferences
         validator = SMPostForm.from_json(ns.payload)
         if not validator.validate():
@@ -160,10 +155,9 @@ class AddSM(Resource):
 
     @ns.expect(expected_headers_per, delete_request_sm_model)
     def delete(self):
-        token = request.headers["Authorization"]
-        flag, data_token = verify_token(token, department="sm")
+        flag, data_token, msg = token_verification_procedure(request, department="sm")
         if not flag:
-            return {"error": "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
         # noinspection PyUnresolvedReferences
         validator = SMDeleteForm.from_json(ns.payload)
         if not validator.validate():
@@ -186,10 +180,9 @@ class AddSM(Resource):
 
     @ns.expect(expected_headers_per, sm_put_model)
     def put(self):
-        token = request.headers["Authorization"]
-        flag, data_token = verify_token(token, department="sm")
+        flag, data_token, msg = token_verification_procedure(request, department="sm")
         if not flag:
-            return {"error": "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
         # noinspection PyUnresolvedReferences
         validator = SMPutForm.from_json(ns.payload)
         if not validator.validate():
@@ -220,10 +213,9 @@ class AddSM(Resource):
 class Client(Resource):
     @ns.expect(expected_headers_per, new_cliente_model)
     def post(self):
-        token = request.headers["Authorization"]
-        flag, data_token = verify_token(token, department="sm")
+        flag, data_token, msg = token_verification_procedure(request, department="sm")
         if not flag:
-            return {"error": "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
         # noinspection PyUnresolvedReferences
         validator = NewClienteForm.from_json(ns.payload)
         if not validator.validate():
@@ -240,10 +232,9 @@ class Client(Resource):
 class Product(Resource):
     @ns.expect(expected_headers_per, new_product_model)
     def post(self):
-        token = request.headers["Authorization"]
-        flag, data_token = verify_token(token, department="sm")
+        flag, data_token, msg = token_verification_procedure(request, department="sm")
         if not flag:
-            return {"error": "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
         # noinspection PyUnresolvedReferences
         validator = NewProductForm.from_json(ns.payload)
         if not validator.validate():
@@ -265,10 +256,9 @@ class PlotSMData(Resource):
     @ns.marshal_with(request_sm_plot_data_model)
     @ns.expect(expected_headers_per)
     def get(self, typerange):
-        token = request.headers["Authorization"]
-        flag, data_token = verify_token(token, department="sm")
+        flag, data_token, msg = token_verification_procedure(request, department="sm")
         if not flag:
-            return {"error": "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
         data_out = get_data_sm_per_range(typerange, "normal")
         return {"data": data_out, "type": "normal plot lines"}, 200
 
@@ -278,10 +268,9 @@ class AlmacenEmployees(Resource):
     @ns.marshal_with(employees_answer_model)
     @ns.expect(expected_headers_per)
     def get(self):
-        token = request.headers["Authorization"]
-        flag, data_token = verify_token(token, department="sm")
+        flag, data_token, msg = token_verification_procedure(request, department="sm")
         if not flag:
-            return {"error": "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
         data_out, code = get_employees_almacen()
         if code == 200:
             return {"data": data_out, "msg": "ok"}, code
@@ -294,10 +283,9 @@ class ManageSMDispatch(Resource):
     @ns.marshal_with(response_sm_dispatch_model)
     @ns.expect(expected_headers_per, request_sm_dispatch_model)
     def post(self):
-        token = request.headers["Authorization"]
-        flag, data_token = verify_token(token, department="sm")
+        flag, data_token, msg = token_verification_procedure(request, department="sm")
         if not flag:
-            return {"error": "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
         # noinspection PyUnresolvedReferences
         validator = RequestSMDispatchForm.from_json(ns.payload)
         if not validator.validate():
@@ -311,10 +299,9 @@ class ManageSMDispatch(Resource):
 
     @ns.expect(expected_headers_per, request_sm_dispatch_model)
     def delete(self):
-        token = request.headers["Authorization"]
-        flag, data_token = verify_token(token, department="sm")
+        flag, data_token, msg = token_verification_procedure(request, department="sm")
         if not flag:
-            return {"error": "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
         # noinspection PyUnresolvedReferences
         validator = RequestSMDispatchForm.from_json(ns.payload)
         if not validator.validate():
@@ -331,10 +318,9 @@ class ManageSMDispatch(Resource):
 class DownloadPDFSM(Resource):
     @ns.expect(expected_headers_per)
     def get(self, sm_id):
-        token = request.headers["Authorization"]
-        flag, data_token = verify_token(token, department="sm")
+        flag, data_token, msg = token_verification_procedure(request, department="sm")
         if not flag:
-            return {"error": "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
         data, code = dowload_file_sm(sm_id)
         if code == 200:
             return send_file(data, as_attachment=True)

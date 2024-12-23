@@ -3,7 +3,7 @@ __author__ = "Edisson Naula"
 __date__ = "$ 03/may./2024  at 15:31 $"
 
 import json
-from datetime import datetime, timezone
+from datetime import datetime
 
 import pandas as pd
 import pytz
@@ -285,7 +285,7 @@ def insert_multiple_products_from_api(data):
     flags, errors, lastrowids = insert_multiple_row_products_amc(tuple(products_aux))
     movements = []
     time_zone = pytz.timezone(timezone_software)
-    date = datetime.now().astimezone(time_zone).strftime(format_timestamps_tz)
+    date = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps_tz)
     for flag, error, lastrowid, item in zip(flags, errors, lastrowids, products_new):
         data_out["errors_insert"].append(
             f"Error at insert->{error}"
@@ -352,9 +352,7 @@ def update_multiple_products_from_api(data):
     movements = []
     # date utc -6
     time_zone = pytz.timezone(timezone_software)
-    date = (
-        datetime.now(timezone.utc).astimezone(time_zone).strftime(format_timestamps_tz)
-    )
+    date = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps_tz)
     for flag, error, result, item in zip(flags, errors, results, products_update):
         data_out["errors_update"].append(
             f"Error at update->{error}"
@@ -419,7 +417,7 @@ def insert_multiple_movements_from_api(data):
     movements = data["movements"]
     data_out = []
     time_zone = pytz.timezone(timezone_software)
-    date = datetime.now().astimezone(time_zone).strftime(format_timestamps_tz)
+    date = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps_tz)
     movements_aux = [
         (item["id_product"], item["type_m"], item["quantity"], date, item["sm_id"])
         for item in movements
@@ -461,7 +459,7 @@ def insert_new_product(new_items):
     flags, errors, lastrowids = insert_multiple_row_products_amc(tuple(new_items))
     movements = []
     time_zone = pytz.timezone(timezone_software)
-    date = datetime.now().astimezone(time_zone).strftime(format_timestamps_tz)
+    date = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps_tz)
     for flag, error, lastrowid, item in zip(flags, errors, lastrowids, new_items):
         data_out["errors_insert"].append(
             f"Error at insert->{error}"
@@ -510,7 +508,7 @@ def update_old_products(
     flags, errors, results = update_stock_db_sku(update_items, stocks_update)
     movements = []
     time_zone = pytz.timezone(timezone_software)
-    date = datetime.now().astimezone(time_zone).strftime(format_timestamps_tz)
+    date = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps_tz)
     for flag, error, result, item in zip(
         flags, errors, results, update_items, new_input_quantity
     ):

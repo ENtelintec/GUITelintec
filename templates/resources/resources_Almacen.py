@@ -38,7 +38,11 @@ from static.Models.api_movements_models import (
     MovementDeleteForm,
     movement_update_model,
 )
-from templates.resources.methods.Functions_Aux_Login import verify_token
+from templates.controllers.product.p_and_s_controller import (
+    delete_movement_db,
+    delete_product_db,
+)
+from templates.resources.methods.Functions_Aux_Login import token_verification_procedure
 from templates.resources.midleware.Functions_midleware_almacen import (
     get_all_movements,
     insert_movement,
@@ -56,10 +60,6 @@ from templates.resources.midleware.Functions_midleware_almacen import (
     create_pdf_barcode,
     create_pdf_barcode_multiple,
 )
-from templates.controllers.product.p_and_s_controller import (
-    delete_movement_db,
-    delete_product_db,
-)
 
 ns = Namespace("GUI/api/v1/almacen")
 
@@ -69,10 +69,12 @@ class GetMovements(Resource):
     @ns.marshal_with(movements_output_model)
     @ns.expect(expected_headers_per)
     def get(self, type_m):
-        token = request.headers["Authorization"]
-        flag, data_token = verify_token(token, department="almacen")
+        flag, data_token, msg = token_verification_procedure(request, department="almacen")
         if not flag:
-            return {"error": "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
+        flag, data_token, msg = token_verification_procedure(request, department="almacen")
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
         data, code = get_all_movements(type_m)
         data_out = {"data": data, "msg": "Ok" if code == 200 else "Error"}
         return data_out, code
@@ -82,10 +84,9 @@ class GetMovements(Resource):
 class MovementDB(Resource):
     @ns.expect(expected_headers_per, movement_insert_model)
     def post(self):
-        token = request.headers["Authorization"]
-        flag, data_token = verify_token(token, department="almacen")
+        flag, data_token, msg = token_verification_procedure(request, department="almacen")
         if not flag:
-            return {"error": "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
         # noinspection PyUnresolvedReferences
         validator = MovementInsertForm.from_json(ns.payload)
         if not validator.validate():
@@ -99,10 +100,9 @@ class MovementDB(Resource):
 
     @ns.expect(expected_headers_per, movement_update_model)
     def put(self):
-        token = request.headers["Authorization"]
-        flag, data_token = verify_token(token, department="almacen")
+        flag, data_token, msg = token_verification_procedure(request, department="almacen")
         if not flag:
-            return {"error": "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
         # noinspection PyUnresolvedReferences
         validator = MovementInsertForm.from_json(ns.payload)
         if not validator.validate():
@@ -116,10 +116,9 @@ class MovementDB(Resource):
 
     @ns.expect(expected_headers_per, movement_delete_model)
     def delete(self):
-        token = request.headers["Authorization"]
-        flag, data_token = verify_token(token, department="almacen")
+        flag, data_token, msg = token_verification_procedure(request, department="almacen")
         if not flag:
-            return {"error": "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
         # noinspection PyUnresolvedReferences
         validator = MovementDeleteForm.from_json(ns.payload)
         if not validator.validate():
@@ -136,10 +135,9 @@ class MovementDB(Resource):
 class MultipleMovementDB(Resource):
     @ns.expect(expected_headers_per, movements_list_post_model)
     def post(self):
-        token = request.headers["Authorization"]
-        flag, data_token = verify_token(token, department="almacen")
+        flag, data_token, msg = token_verification_procedure(request, department="almacen")
         if not flag:
-            return {"error": "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
         # noinspection PyUnresolvedReferences
         validator = MovementsListPostForm.from_json(ns.payload)
         if not validator.validate():
@@ -157,10 +155,9 @@ class InventoryProducts(Resource):
     @ns.marshal_with(products_output_model)
     @ns.expect(expected_headers_per)
     def get(self, type_p):
-        token = request.headers["Authorization"]
-        flag, data_token = verify_token(token, department="almacen")
+        flag, data_token, msg = token_verification_procedure(request, department="almacen")
         if not flag:
-            return {"error": "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
         data, code = get_all_products_DB(type_p)
         return {"data": data, "msg": "Ok" if code == 200 else "Error"}, code
 
@@ -169,10 +166,9 @@ class InventoryProducts(Resource):
 class InventoryProduct(Resource):
     @ns.expect(expected_headers_per, product_insert_model)
     def post(self):
-        token = request.headers["Authorization"]
-        flag, data_token = verify_token(token, department="almacen")
+        flag, data_token, msg = token_verification_procedure(request, department="almacen")
         if not flag:
-            return {"error": "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
         # noinspection PyUnresolvedReferences
         validator = ProductPostForm.from_json(ns.payload)
         if not validator.validate():
@@ -186,10 +182,9 @@ class InventoryProduct(Resource):
 
     @ns.expect(expected_headers_per, product_insert_model)
     def put(self):
-        token = request.headers["Authorization"]
-        flag, data_token = verify_token(token, department="almacen")
+        flag, data_token, msg = token_verification_procedure(request, department="almacen")
         if not flag:
-            return {"error": "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
         # noinspection PyUnresolvedReferences
         validator = ProductPutForm.from_json(ns.payload)
         if not validator.validate():
@@ -203,10 +198,9 @@ class InventoryProduct(Resource):
 
     @ns.expect(expected_headers_per, product_delete_model)
     def delete(self):
-        token = request.headers["Authorization"]
-        flag, data_token = verify_token(token, department="almacen")
+        flag, data_token, msg = token_verification_procedure(request, department="almacen")
         if not flag:
-            return {"error": "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
         # noinspection PyUnresolvedReferences
         validator = ProductDeleteForm.from_json(ns.payload)
         if not validator.validate():
@@ -223,10 +217,9 @@ class InventoryProduct(Resource):
 class InventoryMultipleProducts(Resource):
     @ns.expect(expected_headers_per, products_list_post_model)
     def post(self):
-        token = request.headers["Authorization"]
-        flag, data_token = verify_token(token, department="almacen")
+        flag, data_token, msg = token_verification_procedure(request, department="almacen")
         if not flag:
-            return {"error": "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
         # noinspection PyUnresolvedReferences
         validator = ProductsListPostForm.from_json(ns.payload)
         if not validator.validate():
@@ -241,10 +234,9 @@ class InventoryCategories(Resource):
     @ns.marshal_with(categories_output_model)
     @ns.expect(expected_headers_per)
     def get(self):
-        token = request.headers["Authorization"]
-        flag, data_token = verify_token(token, department="almacen")
+        flag, data_token, msg = token_verification_procedure(request, department="almacen")
         if not flag:
-            return {"error": "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
         code, data = get_categories_db()
         return {"data": data, "msg": "Ok" if code == 200 else "Error"}, code
 
@@ -254,10 +246,9 @@ class InventorySuppliers(Resource):
     @ns.marshal_with(suppliers_output_model)
     @ns.expect(expected_headers_per)
     def get(self):
-        token = request.headers["Authorization"]
-        flag, data_token = verify_token(token, department="almacen")
+        flag, data_token, msg = token_verification_procedure(request, department="almacen")
         if not flag:
-            return {"error": "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
         code, data = get_suppliers_db()
         return {"data": data, "msg": "Ok" if code == 200 else "Error"}, code
 
@@ -266,10 +257,9 @@ class InventorySuppliers(Resource):
 class UploadInventoryeFile(Resource):
     @ns.expect(expected_headers_per, expected_files_almacen)
     def post(self):
-        token = request.headers["Authorization"]
-        flag, data_token = verify_token(token, department="almacen")
+        flag, data_token, msg = token_verification_procedure(request, department="almacen")
         if not flag:
-            return {"error": "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
         if "file" not in request.files:
             return {"data": "No se detecto un archivo"}, 400
         file = request.files["file"]
@@ -293,10 +283,9 @@ class UploadInventoryeFile(Resource):
 class UploadInventoryeFileTool(Resource):
     @ns.expect(expected_headers_per, expected_files_almacen)
     def post(self):
-        token = request.headers["Authorization"]
-        flag, data_token = verify_token(token, department="almacen")
+        flag, data_token, msg = token_verification_procedure(request, department="almacen")
         if not flag:
-            return {"error": "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
         if "file" not in request.files:
             return {"data": "No se detecto un archivo"}, 400
         file = request.files["file"]
@@ -322,10 +311,9 @@ class UploadInventoryeFileTool(Resource):
 class UploadInventoryeFileInternal(Resource):
     @ns.expect(expected_headers_per, expected_files_almacen)
     def post(self):
-        token = request.headers["Authorization"]
-        flag, data_token = verify_token(token, department="almacen")
+        flag, data_token, msg = token_verification_procedure(request, department="almacen")
         if not flag:
-            return {"error": "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
         if "file" not in request.files:
             return {"data": "No se detecto un archivo"}, 400
         file = request.files["file"]
@@ -351,10 +339,9 @@ class UploadInventoryeFileInternal(Resource):
 class DownloadInventoryFile(Resource):
     @ns.expect(expected_headers_per)
     def get(self):
-        token = request.headers["Authorization"]
-        flag, data_token = verify_token(token, department="almacen")
+        flag, data_token, msg = token_verification_procedure(request, department="almacen")
         if not flag:
-            return {"error": "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
         filepath, code = create_file_inventory()
         if code != 200:
             return {"data": filepath, "msg": "Error at creating file"}, 400
@@ -365,10 +352,9 @@ class DownloadInventoryFile(Resource):
 class DownloadMovementsFile(Resource):
     @ns.expect(expected_headers_per, file_movements_request_model)
     def post(self):
-        token = request.headers["Authorization"]
-        flag, data_token = verify_token(token, department="almacen")
+        flag, data_token, msg = token_verification_procedure(request, department="almacen")
         if not flag:
-            return {"error": "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
         # noinspection PyUnresolvedReferences
         validator = FileMovementsForm.from_json(ns.payload)
         if not validator.validate():
@@ -384,10 +370,9 @@ class DownloadMovementsFile(Resource):
 class DownloadBarcodeFile(Resource):
     @ns.expect(expected_headers_per, file_barcode_request_model)
     def post(self):
-        token = request.headers["Authorization"]
-        flag, data_token = verify_token(token, department="almacen")
+        flag, data_token, msg = token_verification_procedure(request, department="almacen")
         if not flag:
-            return {"error": "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
         # noinspection PyUnresolvedReferences
         validator = FileBarcodeForm.from_json(ns.payload)
         if not validator.validate():
@@ -405,10 +390,9 @@ class DownloadBarcodeFile(Resource):
 class DownloadMultipleBarcodeFile(Resource):
     @ns.expect(expected_headers_per, file_barcode_multiple_request_model)
     def post(self):
-        token = request.headers["Authorization"]
-        flag, data_token = verify_token(token, department="almacen")
+        flag, data_token, msg = token_verification_procedure(request, department="almacen")
         if not flag:
-            return {"error": "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
         # noinspection PyUnresolvedReferences
         validator = FileBarcodeMultipleForm.from_json(ns.payload)
         if not validator.validate():

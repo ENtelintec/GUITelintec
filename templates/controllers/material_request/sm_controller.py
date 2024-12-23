@@ -5,7 +5,9 @@ __date__ = "$ 01/may./2024  at 20:19 $"
 import json
 from datetime import datetime
 
-from static.constants import format_timestamps
+import pytz
+
+from static.constants import format_timestamps, timezone_software
 from templates.controllers.product.p_and_s_controller import get_stock_db_products
 from templates.database.connection import execute_sql
 
@@ -68,10 +70,12 @@ def get_sm_entries(emp_id=-1):
 
 
 def insert_sm_db(data):
+    time_zone = pytz.timezone(timezone_software)
+    timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
     event = [
         {
             "event": "creation",
-            "date": datetime.now().strftime(format_timestamps),
+            "date": timestamp,
             "user": data["info"]["emp_id"],
         }
     ]
@@ -140,9 +144,11 @@ def update_sm_db(data):
     }
     print(data["info"]["history"])
     history = data["info"]["history"]
+    time_zone = pytz.timezone(timezone_software)
+    timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
     event = {
         "event": "update",
-        "date": datetime.now().strftime(format_timestamps),
+        "date": timestamp,
         "user": data["info"]["emp_id"],
     }
     history.append(event)

@@ -4,11 +4,12 @@ __date__ = "$ 03/sept/2024  at 14:02 $"
 
 from datetime import datetime
 
+import pytz
 import ttkbootstrap as ttk
 from ttkbootstrap.tableview import Tableview
 
 from static.Models.api_contracts_models import ContractInsertForm, ContractUpdateForm
-from static.constants import format_date, format_timestamps
+from static.constants import format_date, format_timestamps, timezone_software
 from templates.Functions_GUI_Utils import (
     create_label,
     create_button,
@@ -269,7 +270,8 @@ class ContractsCreateFrame(ttk.Frame):
 
     def update_contract(self):
         metadata = self.get_entries_values()
-        timestamp = datetime.now().strftime(format_timestamps)
+        time_zone = pytz.timezone(timezone_software)
+        timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
         timestamps = {
             "complete": {"timestamp": None, "comment": ""},
             "update": [{"timestamp": timestamp, "comment": "update"}],

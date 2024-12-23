@@ -9,15 +9,25 @@ import tempfile
 from datetime import datetime
 
 import pandas as pd
+import pytz
 
-from static.constants import log_file_sm_path, format_timestamps
+from static.constants import log_file_sm_path, format_timestamps, timezone_software
 from templates.Functions_Utils import create_notification_permission
 from templates.controllers.customer.customers_controller import create_customer_db
 from templates.controllers.employees.employees_controller import get_emp_contract
 from templates.controllers.index import DataHandler
-from templates.controllers.material_request.sm_controller import get_sm_entries, update_history_sm, get_sm_by_id, update_sm_products_by_id, \
-    get_info_names_by_sm_id
-from templates.controllers.product.p_and_s_controller import get_sm_products, create_product_db_admin, create_product_db
+from templates.controllers.material_request.sm_controller import (
+    get_sm_entries,
+    update_history_sm,
+    get_sm_by_id,
+    update_sm_products_by_id,
+    get_info_names_by_sm_id,
+)
+from templates.controllers.product.p_and_s_controller import (
+    get_sm_products,
+    create_product_db_admin,
+    create_product_db,
+)
 from templates.forms.Materials import MaterialsRequest
 from templates.misc.Functions_Files import write_log_file
 
@@ -128,7 +138,8 @@ def dispatch_products(
     data=None,
 ) -> tuple[list[dict], list[dict], list[dict]]:
     _data = DataHandler()
-    date = datetime.now().strftime(format_timestamps)
+    time_zone = pytz.timezone(timezone_software)
+    date = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
     # ------------------------------avaliable products------------------------------------------
     msg = ""
     for i, product in enumerate(avaliable):
@@ -228,11 +239,13 @@ def dispatch_sm(data):
         return 400, ["sm not foud"]
     history_sm = json.loads(result[12])
     emp_id_creation = result[6]
+    time_zone = pytz.timezone(timezone_software)
+    date_now =  datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
     history_sm.append(
         {
             "user": data["emp_id"],
             "event": "dispatch",
-            "date": datetime.now().strftime(format_timestamps),
+            "date": date_now,
             "comment": data["comment"],
         }
     )
@@ -325,11 +338,13 @@ def cancel_sm(data):
         return 400, ["sm not foud"]
     history_sm = json.loads(result[0][13])
     emp_id_creation = result[0][7]
+    time_zone = pytz.timezone(timezone_software)
+    date_now = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
     history_sm.append(
         {
             "user": data["emp_id"],
             "event": "cancelation",
-            "date": datetime.now().strftime(format_timestamps),
+            "date": date_now,
             "comment": data["comment"],
         }
     )
@@ -446,13 +461,23 @@ def create_product(
     is_tool=0,
     is_internal=0,
     codes=None,
-    locations=None
+    locations=None,
 ):
     if id_supplier is not None:
         flag, error, result = create_product_db(
-            sku, name, udm, stock, id_category,
-            id_supplier, is_tool, is_internal, codes, locations
+            sku,
+            name,
+            udm,
+            stock,
+            id_category,
+            id_supplier,
+            is_tool,
+            is_internal,
+            codes,
+            locations,
         )
     else:
-        flag, error, result = create_product_db_admin(sku, name, udm, stock, id_category, codes)
+        flag, error, result = create_product_db_admin(
+            sku, name, udm, stock, id_category, codes
+        )
     return {"msg": "ok", "data": result}, 201 if flag else {"msg": str(error)}, 400

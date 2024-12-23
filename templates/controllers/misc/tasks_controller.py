@@ -4,12 +4,16 @@ __date__ = "$ 24/may./2024  at 16:26 $"
 
 import json
 from datetime import datetime
-from static.constants import format_timestamps
+
+import pytz
+
+from static.constants import format_timestamps, timezone_software
 from templates.database.connection import execute_sql
 
 
 def create_task(task_title, emp_destiny, emp_origin, task_date, metadata):
-    timestamp = datetime.now().strftime(format_timestamps)
+    time_zone = pytz.timezone(timezone_software)
+    timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
     body = {
         "title": task_title,
         "emp_destiny": emp_destiny,
@@ -26,7 +30,8 @@ def create_task(task_title, emp_destiny, emp_origin, task_date, metadata):
 
 
 def update_task(id_task, body: dict, status=None, metadata=None):
-    timestamp = datetime.now().strftime(format_timestamps)
+    time_zone = pytz.timezone(timezone_software)
+    timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
     body["status"] = status if status is not None else body["status"]
     body["metadata"] = metadata if metadata is not None else body["metadata"]
     body["changes"].append({"action": "update", "timestamp": timestamp})

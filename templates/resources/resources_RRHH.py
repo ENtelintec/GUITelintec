@@ -51,7 +51,7 @@ from static.constants import (
     quizzes_RRHH,
     path_contract_files,
 )
-from templates.resources.methods.Functions_Aux_Login import verify_token
+from templates.resources.methods.Functions_Aux_Login import token_verification_procedure
 from templates.resources.midleware.Functions_DB_midleware import (
     get_info_employees_with_status,
     get_info_employee_id,
@@ -90,15 +90,14 @@ ns = Namespace("GUI/api/v1/rrhh")
 class Employee(Resource):
     @ns.expect(expected_headers_per, employee_model_insert)
     def post(self):
-        token = request.headers["Authorization"]
-        flag, data_token = verify_token(token, department="RRHH")
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
         if not flag:
-            return {"error": "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
+        # noinspection PyUnresolvedReferences
         validator = EmployeeInsertForm.from_json(ns.payload)
         if not validator.validate():
             return {"errors": validator.errors}, 400
         data = validator.data
-
         if not flag:
             return {"error": data_token}, 400
         flag, error, result = new_employee(
@@ -127,10 +126,10 @@ class Employee(Resource):
 
     @ns.expect(expected_headers_per, employee_model_update)
     def put(self):
-        token = request.headers["Authorization"]
-        flag, data_token = verify_token(token, department="RRHH")
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
         if not flag:
-            return {"error": "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
+        # noinspection PyUnresolvedReferences
         validator = EmployeeUpdateForm.from_json(ns.payload)
         if not validator.validate():
             return {"errors": validator.errors}, 400
@@ -162,10 +161,10 @@ class Employee(Resource):
 
     @ns.expect(expected_headers_per, employee_model_delete)
     def delete(self):
-        token = request.headers["Authorization"]
-        flag, data_token = verify_token(token, department="RRHH")
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
         if not flag:
-            return {"error": "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
+        # noinspection PyUnresolvedReferences
         validator = EmployeeDeleteForm.from_json(ns.payload)
         if not validator.validate():
             return {"errors": validator.errors}, 400
@@ -182,10 +181,9 @@ class EmployeeInfo(Resource):
     @ns.marshal_with(employee_model)
     @ns.expect(expected_headers_per)
     def get(self, id_emp):
-        token = request.headers["Authorization"]
-        flag, data_token = verify_token(token, department="RRHH")
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
         if not flag:
-            return {"error": "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
         data_out, code = get_info_employee_id(id_emp)
         return data_out, code
 
@@ -195,10 +193,9 @@ class EmployeesInfo(Resource):
     @ns.marshal_with(employees_info_model)
     @ns.expect(expected_headers_per)
     def get(self, status):
-        token = request.headers["Authorization"]
-        flag, data_token = verify_token(token, department="RRHH")
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
         if not flag:
-            return {"error": "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
         data_out, code = get_info_employees_with_status(status)
         return {"data": data_out}, code
 
@@ -208,10 +205,9 @@ class EmployeesEMResume(Resource):
     @ns.marshal_with(examenes_medicos_model)
     @ns.expect(expected_headers_per)
     def get(self, id_emp):
-        token = request.headers["Authorization"]
-        flag, data_token = verify_token(token, department="RRHH")
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
         if not flag:
-            return {"error": "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
         flag, e, result = get_all_examenes()
         out = {"exist": False}
         if flag:
@@ -244,10 +240,9 @@ class EmployeesEMResume(Resource):  # noqa: F811
     @ns.marshal_with(employees_examenes_model)
     @ns.expect(expected_headers_per)
     def get(self):
-        token = request.headers["Authorization"]
-        flag, data_token = verify_token(token, department="RRHH")
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
         if not flag:
-            return {"error": "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
         flag, e, result = get_all_examenes()
         out = {"data": None}
         if flag:
@@ -281,10 +276,10 @@ class EmployeesEMResume(Resource):  # noqa: F811
 class EmployeesEMRegistry(Resource):
     @ns.expect(expected_headers_per, employee_exam_model_insert)
     def post(self):
-        token = request.headers["Authorization"]
-        flag, data_token = verify_token(token, department="RRHH")
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
         if not flag:
-            return {"error": "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
+        # noinspection PyUnresolvedReferences
         validator = EmployeeMedInsertForm.from_json(ns.payload)
         if not validator.validate():
             return {"errors": validator.errors}, 400
@@ -305,10 +300,10 @@ class EmployeesEMRegistry(Resource):
 
     @ns.expect(expected_headers_per, employee_exam_model_update)
     def put(self):
-        token = request.headers["Authorization"]
-        flag, data_token = verify_token(token, department="RRHH")
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
         if not flag:
-            return {"error": "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
+        # noinspection PyUnresolvedReferences
         validator = EmployeeMedUpdateForm.from_json(ns.payload)
         if not validator.validate():
             return {"errors": validator.errors}, 400
@@ -326,10 +321,10 @@ class EmployeesEMRegistry(Resource):
 
     @ns.expect(expected_headers_per, employee_exam_model_delete)
     def delete(self):
-        token = request.headers["Authorization"]
-        flag, data_token = verify_token(token, department="RRHH")
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
         if not flag:
-            return {"error": "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
+        # noinspection PyUnresolvedReferences
         validator = EmployeeMedDeleteForm.from_json(ns.payload)
         if not validator.validate():
             return {"errors": validator.errors}, 400
@@ -346,10 +341,9 @@ class EmployeesVacations(Resource):
     @ns.marshal_with(employees_vacations_model)
     @ns.expect(expected_headers_per)
     def get(self):
-        token = request.headers["Authorization"]
-        flag, data_token = verify_token(token, department="RRHH")
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
         if not flag:
-            return {"error": "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
         data, code = get_all_vacations()
         if code == 200:
             return {"data": data}, code
@@ -362,10 +356,9 @@ class EmployeesVacationsID(Resource):
     @ns.marshal_with(vacations_model)
     @ns.expect(expected_headers_per)
     def get(self, id_emp):
-        token = request.headers["Authorization"]
-        flag, data_token = verify_token(token, department="RRHH")
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
         if not flag:
-            return {"error": "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
         data, code = get_vacations_employee(id_emp)
         if code == 200:
             return data, code
@@ -377,10 +370,10 @@ class EmployeesVacationsID(Resource):
 class EmployeesVacationRegistry(Resource):
     @ns.expect(expected_headers_per, employee_vacation_model_insert)
     def post(self):
-        token = request.headers["Authorization"]
-        flag, data_token = verify_token(token, department="RRHH")
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
         if not flag:
-            return {"error": "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
+        # noinspection PyUnresolvedReferences
         validator = EmployeeVacInsertForm.from_json(ns.payload)
         if not validator.validate():
             return {"errors": validator.errors}, 400
@@ -393,10 +386,10 @@ class EmployeesVacationRegistry(Resource):
 
     @ns.expect(expected_headers_per, employee_vacation_model_insert)
     def put(self):
-        token = request.headers["Authorization"]
-        flag, data_token = verify_token(token, department="RRHH")
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
         if not flag:
-            return {"error": "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
+        # noinspection PyUnresolvedReferences
         validator = EmployeeVacInsertForm.from_json(ns.payload)
         if not validator.validate():
             return {"errors": validator.errors}, 400
@@ -409,10 +402,10 @@ class EmployeesVacationRegistry(Resource):
 
     @ns.expect(expected_headers_per, employee_vacation_model_delete)
     def delete(self):
-        token = request.headers["Authorization"]
-        flag, data_token = verify_token(token, department="RRHH")
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
         if not flag:
-            return {"error": "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
+        # noinspection PyUnresolvedReferences
         validator = DeleteVacationForm.from_json(ns.payload)
         if not validator.validate():
             return {"errors": validator.errors}, 400
@@ -429,10 +422,9 @@ class EmployeesResume(Resource):
     @ns.marshal_with(employees_resume_model)
     @ns.expect(expected_headers_per)
     def get(self):
-        token = request.headers["Authorization"]
-        flag, data_token = verify_token(token, department="RRHH")
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
         if not flag:
-            return {"error": "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
         fichajes_resume, flag = get_fichajes_resume_cache(
             cache_file_resume_fichaje_path, is_hard_update=True
         )
@@ -472,10 +464,9 @@ class EmployeesResume(Resource):  # noqa: F811
     @ns.marshal_with(resume_model)
     @ns.expect(expected_headers_per)
     def get(self, id_emp):
-        token = request.headers["Authorization"]
-        flag, data_token = verify_token(token, department="RRHH")
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
         if not flag:
-            return {"error": "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
         fichajes_resume, flag = get_fichajes_resume_cache(
             cache_file_resume_fichaje_path, is_hard_update=True
         )
@@ -514,10 +505,9 @@ class EmployeesResume(Resource):  # noqa: F811
 class DownloadFilesPayroll(Resource):
     @ns.expect(expected_headers_per)
     def get(self, emp_id):
-        token = request.headers["Authorization"]
-        flag, data_token = verify_token(token, department="RRHH")
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
         if not flag:
-            return {"data": None, "msg": "Token invalido"}, 401
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
         code, data_out = get_files_list_nomina(emp_id)
         if code != 200:
             return {"data": None, "msg": "No files"}, code
@@ -529,10 +519,9 @@ class FilesFichaje(Resource):
     @ns.marshal_with(answer_files_fichajes_model)
     @ns.expect(expected_headers_per)
     def get(self):
-        token = request.headers["Authorization"]
-        flag, data_token = verify_token(token, department="RRHH")
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
         if not flag:
-            return {"data": None, "msg": "Token invalido"}, 401
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
         flag, files = get_files_fichaje()
         if flag:
             return {"data": files, "msg": "ok"}, 200
@@ -545,11 +534,10 @@ class DataFichajeFiles(Resource):
     @ns.expect(expected_headers_per, request_data_fichaje_files_model)
     @ns.marshal_with(answer_fichajes_model)
     def post(self):
-        token = request.headers["Authorization"]
-        flag, data_token = verify_token(token, department="RRHH")
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
         if not flag:
-            return {"data": None, "msg": "Token invalido"}, 401
-        # code, data = parse_data(ns.payload, 4)
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
+        # noinspection PyUnresolvedReferences
         validator = DataFichajesFileForm.from_json(ns.payload)
         if not validator.validate():
             return {"data": None, "msg": validator.errors}, 400
@@ -565,10 +553,9 @@ class DataFichajeFiles(Resource):
 class UploadFicahjeFile(Resource):
     @ns.expect(expected_headers_per, expected_files)
     def post(self):
-        token = request.headers["Authorization"]
-        flag, data_token = verify_token(token, department="RRHH")
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
         if not flag:
-            return {"data": "Token invalido"}, 401
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
         if "file" not in request.files:
             return {"data": "No se detecto un archivo"}, 400
         file = request.files["file"]
@@ -584,10 +571,9 @@ class UploadFicahjeFile(Resource):
 class DownloadFileEMPs(Resource):
     @ns.expect(expected_headers_per)
     def get(self, status):
-        token = request.headers["Authorization"]
-        flag, data_token = verify_token(token, department="RRHH")
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
         if not flag:
-            return {"data": None, "msg": "Token invalido"}, 401
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
         filepath = create_csv_file_employees(status)
         return send_file(filepath, as_attachment=True)
 
@@ -596,10 +582,9 @@ class DownloadFileEMPs(Resource):
 class DownloadFileMedical(Resource):
     @ns.expect(expected_headers_per)
     def get(self):
-        token = request.headers["Authorization"]
-        flag, data_token = verify_token(token, department="RRHH")
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
         if not flag:
-            return {"data": None, "msg": "Token invalido"}, 401
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
         flag, e, result = get_all_examenes()
         filepath = "files/medical.csv"
         with open(filepath, "w") as file:
@@ -622,10 +607,9 @@ class DownloadFileMedical(Resource):
 class DownloadFileVacations(Resource):
     @ns.expect(expected_headers_per)
     def get(self):
-        token = request.headers["Authorization"]
-        flag, data_token = verify_token(token, department="RRHH")
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
         if not flag:
-            return {"data": None, "msg": "Token invalido"}, 401
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
         flag, error, data = get_vacations_data()
         filepath = "files/vacations.csv"
         with open(filepath, "w") as file:
@@ -643,10 +627,9 @@ class DownloadFileVacations(Resource):
 class DownloadFileQuizz(Resource):
     @ns.expect(expected_headers_per)
     def get(self, type_q):
-        token = request.headers["Authorization"]
-        flag, data_token = verify_token(token, department="RRHH")
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
         if not flag:
-            return {"data": "Token invalido"}, 401
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
         try:
             quizz = quizzes_RRHH[str(type_q)]
             return send_file(quizz["path"], as_attachment=True)

@@ -6,15 +6,17 @@ import json
 from datetime import datetime
 
 import pandas as pd
+import pytz
 
 from static.constants import (
     files_fichaje_path,
     patterns_files_fichaje,
     cache_file_emp_fichaje,
     format_date_fichaje_file,
-    index_file_nominas,
+    index_file_nominas, timezone_software,
 )
 from templates.Functions_Sharepoint import get_files_site, download_files_site
+from templates.controllers.employees.employees_controller import test_id_employee
 from templates.controllers.employees.vacations_controller import (
     insert_vacation,
     update_registry_vac,
@@ -156,10 +158,12 @@ def get_data_name_fichaje(
         True if dff is not None else False,
         date_max=date_max,
     )
+    time_zone = pytz.timezone(timezone_software)
+    date = datetime.now(pytz.utc).astimezone(time_zone)
     date_example = (
         pd.to_datetime(worked_days_f[0][0])
         if len(worked_days_f) > 0
-        else datetime.now()
+        else date
     )
     # ------------file ternium-----------
     (

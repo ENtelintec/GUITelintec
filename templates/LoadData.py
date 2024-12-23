@@ -6,6 +6,9 @@ __date__ = "$ 28/may./2024  at 17:04 $"
 
 from datetime import datetime
 
+import pytz
+
+from static.constants import timezone_software
 from templates.controllers.contracts.contracts_controller import get_contract
 from templates.controllers.contracts.quotations_controller import get_quotation
 from templates.controllers.payroll.payroll_controller import get_payrolls_with_info
@@ -89,7 +92,8 @@ def load_data(data_dic, is_super=False, emp_id=None, item=None, permissions=None
                     created_windows.append(window)
         case "Bitacora":
             flag, error, emp_data = get_employees_op_names()
-            date = datetime.now()
+            time_zone = pytz.timezone(timezone_software)
+            date = datetime.now(pytz.utc).astimezone(time_zone)
             events, columns = get_events_op_date(date, True)
             data_dic["bitacora"] = {
                 "emp_data": emp_data,

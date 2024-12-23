@@ -4,8 +4,6 @@ __date__ = "$ 08/may./2024  at 10:34 $"
 
 import json
 import pickle
-from datetime import datetime
-
 
 from static.constants import filepath_settings
 from templates.Functions_openAI import get_response_assistant, get_files_list_openai
@@ -14,7 +12,6 @@ from templates.controllers.notifications.Notifications_controller import (
     get_notifications_by_user,
     get_notifications_by_permission,
 )
-from templates.misc.Functions_AuxFiles import split_commment, unify_comment_dict
 
 
 def get_all_notification_db_user_status(id_emp, status):
