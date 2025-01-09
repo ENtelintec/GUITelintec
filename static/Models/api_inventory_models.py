@@ -54,9 +54,7 @@ product_model_new = api.model(
         ),
         "codes": fields.List(fields.Nested(code_model), required=False),
         "locations": fields.Nested(locations_model, required=False),
-        "brand": fields.String(
-            required=False, description="The product brand."
-        ),
+        "brand": fields.String(required=False, description="The product brand."),
     },
 )
 
@@ -85,9 +83,7 @@ product_model_update = api.model(
         ),
         "codes": fields.List(fields.Nested(code_model), required=False),
         "locations": fields.Nested(locations_model, required=False),
-        "brand": fields.String(
-            required=False, description="The product brand."
-        ),
+        "brand": fields.String(required=False, description="The product brand."),
     },
 )
 
@@ -180,9 +176,9 @@ movement_model = api.model(
         "old_stock": fields.Float(
             required=True, description="The movement old stock", example=1.0
         ),
-        "reference":  fields.String(
+        "reference": fields.String(
             required=True, description="The movement reference", example="reference"
-        )
+        ),
     },
 )
 
@@ -281,6 +277,7 @@ class ProductInsertForm(Form):
     is_internal = IntegerField("is_internal", validators=[], default=0)
     codes = FieldList(FormField(CodesForm), validators=[], default=[])
     locations = FormField(LocationsForm)
+    brand = StringField("brand", validators=[], default="")
 
 
 class ProductUpdateForm(Form):
@@ -299,6 +296,7 @@ class ProductUpdateForm(Form):
     quantity_move = FloatField("quantity_move", validators=[], default=0)
     codes = FieldList(FormField(CodesForm), validators=[], default=[])
     locations = FormField(LocationsForm)
+    brand = StringField("brand", validators=[], default="")
 
 
 class ProductPostForm(Form):

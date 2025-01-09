@@ -103,7 +103,9 @@ def verify_token(
     :return: <bool>
     """
     try:
+        print(token)
         data = unpack_token(token)
+        print(data)
         if emp_id:
             if verify_employee_id(data, emp_id):
                 return True, data
