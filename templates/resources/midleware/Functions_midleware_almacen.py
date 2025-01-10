@@ -65,7 +65,7 @@ def get_all_movements(type_m: str):
     flag, error, result = get_movements_type_db(type_m)
     out = []
     if not flag:
-        return [], 400
+        return ["error at retrieving data"], 400
     for item in result:
         id_m, id_product, type_m, quantity, movement_date, sm_id, reference = item
         out.append(

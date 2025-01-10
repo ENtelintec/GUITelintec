@@ -83,6 +83,7 @@ def token_verification_procedure(request, **kwargs):
         token = request.headers.get("Authorization", None)
         if token is None:
             return False, {}, "Token not found"
+        print("token: ", token)
         department = kwargs.get("department", None)
         emp_id = kwargs.get("emp_id", None)
         flag, data_token = verify_token(token, department, emp_id)
@@ -103,9 +104,7 @@ def verify_token(
     :return: <bool>
     """
     try:
-        print(token)
         data = unpack_token(token)
-        print(data)
         if emp_id:
             if verify_employee_id(data, emp_id):
                 return True, data

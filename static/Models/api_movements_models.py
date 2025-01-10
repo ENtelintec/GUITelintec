@@ -46,8 +46,8 @@ movement_out_model = api.model(
         "movement_date": fields.String(
             required=True, description="The movement date", example="2024-04-03"
         ),
-        "sm_id": fields.Integer(
-            required=True, description="The movement id", example=1
+        "sm_id": fields.String(
+            required=True, description="The movement id", example="sm-code"
         ),
         "reference": fields.String(
             required=True, description="The movement reference", example="reference"
