@@ -75,7 +75,7 @@ class GetMovements(Resource):
         if not flag:
             return {
                 "data": [],
-                "msg": msg if msg != "" else "No autorizado. Token invalido",
+                "error": msg if msg != "" else "No autorizado. Token invalido",
             }, 400
         data, code = get_all_movements(type_m)
         data_out = {"data": data, "msg": "Ok" if code == 200 else "Error"}

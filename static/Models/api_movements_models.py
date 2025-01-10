@@ -60,7 +60,8 @@ movements_output_model = api.model(
     "MovementsOutAMC",
     {
         "data": fields.List(fields.Nested(movement_out_model)),
-        "msg": fields.String(required=True, description="The message"),
+        "msg": fields.String(required=False, description="The message"),
+        "error": fields.String(required=False, description="The error"),
     },
 )
 
