@@ -50,7 +50,7 @@ class Notifications(Resource):
     def get(self, id_emp, status):
         flag, data_token, msg = token_verification_procedure(request, department="basic")
         if not flag:
-            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         status = status if status in [0, 1] else "%"
         code, result = get_all_notification_db_user_status(id_emp, status)
         return {"data": result, "msg": "Ok" if code == 200 else "Error"}, code
@@ -63,7 +63,7 @@ class NotificationsPermission(Resource):
     def get(self, permission, status):
         flag, data_token, msg = token_verification_procedure(request, department="basic")
         if not flag:
-            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         status = status if status in [0, 1] else "%"
         code, result = get_all_notification_db_permission(permission, status)
         return {"data": result, "msg": "Ok" if code == 200 else "Error"}, code
@@ -75,7 +75,7 @@ class Notification(Resource):
     def post(self):
         flag, data_token, msg = token_verification_procedure(request, department="basic")
         if not flag:
-            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
         validator = NotificationInsertForm.from_json(ns.payload)
         if not validator.validate():
@@ -91,7 +91,7 @@ class Notification(Resource):
     def put(self):
         flag, data_token, msg = token_verification_procedure(request, department="basic")
         if not flag:
-            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
         validator = NotificationInsertForm.from_json(ns.payload)
         if not validator.validate():
@@ -113,7 +113,7 @@ class DownloadFileVacations(Resource):
     def get(self):
         flag, data_token, msg = token_verification_procedure(request, department="basic")
         if not flag:
-            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         try:
             return send_file(filepath_settings, as_attachment=True)
         except Exception as e:
@@ -127,10 +127,10 @@ class ResponseAV(Resource):
     def post(self):
         flag, data_token, msg = token_verification_procedure(request, department=["almacen", "operaciones", "rrhh", "administracion"])
         if not flag:
-            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         validator = RequestAVResponseForm.from_json(ns.payload)
         if not validator.validate():
-            return {"errors": validator.errors}, 400
+            return {"error": validator.errors}, 400
         data = validator.data
         try:
             files, res, id_chat = get_response_AV(
@@ -152,7 +152,7 @@ class FilesAV(Resource):
     def get(self, department):
         flag, data_token, msg = token_verification_procedure(request, department=["almacen", "operaciones", "rrhh", "administracion"])
         if not flag:
-            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         try:
             files = get_files_openai(department)
             if len(files) == 0:
@@ -168,7 +168,7 @@ class Task(Resource):
     def post(self):
         flag, data_token, msg = token_verification_procedure(request, department="rrhh")
         if not flag:
-            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
         validator = TaskInsertForm.from_json(ns.payload)
         if not validator.validate():
@@ -181,7 +181,7 @@ class Task(Resource):
     def put(self):
         flag, data_token, msg = token_verification_procedure(request, department="rrhh")
         if not flag:
-            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
         validator = TaskUpdateForm.from_json(ns.payload)
         if not validator.validate():
@@ -194,7 +194,7 @@ class Task(Resource):
     def delete(self):
         flag, data_token, msg = token_verification_procedure(request, department="rrhh")
         if not flag:
-            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
         validator = TaskDeleteForm.from_json(ns.payload)
         if not validator.validate():
@@ -210,7 +210,7 @@ class TaskGui(Resource):
     def get(self, emp_id):
         flag, data_token, msg = token_verification_procedure(request, emp_id=emp_id)
         if not flag:
-            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data, code = get_task_by_id_employee(emp_id)
         if code == 200:
             return {"data": data}, 200

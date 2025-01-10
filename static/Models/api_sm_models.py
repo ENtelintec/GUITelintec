@@ -21,6 +21,10 @@ client_emp_sm_response_model = api.model(
     {
         "data": fields.List(fields.List(fields.String)),
         "comment": fields.String(description="comment"),
+        "error": fields.Raw(
+            required=False,
+            description="The error message",
+        ),
     },
 )
 
@@ -89,7 +93,11 @@ employees_answer_model = api.model(
     "AnswerEmployees",
     {
         "data": fields.List(fields.Nested(emp_almacen_model)),
-        "msg": fields.String(required=True, description="The message"),
+        "msg": fields.String(required=False, description="The message"),
+        "error": fields.Raw(
+            required=False,
+            description="The error message",
+        ),
     },
 )
 
@@ -324,6 +332,7 @@ request_sm_plot_data_model = api.model(
     {
         "data": fields.List(fields.Nested(data_sm_plots)),
         "type": fields.String(required=True, description="The type of plot"),
+        "error":  fields.String(required=False, description="The error message"),
     },
 )
 
@@ -350,8 +359,9 @@ data_response_dispatch_model = api.model(
 response_sm_dispatch_model = api.model(
     "ResponseSMDispatch",
     {
-        "msg": fields.String(required=True, description="The message"),
+        "msg": fields.String(required=False, description="The message"),
         "data": fields.Nested(data_response_dispatch_model),
+        "error": fields.String(required=False, description="The error message"),
     },
 )
 

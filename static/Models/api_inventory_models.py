@@ -91,7 +91,8 @@ products_output_model = api.model(
     "ProductsOutAMC",
     {
         "data": fields.List(fields.Nested(product_model_update)),
-        "msg": fields.String(required=True, description="The message"),
+        "msg": fields.String(required=False, description="The message"),
+        "error":  fields.String(required=False, description="The error"),
     },
 )
 
@@ -129,7 +130,8 @@ categories_output_model = api.model(
     "CategoriesOutAMC",
     {
         "data": fields.List(fields.Nested(category_model)),
-        "msg": fields.String(required=True, description="The message"),
+        "msg": fields.String(required=False, description="The message"),
+        "error": fields.String(required=False, description="The error"),
     },
 )
 
@@ -156,7 +158,8 @@ suppliers_output_model = api.model(
     "SuppliersOutAMC",
     {
         "data": fields.List(fields.Nested(supplier_model)),
-        "msg": fields.String(required=True, description="The message"),
+        "msg": fields.String(required=False, description="The message"),
+        "error": fields.String(required=False, description="The error")
     },
 )
 

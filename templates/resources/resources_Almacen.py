@@ -76,7 +76,7 @@ class GetMovements(Resource):
             return {
                 "data": [],
                 "error": msg if msg != "" else "No autorizado. Token invalido",
-            }, 400
+            }, 401
         data, code = get_all_movements(type_m)
         data_out = {"data": data, "msg": "Ok" if code == 200 else "Error"}
         return data_out, code
@@ -94,7 +94,7 @@ class MovementDB(Resource):
         # noinspection PyUnresolvedReferences
         validator = MovementInsertForm.from_json(ns.payload)
         if not validator.validate():
-            return {"data": validator.errors, "msg": "Error at structure"}, 400
+            return {"data": validator.errors, "msg": "Error at structure"}, 401
         data = validator.data
         flag, result = insert_movement(data)
         return {
@@ -108,7 +108,7 @@ class MovementDB(Resource):
             request, department="almacen"
         )
         if not flag:
-            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
         validator = MovementInsertForm.from_json(ns.payload)
         if not validator.validate():
@@ -126,7 +126,7 @@ class MovementDB(Resource):
             request, department="almacen"
         )
         if not flag:
-            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
         validator = MovementDeleteForm.from_json(ns.payload)
         if not validator.validate():
@@ -147,7 +147,7 @@ class MultipleMovementDB(Resource):
             request, department="almacen"
         )
         if not flag:
-            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
         validator = MovementsListPostForm.from_json(ns.payload)
         if not validator.validate():
@@ -169,7 +169,7 @@ class InventoryProducts(Resource):
             request, department="almacen"
         )
         if not flag:
-            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data, code = get_all_products_DB(type_p)
         return {"data": data, "msg": "Ok" if code == 200 else "Error"}, code
 
@@ -182,7 +182,7 @@ class InventoryProduct(Resource):
             request, department="almacen"
         )
         if not flag:
-            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
         validator = ProductPostForm.from_json(ns.payload)
         if not validator.validate():
@@ -200,7 +200,7 @@ class InventoryProduct(Resource):
             request, department="almacen"
         )
         if not flag:
-            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
         validator = ProductPutForm.from_json(ns.payload)
         if not validator.validate():
@@ -218,7 +218,7 @@ class InventoryProduct(Resource):
             request, department="almacen"
         )
         if not flag:
-            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
         validator = ProductDeleteForm.from_json(ns.payload)
         if not validator.validate():
@@ -239,7 +239,7 @@ class InventoryMultipleProducts(Resource):
             request, department="almacen"
         )
         if not flag:
-            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
         validator = ProductsListPostForm.from_json(ns.payload)
         if not validator.validate():
@@ -258,7 +258,7 @@ class InventoryCategories(Resource):
             request, department="almacen"
         )
         if not flag:
-            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         code, data = get_categories_db()
         return {"data": data, "msg": "Ok" if code == 200 else "Error"}, code
 
@@ -272,7 +272,7 @@ class InventorySuppliers(Resource):
             request, department="almacen"
         )
         if not flag:
-            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         code, data = get_suppliers_db()
         return {"data": data, "msg": "Ok" if code == 200 else "Error"}, code
 
@@ -285,7 +285,7 @@ class UploadInventoryeFile(Resource):
             request, department="almacen"
         )
         if not flag:
-            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         if "file" not in request.files:
             return {"data": "No se detecto un archivo"}, 400
         file = request.files["file"]
@@ -313,7 +313,7 @@ class UploadInventoryeFileTool(Resource):
             request, department="almacen"
         )
         if not flag:
-            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         if "file" not in request.files:
             return {"data": "No se detecto un archivo"}, 400
         file = request.files["file"]
@@ -343,7 +343,7 @@ class UploadInventoryeFileInternal(Resource):
             request, department="almacen"
         )
         if not flag:
-            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         if "file" not in request.files:
             return {"data": "No se detecto un archivo"}, 400
         file = request.files["file"]
@@ -373,7 +373,7 @@ class DownloadInventoryFile(Resource):
             request, department="almacen"
         )
         if not flag:
-            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         filepath, code = create_file_inventory()
         if code != 200:
             return {"data": filepath, "msg": "Error at creating file"}, 400
@@ -388,7 +388,7 @@ class DownloadMovementsFile(Resource):
             request, department="almacen"
         )
         if not flag:
-            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
         validator = FileMovementsForm.from_json(ns.payload)
         if not validator.validate():
@@ -408,7 +408,7 @@ class DownloadBarcodeFile(Resource):
             request, department="almacen"
         )
         if not flag:
-            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
         validator = FileBarcodeForm.from_json(ns.payload)
         if not validator.validate():
@@ -430,7 +430,7 @@ class DownloadMultipleBarcodeFile(Resource):
             request, department="almacen"
         )
         if not flag:
-            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
         validator = FileBarcodeMultipleForm.from_json(ns.payload)
         if not validator.validate():
