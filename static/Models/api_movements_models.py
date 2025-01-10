@@ -38,6 +38,7 @@ movement_model = api.model(
 movement_out_model = api.model(
     "MovementAMC",
     {
+        "id": fields.Integer(required=True, description="The movement id", example=1),
         "id_product": fields.Integer(
             required=True, description="The product id", example=1
         ),
