@@ -68,6 +68,7 @@ def get_all_movements(type_m: str):
         return ["error at retrieving data"], 400
     for item in result:
         id_m, id_product, type_m, quantity, movement_date, sm_id, reference = item
+        reference = json.loads(reference) if reference is not None else None
         out.append(
             {
                 "id": id_m,
