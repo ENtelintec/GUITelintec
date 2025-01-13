@@ -674,8 +674,10 @@ def read_excel_file_regular(file: str, is_tool=False, is_internal=0):
     return new_items, update_items, stocks_update, new_input_quantity, result_sku, skus
 
 
-def retrieve_data_file_inventory(type_data="dict"):
-    flag, error, _products = get_all_products_db()
+def retrieve_data_file_inventory(type_data="dict", data=None):
+    flag, error, _products = get_all_products_db() if data is None else True, None, data
+    if not flag:
+        return error, 400
     try:
         # [id_product, sku, name, udm, stock, category_name, supplier_name,  is_tool, is_internal,  codes, locations,  brand, brands]
         # sort by ID
