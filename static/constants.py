@@ -66,6 +66,7 @@ log_file_almacen = "files/logs/almacen"
 path_contract_files = "files/contracts"
 filepath_bitacora_download = "files/quizz_out/temp_bitacora.csv"
 filepath_inventory_form = "files/inventory_temp.pdf"
+filepath_inventory_form_excel = "files/inventory_temp.xlsx"
 filepath_inventory_form_movements = "files/movements_temp.pdf"
 patterns_files_fichaje = ["Fichaje", "Ternium"]
 department_tools_openAI = {

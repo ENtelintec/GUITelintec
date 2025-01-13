@@ -211,3 +211,18 @@ def fetch_all_movements():
         print("Error al obtener los movimientos:", str(error))
         return []
     return movements
+
+
+def create_excel_file(data, filepath):
+    """
+    Create an Excel file with the data provided.
+
+    :param data: {'col1': [1, 2], 'col2': [3, 4]}
+    :param filepath:
+    :return:
+    """
+    import pandas as pd
+
+    df = pd.DataFrame(data)
+    df.to_excel(filepath, index=False)
+    return filepath

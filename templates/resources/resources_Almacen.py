@@ -53,12 +53,12 @@ from templates.resources.midleware.Functions_midleware_almacen import (
     get_categories_db,
     get_suppliers_db,
     upload_product_db_from_file,
-    create_file_inventory,
+    create_file_inventory_pdf,
     create_file_movements_amc,
     insert_and_update_multiple_products_from_api,
     insert_multiple_movements_from_api,
     create_pdf_barcode,
-    create_pdf_barcode_multiple,
+    create_pdf_barcode_multiple, create_file_inventory_excel,
 )
 
 ns = Namespace("GUI/api/v1/almacen")
@@ -365,8 +365,8 @@ class UploadInventoryeFileInternal(Resource):
             return {"msg": "No se subio el archivo"}, 400
 
 
-@ns.route("/inventory/file/download/products")
-class DownloadInventoryFile(Resource):
+@ns.route("/inventory/file/download/products/pdf")
+class DownloadInventoryFilePDF(Resource):
     @ns.expect(expected_headers_per)
     def get(self):
         flag, data_token, msg = token_verification_procedure(
@@ -374,7 +374,22 @@ class DownloadInventoryFile(Resource):
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        filepath, code = create_file_inventory()
+        filepath, code = create_file_inventory_pdf()
+        if code != 200:
+            return {"data": filepath, "msg": "Error at creating file"}, 400
+        return send_file(filepath, as_attachment=True)
+
+
+@ns.route("/inventory/file/download/products/excel")
+class DownloadInventoryFileExcel(Resource):
+    @ns.expect(expected_headers_per)
+    def get(self):
+        flag, data_token, msg = token_verification_procedure(
+            request, department="almacen"
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        filepath, code = create_file_inventory_excel()
         if code != 200:
             return {"data": filepath, "msg": "Error at creating file"}, 400
         return send_file(filepath, as_attachment=True)
