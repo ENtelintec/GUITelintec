@@ -104,6 +104,7 @@ def verify_token(
     """
     try:
         data = unpack_token(token)
+        print("data: ", data)
         if emp_id:
             if verify_employee_id(data, emp_id):
                 return True, data

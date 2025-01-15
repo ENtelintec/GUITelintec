@@ -187,7 +187,7 @@ def create_input_widgets(master, data):
         frame_products, row=2, column=1, font=("Helvetica", 12, "normal")
     )
     input_udm = create_Combobox(
-        frame_products, row=2, column=2, values=["KG", "LT", "ML"]
+        frame_products, row=2, column=2, values=["KG", "LT", "ML"], state="normal"
     )
     input_price = create_entry(
         frame_products, row=2, column=3, font=("Helvetica", 12, "normal")
@@ -220,8 +220,8 @@ class QuotationsBiddingsFrame(ttk.Frame):
 class QuotationsFrame(ttk.Frame):
     def __init__(self, master, **kwargs):
         super().__init__(master)
-        self.columnconfigure(0, weight=1)
         self.id_product = None
+        self.columnconfigure(0, weight=1)
         self.coldata = None
         self.table_widgets = None
         self.data_products = (
@@ -229,6 +229,7 @@ class QuotationsFrame(ttk.Frame):
             if "data_products_gen" in kwargs["data"]
             else []
         )
+        self._products_input = []
         # -----------------Title-------------------------------
         create_label(
             self,
@@ -246,7 +247,7 @@ class QuotationsFrame(ttk.Frame):
         frame_products.grid(row=2, column=0, sticky="nswe")
         entries_prod = create_input_widgets(frame_products, self.data_products)
         self.entries = entries_inf + entries_prod
-        self.product_selector = self.entries[7]
+        self.product_selector = self.entries[6]
         self.product_selector.bind("<<ComboboxSelected>>", self.product_selected)
         # -----------------Buttons-----------------------------
         frame_buttons = ttk.Frame(self)
@@ -254,10 +255,10 @@ class QuotationsFrame(ttk.Frame):
         frame_buttons.columnconfigure((0, 1, 2, 3, 4), weight=1)
         self.create_button_widgets(frame_buttons)
         # -----------------Table-------------------------------
-        frame_table = ttk.Frame(self)
-        frame_table.grid(row=4, column=0, sticky="nswe")
-        frame_table.rowconfigure(0, weight=1)
-        self.table_widgets = self.create_table_widgets(frame_table)
+        self.frame_table = ttk.Frame(self)
+        self.frame_table.grid(row=4, column=0, sticky="nswe")
+        self.frame_table.columnconfigure(0, weight=1)
+        self.table_widgets = self.create_table_widgets()
         # -----------------btns procces------------------------------
         frame_procces = ttk.Frame(self)
         frame_procces.grid(row=5, column=0, sticky="nswe")
@@ -270,7 +271,7 @@ class QuotationsFrame(ttk.Frame):
             0,
             0,
             sticky="n",
-            text="Insertar",
+            text="Agregar producto",
             command=self.insert_product,
         )
         create_button(
@@ -278,7 +279,7 @@ class QuotationsFrame(ttk.Frame):
             0,
             1,
             sticky="n",
-            text="Actualizar",
+            text="Actualizar producto",
             command=self.update_product,
         )
         create_button(
@@ -286,20 +287,26 @@ class QuotationsFrame(ttk.Frame):
             0,
             2,
             sticky="n",
-            text="Eliminar",
+            text="Eliminar producto",
             command=self.delete_product,
         )
         create_button(
             frame_buttons, 0, 3, sticky="n", text="Limpiar", command=self.clear_inputs
         )
         create_button(
-            frame_buttons, 0, 4, sticky="n", text="Nuevo", command=self.new_product
+            frame_buttons,
+            0,
+            4,
+            sticky="n",
+            text="Nuevo producto",
+            command=self.new_product,
         )
 
     def product_selected(self, event):
+        name = event.widget.get()
         for item in self.data_products:
-            if item[2] == self.product_selector.get():
-                self.entries[9].set(item[3])
+            if item[2] == name:
+                self.entries[8].set(item[3])
                 self.id_product = int(item[0])
                 break
 
@@ -308,54 +315,67 @@ class QuotationsFrame(ttk.Frame):
         return data
 
     def insert_product(self):
+        if self.id_product is None:
+            print("No hay producto seleccionado")
+            return
         data = self.get_data_entries()
-        name = self.entries[7].get()
-        quantity = self.entries[8].get()
-        udm = self.entries[9].get()
-        price = self.entries[10].get()
+        name = self.entries[6].get()
+        quantity = self.entries[7].get()
+        udm = self.entries[8].get()
+        price = self.entries[9].get()
+        quantity = quantity if quantity != "" else 0.0
         price = price if price != "" else 0.0
-        items = self.table_widgets.view.get_children()
-        number = len(items) + 1
+        number = len(self._products_input) + 1
         data = [
             number,
             self.id_product,
             name,
             quantity,
             udm,
-            price,
+            float(price),
             float(quantity) * float(price),
         ]
-        self.table_widgets.insert_row(values=data)
+        self._products_input.append(data)
+        self.table_widgets = self.create_table_widgets()
 
     def update_product(self):
-        items = self.table_widgets.view.get_children()
-        for item in items:
-            values = self.table_widgets.view.item(item, "values")
-            if values[0] == self._number_product:
-                data = self.get_data_entries()
-                name = self.entries[7].get()
-                quantity = self.entries[8].get()
-                udm = self.entries[9].get()
-                price = self.entries[10].get()
+        items = self._products_input
+        for index, item in enumerate(items):
+            if int(item[0]) == self._number_product:
+                name = self.entries[6].get()
+                quantity = self.entries[7].get()
+                udm = self.entries[8].get()
+                price = self.entries[9].get()
                 data = [
                     self._number_product,
                     self.id_product,
                     name,
                     quantity,
                     udm,
-                    price,
+                    float(price),
                     float(quantity) * float(price),
                 ]
-                self.table_widgets.view.item(item, values=data)
+                self._products_input[index] = data
                 break
+        self.table_widgets = self.create_table_widgets()
+        self.clear_inputs_product()
+        self.id_product = None
 
     def delete_product(self):
-        items = self.table_widgets.view.get_children()
-        for item in items:
-            values = self.table_widgets.view.item(item, "values")
-            if values[0] == self._number_product:
-                self.table_widgets.view.delete(item)
-                break
+        items = self._products_input.copy()
+        counter = 0
+        for index, item in enumerate(items):
+            if int(item[0]) == self._number_product:
+                self._products_input.remove(item)
+                counter = item[0]
+            else:
+                print(counter)
+                if counter != 0:
+                    self._products_input[index - 1][0] = counter
+                    counter += 1
+        self.table_widgets = self.create_table_widgets()
+        self.clear_inputs_product()
+        self.id_product = None
 
     def clear_inputs(self):
         for item in self.entries:
@@ -364,10 +384,18 @@ class QuotationsFrame(ttk.Frame):
             else:
                 item.delete(0, "end")
 
+    def clear_inputs_product(self):
+        entries = self.entries[6:]
+        for item in entries:
+            if isinstance(item, ttk.Combobox):
+                item.set("")
+            else:
+                item.delete(0, "end")
+
     def new_product(self):
         pass
 
-    def create_table_widgets(self, master):
+    def create_table_widgets(self):
         self.table_widgets.destroy() if self.table_widgets is not None else None
         coldata = []
         columns = [
@@ -387,9 +415,9 @@ class QuotationsFrame(ttk.Frame):
             else:
                 coldata.append({"text": column, "stretch": True})
         self.coldata = coldata
-        data = []
+        data = self._products_input if self._products_input is not None else []
         table_notifications = Tableview(
-            master,
+            self.frame_table,
             coldata=coldata,
             autofit=False,
             paginated=False,
@@ -407,8 +435,13 @@ class QuotationsFrame(ttk.Frame):
 
     def _on_double_click_table(self, event):
         data = event.widget.item(event.widget.selection(), "values")
-        self._number_product = data[0]
-        print(data)
+        self._number_product = int(data[0])
+        self.id_product = int(data[1])
+        self.clear_inputs_product()
+        self.entries[6].set(data[2])
+        self.entries[7].insert(0, data[3])
+        self.entries[8].set(data[4])
+        self.entries[9].insert(0, data[5])
 
     def create_procces_btns(self, master):
         create_button(

@@ -33,9 +33,9 @@ from templates.modules.RRHH.Frame_Vacations import VacationsFrame
 from templates.modules.Assistant.Frame_vAssistantGUI import AssistantGUI
 from templates.modules.SM.SubFrame_SMDashboard import SMDashboard
 from templates.modules.SM.SubFrame_SMManagement import SMManagement
-from templates.modules.Administration.Clients import ClientsScreen
+from templates.modules.Administration.SubFrame_Clients import ClientsScreen
 from templates.modules.Almacen.Inventory import InventoryScreen
-from templates.modules.Administration.Providers import ProvidersScreen
+from templates.modules.Administration.SubFrame_Providers import ProvidersScreen
 from templates.modules.Almacen.Supplies import SuppliesScreen
 from templates.modules.Sesion.Frame_LoginFrames import LogOptionsFrame
 
