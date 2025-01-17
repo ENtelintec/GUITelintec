@@ -14,7 +14,7 @@ def get_all_customers_db():
         "phone, "
         "rfc, "
         "address "
-        "FROM sql_telintec.customers_amc"
+        "FROM sql_telintec.customers_amc ORDER BY name "
     )
     flag, error, result = execute_sql(sql, None, 5)
     return flag, error, result

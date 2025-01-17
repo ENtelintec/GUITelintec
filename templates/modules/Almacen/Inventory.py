@@ -514,7 +514,7 @@ class InventoryScreen(ttk.Frame):
             brand.upper(),
         )
         msg = ""
-
+        msg_list = ""
         # -------------------------------add movement to supplier-----------------------------------
         if not flag:
             msg += f"Error al crear producto: {product_sku}--{lastrowid}--{error}"

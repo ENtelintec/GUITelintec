@@ -11,14 +11,14 @@ from static.constants import format_timestamps, timezone_software
 from templates.database.connection import execute_sql
 
 
-def create_quotation(metadata: dict, products: dict):
+def create_quotation(metadata: dict, products: dict, status=0):
     time_zone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
     sql = (
-        "INSERT INTO sql_telintec_mod_admin.quotations (metadata, products, creation) "
-        "VALUES (%s, %s, %s)"
+        "INSERT INTO sql_telintec_mod_admin.quotations (metadata, products, creation, status) "
+        "VALUES (%s, %s, %s, %s)"
     )
-    val = (json.dumps(metadata), json.dumps(products), timestamp)
+    val = (json.dumps(metadata), json.dumps(products), timestamp, status)
     flag, error, id_quotation = execute_sql(sql, val, 4)
     return flag, error, id_quotation
 
@@ -58,7 +58,7 @@ def delete_quotation(id_quotation):
 def get_quotation(id_quotation=None):
     if id_quotation is None:
         sql = (
-            "SELECT id, metadata, products, creation, timestamps "
+            "SELECT id, metadata, products, creation, timestamps, metadata->'$.company', metadata->'$.emission' "
             "FROM sql_telintec_mod_admin.quotations"
         )
         flag, error, result = execute_sql(sql, None, 5)
