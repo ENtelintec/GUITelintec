@@ -12,17 +12,14 @@ from werkzeug.utils import secure_filename
 
 from static.Models.api_employee_models import (
     employees_info_model,
-    employee_model,
     employee_model_insert,
     employee_model_update,
     employee_model_delete,
-    examenes_medicos_model,
     employees_examenes_model,
     employee_exam_model_insert,
     employee_exam_model_delete,
     employee_exam_model_update,
     employees_vacations_model,
-    vacations_model,
     employee_vacation_model_insert,
     employee_vacation_model_delete,
     EmployeeInsertForm,
@@ -43,7 +40,6 @@ from static.Models.api_fichajes_models import (
 )
 from static.Models.api_models import (
     employees_resume_model,
-    resume_model,
     expected_headers_per,
 )
 from static.constants import (
@@ -184,6 +180,7 @@ class EmployeeInfo(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data_out, code = get_info_employee_id(id_emp)
+        print(code, data_out)
         return data_out, code
 
 
