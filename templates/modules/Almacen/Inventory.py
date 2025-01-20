@@ -7,7 +7,12 @@ import ttkbootstrap as ttk
 from ttkbootstrap.dialogs import Messagebox
 from ttkbootstrap.tableview import Tableview
 
-from static.constants import format_date, log_file_db, file_codebar, format_timestamps, log_file_almacen
+from static.constants import (
+    format_date,
+    file_codebar,
+    format_timestamps,
+    log_file_almacen,
+)
 from templates.Functions_GUI_Utils import (
     create_label,
     create_entry,
@@ -36,9 +41,13 @@ from templates.forms.Storage import InventoryStorage
 from templates.misc.Functions_Files import write_log_file
 from templates.modules.Almacen.Frame_BarCodes import BarcodeSubFrameSelector
 from templates.modules.Almacen.SubFrameLector import LectorScreenSelector
-from templates.resources.methods.Aux_Inventory import coldata_inventory
+from templates.resources.methods.Aux_Inventory import (
+    coldata_inventory,
+    create_excel_file,
+)
 from templates.resources.midleware.Functions_midleware_almacen import (
     upload_product_db_from_file,
+    retrieve_data_file_inventory,
 )
 
 
@@ -366,24 +375,27 @@ class InventoryScreen(ttk.Frame):
         BarcodeSubFrameSelector(self, **kw)
 
     def on_print_products_click(self):
+        # ask if save in pdf or excel
         filepath = filedialog.asksaveasfilename(
             defaultextension=".pdf",
-            filetypes=[("PDF files", "*.pdf")],
+            filetypes=[("PDF files", "*.pdf"), ("Excel files", "*.xlsx")],
             title="Guardar como",
         )
         if not filepath:
             return
-        # products = ["ID", "Description", "UDM", "Categoria", "Stock Min", "Stock", "Solicitar"]
-        products = [
-            (item[0], item[2], item[3], item[5], " ", item[4], " ")
-            for item in self._products
-        ]
-        # sort by ID
-        products.sort(key=lambda x: x[0])
-        InventoryStorage(
-            dict_data={"filename_out": filepath, "products": products},
-            type_form="Materials",
-        )
+        type_f = "dict" if filepath.endswith(".xlsx") else "list"
+        products, code = retrieve_data_file_inventory(type_f, self._products)
+        if type_f == "list":
+            InventoryStorage(
+                dict_data={"filename_out": filepath, "products": products},
+                type_form="Materials",
+            )
+        else:
+            try:
+                create_excel_file(products, filepath)
+            except Exception as e:
+                print(e)
+                return
         print(f"Se guardo el pdf en: {filepath}")
 
     def on_lector_click(self):
@@ -502,7 +514,7 @@ class InventoryScreen(ttk.Frame):
             brand.upper(),
         )
         msg = ""
-
+        msg_list = ""
         # -------------------------------add movement to supplier-----------------------------------
         if not flag:
             msg += f"Error al crear producto: {product_sku}--{lastrowid}--{error}"
@@ -685,7 +697,14 @@ class InventoryScreen(ttk.Frame):
                 )
             else:
                 data_movements.append(
-                    [item[0], "entrada", float(item[4]) - float(item[-1]), date, "None", item[5]]
+                    [
+                        item[0],
+                        "entrada",
+                        float(item[4]) - float(item[-1]),
+                        date,
+                        "None",
+                        item[5],
+                    ]
                 )
         if counter_errors_update == 0:
             msg += f"\nProductos actualizados: {len(products_data)}"

@@ -38,6 +38,7 @@ movement_model = api.model(
 movement_out_model = api.model(
     "MovementAMC",
     {
+        "id": fields.Integer(required=True, description="The movement id", example=1),
         "id_product": fields.Integer(
             required=True, description="The product id", example=1
         ),
@@ -46,8 +47,8 @@ movement_out_model = api.model(
         "movement_date": fields.String(
             required=True, description="The movement date", example="2024-04-03"
         ),
-        "sm_id": fields.Integer(
-            required=True, description="The movement id", example=1
+        "sm_id": fields.String(
+            required=True, description="The movement id", example="sm-code"
         ),
         "reference": fields.String(
             required=True, description="The movement reference", example="reference"
@@ -60,7 +61,8 @@ movements_output_model = api.model(
     "MovementsOutAMC",
     {
         "data": fields.List(fields.Nested(movement_out_model)),
-        "msg": fields.String(required=True, description="The message"),
+        "msg": fields.String(required=False, description="The message"),
+        "error": fields.String(required=False, description="The error"),
     },
 )
 

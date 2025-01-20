@@ -4,6 +4,7 @@ __date__ = "$ 01/abr./2024  at 11:38 $"
 
 import json
 
+from static.constants import format_date
 from templates.Functions_Utils import create_notification_permission_notGUI
 from templates.controllers.employees.employees_controller import (
     get_all_data_employees,
@@ -13,7 +14,11 @@ from templates.controllers.employees.vacations_controller import (
     get_vacations_data,
     get_vacations_data_emp,
 )
-from templates.controllers.misc.tasks_controller import create_task, update_task, delete_task
+from templates.controllers.misc.tasks_controller import (
+    create_task,
+    update_task,
+    delete_task,
+)
 
 
 def get_info_employees_with_status(status: str):
@@ -135,7 +140,7 @@ def get_info_employee_id(id_emp: int):
         "modality": modality,
         "email": email,
         "contract": contract,
-        "admission": admission,
+        "admission": admission.strftime(format_date),
         "rfc": rfc,
         "curp": curp,
         "nss": nss,
@@ -144,7 +149,7 @@ def get_info_employee_id(id_emp: int):
         "status": status,
         "departure": departure,
         "exam_id": examen,
-        "birthday": birthday,
+        "birthday": birthday.strftime(format_date),
         "legajo": legajo,
     }
     return (data_out, 200) if flag else ({}, 400)

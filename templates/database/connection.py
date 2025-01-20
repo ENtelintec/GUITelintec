@@ -30,7 +30,12 @@ def execute_sql(sql: str, values: tuple = None, type_sql=1):
     :param type_sql: type of query to execute
     :param sql: sql query
     :param values: values for sql query
-    :return:
+    :return: <flag , error, result> where result is:
+        | list of items if type 1 |
+        | item if type 2 |
+        | rowcount if type 3 |
+        | lastrowid if type 4 |
+        | list of items if type 5 |
     """
     try:
         mydb = mysql.connector.connect(

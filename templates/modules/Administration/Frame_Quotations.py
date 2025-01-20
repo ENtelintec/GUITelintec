@@ -11,18 +11,27 @@ import ttkbootstrap as ttk
 from ttkbootstrap.scrolled import ScrolledFrame
 from ttkbootstrap.tableview import Tableview
 
-from static.constants import format_timestamps, timezone_software
+from static.constants import (
+    format_timestamps,
+    timezone_software,
+    format_date,
+    log_file_admin,
+)
 from templates.Functions_GUI_Utils import (
     create_label,
     create_entry,
     create_Combobox,
     create_button,
+    create_ComboboxSearch,
+    create_date_entry,
 )
+from templates.Functions_Utils import create_notification_permission_notGUI
 from templates.controllers.contracts.quotations_controller import (
     update_quotation,
     get_quotation,
     create_quotation,
 )
+from templates.misc.Functions_Files import write_log_file
 from templates.resources.methods.Functions_Aux_Admin import read_exel_products_bidding
 
 
@@ -36,12 +45,48 @@ def get_data_entries(entries):
     return data
 
 
+def get_data_info_entries(entries):
+    company_text = entries[0].get().split("-")
+    try:
+        if len(company_text) > 1:
+            company = company_text[1]
+            company_id = int(company_text[0])
+        else:
+            company = company_text[0]
+            company_id = "None"
+    except Exception as e:
+        print(e)
+        company = entries[0].get()
+        company_id = "None"
+    user = entries[1].get()
+    phone = entries[2].get()
+    email = entries[3].get()
+    area = entries[4].get()
+    location = entries[5].get()
+    return company, user, phone, email, area, location, company_id
+
+
+def get_data_products_entries(entries):
+    name = entries[6].get()
+    quantity = entries[7].get()
+    udm = entries[8].get()
+    price = entries[9].get()
+    date = entries[10].entry.get()
+    quantity = quantity if quantity != "" else 0.0
+    price = price if price != "" else 0.0
+    return name, quantity, udm, price, date
+
+
 def clean_entries(entries):
     for item in entries:
         if isinstance(item, ttk.Entry):
             item.delete(0, "end")
         elif isinstance(item, ttk.Combobox):
             item.set("")
+        elif isinstance(item, ttk.DateEntry):
+            date_now = datetime.now().strftime(format_date)
+            item.entry.delete(0, "end")
+            item.entry.insert(0, date_now)
         else:
             pass
 
@@ -62,31 +107,32 @@ def update_products_from_entries(entries_values, products_list):
 
 
 def update_info_from_entries(entries_values, info):
-    info["company"] = entries_values[0]
-    info["user"] = entries_values[1]
-    info["phone"] = entries_values[2]
-    info["email"] = entries_values[3]
-    info["area"] = entries_values[4]
-    info["location"] = entries_values[5]
+    info["company"] = entries_values[0],
+    info["user"] = entries_values[1],
+    info["phone"] = entries_values[2],
+    info["email"] = entries_values[3],
+    info["area"] = entries_values[4],
+    info["location"] = entries_values[5],
+    info["client_id"] = entries_values[6],
     return info
 
 
-def update_procedure(id_bidding, data_bidding, data_info, products):
-    metadata = json.loads(data_bidding[1])
+def update_procedure_quoation(id_bidding, metadata_bidding, data_info, products: list[dict], userdata):
+    metadata = json.loads(metadata_bidding[1])
     metadata = update_info_from_entries(data_info, metadata)
-    products_old = json.loads(data_bidding[2])
+    products_old = json.loads(metadata_bidding[2])
     products_new = update_products_from_entries(products, products_old)
-    timestamps = json.loads(data_bidding[4])
+    timestamps = json.loads(metadata_bidding[4])
     time_zone = pytz.timezone(timezone_software)
     date_now = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
-    timestamps["update"].append(date_now)
+    timestamps["update"].append({"date": date_now, "user": userdata["id"]})
     flag, error, result = update_quotation(
         id_bidding, metadata, products_new, timestamps
     )
     return flag, error, result
 
 
-def create_procedure(data_info, products):
+def create_procedure(data_info, products: list[dict], userdata, status):
     time_zone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
     metadata = {
@@ -101,9 +147,10 @@ def create_procedure(data_info, products):
         "planta": "",
         "area": data_info[4],
         "location": data_info[5],
-        "client_id": "",
+        "client_id": data_info[6],
+        "user_id": userdata["id"],
     }
-    flag, error, result = create_quotation(metadata, products)
+    flag, error, result = create_quotation(metadata, products, status=status)
     return flag, error, result
 
 
@@ -118,7 +165,7 @@ def finalize_action(self, flag, error, result):
         print(error)
 
 
-def create_input_info_widgets(master):
+def create_input_info_widgets(master, data_clients):
     frame_info = master
     frame_info.columnconfigure((0, 1, 2, 3), weight=1)
     create_label(
@@ -129,8 +176,9 @@ def create_input_info_widgets(master):
     create_label(frame_info, 0, 3, text="Email", font=("Helvetica", 12, "normal"))
     create_label(frame_info, 2, 0, text="Area", font=("Helvetica", 12, "normal"))
     create_label(frame_info, 2, 1, text="Ubicacion", font=("Helvetica", 12, "normal"))
-    input_company = create_entry(
-        frame_info, row=1, column=0, font=("Helvetica", 12, "normal")
+    clients_list = [f"{client[0]}-{client[1]}" for client in data_clients]
+    input_company = create_ComboboxSearch(
+        frame_info, row=1, column=0, values=clients_list, state="normal"
     )
     input_user = create_entry(
         frame_info, row=1, column=1, font=("Helvetica", 12, "normal")
@@ -142,7 +190,7 @@ def create_input_info_widgets(master):
         frame_info, row=1, column=3, font=("Helvetica", 12, "normal")
     )
     input_area = create_Combobox(
-        frame_info, row=3, column=0, values=["Area 1", "Area 2"]
+        frame_info, row=3, column=0, values=["Area 1", "Area 2"], state="normal"
     )
     input_ubicacion = create_entry(
         frame_info, row=3, column=1, font=("Helvetica", 12, "normal")
@@ -160,7 +208,7 @@ def create_input_info_widgets(master):
 def create_input_widgets(master, data):
     # ------------products------------
     frame_products = master
-    frame_products.columnconfigure((0, 1, 2, 3), weight=1)
+    frame_products.columnconfigure((0, 1, 2, 3, 4), weight=1)
     create_label(
         frame_products,
         0,
@@ -179,25 +227,86 @@ def create_input_widgets(master, data):
     create_label(
         frame_products, 1, 3, text="Precion (U)", font=("Helvetica", 12, "normal")
     )
+    create_label(frame_products, 1, 4, text="Fecha", font=("Helvetica", 12, "normal"))
     list_products = [item[2] for item in data]
-    input_product_name = create_Combobox(
-        frame_products, row=2, column=0, values=list_products
+    input_product_name = create_ComboboxSearch(
+        frame_products, row=2, column=0, values=list_products, state="normal"
     )
     input_quantity = create_entry(
         frame_products, row=2, column=1, font=("Helvetica", 12, "normal")
     )
     input_udm = create_Combobox(
-        frame_products, row=2, column=2, values=["KG", "LT", "ML"]
+        frame_products, row=2, column=2, values=["KG", "LT", "ML"], state="normal"
     )
     input_price = create_entry(
         frame_products, row=2, column=3, font=("Helvetica", 12, "normal")
     )
-    return [
-        input_product_name,
-        input_quantity,
-        input_udm,
-        input_price,
-    ]
+    input_date = create_date_entry(
+        frame_products,
+        row=2,
+        column=4,
+        firstweekday=0,
+        dateformat=format_date,
+        startdate=None,
+    )
+    return [input_product_name, input_quantity, input_udm, input_price, input_date]
+
+
+def create_dict_products(data, type_q="quotation"):
+    products = []
+    if type_q == "quotation":
+        for item in data:
+            product = {
+                "id_p": item[1],
+                "partida": item[0],
+                "description_small": item[2],
+                "quantity": item[3],
+                "udm": item[4],
+                "price_unit": item[5],
+                "date_needed": item[7],
+                "client": "",
+                "marca": "",
+                "type_p": "",
+                "comment": "",
+                "n_parte": "",
+                "revision": "",
+                "description": "",
+            }
+            products.append(product)
+        return products
+    else:
+        for item in data:
+            product = {
+                "id_p": "None",
+                "partida": item[0],
+                "description_small": item[1],
+                "quantity": item[2],
+                "udm": item[3],
+                "client": item[4],
+                "date_needed": item[5],
+                "marca": "",
+                "type_p": "",
+                "comment": "",
+                "n_parte": "",
+                "revision": "",
+                "price_unit": "",
+                "description": "",
+            }
+            products.append(product)
+    return products
+
+
+def end_action_quotations(msg, title, usernamedata):
+    if msg is None or msg == "":
+        return
+    msg += f"\n[Usuario: {usernamedata.get('username', 'No username')}]"
+    create_notification_permission_notGUI(
+        msg, ["Administracion"], title, usernamedata["id"], 0
+    )
+    timestamp = datetime.now().strftime(format_timestamps)
+    msg += f"[Timestamp: {timestamp}]"
+    msg += f"[ID: {usernamedata.get('id', 'No id')}]"
+    write_log_file(log_file_admin, msg)
 
 
 class QuotationsBiddingsFrame(ttk.Frame):
@@ -210,7 +319,7 @@ class QuotationsBiddingsFrame(ttk.Frame):
 
         # frame quotation
         frame_quotation = QuotationsFrame(notebook, **kwargs)
-        notebook.add(frame_quotation, text="Cotizaciones")
+        notebook.add(frame_quotation, text="Cotizaciones FC")
 
         # frame bidding
         frame_bidding = BiddingsFrame(notebook, **kwargs)
@@ -220,15 +329,16 @@ class QuotationsBiddingsFrame(ttk.Frame):
 class QuotationsFrame(ttk.Frame):
     def __init__(self, master, **kwargs):
         super().__init__(master)
-        self.columnconfigure(0, weight=1)
+        self.id_quotation = None
         self.id_product = None
+        self.columnconfigure(0, weight=1)
         self.coldata = None
         self.table_widgets = None
-        self.data_products = (
-            kwargs["data"]["data_products_gen"]
-            if "data_products_gen" in kwargs["data"]
-            else []
-        )
+        self.data_products = kwargs["data"].get("data_products_gen", [])
+        self.clients_data = kwargs["data"].get("data_clients_gen", [])
+        self.usernamedata = kwargs.get("username_data", None)
+        self.data_quotations = kwargs["data"].get("quotations", [])
+        self._products_input = []
         # -----------------Title-------------------------------
         create_label(
             self,
@@ -238,30 +348,51 @@ class QuotationsFrame(ttk.Frame):
             font=("Helvetica", 30, "bold"),
             columnspan=1,
         )
+        # ---------------------quotation selector---------------------------------
+        frame_quotation_selector = ttk.Frame(self)
+        frame_quotation_selector.grid(row=1, column=0, sticky="nswe")
+        frame_quotation_selector.columnconfigure(1, weight=1)
+        create_label(
+            frame_quotation_selector,
+            0,
+            0,
+            text="Seleccion de cotizacion",
+        )
+        quotations_list = [
+            f"{item[0]}-{item[-2]}-{item[-1]}" for item in self.data_quotations
+        ]
+        self.quoation_selector = create_ComboboxSearch(
+            frame_quotation_selector,
+            row=0,
+            column=1,
+            values=quotations_list,
+            state="normal",
+        )
+        self.quoation_selector.bind("<<ComboboxSelected>>", self.quotation_selected)
         # -----------------Inputs------------------------------
         frame_inputs = ttk.Frame(self)
-        frame_inputs.grid(row=1, column=0, sticky="nswe")
-        entries_inf = create_input_info_widgets(frame_inputs)
+        frame_inputs.grid(row=2, column=0, sticky="nswe")
+        entries_inf = create_input_info_widgets(frame_inputs, self.clients_data)
         frame_products = ttk.Frame(self)
-        frame_products.grid(row=2, column=0, sticky="nswe")
+        frame_products.grid(row=3, column=0, sticky="nswe")
         entries_prod = create_input_widgets(frame_products, self.data_products)
         self.entries = entries_inf + entries_prod
-        self.product_selector = self.entries[7]
+        self.product_selector = self.entries[6]
         self.product_selector.bind("<<ComboboxSelected>>", self.product_selected)
         # -----------------Buttons-----------------------------
         frame_buttons = ttk.Frame(self)
-        frame_buttons.grid(row=3, column=0, sticky="nswe")
+        frame_buttons.grid(row=4, column=0, sticky="nswe")
         frame_buttons.columnconfigure((0, 1, 2, 3, 4), weight=1)
         self.create_button_widgets(frame_buttons)
         # -----------------Table-------------------------------
-        frame_table = ttk.Frame(self)
-        frame_table.grid(row=4, column=0, sticky="nswe")
-        frame_table.rowconfigure(0, weight=1)
-        self.table_widgets = self.create_table_widgets(frame_table)
+        self.frame_table = ttk.Frame(self)
+        self.frame_table.grid(row=5, column=0, sticky="nswe")
+        self.frame_table.columnconfigure(0, weight=1)
+        self.table_widgets = self.create_table_widgets()
         # -----------------btns procces------------------------------
         frame_procces = ttk.Frame(self)
-        frame_procces.grid(row=5, column=0, sticky="nswe")
-        frame_procces.columnconfigure((0, 1, 2, 3), weight=1)
+        frame_procces.grid(row=6, column=0, sticky="nswe")
+        frame_procces.columnconfigure((0, 1, 2), weight=1)
         self.create_procces_btns(frame_procces)
 
     def create_button_widgets(self, frame_buttons):
@@ -270,7 +401,7 @@ class QuotationsFrame(ttk.Frame):
             0,
             0,
             sticky="n",
-            text="Insertar",
+            text="Agregar producto",
             command=self.insert_product,
         )
         create_button(
@@ -278,7 +409,7 @@ class QuotationsFrame(ttk.Frame):
             0,
             1,
             sticky="n",
-            text="Actualizar",
+            text="Actualizar producto",
             command=self.update_product,
         )
         create_button(
@@ -286,76 +417,85 @@ class QuotationsFrame(ttk.Frame):
             0,
             2,
             sticky="n",
-            text="Eliminar",
+            text="Eliminar producto",
             command=self.delete_product,
         )
         create_button(
             frame_buttons, 0, 3, sticky="n", text="Limpiar", command=self.clear_inputs
         )
         create_button(
-            frame_buttons, 0, 4, sticky="n", text="Nuevo", command=self.new_product
+            frame_buttons,
+            0,
+            4,
+            sticky="n",
+            text="Nuevo producto",
+            command=self.new_product,
         )
 
     def product_selected(self, event):
+        name = event.widget.get()
         for item in self.data_products:
-            if item[2] == self.product_selector.get():
-                self.entries[9].set(item[3])
+            if item[2] == name:
+                self.entries[8].set(item[3])
                 self.id_product = int(item[0])
                 break
 
-    def get_data_entries(self):
-        data = [item.get() for item in self.entries]
-        return data
-
     def insert_product(self):
-        data = self.get_data_entries()
-        name = self.entries[7].get()
-        quantity = self.entries[8].get()
-        udm = self.entries[9].get()
-        price = self.entries[10].get()
-        price = price if price != "" else 0.0
-        items = self.table_widgets.view.get_children()
-        number = len(items) + 1
+        if self.id_product is None:
+            print("No hay producto seleccionado")
+            return
+        name, quantity, udm, price, date = get_data_products_entries(self.entries)
+        number = len(self._products_input) + 1
         data = [
             number,
             self.id_product,
             name,
             quantity,
             udm,
-            price,
+            float(price),
             float(quantity) * float(price),
+            date,
         ]
-        self.table_widgets.insert_row(values=data)
+        self._products_input.append(data)
+        self.table_widgets = self.create_table_widgets()
 
     def update_product(self):
-        items = self.table_widgets.view.get_children()
-        for item in items:
-            values = self.table_widgets.view.item(item, "values")
-            if values[0] == self._number_product:
-                data = self.get_data_entries()
-                name = self.entries[7].get()
-                quantity = self.entries[8].get()
-                udm = self.entries[9].get()
-                price = self.entries[10].get()
+        for index, item in enumerate(self._products_input):
+            if int(item[0]) == self._number_product:
+                name, quantity, udm, price, date = get_data_products_entries(
+                    self.entries
+                )
                 data = [
                     self._number_product,
                     self.id_product,
                     name,
                     quantity,
                     udm,
-                    price,
+                    float(price),
                     float(quantity) * float(price),
+                    date,
                 ]
-                self.table_widgets.view.item(item, values=data)
+                self._products_input[index] = data
                 break
+        self.table_widgets = self.create_table_widgets()
+        self.clear_inputs_product()
+        self.id_product = None
 
     def delete_product(self):
-        items = self.table_widgets.view.get_children()
-        for item in items:
-            values = self.table_widgets.view.item(item, "values")
-            if values[0] == self._number_product:
-                self.table_widgets.view.delete(item)
-                break
+        items = self._products_input.copy()
+        counter = 0
+        for index, item in enumerate(items):
+            if int(item[0]) == self._number_product:
+                self._products_input.remove(item)
+                counter = item[0]
+            else:
+                print(counter)
+                if counter != 0:
+                    self._products_input[index - 1][0] = counter
+                    counter += 1
+        self.table_widgets = self.create_table_widgets()
+        self.clear_inputs_product()
+        self.id_product = None
 
     def clear_inputs(self):
         for item in self.entries:
@@ -364,10 +504,34 @@ class QuotationsFrame(ttk.Frame):
             else:
                 item.delete(0, "end")
 
-    def new_product(self):
-        pass
+    def clear_inputs_product(self):
+        entries = self.entries[6:]
+        for item in entries:
+            if isinstance(item, ttk.Combobox):
+                item.set("")
+            elif isinstance(item, ttk.DateEntry):
+                item.entry.delete(0, "end")
+                item.entry.insert(0, "")
+            else:
+                item.delete(0, "end")
 
-    def create_table_widgets(self, master):
+    def new_product(self):
+        name, quantity, udm, price, date = get_data_products_entries(self.entries)
+        number = len(self._products_input) + 1
+        data = [
+            number,
+            None,
+            name,
+            quantity,
+            udm,
+            float(price),
+            float(quantity) * float(price),
+            date,
+        ]
+        self._products_input.append(data)
+        self.table_widgets = self.create_table_widgets()
+
+    def create_table_widgets(self):
         self.table_widgets.destroy() if self.table_widgets is not None else None
         coldata = []
         columns = [
@@ -378,6 +542,7 @@ class QuotationsFrame(ttk.Frame):
             "UDM",
             "Precio unitario",
             "Total",
+            "Fecha requerida",
         ]
         for column in columns:
             if "Descripcion" in column:
@@ -387,9 +552,9 @@ class QuotationsFrame(ttk.Frame):
             else:
                 coldata.append({"text": column, "stretch": True})
         self.coldata = coldata
-        data = []
-        table_notifications = Tableview(
-            master,
+        data = self._products_input if self._products_input is not None else []
+        table = Tableview(
+            self.frame_table,
             coldata=coldata,
             autofit=False,
             paginated=False,
@@ -397,49 +562,116 @@ class QuotationsFrame(ttk.Frame):
             rowdata=data,
             height=15,
         )
-        table_notifications.grid(row=1, column=0, sticky="nswe", padx=(5, 30))
-        table_notifications.view.bind("<Double-1>", self._on_double_click_table)
-        columns_header = table_notifications.get_columns()
+        table.grid(row=1, column=0, sticky="nswe", padx=(5, 30))
+        table.view.bind("<Double-1>", self._on_double_click_table)
+        columns_header = table.get_columns()
         for item in columns_header:
             if item.headertext in ["id"]:
                 item.hide()
-        return table_notifications
+        return table
 
     def _on_double_click_table(self, event):
         data = event.widget.item(event.widget.selection(), "values")
-        self._number_product = data[0]
-        print(data)
+        self._number_product = int(data[0])
+        self.id_product = int(data[1]) if data[1] != "None" and data[1] != "" else None
+        self.clear_inputs_product()
+        self.entries[6].set(data[2])
+        self.entries[7].insert(0, data[3])
+        self.entries[8].set(data[4])
+        self.entries[9].insert(0, data[5])
+        self.entries[10].entry.insert(0, data[7])
 
     def create_procces_btns(self, master):
         create_button(
-            master, 0, 0, sticky="n", text="Crear", command=self.create_quotation
-        )
-        create_button(
-            master, 0, 1, sticky="n", text="Guardar", command=self.save_quotation
-        )
-        create_button(
-            master, 0, 2, sticky="n", text="Imprimir", command=self.print_quotation
+            master,
+            0,
+            0,
+            sticky="n",
+            text="Crear cotización",
+            command=self.create_quotation,
         )
         create_button(
             master,
             0,
-            3,
+            1,
+            sticky="n",
+            text="Guardar borrador",
+            command=self.save_quotation_scrap,
+        )
+        create_button(
+            master,
+            0,
+            2,
             sticky="n",
             text="Generar PDF",
             command=self.generate_pdf_quotation,
         )
 
     def create_quotation(self):
-        print("create")
+        data_info = get_data_info_entries(self.entries)
+        data_products = create_dict_products(self._products_input, type_q="quotation")
+        flag, error, result = create_procedure(
+            data_info, data_products, self.usernamedata, status=1
+        )
+        if not flag:
+            print(error)
+            return
+        msg = f"Creacion de cotizacion id: {result} status: {1}"
+        end_action_quotations(msg, "Creacion de cotizacion", self.usernamedata)
+        print(msg)
+        self.reset_inputs()
 
-    def save_quotation(self):
-        print("save")
-
-    def print_quotation(self):
-        print("print")
-
+    def save_quotation_scrap(self):
+        data_info = get_data_info_entries(self.entries)
+        data_products = create_dict_products(self._products_input, type_q="quotation")
+        flag, error, result = create_procedure(
+            data_info, data_products, self.usernamedata, status=0
+        )
+        if not flag:
+            print(error)
+            return
+        msg = f"Creacion de cotizacion id: {result} status: {0}"
+        end_action_quotations(msg, "Creacion de cotizacion", self.usernamedata)
+        print(msg)
+        self.reset_inputs()
+    
+    def update_quotation(self):
+        data_info = get_data_info_entries(self.entries)
+        data_products = create_dict_products(self._products_input, type_q="quotation")
+        data_quotation = []
+        for item in self.data_quotations:
+            if item[0] == self.id_quotation:
+                data_quotation = item
+                break
+        flag, error, result = update_procedure_quoation(
+            self.id_quotation, data_quotation, data_info, data_products, self.usernamedata
+        )
+        if not flag:
+            print(error)
+            return
+        msg = f"Actualizacion de cotizacion id: {result}"
+        end_action_quotations(msg, "Actualizacion de cotizacion", self.usernamedata)
+        print(msg)
+        self.reset_inputs()
+    
     def generate_pdf_quotation(self):
         print("pdf")
+
+    def reset_inputs(self):
+        for item in self.entries:
+            if isinstance(item, ttk.Combobox):
+                item.set("")
+            elif isinstance(item, ttk.DateEntry):
+                item.entry.delete(0, "end")
+            else:
+                item.delete(0, "end")
+        self._products_input = []
+        self.id_product = None
+        self.table_widgets = self.create_table_widgets()
+    
+    def quotation_selected(self, event):
+        data = event.widget.get().split("-")
+        self.id_quotation = int(data[0])
 
 
 class BiddingsFrame(ttk.Frame):
@@ -448,12 +680,12 @@ class BiddingsFrame(ttk.Frame):
         self.data_bidding = None
         self.id_bidding = None
         self.columnconfigure(0, weight=1)
+        self.usernamedata = kwargs.get("username_data", None)
         self.id_product = None
         self.coldata = None
         self.table_widgets = None
-        self.data_biddings = (
-            kwargs["data"]["quotations"] if "quotations" in kwargs["data"] else []
-        )
+        self.data_biddings = kwargs["data"].get("data_biddings_gen", [])
+        self.clients_data = kwargs["data"].get("data_clients_gen", [])
         # -----------------Title-------------------------------
         create_label(
             self, 0, 0, text="Licitación", font=("Helvetica", 30, "bold"), columnspan=1
@@ -462,7 +694,7 @@ class BiddingsFrame(ttk.Frame):
         frame_inputs = ttk.Frame(self)
         frame_inputs.grid(row=1, column=0, sticky="nswe")
         frame_inputs.columnconfigure(0, weight=1)
-        self.entries = create_input_info_widgets(frame_inputs)
+        self.entries = create_input_info_widgets(frame_inputs, self.clients_data)
         # -----------------Buttons-----------------------------
         frame_selector = ttk.Frame(self)
         frame_selector.grid(row=2, column=0, sticky="nswe")
@@ -563,12 +795,18 @@ class BiddingsFrame(ttk.Frame):
         if self.id_bidding is None:
             print("create")
             products = self.frame_products.get_values_entries()
-            flag, error, result = create_procedure(data_info, products)
+            flag, error, result = create_procedure(
+                data_info, products, self.usernamedata
+            )
         else:
             print("update")
             products = self.frame_products.get_values_entries()
-            flag, error, result = update_procedure(
-                self.id_bidding, self.data_bidding, data_info, products
+            flag, error, result = update_procedure_quoation(
+                self.id_bidding,
+                self.data_bidding,
+                data_info,
+                products,
+                self.usernamedata,
             )
         finalize_action(self, flag, error, result)
 
@@ -577,8 +815,8 @@ class BiddingsFrame(ttk.Frame):
             return
         data_info = get_data_entries(self.entries)
         products = self.frame_products.get_values_entries()
-        flag, error, result = update_procedure(
-            self.id_bidding, self.data_bidding, data_info, products
+        flag, error, result = update_procedure_quoation(
+            self.id_bidding, self.data_bidding, data_info, products, self.usernamedata
         )
         finalize_action(self, flag, error, result)
 
@@ -626,6 +864,7 @@ class SubFrameProducts(ttk.Frame):
         master.columnconfigure(tuple(range(1, n_columns + 1)), weight=1)
         for i in range(n_rows):
             row_entries = []
+            # noinspection PyArgumentList
             checkbutton = ttk.Checkbutton(master, text="", bootstyle="round-toggle")
             checkbutton.grid(row=i + 1, column=0)
             for j in range(n_columns):

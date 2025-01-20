@@ -192,6 +192,9 @@ def load_data(data_dic, is_super=False, emp_id=None, item=None, permissions=None
             if "data_products_gen" not in data_dic:
                 flag, error, products = get_all_products_db()
                 data_dic["data_products_gen"] = products
+            if "data_clients_gen" not in data_dic:
+                flag, error, clients = get_all_customers_db()
+                data_dic["data_clients_gen"] = clients
             flag, error, data_quotations = get_quotation(None)
             data_dic["quotations"] = data_quotations
         case "Documentos Contrato":

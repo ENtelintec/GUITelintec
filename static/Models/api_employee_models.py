@@ -111,7 +111,10 @@ employee_model_insert = api.model(
 )
 
 employees_info_model = api.model(
-    "EmployeeInfo", {"data": fields.List(fields.Nested(employee_model))}
+    "EmployeeInfo", {
+        "data": fields.List(fields.Nested(employee_model)),
+        "error": fields.String(required=False, description="The error message")
+    }
 )
 
 examenes_medicos_model = api.model(
@@ -146,7 +149,10 @@ exam_med_model_input = api.model(
 )
 
 employees_examenes_model = api.model(
-    "EmployesExamenes", {"data": fields.List(fields.Nested(examenes_medicos_model))}
+    "EmployesExamenes", {
+        "data": fields.List(fields.Nested(examenes_medicos_model)),
+        "error": fields.String(required=False, description="The error message")
+    }
 )
 
 employee_exam_model_insert = api.model(
@@ -205,7 +211,10 @@ vacations_model = api.model(
 )
 
 employees_vacations_model = api.model(
-    "EmployeesVacations", {"data": fields.List(fields.Nested(vacations_model))}
+    "EmployeesVacations", {
+        "data": fields.List(fields.Nested(vacations_model)),
+        "error": fields.String(required=False, description="The error message")
+    }
 )
 
 employee_vacation_model_insert = api.model(

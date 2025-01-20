@@ -25,7 +25,7 @@ class ListFilesPayroll(Resource):
     def get(self, emp_id):
         flag, data_token, msg = token_verification_procedure(request, department="rrhh", emp_id=emp_id)
         if not flag:
-            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         code, data_out = get_files_list_nomina(emp_id)
         if code != 200:
             return {"data": None, "msg": "No files"}, code
@@ -43,7 +43,7 @@ class DownloadFilesPayroll(Resource):
         data = validator.data
         flag, data_token, msg = token_verification_procedure(request, emp_id=data["emp_id"], department="rrhh")
         if not flag:
-            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         filepath, code = download_nomina_doc(data)
         if code != 200:
             return {"data": None, "msg": "No files"}, code

@@ -64,7 +64,7 @@ class Employees(Resource):
     def get(self):
         flag, data_token, msg = token_verification_procedure(request, department="sm")
         if not flag:
-            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         flag, error, result = get_sm_employees()
         if flag:
             return {"data": result, "comment": error}, 200
@@ -79,7 +79,7 @@ class Clients(Resource):
     def get(self):
         flag, data_token, msg = token_verification_procedure(request, department="sm")
         if not flag:
-            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         flag, error, result = get_sm_clients()
         if flag:
             return {"data": result, "comment": error}, 200
@@ -94,7 +94,7 @@ class Products(Resource):
     def post(self):
         flag, data_token, msg = token_verification_procedure(request, department="sm")
         if not flag:
-            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
         validator = ProductRequestForm.from_json(ns.payload)
         if not validator.validate():
@@ -111,7 +111,7 @@ class AllSm(Resource):
     def post(self):
         flag, data_token, msg = token_verification_procedure(request, department="sm")
         if not flag:
-            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
         validator = TableRequestForm.from_json(ns.payload)
         if not validator.validate():
@@ -127,7 +127,7 @@ class AddSM(Resource):
     def post(self):
         flag, data_token, msg = token_verification_procedure(request, department="sm")
         if not flag:
-            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
         validator = SMPostForm.from_json(ns.payload)
         if not validator.validate():
@@ -157,7 +157,7 @@ class AddSM(Resource):
     def delete(self):
         flag, data_token, msg = token_verification_procedure(request, department="sm")
         if not flag:
-            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
         validator = SMDeleteForm.from_json(ns.payload)
         if not validator.validate():
@@ -182,7 +182,7 @@ class AddSM(Resource):
     def put(self):
         flag, data_token, msg = token_verification_procedure(request, department="sm")
         if not flag:
-            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
         validator = SMPutForm.from_json(ns.payload)
         if not validator.validate():
@@ -215,7 +215,7 @@ class Client(Resource):
     def post(self):
         flag, data_token, msg = token_verification_procedure(request, department="sm")
         if not flag:
-            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
         validator = NewClienteForm.from_json(ns.payload)
         if not validator.validate():
@@ -234,7 +234,7 @@ class Product(Resource):
     def post(self):
         flag, data_token, msg = token_verification_procedure(request, department="sm")
         if not flag:
-            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
         validator = NewProductForm.from_json(ns.payload)
         if not validator.validate():
@@ -258,7 +258,7 @@ class PlotSMData(Resource):
     def get(self, typerange):
         flag, data_token, msg = token_verification_procedure(request, department="sm")
         if not flag:
-            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data_out = get_data_sm_per_range(typerange, "normal")
         return {"data": data_out, "type": "normal plot lines"}, 200
 
@@ -270,7 +270,7 @@ class AlmacenEmployees(Resource):
     def get(self):
         flag, data_token, msg = token_verification_procedure(request, department="sm")
         if not flag:
-            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data_out, code = get_employees_almacen()
         if code == 200:
             return {"data": data_out, "msg": "ok"}, code
@@ -285,7 +285,7 @@ class ManageSMDispatch(Resource):
     def post(self):
         flag, data_token, msg = token_verification_procedure(request, department="sm")
         if not flag:
-            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
         validator = RequestSMDispatchForm.from_json(ns.payload)
         if not validator.validate():
@@ -301,7 +301,7 @@ class ManageSMDispatch(Resource):
     def delete(self):
         flag, data_token, msg = token_verification_procedure(request, department="sm")
         if not flag:
-            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
         validator = RequestSMDispatchForm.from_json(ns.payload)
         if not validator.validate():
@@ -320,7 +320,7 @@ class DownloadPDFSM(Resource):
     def get(self, sm_id):
         flag, data_token, msg = token_verification_procedure(request, department="sm")
         if not flag:
-            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data, code = dowload_file_sm(sm_id)
         if code == 200:
             return send_file(data, as_attachment=True)

@@ -17,6 +17,7 @@ from static.constants import (
     timezone_software,
     format_timestamps_tz,
     log_file_almacen,
+    filepath_inventory_form_excel,
 )
 from templates.Functions_Utils import create_notification_permission_notGUI
 from templates.controllers.product.p_and_s_controller import (
@@ -52,6 +53,7 @@ from templates.forms.Storage import InventoryStorage
 from templates.misc.Functions_Files import write_log_file
 from templates.resources.methods.Aux_Inventory import (
     generate_default_configuration_barcodes,
+    create_excel_file,
 )
 
 
@@ -65,9 +67,10 @@ def get_all_movements(type_m: str):
     flag, error, result = get_movements_type_db(type_m)
     out = []
     if not flag:
-        return [], 400
+        return ["error at retrieving data"], 400
     for item in result:
         id_m, id_product, type_m, quantity, movement_date, sm_id, reference = item
+        reference = json.loads(reference) if reference is not None else None
         out.append(
             {
                 "id": id_m,
@@ -671,23 +674,74 @@ def read_excel_file_regular(file: str, is_tool=False, is_internal=0):
     return new_items, update_items, stocks_update, new_input_quantity, result_sku, skus
 
 
-def create_file_inventory():
-    flag, error, _products = get_all_products_db()
+def retrieve_data_file_inventory(type_data="dict", data=None):
+    flag, error, _products = get_all_products_db() if data is None else True, None, data
+    if not flag:
+        return error, 400
     try:
-        products = [
-            (item[0], item[2], item[3], item[5], " ", item[4], " ")
-            for item in _products
-        ]
+        # [id_product, sku, name, udm, stock, category_name, supplier_name,  is_tool, is_internal,  codes, locations,  brand, brands]
+        # sort by ID
+        _products.sort(key=lambda x: x[0])
+        if type_data == "dict":
+            products = {
+                "id": [],
+                "sku": [],
+                "name": [],
+                "udm": [],
+                "stock": [],
+                "category_name": [],
+                "supplier_name": [],
+                "is_tool": [],
+                "is_internal": [],
+                "codes": [],
+                "locations": [],
+                "brand": [],
+            }
+            for item in _products:
+                products["id"].append(item[0])
+                products["sku"].append(item[1])
+                products["name"].append(item[2])
+                products["udm"].append(item[3])
+                products["stock"].append(item[4])
+                products["category_name"].append(item[5])
+                products["supplier_name"].append(item[6])
+                products["is_tool"].append(item[7])
+                products["is_internal"].append(item[8])
+                products["codes"].append(item[9])
+                products["locations"].append(item[10])
+                products["brand"].append(item[11])
+        elif "list":
+            products = [
+                (item[0], item[2], item[3], item[5], " ", item[4], " ")
+                for item in _products
+            ]
     except Exception as e:
         print(e)
         return None, 400
-    # sort by ID
-    products.sort(key=lambda x: x[0])
+    return products, 200
+
+
+def create_file_inventory_pdf():
+    products, code = retrieve_data_file_inventory(type_data="list")
+    if code != 200:
+        return None, 400
     flag = InventoryStorage(
         dict_data={"filename_out": filepath_inventory_form, "products": products},
         type_form="Materials",
     )
     return (filepath_inventory_form, 200) if flag else (None, 400)
+
+
+def create_file_inventory_excel():
+    products, code = retrieve_data_file_inventory()
+    if code != 200:
+        return None, 400
+    try:
+        create_excel_file(products, filepath_inventory_form_excel)
+    except Exception as e:
+        print(e)
+        return str(e), 400
+    return filepath_inventory_form_excel, 200
 
 
 def create_file_movements_amc(data):

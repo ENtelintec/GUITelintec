@@ -32,8 +32,11 @@ file_model = api.model(
 
 
 answer_files_fichajes_model = api.model(
-    "FichFiles",
-    {"data": fields.List(fields.Nested(file_model)), "msg": fields.String()},
+    "FichFiles", {
+        "data": fields.List(fields.Nested(file_model)),
+        "msg": fields.String(required=False),
+        "error": fields.String(required=False)
+    }
 )
 
 # {"name": name, "ID": id_emp, "worked_days": worked_days_f, "absence_days": days_absence,
@@ -93,8 +96,11 @@ request_data_fichaje_files_model = api.model(
 )
 
 answer_fichajes_model = api.model(
-    "AnsFichFiles",
-    {"data": fields.Nested(data_emp_fichajes_model), "msg": fields.String()},
+    "AnsFichFiles", {
+        "data": fields.Nested(data_emp_fichajes_model), 
+        "msg": fields.String(required=False),
+        "error": fields.String(required=False)
+    }
 )
 
 expected_files = api.parser()
