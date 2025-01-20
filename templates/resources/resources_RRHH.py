@@ -180,7 +180,6 @@ class EmployeeInfo(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data_out, code = get_info_employee_id(id_emp)
-        print(code, data_out)
         return data_out, code
 
 
