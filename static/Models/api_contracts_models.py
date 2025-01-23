@@ -42,13 +42,6 @@ metadata_quotation_model = api.model(
             required=True, description="The quotation client id"
         ),
         "emp_id": fields.Integer(required=True, description="The quotation emp id"),
-        "emp_name": fields.String(required=True, description="The quotation emp name"),
-        "emp_email": fields.String(
-            required=True, description="The quotation emp email"
-        ),
-        "emp_phone": fields.String(
-            required=True, description="The quotation emp phone"
-        ),
     },
 )
 products_quotation_model = api.model(
@@ -292,9 +285,6 @@ class MetadataQuotationForm(Form):
     emp_id = IntegerField(
         "emp_id", validators=[InputRequired(message="Invalid id or 0 not acepted")]
     )
-    emp_name = StringField("emp_name", validators=[InputRequired()])
-    emp_phone = StringField("emp_phone", validators=[InputRequired()])
-    emp_email = EmailField("emp_email", validators=[InputRequired()])
 
 
 class ProductsQuotationForm(Form):

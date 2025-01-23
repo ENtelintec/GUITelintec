@@ -107,17 +107,19 @@ def update_products_from_entries(entries_values, products_list):
 
 
 def update_info_from_entries(entries_values, info):
-    info["company"] = entries_values[0],
-    info["user"] = entries_values[1],
-    info["phone"] = entries_values[2],
-    info["email"] = entries_values[3],
-    info["area"] = entries_values[4],
-    info["location"] = entries_values[5],
-    info["client_id"] = entries_values[6],
+    info["company"] = (entries_values[0],)
+    info["user"] = (entries_values[1],)
+    info["phone"] = (entries_values[2],)
+    info["email"] = (entries_values[3],)
+    info["area"] = (entries_values[4],)
+    info["location"] = (entries_values[5],)
+    info["client_id"] = (entries_values[6],)
     return info
 
 
-def update_procedure_quoation(id_bidding, metadata_bidding, data_info, products: list[dict], userdata):
+def update_procedure_quoation(
+    id_bidding, metadata_bidding, data_info, products: list[dict], userdata
+):
     metadata = json.loads(metadata_bidding[1])
     metadata = update_info_from_entries(data_info, metadata)
     products_old = json.loads(metadata_bidding[2])
@@ -165,17 +167,54 @@ def finalize_action(self, flag, error, result):
         print(error)
 
 
-def create_input_info_widgets(master, data_clients):
+def create_input_info_widgets(master, data_clients, style="TFrame"):
+    style_l = style.split(".")
+    bootstyle = f"{style_l[0]}.Inverse" if len(style_l) > 1 else None
     frame_info = master
     frame_info.columnconfigure((0, 1, 2, 3), weight=1)
     create_label(
-        frame_info, 0, 0, text="Nombre compañia", font=("Helvetica", 12, "normal")
+        frame_info,
+        0,
+        0,
+        text="Nombre compañia",
+        font=("Helvetica", 12, "normal"),
+        style=bootstyle,
     )
-    create_label(frame_info, 0, 1, text="Usuario", font=("Helvetica", 12, "normal"))
-    create_label(frame_info, 0, 2, text="Telefono", font=("Helvetica", 12, "normal"))
-    create_label(frame_info, 0, 3, text="Email", font=("Helvetica", 12, "normal"))
-    create_label(frame_info, 2, 0, text="Area", font=("Helvetica", 12, "normal"))
-    create_label(frame_info, 2, 1, text="Ubicacion", font=("Helvetica", 12, "normal"))
+    create_label(
+        frame_info,
+        0,
+        1,
+        text="Usuario",
+        font=("Helvetica", 12, "normal"),
+        style=bootstyle,
+    )
+    create_label(
+        frame_info,
+        0,
+        2,
+        text="Telefono",
+        font=("Helvetica", 12, "normal"),
+        style=bootstyle,
+    )
+    create_label(
+        frame_info,
+        0,
+        3,
+        text="Email",
+        font=("Helvetica", 12, "normal"),
+        style=bootstyle,
+    )
+    create_label(
+        frame_info, 2, 0, text="Area", font=("Helvetica", 12, "normal"), style=bootstyle
+    )
+    create_label(
+        frame_info,
+        2,
+        1,
+        text="Ubicacion",
+        font=("Helvetica", 12, "normal"),
+        style=bootstyle,
+    )
     clients_list = [f"{client[0]}-{client[1]}" for client in data_clients]
     input_company = create_ComboboxSearch(
         frame_info, row=1, column=0, values=clients_list, state="normal"
@@ -205,7 +244,9 @@ def create_input_info_widgets(master, data_clients):
     ]
 
 
-def create_input_widgets(master, data):
+def create_input_widgets(master, data, style="TFrame"):
+    style_l = style.split(".")
+    bootstyle = f"{style_l[0]}.Inverse" if len(style_l) > 1 else None
     # ------------products------------
     frame_products = master
     frame_products.columnconfigure((0, 1, 2, 3, 4), weight=1)
@@ -216,18 +257,48 @@ def create_input_widgets(master, data):
         text="Seleccion de Productos",
         font=("Helvetica", 16, "bold"),
         columnspan=4,
+        style=f"{bootstyle}.TLalbel",
     )
     create_label(
-        frame_products, 1, 0, text="Producto", font=("Helvetica", 12, "normal")
+        frame_products,
+        1,
+        0,
+        text="Producto",
+        font=("Helvetica", 12, "normal"),
+        style=f"{bootstyle}.TLabel",
     )
     create_label(
-        frame_products, 1, 1, text="Cantidad", font=("Helvetica", 12, "normal")
+        frame_products,
+        1,
+        1,
+        text="Cantidad",
+        font=("Helvetica", 12, "normal"),
+        style=bootstyle,
     )
-    create_label(frame_products, 1, 2, text="UDM", font=("Helvetica", 12, "normal"))
     create_label(
-        frame_products, 1, 3, text="Precion (U)", font=("Helvetica", 12, "normal")
+        frame_products,
+        1,
+        2,
+        text="UDM",
+        font=("Helvetica", 12, "normal"),
+        style=bootstyle,
     )
-    create_label(frame_products, 1, 4, text="Fecha", font=("Helvetica", 12, "normal"))
+    create_label(
+        frame_products,
+        1,
+        3,
+        text="Precion (U)",
+        font=("Helvetica", 12, "normal"),
+        style=bootstyle,
+    )
+    create_label(
+        frame_products,
+        1,
+        4,
+        text="Fecha",
+        font=("Helvetica", 12, "normal"),
+        style=bootstyle,
+    )
     list_products = [item[2] for item in data]
     input_product_name = create_ComboboxSearch(
         frame_products, row=2, column=0, values=list_products, state="normal"
@@ -309,12 +380,12 @@ def end_action_quotations(msg, title, usernamedata):
     write_log_file(log_file_admin, msg)
 
 
-class QuotationsBiddingsFrame(ttk.Frame):
+class QuotationsBiddingsFrame(ScrolledFrame):
     def __init__(self, master, **kwargs):
-        super().__init__(master)
+        super().__init__(master, autohide=True)
         self.columnconfigure(0, weight=1)
         notebook = ttk.Notebook(self)
-        notebook.grid(row=0, column=0, sticky="nswe")
+        notebook.grid(row=0, column=0, sticky="nswe", padx=(2, 10))
         notebook.columnconfigure(0, weight=1)
 
         # frame quotation
@@ -348,15 +419,22 @@ class QuotationsFrame(ttk.Frame):
             font=("Helvetica", 30, "bold"),
             columnspan=1,
         )
-        # ---------------------quotation selector---------------------------------
-        frame_quotation_selector = ttk.Frame(self)
-        frame_quotation_selector.grid(row=1, column=0, sticky="nswe")
+        # ---------------------Inputs and quotation selector---------------------------------
+        style_info_ins = "TFrame"
+        # bootstyle = style_info_ins.split(".")[0] + ".Inverse"
+        bootstyle = None
+        frame_ins = ttk.LabelFrame(self)
+        frame_ins.grid(row=1, column=0, sticky="nswe", padx=10)
+        frame_ins.columnconfigure(0, weight=1)
+        frame_quotation_selector = ttk.Frame(frame_ins, style=style_info_ins)
+        frame_quotation_selector.grid(row=0, column=0, sticky="nswe")
         frame_quotation_selector.columnconfigure(1, weight=1)
         create_label(
             frame_quotation_selector,
             0,
             0,
             text="Seleccion de cotizacion",
+            style=bootstyle,
         )
         quotations_list = [
             f"{item[0]}-{item[-2]}-{item[-1]}" for item in self.data_quotations
@@ -369,19 +447,23 @@ class QuotationsFrame(ttk.Frame):
             state="normal",
         )
         self.quoation_selector.bind("<<ComboboxSelected>>", self.quotation_selected)
-        # -----------------Inputs------------------------------
-        frame_inputs = ttk.Frame(self)
-        frame_inputs.grid(row=2, column=0, sticky="nswe")
-        entries_inf = create_input_info_widgets(frame_inputs, self.clients_data)
-        frame_products = ttk.Frame(self)
-        frame_products.grid(row=3, column=0, sticky="nswe")
-        entries_prod = create_input_widgets(frame_products, self.data_products)
+        frame_inputs = ttk.Frame(frame_ins, style=style_info_ins)
+        frame_inputs.grid(row=1, column=0, sticky="nswe")
+        frame_inputs.columnconfigure(0, weight=1)
+        entries_inf = create_input_info_widgets(
+            frame_inputs, self.clients_data, style=style_info_ins
+        )
+        frame_products = ttk.Frame(frame_ins, style=style_info_ins)
+        frame_products.grid(row=2, column=0, sticky="nswe")
+        entries_prod = create_input_widgets(
+            frame_products, self.data_products, style=style_info_ins
+        )
         self.entries = entries_inf + entries_prod
         self.product_selector = self.entries[6]
         self.product_selector.bind("<<ComboboxSelected>>", self.product_selected)
         # -----------------Buttons-----------------------------
         frame_buttons = ttk.Frame(self)
-        frame_buttons.grid(row=4, column=0, sticky="nswe")
+        frame_buttons.grid(row=2, column=0, sticky="nswe")
         frame_buttons.columnconfigure((0, 1, 2, 3, 4), weight=1)
         self.create_button_widgets(frame_buttons)
         # -----------------Table-------------------------------
@@ -634,7 +716,7 @@ class QuotationsFrame(ttk.Frame):
         end_action_quotations(msg, "Creacion de cotizacion", self.usernamedata)
         print(msg)
         self.reset_inputs()
-    
+
     def update_quotation(self):
         data_info = get_data_info_entries(self.entries)
         data_products = create_dict_products(self._products_input, type_q="quotation")
@@ -644,7 +726,11 @@ class QuotationsFrame(ttk.Frame):
                 data_quotation = item
                 break
         flag, error, result = update_procedure_quoation(
-            self.id_quotation, data_quotation, data_info, data_products, self.usernamedata
+            self.id_quotation,
+            data_quotation,
+            data_info,
+            data_products,
+            self.usernamedata,
         )
         if not flag:
             print(error)
@@ -653,7 +739,7 @@ class QuotationsFrame(ttk.Frame):
         end_action_quotations(msg, "Actualizacion de cotizacion", self.usernamedata)
         print(msg)
         self.reset_inputs()
-    
+
     def generate_pdf_quotation(self):
         print("pdf")
 
@@ -668,7 +754,7 @@ class QuotationsFrame(ttk.Frame):
         self._products_input = []
         self.id_product = None
         self.table_widgets = self.create_table_widgets()
-    
+
     def quotation_selected(self, event):
         data = event.widget.get().split("-")
         self.id_quotation = int(data[0])
