@@ -11,8 +11,6 @@ from werkzeug.utils import secure_filename
 from static.Models.api_inventory_models import (
     product_insert_model,
     product_delete_model,
-    categories_output_model,
-    suppliers_output_model,
     expected_files_almacen,
     ProductDeleteForm,
     ProductPostForm,
@@ -26,11 +24,10 @@ from static.Models.api_inventory_models import (
     file_barcode_request_model,
     FileBarcodeForm,
     file_barcode_multiple_request_model,
-    FileBarcodeMultipleForm, products_output_model,
+    FileBarcodeMultipleForm,
 )
 from static.Models.api_models import expected_headers_per
 from static.Models.api_movements_models import (
-    movements_output_model,
     movement_insert_model,
     movement_delete_model,
     MovementInsertForm,
@@ -66,7 +63,7 @@ ns = Namespace("GUI/api/v1/almacen")
 
 @ns.route("/movements/<string:type_m>")
 class GetMovements(Resource):
-    @ns.marshal_with(movements_output_model)
+    # @ns.marshal_with(movements_output_model)
     @ns.expect(expected_headers_per)
     def get(self, type_m):
         flag, data_token, msg = token_verification_procedure(
@@ -162,7 +159,7 @@ class MultipleMovementDB(Resource):
 
 @ns.route("/inventory/products/<string:type_p>")
 class InventoryProducts(Resource):
-    @ns.marshal_with(products_output_model)
+    # @ns.marshal_with(products_output_model)
     @ns.expect(expected_headers_per)
     def get(self, type_p):
         flag, data_token, msg = token_verification_procedure(
@@ -251,7 +248,7 @@ class InventoryMultipleProducts(Resource):
 
 @ns.route("/inventory/categories/all")
 class InventoryCategories(Resource):
-    @ns.marshal_with(categories_output_model)
+    # @ns.marshal_with(categories_output_model)
     @ns.expect(expected_headers_per)
     def get(self):
         flag, data_token, msg = token_verification_procedure(
@@ -265,7 +262,7 @@ class InventoryCategories(Resource):
 
 @ns.route("/inventory/suppliers/all")
 class InventorySuppliers(Resource):
-    @ns.marshal_with(suppliers_output_model)
+    # @ns.marshal_with(suppliers_output_model)
     @ns.expect(expected_headers_per)
     def get(self):
         flag, data_token, msg = token_verification_procedure(
