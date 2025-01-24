@@ -44,7 +44,10 @@ from templates.controllers.product.p_and_s_controller import (
     update_stock_db_ids,
     get_product_barcode_data,
 )
-from templates.controllers.supplier.suppliers_controller import get_all_suppliers_amc, update_brands_supplier
+from templates.controllers.supplier.suppliers_controller import (
+    get_all_suppliers_amc,
+    update_brands_supplier,
+)
 from templates.forms.BarCodeGenerator import (
     create_one_code,
     create_multiple_barcodes_products,
@@ -77,7 +80,9 @@ def get_all_movements(type_m: str):
                 "id_product": id_product,
                 "type_m": type_m,
                 "quantity": quantity,
-                "movement_date": movement_date,
+                "movement_date": movement_date.strftime(format_timestamps)
+                if movement_date is not None
+                else None,
                 "sm_id": sm_id,
                 "reference": reference,
             }
@@ -618,6 +623,8 @@ def get_suppliers_db():
             extra_info,
         ) = item
         extra_info = json.loads(extra_info) if extra_info is not None else {}
+        brands = extra_info.get("brands", [])
+        brands = json.loads(brands) if not isinstance(brands, list) else brands
         out.append(
             {
                 "id": id_supplier,
@@ -628,7 +635,7 @@ def get_suppliers_db():
                 "address": address,
                 "web_url": web_url,
                 "type": type_s,
-                "brands": extra_info.get("brands", []),
+                "brands": brands,
             }
         )
     return 200, out
@@ -872,9 +879,7 @@ def update_brand_procedure(data):
     flag, error, data_raw_providers = get_all_suppliers_amc()
     if not flag:
         return "Could not retrive suppliers list", None, None, 400
-    _providers_dict_amc, brands_dict = get_providers_dict(
-        data_raw_providers
-    )
+    _providers_dict_amc, brands_dict = get_providers_dict(data_raw_providers)
     supplier_name, brand = data.get("supplier_name", ""), data.get("brand", "")
     msg_list, _providers_dict_amc, brands_dict = update_brand_list(
         supplier_name, brand, _providers_dict_amc, brands_dict
