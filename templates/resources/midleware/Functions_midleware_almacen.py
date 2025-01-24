@@ -44,7 +44,7 @@ from templates.controllers.product.p_and_s_controller import (
     update_stock_db_ids,
     get_product_barcode_data,
 )
-from templates.controllers.supplier.suppliers_controller import get_all_suppliers_amc
+from templates.controllers.supplier.suppliers_controller import get_all_suppliers_amc, update_brands_supplier
 from templates.forms.BarCodeGenerator import (
     create_one_code,
     create_multiple_barcodes_products,
@@ -825,3 +825,58 @@ def create_pdf_barcode_multiple(data):
         kw, values = generate_default_configuration_barcodes(**general_format)
     create_multiple_barcodes_products(code_list, sku_list, name_list, **kw)
     return kw.get("filepath", file_codebar), 200
+
+
+def update_brand_list(supplier_name, brand_name, providers_dict_amc, brands_dict):
+    msg = ""
+    if supplier_name != "None" and supplier_name != "":
+        brands_list = brands_dict.get(supplier_name, [])
+        if brand_name.upper() not in brands_list:
+            supplier_id = providers_dict_amc.get(supplier_name, None)
+            if supplier_id is None:
+                print("Error, supplier id is None, not able to update brand")
+            else:
+                brands_dict[supplier_name] = brands_list
+                brands_list.append(brand_name.upper())
+                flag, error, result = update_brands_supplier(supplier_id, brands_list)
+                if not flag:
+                    print("Error, could not update brands supplier")
+                    msg += f"Error al actualizar marcas: {brands_list} para supplier_id {supplier_id} "
+                else:
+                    print("Brands supplier updated")
+                    msg += f"Marcas actualizadas: {brands_list} para supplier_id {supplier_id} "
+    return msg, providers_dict_amc, brands_dict
+
+
+def get_categories_dict(data_raw_cats):
+    # id_supplier, name
+    data = {}
+    for row in data_raw_cats:
+        data[row[1]] = row[0]
+    return data
+
+
+def get_providers_dict(data_raw_provider):
+    # id_supplier, name, seller_name, seller_email, phone, address, web_url, type, extra_info
+    data = {}
+    brand_dict = {}
+    for row in data_raw_provider:
+        data[row[1]] = row[0]
+        extra_info = json.loads(row[8])
+        brands = extra_info.get("brands", [])
+        brand_dict[row[1]] = brands if isinstance(brands, list) else json.loads(brands)
+    return data, brand_dict
+
+
+def update_brand_procedure(data):
+    flag, error, data_raw_providers = get_all_suppliers_amc()
+    if not flag:
+        return "Could not retrive suppliers list", None, None, 400
+    _providers_dict_amc, brands_dict = get_providers_dict(
+        data_raw_providers
+    )
+    supplier_name, brand = data.get("supplier_name", ""), data.get("brand", "")
+    msg_list, _providers_dict_amc, brands_dict = update_brand_list(
+        supplier_name, brand, _providers_dict_amc, brands_dict
+    )
+    return msg_list, _providers_dict_amc, brands_dict, 201

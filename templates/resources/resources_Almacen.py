@@ -56,6 +56,7 @@ from templates.resources.midleware.Functions_midleware_almacen import (
     create_pdf_barcode,
     create_pdf_barcode_multiple,
     create_file_inventory_excel,
+    update_brand_procedure,
 )
 
 ns = Namespace("GUI/api/v1/almacen")
@@ -186,9 +187,18 @@ class InventoryProduct(Resource):
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
         flag, data_out = insert_product_db(data)
+        msg_list, _providers_dict_amc, brands_dict = "", None, None
+        if flag:
+            (
+                msg_list,
+                _providers_dict_amc,
+                brands_dict,
+                code,
+            ) = update_brand_procedure(data)
+            msg_list = "" if code == 201 else msg_list
         return {
-            "data": data_out,
-            "msg": "Ok" if flag else "Error",
+            "data": {"id": data_out},
+            "msg": "Ok" + " \n" + msg_list if flag else "Error" + " \n" + msg_list,
         }, 201 if flag else 400
 
     @ns.expect(expected_headers_per, product_insert_model)
@@ -204,9 +214,18 @@ class InventoryProduct(Resource):
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
         flag, data_out = update_product_amc(data)
+        msg_list, _providers_dict_amc, brands_dict = "", None, None
+        if flag:
+            (
+                msg_list,
+                _providers_dict_amc,
+                brands_dict,
+                code,
+            ) = update_brand_procedure(data)
+            msg_list = "" if code == 201 else msg_list
         return {
             "data": str(data_out),
-            "msg": "Ok" if flag else "Error",
+            "msg": "Ok" + " \n" + msg_list if flag else "Error \n" + msg_list,
         }, 200 if flag else 400
 
     @ns.expect(expected_headers_per, product_delete_model)
