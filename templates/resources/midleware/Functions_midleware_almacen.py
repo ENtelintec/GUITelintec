@@ -195,6 +195,7 @@ def get_all_products_DB(type_p):
 
 def insert_product_db(data):
     if data["info"]["supplier_name"] is not None:
+        print(data["info"])
         flag, error, result = create_product_db(
             sku=data["info"]["sku"],
             name=data["info"]["name"],

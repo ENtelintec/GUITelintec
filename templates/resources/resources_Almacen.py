@@ -9,7 +9,6 @@ from flask_restx import Namespace, Resource
 from werkzeug.utils import secure_filename
 
 from static.Models.api_inventory_models import (
-    products_output_model,
     product_insert_model,
     product_delete_model,
     categories_output_model,
@@ -58,7 +57,8 @@ from templates.resources.midleware.Functions_midleware_almacen import (
     insert_and_update_multiple_products_from_api,
     insert_multiple_movements_from_api,
     create_pdf_barcode,
-    create_pdf_barcode_multiple, create_file_inventory_excel,
+    create_pdf_barcode_multiple,
+    create_file_inventory_excel,
 )
 
 ns = Namespace("GUI/api/v1/almacen")
@@ -162,7 +162,6 @@ class MultipleMovementDB(Resource):
 
 @ns.route("/inventory/products/<string:type_p>")
 class InventoryProducts(Resource):
-    @ns.marshal_with(products_output_model)
     @ns.expect(expected_headers_per)
     def get(self, type_p):
         flag, data_token, msg = token_verification_procedure(
