@@ -196,7 +196,6 @@ def get_all_products_DB(type_p):
 
 def insert_product_db(data):
     if data["info"]["supplier_name"] is not None:
-        print(data["info"])
         flag, error, result = create_product_db(
             sku=data["info"]["sku"],
             name=data["info"]["name"],
@@ -230,7 +229,6 @@ def insert_product_db(data):
 
 
 def update_product_amc(data):
-    print(data["info"])
     flag, error, result = update_product_db(
         id_product=data["info"]["id"],
         sku=data["info"]["sku"],
@@ -633,7 +631,6 @@ def get_suppliers_db():
                 "brands": extra_info.get("brands", []),
             }
         )
-        print(out[-1])
     return 200, out
 
 
