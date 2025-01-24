@@ -464,10 +464,17 @@ def delete_product_db(id_product):
     return flag, error, result
 
 
-def update_stock_db(id_product, stock):
-    update_sql = (
-        "UPDATE sql_telintec.products_amc " "SET stock = %s " "WHERE id_product = %s"
-    )
+def update_stock_db(id_product, stock, just_add=False):
+    if not just_add:
+        update_sql = (
+            "UPDATE sql_telintec.products_amc " "SET stock = %s " "WHERE id_product = %s"
+        )
+    else:
+        update_sql = (
+            "UPDATE sql_telintec.products_amc "
+            "SET stock = stock + %s "
+            "WHERE id_product = %s"
+        )
     vals = (stock, id_product)
     flag, error, result = execute_sql(update_sql, vals, 3)
     return flag, error, result

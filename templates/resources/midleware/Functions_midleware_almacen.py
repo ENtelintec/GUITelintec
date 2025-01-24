@@ -105,6 +105,10 @@ def insert_movement(data):
             data["info"]["quantity"],
             data["info"]["movement_date"],
             data["info"]["sm_id"],
+            data["info"]["reference"],
+        )
+        update_stock_db(
+            data["info"]["id_product"], -data["info"]["quantity"], just_add=True
         )
     else:
         flag, e, result = create_in_movement_db(
@@ -113,6 +117,10 @@ def insert_movement(data):
             data["info"]["quantity"],
             data["info"]["movement_date"],
             data["info"]["sm_id"],
+            data["info"]["reference"],
+        )
+        update_stock_db(
+            data["info"]["id_product"], data["info"]["quantity"], just_add=True
         )
     if not flag:
         return False, e
@@ -139,7 +147,7 @@ def update_movement(data):
     if data["info"]["sm_id"] == 0:
         data["info"]["sm_id"] = None
     flag, e, result = update_movement_db(
-        data["id"],
+        data["info"]["id"],
         data["info"]["quantity"],
         data["info"]["movement_date"],
         data["info"]["sm_id"],

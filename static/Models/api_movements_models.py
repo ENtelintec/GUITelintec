@@ -4,8 +4,8 @@ __date__ = "$ 03/may./2024  at 15:33 $"
 
 from flask_restx import fields
 
-from static.Models.api_models import date_filter, datetime_filter
-from static.constants import api, format_timestamps
+from static.Models.api_models import datetime_filter
+from static.constants import api, format_date
 from wtforms.fields.form import FormField
 from wtforms.fields.datetime import DateField
 from wtforms.fields.numeric import FloatField
@@ -23,14 +23,16 @@ movement_model = api.model(
         "type_m": fields.String(required=True, description="The movement type"),
         "quantity": fields.Float(required=True, description="The movement quantity"),
         "movement_date": fields.String(
-            required=True, description="The movement date", example="2024-04-03 10:01:59"
+            required=True,
+            description="The movement date",
+            example="2024-04-03 10:01:59",
         ),
         "sm_id": fields.Integer(
             required=True, description="The movement id", example=1
         ),
         "previous_q": fields.Float(required=True, description="The previous quantity"),
         "reference": fields.String(
-            required=False, description="The movement reference", example="reference"
+            required=True, description="The movement reference", example="reference"
         ),
     },
 )
@@ -101,13 +103,17 @@ class MovementForm(Form):
     type_m = StringField("type_m", validators=[InputRequired()])
     quantity = FloatField("quantity", validators=[], default=0.0)
     movement_date = DateField(
-        "movement_date", format=format_timestamps, validators=[InputRequired()], filters=[datetime_filter]
+        "movement_date",
+        format=format_date,
+        validators=[InputRequired()],
+        filters=[datetime_filter],
     )
     sm_id = IntegerField(
         "sm_id",
         validators=[NumberRange(min=0, message="Invalid sm id")],
     )
     previous_q = FloatField("previous_q", validators=[], default=0.0)
+    reference = StringField("reference", validators=[], default="update")
 
 
 class MovementInsertForm(Form):
