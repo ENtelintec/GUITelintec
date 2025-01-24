@@ -53,7 +53,7 @@ from templates.forms.BarCodeGenerator import (
     create_multiple_barcodes_products,
 )
 from templates.forms.Storage import InventoryStorage
-from templates.misc.Functions_Files import write_log_file
+from templates.misc.Functions_Files import write_log_file, extract_data_encuesta
 from templates.resources.methods.Aux_Inventory import (
     generate_default_configuration_barcodes,
     create_excel_file,
@@ -188,6 +188,9 @@ def get_all_products_DB(type_p):
         else:
             codes = []
         locations = json.loads(item[10])
+        extra_info = json.loads(item[11])
+        brand = extra_info.get("brand", "")
+        brand = brand if isinstance(brand, str) else ""
         out.append(
             {
                 "id": item[0],
@@ -201,7 +204,7 @@ def get_all_products_DB(type_p):
                 "is_internal": item[8],
                 "codes": codes,
                 "locations": locations,
-                "extra_info": json.loads(item[11]),
+                "brand": brand,
             }
         )
     return out, 200
