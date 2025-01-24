@@ -92,7 +92,7 @@ products_output_model = api.model(
     {
         "data": fields.List(fields.Nested(product_model_update)),
         "msg": fields.String(required=False, description="The message"),
-        "error":  fields.String(required=False, description="The error"),
+        "error": fields.String(required=False, description="The error"),
     },
 )
 
@@ -151,6 +151,9 @@ supplier_model = api.model(
         "address": fields.String(required=True, description="The supplier address"),
         "web_url": fields.String(required=True, description="The supplier web url"),
         "type": fields.String(required=True, description="The supplier type"),
+        "brands": fields.List(
+            fields.String, required=False, description="The supplier brans"
+        ),
     },
 )
 
@@ -159,7 +162,7 @@ suppliers_output_model = api.model(
     {
         "data": fields.List(fields.Nested(supplier_model)),
         "msg": fields.String(required=False, description="The message"),
-        "error": fields.String(required=False, description="The error")
+        "error": fields.String(required=False, description="The error"),
     },
 )
 

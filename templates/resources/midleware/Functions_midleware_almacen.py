@@ -616,6 +616,8 @@ def get_suppliers_db():
             type_s,
             extra_info,
         ) = item
+        extra_info = json.loads(extra_info) if extra_info is not None else {}
+
         out.append(
             {
                 "id": id_supplier,
@@ -626,8 +628,10 @@ def get_suppliers_db():
                 "address": address,
                 "web_url": web_url,
                 "type": type_s,
+                "brands": extra_info.get("brands", []),
             }
         )
+        print(out[-1])
     return 200, out
 
 
