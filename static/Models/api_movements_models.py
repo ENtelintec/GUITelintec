@@ -5,7 +5,7 @@ __date__ = "$ 03/may./2024  at 15:33 $"
 from flask_restx import fields
 
 from static.Models.api_models import datetime_filter
-from static.constants import api, format_date
+from static.constants import api, format_timestamps
 from wtforms.fields.form import FormField
 from wtforms.fields.datetime import DateField
 from wtforms.fields.numeric import FloatField
@@ -104,7 +104,7 @@ class MovementForm(Form):
     quantity = FloatField("quantity", validators=[], default=0.0)
     movement_date = DateField(
         "movement_date",
-        format=format_date,
+        format=format_timestamps,
         validators=[InputRequired()],
         filters=[datetime_filter],
     )
