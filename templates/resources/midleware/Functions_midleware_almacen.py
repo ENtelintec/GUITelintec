@@ -166,7 +166,7 @@ def get_all_products_DB(type_p):
         return [], 400
     out = []
     for item in result:
-        # (id_product, sku, name, udm, stock, category_name, supplier_name, is_tool, is_internal, codes) = item
+        # (id_product, sku, name, udm, stock, category_name, supplier_name, is_tool, is_internal, codes, locations, extra_info) = item
         codes_raw = json.loads(item[9])
         if isinstance(codes_raw, list):
             codes = codes_raw
@@ -188,6 +188,7 @@ def get_all_products_DB(type_p):
                 "is_internal": item[8],
                 "codes": codes,
                 "locations": locations,
+                "extra_info": json.loads(item[11]),
             }
         )
     return out, 200
