@@ -229,6 +229,7 @@ def insert_product_db(data):
 
 
 def update_product_amc(data):
+    print(data["info"])
     flag, error, result = update_product_db(
         id_product=data["info"]["id"],
         sku=data["info"]["sku"],

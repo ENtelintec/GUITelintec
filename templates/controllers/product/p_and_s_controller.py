@@ -295,8 +295,12 @@ def create_product_db(
         id_category = int(id_category) if id_category else None
         id_supplier = int(id_supplier) if id_supplier else None
         codes = codes if codes is not None else [{"tag": "sku_fabricante", "value": ""}]
-        locations = locations if locations is not None else {"location_1": "", "location_2": ""}
+        locations = (
+            locations if locations is not None else {"location_1": "", "location_2": ""}
+        )
+        print("brand: ", brand)
         extra_info = {"brand": brand} if brand is not None else {"brand": ""}
+        print(extra_info)
     except Exception as e:
         return False, str(e), None
     insert_sql = (
@@ -343,8 +347,11 @@ def update_product_db(
         id_category = int(id_category) if id_category else None
         id_supplier = int(id_supplier) if id_supplier else None
         codes = codes if codes is not None else [{"tag": "sku_fabricante", "value": ""}]
-        locations = locations if locations is not None else {"location_1": "", "location_2": ""}
+        locations = (
+            locations if locations is not None else {"location_1": "", "location_2": ""}
+        )
         brand = brand if brand is not None else ""
+        print("brand: ", brand)
     except Exception as e:
         return False, str(e), None
     update_sql = (
@@ -796,7 +803,11 @@ def update_stock_db_ids(ids: list, stocks: list):
     errors = []
     results = []
     for _id, stock in zip(ids, stocks):
-        sql = "UPDATE sql_telintec.products_amc " "SET stock = %s " "WHERE id_product = %s"
+        sql = (
+            "UPDATE sql_telintec.products_amc "
+            "SET stock = %s "
+            "WHERE id_product = %s"
+        )
         vals = (stock, _id)
         flag, error, result = execute_sql(sql, vals, 3)
         flags.append(flag)
@@ -944,9 +955,7 @@ def update_multiple_products_suppliers(products: tuple):
     results = []
     for product in products:
         sql = (
-            "UPDATE sql_telintec.products_amc "
-            "SET id_supplier = %s "
-            "WHERE sku = %s"
+            "UPDATE sql_telintec.products_amc " "SET id_supplier = %s " "WHERE sku = %s"
         )
         vals = (product[1], product[0])
         flag, error, result = execute_sql(sql, vals, 3)
@@ -984,9 +993,7 @@ def update_multiple_products_categories(products: tuple):
     results = []
     for product in products:
         sql = (
-            "UPDATE sql_telintec.products_amc "
-            "SET id_category = %s "
-            "WHERE sku = %s"
+            "UPDATE sql_telintec.products_amc " "SET id_category = %s " "WHERE sku = %s"
         )
         vals = (product[1], product[0])
         flag, error, result = execute_sql(sql, vals, 3)
