@@ -26,7 +26,7 @@ from static.Models.api_inventory_models import (
     file_barcode_request_model,
     FileBarcodeForm,
     file_barcode_multiple_request_model,
-    FileBarcodeMultipleForm,
+    FileBarcodeMultipleForm, products_output_model,
 )
 from static.Models.api_models import expected_headers_per
 from static.Models.api_movements_models import (
@@ -162,7 +162,7 @@ class MultipleMovementDB(Resource):
 
 @ns.route("/inventory/products/<string:type_p>")
 class InventoryProducts(Resource):
-    # @ns.marshal_with(products_output_model)
+    @ns.marshal_with(products_output_model)
     @ns.expect(expected_headers_per)
     def get(self, type_p):
         flag, data_token, msg = token_verification_procedure(

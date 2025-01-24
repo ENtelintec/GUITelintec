@@ -151,9 +151,7 @@ supplier_model = api.model(
         "address": fields.String(required=True, description="The supplier address"),
         "web_url": fields.String(required=True, description="The supplier web url"),
         "type": fields.String(required=True, description="The supplier type"),
-        "brands": fields.List(
-            fields.String, required=False, description="The supplier brans"
-        ),
+        "brands": fields.Raw(required=True, description="The supplier brands"),
     },
 )
 
