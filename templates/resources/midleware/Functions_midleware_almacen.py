@@ -617,7 +617,6 @@ def get_suppliers_db():
             extra_info,
         ) = item
         extra_info = json.loads(extra_info) if extra_info is not None else {}
-
         out.append(
             {
                 "id": id_supplier,
