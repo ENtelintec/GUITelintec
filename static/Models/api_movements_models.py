@@ -5,14 +5,14 @@ __date__ = "$ 03/may./2024  at 15:33 $"
 from flask_restx import fields
 
 from static.Models.api_models import datetime_filter
-from static.constants import api, format_timestamps
+from static.constants import api
 from wtforms.fields.form import FormField
-from wtforms.fields.datetime import DateField
+from wtforms.fields.datetime import DateTimeField
 from wtforms.fields.numeric import FloatField
 from wtforms.fields.simple import StringField
 from wtforms.form import Form
 from wtforms import IntegerField
-from wtforms.validators import InputRequired, NumberRange
+from wtforms.validators import InputRequired
 
 movement_model = api.model(
     "MovementAMC",
@@ -27,9 +27,7 @@ movement_model = api.model(
             description="The movement date",
             example="2024-04-03 10:01:59",
         ),
-        "sm_id": fields.Integer(
-            required=True, description="The movement id", example=1
-        ),
+        "sm_id": fields.String(required=True, description="The movement id", example=1),
         "previous_q": fields.Float(required=True, description="The previous quantity"),
         "reference": fields.String(
             required=True, description="The movement reference", example="reference"
@@ -102,15 +100,14 @@ class MovementForm(Form):
     )
     type_m = StringField("type_m", validators=[InputRequired()])
     quantity = FloatField("quantity", validators=[], default=0.0)
-    movement_date = DateField(
+    movement_date = DateTimeField(
         "movement_date",
-        format=format_timestamps,
         validators=[InputRequired()],
         filters=[datetime_filter],
     )
-    sm_id = IntegerField(
+    sm_id = StringField(
         "sm_id",
-        validators=[NumberRange(min=0, message="Invalid sm id")],
+        validators=[InputRequired()],
     )
     previous_q = FloatField("previous_q", validators=[], default=0.0)
     reference = StringField("reference", validators=[], default="update")

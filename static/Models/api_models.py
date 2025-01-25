@@ -90,7 +90,7 @@ employees_resume_model = api.model(
     "EmployeesResume",
     {
         "data": fields.List(fields.Nested(resume_model)),
-        "error": fields.String(required=False, description="The error message")
+        "error": fields.String(required=False, description="The error message"),
     },
 )
 
@@ -165,9 +165,7 @@ notification_request_model = api.model(
     {
         "data": fields.List(fields.Nested(notification_model)),
         "msg": fields.String(required=False, description="The message from the server"),
-        "error": fields.String(
-            required=False, description="The error from the server"
-        ),
+        "error": fields.String(required=False, description="The error from the server"),
     },
 )
 
@@ -198,9 +196,7 @@ response_av_model = api.model(
         ),
         "files": fields.List(fields.String(required=True, description="The files")),
         "id": fields.Integer(required=True, description="The id of the av chat"),
-        "error": fields.Raw(
-            required=False, description="The error from the server"
-        ),
+        "error": fields.Raw(required=False, description="The error from the server"),
     },
 )
 
@@ -240,9 +236,7 @@ response_files_av_model = api.model(
     "ResponseFilesAV",
     {
         "files": fields.List(fields.Nested(files_av_model)),
-        "error": fields.Raw(
-            required=False, description="The error from the server"
-        ),
+        "error": fields.Raw(required=False, description="The error from the server"),
     },
 )
 

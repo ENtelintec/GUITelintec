@@ -53,7 +53,7 @@ from templates.forms.BarCodeGenerator import (
     create_multiple_barcodes_products,
 )
 from templates.forms.Storage import InventoryStorage
-from templates.misc.Functions_Files import write_log_file, extract_data_encuesta
+from templates.misc.Functions_Files import write_log_file
 from templates.resources.methods.Aux_Inventory import (
     generate_default_configuration_barcodes,
     create_excel_file,
@@ -147,7 +147,7 @@ def update_movement(data):
     if data["info"]["sm_id"] == 0:
         data["info"]["sm_id"] = None
     flag, e, result = update_movement_db(
-        data["info"]["id"],
+        data["id"],
         data["info"]["quantity"],
         data["info"]["movement_date"],
         data["info"]["sm_id"],

@@ -33,6 +33,7 @@ from static.Models.api_movements_models import (
     MovementInsertForm,
     MovementDeleteForm,
     movement_update_model,
+    MovementUpdateForm,
 )
 from templates.controllers.product.p_and_s_controller import (
     delete_movement_db,
@@ -108,7 +109,7 @@ class MovementDB(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
-        validator = MovementInsertForm.from_json(ns.payload)
+        validator = MovementUpdateForm.from_json(ns.payload)
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
