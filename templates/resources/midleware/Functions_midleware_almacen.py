@@ -439,7 +439,14 @@ def insert_multiple_movements_from_api(data):
     time_zone = pytz.timezone(timezone_software)
     date = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps_tz)
     movements_aux = [
-        (item["id_product"], item["type_m"], item["quantity"], date, item["sm_id"])
+        (
+            item["id_product"],
+            item["type_m"],
+            item["quantity"],
+            date,
+            item["sm_id"],
+            item.get("reference"),
+        )
         for item in movements
     ]
     flag, error, result = insert_multiple_row_movements_amc(tuple(movements_aux))
@@ -449,18 +456,15 @@ def insert_multiple_movements_from_api(data):
         )
     else:
         data_out.append(f"Insert multiple movements success. Result: {result}")
-        stock_update = [
-            (
-                item["id_product"],
-                item["quantity"] + item["old_stock"]
-                if item["type_m"] == "entrada"
-                else item["old_stock"] - item["quantity"],
-            )
+        stock_update_ids = [item["id_product"] for item in movements]
+        stock_update_vals = [
+            item["quantity"] + item["old_stock"]
+            if item["type_m"] == "entrada"
+            else item["old_stock"] - item["quantity"]
             for item in movements
         ]
-        flag, error, result = update_stock_db_ids(
-            stock_update[0, :], stock_update[1, :]
-        )
+
+        flag, error, result = update_stock_db_ids(stock_update_ids, stock_update_vals)
         if not flag:
             data_out.append(
                 f"Update stock failed. Error: {str(error)}. Result: {result}"

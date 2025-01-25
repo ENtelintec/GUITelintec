@@ -467,7 +467,9 @@ def delete_product_db(id_product):
 def update_stock_db(id_product, stock, just_add=False):
     if not just_add:
         update_sql = (
-            "UPDATE sql_telintec.products_amc " "SET stock = %s " "WHERE id_product = %s"
+            "UPDATE sql_telintec.products_amc "
+            "SET stock = %s "
+            "WHERE id_product = %s"
         )
     else:
         update_sql = (
