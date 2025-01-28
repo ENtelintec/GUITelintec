@@ -44,7 +44,10 @@ from templates.controllers.product.p_and_s_controller import (
     update_stock_db_ids,
     get_product_barcode_data,
 )
-from templates.controllers.supplier.suppliers_controller import get_all_suppliers_amc
+from templates.controllers.supplier.suppliers_controller import (
+    get_all_suppliers_amc,
+    update_brands_supplier,
+)
 from templates.forms.BarCodeGenerator import (
     create_one_code,
     create_multiple_barcodes_products,
@@ -77,7 +80,9 @@ def get_all_movements(type_m: str):
                 "id_product": id_product,
                 "type_m": type_m,
                 "quantity": quantity,
-                "movement_date": movement_date,
+                "movement_date": movement_date.strftime(format_timestamps)
+                if movement_date is not None
+                else None,
                 "sm_id": sm_id,
                 "reference": reference,
             }
@@ -100,6 +105,10 @@ def insert_movement(data):
             data["info"]["quantity"],
             data["info"]["movement_date"],
             data["info"]["sm_id"],
+            data["info"]["reference"],
+        )
+        update_stock_db(
+            data["info"]["id_product"], -data["info"]["quantity"], just_add=True
         )
     else:
         flag, e, result = create_in_movement_db(
@@ -108,6 +117,10 @@ def insert_movement(data):
             data["info"]["quantity"],
             data["info"]["movement_date"],
             data["info"]["sm_id"],
+            data["info"]["reference"],
+        )
+        update_stock_db(
+            data["info"]["id_product"], data["info"]["quantity"], just_add=True
         )
     if not flag:
         return False, e
@@ -166,7 +179,7 @@ def get_all_products_DB(type_p):
         return [], 400
     out = []
     for item in result:
-        # (id_product, sku, name, udm, stock, category_name, supplier_name, is_tool, is_internal, codes) = item
+        # (id_product, sku, name, udm, stock, category_name, supplier_name, is_tool, is_internal, codes, locations, extra_info) = item
         codes_raw = json.loads(item[9])
         if isinstance(codes_raw, list):
             codes = codes_raw
@@ -175,6 +188,9 @@ def get_all_products_DB(type_p):
         else:
             codes = []
         locations = json.loads(item[10])
+        extra_info = json.loads(item[11])
+        brand = extra_info.get("brand", "")
+        brand = brand if isinstance(brand, str) else ""
         out.append(
             {
                 "id": item[0],
@@ -188,6 +204,7 @@ def get_all_products_DB(type_p):
                 "is_internal": item[8],
                 "codes": codes,
                 "locations": locations,
+                "brand": brand,
             }
         )
     return out, 200
@@ -422,7 +439,14 @@ def insert_multiple_movements_from_api(data):
     time_zone = pytz.timezone(timezone_software)
     date = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps_tz)
     movements_aux = [
-        (item["id_product"], item["type_m"], item["quantity"], date, item["sm_id"])
+        (
+            item["id_product"],
+            item["type_m"],
+            item["quantity"],
+            date,
+            item["sm_id"],
+            item.get("reference"),
+        )
         for item in movements
     ]
     flag, error, result = insert_multiple_row_movements_amc(tuple(movements_aux))
@@ -432,18 +456,15 @@ def insert_multiple_movements_from_api(data):
         )
     else:
         data_out.append(f"Insert multiple movements success. Result: {result}")
-        stock_update = [
-            (
-                item["id_product"],
-                item["quantity"] + item["old_stock"]
-                if item["type_m"] == "entrada"
-                else item["old_stock"] - item["quantity"],
-            )
+        stock_update_ids = [item["id_product"] for item in movements]
+        stock_update_vals = [
+            item["quantity"] + item["old_stock"]
+            if item["type_m"] == "entrada"
+            else item["old_stock"] - item["quantity"]
             for item in movements
         ]
-        flag, error, result = update_stock_db_ids(
-            stock_update[0, :], stock_update[1, :]
-        )
+
+        flag, error, result = update_stock_db_ids(stock_update_ids, stock_update_vals)
         if not flag:
             data_out.append(
                 f"Update stock failed. Error: {str(error)}. Result: {result}"
@@ -616,6 +637,9 @@ def get_suppliers_db():
             type_s,
             extra_info,
         ) = item
+        extra_info = json.loads(extra_info) if extra_info is not None else {}
+        brands = extra_info.get("brands", [])
+        brands = json.loads(brands) if not isinstance(brands, list) else brands
         out.append(
             {
                 "id": id_supplier,
@@ -626,6 +650,7 @@ def get_suppliers_db():
                 "address": address,
                 "web_url": web_url,
                 "type": type_s,
+                "brands": brands,
             }
         )
     return 200, out
@@ -822,3 +847,56 @@ def create_pdf_barcode_multiple(data):
         kw, values = generate_default_configuration_barcodes(**general_format)
     create_multiple_barcodes_products(code_list, sku_list, name_list, **kw)
     return kw.get("filepath", file_codebar), 200
+
+
+def update_brand_list(supplier_name, brand_name, providers_dict_amc, brands_dict):
+    msg = ""
+    if supplier_name != "None" and supplier_name != "":
+        brands_list = brands_dict.get(supplier_name, [])
+        if brand_name.upper() not in brands_list:
+            supplier_id = providers_dict_amc.get(supplier_name, None)
+            if supplier_id is None:
+                print("Error, supplier id is None, not able to update brand")
+            else:
+                brands_dict[supplier_name] = brands_list
+                brands_list.append(brand_name.upper())
+                flag, error, result = update_brands_supplier(supplier_id, brands_list)
+                if not flag:
+                    print("Error, could not update brands supplier")
+                    msg += f"Error al actualizar marcas: {brands_list} para supplier_id {supplier_id} "
+                else:
+                    print("Brands supplier updated")
+                    msg += f"Marcas actualizadas: {brands_list} para supplier_id {supplier_id} "
+    return msg, providers_dict_amc, brands_dict
+
+
+def get_categories_dict(data_raw_cats):
+    # id_supplier, name
+    data = {}
+    for row in data_raw_cats:
+        data[row[1]] = row[0]
+    return data
+
+
+def get_providers_dict(data_raw_provider):
+    # id_supplier, name, seller_name, seller_email, phone, address, web_url, type, extra_info
+    data = {}
+    brand_dict = {}
+    for row in data_raw_provider:
+        data[row[1]] = row[0]
+        extra_info = json.loads(row[8])
+        brands = extra_info.get("brands", [])
+        brand_dict[row[1]] = brands if isinstance(brands, list) else json.loads(brands)
+    return data, brand_dict
+
+
+def update_brand_procedure(data):
+    flag, error, data_raw_providers = get_all_suppliers_amc()
+    if not flag:
+        return "Could not retrive suppliers list", None, None, 400
+    _providers_dict_amc, brands_dict = get_providers_dict(data_raw_providers)
+    supplier_name, brand = data.get("supplier_name", ""), data.get("brand", "")
+    msg_list, _providers_dict_amc, brands_dict = update_brand_list(
+        supplier_name, brand, _providers_dict_amc, brands_dict
+    )
+    return msg_list, _providers_dict_amc, brands_dict, 201

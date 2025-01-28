@@ -92,7 +92,7 @@ products_output_model = api.model(
     {
         "data": fields.List(fields.Nested(product_model_update)),
         "msg": fields.String(required=False, description="The message"),
-        "error":  fields.String(required=False, description="The error"),
+        "error": fields.String(required=False, description="The error"),
     },
 )
 
@@ -132,34 +132,6 @@ categories_output_model = api.model(
         "data": fields.List(fields.Nested(category_model)),
         "msg": fields.String(required=False, description="The message"),
         "error": fields.String(required=False, description="The error"),
-    },
-)
-
-
-supplier_model = api.model(
-    "SupplierAMC",
-    {
-        "id": fields.Integer(required=True, description="The supplier id"),
-        "name": fields.String(required=True, description="The supplier name"),
-        "seller_email": fields.String(
-            required=True, description="The supplier seller email"
-        ),
-        "seller_name": fields.String(
-            required=True, description="The supplier seller name"
-        ),
-        "phone": fields.String(required=True, description="The supplier phone"),
-        "address": fields.String(required=True, description="The supplier address"),
-        "web_url": fields.String(required=True, description="The supplier web url"),
-        "type": fields.String(required=True, description="The supplier type"),
-    },
-)
-
-suppliers_output_model = api.model(
-    "SuppliersOutAMC",
-    {
-        "data": fields.List(fields.Nested(supplier_model)),
-        "msg": fields.String(required=False, description="The message"),
-        "error": fields.String(required=False, description="The error")
     },
 )
 

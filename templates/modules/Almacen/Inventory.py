@@ -47,7 +47,7 @@ from templates.resources.methods.Aux_Inventory import (
 )
 from templates.resources.midleware.Functions_midleware_almacen import (
     upload_product_db_from_file,
-    retrieve_data_file_inventory,
+    retrieve_data_file_inventory, update_brand_list, get_providers_dict, get_categories_dict,
 )
 
 
@@ -78,27 +78,6 @@ def get_row_data_inventory(data_raw):
             )
         )
     return data
-
-
-def get_providers_dict(data_raw):
-    # id_supplier, name, seller_name, seller_email, phone, address, web_url, type, extra_info
-    data = {}
-    brand_dict = {}
-    for row in data_raw:
-        data[row[1]] = row[0]
-        extra_info = json.loads(row[8])
-        brands = extra_info.get("brands", [])
-        brand_dict[row[1]] = brands if isinstance(brands, list) else json.loads(brands)
-    return data, brand_dict
-
-
-def get_categories_dict(data_raw):
-    # id_supplier, name
-    data = {}
-    for row in data_raw:
-        data[row[1]] = row[0]
-    return data
-    pass
 
 
 def create_input_widgets(
@@ -232,27 +211,6 @@ def create_btns(master, callbacks):
         command=callbacks.get("generate_code_callback", None),
         style="primary",
     )
-
-
-def update_brand_list(supplier_name, brand_name, providers_dict_amc, brands_dict):
-    msg = ""
-    if supplier_name != "None" and supplier_name != "":
-        brands_list = brands_dict.get(supplier_name, [])
-        if brand_name.upper() not in brands_list:
-            supplier_id = providers_dict_amc.get(supplier_name, None)
-            if supplier_id is None:
-                print("Error, supplier id is None, not able to update brand")
-            else:
-                brands_dict[supplier_name] = brands_list
-                brands_list.append(brand_name.upper())
-                flag, error, result = update_brands_supplier(supplier_id, brands_list)
-                if not flag:
-                    print("Error, could not update brands supplier")
-                    msg += f"Error al actualizar marcas: {brands_list} para supplier_id {supplier_id} "
-                else:
-                    print("Brands supplier updated")
-                    msg += f"Marcas actualizadas: {brands_list} para supplier_id {supplier_id} "
-    return msg, providers_dict_amc, brands_dict
 
 
 class InventoryScreen(ttk.Frame):

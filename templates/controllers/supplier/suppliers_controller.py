@@ -85,7 +85,7 @@ def get_all_suppliers_amc():
     return flag, error, result
 
 
-def create_supplier_amc(
+def create_supplier_brands_amc(
     name_provider,
     seller_provider,
     email_provider,
@@ -122,7 +122,44 @@ def create_supplier_amc(
     return flag, error, result
 
 
-def update_supplier_amc(
+def create_supplier_amc(
+    name_provider,
+    seller_provider,
+    email_provider,
+    phone_provider,
+    address_provider,
+    web_provider,
+    type_provider,
+    extra_info: dict,
+):
+    name_provider = str(name_provider)
+    seller_provider = str(seller_provider)
+    email_provider = str(email_provider)
+    phone_provider = str(phone_provider)
+    address_provider = str(address_provider)
+    web_provider = str(web_provider)
+    type_provider = str(type_provider)
+    extra_info = json.dumps(extra_info) if extra_info else json.dumps({"brands": []})
+    insert_sql = (
+        "INSERT INTO sql_telintec.suppliers_amc "
+        "(name, seller_name, seller_email, phone, address, web_url, type, extra_info) "
+        "VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
+    )
+    vals = (
+        name_provider,
+        seller_provider,
+        email_provider,
+        phone_provider,
+        address_provider,
+        web_provider,
+        type_provider,
+        extra_info,
+    )
+    flag, error, result = execute_sql(insert_sql, vals, 4)
+    return flag, error, result
+
+
+def update_supplier_brands_amc(
     id_provider,
     name_provider,
     seller_provider,
@@ -156,6 +193,46 @@ def update_supplier_amc(
         web_provider,
         type_provider,
         json.dumps(brands),
+        id_provider,
+    )
+    flag, error, result = execute_sql(update_sql, vals, 3)
+    return flag, error, result
+
+
+def update_supplier_amc(
+    id_provider,
+    name_provider,
+    seller_provider,
+    email_provider,
+    phone_provider,
+    address_provider,
+    web_provider,
+    type_provider,
+    extra_info: dict,
+):
+    name_provider = str(name_provider)
+    seller_provider = str(seller_provider)
+    email_provider = str(email_provider)
+    phone_provider = str(phone_provider)
+    address_provider = str(address_provider)
+    web_provider = str(web_provider)
+    type_provider = str(type_provider)
+    extra_info = json.dumps(extra_info) if extra_info else "{}"
+    update_sql = (
+        "UPDATE sql_telintec.suppliers_amc "
+        "SET name = %s, seller_name = %s, seller_email = %s, phone = %s, address = %s, web_url = %s, type = %s, "
+        " extra_info = %s "
+        "WHERE id_supplier = %s"
+    )
+    vals = (
+        name_provider,
+        seller_provider,
+        email_provider,
+        phone_provider,
+        address_provider,
+        web_provider,
+        type_provider,
+        extra_info,
         id_provider,
     )
     flag, error, result = execute_sql(update_sql, vals, 3)

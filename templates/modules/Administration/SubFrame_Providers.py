@@ -13,8 +13,8 @@ from templates.Functions_GUI_Utils import (
 from templates.Functions_Utils import create_notification_permission_notGUI
 from templates.controllers.product.p_and_s_controller import get_all_suppliers
 from templates.controllers.supplier.suppliers_controller import (
-    create_supplier_amc,
-    update_supplier_amc,
+    create_supplier_brands_amc,
+    update_supplier_brands_amc,
     delete_supplier_amc,
 )
 from templates.misc.Functions_Files import write_log_file
@@ -152,7 +152,7 @@ class ProvidersScreen(ttk.Frame):
 
     def create_provider(self):
         data = self.get_entries_values()
-        flag, error, lastrowid = create_supplier_amc(
+        flag, error, lastrowid = create_supplier_brands_amc(
             data[1], data[2], data[3], data[4], data[5], data[6], data[7]
         )
         if not flag:
@@ -165,7 +165,7 @@ class ProvidersScreen(ttk.Frame):
 
     def update_provider(self):
         data = self.get_entries_values()
-        flag, error, result = update_supplier_amc(
+        flag, error, result = update_supplier_brands_amc(
             data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]
         )
         if not flag:
