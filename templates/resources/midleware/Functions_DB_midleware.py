@@ -173,7 +173,7 @@ def get_vacations_employee(emp_id: int):
     out = {
         "emp_id": result[0],
         "name": result[1].upper() + " " + result[2].upper(),
-        "date_admission": result[3],
+        "date_admission": result[3].strftime(format_date),
         "seniority": seniority,
     }
     return out, 200

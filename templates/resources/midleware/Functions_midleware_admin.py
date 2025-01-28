@@ -10,10 +10,22 @@ from templates.controllers.contracts.contracts_controller import (
     get_contract_from_abb,
 )
 from templates.controllers.contracts.quotations_controller import get_quotation
-from templates.controllers.customer.customers_controller import get_customer_amc_by_id
+from templates.controllers.customer.customers_controller import (
+    get_customer_amc_by_id,
+    get_all_customers_db,
+    create_customer_db,
+    update_customer_db,
+    delete_customer_db,
+)
 from templates.controllers.material_request.sm_controller import get_folios_by_pattern
 from templates.controllers.purchases.purchases_admin_controller import (
     get_purchases_admin_db,
+)
+from templates.controllers.supplier.suppliers_controller import (
+    create_supplier_amc,
+    update_supplier_amc,
+    delete_supplier_amc,
+    get_all_suppliers_amc,
 )
 from templates.resources.methods.Functions_Aux_Admin import (
     read_file_tenium_contract,
@@ -275,3 +287,121 @@ def get_data_table_purchases(data):
     ]
 
     return {"data": data_out, "columns": columns, "msg": "Ok"}, 200
+
+
+def get_all_clients_data():
+    flag, error, data = get_all_customers_db()
+
+    if not flag:
+        return {"data": [], "msg": str(error)}, 400
+    data_out = []
+    for item in data:
+        data_out.append(
+            {
+                "id": item[0],
+                "name": item[1],
+                "email": item[2],
+                "phone": item[3],
+                "rfc": item[4],
+                "address": item[5],
+            }
+        )
+    return {"data": data_out, "msg": "Ok"}, 200
+
+
+def insert_customer(data):
+    flag, error, result = create_customer_db(
+        data.get("name").upper(),
+        data.get("email").upper(),
+        data.get("phone"),
+        data.get("rfc").upper(),
+        data.get("address"),
+    )
+    if not flag:
+        return {"data": None, "msg": str(error)}, 400
+    return {"data": result, "msg": "Ok"}, 201
+
+
+def update_customer(data):
+    flag, error, result = update_customer_db(
+        data.get("id"),
+        data.get("name").upper(),
+        data.get("email").upper(),
+        data.get("phone"),
+        data.get("rfc").upper(),
+        data.get("address"),
+    )
+    if not flag:
+        return {"data": None, "msg": str(error)}, 400
+    return {"data": result, "msg": "Ok"}, 200
+
+
+def delete_customer(data):
+    flag, error, result = delete_customer_db(data.get("id"))
+    if not flag:
+        return {"data": None, "msg": str(error)}, 400
+    return {"data": result, "msg": "Ok"}, 200
+
+
+def get_all_suppliers_data():
+    flag, error, data = get_all_suppliers_amc()
+    if not flag:
+        return {"data": [], "msg": str(error)}, 400
+    data_out = []
+    for item in data:
+        extra_info = json.loads(item[8])
+        data_out.append(
+            {
+                "id": item[0],
+                "name": item[1],
+                "seller_name": item[2],
+                "email": item[3],
+                "phone": item[4],
+                "address": item[5],
+                "web_url": item[6],
+                "type": item[7],
+                "brands": extra_info.get("brands", []),
+            }
+        )
+    return {"data": data_out, "msg": "Ok"}, 200
+
+
+def insert_supplier(data):
+    # name, seller_name, seller_email, phone, address, web_url, type, extra_info
+    flag, error, result = create_supplier_amc(
+        data.get("name").upper(),
+        data.get("seller_name").upper(),
+        data.get("email").upper(),
+        data.get("phone"),
+        data.get("address"),
+        data.get("web_url"),
+        data.get("type"),
+        data.get("extra_info"),
+    )
+    if not flag:
+        return {"data": None, "msg": str(error)}, 400
+    return {"data": result, "msg": "Ok"}, 201
+
+
+def update_supplier(data):
+    flag, error, result = update_supplier_amc(
+        data.get("id"),
+        data.get("name").upper(),
+        data.get("seller_name").upper(),
+        data.get("email").upper(),
+        data.get("phone"),
+        data.get("address"),
+        data.get("web_url"),
+        data.get("type"),
+        data.get("extra_info"),
+    )
+    if not flag:
+        return {"data": None, "msg": str(error)}, 400
+    return {"data": result, "msg": "Ok"}, 200
+
+
+def delete_supplier(data):
+    flag, error, result = delete_supplier_amc(data.get("id"))
+    if not flag:
+        return {"data": None, "msg": str(error)}, 400
+    return {"data": result, "msg": "Ok"}, 200

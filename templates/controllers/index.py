@@ -24,8 +24,8 @@ from templates.controllers.product.p_and_s_controller import (
     get_ins_db,
 )
 from templates.controllers.supplier.suppliers_controller import (
-    create_supplier_amc,
-    update_supplier_amc,
+    create_supplier_brands_amc,
+    update_supplier_brands_amc,
     delete_supplier_amc,
 )
 
@@ -62,8 +62,8 @@ class DataHandler:
         }
         self._supplier = {
             "getAllSuppliers": get_all_suppliers,
-            "createSupplier": create_supplier_amc,
-            "updateSupplier": update_supplier_amc,
+            "createSupplier": create_supplier_brands_amc,
+            "updateSupplier": update_supplier_brands_amc,
             "deleteSupplier": delete_supplier_amc,
         }
 
@@ -145,7 +145,7 @@ class DataHandler:
         is_tool=0,
         is_internal=0,
         codes=None,
-        locations=None
+        locations=None,
     ):
         if id_supplier is not None:
             function = self._product["createProduct"]
@@ -159,7 +159,7 @@ class DataHandler:
                 is_tool,
                 is_internal,
                 codes,
-                locations
+                locations,
             )
             return result if flag else str(error)
         else:
