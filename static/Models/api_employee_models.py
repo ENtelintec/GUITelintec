@@ -242,7 +242,7 @@ class EmployeeInputForm(Form):
     phone = StringField("phone", validators=[InputRequired()])
     dep = IntegerField("dep", validators=[InputRequired()])
     modality = StringField("modality", validators=[InputRequired()])
-    email = EmailField("email", validators=[InputRequired()])
+    email = StringField("email", validators=[InputRequired()])
     contract = StringField("contract", validators=[InputRequired()])
     admission = DateField(
         "admission", validators=[InputRequired()], filters=[date_filter]
