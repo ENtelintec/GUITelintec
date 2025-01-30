@@ -75,11 +75,11 @@ supplier_delete_model = api.model(
 
 class ClientInsertForm(Form):
     name = StringField("name", validators=[InputRequired(message="Name is required")])
-    email = EmailField("email", validators=[InputRequired(message="Email is required")])
+    email = EmailField("email", validators=[], default="None")
     phone = StringField(
         "phone", validators=[InputRequired(message="Phone is required")]
     )
-    rfc = StringField("rfc", validators=[InputRequired(message="RFC is required")])
+    rfc = StringField("rfc", validators=[], default="None")
     address = StringField(
         "address", validators=[InputRequired(message="Address is required")]
     )
@@ -88,11 +88,11 @@ class ClientInsertForm(Form):
 class ClientUpdateForm(Form):
     id = IntegerField("id", validators=[InputRequired(message="Id is required")])
     name = StringField("name", validators=[InputRequired(message="Name is required")])
-    email = EmailField("email", validators=[InputRequired(message="Email is required")])
+    email = EmailField("email", validators=[], default="None")
     phone = StringField(
         "phone", validators=[InputRequired(message="Phone is required")]
     )
-    rfc = StringField("rfc", validators=[InputRequired(message="RFC is required")])
+    rfc = StringField("rfc", validators=[], default="None")
     address = StringField(
         "address", validators=[InputRequired(message="Address is required")]
     )
@@ -111,9 +111,7 @@ class ExtraInfoSupplierForm(Form):
 
 class SupplierInsertForm(Form):
     name = StringField("name", validators=[InputRequired(message="Name is required")])
-    seller_name = StringField(
-        "seller_name", validators=[], default="None"
-    )
+    seller_name = StringField("seller_name", validators=[], default="None")
     email = EmailField("email", validators=[InputRequired(message="Email is required")])
     phone = StringField(
         "phone", validators=[InputRequired(message="Phone is required")]
@@ -125,15 +123,13 @@ class SupplierInsertForm(Form):
         "web_url", validators=[InputRequired(message="Web url is required")]
     )
     type = StringField("type", validators=[InputRequired(message="Type is required")])
-    extra_info = FormField(ExtraInfoSupplierForm,  "extra_info")
+    extra_info = FormField(ExtraInfoSupplierForm, "extra_info")
 
 
 class SupplierUpdateForm(Form):
     id = IntegerField("id", validators=[InputRequired(message="Id is required")])
     name = StringField("name", validators=[InputRequired(message="Name is required")])
-    seller_name = StringField(
-        "seller_name", validators=[], default="None"
-    )
+    seller_name = StringField("seller_name", validators=[], default="None")
     email = EmailField("email", validators=[InputRequired(message="Email is required")])
     phone = StringField(
         "phone", validators=[InputRequired(message="Phone is required")]
@@ -145,7 +141,7 @@ class SupplierUpdateForm(Form):
         "web_url", validators=[InputRequired(message="Web url is required")]
     )
     type = StringField("type", validators=[InputRequired(message="Type is required")])
-    extra_info = FormField(ExtraInfoSupplierForm,  "extra_info")
+    extra_info = FormField(ExtraInfoSupplierForm, "extra_info")
 
 
 class SupplierDeleteForm(Form):

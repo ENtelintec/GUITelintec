@@ -11,7 +11,10 @@ from static.Models.api_clients_suppliers_models import (
     ClientInsertForm,
     ClientUpdateForm,
     supplier_delete_model,
-    supplier_model, SupplierDeleteForm, SupplierUpdateForm, SupplierInsertForm,
+    supplier_model,
+    SupplierDeleteForm,
+    SupplierUpdateForm,
+    SupplierInsertForm,
 )
 from static.Models.api_models import expected_headers_per
 from templates.resources.methods.Functions_Aux_Login import token_verification_procedure
@@ -19,7 +22,11 @@ from templates.resources.midleware.Functions_midleware_admin import (
     get_all_clients_data,
     insert_customer,
     delete_customer,
-    update_customer, get_all_suppliers_data,
+    update_customer,
+    get_all_suppliers_data,
+    update_supplier,
+    insert_supplier,
+    delete_supplier,
 )
 
 ns = Namespace("GUI/api/v1/admin/db")
@@ -110,7 +117,7 @@ class SupplierDB(Resource):
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
-        data, code = insert_customer(data)
+        data, code = insert_supplier(data)
         return data, code
 
     @ns.expect(expected_headers_per, supplier_model)
@@ -124,7 +131,7 @@ class SupplierDB(Resource):
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
-        data, code = update_customer(data)
+        data, code = update_supplier(data)
         return data, code
 
     @ns.expect(expected_headers_per, supplier_delete_model)
@@ -138,5 +145,5 @@ class SupplierDB(Resource):
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
-        data, code = delete_customer(data)
+        data, code = delete_supplier(data)
         return data, code
