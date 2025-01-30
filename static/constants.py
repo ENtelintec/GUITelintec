@@ -68,7 +68,8 @@ path_contract_files = "files/contracts"
 filepath_bitacora_download = "files/quizz_out/temp_bitacora.csv"
 filepath_inventory_form = "files/inventory_temp.pdf"
 filepath_inventory_form_excel = "files/inventory_temp.xlsx"
-filepath_inventory_form_movements = "files/movements_temp.pdf"
+filepath_inventory_form_movements_pdf = "files/movements_temp.pdf"
+filepath_inventory_form_movements_excel = "files/movements_temp.xlsx"
 patterns_files_fichaje = ["Fichaje", "Ternium"]
 department_tools_openAI = {
     "director": "files/tools_AV_default.json",
@@ -164,6 +165,6 @@ dict_deps = {
     "Otros": 7,
 }
 format_timestamps_filename = "%Y-%m-%d"
-HOST_DB_DEFAULT = "HOST_DB"
-USER_DB_DEFAULT = "USER_SQL"
-PASS_DB_DEFAULT = "PASS_SQL"
+HOST_DB_DEFAULT = "HOST_DB_AWS"
+USER_DB_DEFAULT = "USER_SQL_AWS"
+PASS_DB_DEFAULT = "PASS_SQL_AWS"

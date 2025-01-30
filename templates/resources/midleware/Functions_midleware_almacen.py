@@ -11,13 +11,14 @@ import pytz
 from static.constants import (
     format_timestamps,
     filepath_inventory_form,
-    filepath_inventory_form_movements,
+    filepath_inventory_form_movements_pdf,
     format_date,
     file_codebar,
     timezone_software,
     format_timestamps_tz,
     log_file_almacen,
     filepath_inventory_form_excel,
+    filepath_inventory_form_movements_excel,
 )
 from templates.Functions_Utils import create_notification_permission_notGUI
 from templates.controllers.product.p_and_s_controller import (
@@ -783,7 +784,7 @@ def create_file_inventory_excel():
     return filepath_inventory_form_excel, 200
 
 
-def create_file_movements_amc(data):
+def retrieve_data_movement_file(data, complete=False):
     type_m = data["type"]
     match type_m:
         case "entrada":
@@ -798,34 +799,70 @@ def create_file_movements_amc(data):
         movements = []
         for item in _movements:
             date = item[5]
+            if not date:
+                continue
+            # print(date, date_init, date_end)
             if date < date_init or date > date_end:
                 continue
-            movements.append(
-                (
-                    item[2],
-                    date.strftime(format_date),
-                    item[7],
-                    item[8],
-                    item[9],
-                    f"{item[3]}: {item[4]}",
-                    item[6],
-                    "",
-                    f"{json.loads(item[10])['location_1']}: {json.loads(item[10])['location_2']}",
-                )
-            )
+            aux = [
+                item[0],
+                item[1],
+                item[2],
+                date.strftime(format_date),
+                item[7],
+                item[8],
+                item[9],
+                f"{item[3]}: {item[4]}",
+                item[6],
+                "",
+                f"{json.loads(item[10])['location_1']}: {json.loads(item[10]).get('location_2')}",
+            ]
+            movements.append(aux[2:] if not complete else aux)
     except Exception as e:
         print(e)
         return None, 400
     # sort by ID
     movements.sort(key=lambda x: x[1])
-    flag = InventoryStorage(
-        dict_data={
-            "filename_out": filepath_inventory_form_movements,
-            "products": movements,
-        },
-        type_form="Movements",
-    )
-    return (filepath_inventory_form_movements, 200) if flag else (None, 400)
+    return movements, 200
+
+
+def create_file_movements_amc(data, type_file="pdf"):
+    flag = False
+    filepath = None
+    if type_file == "pdf":
+        movements, code = retrieve_data_movement_file(data)
+        if code != 200:
+            return None, 400
+        flag = InventoryStorage(
+            dict_data={
+                "filename_out": filepath_inventory_form_movements_pdf,
+                "products": movements,
+            },
+            type_form="Movements",
+        )
+        filepath = filepath_inventory_form_movements_pdf
+    elif type_file == "excel":
+        movements, code = retrieve_data_movement_file(data, complete=True)
+        if code != 200:
+            return None, 400
+        columns = [
+            "ID Movement",
+            "ID Product",
+            "Codigo",
+            "Fecha",
+            "Descripción",
+            "UDM",
+            "Fabricante",
+            "Movimiento",
+            "SM",
+            "Observaciones",
+            "Ubicacion",
+        ]
+        df = pd.DataFrame(movements, columns=columns)
+        df.to_excel(filepath_inventory_form_movements_excel, index=False)
+        flag = True
+        filepath = filepath_inventory_form_movements_excel
+    return (filepath, 200) if flag else (None, 400)
 
 
 def create_pdf_barcode(data):

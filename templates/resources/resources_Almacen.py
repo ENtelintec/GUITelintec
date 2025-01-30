@@ -310,7 +310,7 @@ class GenerateCode(Resource):
         return {"data": data_out, "msg": "Ok" if code == 200 else "Error"}, code
 
 
-@ns.route("/inventory/file/upload/regular")
+@ns.route("/file/upload/regular")
 class UploadInventoryeFile(Resource):
     @ns.expect(expected_headers_per, expected_files_almacen)
     def post(self):
@@ -338,7 +338,7 @@ class UploadInventoryeFile(Resource):
             return {"msg": "No se subio el archivo"}, 400
 
 
-@ns.route("/inventory/file/upload/tool")
+@ns.route("/file/upload/tool")
 class UploadInventoryeFileTool(Resource):
     @ns.expect(expected_headers_per, expected_files_almacen)
     def post(self):
@@ -368,7 +368,7 @@ class UploadInventoryeFileTool(Resource):
             return {"msg": "No se subio el archivo"}, 400
 
 
-@ns.route("/inventory/file/upload/internal")
+@ns.route("/file/upload/internal")
 class UploadInventoryeFileInternal(Resource):
     @ns.expect(expected_headers_per, expected_files_almacen)
     def post(self):
@@ -398,7 +398,7 @@ class UploadInventoryeFileInternal(Resource):
             return {"msg": "No se subio el archivo"}, 400
 
 
-@ns.route("/inventory/file/download/products/pdf")
+@ns.route("/file/download/products/pdf")
 class DownloadInventoryFilePDF(Resource):
     @ns.expect(expected_headers_per)
     def get(self):
@@ -413,7 +413,7 @@ class DownloadInventoryFilePDF(Resource):
         return send_file(filepath, as_attachment=True)
 
 
-@ns.route("/inventory/file/download/products/excel")
+@ns.route("/file/download/products/excel")
 class DownloadInventoryFileExcel(Resource):
     @ns.expect(expected_headers_per)
     def get(self):
@@ -428,8 +428,8 @@ class DownloadInventoryFileExcel(Resource):
         return send_file(filepath, as_attachment=True)
 
 
-@ns.route("/inventory/file/download/movements")
-class DownloadMovementsFile(Resource):
+@ns.route("/file/download/movements/pdf")
+class DownloadMovementsFilePDF(Resource):
     @ns.expect(expected_headers_per, file_movements_request_model)
     def post(self):
         flag, data_token, msg = token_verification_procedure(
@@ -448,7 +448,27 @@ class DownloadMovementsFile(Resource):
         return send_file(filepath, as_attachment=True)
 
 
-@ns.route("/inventory/file/download/barcode")
+@ns.route("/file/download/movements/excel")
+class DownloadMovementsFileExcel(Resource):
+    @ns.expect(expected_headers_per, file_movements_request_model)
+    def post(self):
+        flag, data_token, msg = token_verification_procedure(
+            request, department="almacen"
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        # noinspection PyUnresolvedReferences
+        validator = FileMovementsForm.from_json(ns.payload)
+        if not validator.validate():
+            return {"data": validator.errors, "msg": "Error at structure"}, 400
+        data = validator.data
+        filepath, code = create_file_movements_amc(data, type_file="excel")
+        if code != 200:
+            return {"data": filepath, "msg": "Error at creating file"}, 400
+        return send_file(filepath, as_attachment=True)
+
+
+@ns.route("/file/download/barcode")
 class DownloadBarcodeFile(Resource):
     @ns.expect(expected_headers_per, file_barcode_request_model)
     def post(self):
@@ -470,7 +490,7 @@ class DownloadBarcodeFile(Resource):
         )
 
 
-@ns.route("/inventory/file/download/barcode/multiple")
+@ns.route("/file/download/barcode/multiple")
 class DownloadMultipleBarcodeFile(Resource):
     @ns.expect(expected_headers_per, file_barcode_multiple_request_model)
     def post(self):
