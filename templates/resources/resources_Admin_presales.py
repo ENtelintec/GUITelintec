@@ -309,7 +309,7 @@ class FolioTernium(Resource):
     @ns.expect(expected_headers_per)
     def get(self, contract):
         flag, data_token, msg = token_verification_procedure(
-            request, department="administracion"
+            request, department=["administracion", "almacen"]
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -322,7 +322,7 @@ class FolioCotfc(Resource):
     @ns.expect(expected_headers_per)
     def get(self, key):
         flag, data_token, msg = token_verification_procedure(
-            request, department="administracion"
+            request, department=["administracion", "almacen"]
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401

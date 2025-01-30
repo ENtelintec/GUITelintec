@@ -43,6 +43,7 @@ from templates.controllers.product.p_and_s_controller import (
     update_multiple_row_products_amc,
     update_stock_db_ids,
     get_product_barcode_data,
+    get_last_sku,
 )
 from templates.controllers.supplier.suppliers_controller import (
     get_all_suppliers_amc,
@@ -72,7 +73,18 @@ def get_all_movements(type_m: str):
     if not flag:
         return ["error at retrieving data"], 400
     for item in result:
-        id_m, id_product, type_m, quantity, movement_date, sm_id, reference = item
+        print(item)
+        (
+            id_m,
+            id_product,
+            type_m,
+            quantity,
+            movement_date,
+            sm_id,
+            reference,
+            sku,
+            supplier,
+        ) = item
         reference = json.loads(reference) if reference is not None else None
         out.append(
             {
@@ -85,6 +97,8 @@ def get_all_movements(type_m: str):
                 else None,
                 "sm_id": sm_id,
                 "reference": reference,
+                "sku": sku,
+                "supplier": supplier,
             }
         )
     return out, 200
@@ -900,3 +914,22 @@ def update_brand_procedure(data):
         supplier_name, brand, _providers_dict_amc, brands_dict
     )
     return msg_list, _providers_dict_amc, brands_dict, 201
+
+
+def get_new_code_products():
+    # code = "1001xxxxxxx"
+    code_length = 11
+    prefix = "1001"
+    flag, error, result = get_last_sku()
+    out = 0
+    for item in result:
+        number = item[0][len(prefix) :]
+        try:
+            int(number)
+        except ValueError:
+            print(f"Error, not a number: {number}")
+            continue
+        if number.isdigit():
+            out = max(out, int(number))
+    out_text = prefix + str(out + 1).zfill(code_length - len(prefix))
+    return out_text, 200

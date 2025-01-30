@@ -204,13 +204,17 @@ def get_movements_type_db(type_m: str):
     sql = (
         "SELECT "
         "id_movement, "
-        "id_product, "
+        "products_amc.id_product, "
         "movement_type, "
         "quantity, "
         "movement_date, "
         "sm_id, "
-        "extra_info->'$.reference' "
+        "products_amc.extra_info->'$.reference', "
+        "sku, "
+        "suppliers_amc.name "
         "FROM sql_telintec.product_movements_amc "
+        "INNER JOIN sql_telintec.products_amc ON (sql_telintec.products_amc.id_product = sql_telintec.product_movements_amc.id_product)"
+        "INNER JOIN sql_telintec.suppliers_amc ON (sql_telintec.products_amc.id_supplier = sql_telintec.suppliers_amc.id_supplier)"
         "WHERE movement_type LIKE %s "
     )
     vals = (type_m,)
@@ -403,6 +407,12 @@ def create_product_db_admin(sku, name, udm, stock, id_category, codes=None):
     )
     vals = (sku, name, udm, stock, id_category, codes)
     flag, error, result = execute_sql(insert_sql, vals, 4)
+    return flag, error, result
+
+
+def get_last_sku(n=20):
+    sql = f"SELECT sku FROM sql_telintec.products_amc ORDER BY sku DESC LIMIT {n}"
+    flag, error, result = execute_sql(sql, None, 5)
     return flag, error, result
 
 

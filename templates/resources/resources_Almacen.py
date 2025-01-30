@@ -58,6 +58,7 @@ from templates.resources.midleware.Functions_midleware_almacen import (
     create_pdf_barcode_multiple,
     create_file_inventory_excel,
     update_brand_procedure,
+    get_new_code_products,
 )
 
 ns = Namespace("GUI/api/v1/almacen")
@@ -88,6 +89,7 @@ class MovementDB(Resource):
         flag, data_token, msg = token_verification_procedure(
             request, department="almacen"
         )
+        print(ns.payload)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
         # noinspection PyUnresolvedReferences
@@ -106,6 +108,7 @@ class MovementDB(Resource):
         flag, data_token, msg = token_verification_procedure(
             request, department="almacen"
         )
+        print(ns.payload)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
@@ -292,6 +295,19 @@ class InventorySuppliers(Resource):
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         code, data = get_suppliers_db()
         return {"data": data, "msg": "Ok" if code == 200 else "Error"}, code
+
+
+@ns.route("/codes/generate")
+class GenerateCode(Resource):
+    @ns.expect(expected_headers_per)
+    def get(self):
+        flag, data_token, msg = token_verification_procedure(
+            request, department="almacen"
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        data_out, code = get_new_code_products()
+        return {"data": data_out, "msg": "Ok" if code == 200 else "Error"}, code
 
 
 @ns.route("/inventory/file/upload/regular")
