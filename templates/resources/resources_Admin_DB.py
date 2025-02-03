@@ -37,7 +37,7 @@ class ClientsAll(Resource):
     @ns.expect(expected_headers_per)
     def get(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department="administracion"
+            request, department=["administracion", "sm"]
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
