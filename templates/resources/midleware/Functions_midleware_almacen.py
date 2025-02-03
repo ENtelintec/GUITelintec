@@ -11,13 +11,14 @@ import pytz
 from static.constants import (
     format_timestamps,
     filepath_inventory_form,
-    filepath_inventory_form_movements,
+    filepath_inventory_form_movements_pdf,
     format_date,
     file_codebar,
     timezone_software,
     format_timestamps_tz,
     log_file_almacen,
     filepath_inventory_form_excel,
+    filepath_inventory_form_movements_excel,
 )
 from templates.Functions_Utils import create_notification_permission_notGUI
 from templates.controllers.product.p_and_s_controller import (
@@ -43,6 +44,7 @@ from templates.controllers.product.p_and_s_controller import (
     update_multiple_row_products_amc,
     update_stock_db_ids,
     get_product_barcode_data,
+    get_last_sku,
 )
 from templates.controllers.supplier.suppliers_controller import (
     get_all_suppliers_amc,
@@ -72,7 +74,18 @@ def get_all_movements(type_m: str):
     if not flag:
         return ["error at retrieving data"], 400
     for item in result:
-        id_m, id_product, type_m, quantity, movement_date, sm_id, reference = item
+        print(item)
+        (
+            id_m,
+            id_product,
+            type_m,
+            quantity,
+            movement_date,
+            sm_id,
+            reference,
+            sku,
+            supplier,
+        ) = item
         reference = json.loads(reference) if reference is not None else None
         out.append(
             {
@@ -85,6 +98,8 @@ def get_all_movements(type_m: str):
                 else None,
                 "sm_id": sm_id,
                 "reference": reference,
+                "sku": sku,
+                "supplier": supplier,
             }
         )
     return out, 200
@@ -769,7 +784,7 @@ def create_file_inventory_excel():
     return filepath_inventory_form_excel, 200
 
 
-def create_file_movements_amc(data):
+def retrieve_data_movement_file(data, complete=False):
     type_m = data["type"]
     match type_m:
         case "entrada":
@@ -784,34 +799,70 @@ def create_file_movements_amc(data):
         movements = []
         for item in _movements:
             date = item[5]
+            if not date:
+                continue
+            # print(date, date_init, date_end)
             if date < date_init or date > date_end:
                 continue
-            movements.append(
-                (
-                    item[2],
-                    date.strftime(format_date),
-                    item[7],
-                    item[8],
-                    item[9],
-                    f"{item[3]}: {item[4]}",
-                    item[6],
-                    "",
-                    f"{json.loads(item[10])['location_1']}: {json.loads(item[10])['location_2']}",
-                )
-            )
+            aux = [
+                item[0],
+                item[1],
+                item[2],
+                date.strftime(format_date),
+                item[7],
+                item[8],
+                item[9],
+                f"{item[3]}: {item[4]}",
+                item[6],
+                "",
+                f"{json.loads(item[10])['location_1']}: {json.loads(item[10]).get('location_2')}",
+            ]
+            movements.append(aux[2:] if not complete else aux)
     except Exception as e:
         print(e)
         return None, 400
     # sort by ID
     movements.sort(key=lambda x: x[1])
-    flag = InventoryStorage(
-        dict_data={
-            "filename_out": filepath_inventory_form_movements,
-            "products": movements,
-        },
-        type_form="Movements",
-    )
-    return (filepath_inventory_form_movements, 200) if flag else (None, 400)
+    return movements, 200
+
+
+def create_file_movements_amc(data, type_file="pdf"):
+    flag = False
+    filepath = None
+    if type_file == "pdf":
+        movements, code = retrieve_data_movement_file(data)
+        if code != 200:
+            return None, 400
+        flag = InventoryStorage(
+            dict_data={
+                "filename_out": filepath_inventory_form_movements_pdf,
+                "products": movements,
+            },
+            type_form="Movements",
+        )
+        filepath = filepath_inventory_form_movements_pdf
+    elif type_file == "excel":
+        movements, code = retrieve_data_movement_file(data, complete=True)
+        if code != 200:
+            return None, 400
+        columns = [
+            "ID Movement",
+            "ID Product",
+            "Codigo",
+            "Fecha",
+            "Descripción",
+            "UDM",
+            "Fabricante",
+            "Movimiento",
+            "SM",
+            "Observaciones",
+            "Ubicacion",
+        ]
+        df = pd.DataFrame(movements, columns=columns)
+        df.to_excel(filepath_inventory_form_movements_excel, index=False)
+        flag = True
+        filepath = filepath_inventory_form_movements_excel
+    return (filepath, 200) if flag else (None, 400)
 
 
 def create_pdf_barcode(data):
@@ -900,3 +951,22 @@ def update_brand_procedure(data):
         supplier_name, brand, _providers_dict_amc, brands_dict
     )
     return msg_list, _providers_dict_amc, brands_dict, 201
+
+
+def get_new_code_products():
+    # code = "1001xxxxxxx"
+    code_length = 11
+    prefix = "1001"
+    flag, error, result = get_last_sku()
+    out = 0
+    for item in result:
+        number = item[0][len(prefix) :]
+        try:
+            int(number)
+        except ValueError:
+            print(f"Error, not a number: {number}")
+            continue
+        if number.isdigit():
+            out = max(out, int(number))
+    out_text = prefix + str(out + 1).zfill(code_length - len(prefix))
+    return out_text, 200

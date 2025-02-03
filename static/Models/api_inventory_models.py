@@ -319,7 +319,7 @@ class FileMovementsForm(Form):
     date_end = StringField(
         "date_end", validators=[InputRequired()], filters=[date_filter]
     )
-    type_m = StringField("type", validators=[], default="all")
+    type = StringField("type", validators=[], default="all")
 
 
 class FormatBarcodeForm(Form):
