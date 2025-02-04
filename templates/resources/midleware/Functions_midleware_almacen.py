@@ -250,7 +250,7 @@ def insert_product_db(data):
             codes=data["info"]["codes"],
         )
     if not flag:
-        return False, error
+        return False, str(error)
     time_zone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
     flag, e, result = create_in_movement_db(
