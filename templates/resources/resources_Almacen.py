@@ -185,13 +185,11 @@ class InventoryProduct(Resource):
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        print(ns.payload)
         # noinspection PyUnresolvedReferences
         validator = ProductPostForm.from_json(ns.payload)
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
-        print(data)
         flag, data_out = insert_product_db(data)
         msg_list, _providers_dict_amc, brands_dict = "", None, None
         if flag:
