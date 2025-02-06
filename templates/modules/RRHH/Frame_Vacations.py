@@ -581,7 +581,7 @@ class VacationsFrame(ScrolledFrame):
                                     bootstyle="danger"
                                 )
                                 return
-                        workey_days = datetime.now() - date_admission
+                        workey_days = datetime.now().date() - date_admission
                         self.year_var_info.set(
                             f"Año: {year} sin informacion (El empleado lleva {workey_days.days % 365} dias trabajando del ultimo año."
                         )

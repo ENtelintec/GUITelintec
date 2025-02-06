@@ -34,7 +34,10 @@ def update_task(id_task, body: dict, status=None, metadata=None):
     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
     body["status"] = status if status is not None else body["status"]
     body["metadata"] = metadata if metadata is not None else body["metadata"]
-    body["changes"].append({"action": "update", "timestamp": timestamp})
+    changes = (
+        body["changes"] if isinstance(body["changes"], list) else [body["changes"]]
+    )
+    changes.append({"action": "update", "timestamp": timestamp})
     sql = (
         "UPDATE sql_telintec.tasks_gui "
         "SET body = %s, "

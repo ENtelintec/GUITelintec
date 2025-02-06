@@ -149,6 +149,7 @@ class FrameTasks(ttk.Frame):
         item = event.widget.item(event.widget.selection()[0], "values")
         self.id_task = int(item[0])
         body = json.loads(item[3])
+        print("body: \n")
         if body["title"] in avaliable_tasks:
             kwargs = create_kwargs(body["title"], body, self.id_task)
             avaliable_tasks[body["title"]](master=self, **kwargs)
