@@ -49,7 +49,8 @@ def get_info_employees_with_status(status: str):
         data_out.append(
             {
                 "id": id_emp,
-                "name": name.upper() + " " + lastname.upper(),
+                "name": name.upper(),
+                "lastname": lastname.upper(),
                 "phone": phone,
                 "dep": department,
                 "modality": modality,

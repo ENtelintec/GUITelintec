@@ -240,7 +240,7 @@ def dispatch_sm(data):
     history_sm = json.loads(result[12])
     emp_id_creation = result[6]
     time_zone = pytz.timezone(timezone_software)
-    date_now =  datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
+    date_now = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
     history_sm.append(
         {
             "user": data["emp_id"],

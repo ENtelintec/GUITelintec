@@ -9,7 +9,7 @@ from flask_restx import Api
 from pathlib import Path
 
 environment = "dev"
-secrets = dotenv_values(".env") if environment == "dev" else dotenv_values("../.env")
+secrets = dotenv_values(".env") if environment != "prod" else dotenv_values("../.env")
 api = Api()
 paths_dpb_folders = json.load(open("files/paths_general.json"))
 local_father_path_dpb = "C:/Users/Edisson/Telintec Dropbox/SOFTWARE TELINTEC"
@@ -166,6 +166,6 @@ dict_deps = {
     "Otros": 7,
 }
 format_timestamps_filename = "%Y-%m-%d"
-HOST_DB_DEFAULT = "HOST_DB" if environment == "dev" else "HOST_DB_AWS"
-USER_DB_DEFAULT = "USER_SQL" if environment == "dev" else "USER_SQL_AWS"
-PASS_DB_DEFAULT = "PASS_SQL" if environment == "dev" else "PASS_SQL_AWS"
+HOST_DB_DEFAULT = "HOST_DB" if environment != "prod" else "HOST_DB_AWS"
+USER_DB_DEFAULT = "USER_SQL" if environment != "prod" else "USER_SQL_AWS"
+PASS_DB_DEFAULT = "PASS_SQL" if environment != "prod" else "PASS_SQL_AWS"

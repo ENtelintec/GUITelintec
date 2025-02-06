@@ -19,6 +19,7 @@ employee_model = api.model(
     {
         "id": fields.Integer(required=True, description="The employee id"),
         "name": fields.String(required=True, description="The employee name"),
+        "lastname": fields.String(required=True, description="The employee lastname"),
         "phone": fields.String(required=True, description="The employee phone number"),
         "dep": fields.String(required=True, description="The employee department"),
         "modality": fields.String(required=True, description="The employee modality"),
