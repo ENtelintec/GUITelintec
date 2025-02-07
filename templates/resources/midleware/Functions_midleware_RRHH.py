@@ -8,14 +8,14 @@ from datetime import datetime
 import pandas as pd
 import pytz
 
-from static.FramesClasses import dict_typer_quizz_generator
 from static.constants import (
     files_fichaje_path,
     patterns_files_fichaje,
     cache_file_emp_fichaje,
     format_date_fichaje_file,
     index_file_nominas,
-    timezone_software, quizzes_temp_pdf,
+    timezone_software,
+    quizzes_temp_pdf,
 )
 from templates.Functions_Sharepoint import get_files_site, download_files_site
 from templates.controllers.employees.vacations_controller import (
@@ -450,6 +450,8 @@ def generate_pdf_from_json(data):
     json_dict = data["body"]
     file_out = quizzes_temp_pdf
     tipo_op = json_dict["metadata"]["type_quizz"]
+    from static.FramesClasses import dict_typer_quizz_generator
+
     generator = dict_typer_quizz_generator[tipo_op]
     try:
         generator(

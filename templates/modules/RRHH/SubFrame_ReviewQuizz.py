@@ -11,7 +11,6 @@ import ttkbootstrap as ttk
 from ttkbootstrap.tableview import Tableview
 from ttkbootstrap.dialogs import Messagebox
 
-from static.FramesClasses import dict_typer_quizz_generator
 from static.constants import quizzes_temp_pdf
 from templates.controllers.misc.tasks_controller import get_all_tasks_by_status
 from templates.Functions_GUI_Utils import (
@@ -207,6 +206,8 @@ class ViewQuizz(ttk.Frame):
         file_out = quizzes_temp_pdf
         path += f"/{json_dict['metadata']['name_emp'].replace(' ', '')}_{json_dict['metadata']['date'].replace('/', '-')}_type_{json_dict['metadata']['type_quizz']}.pdf"
         tipo_op = json_dict["metadata"]["type_quizz"]
+        from static.FramesClasses import dict_typer_quizz_generator
+
         generator = dict_typer_quizz_generator[tipo_op]
         generator(
             self._current_data_raw,
