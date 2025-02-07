@@ -32,6 +32,7 @@ filepath_daemons = "files/flags_daemons.json"
 filepath_recomendations = "files/recomendations.json"
 file_size_pages = "files/size_pages.json"
 quizzes_dir_path = "static/quizzes_dir.json"
+quizzes_temp_pdf = "files/quizz_out/temp_quiz.pdf"
 files_user = "files/users.json"
 file_codebar = "files/codebar.pdf"
 quizzes_RRHH = {

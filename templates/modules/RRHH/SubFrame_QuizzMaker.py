@@ -41,7 +41,6 @@ class QuizMaker(ttk.Toplevel):
         self.dict_quizz = dict_quizz
         self.id_task = kwargs.get("id_task")
         self.metadata = metadata
-        print(self.metadata)
         self.questions_label = None
         self.opt_selected = []
         self.data_size = len(self.dict_quizz)
@@ -373,18 +372,17 @@ class QuizMaker(ttk.Toplevel):
                 date_inteview,
                 name_interviewer,
             )
-            print("create eva360", create_quizz_eva_360)
-        print(f"quizz update and pdf generated at {file_out}")
         result_name = f"Quiz_{tipo_op}_{id_emp}_{datetime.now().strftime(format_timestamps_filename)}.json"
         self.metadata["date"] = str(self.metadata["date"])
         self.metadata["admision"] = str(self.metadata["admision"])
         self.metadata["type_q"] = tipo_op
         self.metadata["title"] = self.title_str
-        self.dict_quizz["metadata"] = self.metadata
-        save_json_file_quizz(self.dict_quizz, quizz_out_path + result_name)
+        # self.dict_quizz["metadata"] = self.metadata
+        # save_json_file_quizz(self.dict_quizz, quizz_out_path + result_name)
         data_out = {
             "id": self.id_task,
             "path_out": quizz_out_path + result_name,
+            "dict_quizz": self.dict_quizz,
             "metadata": self.metadata,
         }
         self.master.end_task(data_out)

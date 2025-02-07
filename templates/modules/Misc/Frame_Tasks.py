@@ -149,7 +149,6 @@ class FrameTasks(ttk.Frame):
         item = event.widget.item(event.widget.selection()[0], "values")
         self.id_task = int(item[0])
         body = json.loads(item[3])
-        print("body: \n")
         if body["title"] in avaliable_tasks:
             kwargs = create_kwargs(body["title"], body, self.id_task)
             avaliable_tasks[body["title"]](master=self, **kwargs)
@@ -162,8 +161,8 @@ class FrameTasks(ttk.Frame):
             if item[0] == data_out["id"]:
                 body = json.loads(item[1])
                 body["status"] = 1
-                body["path_out"] = data_out["path_out"]
-                flag, error, out = update_task(data_out["id"], body, 1)
+                data_raw = data_out["dict_quizz"]
+                flag, error, out = update_task(data_out["id"], body, 1, data_raw=data_raw)
                 if not flag:
                     print(str(error))
                 else:
