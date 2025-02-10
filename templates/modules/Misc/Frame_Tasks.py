@@ -161,8 +161,8 @@ class FrameTasks(ttk.Frame):
             if item[0] == data_out["id"]:
                 body = json.loads(item[1])
                 body["status"] = 1
-                body["path_out"] = data_out["path_out"]
-                flag, error, out = update_task(data_out["id"], body, 1)
+                data_raw = data_out["dict_quizz"]
+                flag, error, out = update_task(data_out["id"], body, 1, data_raw=data_raw)
                 if not flag:
                     print(str(error))
                 else:

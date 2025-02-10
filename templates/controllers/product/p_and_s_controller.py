@@ -302,9 +302,7 @@ def create_product_db(
         locations = (
             locations if locations is not None else {"location_1": "", "location_2": ""}
         )
-        print("brand: ", brand)
         extra_info = {"brand": brand} if brand is not None else {"brand": ""}
-        print(extra_info)
     except Exception as e:
         return False, str(e), None
     insert_sql = (

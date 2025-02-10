@@ -4,7 +4,7 @@ __date__ = "$ 01/abr./2024  at 11:38 $"
 
 import json
 
-from static.constants import format_date
+from static.constants import format_date, quizzes_dir_path
 from templates.Functions_Utils import create_notification_permission_notGUI
 from templates.controllers.employees.employees_controller import (
     get_all_data_employees,
@@ -49,7 +49,8 @@ def get_info_employees_with_status(status: str):
         data_out.append(
             {
                 "id": id_emp,
-                "name": name.upper() + " " + lastname.upper(),
+                "name": name.upper(),
+                "lastname": lastname.upper(),
                 "phone": phone,
                 "dep": department,
                 "modality": modality,
@@ -208,12 +209,20 @@ def get_all_vacations():
 
 
 def create_task_from_api(data):
+    quizzes_dir = json.load(open(quizzes_dir_path, encoding="utf-8"))
+    dict_quizz = json.load(
+        open(
+            quizzes_dir[str(data["metadata"]["type_quizz"])]["path"],
+            encoding="utf-8",
+        )
+    )
     flag, error, result = create_task(
         data["title"],
         data["emp_destiny"],
         data["emp_origin"],
         data["date_limit"],
         data["metadata"],
+        dict_quizz,
     )
     if flag:
         msg = f"Se creo una tarea ({result}) {data['title']} para {data['metadata']['name_emp']}"
@@ -231,7 +240,9 @@ def create_task_from_api(data):
 
 
 def update_task_from_api(data):
-    flag, error, result = update_task(data["id"], data["body"])
+    flag, error, result = update_task(
+        data["id"], data["body"], data_raw=data["data_raw"]
+    )
     if flag:
         msg = f"Se actualizo la tarea {data['body']['title']} para {data['body']['metadata']['name_emp']}"
         create_notification_permission_notGUI(

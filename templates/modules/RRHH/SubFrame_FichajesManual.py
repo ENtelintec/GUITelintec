@@ -10,9 +10,9 @@ from ttkbootstrap import DateEntry
 from ttkbootstrap.tableview import Tableview
 
 from static.constants import (
-    files_fichaje_path,
     patterns_files_fichaje,
     cache_file_emp_fichaje,
+    filepath_fichaje_temp,
 )
 from templates.misc.Functions_AuxFiles import get_events_op_date
 from templates.misc.Functions_Files import (
@@ -35,6 +35,7 @@ from templates.Functions_GUI_Utils import (
 from templates.misc.Functions_Files_RH import check_fichajes_files_in_directory
 from templates.modules.Misc.Frame_CollapsingFrame import CollapsingFrame
 from templates.modules.Misc.SubFrame_Plots import FramePlot
+from templates.resources.midleware.Functions_midleware_RRHH import download_fichaje_file
 
 
 class FichajesManual(ttk.Frame):
@@ -43,9 +44,7 @@ class FichajesManual(ttk.Frame):
         self.master = master
         self.columnconfigure(0, weight=1)
         # variables
-        flag, self.files = check_fichajes_files_in_directory(
-            files_fichaje_path, patterns_files_fichaje
-        )
+        flag, self.files = check_fichajes_files_in_directory(patterns_files_fichaje)
         self.file_selected_1 = False
         self.file_selected_2 = False
         self.file_selected_3 = False
@@ -187,12 +186,10 @@ class FichajesManual(ttk.Frame):
 
         self.frame_collapse.add(self.group_1, title="Archivos Fichaje")
         self.frame_collapse.add(self.group_2, title="Bitacora")
-        self.frame_collapse.add(self.group_3, title="Archivos Ternium")
+        # self.frame_collapse.add(self.group_3, title="Archivos Ternium")
 
     def read_files_from_directory(self):
-        flag, self.files = check_fichajes_files_in_directory(
-            files_fichaje_path, patterns_files_fichaje
-        )
+        flag, self.files = check_fichajes_files_in_directory(patterns_files_fichaje)
         self.file_selected_1 = False
         self.file_selected_2 = False
         self.file_selected_3 = False
@@ -231,7 +228,13 @@ class FichajesManual(ttk.Frame):
 
     def on_file_selected(self, event):
         filename = event.widget.get()
-        self.data_files_fichaje(self.files[filename]["path"])
+        path, code = download_fichaje_file(
+            {
+                "file_url": self.files[filename]["path"],
+                "temp": filepath_fichaje_temp,
+            }
+        )
+        self.data_files_fichaje(path)
 
     def list_files_type(self):
         files_ternium = []
@@ -266,7 +269,7 @@ class FichajesManual(ttk.Frame):
                 self.window_time_in_t.grid(row=3, column=1)
                 self.window_time_out_t.grid(row=3, column=3)
                 self.file_selected_3 = True
-            elif "Fichaje" in filename:
+            elif "fichaje" in filename:
                 self.dff = extract_fichajes_file(filename)
                 names_list = self.dff["name"].unique().tolist()
                 names_and_ids = check_names_employees_in_cache(

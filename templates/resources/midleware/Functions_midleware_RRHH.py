@@ -13,14 +13,16 @@ from static.constants import (
     patterns_files_fichaje,
     cache_file_emp_fichaje,
     format_date_fichaje_file,
-    index_file_nominas, timezone_software,
+    index_file_nominas,
+    timezone_software,
+    quizzes_temp_pdf,
 )
 from templates.Functions_Sharepoint import get_files_site, download_files_site
-from templates.controllers.employees.employees_controller import test_id_employee
 from templates.controllers.employees.vacations_controller import (
     insert_vacation,
     update_registry_vac,
 )
+from templates.controllers.misc.tasks_controller import get_all_tasks_by_status
 from templates.controllers.payroll.payroll_controller import (
     get_payrolls,
     update_payroll,
@@ -69,7 +71,7 @@ class GraceMinutes:
 
 def get_files_fichaje():
     flag, files = check_fichajes_files_in_directory(
-        files_fichaje_path, patterns_files_fichaje
+        patterns_files_fichaje
     )
     if not flag:
         return False, files
@@ -161,9 +163,7 @@ def get_data_name_fichaje(
     time_zone = pytz.timezone(timezone_software)
     date = datetime.now(pytz.utc).astimezone(time_zone)
     date_example = (
-        pd.to_datetime(worked_days_f[0][0])
-        if len(worked_days_f) > 0
-        else date
+        pd.to_datetime(worked_days_f[0][0]) if len(worked_days_f) > 0 else date
     )
     # ------------file ternium-----------
     (
@@ -329,7 +329,7 @@ def update_data_docs_nomina(patterns=None, use_index=False):
     patterns = patterns if patterns is not None else []
     folder_patterns = [folder_nominas] + patterns
     if not use_index:
-        data, code, all_items = get_files_site(url_shrpt + folder_rrhh, folder_patterns)
+        code, data = get_files_site(url_shrpt + folder_rrhh, folder_patterns)
         data_dict = get_pairs_nomina_docs(data)
         data_dict_old = json.load(open(index_file_nominas, "r"))
         data_dict_old.update(data_dict)
@@ -428,3 +428,64 @@ def update_vacation(data):
         return False, "No hay informacion que actualizar o corrupcion de info.", None
     flag, error, result = update_registry_vac(data["emp_id"], seniority_dict)
     return flag, error, result
+
+
+def get_all_quizzes():
+    flag, error, tasks = get_all_tasks_by_status(status=-1, title="quizz")
+    if not flag:
+        return False, error, []
+    data_out = []
+    for item in tasks:
+        data_out.append(
+            {
+                "id": item[0],
+                "body": json.loads(item[1]),
+                "data_raw": json.loads(item[2]),
+            }
+        )
+    return True, "", data_out
+
+
+def generate_pdf_from_json(data):
+    json_dict = data["body"]
+    file_out = quizzes_temp_pdf
+    tipo_op = json_dict["metadata"]["type_quizz"]
+    from static.FramesClasses import dict_typer_quizz_generator
+
+    generator = dict_typer_quizz_generator[tipo_op]
+    try:
+        generator(
+            data["data_raw"],
+            None,
+            file_out,
+            json_dict["metadata"]["name_emp"],
+            json_dict["metadata"]["position"],
+            "terminal",
+            json_dict["metadata"]["admision"],
+            json_dict["metadata"]["departure"],
+            json_dict["metadata"]["date"],
+            json_dict["metadata"]["interviewer"],
+        )
+        return 201, file_out
+    except Exception as e:
+        print("Error al generar el pdf", e)
+        return 400, "Error al generar el pdf"
+
+
+def get_files_fichaje_shrpt():
+    settings = json.load(open("files/settings.json", "r"))
+    url_shrpt = settings["gui"]["RRHH"]["url_shrpt"]
+    folder_rrhh = settings["gui"]["RRHH"]["folder_rrhh"]
+    folder_fichaje = settings["gui"]["RRHH"]["folder_checador"]
+    code, files_fichaje = get_files_site(
+        url_shrpt + folder_rrhh, folder_url=folder_fichaje
+    )
+    return code, files_fichaje
+
+
+def download_fichaje_file(data):
+    settings = json.load(open("files/settings.json", "r"))
+    url_shrpt = settings["gui"]["RRHH"]["url_shrpt"]
+    folder_rrhh = settings["gui"]["RRHH"]["folder_rrhh"]
+    download_path, code = download_files_site(url_shrpt + folder_rrhh, data["file_url"], data["temp"])
+    return download_path, code

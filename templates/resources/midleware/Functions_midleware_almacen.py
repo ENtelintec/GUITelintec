@@ -74,7 +74,6 @@ def get_all_movements(type_m: str):
     if not flag:
         return ["error at retrieving data"], 400
     for item in result:
-        print(item)
         (
             id_m,
             id_product,
@@ -250,7 +249,7 @@ def insert_product_db(data):
             codes=data["info"]["codes"],
         )
     if not flag:
-        return False, error
+        return False, str(error)
     time_zone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
     flag, e, result = create_in_movement_db(
@@ -715,12 +714,16 @@ def read_excel_file_regular(file: str, is_tool=False, is_internal=0):
 
 
 def retrieve_data_file_inventory(type_data="dict", data=None):
-    flag, error, _products = get_all_products_db() if data is None else True, None, data
+    flag, error, _products = (
+        get_all_products_db() if data is None else (True, None, data)
+    )
     if not flag:
         return error, 400
     try:
         # [id_product, sku, name, udm, stock, category_name, supplier_name,  is_tool, is_internal,  codes, locations,  brand, brands]
         # sort by ID
+        if _products is None:
+            return [], 400
         _products.sort(key=lambda x: x[0])
         if type_data == "dict":
             products = {

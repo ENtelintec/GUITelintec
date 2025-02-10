@@ -2,11 +2,12 @@
 __author__ = "Edisson Naula"
 __date__ = "$ 02/nov./2023  at 17:32 $"
 
+import json
 
 from static.constants import api, format_timestamps, format_date
 from flask_restx import fields
 from wtforms.fields.datetime import DateTimeField, DateField
-from wtforms.validators import InputRequired
+from wtforms.validators import InputRequired, ValidationError
 from wtforms import FormField, IntegerField, StringField, validators
 from wtforms.fields.list import FieldList
 from wtforms.form import Form
@@ -312,6 +313,9 @@ task_insert_model = api.model(
         "metadata": fields.Nested(
             metadata_task_model, description="The metadata of the task"
         ),
+        "data_raw": fields.String(
+            required=False, description="The raw data of the task"
+        ),
     },
 )
 
@@ -349,6 +353,7 @@ body_task_model = api.model(
             required=False, description="The status of the task", example=0
         ),
         "changes": fields.List(fields.Nested(changes_model)),
+
     },
 )
 
@@ -357,6 +362,9 @@ task_update_model = api.model(
     {
         "id": fields.Integer(required=True, description="The id of the task"),
         "body": fields.Nested(body_task_model, description="The body of the task"),
+        "data_raw": fields.String(
+            required=False, description="The raw data of the task"
+        ),
     },
 )
 
@@ -368,6 +376,14 @@ task_delete_model = api.model(
         "emp_destiny": fields.Integer(
             required=True, description="The destination employee"
         ),
+    },
+)
+
+request_file_report_quizz_model = api.model(
+    "RequestFileReportQuizz",
+    {
+        "body": fields.Integer(required=True, description="The body of the task"),
+        "data_raw": fields.Integer(required=True, description="The data raw of the quizz"),
     },
 )
 
@@ -390,6 +406,13 @@ def datetime_filter(date):
     # Example filter function to format the date
     date = date if date is not None else ""
     return date.strftime(format_timestamps) if not isinstance(date, str) else date
+
+
+def validate_json(form, field):
+    try:
+        json.loads(field.data)
+    except ValueError:
+        raise ValidationError("Invalid JSON data.")
 
 
 class MetadataTasksForm(Form):
@@ -415,6 +438,7 @@ class TaskInsertForm(Form):
         "date_limit", validators=[InputRequired()], filters=[date_filter]
     )
     metadata = FormField(MetadataTasksForm)
+    data_raw = StringField("data_raw", validators=[validate_json])
 
 
 class ChangesForm(Form):
@@ -439,6 +463,7 @@ class BodyTaskForm(Form):
 class TaskUpdateForm(Form):
     id = IntegerField("id", validators=[InputRequired()])
     body = FormField(BodyTaskForm)
+    data_raw = StringField("data_raw", validators=[validate_json])
 
 
 class TaskDeleteForm(Form):
@@ -486,3 +511,8 @@ class RequestAVResponseForm(Form):
 class RequestFileForm(Form):
     file_url = StringField("file_url", validators=[InputRequired()])
     emp_id = IntegerField("emp_id", validators=[InputRequired()])
+
+
+class RequestFileReportQuizzForm(Form):
+    body = FormField(BodyTaskForm)
+    data_raw = StringField("data_raw", validators=[validate_json])

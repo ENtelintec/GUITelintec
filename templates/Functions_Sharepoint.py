@@ -44,30 +44,57 @@ def create_custom_query_folder_name(folder_name: str):
     return qry
 
 
-def get_files_site(site_url, folder_patters: list):
+def get_files_site(site_url, folder_patters: list = None, folder_url=None):
     try:
         ctx, code = connect_sharepoint(site_url)
         if code == 400:
-            return None, 400, None
-        folders = (
-            ctx.web.get_folder_by_server_relative_url(
-                folder_patters[0] + "/" + folder_patters[1]
-            )
-            .get_folders(True)
+            return 400, []
+        folders_root = (
+            ctx.web.default_document_library()
+            .root_folder.folders.get_all()
             .execute_query()
         )
-        files = []
-        for folder in folders:
-            files += folder.files.get_all().execute_query()
+        if folder_patters is not None:
+            folders_main = None
+            for folder in folders_root:
+                if folder_patters[0].lower() in folder.serverRelativeUrl.lower():
+                    folders_main = folder.folders.get_all().execute_query()
+                    break
+            if folders_main is None:
+                return 200, []
+            folders_year = None
+            for folder in folders_main:
+                if folder_patters[1].lower() in folder.serverRelativeUrl.lower():
+                    folders_year = folder.folders.get_all().execute_query()
+                    break
+            if folders_year is None:
+                return 200, []
+            files = []
+            for folder in folders_year:
+                if folder_patters[2].lower() in folder.serverRelativeUrl.lower():
+                    foldes_quincena = folder.folders.get_all().execute_query()
+                    for folder_q in foldes_quincena:
+                        if len(folder_patters) > 3:
+                            if (
+                                folder_patters[3].lower()
+                                in folder_q.serverRelativeUrl.lower()
+                            ):
+                                files = folder_q.files.get_all().execute_query()
+                                break
+                        else:
+                            files += folder_q.files.get_all().execute_query()
+                    break
+        else:
+            files = []
+            for folder in folders_root:
+                if folder_url in folder.serverRelativeUrl:
+                    files = folder.files.get_all().execute_query()
+                    break
     except Exception as e:
-        files_paths_out = []
-        print(e)
-        return files_paths_out, 400, []
-    files_paths_out = []
-    for idx, item in enumerate(files):
-        if folder_patters[2].lower() in item.serverRelativeUrl.lower():
-            files_paths_out.append(item.serverRelativeUrl)
-    return files_paths_out, 200, files
+        print("Error at retrieving files: ", str(e))
+        return 400, []
+    files_out = [file.serverRelativeUrl for file in files]
+    return 200, files_out
 
 
 def download_files_site(site_url, file_url, temp_filepath=None):

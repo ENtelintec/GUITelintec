@@ -41,6 +41,8 @@ from static.Models.api_fichajes_models import (
 from static.Models.api_models import (
     employees_resume_model,
     expected_headers_per,
+    RequestFileReportQuizzForm,
+    request_file_report_quizz_model,
 )
 from static.constants import (
     cache_file_resume_fichaje_path,
@@ -77,6 +79,8 @@ from templates.resources.midleware.Functions_midleware_RRHH import (
     get_files_list_nomina,
     insert_new_vacation,
     update_vacation,
+    get_all_quizzes,
+    generate_pdf_from_json,
 )
 
 ns = Namespace("GUI/api/v1/rrhh")
@@ -410,6 +414,20 @@ class EmployeesVacationRegistry(Resource):
             return {"error": str(error)}, 400
 
 
+@ns.route("/quizzes")
+class TaskQuizzes(Resource):
+    @ns.expect(expected_headers_per)
+    def get(self):
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        flag, error, data_out = get_all_quizzes()
+        if flag:
+            return {"data": data_out, "msg": "ok"}, 200
+        else:
+            return {"data": [], "msg": "Error"}, 400
+
+
 @ns.route("/employees/fichaje/all")
 class EmployeesResume(Resource):
     @ns.marshal_with(employees_resume_model)
@@ -627,3 +645,22 @@ class DownloadFileQuizz(Resource):
             return send_file(quizz["path"], as_attachment=True)
         except Exception as e:
             return {"data": f"Error en el tipo de quizz: {str(e)}"}, 400
+
+
+@ns.route("/download/quizz/report")
+class DownloadFileQuizzReport(Resource):
+    @ns.expect(expected_headers_per, request_file_report_quizz_model)
+    def post(self):
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        # noinspection PyUnresolvedReferences
+        validator = RequestFileReportQuizzForm.from_json(ns.payload)
+        if not validator.validate():
+            return {"error": validator.errors}, 400
+        data = validator.data
+        code, data_out = generate_pdf_from_json(data)
+        if code == 400:
+            return {"data": None, "msg": data_out}, code
+        else:
+            return send_file(data_out, as_attachment=True)

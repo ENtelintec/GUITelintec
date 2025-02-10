@@ -26,7 +26,7 @@ from templates.controllers.notifications.Notifications_controller import (
     insert_notification,
     update_status_notification,
 )
-from templates.resources.methods.Functions_Aux_Login import verify_token, token_verification_procedure
+from templates.resources.methods.Functions_Aux_Login import token_verification_procedure
 from templates.resources.midleware.Functions_DB_midleware import (
     create_task_from_api,
     update_task_from_api,
@@ -48,7 +48,9 @@ class Notifications(Resource):
     @ns.marshal_with(notification_request_model)
     @ns.expect(expected_headers_per)
     def get(self, id_emp, status):
-        flag, data_token, msg = token_verification_procedure(request, department="basic")
+        flag, data_token, msg = token_verification_procedure(
+            request, department="basic"
+        )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         status = status if status in [0, 1] else "%"
@@ -61,7 +63,9 @@ class NotificationsPermission(Resource):
     @ns.marshal_with(notification_request_model)
     @ns.expect(expected_headers_per)
     def get(self, permission, status):
-        flag, data_token, msg = token_verification_procedure(request, department="basic")
+        flag, data_token, msg = token_verification_procedure(
+            request, department="basic"
+        )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         status = status if status in [0, 1] else "%"
@@ -73,7 +77,9 @@ class NotificationsPermission(Resource):
 class Notification(Resource):
     @ns.expect(expected_headers_per, notification_insert_model)
     def post(self):
-        flag, data_token, msg = token_verification_procedure(request, department="basic")
+        flag, data_token, msg = token_verification_procedure(
+            request, department="basic"
+        )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
@@ -89,7 +95,9 @@ class Notification(Resource):
 
     @ns.expect(expected_headers_per, notification_insert_model)
     def put(self):
-        flag, data_token, msg = token_verification_procedure(request, department="basic")
+        flag, data_token, msg = token_verification_procedure(
+            request, department="basic"
+        )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
@@ -111,7 +119,9 @@ class Notification(Resource):
 class DownloadFileVacations(Resource):
     @ns.expect(expected_headers_per)
     def get(self):
-        flag, data_token, msg = token_verification_procedure(request, department="basic")
+        flag, data_token, msg = token_verification_procedure(
+            request, department="basic"
+        )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         try:
@@ -125,7 +135,9 @@ class ResponseAV(Resource):
     @ns.marshal_with(response_av_model)
     @ns.expect(expected_headers_per, request_av_response_model)
     def post(self):
-        flag, data_token, msg = token_verification_procedure(request, department=["almacen", "operaciones", "rrhh", "administracion"])
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["almacen", "operaciones", "rrhh", "administracion"]
+        )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         validator = RequestAVResponseForm.from_json(ns.payload)
@@ -150,7 +162,9 @@ class FilesAV(Resource):
     @ns.marshal_with(response_files_av_model)
     @ns.expect(expected_headers_per)
     def get(self, department):
-        flag, data_token, msg = token_verification_procedure(request, department=["almacen", "operaciones", "rrhh", "administracion"])
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["almacen", "operaciones", "rrhh", "administracion"]
+        )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         try:
@@ -179,7 +193,9 @@ class Task(Resource):
 
     @ns.expect(expected_headers_per, task_update_model)
     def put(self):
-        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["rrhh", "common"]
+        )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences

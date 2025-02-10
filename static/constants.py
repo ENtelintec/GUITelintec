@@ -9,7 +9,7 @@ from flask_restx import Api
 from pathlib import Path
 
 environment = "prod"
-secrets = dotenv_values(".env") if environment == "dev" else dotenv_values("../.env")
+secrets = dotenv_values(".env") if environment != "prod" else dotenv_values("../.env")
 api = Api()
 paths_dpb_folders = json.load(open("files/paths_general.json"))
 local_father_path_dpb = "C:/Users/Edisson/Telintec Dropbox/SOFTWARE TELINTEC"
@@ -32,6 +32,7 @@ filepath_daemons = "files/flags_daemons.json"
 filepath_recomendations = "files/recomendations.json"
 file_size_pages = "files/size_pages.json"
 quizzes_dir_path = "static/quizzes_dir.json"
+quizzes_temp_pdf = "files/quizz_out/temp_quiz.pdf"
 files_user = "files/users.json"
 file_codebar = "files/codebar.pdf"
 quizzes_RRHH = {
@@ -71,6 +72,8 @@ filepath_inventory_form = "files/inventory_temp.pdf"
 filepath_inventory_form_excel = "files/inventory_temp.xlsx"
 filepath_inventory_form_movements_pdf = "files/movements_temp.pdf"
 filepath_inventory_form_movements_excel = "files/movements_temp.xlsx"
+filepath_fichaje_temp = "files/files_fichaje/fichaje_temp.xlsx"
+filepath_ternium_temp = "files/files_fichaje/ternium_temp.xls"
 patterns_files_fichaje = ["Fichaje", "Ternium"]
 department_tools_openAI = {
     "director": "files/tools_AV_default.json",
@@ -166,6 +169,6 @@ dict_deps = {
     "Otros": 7,
 }
 format_timestamps_filename = "%Y-%m-%d"
-HOST_DB_DEFAULT = "HOST_DB" if environment == "dev" else "HOST_DB_AWS"
-USER_DB_DEFAULT = "USER_SQL" if environment == "dev" else "USER_SQL_AWS"
-PASS_DB_DEFAULT = "PASS_SQL" if environment == "dev" else "PASS_SQL_AWS"
+HOST_DB_DEFAULT = "HOST_DB" if environment != "prod" else "HOST_DB_AWS"
+USER_DB_DEFAULT = "USER_SQL" if environment != "prod" else "USER_SQL_AWS"
+PASS_DB_DEFAULT = "PASS_SQL" if environment != "prod" else "PASS_SQL_AWS"

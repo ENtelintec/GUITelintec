@@ -232,8 +232,8 @@ file_barcode_multiple_request_model = api.model(
 
 
 class CodesForm(Form):
-    tag = StringField("tag", validators=[InputRequired()])
-    value = StringField("value", validators=[InputRequired()])
+    tag = StringField("tag", validators=[])
+    value = StringField("value", validators=[])
 
 
 class LocationsForm(Form):

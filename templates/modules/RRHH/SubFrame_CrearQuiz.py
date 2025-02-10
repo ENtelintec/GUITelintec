@@ -12,6 +12,7 @@ from static.constants import quizzes_RRHH, quizz_out_path, format_date
 from templates.Functions_GUI_Utils import (
     create_Combobox,
     create_label,
+    create_ComboboxSearch,
 )
 from templates.controllers.employees.employees_controller import get_id_name_employee
 from templates.controllers.misc.tasks_controller import create_task
@@ -106,10 +107,10 @@ class FrameEncuestas(ttk.Frame):
         create_label(
             frame_inputs, text="Empleado encuestado: ", row=1, column=0, sticky="w"
         )
-        self.name_emp_selector = create_Combobox(
+        self.name_emp_selector = create_ComboboxSearch(
             frame_inputs,
             values=self.names,
-            state="readonly",
+            state="normal",
             width=40,
             row=1,
             column=1,
@@ -217,7 +218,7 @@ class FrameEncuestas(ttk.Frame):
             "departure_reason": data_emp_questioned[4]["reason"],
             "evaluated_emp": self.name_emp_evaluated.get() if self.tipo_id == 4 else "",
             "pos_evaluator": self.pos_evaluator.get(),
-            "evaluated_emp_ID": data_emp_evaluated[1],
+            "evaluated_emp_ID": data_emp_evaluated[1] if self.tipo_id == 4 else "",
             "type_quizz": self.tipo_id,
         }
         name_quizz = self.quizz_selector.get()
@@ -236,6 +237,7 @@ class FrameEncuestas(ttk.Frame):
             self.username_data["id"],
             metadata["date"],
             metadata,
+            self.dict_quizz,
         )
         if flag:
             msg = (

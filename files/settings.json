@@ -29,7 +29,8 @@
       "files_quizz_out": "files\/quizz_out\/",
       "url_shrpt": "https://telintec698.sharepoint.com",
       "folder_rrhh": "/sites/RRHHSP/",
-      "folder_nominas": "Documentos compartidos\/DocsNominas"
+      "folder_nominas": "Documentos compartidos\/DocsNominas",
+      "folder_checador": "RELACION CHECADOR TELINTEC"
     },
     "default": {
       "theme": "morph"

@@ -450,7 +450,8 @@ class EditPatternsUpdateDataPayroll(ttk.Toplevel):
         self.master = master
         self.columnconfigure((0, 1), weight=1)
         create_label(self, text="Actualizar Datos", row=0, column=0, font=("Arial", 18))
-        create_label(self, text="Patrones: ", row=1, column=0)
+        create_label(self, text="Mes: ", row=1, column=0)
+
         months = [
             "Enero",
             "Febrero",
@@ -470,13 +471,19 @@ class EditPatternsUpdateDataPayroll(ttk.Toplevel):
         self._patterns_year = create_entry(self, row=2, column=1)
         date_now = datetime.now()
         self._patterns_year.insert(0, str(date_now.year))
+        create_label(self, text="Quincena: ", row=3, column=0)
+        self._patterns_quincena = create_Combobox(
+            self, values=["1Q", "2Q"], row=3, column=1,
+        )
+
         create_button(
-            self, text="Actualizar", row=3, column=1, command=self.update_data_action
+            self, text="Actualizar", row=4, column=1, command=self.update_data_action
         )
 
     def update_data_action(self):
         month = self._patterns_month.get()
         year = self._patterns_year.get()
-        patterns = [year, month]
+        quincena = self._patterns_quincena.get()
+        patterns = [year, month, quincena]
         self.master.update_data_action(patterns=patterns)
         self.destroy()

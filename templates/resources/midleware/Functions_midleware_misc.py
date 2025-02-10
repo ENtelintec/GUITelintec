@@ -87,7 +87,8 @@ def get_task_by_id_employee(id_emp: int):
         data_out = []
         for item in result:
             body = json.loads(item[1])
-            data_out.append({"id": item[0], "data": body})
+            data_raw = json.loads(item[2])
+            data_out.append({"id": item[0], "data": body, "data_raw": data_raw})
         return data_out, 200
     else:
         return [str(error, result)], 400

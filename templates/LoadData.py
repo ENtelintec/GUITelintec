@@ -107,6 +107,8 @@ def load_data(data_dic, is_super=False, emp_id=None, item=None, permissions=None
         case "Encuestas":
             names, emps_metadata = get_name_id_employees_list(1, True)
             data_dic["encuestas"] = {"names": names, "emps_metadata": emps_metadata}
+            flag, error, tasks = get_all_tasks_by_status(status=-1, title="quizz")
+            data_dic["encuestas"]["tasks"] = tasks
         case "Exámenes":
             columns = [
                 "Id_EM",
