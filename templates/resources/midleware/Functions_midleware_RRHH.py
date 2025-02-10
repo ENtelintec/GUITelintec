@@ -71,7 +71,7 @@ class GraceMinutes:
 
 def get_files_fichaje():
     flag, files = check_fichajes_files_in_directory(
-        files_fichaje_path, patterns_files_fichaje
+        patterns_files_fichaje
     )
     if not flag:
         return False, files
@@ -329,7 +329,7 @@ def update_data_docs_nomina(patterns=None, use_index=False):
     patterns = patterns if patterns is not None else []
     folder_patterns = [folder_nominas] + patterns
     if not use_index:
-        data, code, all_items = get_files_site(url_shrpt + folder_rrhh, folder_patterns)
+        code, data = get_files_site(url_shrpt + folder_rrhh, folder_patterns)
         data_dict = get_pairs_nomina_docs(data)
         data_dict_old = json.load(open(index_file_nominas, "r"))
         data_dict_old.update(data_dict)
@@ -470,3 +470,22 @@ def generate_pdf_from_json(data):
     except Exception as e:
         print("Error al generar el pdf", e)
         return 400, "Error al generar el pdf"
+
+
+def get_files_fichaje_shrpt():
+    settings = json.load(open("files/settings.json", "r"))
+    url_shrpt = settings["gui"]["RRHH"]["url_shrpt"]
+    folder_rrhh = settings["gui"]["RRHH"]["folder_rrhh"]
+    folder_fichaje = settings["gui"]["RRHH"]["folder_checador"]
+    code, files_fichaje = get_files_site(
+        url_shrpt + folder_rrhh, folder_url=folder_fichaje
+    )
+    return code, files_fichaje
+
+
+def download_fichaje_file(data):
+    settings = json.load(open("files/settings.json", "r"))
+    url_shrpt = settings["gui"]["RRHH"]["url_shrpt"]
+    folder_rrhh = settings["gui"]["RRHH"]["folder_rrhh"]
+    download_path, code = download_files_site(url_shrpt + folder_rrhh, data["file_url"], data["temp"])
+    return download_path, code

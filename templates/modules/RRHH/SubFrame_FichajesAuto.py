@@ -12,11 +12,13 @@ from ttkbootstrap.scrolled import ScrolledText
 from ttkbootstrap.tableview import Tableview
 
 from static.constants import (
-    files_fichaje_path,
     patterns_files_fichaje,
     cache_file_emp_fichaje,
     cache_file_resume_fichaje_path,
     format_date,
+    filepath_fichaje_temp,
+    filepath_ternium_temp,
+    format_timestamps,
 )
 from templates.misc.Functions_AuxFiles import get_events_op_date
 from templates.misc.Functions_Files import (
@@ -40,6 +42,7 @@ from templates.Functions_GUI_Utils import (
 )
 from templates.misc.Functions_Files_RH import check_fichajes_files_in_directory
 from templates.modules.Misc.Frame_CollapsingFrame import CollapsingFrame
+from templates.resources.midleware.Functions_midleware_RRHH import download_fichaje_file
 
 
 class FichajesAuto(ttk.Frame):
@@ -99,7 +102,7 @@ class FichajesAuto(ttk.Frame):
         )
         # -------------------create entry for file selector-----------------
         create_label(self, text="Archivos Principales: ", row=1, column=0)
-        create_label(self, text="Archivos Secundarios: ", row=1, column=2)
+        # create_label(self, text="Archivos Secundarios: ", row=1, column=2)
         # -------------------file selectors-----------------
         self.files_main_cb = create_Combobox(
             self,
@@ -120,7 +123,8 @@ class FichajesAuto(ttk.Frame):
             pady=0,
         )
         self.files_main_cb.bind("<<ComboboxSelected>>", self.on_selected_file_fun)
-        self.files_sec_t_cb.bind("<<ComboboxSelected>>", self.on_selected_file_fun)
+        # self.files_sec_t_cb.bind("<<ComboboxSelected>>", self.on_selected_file_fun)
+        self.files_sec_t_cb.grid_remove()
         # -------------------create buttons-----------------
         self.frame_buttons = ttk.Frame(self)
         self.frame_buttons.grid(row=3, column=0, columnspan=5, sticky="nswe")
@@ -141,6 +145,7 @@ class FichajesAuto(ttk.Frame):
         self.table_1 = Tableview(self.group_2)
         self.table_2 = Tableview(self.group_2)
         self.table_3 = Tableview(self.group_2)
+        self.table_3.grid_remove()
         # ---------------------grupo filtrado por nombre------------------------------
         group_1 = ttk.Frame(self.frame_collapse, padding=5)
         # noinspection PyTypeChecker
@@ -291,26 +296,34 @@ class FichajesAuto(ttk.Frame):
             )
             date_example = pd.to_datetime(worked_days_f[0][0])
             # ------------file ternium-----------
-            (
-                worked_days_t,
-                worked_intime_t,
-                count_l_t,
-                count_e_t,
-                days_late_t,
-                days_extra_t,
-                days_worked_t,
-                days_not_worked_t,
-                days_early_t,
-            ) = get_info_t_file_name(
-                self.dft,
-                self.name_emp_selector.get(),
-                self.clocks,
-                self.window_time_in,
-                self.window_time_out,
-                self.file_selected_3,
-                month=date_example.month,
-                date_max=date_max,
-            )
+            if self.file_selected_3:
+                (
+                    worked_days_t,
+                    worked_intime_t,
+                    count_l_t,
+                    count_e_t,
+                    days_late_t,
+                    days_extra_t,
+                    days_worked_t,
+                    days_not_worked_t,
+                    days_early_t,
+                ) = get_info_t_file_name(
+                    self.dft,
+                    self.name_emp_selector.get(),
+                    self.clocks,
+                    self.window_time_in,
+                    self.window_time_out,
+                    self.file_selected_3,
+                    month=date_example.month,
+                    date_max=date_max,
+                )
+            else:
+                (
+                    days_late_t,
+                    days_extra_t,
+                    days_worked_t,
+                    days_early_t,
+                ) = (None, None, None, None)
             # ------------info bitacora-----------
             (
                 days_absence_bit,
@@ -359,12 +372,10 @@ class FichajesAuto(ttk.Frame):
 
     def read_files(self):
         # check files in the directory
-        flag, self.files = check_fichajes_files_in_directory(
-            files_fichaje_path, patterns_files_fichaje
-        )
+        flag, self.files = check_fichajes_files_in_directory(patterns_files_fichaje)
         self.files_names_pairs, self.files_names_main = get_list_files(self.files)
         self.files_main_cb.configure(values=self.files_names_main)
-        self.files_sec_t_cb.configure(values=self.files_names_pairs[1])
+        # self.files_sec_t_cb.configure(values=self.files_names_pairs[1])
 
     def read_file_ternium(self, filename):
         if ".xls" in filename or ".xlsx" in filename or ".csv" in filename:
@@ -429,24 +440,53 @@ class FichajesAuto(ttk.Frame):
     def on_selected_file_fun(self, event):
         filename = event.widget.get()
         if "Ternium" in filename:
-            self.read_file_ternium(self.files[filename]["path"])
+            path, code = download_fichaje_file(
+                {
+                    "file_url": self.files[filename]["path"],
+                    "temp": filepath_ternium_temp,
+                }
+            )
+            if code != 200:
+                Messagebox.show_error(
+                    title="Error", message="Error al descargar el archivo de ternium"
+                )
+                return
+            self.read_file_ternium(path)
             self.update_info_displayed("reset")
         elif "Fichaje" in filename:
+            path, code = download_fichaje_file(
+                {
+                    "file_url": self.files[filename]["path"],
+                    "temp": filepath_fichaje_temp,
+                }
+            )
+            if code != 200:
+                Messagebox.show_error(
+                    title="Error", message="Error al descargar el archivo de fichaje"
+                )
+                return
             self.files_names_pairs, files_names_f = get_list_files(self.files, filename)
             self.file_selected_3 = False
             self.files_sec_t_cb.configure(values=self.files_names_pairs[1])
             self.files_sec_t_cb.set(self.files_names_pairs[1][0])
-            filename_sec_2 = (
-                self.files_names_pairs[1][0]
-                if len(self.files_names_pairs[1]) > 0
-                else "No pair avaliable"
-            )
-            if filename_sec_2 != "No pair avaliable":
-                self.read_file_ternium(self.files[filename_sec_2]["path"])
-                self.file_selected_3 = True
+            # filename_sec_2 = (
+            #     self.files_names_pairs[1][0]
+            #     if len(self.files_names_pairs[1]) > 0
+            #     else "No pair avaliable"
+            # )
+            # if filename_sec_2 != "No pair avaliable":
+            #     path_t, code = download_fichaje_file(
+            #         {
+            #             "file_url": self.files[filename_sec_2]["path"],
+            #             "temp": filepath_fichaje_temp,
+            #         }
+            #     )
+            #     if code == 200:
+            #         self.read_file_ternium(path_t)
+            #         self.file_selected_3 = True
             self.name_emp_selector.configure(state="readonly")
             self.read_bitacora(self.files[filename]["date"])
-            self.read_file_fichaje(self.files[filename]["path"])
+            self.read_file_fichaje(path)
             self.update_info_displayed("reset")
 
     def create_buttons(self, master):
@@ -736,7 +776,7 @@ class FichajesAuto(ttk.Frame):
                         if date_row in dates_keys:
                             row.append(self.late_data_emp[date_row][0])
                             comment += self.late_data_emp[date_row][1] + "\n"
-                            comment += f"{self.late_data_emp[date_row][2]}\n"
+                            comment += f"{'; '.join([item.strftime(format_timestamps) for item in self.late_data_emp[date_row][2]])}\n"
                         else:
                             row.append("")
                     case "Extras":
@@ -745,7 +785,7 @@ class FichajesAuto(ttk.Frame):
                         if date_row in dates_keys:
                             row.append(self.extra_data_emp[date_row][0])
                             comment += self.extra_data_emp[date_row][1] + "\n"
-                            comment += f"{self.extra_data_emp[date_row][2]}\n"
+                            comment += f"{'; '.join([item.strftime(format_timestamps) for item in self.extra_data_emp[date_row][2]])}\n"
                         else:
                             row.append("")
                     case "Salidas Temprano":
@@ -754,7 +794,7 @@ class FichajesAuto(ttk.Frame):
                         if date_row in dates_keys:
                             row.append(self.early_data_emp[date_row][0])
                             comment += self.early_data_emp[date_row][1] + "\n"
-                            comment += f"{self.early_data_emp[date_row][2]}\n"
+                            comment += f"{'; '.join([item.strftime(format_timestamps) for item in self.early_data_emp[date_row][2]])}\n"
                         else:
                             row.append("")
                     case "Faltas":
@@ -763,7 +803,7 @@ class FichajesAuto(ttk.Frame):
                         if date_row in dates_keys:
                             row.append(self.absence_data_emp[date_row][0])
                             comment += self.absence_data_emp[date_row][1] + "\n"
-                            comment += f"{self.absence_data_emp[date_row][2]}\n"
+                            comment += f"{'; '.join([item.strftime(format_timestamps) for item in self.absence_data_emp[date_row][2]])}\n"
                         else:
                             row.append("")
                     case "Primas":
@@ -772,7 +812,7 @@ class FichajesAuto(ttk.Frame):
                         if date_row in dates_keys:
                             row.append(self.prime_data_emp[date_row][0])
                             comment += self.prime_data_emp[date_row][1] + "\n"
-                            comment += f"{self.prime_data_emp[date_row][2]}\n"
+                            comment += f"{'; '.join([item.strftime(format_timestamps) for item in self.prime_data_emp[date_row][2]])}\n"
                         else:
                             row.append("")
                     case "timestamp":

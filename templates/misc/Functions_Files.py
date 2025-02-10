@@ -22,7 +22,9 @@ from static.constants import (
     cache_oct_fichaje_path,
     quizzes_RRHH,
     conversion_quizzes_path,
-    format_date, timezone_software,
+    format_date,
+    timezone_software,
+    format_timestamps,
 )
 from templates.Functions_Text import clean_accents, compare_employee_name
 from templates.controllers.employees.employees_controller import get_employee_id_name
@@ -638,7 +640,7 @@ def get_dict_fichaje(dict_list: list[dict], data: list[dict]):
         if item_dict is not None:
             for timestamp_key, item in item_dict.items():
                 timestamp = (
-                    datetime.strptime(timestamp_key, "%Y-%m-%d %H:%M:%S")
+                    datetime.strptime(timestamp_key, format_timestamps)
                     if isinstance(timestamp_key, str)
                     else timestamp_key
                 )
@@ -682,7 +684,7 @@ def get_dict_oct(dict_o: list[dict], data: list[list]):
                     value = None
                 else:
                     timestamp, comment, value = row
-                timestamp = datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S")
+                timestamp = datetime.strptime(timestamp, format_timestamps)
                 year = str(timestamp.year)
                 month = str(timestamp.month)
                 day = str(timestamp.day)
@@ -1397,22 +1399,22 @@ def unify_data_display_fichaje(data: list[tuple[any, float, str]]) -> dict:
         timestamp, value, comment = item
         if isinstance(value, pd.Timedelta):
             value = value.total_seconds() / 3600
-        comment = "Sin registro" if comment is None else comment
+        comment = "Sin registro\n" if comment is None else comment
         timestamp = (
-            datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S")
+            datetime.strptime(timestamp, format_timestamps)
             if isinstance(timestamp, str)
             else timestamp
         )
         year = timestamp.year
         month = timestamp.month
         day = timestamp.day
-        new_timestamp = datetime(year, month, day).strftime("%Y-%m-%d")
+        new_timestamp = datetime(year, month, day).strftime(format_date)
         if new_timestamp not in dic_out.keys():
             dic_out[new_timestamp] = [value, comment, [timestamp]]
         else:
             dic_out[new_timestamp][0] += float(value)
             dic_out[new_timestamp][1] += comment
-            dic_out[new_timestamp][2].append(timestamp)
+            dic_out[new_timestamp][2].append(timestamp.strftime(format_timestamps))
     return dic_out
 
 
@@ -1465,10 +1467,10 @@ def unify_data_employee(
                     comment = f"------Fichaje------\nEntrada: {item[2]}\n"
                     comment += f"Salida: {item[3]}"
                 else:
-                    comment = f"------Ternium------\nPuerta ternium: {item[1]}"
+                    comment = f"------Ternium------\nPuerta ternium: {item[1]}\n"
             elif isinstance(item, tuple):
                 timestamp, comment, value = item
-                comment = f"------Bitacora------\n{comment}"
+                comment = f"------Bitacora------\n{comment}\n"
             normal_data.append((timestamp, value, comment))
     normal_data_emp = unify_data_display_fichaje(normal_data)
     # absence data
@@ -1481,7 +1483,7 @@ def unify_data_employee(
             comment = None
             if isinstance(item, tuple):
                 timestamp, comment, value = item
-                comment = f"------Bitacora------\n{comment}"
+                comment = f"------Bitacora------\n{comment}\n"
             else:
                 timestamp = item
             absence_data.append((timestamp, value, comment))
@@ -1494,7 +1496,7 @@ def unify_data_employee(
         for item in group:
             if isinstance(item, tuple):
                 timestamp, comment, value = item
-                comment = f"------Bitacora------\n{comment}"
+                comment = f"------Bitacora------\n{comment}\n"
                 prime_data.append((timestamp, value, comment))
     prime_data_emp = unify_data_display_fichaje(prime_data)
     # late data
