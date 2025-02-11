@@ -53,6 +53,7 @@ def generate_columns_contract(data):
         "emission",
         "planta",
         "area",
+        "area",
         "location",
         "creation",
         "quotation_id",

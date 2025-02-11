@@ -14,7 +14,7 @@ from templates.controllers.employees.employees_controller import (
     update_employee,
     delete_employee,
 )
-from static.constants import format_date, dict_deps
+from static.constants import format_date, dict_deps, format_timestamps
 from templates.Functions_GUI_Utils import (
     create_widget_input_DB,
     create_btns_DB,
@@ -133,48 +133,73 @@ class EmployeesFrame(ScrolledFrame):
                 elif index == 12:
                     if len(data[index + 1]) > 0 and data[index + 1] != "None":
                         departure = json.loads(data[index + 1])
+                        try:
+                            date_a = datetime.strptime(departure["date"], format_date)
+                        except ValueError:
+                            date_a = (
+                                datetime.strptime(departure["date"], format_timestamps)
+                                if departure["date"] != "null"
+                                and departure["date"] != ""
+                                and departure["date"] != "None"
+                                else ""
+                            )
                         entry_date = (
-                            datetime.strptime(departure["date"], format_date)
-                            if departure["date"] != "None"
-                            else datetime.now()
+                            date_a.strftime(format_date)
+                            if date_a != "" and not isinstance(date_a, str)
+                            else ""
                         )
-                        self.entries[index] = set_dateEntry_new_value(
-                            self.insert_frame,
-                            self.entries[index],
-                            entry_date.date(),
-                            row=7,
-                            column=0,
-                            padx=5,
-                            pady=1,
-                            date_format=format_date,
-                        )
+                        self.entries[index].entry.delete(0, "end")
+                        self.entries[index].entry.insert(0, entry_date)
+                        # self.entries[index] = set_dateEntry_new_value(
+                        #     self.insert_frame,
+                        #     self.entries[index],
+                        #     entry_date.date(),
+                        #     row=7,
+                        #     column=0,
+                        #     padx=5,
+                        #     pady=1,
+                        #     date_format=format_date,
+                        # )
                     else:
-                        self.entries[index] = set_dateEntry_new_value(
-                            self.insert_frame,
-                            self.entries[index],
-                            datetime.now().date(),
-                            row=7,
-                            column=0,
-                            padx=5,
-                            pady=1,
-                            date_format=format_date,
+                        self.entries[index].entry.delete(0, "end")
+                        self.entries[index].entry.insert(
+                            0, datetime.now().strftime(format_date)
                         )
+                        # self.entries[index] = set_dateEntry_new_value(
+                        #     self.insert_frame,
+                        #     self.entries[index],
+                        #     datetime.now().date(),
+                        #     row=7,
+                        #     column=0,
+                        #     padx=5,
+                        #     pady=1,
+                        #     date_format=format_date,
+                        # )
                 elif index == 14:
                     entry_date = (
                         datetime.strptime(data[index], format_date)
                         if data[index] != "None"
+                        and data[index] != "null"
+                        and data[index] != ""
                         else datetime.now()
                     )
-                    self.entries[index] = set_dateEntry_new_value(
-                        self.insert_frame,
-                        self.entries[index],
-                        entry_date.date(),
-                        row=7,
-                        column=2,
-                        padx=5,
-                        pady=1,
-                        date_format=format_date,
+                    entry_date = (
+                        entry_date.strftime(format_date)
+                        if data[index] != "None" and data[index] != "null"
+                        else ""
                     )
+                    self.entries[index].entry.delete(0, "end")
+                    self.entries[index].entry.insert(0, entry_date)
+                    # self.entries[index] = set_dateEntry_new_value(
+                    #     self.insert_frame,
+                    #     self.entries[index],
+                    #     entry_date.date(),
+                    #     row=7,
+                    #     column=2,
+                    #     padx=5,
+                    #     pady=1,
+                    #     date_format=format_date,
+                    # )
 
     def _update_table_show(self, data):
         self.employee_insert.grid_forget()

@@ -350,6 +350,8 @@ def get_all_suppliers_data():
     data_out = []
     for item in data:
         extra_info = json.loads(item[8])
+        brands = extra_info.get("brands", [])
+        brands.sort()
         data_out.append(
             {
                 "id": item[0],
@@ -360,7 +362,7 @@ def get_all_suppliers_data():
                 "address": item[5],
                 "web_url": item[6],
                 "type": item[7],
-                "brands": extra_info.get("brands", []),
+                "brands": brands,
             }
         )
     return {"data": data_out, "msg": "Ok"}, 200
