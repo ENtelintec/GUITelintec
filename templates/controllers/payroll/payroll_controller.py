@@ -9,7 +9,10 @@ from templates.database.connection import execute_sql
 
 def get_payrolls(employee_id):
     if employee_id <= 0:
-        sql = "SELECT id, files_data " "FROM sql_telintec.payroll"
+        sql = ("SELECT id, files_data, sql_telintec.employees.name, sql_telintec.employees.l_name "
+               "FROM sql_telintec.payroll "
+               "LEFT JOIN sql_telintec.employees ON employees.employee_id = payroll.id "
+               "ORDER BY sql_telintec.employees.name ")
         flag, error, result = execute_sql(sql, None, 5)
         return flag, error, result
     else:

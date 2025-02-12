@@ -44,6 +44,7 @@ from static.Models.api_models import (
     RequestFileReportQuizzForm,
     request_file_report_quizz_model,
 )
+from static.Models.api_payroll_models import update_files_model, UpdateFilesForm, create_mail_model, CreateMailForm
 from static.constants import (
     cache_file_resume_fichaje_path,
     quizzes_RRHH,
@@ -81,6 +82,7 @@ from templates.resources.midleware.Functions_midleware_RRHH import (
     update_vacation,
     get_all_quizzes,
     generate_pdf_from_json,
+    update_files_payroll, create_mail_payroll,
 )
 
 ns = Namespace("GUI/api/v1/rrhh")
@@ -511,6 +513,36 @@ class EmployeesResume(Resource):  # noqa: F811
         return out, code
 
 
+@ns.route("/payroll/files/update")
+class FilesPayroll(Resource):
+    @ns.expect(expected_headers_per, update_files_model)
+    def Post(self):
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        validator = UpdateFilesForm.from_json(ns.payload)
+        if not validator.validate():
+            return {"errors": validator.errors}, 400
+        data = validator.data
+        code, msg = update_files_payroll(data)
+        return {"data": None, "msg": msg}, code
+
+
+@ns.route("/payroll/mail")
+class CreateMailPayroll(Resource):
+    @ns.expect(expected_headers_per, create_mail_model)
+    def post(self):
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        validator = CreateMailForm.from_json(ns.payload)
+        if not validator.validate():
+            return {"errors": validator.errors}, 400
+        data = validator.data
+        code, msg = create_mail_payroll(data)
+        return {"data": None, "msg": msg}, code
+
+
 @ns.route("/payroll/files/list/<int:emp_id>")
 class DownloadFilesPayroll(Resource):
     @ns.expect(expected_headers_per)
@@ -518,10 +550,10 @@ class DownloadFilesPayroll(Resource):
         flag, data_token, msg = token_verification_procedure(request, department="rrhh")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        code, data_out = get_files_list_nomina(emp_id)
+        code, data_out, dicts_data = get_files_list_nomina(emp_id)
         if code != 200:
             return {"data": None, "msg": "No files"}, code
-        return {"data": data_out, "msg": "ok"}, code
+        return {"data": data_out, "data_raw": dicts_data, "msg": "ok"}, code
 
 
 @ns.route("/fichajes/files")

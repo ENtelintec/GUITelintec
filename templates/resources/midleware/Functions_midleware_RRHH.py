@@ -9,15 +9,14 @@ import pandas as pd
 import pytz
 
 from static.constants import (
-    files_fichaje_path,
     patterns_files_fichaje,
     cache_file_emp_fichaje,
     format_date_fichaje_file,
     index_file_nominas,
     timezone_software,
-    quizzes_temp_pdf,
+    quizzes_temp_pdf, filepath_daemons,
 )
-from templates.Functions_Sharepoint import get_files_site, download_files_site
+from templates.Functions_Sharepoint import get_files_site, download_files_site, create_mail_draft_with_attachment
 from templates.controllers.employees.vacations_controller import (
     insert_vacation,
     update_registry_vac,
@@ -70,9 +69,7 @@ class GraceMinutes:
 
 
 def get_files_fichaje():
-    flag, files = check_fichajes_files_in_directory(
-        patterns_files_fichaje
-    )
+    flag, files = check_fichajes_files_in_directory(patterns_files_fichaje)
     if not flag:
         return False, files
     files_list = [v for k, v in files.items()]
@@ -386,8 +383,10 @@ def download_nomina_doc(data):
 def get_files_list_nomina(emp_id):
     flag, error, result = get_payrolls(emp_id)
     files = []
+    dicts_data = []
     for item in result:
         emp_id = int(item[0])
+        name = f"{item[2].upper()} {item[3].upper()}"
         dict_data = json.loads(item[1])
         for year in dict_data.keys():
             for month in dict_data[year].keys():
@@ -401,7 +400,8 @@ def get_files_list_nomina(emp_id):
                             "emp_id": emp_id,
                         }
                     )
-    return 200, files
+        dicts_data.append({"id": emp_id, "name": name, "data": dict_data})
+    return 200, files, dicts_data
 
 
 def insert_new_vacation(data):
@@ -487,5 +487,50 @@ def download_fichaje_file(data):
     settings = json.load(open("files/settings.json", "r"))
     url_shrpt = settings["gui"]["RRHH"]["url_shrpt"]
     folder_rrhh = settings["gui"]["RRHH"]["folder_rrhh"]
-    download_path, code = download_files_site(url_shrpt + folder_rrhh, data["file_url"], data["temp"])
+    download_path, code = download_files_site(
+        url_shrpt + folder_rrhh, data["file_url"], data["temp"]
+    )
     return download_path, code
+
+
+def update_files_payroll(data):
+    quincena = data["quincena"]
+    quincena = quincena if quincena != "" else None
+    patterns = [data["year"], data["month"], quincena]
+    from templates.daemons.Files_handling import UpdaterSharepointNomina
+    thread_update = UpdaterSharepointNomina(patterns)
+    thread_update.start()
+    flags_daemons = json.load(open(filepath_daemons, "r"))
+    flags_daemons["update_files_nomina"] = True
+    json.dump(flags_daemons, open(filepath_daemons, "w"))
+    return 200, f"Proceso de actualizacion iniciado y puede llegar a tardar minutos. Patrones tomados en cuenta {patterns}"
+
+
+def create_mail_payroll(data):
+    flags_daemons = json.load(open(filepath_daemons, "r"))
+    if flags_daemons["update_files_nomina"]:
+        msg = "Accion no permitida mientras se actualizan los datos."
+        return 400, msg
+    destinatarios = data["to"].split(";")
+    asunto = data["subject"]
+    cuerpo = data["body"]
+    _from = data["from"]
+    settings = json.load(open("files/settings.json", "r"))
+    url_shrpt = settings["gui"]["RRHH"]["url_shrpt"]
+    folder_rrhh = settings["gui"]["RRHH"]["folder_rrhh"]
+    download_path_xml, code = download_files_site(
+        url_shrpt + folder_rrhh, data["xml"]
+    )
+    download_path_pdf, code = download_files_site(
+        url_shrpt + folder_rrhh, data["pdf"]
+    )
+    temp_files = [download_path_xml, download_path_pdf]
+    response, code = create_mail_draft_with_attachment(
+        data["emp_id"],
+        _from,
+        asunto,
+        cuerpo,
+        temp_files,
+        to_recipients=destinatarios,
+    )
+    return code, response

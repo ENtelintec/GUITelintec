@@ -353,7 +353,6 @@ def update_product_db(
             locations if locations is not None else {"location_1": "", "location_2": ""}
         )
         brand = brand if brand is not None else ""
-        print("brand: ", brand)
     except Exception as e:
         return False, str(e), None
     update_sql = (
@@ -408,8 +407,8 @@ def create_product_db_admin(sku, name, udm, stock, id_category, codes=None):
     return flag, error, result
 
 
-def get_last_sku(n=20):
-    sql = f"SELECT sku FROM sql_telintec.products_amc ORDER BY sku DESC LIMIT {n}"
+def get_last_sku():
+    sql = "SELECT sku FROM sql_telintec.products_amc ORDER BY sku DESC"
     flag, error, result = execute_sql(sql, None, 5)
     return flag, error, result
 
@@ -468,7 +467,7 @@ def get_all_products_db_tool_internal(is_tool: int, is_internal: int):
 def delete_product_db(id_product):
     delete_sql = "DELETE FROM sql_telintec.products_amc " "WHERE id_product = %s"
     vals = (id_product,)
-    flag, error, result = execute_sql(delete_sql, vals, 4)
+    flag, error, result = execute_sql(delete_sql, vals, 3)
     return flag, error, result
 
 

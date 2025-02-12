@@ -571,11 +571,11 @@ def create_two_code_one_page_multiple(
             pagesize_whole[1] / 2,
         )
 
-        name_list = wrap_text(name.upper(), 25)
-        name_list = name_list.split("\n")
+        name_list_aux = wrap_text(name.upper(), 25)
+        name_list_aux = name_list_aux.split("\n")
         font_name = 8
         c.setFont("Courier-Bold", font_name)
-        for i, line in enumerate(name_list[0:2]):
+        for i, line in enumerate(name_list_aux[0:2]):
             c.drawString(
                 2 * mm,
                 pagesize_whole[1]
@@ -584,6 +584,9 @@ def create_two_code_one_page_multiple(
                 - i * font_name,
                 line,
             )
+        sku_list_aux = wrap_text(str(sku).upper(), 10)
+        sku_list_aux = sku_list_aux.split("\n")
+        sku = sku_list_aux[0]
         barcode = selectBarcodeType(
             c,
             type_code,
