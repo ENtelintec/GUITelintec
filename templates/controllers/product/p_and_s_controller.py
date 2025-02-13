@@ -971,7 +971,6 @@ def insert_multiple_row_movements_amc(movements: tuple):
             sm_id = "None"
             extra_info = json.dumps({"reference": ""})
         else:
-            # date = movement[3]
             sm_id = movement[4] if movement[4] != "None" else "None"
             extra_info = json.dumps({"reference": movement[5]})
         sql = (

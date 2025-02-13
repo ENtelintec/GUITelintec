@@ -310,7 +310,7 @@ class MovementForm(Form):
     quantity = FloatField("quantity", validators=[InputRequired()])
     sm_id = StringField("sm_id", validators=[], default="")
     # old_stock = FloatField("old_stock", validators=[InputRequired()], default=0.0)
-    # old_stock = FloatField("old_stock", validators=[], default=0.0)
+    old_stock = FloatField("old_stock", validators=[], default=0.0)
     reference = StringField("reference", validators=[], default="")
 
 

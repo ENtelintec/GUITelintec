@@ -470,6 +470,7 @@ def insert_multiple_movements_from_api(data):
         for item in movements
     ]
     flag, error, result = insert_multiple_row_movements_amc(tuple(movements_aux))
+    print(flag, error, result)
     if not flag:
         data_out.append(
             f"Insert multiple movements failed. Error: {str(error)}. Result: {result}"
