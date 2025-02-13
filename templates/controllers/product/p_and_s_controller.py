@@ -215,10 +215,32 @@ def get_movements_type_db(type_m: str):
         "FROM sql_telintec.product_movements_amc "
         "INNER JOIN sql_telintec.products_amc ON (sql_telintec.products_amc.id_product = sql_telintec.product_movements_amc.id_product)"
         "INNER JOIN sql_telintec.suppliers_amc ON (sql_telintec.products_amc.id_supplier = sql_telintec.suppliers_amc.id_supplier)"
-        "WHERE movement_type LIKE %s "
+        "WHERE movement_type LIKE %s ORDER BY movement_date DESC"
     )
     vals = (type_m,)
     flag, error, result = execute_sql(sql, vals, 2)
+    return flag, error, result
+
+
+def get_movements_type_db_all():
+    sql = (
+        "SELECT "
+        "id_movement, "
+        "products_amc.id_product, "
+        "movement_type, "
+        "quantity, "
+        "movement_date, "
+        "sm_id, "
+        "products_amc.extra_info->'$.reference', "
+        "sku, "
+        "suppliers_amc.name "
+        "FROM sql_telintec.product_movements_amc "
+        "LEFT JOIN sql_telintec.products_amc ON (sql_telintec.products_amc.id_product = sql_telintec.product_movements_amc.id_product)"
+        "LEFT JOIN sql_telintec.suppliers_amc ON (sql_telintec.products_amc.id_supplier = sql_telintec.suppliers_amc.id_supplier)"
+        "ORDER BY movement_date DESC LIMIT 1000"
+    )
+    vals = ()
+    flag, error, result = execute_sql(sql, vals, 5)
     return flag, error, result
 
 
@@ -949,7 +971,6 @@ def insert_multiple_row_movements_amc(movements: tuple):
             sm_id = "None"
             extra_info = json.dumps({"reference": ""})
         else:
-            # date = movement[3]
             sm_id = movement[4] if movement[4] != "None" else "None"
             extra_info = json.dumps({"reference": movement[5]})
         sql = (

@@ -22,7 +22,6 @@ from static.constants import (
 )
 from templates.Functions_Utils import create_notification_permission_notGUI
 from templates.controllers.product.p_and_s_controller import (
-    get_movements_type_db,
     create_out_movement_db,
     create_in_movement_db,
     get_stock_db,
@@ -45,6 +44,8 @@ from templates.controllers.product.p_and_s_controller import (
     update_stock_db_ids,
     get_product_barcode_data,
     get_last_sku,
+    get_movements_type_db_all,
+    get_movements_type_db,
 )
 from templates.controllers.supplier.suppliers_controller import (
     get_all_suppliers_amc,
@@ -65,11 +66,12 @@ from templates.resources.methods.Aux_Inventory import (
 def get_all_movements(type_m: str):
     if "salida" in type_m:
         type_m = "salida"
+        flag, error, result = get_movements_type_db(type_m)
     elif "entrada" in type_m:
         type_m = "entrada"
+        flag, error, result = get_movements_type_db(type_m)
     else:
-        type_m = "%"
-    flag, error, result = get_movements_type_db(type_m)
+        flag, error, result = get_movements_type_db_all()
     out = []
     if not flag:
         return ["error at retrieving data"], 400
@@ -481,7 +483,6 @@ def insert_multiple_movements_from_api(data):
             else item["old_stock"] - item["quantity"]
             for item in movements
         ]
-
         flag, error, result = update_stock_db_ids(stock_update_ids, stock_update_vals)
         if not flag:
             data_out.append(
