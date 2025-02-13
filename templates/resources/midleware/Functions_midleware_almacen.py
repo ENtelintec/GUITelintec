@@ -87,7 +87,6 @@ def get_all_movements(type_m: str):
             sku,
             supplier,
         ) = item
-        print(item)
         reference = json.loads(reference) if reference is not None else None
         out.append(
             {
