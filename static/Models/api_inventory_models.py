@@ -245,7 +245,7 @@ class ProductInsertForm(Form):
     name = StringField("name", validators=[InputRequired()])
     sku = StringField("sku", validators=[InputRequired()])
     udm = StringField("udm", validators=[InputRequired()])
-    stock = FloatField("stock", validators=[InputRequired()])
+    stock = FloatField("stock", validators=[], default=0.0)
     category_name = StringField("category_name", validators=[], default=None)
     supplier_name = StringField("supplier_name", validators=[], default=None)
     is_tool = IntegerField("is_tool", validators=[], default=0)
