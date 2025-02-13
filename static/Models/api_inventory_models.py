@@ -103,6 +103,14 @@ product_insert_model = api.model(
     },
 )
 
+product_update_model = api.model(
+    "ProductUpdateAMC",
+    {
+        "info": fields.Nested(product_model_new),
+        "id": fields.Integer(required=True, description="The product id to modify"),
+    },
+)
+
 product_delete_model = api.model(
     "ProductDeleteAMC",
     {"id": fields.Integer(required=True, description="The product id to delete")},
@@ -280,6 +288,10 @@ class ProductPostForm(Form):
 
 class ProductPutForm(Form):
     info = FormField(ProductUpdateForm)
+    id = IntegerField(
+        "id",
+        validators=[InputRequired(message="Id is required or value 0 not accepted")],
+    )
 
 
 class ProductsListPostForm(Form):

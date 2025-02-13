@@ -25,6 +25,7 @@ from static.Models.api_inventory_models import (
     FileBarcodeForm,
     file_barcode_multiple_request_model,
     FileBarcodeMultipleForm,
+    product_model_update,
 )
 from static.Models.api_models import expected_headers_per
 from static.Models.api_movements_models import (
@@ -204,7 +205,7 @@ class InventoryProduct(Resource):
             "msg": "Ok" + " \n" + msg_list if flag else "Error" + " \n" + msg_list,
         }, 201 if flag else 400
 
-    @ns.expect(expected_headers_per, product_insert_model)
+    @ns.expect(expected_headers_per, product_model_update)
     def put(self):
         flag, data_token, msg = token_verification_procedure(
             request, department="almacen"

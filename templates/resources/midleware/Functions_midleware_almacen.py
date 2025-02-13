@@ -112,12 +112,14 @@ def insert_movement(data):
         type_m = "entrada"
     else:
         return False, "Invalid type"
+    time_zone = pytz.timezone(timezone_software)
+    timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
     if type_m == "salida":
         flag, e, result = create_out_movement_db(
             data["info"]["id_product"],
             type_m,
             data["info"]["quantity"],
-            data["info"]["movement_date"],
+            timestamp,
             data["info"]["sm_id"],
             data["info"]["reference"],
         )
@@ -129,7 +131,7 @@ def insert_movement(data):
             data["info"]["id_product"],
             type_m,
             data["info"]["quantity"],
-            data["info"]["movement_date"],
+            timestamp,
             data["info"]["sm_id"],
             data["info"]["reference"],
         )
@@ -156,6 +158,8 @@ def update_movement(data):
         ) + f" -No se encontro el producto {data['info']['id_product']}- " + str(
             actual_stock
         )
+    time_zone = pytz.timezone(timezone_software)
+    timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
     quantity = data["info"]["quantity"]
     p_quantity = data["info"]["previous_q"]
     if data["info"]["sm_id"] == 0:
@@ -163,7 +167,7 @@ def update_movement(data):
     flag, e, result = update_movement_db(
         data["id"],
         data["info"]["quantity"],
-        data["info"]["movement_date"],
+        timestamp,
         data["info"]["sm_id"],
         type_m,
         data["info"]["id_product"],
