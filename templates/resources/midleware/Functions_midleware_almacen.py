@@ -483,7 +483,6 @@ def insert_multiple_movements_from_api(data):
             else item["old_stock"] - item["quantity"]
             for item in movements
         ]
-        print(stock_update_ids, stock_update_vals)
         flag, error, result = update_stock_db_ids(stock_update_ids, stock_update_vals)
         if not flag:
             data_out.append(
