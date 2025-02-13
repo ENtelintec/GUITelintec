@@ -89,13 +89,12 @@ class MovementDB(Resource):
         flag, data_token, msg = token_verification_procedure(
             request, department="almacen"
         )
-        print(ns.payload)
         if not flag:
-            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
         validator = MovementInsertForm.from_json(ns.payload)
         if not validator.validate():
-            return {"data": validator.errors, "msg": "Error at structure"}, 401
+            return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
         flag, result = insert_movement(data)
         return {

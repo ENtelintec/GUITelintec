@@ -139,9 +139,9 @@ class VacationsFrame(ScrolledFrame):
         frame_buttons = ttk.Frame(self)
         frame_buttons.grid(row=2, column=0, columnspan=2, padx=20, pady=20)
         frame_buttons.columnconfigure((0, 1, 2, 3), weight=1)
-        ttk.Button(frame_buttons, text="Probar ID", command=self._test_id).grid(
-            row=0, column=0, padx=5, pady=0
-        )
+        # ttk.Button(frame_buttons, text="Probar ID", command=self._test_id).grid(
+        #     row=0, column=0, padx=5, pady=0
+        # )
         ttk.Button(
             frame_buttons,
             text="Actualizar registro",
@@ -151,7 +151,7 @@ class VacationsFrame(ScrolledFrame):
             frame_buttons, text="Limpiar", command=self._delete_registry_from_emp
         ).grid(row=0, column=2, padx=5, pady=0)
         ttk.Button(
-            frame_buttons, text="Actualizar empleados", command=self._update_emps
+            frame_buttons, text="Buscar nuevos empleados", command=self._update_emps
         ).grid(row=0, column=3, padx=5, pady=0)
         # ttk.Button(frame_buttons, text="Exportar", command=self._export_table()).grid(
         #     row=0, column=4, padx=5, pady=0)
@@ -300,22 +300,42 @@ class VacationsFrame(ScrolledFrame):
                 }
             }
         else:
-            for item in seniority_dict.keys():
-                if int(item) == year - 1:
-                    status = (
-                        self.wentry_pendientes.get() + " " + "PTES"
-                        if int(self.wentry_pendientes.get()) > 0
-                        else "Tomadas"
-                    )
-                    seniority_dict[item] = {
-                        "prima": {
-                            "status": self.wentry_prima.get(),
-                            "fecha_pago": self.wentry_prima_pago.get(),
-                        },
-                        "status": status,
-                        "comentarios": self.wentry_comentarios.get(0.0, "end"),
-                    }
-                    break
+            key_year = str(year - 1)
+            if key_year not in seniority_dict.keys():
+                Messagebox.show_info(
+                    title="Warning",
+                    message=f"Se creara un nuevo registro para el año: {year}.",
+                )
+                status = (
+                    self.wentry_pendientes.get() + " " + "PTES"
+                    if int(self.wentry_pendientes.get()) > 0
+                    else "Tomadas"
+                )
+                seniority_dict[key_year] = {
+                    "prima": {
+                        "status": self.wentry_prima.get(),
+                        "fecha_pago": self.wentry_prima_pago.get(),
+                    },
+                    "status": status,
+                    "comentarios": self.wentry_comentarios.get(0.0, "end"),
+                }
+            else:
+                for item in seniority_dict.keys():
+                    if int(item) == year - 1:
+                        status = (
+                            self.wentry_pendientes.get() + " " + "PTES"
+                            if int(self.wentry_pendientes.get()) > 0
+                            else "Tomadas"
+                        )
+                        seniority_dict[item] = {
+                            "prima": {
+                                "status": self.wentry_prima.get(),
+                                "fecha_pago": self.wentry_prima_pago.get(),
+                            },
+                            "status": status,
+                            "comentarios": self.wentry_comentarios.get(0.0, "end"),
+                        }
+                        break
         try:
             flag, error, out = update_registry_vac(int(id_emp), seniority_dict)
             if flag:

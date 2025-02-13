@@ -14,15 +14,29 @@ from ttkbootstrap.tableview import Tableview
 
 from static.constants import cache_file_EM_path, format_date, format_timestamps
 from templates.misc.Functions_Files import get_ExMed_cache_file, update_ExMed_cache_file
-from templates.Functions_GUI_Utils import create_label, set_dateEntry_new_value
+from templates.Functions_GUI_Utils import create_label, create_ComboboxSearch
 from templates.controllers.employees.em_controller import (
     get_all_examenes,
-    update_status_EM,
     update_aptitud,
     update_renovacion,
+    update_date_aptitud,
     insert_new_exam_med,
 )
-from templates.controllers.employees.employees_controller import get_id_employee
+from templates.controllers.employees.employees_controller import (
+    get_id_employee,
+    get_employees,
+)
+
+
+def clean_entries(entries):
+    for entry in entries:
+        if isinstance(entry, ttk.Combobox):
+            entry.set("")
+        elif isinstance(entry, ttk.DateEntry):
+            entry.entry.delete(0, "end")
+            entry.entry.insert(0, datetime.now().strftime(format_date))
+        elif isinstance(entry, ttk.Entry):
+            entry.delete(0, "end")
 
 
 def load_data_EM(option=1):
@@ -60,10 +74,10 @@ def load_data_EM(option=1):
     return data, columns
 
 
-def get_aptitud_from_data(data, id_emp):
+def get_aptitud_from_data(data, exam_id):
     for index, entry in enumerate(data):
         id_exam, nombre, sangre, status, aptitud, fechas, apt_actual, emp_id = entry
-        if emp_id == id_emp:
+        if id_exam == exam_id:
             return (
                 id_exam,
                 nombre,
@@ -78,10 +92,10 @@ def get_aptitud_from_data(data, id_emp):
     return None, None, None, None, None, None, None, None, None
 
 
-def get_entry_from_data(data, id_emp):
+def get_entry_from_data(data, exam_id):
     for index, entry in enumerate(data):
         id_exam, nombre, sangre, status, aptitud, fechas, apt_actual, emp_id = entry
-        if emp_id == id_emp:
+        if exam_id == id_exam:
             return (
                 id_exam,
                 nombre,
@@ -100,6 +114,9 @@ class ExamenesMedicos(ScrolledFrame):
     def __init__(self, master, setting: dict = None, *args, **kwargs):
         super().__init__(master, autohide=True)
         # self.pack(fill=ttk.BOTH, expand=True)
+        self.id_exam = None
+        self.fechas = []
+        self.aptitudes = []
         self.columnconfigure((0, 1), weight=1)
         # self.rowconfigure(0, weight=1)
         # -------------------create title-----------------
@@ -116,6 +133,7 @@ class ExamenesMedicos(ScrolledFrame):
                 kwargs["data"]["examenes"]["columns"],
             )
         )
+        data_emps = kwargs["data"].get("data_emps_gen", get_employees())
         self.name_emp = ttk.StringVar()
         self.aptitud_act = ttk.StringVar()
         self.examen_prox = ttk.StringVar()
@@ -123,21 +141,28 @@ class ExamenesMedicos(ScrolledFrame):
         self.df = None
         self.table_data = []
         #  -------------------create input widgets-----------------
+        self.emps_dict = {
+            item[1] + " " + item[2]: {"id": item[0]} for item in data_emps
+        }
+
+        self.entries = self.create_input_widgets(list(self.emps_dict.keys()))
         (
             self.entry_name,
             self.entry_blood,
             self.entry_status,
             self.entry_aptitud,
             self.entry_last_date,
-            self.entry_emp_id,
-        ) = self.create_input_widgets()
+            # self.entry_emp_id,
+        ) = self.entries
+        self.entry_name.bind("<<ComboboxSelected>>", self._selected_name_emp)
+        self.new_emp_id = None
         # -------------------create buttons-----------------
         frame_buttons = ttk.Frame(self)
         frame_buttons.grid(row=2, column=0, columnspan=2, padx=20, pady=20)
         frame_buttons.columnconfigure((0, 1, 2, 3), weight=1)
         ttk.Button(
             frame_buttons,
-            text="Insertar nuevo registro",
+            text="Inicia registro",
             command=self._insert_data_to_db,
         ).grid(row=0, column=0, padx=5, pady=0)
         ttk.Button(
@@ -147,8 +172,15 @@ class ExamenesMedicos(ScrolledFrame):
             frame_buttons, text="Nueva Aptitud", command=self._update_aptitud_to_db
         ).grid(row=0, column=2, padx=5, pady=0)
         ttk.Button(
-            frame_buttons, text="Cambiar Status", command=self._update_status_to_db
+            frame_buttons,
+            text="Eliminar ultima aptitud",
+            command=lambda x=0: self._delete_last_registry_db(x),
         ).grid(row=0, column=3, padx=5, pady=0)
+        ttk.Button(
+            frame_buttons,
+            text="Eliminar ultima fecha",
+            command=lambda x=1: self._delete_last_registry_db(x),
+        ).grid(row=0, column=4, padx=5, pady=0)
         # -------------------table and info data-----------------
         self.frame_info = ttk.Frame(self)
         self.frame_info.grid(row=3, column=0, columnspan=2, sticky="nsew")
@@ -191,10 +223,22 @@ class ExamenesMedicos(ScrolledFrame):
             row=5, column=0, columnspan=4, padx=10, pady=10
         )
 
-    def _update_status_to_db(self):
-        status = self.entry_status.get()
+    def _selected_name_emp(self, event):
+        name = self.entry_name.get()
+        self.new_emp_id = self.emps_dict[name]["id"]
+        self.id_exam = None
+
+    def reload_data(self):
+        self.data, columns = load_data_EM(1)
+
+    def _delete_last_registry_db(self, option: int):
+        if self.id_exam is None:
+            Messagebox.show_error(
+                title="Error",
+                message="No se ha seleccionado un registro para eliminar.",
+            )
+            return
         try:
-            emp_id = int(self.entry_emp_id.get())
             (
                 id_exam,
                 nombre,
@@ -205,37 +249,34 @@ class ExamenesMedicos(ScrolledFrame):
                 apt_actual,
                 emp_id,
                 index,
-            ) = get_entry_from_data(self.data, emp_id)
+            ) = get_entry_from_data(self.data, self.id_exam)
+            fechas = json.loads(fechas)
+            aptitudes = json.loads(aptitud)
+            if option == 0:
+                aptitudes = aptitudes[:-1] if len(aptitudes) > 0 else []
+            elif option == 1:
+                fechas = fechas[:-1] if len(fechas) > 0 else []
             answer = Messagebox.show_question(
                 title="Confirmacion",
-                message=f"Esta seguro que desea cambiar el status del empleado {emp_id} a {status}?"
+                message=f"Esta seguro que desea eliminar el ultimo registro con id {self.id_exam}?"
                 f"\nEsta accion no se puede deshacer."
                 f"\nEsta accion es irreversible.",
                 buttons=["No:secondary", "Yes:primary"],
             )
             if answer == "No" or None:
                 return
-            flag, e, out = update_status_EM(status, emp_id)
+            flag, e, out = update_date_aptitud(fechas, aptitudes, exam_id=self.id_exam)
             if flag:
                 Messagebox.show_info(
                     title="Exito",
-                    message=f"Se actualizo el status correctamente para el empleado {emp_id}.",
+                    message=f"Se actualizo los registros del empleado {emp_id}.",
                 )
-                self.data[index] = (
-                    id_exam,
-                    nombre,
-                    sangre,
-                    status,
-                    aptitud,
-                    fechas,
-                    apt_actual,
-                    emp_id,
-                )
+                self.reload_data()
                 self.loadTable(self.data)
             else:
                 Messagebox.show_error(
                     title="Error",
-                    message=f"No se pudo actualizar el status para el empleado {emp_id}.\n"
+                    message=f"No se pudo actualizar los registros del empleado {emp_id}.\n"
                     f"Revise que sea el id correcto.",
                 )
         except ValueError:
@@ -244,10 +285,15 @@ class ExamenesMedicos(ScrolledFrame):
             )
 
     def _update_aptitud_to_db(self):
+        if self.id_exam is None:
+            Messagebox.show_error(
+                title="Error",
+                message="No se ha seleccionado un registro para actualizar.",
+            )
+            return
         aptitud = self.entry_aptitud.get()
         try:
             aptitud = int(aptitud)
-            emp_id = int(self.entry_emp_id.get())
             (
                 id_exam,
                 nombre,
@@ -258,7 +304,7 @@ class ExamenesMedicos(ScrolledFrame):
                 apt_actual,
                 emp_id,
                 index,
-            ) = get_entry_from_data(self.data, emp_id)
+            ) = get_entry_from_data(self.data, self.id_exam)
             if aptitudes is not None:
                 apt_actual = aptitud
                 aptitudes = json.loads(aptitudes)
@@ -272,27 +318,18 @@ class ExamenesMedicos(ScrolledFrame):
                 )
                 if answer == "No" or None:
                     return
-                flag, e, out = update_aptitud(aptitudes, aptitud, emp_id)
+                flag, e, out = update_aptitud(aptitudes, aptitud, exam_id=self.id_exam)
                 if flag:
                     Messagebox.show_info(
                         title="Exito",
-                        message=f"Se actualizo la aptitud correctamente para el empleado {emp_id}.",
+                        message=f"Se actualizo la aptitud correctamente para id {self.id_exam}.",
                     )
-                    self.data[index] = (
-                        id_exam,
-                        nombre,
-                        sangre,
-                        status,
-                        json.dumps(aptitudes),
-                        fechas,
-                        apt_actual,
-                        emp_id,
-                    )
+                    self.reload_data()
                     self.loadTable(self.data)
                 else:
                     Messagebox.show_error(
                         title="Error",
-                        message=f"No se pudo actualizar la aptitud para el empleado {emp_id}.\n"
+                        message=f"No se pudo actualizar la aptitud para el id {self.id_exam}.\n"
                         f"Revise que sea el id correcto.",
                     )
         except ValueError:
@@ -301,9 +338,15 @@ class ExamenesMedicos(ScrolledFrame):
             )
 
     def _update_date_to_db(self):
+        if self.id_exam is None:
+            Messagebox.show_error(
+                title="Error",
+                message="No se ha seleccionado un registro para actualizar.",
+            )
+            return
         date = self.entry_last_date.entry.get()
+
         try:
-            emp_id = int(self.entry_emp_id.get())
             (
                 id_exam,
                 nombre,
@@ -314,7 +357,7 @@ class ExamenesMedicos(ScrolledFrame):
                 apt_actual,
                 emp_id,
                 index,
-            ) = get_aptitud_from_data(self.data, emp_id)
+            ) = get_aptitud_from_data(self.data, self.id_exam)
             if renovaciones is not None:
                 renovaciones = json.loads(renovaciones)
                 renovaciones.append(date)
@@ -327,29 +370,21 @@ class ExamenesMedicos(ScrolledFrame):
                 )
                 if answer == "No" or None:
                     return
-                flag, e, out = update_renovacion(renovaciones, date, emp_id)
+                flag, e, out = update_renovacion(
+                    renovaciones, date, exam_id=self.id_exam
+                )
                 if flag:
                     Messagebox.show_info(
                         title="Exito",
-                        message=f"Se actualizo la fecha de renovacion correctamente para el empleado {emp_id}.",
+                        message=f"Se actualizo la fecha de renovacion correctamente para examen {self.id_exam}.",
                     )
-                    self.data[index] = (
-                        id_exam,
-                        nombre,
-                        sangre,
-                        status,
-                        aptitud,
-                        json.dumps(renovaciones),
-                        apt_actual,
-                        emp_id,
-                    )
+                    self.reload_data()
                     self.loadTable(self.data)
-                    self.entry_emp_id.delete(0, "end")
                     update_ExMed_cache_file(cache_file_EM_path, self.data)
                 else:
                     Messagebox.show_error(
                         title="Error",
-                        message=f"No se pudo actualizar la fecha de renovacion para el empleado {emp_id}.\n"
+                        message=f"No se pudo actualizar la fecha de renovacion para el examen {self.id_exam}.\n"
                         f"Revise que sea el id correcto.",
                     )
             else:
@@ -377,6 +412,8 @@ class ExamenesMedicos(ScrolledFrame):
                 self.var_label_id_name.set("No se encontro el ID")
             else:
                 self.var_label_id_name.set(f"Id: {emp_id}")
+                # self.entry_emp_id.delete(0, "end")
+                # self.entry_emp_id.insert(0, str(emp_id))
 
     def _insert_data_to_db(self):
         """
@@ -387,23 +424,29 @@ class ExamenesMedicos(ScrolledFrame):
         # date_entry_value = self.entry_last_date.get()
 
         # retrieve data from entrys
+        if self.new_emp_id is None and self.id_exam is not None:
+            Messagebox.show_error(
+                title="Error",
+                message="No se ha seleccionado un empleado para insertar.",
+            )
+            return
         name = self.entry_name.get()
         blood = self.entry_blood.get()
         status = self.entry_status.get()
         aptitud = int(self.entry_aptitud.get())
         last_date = self.entry_last_date.entry.get()
         last_date_formatted = datetime.strptime(last_date, format_date)
-        emp_id = int(self.entry_emp_id.get())
+        # emp_id = int(self.entry_emp_id.get())
         # insert data to database
-        if name != "" or emp_id != "":
+        if name != "":
             # new register
-            apt_list = [int(aptitud)]
-            renovacion = [last_date]
+            apt_list = [aptitud]
+            renovacion = [last_date_formatted.strftime(format_date)]
             answer = Messagebox.show_question(
                 title="Confirmacion",
                 message=f"Esta seguro que desea insertar el registro:\n"
                 f"Nombre: {name}\n"
-                f"ID: {emp_id}\n"
+                f"ID: {self.new_emp_id}\n"
                 f"Sangre: {blood}\n"
                 f"Status: {status}\n"
                 f"Aptitud: {aptitud}\n"
@@ -415,28 +458,15 @@ class ExamenesMedicos(ScrolledFrame):
             if answer == "No" or None:
                 return
             flag, error, out = insert_new_exam_med(
-                name, blood, status, apt_list, renovacion, aptitud, emp_id
+                name, blood, status, apt_list, renovacion, aptitud, self.new_emp_id
             )
             if flag:
                 Messagebox.show_info(
                     title="Exito", message="Se inserto el registro correctamente"
                 )
-                self.data.append(
-                    (
-                        out,
-                        name,
-                        blood,
-                        status,
-                        json.dumps(apt_list),
-                        json.dumps(renovacion),
-                        int(aptitud),
-                        last_date_formatted,
-                        int(emp_id),
-                    )
-                )
+                self.reload_data()
+                clean_entries(self.entries)
                 self.loadTable(self.data)
-                self.entry_name.delete(0, "end")
-                self.entry_emp_id.delete(0, "end")
                 update_ExMed_cache_file(cache_file_EM_path, self.data)
             else:
                 Messagebox.show_error(
@@ -482,7 +512,7 @@ class ExamenesMedicos(ScrolledFrame):
             except Exception as e:
                 print(f"Error al exportar la tabla de examenes médicos: {e}")
 
-    def create_input_widgets(self):
+    def create_input_widgets(self, data_emps):
         frame_inputs = ttk.Frame(self)
         frame_inputs.grid(
             row=1, column=0, columnspan=2, padx=20, pady=20, sticky="nswe"
@@ -534,18 +564,27 @@ class ExamenesMedicos(ScrolledFrame):
             pady=0,
             font=("Arial", 14, "normal"),
         )
-        create_label(
-            frame_inputs,
-            text="ID Empleado: ",
-            row=6,
-            column=0,
-            padx=0,
-            pady=0,
-            font=("Arial", 14, "normal"),
-        )
+        # create_label(
+        #     frame_inputs,
+        #     text="ID Empleado: ",
+        #     row=6,
+        #     column=0,
+        #     padx=0,
+        #     pady=0,
+        #     font=("Arial", 14, "normal"),
+        # )
         # -------------------create entrys-----------------
-        entry_name = ttk.Entry(frame_inputs, width=40)
-        entry_name.grid(row=1, column=1, sticky="w", padx=5, pady=5)
+
+        entry_name = create_ComboboxSearch(
+            frame_inputs,
+            row=1,
+            column=1,
+            sticky="we",
+            padx=5,
+            pady=5,
+            values=data_emps,
+            columnspan=3,
+        )
         entry_blood = ttk.Combobox(frame_inputs, state="readonly")
         entry_blood["values"] = ("A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-")
         entry_blood.current(0)
@@ -559,25 +598,27 @@ class ExamenesMedicos(ScrolledFrame):
         entry_aptitud.current(0)
         entry_aptitud.grid(row=4, column=1, sticky="w", padx=5, pady=5)
         entry_last_date = ttk.DateEntry(
-            frame_inputs, bootstyle="info", dateformat=format_date
+            frame_inputs,
+            bootstyle="info",
+            dateformat=format_date,
         )
         entry_last_date.grid(row=5, column=1, sticky="w", padx=5, pady=5)
-        entry_emp_id = ttk.Entry(frame_inputs)
-        entry_emp_id.grid(row=6, column=1, sticky="w", padx=5, pady=5)
+        # entry_emp_id = ttk.Entry(frame_inputs)
+        # entry_emp_id.grid(row=6, column=1, sticky="w", padx=5, pady=5)
         # button for search id from name
-        ttk.Button(
-            frame_inputs, text="Buscar ID", command=self.search_id_from_name
-        ).grid(row=1, column=2, sticky="ns", padx=5, pady=5)
-        ttk.Label(frame_inputs, textvariable=self.var_label_id_name).grid(
-            row=1, column=3, sticky="nsew", padx=5, pady=5
-        )
+        # ttk.Button(
+        #     frame_inputs, text="Buscar ID", command=self.search_id_from_name
+        # ).grid(row=1, column=2, sticky="ns", padx=5, pady=5)
+        # ttk.Label(frame_inputs, textvariable=self.var_label_id_name).grid(
+        #     row=1, column=3, sticky="nsew", padx=5, pady=5
+        # )
         return (
             entry_name,
             entry_blood,
             entry_status,
             entry_aptitud,
             entry_last_date,
-            entry_emp_id,
+            # entry_emp_id,
         )
 
     def loadTable(self, data):
@@ -585,17 +626,19 @@ class ExamenesMedicos(ScrolledFrame):
         result = data
         max_len_fechas = 0
         max_len_aptitud = 0
+        max_registries = 0
         for row in result:
             id_exam, nombre, sangre, status, aptitud, fechas, apt_actual, emp_id = row
             self.names_emp.append(nombre)
-            aptitud = json.loads(aptitud)
-            fechas = json.loads(fechas)
+            aptitud = json.loads(aptitud) if isinstance(aptitud, str) else aptitud
+            fechas = json.loads(fechas) if isinstance(fechas, str) else fechas
             max_len_fechas = (
                 len(fechas) if len(fechas) > max_len_fechas else max_len_fechas
             )
             max_len_aptitud = (
                 len(aptitud) if len(aptitud) > max_len_aptitud else max_len_aptitud
             )
+            max_registries = max(max_len_fechas, max_len_aptitud)
             dict_employees[nombre] = {
                 "id_exam": id_exam,
                 "nombre": nombre,
@@ -608,20 +651,22 @@ class ExamenesMedicos(ScrolledFrame):
         self.df = dict_employees
         self.table_data = []
         columns = ["ID", "ID Empleado", "Nombre", "Sangre", "Status"]
-        for i in range(max_len_fechas):
+        for i in range(max_registries):
             columns.append(f"Fecha {i + 1}")
             columns.append(f"Aptitud {i + 1}")
         for row in result:
             id_exam, nombre, sangre, status, aptitud, fechas, apt_actual, emp_id = row
-            aptitud = json.loads(aptitud)
-            fechas = json.loads(fechas)
+            aptitud = json.loads(aptitud) if isinstance(aptitud, str) else aptitud
+            fechas = json.loads(fechas) if isinstance(fechas, str) else fechas
             aux = [id_exam, emp_id, nombre, sangre, status]
-            for i in range(max_len_fechas):
+            for i in range(max_registries):
                 if i < len(fechas):
                     aux.append(fechas[i])
-                    aux.append(aptitud[i])
                 else:
                     aux.append("")
+                if i < len(aptitud):
+                    aux.append(aptitud[i])
+                else:
                     aux.append("")
             self.table_data.append(aux)
         # update tableview
@@ -633,43 +678,42 @@ class ExamenesMedicos(ScrolledFrame):
             searchable=True,
             autofit=True,
         )
+        columns_header = self.grouped_table.get_columns()
+        for item in columns_header:
+            if item.headertext in ["ID Empleado"]:
+                item.hide()
+
         self.grouped_table.grid(row=1, column=0, sticky="nswe", padx=25, pady=5)
         self.grouped_table.view.bind("<Double-1>", self.on_double_click)
 
     def on_double_click(self, event):
+        self.new_emp_id = None
         selected_row = event.widget.item(event.widget.selection()[0], "values")
-        id_exam = selected_row[0]
         id_emp = selected_row[1]
+        self.id_exam = int(selected_row[0])
         name = selected_row[2]
         blood = selected_row[3]
         status = selected_row[4]
         aptitudes = []
         fechas = []
         for row in self.data:
-            if row[0] == int(id_exam):
+            if int(row[0]) == self.id_exam:
                 aptitudes = json.loads(row[4])
                 fechas = json.loads(row[5])
                 break
+        self.aptitudes = aptitudes
+        self.fechas = fechas
         # modify inputs
-        self.entry_name.delete(0, ttk.END)
+        clean_entries(self.entries)
         self.entry_name.insert(0, name)
-        self.entry_emp_id.delete(0, ttk.END)
-        self.entry_emp_id.insert(0, id_emp)
         self.entry_blood.set(blood)
         self.entry_status.set(status)
         self.entry_aptitud.set(str(int(aptitudes[-1])))
-        date = datetime.strptime(fechas[-1], format_timestamps)
-        set_dateEntry_new_value(
-            self.entry_last_date.master,
-            self.entry_last_date,
-            date.date(),
-            5,
-            1,
-            5,
-            5,
-            "w",
-            date_format=format_date,
-        )
+        try:
+            date = datetime.strptime(fechas[-1], format_timestamps)
+        except ValueError:
+            date = datetime.strptime(fechas[-1], format_date)
+        self.entry_last_date.entry.insert(0, date.strftime(format_date))
         # info display
         self.name_emp.set(f"Nombre: {name}")
         self.aptitud_act.set(f"Aptitud actual: {aptitudes[-1]}")

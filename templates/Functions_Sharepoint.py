@@ -194,9 +194,6 @@ def create_mail_draft_with_attachment(
     graph_client, code = connect_graph_client()
     if code == 400:
         return None, 400
-    # flag, error, result = get_emp_mail(emp_id)
-    # if not flag:
-    #     return None, 400
     to_recipients = to_recipients if to_recipients is not None else []
     email_subject = (
         subject if subject is not None else f"Automatic Subject for {emp_id}"

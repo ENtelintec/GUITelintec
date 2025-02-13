@@ -1,4 +1,6 @@
 .env
+*developer.py
+*xlsx
 tester.py
 .venv
 .idea
