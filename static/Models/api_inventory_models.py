@@ -287,10 +287,10 @@ class ProductPostForm(Form):
 
 class ProductPutForm(Form):
     info = FormField(ProductUpdateForm)
-    id = IntegerField(
-        "id",
-        validators=[InputRequired(message="Id is required or value 0 not accepted")],
-    )
+    # id = IntegerField(
+    #     "id",
+    #     validators=[InputRequired(message="Id is required or value 0 not accepted")],
+    # )
 
 
 class ProductsListPostForm(Form):
