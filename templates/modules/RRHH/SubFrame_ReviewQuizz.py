@@ -60,7 +60,7 @@ def create_data_for_table(quizzes_data):
     )
     data = []
     for item in quizzes_data:
-        id_t, body, data_raw = item
+        id_t, body, data_raw, timestamp = item
         body = json.loads(body)
         data_raw = json.loads(data_raw)
         data.append(

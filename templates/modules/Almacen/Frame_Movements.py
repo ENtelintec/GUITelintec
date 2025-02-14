@@ -26,7 +26,7 @@ from templates.controllers.product.p_and_s_controller import (
     update_movement_db,
     delete_movement_db,
     create_in_movement_db,
-    create_out_movement_db,
+    create_movement_db_amc,
     update_stock_db,
 )
 from templates.misc.Functions_Files import write_log_file
@@ -191,7 +191,7 @@ def add_movement(
     sm_folio = entries[7].get()
     sm_folio = None if sm_folio == "" or sm_folio == "None" else sm_folio
     if type_m == "salida":
-        flag, error, lastrowid = create_out_movement_db(
+        flag, error, lastrowid = create_movement_db_amc(
             id_product, type_m, quantity, movement_date, sm_folio, reference
         )
     else:

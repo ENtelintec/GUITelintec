@@ -20,7 +20,7 @@ from templates.controllers.product.p_and_s_controller import (
     update_movement_db,
     delete_movement_db,
     get_outs_db,
-    create_out_movement_db,
+    create_movement_db_amc,
     get_ins_db,
 )
 from templates.controllers.supplier.suppliers_controller import (
@@ -54,7 +54,7 @@ class DataHandler:
         }
         self._product_movements = {
             "createInMovement": create_in_movement_db,
-            "createOutMovement": create_out_movement_db,
+            "createOutMovement": create_movement_db_amc,
             "updateMovement": update_movement_db,
             "deleteMovement": delete_movement_db,
             "get_ins": get_ins_db,

@@ -209,7 +209,7 @@ def get_movements_type_db(type_m: str):
         "quantity, "
         "movement_date, "
         "sm_id, "
-        "products_amc.extra_info->'$.reference', "
+        "product_movements_amc.extra_info->'$.reference', "
         "sku, "
         "suppliers_amc.name "
         "FROM sql_telintec.product_movements_amc "
@@ -231,7 +231,7 @@ def get_movements_type_db_all():
         "quantity, "
         "movement_date, "
         "sm_id, "
-        "products_amc.extra_info->'$.reference', "
+        "sql_telintec.product_movements_amc.extra_info->'$.reference', "
         "sku, "
         "suppliers_amc.name "
         "FROM sql_telintec.product_movements_amc "
@@ -244,8 +244,8 @@ def get_movements_type_db_all():
     return flag, error, result
 
 
-def create_out_movement_db(
-    id_product, movement_type, quantity, movement_date, sm_id, reference=None
+def create_movement_db_amc(
+    id_product, movement_type, quantity, movement_date, sm_id, reference=None, type_m=None
 ):
     extra_info = {"reference": reference.upper()} if reference else {"reference": ""}
     extra_info = json.dumps(extra_info)

@@ -22,7 +22,7 @@ from static.constants import (
 )
 from templates.Functions_Utils import create_notification_permission_notGUI
 from templates.controllers.product.p_and_s_controller import (
-    create_out_movement_db,
+    create_movement_db_amc,
     create_in_movement_db,
     get_stock_db,
     update_movement_db,
@@ -116,30 +116,34 @@ def insert_movement(data):
         return False, "Invalid type"
     time_zone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
-    if type_m == "salida":
-        flag, e, result = create_out_movement_db(
-            data["info"]["id_product"],
-            type_m,
-            data["info"]["quantity"],
-            timestamp,
-            data["info"]["sm_id"],
-            data["info"]["reference"],
+    flag, error, result = get_stock_db(data["info"]["id_product"])
+    if not flag or result is None:
+        return (
+            False,
+            str(error)
+            + f" -No se encontro el stock del producto {data['info']['id_product']}- "
+            + str(result),
         )
-        update_stock_db(
-            data["info"]["id_product"], -data["info"]["quantity"], just_add=True
+    print(result, type(result))
+    try:
+        quantity_final = (
+            result[0] - data["info"]["quantity"]
+            if type_m == "salida"
+            else result[0] + data["info"]["quantity"]
         )
-    else:
-        flag, e, result = create_in_movement_db(
-            data["info"]["id_product"],
-            type_m,
-            data["info"]["quantity"],
-            timestamp,
-            data["info"]["sm_id"],
-            data["info"]["reference"],
-        )
-        update_stock_db(
-            data["info"]["id_product"], data["info"]["quantity"], just_add=True
-        )
+        if quantity_final < 0:
+            return False, "No hay suficiente stock"
+    except Exception as e:
+        return False, str(e)
+    flag, e, result = create_movement_db_amc(
+        data["info"]["id_product"],
+        type_m,
+        data["info"]["quantity"],
+        timestamp,
+        data["info"]["sm_id"],
+        data["info"]["reference"],
+    )
+    update_stock_db(data["info"]["id_product"], quantity_final, just_add=False)
     if not flag:
         return False, e
     return True, result
@@ -469,6 +473,20 @@ def insert_multiple_movements_from_api(data):
         )
         for item in movements
     ]
+    stock_update_ids = [item["id_product"] for item in movements]
+    stock_update_vals = [
+        item["quantity"] + item["old_stock"]
+        if item["type_m"] == "entrada"
+        else item["old_stock"] - item["quantity"]
+        for item in movements
+    ]
+    for index, new_stock in enumerate(stock_update_vals):
+        if new_stock < 0:
+            data_out.append(
+                f"Error: Stock cannot be negative at product {stock_update_ids[index]}"
+            )
+            return False, data_out
+
     flag, error, result = insert_multiple_row_movements_amc(tuple(movements_aux))
     if not flag:
         data_out.append(
@@ -476,13 +494,13 @@ def insert_multiple_movements_from_api(data):
         )
     else:
         data_out.append(f"Insert multiple movements success. Result: {result}")
-        stock_update_ids = [item["id_product"] for item in movements]
-        stock_update_vals = [
-            item["quantity"] + item["old_stock"]
-            if item["type_m"] == "entrada"
-            else item["old_stock"] - item["quantity"]
-            for item in movements
-        ]
+        # stock_update_ids = [item["id_product"] for item in movements]
+        # stock_update_vals = [
+        #     item["quantity"] + item["old_stock"]
+        #     if item["type_m"] == "entrada"
+        #     else item["old_stock"] - item["quantity"]
+        #     for item in movements
+        # ]
         flag, error, result = update_stock_db_ids(stock_update_ids, stock_update_vals)
         if not flag:
             data_out.append(
