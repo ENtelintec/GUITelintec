@@ -124,13 +124,17 @@ def insert_movement(data):
             + f" -No se encontro el stock del producto {data['info']['id_product']}- "
             + str(result),
         )
-    quantity_final = (
-        result - data["info"]["quantity"]
-        if type_m == "salida"
-        else result + data["info"]["quantity"]
-    )
-    if quantity_final < 0:
-        return False, "No hay suficiente stock"
+    print(result, type(result))
+    try:
+        quantity_final = (
+            result[0] - data["info"]["quantity"]
+            if type_m == "salida"
+            else result[0] + data["info"]["quantity"]
+        )
+        if quantity_final < 0:
+            return False, "No hay suficiente stock"
+    except Exception as e:
+        return False, str(e)
     flag, e, result = create_movement_db_amc(
         data["info"]["id_product"],
         type_m,
@@ -478,7 +482,9 @@ def insert_multiple_movements_from_api(data):
     ]
     for index, new_stock in enumerate(stock_update_vals):
         if new_stock < 0:
-            data_out.append(f"Error: Stock cannot be negative at product {stock_update_ids[index]}")
+            data_out.append(
+                f"Error: Stock cannot be negative at product {stock_update_ids[index]}"
+            )
             return False, data_out
 
     flag, error, result = insert_multiple_row_movements_amc(tuple(movements_aux))

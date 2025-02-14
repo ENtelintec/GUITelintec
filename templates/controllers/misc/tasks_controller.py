@@ -65,7 +65,7 @@ def get_all_tasks_by_status(
     if status is None or status == -1 or id_task is not None:
         status = "%"
     sql = (
-        "SELECT id, body, data_raw "
+        "SELECT id, body, data_raw, timestamp "
         "FROM sql_telintec.tasks_gui "
         "WHERE body->'$.status' LIKE %s "
     )

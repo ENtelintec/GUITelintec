@@ -441,6 +441,7 @@ def get_all_quizzes():
                 "id": item[0],
                 "body": json.loads(item[1]),
                 "data_raw": json.loads(item[2]),
+                "timestamp": item[3],
             }
         )
     return True, "", data_out
