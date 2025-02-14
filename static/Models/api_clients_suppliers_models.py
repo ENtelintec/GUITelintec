@@ -52,7 +52,7 @@ supplier_model = api.model(
         ),
         "phone": fields.String(required=True, description="The supplier phone"),
         "address": fields.String(required=True, description="The supplier address"),
-        "web_url": fields.String(required=True, description="The supplier web url"),
+        "web": fields.String(required=True, description="The supplier web url"),
         "type": fields.String(required=True, description="The supplier type"),
         "extra_info": fields.Nested(extra_info_supplier_model),
     },
@@ -137,8 +137,8 @@ class SupplierUpdateForm(Form):
     address = StringField(
         "address", validators=[InputRequired(message="Address is required")]
     )
-    web_url = StringField(
-        "web_url", validators=[InputRequired(message="Web url is required")]
+    web = StringField(
+        "web", validators=[InputRequired(message="Web url is required")]
     )
     type = StringField("type", validators=[InputRequired(message="Type is required")])
     extra_info = FormField(ExtraInfoSupplierForm, "extra_info")
