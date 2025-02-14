@@ -376,7 +376,7 @@ def insert_supplier(data):
         data.get("email").upper(),
         data.get("phone"),
         data.get("address"),
-        data.get("web_url"),
+        data.get("web"),
         data.get("type"),
         data.get("extra_info"),
     )
@@ -393,7 +393,7 @@ def update_supplier(data):
         data.get("email").upper(),
         data.get("phone"),
         data.get("address"),
-        data.get("web_url"),
+        data.get("web"),
         data.get("type"),
         data.get("extra_info"),
     )
