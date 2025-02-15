@@ -14,9 +14,14 @@ from static.constants import (
     format_date_fichaje_file,
     index_file_nominas,
     timezone_software,
-    quizzes_temp_pdf, filepath_daemons,
+    quizzes_temp_pdf,
+    filepath_daemons,
 )
-from templates.Functions_Sharepoint import get_files_site, download_files_site, create_mail_draft_with_attachment
+from templates.Functions_Sharepoint import (
+    get_files_site,
+    download_files_site,
+    create_mail_draft_with_attachment,
+)
 from templates.controllers.employees.vacations_controller import (
     insert_vacation,
     update_registry_vac,
@@ -499,12 +504,16 @@ def update_files_payroll(data):
     quincena = quincena if quincena != "" else None
     patterns = [data["year"], data["month"], quincena]
     from templates.daemons.Files_handling import UpdaterSharepointNomina
+
     thread_update = UpdaterSharepointNomina(patterns)
     thread_update.start()
     flags_daemons = json.load(open(filepath_daemons, "r"))
     flags_daemons["update_files_nomina"] = True
     json.dump(flags_daemons, open(filepath_daemons, "w"))
-    return 200, f"Proceso de actualizacion iniciado y puede llegar a tardar minutos. Patrones tomados en cuenta {patterns}"
+    return (
+        200,
+        f"Proceso de actualizacion iniciado y puede llegar a tardar minutos. Patrones tomados en cuenta {patterns}",
+    )
 
 
 def create_mail_payroll(data):
@@ -515,16 +524,12 @@ def create_mail_payroll(data):
     destinatarios = data["to"].split(";")
     asunto = data["subject"]
     cuerpo = data["body"]
-    _from = data["from"]
+    _from = data["from_"]
     settings = json.load(open("files/settings.json", "r"))
     url_shrpt = settings["gui"]["RRHH"]["url_shrpt"]
     folder_rrhh = settings["gui"]["RRHH"]["folder_rrhh"]
-    download_path_xml, code = download_files_site(
-        url_shrpt + folder_rrhh, data["xml"]
-    )
-    download_path_pdf, code = download_files_site(
-        url_shrpt + folder_rrhh, data["pdf"]
-    )
+    download_path_xml, code = download_files_site(url_shrpt + folder_rrhh, data["xml"])
+    download_path_pdf, code = download_files_site(url_shrpt + folder_rrhh, data["pdf"])
     temp_files = [download_path_xml, download_path_pdf]
     response, code = create_mail_draft_with_attachment(
         data["emp_id"],

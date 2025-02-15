@@ -7,12 +7,12 @@ from wtforms.fields.simple import StringField
 from wtforms.form import Form
 from wtforms.validators import InputRequired
 
-from static.constants import api, format_timestamps, format_date
+from static.constants import api
 
 update_files_model = api.model(
     "UpdateFilesModel",
     {
-        "year":  fields.String(
+        "year": fields.String(
             required=True, description="The year of the file", example="2025"
         ),
         "month": fields.String(
@@ -39,13 +39,13 @@ create_mail_model = api.model(
         "emp_id": fields.Integer(
             required=True, description="The employee id", example=0
         ),
-        "from": fields.String(
+        "from_": fields.String(
             required=True, description="The email from", example="example@gmail.com"
         ),
-        "xml":  fields.String(
+        "xml": fields.String(
             required=True, description="The xml file", example="xml_url"
         ),
-        "pdf":  fields.String(
+        "pdf": fields.String(
             required=True, description="The pdf file", example="pdf_url"
         ),
     },
@@ -63,6 +63,6 @@ class CreateMailForm(Form):
     subject = StringField("subject", validators=[InputRequired()])
     body = StringField("body", validators=[InputRequired()])
     emp_id = StringField("emp_id", validators=[InputRequired()])
-    from_ = StringField("from", validators=[InputRequired()])
+    from_ = StringField("from_", validators=[InputRequired()])
     xml = StringField("xml", validators=[InputRequired()])
     pdf = StringField("pdf", validators=[InputRequired()])

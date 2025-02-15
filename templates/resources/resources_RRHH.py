@@ -44,7 +44,12 @@ from static.Models.api_models import (
     RequestFileReportQuizzForm,
     request_file_report_quizz_model,
 )
-from static.Models.api_payroll_models import update_files_model, UpdateFilesForm, create_mail_model, CreateMailForm
+from static.Models.api_payroll_models import (
+    update_files_model,
+    UpdateFilesForm,
+    create_mail_model,
+    CreateMailForm,
+)
 from static.constants import (
     cache_file_resume_fichaje_path,
     quizzes_RRHH,
@@ -82,7 +87,8 @@ from templates.resources.midleware.Functions_midleware_RRHH import (
     update_vacation,
     get_all_quizzes,
     generate_pdf_from_json,
-    update_files_payroll, create_mail_payroll,
+    update_files_payroll,
+    create_mail_payroll,
 )
 
 ns = Namespace("GUI/api/v1/rrhh")
@@ -540,7 +546,7 @@ class CreateMailPayroll(Resource):
             return {"errors": validator.errors}, 400
         data = validator.data
         code, msg = create_mail_payroll(data)
-        return {"data": None, "msg": msg}, code
+        return {"data": None, "msg": str(msg)}, code
 
 
 @ns.route("/payroll/files/list/<int:emp_id>")
