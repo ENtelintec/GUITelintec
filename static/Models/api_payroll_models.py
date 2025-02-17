@@ -7,6 +7,7 @@ from wtforms.fields.simple import StringField
 from wtforms.form import Form
 from wtforms.validators import InputRequired
 
+from static.Models.api_models import validate_json
 from static.constants import api
 
 update_files_model = api.model(
@@ -51,6 +52,16 @@ create_mail_model = api.model(
     },
 )
 
+update_data_payroll_model = api.model(
+    "UpdateDataPayroll",
+    {
+        "id": fields.Integer(required=True, description="The id of the employee"),
+        "data_dict": fields.String(
+            required=True, description="The data of the employee", default="{}"
+        ),
+    },
+)
+
 
 class UpdateFilesForm(Form):
     year = StringField("year", validators=[InputRequired()])
@@ -66,3 +77,8 @@ class CreateMailForm(Form):
     from_ = StringField("from_", validators=[InputRequired()])
     xml = StringField("xml", validators=[InputRequired()])
     pdf = StringField("pdf", validators=[InputRequired()])
+
+
+class UpdateDataPayrollForm(Form):
+    id = StringField("id", validators=[InputRequired()])
+    data_dict = StringField("data_dict", validators=[validate_json])

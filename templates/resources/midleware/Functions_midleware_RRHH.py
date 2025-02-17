@@ -30,6 +30,7 @@ from templates.controllers.misc.tasks_controller import get_all_tasks_by_status
 from templates.controllers.payroll.payroll_controller import (
     get_payrolls,
     update_payroll,
+    update_payroll_employees,
 )
 from templates.misc.Functions_AuxFiles import (
     get_events_op_date,
@@ -324,12 +325,16 @@ def update_files_data_nominas(key: str, paths_pdf_xml: dict, data_xml: dict):
 
 
 def update_data_docs_nomina(patterns=None, use_index=False):
+    print("Updating data docs nomina ", patterns)
     settings = json.load(open("files/settings.json", "r"))
     url_shrpt = settings["gui"]["RRHH"]["url_shrpt"]
     folder_rrhh = settings["gui"]["RRHH"]["folder_rrhh"]
     folder_nominas = settings["gui"]["RRHH"]["folder_nominas"]
     patterns = patterns if patterns is not None else []
     folder_patterns = [folder_nominas] + patterns
+    flag_quincena = False if len(patterns) <= 2 else True
+    if len(patterns) == 3:
+        flag_quincena = True if patterns[2] is not None else False
     if not use_index:
         code, data = get_files_site(url_shrpt + folder_rrhh, folder_patterns)
         data_dict = get_pairs_nomina_docs(data)
@@ -344,11 +349,19 @@ def update_data_docs_nomina(patterns=None, use_index=False):
         if "xml" not in v.keys() or "pdf" not in v.keys():
             results.append((False, "No se encontraron los archivos necesarios", None))
             continue
-        if (
-            folder_patterns[1] in v["xml"]
-            and folder_patterns[2].lower() in v["xml"].lower()
-        ):
-            download_path, code = download_files_site(url_shrpt + folder_rrhh, v["xml"])
+        if folder_patterns[1].lower() in v["xml"].lower():
+            if flag_quincena:
+                if folder_patterns[2].lower() in v["xml"].lower():
+                    download_path, code = download_files_site(
+                        url_shrpt + folder_rrhh, v["xml"]
+                    )
+                else:
+                    print(f"Not pass the filter {folder_patterns}", v["xml"])
+                    continue
+            else:
+                download_path, code = download_files_site(
+                    url_shrpt + folder_rrhh, v["xml"]
+                )
         else:
             print(f"Not pass the filter {folder_patterns}", v["xml"])
             continue
@@ -387,26 +400,26 @@ def download_nomina_doc(data):
 
 def get_files_list_nomina(emp_id):
     flag, error, result = get_payrolls(emp_id)
-    files = []
+    # files = []
     dicts_data = []
     for item in result:
         emp_id = int(item[0])
         name = f"{item[2].upper()} {item[3].upper()}"
         dict_data = json.loads(item[1])
-        for year in dict_data.keys():
-            for month in dict_data[year].keys():
-                for file in dict_data[year][month].keys():
-                    files.append(
-                        {
-                            "year": year,
-                            "month": month,
-                            "files": dict_data[year][month][file],
-                            "name": file,
-                            "emp_id": emp_id,
-                        }
-                    )
+        # for year in dict_data.keys():
+        #     for month in dict_data[year].keys():
+        #         for file in dict_data[year][month].keys():
+        #             files.append(
+        #                 {
+        #                     "year": year,
+        #                     "month": month,
+        #                     "files": dict_data[year][month][file],
+        #                     "name": file,
+        #                     "emp_id": emp_id,
+        #                 }
+        #             )
         dicts_data.append({"id": emp_id, "name": name, "data": dict_data})
-    return 200, files, dicts_data
+    return 200, dicts_data
 
 
 def insert_new_vacation(data):
@@ -540,3 +553,32 @@ def create_mail_payroll(data):
         to_recipients=destinatarios,
     )
     return code, response
+
+
+def update_payroll_list_employees():
+    flags_daemons = json.load(open(filepath_daemons, "r"))
+    if flags_daemons["update_files_nomina"]:
+        msg = "Accion no permitida mientras se actualizan los datos."
+        return 400, msg
+    flag, error, result = update_payroll_employees()
+    msg = "Se han agregado correctamente:\n"
+    counter = 0
+    for item in result:
+        if item[0]:
+            counter += 1
+    msg += f"{counter} empleados"
+    msg += "\nLos siguientes no se han agregado:\n"
+    for item in result:
+        if not item[0] and "Duplicate entry" not in str(item[1]):
+            msg += f"{item[2]}\n"
+    return 200 if flag else 400, msg
+
+
+def update_data_employee(data):
+    data_dict = json.loads(data["data_dict"])
+    flag, error, result = update_payroll(data_dict, data["id"])
+    return (
+        (200, {"data": result, "msg": "ok"})
+        if flag
+        else (400, {"data": None, "msg": str(error)})
+    )

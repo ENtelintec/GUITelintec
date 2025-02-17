@@ -353,7 +353,6 @@ body_task_model = api.model(
             required=False, description="The status of the task", example=0
         ),
         "changes": fields.List(fields.Nested(changes_model)),
-
     },
 )
 
@@ -383,7 +382,9 @@ request_file_report_quizz_model = api.model(
     "RequestFileReportQuizz",
     {
         "body": fields.Integer(required=True, description="The body of the task"),
-        "data_raw": fields.Integer(required=True, description="The data raw of the quizz"),
+        "data_raw": fields.String(
+            required=True, description="The data raw of the quizz", default="{}"
+        ),
     },
 )
 

@@ -49,11 +49,14 @@ from static.Models.api_payroll_models import (
     UpdateFilesForm,
     create_mail_model,
     CreateMailForm,
+    UpdateDataPayrollForm,
+    update_data_payroll_model,
 )
 from static.constants import (
     cache_file_resume_fichaje_path,
     quizzes_RRHH,
     path_contract_files,
+    filepath_daemons,
 )
 from templates.resources.methods.Functions_Aux_Login import token_verification_procedure
 from templates.resources.midleware.Functions_DB_midleware import (
@@ -89,6 +92,7 @@ from templates.resources.midleware.Functions_midleware_RRHH import (
     generate_pdf_from_json,
     update_files_payroll,
     create_mail_payroll,
+    update_payroll_list_employees, update_data_employee,
 )
 
 ns = Namespace("GUI/api/v1/rrhh")
@@ -522,14 +526,19 @@ class EmployeesResume(Resource):  # noqa: F811
 @ns.route("/payroll/files/update")
 class FilesPayroll(Resource):
     @ns.expect(expected_headers_per, update_files_model)
-    def Post(self):
+    def post(self):
         flag, data_token, msg = token_verification_procedure(request, department="rrhh")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        # noinspection PyUnresolvedReferences
         validator = UpdateFilesForm.from_json(ns.payload)
         if not validator.validate():
             return {"errors": validator.errors}, 400
         data = validator.data
+        flags_daemons = json.load(open(filepath_daemons, "r"))
+        if flags_daemons["update_files_nomina"]:
+            msg = "Accion no permitida mientras se actualizan los datos."
+            return {"data": None, "msg": msg}, 400
         code, msg = update_files_payroll(data)
         return {"data": None, "msg": msg}, code
 
@@ -541,6 +550,7 @@ class CreateMailPayroll(Resource):
         flag, data_token, msg = token_verification_procedure(request, department="rrhh")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        # noinspection PyUnresolvedReferences
         validator = CreateMailForm.from_json(ns.payload)
         if not validator.validate():
             return {"errors": validator.errors}, 400
@@ -556,10 +566,37 @@ class DownloadFilesPayroll(Resource):
         flag, data_token, msg = token_verification_procedure(request, department="rrhh")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        code, data_out, dicts_data = get_files_list_nomina(emp_id)
+        code, dicts_data = get_files_list_nomina(emp_id)
         if code != 200:
             return {"data": None, "msg": "No files"}, code
-        return {"data": data_out, "data_raw": dicts_data, "msg": "ok"}, code
+        return {"data_raw": dicts_data, "msg": "ok"}, code
+
+
+@ns.route("/payroll/data/update")
+class UpdatePayroll(Resource):
+    @ns.expect(expected_headers_per, update_data_payroll_model)
+    def put(self):
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        # noinspection PyUnresolvedReferences
+        validator = UpdateDataPayrollForm.from_json(ns.payload)
+        if not validator.validate():
+            return {"errors": validator.errors}, 400
+        data = validator.data
+        code, data_out = update_data_employee(data)
+        return data_out, code
+
+
+@ns.route("/payroll/update/employees")
+class UpdateEmployees(Resource):
+    @ns.expect(expected_headers_per)
+    def get(self):
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        code, msg = update_payroll_list_employees()
+        return {"data": None, "msg": str(msg)}, code
 
 
 @ns.route("/fichajes/files")
