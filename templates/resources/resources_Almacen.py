@@ -36,6 +36,7 @@ from static.Models.api_movements_models import (
     movement_update_model,
     MovementUpdateForm,
 )
+from templates.Functions_Utils import create_notification_permission_notGUI
 from templates.controllers.product.p_and_s_controller import (
     delete_movement_db,
     delete_product_db,
@@ -59,7 +60,7 @@ from templates.resources.midleware.Functions_midleware_almacen import (
     create_pdf_barcode_multiple,
     create_file_inventory_excel,
     update_brand_procedure,
-    get_new_code_products,
+    get_new_code_products, delete_movement_amc,
 )
 
 ns = Namespace("GUI/api/v1/almacen")
@@ -97,7 +98,7 @@ class MovementDB(Resource):
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
-        flag, result = insert_movement(data)
+        flag, result = insert_movement(data, data_token)
         return {
             "data": str(result),
             "msg": "Ok" if flag else "Error",
@@ -116,7 +117,7 @@ class MovementDB(Resource):
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
-        flag, result = update_movement(data)
+        flag, result = update_movement(data, data_token)
         return {
             "data": str(result),
             "msg": "Ok" if flag else "Error",
@@ -134,10 +135,10 @@ class MovementDB(Resource):
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
-        flag, error, result = delete_movement_db(data["id"])
+        flag, result = delete_movement_amc(data, data_token)
         return {
             "data": str(result),
-            "msg": "Ok" if flag else error,
+            "msg": "Ok" if flag else result,
         }, 200 if flag else 400
 
 
@@ -155,7 +156,7 @@ class MultipleMovementDB(Resource):
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
-        flag, result = insert_multiple_movements_from_api(data)
+        flag, result = insert_multiple_movements_from_api(data, data_token)
         return {
             "data": result,
             "msg": "Ok" if flag else "Error",
@@ -265,7 +266,7 @@ class InventoryMultipleProducts(Resource):
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
-        data_out = insert_and_update_multiple_products_from_api(data)
+        data_out = insert_and_update_multiple_products_from_api(data, data_token)
         return {"data": data_out, "msg": "Ok"}, 200
 
 

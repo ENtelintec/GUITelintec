@@ -490,6 +490,9 @@ class NotificationForm(Form):
 
 class NotificationInsertForm(Form):
     info = FormField(NotificationForm)
+
+class NotificationUpdateForm(Form):
+    info = FormField(NotificationForm)
     id = IntegerField(
         "id", validators=[InputRequired(message="id required or value 0 not accepted")]
     )
