@@ -264,7 +264,7 @@ class PayrollFilesGUI(ttk.Frame):
         month = self.entries[2].get()
         month = transform_string_month_to_int([month])[0]
         self.data_emp_dict[self.entries[1].get()][str(month)][self.selected_file][
-            "is_send"
+            "isSent"
         ] = 1
         flag, error, result = update_payroll(self.data_emp_dict, self.id_emp_edit)
         if flag:
@@ -353,9 +353,9 @@ class PayrollFilesGUI(ttk.Frame):
         data_file = get_data_xml_file_nomina(download_path_xml)
         self._svar_txt_date.set(f"Fecha del archivo: {data_file['date']}")
         self._svar_txt_data_pay.set(f"Fecha de pago: {data_file['date_pay']}")
-        if "is_send" in self.data_file_emp.keys():
+        if "isSent" in self.data_file_emp.keys():
             self._svar_txt_sent.set("Enviado") if self.data_file_emp[
-                "is_send"
+                "isSent"
             ] == 1 else self._svar_txt_sent.set("No Enviado")
         else:
             self._svar_txt_sent.set("No Enviado")

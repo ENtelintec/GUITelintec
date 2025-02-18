@@ -20,6 +20,7 @@ from static.Models.api_models import (
     task_delete_model,
     TaskDeleteForm,
     expected_headers_per,
+    NotificationUpdateForm,
 )
 from static.constants import filepath_settings
 from templates.controllers.notifications.Notifications_controller import (
@@ -58,18 +59,18 @@ class Notifications(Resource):
         return {"data": result, "msg": "Ok" if code == 200 else "Error"}, code
 
 
-@ns.route("/notifications/permission/<string:permission>&<int:status>")
-class NotificationsPermission(Resource):
+@ns.route("/notifications/all/<int:status>")
+class NotificationsAll(Resource):
     @ns.marshal_with(notification_request_model)
     @ns.expect(expected_headers_per)
-    def get(self, permission, status):
+    def get(self, status):
         flag, data_token, msg = token_verification_procedure(
             request, department="basic"
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         status = status if status in [0, 1] else "%"
-        code, result = get_all_notification_db_permission(permission, status)
+        code, result = get_all_notification_db_permission(status, data_token)
         return {"data": result, "msg": "Ok" if code == 200 else "Error"}, code
 
 
@@ -101,11 +102,11 @@ class Notification(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
-        validator = NotificationInsertForm.from_json(ns.payload)
+        validator = NotificationUpdateForm.from_json(ns.payload)
         if not validator.validate():
             return {"errors": validator.errors}, 400
         data = validator.data
-        data["id"] = data["info"]["id"]
+        # data["id"] = data["info"]["id"]
         flag, error, result = update_status_notification(
             data["id"], data["info"]["status"]
         )

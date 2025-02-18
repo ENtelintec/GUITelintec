@@ -407,6 +407,9 @@ class FichajesAuto(ttk.Frame):
     def read_file_fichaje(self, filename):
         if ".xls" in filename or ".xlsx" in filename or ".csv" in filename:
             self.dff = extract_fichajes_file(filename)
+            if self.dff is None:
+                print("No se puede leer el archivo")
+                return
             if len(self.dff) != 0:
                 coldata = []
                 for i, col in enumerate(self.dff.columns.tolist()):
@@ -467,8 +470,8 @@ class FichajesAuto(ttk.Frame):
                 return
             self.files_names_pairs, files_names_f = get_list_files(self.files, filename)
             self.file_selected_3 = False
-            self.files_sec_t_cb.configure(values=self.files_names_pairs[1])
-            self.files_sec_t_cb.set(self.files_names_pairs[1][0])
+            # self.files_sec_t_cb.configure(values=self.files_names_pairs[1])
+            # self.files_sec_t_cb.set(self.files_names_pairs[1][0])
             # filename_sec_2 = (
             #     self.files_names_pairs[1][0]
             #     if len(self.files_names_pairs[1]) > 0
@@ -776,7 +779,7 @@ class FichajesAuto(ttk.Frame):
                         if date_row in dates_keys:
                             row.append(self.late_data_emp[date_row][0])
                             comment += self.late_data_emp[date_row][1] + "\n"
-                            comment += f"{'; '.join([item.strftime(format_timestamps) for item in self.late_data_emp[date_row][2]])}\n"
+                            comment += f"{'; '.join([item.strftime(format_timestamps) if not isinstance(item, str) else item for item in self.late_data_emp[date_row][2]])}\n"
                         else:
                             row.append("")
                     case "Extras":
@@ -785,7 +788,7 @@ class FichajesAuto(ttk.Frame):
                         if date_row in dates_keys:
                             row.append(self.extra_data_emp[date_row][0])
                             comment += self.extra_data_emp[date_row][1] + "\n"
-                            comment += f"{'; '.join([item.strftime(format_timestamps) for item in self.extra_data_emp[date_row][2]])}\n"
+                            comment += f"{'; '.join([item.strftime(format_timestamps) if not isinstance(item, str) else item for item in self.extra_data_emp[date_row][2]])}\n"
                         else:
                             row.append("")
                     case "Salidas Temprano":
@@ -794,7 +797,7 @@ class FichajesAuto(ttk.Frame):
                         if date_row in dates_keys:
                             row.append(self.early_data_emp[date_row][0])
                             comment += self.early_data_emp[date_row][1] + "\n"
-                            comment += f"{'; '.join([item.strftime(format_timestamps) for item in self.early_data_emp[date_row][2]])}\n"
+                            comment += f"{'; '.join([item.strftime(format_timestamps) if not isinstance(item, str) else item for item in self.early_data_emp[date_row][2]])}\n"
                         else:
                             row.append("")
                     case "Faltas":
@@ -803,7 +806,7 @@ class FichajesAuto(ttk.Frame):
                         if date_row in dates_keys:
                             row.append(self.absence_data_emp[date_row][0])
                             comment += self.absence_data_emp[date_row][1] + "\n"
-                            comment += f"{'; '.join([item.strftime(format_timestamps) for item in self.absence_data_emp[date_row][2]])}\n"
+                            comment += f"{'; '.join([item.strftime(format_timestamps) if not isinstance(item, str) else item for item in self.absence_data_emp[date_row][2]])}\n"
                         else:
                             row.append("")
                     case "Primas":
@@ -812,7 +815,7 @@ class FichajesAuto(ttk.Frame):
                         if date_row in dates_keys:
                             row.append(self.prime_data_emp[date_row][0])
                             comment += self.prime_data_emp[date_row][1] + "\n"
-                            comment += f"{'; '.join([item.strftime(format_timestamps) for item in self.prime_data_emp[date_row][2]])}\n"
+                            comment += f"{'; '.join([item.strftime(format_timestamps) if not isinstance(item, str) else item for item in self.prime_data_emp[date_row][2]])}\n"
                         else:
                             row.append("")
                     case "timestamp":

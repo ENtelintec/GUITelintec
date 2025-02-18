@@ -547,7 +547,7 @@ def extract_fichajes_file(filename: str):
         )
         warnings.simplefilter("ignore")
         # noinspection PyTypeChecker
-        df = pd.read_excel(filename, skiprows=skip_rows, usecols=cols)
+        df = pd.read_excel(filename, skiprows=skip_rows)
         if "Ternium" in filename:
             df.dropna(inplace=True)
             df["Fecha/hora"] = clean_date(df["Fecha/hora"].tolist())

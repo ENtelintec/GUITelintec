@@ -45,7 +45,7 @@ from templates.controllers.product.p_and_s_controller import (
     get_product_barcode_data,
     get_last_sku,
     get_movements_type_db_all,
-    get_movements_type_db,
+    get_movements_type_db, delete_movement_db,
 )
 from templates.controllers.supplier.suppliers_controller import (
     get_all_suppliers_amc,
@@ -106,7 +106,7 @@ def get_all_movements(type_m: str):
     return out, 200
 
 
-def insert_movement(data):
+def insert_movement(data, data_token):
     type_m = data["info"]["type_m"]
     if "salida" in type_m:
         type_m = "salida"
@@ -124,7 +124,6 @@ def insert_movement(data):
             + f" -No se encontro el stock del producto {data['info']['id_product']}- "
             + str(result),
         )
-    print(result, type(result))
     try:
         quantity_final = (
             result[0] - data["info"]["quantity"]
@@ -144,12 +143,21 @@ def insert_movement(data):
         data["info"]["reference"],
     )
     update_stock_db(data["info"]["id_product"], quantity_final, just_add=False)
+    msg_notification = (
+            "--System Notification--\n"
+            + f"Se ha realizado un movimiento de {type_m} "
+              f"de {data['info']['quantity']} unidades del producto {data['info']['id_product']} "
+              f"con fecha {timestamp} y referencia {data['info']['reference']} del empleado {data_token.get('emp_id')}-{data_token.get('name')}"
+    )
+    create_notification_permission_notGUI(
+        msg_notification, ["almacen"], "Notifaction de Movimiento", data_token.get("emp_id"), 0
+    )
     if not flag:
         return False, e
     return True, result
 
 
-def update_movement(data):
+def update_movement(data, data_token):
     type_m = data["info"]["type_m"]
     if "salida" in type_m:
         type_m = "salida"
@@ -183,9 +191,39 @@ def update_movement(data):
     flag, error, result = update_stock_db(
         data["info"]["id_product"], actual_stock[0] - quantity + p_quantity
     )
+    msg_notification = (
+            "--System Notification--\n"
+            + f"Se ha realizado un movimiento de {type_m} "
+              f"de {data['info']['quantity']} unidades del producto {data['info']['id_product']} "
+              f"con fecha {timestamp} y referencia {data['info']['reference']} del empleado {data_token.get('emp_id')}-{data_token.get('name')}"
+    )
+    create_notification_permission_notGUI(
+        msg_notification, ["almacen"], "Notifaction de Movimiento", data_token.get("emp_id"), 0
+    )
     if not flag:
         return False, e
     return True, result
+
+
+def delete_movement_amc(data, data_token):
+    flag, error, result = delete_movement_db(data["id"])
+    time_zone = pytz.timezone(timezone_software)
+    date = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_date)
+    if flag:
+        msg_notification = (
+                "--System Notification--\n"
+                + "El movimiento con id: "
+                + str(data["id"])
+                + f" ha sido eliminado por el empleado {data_token.get('emp_id')}-{data_token.get('name')}"
+                + f" en la fecha {date}"
+
+        )
+        create_notification_permission_notGUI(
+            msg_notification, ["almacen"], "Notifaction de Movimiento", 0, 0
+        )
+        return True, result
+    else:
+        return False, str(error)
 
 
 def get_all_products_DB(type_p):
@@ -234,7 +272,7 @@ def get_all_products_DB(type_p):
     return out, 200
 
 
-def insert_product_db(data):
+def insert_product_db(data, data_token):
     if data["info"]["supplier_name"] is not None:
         flag, error, result = create_product_db(
             sku=data["info"]["sku"],
@@ -260,15 +298,19 @@ def insert_product_db(data):
         )
     if not flag:
         return False, str(error)
-    # time_zone = pytz.timezone(timezone_software)
-    # timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
+    time_zone = pytz.timezone(timezone_software)
+    timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
     # flag, e, result = create_in_movement_db(
     #     result, "entrada", data["info"]["stock"], timestamp, None, "creation"
     # )
+    msg = f"Se ha creado el producto {data['info']['name']} con sku {data['info']['sku']} por el empleado {data_token.get('emp_id')}-{data_token.get('name')} en la fecha {timestamp}"
+    create_notification_permission_notGUI(
+        msg, ["almacen"], "Notifaction de Inventario", data_token.get("emp_id"), 0
+    )
     return True, result
 
 
-def update_product_amc(data):
+def update_product_amc(data, data_token):
     flag, error, result = update_product_db(
         id_product=data["info"]["id"],
         sku=data["info"]["sku"],
@@ -297,6 +339,13 @@ def update_product_amc(data):
         timestamp,
         None,
         "update",
+    )
+    msg = (f"Se ha actualizado el producto {data['info']['name']} con sku {data['info']['sku']} "
+           f"por el empleado {data_token.get('emp_id')}-{data_token.get('name')} en la fecha {timestamp}; "
+           f"tambien se ha registrado un movimiento de {movement_type} "
+           f"de {abs(data['info']['quantity_move'])} referencia update")
+    create_notification_permission_notGUI(
+        msg, ["almacen"], "Notifaction de Inventario", data_token.get("emp_id"), 0
     )
     return True, result
 
@@ -363,7 +412,6 @@ def insert_multiple_products_from_api(data):
         if len(data_out["errors_movements"]) > 0
         else ""
     )
-    data_out["msg"] = msg
     return data_out
 
 
@@ -457,7 +505,7 @@ def insert_and_update_multiple_products_from_api(data, token_data=None):
     return data_out
 
 
-def insert_multiple_movements_from_api(data):
+def insert_multiple_movements_from_api(data, data_token):
     movements = data["movements"]
     data_out = []
     time_zone = pytz.timezone(timezone_software)
@@ -509,6 +557,10 @@ def insert_multiple_movements_from_api(data):
         else:
             data_out.append(f"Update stock success. Result: {result}")
     msg_notification = "--System Notification--\n" + "\n".join(data_out)
+    msg_notification += f"[Timestamp: {date}]"
+    msg_notification += f"[ID: {data_token.get('emp_id', 'No id')}]"
+    msg_notification += f"[Name: {data_token.get('name', 'No name')}]"
+
     create_notification_permission_notGUI(
         msg_notification, ["almacen"], "Notifaction de Movimientos", 0, 0
     )

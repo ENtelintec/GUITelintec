@@ -9,7 +9,12 @@ from datetime import datetime
 import jwt
 import pytz
 
-from static.constants import format_timestamps, secrets, file_size_pages, timezone_software
+from static.constants import (
+    format_timestamps,
+    secrets,
+    file_size_pages,
+    timezone_software,
+)
 from templates.controllers.notifications.Notifications_controller import (
     insert_notification,
 )
@@ -65,6 +70,7 @@ def create_notification_permission_notGUI(
     :param permissions:
     :return:
     """
+    sender_id = sender_id if sender_id else 0
     permissions = [item.lower() for item in permissions]
     time_zone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)

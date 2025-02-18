@@ -15,34 +15,24 @@ def get_notifications_by_user(user_id: int, status="%"):
     sql = (
         "SELECT timestamp, id, body "
         "FROM sql_telintec.notifications_gui "
-        "WHERE body->'$.receiver_id' = %s and body->'$.status' like %s "
+        "WHERE body->'$.receiver_id' = %s and body->'$.status' like %s ORDER BY body->'$.status' , timestamp DESC "
     )
     vals = (user_id, status)
     flag, error, result = execute_sql(sql, vals, 2)
     return flag, error, result
 
 
-def get_notifications_by_permission(permissions_key: str, status="%"):
-    sql = (
-        "SELECT timestamp, id, body "
-        "FROM sql_telintec.notifications_gui "
-        "WHERE body->'$.app' REGEXP %s and body->'$.status' like %s "
+def get_notifications_by_permission(permissions_keys: list, sender_id="%", status="%"):
+    regexp_clauses = " OR ".join(
+        [f"body->'$.app' REGEXP '{key}'" for key in permissions_keys]
     )
-    vals = (permissions_key, status)
-    flag, error, result = execute_sql(sql, vals, 2)
-    return flag, error, result
-
-
-def get_notification_by_permission(user_id: int, permissions=None):
     sql = (
-        "SELECT timestamp, id, body "
-        "FROM sql_telintec.notifications_gui "
-        "WHERE body->'$.receiver_id' = %s "
+        f"SELECT timestamp, id, body "
+        f"FROM sql_telintec.notifications_gui "
+        f"WHERE ({regexp_clauses}) and body->'$.status' like %s OR body->'$.sender_id' like %s "
+        f"ORDER BY body->'$.status', timestamp DESC"
     )
-    vals = (user_id,)
-    if permissions is not None:
-        for item in permissions:
-            sql += f"OR body->'$.app' REGEXP '{item.lower()}' "
+    vals = (status, sender_id)
     flag, error, result = execute_sql(sql, vals, 2)
     return flag, error, result
 

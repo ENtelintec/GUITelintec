@@ -65,14 +65,14 @@ def get_payrolls_with_info(employee_id):
 
 
 def update_payroll_employees():
-    sql = "SELECT employee_id " "from sql_telintec.employees"
+    sql = "SELECT employee_id from sql_telintec.employees"
     flag, error, result = execute_sql(sql, None, 5)
     if not flag:
         return flag, error, []
     data_out = []
     for employee in result:
         emp_id = employee[0]
-        sql = "INSERT INTO " "sql_telintec.payroll (id) " "VALUES (%s)"
+        sql = "INSERT INTO sql_telintec.payroll (id) VALUES (%s)"
         vals = (emp_id,)
         flag, error, result = execute_sql(sql, vals, 4)
         data_out.append([flag, error, emp_id])
