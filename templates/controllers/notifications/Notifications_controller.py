@@ -37,20 +37,6 @@ def get_notifications_by_permission(permissions_keys: list, sender_id="%", statu
     return flag, error, result
 
 
-def get_notification_by_permission(user_id: int, permissions=None):
-    sql = (
-        "SELECT timestamp, id, body "
-        "FROM sql_telintec.notifications_gui "
-        "WHERE body->'$.receiver_id' = %s ORDER BY body->'$.status' , timestamp DESC "
-    )
-    vals = (user_id,)
-    if permissions is not None:
-        for item in permissions:
-            sql += f"OR body->'$.app' REGEXP '{item.lower()}' "
-    flag, error, result = execute_sql(sql, vals, 2)
-    return flag, error, result
-
-
 def insert_notification(body: dict):
     time_zone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
