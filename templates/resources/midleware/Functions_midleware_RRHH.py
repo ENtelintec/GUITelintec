@@ -3,6 +3,7 @@ __author__ = "Edisson Naula"
 __date__ = "$ 28/jun./2024  at 16:28 $"
 
 import json
+import zipfile
 from datetime import datetime
 
 import pandas as pd
@@ -16,6 +17,8 @@ from static.constants import (
     timezone_software,
     quizzes_temp_pdf,
     filepath_daemons,
+    filepath_settings,
+    file_temp_zip,
 )
 from templates.Functions_Sharepoint import (
     get_files_site,
@@ -46,6 +49,8 @@ from templates.misc.Functions_Files import (
     unify_data_employee,
 )
 from templates.misc.Functions_Files_RH import check_fichajes_files_in_directory
+
+import os
 
 
 class ClockFichajeHours:
@@ -326,7 +331,7 @@ def update_files_data_nominas(key: str, paths_pdf_xml: dict, data_xml: dict):
 
 def update_data_docs_nomina(patterns=None, use_index=False):
     print("Updating data docs nomina ", patterns)
-    settings = json.load(open("files/settings.json", "r"))
+    settings = json.load(open(filepath_settings, "r"))
     url_shrpt = settings["gui"]["RRHH"]["url_shrpt"]
     folder_rrhh = settings["gui"]["RRHH"]["folder_rrhh"]
     folder_nominas = settings["gui"]["RRHH"]["folder_nominas"]
@@ -390,17 +395,25 @@ def update_data_docs_nomina(patterns=None, use_index=False):
     return results
 
 
-def download_nomina_doc(data):
-    settings = json.load(open("files/settings.json", "r"))
+def download_nomina_docs(data):
+    settings = json.load(open(filepath_settings, "r"))
     url_shrpt = settings["gui"]["RRHH"]["url_shrpt"]
     folder_rrhh = settings["gui"]["RRHH"]["folder_rrhh"]
-    download_path, code = download_files_site(url_shrpt + folder_rrhh, data["file_url"])
-    return download_path, code
+    download_path_pdf, code1 = download_files_site(url_shrpt + folder_rrhh, data["pdf"])
+    download_path_xml, code2 = download_files_site(url_shrpt + folder_rrhh, data["xml"])
+    with zipfile.ZipFile(file_temp_zip, "w") as zipf:
+        if code1 == 200:
+            name_file = os.path.basename(download_path_pdf)
+            zipf.write(download_path_pdf, arcname=name_file)
+        if code2 == 200:
+            name_file = os.path.basename(download_path_xml)
+            zipf.write(download_path_xml, arcname=name_file)
+    code = 200 if os.path.exists(file_temp_zip) else 400
+    return file_temp_zip, code
 
 
 def get_files_list_nomina_RH(emp_id):
     flag, error, result = get_payrolls(emp_id)
-    # files = []
     dicts_data = []
     for item in result:
         emp_id = int(item[0])
@@ -504,7 +517,7 @@ def generate_pdf_from_json(data):
 
 
 def get_files_fichaje_shrpt():
-    settings = json.load(open("files/settings.json", "r"))
+    settings = json.load(open(filepath_settings, "r"))
     url_shrpt = settings["gui"]["RRHH"]["url_shrpt"]
     folder_rrhh = settings["gui"]["RRHH"]["folder_rrhh"]
     folder_fichaje = settings["gui"]["RRHH"]["folder_checador"]
@@ -515,7 +528,7 @@ def get_files_fichaje_shrpt():
 
 
 def download_fichaje_file(data):
-    settings = json.load(open("files/settings.json", "r"))
+    settings = json.load(open(filepath_settings, "r"))
     url_shrpt = settings["gui"]["RRHH"]["url_shrpt"]
     folder_rrhh = settings["gui"]["RRHH"]["folder_rrhh"]
     download_path, code = download_files_site(
@@ -550,7 +563,7 @@ def create_mail_payroll(data):
     asunto = data["subject"]
     cuerpo = data["body"]
     _from = data["from_"]
-    settings = json.load(open("files/settings.json", "r"))
+    settings = json.load(open(filepath_settings, "r"))
     url_shrpt = settings["gui"]["RRHH"]["url_shrpt"]
     folder_rrhh = settings["gui"]["RRHH"]["folder_rrhh"]
     download_path_xml, code = download_files_site(url_shrpt + folder_rrhh, data["xml"])
