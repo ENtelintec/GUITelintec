@@ -85,14 +85,13 @@ from templates.controllers.employees.vacations_controller import (
 from templates.resources.midleware.Functions_midleware_RRHH import (
     get_files_fichaje,
     get_fichaje_data,
-    get_files_list_nomina,
     insert_new_vacation,
     update_vacation,
     get_all_quizzes,
     generate_pdf_from_json,
     update_files_payroll,
     create_mail_payroll,
-    update_payroll_list_employees, update_data_employee,
+    update_payroll_list_employees, update_data_employee, get_files_list_nomina_RH,
 )
 
 ns = Namespace("GUI/api/v1/rrhh")
@@ -566,9 +565,9 @@ class DownloadFilesPayroll(Resource):
         flag, data_token, msg = token_verification_procedure(request, department="rrhh")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        code, dicts_data = get_files_list_nomina(emp_id)
+        code, dicts_data = get_files_list_nomina_RH(emp_id)
         if code != 200:
-            return {"data": None, "msg": "No files"}, code
+            return {"data_raw": None, "msg": "No files"}, code
         return {"data_raw": dicts_data, "msg": "ok"}, code
 
 
