@@ -29,7 +29,6 @@ def get_all_notification_db_permission(status, data_token):
     code = 200
     permissions = data_token.get("permissions", {})
     terms_list = [item.split(".")[-1].lower() for item in permissions.values()]
-    print(terms_list, data_token.get("emp_id", "%"), status)
     flag, error, result = get_notifications_by_permission(
         terms_list, data_token.get("emp_id", "%"), status
     )

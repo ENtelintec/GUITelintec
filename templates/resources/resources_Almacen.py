@@ -36,9 +36,7 @@ from static.Models.api_movements_models import (
     movement_update_model,
     MovementUpdateForm,
 )
-from templates.Functions_Utils import create_notification_permission_notGUI
 from templates.controllers.product.p_and_s_controller import (
-    delete_movement_db,
     delete_product_db,
 )
 from templates.resources.methods.Functions_Aux_Login import token_verification_procedure
@@ -191,7 +189,7 @@ class InventoryProduct(Resource):
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
-        flag, data_out = insert_product_db(data)
+        flag, data_out = insert_product_db(data, data_token)
         msg_list, _providers_dict_amc, brands_dict = "", None, None
         if flag:
             (
@@ -218,7 +216,7 @@ class InventoryProduct(Resource):
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
-        flag, data_out = update_product_amc(data)
+        flag, data_out = update_product_amc(data, data_token)
         msg_list, _providers_dict_amc, brands_dict = "", None, None
         if flag:
             (

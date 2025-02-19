@@ -398,7 +398,7 @@ def download_nomina_doc(data):
     return download_path, code
 
 
-def get_files_list_nomina(emp_id):
+def get_files_list_nomina_RH(emp_id):
     flag, error, result = get_payrolls(emp_id)
     # files = []
     dicts_data = []
@@ -406,20 +406,32 @@ def get_files_list_nomina(emp_id):
         emp_id = int(item[0])
         name = f"{item[2].upper()} {item[3].upper()}"
         dict_data = json.loads(item[1])
-        # for year in dict_data.keys():
-        #     for month in dict_data[year].keys():
-        #         for file in dict_data[year][month].keys():
-        #             files.append(
-        #                 {
-        #                     "year": year,
-        #                     "month": month,
-        #                     "files": dict_data[year][month][file],
-        #                     "name": file,
-        #                     "emp_id": emp_id,
-        #                 }
-        #             )
         dicts_data.append({"id": emp_id, "name": name, "data": dict_data})
     return 200, dicts_data
+
+
+def get_files_list_nomina(emp_id):
+    flag, error, result = get_payrolls(emp_id)
+    files = []
+    dicts_data = []
+    for item in result:
+        emp_id = int(item[0])
+        name = f"{item[2].upper()} {item[3].upper()}"
+        dict_data = json.loads(item[1])
+        for year in dict_data.keys():
+            for month in dict_data[year].keys():
+                for file in dict_data[year][month].keys():
+                    files.append(
+                        {
+                            "year": year,
+                            "month": month,
+                            "files": dict_data[year][month][file],
+                            "name": file,
+                            "emp_id": emp_id,
+                        }
+                    )
+        dicts_data.append({"id": emp_id, "name": name, "data": dict_data})
+    return 200, files
 
 
 def insert_new_vacation(data):
