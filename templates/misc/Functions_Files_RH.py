@@ -16,17 +16,21 @@ def check_files_pairs_date(files_data: dict) -> dict:
             continue
         pairs = []
         date1 = files_data[k]["date"]
-        date1 = datetime.strptime(date1, "%d-%m-%Y")
-        for k2 in files_data.keys():
-            if "Fichaje" in k2:
-                continue
-            if k2 != k:
-                date2 = files_data[k2]["date"]
-                date2 = datetime.strptime(date2, "%d-%m-%Y")
-                diff_dates = date1 - date2
-                if 0 <= diff_dates.days <= 31 and date2 <= date1:
-                    pairs.append(k2)
-        files_data[k]["pairs"] = pairs if len(pairs) > 0 else None
+        try:
+            date1 = datetime.strptime(date1, "%d-%m-%Y")
+            for k2 in files_data.keys():
+                if "Fichaje" in k2:
+                    continue
+                if k2 != k:
+                    date2 = files_data[k2]["date"]
+                    date2 = datetime.strptime(date2, "%d-%m-%Y")
+                    diff_dates = date1 - date2
+                    if 0 <= diff_dates.days <= 31 and date2 <= date1:
+                        pairs.append(k2)
+            files_data[k]["pairs"] = pairs if len(pairs) > 0 else None
+        except Exception as e:
+            print(e)
+            files_data[k]["pairs"] = None
     return files_data
 
 
