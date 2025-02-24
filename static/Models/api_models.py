@@ -388,14 +388,6 @@ request_file_report_quizz_model = api.model(
     },
 )
 
-request_file_model = api.model(
-    "RequestFile",
-    {
-        "file_url": fields.String(required=True, description="The file url"),
-        "emp_id": fields.Integer(required=True, description="The employee id"),
-    },
-)
-
 
 def date_filter(date):
     # Example filter function to format the date
@@ -491,6 +483,7 @@ class NotificationForm(Form):
 class NotificationInsertForm(Form):
     info = FormField(NotificationForm)
 
+
 class NotificationUpdateForm(Form):
     info = FormField(NotificationForm)
     id = IntegerField(
@@ -510,11 +503,6 @@ class RequestAVResponseForm(Form):
     filename = StringField("filename", validators=[InputRequired()])
     files = FieldList(StringField(), validators=[], default=[])
     id = IntegerField("id", validators=[], default=0)
-
-
-class RequestFileForm(Form):
-    file_url = StringField("file_url", validators=[InputRequired()])
-    emp_id = IntegerField("emp_id", validators=[InputRequired()])
 
 
 class RequestFileReportQuizzForm(Form):

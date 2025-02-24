@@ -13,7 +13,8 @@ def get_payrolls(employee_id):
             "SELECT id, files_data, sql_telintec.employees.name, sql_telintec.employees.l_name "
             "FROM sql_telintec.payroll "
             "LEFT JOIN sql_telintec.employees ON employees.employee_id = payroll.id "
-            "ORDER BY sql_telintec.employees.name "
+            "WHERE sql_telintec.employees.status = 'activo' "
+            "ORDER BY sql_telintec.employees.name, sql_telintec.employees.l_name "
         )
         flag, error, result = execute_sql(sql, None, 5)
         return flag, error, result

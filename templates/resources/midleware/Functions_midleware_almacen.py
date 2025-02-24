@@ -45,7 +45,8 @@ from templates.controllers.product.p_and_s_controller import (
     get_product_barcode_data,
     get_last_sku,
     get_movements_type_db_all,
-    get_movements_type_db, delete_movement_db,
+    get_movements_type_db,
+    delete_movement_db,
 )
 from templates.controllers.supplier.suppliers_controller import (
     get_all_suppliers_amc,
@@ -144,13 +145,16 @@ def insert_movement(data, data_token):
     )
     update_stock_db(data["info"]["id_product"], quantity_final, just_add=False)
     msg_notification = (
-            "--System Notification--\n"
-            + f"Se ha realizado un movimiento de {type_m} "
-              f"de {data['info']['quantity']} unidades del producto {data['info']['id_product']} "
-              f"con fecha {timestamp} y referencia {data['info']['reference']} del empleado {data_token.get('emp_id')}-{data_token.get('name')}"
+        "--System Notification--\n" + f"Se ha realizado un movimiento de {type_m} "
+        f"de {data['info']['quantity']} unidades del producto {data['info']['id_product']} "
+        f"con fecha {timestamp} y referencia {data['info']['reference']} del empleado {data_token.get('emp_id')}-{data_token.get('name')}"
     )
     create_notification_permission_notGUI(
-        msg_notification, ["almacen"], "Notifaction de Movimiento", data_token.get("emp_id"), 0
+        msg_notification,
+        ["almacen"],
+        "Notifaction de creación de Movimiento",
+        data_token.get("emp_id"),
+        0,
     )
     if not flag:
         return False, e
@@ -185,20 +189,26 @@ def update_movement(data, data_token):
         data["info"]["sm_id"],
         type_m,
         data["info"]["id_product"],
+        data["info"]["reference"],
     )
     if not flag:
         return False, e
-    flag, error, result = update_stock_db(
-        data["info"]["id_product"], actual_stock[0] - quantity + p_quantity
-    )
+    if p_quantity != quantity:
+        flag, error, result = update_stock_db(
+            data["info"]["id_product"], actual_stock[0] - quantity + p_quantity
+        )
     msg_notification = (
-            "--System Notification--\n"
-            + f"Se ha realizado un movimiento de {type_m} "
-              f"de {data['info']['quantity']} unidades del producto {data['info']['id_product']} "
-              f"con fecha {timestamp} y referencia {data['info']['reference']} del empleado {data_token.get('emp_id')}-{data_token.get('name')}"
+        "--System Notification--\n" + f"Se ha realizado un movimiento de {type_m} "
+        f"de {data['info']['quantity']} unidades del producto {data['info']['id_product']} "
+        f"con fecha {timestamp} y (referencia-{data['info']['reference']}; folio-{data['info']['sm_id']} "
+        f"del empleado {data_token.get('emp_id')}-{data_token.get('name')}"
     )
     create_notification_permission_notGUI(
-        msg_notification, ["almacen"], "Notifaction de Movimiento", data_token.get("emp_id"), 0
+        msg_notification,
+        ["almacen"],
+        "Notifaction de actualización de Movimiento",
+        data_token.get("emp_id"),
+        0,
     )
     if not flag:
         return False, e
@@ -211,15 +221,14 @@ def delete_movement_amc(data, data_token):
     date = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_date)
     if flag:
         msg_notification = (
-                "--System Notification--\n"
-                + "El movimiento con id: "
-                + str(data["id"])
-                + f" ha sido eliminado por el empleado {data_token.get('emp_id')}-{data_token.get('name')}"
-                + f" en la fecha {date}"
-
+            "--System Notification--\n"
+            + "El movimiento con id: "
+            + str(data["id"])
+            + f" ha sido eliminado por el empleado {data_token.get('emp_id')}-{data_token.get('name')}"
+            + f" en la fecha {date}"
         )
         create_notification_permission_notGUI(
-            msg_notification, ["almacen"], "Notifaction de Movimiento", 0, 0
+            msg_notification, ["almacen"], "Notifaction de eliminacion de Movimiento", 0, 0
         )
         return True, result
     else:
@@ -340,10 +349,12 @@ def update_product_amc(data, data_token):
         None,
         "update",
     )
-    msg = (f"Se ha actualizado el producto {data['info']['name']} con sku {data['info']['sku']} "
-           f"por el empleado {data_token.get('emp_id')}-{data_token.get('name')} en la fecha {timestamp}; "
-           f"tambien se ha registrado un movimiento de {movement_type} "
-           f"de {abs(data['info']['quantity_move'])} referencia update")
+    msg = (
+        f"Se ha actualizado el producto {data['info']['name']} con sku {data['info']['sku']} "
+        f"por el empleado {data_token.get('emp_id')}-{data_token.get('name')} en la fecha {timestamp}; "
+        f"tambien se ha registrado un movimiento de {movement_type} "
+        f"de {abs(data['info']['quantity_move'])} referencia update"
+    )
     create_notification_permission_notGUI(
         msg, ["almacen"], "Notifaction de Inventario", data_token.get("emp_id"), 0
     )

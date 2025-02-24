@@ -7,13 +7,12 @@ from flask_restx import Namespace, Resource
 
 from static.Models.api_models import (
     expected_headers_per,
-    request_file_model,
-    RequestFileForm,
 )
-from templates.resources.methods.Functions_Aux_Login import verify_token, token_verification_procedure
+from static.Models.api_payroll_models import RequestFileForm, request_file_model
+from templates.resources.methods.Functions_Aux_Login import token_verification_procedure
 from templates.resources.midleware.Functions_midleware_RRHH import (
     get_files_list_nomina,
-    download_nomina_doc,
+    download_nomina_docs,
 )
 
 ns = Namespace("GUI/api/v1/common")
@@ -23,7 +22,9 @@ ns = Namespace("GUI/api/v1/common")
 class ListFilesPayroll(Resource):
     @ns.expect(expected_headers_per)
     def get(self, emp_id):
-        flag, data_token, msg = token_verification_procedure(request, department="rrhh", emp_id=emp_id)
+        flag, data_token, msg = token_verification_procedure(
+            request, department="rrhh", emp_id=emp_id
+        )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         code, data_out = get_files_list_nomina(emp_id)
@@ -41,10 +42,12 @@ class DownloadFilesPayroll(Resource):
         if not validator.validate():
             return {"error": validator.errors}, 400
         data = validator.data
-        flag, data_token, msg = token_verification_procedure(request, emp_id=data["emp_id"], department="rrhh")
+        flag, data_token, msg = token_verification_procedure(
+            request, emp_id=data["emp_id"], department="rrhh"
+        )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        filepath, code = download_nomina_doc(data)
+        filepath, code = download_nomina_docs(data)
         if code != 200:
             return {"data": None, "msg": "No files"}, code
         return send_file(filepath, as_attachment=True)

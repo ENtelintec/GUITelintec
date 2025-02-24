@@ -3,6 +3,7 @@ __author__ = "Edisson Naula"
 __date__ = "$ 11/feb/2025  at 21:36 $"
 
 from flask_restx import fields
+from wtforms.fields.numeric import IntegerField
 from wtforms.fields.simple import StringField
 from wtforms.form import Form
 from wtforms.validators import InputRequired
@@ -62,6 +63,15 @@ update_data_payroll_model = api.model(
     },
 )
 
+request_file_model = api.model(
+    "RequestFile",
+    {
+        "emp_id":  fields.Integer(required=True, description="The employee id"),
+        "pdf": fields.String(required=True, description="The file pdf url"),
+        "xml": fields.String(required=True, description="The file xml url"),
+    },
+)
+
 
 class UpdateFilesForm(Form):
     year = StringField("year", validators=[InputRequired()])
@@ -82,3 +92,9 @@ class CreateMailForm(Form):
 class UpdateDataPayrollForm(Form):
     id = StringField("id", validators=[InputRequired()])
     data_dict = StringField("data_dict", validators=[validate_json])
+
+
+class RequestFileForm(Form):
+    emp_id = IntegerField("emp_id", validators=[InputRequired()])
+    pdf = StringField("pdf", validators=[InputRequired()])
+    xml = StringField("xml", validators=[InputRequired()])
