@@ -534,7 +534,6 @@ def download_fichaje_file(data):
     download_path, code = download_files_site(
         url_shrpt + folder_rrhh, data["file_url"], data["temp"]
     )
-    print(download_path, code)
     return download_path, code
 
 

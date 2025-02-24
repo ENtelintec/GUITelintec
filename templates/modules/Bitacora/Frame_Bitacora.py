@@ -9,7 +9,12 @@ import ttkbootstrap as ttk
 from ttkbootstrap.scrolled import ScrolledFrame
 from ttkbootstrap.tableview import Tableview
 
-from static.constants import log_file_bitacora_path, delta_bitacora_edit, format_date
+from static.constants import (
+    log_file_bitacora_path,
+    delta_bitacora_edit,
+    format_date,
+    format_timestamps,
+)
 from templates.misc.Functions_AuxFiles import (
     update_bitacora,
     get_events_op_date,
@@ -32,7 +37,7 @@ from templates.controllers.employees.employees_controller import get_employees_o
 def check_date_difference(date_modify, delta):
     flag = True
     date_now = datetime.now()
-    date_modify = datetime.strptime(date_modify, "%Y-%m-%d")
+    date_modify = datetime.strptime(date_modify, format_date)
     date_modify = date_modify.date()
     # week of the month
     week_modify = date_modify.isocalendar()[1]
@@ -494,10 +499,21 @@ class BitacoraEditFrame(ScrolledFrame):
 
     def on_double_click_table(self, event):
         row = event.widget.item(event.widget.selection()[0], "values")
-        (id_emp, name, contract, event, place, activity, timestamp, value, comment) = (
-            row
-        )
-        timestamp = datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S")
+        (
+            id_emp,
+            name,
+            contract,
+            event,
+            place,
+            activity,
+            incidence,
+            timestamp,
+            value,
+            comment,
+            approved,
+            raw_c,
+        ) = row
+        timestamp = datetime.strptime(timestamp, format_timestamps)
         value = float(value)
         comment_dict = split_commment(comment)
         self.emp_id = int(id_emp)
@@ -514,9 +530,9 @@ class BitacoraEditFrame(ScrolledFrame):
         self.comment_entry.delete(0, "end")
         self.comment_entry.insert(0, comment_dict["comment"])
         self.svar_info.set(f"Empleado: {name}, ID: {self.emp_id}")
-        self.svar_activity.set(comment_dict["activity"])
-        self.location.set(comment_dict["place"])
-        self.incidencia_selector.set(comment_dict["incidence"])
+        self.svar_activity.set(activity)
+        self.location.set(place)
+        self.incidencia_selector.set(incidence)
         self.date_selector = set_dateEntry_new_value(
             self.frame_inputs,
             self.date_selector,

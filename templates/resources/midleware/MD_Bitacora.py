@@ -8,12 +8,24 @@ from datetime import datetime, timedelta
 
 import pytz
 
-from static.constants import format_date, log_file_bitacora_path, delta_bitacora_edit, filepath_bitacora_download, format_timestamps, \
-    timezone_software
+from static.constants import (
+    format_date,
+    log_file_bitacora_path,
+    delta_bitacora_edit,
+    filepath_bitacora_download,
+    format_timestamps,
+    timezone_software,
+)
 from templates.Functions_Utils import create_notification_permission
 from templates.controllers.fichajes.fichajes_controller import get_all_fichajes_op
-from templates.misc.Functions_AuxFiles import split_commment, unify_comment_dict, get_events_op_date, update_bitacora, \
-    update_bitacora_value, erase_value_bitacora
+from templates.misc.Functions_AuxFiles import (
+    split_commment,
+    unify_comment_dict,
+    get_events_op_date,
+    update_bitacora,
+    update_bitacora_value,
+    erase_value_bitacora,
+)
 from templates.misc.Functions_Files import write_log_file
 
 
@@ -148,7 +160,9 @@ def get_events_from_extraordinary_sources(hour_in: str, hour_out: str, data: dic
 
 def get_extras_last_month(extras_dict: dict, date=None):
     time_zone = pytz.timezone(timezone_software)
-    date_today = datetime.now(pytz.utc).astimezone(time_zone).date() if date is None else date
+    date_today = (
+        datetime.now(pytz.utc).astimezone(time_zone).date() if date is None else date
+    )
     year = date_today.year
     month = date_today.month - 1
     day = date_today.day
@@ -212,7 +226,25 @@ def get_events_bitacora(data):
     date = data["date"]
     date = datetime.strptime(date, format_date) if isinstance(date, str) else date
     events, columns = get_events_op_date(date, True, emp_id=data["emp_id"])
-    return {"data": events, "columns": columns}, 200
+    data_events = []
+    for item in events:
+        data_events.append(
+            {
+                "id": item[0],
+                "name": item[1].upper(),
+                "contrato": item[2],
+                "evento": item[3],
+                "lugar": item[4],
+                "act": item[5],
+                "incidencia": item[6],
+                "valor": item[7],
+                "timestamp": item[8],
+                "commentario": item[9],
+                "approved": int(item[10]),
+                "comment_raw": item[11],
+            }
+        )
+    return {"data": events, "dataEvents": data_events, "columns": columns}, 200
 
 
 def create_event_bitacora_from_api(data):
@@ -227,9 +259,7 @@ def create_event_bitacora_from_api(data):
             data["hour_in"], data["hour_out"], data
         )
         for index, item in enumerate(data_events):
-            flag, error, result = update_bitacora(
-                data["id_emp"], event[index], item
-            )
+            flag, error, result = update_bitacora(data["id_emp"], event[index], item)
             if flag:
                 events_added.append(f"{event[index]}_{item[1]}, result: {result}")
     else:
@@ -239,9 +269,7 @@ def create_event_bitacora_from_api(data):
             (data["date"], data["value"], data["comment"], data["contract"]),
         )
         if flag:
-            events_added.append(
-                f"{data['event']}_{data['value']}, result: {result}"
-            )
+            events_added.append(f"{data['event']}_{data['value']}, result: {result}")
     if flag:
         msg = (
             f"Record inserted-->Por: {data['id_leader']}, para empleado: {data['id_emp']}, Fecha: {data['date']}, "
@@ -334,16 +362,13 @@ def get_file_report_bitacora(data):
         case "week":
             for item in events:
                 if (
-                        datetime.strptime(item[7], format_timestamps).isocalendar()[1]
-                        == date.isocalendar()[1]
+                    datetime.strptime(item[7], format_timestamps).isocalendar()[1]
+                    == date.isocalendar()[1]
                 ):
                     event_filtered.append(item)
         case "month":
             for item in events:
-                if (
-                        datetime.strptime(item[7], format_timestamps).month
-                        == date.month
-                ):
+                if datetime.strptime(item[7], format_timestamps).month == date.month:
                     event_filtered.append(item)
     # save csv
     with open(filepath_bitacora_download, "w") as file:

@@ -7,12 +7,15 @@ import os
 import re
 from datetime import datetime
 
+import pytz
+
 from static.constants import (
     cache_file_resume_fichaje_path,
     status_dic,
     quizz_out_path,
     format_date,
     format_timestamps,
+    timezone_software,
 )
 from templates.misc.Functions_Files import (
     get_fichajes_resume_cache,
@@ -96,33 +99,34 @@ def update_event_dict(event_dic, data, event=None):
     date = (
         datetime.strptime(data[0], format_date) if isinstance(data[0], str) else data[0]
     )
-
+    time_zone = pytz.timezone(timezone_software)
+    timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
     if str(date.year) not in event_dic.keys():
         event_dic[str(date.year)] = {}
         event_dic[str(date.year)][str(date.month)] = {}
         event_dic[str(date.year)][str(date.month)][str(date.day)] = {
             "value": data[1],
             "comment": data[2],
-            "timestamp": date.strftime(format_timestamps),
+            "timestamp": timestamp,
         }
     elif str(date.month) not in event_dic[str(date.year)].keys():
         event_dic[str(date.year)][str(date.month)] = {}
         event_dic[str(date.year)][str(date.month)][str(date.day)] = {
             "value": data[1],
             "comment": data[2],
-            "timestamp": date.strftime(format_timestamps),
+            "timestamp": timestamp,
         }
     elif str(date.day) not in event_dic[str(date.year)][str(date.month)].keys():
         event_dic[str(date.year)][str(date.month)][str(date.day)] = {
             "value": data[1],
             "comment": data[2],
-            "timestamp": date.strftime(format_timestamps),
+            "timestamp": timestamp,
         }
     else:
         event_dic[str(date.year)][str(date.month)][str(date.day)] = {
             "value": data[1],
             "comment": data[2],
-            "timestamp": date.strftime(format_timestamps),
+            "timestamp": timestamp,
         }
     return event_dic
 
@@ -297,10 +301,12 @@ def update_bitacora_value(emp_id: int, event, data, id_event=None):
         datetime.strptime(data[0], format_date) if isinstance(data[0], str) else data[0]
     )
     try:
+        time_zone = pytz.timezone(timezone_software)
+        timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
         event_dic[str(date.year)][str(date.month)][str(date.day)] = {
             "value": data[1],
             "comment": data[2],
-            "timestamp": date.strftime(format_timestamps),
+            "timestamp": timestamp,
         }
     except KeyError:
         print(f"error at updating the value for {date}")
@@ -422,8 +428,8 @@ def get_data_from_dict_by_date(data: dict, date: datetime, stamp: str):
     if str(date.year) in data.keys():
         if str(date.month) in data[str(date.year)].keys():
             for day in data[str(date.year)][str(date.month)].values():
-                place, activity, incidence, comment = get_place_incidence_from_comment(
-                    day["comment"]
+                place, activity, incidence, aproved, comment = (
+                    get_place_incidence_from_comment(day["comment"])
                 )
                 data_out.append(
                     [
@@ -434,6 +440,8 @@ def get_data_from_dict_by_date(data: dict, date: datetime, stamp: str):
                         day["timestamp"],
                         day["value"],
                         comment,
+                        aproved,
+                        day["comment"],
                     ]
                 )
             return data_out
@@ -468,6 +476,7 @@ def get_place_incidence_from_comment(comment: str):
     activity = ""
     incidence = ""
     comment_out = ""
+    aproved = "0"
     for i, row in enumerate(rows):
         if i >= 1:
             if "actividad" in row:
@@ -476,11 +485,13 @@ def get_place_incidence_from_comment(comment: str):
                 place = row.split("-->")[1]
             elif "incidencia" in row:
                 incidence = row.split("-->")[1]
+            elif "aproved" in row:
+                aproved = row.split("-->")[1]
             elif "-->" not in row:
                 comment_out = row
         elif "-->" not in row:
             comment_out = row
-    return place, activity, incidence, comment_out
+    return place, activity, incidence, aproved, comment_out
 
 
 def get_events_op_date(date: datetime, hard_update, only_op=True, emp_id=-1):
@@ -556,6 +567,8 @@ def get_events_op_date(date: datetime, hard_update, only_op=True, emp_id=-1):
         "Timestamp",
         "Valor",
         "Comentario",
+        "Aprovado",
+        "Raw",
     )
     return data_events, columns
 
