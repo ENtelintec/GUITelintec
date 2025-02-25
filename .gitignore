@@ -32,7 +32,7 @@ __pycache__/
 /app_gui.exe
 /files/samplev2.pdf
 /files/*.pdf
-/files/files_fichaje/*
+/files/files_fichaje/*.xlsx
 .env_*
 /tester_code.py
 /scripts_db_handle/fill_sm_dummy_data.py

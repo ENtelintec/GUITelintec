@@ -87,8 +87,15 @@ def get_all_movements(type_m: str):
             reference,
             sku,
             supplier,
+            codes,
         ) = item
         reference = json.loads(reference) if reference is not None else None
+        codes = json.loads(codes) if codes is not None else []
+        sku_fabricante = ""
+        for code in codes:
+            if code["tag"] == "sku_fabricante":
+                sku_fabricante = code["value"]
+                break
         out.append(
             {
                 "id": id_m,
@@ -102,6 +109,7 @@ def get_all_movements(type_m: str):
                 "reference": reference,
                 "sku": sku,
                 "supplier": supplier,
+                "sku_fabricante": sku_fabricante,
             }
         )
     return out, 200
@@ -228,7 +236,11 @@ def delete_movement_amc(data, data_token):
             + f" en la fecha {date}"
         )
         create_notification_permission_notGUI(
-            msg_notification, ["almacen"], "Notifaction de eliminacion de Movimiento", 0, 0
+            msg_notification,
+            ["almacen"],
+            "Notifaction de eliminacion de Movimiento",
+            0,
+            0,
         )
         return True, result
     else:

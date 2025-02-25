@@ -107,7 +107,6 @@ class MovementDB(Resource):
         flag, data_token, msg = token_verification_procedure(
             request, department="almacen"
         )
-        print(ns.payload)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
