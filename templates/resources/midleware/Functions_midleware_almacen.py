@@ -90,7 +90,7 @@ def get_all_movements(type_m: str):
             codes,
         ) = item
         reference = json.loads(reference) if reference is not None else None
-        codes = json.loads(codes) if codes is not None else None
+        codes = json.loads(codes) if codes is not None else []
         sku_fabricante = ""
         for code in codes:
             if code["tag"] == "sku_fabricante":
