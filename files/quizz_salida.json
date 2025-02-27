@@ -16,7 +16,7 @@
       "Cambio de Residencia",
       "Mejores Prestaciones"
     ],
-    "answer": 0,
+    "answer": [],
     "type": 1
     },
   "1": {
@@ -50,7 +50,7 @@
       "Totalmente insatisfecho",
       "No aplicable"
     ],
-    "answer": "",
+    "answer": [],
     "type": 3
     },
   "3": {
