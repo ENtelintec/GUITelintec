@@ -2,6 +2,8 @@
 __author__ = "Edisson Naula"
 __date__ = "$ 08/may./2024  at 10:00 $"
 
+import json
+
 from flask import send_file, request
 from flask_restx import Namespace, Resource
 
@@ -22,7 +24,7 @@ from static.Models.api_models import (
     expected_headers_per,
     NotificationUpdateForm,
 )
-from static.constants import filepath_settings
+from static.constants import filepath_settings, quizzes_RRHH
 from templates.controllers.notifications.Notifications_controller import (
     insert_notification,
     update_status_notification,
@@ -233,3 +235,19 @@ class TaskGui(Resource):
             return {"data": data}, 200
         else:
             return {"data": data, "msg": "Error"}, code
+
+
+@ns.route("/download/quizz/<int:type_q>")
+class DownloadFileQuizz(Resource):
+    @ns.expect(expected_headers_per)
+    def get(self, type_q):
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        try:
+            quizz = quizzes_RRHH[str(type_q)]
+            with open(quizz["path"], "r", encoding="utf-8") as file:
+                json_data = json.load(file)
+            return {"data": json_data, "msg": "ok"}, 200
+        except Exception as e:
+            return {"data": f"Error en el tipo de quizz: {str(e)}"}, 400

@@ -359,6 +359,7 @@ def get_all_data_employees(status: str):
         "LEFT JOIN sql_telintec.examenes_med "
         "ON (sql_telintec.employees.employee_id = sql_telintec.examenes_med.empleado_id) "
         "WHERE employees.status LIKE %s "
+        "ORDER BY employees.name, employees.l_name "
     )
     val = (status,)
     flag, error, result = execute_sql(sql, val, type_sql=2)

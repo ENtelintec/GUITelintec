@@ -66,7 +66,7 @@ def create_data_for_table(quizzes_data):
         data.append(
             (
                 body["metadata"]["name_emp"],
-                body["metadata"]["ID_emp"],
+                body["metadata"]["id_emp"],
                 "Completado" if body["status"] == 1 else "Pendiente",
                 body["metadata"]["type_quizz"],
                 body["metadata"]["interviewer"],

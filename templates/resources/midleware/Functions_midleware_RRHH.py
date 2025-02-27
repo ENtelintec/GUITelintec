@@ -19,6 +19,7 @@ from static.constants import (
     filepath_daemons,
     filepath_settings,
     file_temp_zip,
+    format_timestamps,
 )
 from templates.Functions_Sharepoint import (
     get_files_site,
@@ -484,7 +485,9 @@ def get_all_quizzes():
                 "id": item[0],
                 "body": json.loads(item[1]),
                 "data_raw": json.loads(item[2]),
-                "timestamp": item[3],
+                "timestamp": item[3].strftime(format_timestamps)
+                if isinstance(item[3], datetime)
+                else item[3],
             }
         )
     return True, "", data_out

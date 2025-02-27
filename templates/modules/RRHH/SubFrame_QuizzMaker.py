@@ -23,7 +23,7 @@ from templates.Functions_GUI_Utils import (
 class QuizMaker(ttk.Toplevel):
     def __init__(
         self,
-        dict_quizz,
+        dict_quizz=None,
         title=None,
         tipo_id=0,
         out_path=quizz_out_path,

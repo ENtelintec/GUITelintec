@@ -149,9 +149,9 @@ class FrameTasks(ttk.Frame):
         item = event.widget.item(event.widget.selection()[0], "values")
         self.id_task = int(item[0])
         body = json.loads(item[3])
-        if body["title"] in avaliable_tasks:
-            kwargs = create_kwargs(body["title"], body, self.id_task)
-            avaliable_tasks[body["title"]](master=self, **kwargs)
+        if body["title"].lower() in avaliable_tasks:
+            kwargs = create_kwargs(body["title"].lower(), body, self.id_task)
+            avaliable_tasks[body["title"].lower()](master=self, **kwargs)
         else:
             print("No se encontro el tipo de tarea")
 
@@ -162,7 +162,9 @@ class FrameTasks(ttk.Frame):
                 body = json.loads(item[1])
                 body["status"] = 1
                 data_raw = data_out["dict_quizz"]
-                flag, error, out = update_task(data_out["id"], body, 1, data_raw=data_raw)
+                flag, error, out = update_task(
+                    data_out["id"], body, 1, data_raw=data_raw
+                )
                 if not flag:
                     print(str(error))
                 else:
