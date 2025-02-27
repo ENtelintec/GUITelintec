@@ -24,7 +24,10 @@ def create_task(task_title, emp_destiny, emp_origin, task_date, metadata, dict_q
         "changes": [{"action": "creation", "timestamp": timestamp}],
     }
     data_raw = {}
-    sql = "INSERT INTO sql_telintec.tasks_gui (body, timestamp, data_raw) " "VALUES (%s, %s, %s)"
+    sql = (
+        "INSERT INTO sql_telintec.tasks_gui (body, timestamp, data_raw) "
+        "VALUES (%s, %s, %s)"
+    )
     val = (json.dumps(body), timestamp, json.dumps(data_raw))
     flag, error, id_task = execute_sql(sql, val, 4)
     return flag, error, id_task
@@ -75,8 +78,8 @@ def get_all_tasks_by_status(
         vals += (id_task,)
     else:
         if title is not None:
-            sql += "AND body->'$.title' = %s "
-            vals += (title,)
+            sql += "AND LCASE(body->'$.title') REGEXP %s "
+            vals += (title.lower(),)
         if id_destiny is not None:
             sql += "AND body->'$.emp_destiny' = %s "
             vals += (id_destiny,)
@@ -89,11 +92,10 @@ def get_all_tasks_by_status(
 
 def get_task_by_id_emp(id_emp):
     sql = (
-        "SELECT id, body, data_raw "
+        "SELECT id, body, data_raw, timestamp "
         "FROM sql_telintec.tasks_gui "
         "WHERE body->'$.emp_destiny' = %s "
-        "OR body->'$.emp_origin' = %s "
     )
-    vals = (id_emp, id_emp)
+    vals = (id_emp,)
     flag, error, result = execute_sql(sql, vals, 2)
     return flag, error, result

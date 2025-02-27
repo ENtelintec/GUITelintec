@@ -4,8 +4,9 @@ __date__ = "$ 08/may./2024  at 10:34 $"
 
 import json
 import pickle
+from datetime import datetime
 
-from static.constants import filepath_settings
+from static.constants import filepath_settings, format_timestamps
 from templates.Functions_openAI import get_response_assistant, get_files_list_openai
 from templates.controllers.misc.tasks_controller import get_task_by_id_emp
 from templates.controllers.notifications.Notifications_controller import (
@@ -88,9 +89,16 @@ def get_task_by_id_employee(id_emp: int):
     if flag:
         data_out = []
         for item in result:
-            body = json.loads(item[1])
-            data_raw = json.loads(item[2])
-            data_out.append({"id": item[0], "data": body, "data_raw": data_raw})
+            data_out.append(
+                {
+                    "id": item[0],
+                    "body": json.loads(item[1]),
+                    "data_raw": json.loads(item[2]),
+                    "timestamp": item[3].strftime(format_timestamps)
+                    if isinstance(item[3], datetime)
+                    else item[3],
+                }
+            )
         return data_out, 200
     else:
         return [str(error, result)], 400

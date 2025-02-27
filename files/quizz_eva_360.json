@@ -4,28 +4,28 @@
         "subquestions": [ ],
         "options": [],
         "answer": "",
-        "type": 4
+        "type": 5
     },
     "1": {
         "question": "Puesto del Evaluador*",
         "subquestions": [ ],
         "options": [],
         "answer": "",
-        "type": 4
+        "type": 5
     },
     "2": {
         "question": "Nombre del EVALUADO *",
         "subquestions": [ ],
         "options": [],
         "answer": "",
-        "type": 4
+        "type": 5
     },
     "3": {
         "question": "Nivel de Puesto del Evaluado *",
         "subquestions": [],
         "options": ["Autoevaluación", "Jefe Inmediato", "Colega", "Subordinado"],
         "answer": "",
-        "type": 4
+        "type": 2
     },
     "4": {
         "question": "Respecto a Organización",

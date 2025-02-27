@@ -91,7 +91,9 @@ from templates.resources.midleware.Functions_midleware_RRHH import (
     generate_pdf_from_json,
     update_files_payroll,
     create_mail_payroll,
-    update_payroll_list_employees, update_data_employee, get_files_list_nomina_RH,
+    update_payroll_list_employees,
+    update_data_employee,
+    get_files_list_nomina_RH,
 )
 
 ns = Namespace("GUI/api/v1/rrhh")
@@ -705,20 +707,6 @@ class DownloadFileVacations(Resource):
                     f"{emp_id}, {name}, {l_name}, {date_admission}, {seniority}\n"
                 )
         return send_file(filepath, as_attachment=True)
-
-
-@ns.route("/download/quizz/<int:type_q>")
-class DownloadFileQuizz(Resource):
-    @ns.expect(expected_headers_per)
-    def get(self, type_q):
-        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
-        if not flag:
-            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        try:
-            quizz = quizzes_RRHH[str(type_q)]
-            return send_file(quizz["path"], as_attachment=True)
-        except Exception as e:
-            return {"data": f"Error en el tipo de quizz: {str(e)}"}, 400
 
 
 @ns.route("/download/quizz/report")
