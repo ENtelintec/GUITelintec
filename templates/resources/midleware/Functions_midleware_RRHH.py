@@ -20,6 +20,8 @@ from static.constants import (
     filepath_settings,
     file_temp_zip,
     format_timestamps,
+    conversion_quizzes_path,
+    filepath_recommendations,
 )
 from templates.Functions_Sharepoint import (
     get_files_site,
@@ -30,7 +32,10 @@ from templates.controllers.employees.vacations_controller import (
     insert_vacation,
     update_registry_vac,
 )
-from templates.controllers.misc.tasks_controller import get_all_tasks_by_status
+from templates.controllers.misc.tasks_controller import (
+    get_all_tasks_by_status,
+    update_task,
+)
 from templates.controllers.payroll.payroll_controller import (
     get_payrolls,
     update_payroll,
@@ -493,16 +498,158 @@ def get_all_quizzes():
     return True, "", data_out
 
 
+def recommendations_results_quizzes(dict_results: dict, tipo_q: int):
+    # Asumiendo que tienes la ruta correcta en filepath_recommendations
+    dict_conversions_recomen = json.load(
+        open(filepath_recommendations, encoding="utf-8")
+    )
+    dict_recommendations = {
+        "c_final_r": "",
+        "c_dom_r": "",
+        "c_cat_r": "",
+    }
+
+    # Asumiendo que dict_results contiene las claves 'c_final', 'c_dom', 'c_cat'
+    # y que pueden tener valores como 'MUY ALTO', 'ALTO', 'MEDIO', 'BAJO', 'NULO'.
+
+    # Acceder a las recomendaciones basadas en el resultado final, dominio, y categoría
+    final_score = dict_results.get(
+        "c_final", "NULO"
+    )  # Usar NULO como valor por defecto si no se encuentra
+    dom_score = dict_results.get("c_dom", "default_dom")  # Usar un valor por defecto
+    cat_score = dict_results.get("c_cat", "default_cat")  # Usar un valor por defecto
+
+    # Acceder a las recomendaciones finales
+    dict_recommendations["c_final_r"] = dict_conversions_recomen["c_final_r"].get(
+        final_score, ["No hay recomendaciones específicas."]
+    )
+
+    # Aquí necesitas modificar el código según cómo desees manejar las recomendaciones de dominio y categoría
+    # dado que en tu JSON 'c_dom_r' es solo una cadena, puedes necesitar un enfoque diferente o más información
+    # Si 'c_dom_r' debería ser una estructura similar a 'c_final_r', ajusta tu JSON y tu código en consecuencia
+
+    # Acceder a las recomendaciones de categoría
+    if cat_score in dict_conversions_recomen["c_cat_r"]:
+        dict_recommendations["c_cat_r"] = dict_conversions_recomen["c_cat_r"][cat_score]
+    else:
+        dict_recommendations["c_cat_r"] = [
+            "No hay recomendaciones específicas para esta categoría."
+        ]
+
+    return dict_recommendations
+
+
+def calculate_results_quizzes(dict_quizz: dict, tipo_q: int):
+    dict_results = {"c_final": 0, "c_dom": 0, "c_cat": 0, "detail": {}}
+    dict_conversions = json.load(open(conversion_quizzes_path, encoding="utf-8"))
+    match tipo_q:
+        case 1:
+            dict_values = dict_conversions["norm035"]["v1"]["conversion"]
+            c_final = 0
+            for question in dict_quizz.values():
+                if question["items"] != "":
+                    upper_limit = question["items"][1]
+                    lower_limit = question["items"][0]
+                    answers = question["answer"]
+                    for q in range(lower_limit, upper_limit + 1):
+                        for group in dict_values.values():
+                            items = group["items"]
+                            values = group["values"]
+                            if q in items:
+                                res = values[answers[q - lower_limit][1]]
+                                dict_results["detail"][str(q)] = res
+                                c_final += res
+                                break
+            dict_results["c_final"] = c_final
+            dict_cat_doms = dict_conversions["norm035"]["v1"]["categorias"]
+            dict_results["c_dom"] = {}
+            dict_results["c_cat"] = {}
+
+            for cat_dic in dict_cat_doms.values():
+                cat_name = cat_dic["categoria"]
+                dict_results["c_cat"][cat_name] = 0
+                for dom_name, dom_dic in cat_dic["dominio"].items():
+                    dict_results["c_dom"][dom_name] = 0
+                    for dim_dic in dom_dic["dimensiones"]:
+                        dim_name = dim_dic["dimension"]
+                        items = dim_dic["item"]
+                        for q, val in dict_results["detail"].items():
+                            if int(q) in items:
+                                dict_results["c_dom"][dom_name] += val
+                                dict_results["c_cat"][cat_name] += val
+        case 2:
+            dict_values = dict_conversions["norm035"]["v2"]["conversion"]
+            c_final = 0
+            for question in dict_quizz.values():
+                if question["items"] != "":
+                    upper_limit = question["items"][1]
+                    lower_limit = question["items"][0]
+                    answers = question["answer"]
+                    for q in range(lower_limit, upper_limit + 1):
+                        for group in dict_values.values():
+                            items = group["items"]
+                            values = group["values"]
+                            if q in items:
+                                res = values[answers[q - lower_limit][1]]
+                                dict_results["detail"][str(q)] = res
+                                c_final += res
+                                break
+            dict_results["c_final"] = c_final
+            dict_cat_doms = dict_conversions["norm035"]["v2"]["categorias"]
+            dict_results["c_dom"] = {}
+            dict_results["c_cat"] = {}
+            dict_results["c_dim"] = {}
+            for cat_dic in dict_cat_doms.values():
+                cat_name = cat_dic["categoria"]
+                dict_results["c_cat"][cat_name] = 0
+                for dom_name, dom_dic in cat_dic["dominio"].items():
+                    dict_results["c_dom"][dom_name] = 0
+                    for dim_dic in dom_dic["dimensiones"]:
+                        dim_name = dim_dic["dimension"]
+                        items = dim_dic["item"]
+                        dict_results["c_dim"][dim_name] = 0
+                        for q, val in dict_results["detail"].items():
+                            if int(q) in items:
+                                # print("calculate: ", q, items)
+                                dict_results["c_dom"][dom_name] += val
+                                dict_results["c_cat"][cat_name] += val
+                                dict_results["c_dim"][dim_name] += val
+        case _:
+            pass
+    return dict_results
+
+
 def generate_pdf_from_json(data):
+    from static.FramesClasses import dict_typer_quizz_generator
+
     json_dict = data["body"]
     file_out = quizzes_temp_pdf
     tipo_op = json_dict["metadata"]["type_quizz"]
-    from static.FramesClasses import dict_typer_quizz_generator
+    is_update = True
 
     generator = dict_typer_quizz_generator[tipo_op]
+    data_raw = (
+        json.loads(data["data_raw"])
+        if isinstance(data["data_raw"], str)
+        else data["data_raw"]
+    )
+    if "results" not in data_raw.keys():
+        dict_results = calculate_results_quizzes(data_raw, tipo_op)
+        data_raw["results"] = dict_results
+        is_update = False
+    if "recommendations" not in data_raw.keys():
+        dict_recomendations = recommendations_results_quizzes(
+            data_raw["results"], tipo_op
+        )
+        data_raw["recommendations"] = dict_recomendations
+        is_update = False
+    if not is_update:
+        flag, error, result = update_task(data["id"], data["body"], data_raw=data_raw)
+        if not flag:
+            print("Error al actualizar el task", error, result)
     try:
         generator(
-            data["data_raw"],
+            data_raw,
             None,
             file_out,
             json_dict["metadata"]["name_emp"],
