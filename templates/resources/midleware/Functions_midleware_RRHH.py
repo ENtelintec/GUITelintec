@@ -472,6 +472,7 @@ def update_vacation(data):
         seniority_dict[str(item["year"])] = {
             "status": item["status"],
             "comentarios": item["comentarios"],
+            "prima": item["prima"],
         }
     if not len(seniority_dict) > 0:
         return False, "No hay informacion que actualizar o corrupcion de info.", None
