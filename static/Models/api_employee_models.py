@@ -3,16 +3,15 @@ __author__ = "Edisson Naula"
 __date__ = "$ 02/may./2024  at 11:21 $"
 
 from flask_restx import fields
+from wtforms import IntegerField, StringField
 from wtforms.fields.datetime import DateField, DateTimeField
 from wtforms.fields.form import FormField
 from wtforms.fields.list import FieldList
-from wtforms.fields.simple import EmailField
+from wtforms.form import Form
+from wtforms.validators import InputRequired
 
 from static.Models.api_models import date_filter, datetime_filter
 from static.constants import api
-from wtforms.validators import InputRequired
-from wtforms import IntegerField, StringField
-from wtforms.form import Form
 
 employee_model = api.model(
     "Employee",
@@ -214,7 +213,8 @@ vacations_model = api.model(
 employees_vacations_model = api.model(
     "EmployeesVacations", {
         "data": fields.List(fields.Nested(vacations_model)),
-        "error": fields.String(required=False, description="The error message")
+        "error": fields.String(required=False, description="The error message"),
+        "msg": fields.String(required=False, description="The error message")
     }
 )
 
@@ -331,6 +331,7 @@ class SeniorityForm(Form):
     prima = FormField(PrimaVacForm, "prima")
     status = StringField("status", validators=[InputRequired()])
     comentarios = StringField("comentarios", validators=[], default="")
+    year = IntegerField("year", validators=[], default=0)
 
 
 class EmployeeVacInsertForm(Form):

@@ -240,9 +240,12 @@ def create_task_from_api(data):
 
 
 def update_task_from_api(data):
-    flag, error, result = update_task(
-        data["id"], data["body"], data_raw=data["data_raw"]
+    data_raw = (
+        json.loads(data["data_raw"])
+        if isinstance(data["data_raw"], str)
+        else data["data_raw"]
     )
+    flag, error, result = update_task(data["id"], data["body"], data_raw=data_raw)
     if flag:
         msg = f"Se actualizo la tarea {data['body']['title']} para {data['body']['metadata']['name_emp']}"
         create_notification_permission_notGUI(

@@ -357,9 +357,9 @@ class EmployeesVacations(Resource):
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data, code = get_all_vacations()
         if code == 200:
-            return {"data": data}, code
+            return {"data": data, "msg": "ok"}, code
         else:
-            return {"data": None}, code
+            return {"data": None, "msg": str(data)}, code
 
 
 @ns.route("/employee/vacations/<string:id_emp>")

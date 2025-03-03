@@ -18,7 +18,6 @@ def update_registry_vac(emp_id: int, seniority: dict):
     sql = "UPDATE sql_telintec.vacations " "SET seniority = %s " "WHERE emp_id = %s"
     val = (json.dumps(seniority), emp_id)
     flag, error, result = execute_sql(sql, val, 3)
-    print(sql, val)
     return flag, error, result
 
 

@@ -381,7 +381,9 @@ task_delete_model = api.model(
 request_file_report_quizz_model = api.model(
     "RequestFileReportQuizz",
     {
-        "body": fields.Integer(required=True, description="The body of the task"),
+        "body": fields.Nested(
+            body_task_model, description="The body of the quizz to report"
+        ),
         "data_raw": fields.String(
             required=True, description="The data raw of the quizz", default="{}"
         ),
@@ -403,8 +405,10 @@ def datetime_filter(date):
 
 def validate_json(form, field):
     try:
-        json.loads(field.data)
-    except ValueError:
+        json.loads(field.data) if isinstance(field.data, str) else None
+    # except ValueError:
+    except Exception as e:
+        print(e)
         raise ValidationError("Invalid JSON data.")
 
 
