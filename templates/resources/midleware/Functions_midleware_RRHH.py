@@ -459,6 +459,7 @@ def insert_new_vacation(data):
         seniority_dict[str(item["year"])] = {
             "status": item["status"],
             "comentarios": item["comentarios"],
+            "dates": item.get("dates", []),
         }
     if not len(seniority_dict) > 0:
         return False, "No hay informacion que insertar", None
@@ -473,6 +474,7 @@ def update_vacation(data):
             "status": item["status"],
             "comentarios": item["comentarios"],
             "prima": item["prima"],
+            "dates": item["dates"],
         }
     if not len(seniority_dict) > 0:
         return False, "No hay informacion que actualizar o corrupcion de info.", None

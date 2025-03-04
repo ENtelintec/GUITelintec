@@ -111,10 +111,11 @@ employee_model_insert = api.model(
 )
 
 employees_info_model = api.model(
-    "EmployeeInfo", {
+    "EmployeeInfo",
+    {
         "data": fields.List(fields.Nested(employee_model)),
-        "error": fields.String(required=False, description="The error message")
-    }
+        "error": fields.String(required=False, description="The error message"),
+    },
 )
 
 examenes_medicos_model = api.model(
@@ -149,10 +150,11 @@ exam_med_model_input = api.model(
 )
 
 employees_examenes_model = api.model(
-    "EmployesExamenes", {
+    "EmployesExamenes",
+    {
         "data": fields.List(fields.Nested(examenes_medicos_model)),
-        "error": fields.String(required=False, description="The error message")
-    }
+        "error": fields.String(required=False, description="The error message"),
+    },
 )
 
 employee_exam_model_insert = api.model(
@@ -193,6 +195,10 @@ seniority_dict_model = api.model(
             required=True, description="The status of days taken", example="7 PTES"
         ),
         "comentarios": fields.String(required=True, description="Any comentary"),
+        "dates": fields.List(
+            fields.String(required=True, description="The dates of the days off"),
+            example=["2025-01-01"],
+        ),
     },
 )
 
@@ -211,11 +217,12 @@ vacations_model = api.model(
 )
 
 employees_vacations_model = api.model(
-    "EmployeesVacations", {
+    "EmployeesVacations",
+    {
         "data": fields.List(fields.Nested(vacations_model)),
         "error": fields.String(required=False, description="The error message"),
-        "msg": fields.String(required=False, description="The error message")
-    }
+        "msg": fields.String(required=False, description="The error message"),
+    },
 )
 
 employee_vacation_model_insert = api.model(
@@ -332,6 +339,9 @@ class SeniorityForm(Form):
     status = StringField("status", validators=[InputRequired()])
     comentarios = StringField("comentarios", validators=[], default="")
     year = IntegerField("year", validators=[], default=0)
+    dates = FieldList(
+        DateField("fecha_pago", validators=[], filters=[date_filter]), "dates"
+    )
 
 
 class EmployeeVacInsertForm(Form):

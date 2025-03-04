@@ -213,7 +213,7 @@ class EmployeesInfo(Resource):
 
 
 @ns.route("/employee/medical/<string:id_emp>")
-class EmployeesEMResume(Resource):
+class EMResumeEmployees(Resource):
     @ns.expect(expected_headers_per)
     def get(self, id_emp):
         flag, data_token, msg = token_verification_procedure(request, department="rrhh")
@@ -247,7 +247,7 @@ class EmployeesEMResume(Resource):
 
 
 @ns.route("/employees/medical/all")
-class EmployeesEMResume(Resource):  # noqa: F811
+class EMResume(Resource):  # noqa: F811
     @ns.marshal_with(employees_examenes_model)
     @ns.expect(expected_headers_per)
     def get(self):
@@ -284,7 +284,7 @@ class EmployeesEMResume(Resource):  # noqa: F811
 
 
 @ns.route("/employee/medical")
-class EmployeesEMRegistry(Resource):
+class EMRegistry(Resource):
     @ns.expect(expected_headers_per, employee_exam_model_insert)
     def post(self):
         flag, data_token, msg = token_verification_procedure(request, department="rrhh")
@@ -348,7 +348,7 @@ class EmployeesEMRegistry(Resource):
 
 
 @ns.route("/employees/vacations/all")
-class EmployeesVacations(Resource):
+class VacationsAll(Resource):
     @ns.marshal_with(employees_vacations_model)
     @ns.expect(expected_headers_per)
     def get(self):
@@ -363,7 +363,7 @@ class EmployeesVacations(Resource):
 
 
 @ns.route("/employee/vacations/<string:id_emp>")
-class EmployeesVacationsID(Resource):
+class VacationsEmployeesID(Resource):
     @ns.expect(expected_headers_per)
     def get(self, id_emp):
         flag, data_token, msg = token_verification_procedure(request, department="rrhh")
@@ -377,7 +377,7 @@ class EmployeesVacationsID(Resource):
 
 
 @ns.route("/employee/vacation")
-class EmployeesVacationRegistry(Resource):
+class VacationRegistry(Resource):
     @ns.expect(expected_headers_per, employee_vacation_model_insert)
     def post(self):
         flag, data_token, msg = token_verification_procedure(request, department="rrhh")
@@ -484,7 +484,7 @@ class EmployeesResume(Resource):
 
 
 @ns.route("/employee/fichaje/<string:id_emp>")
-class EmployeesResume(Resource):  # noqa: F811
+class FichajeResume(Resource):  # noqa: F811
     @ns.expect(expected_headers_per)
     def get(self, id_emp):
         flag, data_token, msg = token_verification_procedure(request, department="rrhh")

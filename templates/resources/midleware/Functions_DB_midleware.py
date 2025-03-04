@@ -193,6 +193,7 @@ def get_all_vacations():
                 "status": v["status"],
                 "comentarios": v["comentarios"],
                 "prima": v["prima"],
+                "dates": v.get("dates", []),
             }
             for k, v in seniority_raw.items()
         ]
