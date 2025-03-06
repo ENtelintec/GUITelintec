@@ -331,11 +331,14 @@ class EMRegistry(Resource):
         if not validator.validate():
             return {"errors": validator.errors}, 400
         data = validator.data
+        apt_actual = (
+            data["info"]["aptitudes"][-1] if len(data["info"]["aptitudes"]) > 0 else 0
+        )
         flag, error, result = update_aptitud_renovacion(
             data["info"]["aptitudes"],
             data["info"]["dates"],
-            data["info"]["apt_actual"],
-            data["id"],
+            apt_actual,
+            exam_id=data["id"],
         )
         if flag:
             return {"data": str(result)}, 200

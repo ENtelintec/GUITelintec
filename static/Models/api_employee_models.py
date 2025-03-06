@@ -149,6 +149,19 @@ exam_med_model_input = api.model(
     },
 )
 
+exam_med_model_update = api.model(
+    "ExamenMedicoUpdate",
+    {
+        "status": fields.String(required=True, description="The status"),
+        "aptitudes": fields.List(
+            fields.Integer(required=True, description="The aptitud")
+        ),
+        "dates": fields.List(fields.String(required=True, description="The date")),
+        "apt_actual": fields.Integer(required=True, description="The aptitud"),
+        "emp_id": fields.Integer(required=True, description="The id"),
+    },
+)
+
 employees_examenes_model = api.model(
     "EmployesExamenes",
     {
@@ -165,7 +178,7 @@ employee_exam_model_update = api.model(
     "EmployesExameneUpdate",
     {
         "id": fields.Integer(required=True, description="The medical exam id"),
-        "info": fields.Nested(exam_med_model_input),
+        "info": fields.Nested(exam_med_model_update),
     },
 )
 
@@ -299,9 +312,19 @@ class EmployeeMedForm(Form):
     name = StringField("name", validators=[InputRequired()])
     blood = StringField("blood", validators=[InputRequired()])
     status = StringField("status", validators=[InputRequired()])
-    aptitudes = FieldList(FormField(AptitudForm), "aptitudes")
-    dates = FieldList(FormField(DateExam), "dates")
+    aptitudes = FieldList(IntegerField(validators=[]), "aptitudes", default=[])
+    dates = FieldList(DateTimeField(filters=[datetime_filter]), "dates", default=[])
     apt_actual = IntegerField("apt_actual", validators=[], default=1)
+    emp_id = IntegerField(
+        "emp_id",
+        validators=[InputRequired(message="id is required or value 0 not accepted")],
+    )
+
+
+class EmployeeMedFormUpdate(Form):
+    status = StringField("status", validators=[InputRequired()])
+    aptitudes = FieldList(IntegerField(validators=[]), "aptitudes", default=[])
+    dates = FieldList(DateTimeField(filters=[datetime_filter]), "dates", default=[])
     emp_id = IntegerField(
         "emp_id",
         validators=[InputRequired(message="id is required or value 0 not accepted")],
@@ -317,7 +340,7 @@ class EmployeeMedUpdateForm(Form):
         "id",
         validators=[InputRequired(message="id is required or value 0 not accepted")],
     )
-    info = FormField(EmployeeMedForm, "info")
+    info = FormField(EmployeeMedFormUpdate, "info")
 
 
 class EmployeeMedDeleteForm(Form):
