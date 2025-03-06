@@ -146,6 +146,7 @@ def get_all_examenes():
     sql = (
         "SELECT examen_id, name, blood, status, aptitud, renovacion, aptitude_actual, empleado_id "
         "FROM sql_telintec.examenes_med "
+        "ORDER BY name "
     )
     flag, e, out = execute_sql(sql, type_sql=5)
     return flag, e, out
@@ -177,4 +178,16 @@ def update_date_aptitud(dates, aptituds, emp_id=None, exam_id=None):
     last_aptitud = aptituds[-1] if len(aptituds) > 0 else 0
     val = (json.dumps(dates), json.dumps(aptituds), last_aptitud, emp_id) if exam_id is None else (json.dumps(dates), json.dumps(aptituds), last_aptitud, exam_id)
     flag, e, out = execute_sql(sql, val, 4)
+    return flag, e, out
+
+
+def get_employees_without_records():
+    sql = (
+        "SELECT name, l_name, status, birthday, date_admission, employee_id "
+        "FROM sql_telintec.employees "
+        "WHERE LOWER(status) = 'activo' "
+        "AND employee_id NOT IN (SELECT empleado_id FROM sql_telintec.examenes_med) "
+        "ORDER BY name, l_name"
+    )
+    flag, e, out = execute_sql(sql, type_sql=5)
     return flag, e, out

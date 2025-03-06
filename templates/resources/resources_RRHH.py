@@ -54,7 +54,6 @@ from static.Models.api_payroll_models import (
 )
 from static.constants import (
     cache_file_resume_fichaje_path,
-    quizzes_RRHH,
     path_contract_files,
     filepath_daemons,
 )
@@ -94,6 +93,7 @@ from templates.resources.midleware.Functions_midleware_RRHH import (
     update_payroll_list_employees,
     update_data_employee,
     get_files_list_nomina_RH,
+    fetch_employees_without_records,
 )
 
 ns = Namespace("GUI/api/v1/rrhh")
@@ -247,7 +247,7 @@ class EMResumeEmployees(Resource):
 
 
 @ns.route("/employees/medical/all")
-class EMResume(Resource):  # noqa: F811
+class EMResumeAll(Resource):  # noqa: F811
     @ns.marshal_with(employees_examenes_model)
     @ns.expect(expected_headers_per)
     def get(self):
@@ -281,6 +281,18 @@ class EMResume(Resource):  # noqa: F811
             out = {"data": []}
             code = 400
         return out, code
+
+
+@ns.route("/medical/employes/less")
+class EMEmployeesListLess(Resource):
+    @ns.expect(expected_headers_per)
+    def get(self):
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        code, data_out = fetch_employees_without_records()
+
+        return data_out, code
 
 
 @ns.route("/employee/medical")

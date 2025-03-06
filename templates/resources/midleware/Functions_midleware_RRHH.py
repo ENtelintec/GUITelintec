@@ -22,12 +22,14 @@ from static.constants import (
     format_timestamps,
     conversion_quizzes_path,
     filepath_recommendations,
+    format_date,
 )
 from templates.Functions_Sharepoint import (
     get_files_site,
     download_files_site,
     create_mail_draft_with_attachment,
 )
+from templates.controllers.employees.em_controller import get_employees_without_records
 from templates.controllers.employees.vacations_controller import (
     insert_vacation,
     update_registry_vac,
@@ -760,3 +762,32 @@ def update_data_employee(data):
         if flag
         else (400, {"data": None, "msg": str(error)})
     )
+
+
+def fetch_employees_without_records():
+    # name, l_name, status, birthday, date_admission, employee_id
+    flag, error, result = get_employees_without_records()
+    if not flag:
+        return 400, {"data": None, "msg": str(error)}
+    out = []
+    for item in result:
+        birthday = (
+            item[3]
+            if isinstance(item[3], str) or item[3] is None or item[4] == "None"
+            else item[3].strftime(format_date)
+        )
+        admission = (
+            item[4]
+            if isinstance(item[4], str) or item[4] is None or item[4] == "None"
+            else item[4].strftime(format_date)
+        )
+        out.append(
+            {
+                "name": item[0].upper() + " " + item[1].upper(),
+                "status": item[2],
+                "birthday": birthday,
+                "date_admission": admission,
+                "emp_id": item[5],
+            }
+        )
+    return 200, {"data": out, "msg": "ok"}
