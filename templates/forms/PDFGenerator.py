@@ -111,7 +111,7 @@ def create_header(
     height_logo = 30
     title_height = 16 if title_font is None else title_font
     codes_h_height = 10
-    codes_width = 140
+    codes_width = 180  # right codes and emision width
     start_box_x = 10 if orientation == "vertical" else 10
     height_box = 50
     pady = 10
@@ -201,7 +201,7 @@ def create_header(
     master.drawString(
         page_x - codes_width - padx,
         position_header_y,
-        f"Emisión: {dict_dates[str(iso_form)]}",
+        f"Inicio de Vigencia: {dict_dates[str(iso_form)]}",
     )
 
 

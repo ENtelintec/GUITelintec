@@ -10,25 +10,24 @@ from templates.forms.PDFGenerator import a4_x, a4_y, create_header
 
 dict_wrappers_headers = {
     "Movements": {
-        "Codigo": {10: 7, 8: 8},
-        "Fecha": {10: 9, 8: 12},
+        "Codigo": {10: 9, 8: 11},
+        "Fecha": {10: 9, 8: 11},
         "Descripción": {10: 20, 8: 26},
-        "Fabricante": {10: 12, 8: 14},
         "UDM": {10: 4, 8: 5},
+        "Proveedor": {10: 12, 8: 14},
         "Movimiento": {10: 10, 8: 12},
         "SM": {10: 8, 8: 11},
-        "Observaciones": {10: 20, 8: 24},
+        "Referencia": {10: 18, 8: 24},
         "Ubicacion": {10: 10, 8: 12},
     },
     "Materials": {
-        "Codigo": {10: 6, 8: 7},
+        "Codigo": {10: 10, 8: 13},
+        "Proveedor": {10: 13, 8: 16},
         "Descripción": {10: 30, 8: 38},
         "UDM": {10: 4, 8: 5},
-        "Categoria": {10: 13, 8: 16},
-        "Almacen": {10: 15, 8: 19},
         "Stock Min.": {10: 10, 8: 12},
         "Stock": {10: 10, 8: 12},
-        "Solicitar": {10: 20, 8: 24},
+        "Ubicacion": {10: 20, 8: 24},
     },
 }
 
@@ -93,11 +92,17 @@ def InventoryStorage(dict_data: dict, type_form="Movements"):
         else dict_data["filename_out"]
     )
     pdf = canvas.Canvas(file_name, pagesize=(a4_y, a4_x))
-    pdf.setTitle("Inventario: Registro de Entradas y Salidas")
+    pdf.setTitle(
+        "Inventario: Registro de Entradas y Salidas"
+    ) if type_form == "Movements" else pdf.setTitle(
+        "Inventario: Registro de Materiales"
+    )
     products = dict_data["products"]
     create_header(
         pdf,
-        title=["Inventario", "Registro de Entradas y Salidas", "Almacen-Nogalar"],
+        title=["Inventario", "Registro de Entradas y Salidas", "Almacen-Nogalar"]
+        if type_form == "Movements"
+        else ["Inventario", "Registro de Materiales", "Almacen-Nogalar"],
         page_x=a4_y,
         iso_form=2,
         orientation="Horizontal",
@@ -119,6 +124,7 @@ def InventoryStorage(dict_data: dict, type_form="Movements"):
         if calculate_last_y(item, limit_y, font_size, y_init, type_form=type_form):
             print_footer_page_count(pdf, pages)
             pdf.showPage()
+            pages += 1
             print_headers_table_inventory(pdf, y_init=535, type_form=type_form)
             y_init = 510
             last_y = y_init
@@ -138,8 +144,6 @@ def InventoryStorage(dict_data: dict, type_form="Movements"):
                 * dict_wrappers_headers[type_form][headers[index]][font_size]
                 * 0.8
             )
-
-    pages += 1
     print_footer_page_count(pdf, pages)
     pdf.save()
     return True
