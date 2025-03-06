@@ -853,7 +853,15 @@ def retrieve_data_file_inventory(type_data="dict", data=None):
                 products["brand"].append(item[11])
         elif "list":
             products = [
-                (item[0], item[2], item[3], item[5], " ", item[4], " ")
+                (
+                    item[1],
+                    item[6],
+                    item[2],
+                    item[3],
+                    " ",  # stock min
+                    item[4],
+                    json.loads(item[10]).get("location_1"),
+                )
                 for item in _products
             ]
     except Exception as e:
@@ -915,7 +923,7 @@ def retrieve_data_movement_file(data, complete=False):
                 item[9],
                 f"{item[3]}: {item[4]}",
                 item[6],
-                "",
+                json.loads(item[11]) if json.loads(item[11]) != "" else "",
                 f"{json.loads(item[10])['location_1']}: {json.loads(item[10]).get('location_2')}",
             ]
             movements.append(aux[2:] if not complete else aux)

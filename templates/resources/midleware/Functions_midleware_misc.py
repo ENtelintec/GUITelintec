@@ -6,8 +6,16 @@ import json
 import pickle
 from datetime import datetime
 
-from static.constants import filepath_settings, format_timestamps
+import pytz
+
+from static.constants import (
+    filepath_settings,
+    format_timestamps,
+    timezone_software,
+    format_date,
+)
 from templates.Functions_openAI import get_response_assistant, get_files_list_openai
+from templates.controllers.employees.vacations_controller import get_vacations_data
 from templates.controllers.misc.tasks_controller import get_task_by_id_emp
 from templates.controllers.notifications.Notifications_controller import (
     get_notifications_by_user,
@@ -102,3 +110,34 @@ def get_task_by_id_employee(id_emp: int):
         return data_out, 200
     else:
         return [str(error, result)], 400
+
+
+def get_all_vacations_data_date():
+    flag, error, result = get_vacations_data()
+    if not flag:
+        return error, 400
+    time_zone = pytz.timezone(timezone_software)
+    date_today = datetime.now(pytz.utc).astimezone(time_zone)
+    date_today.replace(day=1)
+    out = []
+    for item in result:
+        seniority_raw = json.loads(item[4])
+        for k, v in seniority_raw.items():
+            dates_vacation = v.get("dates", [])
+            # filter by date base on the current month and go on
+            dates_vacation = [
+                date
+                for date in dates_vacation
+                if datetime.strptime(date, format_date).replace(tzinfo=time_zone)
+                >= date_today
+            ]
+            if len(dates_vacation) == 0:
+                continue
+            out.append(
+                {
+                    "emp_id": item[0],
+                    "name": item[1].upper() + " " + item[2].upper(),
+                    "dates": dates_vacation,
+                }
+            )
+    return out, 200

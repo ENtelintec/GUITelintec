@@ -251,3 +251,5 @@ class DownloadFileQuizz(Resource):
             return {"data": json_data, "msg": "ok"}, 200
         except Exception as e:
             return {"data": f"Error en el tipo de quizz: {str(e)}"}, 400
+
+

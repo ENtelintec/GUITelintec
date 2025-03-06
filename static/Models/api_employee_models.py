@@ -111,10 +111,11 @@ employee_model_insert = api.model(
 )
 
 employees_info_model = api.model(
-    "EmployeeInfo", {
+    "EmployeeInfo",
+    {
         "data": fields.List(fields.Nested(employee_model)),
-        "error": fields.String(required=False, description="The error message")
-    }
+        "error": fields.String(required=False, description="The error message"),
+    },
 )
 
 examenes_medicos_model = api.model(
@@ -148,11 +149,25 @@ exam_med_model_input = api.model(
     },
 )
 
+exam_med_model_update = api.model(
+    "ExamenMedicoUpdate",
+    {
+        "status": fields.String(required=True, description="The status"),
+        "aptitudes": fields.List(
+            fields.Integer(required=True, description="The aptitud")
+        ),
+        "dates": fields.List(fields.String(required=True, description="The date")),
+        "apt_actual": fields.Integer(required=True, description="The aptitud"),
+        "emp_id": fields.Integer(required=True, description="The id"),
+    },
+)
+
 employees_examenes_model = api.model(
-    "EmployesExamenes", {
+    "EmployesExamenes",
+    {
         "data": fields.List(fields.Nested(examenes_medicos_model)),
-        "error": fields.String(required=False, description="The error message")
-    }
+        "error": fields.String(required=False, description="The error message"),
+    },
 )
 
 employee_exam_model_insert = api.model(
@@ -163,7 +178,7 @@ employee_exam_model_update = api.model(
     "EmployesExameneUpdate",
     {
         "id": fields.Integer(required=True, description="The medical exam id"),
-        "info": fields.Nested(exam_med_model_input),
+        "info": fields.Nested(exam_med_model_update),
     },
 )
 
@@ -193,6 +208,10 @@ seniority_dict_model = api.model(
             required=True, description="The status of days taken", example="7 PTES"
         ),
         "comentarios": fields.String(required=True, description="Any comentary"),
+        "dates": fields.List(
+            fields.String(required=True, description="The dates of the days off"),
+            example=["2025-01-01"],
+        ),
     },
 )
 
@@ -211,11 +230,12 @@ vacations_model = api.model(
 )
 
 employees_vacations_model = api.model(
-    "EmployeesVacations", {
+    "EmployeesVacations",
+    {
         "data": fields.List(fields.Nested(vacations_model)),
         "error": fields.String(required=False, description="The error message"),
-        "msg": fields.String(required=False, description="The error message")
-    }
+        "msg": fields.String(required=False, description="The error message"),
+    },
 )
 
 employee_vacation_model_insert = api.model(
@@ -292,9 +312,19 @@ class EmployeeMedForm(Form):
     name = StringField("name", validators=[InputRequired()])
     blood = StringField("blood", validators=[InputRequired()])
     status = StringField("status", validators=[InputRequired()])
-    aptitudes = FieldList(FormField(AptitudForm), "aptitudes")
-    dates = FieldList(FormField(DateExam), "dates")
+    aptitudes = FieldList(IntegerField(validators=[]), "aptitudes", default=[])
+    dates = FieldList(DateTimeField(filters=[datetime_filter]), "dates", default=[])
     apt_actual = IntegerField("apt_actual", validators=[], default=1)
+    emp_id = IntegerField(
+        "emp_id",
+        validators=[InputRequired(message="id is required or value 0 not accepted")],
+    )
+
+
+class EmployeeMedFormUpdate(Form):
+    status = StringField("status", validators=[InputRequired()])
+    aptitudes = FieldList(IntegerField(validators=[]), "aptitudes", default=[])
+    dates = FieldList(DateTimeField(filters=[datetime_filter]), "dates", default=[])
     emp_id = IntegerField(
         "emp_id",
         validators=[InputRequired(message="id is required or value 0 not accepted")],
@@ -310,7 +340,7 @@ class EmployeeMedUpdateForm(Form):
         "id",
         validators=[InputRequired(message="id is required or value 0 not accepted")],
     )
-    info = FormField(EmployeeMedForm, "info")
+    info = FormField(EmployeeMedFormUpdate, "info")
 
 
 class EmployeeMedDeleteForm(Form):
@@ -332,6 +362,9 @@ class SeniorityForm(Form):
     status = StringField("status", validators=[InputRequired()])
     comentarios = StringField("comentarios", validators=[], default="")
     year = IntegerField("year", validators=[], default=0)
+    dates = FieldList(
+        DateField("fecha_pago", validators=[], filters=[date_filter]), "dates"
+    )
 
 
 class EmployeeVacInsertForm(Form):

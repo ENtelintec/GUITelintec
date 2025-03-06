@@ -14,7 +14,6 @@ from static.Models.api_sm_models import (
     delete_request_sm_model,
     sm_put_model,
     table_sm_model,
-    table_request_model,
     new_cliente_model,
     new_product_model,
     request_sm_plot_data_model,
@@ -22,7 +21,6 @@ from static.Models.api_sm_models import (
     request_sm_dispatch_model,
     response_sm_dispatch_model,
     ProductRequestForm,
-    TableRequestForm,
     SMPostForm,
     SMPutForm,
     SMDeleteForm,
@@ -106,18 +104,25 @@ class Products(Resource):
 
 @ns.route("/all")
 class AllSm(Resource):
-    @ns.expect(expected_headers_per, table_request_model)
+    @ns.expect(expected_headers_per)
     @ns.marshal_with(table_sm_model)
-    def post(self):
+    def get(self):
         flag, data_token, msg = token_verification_procedure(request, department="sm")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        # noinspection PyUnresolvedReferences
-        validator = TableRequestForm.from_json(ns.payload)
-        if not validator.validate():
-            return {"error": validator.errors}, 400
-        data = validator.data
-        data_out, code = get_all_sm(data["limit"], data["page"], data["emp_id"])
+        data_out, code = get_all_sm(-1, 0, -1)
+        return data_out, code
+
+
+@ns.route("/employee")
+class AllSmEmployee(Resource):
+    @ns.expect(expected_headers_per)
+    @ns.marshal_with(table_sm_model)
+    def get(self):
+        flag, data_token, msg = token_verification_procedure(request, department="sm")
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        data_out, code = get_all_sm(-1, 0, data_token.get("emp_id"))
         return data_out, code
 
 

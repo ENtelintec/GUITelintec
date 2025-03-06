@@ -54,7 +54,6 @@ from static.Models.api_payroll_models import (
 )
 from static.constants import (
     cache_file_resume_fichaje_path,
-    quizzes_RRHH,
     path_contract_files,
     filepath_daemons,
 )
@@ -94,6 +93,7 @@ from templates.resources.midleware.Functions_midleware_RRHH import (
     update_payroll_list_employees,
     update_data_employee,
     get_files_list_nomina_RH,
+    fetch_employees_without_records,
 )
 
 ns = Namespace("GUI/api/v1/rrhh")
@@ -213,7 +213,7 @@ class EmployeesInfo(Resource):
 
 
 @ns.route("/employee/medical/<string:id_emp>")
-class EmployeesEMResume(Resource):
+class EMResumeEmployees(Resource):
     @ns.expect(expected_headers_per)
     def get(self, id_emp):
         flag, data_token, msg = token_verification_procedure(request, department="rrhh")
@@ -247,7 +247,7 @@ class EmployeesEMResume(Resource):
 
 
 @ns.route("/employees/medical/all")
-class EmployeesEMResume(Resource):  # noqa: F811
+class EMResumeAll(Resource):  # noqa: F811
     @ns.marshal_with(employees_examenes_model)
     @ns.expect(expected_headers_per)
     def get(self):
@@ -283,8 +283,20 @@ class EmployeesEMResume(Resource):  # noqa: F811
         return out, code
 
 
+@ns.route("/medical/employes/less")
+class EMEmployeesListLess(Resource):
+    @ns.expect(expected_headers_per)
+    def get(self):
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        code, data_out = fetch_employees_without_records()
+
+        return data_out, code
+
+
 @ns.route("/employee/medical")
-class EmployeesEMRegistry(Resource):
+class EMRegistry(Resource):
     @ns.expect(expected_headers_per, employee_exam_model_insert)
     def post(self):
         flag, data_token, msg = token_verification_procedure(request, department="rrhh")
@@ -319,11 +331,14 @@ class EmployeesEMRegistry(Resource):
         if not validator.validate():
             return {"errors": validator.errors}, 400
         data = validator.data
+        apt_actual = (
+            data["info"]["aptitudes"][-1] if len(data["info"]["aptitudes"]) > 0 else 0
+        )
         flag, error, result = update_aptitud_renovacion(
             data["info"]["aptitudes"],
             data["info"]["dates"],
-            data["info"]["apt_actual"],
-            data["id"],
+            apt_actual,
+            exam_id=data["id"],
         )
         if flag:
             return {"data": str(result)}, 200
@@ -348,7 +363,7 @@ class EmployeesEMRegistry(Resource):
 
 
 @ns.route("/employees/vacations/all")
-class EmployeesVacations(Resource):
+class VacationsAll(Resource):
     @ns.marshal_with(employees_vacations_model)
     @ns.expect(expected_headers_per)
     def get(self):
@@ -363,7 +378,7 @@ class EmployeesVacations(Resource):
 
 
 @ns.route("/employee/vacations/<string:id_emp>")
-class EmployeesVacationsID(Resource):
+class VacationsEmployeesID(Resource):
     @ns.expect(expected_headers_per)
     def get(self, id_emp):
         flag, data_token, msg = token_verification_procedure(request, department="rrhh")
@@ -377,7 +392,7 @@ class EmployeesVacationsID(Resource):
 
 
 @ns.route("/employee/vacation")
-class EmployeesVacationRegistry(Resource):
+class VacationRegistry(Resource):
     @ns.expect(expected_headers_per, employee_vacation_model_insert)
     def post(self):
         flag, data_token, msg = token_verification_procedure(request, department="rrhh")
@@ -484,7 +499,7 @@ class EmployeesResume(Resource):
 
 
 @ns.route("/employee/fichaje/<string:id_emp>")
-class EmployeesResume(Resource):  # noqa: F811
+class FichajeResume(Resource):  # noqa: F811
     @ns.expect(expected_headers_per)
     def get(self, id_emp):
         flag, data_token, msg = token_verification_procedure(request, department="rrhh")
