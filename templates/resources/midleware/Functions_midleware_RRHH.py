@@ -23,6 +23,7 @@ from static.constants import (
     conversion_quizzes_path,
     filepath_recommendations,
     format_date,
+    filepath_fichaje_temp,
 )
 from templates.Functions_Sharepoint import (
     get_files_site,
@@ -101,6 +102,8 @@ def get_data_file(filename: str, type_f: str):
             dff = extract_fichajes_file(filename)
             coldata = []
             names_list = []
+            if dff is None:
+                return False, ["No aceptable extension detected"]
             if len(dff) != 0:
                 coldata = []
                 for i, col in enumerate(dff.columns.tolist()):
@@ -153,7 +156,7 @@ def get_bitacora_data(date_file):
 
 
 def get_data_name_fichaje(
-    name: str, dff, dft, dfb, clocks, window_time_in, window_time_out
+    name: str, dff, dfb, clocks, window_time_in, window_time_out, dft=None
 ):
     df_name = dff[dff["name"] == name]
     id_emp = df_name["ID"].values[0]
@@ -290,7 +293,17 @@ def get_fichaje_data(data: dict):
     date_file = ""
     dff, dft = None, None
     for file in files:
-        flag, data_file = get_data_file(file["path"], file["report"])
+        path, code = download_fichaje_file(
+            {
+                "file_url": file["path"],
+                "temp": filepath_fichaje_temp,
+            }
+        )
+        if code != 200:
+            return code, path
+        flag, data_file = get_data_file(filepath_fichaje_temp, file["report"])
+        if not flag:
+            return 400, data_file
         data_files.append(data_file) if flag else data_files.append([])
         name_list.extend(data_file["names"]) if "names" in data_file.keys() else None
         if file["report"].lower() == "fichaje":
@@ -298,12 +311,13 @@ def get_fichaje_data(data: dict):
             dff = data_file["df"]
         else:
             dft = data_file["df"]
+            dft = None
     date_file = datetime.strptime(date_file, format_date_fichaje_file)
     flag, data_bitacora = get_bitacora_data(date_file)
     data_out = []
     for name in name_list:
         data_emp = get_data_name_fichaje(
-            name, dff, dft, data_bitacora["df"], clocks, grace_in, grace_out
+            name, dff, data_bitacora["df"], clocks, grace_in, grace_out, dft=None
         )
         data_out.append(data_emp)
     return 200, data_out

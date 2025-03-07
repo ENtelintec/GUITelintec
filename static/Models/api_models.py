@@ -4,7 +4,12 @@ __date__ = "$ 02/nov./2023  at 17:32 $"
 
 import json
 
-from static.constants import api, format_timestamps, format_date
+from static.constants import (
+    api,
+    format_timestamps,
+    format_date,
+    format_date_fichaje_file,
+)
 from flask_restx import fields
 from wtforms.fields.datetime import DateTimeField, DateField
 from wtforms.validators import InputRequired, ValidationError
@@ -393,8 +398,17 @@ request_file_report_quizz_model = api.model(
 
 def date_filter(date):
     # Example filter function to format the date
+    print(date, "date")
     date = date if date is not None else ""
     return date.strftime(format_date) if not isinstance(date, str) else date
+
+
+def date_filter_fichaje(date):
+    # Example filter function to format the date
+    date = date if date is not None else ""
+    return (
+        date.strftime(format_date_fichaje_file) if not isinstance(date, str) else date
+    )
 
 
 def datetime_filter(date):
