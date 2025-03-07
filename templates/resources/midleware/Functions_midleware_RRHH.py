@@ -663,6 +663,7 @@ def generate_pdf_from_json(data):
         data_raw["recommendations"] = dict_recomendations
         is_update = False
     if not is_update:
+        print(data)
         flag, error, result = update_task(data["id"], data["body"], data_raw=data_raw)
         if not flag:
             print("Error al actualizar el task", error, result)

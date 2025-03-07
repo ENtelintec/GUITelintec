@@ -529,3 +529,4 @@ class RequestAVResponseForm(Form):
 class RequestFileReportQuizzForm(Form):
     body = FormField(BodyTaskForm)
     data_raw = StringField("data_raw", validators=[validate_json])
+    id = IntegerField("id", validators=[InputRequired()], default=0)
