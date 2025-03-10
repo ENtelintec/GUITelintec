@@ -286,7 +286,6 @@ delete_request_sm_model = api.model(
     "DeleteRequestmaterial_request",
     {
         "id": fields.Integer(required=True, description="The id"),
-        "id_emp": fields.Integer(required=True, description="The employee id"),
     },
 )
 
@@ -332,7 +331,7 @@ request_sm_plot_data_model = api.model(
     {
         "data": fields.List(fields.Nested(data_sm_plots)),
         "type": fields.String(required=True, description="The type of plot"),
-        "error":  fields.String(required=False, description="The error message"),
+        "error": fields.String(required=False, description="The error message"),
     },
 )
 
@@ -467,9 +466,6 @@ class SMPutForm(Form):
 class SMDeleteForm(Form):
     id = IntegerField(
         "id", validators=[InputRequired(message="Invalid id or 0 not acepted")]
-    )
-    id_emp = IntegerField(
-        "id_emp", validators=[InputRequired(message="Invalid id or 0 not acepted")]
     )
 
 
