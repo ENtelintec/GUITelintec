@@ -219,7 +219,7 @@ class Task(Resource):
         if not validator.validate():
             return {"errors": validator.errors}, 400
         data = validator.data
-        response, code = delete_task_from_api(data)
+        response, code = delete_task_from_api(data, data_token)
         return response, code
 
 

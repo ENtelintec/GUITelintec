@@ -261,7 +261,7 @@ def update_task_from_api(data):
         return {"msg": "Fail", "data": str(error)}, 400
 
 
-def delete_task_from_api(data):
+def delete_task_from_api(data, data_token):
     flag, error, result = delete_task(data["id"])
     if flag:
         msg = f"Se elimino la tarea {data['id']}"
@@ -269,8 +269,8 @@ def delete_task_from_api(data):
             msg,
             ["RRHH"],
             "Tarea quizz eliminada",
-            data["emp_origin"],
-            data["emp_destiny"],
+            data_token.get("emp_id"),
+            0,
         )
         return {"msg": f"Ok-->{msg}"}, 200
     else:
