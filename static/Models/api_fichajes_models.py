@@ -10,7 +10,7 @@ from wtforms.fields.simple import StringField, EmailField
 from wtforms.form import Form
 from wtforms.validators import InputRequired
 
-from static.Models.api_models import date_filter
+from static.Models.api_models import date_filter, date_filter_fichaje
 from static.constants import api
 
 from wtforms import FormField, FieldList
@@ -24,19 +24,20 @@ file_model = api.model(
         "size": fields.String(required=True, description="The size"),
         "report": fields.String(required=True, description="The type of report"),
         "date": fields.String(
-            required=True, description="The date in the name of the file"
+            required=False, description="The date in the name of the file"
         ),
-        "pairs": fields.String(required=True, description="The pairs"),
+        "pairs": fields.String(required=False, description="The pairs"),
     },
 )
 
 
 answer_files_fichajes_model = api.model(
-    "FichFiles", {
+    "FichFiles",
+    {
         "data": fields.List(fields.Nested(file_model)),
         "msg": fields.String(required=False),
-        "error": fields.String(required=False)
-    }
+        "error": fields.String(required=False),
+    },
 )
 
 # {"name": name, "ID": id_emp, "worked_days": worked_days_f, "absence_days": days_absence,
@@ -96,11 +97,12 @@ request_data_fichaje_files_model = api.model(
 )
 
 answer_fichajes_model = api.model(
-    "AnsFichFiles", {
-        "data": fields.Nested(data_emp_fichajes_model), 
+    "AnsFichFiles",
+    {
+        "data": fields.Nested(data_emp_fichajes_model),
         "msg": fields.String(required=False),
-        "error": fields.String(required=False)
-    }
+        "error": fields.String(required=False),
+    },
 )
 
 
@@ -112,10 +114,10 @@ class FilesForm(Form):
     name = StringField("name", validators=[InputRequired()])
     path = StringField("path", validators=[InputRequired()])
     extension = StringField("extension", validators=[InputRequired()])
-    size = StringField("size", validators=[InputRequired()])
+    size = StringField("size", validators=[])
     report = StringField("report", validators=[InputRequired()])
-    date = DateField("date", validators=[InputRequired()], filters=[date_filter])
-    pairs = StringField("pairs", validators=[InputRequired()])
+    pairs = StringField("pairs", validators=[])
+    date = StringField("date", validators=[InputRequired()], filters=[date_filter_fichaje])
 
 
 class DataFichajesFileForm(Form):

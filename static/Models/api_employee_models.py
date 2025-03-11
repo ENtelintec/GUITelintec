@@ -352,8 +352,8 @@ class EmployeeMedDeleteForm(Form):
 
 class PrimaVacForm(Form):
     status = StringField("status", validators=[], default="No")
-    fecha_pago = DateField(
-        "fecha_pago", validators=[InputRequired()], filters=[date_filter]
+    fecha_pago = StringField(
+        "fecha_pago", validators=[], default="", filters=[date_filter]
     )
 
 

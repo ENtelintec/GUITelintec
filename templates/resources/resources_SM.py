@@ -145,14 +145,14 @@ class AddSM(Resource):
         msg = (
             f"Nueva SM creada #{data['info']['id']}, folio: {data['info']['folio']}, "
             f"fecha limite: {data['info']['critical_date']}, "
-            f"empleado con id: {data['info']['emp_id']}, "
+            f"empleado con id: {data_token.get('emp_id')}, "
             f"comentario: {data['info']['comment']}"
         )
         create_notification_permission(
             msg,
             ["sm", "administracion", "almacen"],
             "Nueva SM Recibida",
-            data["info"]["emp_id"],
+            data_token.get("emp_id"),
             0,
         )
         write_log_file(log_file_sm_path, msg)
@@ -170,12 +170,12 @@ class AddSM(Resource):
         data = validator.data
         flag, error, result = delete_sm_db(data["id"])
         if flag:
-            msg = f"SM #{data['id']} eliminada, " f"empleado con id: {data['id_emp']}"
+            msg = f"SM #{data['id']} eliminada, empleado con id: {data_token.get('emp_id')}"
             create_notification_permission(
                 msg,
                 ["sm", "administracion", "almacen"],
                 "SM Eliminada",
-                sender_id=data["id_emp"],
+                sender_id=data.get("id_emp"),
             )
             write_log_file(log_file_sm_path, msg)
             return {"answer": "ok", "msg": error}, 200
@@ -196,16 +196,16 @@ class AddSM(Resource):
         flag, error, result = update_sm_db(data)
         if flag:
             msg = (
-                f"Nueva SM creada #{data['info']['id']}, folio: {data['info']['folio']}, "
+                f"SM  actualizada  #{data['info']['id']}, folio: {data['info']['folio']}, "
                 f"fecha limite: {data['info']['critical_date']}, "
-                f"empleado con id: {data['info']['emp_id']}, "
+                f"empleado con id: {data_token.get('emp_id')}, "
                 f"comentario: {data['info']['comment']}"
             )
             create_notification_permission(
                 msg,
                 ["sm", "administracion", "almacen"],
                 "Nueva SM Recibida",
-                data["info"]["emp_id"],
+                data_token.get("emp_id"),
                 0,
             )
             write_log_file(log_file_sm_path, msg)

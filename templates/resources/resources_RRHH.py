@@ -638,7 +638,6 @@ class DataFichajeFiles(Resource):
         flag, data_token, msg = token_verification_procedure(request, department="rrhh")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        # noinspection PyUnresolvedReferences
         validator = DataFichajesFileForm.from_json(ns.payload)
         if not validator.validate():
             return {"data": None, "msg": validator.errors}, 400

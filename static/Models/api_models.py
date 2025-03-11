@@ -3,8 +3,14 @@ __author__ = "Edisson Naula"
 __date__ = "$ 02/nov./2023  at 17:32 $"
 
 import json
+from datetime import datetime
 
-from static.constants import api, format_timestamps, format_date
+from static.constants import (
+    api,
+    format_timestamps,
+    format_date,
+    format_date_fichaje_file,
+)
 from flask_restx import fields
 from wtforms.fields.datetime import DateTimeField, DateField
 from wtforms.validators import InputRequired, ValidationError
@@ -397,6 +403,17 @@ def date_filter(date):
     return date.strftime(format_date) if not isinstance(date, str) else date
 
 
+def date_filter_fichaje(date):
+    # Example filter function to format the date
+    date = date if date is not None else ""
+    if isinstance(date, str):
+        date = datetime.strptime(date, format_date_fichaje_file)
+        date = date.strftime(format_date_fichaje_file)
+        return date
+    else:
+        return date.strftime(format_date_fichaje_file)
+
+
 def datetime_filter(date):
     # Example filter function to format the date
     date = date if date is not None else ""
@@ -419,7 +436,7 @@ class MetadataTasksForm(Form):
     id_emp = IntegerField("id_emp", validators=[])
     position = StringField("position", validators=[])
     admision = DateField("admision", validators=[], filters=[date_filter])
-    departure = DateField("departure", validators=[], filters=[date_filter])
+    departure = StringField("departure", validators=[], filters=[date_filter])
     departure_reason = StringField("departure_reason", validators=[])
     evaluated_emp = StringField("evaluated_emp", validators=[])
     pos_evaluator = StringField("pos_evaluator", validators=[])
@@ -512,3 +529,4 @@ class RequestAVResponseForm(Form):
 class RequestFileReportQuizzForm(Form):
     body = FormField(BodyTaskForm)
     data_raw = StringField("data_raw", validators=[validate_json])
+    id = IntegerField("id", validators=[InputRequired()], default=0)

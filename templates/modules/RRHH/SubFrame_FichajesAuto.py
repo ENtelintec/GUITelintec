@@ -769,6 +769,8 @@ class FichajesAuto(ttk.Frame):
         month = date_max.month
         year = date_max.year
         for day in days:
+            if month == 2 and day > 28:
+                break
             row = []
             comment = ""
             for header in columns:

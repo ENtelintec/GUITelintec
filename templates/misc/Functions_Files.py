@@ -1796,7 +1796,7 @@ def get_info_t_file_name(
     month=None,
     date_max=None,
 ):
-    if flag:
+    if not flag:
         return "NA", "NA", "NA", "NA", {}, {}, [], [], {}
     date_min = pd.Timestamp(
         year=date_max.year, month=date_max.month, day=1, hour=0, minute=0, second=0

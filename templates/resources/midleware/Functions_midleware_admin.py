@@ -299,7 +299,7 @@ def get_all_clients_data():
         data_out.append(
             {
                 "id": item[0],
-                "name": item[1],
+                "name": item[1].upper(),
                 "email": item[2],
                 "phone": item[3],
                 "rfc": item[4],
