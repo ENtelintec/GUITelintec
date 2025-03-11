@@ -436,7 +436,7 @@ class MetadataTasksForm(Form):
     id_emp = IntegerField("id_emp", validators=[])
     position = StringField("position", validators=[])
     admision = DateField("admision", validators=[], filters=[date_filter])
-    departure = DateField("departure", validators=[], filters=[date_filter])
+    departure = StringField("departure", validators=[], filters=[date_filter])
     departure_reason = StringField("departure_reason", validators=[])
     evaluated_emp = StringField("evaluated_emp", validators=[])
     pos_evaluator = StringField("pos_evaluator", validators=[])
