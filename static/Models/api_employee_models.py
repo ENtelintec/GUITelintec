@@ -272,13 +272,13 @@ class EmployeeInputForm(Form):
     curp = StringField("curp", validators=[InputRequired()])
     nss = StringField("nss", validators=[InputRequired()])
     emergency = StringField("emergency", validators=[InputRequired()])
-    position = StringField("position", validators=[InputRequired()])
+    position = StringField("position", validators=[], default="")
     status = StringField("status", validators=[InputRequired()])
     departure = StringField("departure", validators=[InputRequired()])
     birthday = DateField(
         "birthday", validators=[InputRequired()], filters=[date_filter]
     )
-    legajo = StringField("legajo", validators=[InputRequired()])
+    legajo = StringField("legajo", validators=[], default="NA")
 
 
 class EmployeeInsertForm(Form):
