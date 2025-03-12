@@ -716,7 +716,9 @@ def update_files_payroll(data):
     thread_update.start()
     flags_daemons = json.load(open(filepath_daemons, "r"))
     flags_daemons["update_files_nomina"] = True
-    json.dump(flags_daemons, open(filepath_daemons, "w"))
+    with open(filepath_daemons, "w") as f:
+        json.dump(flags_daemons, f)
+    # json.dump(flags_daemons, open(filepath_daemons, "w"))
     return (
         200,
         f"Proceso de actualizacion iniciado y puede llegar a tardar minutos. Patrones tomados en cuenta {patterns}",

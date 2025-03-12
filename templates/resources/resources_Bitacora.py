@@ -27,13 +27,16 @@ from templates.controllers.employees.employees_controller import (
     get_employees_op_names,
     get_contracts_operaciones,
 )
-from templates.resources.methods.Functions_Aux_Login import verify_token, token_verification_procedure
+from templates.resources.methods.Functions_Aux_Login import token_verification_procedure
 from templates.resources.midleware.MD_Bitacora import (
     get_events_extra,
     get_events_bitacora,
     create_event_bitacora_from_api,
     update_event_bitacora_from_api,
-    delete_event_bitacora_from_api, get_file_report_bitacora, create_multiple_event_bitacora_from_api, aprove_event_bitacora_from_api,
+    delete_event_bitacora_from_api,
+    get_file_report_bitacora,
+    create_multiple_event_bitacora_from_api,
+    aprove_event_bitacora_from_api,
 )
 
 ns = Namespace("GUI/api/v1/bitacora")
@@ -44,7 +47,9 @@ class Employees(Resource):
     @ns.marshal_with(client_emp_sm_response_model)
     @ns.expect(expected_headers_per)
     def get(self):
-        flag, data_token, msg = token_verification_procedure(request, department="bitacoras")
+        flag, data_token, msg = token_verification_procedure(
+            request, department="bitacoras"
+        )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         flag, error, result = get_employees_op_names()
@@ -58,7 +63,9 @@ class Employees(Resource):
 class FichajeTable(Resource):
     @ns.expect(expected_headers_per, fichaje_request_model)
     def post(self):
-        flag, data_token, msg = token_verification_procedure(request, department="bitacoras")
+        flag, data_token, msg = token_verification_procedure(
+            request, department="bitacoras"
+        )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
@@ -74,7 +81,9 @@ class FichajeTable(Resource):
 class FichajeEvent(Resource):
     @ns.expect(expected_headers_per, fichaje_add_update_request_model)
     def post(self):
-        flag, data_token, msg = token_verification_procedure(request, department="bitacoras")
+        flag, data_token, msg = token_verification_procedure(
+            request, department="bitacoras"
+        )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
@@ -87,7 +96,9 @@ class FichajeEvent(Resource):
 
     @ns.expect(expected_headers_per, fichaje_add_update_request_model)
     def put(self):
-        flag, data_token, msg = token_verification_procedure(request, department="bitacoras")
+        flag, data_token, msg = token_verification_procedure(
+            request, department="bitacoras"
+        )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
@@ -100,7 +111,9 @@ class FichajeEvent(Resource):
 
     @ns.expect(expected_headers_per, fichaje_delete_request_model)
     def delete(self):
-        flag, data_token, msg = token_verification_procedure(request, department="bitacoras")
+        flag, data_token, msg = token_verification_procedure(
+            request, department="bitacoras"
+        )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
@@ -116,7 +129,9 @@ class FichajeEvent(Resource):
 class BitacoraDownloadReport(Resource):
     @ns.expect(expected_headers_per, bitacora_dowmload_report_model)
     def post(self):
-        flag, data_token, msg = token_verification_procedure(request, department="bitacoras")
+        flag, data_token, msg = token_verification_procedure(
+            request, department="bitacoras"
+        )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
@@ -136,7 +151,9 @@ class BitacoraDownloadReport(Resource):
 class BitacoraEmployeesList(Resource):
     @ns.expect(expected_headers_per)
     def get(self):
-        flag, data_token, msg = token_verification_procedure(request, department="bitacoras")
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["bitacoras", "rrhh"]
+        )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         flag, error, result = get_contracts_operaciones()
@@ -153,7 +170,9 @@ class BitacoraEmployeesList(Resource):
 class FichajeMultipleEvent(Resource):
     @ns.expect(expected_headers_per, FichajeRequestMultipleEvents_model)
     def post(self):
-        flag, data_token, msg = token_verification_procedure(request, department="bitacoras")
+        flag, data_token, msg = token_verification_procedure(
+            request, department="bitacoras"
+        )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
@@ -169,7 +188,9 @@ class FichajeMultipleEvent(Resource):
 class FichajesGetExtra(Resource):
     @ns.expect(expected_headers_per, FichajeRequestExtras_model)
     def post(self):
-        flag, data_token, msg = token_verification_procedure(request, department="bitacoras")
+        flag, data_token, msg = token_verification_procedure(
+            request, department="bitacoras"
+        )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
@@ -185,7 +206,9 @@ class FichajesGetExtra(Resource):
 class FichajesAproveExtra(Resource):
     @ns.expect(expected_headers_per, FichajeAproveExtras_model)
     def post(self):
-        flag, data_token, msg = token_verification_procedure(request, department="bitacoras")
+        flag, data_token, msg = token_verification_procedure(
+            request, department="bitacoras"
+        )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences

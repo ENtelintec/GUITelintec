@@ -8,6 +8,7 @@ __author__ = "Edisson Naula"
 __date__ = "$ 02/nov./2023  at 17:29 $"
 
 from flask_restx import Namespace, Resource
+from sympy import false
 from werkzeug.utils import secure_filename
 
 from static.Models.api_employee_models import (
@@ -552,7 +553,7 @@ class FilesPayroll(Resource):
             return {"errors": validator.errors}, 400
         data = validator.data
         flags_daemons = json.load(open(filepath_daemons, "r"))
-        if flags_daemons["update_files_nomina"]:
+        if flags_daemons.get("update_files_nomina", false):
             msg = "Accion no permitida mientras se actualizan los datos."
             return {"data": None, "msg": msg}, 400
         code, msg = update_files_payroll(data)
