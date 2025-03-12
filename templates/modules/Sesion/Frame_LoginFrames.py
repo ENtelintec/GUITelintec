@@ -47,6 +47,7 @@ def call_authApi(user, pass_key, url=None):
         out = response.json()["verified"]
         data_token = unpack_token(response.json()["token"])
         permissions = data_token["permissions"]
+        print(data_token)
         if isinstance(permissions, list):
             permissions_out = {}
             for index, item in enumerate(permissions):
