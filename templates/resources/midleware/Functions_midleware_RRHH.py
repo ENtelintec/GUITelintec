@@ -24,6 +24,7 @@ from static.constants import (
     filepath_recommendations,
     format_date,
     filepath_fichaje_temp,
+    cache_file_resume_fichaje_path,
 )
 from templates.Functions_Sharepoint import (
     get_files_site,
@@ -33,6 +34,12 @@ from templates.Functions_Sharepoint import (
 from templates.controllers.employees.em_controller import (
     get_employees_without_records,
     get_all_examenes,
+    insert_new_exam_med,
+    update_aptitud_renovacion,
+)
+from templates.controllers.employees.employees_controller import (
+    new_employee,
+    update_employee,
 )
 from templates.controllers.employees.vacations_controller import (
     insert_vacation,
@@ -59,6 +66,7 @@ from templates.misc.Functions_Files import (
     get_info_t_file_name,
     get_info_bitacora,
     unify_data_employee,
+    get_fichajes_resume_cache,
 )
 from templates.misc.Functions_Files_RH import check_fichajes_files_in_directory
 
@@ -91,12 +99,130 @@ class GraceMinutes:
         return self.minutes
 
 
+def create_new_employee_db(data):
+    flag, error, result = new_employee(
+        data["info"]["name"],
+        data["info"]["lastname"],
+        data["info"]["curp"],
+        data["info"]["phone"],
+        data["info"]["modality"],
+        data["info"]["dep"],
+        data["info"]["contract"],
+        data["info"]["admission"],
+        data["info"]["rfc"],
+        data["info"]["nss"],
+        data["info"]["position"],
+        data["info"]["status"],
+        data["info"]["departure"],
+        data["info"]["birthday"],
+        data["info"]["legajo"],
+        data["info"]["email"],
+        data["info"]["emergency"],
+    )
+    if flag:
+        return {"data": str(result)}, 201
+    else:
+        return {"error": str(error)}, 400
+
+
+def update_employee_db(data):
+    flag, error, result = update_employee(
+        data["id"],
+        data["info"]["name"],
+        data["info"]["lastname"],
+        data["info"]["curp"],
+        data["info"]["phone"],
+        data["info"]["modality"],
+        data["info"]["dep"],
+        data["info"]["contract"],
+        data["info"]["admission"],
+        data["info"]["rfc"],
+        data["info"]["nss"],
+        data["info"]["position"],
+        data["info"]["status"],
+        data["info"]["departure"],
+        data["info"]["birthday"],
+        data["info"]["legajo"],
+        data["info"]["email"],
+        data["info"]["emergency"],
+    )
+    if flag:
+        return {"data": str(result)}, 200
+    else:
+        return {"error": str(error)}, 400
+
+
 def get_files_fichaje():
     flag, files = check_fichajes_files_in_directory(patterns_files_fichaje)
     if not flag:
         return False, files
     files_list = [v for k, v in files.items()]
     return True, files_list
+
+
+def fetch_fichajes_all_employees():
+    fichajes_resume, flag = get_fichajes_resume_cache(
+        cache_file_resume_fichaje_path, is_hard_update=True
+    )
+    if not flag:
+        return {"msg": "Error al obtener fichajes", "data": []}, 400
+    out_aux = []
+    for item in fichajes_resume:
+        out_aux.append(
+            {
+                "id": item[0],
+                "name": item[1],
+                "contract": item[2],
+                "absences": item[3],
+                "late": item[4],
+                "total_late": item[5],
+                "extra": item[6],
+                "total_h_extra": item[7],
+                "primes": item[8],
+                "absences_details": item[9],
+                "late_details": item[10],
+                "extra_details": item[11],
+                "primes_details": item[12],
+                "normals_details": item[13],
+                "earlies_details": item[14],
+                "pasiva_details": item[15],
+            }
+        )
+    out = {"data": out_aux, "msg": "Ok"}
+    return out, 200
+
+
+def fetch_fichaje_employee(id_emp):
+    fichajes_resume, flag = get_fichajes_resume_cache(
+        cache_file_resume_fichaje_path, is_hard_update=True
+    )
+    if not flag:
+        return {"msg": "Error al obtener fichajes", "data": None}, 400
+    out = {}
+    code = 400
+    for item in fichajes_resume:
+        if str(item[0]) == id_emp:
+            out = {
+                "id": item[0],
+                "name": item[1],
+                "contract": item[2],
+                "absences": item[3],
+                "late": item[4],
+                "total_late": item[5],
+                "extra": item[6],
+                "total_h_extra": item[7],
+                "primes": item[8],
+                "absences_details": item[9],
+                "late_details": item[10],
+                "extra_details": item[11],
+                "primes_details": item[12],
+                "normals_details": item[13],
+                "earlies_details": item[14],
+                "pasiva_details": item[15],
+            }
+            code = 200
+            break
+    return out, code
 
 
 def get_data_file(filename: str, type_f: str):
@@ -472,6 +598,38 @@ def get_files_list_nomina(emp_id):
     return 200, files
 
 
+def insert_medical_db(data):
+    flag, error, result = insert_new_exam_med(
+        data["info"]["name"],
+        data["info"]["blood"],
+        data["info"]["status"],
+        data["info"]["aptitudes"],
+        data["info"]["dates"],
+        data["info"]["apt_actual"],
+        data["info"]["emp_id"],
+    )
+    if flag:
+        return {"data": str(result)}, 201
+    else:
+        return {"error": str(error)}, 400
+
+
+def update_medical_db(data):
+    apt_actual = (
+        data["info"]["aptitudes"][-1] if len(data["info"]["aptitudes"]) > 0 else 0
+    )
+    flag, error, result = update_aptitud_renovacion(
+        data["info"]["aptitudes"],
+        data["info"]["dates"],
+        apt_actual,
+        exam_id=data["id"],
+    )
+    if flag:
+        return {"data": str(result)}, 200
+    else:
+        return {"error": str(error)}, 400
+
+
 def insert_new_vacation(data):
     seniority_dict = {}
     for item in data["seniority"]:
@@ -786,7 +944,6 @@ def update_data_employee(data):
 def fetch_employees_without_records():
     # name, l_name, status, birthday, date_admission, employee_id
     flag, error, result = get_employees_without_records()
-    print(flag, error, result)
     if not flag:
         return 400, {"data": None, "msg": str(error)}
     out = []
@@ -837,4 +994,29 @@ def fetch_medicals():
             }
         )
     out["data"] = data_out
+    return out, 200
+
+
+def fetch_medical_employee(id_emp):
+    flag, e, result = get_all_examenes()
+    out = {"exist": False, "data": None}
+    if not flag:
+        return out, 400
+    for row in result:
+        id_exam, nombre, sangre, status, aptitud, fechas, apt_actual, emp_id = (
+            row
+        )
+        if str(emp_id) == id_emp:
+            out = {
+                "exist": True,
+                "id_exam": id_exam,
+                "name": nombre,
+                "blood": sangre,
+                "status": status,
+                "aptitudes": aptitud,
+                "dates": fechas,
+                "apt_last": apt_actual,
+                "emp_id": emp_id,
+            }
+            break
     return out, 200
