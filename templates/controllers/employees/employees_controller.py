@@ -220,7 +220,7 @@ def get_id_employee(name: str) -> None | int:
         "MATCH(name) AGAINST (%s IN NATURAL LANGUAGE MODE )"
     )
     # lowercase names
-    name = name.lower()
+    name = name.upper()
     values = (name, name)
     flag, e, out = execute_sql(sql, values, 1)
     # print(name, flag, e, out)

@@ -194,11 +194,12 @@ def update_date_aptitud(dates, aptituds, emp_id=None, exam_id=None):
 
 def get_employees_without_records():
     sql = (
-        "SELECT name, l_name, status, birthday, date_admission, employee_id "
-        "FROM sql_telintec.employees "
-        "WHERE LOWER(status) = 'activo' "
-        "AND employee_id NOT IN (SELECT empleado_id FROM sql_telintec.examenes_med) "
-        "ORDER BY name, l_name"
+        "SELECT e.name, e.l_name, e.status, e.birthday, e.date_admission, e.employee_id, em.empleado_id "
+        "FROM sql_telintec.employees e "
+        "LEFT JOIN sql_telintec.examenes_med em "
+        "ON e.employee_id = em.empleado_id "
+        "WHERE LOWER(e.status) = 'activo' AND em.empleado_id IS NULL "
+        "ORDER BY e.name, e.l_name"
     )
     flag, e, out = execute_sql(sql, type_sql=5)
     return flag, e, out

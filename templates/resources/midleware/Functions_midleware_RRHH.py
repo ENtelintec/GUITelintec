@@ -30,7 +30,10 @@ from templates.Functions_Sharepoint import (
     download_files_site,
     create_mail_draft_with_attachment,
 )
-from templates.controllers.employees.em_controller import get_employees_without_records
+from templates.controllers.employees.em_controller import (
+    get_employees_without_records,
+    get_all_examenes,
+)
 from templates.controllers.employees.vacations_controller import (
     insert_vacation,
     update_registry_vac,
@@ -783,6 +786,7 @@ def update_data_employee(data):
 def fetch_employees_without_records():
     # name, l_name, status, birthday, date_admission, employee_id
     flag, error, result = get_employees_without_records()
+    print(flag, error, result)
     if not flag:
         return 400, {"data": None, "msg": str(error)}
     out = []
@@ -807,3 +811,30 @@ def fetch_employees_without_records():
             }
         )
     return 200, {"data": out, "msg": "ok"}
+
+
+def fetch_medicals():
+    flag, e, result = get_all_examenes()
+    out = {"data": None}
+    if not flag:
+        out = {"data": []}
+        code = 400
+        return out, code
+    data_out = []
+    for row in result:
+        id_exam, nombre, sangre, status, aptitud, fechas, apt_actual, emp_id = row
+        data_out.append(
+            {
+                "exist": True,
+                "id_exam": id_exam,
+                "name": nombre,
+                "blood": sangre,
+                "status": status if status is not None else "INACTIVO",
+                "aptitudes": json.loads(aptitud),
+                "dates": json.loads(fechas),
+                "apt_last": apt_actual,
+                "emp_id": emp_id,
+            }
+        )
+    out["data"] = data_out
+    return out, 200

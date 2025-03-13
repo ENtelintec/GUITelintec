@@ -94,6 +94,7 @@ from templates.resources.midleware.Functions_midleware_RRHH import (
     update_data_employee,
     get_files_list_nomina_RH,
     fetch_employees_without_records,
+    fetch_medicals,
 )
 
 ns = Namespace("GUI/api/v1/rrhh")
@@ -254,32 +255,7 @@ class EMResumeAll(Resource):  # noqa: F811
         flag, data_token, msg = token_verification_procedure(request, department="rrhh")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        flag, e, result = get_all_examenes()
-        out = {"data": None}
-        if flag:
-            code = 200
-            data_out = []
-            for row in result:
-                id_exam, nombre, sangre, status, aptitud, fechas, apt_actual, emp_id = (
-                    row
-                )
-                data_out.append(
-                    {
-                        "exist": True,
-                        "id_exam": id_exam,
-                        "name": nombre,
-                        "blood": sangre,
-                        "status": status,
-                        "aptitudes": json.loads(aptitud),
-                        "dates": json.loads(fechas),
-                        "apt_last": apt_actual,
-                        "emp_id": emp_id,
-                    }
-                )
-            out["data"] = data_out
-        else:
-            out = {"data": []}
-            code = 400
+        out, code = fetch_medicals()
         return out, code
 
 
