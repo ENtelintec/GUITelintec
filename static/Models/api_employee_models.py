@@ -53,6 +53,9 @@ employee_model = api.model(
             required=True, description="The employee birthday", example="2024-03-01"
         ),
         "legajo": fields.String(required=True, description="The employee legajo"),
+        "id_leader": fields.Integer(
+            required=False, description="The employee leader id", example=60
+        ),
     },
 )
 
@@ -90,6 +93,9 @@ employee_model_input = api.model(
             required=True, description="The employee birthday", example="2024-03-01"
         ),
         "legajo": fields.String(required=True, description="The employee legajo"),
+        "id_leader": fields.Integer(
+            required=False, description="The employee leader id", example=0
+        ),
     },
 )
 
@@ -132,6 +138,8 @@ examenes_medicos_model = api.model(
         "dates": fields.List(fields.String(required=True, description="The date")),
         "apt_actual": fields.Integer(required=True, description="The aptitud"),
         "emp_id": fields.Integer(required=True, description="The id"),
+        "alergies": fields.String(required=True, description="The alergies"),
+        "observations": fields.String(required=True, description="The observations"),
     },
 )
 exam_med_model_input = api.model(
@@ -278,7 +286,8 @@ class EmployeeInputForm(Form):
     birthday = DateField(
         "birthday", validators=[InputRequired()], filters=[date_filter]
     )
-    legajo = StringField("legajo", validators=[], default="NA")
+    legajo = (StringField("legajo", validators=[], default="NA"),)
+    id_leader = IntegerField("id_leader", validators=[], default=0)
 
 
 class EmployeeInsertForm(Form):
@@ -352,9 +361,7 @@ class EmployeeMedDeleteForm(Form):
 
 class PrimaVacForm(Form):
     status = StringField("status", validators=[], default="No")
-    fecha_pago = StringField(
-        "fecha_pago", validators=[], default="", filters=[date_filter]
-    )
+    fecha_pago = StringField("fecha_pago", validators=[], default="")
 
 
 class SeniorityForm(Form):
