@@ -1004,7 +1004,6 @@ def fetch_medicals():
             }
         )
     out["data"] = data_out
-    print(data_out)
     return out, 200
 
 
