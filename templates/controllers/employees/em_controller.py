@@ -153,7 +153,7 @@ def get_all_examenes():
         "renovacion, "
         "aptitude_actual, "
         "empleado_id, "
-        "extra_info "
+        "sql_telintec.examenes_med.extra_info "
         "FROM sql_telintec.examenes_med "
         "LEFT JOIN sql_telintec.employees on employees.employee_id = examenes_med.empleado_id "
         "ORDER BY name "
