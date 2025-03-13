@@ -132,6 +132,8 @@ examenes_medicos_model = api.model(
         "dates": fields.List(fields.String(required=True, description="The date")),
         "apt_actual": fields.Integer(required=True, description="The aptitud"),
         "emp_id": fields.Integer(required=True, description="The id"),
+        "alergies": fields.String(required=True, description="The alergies"),
+        "observations": fields.String(required=True, description="The observations"),
     },
 )
 exam_med_model_input = api.model(

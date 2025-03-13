@@ -420,7 +420,7 @@ def get_fichaje_data(data: dict):
     data_files = []
     name_list = []
     date_file = ""
-    dff, dft = None, None
+    dff = None
     for file in files:
         path, code = download_fichaje_file(
             {
@@ -438,9 +438,6 @@ def get_fichaje_data(data: dict):
         if file["report"].lower() == "fichaje":
             date_file = file["date"]
             dff = data_file["df"]
-        else:
-            dft = data_file["df"]
-            dft = None
     date_file = datetime.strptime(date_file, format_date_fichaje_file)
     flag, data_bitacora = get_bitacora_data(date_file)
     data_out = []
@@ -979,7 +976,18 @@ def fetch_medicals():
         return out, code
     data_out = []
     for row in result:
-        id_exam, nombre, sangre, status, aptitud, fechas, apt_actual, emp_id = row
+        (
+            id_exam,
+            nombre,
+            sangre,
+            status,
+            aptitud,
+            fechas,
+            apt_actual,
+            emp_id,
+            extra_info,
+        ) = row
+        extra_info = json.loads(extra_info)
         data_out.append(
             {
                 "exist": True,
@@ -991,9 +999,12 @@ def fetch_medicals():
                 "dates": json.loads(fechas),
                 "apt_last": apt_actual,
                 "emp_id": emp_id,
+                "alergies": extra_info.get("alergies", ""),
+                "observations": extra_info.get("observations", ""),
             }
         )
     out["data"] = data_out
+    print(data_out)
     return out, 200
 
 
@@ -1003,9 +1014,7 @@ def fetch_medical_employee(id_emp):
     if not flag:
         return out, 400
     for row in result:
-        id_exam, nombre, sangre, status, aptitud, fechas, apt_actual, emp_id = (
-            row
-        )
+        id_exam, nombre, sangre, status, aptitud, fechas, apt_actual, emp_id = row
         if str(emp_id) == id_emp:
             out = {
                 "exist": True,
