@@ -1,1 +1,5 @@
-{"update_files_nomina": false}
+{
+    "update_files_nomina": false,
+    "flag_medical": true,
+    "last_date_medicals": "2025-03-13"
+}

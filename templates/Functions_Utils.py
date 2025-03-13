@@ -14,10 +14,13 @@ from static.constants import (
     secrets,
     file_size_pages,
     timezone_software,
+    filepath_daemons,
 )
 from templates.controllers.notifications.Notifications_controller import (
     insert_notification,
 )
+
+import os
 
 
 def create_notification_permission(
@@ -253,3 +256,31 @@ def get_page_size(page_size: str):
     """
     dict_pagesize = get_page_size_dict()
     return dict_pagesize[page_size.upper()]
+
+
+def update_flag_daemons(**kwargs):
+    """
+    Función para actualizar el archivo de daemons
+    :param kwargs:
+    :return:
+    """
+    # check if file exists
+    if not os.path.exists(filepath_daemons):
+        with open(filepath_daemons, "w") as file:
+            # noinspection PyTypeChecker
+            json.dump({}, file, indent=4)
+    flags_daemons = json.load(open(filepath_daemons, "r"))
+    for key, value in kwargs.items():
+        flags_daemons[key] = value
+    with open(filepath_daemons, "w") as file:
+        # noinspection PyTypeChecker
+        json.dump(flags_daemons, file, indent=4)
+
+
+def read_flag_daemons():
+    """
+    Función para leer el archivo de daemons
+    :return:
+    """
+    flags_daemons = json.load(open(filepath_daemons, "r"))
+    return flags_daemons
