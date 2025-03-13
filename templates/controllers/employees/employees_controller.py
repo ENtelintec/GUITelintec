@@ -2,6 +2,8 @@
 __author__ = "Edisson Naula"
 __date__ = "$ 01/may./2024  at 18:20 $"
 
+import json
+
 from templates.database.connection import execute_sql, execute_sql_multiple
 
 
@@ -55,12 +57,14 @@ def new_employee(
     legajo,
     email,
     emergency,
+    id_leader=0,
 ):
+    extra_info = {"id_leader": id_leader}
     sql = (
         "INSERT INTO sql_telintec.employees (name, l_name, curp, phone_number, email, department_id,"
         " contrato, date_admission, rfc, nss, emergency_contact, modality, puesto, status, "
-        " departure, birthday, legajo) "
-        "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+        " departure, birthday, legajo, extra_info) "
+        "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
     )
     values = (
         name.lower(),
@@ -80,6 +84,7 @@ def new_employee(
         departure,
         birthday,
         legajo,
+        json.dumps(extra_info),
     )
     flag, e, out = execute_sql(sql, values, 4)
     return flag, e, out
@@ -104,11 +109,12 @@ def update_employee(
     legajo,
     email,
     emergency,
+    id_leader=0,
 ):
     sql = (
         "UPDATE sql_telintec.employees SET name = %s, l_name = %s, curp = %s, phone_number = %s, email = %s, department_id = %s,"
         "contrato = %s, date_admission = %s, rfc = %s, nss = %s, emergency_contact = %s, modality = %s , "
-        "puesto = %s, status = %s, departure = %s, birthday = %s, legajo = %s "
+        "puesto = %s, status = %s, departure = %s, birthday = %s, legajo = %s, extra_info = JSON_REPLACE(extra_info, '$.id_leader', %s) "
         "WHERE employee_id = %s"
     )
     values = (
@@ -130,6 +136,7 @@ def update_employee(
         birthday,
         legajo,
         employee_id,
+        id_leader,
     )
     flag, e, out = execute_sql(sql, values, 3)
     return flag, e, out
@@ -352,7 +359,8 @@ def get_all_data_employees(status: str):
         "employees.departure, "
         "sql_telintec.examenes_med.examen_id, "
         "employees.birthday, "
-        "employees.legajo "
+        "employees.legajo ,"
+        "employees.extra_info "
         "FROM sql_telintec.employees "
         "LEFT JOIN sql_telintec.departments "
         "ON sql_telintec.employees.department_id = sql_telintec.departments.department_id "

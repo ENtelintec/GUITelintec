@@ -118,6 +118,7 @@ def create_new_employee_db(data):
         data["info"]["legajo"],
         data["info"]["email"],
         data["info"]["emergency"],
+        data["info"]["id_leader"],
     )
     if flag:
         return {"data": str(result)}, 201
@@ -145,6 +146,7 @@ def update_employee_db(data):
         data["info"]["legajo"],
         data["info"]["email"],
         data["info"]["emergency"],
+        data["info"]["id_leader"],
     )
     if flag:
         return {"data": str(result)}, 200
