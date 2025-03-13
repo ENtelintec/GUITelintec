@@ -286,7 +286,7 @@ class EmployeeInputForm(Form):
     birthday = DateField(
         "birthday", validators=[InputRequired()], filters=[date_filter]
     )
-    legajo = StringField("legajo", validators=[], default="NA"),
+    legajo = (StringField("legajo", validators=[], default="NA"),)
     id_leader = IntegerField("id_leader", validators=[], default=0)
 
 
@@ -361,9 +361,7 @@ class EmployeeMedDeleteForm(Form):
 
 class PrimaVacForm(Form):
     status = StringField("status", validators=[], default="No")
-    fecha_pago = StringField(
-        "fecha_pago", validators=[], default="", filters=[date_filter]
-    )
+    fecha_pago = StringField("fecha_pago", validators=[], default="")
 
 
 class SeniorityForm(Form):
