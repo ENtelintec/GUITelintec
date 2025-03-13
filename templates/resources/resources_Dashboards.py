@@ -2,7 +2,6 @@
 __author__ = "Edisson Naula"
 __date__ = "$ 18/sept/2024  at 17:15 $"
 
-import hashlib
 from datetime import datetime
 
 import pytz
@@ -19,7 +18,6 @@ from static.Models.api_models import expected_headers_per
 from static.constants import (
     timezone_software,
     format_date,
-    secrets,
 )
 from templates.Functions_Utils import read_flag_daemons, update_flag_daemons
 from templates.daemons.NotificationsSearch import NotificationsSearch
@@ -62,7 +60,7 @@ class SMChart(Resource):
             request, department="almacen"
         )
         if not flag:
-            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data = {"range": range_g, "type_chart": type_chart}
         data_chart, code = get_data_chart_sm(data)
         if code == 200:
@@ -77,7 +75,7 @@ class FichajeEmpChart(Resource):
     def post(self):
         flag, data_token, msg = token_verification_procedure(request, department="rrhh")
         if not flag:
-            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
         validator = FichajeEmpForm.from_json(ns.payload)
         if not validator.validate():
@@ -94,14 +92,9 @@ class FichajeEmpChart(Resource):
 class NotificationsMedicals(Resource):
     @ns.expect(expected_headers_per)
     def get(self):
-        token = request.headers.get("Authorization", None)
-        if token is None:
-            return {"error": "No se encontro token"}, 401
-        token_d = secrets["KEY_WEBAPP"]
-        # haslib md5 token_d
-        if token != hashlib.md5(token_d.encode()).hexdigest():
-            return {"error": "Token invalido"}, 401
-
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         flags_daemons = read_flag_daemons()
         if not flags_daemons.get("flag_medical", False):
             return {"msg": "Se esta ya realizando la busqueda de notificaciones"}, 200
