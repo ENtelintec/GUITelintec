@@ -628,7 +628,17 @@ class ExamenesMedicos(ScrolledFrame):
         max_len_aptitud = 0
         max_registries = 0
         for row in result:
-            id_exam, nombre, sangre, status, aptitud, fechas, apt_actual, emp_id = row
+            (
+                id_exam,
+                nombre,
+                sangre,
+                status,
+                aptitud,
+                fechas,
+                apt_actual,
+                emp_id,
+                extra_info,
+            ) = row
             self.names_emp.append(nombre)
             aptitud = json.loads(aptitud) if isinstance(aptitud, str) else aptitud
             fechas = json.loads(fechas) if isinstance(fechas, str) else fechas
@@ -655,7 +665,17 @@ class ExamenesMedicos(ScrolledFrame):
             columns.append(f"Fecha {i + 1}")
             columns.append(f"Aptitud {i + 1}")
         for row in result:
-            id_exam, nombre, sangre, status, aptitud, fechas, apt_actual, emp_id = row
+            (
+                id_exam,
+                nombre,
+                sangre,
+                status,
+                aptitud,
+                fechas,
+                apt_actual,
+                emp_id,
+                extra_info,
+            ) = row
             aptitud = json.loads(aptitud) if isinstance(aptitud, str) else aptitud
             fechas = json.loads(fechas) if isinstance(fechas, str) else fechas
             aux = [id_exam, emp_id, nombre, sangre, status]

@@ -97,6 +97,8 @@ class FramePlot(tk.Frame):
                     figure_canvas = FigureCanvasTkAgg(figure, self)
                     NavigationToolbar2Tk(figure_canvas, self)
                     axes = figure.add_subplot()
+                    if len(y_values) <= 0:
+                        y_values = [[]]
                     if isinstance(y_values[0], list):
                         values = np.array(y_values)
                         values = values.T
