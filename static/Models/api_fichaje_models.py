@@ -12,7 +12,7 @@ from wtforms.validators import InputRequired
 from wtforms.form import Form
 from wtforms import IntegerField, StringField
 
-from static.Models.api_models import date_filter
+from static.Models.api_models import date_filter, datetime_filter
 from static.constants import api
 
 fichaje_request_model = api.model(
@@ -175,6 +175,61 @@ FichajeAproveExtras_model = api.model(
 )
 
 
+bitacora_insert_rh_model = api.model(
+    "BitacoraInsertRH",
+    {
+        "emp_id":  fields.Integer(
+            required=True, description="The id of the employee", example=1
+        ),
+        "timestamp": fields.String(
+            required=True, description="The timestamp", example="2024-03-30 08:00:00"
+        ),
+        "comment": fields.String(
+            required=True, description="The comment", example="This is a comment"
+        ),
+        "type": fields.Integer(
+            required=True, description="The type of the event", example=1
+        ),
+        "value": fields.Float(required=True, description="The value", example=1.0)
+
+    },
+)
+
+
+bitacora_update_rh_model = api.model(
+    "BitacoraUpdateRH",
+    {
+        "id":  fields.Integer(
+            required=True, description="The id of the event", example=1
+        ),
+        "emp_id":  fields.Integer(
+            required=True, description="The id of the employee", example=1
+        ),
+        "timestamp": fields.String(
+            required=True, description="The timestamp", example="2024-03-30 08:00:00"
+        ),
+        "comment": fields.String(
+            required=True, description="The comment", example="This is a comment"
+        ),
+        "type": fields.Integer(
+            required=True, description="The type of the event", example=1
+        ),
+        "value": fields.Float(required=True, description="The value", example=1.0)
+
+    },
+)
+
+
+bitacora_delete_rh_model = api.model(
+    "BitacoraDeleteRH",
+    {
+        "id":  fields.Integer(
+            required=True, description="The id of the event", example=1
+        ),
+    },
+)
+
+
 class FichajeRequestFormr(Form):
     date = DateField("date", validators=[InputRequired()], filters=[date_filter])
     emp_id = IntegerField(
@@ -259,4 +314,37 @@ class FichajeAproveExtras(Form):
     id_leader = IntegerField(
         "id_leader",
         validators=[InputRequired(message="id_leader is required or 0 not accepted")],
+    )
+
+
+class BitacoraInsertRHForm(Form):
+    emp_id = IntegerField(
+        "emp_id",
+        validators=[InputRequired(message="emp_id is required or 0 not accepted")],
+    )
+    timestamp = StringField("timestamp", validators=[InputRequired()], filters=[datetime_filter])
+    comment = StringField("comment", validators=[InputRequired()])
+    type = IntegerField("type", validators=[InputRequired()])
+    value = FloatField("value", validators=[InputRequired()])
+
+
+class BitacoraUpdateRHForm(Form):
+    id = IntegerField(
+        "id",
+        validators=[InputRequired(message="id is required or 0 not accepted")],
+    )
+    emp_id = IntegerField(
+        "emp_id",
+        validators=[InputRequired(message="emp_id is required or 0 not accepted")],
+    )
+    timestamp = StringField("timestamp", validators=[InputRequired()], filters=[datetime_filter])
+    comment = StringField("comment", validators=[InputRequired()])
+    type = IntegerField("type", validators=[InputRequired()])
+    value = FloatField("value", validators=[InputRequired()])
+
+
+class BitacoraDeleteRHForm(Form):
+    id = IntegerField(
+        "id",
+        validators=[InputRequired(message="id is required or 0 not accepted")],
     )
