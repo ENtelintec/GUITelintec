@@ -135,8 +135,8 @@ def update_employee(
         departure,
         birthday,
         legajo,
-        employee_id,
         id_leader,
+        employee_id,
     )
     flag, e, out = execute_sql(sql, values, 3)
     return flag, e, out
