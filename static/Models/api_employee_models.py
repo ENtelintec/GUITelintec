@@ -286,7 +286,7 @@ class EmployeeInputForm(Form):
     birthday = DateField(
         "birthday", validators=[InputRequired()], filters=[date_filter]
     )
-    legajo = (StringField("legajo", validators=[], default="NA"),)
+    legajo = StringField("legajo", validators=[], default="")
     id_leader = IntegerField("id_leader", validators=[], default=0)
 
 
