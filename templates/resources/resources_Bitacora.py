@@ -158,7 +158,7 @@ class BitacoraEmployeesList(Resource):
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         flag, error, result = get_contracts_operaciones()
         # filtering unique contracts
-        contracts = list(set([item[0] for item in result]))
+        contracts = list(set([item[0] for item in result] + ["OTROS"]))
         contracts.sort()
         if flag:
             return {"data": contracts, "comment": error}, 200

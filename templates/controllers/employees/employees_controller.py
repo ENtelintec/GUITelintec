@@ -67,8 +67,8 @@ def new_employee(
         "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
     )
     values = (
-        name.lower(),
-        lastname.lower(),
+        name.upper(),
+        lastname.upper(),
         curp,
         phone,
         email,
@@ -118,8 +118,8 @@ def update_employee(
         "WHERE employee_id = %s"
     )
     values = (
-        name.lower(),
-        lastname.lower(),
+        name.upper(),
+        lastname.upper(),
         curp,
         phone,
         email,
@@ -135,8 +135,8 @@ def update_employee(
         departure,
         birthday,
         legajo,
-        employee_id,
         id_leader,
+        employee_id,
     )
     flag, e, out = execute_sql(sql, values, 3)
     return flag, e, out
@@ -166,8 +166,7 @@ def get_employee_id_name(name: str) -> tuple[None, str] | tuple[int, str]:
         "MATCH(l_name) AGAINST (%s IN NATURAL LANGUAGE MODE ) AND "
         "MATCH(name) AGAINST (%s IN NATURAL LANGUAGE MODE )"
     )
-    # lowercase names
-    name = name.lower()
+    name = name.upper()
     values = (name, name)
     flag, e, out = execute_sql(sql, values, 1)
     if e is not None or len(out) == 0:
@@ -226,7 +225,6 @@ def get_id_employee(name: str) -> None | int:
         "MATCH(l_name) AGAINST (%s IN NATURAL LANGUAGE MODE ) AND "
         "MATCH(name) AGAINST (%s IN NATURAL LANGUAGE MODE )"
     )
-    # lowercase names
     name = name.upper()
     values = (name, name)
     flag, e, out = execute_sql(sql, values, 1)
@@ -301,9 +299,8 @@ def get_ids_employees(names: list):
         "MATCH(l_name) AGAINST (%s IN NATURAL LANGUAGE MODE ) AND "
         "MATCH(name) AGAINST (%s IN NATURAL LANGUAGE MODE )"
     )
-    # lowercase names
     for i, name in enumerate(names):
-        names[i] = name.lower()
+        names[i] = name.upper()
     values = [names, names]
     flag, e, out = execute_sql_multiple(sql, values, 1)
     if e is not None:
