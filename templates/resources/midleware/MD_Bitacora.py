@@ -498,13 +498,13 @@ def fetch_all_bitacora_rh():
 def create_event_bitacora_rh_from_api(data, data_token):
     flag, error, result = insert_bitacora_rh_db(
         data["emp_id"],
-        data["event"],
+        data["type"],
         data["timestamp"],
         data["comment"],
         data["value"],
     )
     if flag:
-        msg = f"Evento de bitacora registrado por RH: {data['emp_id']}, {data['timestamp']}, {data['event']}, {data['extra_info']}"
+        msg = f"Evento de bitacora registrado por RH: {data['emp_id']}, {data['timestamp']}, {data['type']}, {data['extra_info']}"
         create_notification_permission(
             msg,
             ["RH"],
@@ -525,13 +525,13 @@ def update_event_bitacora_rh_from_api(data, data_token):
     flag, error, result = update_bitacora_rh_db(
         data["id"],
         data["emp_id"],
-        data["event"],
+        data["type"],
         data["timestamp"],
         data["comment"],
         data["value"],
     )
     if flag:
-        msg = f"Evento de bitacora actualizado por RH: {data['emp_id']}, {data['timestamp']}, {data['event']}, {data['extra_info']}"
+        msg = f"Evento de bitacora actualizado por RH: {data['emp_id']}, {data['timestamp']}, {data['type']}, {data['extra_info']}"
         create_notification_permission(
             msg,
             ["RH"],
