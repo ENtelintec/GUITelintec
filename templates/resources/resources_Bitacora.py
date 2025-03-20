@@ -25,7 +25,7 @@ from static.Models.api_fichaje_models import (
     bitacora_delete_rh_model,
     BitacoraInsertRHForm,
     BitacoraUpdateRHForm,
-    BitacoraDeleteRHForm
+    BitacoraDeleteRHForm,
 )
 from static.Models.api_models import expected_headers_per
 from static.Models.api_sm_models import client_emp_sm_response_model
@@ -230,7 +230,7 @@ class FichajesAproveExtra(Resource):
         return response, code
 
 
-@ns.route("/bitacora/rh/all")
+@ns.route("/rh/all")
 class BitacoraRHAll(Resource):
     @ns.expect(expected_headers_per)
     def get(self):
@@ -243,7 +243,7 @@ class BitacoraRHAll(Resource):
         return {"data": data}, code
 
 
-@ns.route("/bitacora/rh/event")
+@ns.route("/rh/event")
 class BitacoraRHEvent(Resource):
     @ns.expect(expected_headers_per, bitacora_insert_rh_model)
     def post(self):
