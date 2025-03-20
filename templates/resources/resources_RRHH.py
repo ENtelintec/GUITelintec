@@ -124,12 +124,10 @@ class Employee(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
-        print(ns.payload)
         validator = EmployeeUpdateForm.from_json(ns.payload)
         if not validator.validate():
             return {"errors": validator.errors}, 400
         data = validator.data
-        print(data)
         data_out, code = update_employee_db(data)
         return data_out, code
 
