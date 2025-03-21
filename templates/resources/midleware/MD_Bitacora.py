@@ -464,7 +464,7 @@ def fetch_all_bitacora_rh():
             events = dict_emps[item[1]]["events"]
             events.append(
                 {
-                    "timestamp": item[3],
+                    "timestamp": item[3].strftime(format_timestamps),
                     "type": item[2],
                     "comment": extra_info.get("comment", ""),
                     "value": extra_info.get("value", 1.0),
@@ -480,7 +480,7 @@ def fetch_all_bitacora_rh():
                 "contract": item[7],
                 "events": [
                     {
-                        "timestamp": item[3],
+                        "timestamp": item[3].strftime(format_timestamps),
                         "type": item[2],
                         "comment": extra_info.get("comment", ""),
                         "value": extra_info.get("value", 1.0),
@@ -489,10 +489,11 @@ def fetch_all_bitacora_rh():
                 ],
             }
     out_data = list(dict_emps.values())
+    print(out_data)
     if flag:
         return {"data": out_data, "msg": "ok"}, 200
     else:
-        return {"data": [], "msg": error}, 400
+        return {"data": [], "msg": str(error)}, 400
 
 
 def create_event_bitacora_rh_from_api(data, data_token):
