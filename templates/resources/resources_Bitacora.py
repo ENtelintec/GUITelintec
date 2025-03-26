@@ -26,6 +26,8 @@ from static.Models.api_fichaje_models import (
     BitacoraInsertRHForm,
     BitacoraUpdateRHForm,
     BitacoraDeleteRHForm,
+    bitacora_fetch_by_date_model,
+    BitacoraFetchByDateForm,
 )
 from static.Models.api_models import expected_headers_per
 from static.Models.api_sm_models import client_emp_sm_response_model
@@ -47,6 +49,7 @@ from templates.resources.midleware.MD_Bitacora import (
     create_event_bitacora_rh_from_api,
     update_event_bitacora_rh_from_api,
     delete_event_bitacora_rh_from_api,
+    fetch_bitacora_rh_from_api_by_date,
 )
 
 ns = Namespace("GUI/api/v1/bitacora")
@@ -282,4 +285,22 @@ class BitacoraRHEvent(Resource):
             return {"error": validator.errors}, 400
         data = validator.data
         response, code = delete_event_bitacora_rh_from_api(data, data_token)
+        return response, code
+
+
+@ns.route("/rh/date")
+class BitacoraRHDate(Resource):
+    @ns.expect(expected_headers_per, bitacora_fetch_by_date_model)
+    def post(self):
+        flag, data_token, msg = token_verification_procedure(
+            request, department="bitacoras"
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        # noinspection PyUnresolvedReferences
+        validator = BitacoraFetchByDateForm.from_json(ns.payload)
+        if not validator.validate():
+            return {"error": validator.errors}, 400
+        data = validator.data
+        response, code = fetch_bitacora_rh_from_api_by_date(data)
         return response, code

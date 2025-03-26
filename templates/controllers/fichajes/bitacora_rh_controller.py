@@ -3,7 +3,9 @@ __author__ = "Edisson Naula"
 __date__ = "$ 20/mar/2025  at 16:27 $"
 
 import json
+from datetime import datetime
 
+from static.constants import format_timestamps
 from templates.database.connection import execute_sql
 
 
@@ -27,7 +29,7 @@ def get_all_bitacora_rh_db():
 
 
 def insert_bitacora_rh_db(emp_id, event, timestamp, comment, value):
-    extra_info = {"comment":  comment, "value": value}
+    extra_info = {"comment": comment, "value": value}
     sql = (
         "INSERT INTO sql_telintec.bitacora_rh (emp_id, event, timestamp, extra_info) "
         "VALUES (%s, %s, %s, %s)"
@@ -55,3 +57,24 @@ def delete_bitacora_rh_db(id_event):
     flag, error, my_result = execute_sql(sql, vals, 3)
     return flag, error, my_result
 
+
+def get_bitacora_rh_db_by_date(date):
+    date = datetime.strptime(date, format_timestamps) if isinstance(date, str) else date
+    sql = (
+        "SELECT "
+        "sql_telintec.bitacora_rh.id_event, "
+        "sql_telintec.bitacora_rh.emp_id, "
+        "sql_telintec.bitacora_rh.event, "
+        "sql_telintec.bitacora_rh.timestamp, "
+        "sql_telintec.bitacora_rh.extra_info, "
+        "sql_telintec.employees.name, "
+        "sql_telintec.employees.l_name, "
+        "sql_telintec.employees.contrato "
+        "FROM sql_telintec.bitacora_rh "
+        "LEFT JOIN sql_telintec.employees ON bitacora_rh.emp_id = employees.employee_id "
+        "WHERE MONTH(sql_telintec.bitacora_rh.timestamp) = %s  AND YEAR(sql_telintec.bitacora_rh.timestamp) = %s "
+        "ORDER BY name, l_name DESC "
+    )
+    vals = (date.month, date.year)
+    flag, error, my_result = execute_sql(sql, vals, 2)
+    return flag, error, my_result

@@ -230,6 +230,16 @@ bitacora_delete_rh_model = api.model(
 )
 
 
+bitacora_fetch_by_date_model = api.model(
+    "BitacoraFetchByDate",
+    {
+        "date": fields.String(
+            required=True, description="The date", example="2024-03-30"
+        ),
+    },
+)
+
+
 class FichajeRequestFormr(Form):
     date = DateField("date", validators=[InputRequired()], filters=[date_filter])
     emp_id = IntegerField(
@@ -348,3 +358,7 @@ class BitacoraDeleteRHForm(Form):
         "id",
         validators=[InputRequired(message="id is required or 0 not accepted")],
     )
+
+
+class BitacoraFetchByDateForm(Form):
+    date = DateField("date", validators=[InputRequired()], filters=[date_filter])
