@@ -2,6 +2,7 @@
 __author__ = "Edisson Naula"
 __date__ = "$ 10/may./2024  at 16:31 $"
 
+from tkinter.scrolledtext import example
 
 from flask_restx import fields
 from wtforms.fields.datetime import DateField
@@ -9,7 +10,7 @@ from wtforms.fields.list import FieldList
 from wtforms.fields.numeric import FloatField
 from wtforms.fields.simple import StringField, URLField, EmailField
 
-from static.Models.api_models import date_filter
+from static.Models.api_models import date_filter, datetime_filter
 from static.constants import api
 from wtforms.form import Form
 from wtforms import validators, IntegerField, FormField
@@ -222,6 +223,158 @@ sm_model_out = api.model(
         ),
         "items": fields.List(fields.Nested(items_model_sm), required=False),
         "items_new": fields.List(fields.Nested(items_model_sm), required=False),
+        # New fields added
+        "urgent": fields.Integer(required=False, description="Urgent", example=0),
+        "project": fields.String(required=False, description="The project"),
+        "activity_description": fields.String(
+            required=False, description="Description of activity"
+        ),
+        "request_date": fields.String(
+            required=True, description="Request date", example="2024-06-29 12:00:00"
+        ),
+        "requesting_user_status": fields.Integer(
+            required=False,
+            description="Status of the requesting user (pendiente:1, recibido:2, cancelado:3, reprogramado:4)",
+            example=0,
+        ),
+        "warehouse_reviewed": fields.Integer(
+            required=False, description="Reviewed by warehouse", example=0
+        ),
+        "warehouse_status": fields.Integer(
+            required=False,
+            description="Warehouse status (no disponible:1, disponible:2)",
+            example=1,
+        ),
+        "admin_notification_date": fields.String(
+            required=False, description="Date of notification to administration"
+        ),
+        "kpi_warehouse": fields.Integer(
+            required=False,
+            description="Key performance indicator (cumple: 0, no cumple:1)",
+            example=0,
+        ),
+        "warehouse_comments": fields.String(
+            required=False, description="Warehouse comments"
+        ),
+        "admin_reviewed": fields.Integer(
+            required=False, description="Reviewed by administration", example=0
+        ),
+        "admin_status": fields.Integer(
+            required=False,
+            description="Administration status (disponible:1, no disponible:2)",
+            example=1,
+        ),
+        "warehouse_notification_date": fields.String(
+            required=False,
+            description="Date of notification to warehouse",
+            example="2024-06-29 12:00:00",
+        ),
+        "purchasing_kpi": fields.Integer(
+            required=False,
+            description="Key performance indicator (cumple=0, no cumple=1)",
+            example=0,
+        ),
+        "admin_comments": fields.String(
+            required=False, description="Administration comments"
+        ),
+        "general_request_status": fields.String(
+            required=False, description="General request status (disponible en almacén: 1, "
+                                        "pendiente: 2, entregado: 3, reprogramado:3, "
+                                        "cancelado: 4, en recolección: 5)",
+            example=1
+        ),
+        "operations_notification_date": fields.String(
+            required=False, description="Date of notification to operations", example="2024-06-29 12:00:00"
+        ),
+        "operations_kpi": fields.Integer(
+            required=False, description="Key performance indicator (Operations)", example=0
+        ),
+        "requesting_user_state": fields.String(
+            required=False, description="State of the requesting user"
+        ),
+    },
+)
+
+
+control_table_sm_model = api.model(
+    "ControlTableSM",
+    {
+        "urgent": fields.Integer(required=False, description="Urgent", example=0),
+        "project": fields.String(required=False, description="The project"),
+        "activity_description": fields.String(
+            required=False, description="Description of activity"
+        ),
+        "request_date": fields.String(
+            required=True, description="Request date", example="2024-06-29 12:00:00"
+        ),
+        "requesting_user_status": fields.Integer(
+            required=False,
+            description="Status of the requesting user (pendiente:1, recibido:2, cancelado:3, reprogramado:4)",
+            example=0,
+        ),
+        "warehouse_reviewed": fields.Integer(
+            required=False, description="Reviewed by warehouse", example=0
+        ),
+        "warehouse_status": fields.Integer(
+            required=False,
+            description="Warehouse status (no disponible:1, disponible:2)",
+            example=1,
+        ),
+        "admin_notification_date": fields.String(
+            required=False, description="Date of notification to administration"
+        ),
+        "kpi_warehouse": fields.Integer(
+            required=False,
+            description="Key performance indicator (cumple: 0, no cumple:1)",
+            example=0,
+        ),
+        "warehouse_comments": fields.String(
+            required=False, description="Warehouse comments"
+        ),
+        "admin_reviewed": fields.Integer(
+            required=False, description="Reviewed by administration", example=0
+        ),
+        "admin_status": fields.Integer(
+            required=False,
+            description="Administration status (disponible:1, no disponible:2)",
+            example=1,
+        ),
+        "warehouse_notification_date": fields.String(
+            required=False,
+            description="Date of notification to warehouse",
+            example="2024-06-29 12:00:00",
+        ),
+        "purchasing_kpi": fields.Integer(
+            required=False,
+            description="Key performance indicator (cumple=0, no cumple=1)",
+            example=0,
+        ),
+        "admin_comments": fields.String(
+            required=False, description="Administration comments"
+        ),
+        "general_request_status": fields.String(
+            required=False, description="General request status (disponible en almacén: 1, "
+                                        "pendiente: 2, entregado: 3, reprogramado:3, "
+                                        "cancelado: 4, en recolección: 5)",
+            example=1
+        ),
+        "operations_notification_date": fields.String(
+            required=False, description="Date of notification to operations", example="2024-06-29 12:00:00"
+        ),
+        "operations_kpi": fields.Integer(
+            required=False, description="Key performance indicator (Operations)", example=0
+        ),
+        "requesting_user_state": fields.String(
+            required=False, description="State of the requesting user"
+        ),
+    },
+)
+
+control_table_sm_put_model = api.model(
+    "ControlTableSMPut",
+    {
+        "id":  fields.Integer(required=True, description="The id of the sm to update"),
+        "info": fields.Nested(control_table_sm_model),
     },
 )
 
@@ -431,6 +584,56 @@ class SMInfoForm(Form):
     history = FieldList(FormField(HistoryFormSM, "history"))
     items = FieldList(FormField(ItemsFormSM, "items"))
     items_new = FieldList(FormField(ItemsFormSM, "items_new"))
+
+
+class SMInfoControlTableForm(Form):
+    id = IntegerField(
+        "id", validators=[validators.number_range(min=0, message="Invalid id")]
+    )
+    project = StringField("project", validators=[], default="")
+    urgent = IntegerField("urgent", validators=[], default=0)
+    activity_description = StringField("activity_description", validators=[], default="")
+    request_date = StringField("request_date", validators=[InputRequired], filters=[datetime_filter])
+    requesting_user_status = IntegerField(
+        "requesting_user_status", validators=[], default=0
+    )
+    warehouse_reviewed = IntegerField(
+        "warehouse_reviewed", validators=[], default=0
+    ),
+    warehouse_status = IntegerField(
+        "warehouse_status", validators=[], default=1
+    ),
+    admin_notification_date = StringField("admin_notification_date", validators=[], filters=[datetime_filter])
+    kpi_warehouse = IntegerField(
+        "kpi_warehouse", validators=[], default=0
+    ),
+    warehouse_comments = StringField("warehouse_comments", validators=[], default="")
+    admin_reviewed = IntegerField(
+        "admin_reviewed", validators=[], default=0
+    ),
+    admin_status = IntegerField(
+        "admin_status", validators=[], default=1
+    ),
+    warehouse_notification_date = StringField("warehouse_notification_date", validators=[], filters=[datetime_filter])
+    purchasing_kpi = IntegerField(
+        "purchasing_kpi", validators=[], default=0
+    ),
+    admin_comments = StringField("admin_comments", validators=[], default="")
+    general_request_status = IntegerField(
+        "general_request_status", validators=[InputRequired], default=1
+    ),
+    operations_notification_date = StringField("operations_notification_date", validators=[], filters=[datetime_filter])
+    operations_kpi = IntegerField(
+        "operations_kpi", validators=[], default=0
+    ),
+    requesting_user_state = StringField("requesting_user_state", validators=[], default="")
+
+
+class SMInfoControlTablePutForm(Form):
+    id = IntegerField(
+        "id", validators=[validators.number_range(min=0, message="Invalid id")]
+    )
+    info = FormField(SMInfoControlTableForm, "info")
 
 
 class TableRequestForm(Form):

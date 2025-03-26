@@ -80,8 +80,28 @@ def insert_sm_db(data):
         }
     ]
     extra_info = {
-        "destination": data["info"]["destination"],
-        "contract_contact": data["info"]["contract_contact"],
+        "destination": data["info"].get("destination"),
+        "contract_contact": data["info"].get("contract_contact"),
+        # Nuevos campos con valores predeterminados
+        "project": data["info"].get("project", ""),
+        "urgent": data["info"].get("urgent", 0),
+        "activity_description": data["info"].get("activity_description", ""),
+        "request_date": timestamp,
+        "requesting_user_status": data["info"].get("requesting_user_status", 0),
+        "warehouse_reviewed": data["info"].get("warehouse_reviewed", 0),
+        "warehouse_status": data["info"].get("warehouse_status", 1),
+        "admin_notification_date": data["info"].get("admin_notification_date", ""),
+        "kpi_warehouse": data["info"].get("kpi_warehouse", 0),
+        "warehouse_comments": data["info"].get("warehouse_comments", ""),
+        "admin_reviewed": data["info"].get("admin_reviewed", 0),
+        "admin_status": data["info"].get("admin_status", 1),
+        "warehouse_notification_date": data["info"].get("warehouse_notification_date", ""),
+        "purchasing_kpi": data["info"].get("purchasing_kpi", 0),
+        "admin_comments": data["info"].get("admin_comments", ""),
+        "general_request_status": data["info"].get("general_request_status", 1),
+        "operations_notification_date": data["info"].get("operations_notification_date", ""),
+        "operations_kpi": data["info"].get("operations_kpi", 0),
+        "requesting_user_state": data["info"].get("requesting_user_state", ""),
     }
     sql = (
         "INSERT INTO sql_telintec.materials_request "
@@ -309,3 +329,15 @@ def get_folios_by_pattern(pattern: str):
     val = (f"{pattern}%",)
     flag, error, result = execute_sql(sql, val, 2)
     return flag, error, result
+
+
+def update_history_extra_info_sm_by_id(sm_id: int, extra_info: dict, history: dict):
+    sql = (
+        "UPDATE sql_telintec.materials_request "
+        "SET extra_info = %s, history = %s "
+        "WHERE sm_id = %s "
+    )
+    val = (json.dumps(extra_info), json.dumps(history), sm_id)
+    flag, error, result = execute_sql(sql, val, 4)
+    return flag, error, result
+

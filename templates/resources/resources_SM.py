@@ -27,6 +27,8 @@ from static.Models.api_sm_models import (
     NewClienteForm,
     RequestSMDispatchForm,
     NewProductForm,
+    control_table_sm_put_model,
+    SMInfoControlTablePutForm,
 )
 from static.constants import log_file_sm_path
 from templates.Functions_AuxPlots import get_data_sm_per_range
@@ -50,6 +52,7 @@ from templates.resources.midleware.MD_SM import (
     dowload_file_sm,
     create_customer,
     create_product,
+    update_sm_from_control_table,
 )
 
 ns = Namespace("GUI/api/v1/sm")
@@ -331,3 +334,18 @@ class DownloadPDFSM(Resource):
             return send_file(data, as_attachment=True)
         else:
             return {"msg": "error at downloading"}, code
+
+
+@ns.route("/control/table")
+class ControlTableSM(Resource):
+    @ns.expect(expected_headers_per, control_table_sm_put_model)
+    def put(self):
+        flag, data_token, msg = token_verification_procedure(request, department="sm")
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        validator = SMInfoControlTablePutForm.from_json(ns.payload)
+        if not validator.validate():
+            return {"error": validator.errors}, 400
+        data = validator.data
+        code, data_out = update_sm_from_control_table(data, data_token)
+        return data_out, code
