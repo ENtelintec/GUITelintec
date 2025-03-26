@@ -108,10 +108,37 @@ def get_all_sm(limit, page=0, emp_id=-1):
             "status": result[i][11],
             "history": json.loads(result[i][12]),
             "comment": result[i][13],
+            "destination": extra_info.get("destination", "Not found"),
+            "contract_contact": extra_info.get("contract_contact", "Not Found"),
+            # Nuevos campos agregados
+            "project": extra_info.get("project", ""),
+            "urgent": extra_info.get("urgent", 0),
+            "activity_description": extra_info.get("activity_description", ""),
+            "request_date": extra_info.get("request_date", ""),
+            "requesting_user_status": extra_info.get("requesting_user_status", 0),
+            "warehouse_reviewed": extra_info.get("warehouse_reviewed", 0),
+            "warehouse_status": extra_info.get("warehouse_status", 1),
+            "admin_notification_date": extra_info.get("admin_notification_date", ""),
+            "kpi_warehouse": extra_info.get("kpi_warehouse", 0),
+            "warehouse_comments": extra_info.get("warehouse_comments", ""),
+            "admin_reviewed": extra_info.get("admin_reviewed", 0),
+            "admin_status": extra_info.get("admin_status", 1),
+            "warehouse_notification_date": extra_info.get(
+                "warehouse_notification_date", ""
+            ),
+            "purchasing_kpi": extra_info.get("purchasing_kpi", 0),
+            "admin_comments": extra_info.get("admin_comments", ""),
+            "general_request_status": extra_info.get("general_request_status", 1),
+            "operations_notification_date": extra_info.get(
+                "operations_notification_date", ""
+            ),
+            "operations_kpi": extra_info.get("operations_kpi", 0),
+            "requesting_user_state": extra_info.get("requesting_user_state", ""),
         }
-        if isinstance(extra_info, dict):
-            for k, v in extra_info.items():
-                dict_sm[k] = v
+
+        # if isinstance(extra_info, dict):
+        #     for k, v in extra_info.items():
+        #         dict_sm[k] = v
         items.append(dict_sm)
     data_out = {"data": items, "page": page, "pages": pages + 1}
     return data_out, 200
