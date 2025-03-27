@@ -396,7 +396,13 @@ request_file_report_quizz_model = api.model(
 def date_filter(date):
     # Example filter function to format the date
     date = date if date is not None else ""
-    return date.strftime(format_date) if not isinstance(date, str) else date
+    # return date.strftime(format_date) if not isinstance(date, str) else date
+    if isinstance(date, str):
+        date = datetime.strptime(date, format_date)
+        date = date.strftime(format_date)
+        return date
+    else:
+        return date.strftime(format_date)
 
 
 def date_filter_fichaje(date):
@@ -413,7 +419,13 @@ def date_filter_fichaje(date):
 def datetime_filter(date):
     # Example filter function to format the date
     date = date if date is not None else ""
-    return date.strftime(format_timestamps) if not isinstance(date, str) else date
+    # return date.strftime(format_timestamps) if not isinstance(date, str) else date
+    if isinstance(date, str):
+        date = datetime.strptime(date, format_timestamps)
+        date = date.strftime(format_timestamps)
+        return date
+    else:
+        return date.strftime(format_timestamps)
 
 
 def validate_json(form, field):

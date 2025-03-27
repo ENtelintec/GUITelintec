@@ -247,7 +247,13 @@ def get_movements_type_db_all():
 
 
 def create_movement_db_amc(
-    id_product, movement_type, quantity, movement_date, sm_id, reference=None, type_m=None
+    id_product,
+    movement_type,
+    quantity,
+    movement_date,
+    sm_id,
+    reference=None,
+    type_m=None,
 ):
     extra_info = {"reference": reference.upper()} if reference else {"reference": ""}
     extra_info = json.dumps(extra_info)
@@ -846,7 +852,7 @@ def update_stock_db_ids(ids: list, stocks: list):
     for _id, stock in zip(ids, stocks):
         sql = (
             "UPDATE sql_telintec.products_amc "
-            "SET stock = %s "
+            "SET stock = stock + %s "
             "WHERE id_product = %s"
         )
         vals = (stock, _id)

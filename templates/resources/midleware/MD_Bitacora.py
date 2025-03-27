@@ -17,6 +17,13 @@ from static.constants import (
     timezone_software,
 )
 from templates.Functions_Utils import create_notification_permission
+from templates.controllers.fichajes.bitacora_rh_controller import (
+    get_all_bitacora_rh_db,
+    insert_bitacora_rh_db,
+    update_bitacora_rh_db,
+    delete_bitacora_rh_db,
+    get_bitacora_rh_db_by_date,
+)
 from templates.controllers.fichajes.fichajes_controller import get_all_fichajes_op
 from templates.misc.Functions_AuxFiles import (
     split_commment,
@@ -446,3 +453,163 @@ def aprove_event_bitacora_from_api(data):
         return {"answer": "There has been an error at aproving the bitacora"}, 404
     else:
         return {"answer": "Fail to update registry"}, 404
+
+
+def fetch_all_bitacora_rh():
+    flag, error, result = get_all_bitacora_rh_db()
+    dict_emps = {}
+    # id_event, emp_id, event, timestamp, extra_info, name, l_name, contrato
+    for item in result:
+        extra_info = json.loads(item[4])
+        if item[1] in dict_emps.keys():
+            events = dict_emps[item[1]]["events"]
+            events.append(
+                {
+                    "timestamp": item[3].strftime(format_timestamps),
+                    "type": item[2],
+                    "comment": extra_info.get("comment", ""),
+                    "value": extra_info.get("value", 1.0),
+                    "id": item[0],
+                }
+            )
+            dict_emps[item[1]]["events"] = events
+        else:
+            dict_emps[item[1]] = {
+                "emp_id": item[1],
+                "name": item[5],
+                "lastname": item[6],
+                "contract": item[7],
+                "events": [
+                    {
+                        "timestamp": item[3].strftime(format_timestamps),
+                        "type": item[2],
+                        "comment": extra_info.get("comment", ""),
+                        "value": extra_info.get("value", 1.0),
+                        "id": item[0],
+                    }
+                ],
+            }
+    out_data = list(dict_emps.values())
+    print(out_data)
+    if flag:
+        return {"data": out_data, "msg": "ok"}, 200
+    else:
+        return {"data": [], "msg": str(error)}, 400
+
+
+def create_event_bitacora_rh_from_api(data, data_token):
+    flag, error, result = insert_bitacora_rh_db(
+        data["emp_id"],
+        data["type"],
+        data["timestamp"],
+        data["comment"],
+        data["value"],
+    )
+    if flag:
+        msg = f"Evento de bitacora registrado por RH: {data['emp_id']}, {data['timestamp']}, {data['type']}, {data['value']}"
+        create_notification_permission(
+            msg,
+            ["RH"],
+            "Evento de bitacora registrado",
+            data_token.get("emp_id", 0),
+            data["emp_id"],
+        )
+        write_log_file(log_file_bitacora_path, msg)
+        return {"msg": "The event has been updated"}, 200
+    elif error is not None:
+        print(error)
+        return {"msg": "There has been an error at aproving the bitacora"}, 400
+    else:
+        return {"msg": "Fail to update registry"}, 400
+
+
+def update_event_bitacora_rh_from_api(data, data_token):
+    flag, error, result = update_bitacora_rh_db(
+        data["id"],
+        data["emp_id"],
+        data["type"],
+        data["timestamp"],
+        data["comment"],
+        data["value"],
+    )
+    if flag:
+        msg = f"Evento de bitacora actualizado por RH: {data['emp_id']}, {data['timestamp']}, {data['type']}, {data['value']}"
+        create_notification_permission(
+            msg,
+            ["RH"],
+            "Evento de bitacora actualizado",
+            data_token.get("emp_id", 0),
+            data["emp_id"],
+        )
+        write_log_file(log_file_bitacora_path, msg)
+        return {"msg": "The event has been updated"}, 200
+    elif error is not None:
+        print(error)
+        return {"msg": "There has been an error at aproving the bitacora"}, 400
+    else:
+        return {"msg": "Fail to update registry"}, 400
+
+
+def delete_event_bitacora_rh_from_api(data, data_token):
+    flag, error, result = delete_bitacora_rh_db(
+        data["id"],
+    )
+    if flag:
+        msg = f"Evento de bitacora eliminado por RH: {data['id']}"
+        create_notification_permission(
+            msg,
+            ["RH"],
+            "Evento de bitacora eliminado",
+            data_token.get("emp_id", 0),
+            data["emp_id"],
+        )
+        write_log_file(log_file_bitacora_path, msg)
+        return {"msg": "The event has been deleted"}, 200
+    elif error is not None:
+        print(error)
+        return {"msg": "There has been an error at aproving the bitacora"}, 400
+    else:
+        return {"msg": "Fail to update registry"}, 400
+
+
+def fetch_bitacora_rh_from_api_by_date(data):
+
+    flag, error, result = get_bitacora_rh_db_by_date(data["date"])
+    dict_emps = {}
+    # id_event, emp_id, event, timestamp, extra_info, name, l_name, contrato
+    for item in result:
+        extra_info = json.loads(item[4])
+        if item[1] in dict_emps.keys():
+            events = dict_emps[item[1]]["events"]
+            events.append(
+                {
+                    "timestamp": item[3].strftime(format_timestamps),
+                    "type": item[2],
+                    "comment": extra_info.get("comment", ""),
+                    "value": extra_info.get("value", 1.0),
+                    "id": item[0],
+                }
+            )
+            dict_emps[item[1]]["events"] = events
+        else:
+            dict_emps[item[1]] = {
+                "emp_id": item[1],
+                "name": item[5],
+                "lastname": item[6],
+                "contract": item[7],
+                "events": [
+                    {
+                        "timestamp": item[3].strftime(format_timestamps),
+                        "type": item[2],
+                        "comment": extra_info.get("comment", ""),
+                        "value": extra_info.get("value", 1.0),
+                        "id": item[0],
+                    }
+                ],
+            }
+    out_data = list(dict_emps.values())
+    print(out_data)
+    if flag:
+        return {"data": out_data, "msg": "ok"}, 200
+    else:
+        return {"data": [], "msg": str(error)}, 400

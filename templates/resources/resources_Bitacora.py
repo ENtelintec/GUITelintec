@@ -20,6 +20,14 @@ from static.Models.api_fichaje_models import (
     FichajeRequestExtras,
     FichajeAproveExtras_model,
     FichajeAproveExtras,
+    bitacora_insert_rh_model,
+    bitacora_update_rh_model,
+    bitacora_delete_rh_model,
+    BitacoraInsertRHForm,
+    BitacoraUpdateRHForm,
+    BitacoraDeleteRHForm,
+    bitacora_fetch_by_date_model,
+    BitacoraFetchByDateForm,
 )
 from static.Models.api_models import expected_headers_per
 from static.Models.api_sm_models import client_emp_sm_response_model
@@ -37,6 +45,11 @@ from templates.resources.midleware.MD_Bitacora import (
     get_file_report_bitacora,
     create_multiple_event_bitacora_from_api,
     aprove_event_bitacora_from_api,
+    fetch_all_bitacora_rh,
+    create_event_bitacora_rh_from_api,
+    update_event_bitacora_rh_from_api,
+    delete_event_bitacora_rh_from_api,
+    fetch_bitacora_rh_from_api_by_date,
 )
 
 ns = Namespace("GUI/api/v1/bitacora")
@@ -217,4 +230,77 @@ class FichajesAproveExtra(Resource):
             return {"error": validator.errors}, 400
         data = validator.data
         response, code = aprove_event_bitacora_from_api(data)
+        return response, code
+
+
+@ns.route("/rh/all")
+class BitacoraRHAll(Resource):
+    @ns.expect(expected_headers_per)
+    def get(self):
+        flag, data_token, msg = token_verification_procedure(
+            request, department="bitacoras"
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        data, code = fetch_all_bitacora_rh()
+        return {"data": data}, code
+
+
+@ns.route("/rh/event")
+class BitacoraRHEvent(Resource):
+    @ns.expect(expected_headers_per, bitacora_insert_rh_model)
+    def post(self):
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        # noinspection PyUnresolvedReferences
+        validator = BitacoraInsertRHForm.from_json(ns.payload)
+        if not validator.validate():
+            return {"error": validator.errors}, 400
+        data = validator.data
+        response, code = create_event_bitacora_rh_from_api(data, data_token)
+        return response, code
+
+    @ns.expect(expected_headers_per, bitacora_update_rh_model)
+    def put(self):
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        # noinspection PyUnresolvedReferences
+        validator = BitacoraUpdateRHForm.from_json(ns.payload)
+        if not validator.validate():
+            return {"error": validator.errors}, 400
+        data = validator.data
+        response, code = update_event_bitacora_rh_from_api(data, data_token)
+        return response, code
+
+    @ns.expect(expected_headers_per, bitacora_delete_rh_model)
+    def delete(self):
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        # noinspection PyUnresolvedReferences
+        validator = BitacoraDeleteRHForm.from_json(ns.payload)
+        if not validator.validate():
+            return {"error": validator.errors}, 400
+        data = validator.data
+        response, code = delete_event_bitacora_rh_from_api(data, data_token)
+        return response, code
+
+
+@ns.route("/rh/date")
+class BitacoraRHDate(Resource):
+    @ns.expect(expected_headers_per, bitacora_fetch_by_date_model)
+    def post(self):
+        flag, data_token, msg = token_verification_procedure(
+            request, department="bitacoras"
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        # noinspection PyUnresolvedReferences
+        validator = BitacoraFetchByDateForm.from_json(ns.payload)
+        if not validator.validate():
+            return {"error": validator.errors}, 400
+        data = validator.data
+        response, code = fetch_bitacora_rh_from_api_by_date(data)
         return response, code

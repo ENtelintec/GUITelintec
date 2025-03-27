@@ -22,6 +22,7 @@ from templates.controllers.material_request.sm_controller import (
     get_sm_by_id,
     update_sm_products_by_id,
     get_info_names_by_sm_id,
+    update_history_extra_info_sm_by_id,
 )
 from templates.controllers.product.p_and_s_controller import (
     get_sm_products,
@@ -91,31 +92,54 @@ def get_all_sm(limit, page=0, emp_id=-1):
                 if product["id"] == -1:
                     new_products.append(product)
         extra_info = json.loads(result[i][14])
-        items.append(
-            {
-                "id": result[i][0],
-                "folio": result[i][1],
-                "contract": result[i][2],
-                "facility": result[i][3],
-                "location": result[i][4],
-                "client_id": result[i][5],
-                "emp_id": result[i][6],
-                "order_quotation": result[i][7],
-                "date": result[i][8],
-                "critical_date": result[i][9],
-                "items": json.loads(result[i][10]),
-                "items_new": new_products,
-                "status": result[i][11],
-                "history": json.loads(result[i][12]),
-                "comment": result[i][13],
-                "destination": extra_info["destination"]
-                if "destination" in extra_info.keys()
-                else "",
-                "contract_contact": extra_info["contract_contact"]
-                if "contract_contact" in extra_info.keys()
-                else "",
-            }
-        )
+        dict_sm = {
+            "id": result[i][0],
+            "folio": result[i][1],
+            "contract": result[i][2],
+            "facility": result[i][3],
+            "location": result[i][4],
+            "client_id": result[i][5],
+            "emp_id": result[i][6],
+            "order_quotation": result[i][7],
+            "date": result[i][8],
+            "critical_date": result[i][9],
+            "items": json.loads(result[i][10]),
+            "items_new": new_products,
+            "status": result[i][11],
+            "history": json.loads(result[i][12]),
+            "comment": result[i][13],
+            "destination": extra_info.get("destination", "Not found"),
+            "contract_contact": extra_info.get("contract_contact", "Not Found"),
+            # Nuevos campos agregados
+            "project": extra_info.get("project", ""),
+            "urgent": extra_info.get("urgent", 0),
+            "activity_description": extra_info.get("activity_description", ""),
+            "request_date": extra_info.get("request_date", ""),
+            "requesting_user_status": extra_info.get("requesting_user_status", 0),
+            "warehouse_reviewed": extra_info.get("warehouse_reviewed", 0),
+            "warehouse_status": extra_info.get("warehouse_status", 1),
+            "admin_notification_date": extra_info.get("admin_notification_date", ""),
+            "kpi_warehouse": extra_info.get("kpi_warehouse", 0),
+            "warehouse_comments": extra_info.get("warehouse_comments", ""),
+            "admin_reviewed": extra_info.get("admin_reviewed", 0),
+            "admin_status": extra_info.get("admin_status", 1),
+            "warehouse_notification_date": extra_info.get(
+                "warehouse_notification_date", ""
+            ),
+            "purchasing_kpi": extra_info.get("purchasing_kpi", 0),
+            "admin_comments": extra_info.get("admin_comments", ""),
+            "general_request_status": extra_info.get("general_request_status", 1),
+            "operations_notification_date": extra_info.get(
+                "operations_notification_date", ""
+            ),
+            "operations_kpi": extra_info.get("operations_kpi", 0),
+            "requesting_user_state": extra_info.get("requesting_user_state", ""),
+        }
+
+        # if isinstance(extra_info, dict):
+        #     for k, v in extra_info.items():
+        #         dict_sm[k] = v
+        items.append(dict_sm)
     data_out = {"data": items, "page": page, "pages": pages + 1}
     return data_out, 200
 
@@ -481,3 +505,36 @@ def create_product(
             sku, name, udm, stock, id_category, codes
         )
     return {"msg": "ok", "data": result}, 201 if flag else {"msg": str(error)}, 400
+
+
+def update_sm_from_control_table(data, data_token):
+    flag, error, result = get_sm_by_id(data["id"])
+    if not flag or len(result) <= 0:
+        return 400, ["sm not foud"]
+    history_sm = json.loads(result[12])
+    emp_id_creation = result[6]
+    time_zone = pytz.timezone(timezone_software)
+    date_now = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
+    history_sm.append(
+        {
+            "user": data_token.get("emp_id"),
+            "event": "update table info",
+            "date": date_now,
+            "comment": "Update from control table",
+        }
+    )
+    extra_info = json.loads(result[14])
+    for k, value in data["info"].items():
+        extra_info[k] = value
+    flag, error, result = update_history_extra_info_sm_by_id(
+        data["id"], extra_info, history_sm
+    )
+    if flag:
+        msg = f"SM con ID-{data['id']} actualizada"
+        create_notification_permission(
+            msg, ["sm"], "SM Actualizada", data_token.get("emp_id"), emp_id_creation
+        )
+        write_log_file(log_file_sm_path, msg)
+        return 200, {"msg": "ok"}
+    else:
+        return 400, {"msg": str(error)}

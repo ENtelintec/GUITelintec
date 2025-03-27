@@ -545,18 +545,24 @@ def insert_multiple_movements_from_api(data, data_token):
         for item in movements
     ]
     stock_update_ids = [item["id_product"] for item in movements]
+    # stock_update_vals = [
+    #     item["quantity"] + item["old_stock"]
+    #     if item["type_m"] == "entrada"
+    #     else item["old_stock"] - item["quantity"]
+    #     for item in movements
+    # ]
     stock_update_vals = [
-        item["quantity"] + item["old_stock"]
+        item["quantity"]
         if item["type_m"] == "entrada"
-        else item["old_stock"] - item["quantity"]
+        else - item["quantity"]
         for item in movements
     ]
-    for index, new_stock in enumerate(stock_update_vals):
-        if new_stock < 0:
-            data_out.append(
-                f"Error: Stock cannot be negative at product {stock_update_ids[index]}"
-            )
-            return False, data_out
+    # for index, new_stock in enumerate(stock_update_vals):
+    #     if new_stock < 0:
+    #         data_out.append(
+    #             f"Error: Stock cannot be negative at product {stock_update_ids[index]}"
+    #         )
+    #         return False, data_out
 
     flag, error, result = insert_multiple_row_movements_amc(tuple(movements_aux))
     if not flag:
