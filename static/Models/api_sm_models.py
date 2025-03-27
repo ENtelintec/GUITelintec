@@ -539,7 +539,8 @@ class ItemsFormSM(Form):
     )
     comment = StringField("comment", validators=[], default="")
     quantity = FloatField(
-        "quantity", validators=[validators.number_range(min=0, message="Invalid id")]
+        "quantity",
+        validators=[validators.number_range(min=0, message="Invalid quantity")],
     )
     movement = StringField("movement", validators=[], default="")
     url = URLField("url", validators=[], default="")
@@ -568,7 +569,7 @@ class HistoryFormSM(Form):
 
 class SMInfoForm(Form):
     id = IntegerField(
-        "id", validators=[validators.number_range(min=0, message="Invalid id")]
+        "id", validators=[validators.number_range(min=0, message="Invalid id sm info")]
     )
     folio = StringField("folio", validators=[InputRequired()])
     contract = StringField("contract", validators=[InputRequired()])
@@ -596,9 +597,6 @@ class SMInfoForm(Form):
 
 
 class SMInfoControlTableForm(Form):
-    id = IntegerField(
-        "id", validators=[validators.number_range(min=0, message="Invalid id")]
-    )
     project = StringField("project", validators=[], default="")
     urgent = IntegerField("urgent", validators=[], default=0)
     activity_description = StringField(
@@ -638,7 +636,7 @@ class SMInfoControlTableForm(Form):
 
 class SMInfoControlTablePutForm(Form):
     id = IntegerField(
-        "id", validators=[validators.number_range(min=0, message="Invalid id")]
+        "id", validators=[InputRequired(message="Invalid id control sm")]
     )
     info = FormField(SMInfoControlTableForm, "info")
 
