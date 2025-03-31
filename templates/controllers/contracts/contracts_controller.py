@@ -11,9 +11,10 @@ from static.constants import format_timestamps, timezone_software
 from templates.database.connection import execute_sql
 
 
-def create_contract(id_quotation, metadata: dict):
+def create_contract(id_quotation, metadata: dict, status=0):
     time_zone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
+    metadata["status"] = status
     sql = (
         "INSERT INTO sql_telintec_mod_admin.contracts (metadata, creation, quotation_id) "
         "VALUES (%s, %s, %s)"

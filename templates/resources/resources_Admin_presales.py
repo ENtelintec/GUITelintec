@@ -41,9 +41,9 @@ from templates.resources.midleware.Functions_midleware_admin import (
     products_contract_from_file,
     modify_pattern_phrase_contract_pdf,
     compare_file_and_quotation,
+    create_contract_from_api,
 )
 from templates.controllers.contracts.contracts_controller import (
-    create_contract,
     update_contract,
 )
 from templates.controllers.contracts.quotations_controller import (
@@ -60,6 +60,7 @@ class Quotations(Resource):
     @ns.marshal_with(answer_quotation_model)
     @ns.expect(expected_headers_per)
     def get(self, id_q):
+        print(request)
         flag, data_token, msg = token_verification_procedure(
             request, department="administracion"
         )
@@ -178,10 +179,8 @@ class Contract(Resource):
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
-        flag, error, result = create_contract(data["quotation_id"], data["metadata"])
-        if not flag:
-            return {"data": None, "msg": str(error)}, 400
-        return {"data": result, "msg": "Ok"}, 200
+        data_out, code = create_contract_from_api(data, data_token)
+        return data_out, code
 
     @ns.expect(expected_headers_per, contract_model_update)
     def put(self):

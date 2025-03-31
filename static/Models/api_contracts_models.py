@@ -12,7 +12,7 @@ from flask_restx import fields
 from wtforms.fields.datetime import DateField, DateTimeField
 from wtforms.fields.list import FieldList
 from wtforms.fields.numeric import FloatField, IntegerField
-from wtforms.fields.simple import StringField, EmailField, BooleanField
+from wtforms.fields.simple import StringField, EmailField
 
 from wtforms import FormField
 
@@ -205,6 +205,9 @@ contract_model_insert = api.model(
         "quotation_id": fields.Integer(
             required=True, description="The quotation id", example=1
         ),
+        "products": fields.List(
+            fields.Nested(products_quotation_model), required=False
+        ),
     },
 )
 contract_model_update = api.model(
@@ -289,7 +292,7 @@ class MetadataQuotationForm(Form):
 
 class ProductsQuotationForm(Form):
     partida = IntegerField("partida", validators=[InputRequired()])
-    revision = BooleanField("revision", validators=[], default=False)
+    revision = IntegerField("revision", validators=[], default=0)
     type_p = StringField("type", validators=[InputRequired()])
     marca = StringField("marca", validators=[InputRequired()])
     n_parte = StringField("n_parte", validators=[InputRequired()])
@@ -353,9 +356,9 @@ class MetadataContractForm(Form):
 class ContractInsertForm(Form):
     metadata = FormField(MetadataContractForm, "metadata")
     quotation_id = IntegerField(
-        "quotation_id",
-        validators=[InputRequired(message="Invalid id or 0 not acepted")],
+        "quotation_id", validators=[], default=0
     )
+    products = FieldList(FormField(ProductsQuotationForm, "products"))
 
 
 class ContractUpdateForm(Form):

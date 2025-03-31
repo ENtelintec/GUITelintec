@@ -4,12 +4,17 @@ __date__ = "$ 20/jun./2024  at 15:23 $"
 
 import json
 
-from static.constants import filepath_settings
+from static.constants import filepath_settings, log_file_admin
+from templates.Functions_Utils import create_notification_permission
 from templates.controllers.contracts.contracts_controller import (
     get_contract,
     get_contract_from_abb,
+    create_contract,
 )
-from templates.controllers.contracts.quotations_controller import get_quotation
+from templates.controllers.contracts.quotations_controller import (
+    get_quotation,
+    create_quotation,
+)
 from templates.controllers.customer.customers_controller import (
     get_customer_amc_by_id,
     get_all_customers_db,
@@ -27,6 +32,7 @@ from templates.controllers.supplier.suppliers_controller import (
     delete_supplier_amc,
     get_all_suppliers_amc,
 )
+from templates.misc.Functions_Files import write_log_file
 from templates.resources.methods.Functions_Aux_Admin import (
     read_file_tenium_contract,
     read_exel_products_quotation,
@@ -80,11 +86,11 @@ def get_quotations(id_quotation=None):
 
 
 def get_contracts(id_contract=None):
-    id_contract = id_contract if id_contract != -1 else None
+    id_contract = None if id_contract == -1 or id_contract == "-1" else id_contract
     flag, error, result = get_contract(id_contract)
     if not flag:
         return {"data": None, "msg": str(error)}, 400
-    if id_contract is None:
+    if id_contract is not None:
         id_c, metadata, creation, quotation_id, timestamps = result
         data_out = {
             "id": id_c,
@@ -407,3 +413,23 @@ def delete_supplier(data):
     if not flag:
         return {"data": None, "msg": str(error)}, 400
     return {"data": result, "msg": "Ok"}, 200
+
+
+def create_contract_from_api(data, data_token):
+    if data.get("quotation_id", 0) == 0:
+        flag, error, result = create_quotation(data["metadata"], data["products"], status=2)
+        if not flag:
+            return {"data": None, "msg": str(error)}, 400
+        id_quotation = result
+        flag, error, result = create_contract(id_quotation, data["metadata"])
+    else:
+        flag, error, result = create_contract(data["quotation_id"], data["metadata"])
+
+    if not flag:
+        return {"data": None, "msg": str(error)}, 400
+    msg = f"Contrato creado con ID-{result} por el empleado {data_token.get('emp_id')}"
+    create_notification_permission(
+        msg, ["administracion"], "Contrato Creado", data_token.get("emp_id"), ""
+    )
+    write_log_file(log_file_admin, msg)
+    return {"data": result, "msg": "Ok"}, 201

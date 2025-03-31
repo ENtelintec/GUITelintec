@@ -14,11 +14,12 @@ from templates.database.connection import execute_sql
 def create_quotation(metadata: dict, products: dict, status=0):
     time_zone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
+    metadata["status"] = status
     sql = (
-        "INSERT INTO sql_telintec_mod_admin.quotations (metadata, products, creation, status) "
-        "VALUES (%s, %s, %s, %s)"
+        "INSERT INTO sql_telintec_mod_admin.quotations (metadata, products, creation) "
+        "VALUES (%s, %s, %s)"
     )
-    val = (json.dumps(metadata), json.dumps(products), timestamp, status)
+    val = (json.dumps(metadata), json.dumps(products), timestamp)
     flag, error, id_quotation = execute_sql(sql, val, 4)
     return flag, error, id_quotation
 
