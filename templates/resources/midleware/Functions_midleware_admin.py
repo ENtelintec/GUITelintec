@@ -22,6 +22,12 @@ from templates.controllers.customer.customers_controller import (
     update_customer_db,
     delete_customer_db,
 )
+from templates.controllers.departments.heads_controller import (
+    get_heads_db,
+    insert_head_DB,
+    update_head_DB,
+    delete_head_DB,
+)
 from templates.controllers.material_request.sm_controller import get_folios_by_pattern
 from templates.controllers.purchases.purchases_admin_controller import (
     get_purchases_admin_db,
@@ -417,7 +423,9 @@ def delete_supplier(data):
 
 def create_contract_from_api(data, data_token):
     if data.get("quotation_id", 0) == 0:
-        flag, error, result = create_quotation(data["metadata"], data["products"], status=2)
+        flag, error, result = create_quotation(
+            data["metadata"], data["products"], status=2
+        )
         if not flag:
             return {"data": None, "msg": str(error)}, 400
         id_quotation = result
@@ -433,3 +441,98 @@ def create_contract_from_api(data, data_token):
     )
     write_log_file(log_file_admin, msg)
     return {"data": result, "msg": "Ok"}, 201
+
+
+def fetch_heads(id_department: int):
+    id_department = int(id_department) if id_department >= 0 else None
+    flag, error, result = get_heads_db(id_department)
+    if not flag:
+        return {"data": [], "msg": str(error)}, 400
+    data_out = []
+    for item in result:
+        # heads.id, heads.name, heads.employee, heads.department, departments.name, UPPER(CONCAT(employees.name, ' ', employees.l_name)) as name_emp, employees.email, heads.extra_info "
+        data_out.append(
+            {
+                "id": item[0],
+                "name": item[1],
+                "employee": item[2],
+                "department": item[3],
+                "department_name": item[4],
+                "employee_name": item[5],
+                "employee_email": item[6],
+                "extra_info": json.loads(item[7]),
+            }
+        )
+    return {"data": data_out, "msg": "Ok"}, 200
+
+
+def insert_head_from_api(data, data_token):
+    extra_info = (
+        json.loads(data["extra_info"])
+        if isinstance(data["extra_info"], str)
+        else data["extra_info"]
+    )
+    if "other_leaders" not in extra_info:
+        extra_info["other_leaders"] = []
+    flag, error, result = insert_head_DB(
+        data["name"],
+        data["department"],
+        data["employee"],
+        extra_info,
+    )
+    if not flag:
+        return {"data": None, "msg": str(error)}, 400
+    msg = f"Encargado creado con ID-{result} por el empleado {data_token.get('emp_id')}"
+    create_notification_permission(
+        msg,
+        ["administracion", "operaciones"],
+        "Encargado Creado",
+        data_token.get("emp_id"),
+        "",
+    )
+    write_log_file(log_file_admin, msg)
+    return {"data": result, "msg": "Ok"}, 201
+
+
+def update_head_from_api(data, data_token):
+    extra_info = (
+        json.loads(data["extra_info"])
+        if isinstance(data["extra_info"], str)
+        else data["extra_info"]
+    )
+    if "other_leaders" not in extra_info:
+        extra_info["other_leaders"] = []
+    flag, error, result = update_head_DB(
+        data["id"],
+        data["department"],
+        data["employee"],
+        extra_info,
+    )
+    if not flag:
+        return {"data": None, "msg": str(error)}, 400
+    msg = f"Encargado actualizado con ID-{data['id']} por el empleado {data_token.get('emp_id')}"
+    create_notification_permission(
+        msg,
+        ["administracion", "operaciones"],
+        "Encargado Actualizado",
+        data_token.get("emp_id"),
+        "",
+    )
+    write_log_file(log_file_admin, msg)
+    return {"data": result, "msg": "Ok"}, 200
+
+
+def delete_head_from_api(data, data_token):
+    flag, error, result = delete_head_DB(data["id"])
+    if not flag:
+        return {"data": None, "msg": str(error)}, 400
+    msg = f"Encargado eliminado con ID-{data['id']} por el empleado {data_token.get('emp_id')}"
+    create_notification_permission(
+        msg,
+        ["administracion", "operaciones"],
+        "Encargado Eliminado",
+        data_token.get("emp_id"),
+        "",
+    )
+    write_log_file(log_file_admin, msg)
+    return {"data": result, "msg": "Ok"}, 200
