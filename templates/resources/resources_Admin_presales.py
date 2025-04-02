@@ -67,6 +67,7 @@ class Quotations(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data, code = get_quotations(id_q)
+        print(data)
         return data, code
 
 

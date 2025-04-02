@@ -66,7 +66,7 @@ def get_quotations(id_quotation=None):
     if not flag:
         return {"data": None, "msg": str(error)}, 400
     if id_quotation is not None:
-        id_q, metadata, products, creation, timestamps = result
+        id_q, metadata, products, creation, timestamps, company, emission = result
         data_out = {
             "id": id_q,
             "metadata": json.loads(metadata),
@@ -78,7 +78,7 @@ def get_quotations(id_quotation=None):
     else:
         data_out = []
         for item in result:
-            id_q, metadata, products, creation, timestamps = item
+            id_q, metadata, products, creation, timestamps, company, emission = item
             data_out.append(
                 {
                     "id": id_q,
@@ -91,6 +91,39 @@ def get_quotations(id_quotation=None):
         return {"data": data_out, "msg": "Ok"}, 200
 
 
+def validate_metadata(metadata: dict):
+    return {
+        "emission": metadata.get("emission", ""),
+        "quotation_code": metadata.get("quotation_code", ""),
+        "planta": metadata.get("planta", ""),
+        "area": metadata.get("area", ""),
+        "location": metadata.get("location", ""),
+        "client_id": metadata.get("client_id", 0),
+        "contract_number": metadata.get("contract_number", ""),
+        "identifier": metadata.get("identifier", ""),
+        "abbreviation": metadata.get("abbreviation", ""),
+        "remitos": metadata.get("remitos", ""),
+        "fecha_solicitud": metadata.get("fecha_solicitud", ""),
+        "coordinador": metadata.get("coordinador", ""),
+        "ceco": metadata.get("ceco", ""),
+        "descripcion": metadata.get("descripcion", ""),
+        "estatus": metadata.get("estatus", ""),
+        "sgd": metadata.get("sgd", ""),
+        "fecha_sg": metadata.get("fecha_sg", ""),
+        "estatus_remision": metadata.get("estatus_remision", ""),
+        "remitos_enviados": metadata.get("remitos_enviados", ""),
+        "estatus_hes": metadata.get("estatus_hes", ""),
+        "num_hes": metadata.get("num_hes", ""),
+        "liberacion_hes": metadata.get("liberacion_hes", ""),
+        "saldo_pedido": metadata.get("saldo_pedido", ""),
+        "remision_mxn": metadata.get("remision_mxn", ""),
+        "saldo_comprometido": metadata.get("saldo_comprometido", ""),
+        "saldo_hes": metadata.get("saldo_hes", ""),
+        "saldo_facturado": metadata.get("saldo_facturado", ""),
+        "observaciones": metadata.get("observaciones", ""),
+    }
+
+
 def get_contracts(id_contract=None):
     id_contract = None if id_contract == -1 or id_contract == "-1" else id_contract
     flag, error, result = get_contract(id_contract)
@@ -98,9 +131,10 @@ def get_contracts(id_contract=None):
         return {"data": None, "msg": str(error)}, 400
     if id_contract is not None:
         id_c, metadata, creation, quotation_id, timestamps = result
+        metadata = validate_metadata(json.loads(metadata))
         data_out = {
             "id": id_c,
-            "metadata": json.loads(metadata),
+            "metadata": metadata,
             "creation": creation,
             "quotation_id": quotation_id,
             "timestamps": json.loads(timestamps),
@@ -110,10 +144,11 @@ def get_contracts(id_contract=None):
         data_out = []
         for item in result:
             id_c, metadata, creation, quotation_id, timestamps = item
+            metadata = validate_metadata(json.loads(metadata))
             data_out.append(
                 {
                     "id": id_c,
-                    "metadata": json.loads(metadata),
+                    "metadata": metadata,
                     "creation": creation,
                     "quotation_id": quotation_id,
                     "timestamps": json.loads(timestamps),

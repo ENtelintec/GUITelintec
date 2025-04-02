@@ -52,8 +52,8 @@ products_quotation_model = api.model(
             description="The product partida (numeration item)",
             example=1,
         ),
-        "revision": fields.Boolean(
-            required=True, description="The product revision", example=False
+        "revision": fields.Integer(
+            required=True, description="The product revision", example=0
         ),
         "type": fields.String(required=True, description="The product type"),
         "marca": fields.String(required=True, description="The product marca"),
@@ -170,6 +170,37 @@ metadata_contract_model = api.model(
             description="The contract abbreviation",
             example="contrato auto",
         ),
+        "remitos": fields.String(required=False, description="The remitos information"),
+        "fecha_solicitud": fields.String(
+            required=False, description="The request date"
+        ),
+        "coordinador": fields.String(required=False, description="The coordinator"),
+        "ceco": fields.String(required=False, description="The CECO (cost center)"),
+        "descripcion": fields.String(required=False, description="The description"),
+        "estatus": fields.String(required=False, description="The status"),
+        "sgd": fields.String(required=False, description="The SGD information"),
+        "fecha_sg": fields.String(required=False, description="The SGD date"),
+        "estatus_remision": fields.String(
+            required=False, description="The remision status"
+        ),
+        "remitos_enviados": fields.String(
+            required=False, description="The remitos sent"
+        ),
+        "estatus_hes": fields.String(required=False, description="The HES status"),
+        "num_hes": fields.String(required=False, description="The HES number"),
+        "liberacion_hes": fields.String(required=False, description="The HES release"),
+        "saldo_pedido": fields.String(required=False, description="The order balance"),
+        "remision_mxn": fields.String(
+            required=False, description="The remision in MXN"
+        ),
+        "saldo_comprometido": fields.String(
+            required=False, description="The committed balance"
+        ),
+        "saldo_hes": fields.String(required=False, description="The HES balance"),
+        "saldo_facturado": fields.String(
+            required=False, description="The invoiced balance"
+        ),
+        "observaciones": fields.String(required=False, description="The observations"),
     },
 )
 
@@ -346,18 +377,35 @@ class MetadataContractForm(Form):
     area = StringField("area", validators=[], default="")
     location = StringField("location", validators=[], default="")
     client_id = IntegerField(
-        "client_id", validators=[InputRequired(message="Invalid id or 0 not acepted")]
+        "client_id", validators=[InputRequired(message="Invalid id or 0 not accepted")]
     )
     contract_number = StringField("contract_number", validators=[InputRequired()])
     identifier = StringField("identifier", validators=[InputRequired()])
     abbreviation = StringField("abbreviation", validators=[InputRequired()])
+    remitos = StringField("remitos", validators=[], default="")
+    fechaSolicitud = StringField("fechaSolicitud", validators=[], filters=[date_filter])
+    coordinador = StringField("coordinador", validators=[], default="")
+    ceco = StringField("ceco", validators=[], default="")
+    descripcion = StringField("descripcion", validators=[], default="")
+    estatus = StringField("estatus", validators=[], default="")
+    sgd = StringField("sgd", validators=[], default="")
+    fecha_sg = StringField("fecha_sg", validators=[], filters=[date_filter])
+    estatus_remision = StringField("estatus_remision", validators=[], default="")
+    remitos_enviados = StringField("remitos_enviados", validators=[], default="")
+    estatus_hes = StringField("estatus_hes", validators=[], default="")
+    num_hes = StringField("num_hes", validators=[], default="")
+    liberacion_hes = StringField("liberacion_hes", validators=[], default="")
+    saldo_pedido = StringField("saldo_pedido", validators=[], default="")
+    remision_mxn = StringField("remision_mxn", validators=[], default="")
+    saldo_comprometido = StringField("saldo_comprometido", validators=[], default="")
+    saldo_hes = StringField("saldo_hes", validators=[], default="")
+    saldo_facturado = StringField("saldo_facturado", validators=[], default="")
+    observaciones = StringField("observaciones", validators=[], default="")
 
 
 class ContractInsertForm(Form):
     metadata = FormField(MetadataContractForm, "metadata")
-    quotation_id = IntegerField(
-        "quotation_id", validators=[], default=0
-    )
+    quotation_id = IntegerField("quotation_id", validators=[], default=0)
     products = FieldList(FormField(ProductsQuotationForm, "products"))
 
 
