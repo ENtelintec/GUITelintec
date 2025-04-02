@@ -60,14 +60,12 @@ class Quotations(Resource):
     @ns.marshal_with(answer_quotation_model)
     @ns.expect(expected_headers_per)
     def get(self, id_q):
-        print(request)
         flag, data_token, msg = token_verification_procedure(
             request, department="administracion"
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data, code = get_quotations(id_q)
-        print(data)
         return data, code
 
 
