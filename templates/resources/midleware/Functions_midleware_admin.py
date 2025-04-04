@@ -4,6 +4,8 @@ __date__ = "$ 20/jun./2024  at 15:23 $"
 
 import json
 
+import pandas as pd
+
 from static.constants import filepath_settings, log_file_admin
 from templates.Functions_Utils import create_notification_permission
 from templates.controllers.contracts.contracts_controller import (
@@ -43,6 +45,7 @@ from templates.resources.methods.Functions_Aux_Admin import (
     read_file_tenium_contract,
     read_exel_products_quotation,
     compare_file_quotation,
+    read_exel_products_bidding,
 )
 
 dict_depts_identifiers = {
@@ -472,7 +475,7 @@ def create_contract_from_api(data, data_token):
         return {"data": None, "msg": str(error)}, 400
     msg = f"Contrato creado con ID-{result} por el empleado {data_token.get('emp_id')}"
     create_notification_permission(
-        msg, ["administracion"], "Contrato Creado", data_token.get("emp_id"), ""
+        msg, ["administracion"], "Contrato Creado", data_token.get("emp_id"), 0
     )
     write_log_file(log_file_admin, msg)
     return {"data": result, "msg": "Ok"}, 201
@@ -523,7 +526,7 @@ def insert_head_from_api(data, data_token):
         ["administracion", "operaciones"],
         "Encargado Creado",
         data_token.get("emp_id"),
-        "",
+        0,
     )
     write_log_file(log_file_admin, msg)
     return {"data": result, "msg": "Ok"}, 201
@@ -551,7 +554,7 @@ def update_head_from_api(data, data_token):
         ["administracion", "operaciones"],
         "Encargado Actualizado",
         data_token.get("emp_id"),
-        "",
+        0,
     )
     write_log_file(log_file_admin, msg)
     return {"data": result, "msg": "Ok"}, 200
@@ -567,7 +570,14 @@ def delete_head_from_api(data, data_token):
         ["administracion", "operaciones"],
         "Encargado Eliminado",
         data_token.get("emp_id"),
-        "",
+        0,
     )
     write_log_file(log_file_admin, msg)
     return {"data": result, "msg": "Ok"}, 200
+
+
+def items_quotation_from_file(data):
+    products = read_exel_products_bidding(data["path"])
+    if products is None:
+        return {"data": None, "msg": "Error at file structure"}, 400
+    return {"data": products, "msg": "Ok"}, 200

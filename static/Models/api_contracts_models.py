@@ -55,7 +55,7 @@ products_quotation_model = api.model(
         "revision": fields.Integer(
             required=True, description="The product revision", example=0
         ),
-        "type": fields.String(required=True, description="The product type"),
+        "type_p": fields.String(required=True, description="The product type"),
         "marca": fields.String(required=True, description="The product marca"),
         "n_parte": fields.String(required=True, description="The product part number"),
         "description_small": fields.String(
@@ -324,7 +324,7 @@ class MetadataQuotationForm(Form):
 class ProductsQuotationForm(Form):
     partida = IntegerField("partida", validators=[InputRequired()])
     revision = IntegerField("revision", validators=[], default=0)
-    type_p = StringField("type", validators=[InputRequired()])
+    type_p = StringField("type_p", validators=[InputRequired()])
     marca = StringField("marca", validators=[InputRequired()])
     n_parte = StringField("n_parte", validators=[InputRequired()])
     description = StringField("description", validators=[], default="")
