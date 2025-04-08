@@ -414,7 +414,7 @@ class ContractUpdateForm(Form):
         "id", validators=[InputRequired(message="Invalid id or 0 not acepted")]
     )
     metadata = FormField(MetadataContractForm, "metadata")
-    quotation_id = IntegerField("quotation_id", validators=[], default=0)
+    quotation_id = IntegerField("quotation_id", validators=[], default=None)
     timestamps = FormField(TimestampsQuotationForm, "timestamps")
 
 

@@ -24,7 +24,7 @@ def create_contract(id_quotation, metadata: dict, status=0):
     return flag, error, id_contract
 
 
-def update_contract(id_contract, metadata: dict, timestamps=None):
+def update_contract(id_contract, metadata: dict, timestamps=None, quotation_id=None):
     time_zone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
     if timestamps is None:
@@ -36,10 +36,10 @@ def update_contract(id_contract, metadata: dict, timestamps=None):
         timestamps["update"].append(timestamp)
     sql = (
         "UPDATE sql_telintec_mod_admin.contracts "
-        "SET metadata = %s, timestamps = %s  "
+        "SET metadata = %s, timestamps = %s, quotation_id = %s  "
         "WHERE id = %s"
     )
-    val = (json.dumps(metadata), json.dumps(timestamps), id_contract)
+    val = (json.dumps(metadata), json.dumps(timestamps), quotation_id, id_contract)
     flag, error, out = execute_sql(sql, val, 3)
     return flag, error, out
 

@@ -196,7 +196,7 @@ class Contract(Resource):
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
         flag, error, result = update_contract(
-            data["id"], data["metadata"], data["timestamps"]
+            data["id"], data["metadata"], data["timestamps"], data["quotation_id"]
         )
         if not flag:
             return {"data": None, "msg": error}, 400
