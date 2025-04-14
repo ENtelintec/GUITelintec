@@ -86,3 +86,15 @@ def get_contract_from_abb(contract_abb: str):
         return False, "Contract not found", None
     else:
         return True, None, result
+
+
+def get_contracts_abreviations_db():
+    sql = (
+        "SELECT metadata->'$.abbreviation', id, metadata "
+        "FROM sql_telintec_mod_admin.contracts "
+    )
+    flag, error, result = execute_sql(sql, None, 2)
+    if len(result) == 0:
+        return False, "Contract not found", None
+    else:
+        return True, None, result

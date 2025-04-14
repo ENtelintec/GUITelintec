@@ -44,6 +44,7 @@ from templates.resources.midleware.Functions_midleware_admin import (
     compare_file_and_quotation,
     create_contract_from_api,
     items_quotation_from_file,
+    get_contracts_abreviations,
 )
 from templates.controllers.contracts.contracts_controller import (
     update_contract,
@@ -351,3 +352,16 @@ class ItemsQuotationFileUpload(Resource):
             return data_out, code
         else:
             return {"msg": "No se subio el archivo"}, 400
+
+
+@ns.route("/contracts/abreviations")
+class ContractsAbreviations(Resource):
+    @ns.expect(expected_headers_per)
+    def get(self):
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["administracion", "rrhh"]
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        data_out, code = get_contracts_abreviations()
+        return data_out, code

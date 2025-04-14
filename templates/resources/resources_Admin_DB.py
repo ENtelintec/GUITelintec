@@ -234,3 +234,4 @@ class HeadDB(Resource):
         data = validator.data
         data_out, code = delete_head_from_api(data, data_token)
         return data_out, code
+

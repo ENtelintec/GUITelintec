@@ -11,6 +11,7 @@ from templates.controllers.contracts.contracts_controller import (
     get_contract,
     get_contract_from_abb,
     create_contract,
+    get_contracts_abreviations_db,
 )
 from templates.controllers.contracts.quotations_controller import (
     get_quotation,
@@ -502,6 +503,8 @@ def fetch_heads(id_department: int):
                 "other_leaders": extra_info.get("other_leaders", []),
             }
         )
+    # data_abb, code_abb = get_contracts_abreviations()
+    # return {"data": data_out, "msg": "Ok", "data_abbreviations": data_abb}, 200
     return {"data": data_out, "msg": "Ok"}, 200
 
 
@@ -590,3 +593,20 @@ def items_quotation_from_file(data):
     if products is None:
         return {"data": None, "msg": "Error at file structure"}, 400
     return {"data": products, "msg": "Ok"}, 200
+
+
+def get_contracts_abreviations():
+    flag, error, result = get_contracts_abreviations_db()
+    if not flag:
+        return {"data": [], "msg": str(error)}, 400
+    data_out = []
+    for item in result:
+        metadata = json.loads(item[2])
+        data_out.append(
+            {
+                "abreviation": json.loads(item[0]),
+                "id": item[1],
+                "metadata": metadata,
+            }
+        )
+    return {"data": data_out, "msg": "Ok"}, 200
