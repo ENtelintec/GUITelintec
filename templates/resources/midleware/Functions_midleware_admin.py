@@ -512,6 +512,8 @@ def insert_head_from_api(data, data_token):
         extra_info["other_leaders"] = []
     if "contracts" not in extra_info:
         extra_info["contracts"] = []
+    if "contracts_temp" not in extra_info:
+        extra_info["contracts_temp"] = []
     flag, error, result = insert_head_DB(
         data["name"],
         data["department"],
@@ -540,6 +542,10 @@ def update_head_from_api(data, data_token):
     )
     if "other_leaders" not in extra_info:
         extra_info["other_leaders"] = []
+    if "contracts" not in extra_info:
+        extra_info["contracts"] = []
+    if "contracts_temp" not in extra_info:
+        extra_info["contracts_temp"] = []
     flag, error, result = update_head_DB(
         data["id"],
         data["department"],
