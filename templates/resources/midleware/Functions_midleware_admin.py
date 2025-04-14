@@ -4,7 +4,6 @@ __date__ = "$ 20/jun./2024  at 15:23 $"
 
 import json
 
-import pandas as pd
 
 from static.constants import filepath_settings, log_file_admin
 from templates.Functions_Utils import create_notification_permission
@@ -488,7 +487,6 @@ def fetch_heads(id_department: int):
         return {"data": [], "msg": str(error)}, 400
     data_out = []
     for item in result:
-        # heads.id, heads.name, heads.employee, heads.department, departments.name, UPPER(CONCAT(employees.name, ' ', employees.l_name)) as name_emp, employees.email, heads.extra_info "
         data_out.append(
             {
                 "id": item[0],
@@ -512,6 +510,8 @@ def insert_head_from_api(data, data_token):
     )
     if "other_leaders" not in extra_info:
         extra_info["other_leaders"] = []
+    if "contracts" not in extra_info:
+        extra_info["contracts"] = []
     flag, error, result = insert_head_DB(
         data["name"],
         data["department"],

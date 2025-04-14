@@ -2,8 +2,6 @@
 __author__ = "Edisson Naula"
 __date__ = "$ 02/may./2024  at 11:21 $"
 
-from tkinter.scrolledtext import example
-
 from flask_restx import fields
 from wtforms import IntegerField, StringField
 from wtforms.fields.datetime import DateField, DateTimeField
@@ -270,9 +268,15 @@ head_insert_model = api.model(
     "HeadInfoInsert",
     {
         "name": fields.String(required=True, description="The position name"),
-        "department": fields.Integer(required=True, description="The department id", example=1),
-        "employee": fields.Integer(required=False, description="The employee id", example=60),
-        "extra_info": fields.String(required=False, description="The extra info json string", example="{}")
+        "department": fields.Integer(
+            required=True, description="The department id", example=1
+        ),
+        "employee": fields.Integer(
+            required=False, description="The employee id", example=60
+        ),
+        "extra_info": fields.String(
+            required=False, description="The extra info json string", example="{}"
+        ),
     },
 )
 
@@ -280,9 +284,15 @@ head_update_model = api.model(
     "HeadInfoUpdate",
     {
         "id": fields.Integer(required=True, description="The head position id"),
-        "department": fields.Integer(required=True, description="The department id", example=1),
-        "employee": fields.Integer(required=False, description="The employee id", example=60),
-        "extra_info": fields.String(required=False, description="The extra info json string", example="{}")
+        "department": fields.Integer(
+            required=True, description="The department id", example=1
+        ),
+        "employee": fields.Integer(
+            required=False, description="The employee id", example=60
+        ),
+        "extra_info": fields.String(
+            required=False, description="The extra info json string", example="{}"
+        ),
     },
 )
 
@@ -422,7 +432,11 @@ class HeadInputForm(Form):
     name = StringField("name", validators=[InputRequired()])
     department = IntegerField("department", validators=[InputRequired()])
     employee = IntegerField("employee", validators=[], default=0)
-    extra_info = StringField("extra_info", validators=[validate_json], default="{}")
+    extra_info = StringField(
+        "extra_info",
+        validators=[validate_json],
+        default='{"other_leaders": [], "contracts": []}',
+    )
 
 
 class HeadUpdateForm(Form):
@@ -435,7 +449,7 @@ class HeadUpdateForm(Form):
     extra_info = StringField("extra_info", validators=[InputRequired(), validate_json])
 
 
-class  HeadDeleteForm(Form):
+class HeadDeleteForm(Form):
     id = IntegerField(
         "id",
         validators=[InputRequired(message="id is required or value 0 not accepted")],
