@@ -288,6 +288,7 @@ def get_all_products_DB(type_p):
                 "codes": codes,
                 "locations": locations,
                 "brand": brand,
+                "epp": extra_info.get("epp", 0),
             }
         )
     return out, 200
@@ -307,6 +308,7 @@ def insert_product_db(data, data_token):
             codes=data["info"]["codes"],
             locations=data["info"]["locations"],
             brand=data["info"]["brand"],
+            epp=data["info"]["epp"],
         )
     else:
         flag, error, result = create_product_db_admin(
@@ -395,6 +397,7 @@ def insert_multiple_products_from_api(data):
             item["codes"],
             item["locations"],
             item["brand"],
+            item.get("epp", 0),
         )
         for item in products_new
     ]
@@ -460,6 +463,7 @@ def update_multiple_products_from_api(data):
             item["codes"],
             item["locations"],
             item["brand"],
+            item.get("epp", 0)
         )
         for item in products_update
     ]

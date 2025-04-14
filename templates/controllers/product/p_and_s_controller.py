@@ -320,6 +320,7 @@ def create_product_db(
     codes=None,
     locations=None,
     brand=None,
+    epp=0,
 ):
     try:
         sku = str(sku).upper()
@@ -333,6 +334,7 @@ def create_product_db(
             locations if locations is not None else {"location_1": "", "location_2": ""}
         )
         extra_info = {"brand": brand} if brand is not None else {"brand": ""}
+        extra_info["epp"] = epp
     except Exception as e:
         return False, str(e), None
     insert_sql = (
@@ -370,6 +372,7 @@ def update_product_db(
     codes=None,
     locations=None,
     brand=None,
+    epp=0,
 ):
     try:
         sku = str(sku).upper()
@@ -389,7 +392,8 @@ def update_product_db(
         "UPDATE sql_telintec.products_amc "
         "SET sku = %s, name = %s, udm = %s, stock = %s, id_category = %s, id_supplier = %s, "
         "is_tool = %s, is_internal = %s, codes = %s, locations = %s, "
-        "extra_info = JSON_REPLACE(extra_info, '$.brand', %s) "
+        "extra_info = JSON_SET(extra_info, '$.brand', %s), "
+        "extra_info = JSON_SET(extra_info, '$.epp', %s) "
         "WHERE id_product = %s;"
     )
     vals = (
@@ -404,6 +408,7 @@ def update_product_db(
         json.dumps(codes),
         json.dumps(locations),
         brand,
+        epp,
         id_product,
     )
     flag, error, result = execute_sql(update_sql, vals, 3)
@@ -874,12 +879,12 @@ def insert_multiple_row_products_amc(products: tuple, dict_cat=None, dict_supp=N
         if len(product) < 10:
             codes = json.dumps([])
             locations = json.dumps({"location_1": ""})
-            extra_info = json.dumps({"brand": ""})
+            extra_info = json.dumps({"brand": "", "epp": 0})
         else:
             codes = json.dumps([])
             location_1 = product[10]
             locations = json.dumps({"location_1": location_1})
-            extra_info = json.dumps({"brand": product[11]})
+            extra_info = json.dumps({"brand": product[11], "epp": product[12]})
         sku = clean_name(product[1].encode(codec, errors="ignore").decode(codec))[0]
         name = str(product[2]).replace("'", "").replace('"', "")
         category_id = (
@@ -928,11 +933,13 @@ def update_multiple_row_products_amc(products: tuple, dict_cat=None, dict_supp=N
             codes = json.dumps([])
             locations = json.dumps({"location_1": ""})
             brand = ""
+            epp=0
         else:
             codes = product[9]
             location_1 = product[10]
             locations = json.dumps({"location_1": location_1})
             brand = product[11]
+            epp = product[12]
         category_id = (
             dict_cat.get(product[5], "None") if dict_cat is not None else product[5]
         )
@@ -942,7 +949,7 @@ def update_multiple_row_products_amc(products: tuple, dict_cat=None, dict_supp=N
         sql = (
             "UPDATE sql_telintec.products_amc "
             "SET sku = %s, name = %s, udm = %s, stock = %s, id_category = %s, id_supplier = %s, is_tool = %s, is_internal = %s, "
-            "codes = %s, locations = %s, extra_info = JSON_SET(extra_info, '$.brand', %s) "
+            "codes = %s, locations = %s, extra_info = JSON_SET(extra_info, '$.brand', %s), extra_info = JSON_SET(extra_info, '$.epp', %s)  "
             "WHERE id_product = %s"
         )
         vals = (
@@ -957,6 +964,7 @@ def update_multiple_row_products_amc(products: tuple, dict_cat=None, dict_supp=N
             codes,
             locations,
             brand,
+            epp,
             product[0],
         )
         flag, error, result = execute_sql(sql, vals, 3)
