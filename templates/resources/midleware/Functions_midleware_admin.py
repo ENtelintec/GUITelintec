@@ -487,6 +487,7 @@ def fetch_heads(id_department: int):
         return {"data": [], "msg": str(error)}, 400
     data_out = []
     for item in result:
+        extra_info = json.loads(item[7])
         data_out.append(
             {
                 "id": item[0],
@@ -496,7 +497,9 @@ def fetch_heads(id_department: int):
                 "department_name": item[4],
                 "employee_name": item[5],
                 "employee_email": item[6],
-                "extra_info": json.loads(item[7]),
+                "contracts": extra_info.get("contracts", []),
+                "contracts_temp": extra_info.get("contracts_temp", []),
+                "other_leaders": extra_info.get("other_leaders", []),
             }
         )
     return {"data": data_out, "msg": "Ok"}, 200
