@@ -66,7 +66,6 @@ columns_movements_widgets_lector = [
 
 
 def generate_default_configuration_barcodes(**kwargs):
-    print(kwargs.get("title_offset"))
     temp = kwargs.get("title_offset", "0, 0")
     title_offset_t = temp.split(",") if isinstance(temp, str) else temp
     title_offset = (
