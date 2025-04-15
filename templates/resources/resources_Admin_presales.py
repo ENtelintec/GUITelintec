@@ -45,6 +45,7 @@ from templates.resources.midleware.Functions_midleware_admin import (
     create_contract_from_api,
     items_quotation_from_file,
     get_contracts_abreviations,
+    items_contract_from_file,
 )
 from templates.controllers.contracts.contracts_controller import (
     update_contract,
@@ -349,6 +350,29 @@ class ItemsQuotationFileUpload(Resource):
             file.save(filepath_download)
             data = {"path": filepath_download}
             data_out, code = items_quotation_from_file(data)
+            return data_out, code
+        else:
+            return {"msg": "No se subio el archivo"}, 400
+
+
+@ns.route("/contract/items/file")
+class ItemsContractFileUpload(Resource):
+    @ns.expect(expected_headers_per, expected_files)
+    def post(self):
+        flag, data_token, msg = token_verification_procedure(
+            request, department="administracion"
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        if "file" not in request.files:
+            return {"data": "No se detecto un archivo"}, 400
+        file = request.files["file"]
+        if file:
+            filename = secure_filename(file.filename)
+            filepath_download = os.path.join(tempfile.mkdtemp(), filename)
+            file.save(filepath_download)
+            data = {"path": filepath_download}
+            data_out, code = items_contract_from_file(data)
             return data_out, code
         else:
             return {"msg": "No se subio el archivo"}, 400

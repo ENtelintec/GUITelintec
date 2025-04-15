@@ -180,6 +180,32 @@ def read_exel_products_bidding(path: str):
     return products
 
 
+def read_exel_products_partidas(path: str):
+    df = pd.read_excel(path)
+    df = df.fillna("")
+    data_excel = df.to_dict("records")
+
+    products = []
+    for item in data_excel:
+        # partida: number; quantity: number; udm: string; price_unit: number; type_p: string; marca: string; n_parte: string; description: string; description_small: string; id: number; comment: string;
+        product = {
+            "partida": item["PARTIDA"],
+            "quantity": 1,
+            "udm": item["UND"],
+            "price_unit": 0.0,
+            "type_p": item["TIPO"],
+            "marca": item["MARCA"],
+            "n_parte": item["NRO. PARTE"],
+            "description": item["DESCRIPCIÓN LARGA"],
+            "description_small": item["DESCRIPCIÓN CORTA"],
+            "id": None,
+            "comment": "",
+
+        }
+        products.append(product)
+    return products
+
+
 def read_exel_products_quotation(path: str):
     df = pd.read_excel(path, skiprows=[0])
     df = df.fillna("")

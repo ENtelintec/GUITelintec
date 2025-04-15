@@ -46,6 +46,7 @@ from templates.resources.methods.Functions_Aux_Admin import (
     read_exel_products_quotation,
     compare_file_quotation,
     read_exel_products_bidding,
+    read_exel_products_partidas,
 )
 
 dict_depts_identifiers = {
@@ -590,6 +591,13 @@ def delete_head_from_api(data, data_token):
 
 def items_quotation_from_file(data):
     products = read_exel_products_bidding(data["path"])
+    if products is None:
+        return {"data": None, "msg": "Error at file structure"}, 400
+    return {"data": products, "msg": "Ok"}, 200
+
+
+def items_contract_from_file(data):
+    products = read_exel_products_partidas(data["path"])
     if products is None:
         return {"data": None, "msg": "Error at file structure"}, 400
     return {"data": products, "msg": "Ok"}, 200
