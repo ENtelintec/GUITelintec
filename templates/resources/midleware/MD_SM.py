@@ -23,6 +23,7 @@ from templates.controllers.material_request.sm_controller import (
     update_sm_products_by_id,
     get_info_names_by_sm_id,
     update_history_extra_info_sm_by_id,
+    get_pending_sm_db,
 )
 from templates.controllers.product.p_and_s_controller import (
     get_sm_products,
@@ -538,3 +539,4 @@ def update_sm_from_control_table(data, data_token):
         return 200, {"msg": "ok"}
     else:
         return 400, {"msg": str(error)}
+

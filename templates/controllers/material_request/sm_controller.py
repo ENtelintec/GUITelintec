@@ -40,7 +40,8 @@ def get_sm_entries(emp_id=-1):
         return False, "Invalid employee ID", []
     if emp_id <= -1:
         sql = (
-            "SELECT sm_id, folio, contract, facility, location, client_id, emp_id, "
+            "SELECT "
+            "sm_id, folio, contract, facility, location, client_id, emp_id, "
             "pedido_cotizacion, date, limit_date, "
             "items, status, history, comment, extra_info "
             "FROM sql_telintec.materials_request where emp_id like '%'"
@@ -341,3 +342,16 @@ def update_history_extra_info_sm_by_id(sm_id: int, extra_info: dict, history: di
     flag, error, result = execute_sql(sql, val, 4)
     return flag, error, result
 
+
+def get_pending_sm_db():
+    sql = (
+        "SELECT "
+        "sm_id, folio, contract, facility, location, "
+        "client_id, emp_id, pedido_cotizacion, date, "
+        "limit_date, items, status, history, "
+        "comment, extra_info "
+        "FROM sql_telintec.materials_request "
+        "WHERE status = 0 "
+    )
+    flag, error, result = execute_sql(sql, None, 5)
+    return flag, error, result

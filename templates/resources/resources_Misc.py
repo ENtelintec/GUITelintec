@@ -41,6 +41,7 @@ from templates.resources.midleware.Functions_midleware_misc import (
     get_files_openai,
     get_all_notification_db_permission,
     get_task_by_id_employee,
+    get_all_dashboard_data,
 )
 
 ns = Namespace("GUI/api/v1/misc")
@@ -143,6 +144,7 @@ class ResponseAV(Resource):
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        # noinspection PyUnresolvedReferences
         validator = RequestAVResponseForm.from_json(ns.payload)
         if not validator.validate():
             return {"error": validator.errors}, 400
@@ -253,3 +255,15 @@ class DownloadFileQuizz(Resource):
             return {"data": f"Error en el tipo de quizz: {str(e)}"}, 400
 
 
+@ns.route("/dashboard")
+class Dashboard(Resource):
+    @ns.expect(expected_headers_per)
+    def get(self):
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        data, code = get_all_dashboard_data(data_token)
+        if code == 200:
+            return {"data": data}, 200
+        else:
+            return {"data": data, "msg": "Error"}, code

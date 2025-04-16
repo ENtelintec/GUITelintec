@@ -16,6 +16,7 @@ from static.constants import (
 )
 from templates.Functions_openAI import get_response_assistant, get_files_list_openai
 from templates.controllers.employees.vacations_controller import get_vacations_data
+from templates.controllers.material_request.sm_controller import get_pending_sm_db
 from templates.controllers.misc.tasks_controller import get_task_by_id_emp
 from templates.controllers.notifications.Notifications_controller import (
     get_notifications_by_user,
@@ -141,3 +142,53 @@ def get_all_vacations_data_date():
                 }
             )
     return out, 200
+
+
+def get_all_dashboard_data(data_token):
+    permissions = data_token.get("permissions", {})
+    terms_list = [item.split(".")[-1].lower() for item in permissions.values()]
+    #  get all notifications
+    flag, error, result = get_notifications_by_permission(
+        terms_list, data_token.get("emp_id", "%")
+    )
+    data_out = {}
+    if not flag:
+        return error, 400
+    out_not = []
+    for item in result:
+        body = json.loads(item[2])
+        body["id"] = item[1]
+        out_not.append(body)
+    data_out["notifications"] = out_not
+    # get sm pending if almacen in term list
+    out_sm = []
+    if "almacen" in terms_list:
+        flag, error, result = get_pending_sm_db()
+        if not flag:
+            return error, 400
+        for item in result:
+            out_sm.append(
+                {
+                    "id": item[0],
+                    "folio": item[1],
+                    "contract": item[2],
+                    "facility": item[3],
+                    "location": item[4],
+                    "client_id": item[5],
+                    "emp_id": item[6],
+                    "order_quotation": item[7],
+                    "date": item[8].strftime(format_timestamps)
+                    if isinstance(item[8], datetime)
+                    else item[8],
+                    "critical_date": item[9].strftime(format_timestamps)
+                    if isinstance(item[9], datetime)
+                    else item[9],
+                    "items": json.loads(item[10]),
+                    "status": item[11],
+                    "history": json.loads(item[12]),
+                    "comment": item[13],
+                    "extra_info": json.loads(item[14]),
+                }
+            )
+        data_out["sm"] = out_sm
+    return data_out, 200
