@@ -58,7 +58,9 @@ from templates.resources.midleware.Functions_midleware_almacen import (
     create_pdf_barcode_multiple,
     create_file_inventory_excel,
     update_brand_procedure,
-    get_new_code_products, delete_movement_amc,
+    get_new_code_products,
+    delete_movement_amc,
+    get_epp_db,
 )
 
 ns = Namespace("GUI/api/v1/almacen")
@@ -508,3 +510,16 @@ class DownloadMultipleBarcodeFile(Resource):
             if code == 200
             else ({"data": filepath, "msg": "Error at creating file"}, 400)
         )
+
+
+@ns.route("/inventory/epp")
+class InventoryEpp(Resource):
+    @ns.expect(expected_headers_per)
+    def get(self):
+        flag, data_token, msg = token_verification_procedure(
+            request, department="almacen"
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        data, code = get_epp_db()
+        return {"data": data, "msg": "Ok" if code == 200 else "Error"}, code

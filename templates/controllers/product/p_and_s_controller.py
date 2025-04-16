@@ -1075,3 +1075,28 @@ def udpate_multiple_row_stock_ids(data):
         errors.append(error)
         results.append(result)
     return flags, errors, results
+
+
+def get_all_epp_inventory():
+    sql = (
+        "SELECT "
+        "sql_telintec.products_amc.id_product,"
+        "sql_telintec.products_amc.sku AS sku,"
+        "sql_telintec.products_amc.name AS name,"
+        "sql_telintec.products_amc.udm AS udm,"
+        "sql_telintec.products_amc.stock AS stock,"
+        "sql_telintec.product_categories_amc.name AS category_name,"
+        "sql_telintec.suppliers_amc.name AS supplier_name, "
+        "sql_telintec.products_amc.is_tool, "
+        "sql_telintec.products_amc.is_internal, "
+        "sql_telintec.products_amc.codes, "
+        "sql_telintec.products_amc.locations, "
+        "sql_telintec.products_amc.extra_info "
+        "FROM sql_telintec.products_amc "
+        "LEFT JOIN sql_telintec.product_categories_amc ON (sql_telintec.products_amc.id_category = sql_telintec.product_categories_amc.id_category) "
+        "LEFT JOIN sql_telintec.suppliers_amc ON (sql_telintec.products_amc.id_supplier = sql_telintec.suppliers_amc.id_supplier)"
+        "WHERE sql_telintec.products_amc.extra_info->>'$.epp' = 1 "
+        "ORDER BY name "
+    )
+    flag, error, result = execute_sql(sql, None, 5)
+    return flag, error, result

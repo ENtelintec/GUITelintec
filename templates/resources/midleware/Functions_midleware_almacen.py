@@ -47,6 +47,7 @@ from templates.controllers.product.p_and_s_controller import (
     get_movements_type_db_all,
     get_movements_type_db,
     delete_movement_db,
+    get_all_epp_inventory,
 )
 from templates.controllers.supplier.suppliers_controller import (
     get_all_suppliers_amc,
@@ -463,7 +464,7 @@ def update_multiple_products_from_api(data):
             item["codes"],
             item["locations"],
             item["brand"],
-            item.get("epp", 0)
+            item.get("epp", 0),
         )
         for item in products_update
     ]
@@ -556,9 +557,7 @@ def insert_multiple_movements_from_api(data, data_token):
     #     for item in movements
     # ]
     stock_update_vals = [
-        item["quantity"]
-        if item["type_m"] == "entrada"
-        else - item["quantity"]
+        item["quantity"] if item["type_m"] == "entrada" else -item["quantity"]
         for item in movements
     ]
     # for index, new_stock in enumerate(stock_update_vals):
@@ -1089,3 +1088,40 @@ def get_new_code_products():
             out = max(out, int(number))
     out_text = prefix + str(out + 1).zfill(code_length - len(prefix))
     return out_text, 200
+
+
+def get_epp_db():
+    flag, error, result = get_all_epp_inventory()
+    if not flag:
+        return error, 400
+    data = []
+    for item in result:
+        codes_raw = json.loads(item[9])
+        if isinstance(codes_raw, list):
+            codes = codes_raw
+        elif isinstance(codes_raw, dict):
+            codes = [{"tag": k, "value": v} for k, v in codes_raw.items()]
+        else:
+            codes = []
+        locations = json.loads(item[10])
+        extra_info = json.loads(item[11])
+        brand = extra_info.get("brand", "")
+        brand = brand if isinstance(brand, str) else ""
+        data.append(
+            {
+                "id": item[0],
+                "sku": item[1],
+                "name": item[2],
+                "udm": item[3],
+                "stock": item[4],
+                "category_name": item[5],
+                "supplier_name": item[6],
+                "is_tool": item[7],
+                "is_internal": item[8],
+                "codes": codes,
+                "locations": locations,
+                "brand": brand,
+                "epp": extra_info.get("epp", 0),
+            }
+        )
+    return data, 200
