@@ -5,7 +5,7 @@ __date__ = "$ 20/jun./2024  at 15:23 $"
 import json
 
 
-from static.constants import filepath_settings, log_file_admin
+from static.constants import filepath_settings, log_file_admin, dict_deps
 from templates.Functions_Utils import create_notification_permission
 from templates.controllers.contracts.contracts_controller import (
     get_contract,
@@ -29,6 +29,8 @@ from templates.controllers.departments.heads_controller import (
     insert_head_DB,
     update_head_DB,
     delete_head_DB,
+    get_heads_list_db,
+    check_if_director,
 )
 from templates.controllers.material_request.sm_controller import get_folios_by_pattern
 from templates.controllers.purchases.purchases_admin_controller import (
@@ -480,6 +482,40 @@ def create_contract_from_api(data, data_token):
     )
     write_log_file(log_file_admin, msg)
     return {"data": result, "msg": "Ok"}, 201
+
+
+def fetch_heads_main(data_token):
+    dep_id = data_token.get("dep_id")
+    permissions = data_token.get("permissions")
+    permissions_last = [item.lower().split(".")[-1] for item in permissions.values()]
+    flag, error, result = check_if_director(data_token.get("emp_id"))
+    if len(result) == 0 and "administrator" not in permissions_last:
+        return {"data": [], "msg": str(error)}, 400
+    dep_ids_list = [dep_id]
+    for k, v in dict_deps.items():
+        if k.lower() in permissions_last:
+            dep_ids_list.append(v)
+    flag, error, result = get_heads_list_db(dep_ids_list)
+    if not flag:
+        return {"data": [], "msg": str(error)}, 400
+    data_out = []
+    for item in result:
+        extra_info = json.loads(item[7])
+        data_out.append(
+            {
+                "id": item[0],
+                "name": item[1],
+                "employee": item[2],
+                "department": item[3],
+                "department_name": item[4],
+                "employee_name": item[5],
+                "employee_email": item[6],
+                "contracts": extra_info.get("contracts", []),
+                "contracts_temp": extra_info.get("contracts_temp", []),
+                "other_leaders": extra_info.get("other_leaders", []),
+            }
+        )
+    return {"data": data_out, "msg": "Ok"}, 200
 
 
 def fetch_heads(id_department: int):

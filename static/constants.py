@@ -162,9 +162,9 @@ timezone_software = "America/Mexico_City"
 format_date = "%Y-%m-%d"
 format_date_fichaje_file = "%d-%m-%Y"
 dict_deps = {
-    "Dirección": 1,
+    "Direccion": 1,
     "Operaciones": 2,
-    "Administración": 3,
+    "Administracion": 3,
     "RRHH": 4,
     "REPSE": 5,
     "IA": 6,

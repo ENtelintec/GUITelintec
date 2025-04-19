@@ -4,6 +4,7 @@ __date__ = "$ 01/may./2024  at 19:25 $"
 
 import json
 
+
 from templates.database.connection import execute_sql
 
 
@@ -32,7 +33,52 @@ def get_heads_db(id_department: int = None):
     return flag, e, my_result
 
 
-def insert_head_DB(position_name: str, department: int, employee: int, extra_info: dict):
+def get_heads_list_db(dep_list: list):
+    placeholders = ", ".join(["%s"] * len(dep_list))
+    sql = (
+        "SELECT "
+        "heads.position_id, "
+        "heads.name, "
+        "heads.employee, "
+        "heads.department, "
+        "departments.name, "
+        "UPPER(CONCAT(employees.name, ' ', employees.l_name)) as name_emp, "
+        "employees.email, "
+        "heads.extra_info "
+        "FROM sql_telintec.heads "
+        "LEFT JOIN sql_telintec.employees ON heads.employee = employees.employee_id "
+        "LEFT JOIN sql_telintec.departments ON heads.department = departments.department_id "
+        f"WHERE heads.department IN ({placeholders})"
+    )
+    val = tuple(dep_list)
+    flag, e, my_result = execute_sql(sql, val, 2)
+    return flag, e, my_result
+
+
+def check_if_director(id_employee: int):
+    sql = (
+        "SELECT "
+        "heads.position_id, "
+        "heads.name, "
+        "heads.employee, "
+        "heads.department, "
+        "departments.name, "
+        "UPPER(CONCAT(employees.name, ' ', employees.l_name)) as name_emp, "
+        "employees.email, "
+        "heads.extra_info "
+        "FROM sql_telintec.heads "
+        "LEFT JOIN sql_telintec.employees ON heads.employee = employees.employee_id "
+        "LEFT JOIN sql_telintec.departments ON heads.department = departments.department_id "
+        "WHERE heads.employee = %s AND heads.name like '%Director%'"
+    )
+    val = (id_employee,)
+    flag, e, my_result = execute_sql(sql, val, 1)
+    return flag, e, my_result
+
+
+def insert_head_DB(
+    position_name: str, department: int, employee: int, extra_info: dict
+):
     sql = (
         "INSERT INTO sql_telintec.heads (name, department, employee, extra_info) "
         "VALUES (%s, %s, %s, %s)"
@@ -44,9 +90,7 @@ def insert_head_DB(position_name: str, department: int, employee: int, extra_inf
     return flag, e, out
 
 
-def update_head_DB(
-    position_id: int, department: int, employee: int, extra_info: dict
-):
+def update_head_DB(position_id: int, department: int, employee: int, extra_info: dict):
     sql = (
         "UPDATE sql_telintec.heads "
         "SET department = %s, employee = %s, extra_info = %s "

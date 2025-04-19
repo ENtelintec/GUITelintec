@@ -10,7 +10,7 @@ from wtforms.fields.list import FieldList
 from wtforms.form import Form
 from wtforms.validators import InputRequired
 
-from static.Models.api_models import date_filter, datetime_filter, validate_json
+from static.Models.api_models import date_filter, datetime_filter
 from static.constants import api
 
 employee_model = api.model(
@@ -21,6 +21,7 @@ employee_model = api.model(
         "lastname": fields.String(required=True, description="The employee lastname"),
         "phone": fields.String(required=True, description="The employee phone number"),
         "dep": fields.String(required=True, description="The employee department"),
+        "dep_id": fields.Integer(required=True, description="The employee department id"),
         "modality": fields.String(required=True, description="The employee modality"),
         "email": fields.String(
             required=True,
@@ -264,6 +265,21 @@ employee_vacation_model_delete = api.model(
     {"emp_id": fields.Integer(required=True, description="The employee id")},
 )
 
+extra_info_heads_model = api.model(
+    "ExtraInfoHeads",
+    {
+        "contracts": fields.List(
+            fields.Integer(required=True, description="The contract id")
+        ),
+        "other_leaders": fields.List(
+            fields.Integer(required=True, description="The other leader id")
+        ),
+        "contracts_temp": fields.List(
+            fields.Integer(required=True, description="The contract temp id")
+        ),
+    },
+)
+
 head_insert_model = api.model(
     "HeadInfoInsert",
     {
@@ -274,8 +290,10 @@ head_insert_model = api.model(
         "employee": fields.Integer(
             required=False, description="The employee id", example=60
         ),
-        "extra_info": fields.String(
-            required=False, description="The extra info json string", example="{}"
+        "extra_info": fields.Nested(
+            extra_info_heads_model,
+            required=True,
+            description="The extra info for heads",
         ),
     },
 )
@@ -290,8 +308,10 @@ head_update_model = api.model(
         "employee": fields.Integer(
             required=False, description="The employee id", example=60
         ),
-        "extra_info": fields.String(
-            required=False, description="The extra info json string", example="{}"
+        "extra_info": fields.Nested(
+            extra_info_heads_model,
+            required=True,
+            description="The extra info for heads",
         ),
     },
 )
@@ -428,15 +448,19 @@ class DeleteVacationForm(Form):
     )
 
 
+class ExtraInfoHeadsForm(Form):
+    contracts = FieldList(IntegerField(validators=[]), "contracts", default=[])
+    other_leaders = FieldList(IntegerField(validators=[]), "other_leaders", default=[])
+    contracts_temp = FieldList(
+        IntegerField(validators=[]), "contracts_temp", default=[]
+    )
+
+
 class HeadInputForm(Form):
     name = StringField("name", validators=[InputRequired()])
     department = IntegerField("department", validators=[InputRequired()])
     employee = IntegerField("employee", validators=[], default=0)
-    extra_info = StringField(
-        "extra_info",
-        validators=[validate_json],
-        default='{"other_leaders": [], "contracts": []}',
-    )
+    extra_info = FormField(ExtraInfoHeadsForm, "extra_info")
 
 
 class HeadUpdateForm(Form):
@@ -446,7 +470,7 @@ class HeadUpdateForm(Form):
     )
     department = IntegerField("department", validators=[InputRequired()])
     employee = IntegerField("employee", validators=[InputRequired()])
-    extra_info = StringField("extra_info", validators=[InputRequired(), validate_json])
+    extra_info = FormField(ExtraInfoHeadsForm, "extra_info")
 
 
 class HeadDeleteForm(Form):

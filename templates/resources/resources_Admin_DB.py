@@ -39,6 +39,7 @@ from templates.resources.midleware.Functions_midleware_admin import (
     insert_head_from_api,
     update_head_from_api,
     delete_head_from_api,
+    fetch_heads_main,
 )
 
 ns = Namespace("GUI/api/v1/admin/db")
@@ -167,6 +168,20 @@ class SupplierDB(Resource):
         return data, code
 
 
+@ns.route("/heads")
+class HeadsDepartmentAuto(Resource):
+    @ns.expect(expected_headers_per)
+    def get(self):
+        flag, data_token, msg = token_verification_procedure(
+            request,
+            department=["administracion", "operaciones", "rrhh", "ia" "otros", "respe"],
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        data, code = fetch_heads_main(data_token)
+        return data, code
+
+
 @ns.route("/heads/<string:id_d>")
 class HeadsDepartment(Resource):
     @ns.expect(expected_headers_per)
@@ -234,4 +249,3 @@ class HeadDB(Resource):
         data = validator.data
         data_out, code = delete_head_from_api(data, data_token)
         return data_out, code
-

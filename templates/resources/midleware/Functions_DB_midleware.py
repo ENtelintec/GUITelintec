@@ -46,6 +46,7 @@ def get_info_employees_with_status(status: str):
             birthday,
             legajo,
             extra_info,
+            dep_id,
         ) = item
         extra_info = json.loads(extra_info)
         data_out.append(
@@ -69,7 +70,8 @@ def get_info_employees_with_status(status: str):
                 "exam_id": examen,
                 "birthday": birthday,
                 "legajo": legajo,
-                "id_leader": extra_info.get("id_leader", 0)
+                "id_leader": extra_info.get("id_leader", 0),
+                "dep_id": dep_id,
             }
         )
 
@@ -106,7 +108,7 @@ def create_csv_file_employees(status: str):
                 examen,
                 birthday,
                 legajo,
-                extra_info
+                extra_info,
             ) = item
             file.write(
                 f"{id_emp},{name},{phone},{department},{modality},{email},{contract},{admission},{rfc},{curp},{nss},{emergency_contact},{position},{status},{departure},{examen},{birthday},{legajo}\n"
@@ -136,6 +138,7 @@ def get_info_employee_id(id_emp: int):
         examen,
         birthday,
         legajo,
+        dep_id,
     ) = result
     data_out = {
         "id": id_emp,
@@ -156,6 +159,7 @@ def get_info_employee_id(id_emp: int):
         "exam_id": examen,
         "birthday": birthday.strftime(format_date),
         "legajo": legajo,
+        "dep_id": dep_id,
     }
     return (data_out, 200) if flag else ({}, 400)
 
