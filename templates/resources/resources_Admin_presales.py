@@ -48,9 +48,6 @@ from templates.resources.midleware.Functions_midleware_admin import (
     items_contract_from_file,
     update_contract_from_api,
 )
-from templates.controllers.contracts.contracts_controller import (
-    update_contract,
-)
 from templates.controllers.contracts.quotations_controller import (
     create_quotation,
     update_quotation,

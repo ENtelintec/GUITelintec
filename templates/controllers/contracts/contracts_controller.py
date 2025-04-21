@@ -30,10 +30,10 @@ def update_contract(id_contract, metadata: dict, timestamps=None, quotation_id=N
     if timestamps is None:
         timestamps = {
             "complete": {"timestamp": "", "comment": ""},
-            "update": [timestamp],
+            "update": [{"timestamp": timestamp, "comment": "creation"}],
         }
     else:
-        timestamps["update"].append(timestamp)
+        timestamps["update"].append({"timestamp": timestamp, "comment": "update"})
     sql = (
         "UPDATE sql_telintec_mod_admin.contracts "
         "SET metadata = %s, timestamps = %s, quotation_id = %s  "

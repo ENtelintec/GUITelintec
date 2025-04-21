@@ -6,7 +6,7 @@ from werkzeug.datastructures import FileStorage
 from wtforms.form import Form
 from wtforms.validators import InputRequired
 
-from static.Models.api_models import date_filter
+from static.Models.api_models import date_filter, datetime_filter
 from static.constants import api
 from flask_restx import fields
 from wtforms.fields.datetime import DateField
@@ -342,19 +342,19 @@ class QuotationInsertForm(Form):
 
 
 class TimestampsAdminForm(Form):
-    timestamps = StringField(
-        "timestamps", validators=[], filters=[date_filter], default=""
+    timestamp = StringField(
+        "timestamp", validators=[], filters=[datetime_filter], default=""
     )
     comment = StringField("comment", validators=[], default="")
 
 
+class TimestampsCompleteForm(Form):
+    timestamp = StringField("timestamp", validators=[], default="")
+    comment = StringField("comment", validators=[], default="")
+
+
 class TimestampsQuotationForm(Form):
-    complete = FormField(
-        TimestampsAdminForm,
-        "complete",
-        validators=[],
-        default={"timestamps": "", "comment": ""},
-    )
+    complete = FormField(TimestampsCompleteForm, "complete")
     update = FieldList(FormField(TimestampsAdminForm, "update"))
 
 
@@ -421,6 +421,7 @@ class ContractUpdateForm(Form):
     metadata = FormField(MetadataContractForm, "metadata")
     quotation_id = IntegerField("quotation_id", validators=[], default=None)
     timestamps = FormField(TimestampsQuotationForm, "timestamps")
+    products = FieldList(FormField(ProductsQuotationForm, "products"))
 
 
 class ContractDeleteForm(Form):

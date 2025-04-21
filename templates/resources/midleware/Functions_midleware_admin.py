@@ -488,7 +488,7 @@ def create_contract_from_api(data, data_token):
 
 def update_contract_from_api(data, data_token):
     msg = ""
-    if data.get("quotation_id", 0) == 0:
+    if data.get("quotation_id", 0) == 0 and len(data.get("products", [])) > 0:
         flag, error, result = create_quotation(
             data["metadata"], data["products"], status=1
         )
@@ -516,11 +516,12 @@ def update_contract_from_api(data, data_token):
                 "msg": "Error at updating products " + str(error),
             }, 400
         msg += f"Se actualizo la cotizacion con ID-{id_quotation} por el empleado {data_token.get('emp_id')}"
+    id_quotation = id_quotation if id_quotation != 0 else None
     flag, error, result = update_contract(
         data["id"], data["metadata"], data["timestamps"], id_quotation
     )
     if not flag:
-        return {"data": None, "msg": error}, 400
+        return {"data": None, "msg": str(error)}, 400
     msg += f"Contrato actualizado con ID-{data['id']} por el empleado {data_token.get('emp_id')}"
     create_notification_permission(
         msg, ["administracion"], "Contrato Actualizado", data_token.get("emp_id"), 0
