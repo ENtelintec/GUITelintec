@@ -46,6 +46,7 @@ from templates.resources.midleware.Functions_midleware_admin import (
     items_quotation_from_file,
     get_contracts_abreviations,
     items_contract_from_file,
+    update_contract_from_api,
 )
 from templates.controllers.contracts.contracts_controller import (
     update_contract,
@@ -197,12 +198,13 @@ class Contract(Resource):
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
-        flag, error, result = update_contract(
-            data["id"], data["metadata"], data["timestamps"], data["quotation_id"]
-        )
-        if not flag:
-            return {"data": None, "msg": error}, 400
-        return {"data": result, "msg": "Ok"}, 200
+        data_out, code = update_contract_from_api(data, data_token)
+        # flag, error, result = update_contract(
+        #     data["id"], data["metadata"], data["timestamps"], data["quotation_id"]
+        # )
+        # if not flag:
+        #     return {"data": None, "msg": error}, 400
+        return data_out, code
 
     @ns.expect(expected_headers_per, contract_model_delete)
     def delete(self):

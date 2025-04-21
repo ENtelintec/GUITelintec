@@ -49,6 +49,17 @@ def update_quotation(id_quotation, metadata: dict, products: list, timestamps=No
     return flag, error, out
 
 
+def update_quotation_from_contract(id_quotation, products: list):
+    sql = (
+        "UPDATE sql_telintec_mod_admin.quotations "
+        "SET products = %s "
+        "WHERE id = %s"
+    )
+    val = (json.dumps(products), id_quotation)
+    flag, error, out = execute_sql(sql, val, 3)
+    return flag, error, out
+
+
 def delete_quotation(id_quotation):
     sql = "DELETE FROM sql_telintec_mod_admin.quotations " "WHERE id = %s"
     val = (id_quotation,)

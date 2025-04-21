@@ -12,10 +12,12 @@ from templates.controllers.contracts.contracts_controller import (
     get_contract_from_abb,
     create_contract,
     get_contracts_abreviations_db,
+    update_contract,
 )
 from templates.controllers.contracts.quotations_controller import (
     get_quotation,
     create_quotation,
+    update_quotation_from_contract,
 )
 from templates.controllers.customer.customers_controller import (
     get_customer_amc_by_id,
@@ -482,6 +484,49 @@ def create_contract_from_api(data, data_token):
     )
     write_log_file(log_file_admin, msg)
     return {"data": result, "msg": "Ok"}, 201
+
+
+def update_contract_from_api(data, data_token):
+    msg = ""
+    if data.get("quotation_id", 0) == 0:
+        flag, error, result = create_quotation(
+            data["metadata"], data["products"], status=1
+        )
+        if not flag:
+            return {
+                "data": None,
+                "msg": "No se pudo crear una cotizacion para relacionar con el contrato"
+                + str(error),
+            }, 400
+        id_quotation = result if isinstance(result, int) and result > 0 else 0
+        if id_quotation == 0:
+            return {
+                "data": None,
+                "msg": "No se pudo obtener el id correcto de una cotizacion para relacionar con el contrato",
+            }, 400
+        msg += f"Se creo una cotizacion con ID-{id_quotation} para relacionar con el contrato por el empleado {data_token.get('emp_id')}"
+    else:
+        id_quotation = data["quotation_id"]
+        flag, error, result = update_quotation_from_contract(
+            id_quotation, data["products"]
+        )
+        if not flag:
+            return {
+                "data": None,
+                "msg": "Error at updating products " + str(error),
+            }, 400
+        msg += f"Se actualizo la cotizacion con ID-{id_quotation} por el empleado {data_token.get('emp_id')}"
+    flag, error, result = update_contract(
+        data["id"], data["metadata"], data["timestamps"], id_quotation
+    )
+    if not flag:
+        return {"data": None, "msg": error}, 400
+    msg += f"Contrato actualizado con ID-{data['id']} por el empleado {data_token.get('emp_id')}"
+    create_notification_permission(
+        msg, ["administracion"], "Contrato Actualizado", data_token.get("emp_id"), 0
+    )
+    write_log_file(log_file_admin, msg)
+    return {"data": result, "msg": "Ok"}, 200
 
 
 def fetch_heads_main(data_token):
