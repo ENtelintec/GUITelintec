@@ -9,7 +9,7 @@ from wtforms.validators import InputRequired
 from static.Models.api_models import date_filter
 from static.constants import api
 from flask_restx import fields
-from wtforms.fields.datetime import DateField, DateTimeField
+from wtforms.fields.datetime import DateField
 from wtforms.fields.list import FieldList
 from wtforms.fields.numeric import FloatField, IntegerField
 from wtforms.fields.simple import StringField, EmailField
@@ -342,14 +342,19 @@ class QuotationInsertForm(Form):
 
 
 class TimestampsAdminForm(Form):
-    timestamps = DateTimeField(
-        "timestamps", validators=[], filters=[date_filter], default=None
+    timestamps = StringField(
+        "timestamps", validators=[], filters=[date_filter], default=""
     )
     comment = StringField("comment", validators=[], default="")
 
 
 class TimestampsQuotationForm(Form):
-    complete = FormField(TimestampsAdminForm, "complete")
+    complete = FormField(
+        TimestampsAdminForm,
+        "complete",
+        validators=[],
+        default={"timestamps": "", "comment": ""},
+    )
     update = FieldList(FormField(TimestampsAdminForm, "update"))
 
 
