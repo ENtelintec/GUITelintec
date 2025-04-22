@@ -164,7 +164,9 @@ class EmployeesInfo(Resource):
     @ns.marshal_with(employees_info_model)
     @ns.expect(expected_headers_per)
     def get(self, status):
-        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["rrhh", "operaciones", "administracion"]
+        )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data_out, code = get_info_employees_with_status(status)
