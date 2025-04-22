@@ -403,6 +403,7 @@ table_sm_model = api.model(
     },
 )
 
+
 table_request_model = api.model(
     "TableRequest",
     {
@@ -635,9 +636,7 @@ class SMInfoControlTableForm(Form):
 
 
 class SMInfoControlTablePutForm(Form):
-    id = IntegerField(
-        "id", validators=[InputRequired(message="Invalid id control sm")]
-    )
+    id = IntegerField("id", validators=[InputRequired(message="Invalid id control sm")])
     info = FormField(SMInfoControlTableForm, "info")
 
 

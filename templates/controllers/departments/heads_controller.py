@@ -69,7 +69,52 @@ def check_if_director(id_employee: int):
         "FROM sql_telintec.heads "
         "LEFT JOIN sql_telintec.employees ON heads.employee = employees.employee_id "
         "LEFT JOIN sql_telintec.departments ON heads.department = departments.department_id "
-        "WHERE heads.employee = %s AND heads.name like '%Director%'"
+        "WHERE heads.employee = %s AND (LOWER(heads.name) like '%director%' OR LOWER(heads.name) like '%jefe%')"
+    )
+    val = (id_employee,)
+    flag, e, my_result = execute_sql(sql, val, 1)
+    return flag, e, my_result
+
+
+def check_if_leader(id_employee: int):
+    sql = (
+        "SELECT "
+        "heads.position_id, "
+        "heads.name, "
+        "heads.employee, "
+        "heads.department, "
+        "departments.name, "
+        "UPPER(CONCAT(employees.name, ' ', employees.l_name)) as name_emp, "
+        "employees.email, "
+        "heads.extra_info "
+        "FROM sql_telintec.heads "
+        "LEFT JOIN sql_telintec.employees ON heads.employee = employees.employee_id "
+        "LEFT JOIN sql_telintec.departments ON heads.department = departments.department_id "
+        "WHERE ("
+        "heads.employee = %s OR "
+        "JSON_CONTAINS(sql_telintec.heads.extra_info->'$.other_leaders', CAST( %s AS JSON))"
+        ") AND LOWER(heads.name) like '%lider%'"
+    )
+    val = (id_employee, id_employee)
+    flag, e, my_result = execute_sql(sql, val, 2)
+    return flag, e, my_result
+
+
+def check_if_head_not_auxiliar(id_employee: int):
+    sql = (
+        "SELECT "
+        "heads.position_id, "
+        "heads.name, "
+        "heads.employee, "
+        "heads.department, "
+        "departments.name, "
+        "UPPER(CONCAT(employees.name, ' ', employees.l_name)) as name_emp, "
+        "employees.email, "
+        "heads.extra_info "
+        "FROM sql_telintec.heads "
+        "LEFT JOIN sql_telintec.employees ON heads.employee = employees.employee_id "
+        "LEFT JOIN sql_telintec.departments ON heads.department = departments.department_id "
+        "WHERE heads.employee = %s AND LOWER(heads.name) not like '%auxiliar%'  AND LOWER(heads.name) not like '%lider%' "
     )
     val = (id_employee,)
     flag, e, my_result = execute_sql(sql, val, 1)

@@ -11,9 +11,24 @@ from datetime import datetime
 import pandas as pd
 import pytz
 
-from static.constants import log_file_sm_path, format_timestamps, timezone_software
+from static.constants import (
+    log_file_sm_path,
+    format_timestamps,
+    timezone_software,
+    dict_depts_identifiers,
+    tabs_sm,
+)
 from templates.Functions_Utils import create_notification_permission
+from templates.controllers.contracts.contracts_controller import (
+    get_contract_by_client,
+    get_contracts_by_ids,
+)
 from templates.controllers.customer.customers_controller import create_customer_db
+from templates.controllers.departments.heads_controller import (
+    check_if_director,
+    check_if_head_not_auxiliar,
+    check_if_leader,
+)
 from templates.controllers.employees.employees_controller import get_emp_contract
 from templates.controllers.index import DataHandler
 from templates.controllers.material_request.sm_controller import (
@@ -23,7 +38,6 @@ from templates.controllers.material_request.sm_controller import (
     update_sm_products_by_id,
     get_info_names_by_sm_id,
     update_history_extra_info_sm_by_id,
-    get_pending_sm_db,
 )
 from templates.controllers.product.p_and_s_controller import (
     get_sm_products,
@@ -142,6 +156,107 @@ def get_all_sm(limit, page=0, emp_id=-1):
         #         dict_sm[k] = v
         items.append(dict_sm)
     data_out = {"data": items, "page": page, "pages": pages + 1}
+    return data_out, 200
+
+
+def get_department_identifiers(department_id, result):
+    match department_id:
+        case 1:
+            return [1]  # Dirección
+        case 2:
+            return (
+                [2001]
+                if "seguridad" in result[1].lower()
+                else [2]
+                if "director" in result[1].lower()
+                else []
+            )
+        case 3:  # Administración
+            return (
+                [3001]
+                if "almacen" in result[1].lower()
+                else [3, 3002]
+                if "activos" in result[1].lower()
+                else [3]
+            )
+        case 4:
+            return [4]  # RH
+        case _:
+            return [department_id]  # Default
+
+
+def get_iddentifiers(data_token):
+    permissions = data_token.get("permissions", {}).values()
+    ids_identtifier = []
+    contracts = []
+    if any("administrator" in item.lower().split(".")[-1] for item in permissions):
+        ids_identtifier = list(dict_depts_identifiers.keys())
+        flag, error, contracts = get_contract_by_client(40)
+    else:
+        for check_func in (check_if_director, check_if_head_not_auxiliar):
+            flag, error, result = check_func(data_token.get("emp_id"))
+            if flag and result:
+                ids_identtifier = get_department_identifiers(
+                    data_token.get("dep_id"), result
+                )
+                break
+        for check_func in (check_if_leader,):
+            flag, error, result = check_func(data_token.get("emp_id"))
+            if flag and len(result) > 0:
+                ids = []
+                for item in result:
+                    extra_info = json.loads(item[7])
+                    ids += extra_info.get("contracts", [])
+                    ids += extra_info.get("contracts_temp", [])
+                ids = list(set(ids))
+                flag, error, contracts = get_contracts_by_ids(ids)
+                if not flag or len(contracts) == 0:
+                    return {"data": None, "msg": str(error)}, 400
+                break
+    identifiers = [
+        dict_depts_identifiers.get(dept_id)
+        for dept_id in ids_identtifier
+        if dict_depts_identifiers.get(dept_id)
+    ]
+    identifier_list = [
+        item
+        for sublist in identifiers
+        for item in (sublist if isinstance(sublist, list) else [sublist])
+    ]
+    for result in contracts:
+        metadata = json.loads(result[1])
+        contract_number = metadata["contract_number"]
+        idn_contract = contract_number[-4:]
+        if str(idn_contract) not in identifier_list:
+            identifier_list.append(f"{idn_contract}")
+    if not identifier_list:
+        return {"data": None, "msg": "Folios for user not found"}
+    return identifier_list, 200
+
+
+def get_all_sm_control_table(data_token):
+    iddentifiers, code = get_iddentifiers(data_token)
+    if code != 200:
+        return iddentifiers, 400
+    data_sm, code = get_all_sm(-1, 0, -1)
+    if code != 200:
+        return iddentifiers, 400
+    data_out = {}
+    ident_list = [f"sm-{item.lower()}-" for item in iddentifiers]
+    for key in ident_list:
+        tab = tabs_sm.get(key)
+        if tab is None:
+            continue
+        if tab not in data_out:
+            data_out[tab] = []
+    for sm in data_sm["data"]:
+        for key in ident_list:
+            tab = tabs_sm.get(key)
+            if tab is None:
+                continue
+            if key in sm["folio"].lower():
+                data_out[tab].append(sm)
+                break
     return data_out, 200
 
 
@@ -539,4 +654,3 @@ def update_sm_from_control_table(data, data_token):
         return 200, {"msg": "ok"}
     else:
         return 400, {"msg": str(error)}
-

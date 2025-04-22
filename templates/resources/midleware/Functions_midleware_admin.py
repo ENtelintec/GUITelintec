@@ -5,14 +5,20 @@ __date__ = "$ 20/jun./2024  at 15:23 $"
 import json
 
 
-from static.constants import filepath_settings, log_file_admin, dict_deps
+from static.constants import (
+    filepath_settings,
+    log_file_admin,
+    dict_deps,
+    dict_depts_identifiers,
+)
 from templates.Functions_Utils import create_notification_permission
 from templates.controllers.contracts.contracts_controller import (
     get_contract,
-    get_contract_from_abb,
     create_contract,
     get_contracts_abreviations_db,
     update_contract,
+    get_contract_by_client,
+    get_contracts_by_ids,
 )
 from templates.controllers.contracts.quotations_controller import (
     get_quotation,
@@ -20,7 +26,6 @@ from templates.controllers.contracts.quotations_controller import (
     update_quotation_from_contract,
 )
 from templates.controllers.customer.customers_controller import (
-    get_customer_amc_by_id,
     get_all_customers_db,
     create_customer_db,
     update_customer_db,
@@ -33,6 +38,8 @@ from templates.controllers.departments.heads_controller import (
     delete_head_DB,
     get_heads_list_db,
     check_if_director,
+    check_if_head_not_auxiliar,
+    check_if_leader,
 )
 from templates.controllers.material_request.sm_controller import get_folios_by_pattern
 from templates.controllers.purchases.purchases_admin_controller import (
@@ -52,17 +59,6 @@ from templates.resources.methods.Functions_Aux_Admin import (
     read_exel_products_bidding,
     read_exel_products_partidas,
 )
-
-dict_depts_identifiers = {
-    "administracion": "ADMON",
-    "almacen": "ALM",
-    "control de activos": ["CDA-VEH", "TI"],
-    "direccion": "DIRE",
-    "operaciones": "OP",
-    "recursos humanos": "RH",
-    "seguridad": "sst",
-    "sistema de gestion integral": "sgi",
-}
 
 
 def get_quotations(id_quotation=None):
@@ -165,58 +161,118 @@ def get_contracts(id_contract=None):
         return {"data": data_out, "msg": "Ok"}, 200
 
 
-def get_folio_from_contract_ternium(contract_abb: str):
-    flag, error, result = get_contract_from_abb(contract_abb)
-    if not flag:
-        return {"data": None, "msg": str(error)}, 400
-    folio_sm = "SM"
-    metadata = json.loads(result[1])
-    contract_number = metadata["contract_number"]
-    idn_contract = contract_number[-4:]
-    folio = folio_sm + "-" + idn_contract
-    flag, error, folios = get_folios_by_pattern(folio)
-    numbers = []
-    for item in folios:
-        try:
-            numbers.append(int(item[0][-3:]))
-        except Exception as e:
-            print(e, "item: ", item)
-            continue
-    numbers = numbers if len(numbers) > 0 else [0]
-    numbers.sort()
-    folio = folio + "-" + str(numbers[-1] + 1).zfill(3)
-    flag, error, client_data = get_customer_amc_by_id(metadata["client_id"])
-    client_data = client_data if flag else [metadata["client_id"], "", "", "", "", ""]
-    data = {
-        "folio": folio,
-        "planta": metadata["planta"],
-        "area": metadata["area"],
-        "location": metadata["location"],
-        "client": {
-            "id": metadata["client_id"],
-            "name": client_data[1],
-            "email": client_data[2],
-            "phone": client_data[3],
-            "rfc": client_data[4],
-            "address": client_data[5],
-        },
-        "identifier": metadata["identifier"],
-    }
+def get_folio_from_contract_ternium(data_token):
+    permissions = data_token.get("permissions", {}).values()
+    if any("administrator" in item.lower().split(".")[-1] for item in permissions):
+        flag, error, contracts = get_contract_by_client(40)
+        if not flag:
+            return {"data": None, "msg": str(error)}, 400
+    else:
+        for check_func in (check_if_leader,):
+            flag, error, result = check_func(data_token.get("emp_id"))
+            if flag and len(result) > 0:
+                ids = []
+                for item in result:
+                    extra_info = json.loads(item[7])
+                    ids += extra_info.get("contracts", [])
+                    ids += extra_info.get("contracts_temp", [])
+                ids = list(set(ids))
+                flag, error, contracts = get_contracts_by_ids(ids)
+                if not flag or len(contracts) == 0:
+                    return {"data": None, "msg": str(error)}, 400
+                break
+        else:
+            return {"data": None, "msg": str(error)}, 400
+    data = []
+    for result in contracts:
+        folio_sm = "SM"
+        metadata = json.loads(result[1])
+        contract_number = metadata["contract_number"]
+        idn_contract = contract_number[-4:]
+        folio = folio_sm + "-" + idn_contract
+        flag, error, folios = get_folios_by_pattern(folio)
+        numbers = []
+        for item in folios:
+            try:
+                numbers.append(int(item[0][-3:]))
+            except Exception as e:
+                print(e, "item: ", item)
+                continue
+        numbers = numbers if len(numbers) > 0 else [0]
+        numbers.sort()
+        folio = folio + "-" + str(numbers[-1] + 1).zfill(3)
+        data.append(
+            {
+                "folio": folio,
+                "planta": metadata["planta"],
+                "area": metadata["area"],
+                "location": metadata["location"],
+                "identifier": metadata["identifier"],
+            }
+        )
     return {"data": data, "msg": "Ok"}, 200
 
 
-def folio_from_department(department_key: str):
-    identifier = dict_depts_identifiers.get(department_key.lower())
-    if identifier is None:
-        return {"data": None, "msg": "Department not found"}, 400
-    folio_list = []
-    if isinstance(identifier, str):
-        folio = f"SM-{identifier.upper()}"
-        folio_list.append(folio)
-    elif isinstance(identifier, list):
-        for idd in identifier:
-            folio = f"SM-{idd.upper()}"
-            folio_list.append(folio)
+def get_department_identifiers(department_id, result):
+    match department_id:
+        case 1:
+            return [1]  # Dirección
+        case 2:
+            return (
+                [2001]
+                if "seguridad" in result[1].lower()
+                else [2]
+                if "director" in result[1].lower()
+                else []
+            )
+        case 3:  # Administración
+            return (
+                [3001]
+                if "almacen" in result[1].lower()
+                else [3, 3002]
+                if "activos" in result[1].lower()
+                else [3]
+            )
+        case 4:
+            return [4]  # RH
+        case _:
+            return [department_id]  # Default
+
+
+def get_iddentifiers(data_token):
+    permissions = data_token.get("permissions", {}).values()
+    if any("administrator" in item.lower().split(".")[-1] for item in permissions):
+        ids_identtifier = list(dict_depts_identifiers.keys())
+    else:
+        for check_func in (check_if_director, check_if_head_not_auxiliar):
+            flag, error, result = check_func(data_token.get("emp_id"))
+            if flag and result:
+                ids_identtifier = get_department_identifiers(data_token.get("dep_id"), result)
+                break
+        else:
+            return {"data": None, "msg": str(error)}, 400
+    identifiers = [
+        dict_depts_identifiers.get(dept_id)
+        for dept_id in ids_identtifier
+        if dict_depts_identifiers.get(dept_id)
+    ]
+    identifier = [
+        item
+        for sublist in identifiers
+        for item in (sublist if isinstance(sublist, list) else [sublist])
+    ]
+    if not identifier:
+        return {"data": None, "msg": "Folios for user not found"}
+    return identifier, 200
+
+
+def folio_from_department(data_token):
+    identifier, code = get_iddentifiers(data_token)
+    if code != 200:
+        return identifier, code
+    folio_list = [
+        f"SM-{idd.upper()}" for idd in identifier if isinstance(identifier, (str, list))
+    ]
     folios_out = []
     for folio in folio_list:
         flag, error, folios = get_folios_by_pattern(folio)

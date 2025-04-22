@@ -305,29 +305,29 @@ class CompareContractQuotation(Resource):
             return {"msg": "No se subio el archivo"}, 400
 
 
-@ns.route("/folio/ternium/<string:contract>")
+@ns.route("/folio/ternium")
 class FolioTernium(Resource):
     @ns.expect(expected_headers_per)
-    def get(self, contract):
+    def get(self):
         flag, data_token, msg = token_verification_procedure(
             request, department=["administracion", "almacen"]
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        data_out, code = get_folio_from_contract_ternium(contract)
+        data_out, code = get_folio_from_contract_ternium(data_token)
         return data_out, code
 
 
-@ns.route("/folio/cotfc/<string:key>")
+@ns.route("/folio/cotfc")
 class FolioCotfc(Resource):
     @ns.expect(expected_headers_per)
-    def get(self, key):
+    def get(self):
         flag, data_token, msg = token_verification_procedure(
             request, department=["administracion", "almacen"]
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        data_out, code = folio_from_department(key)
+        data_out, code = folio_from_department(data_token)
         return data_out, code
 
 

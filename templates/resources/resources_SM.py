@@ -53,6 +53,7 @@ from templates.resources.midleware.MD_SM import (
     create_customer,
     create_product,
     update_sm_from_control_table,
+    get_all_sm_control_table,
 )
 
 ns = Namespace("GUI/api/v1/sm")
@@ -348,4 +349,15 @@ class ControlTableSM(Resource):
             return {"error": validator.errors}, 400
         data = validator.data
         code, data_out = update_sm_from_control_table(data, data_token)
+        return data_out, code
+
+
+@ns.route("/control/table/all")
+class ControlTableSms(Resource):
+    @ns.expect(expected_headers_per)
+    def get(self):
+        flag, data_token, msg = token_verification_procedure(request, department=["sm"])
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        data_out, code = get_all_sm_control_table(data_token)
         return data_out, code

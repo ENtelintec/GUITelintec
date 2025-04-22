@@ -88,6 +88,29 @@ def get_contract_from_abb(contract_abb: str):
         return True, None, result
 
 
+def get_contract_by_client(client_id: int):
+    sql = (
+        "SELECT id, metadata, creation, quotation_id, timestamps "
+        "FROM sql_telintec_mod_admin.contracts "
+        "WHERE metadata->'$.client_id' = %s"
+    )
+    val = (client_id,)
+    flag, error, result = execute_sql(sql, val, 2)
+    return flag, error, result
+
+
+def get_contracts_by_ids(ids_list: list):
+    regexp_clauses = " OR ".join(["id = %s"] * len(ids_list))
+    sql = (
+        f"SELECT id, metadata, creation, quotation_id, timestamps "
+        f"FROM sql_telintec_mod_admin.contracts "
+        f"WHERE {regexp_clauses}"
+    )
+    val = tuple(ids_list)
+    flag, error, result = execute_sql(sql, val, 2)
+    return flag, error, result
+
+
 def get_contracts_abreviations_db():
     sql = (
         "SELECT metadata->'$.abbreviation', id, metadata "

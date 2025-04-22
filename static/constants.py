@@ -170,6 +170,40 @@ dict_deps = {
     "IA": 6,
     "Otros": 7,
 }
+# almacen en administracion
+# los auxiliares no generan
+# control de activos (mariscal TI)
+# coordinador de almacen (ALM, CDA-VEH)
+# sgi pertenece a direccion el puesto se llama coordinador de sgi (Jennfier)
+# sgi enrique DIRE pero las hace Jenny
+# rh crean sm todos
+dict_depts_identifiers = {
+    1: ["DIRE", "SGI"],
+    2: "OP",
+    3: "ADMON",
+    4: "RH",
+    3001: ["ALM", "CDA-VEH"],
+    3002: "TI",
+    2001: "SST",
+}
+tabs_sm = {
+    "sm-dire-": "Direccion",
+    "sm-sgi-": "sgi",
+    "sm-op-": "Operaciones",
+    "sm-admon-": "Administracion",
+    "sm-rh-": "RH",
+    "sm-alm-": "Almacen",
+    "sm-cda-veh-": "CDA Vehiculos",
+    "sm-ti-": "CDA TI",
+    "sm-sst-": "Seguridad",
+    "sm-5000-": "INFRA",
+    "sm-8272-": "GRUAS",
+    "sm-3650-": "PESQUERIA",
+    "sm-9971-": "AUTO",
+    "sm-0701-": "RFID",
+    "sm-3122-": "CCTV",
+    "sm-3487-": "PUEBLA",
+}
 format_timestamps_filename = "%Y-%m-%d"
 HOST_DB_DEFAULT = "HOST_DB" if environment != "prod" else "HOST_DB_AWS"
 USER_DB_DEFAULT = "USER_SQL" if environment != "prod" else "USER_SQL_AWS"
