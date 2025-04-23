@@ -237,10 +237,10 @@ def get_iddentifiers(data_token):
 def get_all_sm_control_table(data_token):
     iddentifiers, code = get_iddentifiers(data_token)
     if code != 200:
-        return iddentifiers, 400
+        return {"data": [], "msg": iddentifiers}, 400
     data_sm, code = get_all_sm(-1, 0, -1)
     if code != 200:
-        return iddentifiers, 400
+        return {"data": [], "msg": data_sm}, 400
     data_out = {}
     ident_list = [f"sm-{item.lower()}-" for item in iddentifiers]
     for key in ident_list:
@@ -257,7 +257,7 @@ def get_all_sm_control_table(data_token):
             if key in sm["folio"].lower():
                 data_out[tab].append(sm)
                 break
-    return data_out, 200
+    return {"data": data_out}, 200
 
 
 def update_data_dicts(products: list, products_sm):
