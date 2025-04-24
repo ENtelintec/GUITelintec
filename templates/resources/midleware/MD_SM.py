@@ -116,8 +116,12 @@ def get_all_sm(limit, page=0, emp_id=-1):
             "client_id": result[i][5],
             "emp_id": result[i][6],
             "order_quotation": result[i][7],
-            "date": result[i][8],
-            "critical_date": result[i][9],
+            "date": result[i][8].strftime(format_timestamps)
+            if isinstance(result[i][8], datetime)
+            else result[i][8],
+            "critical_date": result[i][9].strftime(format_timestamps)
+            if isinstance(result[i][9], datetime)
+            else result[i][9],
             "items": json.loads(result[i][10]),
             "items_new": new_products,
             "status": result[i][11],

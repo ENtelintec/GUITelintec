@@ -360,4 +360,5 @@ class ControlTableSms(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data_out, code = get_all_sm_control_table(data_token)
+        print(data_out)
         return data_out, code
