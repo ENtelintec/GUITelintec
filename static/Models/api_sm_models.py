@@ -4,7 +4,7 @@ __date__ = "$ 10/may./2024  at 16:31 $"
 
 
 from flask_restx import fields
-from wtforms.fields.datetime import DateField
+from wtforms.fields.datetime import DateField, DateTimeField
 from wtforms.fields.list import FieldList
 from wtforms.fields.numeric import FloatField
 from wtforms.fields.simple import StringField, URLField, EmailField
@@ -611,23 +611,23 @@ class SMInfoControlTableForm(Form):
     )
     warehouse_reviewed = (IntegerField("warehouse_reviewed", validators=[], default=0),)
     warehouse_status = (IntegerField("warehouse_status", validators=[], default=1),)
-    admin_notification_date = StringField(
-        "admin_notification_date", validators=[], filters=[datetime_filter]
+    admin_notification_date = DateTimeField(
+        "admin_notification_date", validators=[], format=datetime_filter
     )
     kpi_warehouse = (IntegerField("kpi_warehouse", validators=[], default=0),)
     warehouse_comments = StringField("warehouse_comments", validators=[], default="")
     admin_reviewed = (IntegerField("admin_reviewed", validators=[], default=0),)
     admin_status = (IntegerField("admin_status", validators=[], default=1),)
-    warehouse_notification_date = StringField(
-        "warehouse_notification_date", validators=[], filters=[datetime_filter]
+    warehouse_notification_date = DateTimeField(
+        "warehouse_notification_date", validators=[], format=datetime_filter
     )
     purchasing_kpi = (IntegerField("purchasing_kpi", validators=[], default=0),)
     admin_comments = StringField("admin_comments", validators=[], default="")
     general_request_status = (
         IntegerField("general_request_status", validators=[InputRequired()], default=1),
     )
-    operations_notification_date = StringField(
-        "operations_notification_date", validators=[], filters=[datetime_filter]
+    operations_notification_date = DateTimeField(
+        "operations_notification_date", validators=[], format=datetime_filter
     )
     operations_kpi = (IntegerField("operations_kpi", validators=[], default=0),)
     requesting_user_state = StringField(
