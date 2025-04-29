@@ -149,7 +149,7 @@ class Employee(Resource):
 
 
 @ns.route("/employee/info/<string:id_emp>")
-class EmployeeInfo(Resource):
+class EmployeeGet(Resource):
     @ns.expect(expected_headers_per)
     def get(self, id_emp):
         flag, data_token, msg = token_verification_procedure(request, department="rrhh")

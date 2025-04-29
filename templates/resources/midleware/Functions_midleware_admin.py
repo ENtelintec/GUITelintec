@@ -247,7 +247,9 @@ def get_iddentifiers(data_token):
         for check_func in (check_if_director, check_if_head_not_auxiliar):
             flag, error, result = check_func(data_token.get("emp_id"))
             if flag and result:
-                ids_identtifier = get_department_identifiers(data_token.get("dep_id"), result)
+                ids_identtifier = get_department_identifiers(
+                    data_token.get("dep_id"), result
+                )
                 break
         else:
             return {"data": None, "msg": str(error)}, 400
@@ -595,6 +597,9 @@ def fetch_heads_main(data_token):
         return {"data": [], "msg": str(error)}, 400
     dep_ids_list = [dep_id]
     for k, v in dict_deps.items():
+        if "administrator" in permissions_last:
+            dep_ids_list.append(v)
+            continue
         if k.lower() in permissions_last:
             dep_ids_list.append(v)
     flag, error, result = get_heads_list_db(dep_ids_list)
