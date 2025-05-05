@@ -264,7 +264,7 @@ def get_iddentifiers(data_token):
         for item in (sublist if isinstance(sublist, list) else [sublist])
     ]
     if not identifier:
-        return {"data": None, "msg": "Folios for user not found"}
+        return {"data": None, "msg": "Folios for user not found"}, 401
     return identifier, 200
 
 
