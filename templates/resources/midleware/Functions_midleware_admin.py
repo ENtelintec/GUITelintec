@@ -37,7 +37,7 @@ from templates.controllers.departments.heads_controller import (
     update_head_DB,
     delete_head_DB,
     get_heads_list_db,
-    check_if_director,
+    check_if_gerente,
     check_if_head_not_auxiliar,
     check_if_leader,
 )
@@ -244,7 +244,7 @@ def get_iddentifiers(data_token):
     if any("administrator" in item.lower().split(".")[-1] for item in permissions):
         ids_identtifier = list(dict_depts_identifiers.keys())
     else:
-        for check_func in (check_if_director, check_if_head_not_auxiliar):
+        for check_func in (check_if_gerente, check_if_head_not_auxiliar):
             flag, error, result = check_func(data_token.get("emp_id"))
             if flag and result:
                 ids_identtifier = get_department_identifiers(
@@ -592,7 +592,7 @@ def fetch_heads_main(data_token):
     dep_id = data_token.get("dep_id")
     permissions = data_token.get("permissions")
     permissions_last = [item.lower().split(".")[-1] for item in permissions.values()]
-    flag, error, result = check_if_director(data_token.get("emp_id"))
+    flag, error, result = check_if_gerente(data_token.get("emp_id"))
     if len(result) == 0 and "administrator" not in permissions_last:
         return {"data": [], "msg": str(error)}, 400
     dep_ids_list = [dep_id]

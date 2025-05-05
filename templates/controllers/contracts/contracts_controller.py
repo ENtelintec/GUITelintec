@@ -100,6 +100,8 @@ def get_contract_by_client(client_id: int):
 
 
 def get_contracts_by_ids(ids_list: list):
+    if len(ids_list) == 0:
+        return True, "Contract not found", []
     regexp_clauses = " OR ".join(["id = %s"] * len(ids_list))
     sql = (
         f"SELECT id, metadata, creation, quotation_id, timestamps "

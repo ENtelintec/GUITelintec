@@ -54,6 +54,7 @@ from templates.resources.midleware.MD_SM import (
     create_product,
     update_sm_from_control_table,
     get_all_sm_control_table,
+    fetch_all_sm_with_permissions,
 )
 
 ns = Namespace("GUI/api/v1/sm")
@@ -115,6 +116,17 @@ class AllSm(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data_out, code = get_all_sm(-1, 0, -1)
+        return data_out, code
+
+
+@ns.route("/permission")
+class AllSmPerPermission(Resource):
+    @ns.expect(expected_headers_per)
+    def get(self):
+        flag, data_token, msg = token_verification_procedure(request, department="sm")
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        data_out, code = fetch_all_sm_with_permissions(data_token)
         return data_out, code
 
 

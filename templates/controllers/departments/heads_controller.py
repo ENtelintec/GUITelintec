@@ -55,7 +55,7 @@ def get_heads_list_db(dep_list: list):
     return flag, e, my_result
 
 
-def check_if_director(id_employee: int):
+def check_if_gerente(id_employee: int):
     sql = (
         "SELECT "
         "heads.position_id, "
@@ -69,7 +69,7 @@ def check_if_director(id_employee: int):
         "FROM sql_telintec.heads "
         "LEFT JOIN sql_telintec.employees ON heads.employee = employees.employee_id "
         "LEFT JOIN sql_telintec.departments ON heads.department = departments.department_id "
-        "WHERE heads.employee = %s AND (LOWER(heads.name) like '%director%' OR LOWER(heads.name) like '%jefe%')"
+        "WHERE heads.employee = %s AND (LOWER(heads.name) like '%gerente%' OR LOWER(heads.name) like '%jefe%')"
     )
     val = (id_employee,)
     flag, e, my_result = execute_sql(sql, val, 1)
@@ -96,6 +96,27 @@ def check_if_leader(id_employee: int):
         ") AND LOWER(heads.name) like '%lider%'"
     )
     val = (id_employee, id_employee)
+    flag, e, my_result = execute_sql(sql, val, 2)
+    return flag, e, my_result
+
+
+def check_if_auxiliar_with_contract(id_employee: int):
+    sql = (
+        "SELECT "
+        "heads.position_id, "
+        "heads.name, "
+        "heads.employee, "
+        "heads.department, "
+        "departments.name, "
+        "UPPER(CONCAT(employees.name, ' ', employees.l_name)) as name_emp, "
+        "employees.email, "
+        "heads.extra_info "
+        "FROM sql_telintec.heads "
+        "LEFT JOIN sql_telintec.employees ON heads.employee = employees.employee_id "
+        "LEFT JOIN sql_telintec.departments ON heads.department = departments.department_id "
+        "WHERE heads.employee = %s AND LOWER(heads.name) like '%auxiliar%' "
+    )
+    val = (id_employee,)
     flag, e, my_result = execute_sql(sql, val, 2)
     return flag, e, my_result
 
@@ -128,9 +149,7 @@ def insert_head_DB(
         "INSERT INTO sql_telintec.heads (name, department, employee, extra_info) "
         "VALUES (%s, %s, %s, %s)"
     )
-    print(sql)
     val = (position_name, department, employee, json.dumps(extra_info))
-    print(val)
     flag, e, out = execute_sql(sql, val, 4)
     return flag, e, out
 
