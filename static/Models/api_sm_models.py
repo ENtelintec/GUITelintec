@@ -247,10 +247,10 @@ sm_model_out = api.model(
         "admin_notification_date": fields.String(
             required=False, description="Date of notification to administration"
         ),
-        "kpi_warehouse": fields.Integer(
+        "kpi_warehouse": fields.String(
             required=False,
             description="Key performance indicator (cumple: 0, no cumple:1)",
-            example=0,
+            example="",
         ),
         "warehouse_comments": fields.String(
             required=False, description="Warehouse comments"
@@ -268,11 +268,6 @@ sm_model_out = api.model(
             description="Date of notification to warehouse",
             example="2024-06-29 12:00:00",
         ),
-        "purchasing_kpi": fields.Integer(
-            required=False,
-            description="Key performance indicator (cumple=0, no cumple=1)",
-            example=0,
-        ),
         "admin_comments": fields.String(
             required=False, description="Administration comments"
         ),
@@ -288,10 +283,10 @@ sm_model_out = api.model(
             description="Date of notification to operations",
             example="2024-06-29 12:00:00",
         ),
-        "operations_kpi": fields.Integer(
+        "operations_kpi": fields.String(
             required=False,
             description="Key performance indicator (Operations)",
-            example=0,
+            example="",
         ),
         "requesting_user_state": fields.String(
             required=False, description="State of the requesting user"
