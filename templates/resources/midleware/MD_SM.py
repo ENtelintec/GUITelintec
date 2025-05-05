@@ -107,6 +107,36 @@ def get_all_sm(limit, page=0, emp_id=-1):
                 if product["id"] == -1:
                     new_products.append(product)
         extra_info = json.loads(result[i][14])
+        # time_zone = pytz.timezone(timezone_software)
+        # date_now = datetime.now(pytz.utc).astimezone(time_zone)
+        #  kpi warehouse
+        admin_not_date = extra_info.get("admin_notification_date", "")
+        admin_not_date = (
+            datetime.strptime(admin_not_date, format_timestamps)
+            if admin_not_date != ""
+            else None
+        )
+        date_creation = datetime.strptime(result[i][8], format_timestamps) if isinstance(
+            result[i][8], str) else result[i][8]
+        if admin_not_date is not None:
+            kpi_warehouse = "CUMPLE" if (admin_not_date - date_creation).days <= 2 else "NO CUMPLE"
+        else:
+            kpi_warehouse = ""
+        # operation kpi
+        critical_date = datetime.strptime(result[i][9], format_timestamps) if isinstance(
+            result[i][9], str) else result[i][9]
+        op_not_date = extra_info.get("operations_notification_date", "")
+        op_not_date = (
+            datetime.strptime(op_not_date, format_timestamps)
+            if op_not_date != ""
+            else None
+        )
+        if op_not_date is not None:
+            kpi_operations = (
+                "CUMPLE" if (critical_date-critical_date).days >= 1 else "NO CUMPLE"
+            )
+        else:
+            kpi_operations = ""
         dict_sm = {
             "id": result[i][0],
             "folio": result[i][1],
@@ -133,25 +163,24 @@ def get_all_sm(limit, page=0, emp_id=-1):
             "project": extra_info.get("project", ""),
             "urgent": extra_info.get("urgent", 0),
             "activity_description": extra_info.get("activity_description", ""),
-            "request_date": extra_info.get("request_date", ""),
             "requesting_user_status": extra_info.get("requesting_user_status", 0),
             "warehouse_reviewed": extra_info.get("warehouse_reviewed", 0),
             "warehouse_status": extra_info.get("warehouse_status", 1),
             "admin_notification_date": extra_info.get("admin_notification_date", ""),
-            "kpi_warehouse": extra_info.get("kpi_warehouse", 0),
+            "kpi_warehouse": kpi_warehouse,
             "warehouse_comments": extra_info.get("warehouse_comments", ""),
             "admin_reviewed": extra_info.get("admin_reviewed", 0),
             "admin_status": extra_info.get("admin_status", 1),
             "warehouse_notification_date": extra_info.get(
                 "warehouse_notification_date", ""
             ),
-            "purchasing_kpi": extra_info.get("purchasing_kpi", 0),
+            # "purchasing_kpi": extra_info.get("purchasing_kpi", 0),
             "admin_comments": extra_info.get("admin_comments", ""),
             "general_request_status": extra_info.get("general_request_status", 1),
             "operations_notification_date": extra_info.get(
                 "operations_notification_date", ""
             ),
-            "operations_kpi": extra_info.get("operations_kpi", 0),
+            "operations_kpi": kpi_operations,
             "requesting_user_state": extra_info.get("requesting_user_state", ""),
         }
 

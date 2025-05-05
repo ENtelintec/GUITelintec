@@ -353,12 +353,11 @@ class ControlTableSM(Resource):
 
 
 @ns.route("/control/table/all")
-class ControlTableSms(Resource):
+class AllControlTableSm(Resource):
     @ns.expect(expected_headers_per)
     def get(self):
         flag, data_token, msg = token_verification_procedure(request, department=["sm"])
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data_out, code = get_all_sm_control_table(data_token)
-        print(data_out)
         return data_out, code
