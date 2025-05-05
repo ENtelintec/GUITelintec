@@ -111,20 +111,29 @@ def get_all_sm(limit, page=0, emp_id=-1):
         # date_now = datetime.now(pytz.utc).astimezone(time_zone)
         #  kpi warehouse
         admin_not_date = extra_info.get("admin_notification_date", "")
+        print(admin_not_date)
         admin_not_date = (
             datetime.strptime(admin_not_date, format_timestamps)
             if admin_not_date != ""
             else None
         )
-        date_creation = datetime.strptime(result[i][8], format_timestamps) if isinstance(
-            result[i][8], str) else result[i][8]
+        date_creation = (
+            datetime.strptime(result[i][8], format_timestamps)
+            if isinstance(result[i][8], str)
+            else result[i][8]
+        )
         if admin_not_date is not None:
-            kpi_warehouse = "CUMPLE" if (admin_not_date - date_creation).days <= 2 else "NO CUMPLE"
+            kpi_warehouse = (
+                "CUMPLE" if (admin_not_date - date_creation).days <= 2 else "NO CUMPLE"
+            )
         else:
             kpi_warehouse = ""
         # operation kpi
-        critical_date = datetime.strptime(result[i][9], format_timestamps) if isinstance(
-            result[i][9], str) else result[i][9]
+        critical_date = (
+            datetime.strptime(result[i][9], format_timestamps)
+            if isinstance(result[i][9], str)
+            else result[i][9]
+        )
         op_not_date = extra_info.get("operations_notification_date", "")
         op_not_date = (
             datetime.strptime(op_not_date, format_timestamps)
@@ -133,7 +142,7 @@ def get_all_sm(limit, page=0, emp_id=-1):
         )
         if op_not_date is not None:
             kpi_operations = (
-                "CUMPLE" if (critical_date-critical_date).days >= 1 else "NO CUMPLE"
+                "CUMPLE" if (critical_date - critical_date).days >= 1 else "NO CUMPLE"
             )
         else:
             kpi_operations = ""
