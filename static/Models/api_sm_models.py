@@ -51,6 +51,8 @@ items_model_sm = api.model(
             required=True, description="The product url", example="https://example.com"
         ),
         "sku": fields.String(required=False, description="The product sku"),
+        "partida": fields.String(required=False, description="The product partida"),
+        "udm": fields.String(required=True, description="The product unit of measure"),
     },
 )
 
