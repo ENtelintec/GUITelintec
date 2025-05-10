@@ -8,6 +8,10 @@ import re
 import pandas as pd
 from PyPDF2 import PdfReader
 
+from templates.controllers.product.p_and_s_controller import (
+    get_product_by_sku_manufacture,
+)
+
 
 def parse_data(data: dict, mode: int):
     """
@@ -188,6 +192,11 @@ def read_exel_products_partidas(path: str):
     products = []
     for item in data_excel:
         # partida: number; quantity: number; udm: string; price_unit: number; type_p: string; marca: string; n_parte: string; description: string; description_small: string; id: number; comment: string;
+        n_parte = item["NRO. PARTE"]
+        id_p = None
+        flag, error, result = get_product_by_sku_manufacture(n_parte)
+        if flag and len(result) > 0:
+            id_p = result[0]
         product = {
             "partida": item["PARTIDA"],
             "quantity": 1,
@@ -198,9 +207,8 @@ def read_exel_products_partidas(path: str):
             "n_parte": item["NRO. PARTE"],
             "description": item["DESCRIPCIÓN LARGA"],
             "description_small": item["DESCRIPCIÓN CORTA"],
-            "id": None,
+            "id": id_p,
             "comment": "",
-
         }
         products.append(product)
     return products

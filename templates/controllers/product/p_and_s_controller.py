@@ -933,7 +933,7 @@ def update_multiple_row_products_amc(products: tuple, dict_cat=None, dict_supp=N
             codes = json.dumps([])
             locations = json.dumps({"location_1": ""})
             brand = ""
-            epp=0
+            epp = 0
         else:
             codes = product[9]
             location_1 = product[10]
@@ -1099,4 +1099,30 @@ def get_all_epp_inventory():
         "ORDER BY name "
     )
     flag, error, result = execute_sql(sql, None, 5)
+    return flag, error, result
+
+
+def get_product_by_sku_manufacture(sku: str):
+    sql = (
+        "SELECT "
+        "sql_telintec.products_amc.id_product,"
+        "sql_telintec.products_amc.sku AS sku,"
+        "sql_telintec.products_amc.name AS name,"
+        "sql_telintec.products_amc.udm AS udm,"
+        "sql_telintec.products_amc.stock AS stock,"
+        "sql_telintec.product_categories_amc.name AS category_name,"
+        "sql_telintec.suppliers_amc.name AS supplier_name, "
+        "sql_telintec.products_amc.is_tool, "
+        "sql_telintec.products_amc.is_internal, "
+        "sql_telintec.products_amc.codes, "
+        "sql_telintec.products_amc.locations, "
+        "sql_telintec.products_amc.extra_info "
+        "FROM sql_telintec.products_amc "
+        "LEFT JOIN sql_telintec.product_categories_amc ON (sql_telintec.products_amc.id_category = sql_telintec.product_categories_amc.id_category) "
+        "LEFT JOIN sql_telintec.suppliers_amc ON (sql_telintec.products_amc.id_supplier = sql_telintec.suppliers_amc.id_supplier)"
+        "WHERE JSON_SEARCH(codes, 'one', %s, NULL, '$[*].value') IS NOT NULL "
+        "ORDER BY name "
+    )
+    val = (sku,)
+    flag, error, result = execute_sql(sql, val, 1)
     return flag, error, result
