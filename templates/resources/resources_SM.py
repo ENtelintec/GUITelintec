@@ -90,20 +90,14 @@ class Clients(Resource):
             return {"data": result, "comment": error}, 400
 
 
-@ns.route("/products")
+@ns.route("/products/<string:contract>")
 class Products(Resource):
-    @ns.expect(expected_headers_per, products_request_model)
-    @ns.marshal_with(products_answer_model)
-    def post(self):
+    @ns.expect(expected_headers_per)
+    def get(self, contract):
         flag, data_token, msg = token_verification_procedure(request, department="sm")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        # noinspection PyUnresolvedReferences
-        validator = ProductRequestForm.from_json(ns.payload)
-        if not validator.validate():
-            return {"error": validator.errors}, 400
-        data = validator.data
-        data_out, code = get_products_sm(data["limit"], data["page"])
+        data_out, code = get_products_sm(contract)
         return data_out, code
 
 

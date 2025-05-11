@@ -22,6 +22,7 @@ from templates.Functions_Utils import create_notification_permission
 from templates.controllers.contracts.contracts_controller import (
     get_contract_by_client,
     get_contracts_by_ids,
+    get_items_contract_string,
 )
 from templates.controllers.customer.customers_controller import create_customer_db
 from templates.controllers.departments.heads_controller import (
@@ -49,35 +50,44 @@ from templates.forms.Materials import MaterialsRequest
 from templates.misc.Functions_Files import write_log_file
 
 
-def get_products_sm(limit, page=0):
-    flag, error, result = get_sm_products()
-    if limit == -1:
-        limit = len(result) + 1
-    limit = limit if limit > 0 else 10
-    page = page if page >= 0 else 0
-    if len(result) <= 0:
-        return [None, 204]
-    pages = math.floor(result.__len__() / limit)
-    if page > pages:
-        return [None, 204]
-    items = []
-    if pages == 0:
-        limit_up = result.__len__()
-        limit_down = 0
+def get_products_sm(contract: str):
+    flag, error, contract = get_items_contract_string(contract)
+    if len(contract) > 0:
+        items_contract = json.loads(contract[3]) if contract[3] is not None else []
     else:
-        limit_down = limit * page
-        limit_up = limit * (page + 1)
-        limit_up = limit_up if limit_up < result.__len__() else result.__len__()
-    for i in range(limit_down, limit_up):
-        items.append(
-            {
-                "id": result[i][0],
-                "name": result[i][1],
-                "udm": result[i][2],
-                "stock": result[i][3],
-            }
-        )
-    data_out = {"data": items, "page": page, "pages": pages + 1}
+        items_contract = []
+    ids_in_contract = {}
+    for item in items_contract:
+        if item["id"] is None:
+            continue
+        ids_in_contract[item["id"]] = item["partida"]
+    flag, error, result = get_sm_products()
+    if not flag:
+        return {"data": {"contract": [], "normal": []}}, 400
+    items_normal = []
+    items_partida = []
+    for item in result:
+        if item[0] in ids_in_contract.keys():
+            items_partida.append(
+                {
+                    "id": item[0],
+                    "name": item[1],
+                    "udm": item[2],
+                    "stock": item[3],
+                    "partida": ids_in_contract[item[0]],
+                }
+            )
+        else:
+            items_normal.append(
+                {
+                    "id": item[0],
+                    "name": item[1],
+                    "udm": item[2],
+                    "stock": item[3],
+                    "partida": "",
+                }
+            )
+    data_out = {"data": {"contract": items_partida, "normal": items_normal}}
     return data_out, 200
 
 

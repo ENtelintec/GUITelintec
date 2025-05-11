@@ -123,3 +123,16 @@ def get_contracts_abreviations_db():
         return False, "Contract not found", None
     else:
         return True, None, result
+
+
+def get_items_contract_string(key: str):
+    sql = (
+        "SELECT contracts.id, contracts.metadata, quotation_id, sql_telintec_mod_admin.quotations.products as items "
+        "FROM sql_telintec_mod_admin.contracts "
+        "LEFT JOIN sql_telintec_mod_admin.quotations ON  sql_telintec_mod_admin.quotations.id = contracts.quotation_id "
+        "WHERE RIGHT(JSON_UNQUOTE(JSON_EXTRACT(sql_telintec_mod_admin.contracts.metadata, '$.contract_number')), 4) = %s "
+        "OR JSON_EXTRACT(sql_telintec_mod_admin.contracts.metadata, '$.abbreviation') = %s"
+    )
+    val = (key, key)
+    flag, error, result = execute_sql(sql, val, 1)
+    return flag, error, result
