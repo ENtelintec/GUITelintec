@@ -21,7 +21,7 @@ def update_sm_items_stock(tuple_sm):
             items_db = json.loads(sm_data[10])
             items_out = []
             for item in items_db:
-                if item["id"] in product_ids:
+                if item.get("id", 0) in product_ids:
                     index = product_ids.index(item["id"])
                     item["stock"] = result[index][1]
                 items_out.append(item)
@@ -96,11 +96,15 @@ def insert_sm_db(data):
         "warehouse_comments": data["info"].get("warehouse_comments", ""),
         "admin_reviewed": data["info"].get("admin_reviewed", 0),
         "admin_status": data["info"].get("admin_status", 1),
-        "warehouse_notification_date": data["info"].get("warehouse_notification_date", ""),
+        "warehouse_notification_date": data["info"].get(
+            "warehouse_notification_date", ""
+        ),
         "purchasing_kpi": data["info"].get("purchasing_kpi", 0),
         "admin_comments": data["info"].get("admin_comments", ""),
         "general_request_status": data["info"].get("general_request_status", 1),
-        "operations_notification_date": data["info"].get("operations_notification_date", ""),
+        "operations_notification_date": data["info"].get(
+            "operations_notification_date", ""
+        ),
         "operations_kpi": data["info"].get("operations_kpi", 0),
         "requesting_user_state": data["info"].get("requesting_user_state", ""),
     }

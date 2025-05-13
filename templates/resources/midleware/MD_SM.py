@@ -115,7 +115,7 @@ def get_all_sm(limit, page=0, emp_id=-1):
         new_products = []
         if products is not None:
             for product in products:
-                if product["id"] == -1:
+                if product.get("id", 0) == -1:
                     new_products.append(product)
         extra_info = json.loads(result[i][14])
         # time_zone = pytz.timezone(timezone_software)
