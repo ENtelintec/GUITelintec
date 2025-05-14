@@ -180,7 +180,6 @@ class HeadsDepartmentAuto(Resource):
                 "rrhh",
                 "ia" "otros",
                 "respe",
-                "sm",
             ],
         )
         if not flag:
