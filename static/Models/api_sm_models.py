@@ -9,7 +9,7 @@ from wtforms.fields.list import FieldList
 from wtforms.fields.numeric import FloatField
 from wtforms.fields.simple import StringField, URLField, EmailField
 
-from static.Models.api_models import date_filter, datetime_filter
+from static.Models.api_models import date_filter
 from static.constants import api
 from wtforms.form import Form
 from wtforms import validators, IntegerField, FormField
@@ -599,9 +599,6 @@ class SMInfoControlTableForm(Form):
     urgent = IntegerField("urgent", validators=[], default=0)
     activity_description = StringField(
         "activity_description", validators=[], default=""
-    )
-    request_date = StringField(
-        "request_date", validators=[InputRequired()], filters=[datetime_filter]
     )
     requesting_user_status = IntegerField(
         "requesting_user_status", validators=[], default=0
