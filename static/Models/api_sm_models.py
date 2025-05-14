@@ -305,9 +305,6 @@ control_table_sm_model = api.model(
         "activity_description": fields.String(
             required=False, description="Description of activity"
         ),
-        "request_date": fields.String(
-            required=True, description="Request date", example="2024-06-29 12:00:00"
-        ),
         "requesting_user_status": fields.Integer(
             required=False,
             description="Status of the requesting user (pendiente:1, recibido:2, cancelado:3, reprogramado:4)",
