@@ -28,8 +28,6 @@ def update_sm_items_stock(tuple_sm):
             sm_data = list(sm_data)
             sm_data[10] = json.dumps(items_out)
             tuple_out.append(sm_data)
-    else:
-        return tuple
     return tuple_out
 
 
