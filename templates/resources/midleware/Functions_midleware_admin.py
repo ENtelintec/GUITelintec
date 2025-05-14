@@ -592,10 +592,9 @@ def fetch_heads_main(data_token):
     dep_id = data_token.get("dep_id")
     permissions = data_token.get("permissions")
     permissions_last = [item.lower().split(".")[-1] for item in permissions.values()]
-    # flag, error, result = check_if_gerente(data_token.get("emp_id"))
-    # if len(result) == 0 and "administrator" not in permissions_last:
-    #     print("no es gerente")
-    #     return {"data": [], "msg": str(error)}, 400
+    flag, error, result = check_if_gerente(data_token.get("emp_id"))
+    if len(result) == 0 and "administrator" not in permissions_last:
+        return {"data": [], "msg": str(error)}, 400
     dep_ids_list = [dep_id]
     for k, v in dict_deps.items():
         if "administrator" in permissions_last:
