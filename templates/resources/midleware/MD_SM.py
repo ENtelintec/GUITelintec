@@ -785,10 +785,14 @@ def update_sm_from_control_table(data, data_token):
         }
     )
     extra_info = json.loads(result[14])
+    comments = ""
     for k, value in data["info"].items():
+        if k == "comments":
+            comments = value
+            continue
         extra_info[k] = value
     flag, error, result = update_history_extra_info_sm_by_id(
-        data["id"], extra_info, history_sm
+        data["id"], extra_info, history_sm, comments
     )
     if flag:
         msg = f"SM con ID-{data['id']} actualizada"

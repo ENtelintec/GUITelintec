@@ -334,13 +334,15 @@ def get_folios_by_pattern(pattern: str):
     return flag, error, result
 
 
-def update_history_extra_info_sm_by_id(sm_id: int, extra_info: dict, history: dict):
+def update_history_extra_info_sm_by_id(
+    sm_id: int, extra_info: dict, history: dict, comments: str
+):
     sql = (
         "UPDATE sql_telintec.materials_request "
-        "SET extra_info = %s, history = %s "
+        "SET extra_info = %s, history = %s, comment = %s "
         "WHERE sm_id = %s "
     )
-    val = (json.dumps(extra_info), json.dumps(history), sm_id)
+    val = (json.dumps(extra_info), json.dumps(history), comments, sm_id)
     flag, error, result = execute_sql(sql, val, 4)
     return flag, error, result
 
