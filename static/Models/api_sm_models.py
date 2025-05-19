@@ -302,6 +302,7 @@ control_table_sm_model = api.model(
     {
         "urgent": fields.Integer(required=False, description="Urgent", example=0),
         "project": fields.String(required=False, description="The project"),
+        "comments": fields.String(required=False, description="The comments"),
         "activity_description": fields.String(
             required=False, description="Description of activity"
         ),
@@ -594,6 +595,7 @@ class SMInfoForm(Form):
 class SMInfoControlTableForm(Form):
     project = StringField("project", validators=[], default="")
     urgent = IntegerField("urgent", validators=[], default=0)
+    comments = StringField("comments", validators=[], default="")
     activity_description = StringField(
         "activity_description", validators=[], default=""
     )

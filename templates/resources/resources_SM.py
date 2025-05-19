@@ -8,8 +8,6 @@ from flask_restx import Resource, Namespace
 from static.Models.api_models import expected_headers_per
 from static.Models.api_sm_models import (
     client_emp_sm_response_model,
-    products_answer_model,
-    products_request_model,
     sm_post_model,
     delete_request_sm_model,
     sm_put_model,
@@ -20,7 +18,6 @@ from static.Models.api_sm_models import (
     employees_answer_model,
     request_sm_dispatch_model,
     response_sm_dispatch_model,
-    ProductRequestForm,
     SMPostForm,
     SMPutForm,
     SMDeleteForm,
