@@ -176,7 +176,8 @@ def get_outs_db_detail():
     return flag, error, result
 
 
-def get_all_movements_db_detail():
+def get_all_movements_db_detail(type_m="all"):
+    type_m = type_m if type_m in ["entrada", "salida"] else "%"
     sql = (
         "SELECT "
         "sql_telintec.product_movements_amc.id_movement, "
@@ -194,9 +195,10 @@ def get_all_movements_db_detail():
         "FROM sql_telintec.product_movements_amc "
         "INNER JOIN sql_telintec.products_amc ON sql_telintec.product_movements_amc.id_product = sql_telintec.products_amc.id_product "
         "LEFT JOIN sql_telintec.suppliers_amc ON sql_telintec.products_amc.id_supplier = sql_telintec.suppliers_amc.id_supplier "
-        "WHERE sql_telintec.product_movements_amc.movement_type like '%' ORDER BY movement_date DESC;"
+        "WHERE sql_telintec.product_movements_amc.movement_type like %s ORDER BY movement_date DESC;"
     )
-    flag, error, result = execute_sql(sql, None, 5)
+    vals = (type_m,)
+    flag, error, result = execute_sql(sql, vals, 2)
     return flag, error, result
 
 
@@ -223,7 +225,8 @@ def get_movements_type_db(type_m: str):
     return flag, error, result
 
 
-def get_movements_type_db_all():
+def get_movements_type_db_all(type_m="all"):
+    type_m = type_m if type_m in ["entrada", "salida"] else "%"
     sql = (
         "SELECT "
         "id_movement, "
@@ -239,10 +242,66 @@ def get_movements_type_db_all():
         "FROM sql_telintec.product_movements_amc "
         "LEFT JOIN sql_telintec.products_amc ON (sql_telintec.products_amc.id_product = sql_telintec.product_movements_amc.id_product)"
         "LEFT JOIN sql_telintec.suppliers_amc ON (sql_telintec.products_amc.id_supplier = sql_telintec.suppliers_amc.id_supplier)"
+        "WHERE movement_type LIKE %s "
         "ORDER BY movement_date DESC LIMIT 1000"
     )
-    vals = ()
-    flag, error, result = execute_sql(sql, vals, 5)
+    vals = (type_m,)
+    flag, error, result = execute_sql(sql, vals, 2)
+    return flag, error, result
+
+
+def get_epp_movements_db(type_m):
+    if type_m in ["salida", "entrada"]:
+        type_m = type_m
+    else:
+        type_m = "%"
+    sql = (
+        "SELECT "
+        "id_movement, "
+        "products_amc.id_product, "
+        "movement_type, "
+        "quantity, "
+        "movement_date, "
+        "sm_id, "
+        "sql_telintec.product_movements_amc.extra_info->'$.reference', "
+        "sku, "
+        "suppliers_amc.name, "
+        "products_amc.codes "
+        "FROM sql_telintec.product_movements_amc "
+        "LEFT JOIN sql_telintec.products_amc ON (sql_telintec.products_amc.id_product = sql_telintec.product_movements_amc.id_product)"
+        "LEFT JOIN sql_telintec.suppliers_amc ON (sql_telintec.products_amc.id_supplier = sql_telintec.suppliers_amc.id_supplier)"
+        "WHERE movement_type LIKE %s AND sql_telintec.products_amc.extra_info->>'$.epp' = 1 "
+        "ORDER BY movement_date DESC"
+    )
+    vals = (type_m,)
+    flag, error, result = execute_sql(sql, vals, 2)
+    return flag, error, result
+
+
+def get_epp_movements_db_detail(type_m):
+    type_m = type_m if type_m in ["entrada", "salida"] else "%"
+    sql = (
+        "SELECT "
+        "sql_telintec.product_movements_amc.id_movement, "
+        "sql_telintec.product_movements_amc.id_product, "
+        "sql_telintec.products_amc.sku, "
+        "sql_telintec.product_movements_amc.movement_type, "
+        "sql_telintec.product_movements_amc.quantity, "
+        "sql_telintec.product_movements_amc.movement_date, "
+        "sql_telintec.product_movements_amc.sm_id, "
+        "sql_telintec.products_amc.name as product_name,"
+        "sql_telintec.products_amc.udm, "
+        "sql_telintec.suppliers_amc.name AS supplier_name, "
+        "sql_telintec.products_amc.locations, "
+        "sql_telintec.product_movements_amc.extra_info->'$.reference' "
+        "FROM sql_telintec.product_movements_amc "
+        "INNER JOIN sql_telintec.products_amc ON sql_telintec.product_movements_amc.id_product = sql_telintec.products_amc.id_product "
+        "LEFT JOIN sql_telintec.suppliers_amc ON sql_telintec.products_amc.id_supplier = sql_telintec.suppliers_amc.id_supplier "
+        "WHERE sql_telintec.product_movements_amc.movement_type like %s AND sql_telintec.products_amc.extra_info->>'$.epp' = 1 "
+        "ORDER BY movement_date DESC;"
+    )
+    vals = (type_m,)
+    flag, error, result = execute_sql(sql, vals, 2)
     return flag, error, result
 
 

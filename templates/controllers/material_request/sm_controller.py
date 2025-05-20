@@ -165,7 +165,6 @@ def update_sm_db(data):
         "destination": data["info"]["destination"],
         "contract_contact": data["info"]["contract_contact"],
     }
-    print(data["info"]["history"])
     history = data["info"]["history"]
     time_zone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)

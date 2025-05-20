@@ -37,17 +37,16 @@ from templates.controllers.product.p_and_s_controller import (
     update_stock_db_sku,
     insert_multiple_row_movements_amc,
     get_all_products_db,
-    get_ins_db_detail,
-    get_outs_db_detail,
     get_all_movements_db_detail,
     update_multiple_row_products_amc,
     update_stock_db_ids,
     get_product_barcode_data,
     get_last_sku,
     get_movements_type_db_all,
-    get_movements_type_db,
     delete_movement_db,
     get_all_epp_inventory,
+    get_epp_movements_db,
+    get_epp_movements_db_detail,
 )
 from templates.controllers.supplier.suppliers_controller import (
     get_all_suppliers_amc,
@@ -66,17 +65,63 @@ from templates.resources.methods.Aux_Inventory import (
 
 
 def get_all_movements(type_m: str):
-    if "salida" in type_m:
-        type_m = "salida"
-        flag, error, result = get_movements_type_db(type_m)
-    elif "entrada" in type_m:
-        type_m = "entrada"
-        flag, error, result = get_movements_type_db(type_m)
-    else:
-        flag, error, result = get_movements_type_db_all()
+    type_m = type_m if type_m in ["entrada", "salida"] else type_m
+    # if "salida" in type_m:
+    #     type_m = "salida"
+    #     flag, error, result = get_movements_type_db(type_m)
+    # elif "entrada" in type_m:
+    #     type_m = "entrada"
+    #     flag, error, result = get_movements_type_db(type_m)
+    # else:
+    #     flag, error, result = get_movements_type_db_all()
+    flag, error, result = get_movements_type_db_all(type_m)
     out = []
     if not flag:
         return ["error at retrieving data"], 400
+    for item in result:
+        (
+            id_m,
+            id_product,
+            type_m,
+            quantity,
+            movement_date,
+            sm_id,
+            reference,
+            sku,
+            supplier,
+            codes,
+        ) = item
+        reference = json.loads(reference) if reference is not None else None
+        codes = json.loads(codes) if codes is not None else []
+        sku_fabricante = ""
+        for code in codes:
+            if code["tag"] == "sku_fabricante":
+                sku_fabricante = code["value"]
+                break
+        out.append(
+            {
+                "id": id_m,
+                "id_product": id_product,
+                "type_m": type_m,
+                "quantity": quantity,
+                "movement_date": movement_date.strftime(format_timestamps)
+                if movement_date is not None
+                else None,
+                "sm_id": sm_id,
+                "reference": reference,
+                "sku": sku,
+                "supplier": supplier,
+                "sku_fabricante": sku_fabricante,
+            }
+        )
+    return out, 200
+
+
+def get_epp_movements(type_m):
+    flag, error, result = get_epp_movements_db(type_m)
+    if not flag:
+        return ["error at retrieving data"], 400
+    out = []
     for item in result:
         (
             id_m,
@@ -902,15 +947,12 @@ def create_file_inventory_excel():
     return filepath_inventory_form_excel, 200
 
 
-def retrieve_data_movement_file(data, complete=False):
-    type_m = data["type"]
-    match type_m:
-        case "entrada":
-            flag, error, _movements = get_ins_db_detail()
-        case "salida":
-            flag, error, _movements = get_outs_db_detail()
-        case _:
-            flag, error, _movements = get_all_movements_db_detail()
+def retrieve_data_movement_file(data, complete=False, epp=0):
+    type_m = data["type"] if data["type"] in ["entrada", "salida"] else "all"
+    if epp == 0:
+        flag, error, _movements = get_all_movements_db_detail(type_m)
+    else:
+        flag, error, _movements = get_epp_movements_db_detail(type_m)
     date_init = datetime.strptime(data["date_init"], format_date)
     date_end = datetime.strptime(data["date_end"], format_date)
     try:
@@ -944,11 +986,11 @@ def retrieve_data_movement_file(data, complete=False):
     return movements, 200
 
 
-def create_file_movements_amc(data, type_file="pdf"):
+def create_file_movements_amc(data, type_file="pdf", epp=0):
     flag = False
     filepath = None
     if type_file == "pdf":
-        movements, code = retrieve_data_movement_file(data)
+        movements, code = retrieve_data_movement_file(data, epp=epp)
         if code != 200:
             return None, 400
         flag = InventoryStorage(
@@ -960,7 +1002,7 @@ def create_file_movements_amc(data, type_file="pdf"):
         )
         filepath = filepath_inventory_form_movements_pdf
     elif type_file == "excel":
-        movements, code = retrieve_data_movement_file(data, complete=True)
+        movements, code = retrieve_data_movement_file(data, complete=True, epp=epp)
         if code != 200:
             return None, 400
         columns = [
