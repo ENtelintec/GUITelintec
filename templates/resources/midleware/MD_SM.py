@@ -17,6 +17,7 @@ from static.constants import (
     timezone_software,
     dict_depts_identifiers,
     tabs_sm,
+    format_date,
 )
 from templates.Functions_Utils import create_notification_permission
 from templates.controllers.contracts.contracts_controller import (
@@ -47,6 +48,7 @@ from templates.controllers.product.p_and_s_controller import (
     create_product_db,
 )
 from templates.forms.Materials import MaterialsRequest
+from templates.forms.StorageMovSM import FileSmPDF
 from templates.misc.Functions_Files import write_log_file
 
 
@@ -699,28 +701,38 @@ def dowload_file_sm(sm_id: int):
         else:
             status = "pendiente"
         products.append((counter, name, quantity, udm, stock, status))
-    flag = MaterialsRequest(
+    # "metadata": {
+    #     "Fecha de Solicitud": "06/05/2025",
+    #     "Folio": "SM-0701-177",
+    #     "Contrato": "RFID /IOT",
+    #     "Usuario Solicitante": "ARTURO CUERVO",
+    #     "Número de Pedido": "GC-0701-COT-202",
+    #     "Personal Telintec": "CLAUDIO VILLARREAL",
+    #     "Planta": "LARGOS NORTE",
+    #     "Área Dirigida Telintec": "ALMACEN COMPRAS",
+    #     "Área / Ubicación": "CASETA PESADOS",
+    #     "Fecha Crítica de Entrega": "07/05/2025",
+    # },
+    flag = FileSmPDF(
         {
             "filename_out": download_path,
             "products": products,
-            "info": {
-                "fecha de solictud": date.date(),
-                "contrato": contract,
-                "numero de pedido": order_quotation,
-                "planta": facility,
-                "Area/ubicacion": location,
-                "folio": folio,
-                "usuario solicitante": customer_name,
-                "personal telintec": emp_name,
-                "area dirigida telintec": extra_info["destination"],
-                "fecha critica de entrega": critical_date.date(),
-                "history": history,
+            "metadata": {
+                "Fecha de Solicitud": date.strftime(format_date),
+                "Folio": folio,
+                "Contrato": contract,
+                "Usuario Solicitante": customer_name,
+                "Número de Pedido": order_quotation,
+                "Personal Telintec": emp_name,
+                "Planta": facility,
+                "Área Dirigida Telintec": location,
+                "Área / Ubicación": location,
+                "Fecha Crítica de Entrega": critical_date.strftime(format_date),
             },
             "observations": observations,
             "date_complete_delivery": "2023-06-01",
             "date_first_delivery": "2023-06-01",
         },
-        type_form="MaterialsRequest",
     )
     if not flag:
         print("error at generating pdf", download_path)
