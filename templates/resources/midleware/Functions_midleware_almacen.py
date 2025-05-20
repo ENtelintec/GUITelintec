@@ -56,7 +56,7 @@ from templates.forms.BarCodeGenerator import (
     create_one_code,
     create_multiple_barcodes_products,
 )
-from templates.forms.Storage import InventoryStorage
+from templates.forms.StorageMovSM import InventoryStoragePDF
 from templates.misc.Functions_Files import write_log_file
 from templates.resources.methods.Aux_Inventory import (
     generate_default_configuration_barcodes,
@@ -928,7 +928,7 @@ def create_file_inventory_pdf():
     products, code = retrieve_data_file_inventory(type_data="list")
     if code != 200:
         return None, 400
-    flag = InventoryStorage(
+    flag = InventoryStoragePDF(
         dict_data={"filename_out": filepath_inventory_form, "products": products},
         type_form="Materials",
     )
@@ -993,7 +993,7 @@ def create_file_movements_amc(data, type_file="pdf", epp=0):
         movements, code = retrieve_data_movement_file(data, epp=epp)
         if code != 200:
             return None, 400
-        flag = InventoryStorage(
+        flag = InventoryStoragePDF(
             dict_data={
                 "filename_out": filepath_inventory_form_movements_pdf,
                 "products": movements,

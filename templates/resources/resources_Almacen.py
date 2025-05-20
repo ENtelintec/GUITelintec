@@ -526,8 +526,8 @@ class InventoryEpp(Resource):
 
 @ns.route("/movements/epp/<string:type_m>")
 class GetMovementsEpp(Resource):
-    @ns.expect(expected_headers_per, file_movements_request_model)
-    def post(self, type_m):
+    @ns.expect(expected_headers_per)
+    def get(self, type_m):
         flag, data_token, msg = token_verification_procedure(request, department="epp")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -540,9 +540,7 @@ class GetMovementsEpp(Resource):
 class DownloadEppMovementsFilePDF(Resource):
     @ns.expect(expected_headers_per, file_movements_request_model)
     def post(self):
-        flag, data_token, msg = token_verification_procedure(
-            request, department="epp"
-        )
+        flag, data_token, msg = token_verification_procedure(request, department="epp")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
@@ -560,9 +558,7 @@ class DownloadEppMovementsFilePDF(Resource):
 class DownloadEppMovementsFileExcel(Resource):
     @ns.expect(expected_headers_per, file_movements_request_model)
     def post(self):
-        flag, data_token, msg = token_verification_procedure(
-            request, department="epp"
-        )
+        flag, data_token, msg = token_verification_procedure(request, department="epp")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
