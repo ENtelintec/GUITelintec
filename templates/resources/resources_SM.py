@@ -330,7 +330,7 @@ class ManageSMDispatch(Resource):
 class DownloadPDFSM(Resource):
     @ns.expect(expected_headers_per)
     def get(self, sm_id):
-        flag, data_token, msg = token_verification_procedure(request, department="sm")
+        flag, data_token, msg = token_verification_procedure(request, department=["sm"])
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data, code = dowload_file_sm(sm_id)
