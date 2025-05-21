@@ -341,7 +341,7 @@ control_table_sm_model = api.model(
         "warehouse_notification_date": fields.String(
             required=False,
             description="Date of notification to warehouse",
-            example="2024-06-29 12:00:00",
+            example="2024-06-29",
         ),
         "purchasing_kpi": fields.Integer(
             required=False,
@@ -361,7 +361,7 @@ control_table_sm_model = api.model(
         "operations_notification_date": fields.String(
             required=False,
             description="Date of notification to operations",
-            example="2024-06-29 12:00:00",
+            example="2024-06-29",
         ),
         "operations_kpi": fields.Integer(
             required=False,

@@ -47,7 +47,6 @@ from templates.controllers.product.p_and_s_controller import (
     create_product_db_admin,
     create_product_db,
 )
-from templates.forms.Materials import MaterialsRequest
 from templates.forms.StorageMovSM import FileSmPDF
 from templates.misc.Functions_Files import write_log_file
 
@@ -125,7 +124,7 @@ def get_all_sm(limit, page=0, emp_id=-1):
         #  kpi warehouse
         admin_not_date = extra_info.get("admin_notification_date", "")
         admin_not_date = (
-            datetime.strptime(admin_not_date, format_timestamps)
+            datetime.strptime(admin_not_date, format_date)
             if admin_not_date != ""
             and isinstance(admin_not_date, str)
             and admin_not_date is not None
@@ -150,7 +149,7 @@ def get_all_sm(limit, page=0, emp_id=-1):
         )
         op_not_date = extra_info.get("operations_notification_date", "")
         op_not_date = (
-            datetime.strptime(op_not_date, format_timestamps)
+            datetime.strptime(op_not_date, format_date)
             if op_not_date != ""
             and isinstance(op_not_date, str)
             and op_not_date is not None
