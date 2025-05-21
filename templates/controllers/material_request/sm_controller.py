@@ -160,8 +160,10 @@ def update_sm_db(data):
     )
     vals = (data["id"],)
     flag, error, result = execute_sql(sql, vals, 1)
-    if not flag and len(result) > 0:
-        return False, error, None
+    if not flag:
+        return False, f"Error at retriving sm from db: {error}", None
+    if len(result) == 0:
+        return False, "Material request not found", None
     extra_info = json.loads(result[1])
     extra_info["destination"] = data["info"]["destination"]
     extra_info["contract_contact"] = data["info"]["contract_contact"]
