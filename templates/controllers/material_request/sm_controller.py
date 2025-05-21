@@ -153,18 +153,18 @@ def delete_sm_db(id_m: int):
 
 
 def update_sm_db(data):
-    sql = "SELECT sm_id " "FROM sql_telintec.materials_request "
-    flag, error, result = execute_sql(sql, None, 5)
     data["id"] = data["info"]["id"]
-    if not flag:
+    sql = (
+        "SELECT sm_id, extra_info FROM sql_telintec.materials_request "
+        "WHERE sm_id = %s "
+    )
+    vals = (data["id"],)
+    flag, error, result = execute_sql(sql, vals, 1)
+    if not flag and len(result) > 0:
         return False, error, None
-    ids_sm = [i[0] for i in result]
-    if data["id"] not in ids_sm:
-        return True, "Material request not found", None
-    extra_info = {
-        "destination": data["info"]["destination"],
-        "contract_contact": data["info"]["contract_contact"],
-    }
+    extra_info = json.loads(result[1])
+    extra_info["destination"] = data["info"]["destination"]
+    extra_info["contract_contact"] = data["info"]["contract_contact"]
     history = data["info"]["history"]
     time_zone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
