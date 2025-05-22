@@ -54,6 +54,7 @@ product_model_new = api.model(
         "codes": fields.List(fields.Nested(code_model), required=False),
         "locations": fields.Nested(locations_model, required=False),
         "brand": fields.String(required=False, description="The product brand."),
+        "epp":  fields.Integer(required=True, description="The product epp", example=0),
     },
 )
 
@@ -83,6 +84,7 @@ product_model_update = api.model(
         "codes": fields.List(fields.Nested(code_model), required=False),
         "locations": fields.Nested(locations_model, required=False),
         "brand": fields.String(required=False, description="The product brand."),
+        "epp":  fields.Integer(required=True, description="The product epp", example=0),
     },
 )
 
@@ -260,6 +262,7 @@ class ProductInsertForm(Form):
     codes = FieldList(FormField(CodesForm), validators=[], default=[])
     locations = FormField(LocationsForm)
     brand = StringField("brand", validators=[], default="")
+    epp = IntegerField("epp", validators=[], default=0)
 
 
 class ProductUpdateForm(Form):
@@ -279,6 +282,7 @@ class ProductUpdateForm(Form):
     codes = FieldList(FormField(CodesForm), validators=[], default=[])
     locations = FormField(LocationsForm)
     brand = StringField("brand", validators=[], default="")
+    epp = IntegerField("epp", validators=[], default=0)
 
 
 class ProductPostForm(Form):

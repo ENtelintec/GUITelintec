@@ -21,6 +21,7 @@ employee_model = api.model(
         "lastname": fields.String(required=True, description="The employee lastname"),
         "phone": fields.String(required=True, description="The employee phone number"),
         "dep": fields.String(required=True, description="The employee department"),
+        "dep_id": fields.Integer(required=True, description="The employee department id"),
         "modality": fields.String(required=True, description="The employee modality"),
         "email": fields.String(
             required=True,
@@ -264,6 +265,64 @@ employee_vacation_model_delete = api.model(
     {"emp_id": fields.Integer(required=True, description="The employee id")},
 )
 
+extra_info_heads_model = api.model(
+    "ExtraInfoHeads",
+    {
+        "contracts": fields.List(
+            fields.Integer(required=True, description="The contract id")
+        ),
+        "other_leaders": fields.List(
+            fields.Integer(required=True, description="The other leader id")
+        ),
+        "contracts_temp": fields.List(
+            fields.Integer(required=True, description="The contract temp id")
+        ),
+    },
+)
+
+head_insert_model = api.model(
+    "HeadInfoInsert",
+    {
+        "name": fields.String(required=True, description="The position name"),
+        "department": fields.Integer(
+            required=True, description="The department id", example=1
+        ),
+        "employee": fields.Integer(
+            required=False, description="The employee id", example=60
+        ),
+        "extra_info": fields.Nested(
+            extra_info_heads_model,
+            required=True,
+            description="The extra info for heads",
+        ),
+    },
+)
+
+head_update_model = api.model(
+    "HeadInfoUpdate",
+    {
+        "id": fields.Integer(required=True, description="The head position id"),
+        "department": fields.Integer(
+            required=True, description="The department id", example=1
+        ),
+        "employee": fields.Integer(
+            required=False, description="The employee id", example=60
+        ),
+        "extra_info": fields.Nested(
+            extra_info_heads_model,
+            required=True,
+            description="The extra info for heads",
+        ),
+    },
+)
+
+head_delete_model = api.model(
+    "HeadInfoDelete",
+    {
+        "id": fields.Integer(required=True, description="The head position id"),
+    },
+)
+
 
 class EmployeeInputForm(Form):
     name = StringField("name", validators=[InputRequired()])
@@ -385,5 +444,37 @@ class EmployeeVacInsertForm(Form):
 class DeleteVacationForm(Form):
     emp_id = IntegerField(
         "emp_id",
+        validators=[InputRequired(message="id is required or value 0 not accepted")],
+    )
+
+
+class ExtraInfoHeadsForm(Form):
+    contracts = FieldList(IntegerField(validators=[]), "contracts", default=[])
+    other_leaders = FieldList(IntegerField(validators=[]), "other_leaders", default=[])
+    contracts_temp = FieldList(
+        IntegerField(validators=[]), "contracts_temp", default=[]
+    )
+
+
+class HeadInputForm(Form):
+    name = StringField("name", validators=[InputRequired()])
+    department = IntegerField("department", validators=[InputRequired()])
+    employee = IntegerField("employee", validators=[], default=0)
+    extra_info = FormField(ExtraInfoHeadsForm, "extra_info")
+
+
+class HeadUpdateForm(Form):
+    id = IntegerField(
+        "id",
+        validators=[InputRequired(message="id is required or value 0 not accepted")],
+    )
+    department = IntegerField("department", validators=[InputRequired()])
+    employee = IntegerField("employee", validators=[InputRequired()])
+    extra_info = FormField(ExtraInfoHeadsForm, "extra_info")
+
+
+class HeadDeleteForm(Form):
+    id = IntegerField(
+        "id",
         validators=[InputRequired(message="id is required or value 0 not accepted")],
     )

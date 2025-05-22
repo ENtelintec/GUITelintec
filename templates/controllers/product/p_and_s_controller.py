@@ -176,7 +176,8 @@ def get_outs_db_detail():
     return flag, error, result
 
 
-def get_all_movements_db_detail():
+def get_all_movements_db_detail(type_m="all"):
+    type_m = type_m if type_m in ["entrada", "salida"] else "%"
     sql = (
         "SELECT "
         "sql_telintec.product_movements_amc.id_movement, "
@@ -194,9 +195,10 @@ def get_all_movements_db_detail():
         "FROM sql_telintec.product_movements_amc "
         "INNER JOIN sql_telintec.products_amc ON sql_telintec.product_movements_amc.id_product = sql_telintec.products_amc.id_product "
         "LEFT JOIN sql_telintec.suppliers_amc ON sql_telintec.products_amc.id_supplier = sql_telintec.suppliers_amc.id_supplier "
-        "WHERE sql_telintec.product_movements_amc.movement_type like '%' ORDER BY movement_date DESC;"
+        "WHERE sql_telintec.product_movements_amc.movement_type like %s ORDER BY movement_date DESC;"
     )
-    flag, error, result = execute_sql(sql, None, 5)
+    vals = (type_m,)
+    flag, error, result = execute_sql(sql, vals, 2)
     return flag, error, result
 
 
@@ -223,7 +225,8 @@ def get_movements_type_db(type_m: str):
     return flag, error, result
 
 
-def get_movements_type_db_all():
+def get_movements_type_db_all(type_m="all"):
+    type_m = type_m if type_m in ["entrada", "salida"] else "%"
     sql = (
         "SELECT "
         "id_movement, "
@@ -239,10 +242,66 @@ def get_movements_type_db_all():
         "FROM sql_telintec.product_movements_amc "
         "LEFT JOIN sql_telintec.products_amc ON (sql_telintec.products_amc.id_product = sql_telintec.product_movements_amc.id_product)"
         "LEFT JOIN sql_telintec.suppliers_amc ON (sql_telintec.products_amc.id_supplier = sql_telintec.suppliers_amc.id_supplier)"
+        "WHERE movement_type LIKE %s "
         "ORDER BY movement_date DESC LIMIT 1000"
     )
-    vals = ()
-    flag, error, result = execute_sql(sql, vals, 5)
+    vals = (type_m,)
+    flag, error, result = execute_sql(sql, vals, 2)
+    return flag, error, result
+
+
+def get_epp_movements_db(type_m):
+    if type_m in ["salida", "entrada"]:
+        type_m = type_m
+    else:
+        type_m = "%"
+    sql = (
+        "SELECT "
+        "id_movement, "
+        "products_amc.id_product, "
+        "movement_type, "
+        "quantity, "
+        "movement_date, "
+        "sm_id, "
+        "sql_telintec.product_movements_amc.extra_info->'$.reference', "
+        "sku, "
+        "suppliers_amc.name, "
+        "products_amc.codes "
+        "FROM sql_telintec.product_movements_amc "
+        "LEFT JOIN sql_telintec.products_amc ON (sql_telintec.products_amc.id_product = sql_telintec.product_movements_amc.id_product)"
+        "LEFT JOIN sql_telintec.suppliers_amc ON (sql_telintec.products_amc.id_supplier = sql_telintec.suppliers_amc.id_supplier)"
+        "WHERE movement_type LIKE %s AND sql_telintec.products_amc.extra_info->>'$.epp' = 1 "
+        "ORDER BY movement_date DESC"
+    )
+    vals = (type_m,)
+    flag, error, result = execute_sql(sql, vals, 2)
+    return flag, error, result
+
+
+def get_epp_movements_db_detail(type_m):
+    type_m = type_m if type_m in ["entrada", "salida"] else "%"
+    sql = (
+        "SELECT "
+        "sql_telintec.product_movements_amc.id_movement, "
+        "sql_telintec.product_movements_amc.id_product, "
+        "sql_telintec.products_amc.sku, "
+        "sql_telintec.product_movements_amc.movement_type, "
+        "sql_telintec.product_movements_amc.quantity, "
+        "sql_telintec.product_movements_amc.movement_date, "
+        "sql_telintec.product_movements_amc.sm_id, "
+        "sql_telintec.products_amc.name as product_name,"
+        "sql_telintec.products_amc.udm, "
+        "sql_telintec.suppliers_amc.name AS supplier_name, "
+        "sql_telintec.products_amc.locations, "
+        "sql_telintec.product_movements_amc.extra_info->'$.reference' "
+        "FROM sql_telintec.product_movements_amc "
+        "INNER JOIN sql_telintec.products_amc ON sql_telintec.product_movements_amc.id_product = sql_telintec.products_amc.id_product "
+        "LEFT JOIN sql_telintec.suppliers_amc ON sql_telintec.products_amc.id_supplier = sql_telintec.suppliers_amc.id_supplier "
+        "WHERE sql_telintec.product_movements_amc.movement_type like %s AND sql_telintec.products_amc.extra_info->>'$.epp' = 1 "
+        "ORDER BY movement_date DESC;"
+    )
+    vals = (type_m,)
+    flag, error, result = execute_sql(sql, vals, 2)
     return flag, error, result
 
 
@@ -320,6 +379,7 @@ def create_product_db(
     codes=None,
     locations=None,
     brand=None,
+    epp=0,
 ):
     try:
         sku = str(sku).upper()
@@ -333,6 +393,7 @@ def create_product_db(
             locations if locations is not None else {"location_1": "", "location_2": ""}
         )
         extra_info = {"brand": brand} if brand is not None else {"brand": ""}
+        extra_info["epp"] = epp
     except Exception as e:
         return False, str(e), None
     insert_sql = (
@@ -370,6 +431,7 @@ def update_product_db(
     codes=None,
     locations=None,
     brand=None,
+    epp=0,
 ):
     try:
         sku = str(sku).upper()
@@ -389,7 +451,8 @@ def update_product_db(
         "UPDATE sql_telintec.products_amc "
         "SET sku = %s, name = %s, udm = %s, stock = %s, id_category = %s, id_supplier = %s, "
         "is_tool = %s, is_internal = %s, codes = %s, locations = %s, "
-        "extra_info = JSON_REPLACE(extra_info, '$.brand', %s) "
+        "extra_info = JSON_SET(extra_info, '$.brand', %s), "
+        "extra_info = JSON_SET(extra_info, '$.epp', %s) "
         "WHERE id_product = %s;"
     )
     vals = (
@@ -404,6 +467,7 @@ def update_product_db(
         json.dumps(codes),
         json.dumps(locations),
         brand,
+        epp,
         id_product,
     )
     flag, error, result = execute_sql(update_sql, vals, 3)
@@ -874,12 +938,12 @@ def insert_multiple_row_products_amc(products: tuple, dict_cat=None, dict_supp=N
         if len(product) < 10:
             codes = json.dumps([])
             locations = json.dumps({"location_1": ""})
-            extra_info = json.dumps({"brand": ""})
+            extra_info = json.dumps({"brand": "", "epp": 0})
         else:
             codes = json.dumps([])
             location_1 = product[10]
             locations = json.dumps({"location_1": location_1})
-            extra_info = json.dumps({"brand": product[11]})
+            extra_info = json.dumps({"brand": product[11], "epp": product[12]})
         sku = clean_name(product[1].encode(codec, errors="ignore").decode(codec))[0]
         name = str(product[2]).replace("'", "").replace('"', "")
         category_id = (
@@ -928,11 +992,13 @@ def update_multiple_row_products_amc(products: tuple, dict_cat=None, dict_supp=N
             codes = json.dumps([])
             locations = json.dumps({"location_1": ""})
             brand = ""
+            epp = 0
         else:
             codes = product[9]
             location_1 = product[10]
             locations = json.dumps({"location_1": location_1})
             brand = product[11]
+            epp = product[12]
         category_id = (
             dict_cat.get(product[5], "None") if dict_cat is not None else product[5]
         )
@@ -942,7 +1008,7 @@ def update_multiple_row_products_amc(products: tuple, dict_cat=None, dict_supp=N
         sql = (
             "UPDATE sql_telintec.products_amc "
             "SET sku = %s, name = %s, udm = %s, stock = %s, id_category = %s, id_supplier = %s, is_tool = %s, is_internal = %s, "
-            "codes = %s, locations = %s, extra_info = JSON_SET(extra_info, '$.brand', %s) "
+            "codes = %s, locations = %s, extra_info = JSON_SET(extra_info, '$.brand', %s), extra_info = JSON_SET(extra_info, '$.epp', %s)  "
             "WHERE id_product = %s"
         )
         vals = (
@@ -957,6 +1023,7 @@ def update_multiple_row_products_amc(products: tuple, dict_cat=None, dict_supp=N
             codes,
             locations,
             brand,
+            epp,
             product[0],
         )
         flag, error, result = execute_sql(sql, vals, 3)
@@ -1067,3 +1134,54 @@ def udpate_multiple_row_stock_ids(data):
         errors.append(error)
         results.append(result)
     return flags, errors, results
+
+
+def get_all_epp_inventory():
+    sql = (
+        "SELECT "
+        "sql_telintec.products_amc.id_product,"
+        "sql_telintec.products_amc.sku AS sku,"
+        "sql_telintec.products_amc.name AS name,"
+        "sql_telintec.products_amc.udm AS udm,"
+        "sql_telintec.products_amc.stock AS stock,"
+        "sql_telintec.product_categories_amc.name AS category_name,"
+        "sql_telintec.suppliers_amc.name AS supplier_name, "
+        "sql_telintec.products_amc.is_tool, "
+        "sql_telintec.products_amc.is_internal, "
+        "sql_telintec.products_amc.codes, "
+        "sql_telintec.products_amc.locations, "
+        "sql_telintec.products_amc.extra_info "
+        "FROM sql_telintec.products_amc "
+        "LEFT JOIN sql_telintec.product_categories_amc ON (sql_telintec.products_amc.id_category = sql_telintec.product_categories_amc.id_category) "
+        "LEFT JOIN sql_telintec.suppliers_amc ON (sql_telintec.products_amc.id_supplier = sql_telintec.suppliers_amc.id_supplier)"
+        "WHERE sql_telintec.products_amc.extra_info->>'$.epp' = 1 "
+        "ORDER BY name "
+    )
+    flag, error, result = execute_sql(sql, None, 5)
+    return flag, error, result
+
+
+def get_product_by_sku_manufacture(sku: str):
+    sql = (
+        "SELECT "
+        "sql_telintec.products_amc.id_product,"
+        "sql_telintec.products_amc.sku AS sku,"
+        "sql_telintec.products_amc.name AS name,"
+        "sql_telintec.products_amc.udm AS udm,"
+        "sql_telintec.products_amc.stock AS stock,"
+        "sql_telintec.product_categories_amc.name AS category_name,"
+        "sql_telintec.suppliers_amc.name AS supplier_name, "
+        "sql_telintec.products_amc.is_tool, "
+        "sql_telintec.products_amc.is_internal, "
+        "sql_telintec.products_amc.codes, "
+        "sql_telintec.products_amc.locations, "
+        "sql_telintec.products_amc.extra_info "
+        "FROM sql_telintec.products_amc "
+        "LEFT JOIN sql_telintec.product_categories_amc ON (sql_telintec.products_amc.id_category = sql_telintec.product_categories_amc.id_category) "
+        "LEFT JOIN sql_telintec.suppliers_amc ON (sql_telintec.products_amc.id_supplier = sql_telintec.suppliers_amc.id_supplier)"
+        "WHERE JSON_SEARCH(codes, 'one', %s, NULL, '$[*].value') IS NOT NULL "
+        "ORDER BY name "
+    )
+    val = (sku,)
+    flag, error, result = execute_sql(sql, val, 1)
+    return flag, error, result

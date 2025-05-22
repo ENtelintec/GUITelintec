@@ -21,15 +21,13 @@ def update_sm_items_stock(tuple_sm):
             items_db = json.loads(sm_data[10])
             items_out = []
             for item in items_db:
-                if item["id"] in product_ids:
+                if item.get("id", 0) in product_ids:
                     index = product_ids.index(item["id"])
                     item["stock"] = result[index][1]
                 items_out.append(item)
             sm_data = list(sm_data)
             sm_data[10] = json.dumps(items_out)
             tuple_out.append(sm_data)
-    else:
-        return tuple
     return tuple_out
 
 
@@ -40,7 +38,8 @@ def get_sm_entries(emp_id=-1):
         return False, "Invalid employee ID", []
     if emp_id <= -1:
         sql = (
-            "SELECT sm_id, folio, contract, facility, location, client_id, emp_id, "
+            "SELECT "
+            "sm_id, folio, contract, facility, location, client_id, emp_id, "
             "pedido_cotizacion, date, limit_date, "
             "items, status, history, comment, extra_info "
             "FROM sql_telintec.materials_request where emp_id like '%'"
@@ -95,11 +94,15 @@ def insert_sm_db(data):
         "warehouse_comments": data["info"].get("warehouse_comments", ""),
         "admin_reviewed": data["info"].get("admin_reviewed", 0),
         "admin_status": data["info"].get("admin_status", 1),
-        "warehouse_notification_date": data["info"].get("warehouse_notification_date", ""),
+        "warehouse_notification_date": data["info"].get(
+            "warehouse_notification_date", ""
+        ),
         "purchasing_kpi": data["info"].get("purchasing_kpi", 0),
         "admin_comments": data["info"].get("admin_comments", ""),
         "general_request_status": data["info"].get("general_request_status", 1),
-        "operations_notification_date": data["info"].get("operations_notification_date", ""),
+        "operations_notification_date": data["info"].get(
+            "operations_notification_date", ""
+        ),
         "operations_kpi": data["info"].get("operations_kpi", 0),
         "requesting_user_state": data["info"].get("requesting_user_state", ""),
     }
@@ -150,19 +153,20 @@ def delete_sm_db(id_m: int):
 
 
 def update_sm_db(data):
-    sql = "SELECT sm_id " "FROM sql_telintec.materials_request "
-    flag, error, result = execute_sql(sql, None, 5)
     data["id"] = data["info"]["id"]
+    sql = (
+        "SELECT sm_id, extra_info FROM sql_telintec.materials_request "
+        "WHERE sm_id = %s "
+    )
+    vals = (data["id"],)
+    flag, error, result = execute_sql(sql, vals, 1)
     if not flag:
-        return False, error, None
-    ids_sm = [i[0] for i in result]
-    if data["id"] not in ids_sm:
-        return True, "Material request not found", None
-    extra_info = {
-        "destination": data["info"]["destination"],
-        "contract_contact": data["info"]["contract_contact"],
-    }
-    print(data["info"]["history"])
+        return False, f"Error at retriving sm from db: {error}", None
+    if len(result) == 0:
+        return False, "Material request not found", None
+    extra_info = json.loads(result[1])
+    extra_info["destination"] = data["info"]["destination"]
+    extra_info["contract_contact"] = data["info"]["contract_contact"]
     history = data["info"]["history"]
     time_zone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
@@ -331,13 +335,28 @@ def get_folios_by_pattern(pattern: str):
     return flag, error, result
 
 
-def update_history_extra_info_sm_by_id(sm_id: int, extra_info: dict, history: dict):
+def update_history_extra_info_sm_by_id(
+    sm_id: int, extra_info: dict, history: dict, comments: str
+):
     sql = (
         "UPDATE sql_telintec.materials_request "
-        "SET extra_info = %s, history = %s "
+        "SET extra_info = %s, history = %s, comment = %s "
         "WHERE sm_id = %s "
     )
-    val = (json.dumps(extra_info), json.dumps(history), sm_id)
+    val = (json.dumps(extra_info), json.dumps(history), comments, sm_id)
     flag, error, result = execute_sql(sql, val, 4)
     return flag, error, result
 
+
+def get_pending_sm_db():
+    sql = (
+        "SELECT "
+        "sm_id, folio, contract, facility, location, "
+        "client_id, emp_id, pedido_cotizacion, date, "
+        "limit_date, items, status, history, "
+        "comment, extra_info "
+        "FROM sql_telintec.materials_request "
+        "WHERE status = 0 "
+    )
+    flag, error, result = execute_sql(sql, None, 5)
+    return flag, error, result

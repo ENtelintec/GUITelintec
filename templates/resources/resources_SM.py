@@ -8,8 +8,6 @@ from flask_restx import Resource, Namespace
 from static.Models.api_models import expected_headers_per
 from static.Models.api_sm_models import (
     client_emp_sm_response_model,
-    products_answer_model,
-    products_request_model,
     sm_post_model,
     delete_request_sm_model,
     sm_put_model,
@@ -20,7 +18,6 @@ from static.Models.api_sm_models import (
     employees_answer_model,
     request_sm_dispatch_model,
     response_sm_dispatch_model,
-    ProductRequestForm,
     SMPostForm,
     SMPutForm,
     SMDeleteForm,
@@ -53,6 +50,8 @@ from templates.resources.midleware.MD_SM import (
     create_customer,
     create_product,
     update_sm_from_control_table,
+    get_all_sm_control_table,
+    fetch_all_sm_with_permissions,
 )
 
 ns = Namespace("GUI/api/v1/sm")
@@ -88,20 +87,14 @@ class Clients(Resource):
             return {"data": result, "comment": error}, 400
 
 
-@ns.route("/products")
+@ns.route("/products/<string:contract>")
 class Products(Resource):
-    @ns.expect(expected_headers_per, products_request_model)
-    @ns.marshal_with(products_answer_model)
-    def post(self):
+    @ns.expect(expected_headers_per)
+    def get(self, contract):
         flag, data_token, msg = token_verification_procedure(request, department="sm")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        # noinspection PyUnresolvedReferences
-        validator = ProductRequestForm.from_json(ns.payload)
-        if not validator.validate():
-            return {"error": validator.errors}, 400
-        data = validator.data
-        data_out, code = get_products_sm(data["limit"], data["page"])
+        data_out, code = get_products_sm(contract)
         return data_out, code
 
 
@@ -114,6 +107,17 @@ class AllSm(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data_out, code = get_all_sm(-1, 0, -1)
+        return data_out, code
+
+
+@ns.route("/permission")
+class AllSmPerPermission(Resource):
+    @ns.expect(expected_headers_per)
+    def get(self):
+        flag, data_token, msg = token_verification_procedure(request, department="sm")
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        data_out, code = fetch_all_sm_with_permissions(data_token)
         return data_out, code
 
 
@@ -326,7 +330,7 @@ class ManageSMDispatch(Resource):
 class DownloadPDFSM(Resource):
     @ns.expect(expected_headers_per)
     def get(self, sm_id):
-        flag, data_token, msg = token_verification_procedure(request, department="sm")
+        flag, data_token, msg = token_verification_procedure(request, department=["sm"])
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data, code = dowload_file_sm(sm_id)
@@ -348,4 +352,15 @@ class ControlTableSM(Resource):
             return {"error": validator.errors}, 400
         data = validator.data
         code, data_out = update_sm_from_control_table(data, data_token)
+        return data_out, code
+
+
+@ns.route("/control/table/all")
+class AllControlTableSm(Resource):
+    @ns.expect(expected_headers_per)
+    def get(self):
+        flag, data_token, msg = token_verification_procedure(request, department=["sm"])
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        data_out, code = get_all_sm_control_table(data_token)
         return data_out, code

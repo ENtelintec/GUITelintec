@@ -105,13 +105,14 @@ def create_header(
     iso_form=1,
     orientation="vertical",
     title_font=None,
+    offset_title=(0, 0)
 ):
     position_header_y = 770 if orientation == "vertical" else 535
     position_header_x = 25 if orientation == "vertical" else 25
     height_logo = 30
     title_height = 16 if title_font is None else title_font
     codes_h_height = 10
-    codes_width = 180  # right codes and emision width
+    codes_width = 150  # right codes and emision width
     start_box_x = 10 if orientation == "vertical" else 10
     height_box = 50
     pady = 10
@@ -175,16 +176,16 @@ def create_header(
         title = title.upper()
         master.setFont("Courier-Bold", title_height)
         master.drawCentredString(
-            page_x / 2,
-            position_header_y + height_logo / 2 - title_height / 2,
+            page_x / 2 + offset_title[0],
+            position_header_y + height_logo / 2 - title_height / 2 + offset_title[1],
             title.upper(),
         )
     else:
         nlines = len(title)
-        x_title = page_x / 2
+        x_title = page_x / 2 + offset_title[0]
         y_title = (
             position_header_y + height_logo / 2 + ((nlines - 1) * title_height) / 2
-        )
+        ) + offset_title[1]
         for index, line in enumerate(title):
             master.setFont("Courier-Bold", title_height - 2 * index)
             master.drawCentredString(x_title, y_title, line)
@@ -201,7 +202,7 @@ def create_header(
     master.drawString(
         page_x - codes_width - padx,
         position_header_y,
-        f"Inicio de Vigencia: {dict_dates[str(iso_form)]}",
+        f"I. Vigencia: {dict_dates[str(iso_form)]}",
     )
 
 

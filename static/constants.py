@@ -74,6 +74,7 @@ filepath_inventory_form = "files/inventory_temp.pdf"
 filepath_inventory_form_excel = "files/inventory_temp.xlsx"
 filepath_inventory_form_movements_pdf = "files/movements_temp.pdf"
 filepath_inventory_form_movements_excel = "files/movements_temp.xlsx"
+filepath_sm_pdf = "files/sm_temp.pdf"
 filepath_fichaje_temp = "files/files_fichaje/fichaje_temp.xlsx"
 filepath_ternium_temp = "files/files_fichaje/ternium_temp.xls"
 patterns_files_fichaje = ["Fichaje", "Ternium"]
@@ -162,13 +163,51 @@ timezone_software = "America/Mexico_City"
 format_date = "%Y-%m-%d"
 format_date_fichaje_file = "%d-%m-%Y"
 dict_deps = {
-    "Dirección": 1,
+    "Direccion": 1,
     "Operaciones": 2,
-    "Administración": 3,
+    "Administracion": 3,
     "RRHH": 4,
     "REPSE": 5,
     "IA": 6,
     "Otros": 7,
+}
+# almacen en administracion
+# los auxiliares no generan
+# control de activos (mariscal TI)
+# coordinador de almacen (ALM, CDA-VEH)
+# sgi pertenece a direccion el puesto se llama coordinador de sgi (Jennfier)
+# sgi enrique DIRE pero las hace Jenny
+# rh crean sm todos
+dict_depts_identifiers = {
+    1: ["DIRE", "SGI"],
+    2: "OP",
+    3: "ADMON",
+    4: "RH",
+    3001: ["ALM", "PA-CDA-VEH"],
+    3002: "PA-CDA-TI",
+    3003: "PA-CDA-EQO",
+    3004: "PA-CDA-MED",
+    2001: "SST",
+}
+tabs_sm = {
+    "sm-dire-": "Direccion",
+    "sm-sgi-": "SGI",
+    "sm-op-": "Operaciones",
+    "sm-admon-": "Administracion",
+    "sm-rh-": "RH",
+    "sm-alm-": "Almacen",
+    "sm-pa-cda-veh-": "CDA Vehiculos",
+    "sm-pa-cda-ti-": "CDA TI",
+    "sm-pa-cda-eqo-": "Inmuebles",
+    "sm-pa-cda-med-": "CDA Eq. Medición",
+    "sm-sst-": "Seguridad",
+    "sm-5000-": "INFRA",
+    "sm-8272-": "GRUAS",
+    "sm-3650-": "PESQUERIA",
+    "sm-9971-": "AUTO",
+    "sm-0701-": "RFID",
+    "sm-3122-": "CCTV",
+    "sm-3487-": "PUEBLA",
 }
 format_timestamps_filename = "%Y-%m-%d"
 HOST_DB_DEFAULT = "HOST_DB" if environment != "prod" else "HOST_DB_AWS"

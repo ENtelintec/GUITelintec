@@ -6,7 +6,6 @@ from tkinter.filedialog import askopenfilename
 
 import pandas as pd
 import ttkbootstrap as ttk
-from ttkbootstrap.scrolled import ScrolledFrame
 from ttkbootstrap.tableview import Tableview
 
 from templates.Functions_GUI_Utils import create_label, create_Combobox, create_button
@@ -25,9 +24,9 @@ def procces_quotation_list(data):
         quotations.append(
             [
                 item[0],
-                metadata["company"],
-                metadata["quotation_code"],
-                metadata["codigo"],
+                metadata.get("company", "None"),
+                metadata.get("quotation_code"),
+                metadata.get("codigo"),
                 item[3],
             ]
         )

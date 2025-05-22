@@ -58,7 +58,10 @@ from templates.resources.midleware.Functions_midleware_almacen import (
     create_pdf_barcode_multiple,
     create_file_inventory_excel,
     update_brand_procedure,
-    get_new_code_products, delete_movement_amc,
+    get_new_code_products,
+    delete_movement_amc,
+    get_epp_db,
+    get_epp_movements,
 )
 
 ns = Namespace("GUI/api/v1/almacen")
@@ -87,7 +90,7 @@ class MovementDB(Resource):
     @ns.expect(expected_headers_per, movement_insert_model)
     def post(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department="almacen"
+            request, department=["almacen", "epp"]
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -105,7 +108,7 @@ class MovementDB(Resource):
     @ns.expect(expected_headers_per, movement_update_model)
     def put(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department="almacen"
+            request, department=["almacen", "epp"]
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -508,3 +511,62 @@ class DownloadMultipleBarcodeFile(Resource):
             if code == 200
             else ({"data": filepath, "msg": "Error at creating file"}, 400)
         )
+
+
+@ns.route("/inventory/epp")
+class InventoryEpp(Resource):
+    @ns.expect(expected_headers_per)
+    def get(self):
+        flag, data_token, msg = token_verification_procedure(request, department="epp")
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        data, code = get_epp_db()
+        return {"data": data, "msg": "Ok" if code == 200 else "Error"}, code
+
+
+@ns.route("/movements/epp/<string:type_m>")
+class GetMovementsEpp(Resource):
+    @ns.expect(expected_headers_per)
+    def get(self, type_m):
+        flag, data_token, msg = token_verification_procedure(request, department="epp")
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        data, code = get_epp_movements(type_m)
+        data_out = {"data": data, "msg": "Ok" if code == 200 else "Error"}
+        return data_out, code
+
+
+@ns.route("/file/download/eppmovements/pdf")
+class DownloadEppMovementsFilePDF(Resource):
+    @ns.expect(expected_headers_per, file_movements_request_model)
+    def post(self):
+        flag, data_token, msg = token_verification_procedure(request, department="epp")
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        # noinspection PyUnresolvedReferences
+        validator = FileMovementsForm.from_json(ns.payload)
+        if not validator.validate():
+            return {"data": validator.errors, "msg": "Error at structure"}, 400
+        data = validator.data
+        filepath, code = create_file_movements_amc(data, epp=1)
+        if code != 200:
+            return {"data": filepath, "msg": "Error at creating file"}, 400
+        return send_file(filepath, as_attachment=True)
+
+
+@ns.route("/file/download/eppmovements/excel")
+class DownloadEppMovementsFileExcel(Resource):
+    @ns.expect(expected_headers_per, file_movements_request_model)
+    def post(self):
+        flag, data_token, msg = token_verification_procedure(request, department="epp")
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        # noinspection PyUnresolvedReferences
+        validator = FileMovementsForm.from_json(ns.payload)
+        if not validator.validate():
+            return {"data": validator.errors, "msg": "Error at structure"}, 400
+        data = validator.data
+        filepath, code = create_file_movements_amc(data, type_file="excel", epp=1)
+        if code != 200:
+            return {"data": filepath, "msg": "Error at creating file"}, 400
+        return send_file(filepath, as_attachment=True)

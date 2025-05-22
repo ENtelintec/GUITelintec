@@ -20,7 +20,7 @@ from static.constants import filepath_recommendations
 from templates.controllers.chatbot.chatbot_controller import get_chats
 from templates.controllers.customer.customers_controller import get_customers
 from templates.controllers.departments.department_controller import get_departments
-from templates.controllers.departments.heads_controller import get_heads
+from templates.controllers.departments.heads_controller import get_heads_db
 from templates.controllers.employees.employees_controller import get_employees
 from templates.controllers.employees.us_controller import get_users
 from templates.controllers.notifications.Notifications_controller import (
@@ -163,7 +163,6 @@ def create_Combobox(
 
 
 def create_ComboboxSearch(master, **kwargs):
-
     """
     Create a combobox with the values provided
     :return: Placed combobox in the grid
@@ -483,7 +482,7 @@ def create_visualizer_treeview(
             data = get_departments() if data is None else data
         case "heads":
             columns = ["Cargo", "Empleado", "Dep.ID", "Dep. Name", "Nombre", "Email"]
-            data = get_heads() if data is None else data
+            flag, error, data = get_heads_db() if data is None else data
         case "supplier":
             columns = ["Id", "Name", "Location"]
             data = get_supplier() if data is None else data

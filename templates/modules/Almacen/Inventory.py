@@ -34,10 +34,9 @@ from templates.controllers.product.p_and_s_controller import (
 )
 from templates.controllers.supplier.suppliers_controller import (
     get_all_suppliers_amc,
-    update_brands_supplier,
 )
 from templates.forms.BarCodeGenerator import create_one_code
-from templates.forms.Storage import InventoryStorage
+from templates.forms.StorageMovSM import InventoryStoragePDF
 from templates.misc.Functions_Files import write_log_file
 from templates.modules.Almacen.Frame_BarCodes import BarcodeSubFrameSelector
 from templates.modules.Almacen.SubFrameLector import LectorScreenSelector
@@ -47,7 +46,10 @@ from templates.resources.methods.Aux_Inventory import (
 )
 from templates.resources.midleware.Functions_midleware_almacen import (
     upload_product_db_from_file,
-    retrieve_data_file_inventory, update_brand_list, get_providers_dict, get_categories_dict,
+    retrieve_data_file_inventory,
+    update_brand_list,
+    get_providers_dict,
+    get_categories_dict,
 )
 
 
@@ -344,7 +346,7 @@ class InventoryScreen(ttk.Frame):
         type_f = "dict" if filepath.endswith(".xlsx") else "list"
         products, code = retrieve_data_file_inventory(type_f, self._products)
         if type_f == "list":
-            InventoryStorage(
+            InventoryStoragePDF(
                 dict_data={"filename_out": filepath, "products": products},
                 type_form="Materials",
             )

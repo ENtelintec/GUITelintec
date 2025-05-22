@@ -9,7 +9,7 @@ from wtforms.fields.list import FieldList
 from wtforms.fields.numeric import FloatField
 from wtforms.fields.simple import StringField, URLField, EmailField
 
-from static.Models.api_models import date_filter, datetime_filter
+from static.Models.api_models import date_filter
 from static.constants import api
 from wtforms.form import Form
 from wtforms import validators, IntegerField, FormField
@@ -51,6 +51,8 @@ items_model_sm = api.model(
             required=True, description="The product url", example="https://example.com"
         ),
         "sku": fields.String(required=False, description="The product sku"),
+        "partida": fields.String(required=False, description="The product partida"),
+        "udm": fields.String(required=True, description="The product unit of measure"),
     },
 )
 
@@ -247,10 +249,10 @@ sm_model_out = api.model(
         "admin_notification_date": fields.String(
             required=False, description="Date of notification to administration"
         ),
-        "kpi_warehouse": fields.Integer(
+        "kpi_warehouse": fields.String(
             required=False,
             description="Key performance indicator (cumple: 0, no cumple:1)",
-            example=0,
+            example="",
         ),
         "warehouse_comments": fields.String(
             required=False, description="Warehouse comments"
@@ -268,11 +270,6 @@ sm_model_out = api.model(
             description="Date of notification to warehouse",
             example="2024-06-29 12:00:00",
         ),
-        "purchasing_kpi": fields.Integer(
-            required=False,
-            description="Key performance indicator (cumple=0, no cumple=1)",
-            example=0,
-        ),
         "admin_comments": fields.String(
             required=False, description="Administration comments"
         ),
@@ -288,10 +285,10 @@ sm_model_out = api.model(
             description="Date of notification to operations",
             example="2024-06-29 12:00:00",
         ),
-        "operations_kpi": fields.Integer(
+        "operations_kpi": fields.String(
             required=False,
             description="Key performance indicator (Operations)",
-            example=0,
+            example="",
         ),
         "requesting_user_state": fields.String(
             required=False, description="State of the requesting user"
@@ -305,11 +302,9 @@ control_table_sm_model = api.model(
     {
         "urgent": fields.Integer(required=False, description="Urgent", example=0),
         "project": fields.String(required=False, description="The project"),
+        "comments": fields.String(required=False, description="The comments"),
         "activity_description": fields.String(
             required=False, description="Description of activity"
-        ),
-        "request_date": fields.String(
-            required=True, description="Request date", example="2024-06-29 12:00:00"
         ),
         "requesting_user_status": fields.Integer(
             required=False,
@@ -346,7 +341,7 @@ control_table_sm_model = api.model(
         "warehouse_notification_date": fields.String(
             required=False,
             description="Date of notification to warehouse",
-            example="2024-06-29 12:00:00",
+            example="2024-06-29",
         ),
         "purchasing_kpi": fields.Integer(
             required=False,
@@ -366,7 +361,7 @@ control_table_sm_model = api.model(
         "operations_notification_date": fields.String(
             required=False,
             description="Date of notification to operations",
-            example="2024-06-29 12:00:00",
+            example="2024-06-29",
         ),
         "operations_kpi": fields.Integer(
             required=False,
@@ -402,6 +397,7 @@ table_sm_model = api.model(
         ),
     },
 )
+
 
 table_request_model = api.model(
     "TableRequest",
@@ -599,11 +595,9 @@ class SMInfoForm(Form):
 class SMInfoControlTableForm(Form):
     project = StringField("project", validators=[], default="")
     urgent = IntegerField("urgent", validators=[], default=0)
+    comments = StringField("comments", validators=[], default="")
     activity_description = StringField(
         "activity_description", validators=[], default=""
-    )
-    request_date = StringField(
-        "request_date", validators=[InputRequired()], filters=[datetime_filter]
     )
     requesting_user_status = IntegerField(
         "requesting_user_status", validators=[], default=0
@@ -611,14 +605,14 @@ class SMInfoControlTableForm(Form):
     warehouse_reviewed = (IntegerField("warehouse_reviewed", validators=[], default=0),)
     warehouse_status = (IntegerField("warehouse_status", validators=[], default=1),)
     admin_notification_date = StringField(
-        "admin_notification_date", validators=[], filters=[datetime_filter]
+        "admin_notification_date", validators=[], filters=[]
     )
     kpi_warehouse = (IntegerField("kpi_warehouse", validators=[], default=0),)
     warehouse_comments = StringField("warehouse_comments", validators=[], default="")
     admin_reviewed = (IntegerField("admin_reviewed", validators=[], default=0),)
     admin_status = (IntegerField("admin_status", validators=[], default=1),)
     warehouse_notification_date = StringField(
-        "warehouse_notification_date", validators=[], filters=[datetime_filter]
+        "warehouse_notification_date", validators=[], filters=[]
     )
     purchasing_kpi = (IntegerField("purchasing_kpi", validators=[], default=0),)
     admin_comments = StringField("admin_comments", validators=[], default="")
@@ -626,7 +620,7 @@ class SMInfoControlTableForm(Form):
         IntegerField("general_request_status", validators=[InputRequired()], default=1),
     )
     operations_notification_date = StringField(
-        "operations_notification_date", validators=[], filters=[datetime_filter]
+        "operations_notification_date", validators=[], filters=[]
     )
     operations_kpi = (IntegerField("operations_kpi", validators=[], default=0),)
     requesting_user_state = StringField(
@@ -635,9 +629,7 @@ class SMInfoControlTableForm(Form):
 
 
 class SMInfoControlTablePutForm(Form):
-    id = IntegerField(
-        "id", validators=[InputRequired(message="Invalid id control sm")]
-    )
+    id = IntegerField("id", validators=[InputRequired(message="Invalid id control sm")])
     info = FormField(SMInfoControlTableForm, "info")
 
 

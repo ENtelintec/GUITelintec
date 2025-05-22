@@ -11,9 +11,27 @@ from datetime import datetime
 import pandas as pd
 import pytz
 
-from static.constants import log_file_sm_path, format_timestamps, timezone_software
+from static.constants import (
+    log_file_sm_path,
+    format_timestamps,
+    timezone_software,
+    dict_depts_identifiers,
+    tabs_sm,
+    format_date,
+)
 from templates.Functions_Utils import create_notification_permission
+from templates.controllers.contracts.contracts_controller import (
+    get_contract_by_client,
+    get_contracts_by_ids,
+    get_items_contract_string,
+)
 from templates.controllers.customer.customers_controller import create_customer_db
+from templates.controllers.departments.heads_controller import (
+    check_if_gerente,
+    check_if_head_not_auxiliar,
+    check_if_leader,
+    check_if_auxiliar_with_contract,
+)
 from templates.controllers.employees.employees_controller import get_emp_contract
 from templates.controllers.index import DataHandler
 from templates.controllers.material_request.sm_controller import (
@@ -29,39 +47,48 @@ from templates.controllers.product.p_and_s_controller import (
     create_product_db_admin,
     create_product_db,
 )
-from templates.forms.Materials import MaterialsRequest
+from templates.forms.StorageMovSM import FileSmPDF
 from templates.misc.Functions_Files import write_log_file
 
 
-def get_products_sm(limit, page=0):
-    flag, error, result = get_sm_products()
-    if limit == -1:
-        limit = len(result) + 1
-    limit = limit if limit > 0 else 10
-    page = page if page >= 0 else 0
-    if len(result) <= 0:
-        return [None, 204]
-    pages = math.floor(result.__len__() / limit)
-    if page > pages:
-        return [None, 204]
-    items = []
-    if pages == 0:
-        limit_up = result.__len__()
-        limit_down = 0
+def get_products_sm(contract: str):
+    flag, error, contract = get_items_contract_string(contract)
+    if len(contract) > 0:
+        items_contract = json.loads(contract[3]) if contract[3] is not None else []
     else:
-        limit_down = limit * page
-        limit_up = limit * (page + 1)
-        limit_up = limit_up if limit_up < result.__len__() else result.__len__()
-    for i in range(limit_down, limit_up):
-        items.append(
-            {
-                "id": result[i][0],
-                "name": result[i][1],
-                "udm": result[i][2],
-                "stock": result[i][3],
-            }
-        )
-    data_out = {"data": items, "page": page, "pages": pages + 1}
+        items_contract = []
+    ids_in_contract = {}
+    for item in items_contract:
+        if item["id"] is None:
+            continue
+        ids_in_contract[item["id"]] = item["partida"]
+    flag, error, result = get_sm_products()
+    if not flag:
+        return {"data": {"contract": [], "normal": []}}, 400
+    items_normal = []
+    items_partida = []
+    for item in result:
+        if item[0] in ids_in_contract.keys():
+            items_partida.append(
+                {
+                    "id": item[0],
+                    "name": item[1],
+                    "udm": item[2],
+                    "stock": item[3],
+                    "partida": ids_in_contract[item[0]],
+                }
+            )
+        else:
+            items_normal.append(
+                {
+                    "id": item[0],
+                    "name": item[1],
+                    "udm": item[2],
+                    "stock": item[3],
+                    "partida": "",
+                }
+            )
+    data_out = {"data": {"contract": items_partida, "normal": items_normal}}
     return data_out, 200
 
 
@@ -89,9 +116,51 @@ def get_all_sm(limit, page=0, emp_id=-1):
         new_products = []
         if products is not None:
             for product in products:
-                if product["id"] == -1:
+                if product.get("id", 0) == -1:
                     new_products.append(product)
         extra_info = json.loads(result[i][14])
+        # time_zone = pytz.timezone(timezone_software)
+        # date_now = datetime.now(pytz.utc).astimezone(time_zone)
+        #  kpi warehouse
+        admin_not_date = extra_info.get("admin_notification_date", "")
+        admin_not_date = (
+            datetime.strptime(admin_not_date, format_date)
+            if admin_not_date != ""
+            and isinstance(admin_not_date, str)
+            and admin_not_date is not None
+            else None
+        )
+        date_creation = (
+            datetime.strptime(result[i][8], format_timestamps)
+            if result[i][8] != "" and isinstance(result[i][8], str)
+            else result[i][8]
+        )
+        if admin_not_date is not None:
+            kpi_warehouse = (
+                "CUMPLE" if (admin_not_date - date_creation).days <= 2 else "NO CUMPLE"
+            )
+        else:
+            kpi_warehouse = ""
+        # operation kpi
+        critical_date = (
+            datetime.strptime(result[i][9], format_timestamps)
+            if result[i][9] != "" and isinstance(result[i][9], str)
+            else result[i][9]
+        )
+        op_not_date = extra_info.get("operations_notification_date", "")
+        op_not_date = (
+            datetime.strptime(op_not_date, format_date)
+            if op_not_date != ""
+            and isinstance(op_not_date, str)
+            and op_not_date is not None
+            else None
+        )
+        if op_not_date is not None:
+            kpi_operations = (
+                "CUMPLE" if (critical_date - critical_date).days >= 1 else "NO CUMPLE"
+            )
+        else:
+            kpi_operations = ""
         dict_sm = {
             "id": result[i][0],
             "folio": result[i][1],
@@ -101,8 +170,12 @@ def get_all_sm(limit, page=0, emp_id=-1):
             "client_id": result[i][5],
             "emp_id": result[i][6],
             "order_quotation": result[i][7],
-            "date": result[i][8],
-            "critical_date": result[i][9],
+            "date": result[i][8].strftime(format_timestamps)
+            if isinstance(result[i][8], datetime)
+            else result[i][8],
+            "critical_date": result[i][9].strftime(format_timestamps)
+            if isinstance(result[i][9], datetime)
+            else result[i][9],
             "items": json.loads(result[i][10]),
             "items_new": new_products,
             "status": result[i][11],
@@ -114,25 +187,24 @@ def get_all_sm(limit, page=0, emp_id=-1):
             "project": extra_info.get("project", ""),
             "urgent": extra_info.get("urgent", 0),
             "activity_description": extra_info.get("activity_description", ""),
-            "request_date": extra_info.get("request_date", ""),
             "requesting_user_status": extra_info.get("requesting_user_status", 0),
             "warehouse_reviewed": extra_info.get("warehouse_reviewed", 0),
             "warehouse_status": extra_info.get("warehouse_status", 1),
             "admin_notification_date": extra_info.get("admin_notification_date", ""),
-            "kpi_warehouse": extra_info.get("kpi_warehouse", 0),
+            "kpi_warehouse": kpi_warehouse,
             "warehouse_comments": extra_info.get("warehouse_comments", ""),
             "admin_reviewed": extra_info.get("admin_reviewed", 0),
             "admin_status": extra_info.get("admin_status", 1),
             "warehouse_notification_date": extra_info.get(
                 "warehouse_notification_date", ""
             ),
-            "purchasing_kpi": extra_info.get("purchasing_kpi", 0),
+            # "purchasing_kpi": extra_info.get("purchasing_kpi", 0),
             "admin_comments": extra_info.get("admin_comments", ""),
             "general_request_status": extra_info.get("general_request_status", 1),
             "operations_notification_date": extra_info.get(
                 "operations_notification_date", ""
             ),
-            "operations_kpi": extra_info.get("operations_kpi", 0),
+            "operations_kpi": kpi_operations,
             "requesting_user_state": extra_info.get("requesting_user_state", ""),
         }
 
@@ -142,6 +214,196 @@ def get_all_sm(limit, page=0, emp_id=-1):
         items.append(dict_sm)
     data_out = {"data": items, "page": page, "pages": pages + 1}
     return data_out, 200
+
+
+def get_department_identifiers(department_id, result, flag_creation=False):
+    match department_id:
+        case 1:
+            return [1]  # Dirección
+        case 2:
+            return (
+                [2001]
+                if "seguridad" in result[1].lower()
+                else [2]
+                if "director" in result[1].lower()
+                else []
+            )
+        case 3:  # Administración
+            return (
+                [3001]
+                if "almacen" in result[1].lower()
+                else [3002]
+                if "ti" in result[1].lower()
+                else [3004]
+                if "medición" in result[1].lower()
+                else list(dict_depts_identifiers.keys())
+                if not flag_creation
+                else [3, 3001, 3002, 3003, 3004]
+            )
+        case 4:
+            return [4]  # RH
+        case _:
+            return [department_id]  # Default
+
+
+def get_iddentifiers_creation(data_token):
+    permissions = data_token.get("permissions", {}).values()
+    ids_identtifier = []
+    contracts = []
+    # if any("administrator" in item.lower().split(".")[-1] for item in permissions):
+    if any(
+        word in item.lower().split(".")[-1]
+        for word in ["administrator"]
+        for item in permissions
+    ):
+        ids_identtifier = list(dict_depts_identifiers.keys())
+        flag, error, contracts = get_contract_by_client(40)
+    else:
+        for check_func in (check_if_gerente, check_if_head_not_auxiliar):
+            flag, error, result = check_func(data_token.get("emp_id"))
+            if flag and result:
+                ids_identtifier = get_department_identifiers(
+                    data_token.get("dep_id"), result, True
+                )
+                break
+        for check_func in (check_if_leader,):
+            flag, error, result = check_func(data_token.get("emp_id"))
+            if flag and len(result) > 0:
+                ids = []
+                for item in result:
+                    extra_info = json.loads(item[7])
+                    ids += extra_info.get("contracts", [])
+                    ids += extra_info.get("contracts_temp", [])
+                ids = list(set(ids))
+                flag, error, contracts = get_contracts_by_ids(ids)
+                if not flag:
+                    return {"data": None, "msg": str(error)}, 400
+                break
+    identifiers = [
+        dict_depts_identifiers.get(dept_id)
+        for dept_id in ids_identtifier
+        if dict_depts_identifiers.get(dept_id)
+    ]
+    identifier_list = [
+        item
+        for sublist in identifiers
+        for item in (sublist if isinstance(sublist, list) else [sublist])
+    ]
+    for result in contracts:
+        metadata = json.loads(result[1])
+        contract_number = metadata["contract_number"]
+        idn_contract = contract_number[-4:]
+        if str(idn_contract) not in identifier_list:
+            identifier_list.append(f"{idn_contract}")
+    if not identifier_list:
+        return {"data": None, "msg": "Folios for user not found"}, 200
+    return identifier_list, 200
+
+
+def get_iddentifiers(data_token):
+    permissions = data_token.get("permissions", {}).values()
+    ids_identtifier = []
+    contracts = []
+    # if any("administrator" in item.lower().split(".")[-1] for item in permissions):
+    if any(
+        word in item.lower().split(".")[-1]
+        for word in ["administrator", "almacen"]
+        for item in permissions
+    ):
+        ids_identtifier = list(dict_depts_identifiers.keys())
+        flag, error, contracts = get_contract_by_client(40)
+    else:
+        for check_func in (check_if_gerente, check_if_head_not_auxiliar):
+            flag, error, result = check_func(data_token.get("emp_id"))
+            if flag and result:
+                ids_identtifier = get_department_identifiers(
+                    data_token.get("dep_id"), result
+                )
+                break
+        for check_func in (check_if_leader, check_if_auxiliar_with_contract):
+            flag, error, result = check_func(data_token.get("emp_id"))
+            if flag and len(result) > 0:
+                ids = []
+                for item in result:
+                    extra_info = json.loads(item[7])
+                    ids += extra_info.get("contracts", [])
+                    ids += extra_info.get("contracts_temp", [])
+                ids = list(set(ids))
+                flag, error, contracts = get_contracts_by_ids(ids)
+                if not flag:
+                    return {"data": None, "msg": str(error)}, 400
+                break
+    identifiers = [
+        dict_depts_identifiers.get(dept_id)
+        for dept_id in ids_identtifier
+        if dict_depts_identifiers.get(dept_id)
+    ]
+    identifier_list = [
+        item
+        for sublist in identifiers
+        for item in (sublist if isinstance(sublist, list) else [sublist])
+    ]
+    for result in contracts:
+        metadata = json.loads(result[1])
+        contract_number = metadata["contract_number"]
+        idn_contract = contract_number[-4:]
+        if str(idn_contract) not in identifier_list:
+            identifier_list.append(f"{idn_contract}")
+    if not identifier_list:
+        return {"data": None, "msg": "Folios for user not found"}, 200
+    return identifier_list, 200
+
+
+def fetch_all_sm_with_permissions(data_token):
+    iddentifiers, code = get_iddentifiers_creation(data_token)
+    if code != 200:
+        return {"data": [], "msg": iddentifiers}, 400
+    data_sm, code = get_all_sm(-1, 0, -1)
+    if code != 200:
+        return {"data": [], "msg": data_sm}, 400
+    data_out = {}
+    ident_list = [f"sm-{item.lower()}-" for item in iddentifiers]
+    for key in ident_list:
+        tab = tabs_sm.get(key)
+        if tab is None:
+            continue
+        if tab not in data_out:
+            data_out[tab] = []
+    for sm in data_sm["data"]:
+        for key in ident_list:
+            tab = tabs_sm.get(key)
+            if tab is None:
+                continue
+            if key in sm["folio"].lower():
+                data_out[tab].append(sm)
+                break
+    return {"data": data_out}, 200
+
+
+def get_all_sm_control_table(data_token):
+    iddentifiers, code = get_iddentifiers(data_token)
+    if code != 200:
+        return {"data": [], "msg": iddentifiers}, 400
+    data_sm, code = get_all_sm(-1, 0, -1)
+    if code != 200:
+        return {"data": [], "msg": data_sm}, 400
+    data_out = {}
+    ident_list = [f"sm-{item.lower()}-" for item in iddentifiers]
+    for key in ident_list:
+        tab = tabs_sm.get(key)
+        if tab is None:
+            continue
+        if tab not in data_out:
+            data_out[tab] = []
+    for sm in data_sm["data"]:
+        for key in ident_list:
+            tab = tabs_sm.get(key)
+            if tab is None:
+                continue
+            if key in sm["folio"].lower():
+                data_out[tab].append(sm)
+                break
+    return {"data": data_out}, 200
 
 
 def update_data_dicts(products: list, products_sm):
@@ -438,28 +700,38 @@ def dowload_file_sm(sm_id: int):
         else:
             status = "pendiente"
         products.append((counter, name, quantity, udm, stock, status))
-    flag = MaterialsRequest(
+    # "metadata": {
+    #     "Fecha de Solicitud": "06/05/2025",
+    #     "Folio": "SM-0701-177",
+    #     "Contrato": "RFID /IOT",
+    #     "Usuario Solicitante": "ARTURO CUERVO",
+    #     "Número de Pedido": "GC-0701-COT-202",
+    #     "Personal Telintec": "CLAUDIO VILLARREAL",
+    #     "Planta": "LARGOS NORTE",
+    #     "Área Dirigida Telintec": "ALMACEN COMPRAS",
+    #     "Área / Ubicación": "CASETA PESADOS",
+    #     "Fecha Crítica de Entrega": "07/05/2025",
+    # },
+    flag = FileSmPDF(
         {
             "filename_out": download_path,
             "products": products,
-            "info": {
-                "fecha de solictud": date.date(),
-                "contrato": contract,
-                "numero de pedido": order_quotation,
-                "planta": facility,
-                "Area/ubicacion": location,
-                "folio": folio,
-                "usuario solicitante": customer_name,
-                "personal telintec": emp_name,
-                "area dirigida telintec": extra_info["destination"],
-                "fecha critica de entrega": critical_date.date(),
-                "history": history,
+            "metadata": {
+                "Fecha de Solicitud": date.strftime(format_date),
+                "Folio": folio,
+                "Contrato": contract,
+                "Usuario Solicitante": customer_name,
+                "Número de Pedido": order_quotation,
+                "Personal Telintec": emp_name,
+                "Planta": facility,
+                "Área Dirigida Telintec": location,
+                "Área / Ubicación": location,
+                "Fecha Crítica de Entrega": critical_date.strftime(format_date),
             },
             "observations": observations,
             "date_complete_delivery": "2023-06-01",
             "date_first_delivery": "2023-06-01",
         },
-        type_form="MaterialsRequest",
     )
     if not flag:
         print("error at generating pdf", download_path)
@@ -524,10 +796,14 @@ def update_sm_from_control_table(data, data_token):
         }
     )
     extra_info = json.loads(result[14])
+    comments = ""
     for k, value in data["info"].items():
+        if k == "comments":
+            comments = value
+            continue
         extra_info[k] = value
     flag, error, result = update_history_extra_info_sm_by_id(
-        data["id"], extra_info, history_sm
+        data["id"], extra_info, history_sm, comments
     )
     if flag:
         msg = f"SM con ID-{data['id']} actualizada"

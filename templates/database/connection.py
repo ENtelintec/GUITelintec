@@ -8,20 +8,6 @@ import mysql.connector
 from static.constants import secrets, HOST_DB_DEFAULT, USER_DB_DEFAULT, PASS_DB_DEFAULT
 
 
-def connectionDB():
-    try:
-        connection = mysql.connector.connect(
-            host=secrets[HOST_DB_DEFAULT],
-            user=secrets[USER_DB_DEFAULT],
-            password=secrets[PASS_DB_DEFAULT],
-        )
-        if connection.is_connected():
-            return connection
-
-    except mysql.connector.Error as error:
-        print(f"No se pudo conectar: {error}")
-
-
 def execute_sql(sql: str, values: tuple = None, type_sql=1):
     """
     Execute the sql with the values provides (OR not) AND returns a value

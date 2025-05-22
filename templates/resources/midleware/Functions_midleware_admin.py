@@ -4,18 +4,42 @@ __date__ = "$ 20/jun./2024  at 15:23 $"
 
 import json
 
-from static.constants import filepath_settings
+
+from static.constants import (
+    filepath_settings,
+    log_file_admin,
+    dict_deps,
+    dict_depts_identifiers,
+)
+from templates.Functions_Utils import create_notification_permission
 from templates.controllers.contracts.contracts_controller import (
     get_contract,
-    get_contract_from_abb,
+    create_contract,
+    get_contracts_abreviations_db,
+    update_contract,
+    get_contract_by_client,
+    get_contracts_by_ids,
 )
-from templates.controllers.contracts.quotations_controller import get_quotation
+from templates.controllers.contracts.quotations_controller import (
+    get_quotation,
+    create_quotation,
+    update_quotation_from_contract,
+)
 from templates.controllers.customer.customers_controller import (
-    get_customer_amc_by_id,
     get_all_customers_db,
     create_customer_db,
     update_customer_db,
     delete_customer_db,
+)
+from templates.controllers.departments.heads_controller import (
+    get_heads_db,
+    insert_head_DB,
+    update_head_DB,
+    delete_head_DB,
+    get_heads_list_db,
+    check_if_gerente,
+    check_if_head_not_auxiliar,
+    check_if_leader,
 )
 from templates.controllers.material_request.sm_controller import get_folios_by_pattern
 from templates.controllers.purchases.purchases_admin_controller import (
@@ -27,22 +51,14 @@ from templates.controllers.supplier.suppliers_controller import (
     delete_supplier_amc,
     get_all_suppliers_amc,
 )
+from templates.misc.Functions_Files import write_log_file
 from templates.resources.methods.Functions_Aux_Admin import (
     read_file_tenium_contract,
     read_exel_products_quotation,
     compare_file_quotation,
+    read_exel_products_bidding,
+    read_exel_products_partidas,
 )
-
-dict_depts_identifiers = {
-    "administracion": "ADMON",
-    "almacen": "ALM",
-    "control de activos": ["CDA-VEH", "TI"],
-    "direccion": "DIRE",
-    "operaciones": "OP",
-    "recursos humanos": "RH",
-    "seguridad": "sst",
-    "sistema de gestion integral": "sgi",
-}
 
 
 def get_quotations(id_quotation=None):
@@ -54,7 +70,7 @@ def get_quotations(id_quotation=None):
     if not flag:
         return {"data": None, "msg": str(error)}, 400
     if id_quotation is not None:
-        id_q, metadata, products, creation, timestamps = result
+        id_q, metadata, products, creation, timestamps, company, emission = result
         data_out = {
             "id": id_q,
             "metadata": json.loads(metadata),
@@ -66,7 +82,7 @@ def get_quotations(id_quotation=None):
     else:
         data_out = []
         for item in result:
-            id_q, metadata, products, creation, timestamps = item
+            id_q, metadata, products, creation, timestamps, company, emission = item
             data_out.append(
                 {
                     "id": id_q,
@@ -79,16 +95,50 @@ def get_quotations(id_quotation=None):
         return {"data": data_out, "msg": "Ok"}, 200
 
 
+def validate_metadata(metadata: dict):
+    return {
+        "emission": metadata.get("emission", ""),
+        "quotation_code": metadata.get("quotation_code", ""),
+        "planta": metadata.get("planta", ""),
+        "area": metadata.get("area", ""),
+        "location": metadata.get("location", ""),
+        "client_id": metadata.get("client_id", 0),
+        "contract_number": metadata.get("contract_number", ""),
+        "identifier": metadata.get("identifier", ""),
+        "abbreviation": metadata.get("abbreviation", ""),
+        "remitos": metadata.get("remitos", ""),
+        "fecha_solicitud": metadata.get("fecha_solicitud", ""),
+        "coordinador": metadata.get("coordinador", ""),
+        "ceco": metadata.get("ceco", ""),
+        "descripcion": metadata.get("descripcion", ""),
+        "estatus": metadata.get("estatus", ""),
+        "sgd": metadata.get("sgd", ""),
+        "fecha_sg": metadata.get("fecha_sg", ""),
+        "estatus_remision": metadata.get("estatus_remision", ""),
+        "remitos_enviados": metadata.get("remitos_enviados", ""),
+        "estatus_hes": metadata.get("estatus_hes", ""),
+        "num_hes": metadata.get("num_hes", ""),
+        "liberacion_hes": metadata.get("liberacion_hes", ""),
+        "saldo_pedido": metadata.get("saldo_pedido", ""),
+        "remision_mxn": metadata.get("remision_mxn", ""),
+        "saldo_comprometido": metadata.get("saldo_comprometido", ""),
+        "saldo_hes": metadata.get("saldo_hes", ""),
+        "saldo_facturado": metadata.get("saldo_facturado", ""),
+        "observaciones": metadata.get("observaciones", ""),
+    }
+
+
 def get_contracts(id_contract=None):
-    id_contract = id_contract if id_contract != -1 else None
+    id_contract = None if id_contract == -1 or id_contract == "-1" else id_contract
     flag, error, result = get_contract(id_contract)
     if not flag:
         return {"data": None, "msg": str(error)}, 400
-    if id_contract is None:
+    if id_contract is not None:
         id_c, metadata, creation, quotation_id, timestamps = result
+        metadata = validate_metadata(json.loads(metadata))
         data_out = {
             "id": id_c,
-            "metadata": json.loads(metadata),
+            "metadata": metadata,
             "creation": creation,
             "quotation_id": quotation_id,
             "timestamps": json.loads(timestamps),
@@ -98,10 +148,11 @@ def get_contracts(id_contract=None):
         data_out = []
         for item in result:
             id_c, metadata, creation, quotation_id, timestamps = item
+            metadata = validate_metadata(json.loads(metadata))
             data_out.append(
                 {
                     "id": id_c,
-                    "metadata": json.loads(metadata),
+                    "metadata": metadata,
                     "creation": creation,
                     "quotation_id": quotation_id,
                     "timestamps": json.loads(timestamps),
@@ -110,58 +161,120 @@ def get_contracts(id_contract=None):
         return {"data": data_out, "msg": "Ok"}, 200
 
 
-def get_folio_from_contract_ternium(contract_abb: str):
-    flag, error, result = get_contract_from_abb(contract_abb)
-    if not flag:
-        return {"data": None, "msg": str(error)}, 400
-    folio_sm = "SM"
-    metadata = json.loads(result[1])
-    contract_number = metadata["contract_number"]
-    idn_contract = contract_number[-4:]
-    folio = folio_sm + "-" + idn_contract
-    flag, error, folios = get_folios_by_pattern(folio)
-    numbers = []
-    for item in folios:
-        try:
-            numbers.append(int(item[0][-3:]))
-        except Exception as e:
-            print(e, "item: ", item)
-            continue
-    numbers = numbers if len(numbers) > 0 else [0]
-    numbers.sort()
-    folio = folio + "-" + str(numbers[-1] + 1).zfill(3)
-    flag, error, client_data = get_customer_amc_by_id(metadata["client_id"])
-    client_data = client_data if flag else [metadata["client_id"], "", "", "", "", ""]
-    data = {
-        "folio": folio,
-        "planta": metadata["planta"],
-        "area": metadata["area"],
-        "location": metadata["location"],
-        "client": {
-            "id": metadata["client_id"],
-            "name": client_data[1],
-            "email": client_data[2],
-            "phone": client_data[3],
-            "rfc": client_data[4],
-            "address": client_data[5],
-        },
-        "identifier": metadata["identifier"],
-    }
+def get_folio_from_contract_ternium(data_token):
+    permissions = data_token.get("permissions", {}).values()
+    if any("administrator" in item.lower().split(".")[-1] for item in permissions):
+        flag, error, contracts = get_contract_by_client(40)
+        if not flag:
+            return {"data": None, "msg": str(error)}, 400
+    else:
+        for check_func in (check_if_leader,):
+            flag, error, result = check_func(data_token.get("emp_id"))
+            if flag and len(result) > 0:
+                ids = []
+                for item in result:
+                    extra_info = json.loads(item[7])
+                    ids += extra_info.get("contracts", [])
+                    ids += extra_info.get("contracts_temp", [])
+                ids = list(set(ids))
+                flag, error, contracts = get_contracts_by_ids(ids)
+                if not flag or len(contracts) == 0:
+                    return {"data": None, "msg": str(error)}, 400
+                break
+        else:
+            return {"data": None, "msg": str(error)}, 400
+    data = []
+    for result in contracts:
+        folio_sm = "SM"
+        metadata = json.loads(result[1])
+        contract_number = metadata["contract_number"]
+        idn_contract = contract_number[-4:]
+        folio = folio_sm + "-" + idn_contract
+        flag, error, folios = get_folios_by_pattern(folio)
+        numbers = []
+        for item in folios:
+            try:
+                numbers.append(int(item[0][-3:]))
+            except Exception as e:
+                print(e, "item: ", item)
+                continue
+        numbers = numbers if len(numbers) > 0 else [0]
+        numbers.sort()
+        folio = folio + "-" + str(numbers[-1] + 1).zfill(3)
+        data.append(
+            {
+                "folio": folio,
+                "planta": metadata["planta"],
+                "area": metadata["area"],
+                "location": metadata["location"],
+                "identifier": metadata["identifier"],
+            }
+        )
     return {"data": data, "msg": "Ok"}, 200
 
 
-def folio_from_department(department_key: str):
-    identifier = dict_depts_identifiers.get(department_key.lower())
-    if identifier is None:
-        return {"data": None, "msg": "Department not found"}, 400
-    folio_list = []
-    if isinstance(identifier, str):
-        folio = f"SM-{identifier.upper()}"
-        folio_list.append(folio)
-    elif isinstance(identifier, list):
-        for idd in identifier:
-            folio = f"SM-{idd.upper()}"
-            folio_list.append(folio)
+def get_department_identifiers(department_id, result):
+    match department_id:
+        case 1:
+            return [1]  # Dirección
+        case 2:
+            return (
+                [2001]
+                if "seguridad" in result[1].lower()
+                else [2]
+                if "director" in result[1].lower()
+                else []
+            )
+        case 3:  # Administración
+            return (
+                [3001]
+                if "almacen" in result[1].lower()
+                else [3, 3002]
+                if "activos" in result[1].lower()
+                else [3]
+            )
+        case 4:
+            return [4]  # RH
+        case _:
+            return [department_id]  # Default
+
+
+def get_iddentifiers(data_token):
+    permissions = data_token.get("permissions", {}).values()
+    if any("administrator" in item.lower().split(".")[-1] for item in permissions):
+        ids_identtifier = list(dict_depts_identifiers.keys())
+    else:
+        for check_func in (check_if_gerente, check_if_head_not_auxiliar):
+            flag, error, result = check_func(data_token.get("emp_id"))
+            if flag and result:
+                ids_identtifier = get_department_identifiers(
+                    data_token.get("dep_id"), result
+                )
+                break
+        else:
+            return {"data": None, "msg": str(error)}, 400
+    identifiers = [
+        dict_depts_identifiers.get(dept_id)
+        for dept_id in ids_identtifier
+        if dict_depts_identifiers.get(dept_id)
+    ]
+    identifier = [
+        item
+        for sublist in identifiers
+        for item in (sublist if isinstance(sublist, list) else [sublist])
+    ]
+    if not identifier:
+        return {"data": None, "msg": "Folios for user not found"}, 401
+    return identifier, 200
+
+
+def folio_from_department(data_token):
+    identifier, code = get_iddentifiers(data_token)
+    if code != 200:
+        return identifier, code
+    folio_list = [
+        f"SM-{idd.upper()}" for idd in identifier if isinstance(identifier, (str, list))
+    ]
     folios_out = []
     for folio in folio_list:
         flag, error, folios = get_folios_by_pattern(folio)
@@ -407,3 +520,244 @@ def delete_supplier(data):
     if not flag:
         return {"data": None, "msg": str(error)}, 400
     return {"data": result, "msg": "Ok"}, 200
+
+
+def create_contract_from_api(data, data_token):
+    if data.get("quotation_id", 0) == 0:
+        flag, error, result = create_quotation(
+            data["metadata"], data["products"], status=2
+        )
+        if not flag:
+            return {"data": None, "msg": str(error)}, 400
+        id_quotation = result
+        flag, error, result = create_contract(id_quotation, data["metadata"])
+    else:
+        flag, error, result = create_contract(data["quotation_id"], data["metadata"])
+
+    if not flag:
+        return {"data": None, "msg": str(error)}, 400
+    msg = f"Contrato creado con ID-{result} por el empleado {data_token.get('emp_id')}"
+    create_notification_permission(
+        msg, ["administracion"], "Contrato Creado", data_token.get("emp_id"), 0
+    )
+    write_log_file(log_file_admin, msg)
+    return {"data": result, "msg": "Ok"}, 201
+
+
+def update_contract_from_api(data, data_token):
+    msg = ""
+    if data.get("quotation_id", 0) == 0 and len(data.get("products", [])) > 0:
+        flag, error, result = create_quotation(
+            data["metadata"], data["products"], status=1
+        )
+        if not flag:
+            return {
+                "data": None,
+                "msg": "No se pudo crear una cotizacion para relacionar con el contrato"
+                + str(error),
+            }, 400
+        id_quotation = result if isinstance(result, int) and result > 0 else 0
+        if id_quotation == 0:
+            return {
+                "data": None,
+                "msg": "No se pudo obtener el id correcto de una cotizacion para relacionar con el contrato",
+            }, 400
+        msg += f"Se creo una cotizacion con ID-{id_quotation} para relacionar con el contrato por el empleado {data_token.get('emp_id')}"
+    else:
+        id_quotation = data["quotation_id"]
+        flag, error, result = update_quotation_from_contract(
+            id_quotation, data["products"]
+        )
+        if not flag:
+            return {
+                "data": None,
+                "msg": "Error at updating products " + str(error),
+            }, 400
+        msg += f"Se actualizo la cotizacion con ID-{id_quotation} por el empleado {data_token.get('emp_id')}"
+    id_quotation = id_quotation if id_quotation != 0 else None
+    flag, error, result = update_contract(
+        data["id"], data["metadata"], data["timestamps"], id_quotation
+    )
+    if not flag:
+        return {"data": None, "msg": str(error)}, 400
+    msg += f"Contrato actualizado con ID-{data['id']} por el empleado {data_token.get('emp_id')}"
+    create_notification_permission(
+        msg, ["administracion"], "Contrato Actualizado", data_token.get("emp_id"), 0
+    )
+    write_log_file(log_file_admin, msg)
+    return {"data": result, "msg": "Ok"}, 200
+
+
+def fetch_heads_main(data_token):
+    dep_id = data_token.get("dep_id")
+    permissions = data_token.get("permissions")
+    permissions_last = [item.lower().split(".")[-1] for item in permissions.values()]
+    flag, error, result = check_if_gerente(data_token.get("emp_id"))
+    if len(result) == 0 and "administrator" not in permissions_last:
+        return {"data": [], "msg": str(error)}, 400
+    dep_ids_list = [dep_id]
+    for k, v in dict_deps.items():
+        if "administrator" in permissions_last:
+            dep_ids_list.append(v)
+            continue
+        if k.lower() in permissions_last:
+            dep_ids_list.append(v)
+    flag, error, result = get_heads_list_db(dep_ids_list)
+    if not flag:
+        return {"data": [], "msg": str(error)}, 400
+    data_out = []
+    for item in result:
+        extra_info = json.loads(item[7])
+        data_out.append(
+            {
+                "id": item[0],
+                "name": item[1],
+                "employee": item[2],
+                "department": item[3],
+                "department_name": item[4],
+                "employee_name": item[5],
+                "employee_email": item[6],
+                "contracts": extra_info.get("contracts", []),
+                "contracts_temp": extra_info.get("contracts_temp", []),
+                "other_leaders": extra_info.get("other_leaders", []),
+            }
+        )
+    return {"data": data_out, "msg": "Ok"}, 200
+
+
+def fetch_heads(id_department: int):
+    id_department = int(id_department) if id_department >= 0 else None
+    flag, error, result = get_heads_db(id_department)
+    if not flag:
+        return {"data": [], "msg": str(error)}, 400
+    data_out = []
+    for item in result:
+        extra_info = json.loads(item[7])
+        data_out.append(
+            {
+                "id": item[0],
+                "name": item[1],
+                "employee": item[2],
+                "department": item[3],
+                "department_name": item[4],
+                "employee_name": item[5],
+                "employee_email": item[6],
+                "contracts": extra_info.get("contracts", []),
+                "contracts_temp": extra_info.get("contracts_temp", []),
+                "other_leaders": extra_info.get("other_leaders", []),
+            }
+        )
+    # data_abb, code_abb = get_contracts_abreviations()
+    # return {"data": data_out, "msg": "Ok", "data_abbreviations": data_abb}, 200
+    return {"data": data_out, "msg": "Ok"}, 200
+
+
+def insert_head_from_api(data, data_token):
+    extra_info = (
+        json.loads(data["extra_info"])
+        if isinstance(data["extra_info"], str)
+        else data["extra_info"]
+    )
+    if "other_leaders" not in extra_info:
+        extra_info["other_leaders"] = []
+    if "contracts" not in extra_info:
+        extra_info["contracts"] = []
+    if "contracts_temp" not in extra_info:
+        extra_info["contracts_temp"] = []
+    flag, error, result = insert_head_DB(
+        data["name"],
+        data["department"],
+        data["employee"],
+        extra_info,
+    )
+    if not flag:
+        return {"data": None, "msg": str(error)}, 400
+    msg = f"Encargado creado con ID-{result} por el empleado {data_token.get('emp_id')}"
+    create_notification_permission(
+        msg,
+        ["administracion", "operaciones"],
+        "Encargado Creado",
+        data_token.get("emp_id"),
+        0,
+    )
+    write_log_file(log_file_admin, msg)
+    return {"data": result, "msg": "Ok"}, 201
+
+
+def update_head_from_api(data, data_token):
+    extra_info = (
+        json.loads(data["extra_info"])
+        if isinstance(data["extra_info"], str)
+        else data["extra_info"]
+    )
+    if "other_leaders" not in extra_info:
+        extra_info["other_leaders"] = []
+    if "contracts" not in extra_info:
+        extra_info["contracts"] = []
+    if "contracts_temp" not in extra_info:
+        extra_info["contracts_temp"] = []
+    flag, error, result = update_head_DB(
+        data["id"],
+        data["department"],
+        data["employee"],
+        extra_info,
+    )
+    if not flag:
+        return {"data": None, "msg": str(error)}, 400
+    msg = f"Encargado actualizado con ID-{data['id']} por el empleado {data_token.get('emp_id')}"
+    create_notification_permission(
+        msg,
+        ["administracion", "operaciones"],
+        "Encargado Actualizado",
+        data_token.get("emp_id"),
+        0,
+    )
+    write_log_file(log_file_admin, msg)
+    return {"data": result, "msg": "Ok"}, 200
+
+
+def delete_head_from_api(data, data_token):
+    flag, error, result = delete_head_DB(data["id"])
+    if not flag:
+        return {"data": None, "msg": str(error)}, 400
+    msg = f"Encargado eliminado con ID-{data['id']} por el empleado {data_token.get('emp_id')}"
+    create_notification_permission(
+        msg,
+        ["administracion", "operaciones"],
+        "Encargado Eliminado",
+        data_token.get("emp_id"),
+        0,
+    )
+    write_log_file(log_file_admin, msg)
+    return {"data": result, "msg": "Ok"}, 200
+
+
+def items_quotation_from_file(data):
+    products = read_exel_products_bidding(data["path"])
+    if products is None:
+        return {"data": None, "msg": "Error at file structure"}, 400
+    return {"data": products, "msg": "Ok"}, 200
+
+
+def items_contract_from_file(data):
+    products = read_exel_products_partidas(data["path"])
+    if products is None:
+        return {"data": None, "msg": "Error at file structure"}, 400
+    return {"data": products, "msg": "Ok"}, 200
+
+
+def get_contracts_abreviations():
+    flag, error, result = get_contracts_abreviations_db()
+    if not flag:
+        return {"data": [], "msg": str(error)}, 400
+    data_out = []
+    for item in result:
+        metadata = json.loads(item[2])
+        data_out.append(
+            {
+                "abreviation": json.loads(item[0]),
+                "id": item[1],
+                "metadata": metadata,
+            }
+        )
+    return {"data": data_out, "msg": "Ok"}, 200

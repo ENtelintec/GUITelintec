@@ -30,6 +30,7 @@ from static.Models.api_contracts_models import (
     ContractSettingsForm,
     expected_files_contract_comparison,
 )
+from static.Models.api_fichajes_models import expected_files
 from static.Models.api_models import expected_headers_per
 from templates.resources.methods.Functions_Aux_Login import token_verification_procedure
 from templates.resources.midleware.Functions_midleware_admin import (
@@ -41,10 +42,11 @@ from templates.resources.midleware.Functions_midleware_admin import (
     products_contract_from_file,
     modify_pattern_phrase_contract_pdf,
     compare_file_and_quotation,
-)
-from templates.controllers.contracts.contracts_controller import (
-    create_contract,
-    update_contract,
+    create_contract_from_api,
+    items_quotation_from_file,
+    get_contracts_abreviations,
+    items_contract_from_file,
+    update_contract_from_api,
 )
 from templates.controllers.contracts.quotations_controller import (
     create_quotation,
@@ -178,10 +180,8 @@ class Contract(Resource):
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
-        flag, error, result = create_contract(data["quotation_id"], data["metadata"])
-        if not flag:
-            return {"data": None, "msg": str(error)}, 400
-        return {"data": result, "msg": "Ok"}, 200
+        data_out, code = create_contract_from_api(data, data_token)
+        return data_out, code
 
     @ns.expect(expected_headers_per, contract_model_update)
     def put(self):
@@ -195,12 +195,13 @@ class Contract(Resource):
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
-        flag, error, result = update_contract(
-            data["id"], data["metadata"], data["timestamps"]
-        )
-        if not flag:
-            return {"data": None, "msg": error}, 400
-        return {"data": result, "msg": "Ok"}, 200
+        data_out, code = update_contract_from_api(data, data_token)
+        # flag, error, result = update_contract(
+        #     data["id"], data["metadata"], data["timestamps"], data["quotation_id"]
+        # )
+        # if not flag:
+        #     return {"data": None, "msg": error}, 400
+        return data_out, code
 
     @ns.expect(expected_headers_per, contract_model_delete)
     def delete(self):
@@ -304,27 +305,86 @@ class CompareContractQuotation(Resource):
             return {"msg": "No se subio el archivo"}, 400
 
 
-@ns.route("/folio/ternium/<string:contract>")
+@ns.route("/folio/ternium")
 class FolioTernium(Resource):
     @ns.expect(expected_headers_per)
-    def get(self, contract):
+    def get(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["administracion", "almacen"]
+            request, department=["administracion", "almacen", "sm"]
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        data_out, code = get_folio_from_contract_ternium(contract)
+        data_out, code = get_folio_from_contract_ternium(data_token)
         return data_out, code
 
 
-@ns.route("/folio/cotfc/<string:key>")
+@ns.route("/folio/cotfc")
 class FolioCotfc(Resource):
     @ns.expect(expected_headers_per)
-    def get(self, key):
+    def get(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["administracion", "almacen"]
+            request, department=["administracion", "almacen", "sm"]
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        data_out, code = folio_from_department(key)
+        data_out, code = folio_from_department(data_token)
+        return data_out, code
+
+
+@ns.route("/quotation/items/file")
+class ItemsQuotationFileUpload(Resource):
+    @ns.expect(expected_headers_per, expected_files)
+    def post(self):
+        flag, data_token, msg = token_verification_procedure(
+            request, department="administracion"
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        if "file" not in request.files:
+            return {"data": "No se detecto un archivo"}, 400
+        file = request.files["file"]
+        if file:
+            filename = secure_filename(file.filename)
+            filepath_download = os.path.join(tempfile.mkdtemp(), filename)
+            file.save(filepath_download)
+            data = {"path": filepath_download}
+            data_out, code = items_quotation_from_file(data)
+            return data_out, code
+        else:
+            return {"msg": "No se subio el archivo"}, 400
+
+
+@ns.route("/contract/items/file")
+class ItemsContractFileUpload(Resource):
+    @ns.expect(expected_headers_per, expected_files)
+    def post(self):
+        flag, data_token, msg = token_verification_procedure(
+            request, department="administracion"
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        if "file" not in request.files:
+            return {"data": "No se detecto un archivo"}, 400
+        file = request.files["file"]
+        if file:
+            filename = secure_filename(file.filename)
+            filepath_download = os.path.join(tempfile.mkdtemp(), filename)
+            file.save(filepath_download)
+            data = {"path": filepath_download}
+            data_out, code = items_contract_from_file(data)
+            return data_out, code
+        else:
+            return {"msg": "No se subio el archivo"}, 400
+
+
+@ns.route("/contracts/abreviations")
+class ContractsAbreviations(Resource):
+    @ns.expect(expected_headers_per)
+    def get(self):
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["administracion", "rrhh", "operaciones", "sm"]
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        data_out, code = get_contracts_abreviations()
         return data_out, code

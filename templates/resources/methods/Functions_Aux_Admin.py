@@ -8,6 +8,10 @@ import re
 import pandas as pd
 from PyPDF2 import PdfReader
 
+from templates.controllers.product.p_and_s_controller import (
+    get_product_by_sku_manufacture,
+)
+
 
 def parse_data(data: dict, mode: int):
     """
@@ -175,6 +179,36 @@ def read_exel_products_bidding(path: str):
             "udm": item["Unit of measure"],
             "date_needed": item["Date needed"],
             "price_unit": item["Unit price"],
+        }
+        products.append(product)
+    return products
+
+
+def read_exel_products_partidas(path: str):
+    df = pd.read_excel(path)
+    df = df.fillna("")
+    data_excel = df.to_dict("records")
+
+    products = []
+    for item in data_excel:
+        # partida: number; quantity: number; udm: string; price_unit: number; type_p: string; marca: string; n_parte: string; description: string; description_small: string; id: number; comment: string;
+        n_parte = item["NRO. PARTE"]
+        id_p = None
+        flag, error, result = get_product_by_sku_manufacture(n_parte)
+        if flag and len(result) > 0:
+            id_p = result[0]
+        product = {
+            "partida": item["PARTIDA"],
+            "quantity": 1,
+            "udm": item["UND"],
+            "price_unit": 0.0,
+            "type_p": item["TIPO"],
+            "marca": item["MARCA"],
+            "n_parte": item["NRO. PARTE"],
+            "description": item["DESCRIPCIÓN LARGA"],
+            "description_small": item["DESCRIPCIÓN CORTA"],
+            "id": id_p,
+            "comment": "",
         }
         products.append(product)
     return products
