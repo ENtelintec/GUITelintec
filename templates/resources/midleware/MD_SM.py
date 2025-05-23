@@ -655,7 +655,7 @@ def get_employees_almacen():
     return data_out, 200
 
 
-def dowload_file_sm(sm_id: int):
+def dowload_file_sm(sm_id: int, type_file="pdf"):
     flag, error, result = get_sm_by_id(sm_id)
     if not flag or len(result) == 0:
         return None, 400
@@ -675,6 +675,8 @@ def dowload_file_sm(sm_id: int):
     extra_info = json.loads(result[14])
     download_path = os.path.join(
         tempfile.mkdtemp(), os.path.basename(f"sm_{result[0]}_{date.date()}.pdf")
+    ) if type_file == "pdf" else os.path.join(
+        tempfile.mkdtemp(), os.path.basename(f"sm_{result[0]}_{date.date()}.xlsx")
     )
     products = []
     flag, error, result = get_info_names_by_sm_id(result[0])
@@ -700,42 +702,40 @@ def dowload_file_sm(sm_id: int):
         else:
             status = "pendiente"
         products.append((counter, name, quantity, udm, stock, status))
-    # "metadata": {
-    #     "Fecha de Solicitud": "06/05/2025",
-    #     "Folio": "SM-0701-177",
-    #     "Contrato": "RFID /IOT",
-    #     "Usuario Solicitante": "ARTURO CUERVO",
-    #     "Número de Pedido": "GC-0701-COT-202",
-    #     "Personal Telintec": "CLAUDIO VILLARREAL",
-    #     "Planta": "LARGOS NORTE",
-    #     "Área Dirigida Telintec": "ALMACEN COMPRAS",
-    #     "Área / Ubicación": "CASETA PESADOS",
-    #     "Fecha Crítica de Entrega": "07/05/2025",
-    # },
-    flag = FileSmPDF(
-        {
-            "filename_out": download_path,
-            "products": products,
-            "metadata": {
-                "Fecha de Solicitud": date.strftime(format_date),
-                "Folio": folio,
-                "Contrato": contract,
-                "Usuario Solicitante": customer_name,
-                "Número de Pedido": order_quotation,
-                "Personal Telintec": emp_name,
-                "Planta": facility,
-                "Área Dirigida Telintec": location,
-                "Área / Ubicación": location,
-                "Fecha Crítica de Entrega": critical_date.strftime(format_date),
+
+    if type_file == "pdf":
+        flag = FileSmPDF(
+            {
+                "filename_out": download_path,
+                "products": products,
+                "metadata": {
+                    "Fecha de Solicitud": date.strftime(format_date),
+                    "Folio": folio,
+                    "Contrato": contract,
+                    "Usuario Solicitante": customer_name,
+                    "Número de Pedido": order_quotation,
+                    "Personal Telintec": emp_name,
+                    "Planta": facility,
+                    "Área Dirigida Telintec": location,
+                    "Área / Ubicación": location,
+                    "Fecha Crítica de Entrega": critical_date.strftime(format_date),
+                },
+                "observations": observations,
+                "date_complete_delivery": "2023-06-01",
+                "date_first_delivery": "2023-06-01",
             },
-            "observations": observations,
-            "date_complete_delivery": "2023-06-01",
-            "date_first_delivery": "2023-06-01",
-        },
-    )
-    if not flag:
-        print("error at generating pdf", download_path)
-        return None, 400
+        )
+        if not flag:
+            print("error at generating pdf", download_path)
+            return None, 400
+    else:
+        lista_de_items = products
+        # Definir los nombres de las columnas
+        columnas = ["No.", "Nombre", "Cantidad", "Unidad de Medida", "Stock", "Estatus"]
+        # Convertir la lista en un DataFrame
+        df = pd.DataFrame(lista_de_items, columns=columnas)
+        # Guardar el DataFrame en un archivo Excel
+        df.to_excel(download_path, index=False)
     return download_path, 200
 
 

@@ -340,6 +340,20 @@ class DownloadPDFSM(Resource):
             return {"msg": "error at downloading"}, code
 
 
+@ns.route("/download/excel/<int:sm_id>")
+class DownloadExcelSM(Resource):
+    @ns.expect(expected_headers_per)
+    def get(self, sm_id):
+        flag, data_token, msg = token_verification_procedure(request, department=["sm"])
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        data, code = dowload_file_sm(sm_id, type_file="excel")
+        if code == 200:
+            return send_file(data, as_attachment=True)
+        else:
+            return {"msg": "error at downloading"}, code
+
+
 @ns.route("/control/table")
 class ControlTableSM(Resource):
     @ns.expect(expected_headers_per, control_table_sm_put_model)
