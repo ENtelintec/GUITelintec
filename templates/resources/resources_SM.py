@@ -340,7 +340,7 @@ class DownloadPDFSM(Resource):
             return {"msg": "error at downloading"}, code
 
 
-@ns.route("/dowload/excel/<int:sm_id>")
+@ns.route("/download/excel/<int:sm_id>")
 class DownloadExcelSM(Resource):
     @ns.expect(expected_headers_per)
     def get(self, sm_id):
