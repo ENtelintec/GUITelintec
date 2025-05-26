@@ -249,7 +249,11 @@ def update_movement(data, data_token):
         return False, e
     if p_quantity != quantity:
         flag, error, result = update_stock_db(
-            data["info"]["id_product"], actual_stock[0] + quantity - p_quantity
+            data["info"]["id_product"],
+            actual_stock[0] - p_quantity + quantity
+            if type_m == "entrada"
+            else actual_stock[0] + p_quantity - quantity,
+            just_add=False,
         )
         print(actual_stock[0] + quantity - p_quantity)
     msg_notification = (
