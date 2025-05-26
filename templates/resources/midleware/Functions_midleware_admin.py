@@ -229,8 +229,12 @@ def get_department_identifiers(department_id, result):
             return (
                 [3001]
                 if "almacen" in result[1].lower()
-                else [3, 3002]
-                if "activos" in result[1].lower()
+                else [3002]
+                if "ti" in result[1].lower()
+                else [3003]
+                if "inmuebles" in result[1].lower()
+                else [3004]
+                if "medicion" in result[1].lower()
                 else [3]
             )
         case 4:
