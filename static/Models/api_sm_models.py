@@ -56,6 +56,15 @@ items_model_sm = api.model(
     },
 )
 
+items_dispatch_model_sm = api.model(
+    "ItemsModel",
+    {
+        "id": fields.Integer(required=True, description="The product id"),
+        "comment": fields.String(required=True, description="The product comment"),
+        "quantity": fields.Float(required=True, description="The product quantity"),
+    },
+)
+
 history_model_sm = api.model(
     "HistoryModel",
     {
@@ -496,10 +505,8 @@ request_sm_plot_data_model = api.model(
 request_sm_dispatch_model = api.model(
     "RequestSMDispatch",
     {
-        "id": fields.Integer(required=True, description="The id"),
-        "emp_id": fields.Integer(required=True, description="The employee id"),
-        "comment": fields.String(required=True, description="The date"),
-        "items": fields.List(fields.Nested(items_model_sm), required=False),
+        "id": fields.Integer(required=True, description="The id of the material request"),
+        "items": fields.List(fields.Nested(items_dispatch_model_sm), required=False),
     },
 )
 
@@ -541,6 +548,19 @@ class ItemsFormSM(Form):
     movement = StringField("movement", validators=[], default="")
     url = URLField("url", validators=[], default="")
     sku = StringField("sku", validators=[], default="")
+
+
+class ItemsFormSMDispartch(Form):
+    id = IntegerField(
+        "id",
+        validators=[],
+        default=-1,
+    )
+    comment = StringField("comment", validators=[], default="")
+    quantity = FloatField(
+        "quantity",
+        validators=[validators.number_range(min=0, message="Invalid quantity")],
+    )
 
 
 class ProductRequestForm(Form):
@@ -690,8 +710,4 @@ class RequestSMDispatchForm(Form):
     id = IntegerField(
         "id", validators=[InputRequired(message="Invalid id or 0 not acepted")]
     )
-    emp_id = IntegerField(
-        "emp_id", validators=[InputRequired(message="Invalid id or 0 not acepted")]
-    )
-    comment = StringField("comment", validators=[InputRequired()])
-    items = FieldList(FormField(ItemsFormSM, "items"))
+    items = FieldList(FormField(ItemsFormSMDispartch, "items"))

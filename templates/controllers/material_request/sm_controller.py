@@ -360,3 +360,14 @@ def get_pending_sm_db():
     )
     flag, error, result = execute_sql(sql, None, 5)
     return flag, error, result
+
+
+def update_history_items_sm(sm_id: int, items: list, history: list):
+    sql = (
+        "UPDATE sql_telintec.materials_request "
+        "SET items = %s, history = %s "
+        "WHERE sm_id = %s "
+    )
+    val = (json.dumps(items), json.dumps(history), sm_id)
+    flag, error, result = execute_sql(sql, val, 3)
+    return flag, error, result

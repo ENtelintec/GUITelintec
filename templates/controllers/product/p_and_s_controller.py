@@ -1185,3 +1185,17 @@ def get_product_by_sku_manufacture(sku: str):
     val = (sku,)
     flag, error, result = execute_sql(sql, val, 1)
     return flag, error, result
+
+
+def get_products_stock_from_ids(ids: list):
+    if len(ids) == 0:
+        return [], ["No products to retrieve"], []
+    sql = (
+        "SELECT "
+        "sql_telintec.products_amc.id_product, "
+        "sql_telintec.products_amc.stock "
+        "FROM sql_telintec.products_amc "
+        f"WHERE sql_telintec.products_amc.id_product IN ({','.join(map(str, ids))})"
+    )
+    flag, error, result = execute_sql(sql, None, 5)
+    return flag, error, result
