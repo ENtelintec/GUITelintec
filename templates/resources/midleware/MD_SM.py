@@ -93,7 +93,7 @@ def get_products_sm(contract: str):
     return data_out, 200
 
 
-def get_all_sm(limit, page=0, emp_id=-1):
+def get_all_sm(limit, page=0, emp_id=-1, with_items=True):
     flag, error, result = get_sm_entries(emp_id)
     if limit == -1:
         limit = len(result) + 1
@@ -113,12 +113,6 @@ def get_all_sm(limit, page=0, emp_id=-1):
         limit_up = limit * (page + 1)
         limit_up = limit_up if limit_up < len(result) else len(result)
     for i in range(limit_down, limit_up):
-        products = json.loads(result[i][10])
-        new_products = []
-        if products is not None:
-            for product in products:
-                if product.get("id", 0) == -1:
-                    new_products.append(product)
         extra_info = json.loads(result[i][14])
         # time_zone = pytz.timezone(timezone_software)
         # date_now = datetime.now(pytz.utc).astimezone(time_zone)
@@ -177,8 +171,7 @@ def get_all_sm(limit, page=0, emp_id=-1):
             "critical_date": result[i][9].strftime(format_timestamps)
             if isinstance(result[i][9], datetime)
             else result[i][9],
-            "items": json.loads(result[i][10]),
-            "items_new": new_products,
+            "items": json.loads(result[i][10]) if with_items else [],
             "status": result[i][11],
             "history": json.loads(result[i][12]),
             "comment": result[i][13],
@@ -385,7 +378,7 @@ def get_all_sm_control_table(data_token):
     iddentifiers, code = get_iddentifiers(data_token)
     if code != 200:
         return {"data": [], "msg": iddentifiers}, 400
-    data_sm, code = get_all_sm(-1, 0, -1)
+    data_sm, code = get_all_sm(-1, 0, -1, with_items=False)
     if code != 200:
         return {"data": [], "msg": data_sm}, 400
     data_out = {}
