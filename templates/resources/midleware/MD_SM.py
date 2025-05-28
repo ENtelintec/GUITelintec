@@ -38,14 +38,15 @@ from templates.controllers.material_request.sm_controller import (
     get_sm_entries,
     update_history_sm,
     get_sm_by_id,
-    update_sm_products_by_id,
     get_info_names_by_sm_id,
     update_history_extra_info_sm_by_id,
+    update_history_items_sm,
 )
 from templates.controllers.product.p_and_s_controller import (
     get_sm_products,
     create_product_db_admin,
     create_product_db,
+    get_products_stock_from_ids,
 )
 from templates.forms.StorageMovSM import FileSmPDF
 from templates.misc.Functions_Files import write_log_file
@@ -92,7 +93,7 @@ def get_products_sm(contract: str):
     return data_out, 200
 
 
-def get_all_sm(limit, page=0, emp_id=-1):
+def get_all_sm(limit, page=0, emp_id=-1, with_items=True):
     flag, error, result = get_sm_entries(emp_id)
     if limit == -1:
         limit = len(result) + 1
@@ -112,12 +113,6 @@ def get_all_sm(limit, page=0, emp_id=-1):
         limit_up = limit * (page + 1)
         limit_up = limit_up if limit_up < len(result) else len(result)
     for i in range(limit_down, limit_up):
-        products = json.loads(result[i][10])
-        new_products = []
-        if products is not None:
-            for product in products:
-                if product.get("id", 0) == -1:
-                    new_products.append(product)
         extra_info = json.loads(result[i][14])
         # time_zone = pytz.timezone(timezone_software)
         # date_now = datetime.now(pytz.utc).astimezone(time_zone)
@@ -176,8 +171,7 @@ def get_all_sm(limit, page=0, emp_id=-1):
             "critical_date": result[i][9].strftime(format_timestamps)
             if isinstance(result[i][9], datetime)
             else result[i][9],
-            "items": json.loads(result[i][10]),
-            "items_new": new_products,
+            "items": json.loads(result[i][10]) if with_items else [],
             "status": result[i][11],
             "history": json.loads(result[i][12]),
             "comment": result[i][13],
@@ -384,7 +378,7 @@ def get_all_sm_control_table(data_token):
     iddentifiers, code = get_iddentifiers(data_token)
     if code != 200:
         return {"data": [], "msg": iddentifiers}, 400
-    data_sm, code = get_all_sm(-1, 0, -1)
+    data_sm, code = get_all_sm(-1, 0, -1, with_items=False)
     if code != 200:
         return {"data": [], "msg": data_sm}, 400
     data_out = {}
@@ -515,107 +509,187 @@ def dispatch_products(
     return avaliable, to_request, new_products
 
 
-def dispatch_sm(data):
-    if len(data["items"]) > 0:
-        flag, error, result = update_sm_products_by_id(data["id"], data["items"])
-        if not flag:
-            return 400, f"Not posible to update products in sm, error: {error}"
+# def dispatch_sm(data):
+#     if len(data["items"]) > 0:
+#         flag, error, result = update_sm_products_by_id(data["id"], data["items"])
+#         if not flag:
+#             return 400, f"Not posible to update products in sm, error: {error}"
+#     flag, error, result = get_sm_by_id(data["id"])
+#     if not flag or len(result) <= 0:
+#         return 400, ["sm not foud"]
+#     history_sm = json.loads(result[12])
+#     emp_id_creation = result[6]
+#     time_zone = pytz.timezone(timezone_software)
+#     date_now = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
+#     history_sm.append(
+#         {
+#             "user": data["emp_id"],
+#             "event": "dispatch",
+#             "date": date_now,
+#             "comment": data["comment"],
+#         }
+#     )
+#     products_sm = json.loads(result[10])
+#     products_to_dispacth = []
+#     products_to_request = []
+#     new_products = []
+#     for item in products_sm:
+#         if "(Nuevo)" in item["comment"] and "(Pedido)" not in item["comment"]:
+#             new_products.append(item)
+#             continue
+#         if (
+#             item["stock"] >= 0
+#             and "(Despachado)" not in item["comment"]
+#             and "(Semidespachado)" in item["comment"]
+#         ):
+#             products_to_dispacth.append(item)
+#         elif (
+#             "(Pedido)" not in item["comment"] and "(Despachado)" not in item["comment"]
+#         ):
+#             products_to_request.append(item)
+#     # update db with corresponding movements
+#     data["emp_id_creation"] = emp_id_creation
+#     (products_to_dispacth, products_to_request, new_products) = dispatch_products(
+#         products_to_dispacth, products_to_request, data["id"], new_products, data
+#     )
+#     # update table with new stock
+#     products_sm = update_data_dicts(
+#         [products_to_dispacth, products_to_request, new_products], products_sm
+#     )
+#     is_complete = (
+#         True if len(products_to_request) == 0 and len(new_products) == 0 else False
+#     )
+#     flag, error, result = update_history_sm(
+#         data["id"], history_sm, products_sm, is_complete
+#     )
+#     if is_complete:
+#         print("complete dispatch sm")
+#     if flag:
+#         msg = f"SM con ID-{data['id']} despachada"
+#         write_log_file(log_file_sm_path, msg)
+#         if not is_complete:
+#             msg += (
+#                 "\n Productos a despachar:  "
+#                 + "\n".join(
+#                     [
+#                         f"{item['quantity']} {item['name']}"
+#                         for item in products_to_dispacth
+#                     ]
+#                 )
+#                 + "--"
+#             )
+#             msg += (
+#                 "\n Productos a solicitar:  "
+#                 + "\n".join(
+#                     [
+#                         f"{item['quantity']} {item['name']}"
+#                         for item in products_to_request
+#                     ]
+#                 )
+#                 + "--"
+#             )
+#             msg += (
+#                 "\n Productos nuevos:  "
+#                 + "\n".join(
+#                     [
+#                         f"{item['quantity']} {item['name']} {item['url']}"
+#                         for item in new_products
+#                     ]
+#                 )
+#                 + "--"
+#             )
+#         else:
+#             msg += "\nTodos los productos han sido despachados"
+#         create_notification_permission(
+#             msg, ["sm"], "SM Despachada", data["emp_id"], emp_id_creation
+#         )
+#         return 200, {
+#             "to_dispatch": products_to_dispacth,
+#             "to_request": products_to_request,
+#             "new_products": new_products,
+#         }
+#     else:
+#         return 400, {"msg": str(error)}
+
+
+def dispatch_sm(data, data_token):
+    if len(data["items"]) <= 0:
+        return 400, ["No item to update in sm"]
     flag, error, result = get_sm_by_id(data["id"])
     if not flag or len(result) <= 0:
-        return 400, ["sm not foud"]
+        return 400, ["SM not foud"]
+    id_user = result[6]
+    products_sm = json.loads(result[10])
     history_sm = json.loads(result[12])
-    emp_id_creation = result[6]
+    ids_list = [item["id"] for item in products_sm if item.get("id") >= 0]
+    updated_products = []
+    flag, error, result = get_products_stock_from_ids(ids_list)
+    if not flag:
+        return 400, {"msg": f"Error at retrieving stock: {str(error)}"}
+    flag_semidespachado = False
+    stocks = {item[0]: item[1] for item in result}
+    comment_history = ""
+    for item in products_sm:
+        if "dispatched" not in item.keys():
+            item["dispatched"] = 0
+        for item_n in data["items"]:
+            if item["id"] == item_n["id"]:
+                if item_n["quantity"] > stocks[item["id"]]:
+                    return 400, {
+                        "msg": f"Quantity to dispatch is greater than stock for product {item['id']}-{item['name']}"
+                    }
+                if "(Despachado)".lower() in item["comment"].lower():
+                    return 400, {
+                        "msg": f"Product {item['id']}-{item['name']} already dispatched"
+                    }
+                item["dispatched"] += item_n["quantity"]
+                if item["dispatched"] > item["quantity"]:
+                    return 400, {
+                        "msg": f"Quantity to dispatch is greater than requested for product {item['id']}-{item['name']}"
+                    }
+                # insertar al inicio de los comentarios
+                item["comment"] = f"{item_n['comment']}\n{item['comment']}"
+                # agregar los comandos
+                item["comment"] += (
+                    " ;(Despachado) "
+                    if item["dispatched"] >= item["quantity"]
+                    else " ;(Semidespachado) "
+                )
+                comment_history += f"Dispatch: {item['quantity']}->{item['id']}\n"
+                break
+        updated_products.append(item)
+        if "(Semidespachado)".lower() in item["comment"].lower():
+            flag_semidespachado = True
+
     time_zone = pytz.timezone(timezone_software)
     date_now = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
+    comment_history += (
+        "SM Despachada" if not flag_semidespachado else "SM Semidespachada"
+    )
     history_sm.append(
         {
-            "user": data["emp_id"],
+            "user": data_token["emp_id"],
             "event": "dispatch",
             "date": date_now,
-            "comment": data["comment"],
+            "comment": comment_history,
         }
     )
-    products_sm = json.loads(result[10])
-    products_to_dispacth = []
-    products_to_request = []
-    new_products = []
-    for item in products_sm:
-        if "(Nuevo)" in item["comment"] and "(Pedido)" not in item["comment"]:
-            new_products.append(item)
-            continue
-        if (
-            item["stock"] >= 0
-            and "(Despachado)" not in item["comment"]
-            and "(Semidespachado)" in item["comment"]
-        ):
-            products_to_dispacth.append(item)
-        elif (
-            "(Pedido)" not in item["comment"] and "(Despachado)" not in item["comment"]
-        ):
-            products_to_request.append(item)
-    # update db with corresponding movements
-    data["emp_id_creation"] = emp_id_creation
-    (products_to_dispacth, products_to_request, new_products) = dispatch_products(
-        products_to_dispacth, products_to_request, data["id"], new_products, data
+    flag, error, result = update_history_items_sm(
+        data["id"], updated_products, history_sm
     )
-    # update table with new stock
-    products_sm = update_data_dicts(
-        [products_to_dispacth, products_to_request, new_products], products_sm
-    )
-    is_complete = (
-        True if len(products_to_request) == 0 and len(new_products) == 0 else False
-    )
-    flag, error, result = update_history_sm(
-        data["id"], history_sm, products_sm, is_complete
-    )
-    if is_complete:
-        print("complete dispatch sm")
     if flag:
-        msg = f"SM con ID-{data['id']} despachada"
-        write_log_file(log_file_sm_path, msg)
-        if not is_complete:
-            msg += (
-                "\n Productos a despachar:  "
-                + "\n".join(
-                    [
-                        f"{item['quantity']} {item['name']}"
-                        for item in products_to_dispacth
-                    ]
-                )
-                + "--"
-            )
-            msg += (
-                "\n Productos a solicitar:  "
-                + "\n".join(
-                    [
-                        f"{item['quantity']} {item['name']}"
-                        for item in products_to_request
-                    ]
-                )
-                + "--"
-            )
-            msg += (
-                "\n Productos nuevos:  "
-                + "\n".join(
-                    [
-                        f"{item['quantity']} {item['name']} {item['url']}"
-                        for item in new_products
-                    ]
-                )
-                + "--"
-            )
-        else:
-            msg += "\nTodos los productos han sido despachados"
-        create_notification_permission(
-            msg, ["sm"], "SM Despachada", data["emp_id"], emp_id_creation
+        msg = (
+            f"SM con ID-{data['id']} despachada por el empleado {data_token['emp_id']}"
+            if not flag_semidespachado
+            else f"SM con ID-{data['id']} semidespachada por el empleado {data_token['emp_id']}"
         )
-        return 200, {
-            "to_dispatch": products_to_dispacth,
-            "to_request": products_to_request,
-            "new_products": new_products,
-        }
+        write_log_file(log_file_sm_path, msg)
+        create_notification_permission(
+            msg, ["sm"], "SM Despachada", data_token["emp_id"], id_user
+        )
+        return 200, {"msg": "ok"}
     else:
-        return 400, {"msg": str(error)}
+        return 400, {"msg": f"Error at updating sm {str(error)}"}
 
 
 def cancel_sm(data):
@@ -673,10 +747,14 @@ def dowload_file_sm(sm_id: int, type_file="pdf"):
     history = json.loads(result[12])
     observations = result[13]
     extra_info = json.loads(result[14])
-    download_path = os.path.join(
-        tempfile.mkdtemp(), os.path.basename(f"sm_{result[0]}_{date.date()}.pdf")
-    ) if type_file == "pdf" else os.path.join(
-        tempfile.mkdtemp(), os.path.basename(f"sm_{result[0]}_{date.date()}.xlsx")
+    download_path = (
+        os.path.join(
+            tempfile.mkdtemp(), os.path.basename(f"sm_{result[0]}_{date.date()}.pdf")
+        )
+        if type_file == "pdf"
+        else os.path.join(
+            tempfile.mkdtemp(), os.path.basename(f"sm_{result[0]}_{date.date()}.xlsx")
+        )
     )
     products = []
     flag, error, result = get_info_names_by_sm_id(result[0])

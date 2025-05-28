@@ -292,7 +292,6 @@ class AlmacenEmployees(Resource):
 
 @ns.route("/manage/dispatch")
 class ManageSMDispatch(Resource):
-    @ns.marshal_with(response_sm_dispatch_model)
     @ns.expect(expected_headers_per, request_sm_dispatch_model)
     def post(self):
         flag, data_token, msg = token_verification_procedure(request, department="sm")
@@ -303,7 +302,7 @@ class ManageSMDispatch(Resource):
         if not validator.validate():
             return {"error": validator.errors}, 400
         data = validator.data
-        code, data_out = dispatch_sm(data)
+        code, data_out = dispatch_sm(data, data_token)
         if code == 200:
             return {"msg": "ok", "data": data_out}, code
         else:

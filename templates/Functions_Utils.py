@@ -24,10 +24,11 @@ import os
 
 
 def create_notification_permission(
-    msg: str, permissions: list, title: str, sender_id: int, recierver_id=0
+    msg: str, permissions: list, title: str, sender_id: int, recierver_id=0, extra_emps=None
 ):
     """
     Función para crear una notificación de permiso
+    :param extra_emps:
     :param recierver_id:
     :param sender_id:
     :param title:
@@ -35,6 +36,7 @@ def create_notification_permission(
     :param permissions:
     :return:
     """
+    extra_emps = extra_emps if extra_emps else []
     permissions = [item.lower() for item in permissions]
     time_zone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
@@ -47,6 +49,7 @@ def create_notification_permission(
         "sender_id": sender_id,
         "receiver_id": recierver_id,
         "app": permissions,
+        "extra_emps": extra_emps
     }
     flag, error, result = insert_notification(body)
     return flag
