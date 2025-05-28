@@ -2096,11 +2096,13 @@ def get_list_files(
     return files_pairs, files_names_f
 
 
-def write_log_file(path, text, username_data=None):
+def write_log_file(paths: list | str, text, username_data=None):
     time_zone = pytz.timezone(timezone_software)
     date = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_date)
-    with open(f"{path}_log_{date}.txt", "a") as f:
-        f.write(text + "\n")
+    paths = paths if isinstance(paths, list) else [paths]
+    for path in paths:
+        with open(f"{path}_log_{date}.txt", "a") as f:
+            f.write(f"-->{text}" + "\n")
     return True
 
 
