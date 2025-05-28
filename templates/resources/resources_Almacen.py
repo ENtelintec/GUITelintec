@@ -62,6 +62,7 @@ from templates.resources.midleware.Functions_midleware_almacen import (
     delete_movement_amc,
     get_epp_db,
     get_epp_movements,
+    delete_product_from_api,
 )
 
 ns = Namespace("GUI/api/v1/almacen")
@@ -199,7 +200,7 @@ class InventoryProduct(Resource):
                 _providers_dict_amc,
                 brands_dict,
                 code,
-            ) = update_brand_procedure(data)
+            ) = update_brand_procedure(data, data_token)
             msg_list = "" if code == 201 else msg_list
         return {
             "data": {"id": data_out},
@@ -226,7 +227,7 @@ class InventoryProduct(Resource):
                 _providers_dict_amc,
                 brands_dict,
                 code,
-            ) = update_brand_procedure(data)
+            ) = update_brand_procedure(data, data_token)
             msg_list = "" if code == 201 else msg_list
         return {
             "data": str(data_out),
@@ -245,7 +246,7 @@ class InventoryProduct(Resource):
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
-        flag, error, data_out = delete_product_db(data["id"])
+        flag, data_out = delete_product_from_api(data, data_token)
         return {
             "data": str(data_out),
             "msg": "Ok" if flag else "Error",

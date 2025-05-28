@@ -19,6 +19,7 @@ from static.constants import (
     log_file_almacen,
     filepath_inventory_form_excel,
     filepath_inventory_form_movements_excel,
+    log_file_admin,
 )
 from templates.Functions_Utils import create_notification_permission_notGUI
 from templates.controllers.product.p_and_s_controller import (
@@ -47,6 +48,7 @@ from templates.controllers.product.p_and_s_controller import (
     get_all_epp_inventory,
     get_epp_movements_db,
     get_epp_movements_db_detail,
+    delete_product_db,
 )
 from templates.controllers.supplier.suppliers_controller import (
     get_all_suppliers_amc,
@@ -210,6 +212,7 @@ def insert_movement(data, data_token):
         data_token.get("emp_id"),
         0,
     )
+    write_log_file(log_file_almacen, msg_notification)
     if not flag:
         return False, e
     return True, result
@@ -269,6 +272,7 @@ def update_movement(data, data_token):
         data_token.get("emp_id"),
         0,
     )
+    write_log_file(log_file_almacen, msg_notification)
     if not flag:
         return False, e
     return True, result
@@ -293,6 +297,7 @@ def delete_movement_amc(data, data_token):
             0,
             0,
         )
+        write_log_file(log_file_almacen, msg_notification)
         return True, result
     else:
         return False, str(error)
@@ -381,6 +386,7 @@ def insert_product_db(data, data_token):
     create_notification_permission_notGUI(
         msg, ["almacen"], "Notifaction de Inventario", data_token.get("emp_id"), 0
     )
+    write_log_file(log_file_almacen, msg)
     return True, result
 
 
@@ -423,6 +429,21 @@ def update_product_amc(data, data_token):
     create_notification_permission_notGUI(
         msg, ["almacen"], "Notifaction de Inventario", data_token.get("emp_id"), 0
     )
+    write_log_file(log_file_almacen, msg)
+    return True, result
+
+
+def delete_product_from_api(data, data_token):
+    flag, error, result = delete_product_db(data["id"])
+    if not flag:
+        return False, error
+    time_zone = pytz.timezone(timezone_software)
+    timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
+    msg = f"Se ha eliminado el producto con id {data['id']} por el empleado {data_token.get('emp_id')}-{data_token.get('name')} en la fecha {timestamp}"
+    create_notification_permission_notGUI(
+        msg, ["almacen"], "Notifaction de Inventario", data_token.get("emp_id"), 0
+    )
+    write_log_file(log_file_almacen, msg)
     return True, result
 
 
@@ -646,6 +667,7 @@ def insert_multiple_movements_from_api(data, data_token):
     create_notification_permission_notGUI(
         msg_notification, ["almacen"], "Notifaction de Movimientos", 0, 0
     )
+    write_log_file(log_file_almacen, msg_notification)
     return True, data_out
 
 
@@ -1106,7 +1128,7 @@ def get_providers_dict(data_raw_provider):
     return data, brand_dict
 
 
-def update_brand_procedure(data):
+def update_brand_procedure(data, data_token):
     flag, error, data_raw_providers = get_all_suppliers_amc()
     if not flag:
         return "Could not retrive suppliers list", None, None, 400
@@ -1115,6 +1137,11 @@ def update_brand_procedure(data):
     msg_list, _providers_dict_amc, brands_dict = update_brand_list(
         supplier_name, brand, _providers_dict_amc, brands_dict
     )
+    msg = f"Marca {brand} creada por el empleado {data_token.get('emp_id')} " + msg_list
+    create_notification_permission_notGUI(
+        msg, ["almacen", "administracion"], "Marca Creada", data_token.get("emp_id"), 0
+    )
+    write_log_file([log_file_almacen, log_file_admin], msg)
     return msg_list, _providers_dict_amc, brands_dict, 201
 
 
