@@ -1,135 +1,289 @@
 # -*- coding: utf-8 -*-
-__author__ = 'Edisson Naula'
-__date__ = '$ 01/may./2024  at 19:33 $'
+__author__ = "Edisson Naula"
+__date__ = "$ 01/may./2024  at 19:33 $"
 
 from templates.database.connection import execute_sql
 
-
-def get_orders(limit=(0, 100)):
-    sql = ("SELECT order_id, product_id, quantity, date_order, customer_id, employee_id "
-           "FROM sql_telintec.orders "
-           "LIMIT %s, %s")
-    val = (limit[0], limit[1])
-    flag, e, my_result = execute_sql(sql, val, 2)
-    out = my_result if my_result is not None else []
-    return out
+import json
 
 
 def get_v_orders(limit=(0, 100)):
-    sql = ("SELECT vo_id, products, date_order, customer_id, employee_id, chat_id "
-           "FROM sql_telintec.virtual_orders "
-           "LIMIT %s, %s")
+    sql = (
+        "SELECT vo_id, products, date_order, customer_id, employee_id, chat_id "
+        "FROM sql_telintec.virtual_orders "
+        "LIMIT %s, %s"
+    )
     val = (limit[0], limit[1])
     flag, e, my_result = execute_sql(sql, val, 2)
     out = my_result if my_result is not None else []
     return out
 
 
-def update_order_db(id_order: int, id_product: int, quantity: int, date_order, id_customer: int, id_employee: int):
-    sql = ("UPDATE sql_telintec.orders "
-           "SET "
-           "product_id = %s, "
-           "quantity = %s, "
-           "date_order = %s, "
-           "customer_id = %s, "
-           "employee_id = %s "
-           "WHERE order_id = %s")
-    val = (id_product, quantity, date_order, id_customer, id_employee, id_order)
-    flag, e, out = execute_sql(sql, val, 3)
-    return flag, e, out
-
-
-def delete_order_db(id_order: int):
-    sql = ("DELETE FROM sql_telintec.orders "
-           "WHERE order_id = %s")
-    val = (id_order,)
-    flag, e, out = execute_sql(sql, val, 3)
-    return flag, e, out
-
-
-def insert_vorder_db(id_vorder: int, products: str, date_order,
-                     id_customer: int, id_employee: int, chat_id: int):
-    sql = ("INSERT "
-           "INTO sql_telintec.virtual_orders "
-           "(vo_id, "
-           "products, "
-           "date_order, "
-           "customer_id, "
-           "employee_id, "
-           "chat_id) "
-           "VALUES (%s, %s, %s, %s, %s, %s)")
+def insert_vorder_db(
+    id_vorder: int,
+    products: str,
+    date_order,
+    id_customer: int,
+    id_employee: int,
+    chat_id: int,
+):
+    sql = (
+        "INSERT "
+        "INTO sql_telintec.virtual_orders "
+        "(vo_id, "
+        "products, "
+        "date_order, "
+        "customer_id, "
+        "employee_id, "
+        "chat_id) "
+        "VALUES (%s, %s, %s, %s, %s, %s)"
+    )
     val = (id_vorder, products, date_order, id_customer, id_employee)
     flag, e, out = execute_sql(sql, val, 3)
     print(out, "record inserted in vorders.")
     return flag, None, out
 
 
-def update_vorder_db(id_vorder: int, products: str, date_order,
-                     id_customer: int, id_employee: int, chat_id: int):
-    sql = ("UPDATE sql_telintec.virtual_orders "
-           "SET "
-           "products = %s, "
-           "date_order = %s, "
-           "customer_id = %s, "
-           "employee_id = %s, "
-           "chat_id = %s "
-           "WHERE vo_id = %s")
+def update_vorder_db(
+    id_vorder: int,
+    products: str,
+    date_order,
+    id_customer: int,
+    id_employee: int,
+    chat_id: int,
+):
+    sql = (
+        "UPDATE sql_telintec.virtual_orders "
+        "SET "
+        "products = %s, "
+        "date_order = %s, "
+        "customer_id = %s, "
+        "employee_id = %s, "
+        "chat_id = %s "
+        "WHERE vo_id = %s"
+    )
     val = (products, date_order, id_customer, id_employee, chat_id, id_vorder)
     flag, e, out = execute_sql(sql, val, 3)
     return flag, e, out
 
 
 def delete_vorder_db(id_vorder: int):
-    sql = ("DELETE FROM sql_telintec.virtual_orders "
-           "WHERE vo_id = %s")
+    sql = "DELETE FROM sql_telintec.virtual_orders " "WHERE vo_id = %s"
     val = (id_vorder,)
     flag, e, out = execute_sql(sql, val, 3)
     return flag, e, out
 
 
-def insert_order(id_order: int, id_product: int, quantity: int, date_order, id_customer: int, id_employee: int):
-    sql = ("INSERT INTO sql_telintec.orders "
-           "(order_id, "
-           "product_id, "
-           "quantity, "
-           "date_order, "
-           "customer_id, "
-           "employee_id) "
-           "VALUES (%s, %s, %s, %s, %s, %s)")
-    val = (id_order, id_product, quantity, date_order, id_customer, id_employee)
+def get_purchase_orders():
+    sql = (
+        "SELECT id_order, timestamp, status, items, created_by, approved_by, "
+        "supplier_id, total_amount, folio, reference, extra_info "
+        "FROM sql_telintec_mod_admin.purchase_orders "
+    )
+    val = None
+    flag, e, my_result = execute_sql(sql, val, 5)
+    return flag, e, my_result
+
+
+def insert_purchase_order(
+    id_order: int,
+    timestamp: str,
+    status: int,
+    items: str,
+    created_by: int,
+    approved_by: int,
+    supplier_id: int,
+    total_amount: float,
+    folio: str,
+    reference: str,
+    extra_info: dict,
+):
+    sql = (
+        "INSERT INTO sql_telintec_mod_admin.purchase_orders "
+        "(id_order, timestamp, status, items, created_by, approved_by, "
+        "supplier_id, total_amount, folio, reference, extra_info) "
+        "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+    )
+    val = (
+        id_order,
+        timestamp,
+        status,
+        items,
+        created_by,
+        approved_by,
+        supplier_id,
+        total_amount,
+        folio,
+        reference,
+        json.dumps(extra_info),
+    )
+    flag, e, out = execute_sql(sql, val, 4)
+    return flag, e, out
+
+
+def update_purchase_order(
+    id_order: int,
+    timestamp: str,
+    status: int,
+    items: str,
+    created_by: int,
+    approved_by: int,
+    supplier_id: int,
+    total_amount: float,
+    folio: str,
+    reference: str,
+    extra_info: dict,
+):
+    sql = (
+        "UPDATE sql_telintec_mod_admin.purchase_orders "
+        "SET timestamp = %s, status = %s, items = %s, created_by = %s, "
+        "approved_by = %s, supplier_id = %s, total_amount = %s, "
+        "folio = %s, reference = %s, extra_info = %s "
+        "WHERE id_order = %s"
+    )
+    val = (
+        timestamp,
+        status,
+        items,
+        created_by,
+        approved_by,
+        supplier_id,
+        total_amount,
+        folio,
+        reference,
+        json.dumps(extra_info),
+        id_order,
+    )
     flag, e, out = execute_sql(sql, val, 3)
-    print(out, "record inserted in orders.")
-    return flag, None, out
+    return flag, e, out
 
 
-def get_orders_amc(id_o: int, id_c: int, status: str, name_c: str, date: str):
-    columns = ("id_order", "id_customer", "status", "sm_code", "date", "id_customer")
-    if id_c is None:
-        # get id customer FROM name_c
-        sql = ("SELECT id_customer "
-               "FROM sql_telintec.customers_amc "
-               "WHERE match(name) against (%s IN NATURAL LANGUAGE MODE ) ")
-        val = (name_c,)
-        flag, error, result = execute_sql(sql, val, 1)
-        if len(result) > 0:
-            id_c = result[0]
-        else:
-            id_c = "%"
-    sql = ("SELECT id_order, id_customer, status, sm_code, order_date, id_customer "
-           "FROM sql_telintec.orders_amc "
-           "WHERE (id_order = %s OR "
-           "id_customer = %s) AND status LIKE %s ")
-    if date is not None:
-        sql = sql + " AND order_date = %s"
-    sql = sql + " LIMIT 10"
-    val = (id_o, id_c, status, date)
-    flag, error, result = execute_sql(sql, val, 2)
-    return flag, error, result, columns
+def delete_purchase_order(id_order: int):
+    sql = "DELETE FROM sql_telintec_mod_admin.purchase_orders " "WHERE id_order = %s"
+    val = (id_order,)
+    flag, e, out = execute_sql(sql, val, 3)
+    return flag, e, out
 
 
-def get_all_amc_orders():
-    sql = ("SELECT id_order, id_customer, order_date, sm_code, contract, "
-           "order_number, operation_plant, ubication, requester, personal, estimated_date, status "
-           "FROM sql_telintec.orders_amc ")
-    flag, error, result = execute_sql(sql, None, 2)
-    return flag, error, result
+def cancel_purchase_order(id_order: int):
+    sql = (
+        "UPDATE sql_telintec_mod_admin.purchase_orders "
+        "SET status = 4 "
+        "WHERE id_order = %s"
+    )
+    val = (id_order,)
+    flag, e, out = execute_sql(sql, val, 3)
+    return flag, e, out
+
+
+def get_items_purchase_orders(id_order: int):
+    sql = (
+        "SELECT id_item, order_id, quantity, unit_price, description, extra_info "
+        "FROM sql_telintec_mod_admin.purchase_order_items "
+        "WHERE order_id = %s"
+    )
+    val = (id_order,)
+    flag, e, my_result = execute_sql(sql, val, 2)
+    return flag, e, my_result
+
+
+def insert_purchase_order_item(
+    id_item: int,
+    order_id: int,
+    quantity: int,
+    unit_price: float,
+    description: str,
+    extra_info: dict,
+):
+    sql = (
+        "INSERT INTO sql_telintec_mod_admin.purchase_order_items "
+        "(id_item, order_id, quantity, unit_price, description, extra_info) "
+        "VALUES (%s, %s, %s, %s, %s, %s)"
+    )
+    val = (
+        id_item,
+        order_id,
+        quantity,
+        unit_price,
+        description,
+        json.dumps(extra_info),
+    )
+    flag, e, out = execute_sql(sql, val, 3)
+    return flag, e, out
+
+
+def insert_purchase_order_items(items: list):
+    if len(items) == 0:
+        return False, "No items", None
+    flags = []
+    errors = []
+    outs = []
+    for item in items:
+        flag, e, out = insert_purchase_order_item(
+            item["id_item"],
+            item["order_id"],
+            item["quantity"],
+            item["unit_price"],
+            item["description"],
+            item["extra_info"],
+        )
+        flags.append(flag)
+        errors.append(e)
+        outs.append(out)
+    return all(flags), errors, outs
+
+
+def update_purchase_order_item(
+    id_item: int,
+    order_id: int,
+    quantity: int,
+    unit_price: float,
+    description: str,
+    extra_info: dict,
+):
+    sql = (
+        "UPDATE sql_telintec_mod_admin.purchase_order_items "
+        "SET quantity = %s, unit_price = %s, description = %s, extra_info = %s "
+        "WHERE id_item = %s AND order_id = %s"
+    )
+    val = (
+        quantity,
+        unit_price,
+        description,
+        json.dumps(extra_info),
+        id_item,
+        order_id,
+    )
+    flag, e, out = execute_sql(sql, val, 3)
+    return flag, e, out
+
+
+def update_purchase_order_items(items: list):
+    if len(items) == 0:
+        return False, "No items", None
+    flags = []
+    errors = []
+    outs = []
+    for item in items:
+        flag, e, out = update_purchase_order_item(
+            item["id_item"],
+            item["order_id"],
+            item["quantity"],
+            item["unit_price"],
+            item["description"],
+            item["extra_info"],
+        )
+        flags.append(flag)
+        errors.append(e)
+        outs.append(out)
+    return all(flags), errors, outs
+
+
+def delete_purchase_order_item(id_item: int, order_id: int):
+    sql = (
+        "DELETE FROM sql_telintec_mod_admin.purchase_order_items "
+        "WHERE id_item = %s AND order_id = %s"
+    )
+    val = (id_item, order_id)
+    flag, e, out = execute_sql(sql, val, 3)
+    return flag, e, out
