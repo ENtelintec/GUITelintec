@@ -47,6 +47,7 @@ from templates.controllers.product.p_and_s_controller import (
     create_product_db_admin,
     create_product_db,
     get_products_stock_from_ids,
+    create_movement_db_amc,
 )
 from templates.forms.StorageMovSM import FileSmPDF
 from templates.misc.Functions_Files import write_log_file
@@ -612,6 +613,30 @@ def dispatch_products(
 #         return 400, {"msg": str(error)}
 
 
+def create_movements_dispatch(movements, data_token):
+    # flag, e, result = create_movement_db_amc(
+    #     data["info"]["id_product"],
+    #     type_m,
+    #     data["info"]["quantity"],
+    #     timestamp,
+    #     data["info"]["sm_id"],
+    #     data["info"]["reference"],
+    # )
+    msg = ""
+    for movement in movements:
+        flag, e, result = create_movement_db_amc(
+            movement[0],
+            movement[1],
+            movement[2],
+            movement[3],
+            movement[4],
+            movement[5],
+        )
+        if not flag:
+            return 400, f"Error at creating movement: {str(e)}"
+    return 200, {"msg": "ok"}
+
+
 def dispatch_sm(data, data_token):
     if len(data["items"]) <= 0:
         return 400, ["No item to update in sm"]
@@ -621,6 +646,7 @@ def dispatch_sm(data, data_token):
     id_user = result[6]
     products_sm = json.loads(result[10])
     history_sm = json.loads(result[12])
+    folio = result[1]
     ids_list = [item["id"] for item in products_sm if item.get("id") >= 0]
     updated_products = []
     flag, error, result = get_products_stock_from_ids(ids_list)
@@ -629,40 +655,53 @@ def dispatch_sm(data, data_token):
     flag_semidespachado = False
     stocks = {item[0]: item[1] for item in result}
     comment_history = ""
-    for item in products_sm:
-        if "dispatched" not in item.keys():
-            item["dispatched"] = 0
-        for item_n in data["items"]:
-            if item["id"] == item_n["id"]:
-                if item_n["quantity"] > stocks[item["id"]]:
-                    return 400, {
-                        "msg": f"Quantity to dispatch is greater than stock for product {item['id']}-{item['name']}"
-                    }
-                if "(Despachado)".lower() in item["comment"].lower():
-                    return 400, {
-                        "msg": f"Product {item['id']}-{item['name']} already dispatched"
-                    }
-                item["dispatched"] += item_n["quantity"]
-                if item["dispatched"] > item["quantity"]:
-                    return 400, {
-                        "msg": f"Quantity to dispatch is greater than requested for product {item['id']}-{item['name']}"
-                    }
-                # insertar al inicio de los comentarios
-                item["comment"] = f"{item_n['comment']}\n{item['comment']}"
-                # agregar los comandos
-                item["comment"] += (
-                    " ;(Despachado) "
-                    if item["dispatched"] >= item["quantity"]
-                    else " ;(Semidespachado) "
-                )
-                comment_history += f"Dispatch: {item['quantity']}->{item['id']}\n"
-                break
+    time_zone = pytz.timezone(timezone_software)
+    date_now = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
+    dict_products_sm = {
+        item["id"]: {**item, "dispatched": item.get("dispatched", 0)}
+        for item in products_sm
+    }
+    msg_items = []
+    for item_n in data["items"]:
+        item = dict_products_sm.get(item_n["id"])
+        if item is None:
+            msg_items.append(f"Product {item_n['id']}-{item_n['name']} not found in sm")
+            continue
+        if item_n["quantity"] > stocks.get(item["id"], 0):
+            msg_items.append(
+                f"Quantity to dispatch is greater than stock for product {item['id']}-{item['name']}"
+            )
+            continue
+        if "(Despachado)".lower() in item["comment"].lower():
+            msg_items.append(f"Product {item['id']}-{item['name']} already dispatched")
+            continue
+        item["dispatched"] += item_n["quantity"]
+        if item["dispatched"] > item["quantity"]:
+            msg_items.append(
+                f"Quantity to dispatch is greater than requested for product {item['id']}-{item['name']}"
+            )
+            continue
+        flag, error, result = create_movement_db_amc(
+            item["id"], "salida", item_n["quantity"], date_now, folio, "dispatch sm"
+        )
+        if not flag:
+            msg_items.append(
+                f"x---Error at creating movement-{item['id']}: {str(error)}"
+            )
+            continue
+        msg_items.append(f"----Movement created-{item['id']}: {str(result)}")
+        # insertar al inicio de los comentarios
+        item["comment"] = f"{item_n['comment']}\n{item['comment']}"
+        # agregar los comandos
+        item["comment"] += (
+            " ;(Despachado) "
+            if item["dispatched"] >= item["quantity"]
+            else " ;(Semidespachado) "
+        )
+        comment_history += f"Dispatch: {item['quantity']}->{item['id']}\n"
         updated_products.append(item)
         if "(Semidespachado)".lower() in item["comment"].lower():
             flag_semidespachado = True
-
-    time_zone = pytz.timezone(timezone_software)
-    date_now = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
     comment_history += (
         "SM Despachada" if not flag_semidespachado else "SM Semidespachada"
     )
@@ -683,11 +722,13 @@ def dispatch_sm(data, data_token):
             if not flag_semidespachado
             else f"SM con ID-{data['id']} semidespachada por el empleado {data_token['emp_id']}"
         )
+        if msg_items:
+            msg += "\n" + "\n".join(msg_items)
         write_log_file(log_file_sm_path, msg)
         create_notification_permission(
             msg, ["sm"], "SM Despachada", data_token["emp_id"], id_user
         )
-        return 200, {"msg": "ok"}
+        return 200, {"msg": msg_items}
     else:
         return 400, {"msg": f"Error at updating sm {str(error)}"}
 
