@@ -74,12 +74,31 @@ def delete_vorder_db(id_vorder: int):
     return flag, e, out
 
 
-def get_purchase_orders(status: int | str, created_by: int):
+def get_purchase_orders_with_items(status: int | str, created_by: int):
     sql = (
-        "SELECT id_order, timestamp, status, items, created_by, approved_by, "
-        "supplier_id, total_amount, folio, reference, extra_info "
-        "FROM sql_telintec_mod_admin.purchase_orders "
-        "WHERE status = %s AND created_by = %s"
+        "SELECT "
+        "po.id_order, "
+        "po.timestamp, "
+        "po.status, "
+        "po.created_by, "
+        "po.approved_by, "
+        "po.supplier_id, "
+        "po.total_amount, "
+        "po.folio, "
+        "po.reference, "
+        "po.history, "
+        "po.extra_info, "
+        "JSON_ARRAYAGG("
+        "JSON_OBJECT("
+        " 'id', poi.id_item,"
+        " 'description', poi.description,"
+        " 'quantity', poi.quantity,"
+        " 'unit_price', poi.unit_price, "
+        " 'extra_info', poi.extra_info)"
+        ") AS items "
+        "FROM sql_telintec_mod_admin.purchase_orders AS po "
+        "LEFT JOIN sql_telintec_mod_admin.purchase_order_items AS poi ON po.id_order = poi.order_id "
+        "WHERE po.status = %s AND po.created_by = %s GROUP BY po.id_order"
     )
     val = (status, created_by)
     flag, e, my_result = execute_sql(sql, val, 2)
@@ -97,7 +116,6 @@ def insert_purchase_order(
     reference: str,
     history: list,
     extra_info: dict,
-
 ):
     sql = (
         "INSERT INTO sql_telintec_mod_admin.purchase_orders "
@@ -171,17 +189,6 @@ def cancel_purchase_order(history: list, id_order: int):
 
 def delete_purchase_order(id_order: int):
     sql = "DELETE FROM sql_telintec_mod_admin.purchase_orders " "WHERE id_order = %s"
-    val = (id_order,)
-    flag, e, out = execute_sql(sql, val, 3)
-    return flag, e, out
-
-
-def cancel_purchase_order(id_order: int):
-    sql = (
-        "UPDATE sql_telintec_mod_admin.purchase_orders "
-        "SET status = 4 "
-        "WHERE id_order = %s"
-    )
     val = (id_order,)
     flag, e, out = execute_sql(sql, val, 3)
     return flag, e, out

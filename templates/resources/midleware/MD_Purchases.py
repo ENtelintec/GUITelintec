@@ -10,14 +10,34 @@ from static.constants import timezone_software, format_timestamps, log_file_po
 from templates.Functions_Utils import create_notification_permission_notGUI
 from templates.controllers.departments.heads_controller import check_if_gerente
 from templates.controllers.order.orders_controller import (
-    get_purchase_orders,
     insert_purchase_order,
     insert_purchase_order_item,
     update_purchase_order,
     update_purchase_order_item,
     cancel_purchase_order,
+    get_purchase_orders_with_items,
 )
 from templates.misc.Functions_Files import write_log_file
+
+import json
+
+
+def map_products_po(products: list):
+    products_out = []
+    for item in products:
+        extra_info = json.loads(item.get("extra_info"))
+        products_out.append(
+            {
+                "id": item.get("id"),
+                "description": item.get("description"),
+                "quantity": item.get("quantity"),
+                "unit_price": item.get("price"),
+                "id_invetory": extra_info.get("id_invetory"),
+                "brand": extra_info.get("brand"),
+                "category": extra_info.get("category"),
+            }
+        )
+    return products_out
 
 
 def fetch_purchase_orders(status, data_token):
@@ -30,11 +50,45 @@ def fetch_purchase_orders(status, data_token):
         emp_id = data_token.get("emp_id") if not flag and len(result) <= 0 else "%"
     status_map = {"pendiente": 0, "recibido": 1, "cancelado": 4}
     status = status_map.get(status, "%")  # Si status no es válido, se usa None
-    flag, error, result = get_purchase_orders(status, emp_id)
-    if flag:
-        return {"data": result, "msg": "ok", "error": None}, 200
-    else:
+    flag, error, result = get_purchase_orders_with_items(status, emp_id)
+    if not flag:
         return {"data": None, "msg": "error", "error": str(error)}, 400
+    data_out = []
+    for item in result:
+        (
+            id_order,
+            timestamp,
+            status,
+            created_by,
+            approved_by,
+            supplier,
+            total_amount,
+            folio,
+            reference,
+            history,
+            extra_info,
+            products
+        ) = item
+        extra_info = json.loads(extra_info)
+        products = json.loads(products)
+        products = map_products_po(products)
+        data_out.append(
+            {
+                "id": id_order,
+                "timestamp": timestamp,
+                "status": status,
+                "supplier": supplier,
+                "folio": folio,
+                "reference": reference,
+                "comment": extra_info.get("comment"),
+                "history": json.loads(history),
+                "items": products,
+                "total_amount": total_amount,
+                "created_by": created_by,
+                "approved_by": approved_by
+            }
+        )
+    return {"data": data_out, "msg": "ok", "error": None}, 200
 
 
 def create_purchaser_order_api(data, data_token):
@@ -61,7 +115,7 @@ def create_purchaser_order_api(data, data_token):
         data["folio"],
         data["reference"],
         history,
-        extra_info
+        extra_info,
     )
     if not flag:
         return {"data": None, "msg": "error", "error": str(error)}, 400
@@ -72,7 +126,7 @@ def create_purchaser_order_api(data, data_token):
         extra_info = {
             "id_inventory": item.get("id_inventory", 0),
             "brand": item.get("brand", ""),
-            "category":  item.get("category", ""),
+            "category": item.get("category", ""),
         }
         flag, error, result = insert_purchase_order_item(
             id_order,
@@ -82,7 +136,9 @@ def create_purchaser_order_api(data, data_token):
             extra_info,
         )
         if not flag:
-            msg_moves.append(f"x-Error al crear item de orden de compra -{item['description']}-{str(error)}")
+            msg_moves.append(
+                f"x-Error al crear item de orden de compra -{item['description']}-{str(error)}"
+            )
             flag_error = True
         else:
             msg_moves.append(f"Item de orden de compra creado con ID-{result}")
@@ -92,7 +148,11 @@ def create_purchaser_order_api(data, data_token):
     )
     write_log_file(log_file_po, msg)
     if flag_error:
-        return {"data": [id_order], "msg": "Error at creating order items", "error": "\n".join(msg_moves)}, 400
+        return {
+            "data": [id_order],
+            "msg": "Error at creating order items",
+            "error": "\n".join(msg_moves),
+        }, 400
     return {"data": [id_order], "msg": "ok", "error": None}, 200
 
 
@@ -122,7 +182,7 @@ def update_purchase_order_api(data, data_token):
         data["folio"],
         data["reference"],
         history,
-        extra_info
+        extra_info,
     )
     if not flag:
         return {"data": None, "msg": "error", "error": str(error)}, 400
@@ -133,7 +193,7 @@ def update_purchase_order_api(data, data_token):
         extra_info = {
             "id_inventory": item.get("id_inventory", 0),
             "brand": item.get("brand", ""),
-            "category":  item.get("category", ""),
+            "category": item.get("category", ""),
         }
         flag, error, result = update_purchase_order_item(
             item["id"],
@@ -144,7 +204,9 @@ def update_purchase_order_api(data, data_token):
             extra_info,
         )
         if not flag:
-            msg_items.append(f"x-Error al crear item de orden de compra -{item['description']}-{str(error)}")
+            msg_items.append(
+                f"x-Error al crear item de orden de compra -{item['description']}-{str(error)}"
+            )
             flag_error = True
         else:
             msg_items.append(f"Item de orden de compra actualizado con ID-{item['id']}")
@@ -154,7 +216,11 @@ def update_purchase_order_api(data, data_token):
     )
     write_log_file(log_file_po, msg)
     if flag_error:
-        return {"data": [data["id"]], "msg": "Error at creating order items", "error": "\n".join(msg_items)}, 400
+        return {
+            "data": [data["id"]],
+            "msg": "Error at creating order items",
+            "error": "\n".join(msg_items),
+        }, 400
     return {"data": [data["id"]], "msg": "ok", "error": None}, 200
 
 
