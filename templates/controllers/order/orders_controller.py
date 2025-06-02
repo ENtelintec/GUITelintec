@@ -74,47 +74,47 @@ def delete_vorder_db(id_vorder: int):
     return flag, e, out
 
 
-def get_purchase_orders():
+def get_purchase_orders(status: int | str, created_by: int):
     sql = (
         "SELECT id_order, timestamp, status, items, created_by, approved_by, "
         "supplier_id, total_amount, folio, reference, extra_info "
         "FROM sql_telintec_mod_admin.purchase_orders "
+        "WHERE status = %s AND created_by = %s"
     )
-    val = None
-    flag, e, my_result = execute_sql(sql, val, 5)
+    val = (status, created_by)
+    flag, e, my_result = execute_sql(sql, val, 2)
     return flag, e, my_result
 
 
 def insert_purchase_order(
-    id_order: int,
     timestamp: str,
     status: int,
-    items: str,
     created_by: int,
-    approved_by: int,
+    approved_by: int | None,
     supplier_id: int,
-    total_amount: float,
+    total_amount: float | None,
     folio: str,
     reference: str,
+    history: list,
     extra_info: dict,
+
 ):
     sql = (
         "INSERT INTO sql_telintec_mod_admin.purchase_orders "
-        "(id_order, timestamp, status, items, created_by, approved_by, "
-        "supplier_id, total_amount, folio, reference, extra_info) "
-        "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+        "(timestamp, status, created_by, approved_by, "
+        "supplier_id, total_amount, folio, reference, history, extra_info) "
+        "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
     )
     val = (
-        id_order,
         timestamp,
         status,
-        items,
         created_by,
         approved_by,
         supplier_id,
         total_amount,
         folio,
         reference,
+        json.dumps(history),
         json.dumps(extra_info),
     )
     flag, e, out = execute_sql(sql, val, 4)
@@ -125,35 +125,46 @@ def update_purchase_order(
     id_order: int,
     timestamp: str,
     status: int,
-    items: str,
     created_by: int,
     approved_by: int,
     supplier_id: int,
     total_amount: float,
     folio: str,
     reference: str,
+    history: list,
     extra_info: dict,
 ):
     sql = (
         "UPDATE sql_telintec_mod_admin.purchase_orders "
-        "SET timestamp = %s, status = %s, items = %s, created_by = %s, "
+        "SET timestamp = %s, status = %s, created_by = %s, "
         "approved_by = %s, supplier_id = %s, total_amount = %s, "
-        "folio = %s, reference = %s, extra_info = %s "
+        "folio = %s, reference = %s, history = %s, extra_info = %s "
         "WHERE id_order = %s"
     )
     val = (
         timestamp,
         status,
-        items,
         created_by,
         approved_by,
         supplier_id,
         total_amount,
         folio,
         reference,
+        json.dumps(history),
         json.dumps(extra_info),
         id_order,
     )
+    flag, e, out = execute_sql(sql, val, 3)
+    return flag, e, out
+
+
+def cancel_purchase_order(history: list, id_order: int):
+    sql = (
+        "UPDATE sql_telintec_mod_admin.purchase_orders "
+        "SET status = 4, history = %s "
+        "WHERE id_order = %s"
+    )
+    val = (json.dumps(history), id_order)
     flag, e, out = execute_sql(sql, val, 3)
     return flag, e, out
 
@@ -188,7 +199,6 @@ def get_items_purchase_orders(id_order: int):
 
 
 def insert_purchase_order_item(
-    id_item: int,
     order_id: int,
     quantity: int,
     unit_price: float,
@@ -197,11 +207,10 @@ def insert_purchase_order_item(
 ):
     sql = (
         "INSERT INTO sql_telintec_mod_admin.purchase_order_items "
-        "(id_item, order_id, quantity, unit_price, description, extra_info) "
-        "VALUES (%s, %s, %s, %s, %s, %s)"
+        "(order_id, quantity, unit_price, description, extra_info) "
+        "VALUES (%s, %s, %s, %s, %s)"
     )
     val = (
-        id_item,
         order_id,
         quantity,
         unit_price,
@@ -220,7 +229,6 @@ def insert_purchase_order_items(items: list):
     outs = []
     for item in items:
         flag, e, out = insert_purchase_order_item(
-            item["id_item"],
             item["order_id"],
             item["quantity"],
             item["unit_price"],
