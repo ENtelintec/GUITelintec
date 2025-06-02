@@ -12,7 +12,6 @@ from templates.controllers.employees.employees_controller import (
     get_employee_info,
 )
 from templates.controllers.fichajes.fichajes_controller import get_fichaje_emp_AV
-from templates.controllers.order.orders_controller import get_orders_amc
 from templates.controllers.product.p_and_s_controller import (
     get_product_categories,
     get_products_almacen,
