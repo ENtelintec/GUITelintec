@@ -35,6 +35,8 @@ def map_products_po(products: list):
                 "id_invetory": extra_info.get("id_invetory"),
                 "brand": extra_info.get("brand"),
                 "category": extra_info.get("category"),
+                "url": extra_info.get("url"),
+                "n_parte": extra_info.get("n_parte"),
             }
         )
     return products_out
@@ -67,7 +69,7 @@ def fetch_purchase_orders(status, data_token):
             reference,
             history,
             extra_info,
-            products
+            products,
         ) = item
         extra_info = json.loads(extra_info)
         products = json.loads(products)
@@ -85,7 +87,7 @@ def fetch_purchase_orders(status, data_token):
                 "items": products,
                 "total_amount": total_amount,
                 "created_by": created_by,
-                "approved_by": approved_by
+                "approved_by": approved_by,
             }
         )
     return {"data": data_out, "msg": "ok", "error": None}, 200
@@ -127,6 +129,8 @@ def create_purchaser_order_api(data, data_token):
             "id_inventory": item.get("id_inventory", 0),
             "brand": item.get("brand", ""),
             "category": item.get("category", ""),
+            "n_parte": item.get("n_parte", ""),
+            "url": item.get("url", ""),
         }
         flag, error, result = insert_purchase_order_item(
             id_order,
@@ -194,6 +198,8 @@ def update_purchase_order_api(data, data_token):
             "id_inventory": item.get("id_inventory", 0),
             "brand": item.get("brand", ""),
             "category": item.get("category", ""),
+            "n_parte": item.get("n_parte", ""),
+            "url": item.get("url", ""),
         }
         flag, error, result = update_purchase_order_item(
             item["id"],

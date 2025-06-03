@@ -57,6 +57,8 @@ items_po_model = api.model(
         "brand": fields.String(required=True, description="The brand"),
         "category": fields.String(required=True, description="The supplier"),
         "id_inventory": fields.Integer(required=True, description="The inventory id", example=0),
+        "ulr":  fields.String(required=True, description="The url", example="https://www.example.com"),
+        "n_parte":  fields.String(required=True, description="The part number", example="1234567890"),
     },
 )
 
@@ -169,6 +171,8 @@ class ItemsPOForm(Form):
     brand = StringField("brand", [InputRequired()])
     category = StringField("category", [InputRequired()])
     id_inventory = FloatField("id_inventory", [], default=0)
+    ulr = URLField("ulr", [], default="")
+    n_parte = StringField("n_parte", [], default="")
 
 
 class PurchaseOrderPostForm(Form):
