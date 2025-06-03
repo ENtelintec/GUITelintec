@@ -10,6 +10,7 @@ from templates.resources.rs_Admin_presales import ns as ns_admin_presales
 from templates.resources.rs_Admin_DB import ns as ns_admin_db
 from templates.resources.rs_Dashboards import ns as ns_dashboard
 from templates.resources.rs_Common import ns as ns_common
+from templates.resources.rs_Admin_collections import ns as ns_admin_collections
 from wtforms_json import init as init_wtforms_json
 
 app = Flask(__name__)
@@ -33,6 +34,7 @@ api.add_namespace(ns_admin_presales)
 api.add_namespace(ns_admin_db)
 api.add_namespace(ns_dashboard)
 api.add_namespace(ns_common)
+api.add_namespace(ns_admin_collections)
 
 
 if __name__ == "__main__":
