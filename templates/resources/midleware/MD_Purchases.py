@@ -24,6 +24,7 @@ import json
 
 def map_products_po(products: list):
     products_out = []
+    total_amount = 0.0
     for item in products:
         extra_info = json.loads(item.get("extra_info"))
         products_out.append(
@@ -31,7 +32,7 @@ def map_products_po(products: list):
                 "id": item.get("id"),
                 "description": item.get("description"),
                 "quantity": item.get("quantity"),
-                "unit_price": item.get("price"),
+                "unit_price": item.get("unit_price"),
                 "id_invetory": extra_info.get("id_invetory"),
                 "brand": extra_info.get("brand"),
                 "category": extra_info.get("category"),
@@ -39,7 +40,8 @@ def map_products_po(products: list):
                 "n_parte": extra_info.get("n_parte"),
             }
         )
-    return products_out
+        total_amount += float(item.get("unit_price")) * float(item.get("quantity"))
+    return products_out, total_amount
 
 
 def fetch_purchase_orders(status, data_token):
@@ -73,7 +75,7 @@ def fetch_purchase_orders(status, data_token):
         ) = item
         extra_info = json.loads(extra_info)
         products = json.loads(products)
-        products = map_products_po(products)
+        products, total_amount = map_products_po(products)
         data_out.append(
             {
                 "id": id_order,
