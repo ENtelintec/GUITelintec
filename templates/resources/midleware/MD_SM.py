@@ -665,7 +665,7 @@ def dispatch_sm(data, data_token):
     for item_n in data["items"]:
         item = dict_products_sm.get(item_n["id"])
         if item is None:
-            msg_items.append(f"Product {item_n['id']}-{item_n['name']} not found in sm")
+            msg_items.append(f"Product {item_n['id']}-{item['name']} not found in sm")
             continue
         if item_n["quantity"] > stocks.get(item["id"], 0):
             msg_items.append(
