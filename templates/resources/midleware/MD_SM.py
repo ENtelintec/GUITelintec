@@ -662,6 +662,7 @@ def dispatch_sm(data, data_token):
         for item in products_sm
     }
     msg_items = []
+    print(data["items"])
     for item_n in data["items"]:
         item = dict_products_sm.get(item_n["id"])
         if item is None:
