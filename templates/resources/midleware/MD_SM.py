@@ -349,13 +349,7 @@ def get_iddentifiers(data_token):
     return identifier_list, 200
 
 
-def fetch_all_sm_with_permissions(data_token):
-    iddentifiers, code = get_iddentifiers_creation(data_token)
-    if code != 200:
-        return {"data": [], "msg": iddentifiers}, 400
-    data_sm, code = get_all_sm(-1, 0, -1)
-    if code != 200:
-        return {"data": [], "msg": data_sm}, 400
+def clasify_sm(iddentifiers, data_sm, data_token):
     data_out = {}
     ident_list = [f"sm-{item.lower()}-" for item in iddentifiers]
     for key in ident_list:
@@ -364,14 +358,30 @@ def fetch_all_sm_with_permissions(data_token):
             continue
         if tab not in data_out:
             data_out[tab] = []
+    ident_set = set(ident_list)
     for sm in data_sm["data"]:
-        for key in ident_list:
-            tab = tabs_sm.get(key)
-            if tab is None:
-                continue
-            if key in sm["folio"].lower():
-                data_out[tab].append(sm)
-                break
+        folio = sm["folio"].lower()
+        added = False
+        for key in ident_set:
+            if key in folio:
+                tab = tabs_sm.get(key)
+                if tab:
+                    data_out[tab].append(sm)
+                    added = True
+                    break
+        if not added and sm["emp_id"] == data_token.get("emp_id"):
+            data_out.setdefault("Otros", []).append(sm)
+    return data_out
+
+
+def fetch_all_sm_with_permissions(data_token):
+    iddentifiers, code = get_iddentifiers_creation(data_token)
+    if code != 200:
+        return {"data": [], "msg": iddentifiers}, 400
+    data_sm, code = get_all_sm(-1, 0, -1)
+    if code != 200:
+        return {"data": [], "msg": data_sm}, 400
+    data_out = clasify_sm(iddentifiers, data_sm, data_token)
     return {"data": data_out}, 200
 
 
@@ -382,22 +392,7 @@ def get_all_sm_control_table(data_token):
     data_sm, code = get_all_sm(-1, 0, -1, with_items=False)
     if code != 200:
         return {"data": [], "msg": data_sm}, 400
-    data_out = {}
-    ident_list = [f"sm-{item.lower()}-" for item in iddentifiers]
-    for key in ident_list:
-        tab = tabs_sm.get(key)
-        if tab is None:
-            continue
-        if tab not in data_out:
-            data_out[tab] = []
-    for sm in data_sm["data"]:
-        for key in ident_list:
-            tab = tabs_sm.get(key)
-            if tab is None:
-                continue
-            if key in sm["folio"].lower():
-                data_out[tab].append(sm)
-                break
+    data_out = clasify_sm(iddentifiers, data_sm, data_token)
     return {"data": data_out}, 200
 
 
@@ -663,6 +658,7 @@ def dispatch_sm(data, data_token):
     }
     msg_items = []
     print(data["items"])
+    # return 200, {"msg": "ok"}
     for item_n in data["items"]:
         item = dict_products_sm.get(item_n["id"])
         if item is None:
@@ -682,6 +678,9 @@ def dispatch_sm(data, data_token):
                 f"Quantity to dispatch is greater than requested for product {item['id']}-{item['name']}"
             )
             continue
+        print(item)
+        print(item_n["comment"], item_n["partida"])
+        return 200, {"msg": "ok"}
         flag, error, result = create_movement_db_amc(
             item["id"], "salida", item_n["quantity"], date_now, folio, "dispatch sm"
         )

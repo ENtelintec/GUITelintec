@@ -50,14 +50,13 @@ items_model_sm = api.model(
         "url": fields.String(
             required=True, description="The product url", example="https://example.com"
         ),
-        "sku": fields.String(required=False, description="The product sku"),
+        "n_parte": fields.String(required=False, description="The product n_parte"),
         "partida": fields.String(required=False, description="The product partida"),
-        "udm": fields.String(required=True, description="The product unit of measure"),
     },
 )
 
 items_dispatch_model_sm = api.model(
-    "ItemsModel",
+    "ItemsDispatchModel",
     {
         "id": fields.Integer(required=True, description="The product id"),
         "comment": fields.String(required=True, description="The product comment"),
@@ -232,7 +231,6 @@ sm_model_out = api.model(
             required=True, description="The destination area in telintec"
         ),
         "items": fields.List(fields.Nested(items_model_sm), required=False),
-        "items_new": fields.List(fields.Nested(items_model_sm), required=False),
         # New fields added
         "urgent": fields.Integer(required=False, description="Urgent", example=0),
         "project": fields.String(required=False, description="The project"),
@@ -505,7 +503,9 @@ request_sm_plot_data_model = api.model(
 request_sm_dispatch_model = api.model(
     "RequestSMDispatch",
     {
-        "id": fields.Integer(required=True, description="The id of the material request"),
+        "id": fields.Integer(
+            required=True, description="The id of the material request"
+        ),
         "items": fields.List(fields.Nested(items_dispatch_model_sm), required=False),
     },
 )
@@ -548,6 +548,8 @@ class ItemsFormSM(Form):
     movement = StringField("movement", validators=[], default="")
     url = URLField("url", validators=[], default="")
     sku = StringField("sku", validators=[], default="")
+    partida = StringField("partida", validators=[], default="")
+    n_parte = StringField("n_parte", validators=[], default="")
 
 
 class ItemsFormSMDispartch(Form):
@@ -608,8 +610,6 @@ class SMInfoForm(Form):
     destination = StringField("destination", validators=[InputRequired()])
     # history = StringField("history", validators=[], default="[]")
     history = FieldList(FormField(HistoryFormSM, "history"))
-    items = FieldList(FormField(ItemsFormSM, "items"))
-    items_new = FieldList(FormField(ItemsFormSM, "items_new"))
 
 
 class SMInfoControlTableForm(Form):
