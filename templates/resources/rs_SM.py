@@ -17,7 +17,6 @@ from static.Models.api_sm_models import (
     request_sm_plot_data_model,
     employees_answer_model,
     request_sm_dispatch_model,
-    response_sm_dispatch_model,
     SMPostForm,
     SMPutForm,
     SMDeleteForm,
@@ -101,12 +100,12 @@ class Products(Resource):
 @ns.route("/all")
 class AllSm(Resource):
     @ns.expect(expected_headers_per)
-    @ns.marshal_with(table_sm_model)
     def get(self):
         flag, data_token, msg = token_verification_procedure(request, department="sm")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data_out, code = get_all_sm(-1, 0, -1)
+        print(data_out["data"])
         return data_out, code
 
 

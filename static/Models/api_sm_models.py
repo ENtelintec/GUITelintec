@@ -50,8 +50,11 @@ items_model_sm = api.model(
         "url": fields.String(
             required=True, description="The product url", example="https://example.com"
         ),
-        "n_parte": fields.String(required=False, description="The product n_parte"),
+        "sku": fields.String(required=False, description="The product sku"),
         "partida": fields.String(required=False, description="The product partida"),
+        "dispatched": fields.Float(
+            required=False, description="The product dispatched"
+        ),
     },
 )
 
@@ -549,7 +552,6 @@ class ItemsFormSM(Form):
     url = URLField("url", validators=[], default="")
     sku = StringField("sku", validators=[], default="")
     partida = StringField("partida", validators=[], default="")
-    n_parte = StringField("n_parte", validators=[], default="")
 
 
 class ItemsFormSMDispartch(Form):

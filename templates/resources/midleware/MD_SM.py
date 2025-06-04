@@ -505,133 +505,6 @@ def dispatch_products(
     return avaliable, to_request, new_products
 
 
-# def dispatch_sm(data):
-#     if len(data["items"]) > 0:
-#         flag, error, result = update_sm_products_by_id(data["id"], data["items"])
-#         if not flag:
-#             return 400, f"Not posible to update products in sm, error: {error}"
-#     flag, error, result = get_sm_by_id(data["id"])
-#     if not flag or len(result) <= 0:
-#         return 400, ["sm not foud"]
-#     history_sm = json.loads(result[12])
-#     emp_id_creation = result[6]
-#     time_zone = pytz.timezone(timezone_software)
-#     date_now = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
-#     history_sm.append(
-#         {
-#             "user": data["emp_id"],
-#             "event": "dispatch",
-#             "date": date_now,
-#             "comment": data["comment"],
-#         }
-#     )
-#     products_sm = json.loads(result[10])
-#     products_to_dispacth = []
-#     products_to_request = []
-#     new_products = []
-#     for item in products_sm:
-#         if "(Nuevo)" in item["comment"] and "(Pedido)" not in item["comment"]:
-#             new_products.append(item)
-#             continue
-#         if (
-#             item["stock"] >= 0
-#             and "(Despachado)" not in item["comment"]
-#             and "(Semidespachado)" in item["comment"]
-#         ):
-#             products_to_dispacth.append(item)
-#         elif (
-#             "(Pedido)" not in item["comment"] and "(Despachado)" not in item["comment"]
-#         ):
-#             products_to_request.append(item)
-#     # update db with corresponding movements
-#     data["emp_id_creation"] = emp_id_creation
-#     (products_to_dispacth, products_to_request, new_products) = dispatch_products(
-#         products_to_dispacth, products_to_request, data["id"], new_products, data
-#     )
-#     # update table with new stock
-#     products_sm = update_data_dicts(
-#         [products_to_dispacth, products_to_request, new_products], products_sm
-#     )
-#     is_complete = (
-#         True if len(products_to_request) == 0 and len(new_products) == 0 else False
-#     )
-#     flag, error, result = update_history_sm(
-#         data["id"], history_sm, products_sm, is_complete
-#     )
-#     if is_complete:
-#         print("complete dispatch sm")
-#     if flag:
-#         msg = f"SM con ID-{data['id']} despachada"
-#         write_log_file(log_file_sm_path, msg)
-#         if not is_complete:
-#             msg += (
-#                 "\n Productos a despachar:  "
-#                 + "\n".join(
-#                     [
-#                         f"{item['quantity']} {item['name']}"
-#                         for item in products_to_dispacth
-#                     ]
-#                 )
-#                 + "--"
-#             )
-#             msg += (
-#                 "\n Productos a solicitar:  "
-#                 + "\n".join(
-#                     [
-#                         f"{item['quantity']} {item['name']}"
-#                         for item in products_to_request
-#                     ]
-#                 )
-#                 + "--"
-#             )
-#             msg += (
-#                 "\n Productos nuevos:  "
-#                 + "\n".join(
-#                     [
-#                         f"{item['quantity']} {item['name']} {item['url']}"
-#                         for item in new_products
-#                     ]
-#                 )
-#                 + "--"
-#             )
-#         else:
-#             msg += "\nTodos los productos han sido despachados"
-#         create_notification_permission(
-#             msg, ["sm"], "SM Despachada", data["emp_id"], emp_id_creation
-#         )
-#         return 200, {
-#             "to_dispatch": products_to_dispacth,
-#             "to_request": products_to_request,
-#             "new_products": new_products,
-#         }
-#     else:
-#         return 400, {"msg": str(error)}
-
-
-def create_movements_dispatch(movements, data_token):
-    # flag, e, result = create_movement_db_amc(
-    #     data["info"]["id_product"],
-    #     type_m,
-    #     data["info"]["quantity"],
-    #     timestamp,
-    #     data["info"]["sm_id"],
-    #     data["info"]["reference"],
-    # )
-    msg = ""
-    for movement in movements:
-        flag, e, result = create_movement_db_amc(
-            movement[0],
-            movement[1],
-            movement[2],
-            movement[3],
-            movement[4],
-            movement[5],
-        )
-        if not flag:
-            return 400, f"Error at creating movement: {str(e)}"
-    return 200, {"msg": "ok"}
-
-
 def dispatch_sm(data, data_token):
     if len(data["items"]) <= 0:
         return 400, ["No item to update in sm"]
@@ -657,51 +530,72 @@ def dispatch_sm(data, data_token):
         for item in products_sm
     }
     msg_items = []
-    print(data["items"])
+    # print(data["items"])
     # return 200, {"msg": "ok"}
     for item_n in data["items"]:
-        item = dict_products_sm.get(item_n["id"])
-        if item is None:
+        item_to_update = dict_products_sm.get(item_n["id"])
+        old_item = item_to_update.copy()
+        if item_to_update is None:
             msg_items.append(f"Product {item_n['id']}-not found in sm")
+            updated_products.append(old_item)
             continue
-        if item_n["quantity"] > stocks.get(item["id"], 0):
+        if item_n["quantity"] > stocks.get(item_to_update["id"], 0):
             msg_items.append(
-                f"Quantity to dispatch is greater than stock for product {item['id']}-{item['name']}"
+                f"Quantity to dispatch is greater than stock for product {item_to_update['id']}-{item_to_update['name']}"
             )
+            updated_products.append(old_item)
             continue
-        if "(Despachado)".lower() in item["comment"].lower():
-            msg_items.append(f"Product {item['id']}-{item['name']} already dispatched")
-            continue
-        item["dispatched"] += item_n["quantity"]
-        if item["dispatched"] > item["quantity"]:
+        if "(Despachado)".lower() in item_to_update["comment"].lower():
             msg_items.append(
-                f"Quantity to dispatch is greater than requested for product {item['id']}-{item['name']}"
+                f"Product {item_to_update['id']}-{item_to_update['name']} already dispatched"
             )
+            updated_products.append(old_item)
             continue
-        print(item)
-        print(item_n["comment"], item_n["partida"])
-        return 200, {"msg": "ok"}
+        item_to_update["dispatched"] += item_n["quantity"]
+        if item_to_update["dispatched"] > item_to_update["quantity"]:
+            msg_items.append(
+                f"Quantity to dispatch is greater than requested for product {item_to_update['id']}-{item_to_update['name']}"
+            )
+            updated_products.append(old_item)
+            continue
+        # print(item_to_update)
+        # print(item_n)
+
         flag, error, result = create_movement_db_amc(
-            item["id"], "salida", item_n["quantity"], date_now, folio, "dispatch sm"
+            item_to_update["id"],
+            "salida",
+            item_n["quantity"],
+            date_now,
+            folio,
+            "dispatch sm",
         )
         if not flag:
             msg_items.append(
-                f"x---Error at creating movement-{item['id']}: {str(error)}"
+                f"x---Error at creating movement-{item_to_update['id']}: {str(error)}"
             )
+            updated_products.append(old_item)
             continue
-        msg_items.append(f"----Movement created-{item['id']}: {str(result)}")
+        msg_items.append(f"----Movement created-{item_to_update['id']}: {str(result)}")
         # insertar al inicio de los comentarios
-        item["comment"] = f"{item_n['comment']}\n{item['comment']}"
+        item_to_update["comment"] = f"{item_n['comment']}\n{item_to_update['comment']}"
         # agregar los comandos
-        item["comment"] += (
+        item_to_update["comment"] += (
             " ;(Despachado) "
-            if item["dispatched"] >= item["quantity"]
+            if item_to_update["dispatched"] >= item_to_update["quantity"]
             else " ;(Semidespachado) "
         )
-        comment_history += f"Dispatch: {item['quantity']}->{item['id']}\n"
-        updated_products.append(item)
-        if "(Semidespachado)".lower() in item["comment"].lower():
+        comment_history += (
+            f"Dispatch: {item_to_update['quantity']}->{item_to_update['id']}\n"
+        )
+
+        updated_products.append(item_to_update)
+        if "(Semidespachado)".lower() in item_to_update["comment"].lower():
             flag_semidespachado = True
+    ids_to_update = [item["id"] for item in updated_products]
+    for k, v in dict_products_sm.items():
+        if k not in ids_to_update:
+            updated_products.append(v)
+    # print(updated_products)
     comment_history += (
         "SM Despachada" if not flag_semidespachado else "SM Semidespachada"
     )
