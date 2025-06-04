@@ -105,7 +105,6 @@ class AllSm(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data_out, code = get_all_sm(-1, 0, -1)
-        print(data_out["data"])
         return data_out, code
 
 
