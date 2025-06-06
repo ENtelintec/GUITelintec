@@ -69,7 +69,6 @@ def get_sm_entries(emp_id=-1):
 
 
 def insert_sm_db(data):
-    print(data)
     time_zone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
     event = [

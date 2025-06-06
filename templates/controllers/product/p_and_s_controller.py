@@ -507,7 +507,7 @@ def get_last_sku():
     return flag, error, result
 
 
-def get_all_products_db():
+def get_all_products_db_old():
     sql = (
         "SELECT "
         "sql_telintec.products_amc.id_product,"
@@ -588,19 +588,6 @@ def get_stock_db(id_product):
     vals = (id_product,)
     flag, error, result = execute_sql(sql, vals, 1)
     return flag, error, result
-
-
-def get_p_and_s(limit=(0, 100)):
-    sql = (
-        "SELECT product_id, name, model, marca, description, price_retail, available_quantity, "
-        "price_provider, support_offered, is_service, category, image "
-        "FROM sql_telintec.products_services "
-        "LIMIT %s, %s"
-    )
-    val = (limit[0], limit[1])
-    flag, e, my_result = execute_sql(sql, val, 2)
-    out = my_result if my_result is not None else []
-    return out
 
 
 def insert_product_and_service(

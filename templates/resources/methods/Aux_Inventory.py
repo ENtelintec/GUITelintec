@@ -6,7 +6,7 @@ from reportlab.lib.units import mm
 
 from static.constants import file_codebar
 from templates.controllers.product.p_and_s_controller import (
-    get_all_products_db,
+    get_all_products_db_old,
     get_all_movements_db_detail,
 )
 
@@ -186,7 +186,7 @@ def generate_kw_for_barcode(values, **kwargs):
 
 
 def fetch_all_products():
-    flag, error, result = get_all_products_db()
+    flag, error, result = get_all_products_db_old()
     if not flag:
         print("Error al obtener los productos:", str(error))
         return []

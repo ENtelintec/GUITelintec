@@ -37,7 +37,7 @@ from templates.controllers.product.p_and_s_controller import (
     insert_multiple_row_products_amc,
     update_stock_db_sku,
     insert_multiple_row_movements_amc,
-    get_all_products_db,
+    get_all_products_db_old,
     get_all_movements_db_detail,
     update_multiple_row_products_amc,
     update_stock_db_ids,
@@ -894,7 +894,7 @@ def read_excel_file_regular(file: str, is_tool=False, is_internal=0):
 
 def retrieve_data_file_inventory(type_data="dict", data=None):
     flag, error, _products = (
-        get_all_products_db() if data is None else (True, None, data)
+        get_all_products_db_old() if data is None else (True, None, data)
     )
     if not flag:
         return error, 400

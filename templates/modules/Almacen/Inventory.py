@@ -29,7 +29,7 @@ from templates.controllers.product.p_and_s_controller import (
     create_product_db,
     create_in_movement_db,
     update_product_db,
-    get_all_products_db,
+    get_all_products_db_old,
     delete_product_db,
 )
 from templates.controllers.supplier.suppliers_controller import (
@@ -54,7 +54,7 @@ from templates.resources.midleware.Functions_midleware_almacen import (
 
 
 def fetch_products():
-    flag, error, result = get_all_products_db()
+    flag, error, result = get_all_products_db_old()
     if not flag:
         print(error)
         return []
