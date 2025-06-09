@@ -143,7 +143,7 @@ def create_voucher_safety_api(data, data_token):
         }, 400
     errors = []
     for item in data["items"]:
-        flag, error, lastrowid = create_voucher_item(
+        flag, error, lastrowid_item = create_voucher_item(
             lastrowid,
             item["id_inventory"],
             item["quantity"],
@@ -154,7 +154,7 @@ def create_voucher_safety_api(data, data_token):
         if not flag:
             errors.append(
                 {
-                    "id_item": item["id_item"],
+                    "id_item": lastrowid_item,
                     "error": str(error),
                 }
             )
