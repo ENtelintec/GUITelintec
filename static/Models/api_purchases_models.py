@@ -102,7 +102,7 @@ purchase_order_post_model = api.model(
         "comment": fields.String(
             required=True, description="The quotation comment", example="Some comment"
         ),
-        "items": fields.Nested(items_po_model, required=True),
+        "items": fields.List(fields.Nested(items_po_model, required=True)),
     },
 )
 
@@ -137,7 +137,7 @@ purchase_order_put_model = api.model(
         "total_amount": fields.Float(
             required=True, description="The quotation total amount", example=100.0
         ),
-        "items": fields.Nested(items_po_model, required=True),
+        "items": fields.List(fields.Nested(items_po_model, required=True)),
     },
 )
 
