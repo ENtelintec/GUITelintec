@@ -35,7 +35,7 @@ class VoucherTools(Resource):
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        validator = VoucherToolsFormPost(ns.payload)
+        validator = VoucherToolsFormPost.from_json(ns.payload)
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
@@ -49,7 +49,7 @@ class VoucherTools(Resource):
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        validator = VoucherToolsFormPut(ns.payload)
+        validator = VoucherToolsFormPut.from_json(ns.payload)
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
@@ -66,7 +66,7 @@ class VoucerSafety(Resource):
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        validator = VoucherSafetyFormPost(ns.payload)
+        validator = VoucherSafetyFormPost.from_json(ns.payload)
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
@@ -80,7 +80,7 @@ class VoucerSafety(Resource):
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        validator = VoucherSafetyFormPut(ns.payload)
+        validator = VoucherSafetyFormPut.from_json(ns.payload)
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data

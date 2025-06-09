@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-__author__ = 'Edisson Naula'
-__date__ = '$ 20/jun./2024  at 15:06 $'
+__author__ = "Edisson Naula"
+__date__ = "$ 20/jun./2024  at 15:06 $"
 
 from flask import request
 from flask_restx import Namespace, Resource
@@ -21,7 +21,7 @@ from templates.resources.midleware.MD_Purchases import (
     cancel_purchase_order_api,
 )
 
-ns = Namespace('GUI/api/v1/admin/collections')
+ns = Namespace("GUI/api/v1/admin/collections")
 
 
 @ns.route("/orders/<string:status>")
@@ -46,7 +46,7 @@ class OperationsOrders(Resource):
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        validator = PurchaseOrderPostForm(ns.payload)
+        validator = PurchaseOrderPostForm.from_json(ns.payload)
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
@@ -55,12 +55,12 @@ class OperationsOrders(Resource):
 
     @ns.expect(expected_headers_per, purchase_order_put_model)
     def put(self):
-        flag,  data_token, msg = token_verification_procedure(
+        flag, data_token, msg = token_verification_procedure(
             request, department="orders"
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        validator = PurchaseOrderPutForm(ns.payload)
+        validator = PurchaseOrderPutForm.from_json(ns.payload)
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
@@ -74,7 +74,7 @@ class OperationsOrders(Resource):
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        validator = PurchaseOrderDeleteForm(ns.payload)
+        validator = PurchaseOrderDeleteForm.from_json(ns.payload)
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
