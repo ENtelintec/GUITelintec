@@ -187,9 +187,7 @@ class PurchaseOrderPostForm(Form):
     reference = StringField("reference", [])
     supplier = FloatField("supplier", [])
     comment = StringField("comment", [])
-    items = FieldList(
-        FormField(ItemsPOForm), "items", validators=[InputRequired()], default=[]
-    )
+    items = FieldList(FormField(ItemsPOForm), "items", validators=[], default=[])
 
 
 class ItemsPOUpdateForm(Form):
