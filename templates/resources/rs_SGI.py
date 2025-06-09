@@ -23,7 +23,7 @@ from templates.resources.midleware.MD_SGI import (
     update_voucher_safety_api,
 )
 
-ns = Namespace("GUI/api/v1/admin/collections")
+ns = Namespace("GUI/api/v1/sgi", description="SGI")
 
 
 @ns.route("/voucher/tools")
