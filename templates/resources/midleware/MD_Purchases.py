@@ -26,7 +26,7 @@ def map_products_po(products: list):
     products_out = []
     total_amount = 0.0
     for item in products:
-        extra_info = json.loads(item.get("extra_info"))
+        extra_info = item.get("extra_info", {})
         products_out.append(
             {
                 "id": item.get("id"),
@@ -48,12 +48,12 @@ def fetch_purchase_orders(status, data_token):
     permissions = data_token.get("permissions")
     permissions_last = [item.lower().split(".")[-1] for item in permissions.values()]
     if "administrator" in permissions_last:
-        emp_id = "%"
+        emp_id = None
     else:
         flag, error, result = check_if_gerente(data_token.get("emp_id"))
-        emp_id = data_token.get("emp_id") if not flag and len(result) <= 0 else "%"
+        emp_id = data_token.get("emp_id") if not flag and len(result) <= 0 else None
     status_map = {"pendiente": 0, "recibido": 1, "cancelado": 4}
-    status = status_map.get(status, "%")  # Si status no es válido, se usa None
+    status = status_map.get(status, None)  # Si status no es válido, se usa None
     flag, error, result = get_purchase_orders_with_items(status, emp_id)
     if not flag:
         return {"data": None, "msg": "error", "error": str(error)}, 400
@@ -79,7 +79,9 @@ def fetch_purchase_orders(status, data_token):
         data_out.append(
             {
                 "id": id_order,
-                "timestamp": timestamp,
+                "timestamp": timestamp.strftime(format_timestamps)
+                if not isinstance(timestamp, str)
+                else timestamp,
                 "status": status,
                 "supplier": supplier,
                 "folio": folio,

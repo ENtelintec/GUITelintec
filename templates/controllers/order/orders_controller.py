@@ -74,7 +74,7 @@ def delete_vorder_db(id_vorder: int):
     return flag, e, out
 
 
-def get_purchase_orders_with_items(status: int | str, created_by: int):
+def get_purchase_orders_with_items(status: int | None, created_by: int | None):
     sql = (
         "SELECT "
         "po.id_order, "
@@ -98,9 +98,9 @@ def get_purchase_orders_with_items(status: int | str, created_by: int):
         ") AS items "
         "FROM sql_telintec_mod_admin.purchase_orders AS po "
         "LEFT JOIN sql_telintec_mod_admin.purchase_order_items AS poi ON po.id_order = poi.order_id "
-        "WHERE po.status = %s AND po.created_by = %s GROUP BY po.id_order"
+        "WHERE (po.status = %s or %s IS NULL ) AND (po.created_by = %s OR %s IS NULL) GROUP BY po.id_order"
     )
-    val = (status, created_by)
+    val = (status, status, created_by, created_by)
     flag, e, my_result = execute_sql(sql, val, 2)
     return flag, e, my_result
 
