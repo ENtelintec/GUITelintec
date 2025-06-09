@@ -121,13 +121,14 @@ def create_voucher_safety_api(data, data_token):
     flag, error, lastrowid = create_voucher_general(
         data["type"], timestamp, data_token.get("emp_id"), data["contract"]
     )
+    print("lastrowid", lastrowid)
     if not flag:
         return {
             "data": None,
             "msg": "Error at creating general voucher",
             "error": str(error),
         }, 400
-    flag, error, lastrowid = create_voucher_safety(
+    flag, error, lastrowid_safety = create_voucher_safety(
         lastrowid,
         data["superior"],
         data["epp_emp"],
