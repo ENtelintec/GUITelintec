@@ -52,7 +52,7 @@ def create_voucher_tools_api(data, data_token):
             item["id_inventory"],
             item["quantity"],
             item["unit"],
-            item["desciption"],
+            item["description"],
             item["observations"],
         )
         if not flag:
@@ -96,7 +96,7 @@ def update_voucher_tools_api(data, data_token):
             item["id_inventory"],
             item["quantity"],
             item["unit"],
-            item["desciption"],
+            item["description"],
             item["observations"],
         )
         if not flag:
@@ -148,7 +148,7 @@ def create_voucher_safety_api(data, data_token):
             item["id_inventory"],
             item["quantity"],
             item["unit"],
-            item["desciption"],
+            item["description"],
             item["observations"],
         )
         if not flag:
@@ -191,7 +191,7 @@ def update_voucher_safety_api(data, data_token):
             item["id_inventory"],
             item["quantity"],
             item["unit"],
-            item["desciption"],
+            item["description"],
             item["observations"],
         )
         if not flag:
