@@ -60,7 +60,7 @@ items_po_model = api.model(
         "id_inventory": fields.Integer(
             required=True, description="The inventory id", example=0
         ),
-        "ulr": fields.String(
+        "url": fields.String(
             required=True, description="The url", example="https://www.example.com"
         ),
         "n_parte": fields.String(
@@ -178,7 +178,7 @@ class ItemsPOForm(Form):
     brand = StringField("brand", [InputRequired()])
     category = StringField("category", [InputRequired()])
     id_inventory = FloatField("id_inventory", [], default=0)
-    ulr = URLField("ulr", [], default="")
+    url = URLField("url", [], default="")
     n_parte = StringField("n_parte", [], default="")
 
 
@@ -200,7 +200,7 @@ class ItemsPOUpdateForm(Form):
     brand = StringField("brand", [InputRequired()])
     category = StringField("category", [InputRequired()])
     id_inventory = FloatField("id_inventory", [], default=0)
-    ulr = URLField("ulr", [], default="")
+    url = URLField("url", [], default="")
     n_parte = StringField("n_parte", [], default="")
 
 
