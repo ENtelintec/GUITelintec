@@ -16,6 +16,7 @@ from templates.controllers.order.orders_controller import (
     update_purchase_order_item,
     cancel_purchase_order,
     get_purchase_orders_with_items,
+    update_purchase_order_status,
 )
 from templates.misc.Functions_Files import write_log_file
 
@@ -270,3 +271,34 @@ def cancel_purchase_order_api(data, data_token):
     )
     write_log_file(log_file_po, msg)
     return {"data": [data["id"]], "msg": "ok", "error": None}, 200
+
+
+def change_state_order_api(data, data_token):
+    time_zone = pytz.timezone(timezone_software)
+    timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
+    history = data.get("history", [])
+    history.append(
+        {
+            "user": data_token.get("emp_id"),
+            "event": "change_state",
+            "date": timestamp,
+            "comment": data.get("comment", ""),
+        }
+    )
+    flag, error, result = update_purchase_order_status(
+        data["id"],
+        history,
+        data["status"],
+        data_token.get("emp_id"),
+    )
+    if not flag:
+        return {"data": None, "msg": "error", "error": str(error)}, 400
+    msg = f"Orden de compra actualizada con ID-{data['id']} a estado {data['status']}"
+    create_notification_permission_notGUI(
+        msg,
+        ["orders", "administracion"],
+        "Orden de compra actualizada",
+        data_token.get("emp_id"),
+    )
+    write_log_file(log_file_po, msg)
+    return {"data": [result], "msg": "ok", "error": None}, 200

@@ -149,6 +149,20 @@ purchase_order_delete_model = api.model(
     },
 )
 
+purchase_order_update_status_model = api.model(
+    "PurchaseOrderDelete",
+    {
+        "id": fields.Integer(required=True, description="The quotation id", example=1),
+        "history": fields.List(fields.Nested(history_purchase_model), required=True),
+        "status": fields.Integer(
+            required=True, description="The quotation status", example=0
+        ),
+        "approved_by": fields.Integer(
+            required=True, description="The quotation approved by", example=1
+        ),
+    },
+)
+
 
 class MetadataPurchaseForm(Form):
     name = StringField("Name", [InputRequired()])
@@ -224,3 +238,12 @@ class PurchaseOrderPutForm(Form):
 
 class PurchaseOrderDeleteForm(Form):
     id = IntegerField("id", [InputRequired()])
+    history = FieldList(FormField(HistoryPurchaseForm), "history", default=[])
+
+
+class PurchaseOrderUpdateStatusForm(Form):
+    id = IntegerField("id", [InputRequired()])
+    history = FieldList(FormField(HistoryPurchaseForm), "history", default=[])
+    status = IntegerField(
+        "status", [validators.number_range(min=-1, message="Invalid id")]
+    )

@@ -176,6 +176,19 @@ def update_purchase_order(
     return flag, e, out
 
 
+def update_purchase_order_status(
+    id_order: int, history: list, status: int, id_approved: int
+):
+    sql = (
+        "UPDATE sql_telintec_mod_admin.purchase_orders "
+        "SET status = %s, history = %s, approved_by= %s "
+        "WHERE id_order = %s"
+    )
+    val = (status, json.dumps(history), id_approved, id_order)
+    flag, error, result = execute_sql(sql, val, 3)
+    return flag, error, result
+
+
 def cancel_purchase_order(history: list, id_order: int):
     sql = (
         "UPDATE sql_telintec_mod_admin.purchase_orders "
