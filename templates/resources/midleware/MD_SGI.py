@@ -2,6 +2,7 @@
 __author__ = "Edisson Naula"
 __date__ = "$ 06/jun/2025  at 14:54 $"
 
+import json
 from datetime import datetime
 
 import pytz
@@ -15,6 +16,8 @@ from templates.controllers.vouchers.vouchers_controller import (
     update_voucher_safety,
     create_voucher_item,
     update_voucher_item,
+    get_vouchers_tools_with_items_date,
+    get_vouchers_safety_with_items,
 )
 
 
@@ -209,3 +212,66 @@ def update_voucher_safety_api(data, data_token):
             "errors": errors,
         }, 400
     return {"data": [rows_changed], "msg": "Voucher updated successfully"}, 200
+
+
+def get_vouchers_tools_api(data, data_token=None):
+    flag, error, result = get_vouchers_tools_with_items_date(data["date"])
+    if not flag:
+        return {
+            "data": None,
+            "msg": "Error at getting vouchers",
+            "error": str(error),
+        }, 400
+    data_out = []
+    for item in result:
+        data_out.append(
+            {
+                "id_voucher_general": item[0],
+                "type": item[1],
+                "date": item[2].strftime(format_timestamps)
+                if not isinstance(item[2], str)
+                else item[2],
+                "user": item[3],
+                "contract": item[4],
+                "position": item[5],
+                "type_transaction": item[6],
+                "superior": item[7],
+                "storage_emp": item[8],
+                "user_state": item[9],
+                "superior_state": item[10],
+                "extra_info": json.loads(item[11]),
+                "items": json.loads(item[12]),
+            }
+        )
+    return {"data": data_out, "msg": "Vouchers retrieved successfully"}, 200
+
+
+def get_vouchers_safety_api(data, data_token=None):
+    flag, error, result = get_vouchers_safety_with_items(data["date"])
+    if not flag:
+        return {
+            "data": None,
+            "msg": "Error at getting vouchers",
+            "error": str(error),
+        }, 400
+    data_out = []
+    for item in result:
+        data_out.append(
+            {
+                "id_voucher_general": item[0],
+                "type": item[1],
+                "date": item[2].strftime(format_timestamps)
+                if not isinstance(item[2], str)
+                else item[2],
+                "user": item[3],
+                "contract": item[4],
+                "superior": item[5],
+                "epp_emp": item[6],
+                "epp_state": item[7],
+                "superior_state": item[8],
+                "motive": item[9],
+                "extra_info": json.loads(item[10]),
+                "items": json.loads(item[11]),
+            }
+        )
+    return {"data": data_out, "msg": "Vouchers retrieved successfully"}, 200

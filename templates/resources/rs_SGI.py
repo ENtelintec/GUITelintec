@@ -21,6 +21,8 @@ from templates.resources.midleware.MD_SGI import (
     create_voucher_safety_api,
     update_voucher_tools_api,
     update_voucher_safety_api,
+    get_vouchers_tools_api,
+    get_vouchers_safety_api,
 )
 
 ns = Namespace("GUI/api/v1/sgi", description="SGI")
@@ -85,4 +87,34 @@ class VoucerSafety(Resource):
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
         data_out, code = update_voucher_safety_api(data, data_token)
+        return data_out, code
+
+
+@ns.route("/voucher/tools/<string:year, string:month, string:day>")
+class FetchVoucherTools(Resource):
+    @ns.expect(expected_headers_per)
+    def get(self, year, month, day):
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["sgi", "voucher"]
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        data_out, code = get_vouchers_tools_api(
+            {"date": f"{year}-{month}-{day}"}, data_token
+        )
+        return data_out, code
+
+
+@ns.route("/voucher/safety/<string:year, string:month, string:day>")
+class FetchVoucherSafety(Resource):
+    @ns.expect(expected_headers_per)
+    def get(self, year, month, day):
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["sgi", "voucher"]
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        data_out, code = get_vouchers_safety_api(
+            {"date": f"{year}-{month}-{day}"}, data_token
+        )
         return data_out, code
