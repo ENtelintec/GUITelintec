@@ -206,21 +206,32 @@ def update_purchase_order_api(data, data_token):
             "n_parte": item.get("n_parte", ""),
             "url": item.get("url", ""),
         }
-        flag, error, result = update_purchase_order_item(
-            item["id"],
-            data["id"],
-            item["quantity"],
-            item["unit_price"],
-            item["description"],
-            extra_info,
-        )
+        if item["id"] == -1:
+            flag, error, result = insert_purchase_order_item(
+                data["id"],
+                item["quantity"],
+                item["unit_price"],
+                item["description"],
+                extra_info,
+            )
+        else:
+            flag, error, result = update_purchase_order_item(
+                item["id"],
+                data["id"],
+                item["quantity"],
+                item["unit_price"],
+                item["description"],
+                extra_info,
+            )
         if not flag:
             msg_items.append(
-                f"x-Error al crear item de orden de compra -{item['description']}-{str(error)}"
+                f"x-Error al actualizar item de orden de compra -{item['description']}-{str(error)}"
             )
             flag_error = True
         else:
-            msg_items.append(f"Item de orden de compra actualizado con ID-{item['id']}")
+            msg_items.append(
+                f"Item de orden de compra actualizado con ID-{item['id']}-{item['description']}"
+            )
     msg += "\n" + "\n".join(msg_items)
     create_notification_permission_notGUI(
         msg, ["orders"], "Orden de compra creada", data_token.get("emp_id")
