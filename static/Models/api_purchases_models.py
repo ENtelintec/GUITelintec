@@ -10,7 +10,7 @@ from static.constants import api
 from flask_restx import fields
 from wtforms.fields.datetime import DateTimeField, DateField
 from wtforms.validators import InputRequired
-from wtforms import FormField, StringField, URLField, FloatField
+from wtforms import FormField, StringField, URLField, FloatField, validators
 from wtforms.fields.list import FieldList
 from wtforms.form import Form
 
@@ -185,19 +185,23 @@ class ItemsPOForm(Form):
 class PurchaseOrderPostForm(Form):
     folio = StringField("folio", [InputRequired()])
     reference = StringField("reference", [])
-    supplier = FloatField("supplier", [])
+    supplier = StringField("supplier", [])
     comment = StringField("comment", [])
     items = FieldList(FormField(ItemsPOForm), "items", validators=[], default=[])
 
 
 class ItemsPOUpdateForm(Form):
-    id = FloatField("id", [InputRequired()])
+    id = IntegerField("id", [], default=-1)
     description = StringField("description", [InputRequired()])
     quantity = FloatField("quantity", [InputRequired()])
     unit_price = FloatField("unit_price", [InputRequired()])
     brand = StringField("brand", [InputRequired()])
     category = StringField("category", [InputRequired()])
-    id_inventory = FloatField("id_inventory", [], default=0)
+    id_inventory = IntegerField(
+        "id_inventory",
+        [validators.number_range(min=-1, message="Invalid id")],
+        default=-1,
+    )
     url = URLField("url", [], default="")
     n_parte = StringField("n_parte", [], default="")
 
@@ -206,16 +210,16 @@ class PurchaseOrderPutForm(Form):
     id = IntegerField("id", [InputRequired()])
     folio = StringField("folio", [InputRequired()])
     reference = StringField("reference", [])
-    supplier = FloatField("supplier", [])
+    supplier = StringField("supplier", [])
     comment = StringField("comment", [])
     history = FieldList(FormField(HistoryPurchaseForm), "history", default=[])
-    status = IntegerField("status", [])
+    status = IntegerField(
+        "status", [validators.number_range(min=-1, message="Invalid id")]
+    )
     approved_by = IntegerField("approved_by", [])
     created_by = IntegerField("created_by", [])
     total_amount = FloatField("total_amount", [])
-    items = FieldList(
-        FormField(ItemsPOUpdateForm), "items", validators=[InputRequired()], default=[]
-    )
+    items = FieldList(FormField(ItemsPOUpdateForm), "items", validators=[], default=[])
 
 
 class PurchaseOrderDeleteForm(Form):

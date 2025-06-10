@@ -33,7 +33,7 @@ def map_products_po(products: list):
                 "description": item.get("description"),
                 "quantity": item.get("quantity"),
                 "unit_price": item.get("unit_price"),
-                "id_invetory": extra_info.get("id_invetory"),
+                "id_inventory": int(extra_info.get("id_inventory", 0)),
                 "brand": extra_info.get("brand"),
                 "category": extra_info.get("category"),
                 "url": extra_info.get("url"),
@@ -94,6 +94,7 @@ def fetch_purchase_orders(status, data_token):
                 "approved_by": approved_by,
             }
         )
+
     return {"data": data_out, "msg": "ok", "error": None}, 200
 
 
