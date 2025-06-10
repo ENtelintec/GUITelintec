@@ -90,7 +90,7 @@ class VoucerSafety(Resource):
         return data_out, code
 
 
-@ns.route("/voucher/tools/<string:year, string:month, string:day>")
+@ns.route("/voucher/tools/<string:year>&<string:month>&<string:day>")
 class FetchVoucherTools(Resource):
     @ns.expect(expected_headers_per)
     def get(self, year, month, day):
@@ -105,7 +105,7 @@ class FetchVoucherTools(Resource):
         return data_out, code
 
 
-@ns.route("/voucher/safety/<string:year, string:month, string:day>")
+@ns.route("/voucher/safety/<string:year>&<string:month>&<string:day>")
 class FetchVoucherSafety(Resource):
     @ns.expect(expected_headers_per)
     def get(self, year, month, day):
