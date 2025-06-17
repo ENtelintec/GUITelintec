@@ -68,6 +68,9 @@ items_po_model = api.model(
         "duration_services": fields.String(
             required=True, description="The duration services", example="2024-03-01"
         ),
+        "purchase_id": fields.Integer(
+            required=False, description="The purchase id", example=0
+        ),
     },
 )
 
