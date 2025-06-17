@@ -17,6 +17,7 @@ from templates.controllers.order.orders_controller import (
     cancel_purchase_order,
     get_purchase_orders_with_items,
     update_purchase_order_status,
+    get_pos_application_with_items,
 )
 from templates.misc.Functions_Files import write_log_file
 
@@ -31,6 +32,7 @@ def map_products_po(products: list):
         products_out.append(
             {
                 "id": item.get("id"),
+                "purchase_id": item.get("purchase_id"),
                 "description": item.get("description"),
                 "quantity": item.get("quantity"),
                 "unit_price": item.get("unit_price"),
@@ -301,3 +303,46 @@ def change_state_order_api(data, data_token):
     )
     write_log_file(log_file_po, msg)
     return {"data": [result], "msg": "ok", "error": None}, 200
+
+
+def fetch_pos_applications(data_token):
+    permissions = data_token.get("permissions")
+    permissions_last = [item.lower().split(".")[-1] for item in permissions.values()]
+    if "administrator" in permissions_last:
+        emp_id = None
+    else:
+        flag, error, result = check_if_gerente(data_token.get("emp_id"))
+        emp_id = data_token.get("emp_id") if not flag and len(result) <= 0 else None
+    flag, error, result = get_pos_application_with_items(emp_id)
+    if not flag:
+        return {"data": None, "msg": "error", "error": str(error)}, 400
+    data_out = []
+    "SELECT  po.id_order,  po.timestamp,  po.status,  po.created_by,  po.reference,  po.history,  JSON_ARRAYAGG( JSON_OBJECT(  'id', poi.id_item,  'purchase_id', poi.purchase_id,  'description', poi.description, 'quantity', poi.quantity, 'unit_price', poi.unit_price,  'extra_info', poi.extra_info,  'duration_services', poi.duration_services  ) AS items "
+    for item in result:
+        (
+            id_order,
+            timestamp,
+            status,
+            created_by,
+            reference,
+            history,
+            products,
+        ) = item
+        products = json.loads(products)
+        products, total_amount = map_products_po(products)
+        data_out.append(
+            {
+                "id": id_order,
+                "timestamp": timestamp.strftime(format_timestamps)
+                if not isinstance(timestamp, str)
+                else timestamp,
+                "status": status,
+                "reference": reference,
+                "history": json.loads(history),
+                "items": products,
+                "total_amount": total_amount,
+                "created_by": created_by,
+            }
+        )
+
+    return {"data": data_out, "msg": "ok", "error": None}, 200

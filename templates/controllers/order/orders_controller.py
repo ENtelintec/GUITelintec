@@ -87,7 +87,8 @@ def get_purchase_orders_with_items(status: int | None, created_by: int | None):
         "po.extra_info, "
         "JSON_ARRAYAGG("
         "JSON_OBJECT("
-        " 'id', poi.id_item,"
+        " 'id', poi.id_item, "
+        " 'purchase_id', poi.purchase_id, "
         " 'description', poi.description,"
         " 'quantity', poi.quantity,"
         " 'unit_price', poi.unit_price, "
@@ -100,6 +101,34 @@ def get_purchase_orders_with_items(status: int | None, created_by: int | None):
         "WHERE (po.status = %s or %s IS NULL ) AND (po.created_by = %s OR %s IS NULL) GROUP BY po.id_order"
     )
     val = (status, status, created_by, created_by)
+    flag, e, my_result = execute_sql(sql, val, 2)
+    return flag, e, my_result
+
+
+def get_pos_application_with_items(created_by: int | None):
+    sql = (
+        "SELECT "
+        "po.id_order, "
+        "po.timestamp, "
+        "po.status, "
+        "po.created_by, "
+        "po.reference, "
+        "po.history, "
+        "JSON_ARRAYAGG("
+        "JSON_OBJECT("
+        " 'id', poi.id_item, "
+        " 'purchase_id', poi.purchase_id, "
+        " 'description', poi.description,"
+        " 'quantity', poi.quantity,"
+        " 'unit_price', poi.unit_price, "
+        " 'extra_info', poi.extra_info, "
+        " 'duration_services', poi.duration_services "
+        ")) AS items "
+        "FROM sql_telintec_mod_admin.pos_applications AS po "
+        "LEFT JOIN sql_telintec_mod_admin.purchase_order_items AS poi ON po.id_order = poi.order_id "
+        "WHERE po.created_by = %s OR %s IS NULL GROUP BY po.id_order"
+    )
+    val = (created_by, created_by)
     flag, e, my_result = execute_sql(sql, val, 2)
     return flag, e, my_result
 

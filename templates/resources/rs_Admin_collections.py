@@ -32,7 +32,7 @@ ns = Namespace("GUI/api/v1/admin/collections")
 
 
 @ns.route("/orders/<string:status>")
-class FetchPurchaseOrders(Resource):
+class FetchPOs(Resource):
     @ns.expect(expected_headers_per)
     def get(self, status):
         flag, data_token, msg = token_verification_procedure(
