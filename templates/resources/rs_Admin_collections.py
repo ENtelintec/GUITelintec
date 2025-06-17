@@ -105,6 +105,7 @@ class OperationsPOs(Resource):
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        # noinspection PyUnresolvedReferences
         validator = PurchaseOrderPostForm.from_json(ns.payload)
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
@@ -120,6 +121,7 @@ class OperationsPOs(Resource):
                 "error": error if error != "" else "No autorizado. Token invalido"
             }, 401
 
+        # noinspection PyUnresolvedReferences
         validator = PurchaseOrderPutForm.from_json(ns.payload)
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
