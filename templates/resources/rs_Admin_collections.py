@@ -26,6 +26,10 @@ from templates.resources.midleware.MD_Purchases import (
     update_purchase_order_api,
     cancel_purchase_order_api,
     change_state_order_api,
+    create_po_application_api,
+    update_po_application_api,
+    cancel_po_application_api,
+    change_state_po_application_api,
 )
 
 ns = Namespace("GUI/api/v1/admin/collections")
@@ -58,7 +62,7 @@ class OperationsApplicationPOs(Resource):
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
-        data_out, code = create_purchaser_order_api(data, data_token)
+        data_out, code = create_po_application_api(data, data_token)
         return data_out, code
 
     @ns.expect(expected_headers_per, pos_application_put_model)
@@ -73,7 +77,7 @@ class OperationsApplicationPOs(Resource):
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
-        data_out, code = update_purchase_order_api(data, data_token)
+        data_out, code = update_po_application_api(data, data_token)
         return data_out, code
 
     @ns.expect(expected_headers_per)
@@ -88,7 +92,7 @@ class OperationsApplicationPOs(Resource):
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
-        data_out, code = cancel_purchase_order_api(data, data_token)
+        data_out, code = cancel_po_application_api(data, data_token)
         return data_out, code
 
 
@@ -152,4 +156,20 @@ class ChangeStateOrder(Resource):
         validator = PurchaseOrderUpdateStatusForm.from_json(ns.payload)
         data = validator.data
         data_out, code = change_state_order_api(data, data_token)
+        return data_out, code
+
+
+@ns.route("/application/order/status")
+class ChangeStatePOApplication(Resource):
+    @ns.expect(expected_headers_per, purchase_order_update_status_model)
+    def put(self):
+        flag, data_token, msg = token_verification_procedure(
+            request, department="orders"
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        # noinspection PyUnresolvedReferences
+        validator = PurchaseOrderUpdateStatusForm.from_json(ns.payload)
+        data = validator.data
+        data_out, code = change_state_po_application_api(data, data_token)
         return data_out, code

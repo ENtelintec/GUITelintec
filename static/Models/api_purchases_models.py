@@ -305,6 +305,7 @@ class ItemsPOForm(Form):
     n_parte = StringField("n_parte", [], default="")
     duration_services = StringField("duration_services", [], default="")
     supplier = StringField("supplier", [], default="")
+    purchase_id = IntegerField("purchase_id", [], default=0)
 
 
 class PurchaseOrderApplicationPostForm(Form):
