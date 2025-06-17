@@ -39,6 +39,8 @@ def map_products_po(products: list):
                 "category": extra_info.get("category"),
                 "url": extra_info.get("url"),
                 "n_parte": extra_info.get("n_parte"),
+                "duration_services": item.get("duration_services"),
+                "supplier": extra_info.get("supplier"),
             }
         )
         total_amount += float(item.get("unit_price")) * float(item.get("quantity"))
@@ -65,14 +67,12 @@ def fetch_purchase_orders(status, data_token):
             timestamp,
             status,
             created_by,
-            approved_by,
             supplier,
-            total_amount,
             folio,
-            reference,
             history,
             extra_info,
             products,
+            time_delivery,
         ) = item
         extra_info = json.loads(extra_info)
         products = json.loads(products)
@@ -86,13 +86,12 @@ def fetch_purchase_orders(status, data_token):
                 "status": status,
                 "supplier": supplier,
                 "folio": folio,
-                "reference": reference,
                 "comment": extra_info.get("comment"),
                 "history": json.loads(history),
                 "items": products,
                 "total_amount": total_amount,
                 "created_by": created_by,
-                "approved_by": approved_by,
+                "time_delivery": time_delivery,
             }
         )
 
