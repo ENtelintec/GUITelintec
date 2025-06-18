@@ -39,7 +39,6 @@ def insert_vorder_db(
     )
     val = (id_vorder, products, date_order, id_customer, id_employee)
     flag, e, out = execute_sql(sql, val, 3)
-    print(out, "record inserted in vorders.")
     return flag, None, out
 
 

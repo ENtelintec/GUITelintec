@@ -34,6 +34,9 @@ def map_products_po(products: list):
     total_amount = 0.0
     for item in products:
         extra_info = item.get("extra_info", {})
+        extra_info = extra_info if extra_info else {}
+        if item.get("quantity") is None:
+            continue
         products_out.append(
             {
                 "id": item.get("id"),

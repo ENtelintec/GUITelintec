@@ -8,9 +8,9 @@ from flask_restx import Namespace, Resource
 from static.Models.api_models import expected_headers_per
 from static.Models.api_purchases_models import (
     pos_application_post_model,
-    PurchaseOrderApplicationPostForm,
+    POsApplicationPostForm,
     pos_application_put_model,
-    PurchaseOrderApplicationPutForm,
+    POsApplicationPutForm,
     PurchaseOrderDeleteForm,
     purchase_order_update_status_model,
     PurchaseOrderUpdateStatusForm,
@@ -58,7 +58,7 @@ class OperationsApplicationPOs(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
-        validator = PurchaseOrderApplicationPostForm.from_json(ns.payload)
+        validator = POsApplicationPostForm.from_json(ns.payload)
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
@@ -73,7 +73,7 @@ class OperationsApplicationPOs(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
-        validator = PurchaseOrderApplicationPutForm.from_json(ns.payload)
+        validator = POsApplicationPutForm.from_json(ns.payload)
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data

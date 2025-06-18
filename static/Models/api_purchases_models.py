@@ -169,7 +169,7 @@ metadata_supplier_model = api.model(
 pos_application_post_model = api.model(
     "PurchaseOrderApplicationPost",
     {
-        "folio": fields.String(
+        "reference": fields.String(
             required=True,
             description="The quotation creation date",
             example="2024-03-01",
@@ -186,13 +186,10 @@ pos_application_put_model = api.model(
     "PurchaseOrderApplicationPut",
     {
         "id": fields.Integer(required=True, description="The quotation id", example=1),
-        "folio": fields.String(
+        "reference": fields.String(
             required=True,
-            description="The quotation creation date",
-            example="2024-03-01",
-        ),
-        "supplier": fields.Integer(
-            required=True, description="The supplier id", example=1
+            description="The application reference",
+            example="alm-xxx-xx",
         ),
         "comment": fields.String(
             required=True, description="The quotation comment", example="Some comment"
@@ -203,9 +200,6 @@ pos_application_put_model = api.model(
         ),
         "created_by": fields.Integer(
             required=True, description="The quotation created by", example=1
-        ),
-        "time_delivery": fields.String(
-            required=True, description="The quotation time delivery", example="3 weeks"
         ),
         "items": fields.List(fields.Nested(items_po_model, required=True)),
     },
@@ -311,13 +305,6 @@ class ItemsPOForm(Form):
     purchase_id = IntegerField("purchase_id", [], default=0)
 
 
-class PurchaseOrderApplicationPostForm(Form):
-    folio = StringField("folio", [InputRequired()])
-    reference = StringField("reference", [])
-    comment = StringField("comment", [])
-    items = FieldList(FormField(ItemsPOForm), "items", validators=[], default=[])
-
-
 class MetadataTelitencForm(Form):
     name = StringField("name", [InputRequired()])
     address_invoice = StringField("address_invoice", [InputRequired()])
@@ -370,18 +357,6 @@ class ItemsPOUpdateForm(Form):
     supplier = StringField("supplier", [], default="")
 
 
-class PurchaseOrderApplicationPutForm(Form):
-    id = IntegerField("id", [InputRequired()])
-    reference = StringField("reference", [InputRequired()])
-    comment = StringField("comment", [])
-    history = FieldList(FormField(HistoryPurchaseForm), "history", default=[])
-    status = IntegerField(
-        "status", [validators.number_range(min=-1, message="Invalid id")]
-    )
-    created_by = IntegerField("created_by", [])
-    items = FieldList(FormField(ItemsPOUpdateForm), "items", validators=[], default=[])
-
-
 class PurchaseOrderPutForm(Form):
     id = IntegerField("id", [InputRequired()])
     folio = StringField("folio", [InputRequired()])
@@ -409,3 +384,21 @@ class PurchaseOrderUpdateStatusForm(Form):
     status = IntegerField(
         "status", [validators.number_range(min=-1, message="Invalid id")]
     )
+
+
+class POsApplicationPostForm(Form):
+    reference = StringField("reference", [])
+    comment = StringField("comment", [])
+    items = FieldList(FormField(ItemsPOForm), "items", validators=[], default=[])
+
+
+class POsApplicationPutForm(Form):
+    id = IntegerField("id", [InputRequired()])
+    reference = StringField("reference", [InputRequired()])
+    comment = StringField("comment", [])
+    history = FieldList(FormField(HistoryPurchaseForm), "history", default=[])
+    status = IntegerField(
+        "status", [validators.number_range(min=-1, message="Invalid id")]
+    )
+    created_by = IntegerField("created_by", [])
+    items = FieldList(FormField(ItemsPOUpdateForm), "items", validators=[], default=[])
