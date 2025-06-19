@@ -305,6 +305,18 @@ class ItemsPOForm(Form):
     purchase_id = IntegerField("purchase_id", [], default=0)
 
 
+class ItemsPOApplicationForm(Form):
+    description = StringField("description", [InputRequired()])
+    quantity = FloatField("quantity", [InputRequired()])
+    brand = StringField("brand", [InputRequired()])
+    category = StringField("category", [InputRequired()])
+    id_inventory = FloatField("id_inventory", [], default=0)
+    url = URLField("url", [], default="")
+    n_parte = StringField("n_parte", [], default="")
+    supplier = StringField("supplier", [], default="")
+    purchase_id = IntegerField("purchase_id", [], default=0)
+
+
 class MetadataTelitencForm(Form):
     name = StringField("name", [InputRequired()])
     address_invoice = StringField("address_invoice", [InputRequired()])
@@ -357,6 +369,24 @@ class ItemsPOUpdateForm(Form):
     supplier = StringField("supplier", [], default="")
 
 
+class ItemsPOApplicationUpdateForm(Form):
+    id = IntegerField("id", [], default=-1)
+    purchase_id = IntegerField("purchase_id", [], default=0)
+    description = StringField("description", [InputRequired()])
+    quantity = FloatField("quantity", [InputRequired()])
+    unit_price = FloatField("unit_price", [InputRequired()])
+    brand = StringField("brand", [InputRequired()])
+    category = StringField("category", [InputRequired()])
+    id_inventory = IntegerField(
+        "id_inventory",
+        [validators.number_range(min=-1, message="Invalid id")],
+        default=-1,
+    )
+    url = URLField("url", [], default="")
+    n_parte = StringField("n_parte", [], default="")
+    supplier = StringField("supplier", [], default="")
+
+
 class PurchaseOrderPutForm(Form):
     id = IntegerField("id", [InputRequired()])
     folio = StringField("folio", [InputRequired()])
@@ -389,7 +419,9 @@ class PurchaseOrderUpdateStatusForm(Form):
 class POsApplicationPostForm(Form):
     reference = StringField("reference", [])
     comment = StringField("comment", [])
-    items = FieldList(FormField(ItemsPOForm), "items", validators=[], default=[])
+    items = FieldList(
+        FormField(ItemsPOApplicationForm), "items", validators=[], default=[]
+    )
 
 
 class POsApplicationPutForm(Form):
@@ -401,4 +433,6 @@ class POsApplicationPutForm(Form):
         "status", [validators.number_range(min=-1, message="Invalid id")]
     )
     created_by = IntegerField("created_by", [])
-    items = FieldList(FormField(ItemsPOUpdateForm), "items", validators=[], default=[])
+    items = FieldList(
+        FormField(ItemsPOApplicationUpdateForm), "items", validators=[], default=[]
+    )
