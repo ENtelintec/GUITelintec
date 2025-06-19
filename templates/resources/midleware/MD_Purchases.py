@@ -410,9 +410,9 @@ def create_po_application_api(data, data_token):
         flag, error, result = insert_purchase_order_item(
             id_order,
             item["quantity"],
-            item["unit_price"],
+            0.0,
             item["description"],
-            item["duration_services"],
+            0,
             extra_info,
         )
         if not flag:
@@ -467,17 +467,17 @@ def update_po_application_api(data, data_token):
             flag, error, result = insert_purchase_order_item(
                 data["id"],
                 item["quantity"],
-                item["unit_price"],
+                0.0,
                 item["description"],
-                item["duration_services"],
+                0,
                 extra_info,
             )
         else:
             flag, error, result = update_po_application_item(
                 item["id"],
-                data["id"],
                 item["quantity"],
-                item["unit_price"],
+                0.0,
+                0,
                 item["description"],
                 extra_info,
             )

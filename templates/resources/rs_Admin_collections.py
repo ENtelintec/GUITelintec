@@ -30,6 +30,7 @@ from templates.resources.midleware.MD_Purchases import (
     update_po_application_api,
     cancel_po_application_api,
     change_state_po_application_api,
+    fetch_pos_applications,
 )
 
 ns = Namespace("GUI/api/v1/admin/collections")
@@ -45,6 +46,19 @@ class FetchPOs(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data, code = fetch_purchase_orders(status, data_token)
+        return data, code
+
+
+@ns.route("/application/orders/<string:status>")
+class FetchPOsApplications(Resource):
+    @ns.expect(expected_headers_per)
+    def get(self, status):
+        flag, data_token, msg = token_verification_procedure(
+            request, department="administracion"
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        data, code = fetch_pos_applications(status, data_token)
         return data, code
 
 
