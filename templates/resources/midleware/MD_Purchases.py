@@ -2,11 +2,17 @@
 __author__ = "Edisson Naula"
 __date__ = "$ 02/jun/2025  at 11:09 $"
 
+import os
+import tempfile
 from datetime import datetime
 
 import pytz
 
-from static.constants import timezone_software, format_timestamps, log_file_po
+from static.constants import (
+    timezone_software,
+    format_timestamps,
+    log_file_po,
+)
 from templates.Functions_Utils import create_notification_permission_notGUI
 from templates.controllers.departments.heads_controller import check_if_gerente
 from templates.controllers.order.orders_controller import (
@@ -23,7 +29,9 @@ from templates.controllers.order.orders_controller import (
     update_po_application,
     cancel_po_application,
     update_po_application_status,
+    get_purchase_order_with_items_by_id,
 )
+from templates.forms.PurchaseForms import FilePoPDF
 from templates.misc.Functions_Files import write_log_file
 
 import json
@@ -187,7 +195,7 @@ def create_purchaser_order_api(data, data_token):
         extra_info = create_extra_info_product_from_data(item)
         flag, error, result = update_po_item(
             item["id"],
-            item["purchase_id"],
+            id_order,
             item["quantity"],
             item["unit_price"],
             item["description"],
@@ -561,3 +569,81 @@ def change_state_po_application_api(data, data_token):
     )
     write_log_file(log_file_po, msg)
     return {"data": [result], "msg": "ok", "error": None}, 200
+
+
+def create_metadata_for_pdf_po(extra_info: dict):
+    extra_info_telintec = extra_info.get("metadata_telintec", {})
+    extra_info_supplier = extra_info.get("metadata_supplier", {})
+    metadata_telintec = {
+        "Empresa solicitante": extra_info_telintec.get("name", ""),
+        "RFC": extra_info_telintec.get("rfc", ""),
+        "Domicilio de facturación": extra_info_telintec.get("address_invoice", ""),
+        "Domicilio comercial": extra_info_telintec.get("address_comercial", ""),
+        "Responsable en compras": extra_info_telintec.get("responsable", ""),
+        "Teléfono comercial": extra_info_telintec.get("phone", ""),
+        "Correo de facturación": extra_info_telintec.get("email", ""),
+    }
+    metadata_supplier = {
+        "Nombre del proveedor": extra_info_supplier.get("name", ""),
+        "Dirección del proveedor": extra_info_supplier.get("address_invoice", ""),
+        "RFC del proveedor": extra_info_supplier.get("rfc", ""),
+        "Vendedor": extra_info_supplier.get("salesman", "NA"),
+        "Forma de pago": extra_info_supplier.get("payment_method", ""),
+        "Condiciones de entrega": extra_info_supplier.get("delivery_conditions", ""),
+        "Dirección de entrega": extra_info_supplier.get("delivery_address", ""),
+        "Transporte": extra_info_supplier.get("transport", ""),
+        "Seguro": extra_info_supplier.get("insurance", ""),
+        "Garantias": extra_info_supplier.get("guarantee", ""),
+    }
+    return metadata_telintec, metadata_supplier
+
+
+def dowload_file_purchase(order_id: int):
+    flag, error, result = get_purchase_order_with_items_by_id(order_id)
+    if not flag or len(result) == 0:
+        return None, 400
+    date = result[0]
+    download_path = os.path.join(
+        tempfile.mkdtemp(), os.path.basename(f"oc_{result[5]}_{date.date()}.pdf")
+    )
+    products = []
+    items = json.loads(result[8])
+    total_amount = 0.0
+    for index, item in enumerate(items):
+        extra_info_item = item["extra_info"]
+        subtotal = item["quantity"] * item["unit_price"]
+        products.append(
+            [
+                index + 1,
+                item["description"],
+                extra_info_item["n_parte"],
+                item["duration_services"],
+                "NA",
+                item["quantity"],
+                item["unit_price"],
+                subtotal,
+            ]
+        )
+        total_amount += subtotal
+    extra_info = json.loads(result[7])
+    metadata_telintec, metadata_supplier = create_metadata_for_pdf_po(extra_info)
+    flag = FilePoPDF(
+        {
+            "filename_out": download_path,
+            "products": products,
+            "folio": result[5],
+            "status": result[1],
+            "total_amount": total_amount,
+            "created_by": f"{result[2]} {result[3]}",
+            "supplier": result[4],
+            "timestamp": result[0],
+            "history": json.loads(result[6]),
+            "time_delivery": result[9],
+            "metadata_telintec": metadata_telintec,
+            "metadata_supplier": metadata_supplier,
+        },
+    )
+    if not flag:
+        print("error at generating pdf", download_path)
+        return None, 400
+    return download_path, 200

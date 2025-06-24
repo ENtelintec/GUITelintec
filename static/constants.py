@@ -2,7 +2,6 @@
 __author__ = "Edisson Naula"
 __date__ = "$ 02/nov./2023  at 17:32 $"
 
-import json
 
 from dotenv import dotenv_values
 from flask_restx import Api
@@ -12,7 +11,6 @@ environment = "dev"
 secrets = dotenv_values(".env") if environment != "prod" else dotenv_values("../.env")
 domain_path = "domain.pem" if environment != "prod" else "../domain.pem"
 api = Api()
-paths_dpb_folders = json.load(open("files/paths_general.json"))
 local_father_path_dpb = "C:/Users/Edisson/Telintec Dropbox/SOFTWARE TELINTEC"
 IMG_PATH_COLLAPSING = Path("./img")
 ventanasApp_path = "static/ventanasAppGUI.json"
@@ -76,6 +74,7 @@ filepath_inventory_form_excel = "files/inventory_temp.xlsx"
 filepath_inventory_form_movements_pdf = "files/movements_temp.pdf"
 filepath_inventory_form_movements_excel = "files/movements_temp.xlsx"
 filepath_sm_pdf = "files/sm_temp.pdf"
+filepath_po_pdf = "files/po_temp.pdf"
 filepath_fichaje_temp = "files/files_fichaje/fichaje_temp.xlsx"
 filepath_ternium_temp = "files/files_fichaje/ternium_temp.xls"
 patterns_files_fichaje = ["Fichaje", "Ternium"]

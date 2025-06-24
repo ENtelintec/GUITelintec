@@ -103,6 +103,39 @@ def get_purchase_orders_with_items(status: int | None, created_by: int | None):
     return flag, e, my_result
 
 
+def get_purchase_order_with_items_by_id(order_id: int):
+    sql = (
+        "SELECT "
+        "po.timestamp, "
+        "po.status, "
+        "emps.name, "
+        "emps.l_name, "
+        "sa.name, "
+        "po.folio, "
+        "po.history, "
+        "po.extra_info, "
+        "JSON_ARRAYAGG("
+        "JSON_OBJECT("
+        " 'id', poi.id_item, "
+        " 'purchase_id', poi.purchase_id, "
+        " 'description', poi.description,"
+        " 'quantity', poi.quantity,"
+        " 'unit_price', poi.unit_price, "
+        " 'extra_info', poi.extra_info, "
+        " 'duration_services', poi.duration_services "
+        ")) AS items, "
+        "po.time_delivery "
+        "FROM sql_telintec_mod_admin.purchase_orders AS po "
+        "LEFT JOIN sql_telintec_mod_admin.purchase_order_items AS poi ON po.id_order = poi.purchase_id "
+        "LEFT JOIN sql_telintec.employees emps on emps.employee_id = po.created_by "
+        "LEFT JOIN sql_telintec.suppliers_amc sa on po.supplier_id = sa.id_supplier "
+        "WHERE po.id_order = %s GROUP BY po.id_order"
+    )
+    val = (order_id,)
+    flag, e, my_result = execute_sql(sql, val, 1)
+    return flag, e, my_result
+
+
 def get_pos_application_with_items(status: int | None, created_by: int | None):
     sql = (
         "SELECT "

@@ -300,9 +300,10 @@ class ItemsPOForm(Form):
     id_inventory = FloatField("id_inventory", [], default=0)
     url = URLField("url", [], default="")
     n_parte = StringField("n_parte", [], default="")
-    duration_services = StringField("duration_services", [], default="")
+    duration_services = StringField("duration_services", [], default="0")
     supplier = StringField("supplier", [], default="")
     purchase_id = IntegerField("purchase_id", [], default=0)
+    id = IntegerField("id", [InputRequired()])
 
 
 class ItemsPOApplicationForm(Form):

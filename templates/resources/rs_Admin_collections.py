@@ -2,7 +2,7 @@
 __author__ = "Edisson Naula"
 __date__ = "$ 20/jun./2024  at 15:06 $"
 
-from flask import request
+from flask import request, send_file
 from flask_restx import Namespace, Resource
 
 from static.Models.api_models import expected_headers_per
@@ -31,6 +31,7 @@ from templates.resources.midleware.MD_Purchases import (
     cancel_po_application_api,
     change_state_po_application_api,
     fetch_pos_applications,
+    dowload_file_purchase,
 )
 
 ns = Namespace("GUI/api/v1/admin/collections")
@@ -189,3 +190,17 @@ class ChangeStatePOApplication(Resource):
         data = validator.data
         data_out, code = change_state_po_application_api(data, data_token)
         return data_out, code
+
+
+@ns.route("/purchase/download/pdf/<int:po_id>")
+class DownloadPDFSM(Resource):
+    @ns.expect(expected_headers_per)
+    def get(self, po_id):
+        flag, data_token, msg = token_verification_procedure(request, department=["sm"])
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        data, code = dowload_file_purchase(po_id)
+        if code == 200:
+            return send_file(data, as_attachment=True)
+        else:
+            return {"msg": "error at downloading"}, code
