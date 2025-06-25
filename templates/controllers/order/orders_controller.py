@@ -250,20 +250,15 @@ def insert_po_application(
     created_by: int,
     reference: str,
     history: list,
+    approved=1,
 ):
     sql = (
         "INSERT INTO sql_telintec_mod_admin.pos_applications "
         "(timestamp, status, created_by, "
-        "reference, history) "
-        "VALUES (%s, %s, %s, %s, %s)"
+        "reference, history, approved) "
+        "VALUES (%s, %s, %s, %s, %s, %s)"
     )
-    val = (
-        timestamp,
-        status,
-        created_by,
-        reference,
-        json.dumps(history),
-    )
+    val = (timestamp, status, created_by, reference, json.dumps(history), approved)
     flag, e, out = execute_sql(sql, val, 4)
     return flag, e, out
 
@@ -294,13 +289,15 @@ def update_po_application(
     return flag, e, out
 
 
-def update_po_application_status(id_order: int, history: list, status: int):
+def update_po_application_status(
+    id_order: int, history: list, status: int, approved: int
+):
     sql = (
         "UPDATE sql_telintec_mod_admin.pos_applications "
-        "SET status = %s, history = %s "
+        "SET status = %s, history = %s , approved = %s "
         "WHERE id_order = %s"
     )
-    val = (status, json.dumps(history), id_order)
+    val = (status, json.dumps(history), approved, id_order)
     flag, error, result = execute_sql(sql, val, 3)
     return flag, error, result
 
@@ -323,11 +320,12 @@ def insert_purchase_order_item(
     description: str,
     duration_services: int,
     extra_info: dict,
+    tool=0,
 ):
     sql = (
         "INSERT INTO sql_telintec_mod_admin.purchase_order_items "
-        "(order_id, quantity, unit_price, description, duration_services, extra_info) "
-        "VALUES (%s, %s, %s, %s, %s, %s)"
+        "(order_id, quantity, unit_price, description, duration_services, extra_info, tool) "
+        "VALUES (%s, %s, %s, %s, %s, %s, %s)"
     )
     val = (
         order_id,
@@ -336,6 +334,7 @@ def insert_purchase_order_item(
         description,
         duration_services,
         json.dumps(extra_info),
+        tool,
     )
     flag, e, out = execute_sql(sql, val, 3)
     return flag, e, out

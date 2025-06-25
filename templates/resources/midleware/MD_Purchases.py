@@ -401,7 +401,7 @@ def create_po_application_api(data, data_token):
             "comment": "Create purchase order application",
         }
     ]
-    flag, error, id_order = insert_po_application(
+    flag, error, id_po_app = insert_po_application(
         timestamp,
         0,
         data_token.get("emp_id"),
@@ -410,19 +410,23 @@ def create_po_application_api(data, data_token):
     )
     if not flag:
         return {"data": None, "msg": "error", "error": str(error)}, 400
-    msg = f"Solicitud de Orden de compra creada con ID-{id_order}"
+    msg = f"Solicitud de Orden de compra creada con ID-{id_po_app}"
     msg_moves = []
     flag_error = False
+    tool_detected = False
     for item in data["items"]:
         extra_info = create_extra_info_product_from_data(item)
         flag, error, result = insert_purchase_order_item(
-            id_order,
+            id_po_app,
             item["quantity"],
             0.0,
             item["description"],
             0,
             extra_info,
+            item["tool"],
         )
+        if item["tool"] == 1:
+            tool_detected = True
         if not flag:
             msg_moves.append(
                 f"x-Error al crear item de orden de compra -{item['description']}-{str(error)}"
@@ -431,17 +435,25 @@ def create_po_application_api(data, data_token):
         else:
             msg_moves.append(f"Item de orden de compra creado con ID-{result}")
     msg += "\n" + "\n".join(msg_moves)
+    if tool_detected:
+        msg += (
+            "\n"
+            + "Se detectó que se solicita una herramienta, esta requerira aprobacion."
+        )
+        flag, error, result = update_po_application_status(id_po_app, history, 0, 0)
+        if not flag:
+            return {"data": None, "msg": msg + "\nerror", "error": str(error)}, 400
     create_notification_permission_notGUI(
-        msg, ["orders"], "Orden de compra creada", data_token.get("emp_id")
+        msg, ["orders"], "Solicitud de orden de compra creada", data_token.get("emp_id")
     )
     write_log_file(log_file_po, msg)
     if flag_error:
         return {
-            "data": [id_order],
-            "msg": "Error at creating order items",
+            "data": [id_po_app],
+            "msg": "Error at creating application items",
             "error": "\n".join(msg_moves),
         }, 400
-    return {"data": [id_order], "msg": "ok", "error": None}, 200
+    return {"data": [id_po_app], "msg": "ok", "error": None}, 200
 
 
 def update_po_application_api(data, data_token):
@@ -550,13 +562,12 @@ def change_state_po_application_api(data, data_token):
             "user": data_token.get("emp_id"),
             "event": "change_state",
             "date": timestamp,
-            "comment": data.get("comment", ""),
+            "comment": data.get("comment", "")
+            + f"status: {data['status']}, approved: {data['approved']}",
         }
     )
     flag, error, result = update_po_application_status(
-        data["id"],
-        history,
-        data["status"],
+        data["id"], history, data["status"], data["approved"]
     )
     if not flag:
         return {"data": None, "msg": "error", "error": str(error)}, 400

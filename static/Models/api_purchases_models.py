@@ -71,6 +71,9 @@ items_po_model = api.model(
         "purchase_id": fields.Integer(
             required=False, description="The purchase id", example=0
         ),
+        "tool": fields.Integer(
+            required=True, description="The state if is a tool 1", example=0
+        ),
     },
 )
 
@@ -280,6 +283,9 @@ purchase_order_update_status_model = api.model(
         "status": fields.Integer(
             required=True, description="The quotation status", example=0
         ),
+        "approved": fields.Integer(
+            required=True, description="The quotation approved", example=1
+        ),
     },
 )
 
@@ -316,6 +322,7 @@ class ItemsPOApplicationForm(Form):
     n_parte = StringField("n_parte", [], default="")
     supplier = StringField("supplier", [], default="")
     purchase_id = IntegerField("purchase_id", [], default=0)
+    tool = IntegerField("tool", [InputRequired()])
 
 
 class MetadataTelitencForm(Form):
@@ -386,6 +393,7 @@ class ItemsPOApplicationUpdateForm(Form):
     url = URLField("url", [], default="")
     n_parte = StringField("n_parte", [], default="")
     supplier = StringField("supplier", [], default="")
+    tool = IntegerField("tool", [InputRequired()])
 
 
 class PurchaseOrderPutForm(Form):
@@ -414,6 +422,9 @@ class PurchaseOrderUpdateStatusForm(Form):
     history = FieldList(FormField(HistoryPurchaseForm), "history", default=[])
     status = IntegerField(
         "status", [validators.number_range(min=-1, message="Invalid id")]
+    )
+    approved = IntegerField(
+        "approved", [validators.number_range(min=-1, message="Invalid id")]
     )
 
 
