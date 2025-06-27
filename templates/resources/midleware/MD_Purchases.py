@@ -30,6 +30,7 @@ from templates.controllers.order.orders_controller import (
     cancel_po_application,
     update_po_application_status,
     get_purchase_order_with_items_by_id,
+    get_pos_application_with_items_to_approve,
 )
 from templates.forms.PurchaseForms import FilePoPDF
 from templates.misc.Functions_Files import write_log_file
@@ -59,6 +60,7 @@ def map_products_po(products: list):
                 "n_parte": extra_info.get("n_parte"),
                 "duration_services": item.get("duration_services"),
                 "supplier": extra_info.get("supplier"),
+                "tool": item.get("tool"),
             }
         )
         total_amount += float(item.get("unit_price")) * float(item.get("quantity"))
@@ -345,6 +347,43 @@ def change_state_order_api(data, data_token):
     return {"data": [result], "msg": "ok", "error": None}, 200
 
 
+def fetch_pos_applications_to_approve(data_token):
+    permissions = data_token.get("permissions")
+    permissions_last = [item.lower().split(".")[-1] for item in permissions.values()]
+    flag, error, result = get_pos_application_with_items_to_approve()
+    if not flag:
+        return {"data": None, "msg": "error", "error": str(error)}, 400
+    data_out = []
+    for item in result:
+        (
+            id_order,
+            timestamp,
+            status,
+            created_by,
+            reference,
+            history,
+            products,
+        ) = item
+        products = json.loads(products)
+        products, total_amount = map_products_po(products)
+        data_out.append(
+            {
+                "id": id_order,
+                "timestamp": timestamp.strftime(format_timestamps)
+                if not isinstance(timestamp, str)
+                else timestamp,
+                "status": status,
+                "reference": reference,
+                "history": json.loads(history),
+                "items": products,
+                "total_amount": total_amount,
+                "created_by": created_by,
+            }
+        )
+
+    return {"data": data_out, "msg": "ok", "error": None}, 200
+
+
 def fetch_pos_applications(status, data_token):
     permissions = data_token.get("permissions")
     permissions_last = [item.lower().split(".")[-1] for item in permissions.values()]
@@ -359,7 +398,6 @@ def fetch_pos_applications(status, data_token):
     if not flag:
         return {"data": None, "msg": "error", "error": str(error)}, 400
     data_out = []
-    "SELECT  po.id_order,  po.timestamp,  po.status,  po.created_by,  po.reference,  po.history,  JSON_ARRAYAGG( JSON_OBJECT(  'id', poi.id_item,  'purchase_id', poi.purchase_id,  'description', poi.description, 'quantity', poi.quantity, 'unit_price', poi.unit_price,  'extra_info', poi.extra_info,  'duration_services', poi.duration_services  ) AS items "
     for item in result:
         (
             id_order,

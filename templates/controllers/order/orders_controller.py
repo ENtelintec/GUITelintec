@@ -122,7 +122,8 @@ def get_purchase_order_with_items_by_id(order_id: int):
         " 'quantity', poi.quantity,"
         " 'unit_price', poi.unit_price, "
         " 'extra_info', poi.extra_info, "
-        " 'duration_services', poi.duration_services "
+        " 'duration_services', poi.duration_services, "
+        " 'tool', poi.tool "
         ")) AS items, "
         "po.time_delivery "
         "FROM sql_telintec_mod_admin.purchase_orders AS po "
@@ -153,7 +154,8 @@ def get_pos_application_with_items(status: int | None, created_by: int | None):
         " 'quantity', poi.quantity,"
         " 'unit_price', poi.unit_price, "
         " 'extra_info', poi.extra_info, "
-        " 'duration_services', poi.duration_services "
+        " 'duration_services', poi.duration_services, "
+        " 'tool', poi.tool "
         ")) AS items "
         "FROM sql_telintec_mod_admin.pos_applications AS po "
         "LEFT JOIN sql_telintec_mod_admin.purchase_order_items AS poi ON po.id_order = poi.order_id "
@@ -161,6 +163,34 @@ def get_pos_application_with_items(status: int | None, created_by: int | None):
     )
     val = (status, status, created_by, created_by)
     flag, e, my_result = execute_sql(sql, val, 2)
+    return flag, e, my_result
+
+
+def get_pos_application_with_items_to_approve():
+    sql = (
+        "SELECT "
+        "po.id_order, "
+        "po.timestamp, "
+        "po.status, "
+        "po.created_by, "
+        "po.reference, "
+        "po.history, "
+        "JSON_ARRAYAGG("
+        "JSON_OBJECT("
+        " 'id', poi.id_item, "
+        " 'purchase_id', poi.purchase_id, "
+        " 'description', poi.description,"
+        " 'quantity', poi.quantity,"
+        " 'unit_price', poi.unit_price, "
+        " 'extra_info', poi.extra_info, "
+        " 'duration_services', poi.duration_services, "
+        " 'tool', poi.tool "
+        ")) AS items "
+        "FROM sql_telintec_mod_admin.pos_applications AS po "
+        "LEFT JOIN sql_telintec_mod_admin.purchase_order_items AS poi ON po.id_order = poi.order_id "
+        "WHERE po.approved = 0 group by po.id_order "
+    )
+    flag, e, my_result = execute_sql(sql, None, 5)
     return flag, e, my_result
 
 
