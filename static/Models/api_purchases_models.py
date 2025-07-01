@@ -8,7 +8,7 @@ from static.Models.api_models import datetime_filter
 from static.constants import api
 from flask_restx import fields
 from wtforms.fields.datetime import DateTimeField
-from wtforms.validators import InputRequired
+from wtforms.validators import InputRequired, number_range
 from wtforms import FormField, StringField, URLField, FloatField, validators
 from wtforms.fields.list import FieldList
 from wtforms.form import Form
@@ -322,7 +322,7 @@ class ItemsPOApplicationForm(Form):
     n_parte = StringField("n_parte", [], default="")
     supplier = StringField("supplier", [], default="")
     purchase_id = IntegerField("purchase_id", [], default=0)
-    tool = IntegerField("tool", [InputRequired()])
+    tool = IntegerField("tool", [number_range(min=-1, max=2, message="Invalid tool")])
 
 
 class MetadataTelitencForm(Form):

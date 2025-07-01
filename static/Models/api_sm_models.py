@@ -624,6 +624,9 @@ class SMInfoControlTableForm(Form):
     requesting_user_status = IntegerField(
         "requesting_user_status", validators=[], default=0
     )
+    requesting_user_state = StringField(
+        "requesting_user_state", validators=[], default=""
+    )
     warehouse_reviewed = (IntegerField("warehouse_reviewed", validators=[], default=0),)
     warehouse_status = (IntegerField("warehouse_status", validators=[], default=1),)
     admin_notification_date = StringField(
@@ -645,9 +648,6 @@ class SMInfoControlTableForm(Form):
         "operations_notification_date", validators=[], filters=[]
     )
     operations_kpi = (IntegerField("operations_kpi", validators=[], default=0),)
-    requesting_user_state = StringField(
-        "requesting_user_state", validators=[], default=""
-    )
 
 
 class SMInfoControlTablePutForm(Form):
