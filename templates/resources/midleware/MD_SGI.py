@@ -39,8 +39,7 @@ def create_voucher_tools_api(data, data_token):
         data["type_transaction"],
         data["superior"],
         data["storage_emp"],
-        data["user_state"],
-        data["superior_state"],
+        data["designated_emp"],
     )
     if not flag:
         return {
@@ -83,8 +82,10 @@ def update_voucher_tools_api(data, data_token):
         data["type_transaction"],
         data["superior"],
         data["storage_emp"],
+        data["designated_emp"],
         data["user_state"],
         data["superior_state"],
+        data["storage_state"],
     )
     if not flag:
         return {
@@ -133,11 +134,10 @@ def create_voucher_safety_api(data, data_token):
         }, 400
     flag, error, lastrowid_safety = create_voucher_safety(
         lastrowid,
-        data["superior"],
-        data["epp_emp"],
-        data["epp_state"],
-        data["superior_state"],
         data["motive"],
+        data["epp_emp"],
+        data["storage_emp"],
+        data["designated_emp"],
     )
     if not flag:
         return {
@@ -176,10 +176,12 @@ def update_voucher_safety_api(data, data_token):
     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
     flag, error, rows_changed = update_voucher_safety(
         data["id_voucher_general"],
-        data["superior"],
         data["epp_emp"],
+        data["storage_emp"],
+        data["designated_emp"],
         data["epp_state"],
-        data["superior_state"],
+        data["storage_state"],
+        data["designated_state"],
         data["motive"],
     )
     if not flag:
@@ -215,7 +217,9 @@ def update_voucher_safety_api(data, data_token):
 
 
 def get_vouchers_tools_api(data, data_token=None):
-    flag, error, result = get_vouchers_tools_with_items_date(data["date"])
+    flag, error, result = get_vouchers_tools_with_items_date(
+        data["date"], data_token.get("emp_id")
+    )
     if not flag:
         return {
             "data": None,
@@ -231,23 +235,27 @@ def get_vouchers_tools_api(data, data_token=None):
                 "date": item[2].strftime(format_timestamps)
                 if not isinstance(item[2], str)
                 else item[2],
-                "user": item[3],
-                "contract": item[4],
-                "position": item[5],
-                "type_transaction": item[6],
+                "contract": item[3],
+                "position": item[4],
+                "type_transaction": item[5],
+                "user": item[6],
                 "superior": item[7],
                 "storage_emp": item[8],
-                "user_state": item[9],
+                "designated_emp": item[9],
+                "user_state": item[10],
                 "superior_state": item[10],
-                "extra_info": json.loads(item[11]),
-                "items": json.loads(item[12]),
+                "storage_state": item[11],
+                "extra_info": json.loads(item[12]),
+                "items": json.loads(item[13]),
             }
         )
     return {"data": data_out, "msg": "Vouchers retrieved successfully"}, 200
 
 
 def get_vouchers_safety_api(data, data_token=None):
-    flag, error, result = get_vouchers_safety_with_items(data["date"])
+    flag, error, result = get_vouchers_safety_with_items(
+        data["date"], data_token.get("emp_id")
+    )
     if not flag:
         return {
             "data": None,
@@ -263,15 +271,17 @@ def get_vouchers_safety_api(data, data_token=None):
                 "date": item[2].strftime(format_timestamps)
                 if not isinstance(item[2], str)
                 else item[2],
-                "user": item[3],
-                "contract": item[4],
-                "superior": item[5],
+                "contract": item[3],
+                "motive": item[4],
+                "user": item[5],
                 "epp_emp": item[6],
-                "epp_state": item[7],
-                "superior_state": item[8],
-                "motive": item[9],
-                "extra_info": json.loads(item[10]),
-                "items": json.loads(item[11]),
+                "storage_emp": item[7],
+                "designated_emp": item[8],
+                "user_state": item[9],
+                "epp_state": item[10],
+                "storage_state": item[11],
+                "extra_info": json.loads(item[12]),
+                "items": json.loads(item[13]),
             }
         )
     return {"data": data_out, "msg": "Vouchers retrieved successfully"}, 200

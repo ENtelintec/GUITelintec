@@ -33,8 +33,7 @@ def create_voucher_tools(
     type_transaction,
     superior,
     storage_emp,
-    user_state=0,
-    superior_state=0,
+    desiganted_emp,
     extra_info=None,
 ):
     """
@@ -45,8 +44,7 @@ def create_voucher_tools(
     :param type_transaction: Tipo de transacción (0=default)
     :param superior: ID del superior responsable
     :param storage_emp: ID del empleado encargado del almacenamiento
-    :param user_state: Estado del usuario (default=0)
-    :param superior_state: Estado del superior (default=0)
+    :param desiganted_emp: ID del empleado designado
     :param extra_info: Información extra en formato JSON
     :return: Estado de la operación (éxito/error)
     """
@@ -54,9 +52,9 @@ def create_voucher_tools(
         extra_info = {}
     sql = (
         "INSERT INTO sql_telintec_mod_admin.voucher_tools "
-        "(id_voucher_general, position, type_transaction, superior, "
-        "storage_emp, user_state, superior_state, extra_info) "
-        "VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
+        "(id_voucher_general, position, type_transaction, superior, storage_emp, designated_emp, "
+        "user_state, superior_state, storage_state, extra_info) "
+        "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
     )
     val = (
         id_voucher_general,
@@ -64,8 +62,10 @@ def create_voucher_tools(
         type_transaction,
         superior,
         storage_emp,
-        user_state,
-        superior_state,
+        desiganted_emp,
+        1,
+        0,
+        0,
         json.dumps(extra_info),
     )
     flag, error, lastrowid = execute_sql(sql, val, 4)
@@ -78,8 +78,10 @@ def update_voucher_tools(
     type_transaction,
     superior,
     storage_emp,
+    designated_emp,
     user_state=0,
     superior_state=0,
+    storage_state=0,
     extra_info=None,
 ):
     """
@@ -90,17 +92,20 @@ def update_voucher_tools(
     :param type_transaction: Tipo de transacción.
     :param superior: ID del superior responsable.
     :param storage_emp: ID del empleado encargado del almacenamiento.
+    :param designated_emp: ID del empleado designado
     :param user_state: Estado del usuario (default=0).
     :param superior_state: Estado del superior (default=0).
+    :param storage_state: Estado del almacenamiento (default=0).
     :param extra_info: Información extra en formato JSON.
-    :return: Estado de la operación (éxito/error).
+    :return: Estado de la operación (éxito/error)
     """
     if extra_info is None:
         extra_info = {}
     sql = (
         "UPDATE sql_telintec_mod_admin.voucher_tools "
-        "SET position = %s, type_transaction = %s, superior = %s, "
-        "storage_emp = %s, user_state = %s, superior_state = %s, extra_info = %s "
+        "SET position = %s, type_transaction = %s, "
+        "superior = %s, storage_emp = %s, designated_emp = %s, "
+        "user_state = %s, superior_state = %s, storage_state = %s, extra_info = %s "
         "WHERE id_voucher_general = %s"
     )
     val = (
@@ -108,8 +113,10 @@ def update_voucher_tools(
         type_transaction,
         superior,
         storage_emp,
+        designated_emp,
         user_state,
         superior_state,
+        storage_state,
         json.dumps(extra_info),
         id_voucher_general,
     )
@@ -119,21 +126,19 @@ def update_voucher_tools(
 
 def create_voucher_safety(
     id_voucher_general,
-    superior,
+    motive,
     epp_emp,
-    epp_state=0,
-    superior_state=0,
-    motive=0,
+    storage_emp,
+    designated_emp,
     extra_info=None,
 ):
     """
     Crea un nuevo registro en la tabla voucher_safety.
 
     :param id_voucher_general: ID del voucher general creado previamente.
-    :param superior: ID del superior responsable
     :param epp_emp: ID del empleado que recibe los elementos de seguridad
-    :param epp_state: Estado del EPP (default=0)
-    :param superior_state: Estado del superior (default=0)
+    :param storage_emp: ID del empleado de almacen
+    :param designated_emp: ID del empleado designado
     :param motive: Motivo del vale (default=0)
     :param extra_info: Información extra en formato JSON
     :return: Estado de la operación (éxito/error)
@@ -142,15 +147,17 @@ def create_voucher_safety(
         extra_info = {}
     sql = (
         "INSERT INTO sql_telintec_mod_admin.voucher_safety "
-        "(id_voucher_general, superior, epp_emp, epp_state, superior_state, motive, extra_info) "
-        "VALUES (%s, %s, %s, %s, %s, %s, %s)"
+        "(id_voucher_general, epp_emp, storage_emp, designated_emp, user_state, epp_state, storage_state, motive, extra_info) "
+        "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)"
     )
     val = (
         id_voucher_general,
-        superior,
         epp_emp,
-        epp_state,
-        superior_state,
+        storage_emp,
+        designated_emp,
+        1,
+        0,
+        0,
         motive,
         json.dumps(extra_info),
     )
@@ -160,40 +167,45 @@ def create_voucher_safety(
 
 def update_voucher_safety(
     id_voucher_general,
-    superior,
     epp_emp,
+    storage_emp,
+    designated_emp,
+    user_state=1,
     epp_state=0,
-    superior_state=0,
-    motive=None,
+    storage_state=0,
+    motive=0,
     extra_info=None,
 ):
     """
     Actualiza un registro existente en la tabla voucher_safety.
 
     :param id_voucher_general: ID del voucher general.
-    :param superior: ID del superior responsable.
-    :param epp_emp: ID del EPP asignado al empleado.
-    :param epp_state: Estado del EPP (default=0).
-    :param superior_state: Estado del superior (default=0).
-    :param motive: Motivo de la solicitud.
+    :param epp_emp: ID del empleado que recibe los elementos de seguridad.
+    :param storage_emp: ID del empleado de almacen.
+    :param designated_emp: ID del empleado designado.
+    :param user_state: Estado del usuario (default=0).
+    :param epp_state: Estado de los elementos de seguridad (default=0).
+    :param storage_state: Estado del almacenamiento (default=0).
+    :param motive: Motivo del vale (default=0).
     :param extra_info: Información extra en formato JSON.
-    :return: Estado de la operación (éxito/error).
+    :return: Estado de la operación (éxito/error)
     """
-    if motive is None:
-        motive = ""
     if extra_info is None:
         extra_info = {}
     sql = (
         "UPDATE sql_telintec_mod_admin.voucher_safety "
-        "SET superior = %s, epp_emp = %s, epp_state = %s, "
-        "superior_state = %s, motive = %s, extra_info = %s "
+        "SET epp_emp = %s, storage_emp = %s, designated_emp = %s, "
+        "user_state = %s, epp_state = %s, storage_state = %s, "
+        "motive = %s, extra_info = %s "
         "WHERE id_voucher_general = %s"
     )
     val = (
-        superior,
         epp_emp,
+        storage_emp,
+        designated_emp,
+        user_state,
         epp_state,
-        superior_state,
+        storage_state,
         motive,
         json.dumps(extra_info),
         id_voucher_general,
@@ -290,11 +302,12 @@ def update_voucher_item(
     return flag, error, rows_changed
 
 
-def get_vouchers_tools_with_items_date(start_date):
+def get_vouchers_tools_with_items_date(start_date, user=None):
     """
     Obtiene vouchers de herramientas desde una fecha específica, incluyendo su metadata e ítems relacionados.
 
     :param start_date: Fecha de inicio (YYYY-MM-DD)
+    :param user: user ID that creates the voucher
     :return: Lista de vouchers de herramientas con sus ítems agregados como JSON o mensaje de error
     """
     sql = (
@@ -302,14 +315,16 @@ def get_vouchers_tools_with_items_date(start_date):
         "vt.id_voucher_general, "
         "vg.type, "
         "vg.date, "
-        "vg.user, "
         "vg.contract, "
         "vt.position, "
         "vt.type_transaction, "
+        "vg.user, "
         "vt.superior, "
         "vt.storage_emp, "
+        "vt.designated_emp, "
         "vt.user_state, "
         "vt.superior_state, "
+        "vt.storage_state, "
         "vt.extra_info, "
         "JSON_ARRAYAGG("
         "JSON_OBJECT("
@@ -323,18 +338,19 @@ def get_vouchers_tools_with_items_date(start_date):
         "FROM sql_telintec_mod_admin.voucher_tools AS vt "
         "JOIN sql_telintec_mod_admin.vouchers_general AS vg ON vt.id_voucher_general = vg.id_voucher "
         "LEFT JOIN sql_telintec_mod_admin.voucher_items AS vi ON vg.id_voucher = vi.id_voucher "
-        "WHERE vg.date >= %s GROUP BY vt.id_voucher_general"
+        "WHERE (vg.date >= %s) AND (vg.user = %s OR %s IS NULL) GROUP BY vt.id_voucher_general"
     )
-    val = (start_date,)
+    val = (start_date, user, user)
     flag, error, vouchers = execute_sql(sql, val, 2)
     return flag, error, vouchers
 
 
-def get_vouchers_safety_with_items(start_date):
+def get_vouchers_safety_with_items(start_date, user=None):
     """
     Obtiene vouchers de seguridad desde una fecha específica, incluyendo su metadata e ítems relacionados.
 
     :param start_date: Fecha de inicio (YYYY-MM-DD)
+    :param user: user ID that creates the voucher
     :return: Lista de vouchers de seguridad con sus ítems agregados como JSON o mensaje de error
     """
     sql = (
@@ -342,13 +358,15 @@ def get_vouchers_safety_with_items(start_date):
         "vs.id_voucher_general, "
         "vg.type, "
         "vg.date, "
-        "vg.user, "
         "vg.contract, "
-        "vs.superior, "
-        "vs.epp_emp, "
-        "vs.epp_state, "
-        "vs.superior_state, "
         "vs.motive, "
+        "vg.user, "
+        "vs.epp_emp, "
+        "vs.storage_emp, "
+        "vs.designated_emp, "
+        "vs.user_state, "
+        "vs.epp_state, "
+        "vs.storage_state, "
         "vs.extra_info, "
         "JSON_ARRAYAGG("
         "JSON_OBJECT("
@@ -362,8 +380,8 @@ def get_vouchers_safety_with_items(start_date):
         "FROM sql_telintec_mod_admin.voucher_safety AS vs "
         "JOIN sql_telintec_mod_admin.vouchers_general AS vg ON vs.id_voucher_general = vg.id_voucher "
         "LEFT JOIN sql_telintec_mod_admin.voucher_items AS vi ON vg.id_voucher = vi.id_voucher "
-        "WHERE vg.date >= %s GROUP BY vs.id_voucher_general "
+        "WHERE (vg.date >= %s) AND (vg.user = %s OR %s IS NULL) GROUP BY vs.id_voucher_general "
     )
-    val = (start_date,)
+    val = (start_date, user, user)
     flag, error, vouchers = execute_sql(sql, val, 2)
     return flag, error, vouchers
