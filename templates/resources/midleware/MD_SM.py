@@ -556,6 +556,7 @@ def dispatch_sm(data, data_token):
     msg_items = []
     # print(data["items"])
     # return 200, {"msg": "ok"}
+    operations_done = False
     for item_n in data["items"]:
         item_to_update = dict_products_sm.get(item_n["id"])
         old_item = item_to_update.copy()
@@ -573,7 +574,7 @@ def dispatch_sm(data, data_token):
             msg_items.append(
                 f"Product {item_to_update['id']}-{item_to_update['name']} already dispatched"
             )
-            updated_products.append(old_item)
+            # updated_products.append(old_item)
             continue
         item_to_update["dispatched"] += item_n["quantity"]
         if item_to_update["dispatched"] > item_to_update["quantity"]:
@@ -615,18 +616,21 @@ def dispatch_sm(data, data_token):
         updated_products.append(item_to_update)
         if "(Semidespachado)".lower() in item_to_update["comment"].lower():
             flag_semidespachado = True
+        operations_done = True
     ids_to_update = [item["id"] for item in updated_products]
     for k, v in dict_products_sm.items():
         if k not in ids_to_update:
             updated_products.append(v)
     # print(updated_products)
+    if not operations_done:
+        return 400, {"msg": msg_items, "error": "No operations done"}
     comment_history += (
         "SM Despachada" if not flag_semidespachado else "SM Semidespachada"
     )
     history_sm.append(
         {
             "user": data_token["emp_id"],
-            "event": "dispatch",
+            "event": "dispatch action",
             "date": date_now,
             "comment": comment_history,
         }

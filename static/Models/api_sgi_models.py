@@ -59,21 +59,19 @@ voucher_tools_post_model = api.model(
         "type": fields.Integer(
             required=True, description="Tipo de voucher (0: Tools, 1: Safety)"
         ),
-        "user": fields.Integer(required=True, description="ID del usuario"),
         "contract": fields.Integer(required=True, description="ID del contrato"),
-        "id_voucher_general": fields.Integer(
-            required=False, description="ID del voucher general for update"
-        ),
         "position": fields.String(required=True, description="Puesto del solicitante"),
         "type_transaction": fields.Integer(
             default=0, description="Tipo de transacción"
         ),
+        "user": fields.Integer(required=True, description="ID del usuario"),
         "superior": fields.Integer(required=True, description="ID del superior"),
         "storage_emp": fields.Integer(
             required=True, description="ID del encargado de almacenamiento"
         ),
-        "user_state": fields.Integer(default=0, description="Estado del usuario"),
-        "superior_state": fields.Integer(default=0, description="Estado del superior"),
+        "designated_emp": fields.Integer(
+            required=True, description="ID del empleado designado"
+        ),
         "items": fields.List(fields.Nested(voucher_items_post_model)),
     },
 )
@@ -85,7 +83,6 @@ voucher_tools_put_model = api.model(
         "type": fields.Integer(
             required=True, description="Tipo de voucher (0: Tools, 1: Safety)"
         ),
-        "user": fields.Integer(required=True, description="ID del usuario"),
         "contract": fields.Integer(required=True, description="ID del contrato"),
         "id_voucher_general": fields.Integer(
             required=False, description="ID del voucher general for update"
@@ -94,12 +91,19 @@ voucher_tools_put_model = api.model(
         "type_transaction": fields.Integer(
             default=0, description="Tipo de transacción"
         ),
+        "user": fields.Integer(required=True, description="ID del usuario"),
         "superior": fields.Integer(required=True, description="ID del superior"),
         "storage_emp": fields.Integer(
             required=True, description="ID del encargado de almacenamiento"
         ),
+        "designated_emp": fields.Integer(
+            required=True, description="ID del empleado designado"
+        ),
         "user_state": fields.Integer(default=0, description="Estado del usuario"),
         "superior_state": fields.Integer(default=0, description="Estado del superior"),
+        "storage_state": fields.Integer(
+            default=0, description="Estado del encargado de almacenamiento"
+        ),
         "items": fields.List(fields.Nested(voucher_items_put_model)),
     },
 )
@@ -111,18 +115,23 @@ voucher_safety_post_model = api.model(
         "type": fields.Integer(
             required=True, description="Tipo de voucher (0: Tools, 1: Safety)"
         ),
-        "user": fields.Integer(required=True, description="ID del usuario"),
         "contract": fields.Integer(required=True, description="ID del contrato"),
-        "id_voucher_general": fields.Integer(
-            required=False, description="ID del voucher general for update"
-        ),
-        "superior": fields.Integer(required=True, description="ID del superior"),
+        "motive": fields.Integer(default=0, description="Motivo del voucher"),
+        "user": fields.Integer(required=True, description="ID del usuario"),
         "epp_emp": fields.Integer(
             required=True, description="ID del empleado que recibe el EPP"
         ),
+        "storage_emp": fields.Integer(
+            required=True, description="ID del encargado de almacenamiento"
+        ),
+        "designated_emp": fields.Integer(
+            required=True, description="ID del empleado designado"
+        ),
+        "user_state": fields.Integer(default=0, description="Estado del usuario"),
         "epp_state": fields.Integer(default=0, description="Estado del EPP"),
-        "superior_state": fields.Integer(default=0, description="Estado del superior"),
-        "motive": fields.Integer(default=0, description="Motivo del voucher"),
+        "storage_state": fields.Integer(
+            default=0, description="Estado del encargado de almacenamiento"
+        ),
         "items": fields.List(fields.Nested(voucher_items_post_model)),
     },
 )
@@ -134,18 +143,26 @@ voucher_safety_put_model = api.model(
         "type": fields.Integer(
             required=True, description="Tipo de voucher (0: Tools, 1: Safety)"
         ),
-        "user": fields.Integer(required=True, description="ID del usuario"),
         "contract": fields.Integer(required=True, description="ID del contrato"),
         "id_voucher_general": fields.Integer(
             required=False, description="ID del voucher general for update"
         ),
-        "superior": fields.Integer(required=True, description="ID del superior"),
+        "motive": fields.Integer(default=0, description="Motivo del voucher"),
+        "user": fields.Integer(required=True, description="ID del usuario"),
         "epp_emp": fields.Integer(
             required=True, description="ID del empleado que recibe el EPP"
         ),
+        "storage_emp": fields.Integer(
+            required=True, description="ID del encargado de almacenamiento"
+        ),
+        "designated_emp": fields.Integer(
+            required=True, description="ID del empleado designado"
+        ),
+        "user_state": fields.Integer(default=0, description="Estado del usuario"),
         "epp_state": fields.Integer(default=0, description="Estado del EPP"),
-        "superior_state": fields.Integer(default=0, description="Estado del superior"),
-        "motive": fields.Integer(default=0, description="Motivo del voucher"),
+        "storage_state": fields.Integer(
+            default=0, description="Estado del encargado de almacenamiento"
+        ),
         "items": fields.List(fields.Nested(voucher_items_put_model)),
     },
 )
@@ -171,49 +188,51 @@ class ItemsVoucherPutForm(Form):
 
 class VoucherToolsFormPost(Form):
     type = StringField("type", [InputRequired()])
-    user = IntegerField("user", [InputRequired()])
     contract = IntegerField("contract", [InputRequired()])
     position = StringField("position", [InputRequired()])
     type_transaction = IntegerField("type_transaction", [InputRequired()])
+    user = IntegerField("user", [InputRequired()])
     superior = IntegerField("superior", [InputRequired()])
     storage_emp = IntegerField("storage_emp", [InputRequired()])
-    user_state = IntegerField("user_state", [InputRequired()])
-    superior_state = IntegerField("superior_state", [InputRequired()])
+    designated_emp = IntegerField("designated_emp", [InputRequired()])
     items = FieldList(FormField(ItemsVoucherPostForm, "items"))
 
 
 class VoucherToolsFormPut(Form):
     id_voucher_general = IntegerField("id_voucher_general", [InputRequired()])
     type = StringField("type", [InputRequired()])
-    user = IntegerField("user", [InputRequired()])
     contract = IntegerField("contract", [InputRequired()])
+    user = IntegerField("user", [InputRequired()])
     superior = IntegerField("superior", [InputRequired()])
     storage_emp = IntegerField("storage_emp", [InputRequired()])
+    designated_emp = IntegerField("designated_emp", [InputRequired()])
     user_state = IntegerField("user_state", [InputRequired()])
     superior_state = IntegerField("superior_state", [InputRequired()])
+    storage_state = IntegerField("storage_state", [InputRequired()])
     items = FieldList(FormField(ItemsVoucherPutForm, "items"))
 
 
 class VoucherSafetyFormPost(Form):
     type = StringField("type", [InputRequired()])
-    user = IntegerField("user", [InputRequired()])
     contract = IntegerField("contract", [InputRequired()])
-    superior = IntegerField("superior", [InputRequired()])
-    epp_emp = IntegerField("epp_emp", [InputRequired()])
-    epp_state = IntegerField("epp_state", [InputRequired()])
-    superior_state = IntegerField("superior_state", [InputRequired()])
     motive = IntegerField("motive", [InputRequired()])
+    user = IntegerField("user", [InputRequired()])
+    epp_emp = IntegerField("epp_emp", [InputRequired()])
+    storage_emp = IntegerField("storage_emp", [InputRequired()])
+    designated_emp = IntegerField("designated_emp", [InputRequired()])
     items = FieldList(FormField(ItemsVoucherPostForm, "items"))
 
 
 class VoucherSafetyFormPut(Form):
     id_voucher_general = IntegerField("id_voucher_general", [InputRequired()])
     type = StringField("type", [InputRequired()])
-    user = IntegerField("user", [InputRequired()])
     contract = IntegerField("contract", [InputRequired()])
-    superior = IntegerField("superior", [InputRequired()])
-    epp_emp = IntegerField("epp_emp", [InputRequired()])
-    epp_state = IntegerField("epp_state", [InputRequired()])
-    superior_state = IntegerField("superior_state", [InputRequired()])
     motive = IntegerField("motive", [InputRequired()])
+    user = IntegerField("user", [InputRequired()])
+    epp_emp = IntegerField("epp_emp", [InputRequired()])
+    storage_emp = IntegerField("storage_emp", [InputRequired()])
+    designated_emp = IntegerField("designated_emp", [InputRequired()])
+    user_state = IntegerField("user_state", [InputRequired()])
+    epp_state = IntegerField("epp_state", [InputRequired()])
+    storage_state = IntegerField("storage_state", [InputRequired()])
     items = FieldList(FormField(ItemsVoucherPutForm, "items"))
