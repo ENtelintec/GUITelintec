@@ -94,6 +94,23 @@ def get_products_sm(contract: str):
     return data_out, 200
 
 
+def calculate_items_delivered(items):
+    total = 0
+    dispatched_total = 0
+    for item in items:
+        quantity = item.get("quantity", 1.0)
+        total += quantity
+        dispatched = item.get("dispatched", 0)
+        dispatched_total += dispatched
+    return round((dispatched_total / total) * 100, 2) if total else 0
+
+
+def calculate_items_delivered_2(items):
+    total = sum(item.get("quantity", 1.0) for item in items)
+    dispatched_total = sum(item.get("dispatched", 0) for item in items)
+    return round((dispatched_total / total) * 100, 2) if total else 0
+
+
 def get_all_sm(limit, page=0, emp_id=-1, with_items=True):
     flag, error, result = get_sm_entries(emp_id)
     if limit == -1:
@@ -157,6 +174,12 @@ def get_all_sm(limit, page=0, emp_id=-1, with_items=True):
             )
         else:
             kpi_operations = ""
+        items_sm = json.loads(result[i][10]) if with_items else []
+        percentage = (
+            calculate_items_delivered(json.loads(result[i][10]))
+            if not with_items
+            else 0.0
+        )
         dict_sm = {
             "id": result[i][0],
             "folio": result[i][1],
@@ -172,7 +195,8 @@ def get_all_sm(limit, page=0, emp_id=-1, with_items=True):
             "critical_date": result[i][9].strftime(format_timestamps)
             if isinstance(result[i][9], datetime)
             else result[i][9],
-            "items": json.loads(result[i][10]) if with_items else [],
+            "items": items_sm,
+            "percentage": percentage,
             "status": result[i][11],
             "history": json.loads(result[i][12]),
             "comment": result[i][13],

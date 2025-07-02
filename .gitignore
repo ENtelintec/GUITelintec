@@ -54,3 +54,4 @@ __pycache__/
 /files/test_result.txt
 /templates/forms/barcodes.pdf
 /Tests/
+tester*.py
