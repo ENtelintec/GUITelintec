@@ -14,6 +14,9 @@ from static.constants import (
     log_file_po,
 )
 from templates.Functions_Utils import create_notification_permission_notGUI
+from templates.controllers.contracts.contracts_controller import (
+    get_contracts_abreviations_db,
+)
 from templates.controllers.departments.heads_controller import check_if_gerente
 from templates.controllers.order.orders_controller import (
     insert_purchase_order,
@@ -696,3 +699,17 @@ def dowload_file_purchase(order_id: int):
         print("error at generating pdf", download_path)
         return None, 400
     return download_path, 200
+
+
+def generate_folios_po(reference, data_token):
+    flag, error, result_abb = get_contracts_abreviations_db()
+    abbs_area = [item[0] for item in result_abb if item[0] != ""]
+    reference_parts = reference.split("-")
+    if len(reference_parts) <= 2:
+        return {"data": [], "error": "Bad reference"}, 400
+    if reference_parts[1] not in abbs_area:
+        return {"data": [], "error": "Bad reference, not in patterns"}, 400
+    folio_normal = "OC-GC" + "-".join(reference_parts[-2:])
+    folio_maestro = "OCM-GC" + f"-{reference[-2]}"
+    folio_cotfc = "OC-GCCOTFC-" + "{reference[0]}"
+    return abbs_area, 200

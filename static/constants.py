@@ -183,10 +183,10 @@ dict_depts_identifiers = {
     2: "OP",
     3: "ADMON",
     4: "RH",
-    3001: ["ALM", "PA-CDA-VEH"],
-    3002: "PA-CDA-TI",
-    3003: "PA-CDA-EQO",
-    3004: "PA-CDA-MED",
+    3001: ["ALM", "CDA-VEH"],
+    3002: "CDA-TI",
+    3003: "CDA-EQO",
+    3004: "CDA-MED",
     2001: "SST",
 }
 tabs_sm = {
@@ -194,7 +194,7 @@ tabs_sm = {
     "sm-sgi-": "SGI",
     "sm-op-": "Operaciones",
     "sm-admon-": "Administracion",
-    "sm-rh-": "RH",
+    "sm-rrhh-": "RH",
     "sm-alm-": "Almacen",
     "sm-pa-cda-veh-": "CDA Vehiculos",
     "sm-pa-cda-ti-": "CDA TI",

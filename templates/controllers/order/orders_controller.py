@@ -420,3 +420,16 @@ def update_po_item(
     )
     flag, e, out = execute_sql(sql, val, 3)
     return flag, e, out
+
+
+def get_folios_po_from_pattern(patterns: list):
+    regexp_clauses = " OR ".join(["folio LIKE %s"] * len(patterns))
+    like_patterns = [f"%{p}%" for p in patterns]
+    sql = (
+        "SELECT id_order, folio "
+        "FROM sql_telintec_mod_admin.purchase_orders "
+        f"WHERE {regexp_clauses}"
+    )
+    val = like_patterns
+    flag, e, out = execute_sql(sql, val, 2)
+    return flag, e, out

@@ -382,11 +382,17 @@ def insert_product_db(data, data_token):
     # flag, e, result = create_in_movement_db(
     #     result, "entrada", data["info"]["stock"], timestamp, None, "creation"
     # )
-    msg = f"Se ha creado el producto {data['info']['name']} con sku {data['info']['sku']} por el empleado {data_token.get('emp_id')}-{data_token.get('name')} en la fecha {timestamp}"
-    create_notification_permission_notGUI(
+    msg = (
+        f"Se ha creado el producto {data['info']['name']}-{result} con sku {data['info']['sku']}-{data['info']['stock']} "
+        f"por el empleado {data_token.get('emp_id')}-{data_token.get('name')} en la fecha {timestamp}"
+    )
+    flag = create_notification_permission_notGUI(
         msg, ["almacen"], "Notifaction de Inventario", data_token.get("emp_id"), 0
     )
+    if not flag:
+        msg += "\n error notification creation"
     write_log_file(log_file_almacen, msg)
+
     return True, result
 
 

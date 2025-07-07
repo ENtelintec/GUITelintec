@@ -309,8 +309,7 @@ def get_iddentifiers_creation(data_token):
         for item in (sublist if isinstance(sublist, list) else [sublist])
     ]
     for result in contracts:
-        metadata = json.loads(result[1])
-        contract_number = metadata["contract_number"]
+        contract_number = result[5]
         idn_contract = contract_number[-4:]
         if str(idn_contract) not in identifier_list:
             identifier_list.append(f"{idn_contract}")
@@ -363,8 +362,7 @@ def get_iddentifiers(data_token):
         for item in (sublist if isinstance(sublist, list) else [sublist])
     ]
     for result in contracts:
-        metadata = json.loads(result[1])
-        contract_number = metadata["contract_number"]
+        contract_number = result[5]
         idn_contract = contract_number[-4:]
         if str(idn_contract) not in identifier_list:
             identifier_list.append(f"{idn_contract}")

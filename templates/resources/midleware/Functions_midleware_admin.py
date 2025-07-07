@@ -9,7 +9,6 @@ from static.constants import (
     filepath_settings,
     log_file_admin,
     dict_deps,
-    dict_depts_identifiers,
 )
 from templates.Functions_Utils import create_notification_permission
 from templates.controllers.contracts.contracts_controller import (
@@ -97,13 +96,13 @@ def get_quotations(id_quotation=None):
 
 def validate_metadata(metadata: dict):
     return {
-        "emission": metadata.get("emission", ""),
+        # "emission": metadata.get("emission", ""),
         "quotation_code": metadata.get("quotation_code", ""),
         "planta": metadata.get("planta", ""),
         "area": metadata.get("area", ""),
         "location": metadata.get("location", ""),
-        "client_id": metadata.get("client_id", 0),
-        "contract_number": metadata.get("contract_number", ""),
+        # "client_id": metadata.get("client_id", 0),
+        # "contract_number": metadata.get("contract_number", ""),
         "identifier": metadata.get("identifier", ""),
         "abbreviation": metadata.get("abbreviation", ""),
         "remitos": metadata.get("remitos", ""),
@@ -133,32 +132,45 @@ def get_contracts(id_contract=None):
     flag, error, result = get_contract(id_contract)
     if not flag:
         return {"data": None, "msg": str(error)}, 400
-    if id_contract is not None:
-        id_c, metadata, creation, quotation_id, timestamps = result
+    result = [result] if id_contract is not None else result
+    # if id_contract is not None:
+    #     id_c, metadata, creation, quotation_id, timestamps = result
+    #     metadata = validate_metadata(json.loads(metadata))
+    #     data_out = {
+    #         "id": id_c,
+    #         "metadata": metadata,
+    #         "creation": creation,
+    #         "quotation_id": quotation_id,
+    #         "timestamps": json.loads(timestamps),
+    #     }
+    #     return {"data": [data_out], "msg": None}, 200
+    # else:
+    data_out = []
+    for item in result:
+        (
+            id_c,
+            metadata,
+            creation,
+            quotation_id,
+            timestamps,
+            code,
+            client_id,
+            emission,
+        ) = item
         metadata = validate_metadata(json.loads(metadata))
-        data_out = {
-            "id": id_c,
-            "metadata": metadata,
-            "creation": creation,
-            "quotation_id": quotation_id,
-            "timestamps": json.loads(timestamps),
-        }
-        return {"data": [data_out], "msg": None}, 200
-    else:
-        data_out = []
-        for item in result:
-            id_c, metadata, creation, quotation_id, timestamps = item
-            metadata = validate_metadata(json.loads(metadata))
-            data_out.append(
-                {
-                    "id": id_c,
-                    "metadata": metadata,
-                    "creation": creation,
-                    "quotation_id": quotation_id,
-                    "timestamps": json.loads(timestamps),
-                }
-            )
-        return {"data": data_out, "msg": "Ok"}, 200
+        metadata["contract_number"] = code
+        metadata["client_id"] = client_id
+        metadata["emission"] = emission
+        data_out.append(
+            {
+                "id": id_c,
+                "metadata": metadata,
+                "creation": creation,
+                "quotation_id": quotation_id,
+                "timestamps": json.loads(timestamps),
+            }
+        )
+    return {"data": data_out, "msg": "Ok"}, 200
 
 
 def get_folio_from_contract_ternium(data_token):
@@ -181,13 +193,13 @@ def get_folio_from_contract_ternium(data_token):
                 if not flag or len(contracts) == 0:
                     return {"data": None, "msg": str(error)}, 400
                 break
-        else:
-            return {"data": None, "msg": str(error)}, 400
+            else:
+                return {"data": None, "msg": str(error)}, 400
     data = []
     for result in contracts:
         folio_sm = "SM"
         metadata = json.loads(result[1])
-        contract_number = metadata["contract_number"]
+        contract_number = result[5]
         idn_contract = contract_number[-4:]
         folio = folio_sm + "-" + idn_contract
         flag, error, folios = get_folios_by_pattern(folio)
@@ -213,71 +225,44 @@ def get_folio_from_contract_ternium(data_token):
     return {"data": data, "msg": "Ok"}, 200
 
 
-def get_department_identifiers(department_id, result):
-    match department_id:
-        case 1:
-            return [1]  # Dirección
-        case 2:
-            return (
-                [2001]
-                if "seguridad" in result[1].lower()
-                else [2]
-                if "director" in result[1].lower()
-                else []
-            )
-        case 3:  # Administración
-            return (
-                [3001]
-                if "almacen" in result[1].lower()
-                else [3002]
-                if "ti" in result[1].lower()
-                else [3003]
-                if "inmuebles" in result[1].lower()
-                else [3004]
-                if "medicion" in result[1].lower()
-                else [3]
-            )
-        case 4:
-            return [4]  # RH
-        case _:
-            return [department_id]  # Default
+def get_department_identifiers(result):
+    abbs = []
+    for item in result:
+        if item[9]:
+            abbs.append(item[8])
+        else:
+            abbs.append(item[10])
+            abbs.append(item[8]) if item[8] else None
+    return abbs
 
 
-def get_iddentifiers(data_token):
+def get_iddentifiers(data_token, all_data_keys):
     permissions = data_token.get("permissions", {}).values()
-    if any("administrator" in item.lower().split(".")[-1] for item in permissions):
-        ids_identtifier = list(dict_depts_identifiers.keys())
+    if any(item.lower().split(".")[-1] in all_data_keys for item in permissions):
+        flag, error, result_abb = get_contracts_abreviations_db()
+        abbs_area = [item[0] for item in result_abb if item[4] == 0 and item[0] != ""]
     else:
         for check_func in (check_if_gerente, check_if_head_not_auxiliar):
             flag, error, result = check_func(data_token.get("emp_id"))
             if flag and result:
-                ids_identtifier = get_department_identifiers(
-                    data_token.get("dep_id"), result
-                )
+                abbs_area = get_department_identifiers(result)
                 break
-        else:
-            return {"data": None, "msg": str(error)}, 400
-    identifiers = [
-        dict_depts_identifiers.get(dept_id)
-        for dept_id in ids_identtifier
-        if dict_depts_identifiers.get(dept_id)
-    ]
-    identifier = [
-        item
-        for sublist in identifiers
-        for item in (sublist if isinstance(sublist, list) else [sublist])
-    ]
-    if not identifier:
+            else:
+                return {"data": None, "msg": str(error)}, 400
+    identifiers = abbs_area
+    if not identifiers:
         return {"data": None, "msg": "Folios for user not found"}, 401
-    return identifier, 200
+    return identifiers, 200
 
 
 def folio_from_department(data_token):
-    identifier, code = get_iddentifiers(data_token)
+    abbs_list, code = get_iddentifiers(data_token, ["administrator"])
     if code != 200:
-        return identifier, code
+        return abbs_list, code
     folio_list = [
-        f"SM-{idd.upper()}" for idd in identifier if isinstance(identifier, (str, list))
+        f"SM-{abbreviation.upper()}"
+        for abbreviation in abbs_list
+        if isinstance(abbs_list, (str, list))
     ]
     folios_out = []
     for folio in folio_list:
@@ -527,6 +512,10 @@ def delete_supplier(data):
 
 
 def create_contract_from_api(data, data_token):
+    # Extraer y eliminar claves específicas del metadata
+    contract_number = data["metadata"].pop("contract_number", "error cnumber")
+    client_id = data["metadata"].pop("client_id", 50)
+    emission = data["metadata"].pop("emission", "error edate")
     if data.get("quotation_id", 0) == 0:
         flag, error, result = create_quotation(
             data["metadata"], data["products"], status=2
@@ -534,9 +523,13 @@ def create_contract_from_api(data, data_token):
         if not flag:
             return {"data": None, "msg": str(error)}, 400
         id_quotation = result
-        flag, error, result = create_contract(id_quotation, data["metadata"])
+        flag, error, result = create_contract(
+            id_quotation, data["metadata"], contract_number, client_id, emission
+        )
     else:
-        flag, error, result = create_contract(data["quotation_id"], data["metadata"])
+        flag, error, result = create_contract(
+            data["quotation_id"], data["metadata"], contract_number, client_id, emission
+        )
 
     if not flag:
         return {"data": None, "msg": str(error)}, 400
@@ -579,8 +572,17 @@ def update_contract_from_api(data, data_token):
             }, 400
         msg += f"Se actualizo la cotizacion con ID-{id_quotation} por el empleado {data_token.get('emp_id')}"
     id_quotation = id_quotation if id_quotation != 0 else None
+    contract_number = data["metadata"].pop("contract_number", "error cnumber")
+    client_id = data["metadata"].pop("client_id", 50)
+    emission = data["metadata"].pop("emission", "error edate")
     flag, error, result = update_contract(
-        data["id"], data["metadata"], data["timestamps"], id_quotation
+        data["id"],
+        data["metadata"],
+        contract_number,
+        client_id,
+        emission,
+        data["timestamps"],
+        id_quotation,
     )
     if not flag:
         return {"data": None, "msg": str(error)}, 400
@@ -759,9 +761,11 @@ def get_contracts_abreviations():
         metadata = json.loads(item[2])
         data_out.append(
             {
-                "abreviation": json.loads(item[0]),
+                "abreviation": item[0],
                 "id": item[1],
                 "metadata": metadata,
+                "initial": item[3],
+                "isContract": item[4],
             }
         )
     return {"data": data_out, "msg": "Ok"}, 200

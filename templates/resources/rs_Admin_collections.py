@@ -33,6 +33,7 @@ from templates.resources.midleware.MD_Purchases import (
     fetch_pos_applications,
     dowload_file_purchase,
     fetch_pos_applications_to_approve,
+    generate_folios_po,
 )
 
 ns = Namespace("GUI/api/v1/admin/collections")
@@ -218,3 +219,16 @@ class DownloadPDFSM(Resource):
             return send_file(data, as_attachment=True)
         else:
             return {"msg": "error at downloading"}, code
+
+
+@ns.route("/purchase/folio/<string:folio>")
+class FolioTernium(Resource):
+    @ns.expect(expected_headers_per)
+    def get(self, folio):
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["administracion", "purchases"]
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        data_out, code = generate_folios_po(folio, data_token)
+        return data_out, code
