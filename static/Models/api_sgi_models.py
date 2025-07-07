@@ -127,11 +127,6 @@ voucher_safety_post_model = api.model(
         "designated_emp": fields.Integer(
             required=True, description="ID del empleado designado"
         ),
-        "user_state": fields.Integer(default=0, description="Estado del usuario"),
-        "epp_state": fields.Integer(default=0, description="Estado del EPP"),
-        "storage_state": fields.Integer(
-            default=0, description="Estado del encargado de almacenamiento"
-        ),
         "items": fields.List(fields.Nested(voucher_items_post_model)),
     },
 )
