@@ -34,6 +34,7 @@ from templates.controllers.order.orders_controller import (
     update_po_application_status,
     get_purchase_order_with_items_by_id,
     get_pos_application_with_items_to_approve,
+    get_folios_po_from_pattern,
 )
 from templates.forms.PurchaseForms import FilePoPDF
 from templates.misc.Functions_Files import write_log_file
@@ -712,4 +713,24 @@ def generate_folios_po(reference, data_token):
     folio_normal = "OC-GC" + "-".join(reference_parts[-2:])
     folio_maestro = "OCM-GC" + f"-{reference[-2]}"
     folio_cotfc = "OC-GCCOTFC-" + "{reference[0]}"
-    return abbs_area, 200
+    flag, error, result = get_folios_po_from_pattern([folio_normal.lower(), folio_maestro.lower(), folio_cotfc.lower()])
+
+    if not flag:
+        return {"data": [], "error": str(error)}, 400
+    folios_out = []
+    for po_order in result:
+        id_order, folio = po_order
+        if folio_normal.lower() == folio.lower():
+            folio_temp = folio.lower().replace(folio_normal.lower(), "")
+            count = int(folio_temp.split("-")[0])
+            folios_out.append(f"{folio_normal}-{count+1:03d}")
+        elif folio_maestro.lower() == folio.lower():
+            folio_temp = folio.lower().replace(folio_maestro.lower(), "")
+            count = int(folio_temp.split("-")[0])
+            folios_out.append(f"{folio_maestro}-{count+1:03d}")
+        else:
+            folio_temp = folio.lower().replace(folio_cotfc.lower(), "")
+            count = int(folio_temp.split("-")[0])
+            folios_out.append(f"{folio_cotfc}-{count+1:03d}")
+
+    return {"data": folios_out, "error": None}, 200

@@ -222,7 +222,7 @@ class DownloadPDFSM(Resource):
 
 
 @ns.route("/purchase/folio/<string:folio>")
-class FolioTernium(Resource):
+class FolioPO(Resource):
     @ns.expect(expected_headers_per)
     def get(self, folio):
         flag, data_token, msg = token_verification_procedure(
