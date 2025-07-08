@@ -713,7 +713,9 @@ def generate_folios_po(reference, data_token):
     folio_normal = "OC-GC" + "-".join(reference_parts[-2:])
     folio_maestro = "OCM-GC" + f"-{reference[-2]}"
     folio_cotfc = "OC-GCCOTFC-" + "{reference[0]}"
-    flag, error, result = get_folios_po_from_pattern([folio_normal.lower(), folio_maestro.lower(), folio_cotfc.lower()])
+    flag, error, result = get_folios_po_from_pattern(
+        [folio_normal.lower(), folio_maestro.lower(), folio_cotfc.lower()]
+    )
 
     if not flag:
         return {"data": [], "error": str(error)}, 400
@@ -732,5 +734,4 @@ def generate_folios_po(reference, data_token):
             folio_temp = folio.lower().replace(folio_cotfc.lower(), "")
             count = int(folio_temp.split("-")[0])
             folios_out.append(f"{folio_cotfc}-{count+1:03d}")
-
     return {"data": folios_out, "error": None}, 200
