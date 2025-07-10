@@ -704,15 +704,32 @@ def dowload_file_purchase(order_id: int):
 
 def generate_folios_po(reference, data_token):
     flag, error, result_abb = get_contracts_abreviations_db()
-    abbs_area = [item[0] for item in result_abb if item[0] != ""]
-    reference_parts = reference.split("-")
+    abbs_area = []
+    dict_abbs = {}
+    for item in result_abb:
+        if item[0] != "" and item[4] == 0:
+            abbs_area.append(item[0])
+            dict_abbs[item[0].lower()] = {"initial": item[0].split("-")[0]}
+        elif item[4] == 1:
+            extra_info = json.loads(item[2])
+            contract_number = extra_info.get("contract_number", "")
+            if contract_number == "":
+                continue
+            abbs_area.append(contract_number[-4:])
+            dict_abbs[contract_number[-4:].lower()] = {"initial": item[3]}
+
+    # abbs_area = [item[0] for item in result_abb if item[0] != "" and item[4] == 0]
+    reference_parts = reference.lower().split("-")
     if len(reference_parts) <= 2:
         return {"data": [], "error": "Bad reference"}, 400
-    if reference_parts[1] not in abbs_area:
+    if (
+        reference_parts[1].upper() not in abbs_area
+        and reference_parts[1].lower() not in abbs_area
+    ):
         return {"data": [], "error": "Bad reference, not in patterns"}, 400
     folio_normal = "OC-GC" + "-".join(reference_parts[-2:])
-    folio_maestro = "OCM-GC" + f"-{reference[-2]}"
-    folio_cotfc = "OC-GCCOTFC-" + "{reference[0]}"
+    folio_maestro = "OCM-GC" + f"{reference_parts[-2]}"
+    folio_cotfc = "OC-GCCOTFC" + f"-{'-'.join(reference_parts[-2:])}"
     flag, error, result = get_folios_po_from_pattern(
         [folio_normal.lower(), folio_maestro.lower(), folio_cotfc.lower()]
     )
@@ -722,16 +739,40 @@ def generate_folios_po(reference, data_token):
     folios_out = []
     for po_order in result:
         id_order, folio = po_order
-        if folio_normal.lower() == folio.lower():
-            folio_temp = folio.lower().replace(folio_normal.lower(), "")
-            count = int(folio_temp.split("-")[0])
-            folios_out.append(f"{folio_normal}-{count+1:03d}")
-        elif folio_maestro.lower() == folio.lower():
-            folio_temp = folio.lower().replace(folio_maestro.lower(), "")
-            count = int(folio_temp.split("-")[0])
-            folios_out.append(f"{folio_maestro}-{count+1:03d}")
+        count = 0
+        if folio_normal.lower() in folio.lower():
+            folio_temp = folio.lower().replace(folio_normal.lower(), "").split("-")
+            for number in folio_temp:
+                try:
+                    count = int(number)
+                    break
+                except Exception:
+                    continue
+            folios_out.append(f"{folio_normal}-{count+1:03d}".upper())
+        elif folio_maestro.lower() in folio.lower():
+            folio_temp = folio.lower().replace(folio_maestro.lower(), "").split("-")
+            for number in folio_temp:
+                try:
+                    count = int(number)
+                    break
+                except Exception:
+                    continue
+            folios_out.append(
+                f"{folio_maestro}-{count+1:03d}-{dict_abbs[reference_parts[-2]].get('initial', '')}{reference_parts[-1]}".upper()
+            )
         else:
-            folio_temp = folio.lower().replace(folio_cotfc.lower(), "")
-            count = int(folio_temp.split("-")[0])
-            folios_out.append(f"{folio_cotfc}-{count+1:03d}")
+            folio_temp = folio.lower().replace(folio_cotfc.lower(), "").split("-")
+            for number in folio_temp:
+                try:
+                    count = int(number)
+                    break
+                except Exception:
+                    continue
+            folios_out.append(f"{folio_cotfc}-{count+1:03d}".upper())
+    if len(folios_out) == 0:
+        folios_out = [
+            f"{folio_normal}".upper(),
+            f"{folio_maestro}-{dict_abbs[reference_parts[-2]].get('initial', '')}{reference_parts[-1]}".upper(),
+            f"{folio_cotfc}".upper(),
+        ]
     return {"data": folios_out, "error": None}, 200
