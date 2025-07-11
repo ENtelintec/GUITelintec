@@ -129,6 +129,21 @@ class FetchVoucherTools(Resource):
         return data_out, code
 
 
+@ns.route("/voucher/safety/<string:year>&<string:month>&<string:day>")
+class FetchVoucherSafety(Resource):
+    @ns.expect(expected_headers_per)
+    def get(self, year, month, day):
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["sgi", "voucher"]
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        data_out, code = get_vouchers_safety_api(
+            {"date": f"{year}-{month}-{day}"}, data_token
+        )
+        return data_out, code
+
+
 @ns.route("voucher/safety/state")
 class VoucherSafetyState(Resource):
     @ns.expect(expected_headers_per, voucher_safety_status_put_model)
@@ -143,19 +158,4 @@ class VoucherSafetyState(Resource):
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
         data_out, code = update_status_safety(data, data_token)
-        return data_out, code
-
-
-@ns.route("/voucher/safety/<string:year>&<string:month>&<string:day>")
-class FetchVoucherSafety(Resource):
-    @ns.expect(expected_headers_per)
-    def get(self, year, month, day):
-        flag, data_token, msg = token_verification_procedure(
-            request, department=["sgi", "voucher"]
-        )
-        if not flag:
-            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        data_out, code = get_vouchers_safety_api(
-            {"date": f"{year}-{month}-{day}"}, data_token
-        )
         return data_out, code
