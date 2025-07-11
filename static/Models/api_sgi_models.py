@@ -127,6 +127,20 @@ voucher_tools_put_model = api.model(
 )
 
 
+voucher_tools_status_put_model = api.model(
+    "VoucherToolsStatusPut",
+    {
+        "id_voucher": fields.Integer(required=True, description="ID del voucher"),
+        "user_state": fields.Integer(default=0, description="Estado del usuario"),
+        "superior_state": fields.Integer(default=0, description="Estado del superior"),
+        "storage_state": fields.Integer(
+            default=0, description="Estado del encargado de almacenamiento"
+        ),
+        "history": fields.List(fields.Nested(voucher_history_model)),
+    },
+)
+
+
 voucher_safety_post_model = api.model(
     "VoucherSafetyPost",
     {
@@ -177,6 +191,20 @@ voucher_safety_put_model = api.model(
             default=0, description="Estado del encargado de almacenamiento"
         ),
         "items": fields.List(fields.Nested(voucher_items_put_model)),
+    },
+)
+
+
+voucher_safety_status_put_model = api.model(
+    "VoucherSafetyStatusPut",
+    {
+        "id_voucher": fields.Integer(required=True, description="ID del voucher"),
+        "user_state": fields.Integer(default=0, description="Estado del usuario"),
+        "epp_state": fields.Integer(default=0, description="Estado del EPP"),
+        "storage_state": fields.Integer(
+            default=0, description="Estado del encargado de almacenamiento"
+        ),
+        "history": fields.List(fields.Nested(voucher_history_model)),
     },
 )
 
@@ -270,4 +298,32 @@ class VoucherSafetyFormPut(Form):
     epp_state = IntegerField("epp_state", [InputRequired()])
     storage_state = IntegerField("storage_state", [InputRequired()])
     items = FieldList(FormField(ItemsVoucherPutForm, "items"))
+    history = FieldList(FormField(VoucherHistoryForm, "history"))
+
+
+class VoucherToolsStatusFormPut(Form):
+    id_voucher = IntegerField("id_voucher", [InputRequired()])
+    user_state = IntegerField(
+        "user_state", [validators.number_range(min=-1, message="Invalid id")]
+    )
+    superior_state = IntegerField(
+        "superior_state", [validators.number_range(min=-1, message="Invalid id")]
+    )
+    storage_state = IntegerField(
+        "storage_state", [validators.number_range(min=-1, message="Invalid id")]
+    )
+    history = FieldList(FormField(VoucherHistoryForm, "history"))
+
+
+class VoucherSafetyStatusFormPut(Form):
+    id_voucher = IntegerField("id_voucher", [InputRequired()])
+    user_state = IntegerField(
+        "user_state", [validators.number_range(min=-1, message="Invalid id")]
+    )
+    epp_state = IntegerField(
+        "epp_state", [validators.number_range(min=-1, message="Invalid id")]
+    )
+    storage_state = IntegerField(
+        "storage_state", [validators.number_range(min=-1, message="Invalid id")]
+    )
     history = FieldList(FormField(VoucherHistoryForm, "history"))

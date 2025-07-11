@@ -19,6 +19,8 @@ from templates.controllers.vouchers.vouchers_controller import (
     get_vouchers_tools_with_items_date,
     get_vouchers_safety_with_items,
     update_history_voucher,
+    update_state_tools_voucher,
+    update_state_safety_voucher,
 )
 
 
@@ -354,3 +356,79 @@ def get_vouchers_safety_api(data, data_token=None):
             }
         )
     return {"data": data_out, "msg": "Vouchers retrieved successfully"}, 200
+
+
+def update_status_tools(data, data_token):
+    time_zone = pytz.timezone(timezone_software)
+    timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
+    history = data["history"]
+    history.append(
+        {
+            "id_voucher": data["id_voucher_general"],
+            "type": 0,
+            "timestamp": timestamp,
+            "user": data_token.get("emp_id"),
+            "comment": f"Voucher tools actualizado de estados: "
+            f"{data['user_state']}-{data['superior_state']}-{data['storage_state']}",
+        }
+    )
+    flag, error, rows_updated = update_state_tools_voucher(
+        data["id_voucher_general"],
+        data["user_state"],
+        data["superior_state"],
+        data["storage_state"],
+    )
+    if not flag:
+        return {
+            "data": None,
+            "msg": "Error at updating tools voucher",
+            "error": str(error),
+        }, 400
+    flag, error, rows_updated = update_history_voucher(
+        history, data["id_voucher_general"]
+    )
+    if not flag:
+        return {
+            "data": None,
+            "msg": "Error at updating history voucher",
+            "error": str(error),
+        }, 400
+    return {"data": [rows_updated], "msg": "Voucher updated successfully"}, 200
+
+
+def update_status_safety(data, data_token):
+    time_zone = pytz.timezone(timezone_software)
+    timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
+    history = data["history"]
+    history.append(
+        {
+            "id_voucher": data["id_voucher_general"],
+            "type": 1,
+            "timestamp": timestamp,
+            "user": data_token.get("emp_id"),
+            "comment": f"Voucher safety actualizado de estados: "
+            f"{data['user_state']}-{data['epp_state']}-{data['storage_state']}",
+        }
+    )
+    flag, error, rows_updated = update_state_safety_voucher(
+        data["id_voucher_general"],
+        data["user_state"],
+        data["epp_state"],
+        data["storage_state"],
+    )
+    if not flag:
+        return {
+            "data": None,
+            "msg": "Error at updating safety voucher",
+            "error": str(error),
+        }, 400
+    flag, error, rows_updated = update_history_voucher(
+        history, data["id_voucher_general"]
+    )
+    if not flag:
+        return {
+            "data": None,
+            "msg": "Error at updating history voucher",
+            "error": str(error),
+        }, 400
+    return {"data": [rows_updated], "msg": "Voucher updated successfully"}, 200

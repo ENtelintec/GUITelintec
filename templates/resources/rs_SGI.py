@@ -16,6 +16,10 @@ from static.Models.api_sgi_models import (
     VoucherToolsFormPut,
     VoucherSafetyFormPut,
     voucher_tools_put_model,
+    voucher_tools_status_put_model,
+    VoucherToolsStatusFormPut,
+    voucher_safety_status_put_model,
+    VoucherSafetyStatusFormPut,
 )
 from templates.resources.midleware.MD_SGI import (
     create_voucher_tools_api,
@@ -24,6 +28,8 @@ from templates.resources.midleware.MD_SGI import (
     update_voucher_safety_api,
     get_vouchers_tools_api,
     get_vouchers_safety_api,
+    update_status_tools,
+    update_status_safety,
 )
 
 ns = Namespace("GUI/api/v1/sgi", description="SGI")
@@ -57,6 +63,23 @@ class VoucherTools(Resource):
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
         data_out, code = update_voucher_tools_api(data, data_token)
+        return data_out, code
+
+
+@ns.route("voucher/tools/state")
+class VoucherToolsState(Resource):
+    @ns.expect(expected_headers_per, voucher_tools_status_put_model)
+    def put(self):
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["sgi", "voucher"]
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        validator = VoucherToolsStatusFormPut.from_json(ns.payload)
+        if not validator.validate():
+            return {"data": validator.errors, "msg": "Error at structure"}, 400
+        data = validator.data
+        data_out, code = update_status_tools(data, data_token)
         return data_out, code
 
 
@@ -103,6 +126,23 @@ class FetchVoucherTools(Resource):
         data_out, code = get_vouchers_tools_api(
             {"date": f"{year}-{month}-{day}"}, data_token
         )
+        return data_out, code
+
+
+@ns.route("voucher/safety/state")
+class VoucherSafetyState(Resource):
+    @ns.expect(expected_headers_per, voucher_safety_status_put_model)
+    def put(self):
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["sgi", "voucher"]
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        validator = VoucherSafetyStatusFormPut.from_json(ns.payload)
+        if not validator.validate():
+            return {"data": validator.errors, "msg": "Error at structure"}, 400
+        data = validator.data
+        data_out, code = update_status_safety(data, data_token)
         return data_out, code
 
 

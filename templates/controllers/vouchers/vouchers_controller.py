@@ -405,3 +405,43 @@ def get_vouchers_safety_with_items(start_date, user=None):
     val = (start_date, user, user)
     flag, error, vouchers = execute_sql(sql, val, 2)
     return flag, error, vouchers
+
+
+def update_state_tools_voucher(id_voucher, user_state, superior_state, storage_state):
+    """
+    Actualiza los estados de un voucher de herramientas en la tabla voucher_tools.
+
+    :param id_voucher: ID del voucher de herramientas
+    :param user_state: Nuevo estado del usuario
+    :param superior_state: Nuevo estado del superior
+    :param storage_state: Nuevo estado del almacenamiento
+    :return: Estado de la operación (éxito/error)
+    """
+    sql = (
+        "UPDATE sql_telintec_mod_admin.voucher_tools "
+        "SET user_state = %s, superior_state = %s, storage_state = %s "
+        "WHERE id_voucher_general = %s"
+    )
+    val = (user_state, superior_state, storage_state, id_voucher)
+    flag, error, rows_changed = execute_sql(sql, val, 3)
+    return flag, error, rows_changed
+
+
+def update_state_safety_voucher(id_voucher, user_state, epp_state, storage_state):
+    """
+    Actualiza los estados de un voucher de seguridad en la tabla voucher_safety.
+
+    :param id_voucher: ID del voucher de seguridad
+    :param user_state: Nuevo estado del usuario
+    :param epp_state: Nuevo estado de los elementos de seguridad
+    :param storage_state: Nuevo estado del almacenamiento
+    :return: Estado de la operación (éxito/error)
+    """
+    sql = (
+        "UPDATE sql_telintec_mod_admin.voucher_safety "
+        "SET user_state = %s, epp_state = %s, storage_state = %s "
+        "WHERE id_voucher_general = %s"
+    )
+    val = (user_state, epp_state, storage_state, id_voucher)
+    flag, error, rows_changed = execute_sql(sql, val, 3)
+    return flag, error, rows_changed
