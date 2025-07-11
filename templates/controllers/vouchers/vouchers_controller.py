@@ -258,6 +258,24 @@ def create_voucher_item(
     return flag, error, lastrowid
 
 
+def update_history_voucher(history: dict, id_voucher):
+    """
+    Actualiza el historial de un voucher en la tabla vouchers_general.
+
+    :param history: Nuevo historial en formato JSON
+    :param id_voucher: ID del voucher a actualizar
+    :return: Estado de la operación (éxito/error)
+    """
+    sql = (
+        "UPDATE sql_telintec_mod_admin.vouchers_general "
+        "SET history = %s "
+        "WHERE id_voucher = %s"
+    )
+    val = (json.dumps(history), id_voucher)
+    flag, error, rows_changed = execute_sql(sql, val, 3)
+    return flag, error, rows_changed
+
+
 def update_voucher_item(
     id_item,
     id_inventory,
@@ -334,7 +352,8 @@ def get_vouchers_tools_with_items_date(start_date, user=None):
         "'description', vi.description, "
         "'observations', vi.observations, "
         "'extra_info', vi.extra_info)"
-        ") AS items "
+        ") AS items, "
+        "vg.history "
         "FROM sql_telintec_mod_admin.voucher_tools AS vt "
         "JOIN sql_telintec_mod_admin.vouchers_general AS vg ON vt.id_voucher_general = vg.id_voucher "
         "LEFT JOIN sql_telintec_mod_admin.voucher_items AS vi ON vg.id_voucher = vi.id_voucher "
@@ -376,7 +395,8 @@ def get_vouchers_safety_with_items(start_date, user=None):
         "'description', vi.description, "
         "'observations', vi.observations, "
         "'extra_info', vi.extra_info)"
-        ") AS items "
+        ") AS items, "
+        "vg.history "
         "FROM sql_telintec_mod_admin.voucher_safety AS vs "
         "JOIN sql_telintec_mod_admin.vouchers_general AS vg ON vs.id_voucher_general = vg.id_voucher "
         "LEFT JOIN sql_telintec_mod_admin.voucher_items AS vi ON vg.id_voucher = vi.id_voucher "

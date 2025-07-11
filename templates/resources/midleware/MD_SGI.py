@@ -18,6 +18,7 @@ from templates.controllers.vouchers.vouchers_controller import (
     update_voucher_item,
     get_vouchers_tools_with_items_date,
     get_vouchers_safety_with_items,
+    update_history_voucher,
 )
 
 
@@ -45,6 +46,20 @@ def create_voucher_tools_api(data, data_token):
         return {
             "data": None,
             "msg": "Error at creating tools voucher",
+            "error": str(error),
+        }, 400
+    history = {
+        "id_voucher": v_tools_id,
+        "type": 0,
+        "timestamp": timestamp,
+        "user": data_token.get("emp_id"),
+        "comment": "Voucher creado",
+    }
+    flag, error, rows_updated = update_history_voucher(history, lastrowid)
+    if not flag:
+        return {
+            "data": None,
+            "msg": "Error at updating history voucher",
             "error": str(error),
         }, 400
     errors = []
@@ -76,6 +91,16 @@ def create_voucher_tools_api(data, data_token):
 def update_voucher_tools_api(data, data_token):
     time_zone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
+    history = data["history"]
+    history.append(
+        {
+            "id_voucher": data["id_voucher_general"],
+            "type": 0,
+            "timestamp": timestamp,
+            "user": data_token.get("emp_id"),
+            "comment": "Voucher tools actualizado",
+        }
+    )
     flag, error, rows_updated = update_voucher_tools(
         data["id_voucher_general"],
         data["position"],
@@ -91,6 +116,15 @@ def update_voucher_tools_api(data, data_token):
         return {
             "data": None,
             "msg": "Error at updating tools voucher",
+            "error": str(error),
+        }, 400
+    flag, error, rows_updated = update_history_voucher(
+        history, data["id_voucher_general"]
+    )
+    if not flag:
+        return {
+            "data": None,
+            "msg": "Error at updating history voucher",
             "error": str(error),
         }, 400
     errors = []
@@ -125,7 +159,6 @@ def create_voucher_safety_api(data, data_token):
     flag, error, lastrowid = create_voucher_general(
         data["type"], timestamp, data_token.get("emp_id"), data["contract"]
     )
-    print("lastrowid", lastrowid)
     if not flag:
         return {
             "data": None,
@@ -143,6 +176,20 @@ def create_voucher_safety_api(data, data_token):
         return {
             "data": None,
             "msg": "Error at creating safety voucher",
+            "error": str(error),
+        }, 400
+    history = {
+        "id_voucher": lastrowid_safety,
+        "type": 1,
+        "timestamp": timestamp,
+        "user": data_token.get("emp_id"),
+        "comment": "Voucher creado",
+    }
+    flag, error, rows_updated = update_history_voucher(history, lastrowid)
+    if not flag:
+        return {
+            "data": None,
+            "msg": "Error at updating history voucher",
             "error": str(error),
         }, 400
     errors = []
@@ -174,6 +221,17 @@ def create_voucher_safety_api(data, data_token):
 def update_voucher_safety_api(data, data_token):
     time_zone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
+    history = data["history"]
+    history.append(
+        {
+            "id_voucher": data["id_voucher_general"],
+            "type": 1,
+            "timestamp": timestamp,
+            "user": data_token.get("emp_id"),
+            "comment": "Voucher safety actualizado",
+        }
+    )
+
     flag, error, rows_changed = update_voucher_safety(
         data["id_voucher_general"],
         data["epp_emp"],
@@ -188,6 +246,15 @@ def update_voucher_safety_api(data, data_token):
         return {
             "data": None,
             "msg": "Error at updating safety voucher",
+            "error": str(error),
+        }, 400
+    flag, error, rows_updated = update_history_voucher(
+        history, data["id_voucher_general"]
+    )
+    if not flag:
+        return {
+            "data": None,
+            "msg": "Error at updating history voucher",
             "error": str(error),
         }, 400
     errors = []
@@ -247,6 +314,7 @@ def get_vouchers_tools_api(data, data_token=None):
                 "storage_state": item[11],
                 "extra_info": json.loads(item[12]),
                 "items": json.loads(item[13]),
+                "history": json.loads(item[14]),
             }
         )
     return {"data": data_out, "msg": "Vouchers retrieved successfully"}, 200
@@ -282,6 +350,7 @@ def get_vouchers_safety_api(data, data_token=None):
                 "storage_state": item[11],
                 "extra_info": json.loads(item[12]),
                 "items": json.loads(item[13]),
+                "history": json.loads(item[14]),
             }
         )
     return {"data": data_out, "msg": "Vouchers retrieved successfully"}, 200
