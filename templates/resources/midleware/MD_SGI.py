@@ -312,11 +312,11 @@ def get_vouchers_tools_api(data, data_token=None):
                 "storage_emp": item[8],
                 "designated_emp": item[9],
                 "user_state": item[10],
-                "superior_state": item[10],
-                "storage_state": item[11],
-                "extra_info": json.loads(item[12]),
-                "items": json.loads(item[13]),
-                "history": json.loads(item[14]),
+                "superior_state": item[11],
+                "storage_state": item[12],
+                "extra_info": json.loads(item[13]),
+                "items": json.loads(item[14]),
+                "history": json.loads(item[15]),
             }
         )
     return {"data": data_out, "msg": "Vouchers retrieved successfully"}, 200
