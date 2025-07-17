@@ -44,9 +44,7 @@ voucher_items_post_model = api.model(
 voucher_items_put_model = api.model(
     "VoucherItemsPut",
     {
-        "id_voucher": fields.Integer(
-            required=True, description="ID del voucher asociado"
-        ),
+        "id_item": fields.Integer(required=True, description="ID del voucher asociado"),
         "quantity": fields.Integer(required=True, description="Cantidad del ítem"),
         "unit": fields.String(required=True, description="Unidad de medida"),
         "description": fields.String(required=True, description="Descripción del ítem"),
@@ -221,7 +219,7 @@ class ItemsVoucherPostForm(Form):
 
 
 class ItemsVoucherPutForm(Form):
-    id_voucher = IntegerField("id_voucher", [InputRequired()])
+    id_item = IntegerField("id_item", [InputRequired()])
     quantity = FloatField("quantity", [InputRequired()])
     unit = StringField("unit", [InputRequired()])
     description = StringField("description", [InputRequired()])
