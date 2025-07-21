@@ -268,6 +268,7 @@ class VoucherToolsFormPut(Form):
     storage_state = IntegerField("storage_state", [InputRequired()])
     items = FieldList(FormField(ItemsVoucherPutForm, "items"))
     history = FieldList(FormField(VoucherHistoryForm, "history"))
+    position = StringField("position", validators=[], default="")
 
 
 class VoucherSafetyFormPost(Form):
