@@ -181,6 +181,7 @@ def get_all_sm(limit, page=0, emp_id=-1, with_items=True):
         #     else 0.0
         # )
         percentage = calculate_items_delivered(json.loads(result[i][10]))
+
         dict_sm = {
             "id": result[i][0],
             "folio": result[i][1],
