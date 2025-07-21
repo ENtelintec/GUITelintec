@@ -152,7 +152,7 @@ def update_voucher_tools_api(data, data_token):
             "msg": "Voucher created but error at updating tools",
             "errors": errors,
         }, 400
-    return {"data": rows_updated, "msg": "Voucher updated successfully"}, 200
+    return {"data": [], "msg": "Voucher updated successfully"}, 200
 
 
 def create_voucher_safety_api(data, data_token):
