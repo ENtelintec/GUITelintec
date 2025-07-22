@@ -20,6 +20,7 @@ from static.Models.api_sgi_models import (
     VoucherToolsStatusFormPut,
     voucher_safety_status_put_model,
     VoucherSafetyStatusFormPut,
+    voucher_safety_put_model,
 )
 from templates.resources.midleware.MD_SGI import (
     create_voucher_tools_api,
@@ -99,7 +100,7 @@ class VoucerSafety(Resource):
         data_out, code = create_voucher_safety_api(data, data_token)
         return data_out, code
 
-    @ns.expect(expected_headers_per, voucher_safety_post_model)
+    @ns.expect(expected_headers_per, voucher_safety_put_model)
     def put(self):
         flag, data_token, msg = token_verification_procedure(
             request, department=["sgi", "voucher"]
