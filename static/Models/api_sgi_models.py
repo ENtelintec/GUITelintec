@@ -219,7 +219,9 @@ class ItemsVoucherPostForm(Form):
 
 
 class ItemsVoucherPutForm(Form):
-    id_item = IntegerField("id_item", [InputRequired()])
+    id_item = IntegerField(
+        "id_item", [validators.number_range(min=-1, message="Invalid type")]
+    )
     quantity = FloatField("quantity", [InputRequired()])
     unit = StringField("unit", [InputRequired()])
     description = StringField("description", [InputRequired()])

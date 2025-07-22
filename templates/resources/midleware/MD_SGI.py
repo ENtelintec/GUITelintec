@@ -131,6 +131,7 @@ def update_voucher_tools_api(data, data_token):
         }, 400
     errors = []
     for item in data["items"]:
+
         flag, error, result = update_voucher_item(
             item["id_item"],
             item["id_inventory"],
