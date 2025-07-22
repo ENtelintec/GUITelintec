@@ -131,15 +131,27 @@ def update_voucher_tools_api(data, data_token):
         }, 400
     errors = []
     for item in data["items"]:
-
-        flag, error, result = update_voucher_item(
-            item["id_item"],
-            item["id_inventory"],
-            item["quantity"],
-            item["unit"],
-            item["description"],
-            item["observations"],
-        )
+        if item["id_item"]!=0:
+            flag, error, result = update_voucher_item(
+                item["id_item"],
+                item["id_inventory"],
+                item["quantity"],
+                item["unit"],
+                item["description"],
+                item["observations"],
+            )
+        elif item["id_item"] == -1:
+            print("delete item")
+            flag, error, result = (True, None, None)
+        else:
+            flag, error, result = create_voucher_item(
+                data["id_voucher_general"],
+                item["id_inventory"],
+                item["quantity"],
+                item["unit"],
+                item["description"],
+                item["observations"],
+            )
         if not flag:
             errors.append(
                 {
