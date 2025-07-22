@@ -21,6 +21,7 @@ from templates.controllers.vouchers.vouchers_controller import (
     update_history_voucher,
     update_state_tools_voucher,
     update_state_safety_voucher,
+    delete_voucher_item,
 )
 
 
@@ -131,8 +132,9 @@ def update_voucher_tools_api(data, data_token):
         }, 400
     errors = []
     for item in data["items"]:
-        extra_info = {"is_erased": 1} if item["id_item"] == -1 else {}
-        if item["id_item"] != 0:
+        if item["is_erased"] == 1:
+            flag, error, result = delete_voucher_item(item["id_item"])
+        elif item["id_item"] > 0:
             flag, error, result = update_voucher_item(
                 item["id_item"],
                 item["id_inventory"],
@@ -140,7 +142,6 @@ def update_voucher_tools_api(data, data_token):
                 item["unit"],
                 item["description"],
                 item["observations"],
-                extra_info,
             )
         else:
             flag, error, result = create_voucher_item(
@@ -150,7 +151,6 @@ def update_voucher_tools_api(data, data_token):
                 item["unit"],
                 item["description"],
                 item["observations"],
-                extra_info,
             )
         if not flag:
             errors.append(
@@ -274,8 +274,9 @@ def update_voucher_safety_api(data, data_token):
         }, 400
     errors = []
     for item in data["items"]:
-        extra_info = {"is_erased": 1} if item["id_item"] == -1 else {}
-        if item["id_item"] != 0:
+        if item["is_erased"] == 1:
+            flag, error, lastrowid = delete_voucher_item(item["id_item"])
+        elif item["id_item"] > 0:
             flag, error, lastrowid = update_voucher_item(
                 item["id_item"],
                 item["id_inventory"],
@@ -292,7 +293,6 @@ def update_voucher_safety_api(data, data_token):
                 item["unit"],
                 item["description"],
                 item["observations"],
-                extra_info,
             )
         if not flag:
             errors.append(
@@ -310,14 +310,6 @@ def update_voucher_safety_api(data, data_token):
     return {"data": [rows_changed], "msg": "Voucher updated successfully"}, 200
 
 
-def filter_voucher_items(items):
-    items_out = []
-    for item in items:
-        if item.get("extra_info", {}).get("is_erased", 0) == 0:
-            items_out.append(item)
-    return items_out
-
-
 def get_vouchers_tools_api(data, data_token=None):
     flag, error, result = get_vouchers_tools_with_items_date(
         data["date"], data_token.get("emp_id")
@@ -330,7 +322,6 @@ def get_vouchers_tools_api(data, data_token=None):
         }, 400
     data_out = []
     for item in result:
-        items_out = filter_voucher_items(json.loads(item[14]))
         data_out.append(
             {
                 "id_voucher_general": item[0],
@@ -349,7 +340,7 @@ def get_vouchers_tools_api(data, data_token=None):
                 "superior_state": item[11],
                 "storage_state": item[12],
                 "extra_info": json.loads(item[13]),
-                "items": items_out,
+                "items": json.loads(item[14]),
                 "history": json.loads(item[15]),
             }
         )
@@ -368,7 +359,6 @@ def get_vouchers_safety_api(data, data_token=None):
         }, 400
     data_out = []
     for item in result:
-        items_out = filter_voucher_items(json.loads(item[13]))
         data_out.append(
             {
                 "id_voucher_general": item[0],
@@ -386,7 +376,7 @@ def get_vouchers_safety_api(data, data_token=None):
                 "epp_state": item[10],
                 "storage_state": item[11],
                 "extra_info": json.loads(item[12]),
-                "items": items_out,
+                "items": json.loads(item[13]),
                 "history": json.loads(item[14]),
             }
         )

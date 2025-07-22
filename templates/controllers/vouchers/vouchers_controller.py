@@ -320,6 +320,13 @@ def update_voucher_item(
     return flag, error, rows_changed
 
 
+def delete_voucher_item(id_item: int):
+    sql = "DELETE FROM sql_telintec_mod_admin.voucher_items " "WHERE id_item = %s"
+    val = (id_item,)
+    flag, error, rows_changed = execute_sql(sql, val, 3)
+    return flag, error, rows_changed
+
+
 def get_vouchers_tools_with_items_date(start_date, user=None):
     """
     Obtiene vouchers de herramientas desde una fecha específica, incluyendo su metadata e ítems relacionados.

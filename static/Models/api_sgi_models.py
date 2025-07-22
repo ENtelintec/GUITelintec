@@ -52,6 +52,9 @@ voucher_items_put_model = api.model(
         "id_inventory": fields.Integer(
             required=True, description="ID del inventario asociado"
         ),
+        "is_erased": fields.Integer(
+            required=True, description="Indicador de eliminación", example=0
+        ),
     },
 )
 
@@ -227,6 +230,7 @@ class ItemsVoucherPutForm(Form):
     description = StringField("description", [InputRequired()])
     observations = StringField("observations", [])
     id_inventory = IntegerField("id_inventory", [InputRequired()])
+    is_erased = IntegerField("is_erased", [], default=0)
 
 
 class VoucherHistoryForm(Form):
