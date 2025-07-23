@@ -275,7 +275,10 @@ class VoucherToolsFormPut(Form):
     items = FieldList(FormField(ItemsVoucherPutForm, "items"))
     history = FieldList(FormField(VoucherHistoryForm, "history"))
     position = StringField("position", validators=[], default="")
-    type_transaction = IntegerField("type_transaction", validators=[InputRequired()])
+    type_transaction = IntegerField(
+        "type_transaction",
+        validators=[validators.number_range(min=-1, message="Invalid type")],
+    )
 
 
 class VoucherSafetyFormPost(Form):
