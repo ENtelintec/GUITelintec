@@ -67,7 +67,7 @@ class VoucherTools(Resource):
         return data_out, code
 
 
-@ns.route("voucher/toolsState")
+@ns.route("/voucher/toolsState")
 class VoucherToolsState(Resource):
     @ns.expect(expected_headers_per, voucher_tools_status_put_model)
     def put(self):
@@ -145,7 +145,7 @@ class FetchVoucherSafety(Resource):
         return data_out, code
 
 
-@ns.route("voucher/safetyState")
+@ns.route("/voucher/safetyState")
 class VoucherSafetyState(Resource):
     @ns.expect(expected_headers_per, voucher_safety_status_put_model)
     def put(self):

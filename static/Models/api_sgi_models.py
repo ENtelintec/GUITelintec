@@ -213,7 +213,7 @@ voucher_safety_status_put_model = api.model(
 
 
 class ItemsVoucherPostForm(Form):
-    id_voucher = IntegerField("id", [InputRequired()])
+    id_voucher = IntegerField("id", [])
     quantity = FloatField("quantity", [InputRequired()])
     unit = StringField("unit", [InputRequired()])
     description = StringField("description", [InputRequired()])

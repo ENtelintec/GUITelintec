@@ -389,7 +389,7 @@ def update_status_tools(data, data_token):
     history = data["history"]
     history.append(
         {
-            "id_voucher": data["id_voucher_general"],
+            "id_voucher": data["id_voucher"],
             "type": 0,
             "timestamp": timestamp,
             "user": data_token.get("emp_id"),
@@ -398,7 +398,7 @@ def update_status_tools(data, data_token):
         }
     )
     flag, error, rows_updated = update_state_tools_voucher(
-        data["id_voucher_general"],
+        data["id_voucher"],
         data["user_state"],
         data["superior_state"],
         data["storage_state"],
@@ -409,9 +409,7 @@ def update_status_tools(data, data_token):
             "msg": "Error at updating tools voucher",
             "error": str(error),
         }, 400
-    flag, error, rows_updated = update_history_voucher(
-        history, data["id_voucher_general"]
-    )
+    flag, error, rows_updated = update_history_voucher(history, data["id_voucher"])
     if not flag:
         return {
             "data": None,
