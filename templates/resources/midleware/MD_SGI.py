@@ -254,7 +254,6 @@ def update_voucher_safety_api(data, data_token):
         data["designated_emp"],
         data["epp_state"],
         data["storage_state"],
-        data["designated_state"],
         data["motive"],
     )
     if not flag:
