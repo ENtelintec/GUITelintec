@@ -297,7 +297,9 @@ class VoucherSafetyFormPut(Form):
         "type", [validators.number_range(min=-1, message="Invalid type")]
     )
     contract = IntegerField("contract", [InputRequired()])
-    motive = IntegerField("motive", [InputRequired()])
+    motive = IntegerField(
+        "motive", [validators.number_range(min=-1, message="Invalid motive")]
+    )
     user = IntegerField("user", [InputRequired()])
     epp_emp = IntegerField("epp_emp", [InputRequired()])
     storage_emp = IntegerField("storage_emp", [InputRequired()])
