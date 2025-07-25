@@ -28,9 +28,6 @@ from wtforms.form import Form
 voucher_items_post_model = api.model(
     "VoucherItemsPost",
     {
-        "id_voucher": fields.Integer(
-            required=True, description="ID del voucher asociado"
-        ),
         "quantity": fields.Integer(required=True, description="Cantidad del ítem"),
         "unit": fields.String(required=True, description="Unidad de medida"),
         "description": fields.String(required=True, description="Descripción del ítem"),
