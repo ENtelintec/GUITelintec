@@ -302,9 +302,9 @@ class VoucherSafetyFormPut(Form):
     epp_emp = IntegerField("epp_emp", [InputRequired()])
     storage_emp = IntegerField("storage_emp", [InputRequired()])
     designated_emp = IntegerField("designated_emp", [InputRequired()])
-    user_state = IntegerField("user_state", [InputRequired()])
-    epp_state = IntegerField("epp_state", [InputRequired()])
-    storage_state = IntegerField("storage_state", [InputRequired()])
+    user_state = IntegerField("user_state", [], default=0)
+    epp_state = IntegerField("epp_state", [], default=0)
+    storage_state = IntegerField("storage_state", [], default=0)
     items = FieldList(FormField(ItemsVoucherPutForm, "items"))
     history = FieldList(FormField(VoucherHistoryForm, "history"))
 
