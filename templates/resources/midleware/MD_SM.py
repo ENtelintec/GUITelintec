@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 __author__ = "Edisson Naula"
 __date__ = "$ 18/dic/2024  at 12:10 $"
 
@@ -12,14 +11,13 @@ import pandas as pd
 import pytz
 
 from static.constants import (
-    log_file_sm_path,
-    format_timestamps,
-    timezone_software,
     dict_depts_identifiers,
-    tabs_sm,
     format_date,
+    format_timestamps,
+    log_file_sm_path,
+    tabs_sm,
+    timezone_software,
 )
-from templates.Functions_Utils import create_notification_permission
 from templates.controllers.contracts.contracts_controller import (
     get_contract_by_client,
     get_contracts_by_ids,
@@ -27,29 +25,34 @@ from templates.controllers.contracts.contracts_controller import (
 )
 from templates.controllers.customer.customers_controller import create_customer_db
 from templates.controllers.departments.heads_controller import (
+    check_if_auxiliar_with_contract,
     check_if_gerente,
     check_if_head_not_auxiliar,
     check_if_leader,
-    check_if_auxiliar_with_contract,
 )
 from templates.controllers.employees.employees_controller import get_emp_contract
 from templates.controllers.index import DataHandler
 from templates.controllers.material_request.sm_controller import (
-    get_sm_entries,
-    update_history_sm,
-    get_sm_by_id,
     get_info_names_by_sm_id,
+    get_sm_by_id,
+    get_sm_entries,
+    insert_sm_db,
     update_history_extra_info_sm_by_id,
     update_history_items_sm,
+    update_history_sm,
+    create_items_sm_db,
+    update_items_sm,
+    update_sm_db,
 )
 from templates.controllers.product.p_and_s_controller import (
-    get_sm_products,
-    create_product_db_admin,
-    create_product_db,
-    get_products_stock_from_ids,
     create_movement_db_amc,
+    create_product_db,
+    create_product_db_admin,
+    get_products_stock_from_ids,
+    get_sm_products,
 )
 from templates.forms.StorageMovSM import FileSmPDF
+from templates.Functions_Utils import create_notification_permission
 from templates.misc.Functions_Files import write_log_file
 
 
@@ -78,6 +81,8 @@ def get_products_sm(contract: str):
                     "udm": item[2],
                     "stock": item[3],
                     "partida": ids_in_contract[item[0]],
+                    "reserved": item[4],
+                    "avaliable_stock": item[5],
                 }
             )
         else:
@@ -88,6 +93,8 @@ def get_products_sm(contract: str):
                     "udm": item[2],
                     "stock": item[3],
                     "partida": "",
+                    "reserved": item[4],
+                    "avaliable_stock": item[5],
                 }
             )
     data_out = {"data": {"contract": items_partida, "normal": items_normal}}
@@ -99,9 +106,9 @@ def calculate_items_delivered(items):
     dispatched_total = 0
     for item in items:
         quantity = item.get("quantity", 1.0)
-        total += quantity
+        total += quantity if quantity else 1.0
         dispatched = item.get("dispatched", 0)
-        dispatched_total += dispatched
+        dispatched_total += dispatched if dispatched else 0
     return round((dispatched_total / total) * 100, 2) if total else 0
 
 
@@ -112,6 +119,7 @@ def calculate_items_delivered_2(items):
 
 
 def get_all_sm(limit, page=0, emp_id=-1, with_items=True):
+    emp_id = None if emp_id == -1 else emp_id
     flag, error, result = get_sm_entries(emp_id)
     if limit == -1:
         limit = len(result) + 1
@@ -700,23 +708,23 @@ def dowload_file_sm(sm_id: int, type_file="pdf"):
     contract = result[2]
     facility = result[3]
     location = result[4]
-    client_id = result[5]
-    emp_id = result[6]
+    # client_id = result[5]
+    # emp_id = result[6]
     order_quotation = result[7]
     date = pd.to_datetime(result[8])
     critical_date = pd.to_datetime(result[9])
     items = json.loads(result[10])
-    status = result[11]
-    history = json.loads(result[12])
+    # status = result[11]
+    # history = json.loads(result[12])
     observations = result[13]
-    extra_info = json.loads(result[14])
+    # extra_info = json.loads(result[14])
     download_path = (
         os.path.join(
-            tempfile.mkdtemp(), os.path.basename(f"sm_{result[0]}_{date.date()}.pdf")
+            tempfile.mkdtemp(), os.path.basename(f"sm_{result[0]}_{folio}.pdf")
         )
         if type_file == "pdf"
         else os.path.join(
-            tempfile.mkdtemp(), os.path.basename(f"sm_{result[0]}_{date.date()}.xlsx")
+            tempfile.mkdtemp(), os.path.basename(f"sm_{result[0]}_{folio}.xlsx")
         )
     )
     products = []
@@ -855,3 +863,59 @@ def update_sm_from_control_table(data, data_token):
         return 200, {"msg": "ok"}
     else:
         return 400, {"msg": str(error)}
+
+
+def create_sm_from_api(data, data_token):
+    flag, error, result = insert_sm_db(data)
+    if not flag:
+        print(error)
+        return {"answer": "error at updating db"}, 400
+    msg = (
+        f"Nueva SM creada #{data['info']['id']}, folio: {data['info']['folio']}, "
+        f"fecha limite: {data['info']['critical_date']}, "
+        f"empleado con id: {data_token.get('emp_id')}, "
+        f"comentario: {data['info']['comment']}"
+    )
+    errors_items, result_ids_items = create_items_sm_db(
+        data["items"], data["info"]["id"]
+    )
+    if len(result_ids_items) > 0:
+        msg += f"\nItems creados: {result_ids_items}"
+    if len(errors_items) > 0:
+        msg += f"\nErrores al crear items: {errors_items}"
+    create_notification_permission(
+        msg,
+        ["sm", "administracion", "almacen"],
+        "Nueva SM Recibida",
+        data_token.get("emp_id"),
+        0,
+    )
+    write_log_file(log_file_sm_path, msg)
+    return {"answer": "ok", "data": msg, "error": error}, 201
+
+
+def update_sm_from_api(data, data_token):
+    flag, error, result = update_sm_db(data)
+    if flag:
+        msg = (
+            f"SM  actualizada  #{data['info']['id']}, folio: {data['info']['folio']}, "
+            f"fecha limite: {data['info']['critical_date']}, "
+            f"empleado con id: {data_token.get('emp_id')}, "
+            f"comentario: {data['info']['comment']}"
+        )
+        errors, results = update_items_sm(data["items"], data["id"])
+        if len(results) > 0:
+            msg += f"\nItems actualizados: {results}"
+        if len(errors) > 0:
+            msg += f"\nErrores al actualizar items: {errors}"
+        create_notification_permission(
+            msg,
+            ["sm", "administracion", "almacen"],
+            "Nueva SM Recibida",
+            data_token.get("emp_id"),
+            0,
+        )
+        write_log_file(log_file_sm_path, msg)
+        return {"answer": "ok", "data": msg, "error": error}, 200
+    else:
+        return {"answer": "error at updating db", "data": "", "error": error}, 400

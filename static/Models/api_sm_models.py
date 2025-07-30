@@ -42,6 +42,9 @@ items_model_sm = api.model(
     "ItemsModel",
     {
         "id": fields.Integer(required=True, description="The product id"),
+        "id_inventory": fields.Integer(
+            required=False, description="The product id in the inventory"
+        ),
         "name": fields.String(required=True, description="The product name"),
         "stock": fields.Float(required=True, description="The product stock"),
         "comment": fields.String(required=True, description="The product comment"),
@@ -54,6 +57,9 @@ items_model_sm = api.model(
         "partida": fields.String(required=False, description="The product partida"),
         "dispatched": fields.Float(
             required=False, description="The product dispatched"
+        ),
+        "is_erased": fields.Integer(
+            required=False, description="The product is erased", example=0
         ),
     },
 )
@@ -533,11 +539,11 @@ response_sm_dispatch_model = api.model(
 )
 
 
-class ItemsFormSM(Form):
-    id = IntegerField(
-        "id",
+class ItemsFormSMPost(Form):
+    id_inventory = IntegerField(
+        "id_inventory",
         validators=[],
-        default=-1,
+        default=0,
     )
     name = StringField("name", validators=[InputRequired()])
     stock = FloatField(
@@ -552,6 +558,36 @@ class ItemsFormSM(Form):
     url = URLField("url", validators=[], default="")
     sku = StringField("sku", validators=[], default="")
     partida = StringField("partida", validators=[], default="")
+    state = IntegerField("state", validators=[], default=1)
+    is_erased = IntegerField("is_erased", validators=[], default=0)
+
+
+class ItemsFormSMPUT(Form):
+    id = IntegerField(
+        "id",
+        validators=[],
+        default=0,
+    )
+    id_inventory = IntegerField(
+        "id_inventory",
+        validators=[],
+        default=0,
+    )
+    name = StringField("name", validators=[InputRequired()])
+    stock = FloatField(
+        "stock", validators=[validators.number_range(min=-100, message="Invalid stock")]
+    )
+    comment = StringField("comment", validators=[], default="")
+    quantity = FloatField(
+        "quantity",
+        validators=[validators.number_range(min=0, message="Invalid quantity")],
+    )
+    movement = StringField("movement", validators=[], default="")
+    url = URLField("url", validators=[], default="")
+    sku = StringField("sku", validators=[], default="")
+    partida = StringField("partida", validators=[], default="")
+    is_erased = IntegerField("is_erased", validators=[], default=0)
+    state = IntegerField("state", validators=[], default=1)
 
 
 class ItemsFormSMDispartch(Form):
@@ -674,12 +710,12 @@ class TableRequestForm(Form):
 
 class SMPostForm(Form):
     info = FormField(SMInfoForm, "info")
-    items = FieldList(FormField(ItemsFormSM, "items"))
+    items = FieldList(FormField(ItemsFormSMPost, "items"))
 
 
 class SMPutForm(Form):
     info = FormField(SMInfoForm, "info")
-    items = FieldList(FormField(ItemsFormSM, "items"))
+    items = FieldList(FormField(ItemsFormSMPUT, "items"))
     id = IntegerField(
         "id", validators=[validators.number_range(min=0, message="Invalid id")]
     )

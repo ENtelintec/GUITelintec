@@ -31,41 +31,245 @@ def update_sm_items_stock(tuple_sm):
     return tuple_out
 
 
-def get_sm_entries(emp_id=-1):
-    try:
-        emp_id = int(emp_id)
-    except ValueError:
-        return False, "Invalid employee ID", []
-    if emp_id <= -1:
-        sql = (
-            "SELECT "
-            "sm_id, folio, contract, facility, location, client_id, emp_id, "
-            "pedido_cotizacion, date, limit_date, "
-            "items, status, history, comment, extra_info "
-            "FROM sql_telintec.materials_request where emp_id like '%'"
-        )
-        flag, error, result = execute_sql(sql, None, 5)
-    else:
-        sql = "SELECT contrato from sql_telintec.employees where employee_id = %s "
-        val = (emp_id,)
-        flag, error, result = execute_sql(sql, val, 1)
-        if flag and len(result) > 0:
-            sql = (
-                "SELECT sm_id, folio, contract, facility, location, client_id, emp_id, "
-                "pedido_cotizacion, date, limit_date, "
-                "items, status, history, comment, extra_info "
-                "FROM sql_telintec.materials_request "
-                "WHERE contract = %s or emp_id = %s "
-            )
-            val = (
-                result[0],
-                emp_id,
-            )
-            flag, error, result = execute_sql(sql, val, 2)
-        else:
-            return False, "Invalid employee ID", []
+# def get_sm_entries(emp_id=-1):
+#     try:
+#         emp_id = int(emp_id)
+#     except ValueError:
+#         return False, "Invalid employee ID", []
+#     if emp_id <= -1:
+#         sql = (
+#             "SELECT "
+#             "mr.sm_id, mr.folio, mr.contract, mr.facility, mr.location, mr.client_id, mr.emp_id, "
+#             "mr.pedido_cotizacion, mr.date, mr.limit_date, "
+#             "JSON_ARRAYAGG( "
+#             "JSON_OBJECT( "
+#             " 'id', smi.id_item, "
+#             " 'id_inventory', smi.id_inventory, "
+#             " 'name', smi.name,"
+#             " 'udm', smi.udm, "
+#             " 'comment', smi.comment, "
+#             " 'partida', smi.partida, "
+#             " 'quantity', smi.quantity,"
+#             " 'dispatched', smi.dispatched,"
+#             " 'movements', smi.movements,"
+#             " 'state', smi.state,"
+#             " 'extra_info', smi.extra_info "
+#             ")) AS items, "
+#             "mr.status, mr.history, mr.comment, mr.extra_info "
+#             "FROM sql_telintec.materials_request as mr "
+#             "LEFT JOIN sql_telintec.sm_items AS smi ON sm_id = smi.id_sm "
+#             "where emp_id like '%'"
+#         )
+#         flag, error, result = execute_sql(sql, None, 5)
+#     else:
+#         sql = (
+#             "SELECT "
+#             "mr.sm_id, mr.folio, mr.contract, mr.facility, mr.location, mr.client_id, mr.emp_id, "
+#             "mr.pedido_cotizacion, mr.date, mr.limit_date, "
+#             "JSON_ARRAYAGG( "
+#             "JSON_OBJECT( "
+#             " 'id', smi.id_item, "
+#             " 'id_inventory', smi.id_inventory, "
+#             " 'name', smi.name,"
+#             " 'udm', smi.udm, "
+#             " 'comment', smi.comment, "
+#             " 'partida', smi.partida, "
+#             " 'quantity', smi.quantity,"
+#             " 'dispatched', smi.dispatched,"
+#             " 'movements', smi.movements,"
+#             " 'state', smi.state,"
+#             " 'extra_info', smi.extra_info "
+#             ")) AS items, "
+#             "mr.status, mr.history, mr.comment, mr.extra_info "
+#             "FROM sql_telintec.materials_request as mr "
+#             "LEFT JOIN sql_telintec.sm_items AS smi ON sm_id = smi.id_sm "
+#             "where emp_id = %s "
+#         )
+#         val = (emp_id,)
+#         flag, error, result = execute_sql(sql, val, 2)
+#     result = update_sm_items_stock(result)
+#     return flag, error, result
+
+
+def get_sm_entries(emp_id=None):
+    base_sql = (
+        "SELECT "
+        "mr.sm_id, "
+        "mr.folio, "
+        "mr.contract, "
+        "mr.facility, "
+        "mr.location, "
+        "mr.client_id, "
+        "mr.emp_id, "
+        "mr.pedido_cotizacion, "
+        "mr.date, "
+        "mr.limit_date, "
+        "JSON_ARRAYAGG(JSON_OBJECT("
+        " 'id', smi.id_item, "
+        " 'id_inventory', smi.id_inventory, "
+        " 'name', smi.name, "
+        " 'udm', smi.udm, "
+        " 'comment', smi.comment, "
+        " 'partida', smi.partida, "
+        " 'quantity', smi.quantity, "
+        " 'dispatched', smi.dispatched, "
+        " 'movements', smi.movements, "
+        " 'state', smi.state, "
+        " 'extra_info', smi.extra_info)) AS items, "
+        "mr.status, "
+        "mr.history, "
+        "mr.comment, "
+        "mr.extra_info "
+        "FROM sql_telintec.materials_request AS mr "
+        "LEFT JOIN sql_telintec.sm_items AS smi ON mr.sm_id = smi.id_sm "
+        "WHERE (mr.emp_id = %s OR %s IS NULL) GROUP BY mr.sm_id"
+    )
+
+    val = (emp_id, emp_id)
+    flag, error, result = execute_sql(base_sql, val, 2)
     result = update_sm_items_stock(result)
     return flag, error, result
+
+
+def get_sm_by_id(sm_id: int):
+    # sql = (
+    #     "SELECT "
+    #     "sm_id, folio, contract, facility, location, "
+    #     "client_id, emp_id, pedido_cotizacion, date, "
+    #     "limit_date, items, status, history, "
+    #     "comment, extra_info "
+    #     "FROM sql_telintec.materials_request "
+    #     "WHERE sm_id = %s"
+    # )
+    sql = (
+        "SELECT "
+        "mr.sm_id, "
+        "mr.folio, "
+        "mr.contract, "
+        "mr.facility, "
+        "mr.location, "
+        "mr.client_id, "
+        "mr.emp_id, "
+        "mr.pedido_cotizacion, "
+        "mr.date, "
+        "mr.limit_date, "
+        "JSON_ARRAYAGG(JSON_OBJECT("
+        " 'id', smi.id_item, "
+        " 'id_inventory', smi.id_inventory, "
+        " 'name', smi.name, "
+        " 'udm', smi.udm, "
+        " 'comment', smi.comment, "
+        " 'partida', smi.partida, "
+        " 'quantity', smi.quantity, "
+        " 'dispatched', smi.dispatched, "
+        " 'movements', smi.movements, "
+        " 'state', smi.state, "
+        " 'extra_info', smi.extra_info)) AS items, "
+        "mr.status, "
+        "mr.history, "
+        "mr.comment, "
+        "mr.extra_info "
+        "FROM sql_telintec.materials_request AS mr "
+        "LEFT JOIN sql_telintec.sm_items AS smi ON mr.sm_id = smi.id_sm "
+        "WHERE mr.sm_id = %s"
+    )
+    val = (sm_id,)
+    flag, error, result = execute_sql(sql, val, 1)
+    return flag, error, result
+
+
+def create_items_sm_db(items: list, sm_id: int):
+    errors = []
+    results = []
+    for item in items:
+        sql = (
+            "INSERT INTO sql_telintec.sm_items "
+            "(id_sm, id_inventory, name, udm, comment, partida, quantity, dispatched, movements, state, extra_info) "
+            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+        )
+        val = (
+            sm_id,
+            item.get("id_inventory"),
+            item.get("name"),
+            item.get("udm", "PZA"),
+            item.get("comment", ""),
+            item.get("partida"),
+            item.get("quantity", 1),
+            item.get("dispatched", 0),
+            json.dumps(item.get("movements", [])),
+            item.get("state", 1),
+            json.dumps(item.get("extra_info", {})),
+        )
+        flag, error, id_item = execute_sql(sql, val, 4)
+        if flag:
+            results.append({"data": id_item, "action": "new"})
+        else:
+            errors.append(item)
+
+    return errors, results
+
+
+def update_items_sm(items: list, sm_id: int):
+    errors = []
+    results = []
+    action = "update"
+    for item in items:
+        is_erased = item.get("is_erased", 0)
+        id_inventory = item.get("id_inventory")
+        if is_erased == 0:
+            if item.get("id", 0) != 0:
+                sql = (
+                    "UPDATE sql_telintec.sm_items "
+                    "SET id_inventory = %s, name = %s, udm = %s, comment = %s, partida = %s, quantity = %s, dispatched = %s, movements = %s, state = %s, extra_info = %s "
+                    "WHERE id_item = %s"
+                )
+                val = (
+                    id_inventory if id_inventory != 0 else None,
+                    item.get("name"),
+                    item.get("udm", "PZA"),
+                    item.get("comment", ""),
+                    item.get("partida"),
+                    item.get("quantity", 1),
+                    item.get("dispatched", 0),
+                    json.dumps(item.get("movements", [])),
+                    item.get("state", 0),
+                    json.dumps(item.get("extra_info", {})),
+                    item.get("id"),
+                )
+                flag, error, result = execute_sql(sql, val, 4)
+            else:
+                action = "new"
+                sql = (
+                    "INSERT INTO sql_telintec.sm_items "
+                    "(id_sm, id_inventory, name, udm, comment, partida, quantity, dispatched, movements, state, extra_info) "
+                    "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+                )
+                val = (
+                    sm_id,
+                    id_inventory if id_inventory != 0 else None,
+                    item.get("name"),
+                    item.get("udm", "PZA"),
+                    item.get("comment", ""),
+                    item.get("partida"),
+                    item.get("quantity", 1),
+                    item.get("dispatched", 0),
+                    json.dumps(item.get("movements", [])),
+                    item.get("state", 0),
+                    json.dumps(item.get("extra_info", {})),
+                )
+                flag, error, result = execute_sql(sql, val, 4)
+
+        else:
+            action = "delete"
+            sql = "DELETE FROM sql_telintec.sm_items WHERE id_item = %s"
+            val = (item.get("id"),)
+            flag, error, result = execute_sql(sql, val, 4)
+        if flag:
+            results.append({"data": result, "action": action})
+        else:
+            errors.append(item)
+
+    return errors, results
 
 
 def insert_sm_db(data):
@@ -282,21 +486,6 @@ def update_only_status(status: int, sm_id: int):
     )
     val = (status, sm_id)
     flag, error, result = execute_sql(sql, val, 4)
-    return flag, error, result
-
-
-def get_sm_by_id(sm_id: int):
-    sql = (
-        "SELECT "
-        "sm_id, folio, contract, facility, location, "
-        "client_id, emp_id, pedido_cotizacion, date, "
-        "limit_date, items, status, history, "
-        "comment, extra_info "
-        "FROM sql_telintec.materials_request "
-        "WHERE sm_id = %s"
-    )
-    val = (sm_id,)
-    flag, error, result = execute_sql(sql, val, 1)
     return flag, error, result
 
 
