@@ -51,6 +51,7 @@ from templates.controllers.product.p_and_s_controller import (
     delete_product_db,
     insert_reservation_db,
     update_reservation_db,
+    delete_reservation_db,
 )
 from templates.controllers.supplier.suppliers_controller import (
     get_all_suppliers_amc,
@@ -1226,6 +1227,11 @@ def create_reservation_from_api(data, data_token):
     )
     if not flag:
         return {"data": None, "error": str(error)}, 400
+    msg = f"Reservation <{lastrowid}> creada por el empleado {data_token.get('emp_id')} con cantidad {data['quantity']} y id producto {data['id_product']}"
+    create_notification_permission_notGUI(
+        msg, ["almacen"], "Notifaction de Inventario", data_token.get("emp_id"), 0
+    )
+    write_log_file(log_file_almacen, msg)
     return {"data": lastrowid, "error": str(error)}, 201
 
 
@@ -1251,4 +1257,21 @@ def update_reservation_from_api(data, data_token):
     )
     if not flag:
         return {"data": None, "error": str(error)}, 400
+    msg = f"Reservation <{data['id_reservation']}> actualizada por el empleado {data_token.get('emp_id')} con status {data['status']}  y cantidad {data['quantity']}"
+    create_notification_permission_notGUI(
+        msg, ["almacen"], "Notifaction de Inventario", data_token.get("emp_id"), 0
+    )
+    write_log_file(log_file_almacen, msg)
+    return {"data": result, "error": str(error)}, 201
+
+
+def delete_reservation_from_api(data, data_token):
+    flag, error, result = delete_reservation_db(data["id_reservation"])
+    if not flag:
+        return {"data": None, "error": str(error)}, 400
+    msg = f"Reservation <{data['id_reservation']}> eliminada por el empleado {data_token.get('emp_id')}"
+    create_notification_permission_notGUI(
+        msg, ["almacen"], "Notifaction de Inventario", data_token.get("emp_id"), 0
+    )
+    write_log_file(log_file_almacen, msg)
     return {"data": result, "error": str(error)}, 201

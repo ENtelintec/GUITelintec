@@ -30,6 +30,7 @@ from static.Models.api_inventory_models import (
     ReservationPostForm,
     reservation_put_model,
     ReservationPutForm,
+    reservation_delete_model,
 )
 from static.Models.api_models import expected_headers_per
 from static.Models.api_movements_models import (
@@ -66,6 +67,7 @@ from templates.resources.midleware.Functions_midleware_almacen import (
     delete_product_from_api,
     create_reservation_from_api,
     update_reservation_from_api,
+    delete_reservation_from_api,
 )
 
 ns = Namespace("GUI/api/v1/almacen")
@@ -605,4 +607,18 @@ class ReservationActions(Resource):
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
         data_out, code = update_reservation_from_api(data, data_token)
+        return data_out, code
+
+    @ns.expect(expected_headers_per, reservation_delete_model)
+    def delete(self):
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["administracion", "almacen"]
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        validator = ReservationPutForm.from_json(ns.payload)
+        if not validator.validate():
+            return {"data": validator.errors, "msg": "Error at structure"}, 400
+        data = validator.data
+        data_out, code = delete_reservation_from_api(data, data_token)
         return data_out, code

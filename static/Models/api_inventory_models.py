@@ -262,6 +262,14 @@ reservation_put_model = api.model(
     },
 )
 
+reservation_delete_model = api.model(
+    "ReservationDeleteAMC",
+    {
+        "id": fields.Integer(
+            required=True, description="The reservation id", example=1
+        ),
+    },
+)
 
 file_barcode_request_model = api.model(
     "FileBarcodeAMC",
