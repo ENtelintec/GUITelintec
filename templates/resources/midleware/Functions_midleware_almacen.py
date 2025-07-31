@@ -588,7 +588,7 @@ def update_multiple_products_from_api(data):
         if len(data_out["errors_movements"]) > 0
         else ""
     )
-    data_out["msg"] = msg
+    data_out["msg"] = [msg]
     return data_out
 
 
@@ -597,9 +597,9 @@ def insert_and_update_multiple_products_from_api(data, token_data=None):
     data_out_update = update_multiple_products_from_api(data)
     msg_notification = (
         "--System Notification--\n"
-        + data_out_insert["msg"]
+        + "\n".join(data_out_insert["msg"])
         + "\n"
-        + data_out_update["msg"]
+        + "\n".join(data_out_update["msg"])
     )
     create_notification_permission_notGUI(
         msg_notification, ["almacen"], "Notifaction de Inventario", 0, 0
@@ -720,7 +720,7 @@ def insert_new_product(new_items):
         if len(data_out["errors_movements"]) > 0
         else ""
     )
-    data_out["msg"] = msg
+    data_out["msg"] = [msg]
     return data_out
 
 
@@ -773,7 +773,7 @@ def update_old_products(
         if len(data_out["errors_movements"]) > 0
         else ""
     )
-    data_out["msg"] = msg
+    data_out["msg"] = [msg]
     return data_out
 
 
@@ -790,9 +790,9 @@ def upload_product_db_from_file(
     )
     msg_notification = (
         "--System Notification--\n"
-        + data_out_insert["msg"]
+        + "\n".join(data_out_insert["msg"])
         + "\n"
-        + data_out_update["msg"]
+        + "\n".join(data_out_update["msg"])
     )
     create_notification_permission_notGUI(
         msg_notification, ["almacen"], "Notification de Inventario", 0, 0
@@ -842,7 +842,7 @@ def get_suppliers_db():
             extra_info,
         ) = item
         extra_info = json.loads(extra_info) if extra_info is not None else {}
-        brands = extra_info.get("brands", [])
+        brands = extra_info.get("brands", "[]")
         brands = json.loads(brands) if not isinstance(brands, list) else brands
         out.append(
             {
@@ -909,6 +909,7 @@ def retrieve_data_file_inventory(type_data="dict", data=None):
     )
     if not flag:
         return error, 400
+    products = {}
     try:
         # [id_product, sku, name, udm, stock, category_name, supplier_name,  is_tool, is_internal,  codes, locations,  brand, brands]
         # sort by ID
