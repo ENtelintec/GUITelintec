@@ -1140,9 +1140,10 @@ def update_multiple_products_categories(products: tuple):
     errors = []
     results = []
     for product in products:
-        sql = (
-            "UPDATE sql_telintec.products_amc " "SET id_category = %s " "WHERE sku = %s"
-        )
+        sql = """
+            UPDATE sql_telintec.products_amc
+            SET id_category = %s WHERE sku = %s
+            """
         vals = (product[1], product[0])
         flag, error, result = execute_sql(sql, vals, 3)
         flags.append(flag)
