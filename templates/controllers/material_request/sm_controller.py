@@ -31,66 +31,6 @@ def update_sm_items_stock(tuple_sm):
     return tuple_out
 
 
-# def get_sm_entries(emp_id=-1):
-#     try:
-#         emp_id = int(emp_id)
-#     except ValueError:
-#         return False, "Invalid employee ID", []
-#     if emp_id <= -1:
-#         sql = (
-#             "SELECT "
-#             "mr.sm_id, mr.folio, mr.contract, mr.facility, mr.location, mr.client_id, mr.emp_id, "
-#             "mr.pedido_cotizacion, mr.date, mr.limit_date, "
-#             "JSON_ARRAYAGG( "
-#             "JSON_OBJECT( "
-#             " 'id', smi.id_item, "
-#             " 'id_inventory', smi.id_inventory, "
-#             " 'name', smi.name,"
-#             " 'udm', smi.udm, "
-#             " 'comment', smi.comment, "
-#             " 'partida', smi.partida, "
-#             " 'quantity', smi.quantity,"
-#             " 'dispatched', smi.dispatched,"
-#             " 'movements', smi.movements,"
-#             " 'state', smi.state,"
-#             " 'extra_info', smi.extra_info "
-#             ")) AS items, "
-#             "mr.status, mr.history, mr.comment, mr.extra_info "
-#             "FROM sql_telintec.materials_request as mr "
-#             "LEFT JOIN sql_telintec.sm_items AS smi ON sm_id = smi.id_sm "
-#             "where emp_id like '%'"
-#         )
-#         flag, error, result = execute_sql(sql, None, 5)
-#     else:
-#         sql = (
-#             "SELECT "
-#             "mr.sm_id, mr.folio, mr.contract, mr.facility, mr.location, mr.client_id, mr.emp_id, "
-#             "mr.pedido_cotizacion, mr.date, mr.limit_date, "
-#             "JSON_ARRAYAGG( "
-#             "JSON_OBJECT( "
-#             " 'id', smi.id_item, "
-#             " 'id_inventory', smi.id_inventory, "
-#             " 'name', smi.name,"
-#             " 'udm', smi.udm, "
-#             " 'comment', smi.comment, "
-#             " 'partida', smi.partida, "
-#             " 'quantity', smi.quantity,"
-#             " 'dispatched', smi.dispatched,"
-#             " 'movements', smi.movements,"
-#             " 'state', smi.state,"
-#             " 'extra_info', smi.extra_info "
-#             ")) AS items, "
-#             "mr.status, mr.history, mr.comment, mr.extra_info "
-#             "FROM sql_telintec.materials_request as mr "
-#             "LEFT JOIN sql_telintec.sm_items AS smi ON sm_id = smi.id_sm "
-#             "where emp_id = %s "
-#         )
-#         val = (emp_id,)
-#         flag, error, result = execute_sql(sql, val, 2)
-#     result = update_sm_items_stock(result)
-#     return flag, error, result
-
-
 def get_sm_entries(emp_id=None):
     base_sql = (
         "SELECT "
@@ -115,16 +55,24 @@ def get_sm_entries(emp_id=None):
         " 'dispatched', smi.dispatched, "
         " 'movements', smi.movements, "
         " 'state', smi.state, "
-        " 'extra_info', smi.extra_info)) AS items, "
+        " 'extra_info', smi.extra_info, "
+        " 'reserved', IFNULL(rsv.total_reserved, 0))"
+        ") AS items, "
         "mr.status, "
         "mr.history, "
         "mr.comment, "
         "mr.extra_info "
         "FROM sql_telintec.materials_request AS mr "
         "LEFT JOIN sql_telintec.sm_items AS smi ON mr.sm_id = smi.id_sm "
-        "WHERE (mr.emp_id = %s OR %s IS NULL) GROUP BY mr.sm_id"
+        "LEFT JOIN ( "
+        "   SELECT id_product, SUM(quantity) AS total_reserved "
+        "   FROM sql_telintec.product_reservations "
+        "   WHERE status = 0 "
+        "   GROUP BY id_product "
+        ") rsv ON rsv.id_product = smi.id_inventory "
+        "WHERE (mr.emp_id = %s OR %s IS NULL) "
+        "GROUP BY mr.sm_id"
     )
-
     val = (emp_id, emp_id)
     flag, error, result = execute_sql(base_sql, val, 2)
     result = update_sm_items_stock(result)

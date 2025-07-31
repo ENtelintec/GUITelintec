@@ -49,6 +49,8 @@ from templates.controllers.product.p_and_s_controller import (
     get_epp_movements_db,
     get_epp_movements_db_detail,
     delete_product_db,
+    insert_reservation_db,
+    update_reservation_db,
 )
 from templates.controllers.supplier.suppliers_controller import (
     get_all_suppliers_amc,
@@ -345,6 +347,8 @@ def get_all_products_DB(type_p):
                 "locations": locations,
                 "brand": brand,
                 "epp": extra_info.get("epp", 0),
+                "reserved": item[12],
+                "avaliable_stock": item[13],
             }
         )
     return out, 200
@@ -1205,3 +1209,46 @@ def get_epp_db():
             }
         )
     return data, 200
+
+
+def create_reservation_from_api(data, data_token):
+    time_zone = pytz.timezone(timezone_software)
+    date = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
+    history = [
+        {
+            "user": data_token["emp_id"],
+            "comment": f"Reservation creation for {data['id_product']} with {data['quantity']} items",
+            "timestamp": date,
+        }
+    ]
+    flag, error, lastrowid = insert_reservation_db(
+        data["id_product"], data["quantity"], data["sm_id"], json.dumps(history)
+    )
+    if not flag:
+        return {"data": None, "error": str(error)}, 400
+    return {"data": lastrowid, "error": str(error)}, 201
+
+
+def update_reservation_from_api(data, data_token):
+    # flag, error, result = get_reservation_db(data["id_reservation"])
+    # if not flag:
+    #     return {"data": None, "error": str(error)}, 400
+    time_zone = pytz.timezone(timezone_software)
+    date = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
+    history = data.get("history")
+    history.append(
+        {
+            "user": data_token["emp_id"],
+            "comment": f"Reservation update for {data['id_product']} with {data['quantity']} items",
+            "timestamp": date,
+        }
+    )
+    flag, error, result = update_reservation_db(
+        data["id_reservation"],
+        data["status"],
+        data["quantity"],
+        json.dumps(history),
+    )
+    if not flag:
+        return {"data": None, "error": str(error)}, 400
+    return {"data": result, "error": str(error)}, 201

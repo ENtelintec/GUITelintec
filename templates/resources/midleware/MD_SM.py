@@ -183,11 +183,6 @@ def get_all_sm(limit, page=0, emp_id=-1, with_items=True):
         else:
             kpi_operations = ""
         items_sm = json.loads(result[i][10]) if with_items else []
-        # percentage = (
-        #     calculate_items_delivered(json.loads(result[i][10]))
-        #     if not with_items
-        #     else 0.0
-        # )
         percentage = calculate_items_delivered(json.loads(result[i][10]))
 
         dict_sm = {
