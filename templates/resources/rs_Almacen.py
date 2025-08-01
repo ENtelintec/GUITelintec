@@ -31,6 +31,7 @@ from static.Models.api_inventory_models import (
     reservation_put_model,
     ReservationPutForm,
     reservation_delete_model,
+    ReservationDeleteForm,
 )
 from static.Models.api_models import expected_headers_per
 from static.Models.api_movements_models import (
@@ -616,7 +617,7 @@ class ReservationActions(Resource):
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        validator = ReservationPutForm.from_json(ns.payload)
+        validator = ReservationDeleteForm.from_json(ns.payload)
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data

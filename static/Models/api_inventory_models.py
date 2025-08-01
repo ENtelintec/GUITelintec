@@ -454,3 +454,10 @@ class ReservationPutForm(Form):
     quantity = FloatField("quantity", validators=[InputRequired()])
     status = IntegerField("status", validators=[], default=0)
     history = FieldList(FormField(ReservationHistoryForm), "history")
+
+
+class ReservationDeleteForm(Form):
+    id = IntegerField(
+        "id",
+        validators=[InputRequired(message="Id is required or value 0 not accepted")],
+    )
