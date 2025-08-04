@@ -1243,7 +1243,7 @@ def insert_reservation_db(id_product, quantity, sm_id, history):
         "(id_product, quantity, sm_id, status, created_at, history) "
         "VALUES (%s, %s, %s, %s, %s, %s)"
     )
-    vals = (id_product, quantity, sm_id, 0, history["timestamp"], history)
+    vals = (id_product, quantity, sm_id, 0, history[-1]["timestamp"], history)
     flag, error, lastrowid = execute_sql(sql, vals, 4)
     return flag, error, lastrowid
 
