@@ -52,6 +52,7 @@ from templates.controllers.product.p_and_s_controller import (
     insert_reservation_db,
     update_reservation_db,
     delete_reservation_db,
+    get_all_reservations,
 )
 from templates.controllers.supplier.suppliers_controller import (
     get_all_suppliers_amc,
@@ -1276,3 +1277,23 @@ def delete_reservation_from_api(data, data_token):
     )
     write_log_file(log_file_almacen, msg)
     return {"data": result, "error": str(error)}, 201
+
+
+def get_reservations_db(data_token):
+    flag, error, result = get_all_reservations()
+    if not flag:
+        return {"data": None, "error": str(error)}, 400
+    data = []
+    for item in result:
+        history = json.loads(item[5])
+        data.append({
+            "reservation_id": item[0],
+            "id_product": item[1],
+            "id_sm": item[2],
+            "quantity": item[3],
+            "status": item[4],
+            "history": history,
+            "folio": item[6]
+        })
+
+    return {"data": data, "error": str(error)}, 200

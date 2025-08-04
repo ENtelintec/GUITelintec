@@ -69,6 +69,7 @@ from templates.resources.midleware.Functions_midleware_almacen import (
     create_reservation_from_api,
     update_reservation_from_api,
     delete_reservation_from_api,
+    get_reservations_db,
 )
 
 ns = Namespace("GUI/api/v1/almacen")
@@ -623,3 +624,16 @@ class ReservationActions(Resource):
         data = validator.data
         data_out, code = delete_reservation_from_api(data, data_token)
         return data_out, code
+
+
+@ns.route("/reservations")
+class GetReservations(Resource):
+    @ns.expect(expected_headers_per)
+    def get(self):
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["administracion", "almacen"]
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        data, code = get_reservations_db(data_token)
+        return data, code

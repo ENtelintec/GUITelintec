@@ -1272,3 +1272,20 @@ def delete_reservation_db(id_reservation):
     vals = (id_reservation,)
     flag, error, lastrowid = execute_sql(sql, vals, 4)
     return flag, error, lastrowid
+
+
+def get_all_reservations():
+    sql = (
+        "SELECT "
+        "sql_telintec.product_reservations.reservation_id, "
+        "sql_telintec.product_reservations.id_product, "
+        "sql_telintec.product_reservations.sm_id, "
+        "sql_telintec.product_reservations.quantity, "
+        "sql_telintec.product_reservations.status, "
+        "sql_telintec.product_reservations.history, "
+        "sql_telintec.materials_request.folio "
+        "FROM sql_telintec.product_reservations "
+        "LEFT JOIN sql_telintec.products_amc ON (sql_telintec.product_reservations.id_product = sql_telintec.products_amc.id_product)"
+    )
+    flag, error, result = execute_sql(sql, None, 5)
+    return flag, error, result
