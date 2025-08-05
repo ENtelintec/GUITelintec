@@ -4,12 +4,12 @@ __date__ = "$ 10/may./2024  at 16:31 $"
 
 
 from flask_restx import fields
-from wtforms.fields.datetime import DateField
+from wtforms.fields.datetime import DateField, DateTimeField
 from wtforms.fields.list import FieldList
 from wtforms.fields.numeric import FloatField
 from wtforms.fields.simple import StringField, URLField, EmailField
 
-from static.Models.api_models import date_filter
+from static.Models.api_models import date_filter, datetime_filter
 from static.constants import api
 from wtforms.form import Form
 from wtforms import validators, IntegerField, FormField
@@ -38,10 +38,23 @@ product_model_SM_selection = api.model(
     },
 )
 
+deliveries_item_model = api.model(
+    "DeliveriesItemModel",
+    {
+        "quantity": fields.Float(required=True, description="The product quantity"),
+        "timestamp": fields.String(required=True, description="The product date"),
+        "comment": fields.String(required=True, description="The product comment"),
+        "state":  fields.Integer(required=True, description="The product state"),
+    },
+)
+
 items_model_sm = api.model(
     "ItemsModel",
     {
         "id": fields.Integer(required=True, description="The product id"),
+        "id_inventory": fields.Integer(
+            required=False, description="The product id in the inventory"
+        ),
         "name": fields.String(required=True, description="The product name"),
         "stock": fields.Float(required=True, description="The product stock"),
         "comment": fields.String(required=True, description="The product comment"),
@@ -52,12 +65,25 @@ items_model_sm = api.model(
         ),
         "sku": fields.String(required=False, description="The product sku"),
         "partida": fields.String(required=False, description="The product partida"),
-        "udm": fields.String(required=True, description="The product unit of measure"),
+        "dispatched": fields.Float(
+            required=False, description="The product dispatched"
+        ),
+        "is_erased": fields.Integer(
+            required=False, description="The product is erased", example=0
+        ),
+        "state": fields.Integer(required=True, description="The product state for dispatch", example=0),
+        "deliveries": fields.List(fields.Nested(deliveries_item_model)),
+        "state_quantity": fields.Integer(
+            required=True, description="The product state quantity", example=0
+        ),
+        "state_delivery":  fields.String(
+            required=True, description="The product state delivery", example="N/A"
+        ),
     },
 )
 
 items_dispatch_model_sm = api.model(
-    "ItemsModel",
+    "ItemsDispatchModel",
     {
         "id": fields.Integer(required=True, description="The product id"),
         "comment": fields.String(required=True, description="The product comment"),
@@ -232,7 +258,6 @@ sm_model_out = api.model(
             required=True, description="The destination area in telintec"
         ),
         "items": fields.List(fields.Nested(items_model_sm), required=False),
-        "items_new": fields.List(fields.Nested(items_model_sm), required=False),
         # New fields added
         "urgent": fields.Integer(required=False, description="Urgent", example=0),
         "project": fields.String(required=False, description="The project"),
@@ -449,6 +474,8 @@ sm_put_model = api.model(
     },
 )
 
+
+
 delete_request_sm_model = api.model(
     "DeleteRequestmaterial_request",
     {
@@ -505,7 +532,9 @@ request_sm_plot_data_model = api.model(
 request_sm_dispatch_model = api.model(
     "RequestSMDispatch",
     {
-        "id": fields.Integer(required=True, description="The id of the material request"),
+        "id": fields.Integer(
+            required=True, description="The id of the material request"
+        ),
         "items": fields.List(fields.Nested(items_dispatch_model_sm), required=False),
     },
 )
@@ -529,12 +558,20 @@ response_sm_dispatch_model = api.model(
     },
 )
 
+item_sm_put_model = api.model(
+    "SMItemPut",
+    {
+        "items": fields.List(fields.Nested(items_model_sm)),
+        "id_sm": fields.Integer(required=True, description="The id of the sm to update"),
+    },
+)
 
-class ItemsFormSM(Form):
-    id = IntegerField(
-        "id",
+
+class ItemsFormSMPost(Form):
+    id_inventory = IntegerField(
+        "id_inventory",
         validators=[],
-        default=-1,
+        default=0,
     )
     name = StringField("name", validators=[InputRequired()])
     stock = FloatField(
@@ -548,6 +585,51 @@ class ItemsFormSM(Form):
     movement = StringField("movement", validators=[], default="")
     url = URLField("url", validators=[], default="")
     sku = StringField("sku", validators=[], default="")
+    partida = StringField("partida", validators=[], default="")
+    state = IntegerField("state", validators=[], default=1)
+    is_erased = IntegerField("is_erased", validators=[], default=0)
+
+
+class DeliveriesForm(Form):
+    quantity = FloatField(
+        "quantity",
+        validators=[validators.number_range(min=0, message="Invalid quantity")],
+    )
+    comment = StringField("comment", validators=[], default="")
+    state = IntegerField("state", validators=[], default=1)
+    timestamp = DateTimeField("timestamp", validators=[], filters=[datetime_filter])
+
+
+class ItemsFormSMPUT(Form):
+    id = IntegerField(
+        "id",
+        validators=[],
+        default=0,
+    )
+    id_inventory = IntegerField(
+        "id_inventory",
+        validators=[],
+        default=0,
+    )
+    name = StringField("name", validators=[InputRequired()])
+    stock = FloatField(
+        "stock", validators=[validators.number_range(min=-100, message="Invalid stock")]
+    )
+    comment = StringField("comment", validators=[], default="")
+    quantity = FloatField(
+        "quantity",
+        validators=[validators.number_range(min=0, message="Invalid quantity")],
+    )
+    movement = StringField("movement", validators=[], default="")
+    url = URLField("url", validators=[], default="")
+    sku = StringField("sku", validators=[], default="")
+    partida = StringField("partida", validators=[], default="")
+    is_erased = IntegerField("is_erased", validators=[], default=0)
+    state = IntegerField("state", validators=[], default=1)
+    dispatched = IntegerField("dispatched", validators=[], default=0)
+    deliveries = FieldList(FormField(DeliveriesForm, "deliveries"))
+    state_delivery = IntegerField("state_delivery", validators=[], default=0)
+    state_quantity = IntegerField("state_quantity", validators=[], default=0)
 
 
 class ItemsFormSMDispartch(Form):
@@ -608,8 +690,6 @@ class SMInfoForm(Form):
     destination = StringField("destination", validators=[InputRequired()])
     # history = StringField("history", validators=[], default="[]")
     history = FieldList(FormField(HistoryFormSM, "history"))
-    items = FieldList(FormField(ItemsFormSM, "items"))
-    items_new = FieldList(FormField(ItemsFormSM, "items_new"))
 
 
 class SMInfoControlTableForm(Form):
@@ -621,6 +701,9 @@ class SMInfoControlTableForm(Form):
     )
     requesting_user_status = IntegerField(
         "requesting_user_status", validators=[], default=0
+    )
+    requesting_user_state = StringField(
+        "requesting_user_state", validators=[], default=""
     )
     warehouse_reviewed = (IntegerField("warehouse_reviewed", validators=[], default=0),)
     warehouse_status = (IntegerField("warehouse_status", validators=[], default=1),)
@@ -643,9 +726,6 @@ class SMInfoControlTableForm(Form):
         "operations_notification_date", validators=[], filters=[]
     )
     operations_kpi = (IntegerField("operations_kpi", validators=[], default=0),)
-    requesting_user_state = StringField(
-        "requesting_user_state", validators=[], default=""
-    )
 
 
 class SMInfoControlTablePutForm(Form):
@@ -672,12 +752,12 @@ class TableRequestForm(Form):
 
 class SMPostForm(Form):
     info = FormField(SMInfoForm, "info")
-    items = FieldList(FormField(ItemsFormSM, "items"))
+    items = FieldList(FormField(ItemsFormSMPost, "items"))
 
 
 class SMPutForm(Form):
     info = FormField(SMInfoForm, "info")
-    items = FieldList(FormField(ItemsFormSM, "items"))
+    items = FieldList(FormField(ItemsFormSMPUT, "items"))
     id = IntegerField(
         "id", validators=[validators.number_range(min=0, message="Invalid id")]
     )
@@ -711,3 +791,10 @@ class RequestSMDispatchForm(Form):
         "id", validators=[InputRequired(message="Invalid id or 0 not acepted")]
     )
     items = FieldList(FormField(ItemsFormSMDispartch, "items"))
+
+
+class ItemSmPutForm(Form):
+    items = FieldList(FormField(ItemsFormSMPUT, "items"))
+    id_sm = IntegerField(
+        "id_sm", validators=[InputRequired(message="Invalid id or 0 not acepted")]
+    )

@@ -10,7 +10,7 @@ from templates.controllers.product.p_and_s_controller import (
     create_product_db_admin,
     update_product_db,
     delete_product_db,
-    get_all_products_db,
+    get_all_products_db_old,
     update_stock_db,
     get_all_categories_db,
     create_category_db,
@@ -43,7 +43,7 @@ class DataHandler:
             "createProductAdmin": create_product_db_admin,
             "updateProduct": update_product_db,
             "deleteProduct": delete_product_db,
-            "getAllProducts": get_all_products_db,
+            "getAllProducts": get_all_products_db_old,
             "updateStock": update_stock_db,
         }
         self._product_categories = {

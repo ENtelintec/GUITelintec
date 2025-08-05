@@ -1,15 +1,17 @@
 from flask import Flask
 from flask_cors import CORS
 from static.constants import api
-from templates.resources.resources_RRHH import ns as ns_rrhh
-from templates.resources.resources_SM import ns as ns_sm
-from templates.resources.resources_Bitacora import ns as ns_bitacora
-from templates.resources.resources_Almacen import ns as ns_almacen
-from templates.resources.resources_Misc import ns as ns_misc
-from templates.resources.resources_Admin_presales import ns as ns_admin_presales
-from templates.resources.resources_Admin_DB import ns as ns_admin_db
-from templates.resources.resources_Dashboards import ns as ns_dashboard
-from templates.resources.resources_Common import ns as ns_common
+from templates.resources.rs_RRHH import ns as ns_rrhh
+from templates.resources.rs_SM import ns as ns_sm
+from templates.resources.rs_Bitacora import ns as ns_bitacora
+from templates.resources.rs_Almacen import ns as ns_almacen
+from templates.resources.rs_Misc import ns as ns_misc
+from templates.resources.rs_Admin_presales import ns as ns_admin_presales
+from templates.resources.rs_Admin_DB import ns as ns_admin_db
+from templates.resources.rs_Dashboards import ns as ns_dashboard
+from templates.resources.rs_Common import ns as ns_common
+from templates.resources.rs_Admin_collections import ns as ns_admin_collections
+from templates.resources.rs_SGI import ns as ns_sgi
 from wtforms_json import init as init_wtforms_json
 
 app = Flask(__name__)
@@ -33,6 +35,8 @@ api.add_namespace(ns_admin_presales)
 api.add_namespace(ns_admin_db)
 api.add_namespace(ns_dashboard)
 api.add_namespace(ns_common)
+api.add_namespace(ns_admin_collections)
+api.add_namespace(ns_sgi)
 
 
 if __name__ == "__main__":

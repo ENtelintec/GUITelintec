@@ -4,15 +4,16 @@ __date__ = "$ 03/may./2024  at 17:04 $"
 
 from flask_restx import fields
 from werkzeug.datastructures import FileStorage
+from wtforms.fields.datetime import DateTimeField
 from wtforms.fields.list import FieldList
 
-from static.Models.api_models import date_filter
+from static.Models.api_models import date_filter, datetime_filter
 from static.constants import api
 from wtforms.fields.form import FormField
 from wtforms.fields.numeric import FloatField
 from wtforms.fields.simple import StringField, BooleanField
 from wtforms.form import Form
-from wtforms import IntegerField
+from wtforms import IntegerField, validators
 from wtforms.validators import InputRequired, NumberRange
 
 code_model = api.model(
@@ -54,7 +55,7 @@ product_model_new = api.model(
         "codes": fields.List(fields.Nested(code_model), required=False),
         "locations": fields.Nested(locations_model, required=False),
         "brand": fields.String(required=False, description="The product brand."),
-        "epp":  fields.Integer(required=True, description="The product epp", example=0),
+        "epp": fields.Integer(required=True, description="The product epp", example=0),
     },
 )
 
@@ -84,7 +85,7 @@ product_model_update = api.model(
         "codes": fields.List(fields.Nested(code_model), required=False),
         "locations": fields.Nested(locations_model, required=False),
         "brand": fields.String(required=False, description="The product brand."),
-        "epp":  fields.Integer(required=True, description="The product epp", example=0),
+        "epp": fields.Integer(required=True, description="The product epp", example=0),
     },
 )
 
@@ -219,6 +220,54 @@ format_barcode_model = api.model(
         "pagesize": fields.String(required=True, example="default"),
         "orientation": fields.String(required=True, example="horizontal"),
         "border_on": fields.Boolean(required=True, example=True),
+    },
+)
+
+
+reservation_history_model = api.model(
+    "ReservationHistory",
+    {
+        "timestamp": fields.String(required=True, description="Fecha del voucher"),
+        "user": fields.Integer(required=True, description="ID del usuario"),
+        "comment": fields.String(required=True, description="Comentario del historial"),
+    },
+)
+reservation_post_model = api.model(
+    "ReservationPostAMC",
+    {
+        "id_product": fields.Integer(
+            required=True, description="The product id", example=1
+        ),
+        "quantity": fields.Float(required=True, description="The reservation quantity"),
+        "sm_id": fields.Integer(
+            required=True, description="The material request id", example=1
+        ),
+    },
+)
+reservation_put_model = api.model(
+    "ReservationPutAMC",
+    {
+        "id": fields.Integer(
+            required=True, description="The reservation id", example=1
+        ),
+        "quantity": fields.Float(required=True, description="The reservation quantity"),
+        "status": fields.Integer(
+            required=False, description="The reservation status", example=0
+        ),
+        "history": fields.List(
+            fields.Nested(reservation_history_model),
+            required=False,
+            description="The reservation history",
+        ),
+    },
+)
+
+reservation_delete_model = api.model(
+    "ReservationDeleteAMC",
+    {
+        "id": fields.Integer(
+            required=True, description="The reservation id", example=1
+        ),
     },
 )
 
@@ -374,3 +423,41 @@ class FileBarcodeForm(Form):
 
 class FileBarcodeMultipleForm(Form):
     data = FieldList(FormField(FileBarcodeForm), "data")
+
+
+class ReservationHistoryForm(Form):
+    timestamp = DateTimeField(
+        "timestamp", validators=[InputRequired()], filters=[datetime_filter]
+    )
+    user = IntegerField(
+        "user", validators=[validators.number_range(min=-1, message="Invalid id")]
+    )
+    comment = StringField("comment", validators=[InputRequired()])
+
+
+class ReservationPostForm(Form):
+    id_product = IntegerField(
+        "id_product",
+        validators=[
+            InputRequired(message="Id product is required or value 0 not accepted")
+        ],
+    )
+    quantity = FloatField("quantity", validators=[InputRequired()])
+    sm_id = IntegerField("sm_id", validators=[InputRequired()])
+
+
+class ReservationPutForm(Form):
+    id = IntegerField(
+        "id",
+        validators=[InputRequired(message="Id is required or value 0 not accepted")],
+    )
+    quantity = FloatField("quantity", validators=[InputRequired()])
+    status = IntegerField("status", validators=[], default=0)
+    history = FieldList(FormField(ReservationHistoryForm), "history")
+
+
+class ReservationDeleteForm(Form):
+    id = IntegerField(
+        "id",
+        validators=[InputRequired(message="Id is required or value 0 not accepted")],
+    )

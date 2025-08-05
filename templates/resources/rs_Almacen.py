@@ -26,6 +26,12 @@ from static.Models.api_inventory_models import (
     file_barcode_multiple_request_model,
     FileBarcodeMultipleForm,
     product_model_update,
+    reservation_post_model,
+    ReservationPostForm,
+    reservation_put_model,
+    ReservationPutForm,
+    reservation_delete_model,
+    ReservationDeleteForm,
 )
 from static.Models.api_models import expected_headers_per
 from static.Models.api_movements_models import (
@@ -35,9 +41,6 @@ from static.Models.api_movements_models import (
     MovementDeleteForm,
     movement_update_model,
     MovementUpdateForm,
-)
-from templates.controllers.product.p_and_s_controller import (
-    delete_product_db,
 )
 from templates.resources.methods.Functions_Aux_Login import token_verification_procedure
 from templates.resources.midleware.Functions_midleware_almacen import (
@@ -63,6 +66,10 @@ from templates.resources.midleware.Functions_midleware_almacen import (
     get_epp_db,
     get_epp_movements,
     delete_product_from_api,
+    create_reservation_from_api,
+    update_reservation_from_api,
+    delete_reservation_from_api,
+    get_reservations_db,
 )
 
 ns = Namespace("GUI/api/v1/almacen")
@@ -165,7 +172,7 @@ class MultipleMovementDB(Resource):
 
 
 @ns.route("/inventory/products/<string:type_p>")
-class InventoryProducts(Resource):
+class FetchProducts(Resource):
     # @ns.marshal_with(products_output_model)
     @ns.expect(expected_headers_per)
     def get(self, type_p):
@@ -571,3 +578,62 @@ class DownloadEppMovementsFileExcel(Resource):
         if code != 200:
             return {"data": filepath, "msg": "Error at creating file"}, 400
         return send_file(filepath, as_attachment=True)
+
+
+@ns.route("/reservation")
+class ReservationActions(Resource):
+    @ns.expect(expected_headers_per, reservation_post_model)
+    def post(self):
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["administracion", "almacen"]
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+
+        validator = ReservationPostForm.from_json(ns.payload)
+        if not validator.validate():
+            return {"data": validator.errors, "msg": "Error at structure"}, 400
+        data = validator.data
+        data_out, code = create_reservation_from_api(data, data_token)
+        return data_out, code
+
+    @ns.expect(expected_headers_per, reservation_put_model)
+    def put(self):
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["administracion", "almacen"]
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        validator = ReservationPutForm.from_json(ns.payload)
+        if not validator.validate():
+            return {"data": validator.errors, "msg": "Error at structure"}, 400
+        data = validator.data
+        data_out, code = update_reservation_from_api(data, data_token)
+        return data_out, code
+
+    @ns.expect(expected_headers_per, reservation_delete_model)
+    def delete(self):
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["administracion", "almacen"]
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        validator = ReservationDeleteForm.from_json(ns.payload)
+        if not validator.validate():
+            return {"data": validator.errors, "msg": "Error at structure"}, 400
+        data = validator.data
+        data_out, code = delete_reservation_from_api(data, data_token)
+        return data_out, code
+
+
+@ns.route("/reservations")
+class GetReservations(Resource):
+    @ns.expect(expected_headers_per)
+    def get(self):
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["administracion", "almacen"]
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        data, code = get_reservations_db(data_token)
+        return data, code

@@ -123,24 +123,6 @@
   {
     "type": "function",
     "function": {
-      "name": "getOrder",
-      "description": "Get information for an Order from the body of the input text",
-      "parameters": {
-        "type": "object",
-        "properties": {
-          "id": {"type": "integer", "description": "id of the Order"},
-          "custumer": {"type": "string", "description": "name of the custumer of the Order"},
-          "status": {"type": "string", "description": "status of the Order", "enum":  ["pending", "urgent", "processing", "complete"]},
-          "id_custumer": {"type": "integer", "description": "id of the customer"},
-          "date": {"type": "string", "description": "date for the search with format <dd-MM-yyyy>"}
-        },
-        "required": ["status"]
-      }
-    }
-  },
-  {
-    "type": "function",
-    "function": {
       "name": "getProductMovement",
       "description": "Get information for a Product Movement from the body of the input text",
       "parameters": {

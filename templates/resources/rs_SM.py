@@ -17,7 +17,6 @@ from static.Models.api_sm_models import (
     request_sm_plot_data_model,
     employees_answer_model,
     request_sm_dispatch_model,
-    response_sm_dispatch_model,
     SMPostForm,
     SMPutForm,
     SMDeleteForm,
@@ -25,7 +24,7 @@ from static.Models.api_sm_models import (
     RequestSMDispatchForm,
     NewProductForm,
     control_table_sm_put_model,
-    SMInfoControlTablePutForm,
+    SMInfoControlTablePutForm, item_sm_put_model, ItemSmPutForm,
 )
 from static.constants import log_file_sm_path
 from templates.Functions_AuxPlots import get_data_sm_per_range
@@ -34,9 +33,7 @@ from templates.controllers.customer.customers_controller import get_sm_clients
 from templates.controllers.employees.employees_controller import get_sm_employees
 from templates.controllers.index import DataHandler
 from templates.controllers.material_request.sm_controller import (
-    insert_sm_db,
     delete_sm_db,
-    update_sm_db,
 )
 from templates.misc.Functions_Files import write_log_file
 from templates.resources.methods.Functions_Aux_Login import token_verification_procedure
@@ -52,6 +49,8 @@ from templates.resources.midleware.MD_SM import (
     update_sm_from_control_table,
     get_all_sm_control_table,
     fetch_all_sm_with_permissions,
+    create_sm_from_api,
+    update_sm_from_api,
 )
 
 ns = Namespace("GUI/api/v1/sm")
@@ -101,7 +100,6 @@ class Products(Resource):
 @ns.route("/all")
 class AllSm(Resource):
     @ns.expect(expected_headers_per)
-    @ns.marshal_with(table_sm_model)
     def get(self):
         flag, data_token, msg = token_verification_procedure(request, department="sm")
         if not flag:
@@ -134,7 +132,7 @@ class AllSmEmployee(Resource):
 
 
 @ns.route("/add")
-class AddSM(Resource):
+class AddUpdateSM(Resource):
     @ns.expect(expected_headers_per, sm_post_model)
     def post(self):
         flag, data_token, msg = token_verification_procedure(request, department="sm")
@@ -145,25 +143,8 @@ class AddSM(Resource):
         if not validator.validate():
             return {"error": validator.errors}, 400
         data = validator.data
-        flag, error, result = insert_sm_db(data)
-        if not flag:
-            print(error)
-            return {"answer": "error at updating db"}, 400
-        msg = (
-            f"Nueva SM creada #{data['info']['id']}, folio: {data['info']['folio']}, "
-            f"fecha limite: {data['info']['critical_date']}, "
-            f"empleado con id: {data_token.get('emp_id')}, "
-            f"comentario: {data['info']['comment']}"
-        )
-        create_notification_permission(
-            msg,
-            ["sm", "administracion", "almacen"],
-            "Nueva SM Recibida",
-            data_token.get("emp_id"),
-            0,
-        )
-        write_log_file(log_file_sm_path, msg)
-        return {"answer": "ok", "msg": result}, 201
+        data_out, code = create_sm_from_api(data, data_token)
+        return data, code
 
     @ns.expect(expected_headers_per, delete_request_sm_model)
     def delete(self):
@@ -200,25 +181,8 @@ class AddSM(Resource):
         if not validator.validate():
             return {"error": validator.errors}, 400
         data = validator.data
-        flag, error, result = update_sm_db(data)
-        if flag:
-            msg = (
-                f"SM  actualizada  #{data['info']['id']}, folio: {data['info']['folio']}, "
-                f"fecha limite: {data['info']['critical_date']}, "
-                f"empleado con id: {data_token.get('emp_id')}, "
-                f"comentario: {data['info']['comment']}"
-            )
-            create_notification_permission(
-                msg,
-                ["sm", "administracion", "almacen"],
-                "Nueva SM Recibida",
-                data_token.get("emp_id"),
-                0,
-            )
-            write_log_file(log_file_sm_path, msg)
-            return {"answer": "ok", "msg": error}, 200
-        else:
-            return {"answer": "error at updating db"}, 400
+        data_out, code = update_sm_from_api(data, data_token)
+        return data, code
 
 
 @ns.route("/newclient")
@@ -376,4 +340,19 @@ class AllControlTableSm(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data_out, code = get_all_sm_control_table(data_token)
+        return data_out, code
+
+
+@ns.route("/item")
+class SmItemsActions(Resource):
+    @ns.expect(expected_headers_per, item_sm_put_model)
+    def put(self):
+        flag, data_token, msg = token_verification_procedure(request, department=["sm", "administracion", "almacen"])
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        validator = ItemSmPutForm.from_json(ns.payload)
+        if not validator.validate():
+            return {"error": validator.errors}, 400
+        data = validator.data
+        data_out, code = update_sm_from_api(data, data_token)
         return data_out, code

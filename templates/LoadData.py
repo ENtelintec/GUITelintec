@@ -33,8 +33,9 @@ from templates.controllers.employees.employees_controller import (
 from templates.controllers.employees.vacations_controller import get_vacations_data
 from templates.controllers.misc.tasks_controller import get_all_tasks_by_status
 from templates.controllers.product.p_and_s_controller import (
-    get_all_products_db,
-    get_all_categories_db, get_all_movements_db_detail,
+    get_all_products_db_old,
+    get_all_categories_db,
+    get_all_movements_db_detail,
 )
 from templates.modules.Home.SubFrame_GeneralNoti import load_notifications
 from templates.modules.RRHH.SubFrame_CrearQuiz import get_name_id_employees_list
@@ -165,7 +166,7 @@ def load_data(data_dic, is_super=False, emp_id=None, item=None, permissions=None
             data_dic["data_providers_gen"] = providers
         case "Inventario":
             if "data_products_gen" not in data_dic:
-                flag, error, products = get_all_products_db()
+                flag, error, products = get_all_products_db_old()
                 data_dic["data_products_gen"] = products
             if "data_providers_amc" not in data_dic:
                 flag, error, providers = get_all_suppliers_amc()
@@ -182,17 +183,17 @@ def load_data(data_dic, is_super=False, emp_id=None, item=None, permissions=None
             data_dic["data_movements"] = {
                 "data_ins": data_movements_in,
                 "data_outs": data_movements_out,
-                "data_all":  movements,
+                "data_all": movements,
             }
             if "data_products_gen" not in data_dic:
-                flag, error, products = get_all_products_db()
+                flag, error, products = get_all_products_db_old()
                 data_dic["data_products_gen"] = products
         case "Tasks":
             flag, error, tasks = get_all_tasks_by_status(status=-1, id_destiny=emp_id)
             data_dic["tasks"] = {"data": tasks}
         case "Pre-Venta":
             if "data_products_gen" not in data_dic:
-                flag, error, products = get_all_products_db()
+                flag, error, products = get_all_products_db_old()
                 data_dic["data_products_gen"] = products
             if "data_clients_gen" not in data_dic:
                 flag, error, clients = get_all_customers_db()

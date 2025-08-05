@@ -507,7 +507,7 @@ def get_last_sku():
     return flag, error, result
 
 
-def get_all_products_db():
+def get_all_products_db_old():
     sql = (
         "SELECT "
         "sql_telintec.products_amc.id_product,"
@@ -532,6 +532,29 @@ def get_all_products_db():
     return flag, error, result
 
 
+# def get_sm_products():
+#     sql = """
+#           SELECT
+#               p.id_product,
+#               p.name,
+#               p.udm,
+#               p.stock,
+#               IFNULL(r.reserved_qty, 0) AS reserved_qty,
+#               p.stock - IFNULL(r.reserved_qty, 0) AS available_stock
+#           FROM sql_telintec.products_amc p
+#                    LEFT JOIN (
+#               SELECT
+#                   id_product,
+#                   SUM(quantity) AS reserved_qty
+#               FROM sql_telintec.product_reservations
+#               WHERE status = 0 -- Solo reservas pendientes
+#               GROUP BY id_product
+#           ) r ON p.id_product = r.id_product \
+#           """
+#     flag, error, result = execute_sql(sql, None, 5)
+#     return flag, error, result
+
+
 def get_all_products_db_tool_internal(is_tool: int, is_internal: int):
     sql = (
         "SELECT "
@@ -546,10 +569,18 @@ def get_all_products_db_tool_internal(is_tool: int, is_internal: int):
         "sql_telintec.products_amc.is_internal, "
         "sql_telintec.products_amc.codes, "
         "sql_telintec.products_amc.locations, "
-        "sql_telintec.products_amc.extra_info "
+        "sql_telintec.products_amc.extra_info, "
+        "IFNULL(r.reserved_qty, 0) AS reserved_qty, "
+        "stock - IFNULL(r.reserved_qty, 0) AS available_stock "
         "FROM sql_telintec.products_amc "
         "LEFT JOIN sql_telintec.product_categories_amc ON (sql_telintec.products_amc.id_category = sql_telintec.product_categories_amc.id_category) "
-        "LEFT JOIN sql_telintec.suppliers_amc ON (sql_telintec.products_amc.id_supplier = sql_telintec.suppliers_amc.id_supplier)"
+        "LEFT JOIN sql_telintec.suppliers_amc ON (sql_telintec.products_amc.id_supplier = sql_telintec.suppliers_amc.id_supplier) "
+        "LEFT JOIN ( "
+        "   SELECT id_product, "
+        "       SUM(quantity) AS reserved_qty "
+        "   FROM sql_telintec.product_reservations"
+        "   WHERE status = 0 "
+        "   GROUP BY id_product) r ON sql_telintec.products_amc.id_product = r.id_product "
         "WHERE products_amc.is_internal like %s AND products_amc.is_tool like %s "
     )
     vals = (is_internal, is_tool)
@@ -588,19 +619,6 @@ def get_stock_db(id_product):
     vals = (id_product,)
     flag, error, result = execute_sql(sql, vals, 1)
     return flag, error, result
-
-
-def get_p_and_s(limit=(0, 100)):
-    sql = (
-        "SELECT product_id, name, model, marca, description, price_retail, available_quantity, "
-        "price_provider, support_offered, is_service, category, image "
-        "FROM sql_telintec.products_services "
-        "LIMIT %s, %s"
-    )
-    val = (limit[0], limit[1])
-    flag, e, my_result = execute_sql(sql, val, 2)
-    out = my_result if my_result is not None else []
-    return out
 
 
 def insert_product_and_service(
@@ -837,7 +855,24 @@ def get_supply_inv_amc(id_s: int, name: str):
 
 
 def get_sm_products():
-    sql = "SELECT id_product, name, udm, stock " "FROM sql_telintec.products_amc "
+    sql = """
+          SELECT
+              p.id_product,
+              p.name,
+              p.udm,
+              p.stock,
+              IFNULL(r.reserved_qty, 0) AS reserved_qty,
+              p.stock - IFNULL(r.reserved_qty, 0) AS available_stock
+          FROM sql_telintec.products_amc p
+                   LEFT JOIN (
+              SELECT
+                  id_product,
+                  SUM(quantity) AS reserved_qty
+              FROM sql_telintec.product_reservations
+              WHERE status = 0 -- Solo reservas pendientes
+              GROUP BY id_product
+          ) r ON p.id_product = r.id_product \
+          """
     flag, error, result = execute_sql(sql, None, 5)
     return flag, error, result
 
@@ -1105,9 +1140,10 @@ def update_multiple_products_categories(products: tuple):
     errors = []
     results = []
     for product in products:
-        sql = (
-            "UPDATE sql_telintec.products_amc " "SET id_category = %s " "WHERE sku = %s"
-        )
+        sql = """
+            UPDATE sql_telintec.products_amc
+            SET id_category = %s WHERE sku = %s
+            """
         vals = (product[1], product[0])
         flag, error, result = execute_sql(sql, vals, 3)
         flags.append(flag)
@@ -1196,6 +1232,60 @@ def get_products_stock_from_ids(ids: list):
         "sql_telintec.products_amc.stock "
         "FROM sql_telintec.products_amc "
         f"WHERE sql_telintec.products_amc.id_product IN ({','.join(map(str, ids))})"
+    )
+    flag, error, result = execute_sql(sql, None, 5)
+    return flag, error, result
+
+
+def insert_reservation_db(id_product, quantity, sm_id, history):
+    sql = (
+        "INSERT INTO sql_telintec.product_reservations "
+        "(id_product, quantity, sm_id, status, created_at, history) "
+        "VALUES (%s, %s, %s, %s, %s, %s)"
+    )
+    history_dict_list = json.loads(history)
+    vals = (
+        id_product,
+        quantity,
+        sm_id,
+        0,
+        history_dict_list[-1].get("timestamp"),
+        history,
+    )
+    flag, error, lastrowid = execute_sql(sql, vals, 4)
+    return flag, error, lastrowid
+
+
+def update_reservation_db(id_reservation, status, quantity, history):
+    sql = (
+        "UPDATE sql_telintec.product_reservations "
+        "SET status = %s, quantity = %s, history = %s "
+        "WHERE reservation_id = %s"
+    )
+    vals = (status, quantity, history, id_reservation)
+    flag, error, lastrowid = execute_sql(sql, vals, 4)
+    return flag, error, lastrowid
+
+
+def delete_reservation_db(id_reservation):
+    sql = "DELETE FROM sql_telintec.product_reservations " "WHERE reservation_id = %s"
+    vals = (id_reservation,)
+    flag, error, lastrowid = execute_sql(sql, vals, 4)
+    return flag, error, lastrowid
+
+
+def get_all_reservations():
+    sql = (
+        "SELECT "
+        "sql_telintec.product_reservations.reservation_id, "
+        "sql_telintec.product_reservations.id_product, "
+        "sql_telintec.product_reservations.sm_id, "
+        "sql_telintec.product_reservations.quantity, "
+        "sql_telintec.product_reservations.status, "
+        "sql_telintec.product_reservations.history, "
+        "sql_telintec.materials_request.folio "
+        "FROM sql_telintec.product_reservations "
+        "LEFT JOIN sql_telintec.products_amc ON (sql_telintec.product_reservations.id_product = sql_telintec.products_amc.id_product)"
     )
     flag, error, result = execute_sql(sql, None, 5)
     return flag, error, result

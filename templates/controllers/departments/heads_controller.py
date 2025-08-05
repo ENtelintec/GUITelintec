@@ -65,14 +65,19 @@ def check_if_gerente(id_employee: int):
         "departments.name, "
         "UPPER(CONCAT(employees.name, ' ', employees.l_name)) as name_emp, "
         "employees.email, "
-        "heads.extra_info "
+        "heads.extra_info, "
+        "areas.abbreviation, "
+        "JSON_UNQUOTE(heads.extra_info->'$.area'), "
+        "departments.abbreviation "
         "FROM sql_telintec.heads "
         "LEFT JOIN sql_telintec.employees ON heads.employee = employees.employee_id "
         "LEFT JOIN sql_telintec.departments ON heads.department = departments.department_id "
+        "LEFT JOIN sql_telintec.areas ON JSON_UNQUOTE(heads.extra_info->'$.area') = areas.id "
         "WHERE heads.employee = %s AND (LOWER(heads.name) like '%gerente%' OR LOWER(heads.name) like '%jefe%')"
     )
     val = (id_employee,)
-    flag, e, my_result = execute_sql(sql, val, 1)
+    flag, e, my_result = execute_sql(sql, val, 2)
+    print("check if genrten", my_result)
     return flag, e, my_result
 
 
@@ -90,6 +95,7 @@ def check_if_leader(id_employee: int):
         "FROM sql_telintec.heads "
         "LEFT JOIN sql_telintec.employees ON heads.employee = employees.employee_id "
         "LEFT JOIN sql_telintec.departments ON heads.department = departments.department_id "
+        "LEFT JOIN sql_telintec.areas ON JSON_UNQUOTE(heads.extra_info->'$.area') = areas.id "
         "WHERE ("
         "heads.employee = %s OR "
         "JSON_CONTAINS(sql_telintec.heads.extra_info->'$.other_leaders', CAST( %s AS JSON))"
@@ -110,10 +116,14 @@ def check_if_auxiliar_with_contract(id_employee: int):
         "departments.name, "
         "UPPER(CONCAT(employees.name, ' ', employees.l_name)) as name_emp, "
         "employees.email, "
-        "heads.extra_info "
+        "heads.extra_info, "
+        "areas.abbreviation, "
+        "JSON_UNQUOTE(heads.extra_info->'$.area'), "
+        "departments.abbreviation "
         "FROM sql_telintec.heads "
         "LEFT JOIN sql_telintec.employees ON heads.employee = employees.employee_id "
         "LEFT JOIN sql_telintec.departments ON heads.department = departments.department_id "
+        "LEFT JOIN sql_telintec.areas ON JSON_UNQUOTE(heads.extra_info->'$.area') = areas.id "
         "WHERE heads.employee = %s AND LOWER(heads.name) like '%auxiliar%' "
     )
     val = (id_employee,)
@@ -131,14 +141,25 @@ def check_if_head_not_auxiliar(id_employee: int):
         "departments.name, "
         "UPPER(CONCAT(employees.name, ' ', employees.l_name)) as name_emp, "
         "employees.email, "
-        "heads.extra_info "
+        "heads.extra_info,"
+        "areas.abbreviation, "
+        "JSON_UNQUOTE(heads.extra_info->'$.area'), "
+        "departments.abbreviation "
         "FROM sql_telintec.heads "
         "LEFT JOIN sql_telintec.employees ON heads.employee = employees.employee_id "
         "LEFT JOIN sql_telintec.departments ON heads.department = departments.department_id "
-        "WHERE heads.employee = %s AND LOWER(heads.name) not like '%auxiliar%'  AND LOWER(heads.name) not like '%lider%' "
+        "LEFT JOIN sql_telintec.areas ON JSON_UNQUOTE(heads.extra_info->'$.area') = areas.id "
+        "WHERE (heads.employee = %s "
+        "AND LOWER(heads.name) not like '%auxiliar%'  "
+        "AND LOWER(heads.name) not like '%lider%') "
+        "OR "
+        "(JSON_CONTAINS(sql_telintec.heads.extra_info->'$.other_leaders', CAST( %s AS JSON)) "
+        "AND LOWER(heads.name) not like '%auxiliar%'  "
+        "AND LOWER(heads.name) not like '%lider%') "
     )
-    val = (id_employee,)
-    flag, e, my_result = execute_sql(sql, val, 1)
+    val = (id_employee, id_employee)
+    flag, e, my_result = execute_sql(sql, val, 2)
+    print("check if head not auxiliar", my_result)
     return flag, e, my_result
 
 

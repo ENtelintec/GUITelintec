@@ -2,7 +2,6 @@
 __author__ = "Edisson Naula"
 __date__ = "$ 02/nov./2023  at 17:32 $"
 
-import json
 
 from dotenv import dotenv_values
 from flask_restx import Api
@@ -12,7 +11,6 @@ environment = "prod"
 secrets = dotenv_values(".env") if environment != "prod" else dotenv_values("../.env")
 domain_path = "domain.pem" if environment != "prod" else "../domain.pem"
 api = Api()
-paths_dpb_folders = json.load(open("files/paths_general.json"))
 local_father_path_dpb = "C:/Users/Edisson/Telintec Dropbox/SOFTWARE TELINTEC"
 IMG_PATH_COLLAPSING = Path("./img")
 ventanasApp_path = "static/ventanasAppGUI.json"
@@ -68,6 +66,7 @@ log_file_sm_path = "files/logs/sm"
 log_file_db = "files/logs/db"
 log_file_admin = "files/logs/admin"
 log_file_almacen = "files/logs/almacen"
+log_file_po = "files/logs/po"
 path_contract_files = "files/contracts"
 filepath_bitacora_download = "files/quizz_out/temp_bitacora.csv"
 filepath_inventory_form = "files/inventory_temp.pdf"
@@ -75,6 +74,7 @@ filepath_inventory_form_excel = "files/inventory_temp.xlsx"
 filepath_inventory_form_movements_pdf = "files/movements_temp.pdf"
 filepath_inventory_form_movements_excel = "files/movements_temp.xlsx"
 filepath_sm_pdf = "files/sm_temp.pdf"
+filepath_po_pdf = "files/po_temp.pdf"
 filepath_fichaje_temp = "files/files_fichaje/fichaje_temp.xlsx"
 filepath_ternium_temp = "files/files_fichaje/ternium_temp.xls"
 patterns_files_fichaje = ["Fichaje", "Ternium"]
@@ -183,10 +183,10 @@ dict_depts_identifiers = {
     2: "OP",
     3: "ADMON",
     4: "RH",
-    3001: ["ALM", "PA-CDA-VEH"],
-    3002: "PA-CDA-TI",
-    3003: "PA-CDA-EQO",
-    3004: "PA-CDA-MED",
+    3001: ["ALM", "CDA-VEH"],
+    3002: "CDA-TI",
+    3003: "CDA-EQO",
+    3004: "CDA-MED",
     2001: "SST",
 }
 tabs_sm = {
@@ -194,7 +194,7 @@ tabs_sm = {
     "sm-sgi-": "SGI",
     "sm-op-": "Operaciones",
     "sm-admon-": "Administracion",
-    "sm-rh-": "RH",
+    "sm-rrhh-": "RH",
     "sm-alm-": "Almacen",
     "sm-pa-cda-veh-": "CDA Vehiculos",
     "sm-pa-cda-ti-": "CDA TI",

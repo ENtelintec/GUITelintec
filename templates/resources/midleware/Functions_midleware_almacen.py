@@ -37,7 +37,7 @@ from templates.controllers.product.p_and_s_controller import (
     insert_multiple_row_products_amc,
     update_stock_db_sku,
     insert_multiple_row_movements_amc,
-    get_all_products_db,
+    get_all_products_db_old,
     get_all_movements_db_detail,
     update_multiple_row_products_amc,
     update_stock_db_ids,
@@ -49,6 +49,10 @@ from templates.controllers.product.p_and_s_controller import (
     get_epp_movements_db,
     get_epp_movements_db_detail,
     delete_product_db,
+    insert_reservation_db,
+    update_reservation_db,
+    delete_reservation_db,
+    get_all_reservations,
 )
 from templates.controllers.supplier.suppliers_controller import (
     get_all_suppliers_amc,
@@ -345,6 +349,8 @@ def get_all_products_DB(type_p):
                 "locations": locations,
                 "brand": brand,
                 "epp": extra_info.get("epp", 0),
+                "reserved": item[12],
+                "avaliable_stock": item[13],
             }
         )
     return out, 200
@@ -382,11 +388,17 @@ def insert_product_db(data, data_token):
     # flag, e, result = create_in_movement_db(
     #     result, "entrada", data["info"]["stock"], timestamp, None, "creation"
     # )
-    msg = f"Se ha creado el producto {data['info']['name']} con sku {data['info']['sku']} por el empleado {data_token.get('emp_id')}-{data_token.get('name')} en la fecha {timestamp}"
-    create_notification_permission_notGUI(
+    msg = (
+        f"Se ha creado el producto {data['info']['name']}-{result} con sku {data['info']['sku']}-{data['info']['stock']} "
+        f"por el empleado {data_token.get('emp_id')}-{data_token.get('name')} en la fecha {timestamp}"
+    )
+    flag = create_notification_permission_notGUI(
         msg, ["almacen"], "Notifaction de Inventario", data_token.get("emp_id"), 0
     )
+    if not flag:
+        msg += "\n error notification creation"
     write_log_file(log_file_almacen, msg)
+
     return True, result
 
 
@@ -577,7 +589,7 @@ def update_multiple_products_from_api(data):
         if len(data_out["errors_movements"]) > 0
         else ""
     )
-    data_out["msg"] = msg
+    data_out["msg"] = [msg]
     return data_out
 
 
@@ -586,9 +598,9 @@ def insert_and_update_multiple_products_from_api(data, token_data=None):
     data_out_update = update_multiple_products_from_api(data)
     msg_notification = (
         "--System Notification--\n"
-        + data_out_insert["msg"]
+        + "\n".join(data_out_insert["msg"])
         + "\n"
-        + data_out_update["msg"]
+        + "\n".join(data_out_update["msg"])
     )
     create_notification_permission_notGUI(
         msg_notification, ["almacen"], "Notifaction de Inventario", 0, 0
@@ -709,7 +721,7 @@ def insert_new_product(new_items):
         if len(data_out["errors_movements"]) > 0
         else ""
     )
-    data_out["msg"] = msg
+    data_out["msg"] = [msg]
     return data_out
 
 
@@ -762,7 +774,7 @@ def update_old_products(
         if len(data_out["errors_movements"]) > 0
         else ""
     )
-    data_out["msg"] = msg
+    data_out["msg"] = [msg]
     return data_out
 
 
@@ -779,9 +791,9 @@ def upload_product_db_from_file(
     )
     msg_notification = (
         "--System Notification--\n"
-        + data_out_insert["msg"]
+        + "\n".join(data_out_insert["msg"])
         + "\n"
-        + data_out_update["msg"]
+        + "\n".join(data_out_update["msg"])
     )
     create_notification_permission_notGUI(
         msg_notification, ["almacen"], "Notification de Inventario", 0, 0
@@ -831,7 +843,7 @@ def get_suppliers_db():
             extra_info,
         ) = item
         extra_info = json.loads(extra_info) if extra_info is not None else {}
-        brands = extra_info.get("brands", [])
+        brands = extra_info.get("brands", "[]")
         brands = json.loads(brands) if not isinstance(brands, list) else brands
         out.append(
             {
@@ -894,10 +906,11 @@ def read_excel_file_regular(file: str, is_tool=False, is_internal=0):
 
 def retrieve_data_file_inventory(type_data="dict", data=None):
     flag, error, _products = (
-        get_all_products_db() if data is None else (True, None, data)
+        get_all_products_db_old() if data is None else (True, None, data)
     )
     if not flag:
         return error, 400
+    products = {}
     try:
         # [id_product, sku, name, udm, stock, category_name, supplier_name,  is_tool, is_internal,  codes, locations,  brand, brands]
         # sort by ID
@@ -1199,3 +1212,88 @@ def get_epp_db():
             }
         )
     return data, 200
+
+
+def create_reservation_from_api(data, data_token):
+    time_zone = pytz.timezone(timezone_software)
+    date = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
+    history = [
+        {
+            "user": data_token["emp_id"],
+            "comment": f"Reservation creation for {data['id_product']} with {data['quantity']} items",
+            "timestamp": date,
+        }
+    ]
+    flag, error, lastrowid = insert_reservation_db(
+        data["id_product"], data["quantity"], data["sm_id"], json.dumps(history)
+    )
+    if not flag:
+        return {"data": None, "error": str(error)}, 400
+    msg = f"Reservation <{lastrowid}> creada por el empleado {data_token.get('emp_id')} con cantidad {data['quantity']} y id producto {data['id_product']}"
+    create_notification_permission_notGUI(
+        msg, ["almacen"], "Notifaction de Inventario", data_token.get("emp_id"), 0
+    )
+    write_log_file(log_file_almacen, msg)
+    return {"data": lastrowid, "error": str(error)}, 201
+
+
+def update_reservation_from_api(data, data_token):
+    # flag, error, result = get_reservation_db(data["id_reservation"])
+    # if not flag:
+    #     return {"data": None, "error": str(error)}, 400
+    time_zone = pytz.timezone(timezone_software)
+    date = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
+    history = data.get("history")
+    history.append(
+        {
+            "user": data_token["emp_id"],
+            "comment": f"Reservation update for {data['id_product']} with {data['quantity']} items",
+            "timestamp": date,
+        }
+    )
+    flag, error, result = update_reservation_db(
+        data["id_reservation"],
+        data["status"],
+        data["quantity"],
+        json.dumps(history),
+    )
+    if not flag:
+        return {"data": None, "error": str(error)}, 400
+    msg = f"Reservation <{data['id_reservation']}> actualizada por el empleado {data_token.get('emp_id')} con status {data['status']}  y cantidad {data['quantity']}"
+    create_notification_permission_notGUI(
+        msg, ["almacen"], "Notifaction de Inventario", data_token.get("emp_id"), 0
+    )
+    write_log_file(log_file_almacen, msg)
+    return {"data": result, "error": str(error)}, 201
+
+
+def delete_reservation_from_api(data, data_token):
+    flag, error, result = delete_reservation_db(data["id_reservation"])
+    if not flag:
+        return {"data": None, "error": str(error)}, 400
+    msg = f"Reservation <{data['id_reservation']}> eliminada por el empleado {data_token.get('emp_id')}"
+    create_notification_permission_notGUI(
+        msg, ["almacen"], "Notifaction de Inventario", data_token.get("emp_id"), 0
+    )
+    write_log_file(log_file_almacen, msg)
+    return {"data": result, "error": str(error)}, 201
+
+
+def get_reservations_db(data_token):
+    flag, error, result = get_all_reservations()
+    if not flag:
+        return {"data": None, "error": str(error)}, 400
+    data = []
+    for item in result:
+        history = json.loads(item[5])
+        data.append({
+            "reservation_id": item[0],
+            "id_product": item[1],
+            "id_sm": item[2],
+            "quantity": item[3],
+            "status": item[4],
+            "history": history,
+            "folio": item[6]
+        })
+
+    return {"data": data, "error": str(error)}, 200

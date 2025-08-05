@@ -47,6 +47,21 @@ def create_datos_personales(
     master.drawString(dim_x + 215, dim_y - 115 - pady, f"{interview}")
 
 
+def print_footer_page_count(pdf, page, font_size=6, right_text="", x_max=a4_x):
+    """
+    :param x_max:
+    :param right_text:
+    :param pdf:
+    :param page:
+    :param font_size:
+    :return:
+    """
+    pdf.setFont("Courier", font_size)
+    pdf.drawString(5, 5, f"Página {page}")
+    if right_text != "":
+        pdf.drawString(x_max - len(right_text) * font_size * 0.7, 5, right_text)
+
+
 def display_result(master: canvas.Canvas, dict_quizz, dim_x, dim_y):
     dict_results = dict_quizz["results"]
     # Posición inicial de la primera línea
@@ -105,7 +120,7 @@ def create_header(
     iso_form=1,
     orientation="vertical",
     title_font=None,
-    offset_title=(0, 0)
+    offset_title=(0, 0),
 ):
     position_header_y = 770 if orientation == "vertical" else 535
     position_header_x = 25 if orientation == "vertical" else 25
