@@ -995,6 +995,9 @@ def retrieve_data_movement_file(data, complete=False, epp=0):
         flag, error, _movements = get_epp_movements_db_detail(type_m)
     date_init = datetime.strptime(data["date_init"], format_date)
     date_end = datetime.strptime(data["date_end"], format_date)
+    # set hour init 0:00:00 and hour end 23:59:59
+    date_init = date_init.replace(hour=0, minute=0, second=0)
+    date_end = date_end.replace(hour=23, minute=59, second=59)
     try:
         movements = []
         for item in _movements:
