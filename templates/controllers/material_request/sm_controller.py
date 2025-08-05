@@ -171,7 +171,10 @@ def update_items_sm(items: list, sm_id: int):
             if item.get("id", 0) != 0:
                 sql = (
                     "UPDATE sql_telintec.sm_items "
-                    "SET id_inventory = %s, name = %s, udm = %s, comment = %s, partida = %s, quantity = %s, dispatched = %s, movements = %s, state = %s, extra_info = %s "
+                    "SET id_inventory = %s, name = %s, udm = %s, comment = %s, "
+                    "partida = %s, quantity = %s, dispatched = %s, movements = %s, state = %s, "
+                    "extra_info = %s, "
+                    "deliveries = %s, state_delivery = %s, state_quantity = %s "
                     "WHERE id_item = %s"
                 )
                 val = (
@@ -185,6 +188,9 @@ def update_items_sm(items: list, sm_id: int):
                     json.dumps(item.get("movements", [])),
                     item.get("state", 0),
                     json.dumps(item.get("extra_info", {})),
+                    json.dumps(item.get("deliveries", [])),
+                    item.get("state_delivery", ""),
+                    item.get("state_quantity", 0),
                     item.get("id"),
                 )
                 flag, error, result = execute_sql(sql, val, 4)
@@ -192,8 +198,9 @@ def update_items_sm(items: list, sm_id: int):
                 action = "new"
                 sql = (
                     "INSERT INTO sql_telintec.sm_items "
-                    "(id_sm, id_inventory, name, udm, comment, partida, quantity, dispatched, movements, state, extra_info) "
-                    "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+                    "(id_sm, id_inventory, name, udm, comment, partida, quantity, "
+                    "dispatched, movements, state, extra_info, deliveries, state_delivery, state_quantity) "
+                    "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
                 )
                 val = (
                     sm_id,
@@ -207,6 +214,9 @@ def update_items_sm(items: list, sm_id: int):
                     json.dumps(item.get("movements", [])),
                     item.get("state", 0),
                     json.dumps(item.get("extra_info", {})),
+                    json.dumps(item.get("deliveries", [])),
+                    item.get("state_delivery", ""),
+                    item.get("state_quantity", 0),
                 )
                 flag, error, result = execute_sql(sql, val, 4)
 
