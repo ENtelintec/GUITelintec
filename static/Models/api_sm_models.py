@@ -4,12 +4,12 @@ __date__ = "$ 10/may./2024  at 16:31 $"
 
 
 from flask_restx import fields
-from wtforms.fields.datetime import DateField
+from wtforms.fields.datetime import DateField, DateTimeField
 from wtforms.fields.list import FieldList
 from wtforms.fields.numeric import FloatField
 from wtforms.fields.simple import StringField, URLField, EmailField
 
-from static.Models.api_models import date_filter
+from static.Models.api_models import date_filter, datetime_filter
 from static.constants import api
 from wtforms.form import Form
 from wtforms import validators, IntegerField, FormField
@@ -38,6 +38,16 @@ product_model_SM_selection = api.model(
     },
 )
 
+deliveries_item_model = api.model(
+    "DeliveriesItemModel",
+    {
+        "quantity": fields.Float(required=True, description="The product quantity"),
+        "timestamp": fields.String(required=True, description="The product date"),
+        "comment": fields.String(required=True, description="The product comment"),
+        "state":  fields.Integer(required=True, description="The product state"),
+    },
+)
+
 items_model_sm = api.model(
     "ItemsModel",
     {
@@ -60,6 +70,14 @@ items_model_sm = api.model(
         ),
         "is_erased": fields.Integer(
             required=False, description="The product is erased", example=0
+        ),
+        "state": fields.Integer(required=True, description="The product state for dispatch", example=0),
+        "deliveries": fields.List(fields.Nested(deliveries_item_model)),
+        "state_quantity": fields.Integer(
+            required=True, description="The product state quantity", example=0
+        ),
+        "state_delivery":  fields.String(
+            required=True, description="The product state delivery", example="N/A"
         ),
     },
 )
@@ -456,6 +474,8 @@ sm_put_model = api.model(
     },
 )
 
+
+
 delete_request_sm_model = api.model(
     "DeleteRequestmaterial_request",
     {
@@ -538,6 +558,14 @@ response_sm_dispatch_model = api.model(
     },
 )
 
+item_sm_put_model = api.model(
+    "SMItemPut",
+    {
+        "items": fields.List(fields.Nested(items_model_sm)),
+        "id_sm": fields.Integer(required=True, description="The id of the sm to update"),
+    },
+)
+
 
 class ItemsFormSMPost(Form):
     id_inventory = IntegerField(
@@ -560,6 +588,16 @@ class ItemsFormSMPost(Form):
     partida = StringField("partida", validators=[], default="")
     state = IntegerField("state", validators=[], default=1)
     is_erased = IntegerField("is_erased", validators=[], default=0)
+
+
+class DeliveriesForm(Form):
+    quantity = FloatField(
+        "quantity",
+        validators=[validators.number_range(min=0, message="Invalid quantity")],
+    )
+    comment = StringField("comment", validators=[], default="")
+    state = IntegerField("state", validators=[], default=1)
+    timestamp = DateTimeField("timestamp", validators=[], filters=[datetime_filter])
 
 
 class ItemsFormSMPUT(Form):
@@ -588,6 +626,10 @@ class ItemsFormSMPUT(Form):
     partida = StringField("partida", validators=[], default="")
     is_erased = IntegerField("is_erased", validators=[], default=0)
     state = IntegerField("state", validators=[], default=1)
+    dispatched = IntegerField("dispatched", validators=[], default=0)
+    deliveries = FieldList(FormField(DeliveriesForm, "deliveries"))
+    state_delivery = IntegerField("state_delivery", validators=[], default=0)
+    state_quantity = IntegerField("state_quantity", validators=[], default=0)
 
 
 class ItemsFormSMDispartch(Form):
@@ -749,3 +791,10 @@ class RequestSMDispatchForm(Form):
         "id", validators=[InputRequired(message="Invalid id or 0 not acepted")]
     )
     items = FieldList(FormField(ItemsFormSMDispartch, "items"))
+
+
+class ItemSmPutForm(Form):
+    items = FieldList(FormField(ItemsFormSMPUT, "items"))
+    id_sm = IntegerField(
+        "id_sm", validators=[InputRequired(message="Invalid id or 0 not acepted")]
+    )

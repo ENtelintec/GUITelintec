@@ -24,7 +24,7 @@ from static.Models.api_sm_models import (
     RequestSMDispatchForm,
     NewProductForm,
     control_table_sm_put_model,
-    SMInfoControlTablePutForm,
+    SMInfoControlTablePutForm, item_sm_put_model, ItemSmPutForm,
 )
 from static.constants import log_file_sm_path
 from templates.Functions_AuxPlots import get_data_sm_per_range
@@ -340,4 +340,19 @@ class AllControlTableSm(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data_out, code = get_all_sm_control_table(data_token)
+        return data_out, code
+
+
+@ns.route("/item")
+class SmItemsActions(Resource):
+    @ns.expect(expected_headers_per, item_sm_put_model)
+    def put(self):
+        flag, data_token, msg = token_verification_procedure(request, department=["sm", "administracion", "almacen"])
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        validator = ItemSmPutForm.from_json(ns.payload)
+        if not validator.validate():
+            return {"error": validator.errors}, 400
+        data = validator.data
+        data_out, code = update_sm_from_api(data, data_token)
         return data_out, code

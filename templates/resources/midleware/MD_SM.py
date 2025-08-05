@@ -914,3 +914,21 @@ def update_sm_from_api(data, data_token):
         return {"answer": "ok", "data": msg, "error": error}, 200
     else:
         return {"answer": "error at updating db", "data": "", "error": error}, 400
+
+
+def update_items_sm_from_api(data, data_token):
+    errors, results = update_items_sm(data["items"], data["id"])
+    msg = ""
+    if len(results) > 0:
+        msg = f"Items actualizados: {results}"
+    if len(errors) > 0:
+        msg += f"\nErrores al actualizar items: {errors}"
+    create_notification_permission(
+        msg,
+        ["sm", "administracion", "almacen"],
+        "Nueva SM Recibida",
+        data_token.get("emp_id"),
+        0,
+    )
+    write_log_file(log_file_sm_path, msg)
+    return {"answer": "ok", "data": msg, "error": error}, 200
