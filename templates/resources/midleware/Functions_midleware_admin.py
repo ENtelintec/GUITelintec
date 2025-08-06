@@ -465,6 +465,7 @@ def get_all_suppliers_data():
                 "web_url": item[6],
                 "type": item[7],
                 "brands": brands,
+                "rfc": extra_info.get("rfc", ""),
             }
         )
     return {"data": data_out, "msg": "Ok"}, 200

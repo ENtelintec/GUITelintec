@@ -121,7 +121,7 @@ class SuppliersAll(Resource):
 
 
 @ns.route("/supplier")
-class SupplierDB(Resource):
+class SupplierActions(Resource):
     @ns.expect(expected_headers_per, supplier_model)
     def post(self):
         flag, data_token, msg = token_verification_procedure(

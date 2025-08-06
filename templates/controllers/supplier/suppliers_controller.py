@@ -139,7 +139,7 @@ def create_supplier_amc(
     address_provider = str(address_provider)
     web_provider = str(web_provider)
     type_provider = str(type_provider)
-    extra_info = json.dumps(extra_info) if extra_info else json.dumps({"brands": []})
+    extra_info = json.dumps(extra_info) if extra_info else json.dumps({"brands": [], "rfc": ""})
     insert_sql = (
         "INSERT INTO sql_telintec.suppliers_amc "
         "(name, seller_name, seller_email, phone, address, web_url, type, extra_info) "
@@ -217,7 +217,7 @@ def update_supplier_amc(
     address_provider = str(address_provider)
     web_provider = str(web_provider)
     type_provider = str(type_provider)
-    extra_info = json.dumps(extra_info) if extra_info else "{'brands': []}"
+    extra_info = json.dumps(extra_info) if extra_info else "{'brands': [], 'rfc': ''}"
     update_sql = (
         "UPDATE sql_telintec.suppliers_amc "
         "SET name = %s, seller_name = %s, seller_email = %s, phone = %s, address = %s, web_url = %s, type = %s, "
