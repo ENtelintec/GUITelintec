@@ -243,7 +243,7 @@ def get_movements_type_db_all(type_m="all"):
         "LEFT JOIN sql_telintec.products_amc ON (sql_telintec.products_amc.id_product = sql_telintec.product_movements_amc.id_product)"
         "LEFT JOIN sql_telintec.suppliers_amc ON (sql_telintec.products_amc.id_supplier = sql_telintec.suppliers_amc.id_supplier)"
         "WHERE movement_type LIKE %s "
-        "ORDER BY movement_date DESC LIMIT 1000"
+        "ORDER BY movement_date DESC"
     )
     vals = (type_m,)
     flag, error, result = execute_sql(sql, vals, 2)
