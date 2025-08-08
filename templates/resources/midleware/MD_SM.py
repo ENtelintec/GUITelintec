@@ -931,4 +931,4 @@ def update_items_sm_from_api(data, data_token):
         0,
     )
     write_log_file(log_file_sm_path, msg)
-    return {"answer": "ok", "data": msg, "error": error}, 200
+    return {"answer": "ok", "data": msg, "error": errors}, 200

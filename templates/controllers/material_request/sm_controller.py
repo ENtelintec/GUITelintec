@@ -60,7 +60,10 @@ def get_sm_entries(emp_id=None):
         " 'reservation_id', rsv.reservation_id,"
         " 'deliveries', smi.deliveries,"
         " 'state_quantity', smi.state_quantity, "
-        " 'state_delivery', smi.state_delivery ) "
+        " 'state_delivery', smi.state_delivery , "
+        " 'reserved_all', rAll.reserved_qty, "
+        " 'avaliable_stock', IFNULL(inv.stock, 0) - IFNULL(rAll.reserved_qty, 0), "
+        " 'stock', IFNULL(inv.stock, 0) )"
         ") AS items, "
         "mr.status, "
         "mr.history, "
@@ -68,17 +71,24 @@ def get_sm_entries(emp_id=None):
         "mr.extra_info "
         "FROM sql_telintec.materials_request AS mr "
         "LEFT JOIN sql_telintec.sm_items AS smi ON mr.sm_id = smi.id_sm "
+        "LEFT JOIN sql_telintec.products_amc AS inv ON inv.id_product = smi.id_inventory "
         "LEFT JOIN ( "
         "   SELECT id_product, sm_id, quantity AS reserved, reservation_id "
         "   FROM sql_telintec.product_reservations "
         "   WHERE status = 0 "
         ") rsv ON (rsv.sm_id = smi.id_sm) AND (rsv.id_product = smi.id_inventory)  "
+        "LEFT JOIN ( "
+        "   SELECT id_product, "
+        "       SUM(quantity) AS reserved_qty "
+        "   FROM sql_telintec.product_reservations"
+        "   WHERE status = 0 "
+        "   GROUP BY id_product) rAll ON smi.id_inventory = rAll.id_product "
         "WHERE (mr.emp_id = %s OR %s IS NULL) "
         "GROUP BY mr.sm_id"
     )
     val = (emp_id, emp_id)
     flag, error, result = execute_sql(base_sql, val, 2)
-    result = update_sm_items_stock(result)
+    # result = update_sm_items_stock(result)
     return flag, error, result
 
 
