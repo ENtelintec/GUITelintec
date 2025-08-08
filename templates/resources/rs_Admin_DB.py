@@ -45,7 +45,7 @@ from templates.resources.midleware.Functions_midleware_admin import (
 ns = Namespace("GUI/api/v1/admin/db")
 
 
-@ns.route("/clients/all")
+@ns.route("/clients/allClients")
 class ClientsAll(Resource):
     @ns.expect(expected_headers_per)
     def get(self):
@@ -107,7 +107,7 @@ class ClientDB(Resource):
         return data, code
 
 
-@ns.route("/suppliers/all")
+@ns.route("/suppliers/allSuppliers")
 class SuppliersAll(Resource):
     @ns.expect(expected_headers_per)
     def get(self):
