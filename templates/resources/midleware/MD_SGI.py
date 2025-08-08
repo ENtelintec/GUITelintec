@@ -51,13 +51,15 @@ def create_voucher_tools_api(data, data_token):
             "msg": "Error at creating tools voucher",
             "error": str(error),
         }, 400
-    history = {
-        "id_voucher": v_tools_id,
-        "type": 0,
-        "timestamp": timestamp,
-        "user": data_token.get("emp_id"),
-        "comment": "Voucher creado",
-    }
+    history = [
+        {
+            "id_voucher": v_tools_id,
+            "type": 0,
+            "timestamp": timestamp,
+            "user": data_token.get("emp_id"),
+            "comment": "Voucher creado",
+        }
+    ]
     flag, error, rows_updated = update_history_voucher(history, lastrowid)
     if not flag:
         return {
@@ -193,13 +195,15 @@ def create_voucher_safety_api(data, data_token):
             "msg": "Error at creating safety voucher",
             "error": str(error),
         }, 400
-    history = {
-        "id_voucher": lastrowid_safety,
-        "type": 1,
-        "timestamp": timestamp,
-        "user": data_token.get("emp_id"),
-        "comment": "Voucher creado",
-    }
+    history = [
+        {
+            "id_voucher": lastrowid_safety,
+            "type": 1,
+            "timestamp": timestamp,
+            "user": data_token.get("emp_id"),
+            "comment": "Voucher creado",
+        }
+    ]
     flag, error, rows_updated = update_history_voucher(history, lastrowid)
     if not flag:
         return {
