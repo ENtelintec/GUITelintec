@@ -122,7 +122,6 @@ def fetch_purchase_orders(status, data_token):
     status_map = {"pendiente": 0, "recibido": 1, "cancelado": 4}
     status = status_map.get(status, None)  # Si status no es válido, se usa None
     flag, error, result = get_purchase_orders_with_items(status, emp_id)
-    print(status, emp_id, result)
     if not flag:
         return {"data": None, "msg": "error", "error": str(error)}, 400
     data_out = []
@@ -145,7 +144,6 @@ def fetch_purchase_orders(status, data_token):
         )
         products = json.loads(products)
         products, total_amount = map_products_po(products)
-        print(products)
         data_out.append(
             {
                 "id": id_order,
