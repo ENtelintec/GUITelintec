@@ -96,7 +96,7 @@ def get_purchase_orders_with_items(status: int | None, created_by: int | None):
         "po.time_delivery "
         "FROM sql_telintec_mod_admin.purchase_orders AS po "
         "LEFT JOIN sql_telintec_mod_admin.purchase_order_items AS poi ON po.id_order = poi.purchase_id "
-        "WHERE (po.status = %s or %s IS NULL ) AND (po.created_by = %s OR %s IS NULL) GROUP BY po.id_order"
+        "WHERE (po.status = %s or %s IS NULL ) AND (po.status != 4) AND (po.created_by = %s OR %s IS NULL) GROUP BY po.id_order"
     )
     val = (status, status, created_by, created_by)
     flag, e, my_result = execute_sql(sql, val, 2)
@@ -159,7 +159,7 @@ def get_pos_application_with_items(status: int | None, created_by: int | None):
         ")) AS items "
         "FROM sql_telintec_mod_admin.pos_applications AS po "
         "LEFT JOIN sql_telintec_mod_admin.purchase_order_items AS poi ON po.id_order = poi.order_id "
-        "WHERE (po.status = %s or %s IS NULL ) AND (po.created_by = %s OR %s IS NULL) GROUP BY po.id_order"
+        "WHERE (po.status = %s or %s IS NULL ) AND (po.status != 4) AND (po.created_by = %s OR %s IS NULL) GROUP BY po.id_order"
     )
     val = (status, status, created_by, created_by)
     flag, e, my_result = execute_sql(sql, val, 2)
@@ -201,13 +201,14 @@ def insert_purchase_order(
     supplier_id: int,
     folio: str,
     history: list,
+    time_delivery: str,
     extra_info: dict,
 ):
     sql = (
         "INSERT INTO sql_telintec_mod_admin.purchase_orders "
         "(timestamp, status, created_by, "
-        "supplier_id, folio, history, extra_info) "
-        "VALUES (%s, %s, %s, %s, %s, %s, %s)"
+        "supplier_id, folio, history, time_delivery, extra_info) "
+        "VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
     )
     val = (
         timestamp,
@@ -216,6 +217,7 @@ def insert_purchase_order(
         supplier_id,
         folio,
         json.dumps(history),
+        time_delivery,
         json.dumps(extra_info),
     )
     flag, e, out = execute_sql(sql, val, 4)
@@ -231,11 +233,12 @@ def update_purchase_order(
     folio: str,
     history: list,
     extra_info: dict,
+    time_delivery: str,
 ):
     sql = (
         "UPDATE sql_telintec_mod_admin.purchase_orders "
         "SET timestamp = %s, status = %s, created_by = %s, "
-        "supplier_id = %s, folio = %s, history = %s, extra_info = %s "
+        "supplier_id = %s, folio = %s, history = %s, extra_info = %s , time_delivery = %s "
         "WHERE id_order = %s"
     )
     val = (
@@ -246,6 +249,7 @@ def update_purchase_order(
         folio,
         json.dumps(history),
         json.dumps(extra_info),
+        time_delivery,
         id_order,
     )
     flag, e, out = execute_sql(sql, val, 3)
@@ -332,13 +336,13 @@ def update_po_application_status(
     return flag, error, result
 
 
-def cancel_po_application(history: list, id_order: int):
+def cancel_po_application(history: list, id_order: int, status):
     sql = (
         "UPDATE sql_telintec_mod_admin.pos_applications "
-        "SET status = 4, history = %s "
+        "SET status = %s, history = %s "
         "WHERE id_order = %s"
     )
-    val = (json.dumps(history), id_order)
+    val = (status, json.dumps(history), id_order)
     flag, e, out = execute_sql(sql, val, 3)
     return flag, e, out
 
@@ -348,7 +352,7 @@ def insert_purchase_order_item(
     quantity: int,
     unit_price: float,
     description: str,
-    duration_services: int,
+    duration_services: str,
     extra_info: dict,
     tool=0,
 ):

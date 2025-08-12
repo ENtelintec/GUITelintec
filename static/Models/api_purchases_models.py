@@ -141,7 +141,7 @@ metadata_supplier_model = api.model(
         "rfc": fields.String(
             required=True, description="The RFC", example="RFC1234567890"
         ),
-        "salesaman": fields.String(
+        "salesman": fields.String(
             required=True,
             description="The person salesanan name",
             example="Carolina Torres",
@@ -275,6 +275,17 @@ purchase_order_delete_model = api.model(
     },
 )
 
+po_app_delete_model = api.model(
+    "PurchaseOrderDelete",
+    {
+        "id": fields.Integer(required=True, description="The quotation id", example=1),
+        "history": fields.List(fields.Nested(history_purchase_model), required=True),
+        "status": fields.Integer(
+            required=True, description="The quotation status", example=4
+        ),
+    },
+)
+
 purchase_order_update_status_model = api.model(
     "PurchaseOrderDelete",
     {
@@ -339,7 +350,7 @@ class MetadataSupplierForm(Form):
     name = StringField("name", [InputRequired()])
     address_invoice = StringField("address_invoice", [InputRequired()])
     rfc = StringField("rfc", [InputRequired()])
-    salesaman = StringField("salesaman", [InputRequired()])
+    salesman = StringField("salesman", [InputRequired()])
     payment_method = StringField("payment_method", [InputRequired()])
     delivery_conditions = StringField("delivery_conditions", [InputRequired()])
     delivery_address = StringField("delivery_address", [InputRequired()])
@@ -352,7 +363,7 @@ class PurchaseOrderPostForm(Form):
     folio = StringField("folio", [InputRequired()])
     supplier = IntegerField("supplier", [InputRequired()])
     comment = StringField("comment", [])
-    time_delivery = StringField("time_delivery", [])
+    time_delivery = StringField("time_delivery", [], default="")
     items = FieldList(FormField(ItemsPOForm), "items", validators=[], default=[])
     metadata_telintec = FormField(MetadataTelitencForm)
     metadata_supplier = FormField(MetadataSupplierForm)
@@ -415,6 +426,14 @@ class PurchaseOrderPutForm(Form):
 class PurchaseOrderDeleteForm(Form):
     id = IntegerField("id", [InputRequired()])
     history = FieldList(FormField(HistoryPurchaseForm), "history", default=[])
+
+
+class POAppDeleteForm(Form):
+    id = IntegerField("id", [InputRequired()])
+    history = FieldList(FormField(HistoryPurchaseForm), "history", default=[])
+    status = IntegerField(
+        "status", [validators.number_range(min=-1, message="Invalid id")]
+    )
 
 
 class PurchaseOrderUpdateStatusForm(Form):
