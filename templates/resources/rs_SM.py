@@ -53,6 +53,7 @@ from templates.resources.midleware.MD_SM import (
     fetch_all_sm_with_permissions,
     create_sm_from_api,
     update_sm_from_api,
+    update_items_sm_from_api,
 )
 
 ns = Namespace("GUI/api/v1/sm")
@@ -364,5 +365,5 @@ class SmItemsActions(Resource):
         if not validator.validate():
             return {"error": validator.errors}, 400
         data = validator.data
-        data_out, code = update_sm_from_api(data, data_token)
+        data_out, code = update_items_sm_from_api(data, data_token)
         return data_out, code
