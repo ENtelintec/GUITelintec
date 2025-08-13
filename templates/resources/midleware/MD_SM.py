@@ -435,7 +435,7 @@ def update_data_dicts(products: list, products_sm):
     return products_sm
 
 
-def dispatch_products(
+def dispatch_products_from_GUI(
     avaliable: list[dict],
     to_request: list[dict],
     sm_id: int,

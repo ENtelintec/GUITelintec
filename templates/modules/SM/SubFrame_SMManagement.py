@@ -23,7 +23,10 @@ from templates.controllers.material_request.sm_controller import (
     update_history_sm,
     cancel_sm_db,
 )
-from templates.resources.midleware.MD_SM import update_data_dicts, dispatch_products
+from templates.resources.midleware.MD_SM import (
+    update_data_dicts,
+    dispatch_products_from_GUI,
+)
 
 
 def reorder_data_table(data):
@@ -310,8 +313,13 @@ class SMManagement(ttk.Frame):
         if answer == "No":
             return
         # update db with corresponding movements
-        (products_to_dispacth, products_to_request, new_products) = dispatch_products(
-            products_to_dispacth, products_to_request, self._id_sm_to_edit, new_products
+        (products_to_dispacth, products_to_request, new_products) = (
+            dispatch_products_from_GUI(
+                products_to_dispacth,
+                products_to_request,
+                self._id_sm_to_edit,
+                new_products,
+            )
         )
         # update table with new stock
         self.products_sm = update_data_dicts(
