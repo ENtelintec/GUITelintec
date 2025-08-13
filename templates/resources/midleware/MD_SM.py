@@ -31,7 +31,8 @@ from templates.controllers.departments.heads_controller import (
     check_if_leader,
 )
 from templates.controllers.employees.employees_controller import get_emp_contract
-from templates.controllers.index import DataHandler
+
+# from templates.controllers.index import DataHandler
 from templates.controllers.material_request.sm_controller import (
     get_info_names_by_sm_id,
     get_sm_by_id,
@@ -50,6 +51,7 @@ from templates.controllers.product.p_and_s_controller import (
     create_product_db_admin,
     get_products_stock_from_ids,
     get_sm_products,
+    update_stock_db,
 )
 from templates.forms.StorageMovSM import FileSmPDF
 from templates.Functions_Utils import create_notification_permission
@@ -440,7 +442,7 @@ def dispatch_products(
     new_products: list[dict],
     data=None,
 ) -> tuple[list[dict], list[dict], list[dict]]:
-    _data = DataHandler()
+    # _data = DataHandler()
     time_zone = pytz.timezone(timezone_software)
     date = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
     # ------------------------------avaliable products------------------------------------------
@@ -449,20 +451,20 @@ def dispatch_products(
         # create out movements
         if "remanent" not in product.keys():
             if product["stock"] >= product["quantity"]:
-                _data.create_out_movement(
+                create_movement_db_amc(
                     product["id"], "salida", product["quantity"], date, sm_id
                 )
                 product["comment"] += " ;(Despachado) "
                 delivered_trans = product["quantity"]
             else:
-                _data.create_out_movement(
+                create_movement_db_amc(
                     product["id"], "salida", product["stock"], date, sm_id
                 )
                 delivered_trans = product["stock"]
                 product["remanent"] = product["quantity"] - product["stock"]
                 product["comment"] += " ;(Semidespachado) "
         elif "remanent" in product.keys() and product["remanent"] > 0:
-            _data.create_out_movement(
+            create_movement_db_amc(
                 product["id"], "salida", product["remanent"], date, sm_id
             )
             delivered_trans = product["remanent"]
@@ -472,7 +474,7 @@ def dispatch_products(
             product["comment"] += " ;(Despachado) "
             continue
         # update stock avaliable
-        _data.update_stock(product["id"], product["stock"] - delivered_trans)
+        update_stock_db(product["id"], product["stock"] - delivered_trans)
         product["stock"] -= delivered_trans
         avaliable[i] = product
         msg += f"Cantidad: {delivered_trans}-{product['name']}, movimiento de salida al despachar."
@@ -489,7 +491,7 @@ def dispatch_products(
     # ------------------------------products to request------------------------------------------
     msg = ""
     for i, product in enumerate(to_request):
-        _ins = _data.create_in_movement(
+        _ins = create_movement_db_amc(
             product["id"], "entrada", product["quantity"], date, sm_id
         )
         product["comment"] += " ;(Pedido) "
@@ -917,7 +919,7 @@ def update_sm_from_api(data, data_token):
 
 
 def update_items_sm_from_api(data, data_token):
-    errors, results = update_items_sm(data["items"], data["id"])
+    errors, results = update_items_sm(data["items"], data["id_sm"])
     msg = ""
     if len(results) > 0:
         msg = f"Items actualizados: {results}"

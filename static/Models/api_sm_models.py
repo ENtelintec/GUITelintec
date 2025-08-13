@@ -44,7 +44,7 @@ deliveries_item_model = api.model(
         "quantity": fields.Float(required=True, description="The product quantity"),
         "timestamp": fields.String(required=True, description="The product date"),
         "comment": fields.String(required=True, description="The product comment"),
-        "state":  fields.Integer(required=True, description="The product state"),
+        "state": fields.Integer(required=True, description="The product state"),
     },
 )
 
@@ -71,12 +71,14 @@ items_model_sm = api.model(
         "is_erased": fields.Integer(
             required=False, description="The product is erased", example=0
         ),
-        "state": fields.Integer(required=True, description="The product state for dispatch", example=0),
+        "state": fields.Integer(
+            required=True, description="The product state for dispatch", example=0
+        ),
         "deliveries": fields.List(fields.Nested(deliveries_item_model)),
         "state_quantity": fields.Integer(
             required=True, description="The product state quantity", example=0
         ),
-        "state_delivery":  fields.String(
+        "state_delivery": fields.String(
             required=True, description="The product state delivery", example="N/A"
         ),
     },
@@ -475,7 +477,6 @@ sm_put_model = api.model(
 )
 
 
-
 delete_request_sm_model = api.model(
     "DeleteRequestmaterial_request",
     {
@@ -562,7 +563,9 @@ item_sm_put_model = api.model(
     "SMItemPut",
     {
         "items": fields.List(fields.Nested(items_model_sm)),
-        "id_sm": fields.Integer(required=True, description="The id of the sm to update"),
+        "id_sm": fields.Integer(
+            required=True, description="The id of the sm to update"
+        ),
     },
 )
 
