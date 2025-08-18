@@ -1274,6 +1274,17 @@ def delete_reservation_db(id_reservation):
     return flag, error, lastrowid
 
 
+def complete_reservation_db(id_reservation):
+    sql = (
+        "UPDATE sql_telintec.product_reservations "
+        "SET status = 1 "
+        "WHERE reservation_id = %s"
+    )
+    vals = (id_reservation,)
+    flag, error, lastrowid = execute_sql(sql, vals, 4)
+    return flag, error, lastrowid
+
+
 def get_all_reservations():
     sql = (
         "SELECT "

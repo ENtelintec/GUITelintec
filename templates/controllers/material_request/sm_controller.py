@@ -125,13 +125,34 @@ def get_sm_by_id(sm_id: int):
         " 'dispatched', smi.dispatched, "
         " 'movements', smi.movements, "
         " 'state', smi.state, "
-        " 'extra_info', smi.extra_info)) AS items, "
+        " 'extra_info', smi.extra_info, "
+        " 'reserved', IFNULL(rsv.reserved, 0), "
+        " 'reservation_id', rsv.reservation_id,"
+        " 'deliveries', smi.deliveries,"
+        " 'state_quantity', smi.state_quantity, "
+        " 'state_delivery', smi.state_delivery , "
+        " 'reserved_all', rAll.reserved_qty, "
+        " 'avaliable_stock', IFNULL(inv.stock, 0) - IFNULL(rAll.reserved_qty, 0), "
+        " 'stock', IFNULL(inv.stock, 0) )"
+        ") AS items, "
         "mr.status, "
         "mr.history, "
         "mr.comment, "
         "mr.extra_info "
         "FROM sql_telintec.materials_request AS mr "
         "LEFT JOIN sql_telintec.sm_items AS smi ON mr.sm_id = smi.id_sm "
+        "LEFT JOIN sql_telintec.products_amc AS inv ON inv.id_product = smi.id_inventory "
+        "LEFT JOIN ( "
+        "   SELECT id_product, sm_id, quantity AS reserved, reservation_id "
+        "   FROM sql_telintec.product_reservations "
+        "   WHERE status = 0 "
+        ") rsv ON (rsv.sm_id = smi.id_sm) AND (rsv.id_product = smi.id_inventory)  "
+        "LEFT JOIN ( "
+        "   SELECT id_product, "
+        "       SUM(quantity) AS reserved_qty "
+        "   FROM sql_telintec.product_reservations"
+        "   WHERE status = 0 "
+        "   GROUP BY id_product) rAll ON smi.id_inventory = rAll.id_product "
         "WHERE mr.sm_id = %s"
     )
     val = (sm_id,)
@@ -196,7 +217,7 @@ def update_items_sm(items: list, sm_id: int):
                     item.get("quantity", 1),
                     item.get("dispatched", 0),
                     json.dumps(item.get("movements", [])),
-                    item.get("state", 0),
+                    item.get("state", 1),
                     json.dumps(item.get("extra_info", {})),
                     json.dumps(item.get("deliveries", [])),
                     item.get("state_delivery", ""),
@@ -396,7 +417,7 @@ def cancel_sm_db(id_m: int, history: dict):
     return flag, error, result
 
 
-def update_history_sm(sm_id, history: dict, items: list, is_complete=False):
+def update_history_sm(sm_id, history: list, items: list, is_complete=False):
     if is_complete:
         sql = (
             "UPDATE sql_telintec.materials_request "
@@ -413,6 +434,17 @@ def update_history_sm(sm_id, history: dict, items: list, is_complete=False):
         )
         val = (json.dumps(history), json.dumps(items), sm_id)
         flag, error, result = execute_sql(sql, val, 4)
+    return flag, error, result
+
+
+def update_history_status_sm(sm_id, history: list, status):
+    sql = (
+        "UPDATE sql_telintec.materials_request "
+        "SET history = %s, status =  %s "
+        "WHERE sm_id = %s "
+    )
+    val = (json.dumps(history), status, sm_id)
+    flag, error, result = execute_sql(sql, val, 4)
     return flag, error, result
 
 
@@ -524,9 +556,7 @@ def get_pending_sm_db():
 
 def update_history_items_sm(sm_id: int, items: list, history: list):
     sql = (
-        "UPDATE sql_telintec.materials_request "
-        "SET items = %s, history = %s "
-        "WHERE sm_id = %s "
+        "UPDATE sql_telintec.materials_request " "SET history = %s " "WHERE sm_id = %s "
     )
     val = (json.dumps(items), json.dumps(history), sm_id)
     flag, error, result = execute_sql(sql, val, 3)

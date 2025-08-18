@@ -262,7 +262,7 @@ class AlmacenEmployees(Resource):
 
 
 @ns.route("/manage/dispatch")
-class ManageSMDispatch(Resource):
+class DispatchSM(Resource):
     @ns.expect(expected_headers_per, request_sm_dispatch_model)
     def post(self):
         flag, data_token, msg = token_verification_procedure(

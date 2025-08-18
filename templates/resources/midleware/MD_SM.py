@@ -39,11 +39,11 @@ from templates.controllers.material_request.sm_controller import (
     get_sm_entries,
     insert_sm_db,
     update_history_extra_info_sm_by_id,
-    update_history_items_sm,
     update_history_sm,
     create_items_sm_db,
     update_items_sm,
     update_sm_db,
+    update_history_status_sm,
 )
 from templates.controllers.product.p_and_s_controller import (
     create_movement_db_amc,
@@ -52,6 +52,7 @@ from templates.controllers.product.p_and_s_controller import (
     get_products_stock_from_ids,
     get_sm_products,
     update_stock_db,
+    complete_reservation_db,
 )
 from templates.forms.StorageMovSM import FileSmPDF
 from templates.Functions_Utils import create_notification_permission
@@ -534,6 +535,14 @@ def dispatch_products_from_GUI(
     return avaliable, to_request, new_products
 
 
+def determine_status_sm(items: list):
+    total_items = len(items)
+    for item in items:
+        if item["state"] == 4:
+            total_items -= 1
+    return 2 if total_items == 0 else 1
+
+
 def dispatch_sm(data, data_token):
     if len(data["items"]) <= 0:
         return 400, ["No item to update in sm"]
@@ -559,38 +568,42 @@ def dispatch_sm(data, data_token):
         for item in products_sm
     }
     msg_items = []
-    # print(data["items"])
-    # return 200, {"msg": "ok"}
     operations_done = False
     for item_n in data["items"]:
         item_to_update = dict_products_sm.get(item_n["id"])
         old_item = item_to_update.copy()
+        # si el item no existe
         if item_to_update is None:
             msg_items.append(f"Product {item_n['id']}-not found in sm")
             updated_products.append(old_item)
             continue
+        # si no hay cantidad para despachar
         if item_n["quantity"] > stocks.get(item_to_update["id"], 0):
             msg_items.append(
                 f"Quantity to dispatch is greater than stock for product {item_to_update['id']}-{item_to_update['name']}"
             )
             updated_products.append(old_item)
             continue
-        if "(Despachado)".lower() in item_to_update["comment"].lower():
+        # si ya esta despachado
+        if (
+            "(Despachado)".lower() in item_to_update["comment"].lower()
+            or item_to_update["state"] == 4
+        ):
             msg_items.append(
                 f"Product {item_to_update['id']}-{item_to_update['name']} already dispatched"
             )
             # updated_products.append(old_item)
             continue
+        # calculo de cantidad total despachada
         item_to_update["dispatched"] += item_n["quantity"]
+        # si la cantidad es mayor que la requerida
         if item_to_update["dispatched"] > item_to_update["quantity"]:
             msg_items.append(
                 f"Quantity to dispatch is greater than requested for product {item_to_update['id']}-{item_to_update['name']}"
             )
             updated_products.append(old_item)
             continue
-        # print(item_to_update)
-        # print(item_n)
-
+        # --- Crear un movimiento de salida para el despachado
         flag, error, result = create_movement_db_amc(
             item_to_update["id"],
             "salida",
@@ -606,6 +619,26 @@ def dispatch_sm(data, data_token):
             updated_products.append(old_item)
             continue
         msg_items.append(f"----Movement created-{item_to_update['id']}: {str(result)}")
+        # -- actualizar stock del producto
+        flag, error, res_stock = update_stock_db(
+            item_to_update["id"], -item_n["quantity"], True
+        )
+        msg_items.append(
+            f"x---Error at updating stock-{item_to_update['id']}: {str(error)}"
+        ) if not flag else msg_items.append(
+            f"Movement created-{item_to_update['id']}: {str(res_stock)}"
+        )
+        # -- actualizar el estado de la reservación
+        flag, error, res_res = complete_reservation_db(item_to_update["reservation_id"])
+        msg_items.append(
+            f"x---Error at updating reservation-{item_to_update['id']}: {str(error)}"
+        ) if not flag else msg_items.append(
+            f"Reservation completed-{item_to_update['id']}: {str(res_res)}"
+        )
+        # verificar si se despacho por completo
+        item_to_update["state"] = (
+            4 if item_to_update["dispatched"] == item_to_update["quantity"] else 3
+        )
         # insertar al inicio de los comentarios
         item_to_update["comment"] = f"{item_n['comment']}\n{item_to_update['comment']}"
         # agregar los comandos
@@ -617,16 +650,18 @@ def dispatch_sm(data, data_token):
         comment_history += (
             f"Dispatch: {item_to_update['quantity']}->{item_to_update['id']}\n"
         )
-
+        # --- agregar el item para que se actualize en los datos de la sm
         updated_products.append(item_to_update)
-        if "(Semidespachado)".lower() in item_to_update["comment"].lower():
+        if (
+            "(Semidespachado)".lower() in item_to_update["comment"].lower()
+            or item_to_update["state"] == 3
+        ):
             flag_semidespachado = True
         operations_done = True
     ids_to_update = [item["id"] for item in updated_products]
     for k, v in dict_products_sm.items():
         if k not in ids_to_update:
             updated_products.append(v)
-    # print(updated_products)
     if not operations_done:
         return 400, {"msg": msg_items, "error": "No operations done"}
     comment_history += (
@@ -640,24 +675,29 @@ def dispatch_sm(data, data_token):
             "comment": comment_history,
         }
     )
-    flag, error, result = update_history_items_sm(
-        data["id"], updated_products, history_sm
+    flag, error, result_smi = update_items_sm(updated_products, data["id"])
+    msg_items.append(f"Items updated: {str(result_smi)}") if flag else msg_items.append(
+        f"Error at updating items sm: {str(error)}"
     )
-    if flag:
-        msg = (
-            f"SM con ID-{data['id']} despachada por el empleado {data_token['emp_id']}"
-            if not flag_semidespachado
-            else f"SM con ID-{data['id']} semidespachada por el empleado {data_token['emp_id']}"
-        )
-        if msg_items:
-            msg += "\n" + "\n".join(msg_items)
-        write_log_file(log_file_sm_path, msg)
-        create_notification_permission(
-            msg, ["sm"], "SM Despachada", data_token["emp_id"], id_user
-        )
-        return 200, {"msg": msg_items}
-    else:
-        return 400, {"msg": f"Error at updating sm {str(error)}"}
+    new_status = determine_status_sm(updated_products)
+    flag, error, result_his = update_history_status_sm(
+        data["id"], history_sm, new_status
+    )
+    msg_items.append(
+        f"History updated: {str(result_his)}"
+    ) if flag else msg_items.append(f"Error at updating history sm: {str(error)}")
+    msg = (
+        f"SM con ID-{data['id']} despachada por el empleado {data_token['emp_id']}"
+        if not flag_semidespachado
+        else f"SM con ID-{data['id']} semidespachada por el empleado {data_token['emp_id']}"
+    )
+    if msg_items:
+        msg += "\n" + "\n".join(msg_items)
+    write_log_file(log_file_sm_path, msg)
+    create_notification_permission(
+        msg, ["sm"], "SM Despachada", data_token["emp_id"], id_user
+    )
+    return 200, {"msg": msg_items}
 
 
 def cancel_sm(data):
