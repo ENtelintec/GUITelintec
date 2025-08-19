@@ -244,6 +244,7 @@ def get_all_sm(limit, page=0, emp_id=-1, with_items=True):
 
 
 def get_department_identifiers(department_id, result, flag_creation=False):
+    print(department_id, result, flag_creation)
     match department_id:
         case 1:
             return [1]  # Dirección
@@ -904,6 +905,12 @@ def update_sm_from_control_table(data, data_token):
 
 
 def create_sm_from_api(data, data_token):
+    if len(data["items"]) == 0:
+        return {
+            "answer": "error",
+            "data": data["items"],
+            "error": "No items detected",
+        }, 400
     flag, error, result = insert_sm_db(data)
     if not flag:
         print(error)
@@ -914,9 +921,7 @@ def create_sm_from_api(data, data_token):
         f"empleado con id: {data_token.get('emp_id')}, "
         f"comentario: {data['info']['comment']}"
     )
-    errors_items, result_ids_items = create_items_sm_db(
-        data["items"], data["info"]["id"]
-    )
+    errors_items, result_ids_items = create_items_sm_db(data["items"], result)
     if len(result_ids_items) > 0:
         msg += f"\nItems creados: {result_ids_items}"
     if len(errors_items) > 0:

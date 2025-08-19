@@ -571,10 +571,12 @@ item_sm_put_model = api.model(
 
 
 class ItemsFormSMPost(Form):
-    id_inventory = IntegerField(
-        "id_inventory",
-        validators=[],
-        default=0,
+    id = IntegerField(
+        "id",
+        validators=[
+            validators.number_range(min=-10, message="Invalid id in inventory")
+        ],
+        default=-1,
     )
     name = StringField("name", validators=[InputRequired()])
     stock = FloatField(
