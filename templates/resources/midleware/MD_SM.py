@@ -675,10 +675,11 @@ def dispatch_sm(data, data_token):
             "comment": comment_history,
         }
     )
-    flag, error, result_smi = update_items_sm(updated_products, data["id"])
-    msg_items.append(f"Items updated: {str(result_smi)}") if flag else msg_items.append(
-        f"Error at updating items sm: {str(error)}"
-    )
+    errors, results_smi = update_items_sm(updated_products, data["id"])
+    if len(errors) > 0:
+        msg_items.append(f"Error al actualizar items: {errors}")
+    if len(results_smi) > 0:
+        msg_items.append(f"Items actualizados: {results_smi}")
     new_status = determine_status_sm(updated_products)
     flag, error, result_his = update_history_status_sm(
         data["id"], history_sm, new_status
