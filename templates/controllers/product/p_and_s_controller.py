@@ -1294,9 +1294,13 @@ def get_all_reservations():
         "sql_telintec.product_reservations.quantity, "
         "sql_telintec.product_reservations.status, "
         "sql_telintec.product_reservations.history, "
-        "sql_telintec.materials_request.folio "
+        "sql_telintec.materials_request.folio, "
+        "sql_telintec.products_amc.name, "
+        "sql_telintec.products_amc.sku "
         "FROM sql_telintec.product_reservations "
-        "LEFT JOIN sql_telintec.products_amc ON (sql_telintec.product_reservations.id_product = sql_telintec.products_amc.id_product)"
+        "LEFT JOIN sql_telintec.products_amc ON (sql_telintec.product_reservations.id_product = sql_telintec.products_amc.id_product) "
+        "LEFT JOIN sql_telintec.materials_request ON (sql_telintec.product_reservations.sm_id = sql_telintec.materials_request.sm_id) "
+        "ORDER BY reservation_id DESC "
     )
     flag, error, result = execute_sql(sql, None, 5)
     return flag, error, result
