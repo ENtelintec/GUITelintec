@@ -428,7 +428,7 @@ def update_status_safety(data, data_token):
     history = data["history"]
     history.append(
         {
-            "id_voucher": data["id_voucher_general"],
+            "id_voucher": data["id_voucher"],
             "type": 1,
             "timestamp": timestamp,
             "user": data_token.get("emp_id"),
