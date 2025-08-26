@@ -334,11 +334,9 @@ class ControlTableSM(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         validator = SMInfoControlTablePutForm.from_json(ns.payload)
-        print(ns.payload)
         if not validator.validate():
             return {"error": validator.errors}, 400
         data = validator.data
-        print(data)
         code, data_out = update_sm_from_control_table(data, data_token)
         return data_out, code
 

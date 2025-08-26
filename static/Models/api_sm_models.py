@@ -701,6 +701,9 @@ class SMInfoControlTableForm(Form):
     project = StringField("project", validators=[], default="")
     urgent = IntegerField("urgent", validators=[], default=0)
     comments = StringField("comments", validators=[], default="")
+    request_date = DateField("request_date", validators=[], filters=[date_filter])
+    date = DateField("date", validators=[], filters=[date_filter])
+    critical_date = DateField("critical_date", validators=[], filters=[date_filter])
     activity_description = StringField(
         "activity_description", validators=[], default=""
     )
