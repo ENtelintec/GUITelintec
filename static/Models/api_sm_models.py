@@ -710,27 +710,27 @@ class SMInfoControlTableForm(Form):
     requesting_user_state = StringField(
         "requesting_user_state", validators=[], default=""
     )
-    warehouse_reviewed = (IntegerField("warehouse_reviewed", validators=[], default=0),)
-    warehouse_status = (IntegerField("warehouse_status", validators=[], default=1),)
+    warehouse_reviewed = IntegerField("warehouse_reviewed", validators=[], default=0)
+    warehouse_status = IntegerField("warehouse_status", validators=[], default=1)
     admin_notification_date = StringField(
         "admin_notification_date", validators=[], filters=[]
     )
-    kpi_warehouse = (IntegerField("kpi_warehouse", validators=[], default=0),)
+    kpi_warehouse = IntegerField("kpi_warehouse", validators=[], default=0)
     warehouse_comments = StringField("warehouse_comments", validators=[], default="")
-    admin_reviewed = (IntegerField("admin_reviewed", validators=[], default=0),)
-    admin_status = (IntegerField("admin_status", validators=[], default=1),)
+    admin_reviewed = IntegerField("admin_reviewed", validators=[], default=0)
+    admin_status = IntegerField("admin_status", validators=[], default=1)
     warehouse_notification_date = StringField(
         "warehouse_notification_date", validators=[], filters=[]
     )
-    purchasing_kpi = (IntegerField("purchasing_kpi", validators=[], default=0),)
+    purchasing_kpi = IntegerField("purchasing_kpi", validators=[], default=0)
     admin_comments = StringField("admin_comments", validators=[], default="")
-    general_request_status = (
-        IntegerField("general_request_status", validators=[InputRequired()], default=1),
+    general_request_status = IntegerField(
+        "general_request_status", validators=[InputRequired()], default=1
     )
     operations_notification_date = StringField(
         "operations_notification_date", validators=[], filters=[]
     )
-    operations_kpi = (IntegerField("operations_kpi", validators=[], default=0),)
+    operations_kpi = IntegerField("operations_kpi", validators=[], default=0)
 
 
 class SMInfoControlTablePutForm(Form):
