@@ -85,7 +85,7 @@ def get_products_sm(contract: str):
                     "stock": item[3],
                     "partida": ids_in_contract[item[0]],
                     "reserved": item[4],
-                    "avaliable_stock": item[5],
+                    "available_stock": item[5],
                 }
             )
         else:
@@ -97,7 +97,7 @@ def get_products_sm(contract: str):
                     "stock": item[3],
                     "partida": "",
                     "reserved": item[4],
-                    "avaliable_stock": item[5],
+                    "available_stock": item[5],
                 }
             )
     data_out = {"data": {"contract": items_partida, "normal": items_normal}}
@@ -438,7 +438,7 @@ def update_data_dicts(products: list, products_sm):
 
 
 def dispatch_products_from_GUI(
-    avaliable: list[dict],
+    available: list[dict],
     to_request: list[dict],
     sm_id: int,
     new_products: list[dict],
@@ -449,7 +449,7 @@ def dispatch_products_from_GUI(
     date = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
     # ------------------------------avaliable products------------------------------------------
     msg = ""
-    for i, product in enumerate(avaliable):
+    for i, product in enumerate(available):
         # create out movements
         if "remanent" not in product.keys():
             if product["stock"] >= product["quantity"]:
@@ -478,11 +478,11 @@ def dispatch_products_from_GUI(
         # update stock avaliable
         update_stock_db(product["id"], product["stock"] - delivered_trans)
         product["stock"] -= delivered_trans
-        avaliable[i] = product
+        available[i] = product
         msg += f"Cantidad: {delivered_trans}-{product['name']}, movimiento de salida al despachar."
     emp_id = data["emp_id"] if data is not None else 0
     emp_id_creation = data["emp_id_creation"] if data is not None else 0
-    if len(avaliable) > 0:
+    if len(available) > 0:
         create_notification_permission(
             msg,
             ["almacen"],
@@ -533,7 +533,7 @@ def dispatch_products_from_GUI(
             emp_id,
             emp_id_creation,
         )
-    return avaliable, to_request, new_products
+    return available, to_request, new_products
 
 
 def determine_status_sm(items: list):

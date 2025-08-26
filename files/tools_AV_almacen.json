@@ -20,7 +20,7 @@
     "type": "function",
     "function": {
       "name": "getProductCategories",
-      "description": "Get the avaliable categories of products",
+      "description": "Get the available categories of products",
       "parameters": {
         "type": "object",
         "properties": {
