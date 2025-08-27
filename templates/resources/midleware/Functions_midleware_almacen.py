@@ -1247,6 +1247,9 @@ def update_reservation_from_api(data, data_token):
     time_zone = pytz.timezone(timezone_software)
     date = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
     history = data.get("history")
+    status = data.get("status", 0)
+    add_quantity = True if status == 10 else False
+    status = 0 if status == 10 else status
     history.append(
         {
             "user": data_token["emp_id"],
@@ -1256,9 +1259,10 @@ def update_reservation_from_api(data, data_token):
     )
     flag, error, result = update_reservation_db(
         data["id"],
-        data["status"],
+        status,
         data["quantity"],
         json.dumps(history),
+        add_quantity
     )
     if not flag:
         return {"data": None, "error": str(error)}, 400

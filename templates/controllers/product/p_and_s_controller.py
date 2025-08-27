@@ -8,8 +8,8 @@ from datetime import datetime
 import pytz
 
 from static.constants import format_timestamps, timezone_software
-from templates.Functions_Utils import clean_name
 from templates.database.connection import execute_sql
+from templates.Functions_Utils import clean_name
 
 
 def get_ins_db():
@@ -1256,12 +1256,21 @@ def insert_reservation_db(id_product, quantity, sm_id, history):
     return flag, error, lastrowid
 
 
-def update_reservation_db(id_reservation, status, quantity, history):
-    sql = (
-        "UPDATE sql_telintec.product_reservations "
-        "SET status = %s, quantity = %s, history = %s "
-        "WHERE reservation_id = %s"
-    )
+def update_reservation_db(
+    id_reservation, status, quantity, history, add_quantity=False
+):
+    if not add_quantity:
+        sql = (
+            "UPDATE sql_telintec.product_reservations "
+            "SET status = %s, quantity = %s, history = %s "
+            "WHERE reservation_id = %s"
+        )
+    else:
+        sql = (
+            "UPDATE sql_telintec.product_reservations "
+            "SET status = %s, quantity = quantity + %s, history = %s "
+            "WHERE reservation_id = %s"
+        )
     vals = (status, quantity, history, id_reservation)
     flag, error, lastrowid = execute_sql(sql, vals, 4)
     return flag, error, lastrowid
