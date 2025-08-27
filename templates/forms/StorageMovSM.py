@@ -7,7 +7,7 @@ import textwrap
 from reportlab.pdfgen import canvas
 
 from static.constants import filepath_sm_pdf
-from templates.forms.PDFGenerator import a4_x, a4_y, create_header
+from templates.forms.PDFGenerator import a4_x, a4_y, create_header_telintec
 
 dict_wrappers_headers = {
     "Movements": {
@@ -216,7 +216,7 @@ def InventoryStoragePDF(dict_data: dict, type_form="Movements"):
         "Inventario: Registro de Materiales"
     )
     products = dict_data["products"]
-    create_header(
+    create_header_telintec(
         pdf,
         title=["Inventario", "Registro de Entradas y Salidas", "Almacen-Nogalar"]
         if type_form == "Movements"
@@ -280,7 +280,7 @@ def ReturnMaterials(dict_data: dict):
     pdf = canvas.Canvas(file_name, pagesize=(a4_y, a4_x))
     pdf.setTitle("Devolucion de Materiales")
     products = dict_data["products"]
-    create_header(
+    create_header_telintec(
         pdf, title="DEVOLUCION DE MATERIALES", page_x=a4_y, date_int="2023-06-14"
     )
     pages = 1
@@ -341,7 +341,7 @@ def FileSmPDF(dict_data: dict):
     pdf.setTitle("SOLICITUD DE MATERIAL")
     products = dict_data["products"]
     folio = dict_data.get("metadata", {}).get("Folio", "")
-    create_header(
+    create_header_telintec(
         pdf,
         title="SOLICITUD DE MATERIAL",
         page_x=x_max,

@@ -11,7 +11,7 @@ from static.constants import filepath_po_pdf
 from templates.forms.PDFGenerator import (
     a4_x,
     a4_y,
-    create_header,
+    create_header_telintec,
     print_footer_page_count,
 )
 
@@ -199,7 +199,7 @@ def FilePoPDF(dict_data: dict):
     pdf.setTitle("Orden de Compra")
     products = dict_data["products"]
     folio = dict_data.get("Folio", "")
-    create_header(
+    create_header_telintec(
         pdf,
         title="Orden de Compra",
         page_x=x_max,
