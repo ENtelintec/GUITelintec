@@ -437,103 +437,103 @@ def update_data_dicts(products: list, products_sm):
     return products_sm
 
 
-def dispatch_products_from_GUI(
-    available: list[dict],
-    to_request: list[dict],
-    sm_id: int,
-    new_products: list[dict],
-    data=None,
-) -> tuple[list[dict], list[dict], list[dict]]:
-    # _data = DataHandler()
-    time_zone = pytz.timezone(timezone_software)
-    date = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
-    # ------------------------------avaliable products------------------------------------------
-    msg = ""
-    for i, product in enumerate(available):
-        # create out movements
-        if "remanent" not in product.keys():
-            if product["stock"] >= product["quantity"]:
-                create_movement_db_amc(
-                    product["id"], "salida", product["quantity"], date, sm_id
-                )
-                product["comment"] += " ;(Despachado) "
-                delivered_trans = product["quantity"]
-            else:
-                create_movement_db_amc(
-                    product["id"], "salida", product["stock"], date, sm_id
-                )
-                delivered_trans = product["stock"]
-                product["remanent"] = product["quantity"] - product["stock"]
-                product["comment"] += " ;(Semidespachado) "
-        elif "remanent" in product.keys() and product["remanent"] > 0:
-            create_movement_db_amc(
-                product["id"], "salida", product["remanent"], date, sm_id
-            )
-            delivered_trans = product["remanent"]
-            product["comment"] += " ;(Despachado) "
-        else:
-            # cuando el remante es menor que cero
-            product["comment"] += " ;(Despachado) "
-            continue
-        # update stock avaliable
-        update_stock_db(product["id"], product["stock"] - delivered_trans)
-        product["stock"] -= delivered_trans
-        available[i] = product
-        msg += f"Cantidad: {delivered_trans}-{product['name']}, movimiento de salida al despachar."
-    emp_id = data["emp_id"] if data is not None else 0
-    emp_id_creation = data["emp_id_creation"] if data is not None else 0
-    if len(available) > 0:
-        create_notification_permission(
-            msg,
-            ["almacen"],
-            "Movimientos almacen despachar sm",
-            emp_id,
-            emp_id_creation,
-        )
-    # ------------------------------products to request------------------------------------------
-    msg = ""
-    for i, product in enumerate(to_request):
-        _ins = create_movement_db_amc(
-            product["id"], "entrada", product["quantity"], date, sm_id
-        )
-        product["comment"] += " ;(Pedido) "
-        to_request[i] = product
-        msg += f"{product['quantity']} {product['name']} movimiento de entrada."
-        product["stock"] += product["quantity"]
-    if len(to_request) > 0:
-        create_notification_permission(
-            msg,
-            ["almacen"],
-            "Movimiento pedidos al despachar sm",
-            emp_id,
-            emp_id_creation,
-        )
-    # ------------------------------products to request for new-----------------------------------
-    msg = ""
-    for i, product in enumerate(new_products):
-        try:
-            int(product["id"])
-            if int(product["id"]) == -1 or int(product["id"]) < 0:
-                msg += f"{product['quantity']} {product['name']} debe primero ser ingresado al inventario"
-                continue
-        except Exception as e:
-            print("Error in the format of the id: ", str(e))
-            continue
-        # _ins = _data.create_in_movement(
-        #     product["id"], "entrada", product["quantity"], date, sm_id
-        # )
-        product["comment"] += " ;(Pedido) "
-        new_products[i] = product
-        msg += f"{product['quantity']} {product['name']} movimiento de entrada de producto nuevo."
-    if len(new_products) > 0:
-        create_notification_permission(
-            msg,
-            ["almacen"],
-            "Movimiento de entrada (Productos Nuevos)",
-            emp_id,
-            emp_id_creation,
-        )
-    return available, to_request, new_products
+# def dispatch_products_from_GUI(
+#     available: list[dict],
+#     to_request: list[dict],
+#     sm_id: int,
+#     new_products: list[dict],
+#     data=None,
+# ) -> tuple[list[dict], list[dict], list[dict]]:
+#     # _data = DataHandler()
+#     time_zone = pytz.timezone(timezone_software)
+#     date = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
+#     # ------------------------------avaliable products------------------------------------------
+#     msg = ""
+#     for i, product in enumerate(available):
+#         # create out movements
+#         if "remanent" not in product.keys():
+#             if product["stock"] >= product["quantity"]:
+#                 create_movement_db_amc(
+#                     product["id"], "salida", product["quantity"], date, sm_id
+#                 )
+#                 product["comment"] += " ;(Despachado) "
+#                 delivered_trans = product["quantity"]
+#             else:
+#                 create_movement_db_amc(
+#                     product["id"], "salida", product["stock"], date, sm_id
+#                 )
+#                 delivered_trans = product["stock"]
+#                 product["remanent"] = product["quantity"] - product["stock"]
+#                 product["comment"] += " ;(Semidespachado) "
+#         elif "remanent" in product.keys() and product["remanent"] > 0:
+#             create_movement_db_amc(
+#                 product["id"], "salida", product["remanent"], date, sm_id
+#             )
+#             delivered_trans = product["remanent"]
+#             product["comment"] += " ;(Despachado) "
+#         else:
+#             # cuando el remante es menor que cero
+#             product["comment"] += " ;(Despachado) "
+#             continue
+#         # update stock avaliable
+#         update_stock_db(product["id"], product["stock"] - delivered_trans)
+#         product["stock"] -= delivered_trans
+#         available[i] = product
+#         msg += f"Cantidad: {delivered_trans}-{product['name']}, movimiento de salida al despachar."
+#     emp_id = data["emp_id"] if data is not None else 0
+#     emp_id_creation = data["emp_id_creation"] if data is not None else 0
+#     if len(available) > 0:
+#         create_notification_permission(
+#             msg,
+#             ["almacen"],
+#             "Movimientos almacen despachar sm",
+#             emp_id,
+#             emp_id_creation,
+#         )
+#     # ------------------------------products to request------------------------------------------
+#     msg = ""
+#     for i, product in enumerate(to_request):
+#         _ins = create_movement_db_amc(
+#             product["id"], "entrada", product["quantity"], date, sm_id
+#         )
+#         product["comment"] += " ;(Pedido) "
+#         to_request[i] = product
+#         msg += f"{product['quantity']} {product['name']} movimiento de entrada."
+#         product["stock"] += product["quantity"]
+#     if len(to_request) > 0:
+#         create_notification_permission(
+#             msg,
+#             ["almacen"],
+#             "Movimiento pedidos al despachar sm",
+#             emp_id,
+#             emp_id_creation,
+#         )
+#     # ------------------------------products to request for new-----------------------------------
+#     msg = ""
+#     for i, product in enumerate(new_products):
+#         try:
+#             int(product["id"])
+#             if int(product["id"]) == -1 or int(product["id"]) < 0:
+#                 msg += f"{product['quantity']} {product['name']} debe primero ser ingresado al inventario"
+#                 continue
+#         except Exception as e:
+#             print("Error in the format of the id: ", str(e))
+#             continue
+#         # _ins = _data.create_in_movement(
+#         #     product["id"], "entrada", product["quantity"], date, sm_id
+#         # )
+#         product["comment"] += " ;(Pedido) "
+#         new_products[i] = product
+#         msg += f"{product['quantity']} {product['name']} movimiento de entrada de producto nuevo."
+#     if len(new_products) > 0:
+#         create_notification_permission(
+#             msg,
+#             ["almacen"],
+#             "Movimiento de entrada (Productos Nuevos)",
+#             emp_id,
+#             emp_id_creation,
+#         )
+#     return available, to_request, new_products
 
 
 def determine_status_sm(items: list):
@@ -671,9 +671,9 @@ def dispatch_sm(data, data_token):
     history_sm.append(
         {
             "user": data_token["emp_id"],
-            "event": "dispatch action",
+            "event": "Despachado",
             "date": date_now,
-            "comment": comment_history,
+            "comment": comment_history + f"por el empleado {data_token['emp_id']}",
         }
     )
     errors, results_smi = update_items_sm(updated_products, data["id"])
@@ -713,9 +713,9 @@ def cancel_sm(data):
     history_sm.append(
         {
             "user": data["emp_id"],
-            "event": "cancelation",
+            "event": "Cancelación",
             "date": date_now,
-            "comment": data["comment"],
+            "comment": data["comment"] + f"por el empleado {data['emp_id']}",
         }
     )
     flag, error, result = update_history_sm(data["id"], history_sm, [], True)
@@ -878,9 +878,9 @@ def update_sm_from_control_table(data, data_token):
     history_sm.append(
         {
             "user": data_token.get("emp_id"),
-            "event": "update table info",
+            "event": "Actualizar control de sm",
             "date": date_now,
-            "comment": "Update from control table",
+            "comment": f"Actualización de datos desde la tabla de control por el empleado {data_token.get('emp_id')}",
         }
     )
     extra_info = json.loads(result[14])

@@ -270,7 +270,7 @@ def insert_sm_db(data):
     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
     event = [
         {
-            "event": "creation",
+            "event": "Creación",
             "date": timestamp,
             "user": data["info"]["emp_id"],
         }

@@ -173,7 +173,7 @@ def create_purchaser_order_api(data, data_token):
     history = [
         {
             "user": data_token.get("emp_id"),
-            "event": "create",
+            "event": "Creación de orden",
             "date": timestamp,
             "comment": "Create purchase order",
         }
@@ -237,7 +237,7 @@ def update_purchase_order_api(data, data_token):
     history.append(
         {
             "user": data_token.get("emp_id"),
-            "event": "update",
+            "event": "Actualización de orden",
             "date": timestamp,
             "comment": "Update purchase order",
         }
@@ -304,7 +304,7 @@ def cancel_purchase_order_api(data, data_token):
     history.append(
         {
             "user": data_token.get("emp_id"),
-            "event": "cancel",
+            "event": "Cancelado",
             "date": timestamp,
             "comment": data.get("comment", ""),
         }
@@ -330,7 +330,7 @@ def change_state_order_api(data, data_token):
     history.append(
         {
             "user": data_token.get("emp_id"),
-            "event": "change_state",
+            "event": "Cambio de estado",
             "date": timestamp,
             "comment": data.get("comment", ""),
         }
@@ -440,7 +440,7 @@ def create_po_application_api(data, data_token):
     history = [
         {
             "user": data_token.get("emp_id"),
-            "event": "create",
+            "event": "Creación de solicitud",
             "date": timestamp,
             "comment": "Create purchase order application",
         }
@@ -507,7 +507,7 @@ def update_po_application_api(data, data_token):
     history.append(
         {
             "user": data_token.get("emp_id"),
-            "event": "update",
+            "event": "Actualización de solicitud",
             "date": timestamp,
             "comment": "Update purchase order",
         }
@@ -575,7 +575,7 @@ def cancel_po_application_api(data, data_token):
     history.append(
         {
             "user": data_token.get("emp_id"),
-            "event": "cancel",
+            "event": "Cancelado",
             "date": timestamp,
             "comment": data.get("comment", ""),
         }
@@ -605,7 +605,7 @@ def change_state_po_application_api(data, data_token):
     history.append(
         {
             "user": data_token.get("emp_id"),
-            "event": "change_state",
+            "event": "Cambio de estado",
             "date": timestamp,
             "comment": data.get("comment", "")
             + f"status: {data['status']}, approved: {data['approved']}",
