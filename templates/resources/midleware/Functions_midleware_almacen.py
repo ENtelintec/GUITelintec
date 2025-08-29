@@ -1256,7 +1256,7 @@ def update_reservation_from_api(data, data_token):
     history.append(
         {
             "user": data_token["emp_id"],
-            "comment": f"Actualizaicon de reservacion {data['id']} con {data['quantity']} items para el folio {data['sm_id']}",
+            "comment": f"Actualizaicon de reservacion {data['id']} con {data['quantity']} items ",
             "timestamp": date,
         }
     )
