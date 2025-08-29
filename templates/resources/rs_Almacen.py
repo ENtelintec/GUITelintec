@@ -292,7 +292,7 @@ class InventoryCategories(Resource):
         return {"data": data, "msg": "Ok" if code == 200 else "Error"}, code
 
 
-@ns.route("/inventory/suppliers/all")
+@ns.route("/inventory/suppliers/allSuppliers")
 class InventorySuppliers(Resource):
     # @ns.marshal_with(suppliers_output_model)
     @ns.expect(expected_headers_per)

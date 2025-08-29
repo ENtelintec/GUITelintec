@@ -6,7 +6,7 @@ import textwrap
 
 from reportlab.pdfgen import canvas
 
-from templates.forms.PDFGenerator import a4_x, a4_y, create_header
+from templates.forms.PDFGenerator import a4_x, a4_y, create_header_telintec
 
 dict_wrappers_headers_quotation = {
     "Movements": {
@@ -229,7 +229,7 @@ def QuotationForm(dict_data: dict, type_form="Movements"):
     pdf = canvas.Canvas(file_name, pagesize=(a4_y, a4_x))
     pdf.setTitle("Cotización")
     products = dict_data["products"]
-    create_header(
+    create_header_telintec(
         pdf,
         title="Cotización",
         page_x=a4_y,

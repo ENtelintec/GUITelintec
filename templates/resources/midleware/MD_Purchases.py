@@ -173,7 +173,7 @@ def create_purchaser_order_api(data, data_token):
     history = [
         {
             "user": data_token.get("emp_id"),
-            "event": "create",
+            "event": "Creación de orden",
             "date": timestamp,
             "comment": "Create purchase order",
         }
@@ -190,6 +190,7 @@ def create_purchaser_order_api(data, data_token):
         data["supplier"],
         data["folio"],
         history,
+        data["time_delivery"],
         extra_info,
     )
     if not flag:
@@ -236,7 +237,7 @@ def update_purchase_order_api(data, data_token):
     history.append(
         {
             "user": data_token.get("emp_id"),
-            "event": "update",
+            "event": "Actualización de orden",
             "date": timestamp,
             "comment": "Update purchase order",
         }
@@ -255,6 +256,7 @@ def update_purchase_order_api(data, data_token):
         data["folio"],
         history,
         extra_info,
+        data["time_delivery"],
     )
     if not flag:
         return {"data": None, "msg": "error", "error": str(error)}, 400
@@ -265,7 +267,7 @@ def update_purchase_order_api(data, data_token):
         extra_info = create_extra_info_product_from_data(item)
         flag, error, result = update_po_item(
             item["id"],
-            item["purchase_id"],
+            data["id"],
             item["quantity"],
             item["unit_price"],
             item["description"],
@@ -302,7 +304,7 @@ def cancel_purchase_order_api(data, data_token):
     history.append(
         {
             "user": data_token.get("emp_id"),
-            "event": "cancel",
+            "event": "Cancelado",
             "date": timestamp,
             "comment": data.get("comment", ""),
         }
@@ -328,7 +330,7 @@ def change_state_order_api(data, data_token):
     history.append(
         {
             "user": data_token.get("emp_id"),
-            "event": "change_state",
+            "event": "Cambio de estado",
             "date": timestamp,
             "comment": data.get("comment", ""),
         }
@@ -438,14 +440,14 @@ def create_po_application_api(data, data_token):
     history = [
         {
             "user": data_token.get("emp_id"),
-            "event": "create",
+            "event": "Creación de solicitud",
             "date": timestamp,
             "comment": "Create purchase order application",
         }
     ]
     flag, error, id_po_app = insert_po_application(
         timestamp,
-        0,
+        1,
         data_token.get("emp_id"),
         data["reference"],
         history,
@@ -463,7 +465,7 @@ def create_po_application_api(data, data_token):
             item["quantity"],
             0.0,
             item["description"],
-            0,
+            "0",
             extra_info,
             item["tool"],
         )
@@ -505,7 +507,7 @@ def update_po_application_api(data, data_token):
     history.append(
         {
             "user": data_token.get("emp_id"),
-            "event": "update",
+            "event": "Actualización de solicitud",
             "date": timestamp,
             "comment": "Update purchase order",
         }
@@ -531,7 +533,7 @@ def update_po_application_api(data, data_token):
                 item["quantity"],
                 0.0,
                 item["description"],
-                0,
+                "0",
                 extra_info,
             )
         else:
@@ -573,12 +575,13 @@ def cancel_po_application_api(data, data_token):
     history.append(
         {
             "user": data_token.get("emp_id"),
-            "event": "cancel",
+            "event": "Cancelado",
             "date": timestamp,
             "comment": data.get("comment", ""),
         }
     )
     flag, error, result = cancel_po_application(
+        data.get("status", 4),
         history,
         data["id"],
     )
@@ -602,7 +605,7 @@ def change_state_po_application_api(data, data_token):
     history.append(
         {
             "user": data_token.get("emp_id"),
-            "event": "change_state",
+            "event": "Cambio de estado",
             "date": timestamp,
             "comment": data.get("comment", "")
             + f"status: {data['status']}, approved: {data['approved']}",

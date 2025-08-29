@@ -24,7 +24,9 @@ from static.Models.api_sm_models import (
     RequestSMDispatchForm,
     NewProductForm,
     control_table_sm_put_model,
-    SMInfoControlTablePutForm, item_sm_put_model, ItemSmPutForm,
+    SMInfoControlTablePutForm,
+    item_sm_put_model,
+    ItemSmPutForm,
 )
 from static.constants import log_file_sm_path
 from templates.Functions_AuxPlots import get_data_sm_per_range
@@ -51,6 +53,7 @@ from templates.resources.midleware.MD_SM import (
     fetch_all_sm_with_permissions,
     create_sm_from_api,
     update_sm_from_api,
+    update_items_sm_from_api,
 )
 
 ns = Namespace("GUI/api/v1/sm")
@@ -101,7 +104,9 @@ class Products(Resource):
 class AllSm(Resource):
     @ns.expect(expected_headers_per)
     def get(self):
-        flag, data_token, msg = token_verification_procedure(request, department="sm")
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["sm", "almacen"]
+        )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data_out, code = get_all_sm(-1, 0, -1)
@@ -112,7 +117,9 @@ class AllSm(Resource):
 class AllSmPerPermission(Resource):
     @ns.expect(expected_headers_per)
     def get(self):
-        flag, data_token, msg = token_verification_procedure(request, department="sm")
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["sm", "almacen"]
+        )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data_out, code = fetch_all_sm_with_permissions(data_token)
@@ -255,10 +262,12 @@ class AlmacenEmployees(Resource):
 
 
 @ns.route("/manage/dispatch")
-class ManageSMDispatch(Resource):
+class DispatchSM(Resource):
     @ns.expect(expected_headers_per, request_sm_dispatch_model)
     def post(self):
-        flag, data_token, msg = token_verification_procedure(request, department="sm")
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["almacen"]
+        )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
@@ -347,12 +356,14 @@ class AllControlTableSm(Resource):
 class SmItemsActions(Resource):
     @ns.expect(expected_headers_per, item_sm_put_model)
     def put(self):
-        flag, data_token, msg = token_verification_procedure(request, department=["sm", "administracion", "almacen"])
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["sm", "administracion", "almacen"]
+        )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         validator = ItemSmPutForm.from_json(ns.payload)
         if not validator.validate():
             return {"error": validator.errors}, 400
         data = validator.data
-        data_out, code = update_sm_from_api(data, data_token)
+        data_out, code = update_items_sm_from_api(data, data_token)
         return data_out, code

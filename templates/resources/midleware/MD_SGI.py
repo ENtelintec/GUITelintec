@@ -51,13 +51,15 @@ def create_voucher_tools_api(data, data_token):
             "msg": "Error at creating tools voucher",
             "error": str(error),
         }, 400
-    history = {
-        "id_voucher": v_tools_id,
-        "type": 0,
-        "timestamp": timestamp,
-        "user": data_token.get("emp_id"),
-        "comment": "Voucher creado",
-    }
+    history = [
+        {
+            "id_voucher": v_tools_id,
+            "type": 0,
+            "timestamp": timestamp,
+            "user": data_token.get("emp_id"),
+            "comment": "Voucher creado",
+        }
+    ]
     flag, error, rows_updated = update_history_voucher(history, lastrowid)
     if not flag:
         return {
@@ -193,13 +195,15 @@ def create_voucher_safety_api(data, data_token):
             "msg": "Error at creating safety voucher",
             "error": str(error),
         }, 400
-    history = {
-        "id_voucher": lastrowid_safety,
-        "type": 1,
-        "timestamp": timestamp,
-        "user": data_token.get("emp_id"),
-        "comment": "Voucher creado",
-    }
+    history = [
+        {
+            "id_voucher": lastrowid_safety,
+            "type": 1,
+            "timestamp": timestamp,
+            "user": data_token.get("emp_id"),
+            "comment": "Voucher creado",
+        }
+    ]
     flag, error, rows_updated = update_history_voucher(history, lastrowid)
     if not flag:
         return {
@@ -424,7 +428,7 @@ def update_status_safety(data, data_token):
     history = data["history"]
     history.append(
         {
-            "id_voucher": data["id_voucher_general"],
+            "id_voucher": data["id_voucher"],
             "type": 1,
             "timestamp": timestamp,
             "user": data_token.get("emp_id"),
@@ -433,7 +437,7 @@ def update_status_safety(data, data_token):
         }
     )
     flag, error, rows_updated = update_state_safety_voucher(
-        data["id_voucher_general"],
+        data["id_voucher"],
         data["user_state"],
         data["epp_state"],
         data["storage_state"],
@@ -444,9 +448,7 @@ def update_status_safety(data, data_token):
             "msg": "Error at updating safety voucher",
             "error": str(error),
         }, 400
-    flag, error, rows_updated = update_history_voucher(
-        history, data["id_voucher_general"]
-    )
+    flag, error, rows_updated = update_history_voucher(history, data["id_voucher"])
     if not flag:
         return {
             "data": None,

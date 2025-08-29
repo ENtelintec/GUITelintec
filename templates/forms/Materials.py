@@ -11,7 +11,7 @@ from templates.forms.PDFGenerator import (
     a4_x,
     create_header_materials,
     create_footer_sign,
-    create_header,
+    create_header_telintec,
     create_info_materials_request,
 )
 
@@ -203,7 +203,7 @@ def MaterialsRequest(dict_data: dict, type_form="MaterialsRequest"):
     limit_y = 10
     pdf.setTitle("Solicitud de Material")
     products = dict_data["products"]
-    create_header(
+    create_header_telintec(
         pdf,
         title="SOLICITUD DE MATERIALES",
         page_x=a4_x,

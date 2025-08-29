@@ -1,8 +1,13 @@
 # -*- coding: utf-8 -*-
-__author__ = 'Edisson Naula'
-__date__ = '$ 23/jul./2024  at 5:50 $'
+__author__ = "Edisson Naula"
+__date__ = "$ 23/jul./2024  at 5:50 $"
 
-from templates.forms.PDFGenerator import create_datos_personales, display_recommendations, display_result, create_header
+from templates.forms.PDFGenerator import (
+    create_datos_personales,
+    display_recommendations,
+    display_result,
+    create_header_telintec,
+)
 from reportlab.pdfgen import canvas
 
 
@@ -19,11 +24,7 @@ def QuizzSalidaPDF(
     name_interviewer="Interviewer",
 ):
     # initializing variables with values
-    file_name = (
-        "files/quizz_out/sample.pdf"
-        if filepath_out is None
-        else filepath_out
-    )
+    file_name = "files/quizz_out/sample.pdf" if filepath_out is None else filepath_out
     image_logo = "img/logo_docs.png" if image_logo is None else image_logo
     name_quizz = "Encuesta de Salida"
     # creating a pdf object
@@ -34,7 +35,7 @@ def QuizzSalidaPDF(
     # setting the title of the document
     pdf.setTitle(name_quizz)
     # create header
-    create_header(pdf, image_logo, name_quizz, a4_x, date_inteview)
+    create_header_telintec(pdf, image_logo, name_quizz, a4_x, date_inteview)
     # information text
     txt_lines = [
         "Por favor, dedique unos minutos a completar esta encuesta. La información que nos",
@@ -187,7 +188,7 @@ def QuizzSalidaPDF(
                 pdf.drawString(310 + j * 50, 115 - i * font_size * 1.35, "O")
     # ----------------------add other page------------------------------------------
     pdf.showPage()
-    create_header(pdf, image_logo, name_quizz, a4_x, date_inteview)
+    create_header_telintec(pdf, image_logo, name_quizz, a4_x, date_inteview)
     # ------------------------question 6-------------------
     question = dict_quizz["5"]["question"]
     question = question.split("\n")

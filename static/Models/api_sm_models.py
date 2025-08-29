@@ -44,7 +44,7 @@ deliveries_item_model = api.model(
         "quantity": fields.Float(required=True, description="The product quantity"),
         "timestamp": fields.String(required=True, description="The product date"),
         "comment": fields.String(required=True, description="The product comment"),
-        "state":  fields.Integer(required=True, description="The product state"),
+        "state": fields.Integer(required=True, description="The product state"),
     },
 )
 
@@ -71,12 +71,14 @@ items_model_sm = api.model(
         "is_erased": fields.Integer(
             required=False, description="The product is erased", example=0
         ),
-        "state": fields.Integer(required=True, description="The product state for dispatch", example=0),
+        "state": fields.Integer(
+            required=True, description="The product state for dispatch", example=0
+        ),
         "deliveries": fields.List(fields.Nested(deliveries_item_model)),
         "state_quantity": fields.Integer(
             required=True, description="The product state quantity", example=0
         ),
-        "state_delivery":  fields.String(
+        "state_delivery": fields.String(
             required=True, description="The product state delivery", example="N/A"
         ),
     },
@@ -475,7 +477,6 @@ sm_put_model = api.model(
 )
 
 
-
 delete_request_sm_model = api.model(
     "DeleteRequestmaterial_request",
     {
@@ -562,16 +563,20 @@ item_sm_put_model = api.model(
     "SMItemPut",
     {
         "items": fields.List(fields.Nested(items_model_sm)),
-        "id_sm": fields.Integer(required=True, description="The id of the sm to update"),
+        "id_sm": fields.Integer(
+            required=True, description="The id of the sm to update"
+        ),
     },
 )
 
 
 class ItemsFormSMPost(Form):
-    id_inventory = IntegerField(
-        "id_inventory",
-        validators=[],
-        default=0,
+    id = IntegerField(
+        "id",
+        validators=[
+            validators.number_range(min=-10, message="Invalid id in inventory")
+        ],
+        default=-1,
     )
     name = StringField("name", validators=[InputRequired()])
     stock = FloatField(
@@ -696,6 +701,9 @@ class SMInfoControlTableForm(Form):
     project = StringField("project", validators=[], default="")
     urgent = IntegerField("urgent", validators=[], default=0)
     comments = StringField("comments", validators=[], default="")
+    request_date = DateField("request_date", validators=[], filters=[date_filter])
+    date = DateField("date", validators=[], filters=[date_filter])
+    critical_date = DateField("critical_date", validators=[], filters=[date_filter])
     activity_description = StringField(
         "activity_description", validators=[], default=""
     )
@@ -705,27 +713,27 @@ class SMInfoControlTableForm(Form):
     requesting_user_state = StringField(
         "requesting_user_state", validators=[], default=""
     )
-    warehouse_reviewed = (IntegerField("warehouse_reviewed", validators=[], default=0),)
-    warehouse_status = (IntegerField("warehouse_status", validators=[], default=1),)
+    warehouse_reviewed = IntegerField("warehouse_reviewed", validators=[], default=0)
+    warehouse_status = IntegerField("warehouse_status", validators=[], default=1)
     admin_notification_date = StringField(
         "admin_notification_date", validators=[], filters=[]
     )
-    kpi_warehouse = (IntegerField("kpi_warehouse", validators=[], default=0),)
+    kpi_warehouse = IntegerField("kpi_warehouse", validators=[], default=0)
     warehouse_comments = StringField("warehouse_comments", validators=[], default="")
-    admin_reviewed = (IntegerField("admin_reviewed", validators=[], default=0),)
-    admin_status = (IntegerField("admin_status", validators=[], default=1),)
+    admin_reviewed = IntegerField("admin_reviewed", validators=[], default=0)
+    admin_status = IntegerField("admin_status", validators=[], default=1)
     warehouse_notification_date = StringField(
         "warehouse_notification_date", validators=[], filters=[]
     )
-    purchasing_kpi = (IntegerField("purchasing_kpi", validators=[], default=0),)
+    purchasing_kpi = IntegerField("purchasing_kpi", validators=[], default=0)
     admin_comments = StringField("admin_comments", validators=[], default="")
-    general_request_status = (
-        IntegerField("general_request_status", validators=[InputRequired()], default=1),
+    general_request_status = IntegerField(
+        "general_request_status", validators=[InputRequired()], default=1
     )
     operations_notification_date = StringField(
         "operations_notification_date", validators=[], filters=[]
     )
-    operations_kpi = (IntegerField("operations_kpi", validators=[], default=0),)
+    operations_kpi = IntegerField("operations_kpi", validators=[], default=0)
 
 
 class SMInfoControlTablePutForm(Form):

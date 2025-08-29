@@ -18,6 +18,8 @@ from static.Models.api_purchases_models import (
     PurchaseOrderPostForm,
     purchase_order_put_model,
     PurchaseOrderPutForm,
+    purchase_order_delete_model,
+    POAppDeleteForm,
 )
 from templates.resources.methods.Functions_Aux_Login import token_verification_procedure
 from templates.resources.midleware.MD_Purchases import (
@@ -118,7 +120,7 @@ class OperationsApplicationPOs(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
-        validator = PurchaseOrderDeleteForm.from_json(ns.payload)
+        validator = POAppDeleteForm.from_json(ns.payload)
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
@@ -159,7 +161,7 @@ class OperationsPOs(Resource):
         data_out, code = update_purchase_order_api(data, error)
         return data_out, code
 
-    @ns.expect(expected_headers_per)
+    @ns.expect(expected_headers_per, purchase_order_delete_model)
     def delete(self):
         flag, data_token, msg = token_verification_procedure(
             request, department="orders"

@@ -36,6 +36,7 @@ extra_info_supplier_model = api.model(
     "EISupplier",
     {
         "brands": fields.List(fields.String(), required=True, default=[]),
+        "rfc":  fields.String(required=False, default=""),
     },
 )
 
@@ -107,6 +108,7 @@ class ClientDeleteForm(Form):
 
 class ExtraInfoSupplierForm(Form):
     brands = FieldList(StringField(validators=[], default=""), "brands")
+    rfc = StringField(validators=[], default="")
 
 
 class SupplierInsertForm(Form):

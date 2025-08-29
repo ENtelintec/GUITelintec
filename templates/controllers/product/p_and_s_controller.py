@@ -8,8 +8,8 @@ from datetime import datetime
 import pytz
 
 from static.constants import format_timestamps, timezone_software
-from templates.Functions_Utils import clean_name
 from templates.database.connection import execute_sql
+from templates.Functions_Utils import clean_name
 
 
 def get_ins_db():
@@ -243,7 +243,7 @@ def get_movements_type_db_all(type_m="all"):
         "LEFT JOIN sql_telintec.products_amc ON (sql_telintec.products_amc.id_product = sql_telintec.product_movements_amc.id_product)"
         "LEFT JOIN sql_telintec.suppliers_amc ON (sql_telintec.products_amc.id_supplier = sql_telintec.suppliers_amc.id_supplier)"
         "WHERE movement_type LIKE %s "
-        "ORDER BY movement_date DESC LIMIT 1000"
+        "ORDER BY movement_date DESC"
     )
     vals = (type_m,)
     flag, error, result = execute_sql(sql, vals, 2)
@@ -1256,19 +1256,39 @@ def insert_reservation_db(id_product, quantity, sm_id, history):
     return flag, error, lastrowid
 
 
-def update_reservation_db(id_reservation, status, quantity, history):
-    sql = (
-        "UPDATE sql_telintec.product_reservations "
-        "SET status = %s, quantity = %s, history = %s "
-        "WHERE reservation_id = %s"
-    )
+def update_reservation_db(
+    id_reservation, status, quantity, history, add_quantity=False
+):
+    if not add_quantity:
+        sql = (
+            "UPDATE sql_telintec.product_reservations "
+            "SET status = %s, quantity = %s, history = %s "
+            "WHERE reservation_id = %s"
+        )
+    else:
+        sql = (
+            "UPDATE sql_telintec.product_reservations "
+            "SET status = %s, quantity = quantity + %s, history = %s "
+            "WHERE reservation_id = %s"
+        )
     vals = (status, quantity, history, id_reservation)
     flag, error, lastrowid = execute_sql(sql, vals, 4)
     return flag, error, lastrowid
 
 
 def delete_reservation_db(id_reservation):
-    sql = "DELETE FROM sql_telintec.product_reservations " "WHERE reservation_id = %s"
+    sql = "DELETE FROM sql_telintec.product_reservations WHERE reservation_id = %s"
+    vals = (id_reservation,)
+    flag, error, lastrowid = execute_sql(sql, vals, 4)
+    return flag, error, lastrowid
+
+
+def complete_reservation_db(id_reservation):
+    sql = (
+        "UPDATE sql_telintec.product_reservations "
+        "SET status = 1 "
+        "WHERE reservation_id = %s"
+    )
     vals = (id_reservation,)
     flag, error, lastrowid = execute_sql(sql, vals, 4)
     return flag, error, lastrowid
@@ -1283,9 +1303,13 @@ def get_all_reservations():
         "sql_telintec.product_reservations.quantity, "
         "sql_telintec.product_reservations.status, "
         "sql_telintec.product_reservations.history, "
-        "sql_telintec.materials_request.folio "
+        "sql_telintec.materials_request.folio, "
+        "sql_telintec.products_amc.name, "
+        "sql_telintec.products_amc.sku "
         "FROM sql_telintec.product_reservations "
-        "LEFT JOIN sql_telintec.products_amc ON (sql_telintec.product_reservations.id_product = sql_telintec.products_amc.id_product)"
+        "LEFT JOIN sql_telintec.products_amc ON (sql_telintec.product_reservations.id_product = sql_telintec.products_amc.id_product) "
+        "LEFT JOIN sql_telintec.materials_request ON (sql_telintec.product_reservations.sm_id = sql_telintec.materials_request.sm_id) "
+        "ORDER BY reservation_id DESC "
     )
     flag, error, result = execute_sql(sql, None, 5)
     return flag, error, result

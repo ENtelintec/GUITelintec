@@ -258,7 +258,7 @@ def create_voucher_item(
     return flag, error, lastrowid
 
 
-def update_history_voucher(history: dict, id_voucher):
+def update_history_voucher(history: list, id_voucher):
     """
     Actualiza el historial de un voucher en la tabla vouchers_general.
 

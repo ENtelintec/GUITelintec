@@ -1223,7 +1223,7 @@ def create_reservation_from_api(data, data_token):
     history = [
         {
             "user": data_token["emp_id"],
-            "comment": f"Reservation creation for {data['id_product']} with {data['quantity']} items",
+            "comment": f"Reservacion creada {data['id_product']} con {data['quantity']} items para el folio {data['sm_id']}",
             "timestamp": date,
         }
     ]
@@ -1232,7 +1232,10 @@ def create_reservation_from_api(data, data_token):
     )
     if not flag:
         return {"data": None, "error": str(error)}, 400
-    msg = f"Reservation <{lastrowid}> creada por el empleado {data_token.get('emp_id')} con cantidad {data['quantity']} y id producto {data['id_product']}"
+    msg = (
+        f"Reservation <{lastrowid}> creada por el empleado {data_token.get('emp_id')} "
+        f"con cantidad {data['quantity']} y id producto {data['id_product']} para la sm {data['sm_id']}"
+    )
     create_notification_permission_notGUI(
         msg, ["almacen"], "Notifaction de Inventario", data_token.get("emp_id"), 0
     )
@@ -1247,22 +1250,22 @@ def update_reservation_from_api(data, data_token):
     time_zone = pytz.timezone(timezone_software)
     date = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
     history = data.get("history")
+    status = data.get("status", 0)
+    add_quantity = True if status == 10 else False
+    status = 0 if status == 10 else status
     history.append(
         {
             "user": data_token["emp_id"],
-            "comment": f"Reservation update for {data['id_product']} with {data['quantity']} items",
+            "comment": f"Actualizaicon de reservacion {data['id']} con {data['quantity']} items ",
             "timestamp": date,
         }
     )
     flag, error, result = update_reservation_db(
-        data["id_reservation"],
-        data["status"],
-        data["quantity"],
-        json.dumps(history),
+        data["id"], status, data["quantity"], json.dumps(history), add_quantity
     )
     if not flag:
         return {"data": None, "error": str(error)}, 400
-    msg = f"Reservation <{data['id_reservation']}> actualizada por el empleado {data_token.get('emp_id')} con status {data['status']}  y cantidad {data['quantity']}"
+    msg = f"Reservation <{data['id']}> actualizada por el empleado {data_token.get('emp_id')} con status {data['status']}  y cantidad {data['quantity']}"
     create_notification_permission_notGUI(
         msg, ["almacen"], "Notifaction de Inventario", data_token.get("emp_id"), 0
     )
@@ -1271,10 +1274,10 @@ def update_reservation_from_api(data, data_token):
 
 
 def delete_reservation_from_api(data, data_token):
-    flag, error, result = delete_reservation_db(data["id_reservation"])
+    flag, error, result = delete_reservation_db(data["id"])
     if not flag:
         return {"data": None, "error": str(error)}, 400
-    msg = f"Reservation <{data['id_reservation']}> eliminada por el empleado {data_token.get('emp_id')}"
+    msg = f"Reservation <{data['id']}> eliminada por el empleado {data_token.get('emp_id')}"
     create_notification_permission_notGUI(
         msg, ["almacen"], "Notifaction de Inventario", data_token.get("emp_id"), 0
     )
@@ -1289,14 +1292,16 @@ def get_reservations_db(data_token):
     data = []
     for item in result:
         history = json.loads(item[5])
-        data.append({
-            "reservation_id": item[0],
-            "id_product": item[1],
-            "id_sm": item[2],
-            "quantity": item[3],
-            "status": item[4],
-            "history": history,
-            "folio": item[6]
-        })
+        data.append(
+            {
+                "reservation_id": item[0],
+                "id_product": item[1],
+                "id_sm": item[2],
+                "quantity": item[3],
+                "status": item[4],
+                "history": history,
+                "folio": item[6],
+            }
+        )
 
     return {"data": data, "error": str(error)}, 200

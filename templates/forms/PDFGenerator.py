@@ -111,7 +111,7 @@ def display_recommendations(master: canvas.Canvas, dict_quizz, dim_x, dim_y):
     )
 
 
-def create_header(
+def create_header_telintec(
     master: canvas.Canvas,
     img=None,
     title=None,

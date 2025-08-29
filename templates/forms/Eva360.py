@@ -1,13 +1,18 @@
 # -*- coding: utf-8 -*-
-__author__ = 'Edisson Naula'
-__date__ = '$ 23/jul./2024  at 6:00 $'
+__author__ = "Edisson Naula"
+__date__ = "$ 23/jul./2024  at 6:00 $"
 
 import textwrap
 
 from reportlab.pdfgen import canvas
 
-from templates.forms.PDFGenerator import create_header, draw_option, create_datos_personales, display_result, \
-    display_recommendations
+from templates.forms.PDFGenerator import (
+    create_header_telintec,
+    draw_option,
+    create_datos_personales,
+    display_result,
+    display_recommendations,
+)
 
 
 def create_quizz_eva_360(
@@ -37,7 +42,7 @@ def create_quizz_eva_360(
     pdf = canvas.Canvas(file_name, pagesize=(a4_x, a4_y))
     pdf.setTitle(name_quizz)
 
-    create_header(pdf, image_logo, name_quizz, a4_x, date_interview)
+    create_header_telintec(pdf, image_logo, name_quizz, a4_x, date_interview)
     note = "* Indica que la pregunta es obligatoria"
     txt_lines = [
         " Evaluacion 360",
@@ -56,7 +61,7 @@ def create_quizz_eva_360(
             continue  # Salta a la siguiente iteración del bucle
         if i % 3 == 0 and i != 0:
             pdf.showPage()
-            create_header(pdf, image_logo, name_quizz, a4_x, date_interview)
+            create_header_telintec(pdf, image_logo, name_quizz, a4_x, date_interview)
             y_position = 730
         question = textwrap.wrap(dict_quizz[str(i)]["question"], width=121)
         font_size = 10
