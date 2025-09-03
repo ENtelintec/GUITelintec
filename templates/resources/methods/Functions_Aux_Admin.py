@@ -190,23 +190,24 @@ def read_exel_products_partidas(path: str):
     data_excel = df.to_dict("records")
 
     products = []
-    for item in data_excel:
+    for index, item in enumerate(data_excel):
         # partida: number; quantity: number; udm: string; price_unit: number; type_p: string; marca: string; n_parte: string; description: string; description_small: string; id: number; comment: string;
-        n_parte = item["NRO. PARTE"]
+        n_parte = item.get("NRO. PARTE", "")
         id_p = None
-        flag, error, result = get_product_by_sku_manufacture(n_parte)
-        if flag and len(result) > 0:
-            id_p = result[0]
+        if n_parte != "":
+            flag, error, result = get_product_by_sku_manufacture(n_parte)
+            if flag and len(result) > 0:
+                id_p = result[0]
         product = {
-            "partida": item["PARTIDA"],
+            "partida": item.get("PARTIDA", index),
             "quantity": 1,
-            "udm": item["UND"],
-            "price_unit": 0.0,
-            "type_p": item["TIPO"],
-            "marca": item["MARCA"],
-            "n_parte": item["NRO. PARTE"],
-            "description": item["DESCRIPCIÓN LARGA"],
-            "description_small": item["DESCRIPCIÓN CORTA"],
+            "udm": item.get("UDM"),
+            "price_unit": item.get("PRECIO UNITARIO", 0.0),
+            "type_p": item.get("TIPO", ""),
+            "marca": item.get("MARCA", ""),
+            "n_parte": item.get("NRO. PARTE", ""),
+            "description": item.get("DESCRIPCIÓN LARGA", ""),
+            "description_small": item.get("DESCRIPCIÓN CORTA", ""),
             "id": id_p,
             "comment": "",
         }

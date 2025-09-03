@@ -169,7 +169,7 @@ def create_items_sm_db(items: list, sm_id: int):
             "(id_sm, id_inventory, name, udm, comment, partida, quantity, dispatched, movements, state, extra_info) "
             "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
         )
-        id_inventory = item.get("id_inventory") if item.get("id", -1) != 1 else None
+        id_inventory = item.get("id") if item.get("id", -1) != 1 else None
         val = (
             sm_id,
             id_inventory,
@@ -198,8 +198,8 @@ def update_items_sm(items: list, sm_id: int):
     action = "update"
     for item in items:
         is_erased = item.get("is_erased", 0)
-        id_inventory = item.get("id_inventory")
         if is_erased == 0:
+            id_inventory = item.get("id_inventory")
             if item.get("id", 0) != 0:
                 sql = (
                     "UPDATE sql_telintec.sm_items "
@@ -234,6 +234,7 @@ def update_items_sm(items: list, sm_id: int):
                     "dispatched, movements, state, extra_info, deliveries, state_delivery, state_quantity) "
                     "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
                 )
+                id_inventory = item.get("id") if item.get("id", -1) != 1 else None
                 val = (
                     sm_id,
                     id_inventory if id_inventory != 0 else None,

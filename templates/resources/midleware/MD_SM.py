@@ -554,7 +554,9 @@ def dispatch_sm(data, data_token):
     products_sm = json.loads(result[10])
     history_sm = json.loads(result[12])
     folio = result[1]
-    ids_list = [item["id"] for item in products_sm if item.get("id") >= 0]
+    ids_list = [
+        item["id_inventory"] for item in products_sm if item.get("id_inventory") >= 0
+    ]
     updated_products = []
     flag, error, result = get_products_stock_from_ids(ids_list)
     if not flag:
@@ -579,9 +581,9 @@ def dispatch_sm(data, data_token):
             updated_products.append(old_item)
             continue
         # si no hay cantidad para despachar
-        if item_n["quantity"] > stocks.get(item_to_update["id"], 0):
+        if item_n["quantity"] > stocks.get(item_to_update["id_inventory"], 0):
             msg_items.append(
-                f"Quantity to dispatch is greater than stock for product {item_to_update['id']}-{item_to_update['name']}"
+                f"Quantity to dispatch is greater than stock for product {item_to_update['id_inventory']}-{item_to_update['name']}"
             )
             updated_products.append(old_item)
             continue
@@ -606,7 +608,7 @@ def dispatch_sm(data, data_token):
             continue
         # --- Crear un movimiento de salida para el despachado
         flag, error, result = create_movement_db_amc(
-            item_to_update["id"],
+            item_to_update["id_inventory"],
             "salida",
             item_n["quantity"],
             date_now,
@@ -622,10 +624,10 @@ def dispatch_sm(data, data_token):
         msg_items.append(f"----Movement created-{item_to_update['id']}: {str(result)}")
         # -- actualizar stock del producto
         flag, error, res_stock = update_stock_db(
-            item_to_update["id"], -item_n["quantity"], True
+            item_to_update["id_inventory"], -item_n["quantity"], True
         )
         msg_items.append(
-            f"x---Error at updating stock-{item_to_update['id']}: {str(error)}"
+            f"x---Error at updating stock-{item_to_update['id_inventory']}: {str(error)}"
         ) if not flag else msg_items.append(
             f"Movement created-{item_to_update['id']}: {str(res_stock)}"
         )
@@ -916,7 +918,7 @@ def create_sm_from_api(data, data_token):
         print(error)
         return {"answer": "error at updating db"}, 400
     msg = (
-        f"Nueva SM creada #{data['info']['id']}, folio: {data['info']['folio']}, "
+        f"Nueva SM creada #{result}, folio: {data['info']['folio']}, "
         f"fecha limite: {data['info']['critical_date']}, "
         f"empleado con id: {data_token.get('emp_id')}, "
         f"comentario: {data['info']['comment']}"

@@ -77,7 +77,7 @@ def check_if_gerente(id_employee: int):
     )
     val = (id_employee,)
     flag, e, my_result = execute_sql(sql, val, 2)
-    print("check if genrten", my_result)
+    # print("check if genrten", my_result)
     return flag, e, my_result
 
 

@@ -324,9 +324,9 @@ class MetadataQuotationForm(Form):
 class ProductsQuotationForm(Form):
     partida = IntegerField("partida", validators=[InputRequired()])
     revision = IntegerField("revision", validators=[], default=0)
-    type_p = StringField("type_p", validators=[InputRequired()])
-    marca = StringField("marca", validators=[InputRequired()])
-    n_parte = StringField("n_parte", validators=[InputRequired()])
+    type_p = StringField("type_p", validators=[])
+    marca = StringField("marca", validators=[])
+    n_parte = StringField("n_parte", validators=[])
     description = StringField("description", validators=[], default="")
     description_small = StringField("description_small", validators=[], default="")
     quantity = IntegerField("quantity", validators=[], default=0)
