@@ -558,7 +558,7 @@ def dispatch_sm(data, data_token):
     folio = result[1]
     # products ids in the inventory
     ids_inventory_sm_list = [
-        item["id_inventory"] for item in products_sm if item.get("id_inventory") >= 0
+        item["id_inventory"] for item in products_sm if item.get("state") > 0
     ]
     updated_products = []
     flag, error, result = get_products_stock_from_ids(ids_inventory_sm_list)
@@ -703,9 +703,15 @@ def dispatch_sm(data, data_token):
             "admin_status": 2,
             "warehouse_status": 1,
             "general_request_status": 0,
-            "warehouse_notification_date": date_now if warehouse_notification_date == "" else warehouse_notification_date,
-            "operations_notification_date": date_now if operations_notification_date == "" else operations_notification_date,
-            "admin_notification_date": date_now if admin_notification_date == "" else admin_notification_date,
+            "warehouse_notification_date": date_now
+            if warehouse_notification_date == ""
+            else warehouse_notification_date,
+            "operations_notification_date": date_now
+            if operations_notification_date == ""
+            else operations_notification_date,
+            "admin_notification_date": date_now
+            if admin_notification_date == ""
+            else admin_notification_date,
         }
         if new_status == 2
         else {}
