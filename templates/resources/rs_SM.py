@@ -54,6 +54,7 @@ from templates.resources.midleware.MD_SM import (
     create_sm_from_api,
     update_sm_from_api,
     update_items_sm_from_api,
+    get_sm_folios_from_api,
 )
 
 ns = Namespace("GUI/api/v1/sm")
@@ -366,4 +367,17 @@ class SmItemsActions(Resource):
             return {"error": validator.errors}, 400
         data = validator.data
         data_out, code = update_items_sm_from_api(data, data_token)
+        return data_out, code
+
+
+@ns.route("/folioSmAll")
+class FetchSMFolios(Resource):
+    @ns.expect(expected_headers_per)
+    def get(self):
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["sm", "almacen"]
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        data_out, code = get_sm_folios_from_api(data_token)
         return data_out, code

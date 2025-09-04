@@ -44,6 +44,7 @@ from templates.controllers.material_request.sm_controller import (
     update_items_sm,
     update_sm_db,
     update_history_status_sm,
+    get_sm_folios_db,
 )
 from templates.controllers.product.p_and_s_controller import (
     create_movement_db_amc,
@@ -991,3 +992,18 @@ def update_items_sm_from_api(data, data_token):
     )
     write_log_file(log_file_sm_path, msg)
     return {"answer": "ok", "data": msg, "error": errors}, 200
+
+
+def get_sm_folios_from_api(data_token):
+    flag, error, result = get_sm_folios_db()
+    if not flag:
+        return {"answer": "error at getting sm folios"}, 400
+    folios = []
+    for item in result:
+        folios.append(
+            {
+                "id": item[0],
+                "folio": item[1],
+            }
+        )
+    return {"answer": "ok", "data": folios}, 200

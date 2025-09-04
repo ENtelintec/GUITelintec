@@ -563,3 +563,14 @@ def update_history_items_sm(sm_id: int, items: list, history: list):
     val = (json.dumps(items), json.dumps(history), sm_id)
     flag, error, result = execute_sql(sql, val, 3)
     return flag, error, result
+
+
+def get_sm_folios_db():
+    sql = (
+        "SELECT "
+        "sm_id, folio "
+        "FROM sql_telintec.materials_request "
+        "WHERE status < 2 "
+    )
+    flag, error, result = execute_sql(sql, None, 5)
+    return flag, error, result
