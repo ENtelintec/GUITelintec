@@ -554,6 +554,7 @@ def dispatch_sm(data, data_token):
     id_user = result[6]
     products_sm = json.loads(result[10])
     history_sm = json.loads(result[12])
+    extra_info_sm = json.loads(result[14])
     folio = result[1]
     # products ids in the inventory
     ids_inventory_sm_list = [
@@ -692,8 +693,29 @@ def dispatch_sm(data, data_token):
     if len(results_smi) > 0:
         msg_items.append(f"Items SM actualizados: {results_smi}")
     new_status = determine_status_sm(updated_products)
+    # actualizar valores en tabla de control
+    warehouse_reviewed = extra_info_sm.get("warehouse_reviewed", 0)
+    warehouse_notification_date = extra_info_sm.get("warehouse_notification_date", "")
+    operations_notification_date = extra_info_sm.get("operations_notification_date", "")
+    admin_notification_date = extra_info_sm.get("admin_notification_date", "")
+    extra_info = (
+        {
+            "admin_status": 2,
+            "warehouse_status": 1,
+            "general_request_status": 0,
+            "warehouse_notification_date": date_now if warehouse_notification_date == "" else warehouse_notification_date,
+            "operations_notification_date": date_now if operations_notification_date == "" else operations_notification_date,
+            "admin_notification_date": date_now if admin_notification_date == "" else admin_notification_date,
+        }
+        if new_status == 2
+        else {}
+    )
+    if warehouse_reviewed == 0:
+        extra_info["warehouse_reviewed"] = 1
+    for k, v in extra_info.items():
+        extra_info_sm[k] = v
     flag, error, result_his = update_history_status_sm(
-        data["id"], history_sm, new_status
+        data["id"], history_sm, new_status, extra_info_sm
     )
     msg_items.append(
         f"Historial actualizado: {str(result_his)}"

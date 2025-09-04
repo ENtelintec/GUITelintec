@@ -492,7 +492,8 @@ def update_history_sm(sm_id, history: list, items: list, is_complete=False):
     return flag, error, result
 
 
-def update_history_status_sm(sm_id, history: list, status):
+def update_history_status_sm(sm_id, history: list, status, extra_info):
+
     sql = (
         "UPDATE sql_telintec.materials_request "
         "SET history = %s, status =  %s "
