@@ -18,6 +18,10 @@ from templates.controllers.contracts.contracts_controller import (
     get_contracts_abreviations_db,
 )
 from templates.controllers.departments.heads_controller import check_if_gerente
+from templates.controllers.material_request.sm_controller import (
+    get_sm_by_id,
+    get_sm_by_folio,
+)
 from templates.controllers.order.orders_controller import (
     insert_purchase_order,
     insert_purchase_order_item,
@@ -40,6 +44,8 @@ from templates.forms.PurchaseForms import FilePoPDF
 from templates.misc.Functions_Files import write_log_file
 
 import json
+
+from templates.resources.midleware.MD_SM import update_sm_from_control_table
 
 
 def map_products_po(products: list):
@@ -168,20 +174,30 @@ def fetch_purchase_orders(status, data_token):
 
 
 def create_purchaser_order_api(data, data_token):
+    sm_id = data.get("sm_id", 0)
+    update_sm_control_table = False
+    if sm_id != 0:
+        flag, error, result_sm = get_sm_by_id(sm_id)
+        if not flag:
+            update_sm_control_table = True
+    else:
+        result_sm = [0]
     time_zone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
+    comment_history = f"Orden de compra creada por {data_token.get('emp_id')}"
     history = [
         {
             "user": data_token.get("emp_id"),
             "event": "Creación de orden",
             "date": timestamp,
-            "comment": "Create purchase order",
+            "comment": comment_history,
         }
     ]
     extra_info = {
         "comment": data.get("comment", ""),
         "metadata_telintec": data.get("metadata_telintec", {}),
         "metadata_supplier": data.get("metadata_supplier", {}),
+        "sm_id": sm_id,
     }
     flag, error, id_order = insert_purchase_order(
         timestamp,
@@ -217,6 +233,23 @@ def create_purchaser_order_api(data, data_token):
         else:
             msg_moves.append(f"Item de orden de compra creado con ID-{result}")
     msg += "\n" + "\n".join(msg_moves)
+    if update_sm_control_table:
+        data_out, code = update_sm_from_control_table(
+            {
+                "id": sm_id,
+                "info": {"admin_reviewed": 1, "warehouse_notification_date": timestamp},
+            },
+            data_token,
+            result_sm,
+        )
+        if code != 200:
+            msg += (
+                "\n"
+                + f"Error al actualizar la tabla de control de sm con id {sm_id}: {data_out['msg']}"
+            )
+
+        else:
+            msg += "\n" + f"Tabla de control de SM con id {sm_id} actualizada"
     create_notification_permission_notGUI(
         msg, ["orders"], "Orden de compra creada", data_token.get("emp_id")
     )
@@ -224,7 +257,7 @@ def create_purchaser_order_api(data, data_token):
     if flag_error:
         return {
             "data": [id_order],
-            "msg": "Error at creating order items",
+            "msg": "Error al crear los items de la orden",
             "error": "\n".join(msg_moves),
         }, 400
     return {"data": [id_order], "msg": "ok", "error": None}, 200
@@ -246,6 +279,7 @@ def update_purchase_order_api(data, data_token):
         "comment": data.get("comment", ""),
         "metadata_telintec": data.get("metadata_telintec", {}),
         "metadata_supplier": data.get("metadata_supplier", {}),
+        "sm_id": data.get("sm_id", 0),
     }
     flag, error, result = update_purchase_order(
         data["id"],
@@ -369,6 +403,7 @@ def fetch_pos_applications_to_approve(data_token):
             reference,
             history,
             products,
+            extra_info,
         ) = item
         products = json.loads(products)
         products, total_amount = map_products_po(products)
@@ -413,9 +448,11 @@ def fetch_pos_applications(status, data_token):
             reference,
             history,
             products,
+            extra_info,
         ) = item
         products = json.loads(products)
         products, total_amount = map_products_po(products)
+        extra_info = json.loads(extra_info)
         data_out.append(
             {
                 "id": id_order,
@@ -428,6 +465,7 @@ def fetch_pos_applications(status, data_token):
                 "items": products,
                 "total_amount": total_amount,
                 "created_by": created_by,
+                "sm_id": extra_info.get("sm_id", 0),
             }
         )
 
@@ -435,6 +473,19 @@ def fetch_pos_applications(status, data_token):
 
 
 def create_po_application_api(data, data_token):
+    sm_id = data.get("sm_id", 0)
+    update_sm_control_table = False
+    if sm_id > 0:
+        flag, error, result_sm = get_sm_by_id(sm_id)
+    else:
+        flag, error, result_sm = get_sm_by_folio(data.get("folio", ""))
+    extra_info = {}
+    if flag:
+        update_sm_control_table = True
+        extra_info = {
+            "sm_id": result_sm[0],
+        }
+
     time_zone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
     history = [
@@ -442,15 +493,18 @@ def create_po_application_api(data, data_token):
             "user": data_token.get("emp_id"),
             "event": "Creación de solicitud",
             "date": timestamp,
-            "comment": "Create purchase order application",
+            "comment": f"Se creo una solicitud de orden de compra con referencia {data['reference']} "
+            f"por el usuario {data_token.get('emp_id')}.",
         }
     ]
+
     flag, error, id_po_app = insert_po_application(
         timestamp,
         1,
         data_token.get("emp_id"),
         data["reference"],
         history,
+        extra_info=extra_info,
     )
     if not flag:
         return {"data": None, "msg": "error", "error": str(error)}, 400
@@ -487,14 +541,35 @@ def create_po_application_api(data, data_token):
         flag, error, result = update_po_application_status(id_po_app, history, 0, 0)
         if not flag:
             return {"data": None, "msg": msg + "\nerror", "error": str(error)}, 400
+    if update_sm_control_table:
+        data_out, code = update_sm_from_control_table(
+            {
+                "id": result_sm[0],
+                "info": {"warehouse_reviewed": 1, "admin_notification_date": timestamp},
+            },
+            data_token,
+            result_sm,
+        )
+        if code != 200:
+            msg += (
+                "\n"
+                + f"Error al actualizar la tabla de control de sm con id {result_sm[0]}: {data_out['msg']}"
+            )
+
+        else:
+            msg += "\n" + f"Tabla de control de SM con id {result_sm[0]} actualizada"
+
     create_notification_permission_notGUI(
-        msg, ["orders"], "Solicitud de orden de compra creada", data_token.get("emp_id")
+        msg,
+        ["orders", "almacen", "sm"],
+        "Solicitud de orden de compra creada",
+        data_token.get("emp_id"),
     )
     write_log_file(log_file_po, msg)
     if flag_error:
         return {
             "data": [id_po_app],
-            "msg": "Error at creating application items",
+            "msg": "Error al crear los items en la solicitud de compras",
             "error": "\n".join(msg_moves),
         }, 400
     return {"data": [id_po_app], "msg": "ok", "error": None}, 200

@@ -879,22 +879,19 @@ def create_product(
     return {"msg": "ok", "data": result}, 201 if flag else {"msg": str(error)}, 400
 
 
-def update_sm_from_control_table(data, data_token):
-    flag, error, result = get_sm_by_id(data["id"])
+def update_sm_from_control_table(data, data_token, sm_data=None):
+    if sm_data is None:
+        flag, error, result = get_sm_by_id(data["id"])
+    else:
+        flag, error, result = True, None, sm_data
     if not flag or len(result) <= 0:
         return 400, ["sm not foud"]
     history_sm = json.loads(result[12])
     emp_id_creation = result[6]
     time_zone = pytz.timezone(timezone_software)
     date_now = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
-    history_sm.append(
-        {
-            "user": data_token.get("emp_id"),
-            "event": "Actualizar control de sm",
-            "date": date_now,
-            "comment": f"Actualización de datos desde la tabla de control por el empleado {data_token.get('emp_id')}",
-        }
-    )
+    comment_history = f"Actualización de datos desde la tabla de control por el empleado {data_token.get('emp_id')}"
+
     extra_info = json.loads(result[14])
     comments = ""
     for k, value in data["info"].items():
@@ -902,15 +899,24 @@ def update_sm_from_control_table(data, data_token):
             comments = value
             continue
         extra_info[k] = value
+        comment_history += f"-{k}-{value}-"
+    history_sm.append(
+        {
+            "user": data_token.get("emp_id"),
+            "event": "Actualizar control de sm",
+            "date": date_now,
+            "comment": comment_history,
+        }
+    )
     flag, error, result = update_history_extra_info_sm_by_id(
         data["id"], extra_info, history_sm, comments
     )
     if flag:
         msg = f"SM con ID-{data['id']} actualizada"
         create_notification_permission(
-            msg, ["sm"], "SM Actualizada", data_token.get("emp_id"), emp_id_creation
+            msg, ["sm", "almacen", "administracion"], "SM Actualizada", data_token.get("emp_id"), emp_id_creation
         )
-        write_log_file(log_file_sm_path, msg)
+        write_log_file(log_file_sm_path, msg + "-->" + comment_history)
         return 200, {"msg": "ok"}
     else:
         return 400, {"msg": str(error)}

@@ -156,7 +156,8 @@ def get_pos_application_with_items(status: int | None, created_by: int | None):
         " 'extra_info', poi.extra_info, "
         " 'duration_services', poi.duration_services, "
         " 'tool', poi.tool "
-        ")) AS items "
+        ")) AS items, "
+        "po.extra_info "
         "FROM sql_telintec_mod_admin.pos_applications AS po "
         "LEFT JOIN sql_telintec_mod_admin.purchase_order_items AS poi ON po.id_order = poi.order_id "
         "WHERE (po.status = %s or %s IS NULL ) AND (po.status != 4) AND (po.created_by = %s OR %s IS NULL) GROUP BY po.id_order"
@@ -185,7 +186,8 @@ def get_pos_application_with_items_to_approve():
         " 'extra_info', poi.extra_info, "
         " 'duration_services', poi.duration_services, "
         " 'tool', poi.tool "
-        ")) AS items "
+        ")) AS items, "
+        "po.extra_info "
         "FROM sql_telintec_mod_admin.pos_applications AS po "
         "LEFT JOIN sql_telintec_mod_admin.purchase_order_items AS poi ON po.id_order = poi.order_id "
         "WHERE po.approved = 0 group by po.id_order "
@@ -285,14 +287,25 @@ def insert_po_application(
     reference: str,
     history: list,
     approved=1,
+    extra_info: dict = None,
 ):
     sql = (
         "INSERT INTO sql_telintec_mod_admin.pos_applications "
         "(timestamp, status, created_by, "
-        "reference, history, approved) "
-        "VALUES (%s, %s, %s, %s, %s, %s)"
+        "reference, history, approved, extra_info) "
+        "VALUES (%s, %s, %s, %s, %s, %s, %s)"
     )
-    val = (timestamp, status, created_by, reference, json.dumps(history), approved)
+    if extra_info is None:
+        extra_info = {"sm_id": 0}
+    val = (
+        timestamp,
+        status,
+        created_by,
+        reference,
+        json.dumps(history),
+        approved,
+        json.dumps(extra_info),
+    )
     flag, e, out = execute_sql(sql, val, 4)
     return flag, e, out
 

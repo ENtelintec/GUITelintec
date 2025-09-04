@@ -93,15 +93,6 @@ def get_sm_entries(emp_id=None):
 
 
 def get_sm_by_id(sm_id: int):
-    # sql = (
-    #     "SELECT "
-    #     "sm_id, folio, contract, facility, location, "
-    #     "client_id, emp_id, pedido_cotizacion, date, "
-    #     "limit_date, items, status, history, "
-    #     "comment, extra_info "
-    #     "FROM sql_telintec.materials_request "
-    #     "WHERE sm_id = %s"
-    # )
     sql = (
         "SELECT "
         "mr.sm_id, "
@@ -156,6 +147,65 @@ def get_sm_by_id(sm_id: int):
         "WHERE mr.sm_id = %s"
     )
     val = (sm_id,)
+    flag, error, result = execute_sql(sql, val, 1)
+    return flag, error, result
+
+
+def get_sm_by_folio(folio: str):
+    sql = (
+        "SELECT "
+        "mr.sm_id, "
+        "mr.folio, "
+        "mr.contract, "
+        "mr.facility, "
+        "mr.location, "
+        "mr.client_id, "
+        "mr.emp_id, "
+        "mr.pedido_cotizacion, "
+        "mr.date, "
+        "mr.limit_date, "
+        "JSON_ARRAYAGG(JSON_OBJECT("
+        " 'id', smi.id_item, "
+        " 'id_inventory', smi.id_inventory, "
+        " 'name', smi.name, "
+        " 'udm', smi.udm, "
+        " 'comment', smi.comment, "
+        " 'partida', smi.partida, "
+        " 'quantity', smi.quantity, "
+        " 'dispatched', smi.dispatched, "
+        " 'movements', smi.movements, "
+        " 'state', smi.state, "
+        " 'extra_info', smi.extra_info, "
+        " 'reserved', IFNULL(rsv.reserved, 0), "
+        " 'reservation_id', rsv.reservation_id,"
+        " 'deliveries', smi.deliveries,"
+        " 'state_quantity', smi.state_quantity, "
+        " 'state_delivery', smi.state_delivery , "
+        " 'reserved_all', rAll.reserved_qty, "
+        " 'available_stock', IFNULL(inv.stock, 0) - IFNULL(rAll.reserved_qty, 0), "
+        " 'stock', IFNULL(inv.stock, 0) )"
+        ") AS items, "
+        "mr.status, "
+        "mr.history, "
+        "mr.comment, "
+        "mr.extra_info "
+        "FROM sql_telintec.materials_request AS mr "
+        "LEFT JOIN sql_telintec.sm_items AS smi ON mr.sm_id = smi.id_sm "
+        "LEFT JOIN sql_telintec.products_amc AS inv ON inv.id_product = smi.id_inventory "
+        "LEFT JOIN ( "
+        "   SELECT id_product, sm_id, quantity AS reserved, reservation_id "
+        "   FROM sql_telintec.product_reservations "
+        "   WHERE status = 0 "
+        ") rsv ON (rsv.sm_id = smi.id_sm) AND (rsv.id_product = smi.id_inventory)  "
+        "LEFT JOIN ( "
+        "   SELECT id_product, "
+        "       SUM(quantity) AS reserved_qty "
+        "   FROM sql_telintec.product_reservations"
+        "   WHERE status = 0 "
+        "   GROUP BY id_product) rAll ON smi.id_inventory = rAll.id_product "
+        "WHERE mr.folio = %s"
+    )
+    val = (folio,)
     flag, error, result = execute_sql(sql, val, 1)
     return flag, error, result
 
