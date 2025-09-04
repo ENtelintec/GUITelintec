@@ -914,12 +914,40 @@ def update_sm_from_control_table(data, data_token, sm_data=None):
     if flag:
         msg = f"SM con ID-{data['id']} actualizada"
         create_notification_permission(
-            msg, ["sm", "almacen", "administracion"], "SM Actualizada", data_token.get("emp_id"), emp_id_creation
+            msg,
+            ["sm", "almacen", "administracion"],
+            "SM Actualizada",
+            data_token.get("emp_id"),
+            emp_id_creation,
         )
         write_log_file(log_file_sm_path, msg + "-->" + comment_history)
         return 200, {"msg": "ok"}
     else:
         return 400, {"msg": str(error)}
+
+
+def check_item_sm_for_init_vals(items: list):
+    all_avaliable = True
+    for item in items:
+        if item.get["id"] <= 0:
+            all_avaliable = False
+            break
+        if item.get("stock", 0) < item["quantity"]:
+            all_avaliable = False
+            break
+    if all_avaliable:
+        extra_info = {
+            "warehouse_status": 0,
+            "admin_status": 2,
+            "general_request_status": 0,
+        }
+    else:
+        extra_info = {
+            "warehouse_status": 1,
+            "admin_status": 0,
+            "general_request_status": 2,
+        }
+    return extra_info
 
 
 def create_sm_from_api(data, data_token):
@@ -929,7 +957,8 @@ def create_sm_from_api(data, data_token):
             "data": data["items"],
             "error": "No items detected",
         }, 400
-    flag, error, result = insert_sm_db(data)
+    extra_info = check_item_sm_for_init_vals(data["items"])
+    flag, error, result = insert_sm_db(data, extra_info)
     if not flag:
         print(error)
         return {"answer": "error at updating db"}, 400

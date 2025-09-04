@@ -102,7 +102,7 @@ class Products(Resource):
 
 
 @ns.route("/all")
-class AllSm(Resource):
+class FetchAllSm(Resource):
     @ns.expect(expected_headers_per)
     def get(self):
         flag, data_token, msg = token_verification_procedure(
@@ -140,7 +140,7 @@ class AllSmEmployee(Resource):
 
 
 @ns.route("/add")
-class AddUpdateSM(Resource):
+class ActionsSM(Resource):
     @ns.expect(expected_headers_per, sm_post_model)
     def post(self):
         flag, data_token, msg = token_verification_procedure(request, department="sm")

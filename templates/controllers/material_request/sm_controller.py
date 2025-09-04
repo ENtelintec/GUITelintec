@@ -316,7 +316,7 @@ def update_items_sm(items: list, sm_id: int):
     return errors, results
 
 
-def insert_sm_db(data):
+def insert_sm_db(data, init_extra_info=None):
     time_zone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
     event = [
@@ -354,6 +354,9 @@ def insert_sm_db(data):
         "operations_kpi": data["info"].get("operations_kpi", 0),
         "requesting_user_state": data["info"].get("requesting_user_state", ""),
     }
+    if extra_info is not None:
+        for k, v in init_extra_info.items():
+            extra_info[k] = v
     sql = (
         "INSERT INTO sql_telintec.materials_request "
         "(folio, contract, facility, location, "
