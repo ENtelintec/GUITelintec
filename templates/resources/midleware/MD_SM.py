@@ -149,7 +149,7 @@ def get_all_sm(limit, page=0, emp_id=-1, with_items=True):
         #  kpi warehouse
         admin_not_date = extra_info.get("admin_notification_date", "")
         admin_not_date = (
-            datetime.strptime(admin_not_date, format_date)
+            datetime.strptime(admin_not_date, format_timestamps)
             if admin_not_date != ""
             and isinstance(admin_not_date, str)
             and admin_not_date is not None
@@ -174,7 +174,7 @@ def get_all_sm(limit, page=0, emp_id=-1, with_items=True):
         )
         op_not_date = extra_info.get("operations_notification_date", "")
         op_not_date = (
-            datetime.strptime(op_not_date, format_date)
+            datetime.strptime(op_not_date, format_timestamps)
             if op_not_date != ""
             and isinstance(op_not_date, str)
             and op_not_date is not None
