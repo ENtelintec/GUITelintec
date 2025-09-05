@@ -234,7 +234,7 @@ def create_purchaser_order_api(data, data_token):
             msg_moves.append(f"Item de orden de compra creado con ID-{result}")
     msg += "\n" + "\n".join(msg_moves)
     if update_sm_control_table:
-        data_out, code = update_sm_from_control_table(
+        code, data_out = update_sm_from_control_table(
             {
                 "id": sm_id,
                 "info": {"admin_reviewed": 1, "warehouse_notification_date": timestamp},
@@ -542,7 +542,7 @@ def create_po_application_api(data, data_token):
         if not flag:
             return {"data": None, "msg": msg + "\nerror", "error": str(error)}, 400
     if update_sm_control_table:
-        data_out, code = update_sm_from_control_table(
+        code, data_out = update_sm_from_control_table(
             {
                 "id": result_sm[0],
                 "info": {"warehouse_reviewed": 1, "admin_notification_date": timestamp},
