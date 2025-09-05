@@ -493,7 +493,6 @@ def update_history_sm(sm_id, history: list, items: list, is_complete=False):
 
 
 def update_history_status_sm(sm_id, history: list, status, extra_info):
-
     sql = (
         "UPDATE sql_telintec.materials_request "
         "SET history = %s, status =  %s "
@@ -628,3 +627,10 @@ def get_sm_folios_db():
     )
     flag, error, result = execute_sql(sql, None, 5)
     return flag, error, result
+
+
+def delete_item_from_sm_id(sm_id: int):
+    sql = """DELETE FROM sql_telintec.materials_request WHERE sm_id = %s """
+    val = (json.dumps([]), sm_id)
+    flag, error, result = execute_sql(sql, val, 3)
+    return flag, error

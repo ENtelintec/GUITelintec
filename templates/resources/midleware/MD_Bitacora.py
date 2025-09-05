@@ -6,6 +6,7 @@ import csv
 import json
 from datetime import datetime, timedelta
 
+import pandas as pd
 import pytz
 
 from static.constants import (

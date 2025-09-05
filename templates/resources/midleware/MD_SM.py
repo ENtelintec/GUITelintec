@@ -45,6 +45,8 @@ from templates.controllers.material_request.sm_controller import (
     update_sm_db,
     update_history_status_sm,
     get_sm_folios_db,
+    delete_sm_db,
+    delete_item_from_sm_id,
 )
 from templates.controllers.product.p_and_s_controller import (
     create_movement_db_amc,
@@ -1037,6 +1039,29 @@ def update_sm_from_api(data, data_token):
         return {"answer": "ok", "data": msg, "error": error}, 200
     else:
         return {"answer": "error at updating db", "data": "", "error": error}, 400
+
+
+def delete_sm_from_api(data, data_token):
+    flag, error, result = delete_item_from_sm_id(data["id"])
+    if not flag:
+        return {"answer": "error at deleting items of sm in db"}, 400
+    msg = f"Items eliminados <{result}> de la sm con id: {data['id']}\n"
+    flag, error, result = delete_sm_db(data["id"])
+    if flag:
+        msg += (
+            f"SM #{data['id']} eliminada, empleado con id: {data_token.get('emp_id')}"
+        )
+        create_notification_permission(
+            msg,
+            ["sm", "administracion", "almacen"],
+            "SM Eliminada",
+            sender_id=data.get("id_emp"),
+        )
+        write_log_file(log_file_sm_path, msg)
+        return {"answer": "ok", "msg": error}, 200
+    else:
+        print(error)
+        return {"answer": "error at updating db"}, 400
 
 
 def update_items_sm_from_api(data, data_token):
