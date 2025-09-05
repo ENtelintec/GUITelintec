@@ -351,6 +351,7 @@ def get_all_products_DB(type_p):
                 "epp": extra_info.get("epp", 0),
                 "reserved": item[12],
                 "avaliable_stock": item[13],
+                "name_short": item[14],
             }
         )
     return out, 200
@@ -912,7 +913,7 @@ def retrieve_data_file_inventory(type_data="dict", data=None):
         return error, 400
     products = {}
     try:
-        # [id_product, sku, name, udm, stock, category_name, supplier_name,  is_tool, is_internal,  codes, locations,  brand, brands]
+        # [id_product, sku, name, udm, stock, category_name, supplier_name,  is_tool, is_internal,  codes, locations,  brand, brands, name_short]
         # sort by ID
         if _products is None:
             return [], 400
@@ -931,6 +932,7 @@ def retrieve_data_file_inventory(type_data="dict", data=None):
                 "codes": [],
                 "locations": [],
                 "brand": [],
+                "name_short": [],
             }
             for item in _products:
                 products["id"].append(item[0])
@@ -945,6 +947,7 @@ def retrieve_data_file_inventory(type_data="dict", data=None):
                 products["codes"].append(item[9])
                 products["locations"].append(item[10])
                 products["brand"].append(item[11])
+                products["name_short"].append(item[13])
         elif "list":
             products = [
                 (
@@ -993,8 +996,8 @@ def retrieve_data_movement_file(data, complete=False, epp=0):
         flag, error, _movements = get_all_movements_db_detail(type_m)
     else:
         flag, error, _movements = get_epp_movements_db_detail(type_m)
-    date_init = datetime.strptime(data["date_init"], format_date)
-    date_end = datetime.strptime(data["date_end"], format_date)
+    date_init = pd.to_datetime(data["date_init"])
+    date_end = pd.to_datetime(data["date_end"])
     # set hour init 0:00:00 and hour end 23:59:59
     date_init = date_init.replace(hour=0, minute=0, second=0)
     date_end = date_end.replace(hour=23, minute=59, second=59)
@@ -1212,6 +1215,7 @@ def get_epp_db():
                 "locations": locations,
                 "brand": brand,
                 "epp": extra_info.get("epp", 0),
+                "name_short": item[12],
             }
         )
     return data, 200

@@ -44,6 +44,9 @@ from templates.controllers.material_request.sm_controller import (
     update_items_sm,
     update_sm_db,
     update_history_status_sm,
+    get_sm_folios_db,
+    delete_sm_db,
+    delete_item_from_sm_id,
 )
 from templates.controllers.product.p_and_s_controller import (
     create_movement_db_amc,
@@ -148,14 +151,14 @@ def get_all_sm(limit, page=0, emp_id=-1, with_items=True):
         #  kpi warehouse
         admin_not_date = extra_info.get("admin_notification_date", "")
         admin_not_date = (
-            datetime.strptime(admin_not_date, format_date)
+            pd.to_datetime(admin_not_date)
             if admin_not_date != ""
             and isinstance(admin_not_date, str)
             and admin_not_date is not None
             else None
         )
         date_creation = (
-            datetime.strptime(result[i][8], format_timestamps)
+            pd.to_datetime(result[i][8])
             if result[i][8] != "" and isinstance(result[i][8], str)
             else result[i][8]
         )
@@ -167,13 +170,13 @@ def get_all_sm(limit, page=0, emp_id=-1, with_items=True):
             kpi_warehouse = ""
         # operation kpi
         critical_date = (
-            datetime.strptime(result[i][9], format_timestamps)
+            pd.to_datetime(result[i][9])
             if result[i][9] != "" and isinstance(result[i][9], str)
             else result[i][9]
         )
         op_not_date = extra_info.get("operations_notification_date", "")
         op_not_date = (
-            datetime.strptime(op_not_date, format_date)
+            pd.to_datetime(op_not_date)
             if op_not_date != ""
             and isinstance(op_not_date, str)
             and op_not_date is not None
@@ -553,10 +556,14 @@ def dispatch_sm(data, data_token):
     id_user = result[6]
     products_sm = json.loads(result[10])
     history_sm = json.loads(result[12])
+    extra_info_sm = json.loads(result[14])
     folio = result[1]
-    ids_list = [item["id"] for item in products_sm if item.get("id") >= 0]
+    # products ids in the inventory
+    ids_inventory_sm_list = [
+        item["id_inventory"] for item in products_sm if item.get("state") > 0
+    ]
     updated_products = []
-    flag, error, result = get_products_stock_from_ids(ids_list)
+    flag, error, result = get_products_stock_from_ids(ids_inventory_sm_list)
     if not flag:
         return 400, {"msg": f"Error at retrieving stock: {str(error)}"}
     flag_semidespachado = False
@@ -575,13 +582,16 @@ def dispatch_sm(data, data_token):
         old_item = item_to_update.copy()
         # si el item no existe
         if item_to_update is None:
-            msg_items.append(f"Product {item_n['id']}-not found in sm")
+            msg_items.append(
+                f"Producto {item_n['id']}-{item_n['name']} no encontrado en la sm"
+            )
             updated_products.append(old_item)
             continue
         # si no hay cantidad para despachar
-        if item_n["quantity"] > stocks.get(item_to_update["id"], 0):
+        if item_n["quantity"] > stocks.get(item_to_update["id_inventory"], 0):
             msg_items.append(
-                f"Quantity to dispatch is greater than stock for product {item_to_update['id']}-{item_to_update['name']}"
+                f"La cantidad para despachar es mayor que el stock disponible para el producto "
+                f"{item_to_update['id']}-{item_to_update['id_inventory']}-{item_to_update['name']}"
             )
             updated_products.append(old_item)
             continue
@@ -591,7 +601,7 @@ def dispatch_sm(data, data_token):
             or item_to_update["state"] == 4
         ):
             msg_items.append(
-                f"Product {item_to_update['id']}-{item_to_update['name']} already dispatched"
+                f"Producto {item_to_update['id']}-{item_to_update['name']} ya fue despachado"
             )
             # updated_products.append(old_item)
             continue
@@ -600,41 +610,44 @@ def dispatch_sm(data, data_token):
         # si la cantidad es mayor que la requerida
         if item_to_update["dispatched"] > item_to_update["quantity"]:
             msg_items.append(
-                f"Quantity to dispatch is greater than requested for product {item_to_update['id']}-{item_to_update['name']}"
+                f"La cantidad a despachar es mayor que la cantidad requerida para el producto "
+                f"{item_to_update['id']}-{item_to_update['id_inventory']}-{item_to_update['name']}"
             )
             updated_products.append(old_item)
             continue
         # --- Crear un movimiento de salida para el despachado
         flag, error, result = create_movement_db_amc(
-            item_to_update["id"],
+            item_to_update["id_inventory"],
             "salida",
             item_n["quantity"],
             date_now,
             folio,
-            "dispatch sm",
+            "Despachado de SM",
         )
         if not flag:
             msg_items.append(
-                f"x---Error at creating movement-{item_to_update['id']}: {str(error)}"
+                f"x---Error al crear el movimiento para el item {item_to_update['id_inventory']}: {str(error)}"
             )
             updated_products.append(old_item)
             continue
-        msg_items.append(f"----Movement created-{item_to_update['id']}: {str(result)}")
+        msg_items.append(
+            f"----Movimiento creado para el item {item_to_update['id_inventory']}: {str(result)}"
+        )
         # -- actualizar stock del producto
         flag, error, res_stock = update_stock_db(
-            item_to_update["id"], -item_n["quantity"], True
+            item_to_update["id_inventory"], -item_n["quantity"], True
         )
         msg_items.append(
-            f"x---Error at updating stock-{item_to_update['id']}: {str(error)}"
+            f"x---Error al actualizar el stock para el producto {item_to_update['id_inventory']}: {str(error)}"
         ) if not flag else msg_items.append(
-            f"Movement created-{item_to_update['id']}: {str(res_stock)}"
+            f"---Stock actualizado para el item {item_to_update['id_inventory']}: {str(res_stock)}"
         )
         # -- actualizar el estado de la reservación
         flag, error, res_res = complete_reservation_db(item_to_update["reservation_id"])
         msg_items.append(
-            f"x---Error at updating reservation-{item_to_update['id']}: {str(error)}"
+            f"x---Error al tratar de completar la reservación {item_to_update['id']}: {str(error)}"
         ) if not flag else msg_items.append(
-            f"Reservation completed-{item_to_update['id']}: {str(res_res)}"
+            f"---Reservación completada {item_to_update['id']}: {str(res_res)}"
         )
         # verificar si se despacho por completo
         item_to_update["state"] = (
@@ -649,7 +662,7 @@ def dispatch_sm(data, data_token):
             else " ;(Semidespachado) "
         )
         comment_history += (
-            f"Dispatch: {item_to_update['quantity']}->{item_to_update['id']}\n"
+            f"Despachado: {item_to_update['quantity']}->{item_to_update['id']}\n"
         )
         # --- agregar el item para que se actualize en los datos de la sm
         updated_products.append(item_to_update)
@@ -671,23 +684,52 @@ def dispatch_sm(data, data_token):
     history_sm.append(
         {
             "user": data_token["emp_id"],
-            "event": "Despachado",
+            "event": "Accion de despachado",
             "date": date_now,
-            "comment": comment_history + f"por el empleado {data_token['emp_id']}",
+            "comment": comment_history + f" por el empleado {data_token['emp_id']}",
         }
     )
     errors, results_smi = update_items_sm(updated_products, data["id"])
     if len(errors) > 0:
         msg_items.append(f"Error al actualizar items: {errors}")
     if len(results_smi) > 0:
-        msg_items.append(f"Items actualizados: {results_smi}")
+        msg_items.append(f"Items SM actualizados: {results_smi}")
     new_status = determine_status_sm(updated_products)
+    # actualizar valores en tabla de control
+    warehouse_reviewed = extra_info_sm.get("warehouse_reviewed", 0)
+    warehouse_notification_date = extra_info_sm.get("warehouse_notification_date", "")
+    operations_notification_date = extra_info_sm.get("operations_notification_date", "")
+    admin_notification_date = extra_info_sm.get("admin_notification_date", "")
+    extra_info = (
+        {
+            "admin_status": 2,
+            "warehouse_status": 1,
+            "general_request_status": 0,
+            "warehouse_notification_date": date_now
+            if warehouse_notification_date == ""
+            else warehouse_notification_date,
+            "operations_notification_date": date_now
+            if operations_notification_date == ""
+            else operations_notification_date,
+            "admin_notification_date": date_now
+            if admin_notification_date == ""
+            else admin_notification_date,
+        }
+        if new_status == 2
+        else {}
+    )
+    if warehouse_reviewed == 0:
+        extra_info["warehouse_reviewed"] = 1
+    for k, v in extra_info.items():
+        extra_info_sm[k] = v
     flag, error, result_his = update_history_status_sm(
-        data["id"], history_sm, new_status
+        data["id"], history_sm, new_status, extra_info_sm
     )
     msg_items.append(
-        f"History updated: {str(result_his)}"
-    ) if flag else msg_items.append(f"Error at updating history sm: {str(error)}")
+        f"Historial actualizado: {str(result_his)}"
+    ) if flag else msg_items.append(
+        f"Error al actualizar el historial de la sm: {str(error)}"
+    )
     msg = (
         f"SM con ID-{data['id']} despachada por el empleado {data_token['emp_id']}"
         if not flag_semidespachado
@@ -867,22 +909,19 @@ def create_product(
     return {"msg": "ok", "data": result}, 201 if flag else {"msg": str(error)}, 400
 
 
-def update_sm_from_control_table(data, data_token):
-    flag, error, result = get_sm_by_id(data["id"])
+def update_sm_from_control_table(data, data_token, sm_data=None):
+    if sm_data is None:
+        flag, error, result = get_sm_by_id(data["id"])
+    else:
+        flag, error, result = True, None, sm_data
     if not flag or len(result) <= 0:
         return 400, ["sm not foud"]
     history_sm = json.loads(result[12])
     emp_id_creation = result[6]
     time_zone = pytz.timezone(timezone_software)
     date_now = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
-    history_sm.append(
-        {
-            "user": data_token.get("emp_id"),
-            "event": "Actualizar control de sm",
-            "date": date_now,
-            "comment": f"Actualización de datos desde la tabla de control por el empleado {data_token.get('emp_id')}",
-        }
-    )
+    comment_history = f"Actualización de datos desde la tabla de control por el empleado {data_token.get('emp_id')}"
+
     extra_info = json.loads(result[14])
     comments = ""
     for k, value in data["info"].items():
@@ -890,18 +929,55 @@ def update_sm_from_control_table(data, data_token):
             comments = value
             continue
         extra_info[k] = value
+        comment_history += f"-{k}-{value}-"
+    history_sm.append(
+        {
+            "user": data_token.get("emp_id"),
+            "event": "Actualizar control de sm",
+            "date": date_now,
+            "comment": comment_history,
+        }
+    )
     flag, error, result = update_history_extra_info_sm_by_id(
         data["id"], extra_info, history_sm, comments
     )
     if flag:
         msg = f"SM con ID-{data['id']} actualizada"
         create_notification_permission(
-            msg, ["sm"], "SM Actualizada", data_token.get("emp_id"), emp_id_creation
+            msg,
+            ["sm", "almacen", "administracion"],
+            "SM Actualizada",
+            data_token.get("emp_id"),
+            emp_id_creation,
         )
-        write_log_file(log_file_sm_path, msg)
+        write_log_file(log_file_sm_path, msg + "-->" + comment_history)
         return 200, {"msg": "ok"}
     else:
         return 400, {"msg": str(error)}
+
+
+def check_item_sm_for_init_vals(items: list):
+    all_avaliable = True
+    for item in items:
+        if item.get("id", 0) <= 0:
+            all_avaliable = False
+            break
+        if item.get("stock", 0) < item["quantity"]:
+            all_avaliable = False
+            break
+    if all_avaliable:
+        extra_info = {
+            "warehouse_status": 0,
+            "admin_status": 2,
+            "general_request_status": 0,
+        }
+    else:
+        extra_info = {
+            "warehouse_status": 1,
+            "admin_status": 0,
+            "general_request_status": 2,
+        }
+    return extra_info
 
 
 def create_sm_from_api(data, data_token):
@@ -911,12 +987,13 @@ def create_sm_from_api(data, data_token):
             "data": data["items"],
             "error": "No items detected",
         }, 400
-    flag, error, result = insert_sm_db(data)
+    extra_info = check_item_sm_for_init_vals(data["items"])
+    flag, error, result = insert_sm_db(data, extra_info)
     if not flag:
         print(error)
         return {"answer": "error at updating db"}, 400
     msg = (
-        f"Nueva SM creada #{data['info']['id']}, folio: {data['info']['folio']}, "
+        f"Nueva SM creada #{result}, folio: {data['info']['folio']}, "
         f"fecha limite: {data['info']['critical_date']}, "
         f"empleado con id: {data_token.get('emp_id')}, "
         f"comentario: {data['info']['comment']}"
@@ -964,6 +1041,29 @@ def update_sm_from_api(data, data_token):
         return {"answer": "error at updating db", "data": "", "error": error}, 400
 
 
+def delete_sm_from_api(data, data_token):
+    flag, error, result = delete_item_from_sm_id(data["id"])
+    if not flag:
+        return {"answer": "error at deleting items of sm in db"}, 400
+    msg = f"Items eliminados <{result}> de la sm con id: {data['id']}\n"
+    flag, error, result = delete_sm_db(data["id"])
+    if flag:
+        msg += (
+            f"SM #{data['id']} eliminada, empleado con id: {data_token.get('emp_id')}"
+        )
+        create_notification_permission(
+            msg,
+            ["sm", "administracion", "almacen"],
+            "SM Eliminada",
+            sender_id=data.get("id_emp"),
+        )
+        write_log_file(log_file_sm_path, msg)
+        return {"answer": "ok", "msg": error}, 200
+    else:
+        print(error)
+        return {"answer": "error at updating db"}, 400
+
+
 def update_items_sm_from_api(data, data_token):
     errors, results = update_items_sm(data["items"], data["id_sm"])
     msg = ""
@@ -980,3 +1080,18 @@ def update_items_sm_from_api(data, data_token):
     )
     write_log_file(log_file_sm_path, msg)
     return {"answer": "ok", "data": msg, "error": errors}, 200
+
+
+def get_sm_folios_from_api(data_token):
+    flag, error, result = get_sm_folios_db()
+    if not flag:
+        return {"answer": "error at getting sm folios"}, 400
+    folios = []
+    for item in result:
+        folios.append(
+            {
+                "id": item[0],
+                "folio": item[1],
+            }
+        )
+    return {"answer": "ok", "data": folios}, 200

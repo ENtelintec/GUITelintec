@@ -5,9 +5,10 @@ __date__ = "$ 13/mar/2025  at 13:15 $"
 import threading
 from datetime import datetime
 
+import pandas as pd
 import pytz
 
-from static.constants import timezone_software, format_timestamps
+from static.constants import timezone_software
 from templates.Functions_Utils import (
     create_notification_permission_notGUI,
     update_flag_daemons,
@@ -27,7 +28,7 @@ def MedicalNotifications():
         # get the last date
         last_date = item.get("dates")[-1]
         # check is a year minus 15 days have passed
-        last_date = datetime.strptime(last_date, format_timestamps)
+        last_date = pd.to_datetime(last_date)
         if timestamp_today.year - last_date.year > 15:
             medical_to_notify.append(
                 f"El empleado {item.get('name')} debe realizar sus examenes medicos"
@@ -48,9 +49,7 @@ class NotificationsSearch(threading.Thread):
         match self.type_n:
             case "medical":
                 MedicalNotifications()
-                update_flag_daemons(
-                    flag_medical=True
-                )
+                update_flag_daemons(flag_medical=True)
             case "payroll":
                 print("searching for payroll notifications")
             case _:

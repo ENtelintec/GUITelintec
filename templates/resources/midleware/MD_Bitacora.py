@@ -6,6 +6,7 @@ import csv
 import json
 from datetime import datetime, timedelta
 
+import pandas as pd
 import pytz
 
 from static.constants import (
@@ -41,9 +42,7 @@ def check_date_difference(date_modify, delta):
     time_zone = pytz.timezone(timezone_software)
     date_now = datetime.now(pytz.utc).astimezone(time_zone)
     date_modify = (
-        datetime.strptime(date_modify, format_date)
-        if isinstance(date_modify, str)
-        else date_modify
+        pd.to_datetime(date_modify) if isinstance(date_modify, str) else date_modify
     )
     date_modify = (
         date_modify.date() if isinstance(date_modify, datetime) else date_modify
@@ -573,7 +572,6 @@ def delete_event_bitacora_rh_from_api(data, data_token):
 
 
 def fetch_bitacora_rh_from_api_by_date(data):
-
     flag, error, result = get_bitacora_rh_db_by_date(data["date"])
     dict_emps = {}
     # id_event, emp_id, event, timestamp, extra_info, name, l_name, contrato

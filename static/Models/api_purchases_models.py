@@ -180,6 +180,9 @@ pos_application_post_model = api.model(
         "comment": fields.String(
             required=True, description="The quotation comment", example="Some comment"
         ),
+        "sm_id": fields.Integer(
+            required=False, description="The quotation sm id", example=1
+        ),
         "items": fields.List(fields.Nested(items_po_model, required=True)),
     },
 )
@@ -215,6 +218,9 @@ purchase_order_post_model = api.model(
             required=True,
             description="The quotation creation date",
             example="2024-03-01",
+        ),
+        "sm_id": fields.Integer(
+            required=False, description="The quotation sm id", example=1
         ),
         "supplier": fields.Integer(
             required=True, description="The supplier id", example=1
@@ -264,6 +270,9 @@ purchase_order_put_model = api.model(
             metadata_telintec_order_model, required=True
         ),
         "metadata_supplier": fields.Nested(metadata_supplier_model, required=True),
+        "sm_id": fields.Integer(
+            required=False, description="The quotation sm id", example=1
+        ),
     },
 )
 
@@ -326,8 +335,8 @@ class ItemsPOForm(Form):
 class ItemsPOApplicationForm(Form):
     description = StringField("description", [InputRequired()])
     quantity = FloatField("quantity", [InputRequired()])
-    brand = StringField("brand", [InputRequired()])
-    category = StringField("category", [InputRequired()])
+    brand = StringField("brand", [])
+    category = StringField("category", [])
     id_inventory = FloatField("id_inventory", [], default=0)
     url = URLField("url", [], default="")
     n_parte = StringField("n_parte", [], default="")
@@ -367,6 +376,7 @@ class PurchaseOrderPostForm(Form):
     items = FieldList(FormField(ItemsPOForm), "items", validators=[], default=[])
     metadata_telintec = FormField(MetadataTelitencForm)
     metadata_supplier = FormField(MetadataSupplierForm)
+    sm_id = IntegerField("sm_id", [], default=0)
 
 
 class ItemsPOUpdateForm(Form):
@@ -421,6 +431,7 @@ class PurchaseOrderPutForm(Form):
     supplier = IntegerField("supplier", [InputRequired()])
     metadata_telintec = FormField(MetadataTelitencForm)
     metadata_supplier = FormField(MetadataSupplierForm)
+    sm_id = IntegerField("sm_id", [], default=0)
 
 
 class PurchaseOrderDeleteForm(Form):
@@ -453,6 +464,7 @@ class POsApplicationPostForm(Form):
     items = FieldList(
         FormField(ItemsPOApplicationForm), "items", validators=[], default=[]
     )
+    sm_id = IntegerField("sm_id", [], default=0)
 
 
 class POsApplicationPutForm(Form):

@@ -54,6 +54,8 @@ from templates.resources.midleware.MD_SM import (
     create_sm_from_api,
     update_sm_from_api,
     update_items_sm_from_api,
+    get_sm_folios_from_api,
+    delete_sm_from_api,
 )
 
 ns = Namespace("GUI/api/v1/sm")
@@ -101,7 +103,7 @@ class Products(Resource):
 
 
 @ns.route("/all")
-class AllSm(Resource):
+class FetchAllSm(Resource):
     @ns.expect(expected_headers_per)
     def get(self):
         flag, data_token, msg = token_verification_procedure(
@@ -139,7 +141,7 @@ class AllSmEmployee(Resource):
 
 
 @ns.route("/add")
-class AddUpdateSM(Resource):
+class ActionsSM(Resource):
     @ns.expect(expected_headers_per, sm_post_model)
     def post(self):
         flag, data_token, msg = token_verification_procedure(request, department="sm")
@@ -163,20 +165,8 @@ class AddUpdateSM(Resource):
         if not validator.validate():
             return {"error": validator.errors}, 400
         data = validator.data
-        flag, error, result = delete_sm_db(data["id"])
-        if flag:
-            msg = f"SM #{data['id']} eliminada, empleado con id: {data_token.get('emp_id')}"
-            create_notification_permission(
-                msg,
-                ["sm", "administracion", "almacen"],
-                "SM Eliminada",
-                sender_id=data.get("id_emp"),
-            )
-            write_log_file(log_file_sm_path, msg)
-            return {"answer": "ok", "msg": error}, 200
-        else:
-            print(error)
-            return {"answer": "error at updating db"}, 400
+        data_out, code = delete_sm_from_api(data, data_token)
+        return data, code
 
     @ns.expect(expected_headers_per, sm_put_model)
     def put(self):
@@ -366,4 +356,17 @@ class SmItemsActions(Resource):
             return {"error": validator.errors}, 400
         data = validator.data
         data_out, code = update_items_sm_from_api(data, data_token)
+        return data_out, code
+
+
+@ns.route("/folioSmAll")
+class FetchSMFolios(Resource):
+    @ns.expect(expected_headers_per)
+    def get(self):
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["sm", "almacen"]
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        data_out, code = get_sm_folios_from_api(data_token)
         return data_out, code
