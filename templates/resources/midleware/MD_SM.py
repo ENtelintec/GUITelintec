@@ -957,7 +957,7 @@ def update_sm_from_control_table(data, data_token, sm_data=None):
 def check_item_sm_for_init_vals(items: list):
     all_avaliable = True
     for item in items:
-        if item.get["id"] <= 0:
+        if item.get("id", 0) <= 0:
             all_avaliable = False
             break
         if item.get("stock", 0) < item["quantity"]:
