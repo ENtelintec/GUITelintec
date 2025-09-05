@@ -968,7 +968,40 @@ def create_sm_from_api(data, data_token):
     return {"answer": "ok", "data": msg, "error": error}, 201
 
 
+def check_if_items_sm_correct_for_update(data):
+    all_ok = True
+    error = None
+    items_out = []
+    for item in data["items"]:
+        items_out.append(item)
+        if item.get("quantity", 0) < item["quantity"]:
+            all_ok = False
+            error = f"Item con id {item['id']} no tiene suficiente stock"
+            break
+        if item.get("id", 0) <= 0:
+            if item.get("id_inventory", 0) <= 0:
+                all_ok = False
+                error = (
+                    f"Item con id {item['id']} no tiene id de inventario para crearlo"
+                )
+                break
+        if item.get("id_inventory", 0) <= 0:
+            if item.get("id", 0) > 0:
+                all_ok = False
+                error = f"No se puede actualizar el item con id {item['id']} sin id de inventario"
+                break
+    return all_ok, items_out, error
+
+
 def update_sm_from_api(data, data_token):
+    flag, items_out, error = check_if_items_sm_correct_for_update(data)
+    print(error, items_out)
+    if not flag:
+        return {
+            "answer": "error at items",
+            "data": items_out,
+            "error": error,
+        }, 400
     flag, error, result = update_sm_db(data)
     if flag:
         msg = (
