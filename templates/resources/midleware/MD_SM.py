@@ -265,7 +265,7 @@ def get_iddentifiers_creation_contracts(data_token):
                 ids = list(set(ids))
                 flag, error, contracts = get_contracts_by_ids(ids)
                 if not flag:
-                    return {"data": None, "msg": str(error)}, 400
+                    return {"data": None, "msg": str(error)}, dict_tabs, 400
                 break
     identifier_list = []
     for result in contracts:
@@ -278,7 +278,7 @@ def get_iddentifiers_creation_contracts(data_token):
                 "abbreviation", f"{idn_contract}"
             )
     if not identifier_list:
-        return {"data": None, "msg": "Folios for user not found"}, 200
+        return {"data": None, "msg": "Folios for user not found"}, dict_tabs, 200
     return identifier_list, dict_tabs, 200
 
 
@@ -304,7 +304,7 @@ def get_iddentifiers_ternium(data_token):
                 ids = list(set(ids))
                 flag, error, contracts = get_contracts_by_ids(ids)
                 if not flag:
-                    return {"data": None, "msg": str(error)}, 400
+                    return {"data": None, "msg": str(error)}, dict_tabs, 400
                 break
 
     identifier_list = []
@@ -318,7 +318,7 @@ def get_iddentifiers_ternium(data_token):
                 "abbreviation", f"{idn_contract}"
             )
     if not identifier_list:
-        return {"data": None, "msg": "Folios for user not found"}, 200
+        return {"data": None, "msg": "Folios for user not found"}, dict_tabs, 200
     return identifier_list, dict_tabs, 200
 
 
