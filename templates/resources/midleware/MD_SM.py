@@ -370,9 +370,11 @@ def get_all_sm_control_table(data_token):
     abbs_list_departments, code = get_iddentifiers(data_token, ["administrator"])
     for abb in abbs_list_departments:
         dict_tabs_contracts[f"sm-{abb.lower()}-"] = abb
-    if code != 200:
-        return {"data": [], "msg": iddentifiers_contracts}, 400
+    print(abbs_list_departments, code)
+    # if code != 200:
+    #     return {"data": [], "msg": iddentifiers_contracts}, 400
     data_sm, code = get_all_sm(-1, 0, -1, with_items=False)
+    print(data_sm, code)
     if code != 200:
         return {"data": [], "msg": data_sm}, 400
     data_out = clasify_sm(
