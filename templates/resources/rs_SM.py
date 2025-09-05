@@ -28,16 +28,10 @@ from static.Models.api_sm_models import (
     item_sm_put_model,
     ItemSmPutForm,
 )
-from static.constants import log_file_sm_path
 from templates.Functions_AuxPlots import get_data_sm_per_range
-from templates.Functions_Utils import create_notification_permission
 from templates.controllers.customer.customers_controller import get_sm_clients
 from templates.controllers.employees.employees_controller import get_sm_employees
 from templates.controllers.index import DataHandler
-from templates.controllers.material_request.sm_controller import (
-    delete_sm_db,
-)
-from templates.misc.Functions_Files import write_log_file
 from templates.resources.methods.Functions_Aux_Login import token_verification_procedure
 from templates.resources.midleware.MD_SM import (
     get_products_sm,
@@ -179,7 +173,7 @@ class ActionsSM(Resource):
             return {"error": validator.errors}, 400
         data = validator.data
         data_out, code = update_sm_from_api(data, data_token)
-        return data, code
+        return data_out, code
 
 
 @ns.route("/newclient")

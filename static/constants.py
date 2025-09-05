@@ -179,37 +179,38 @@ dict_deps = {
 # sgi pertenece a direccion el puesto se llama coordinador de sgi (Jennfier)
 # sgi enrique DIRE pero las hace Jenny
 # rh crean sm todos
-dict_depts_identifiers = {
-    1: ["DIRE", "SGI"],
-    2: "OP",
-    3: "ADMON",
-    4: "RH",
-    3001: ["ALM", "CDA-VEH"],
-    3002: "CDA-TI",
-    3003: "CDA-EQO",
-    3004: "CDA-MED",
-    2001: "SST",
-}
-tabs_sm = {
-    "sm-dire-": "Direccion",
-    "sm-sgi-": "SGI",
-    "sm-op-": "Operaciones",
-    "sm-admon-": "Administracion",
-    "sm-rrhh-": "RH",
-    "sm-alm-": "Almacen",
-    "sm-pa-cda-veh-": "CDA Vehiculos",
-    "sm-pa-cda-ti-": "CDA TI",
-    "sm-pa-cda-eqo-": "Inmuebles",
-    "sm-pa-cda-med-": "CDA Eq. Medición",
-    "sm-sst-": "Seguridad",
-    "sm-5000-": "INFRA",
-    "sm-8272-": "GRUAS",
-    "sm-3650-": "PESQUERIA",
-    "sm-9971-": "AUTO",
-    "sm-0701-": "RFID",
-    "sm-3122-": "CCTV",
-    "sm-3487-": "PUEBLA",
-}
+# dict_depts_identifiers = {
+#     1: ["DIRE", "SGI"],
+#     2: "OP",
+#     3: "ADMON",
+#     4: "RH",
+#     3001: ["ALM", "CDA-VEH"],
+#     3002: "CDA-TI",
+#     3003: "CDA-EQO",
+#     3004: "CDA-MED",
+#     2001: "SST",
+# }
+# tabs_sm = {
+#     "sm-dire-": "Direccion",
+#     "sm-sgi-": "SGI",
+#     "sm-op-": "Operaciones",
+#     "sm-admon-": "Administracion",
+#     "sm-rrhh-": "RH",
+#     "sm-alm-": "Almacen",
+#     "sm-pa-cda-veh-": "CDA Vehiculos",
+#     "sm-pa-cda-ti-": "CDA TI",
+#     "sm-pa-cda-eqo-": "Inmuebles",
+#     "sm-pa-cda-med-": "CDA Eq. Medición",
+#     "sm-sst-": "Seguridad",
+#     "sm-5000-": "INFRA",
+#     "sm-8272-": "GRUAS",
+#     "sm-3650-": "PESQUERIA",
+#     "sm-9971-": "AUTO",
+#     "sm-0701-": "RFID",
+#     "sm-3122-": "CCTV",
+#     "sm-3487-": "PUEBLA",
+#     "sm-8514-": "REDES-MTTO",
+# }
 format_timestamps_filename = "%Y-%m-%d"
 HOST_DB_DEFAULT = "HOST_DB" if environment != "prod" else "HOST_DB_AWS"
 USER_DB_DEFAULT = "USER_SQL" if environment != "prod" else "USER_SQL_AWS"

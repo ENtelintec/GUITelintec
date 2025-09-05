@@ -159,7 +159,6 @@ def check_if_head_not_auxiliar(id_employee: int):
     )
     val = (id_employee, id_employee)
     flag, e, my_result = execute_sql(sql, val, 2)
-    print("check if head not auxiliar", my_result)
     return flag, e, my_result
 
 

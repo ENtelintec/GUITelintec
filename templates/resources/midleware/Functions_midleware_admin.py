@@ -228,6 +228,7 @@ def get_folio_from_contract_ternium(data_token):
 def get_department_identifiers(result):
     abbs = []
     for item in result:
+        # print("dep", item)
         if item[9]:
             abbs.append(item[8])
         else:
@@ -242,12 +243,13 @@ def get_iddentifiers(data_token, all_data_keys):
         flag, error, result_abb = get_contracts_abreviations_db()
         abbs_area = [item[0] for item in result_abb if item[4] == 0 and item[0] != ""]
     else:
+        abbs_area = []
         for check_func in (check_if_gerente, check_if_head_not_auxiliar):
             flag, error, result = check_func(data_token.get("emp_id"))
             if flag and result:
                 abbs_area = get_department_identifiers(result)
                 break
-            else:
+            elif not flag:
                 return {"data": None, "msg": str(error)}, 400
     identifiers = abbs_area
     if not identifiers:
