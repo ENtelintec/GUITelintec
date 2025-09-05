@@ -995,7 +995,6 @@ def check_if_items_sm_correct_for_update(data):
 
 def update_sm_from_api(data, data_token):
     flag, items_out, error = check_if_items_sm_correct_for_update(data)
-    print(error, items_out)
     if not flag:
         return {
             "answer": "error at items",
