@@ -937,7 +937,7 @@ def check_item_sm_for_init_vals(items: list):
 def create_sm_from_api(data, data_token):
     if len(data["items"]) == 0:
         return {
-            "answer": "error",
+            "answer": "error no sufficient items",
             "data": data["items"],
             "error": "No items detected",
         }, 400

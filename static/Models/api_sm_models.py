@@ -613,7 +613,9 @@ class ItemsFormSMPUT(Form):
     )
     id_inventory = IntegerField(
         "id_inventory",
-        validators=[],
+        validators=[
+            validators.number_range(min=-10, message="Invalid id in inventory")
+        ],
         default=0,
     )
     name = StringField("name", validators=[InputRequired()])
