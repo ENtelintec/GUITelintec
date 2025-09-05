@@ -7,13 +7,13 @@ import os
 import re
 from datetime import datetime
 
+import pandas as pd
 import pytz
 
 from static.constants import (
     cache_file_resume_fichaje_path,
     status_dic,
     quizz_out_path,
-    format_date,
     format_timestamps,
     timezone_software,
 )
@@ -96,9 +96,7 @@ def get_data_employees_ids(ids: list):
 
 
 def update_event_dict(event_dic, data, event=None):
-    date = (
-        datetime.strptime(data[0], format_date) if isinstance(data[0], str) else data[0]
-    )
+    date = pd.to_datetime(data[0]) if isinstance(data[0], str) else data[0]
     time_zone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
     if str(date.year) not in event_dic.keys():
@@ -297,12 +295,12 @@ def update_bitacora_value(emp_id: int, event, data, id_event=None):
         event_dic = json.loads(result[events_indexes_db[event]])
     else:
         print("error at getting data from db or not data found for the employee")
-    date = (
-        datetime.strptime(data[0], format_date) if isinstance(data[0], str) else data[0]
-    )
+    date = pd.to_datetime(data[0]) if isinstance(data[0], str) else data[0]
     try:
         time_zone = pytz.timezone(timezone_software)
-        timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
+        timestamp = (
+            datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
+        )
         event_dic[str(date.year)][str(date.month)][str(date.day)] = {
             "value": data[1],
             "comment": data[2],
@@ -377,9 +375,7 @@ def erase_value_bitacora(emp_id: int, event, data):
         event_dic = json.loads(result[events_indexes_db[event]])
     else:
         print("error at getting data from db or not data found for the employee")
-    date = (
-        datetime.strptime(data[0], format_date) if isinstance(data[0], str) else data[0]
-    )
+    date = pd.to_datetime(data[0]) if isinstance(data[0], str) else data[0]
     if str(date.year) in event_dic.keys():
         if str(date.month) in event_dic[str(date.year)].keys():
             if str(date.day) in event_dic[str(date.year)][str(date.month)].keys():

@@ -640,7 +640,7 @@ def get_dict_fichaje(dict_list: list[dict], data: list[dict]):
         if item_dict is not None:
             for timestamp_key, item in item_dict.items():
                 timestamp = (
-                    datetime.strptime(timestamp_key, format_timestamps)
+                    pd.to_datetime(timestamp_key)
                     if isinstance(timestamp_key, str)
                     else timestamp_key
                 )
@@ -684,7 +684,7 @@ def get_dict_oct(dict_o: list[dict], data: list[list]):
                     value = None
                 else:
                     timestamp, comment, value = row
-                timestamp = datetime.strptime(timestamp, format_timestamps)
+                timestamp = pd.to_datetime(timestamp)
                 year = str(timestamp.year)
                 month = str(timestamp.month)
                 day = str(timestamp.day)
@@ -1401,9 +1401,7 @@ def unify_data_display_fichaje(data: list[tuple[any, float, str]]) -> dict:
             value = value.total_seconds() / 3600
         comment = "Sin registro\n" if comment is None else comment
         timestamp = (
-            datetime.strptime(timestamp, format_timestamps)
-            if isinstance(timestamp, str)
-            else timestamp
+            pd.to_datetime(timestamp) if isinstance(timestamp, str) else timestamp
         )
         year = timestamp.year
         month = timestamp.month

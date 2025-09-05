@@ -10,6 +10,7 @@ import time
 from datetime import datetime, timezone
 
 import openai
+import pandas as pd
 import requests
 from bardapi import Bard
 from bardapi.constants import SESSION_HEADERS
@@ -133,7 +134,7 @@ def follow_conversation(data: list) -> str:
     """
     chat_id = data[0]
     sender_id = data[1]
-    time_start = datetime.strptime(data[2], "%Y-%m-%d %H:%M:%S.%f")
+    time_start = pd.to_datetime(data[2])
     result = get_isAlive(chat_id, sender_id)
     if result is None:
         print("Chat not found")
@@ -294,9 +295,7 @@ def handle_if_products(
         # check if enough time has passed
         if (
             datetime.now(timezone.utc)
-            - datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S").replace(
-                tzinfo=timezone.utc
-            )
+            - pd.to_datetime(timestamp).replace(tzinfo=timezone.utc)
         ).seconds / 60 > time_window:
             print("Chat {} is not alive", chat_id)
             finish_chat(chat_id)
@@ -368,12 +367,10 @@ def get_timestamp_difference(
     :return: int with the difference in minutes
     """
     if is_utc:
-        timestamp_last = datetime.strptime(timestamp_last, "%Y-%m-%d %H:%M:%S").replace(
-            tzinfo=timezone.utc
-        )
+        timestamp_last = pd.to_datetime(timestamp_last).replace(tzinfo=timezone.utc)
         timestamp_now = datetime.now(timezone.utc)
     else:
-        timestamp_last = datetime.strptime(timestamp_last, "%Y-%m-%d %H:%M:%S")
+        timestamp_last = pd.to_datetime(timestamp_last)
         timestamp_now = datetime.now()
     match scale:
         case "MINUTES":

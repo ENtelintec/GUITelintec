@@ -2,7 +2,8 @@
 __author__ = "Edisson Naula"
 __date__ = "$ 28/jun./2024  at 16:33 $"
 
-from datetime import datetime
+
+import pandas as pd
 
 
 def check_files_pairs_date(files_data: dict) -> dict:
@@ -17,13 +18,13 @@ def check_files_pairs_date(files_data: dict) -> dict:
         pairs = []
         date1 = files_data[k]["date"]
         try:
-            date1 = datetime.strptime(date1, "%d-%m-%Y")
+            date1 = pd.to_datetime(date1)
             for k2 in files_data.keys():
                 if "Fichaje" in k2:
                     continue
                 if k2 != k:
                     date2 = files_data[k2]["date"]
-                    date2 = datetime.strptime(date2, "%d-%m-%Y")
+                    date2 = pd.to_datetime(date2)
                     diff_dates = date1 - date2
                     if 0 <= diff_dates.days <= 31 and date2 <= date1:
                         pairs.append(k2)
