@@ -245,10 +245,8 @@ def get_all_sm(limit, page=0, emp_id=-1, with_items=True):
 
 def get_iddentifiers_creation_contracts(data_token):
     permissions = data_token.get("permissions", {}).values()
-    ids_identtifier = []
     contracts = []
     dict_tabs = {}
-    # if any("administrator" in item.lower().split(".")[-1] for item in permissions):
     if any(
         word in item.lower().split(".")[-1]
         for word in ["administrator"]
@@ -256,13 +254,6 @@ def get_iddentifiers_creation_contracts(data_token):
     ):
         flag, error, contracts = get_contract_by_client(40)
     else:
-        # for check_func in (check_if_gerente, check_if_head_not_auxiliar):
-        #     flag, error, result = check_func(data_token.get("emp_id"))
-        #     if flag and result:
-        #         ids_identtifier = get_department_identifiers(
-        #             data_token.get("dep_id"), result, True
-        #         )
-        #         break
         for check_func in (check_if_leader,):
             flag, error, result = check_func(data_token.get("emp_id"))
             if flag and len(result) > 0:
@@ -295,7 +286,6 @@ def get_iddentifiers_ternium(data_token):
     permissions = data_token.get("permissions", {}).values()
     contracts = []
     dict_tabs = {}
-    # if any("administrator" in item.lower().split(".")[-1] for item in permissions):
     if any(
         word in item.lower().split(".")[-1]
         for word in ["administrator", "almacen"]
@@ -303,13 +293,6 @@ def get_iddentifiers_ternium(data_token):
     ):
         flag, error, contracts = get_contract_by_client(40)
     else:
-        # for check_func in (check_if_gerente, check_if_head_not_auxiliar):
-        #     flag, error, result = check_func(data_token.get("emp_id"))
-        #     if flag and result:
-        #         ids_identtifier = get_department_identifiers(
-        #             data_token.get("dep_id"), result
-        #         )
-        #         break
         for check_func in (check_if_leader, check_if_auxiliar_with_contract):
             flag, error, result = check_func(data_token.get("emp_id"))
             if flag and len(result) > 0:
@@ -366,12 +349,17 @@ def clasify_sm(iddentifiers, data_sm, data_token, tabs_sm):
 
 def fetch_all_sm_with_permissions(data_token):
     iddentifiers, dict_tabs, code = get_iddentifiers_creation_contracts(data_token)
+    abbs_list_departments, code = get_iddentifiers(data_token, ["administrator"])
+    for abb in abbs_list_departments:
+        dict_tabs[f"sm-{abb.lower()}-"] = abb
     if code != 200:
         return {"data": [], "msg": iddentifiers}, 400
     data_sm, code = get_all_sm(-1, 0, -1)
     if code != 200:
         return {"data": [], "msg": data_sm}, 400
-    data_out = clasify_sm(iddentifiers, data_sm, data_token, dict_tabs)
+    data_out = clasify_sm(
+        iddentifiers + abbs_list_departments, data_sm, data_token, dict_tabs
+    )
     return {"data": data_out}, 200
 
 
