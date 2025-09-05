@@ -249,7 +249,7 @@ def update_items_sm(items: list, sm_id: int):
     for item in items:
         is_erased = item.get("is_erased", 0)
         if is_erased == 0:
-            id_inventory = item.get("id_inventory")
+            id_inventory = item.get("id_inventory", 0)
             if item.get("id", 0) != 0:
                 sql = (
                     "UPDATE sql_telintec.sm_items "
@@ -284,10 +284,12 @@ def update_items_sm(items: list, sm_id: int):
                     "dispatched, movements, state, extra_info, deliveries, state_delivery, state_quantity) "
                     "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
                 )
-                id_inventory = item.get("id") if item.get("id", -1) != 1 else None
+                id_new = item.get("id", -1)
+                id_new = None if id_new == -1 else id_new
+                id_inventory = id_new if (id_inventory <= 0) else id_inventory
                 val = (
                     sm_id,
-                    id_inventory if id_inventory != 0 else None,
+                    id_inventory,
                     item.get("name"),
                     item.get("udm", "PZA"),
                     item.get("comment", ""),
