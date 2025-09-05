@@ -81,7 +81,7 @@ class FetchPOsApplicationsToApprove(Resource):
 
 
 @ns.route("/application/order")
-class OperationsApplicationPOs(Resource):
+class APOsOperations(Resource):
     @ns.expect(expected_headers_per, pos_application_post_model)
     def post(self):
         flag, data_token, msg = token_verification_procedure(
@@ -129,7 +129,7 @@ class OperationsApplicationPOs(Resource):
 
 
 @ns.route("/order")
-class OperationsPOs(Resource):
+class POsOperations(Resource):
     @ns.expect(expected_headers_per, purchase_order_post_model)
     def post(self):
         flag, data_token, msg = token_verification_procedure(

@@ -335,8 +335,8 @@ class ItemsPOForm(Form):
 class ItemsPOApplicationForm(Form):
     description = StringField("description", [InputRequired()])
     quantity = FloatField("quantity", [InputRequired()])
-    brand = StringField("brand", [InputRequired()])
-    category = StringField("category", [InputRequired()])
+    brand = StringField("brand", [])
+    category = StringField("category", [])
     id_inventory = FloatField("id_inventory", [], default=0)
     url = URLField("url", [], default="")
     n_parte = StringField("n_parte", [], default="")
