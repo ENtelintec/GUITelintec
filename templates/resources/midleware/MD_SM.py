@@ -334,6 +334,7 @@ def get_iddentifiers(data_token):
     permissions = data_token.get("permissions", {}).values()
     ids_identtifier = []
     contracts = []
+    dict_tabs = {}
     # if any("administrator" in item.lower().split(".")[-1] for item in permissions):
     if any(
         word in item.lower().split(".")[-1]
@@ -368,6 +369,7 @@ def get_iddentifiers(data_token):
         for dept_id in ids_identtifier
         if dict_depts_identifiers.get(dept_id)
     ]
+    print("indet 1", identifiers)
     identifier_list = [
         item
         for sublist in identifiers
@@ -375,12 +377,16 @@ def get_iddentifiers(data_token):
     ]
     for result in contracts:
         contract_number = result[5]
+        metadata_contract = json.loads(result[1])
         idn_contract = contract_number[-4:]
         if str(idn_contract) not in identifier_list:
             identifier_list.append(f"{idn_contract}")
+            dict_tabs[f"{idn_contract}"] = metadata_contract.get(
+                "abbreviation", f"{idn_contract}"
+            )
     if not identifier_list:
         return {"data": None, "msg": "Folios for user not found"}, 200
-    return identifier_list, 200
+    return identifier_list, dict_tabs, 200
 
 
 def clasify_sm(iddentifiers, data_sm, data_token):
@@ -420,7 +426,8 @@ def fetch_all_sm_with_permissions(data_token):
 
 
 def get_all_sm_control_table(data_token):
-    iddentifiers, code = get_iddentifiers(data_token)
+    iddentifiers, dict_tabs, code = get_iddentifiers(data_token)
+    print(iddentifiers, dict_tabs)
     if code != 200:
         return {"data": [], "msg": iddentifiers}, 400
     data_sm, code = get_all_sm(-1, 0, -1, with_items=False)
