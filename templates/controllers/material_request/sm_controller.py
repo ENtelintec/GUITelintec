@@ -631,6 +631,6 @@ def get_sm_folios_db():
 
 def delete_item_from_sm_id(sm_id: int):
     sql = """DELETE FROM sql_telintec.materials_request WHERE sm_id = %s """
-    val = (json.dumps([]), sm_id)
+    val = (sm_id,)
     flag, error, result = execute_sql(sql, val, 3)
     return flag, error, result
