@@ -633,4 +633,4 @@ def delete_item_from_sm_id(sm_id: int):
     sql = """DELETE FROM sql_telintec.materials_request WHERE sm_id = %s """
     val = (json.dumps([]), sm_id)
     flag, error, result = execute_sql(sql, val, 3)
-    return flag, error
+    return flag, error, result
