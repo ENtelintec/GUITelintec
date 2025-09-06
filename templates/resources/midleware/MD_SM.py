@@ -349,7 +349,7 @@ def clasify_sm(iddentifiers, data_sm, data_token, tabs_sm):
 
 def fetch_all_sm_with_permissions(data_token):
     iddentifiers, dict_tabs, code = get_iddentifiers_creation_contracts(data_token)
-    if code != 200:
+    if code != 200 and isinstance(iddentifiers, dict):
         iddentifiers = []
     abbs_list_departments, code = get_iddentifiers(data_token, ["administrator"])
     for abb in abbs_list_departments:
@@ -369,7 +369,7 @@ def get_all_sm_control_table(data_token):
     iddentifiers_contracts, dict_tabs_contracts, code = get_iddentifiers_ternium(
         data_token
     )
-    if code != 200:
+    if code != 200 and isinstance(iddentifiers_contracts, dict):
         iddentifiers_contracts = []
     abbs_list_departments, code = get_iddentifiers(data_token, ["administrator"])
     for abb in abbs_list_departments:
