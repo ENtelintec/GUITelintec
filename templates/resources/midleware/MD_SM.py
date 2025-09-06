@@ -353,7 +353,7 @@ def fetch_all_sm_with_permissions(data_token):
     for abb in abbs_list_departments:
         dict_tabs[f"sm-{abb.lower()}-"] = abb
     if code != 200:
-        return {"data": [], "msg": iddentifiers}, 400
+        abbs_list_departments = []
     data_sm, code = get_all_sm(-1, 0, -1)
     if code != 200:
         return {"data": [], "msg": data_sm}, 400
