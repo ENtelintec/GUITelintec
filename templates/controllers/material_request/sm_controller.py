@@ -335,6 +335,7 @@ def insert_sm_db(data, init_extra_info=None):
         "project": data["info"].get("project", ""),
         "urgent": data["info"].get("urgent", 0),
         "activity_description": data["info"].get("activity_description", ""),
+        "comment": data["info"].get("comment", ""),
         "request_date": timestamp,
         "requesting_user_status": data["info"].get("requesting_user_status", 0),
         "warehouse_reviewed": data["info"].get("warehouse_reviewed", 0),
@@ -420,6 +421,9 @@ def update_sm_db(data):
     extra_info = json.loads(result[1])
     extra_info["destination"] = data["info"]["destination"]
     extra_info["contract_contact"] = data["info"]["contract_contact"]
+    extra_info["activity_description"] = data["info"]["activity_description"]
+    extra_info["comment"] = data["info"]["comment"]
+    extra_info["project"] = data["info"]["project"]
     history = data["info"]["history"]
     time_zone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)

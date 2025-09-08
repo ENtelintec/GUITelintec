@@ -703,7 +703,7 @@ def dispatch_sm(data, data_token):
     return 200, {"msg": msg_items}
 
 
-def cancel_sm(data):
+def cancel_sm(data, data_token):
     flag, error, result = get_sm_by_id(data["id"])
     if not flag or len(result) <= 0:
         return 400, ["sm not foud"]
@@ -713,10 +713,10 @@ def cancel_sm(data):
     date_now = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
     history_sm.append(
         {
-            "user": data["emp_id"],
+            "user": data_token["emp_id"],
             "event": "Cancelación",
             "date": date_now,
-            "comment": data["comment"] + f"por el empleado {data['emp_id']}",
+            "comment": data["comment"] + f"por el empleado {data_token['emp_id']}",
         }
     )
     flag, error, result = update_history_sm(data["id"], history_sm, [], True)

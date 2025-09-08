@@ -185,6 +185,10 @@ sm_model_post = api.model(
         "destination": fields.String(
             required=True, description="The destination area in telintec"
         ),
+        "activity_description": fields.String(
+            required=True, description="The activity description"
+        ),
+        "project": fields.String(required=True, description="The project"),
     },
 )
 
@@ -692,9 +696,13 @@ class SMInfoForm(Form):
         "status", validators=[validators.number_range(min=0, message="Invalid id")]
     )
     comment = StringField("comment", validators=[], default="")
+    activity_description = StringField(
+        "activity_description", validators=[], default=""
+    )
     destination = StringField("destination", validators=[InputRequired()])
     # history = StringField("history", validators=[], default="[]")
     history = FieldList(FormField(HistoryFormSM, "history"))
+    project = StringField("project", validators=[], default="")
 
 
 class SMInfoControlTableForm(Form):
