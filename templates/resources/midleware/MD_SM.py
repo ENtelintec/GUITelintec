@@ -1016,6 +1016,7 @@ def update_sm_from_api(data, data_token):
         )
         print(data["items"])
         errors, results = update_items_sm(data["items"], data["id"])
+        print(errors, results)
         if len(results) > 0:
             msg += f"\nItems actualizados: {results}"
         if len(errors) > 0:

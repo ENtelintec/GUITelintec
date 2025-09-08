@@ -250,7 +250,9 @@ def update_items_sm(items: list, sm_id: int):
         is_erased = item.get("is_erased", 0)
         if is_erased == 0:
             id_inventory = item.get("id_inventory", 0)
-            if item.get("id", 0) != 0:
+            if item.get("id", 0) != 0 and item.get("id", 0) != item.get(
+                "id_inventory", 0
+            ):
                 sql = (
                     "UPDATE sql_telintec.sm_items "
                     "SET id_inventory = %s, name = %s, udm = %s, comment = %s, "
