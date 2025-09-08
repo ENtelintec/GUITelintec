@@ -311,7 +311,7 @@ def update_items_sm(items: list, sm_id: int):
             val = (item.get("id"),)
             flag, error, result = execute_sql(sql, val, 4)
         if flag:
-            results.append({"data": result, "action": action})
+            results.append({"data": result, "action": action, "id": item.get("id")})
         else:
             errors.append(item)
 

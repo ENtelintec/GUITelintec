@@ -1014,6 +1014,7 @@ def update_sm_from_api(data, data_token):
             f"empleado con id: {data_token.get('emp_id')}, "
             f"comentario: {data['info']['comment']}"
         )
+        print(data["items"])
         errors, results = update_items_sm(data["items"], data["id"])
         if len(results) > 0:
             msg += f"\nItems actualizados: {results}"
