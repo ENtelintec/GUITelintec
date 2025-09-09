@@ -30,6 +30,7 @@ from templates.controllers.contracts.quotations_controller import (
     delete_item_quotation,
     update_item_quotation,
     delete_quotation_items,
+    delete_contract_from_item_quotation,
 )
 from templates.controllers.customer.customers_controller import (
     get_all_customers_db,
@@ -898,8 +899,10 @@ def create_contract_from_api(data, data_token):
         flag, error_c, result_c = delete_contract(id_contract)
         return {
             "data": {result_list},
-            "error": error_list+[error_q, error_c],
-            "msg": str(result_q)+" "+str(result_c) if not flag else "Cotización no creada",
+            "error": error_list + [error_q, error_c],
+            "msg": str(result_q) + " " + str(result_c)
+            if not flag
+            else "Cotización no creada",
         }, 400
     else:
         msg += "\nError al crear ciertos items de la cotización"
@@ -915,9 +918,7 @@ def update_contract_from_api(data, data_token):
     msg = ""
     if data.get("quotation_id", 0) == 0 and len(data.get("products", [])) > 0:
         id_contract = data["id"]
-        flag, error, result = create_quotation(
-            data["metadata"], status=1
-        )
+        flag, error, result = create_quotation(data["metadata"], status=1)
         if not flag:
             return {
                 "data": None,
@@ -955,11 +956,18 @@ def update_contract_from_api(data, data_token):
         flag, error_c, result_c = delete_contract(id_contract)
         return {
             "data": {result_list},
-            "error": error_list+[error_q, error_c],
-            "msg": str(result_q)+" "+str(result_c) if not flag else "Cotización no creada",
+            "error": error_list + [error_q, error_c],
+            "msg": str(result_q) + " " + str(result_c)
+            if not flag
+            else "Cotización no creada",
         }, 400
     else:
-        msg += "\nError al crear o actualizar ciertos items de la cotización" + str(error_list)+"\n"+str(result_list)
+        msg += (
+            "\nError al crear o actualizar ciertos items de la cotización"
+            + str(error_list)
+            + "\n"
+            + str(result_list)
+        )
     contract_number = data["metadata"].pop("contract_number", "error cnumber")
     client_id = data["metadata"].pop("client_id", 50)
     emission = data["metadata"].pop("emission", "error edate")
@@ -981,3 +989,18 @@ def update_contract_from_api(data, data_token):
     )
     write_log_file(log_file_admin, msg)
     return {"data": result, "error": error_list, "msg": result_list}, 200
+
+
+def delete_contract_from_api(data, data_token):
+    flag, error, result = delete_contract_from_item_quotation(data["id"])
+    if not flag:
+        return {"data": None, "msg": str(error)}, 400
+    flag, error, result = delete_contract(data["id"])
+    if not flag:
+        return {"data": None, "msg": str(error)}, 400
+    msg = f"Contrato eliminado con ID-{data['id']} por el empleado {data_token.get('emp_id')}"
+    create_notification_permission(
+        msg, ["administracion"], "Contrato Eliminado", data_token.get("emp_id"), 0
+    )
+    write_log_file(log_file_admin, msg)
+    return {"data": result, "msg": "Ok"}, 200

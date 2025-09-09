@@ -50,9 +50,7 @@ from templates.resources.midleware.Functions_midleware_admin import (
     create_quotation_from_api,
     update_quoation_from_api,
     delete_quotation_from_api,
-)
-from templates.controllers.contracts.quotations_controller import (
-    delete_quotation,
+    delete_contract_from_api,
 )
 
 ns = Namespace("GUI/api/v1/admin/presales")
@@ -203,10 +201,8 @@ class ContractAction(Resource):
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
-        flag, error, result = delete_quotation(data["id"])
-        if not flag:
-            return {"data": None, "msg": error}, 400
-        return {"data": result, "msg": "Ok"}, 200
+        data_out, code = delete_contract_from_api(data, data_token)
+        return data_out, code
 
 
 @ns.route("/contract/review/products/upload")

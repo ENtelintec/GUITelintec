@@ -151,6 +151,17 @@ def delete_quotation_items(id_quotation):
     return flag, error, out
 
 
+def delete_contract_from_item_quotation(contract_id):
+    sql = (
+        "UPDATE sql_telintec_mod_admin.quotation_items "
+        "SET contract_id = NULL "
+        "WHERE contract_id = %s"
+    )
+    val = (contract_id,)
+    flag, error, out = execute_sql(sql, val, 3)
+    return flag, error, out
+
+
 def delete_quotation(id_quotation):
     sql = "DELETE FROM sql_telintec_mod_admin.quotations " "WHERE id = %s"
     val = (id_quotation,)
