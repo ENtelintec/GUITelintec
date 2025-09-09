@@ -160,6 +160,9 @@ sm_model_post = api.model(
         ),
         "folio": fields.String(required=True, description="The folio"),
         "contract": fields.String(required=True, description="The contract"),
+        "contract_id": fields.Integer(
+            required=True, description="The contract id", example=1
+        ),
         "facility": fields.String(required=True, description="The facility"),
         "contract_contact": fields.String(
             required=True, description="The contract contact"
@@ -200,6 +203,9 @@ sm_model_put = api.model(
         ),
         "folio": fields.String(required=True, description="The folio"),
         "contract": fields.String(required=True, description="The contract"),
+        "contract_id": fields.Integer(
+            required=True, description="The contract id", example=1
+        ),
         "facility": fields.String(required=True, description="The facility"),
         "contract_contact": fields.String(
             required=True, description="The contract contact"
