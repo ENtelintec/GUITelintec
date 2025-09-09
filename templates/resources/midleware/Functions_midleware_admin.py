@@ -22,7 +22,14 @@ from templates.controllers.contracts.contracts_controller import (
 from templates.controllers.contracts.quotations_controller import (
     get_quotation,
     create_quotation,
-    update_quotation_from_contract,
+    update_quotation_products_from_contract,
+    create_items_quotation,
+    delete_quotation,
+    update_quotation,
+    create_item_quotation,
+    delete_item_quotation,
+    update_item_quotation,
+    delete_quotation_items,
 )
 from templates.controllers.customer.customers_controller import (
     get_all_customers_db,
@@ -565,7 +572,7 @@ def update_contract_from_api(data, data_token):
         msg += f"Se creo una cotizacion con ID-{id_quotation} para relacionar con el contrato por el empleado {data_token.get('emp_id')}"
     else:
         id_quotation = data["quotation_id"]
-        flag, error, result = update_quotation_from_contract(
+        flag, error, result = update_quotation_products_from_contract(
             id_quotation, data["products"]
         )
         if not flag:
@@ -772,3 +779,153 @@ def get_contracts_abreviations():
             }
         )
     return {"data": data_out, "msg": "Ok"}, 200
+
+
+def create_quotation_from_api(data, data_token):
+    flag, error, id_quotation = create_quotation(data["metadata"])
+    if not flag:
+        return {"data": None, "msg": str(error)}, 400
+    msg = f"Cotizacion creada con ID-{id_quotation} por el empleado {data_token.get('emp_id')}"
+    products = data["products"]
+    products_list = []
+    for product in products:
+        description = product.get("description", "")
+        description_small = product.get("description_small", "")
+        products_list.append(
+            {
+                "quotation_id": id_quotation,
+                "contract_id": None,
+                "partida": product.get("partida", None),
+                "udm": product.get("udm", "PZA"),
+                "brand": product.get("marca", ""),
+                "type_p": product.get("type_p", ""),
+                "n_part": product.get("n_parte", ""),
+                "quantity": product.get("quantity", 0.0),
+                "revision": product.get("revision", 0),
+                "price_unit": product.get("price_unit", 0.0),
+                "description": description
+                if len(description) <= 1024
+                else description[:1024],
+                "description_small": description_small
+                if len(description_small) <= 255
+                else description_small[:255],
+                "id_inventory": product.get("id", None),
+            }
+        )
+    flag_list, error_list, result_list = create_items_quotation(products_list)
+    if flag_list.count(True) == len(flag_list):
+        msg += "\nItems de cotizacion creados correctamente"
+    elif flag_list.count(False) == len(flag_list):
+        print("No items created")
+        flag, error, result = delete_quotation(id_quotation)
+        return {
+            "data": {result_list},
+            "error": error_list,
+            "msg": str(error) if not flag else "Cotización no creada",
+        }, 400
+    else:
+        msg += "\nError al crear ciertos items de la cotización"
+    create_notification_permission(
+        msg, ["administracion"], "Cotizacion Creada", data_token.get("emp_id"), 0
+    )
+    write_log_file(log_file_admin, msg)
+    return {"data": id_quotation, "msg": "Ok"}, 201
+
+
+def update_quoation_from_api(data, data_token):
+    flag, error, result = update_quotation(data["id"], data["metadata"])
+    if not flag:
+        return {"data": None, "msg": str(error)}, 400
+    msg = f"Cotizacion actualizada con ID-{data['id']} por el empleado {data_token.get('emp_id')}"
+    flag, error, result = get_quotation(data["id"])
+    if not flag:
+        return {"data": None, "msg": str(error)}, 400
+    old_products = json.loads(result[2])
+    dict_products = {item["id"]: item for item in old_products}
+    products = data["products"]
+    contract_id = result[5]
+    flag_list = []
+    error_list = []
+    result_list = []
+    for new_product in products:
+        description = new_product.get("description", "")
+        description_small = new_product.get("description_small", "")
+        id_item = new_product.get("id", 0)
+        if id_item == 0:
+            flag, error, result = create_item_quotation(
+                {
+                    "quotation_id": data["id"],
+                    "contract_id": contract_id,
+                    "partida": new_product.get("partida", None),
+                    "udm": new_product.get("udm", "PZA"),
+                    "brand": new_product.get("marca", ""),
+                    "type_p": new_product.get("type_p", ""),
+                    "n_part": new_product.get("n_parte", ""),
+                    "quantity": new_product.get("quantity", 0.0),
+                    "revision": new_product.get("revision", 0),
+                    "price_unit": new_product.get("price_unit", 0.0),
+                    "description": description
+                    if len(description) <= 1024
+                    else description[:1024],
+                    "description_small": description_small
+                    if len(description_small) <= 255
+                    else description_small[:255],
+                    "id_inventory": new_product.get("id", None),
+                }
+            )
+        else:
+            if new_product.get("is_erased", 0) != 0:
+                flag, error, result = delete_item_quotation(id_item)
+            else:
+                old_product = dict_products.get(id_item, {})
+                old_product["partida"] = new_product.get("partida", None)
+                old_product["udm"] = new_product.get("udm", "PZA")
+                old_product["brand"] = new_product.get("marca", "")
+                old_product["type_p"] = new_product.get("type_p", "")
+                old_product["n_part"] = new_product.get("n_parte", "")
+                old_product["quantity"] = new_product.get("quantity", 0.0)
+                old_product["revision"] = new_product.get("revision", 0)
+                old_product["price_unit"] = new_product.get("price_unit", 0.0)
+                old_product["description"] = (
+                    description if len(description) <= 1024 else description[:1024]
+                )
+                old_product["description_small"] = (
+                    description_small
+                    if len(description_small) <= 255
+                    else description_small[:255]
+                )
+                old_product["id_inventory"] = new_product.get("id", None)
+                flag, error, result = update_item_quotation(id_item, old_product)
+        flag_list.append(flag)
+        error_list.append(error)
+        result_list.append(result)
+    if flag_list.count(True) == len(flag_list):
+        msg += "\nItems de cotizacion actualizados correctamente"
+    elif flag_list.count(False) == len(flag_list):
+        return {
+            "data": {"data": result_list},
+            "error": error_list,
+            "msg": "Error al actualizar items de cotización",
+        }, 400
+    else:
+        msg += "\nError al actualizar ciertos items de la cotización"
+    create_notification_permission(
+        msg, ["administracion"], "Cotizacion Actualizada", data_token.get("emp_id"), 0
+    )
+    write_log_file(log_file_admin, msg)
+    return {"data": result_list, "error": error_list, "msg": msg}, 200
+
+
+def delte_quotation_from_api(data, data_token):
+    flag, error, result_items = delete_quotation_items(data["id"])
+    if not flag:
+        return {"data": "Items cant be erased", "msg": str(error)}, 400
+    flag, error, result = delete_quotation(data["id"])
+    if not flag:
+        return {"data": "Quoation unable to be deleted", "msg": str(error)}, 400
+    msg = f"Cotizacion eliminada con ID-{data['id']} por el empleado {data_token.get('emp_id')}"
+    create_notification_permission(
+        msg, ["administracion"], "Cotizacion Eliminada", data_token.get("emp_id"), 0
+    )
+    write_log_file(log_file_admin, msg)
+    return {"data": result, "msg": "Ok"}, 200

@@ -21,6 +21,10 @@ from templates.controllers.contracts.contracts_controller import (
     get_contracts_by_ids,
     get_items_contract_string,
 )
+from templates.controllers.contracts.quotations_controller import (
+    get_items_quotation_from_cotract,
+    update_quotation_item_partida_from_sm,
+)
 from templates.controllers.customer.customers_controller import create_customer_db
 from templates.controllers.departments.heads_controller import (
     check_if_auxiliar_with_contract,
@@ -940,6 +944,32 @@ def check_item_sm_for_init_vals(items: list):
     return extra_info
 
 
+def check_for_partidas_updates(products: list, contract_id: int):
+    flag, error, old_items = get_items_quotation_from_cotract(contract_id)
+    # dict partida->id_inventory
+    dict_partidas = {item[1]: item[2] for item in old_items}
+    flags, errors, results = ([], [], [])
+    for item in products:
+        partida = item.get("partida", None)
+        if partida is None:
+            continue
+        id_inventory_old = dict_partidas.get(partida, None)
+        id_inventory_new = item.get("id", None)
+        if id_inventory_new is None:
+            continue
+        if id_inventory_old != id_inventory_new:
+            flag, error, result = update_quotation_item_partida_from_sm(
+                contract_id, partida, id_inventory_new
+            )
+            if not flag:
+                return False, error, result
+            dict_partidas[partida] = id_inventory_new
+            flags.append(flag)
+            errors.append(error)
+            results.append(result)
+    return flags, errors, results
+
+
 def create_sm_from_api(data, data_token):
     if len(data["items"]) == 0:
         return {
@@ -963,6 +993,13 @@ def create_sm_from_api(data, data_token):
         msg += f"\nItems creados: {result_ids_items}"
     if len(errors_items) > 0:
         msg += f"\nErrores al crear items: {errors_items}"
+    flags, errors, result_partidas = check_for_partidas_updates(
+        data["items"], data["info"]["contract_id"]
+    )
+    if len(result_partidas) > 0:
+        msg += f"\nPartidas actualizadas: {result_partidas}"
+    if len(errors) > 0:
+        msg += f"\nErrores al actualizar partidas: {errors}"
     create_notification_permission(
         msg,
         ["sm", "administracion", "almacen"],
@@ -1016,6 +1053,13 @@ def update_sm_from_api(data, data_token):
             f"comentario: {data['info']['comment']}"
         )
         errors, results = update_items_sm(items_out, data["id"])
+        flags, errors_p, result_partidas = check_for_partidas_updates(
+            data["items"], data["info"]["contract_id"]
+        )
+        if len(result_partidas) > 0:
+            msg += f"\nPartidas actualizadas: {result_partidas}"
+        if len(errors_p) > 0:
+            msg += f"\nErrores al actualizar partidas: {errors_p}"
         if len(results) > 0:
             msg += f"\nItems actualizados: {results}"
         if len(errors) > 0:

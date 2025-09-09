@@ -680,6 +680,9 @@ class SMInfoForm(Form):
     )
     folio = StringField("folio", validators=[InputRequired()])
     contract = StringField("contract", validators=[InputRequired()])
+    contract_id = IntegerField(
+        "contract_id", validators=[InputRequired(message="Invalid id or 0 not acepted")]
+    )
     facility = StringField("facility", validators=[InputRequired()])
     contract_contact = StringField("contract_contact", default="")
     client_id = IntegerField(

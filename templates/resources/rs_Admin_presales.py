@@ -47,10 +47,11 @@ from templates.resources.midleware.Functions_midleware_admin import (
     get_contracts_abreviations,
     items_contract_from_file,
     update_contract_from_api,
+    create_quotation_from_api,
+    update_quoation_from_api,
+    delte_quotation_from_api,
 )
 from templates.controllers.contracts.quotations_controller import (
-    create_quotation,
-    update_quotation,
     delete_quotation,
 )
 
@@ -85,10 +86,8 @@ class QuotationAction(Resource):
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
-        flag, error, result = create_quotation(data["metadata"], data["products"])
-        if not flag:
-            return {"data": None, "msg": error}, 400
-        return {"data": result, "msg": "Ok"}, 200
+        data_out, code = create_quotation_from_api(data, data_token)
+        return data_out, code
 
     @ns.expect(expected_headers_per, quotation_model_update)
     def put(self):
@@ -102,12 +101,8 @@ class QuotationAction(Resource):
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
-        flag, error, result = update_quotation(
-            data["id"], data["metadata"], data["products"], data["timestamps"]
-        )
-        if not flag:
-            return {"data": None, "msg": error}, 400
-        return {"data": result, "msg": "Ok"}, 200
+        data_out, code = update_quoation_from_api(data, data_token)
+        return data_out, code
 
     @ns.marshal_with(quotation_model_delete)
     @ns.expect(expected_headers_per)
@@ -122,10 +117,8 @@ class QuotationAction(Resource):
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
-        flag, error, result = delete_quotation(data["id"])
-        if not flag:
-            return {"data": None, "msg": error}, 400
-        return {"data": result, "msg": "Ok"}, 200
+        data_out, code = delte_quotation_from_api(data, data_token)
+        return data_out, code
 
 
 @ns.route("/quotation/products/upload")
@@ -196,11 +189,6 @@ class ContractAction(Resource):
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
         data_out, code = update_contract_from_api(data, data_token)
-        # flag, error, result = update_contract(
-        #     data["id"], data["metadata"], data["timestamps"], data["quotation_id"]
-        # )
-        # if not flag:
-        #     return {"data": None, "msg": error}, 400
         return data_out, code
 
     @ns.expect(expected_headers_per, contract_model_delete)
