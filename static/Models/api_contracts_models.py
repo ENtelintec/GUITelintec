@@ -321,7 +321,7 @@ class MetadataQuotationForm(Form):
     )
 
 
-class ProductsQuotationForm(Form):
+class ProductsPostQuotationForm(Form):
     partida = IntegerField("partida", validators=[InputRequired()])
     revision = IntegerField("revision", validators=[], default=0)
     type_p = StringField("type_p", validators=[])
@@ -332,13 +332,31 @@ class ProductsQuotationForm(Form):
     quantity = IntegerField("quantity", validators=[], default=0)
     udm = StringField("udm", validators=[InputRequired()])
     price_unit = FloatField("price_unit", validators=[], default=0.0)
-    id = IntegerField("id", validators=[], default=None)
+    id_inventory = IntegerField("id_inventory", validators=[], default=None)
+    comment = StringField("comment", validators=[], default="")
+
+
+class ProductsPutQuotationForm(Form):
+    id = IntegerField(
+        "id", validators=[InputRequired(message="Invalid id or 0 not acepted")]
+    )
+    partida = IntegerField("partida", validators=[InputRequired()])
+    revision = IntegerField("revision", validators=[], default=0)
+    type_p = StringField("type_p", validators=[])
+    marca = StringField("marca", validators=[])
+    n_parte = StringField("n_parte", validators=[])
+    description = StringField("description", validators=[], default="")
+    description_small = StringField("description_small", validators=[], default="")
+    quantity = IntegerField("quantity", validators=[], default=0)
+    udm = StringField("udm", validators=[InputRequired()])
+    price_unit = FloatField("price_unit", validators=[], default=0.0)
+    id_inventory = IntegerField("id_inventory", validators=[], default=None)
     comment = StringField("comment", validators=[], default="")
 
 
 class QuotationInsertForm(Form):
     metadata = FormField(MetadataQuotationForm, "metadata")
-    products = FieldList(FormField(ProductsQuotationForm, "products"))
+    products = FieldList(FormField(ProductsPostQuotationForm, "products"))
 
 
 class TimestampsAdminForm(Form):
@@ -363,7 +381,7 @@ class QuotationUpdateForm(Form):
         "id", validators=[InputRequired(message="Invalid id or 0 not acepted")]
     )
     metadata = FormField(MetadataQuotationForm, "metadata")
-    products = FieldList(FormField(ProductsQuotationForm, "products"))
+    products = FieldList(FormField(ProductsPutQuotationForm, "products"))
     timestamps = FormField(TimestampsQuotationForm, "timestamps")
 
 
@@ -411,7 +429,7 @@ class MetadataContractForm(Form):
 class ContractInsertForm(Form):
     metadata = FormField(MetadataContractForm, "metadata")
     quotation_id = IntegerField("quotation_id", validators=[], default=0)
-    products = FieldList(FormField(ProductsQuotationForm, "products"))
+    products = FieldList(FormField(ProductsPostQuotationForm, "products"))
 
 
 class ContractUpdateForm(Form):
@@ -421,7 +439,7 @@ class ContractUpdateForm(Form):
     metadata = FormField(MetadataContractForm, "metadata")
     quotation_id = IntegerField("quotation_id", validators=[], default=None)
     timestamps = FormField(TimestampsQuotationForm, "timestamps")
-    products = FieldList(FormField(ProductsQuotationForm, "products"))
+    products = FieldList(FormField(ProductsPutQuotationForm, "products"))
 
 
 class ContractDeleteForm(Form):

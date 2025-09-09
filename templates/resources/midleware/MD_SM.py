@@ -49,7 +49,7 @@ from templates.controllers.product.p_and_s_controller import (
     create_product_db,
     create_product_db_admin,
     get_products_stock_from_ids,
-    get_sm_products,
+    get_products_w_reservations,
     update_stock_db,
     complete_reservation_db,
 )
@@ -60,44 +60,43 @@ from templates.resources.midleware.Functions_midleware_admin import get_iddentif
 
 
 def get_products_sm(contract: str):
-    flag, error, contract = get_items_contract_string(contract)
-    if len(contract) > 0:
-        items_contract = json.loads(contract[3]) if contract[3] is not None else []
+    if contract != "all":
+        flag, error, items_contract = get_items_contract_string(contract)
     else:
         items_contract = []
     ids_in_contract = {}
     for item in items_contract:
-        if item["id"] is None:
+        if item[4] is None:
             continue
-        ids_in_contract[item["id"]] = item["partida"]
-    flag, error, result = get_sm_products()
+        ids_in_contract[item[4]] = item[3]
+    flag, error, result_p = get_products_w_reservations()
     if not flag:
         return {"data": {"contract": [], "normal": []}}, 400
     items_normal = []
     items_partida = []
-    for item in result:
-        if item[0] in ids_in_contract.keys():
+    for product in result_p:
+        if product[0] in ids_in_contract.keys():
             items_partida.append(
                 {
-                    "id": item[0],
-                    "name": item[1],
-                    "udm": item[2],
-                    "stock": item[3],
-                    "partida": ids_in_contract[item[0]],
-                    "reserved": item[4],
-                    "available_stock": item[5],
+                    "id": product[0],
+                    "name": product[1],
+                    "udm": product[2],
+                    "stock": product[3],
+                    "partida": ids_in_contract[product[0]],
+                    "reserved": product[4],
+                    "available_stock": product[5],
                 }
             )
         else:
             items_normal.append(
                 {
-                    "id": item[0],
-                    "name": item[1],
-                    "udm": item[2],
-                    "stock": item[3],
+                    "id": product[0],
+                    "name": product[1],
+                    "udm": product[2],
+                    "stock": product[3],
                     "partida": "",
-                    "reserved": item[4],
-                    "available_stock": item[5],
+                    "reserved": product[4],
+                    "available_stock": product[5],
                 }
             )
     data_out = {"data": {"contract": items_partida, "normal": items_normal}}
@@ -917,7 +916,9 @@ def update_sm_from_control_table(data, data_token, sm_data=None):
 
 def check_item_sm_for_init_vals(items: list):
     all_avaliable = True
+    items_out = []
     for item in items:
+        items_out.append(item)
         if item.get("id", 0) <= 0:
             all_avaliable = False
             break
@@ -973,33 +974,33 @@ def create_sm_from_api(data, data_token):
     return {"answer": "ok", "data": msg, "error": error}, 201
 
 
-def check_if_items_sm_correct_for_update(data):
+def check_if_items_sm_correct_for_update(items_in):
     all_ok = True
     error = None
     items_out = []
-    for item in data["items"]:
+    for item in items_in:
         items_out.append(item)
         if item.get("quantity", 0) < item["quantity"]:
             all_ok = False
             error = f"Item con id {item['id']} no tiene suficiente stock"
-            break
+
         if item.get("id", 0) <= 0:
             if item.get("id_inventory", 0) <= 0:
                 all_ok = False
                 error = (
                     f"Item con id {item['id']} no tiene id de inventario para crearlo"
                 )
-                break
+
         if item.get("id_inventory", 0) <= 0:
             if item.get("id", 0) > 0:
                 all_ok = False
                 error = f"No se puede actualizar el item con id {item['id']} sin id de inventario"
-                break
+
     return all_ok, items_out, error
 
 
 def update_sm_from_api(data, data_token):
-    flag, items_out, error = check_if_items_sm_correct_for_update(data)
+    flag, items_out, error = check_if_items_sm_correct_for_update(data.get("items", []))
     if not flag:
         return {
             "answer": "error at items",
@@ -1014,9 +1015,7 @@ def update_sm_from_api(data, data_token):
             f"empleado con id: {data_token.get('emp_id')}, "
             f"comentario: {data['info']['comment']}"
         )
-        print(data["items"])
-        errors, results = update_items_sm(data["items"], data["id"])
-        print(errors, results)
+        errors, results = update_items_sm(items_out, data["id"])
         if len(results) > 0:
             msg += f"\nItems actualizados: {results}"
         if len(errors) > 0:

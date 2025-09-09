@@ -72,7 +72,7 @@ class Quotations(Resource):
 
 
 @ns.route("/quotation")
-class Quotation(Resource):
+class QuotationAction(Resource):
     @ns.expect(expected_headers_per, quotation_model_insert)
     def post(self):
         flag, data_token, msg = token_verification_procedure(
@@ -167,7 +167,7 @@ class Contracts(Resource):
 
 
 @ns.route("/contract")
-class Contract(Resource):
+class ContractAction(Resource):
     @ns.expect(expected_headers_per, contract_model_insert)
     def post(self):
         flag, data_token, msg = token_verification_procedure(

@@ -24,6 +24,40 @@ def create_quotation(metadata: dict, products: dict, status=0):
     return flag, error, id_quotation
 
 
+def create_items_quotation(items: list):
+    result_list = []
+    error_list = []
+    flag_list = []
+    for item in items:
+        val = (
+            item["quotation_id"],
+            item["contract_id"],
+            item["partida"],
+            item["udm"],
+            item["brand"],
+            item["type_p"],
+            item["n_part"],
+            item["quantity"],
+            item["revision"],
+            item["price_unit"],
+            item["description"],
+            item["description_small"],
+            item["id_inventory"],
+        )
+        sql = (
+            "INSERT INTO sql_telintec_mod_admin.quotation_items "
+            "(quotation_id, contract_id, partida, udm, brand, type_p, n_part, "
+            "quantity, revision, price_unit, description, description_small, "
+            "id_inventory) "
+            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+        )
+        flag, error, lastrowid = execute_sql(sql, val, 4)
+        flag_list.append(flag)
+        error_list.append(error)
+        result_list.append(lastrowid)
+    return flag_list, error_list, result_list
+
+
 def update_quotation(id_quotation, metadata: dict, products: list, timestamps=None):
     time_zone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
@@ -51,9 +85,7 @@ def update_quotation(id_quotation, metadata: dict, products: list, timestamps=No
 
 def update_quotation_from_contract(id_quotation, products: list):
     sql = (
-        "UPDATE sql_telintec_mod_admin.quotations "
-        "SET products = %s "
-        "WHERE id = %s"
+        "UPDATE sql_telintec_mod_admin.quotations " "SET products = %s " "WHERE id = %s"
     )
     val = (json.dumps(products), id_quotation)
     flag, error, out = execute_sql(sql, val, 3)
