@@ -49,7 +49,7 @@ from templates.resources.midleware.Functions_midleware_admin import (
     update_contract_from_api,
     create_quotation_from_api,
     update_quoation_from_api,
-    delte_quotation_from_api,
+    delete_quotation_from_api,
 )
 from templates.controllers.contracts.quotations_controller import (
     delete_quotation,
@@ -117,7 +117,7 @@ class QuotationAction(Resource):
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
-        data_out, code = delte_quotation_from_api(data, data_token)
+        data_out, code = delete_quotation_from_api(data, data_token)
         return data_out, code
 
 

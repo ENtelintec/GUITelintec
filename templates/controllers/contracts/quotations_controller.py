@@ -144,19 +144,9 @@ def delete_item_quotation(id_item):
 
 def delete_quotation_items(id_quotation):
     sql = (
-        "DELETE FROM sql_telintec_mod_admin.quotation_items "
-        "WHERE quotation_id = %s"
+        "DELETE FROM sql_telintec_mod_admin.quotation_items " "WHERE quotation_id = %s"
     )
     val = (id_quotation,)
-    flag, error, out = execute_sql(sql, val, 3)
-    return flag, error, out
-
-
-def update_quotation_products_from_contract(id_quotation, products: list):
-    sql = (
-        "UPDATE sql_telintec_mod_admin.quotations " "SET products = %s " "WHERE id = %s"
-    )
-    val = (json.dumps(products), id_quotation)
     flag, error, out = execute_sql(sql, val, 3)
     return flag, error, out
 
