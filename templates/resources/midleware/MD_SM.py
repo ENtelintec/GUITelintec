@@ -1026,12 +1026,12 @@ def check_if_items_sm_correct_for_update(items_in):
             all_ok = False
             error = f"Item con id {item['id']} no tiene suficiente stock"
 
-        if item.get("id", 0) <= 0:
-            if item.get("id_inventory", 0) <= 0:
-                all_ok = False
-                error = (
-                    f"Item con id {item['id']} no tiene id de inventario para crearlo"
-                )
+        # if item.get("id", 0) <= 0:
+        #     if item.get("id_inventory", 0) <= 0:
+        #         all_ok = False
+        #         error = (
+        #             f"Item con id {item['id']} no tiene id de inventario para crearlo"
+        #         )
 
         if item.get("id_inventory", 0) <= 0:
             if item.get("id", 0) > 0:

@@ -219,6 +219,7 @@ def create_items_sm_db(items: list, sm_id: int):
             "(id_sm, id_inventory, name, udm, comment, partida, quantity, dispatched, movements, state, extra_info) "
             "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
         )
+        state = 0 if item.get("id", -1) == 1 else 1
         id_inventory = item.get("id") if item.get("id", -1) != 1 else None
         val = (
             sm_id,
@@ -230,7 +231,7 @@ def create_items_sm_db(items: list, sm_id: int):
             item.get("quantity", 1),
             item.get("dispatched", 0),
             json.dumps(item.get("movements", [])),
-            item.get("state", 1),
+            state,
             json.dumps(item.get("extra_info", {})),
         )
         flag, error, id_item = execute_sql(sql, val, 4)
