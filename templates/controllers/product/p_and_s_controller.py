@@ -856,7 +856,7 @@ def get_supply_inv_amc(id_s: int, name: str):
     return flag, error, result, columns
 
 
-def get_sm_products():
+def get_products_w_reservations():
     sql = """
           SELECT
               p.id_product,

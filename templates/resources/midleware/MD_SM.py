@@ -21,6 +21,10 @@ from templates.controllers.contracts.contracts_controller import (
     get_contracts_by_ids,
     get_items_contract_string,
 )
+from templates.controllers.contracts.quotations_controller import (
+    get_items_quotation_from_cotract,
+    update_quotation_item_partida_from_sm,
+)
 from templates.controllers.customer.customers_controller import create_customer_db
 from templates.controllers.departments.heads_controller import (
     check_if_auxiliar_with_contract,
@@ -49,7 +53,7 @@ from templates.controllers.product.p_and_s_controller import (
     create_product_db,
     create_product_db_admin,
     get_products_stock_from_ids,
-    get_sm_products,
+    get_products_w_reservations,
     update_stock_db,
     complete_reservation_db,
 )
@@ -60,44 +64,43 @@ from templates.resources.midleware.Functions_midleware_admin import get_iddentif
 
 
 def get_products_sm(contract: str):
-    flag, error, contract = get_items_contract_string(contract)
-    if len(contract) > 0:
-        items_contract = json.loads(contract[3]) if contract[3] is not None else []
+    if contract != "all":
+        flag, error, items_contract = get_items_contract_string(contract)
     else:
         items_contract = []
     ids_in_contract = {}
     for item in items_contract:
-        if item["id"] is None:
+        if item[4] is None:
             continue
-        ids_in_contract[item["id"]] = item["partida"]
-    flag, error, result = get_sm_products()
+        ids_in_contract[item[4]] = item[3]
+    flag, error, result_p = get_products_w_reservations()
     if not flag:
         return {"data": {"contract": [], "normal": []}}, 400
     items_normal = []
     items_partida = []
-    for item in result:
-        if item[0] in ids_in_contract.keys():
+    for product in result_p:
+        if product[0] in ids_in_contract.keys():
             items_partida.append(
                 {
-                    "id": item[0],
-                    "name": item[1],
-                    "udm": item[2],
-                    "stock": item[3],
-                    "partida": ids_in_contract[item[0]],
-                    "reserved": item[4],
-                    "available_stock": item[5],
+                    "id": product[0],
+                    "name": product[1],
+                    "udm": product[2],
+                    "stock": product[3],
+                    "partida": ids_in_contract[product[0]],
+                    "reserved": product[4],
+                    "available_stock": product[5],
                 }
             )
         else:
             items_normal.append(
                 {
-                    "id": item[0],
-                    "name": item[1],
-                    "udm": item[2],
-                    "stock": item[3],
+                    "id": product[0],
+                    "name": product[1],
+                    "udm": product[2],
+                    "stock": product[3],
                     "partida": "",
-                    "reserved": item[4],
-                    "available_stock": item[5],
+                    "reserved": product[4],
+                    "available_stock": product[5],
                 }
             )
     data_out = {"data": {"contract": items_partida, "normal": items_normal}}
@@ -703,20 +706,20 @@ def dispatch_sm(data, data_token):
     return 200, {"msg": msg_items}
 
 
-def cancel_sm(data):
+def cancel_sm(data, data_token):
     flag, error, result = get_sm_by_id(data["id"])
     if not flag or len(result) <= 0:
         return 400, ["sm not foud"]
-    history_sm = json.loads(result[0][13])
-    emp_id_creation = result[0][7]
+    history_sm = json.loads(result[0][12])
+    emp_id_creation = result[0][6]
     time_zone = pytz.timezone(timezone_software)
     date_now = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
     history_sm.append(
         {
-            "user": data["emp_id"],
+            "user": data_token["emp_id"],
             "event": "Cancelación",
             "date": date_now,
-            "comment": data["comment"] + f"por el empleado {data['emp_id']}",
+            "comment": data["comment"] + f"por el empleado {data_token['emp_id']}",
         }
     )
     flag, error, result = update_history_sm(data["id"], history_sm, [], True)
@@ -917,7 +920,9 @@ def update_sm_from_control_table(data, data_token, sm_data=None):
 
 def check_item_sm_for_init_vals(items: list):
     all_avaliable = True
+    items_out = []
     for item in items:
+        items_out.append(item)
         if item.get("id", 0) <= 0:
             all_avaliable = False
             break
@@ -939,7 +944,38 @@ def check_item_sm_for_init_vals(items: list):
     return extra_info
 
 
+def check_for_partidas_updates(products: list, contract_id: int):
+    flags, errors, results = ([], [], [])
+    if contract_id is None or contract_id == 0:
+        return flags, errors, results
+    flag, error, old_items = get_items_quotation_from_cotract(contract_id)
+    print(old_items)
+    # dict partida->id_inventory
+    old_items = old_items if old_items is not None else []
+    dict_partidas = {item[1]: item[2] for item in old_items}
+    for item in products:
+        partida = item.get("partida", None)
+        if partida is None:
+            continue
+        id_inventory_old = dict_partidas.get(partida, None)
+        id_inventory_new = item.get("id", None)
+        if id_inventory_new is None:
+            continue
+        if id_inventory_old != id_inventory_new:
+            flag, error, result = update_quotation_item_partida_from_sm(
+                contract_id, partida, id_inventory_new
+            )
+            if not flag:
+                return [False], [error], [result]
+            dict_partidas[partida] = id_inventory_new
+            flags.append(flag)
+            errors.append(error)
+            results.append(result)
+    return flags, errors, results
+
+
 def create_sm_from_api(data, data_token):
+    print(data)
     if len(data["items"]) == 0:
         return {
             "answer": "error no sufficient items",
@@ -962,6 +998,13 @@ def create_sm_from_api(data, data_token):
         msg += f"\nItems creados: {result_ids_items}"
     if len(errors_items) > 0:
         msg += f"\nErrores al crear items: {errors_items}"
+    flags, errors, result_partidas = check_for_partidas_updates(
+        data["items"], data["info"]["contract_id"]
+    )
+    if len(result_partidas) > 0:
+        msg += f"\nPartidas actualizadas: {result_partidas}"
+    if len(errors) > 0:
+        msg += f"\nErrores al actualizar partidas: {errors}"
     create_notification_permission(
         msg,
         ["sm", "administracion", "almacen"],
@@ -973,33 +1016,33 @@ def create_sm_from_api(data, data_token):
     return {"answer": "ok", "data": msg, "error": error}, 201
 
 
-def check_if_items_sm_correct_for_update(data):
+def check_if_items_sm_correct_for_update(items_in):
     all_ok = True
     error = None
     items_out = []
-    for item in data["items"]:
+    for item in items_in:
         items_out.append(item)
         if item.get("quantity", 0) < item["quantity"]:
             all_ok = False
             error = f"Item con id {item['id']} no tiene suficiente stock"
-            break
-        if item.get("id", 0) <= 0:
-            if item.get("id_inventory", 0) <= 0:
-                all_ok = False
-                error = (
-                    f"Item con id {item['id']} no tiene id de inventario para crearlo"
-                )
-                break
+
+        # if item.get("id", 0) <= 0:
+        #     if item.get("id_inventory", 0) <= 0:
+        #         all_ok = False
+        #         error = (
+        #             f"Item con id {item['id']} no tiene id de inventario para crearlo"
+        #         )
+
         if item.get("id_inventory", 0) <= 0:
             if item.get("id", 0) > 0:
                 all_ok = False
                 error = f"No se puede actualizar el item con id {item['id']} sin id de inventario"
-                break
+
     return all_ok, items_out, error
 
 
 def update_sm_from_api(data, data_token):
-    flag, items_out, error = check_if_items_sm_correct_for_update(data)
+    flag, items_out, error = check_if_items_sm_correct_for_update(data.get("items", []))
     if not flag:
         return {
             "answer": "error at items",
@@ -1014,7 +1057,14 @@ def update_sm_from_api(data, data_token):
             f"empleado con id: {data_token.get('emp_id')}, "
             f"comentario: {data['info']['comment']}"
         )
-        errors, results = update_items_sm(data["items"], data["id"])
+        errors, results = update_items_sm(items_out, data["id"])
+        flags, errors_p, result_partidas = check_for_partidas_updates(
+            data["items"], data["info"]["contract_id"]
+        )
+        if len(result_partidas) > 0:
+            msg += f"\nPartidas actualizadas: {result_partidas}"
+        if len(errors_p) > 0:
+            msg += f"\nErrores al actualizar partidas: {errors_p}"
         if len(results) > 0:
             msg += f"\nItems actualizados: {results}"
         if len(errors) > 0:

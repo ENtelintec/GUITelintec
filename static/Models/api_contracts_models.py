@@ -14,7 +14,7 @@ from wtforms.fields.list import FieldList
 from wtforms.fields.numeric import FloatField, IntegerField
 from wtforms.fields.simple import StringField, EmailField
 
-from wtforms import FormField
+from wtforms import FormField, validators
 
 metadata_quotation_model = api.model(
     "MetadataQuotation",
@@ -76,6 +76,41 @@ products_quotation_model = api.model(
     },
 )
 
+products_quotation_put_model = api.model(
+    "ProductsQuotation",
+    {
+        "partida": fields.Integer(
+            required=True,
+            description="The product partida (numeration item)",
+            example=1,
+        ),
+        "revision": fields.Integer(
+            required=True, description="The product revision", example=0
+        ),
+        "type_p": fields.String(required=True, description="The product type"),
+        "marca": fields.String(required=True, description="The product marca"),
+        "n_parte": fields.String(required=True, description="The product part number"),
+        "description_small": fields.String(
+            required=True, description="The product descripcion_corta"
+        ),
+        "description": fields.String(
+            required=True, description="The product description"
+        ),
+        "quantity": fields.Integer(required=True, description="The product quantity"),
+        "udm": fields.String(required=True, description="The product udm"),
+        "price_unit": fields.Float(
+            required=True, description="The quotation price unit"
+        ),
+        "comment": fields.String(required=False, description="The product comment"),
+        "id": fields.Integer(
+            required=False, description="The product id in the database"
+        ),
+        "is_erased": fields.Integer(
+            required=False, description="The product needs to be erased", example=0
+        ),
+    },
+)
+
 timestamp_model_admin = api.model(
     "TimestampAdmin",
     {
@@ -129,7 +164,7 @@ quotation_model_update = api.model(
     {
         "id": fields.Integer(required=True, description="The quotation id"),
         "metadata": fields.Nested(metadata_quotation_model),
-        "products": fields.List(fields.Nested(products_quotation_model)),
+        "products": fields.List(fields.Nested(products_quotation_put_model)),
         "timestamps": fields.Nested(timestamps_quotation_model),
     },
 )
@@ -321,7 +356,7 @@ class MetadataQuotationForm(Form):
     )
 
 
-class ProductsQuotationForm(Form):
+class ProductsPostQuotationForm(Form):
     partida = IntegerField("partida", validators=[InputRequired()])
     revision = IntegerField("revision", validators=[], default=0)
     type_p = StringField("type_p", validators=[])
@@ -332,13 +367,32 @@ class ProductsQuotationForm(Form):
     quantity = IntegerField("quantity", validators=[], default=0)
     udm = StringField("udm", validators=[InputRequired()])
     price_unit = FloatField("price_unit", validators=[], default=0.0)
-    id = IntegerField("id", validators=[], default=None)
+    id_inventory = IntegerField("id_inventory", validators=[], default=None)
     comment = StringField("comment", validators=[], default="")
+
+
+class ProductsPutQuotationForm(Form):
+    id = IntegerField(
+        "id", validators=[validators.number_range(min=-1, message="Invalid id")]
+    )
+    partida = IntegerField("partida", validators=[InputRequired()])
+    revision = IntegerField("revision", validators=[], default=0)
+    type_p = StringField("type_p", validators=[])
+    marca = StringField("marca", validators=[])
+    n_parte = StringField("n_parte", validators=[])
+    description = StringField("description", validators=[], default="")
+    description_small = StringField("description_small", validators=[], default="")
+    quantity = IntegerField("quantity", validators=[], default=0)
+    udm = StringField("udm", validators=[InputRequired()])
+    price_unit = FloatField("price_unit", validators=[], default=0.0)
+    id_inventory = IntegerField("id_inventory", validators=[], default=None)
+    comment = StringField("comment", validators=[], default="")
+    is_erased = IntegerField("is_erased", validators=[], default=0)
 
 
 class QuotationInsertForm(Form):
     metadata = FormField(MetadataQuotationForm, "metadata")
-    products = FieldList(FormField(ProductsQuotationForm, "products"))
+    products = FieldList(FormField(ProductsPostQuotationForm, "products"))
 
 
 class TimestampsAdminForm(Form):
@@ -363,7 +417,7 @@ class QuotationUpdateForm(Form):
         "id", validators=[InputRequired(message="Invalid id or 0 not acepted")]
     )
     metadata = FormField(MetadataQuotationForm, "metadata")
-    products = FieldList(FormField(ProductsQuotationForm, "products"))
+    products = FieldList(FormField(ProductsPutQuotationForm, "products"))
     timestamps = FormField(TimestampsQuotationForm, "timestamps")
 
 
@@ -411,7 +465,7 @@ class MetadataContractForm(Form):
 class ContractInsertForm(Form):
     metadata = FormField(MetadataContractForm, "metadata")
     quotation_id = IntegerField("quotation_id", validators=[], default=0)
-    products = FieldList(FormField(ProductsQuotationForm, "products"))
+    products = FieldList(FormField(ProductsPostQuotationForm, "products"))
 
 
 class ContractUpdateForm(Form):
@@ -421,7 +475,7 @@ class ContractUpdateForm(Form):
     metadata = FormField(MetadataContractForm, "metadata")
     quotation_id = IntegerField("quotation_id", validators=[], default=None)
     timestamps = FormField(TimestampsQuotationForm, "timestamps")
-    products = FieldList(FormField(ProductsQuotationForm, "products"))
+    products = FieldList(FormField(ProductsPutQuotationForm, "products"))
 
 
 class ContractDeleteForm(Form):

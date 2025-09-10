@@ -160,6 +160,9 @@ sm_model_post = api.model(
         ),
         "folio": fields.String(required=True, description="The folio"),
         "contract": fields.String(required=True, description="The contract"),
+        "contract_id": fields.Integer(
+            required=True, description="The contract id", example=1
+        ),
         "facility": fields.String(required=True, description="The facility"),
         "contract_contact": fields.String(
             required=True, description="The contract contact"
@@ -185,6 +188,10 @@ sm_model_post = api.model(
         "destination": fields.String(
             required=True, description="The destination area in telintec"
         ),
+        "activity_description": fields.String(
+            required=True, description="The activity description"
+        ),
+        "project": fields.String(required=True, description="The project"),
     },
 )
 
@@ -196,6 +203,9 @@ sm_model_put = api.model(
         ),
         "folio": fields.String(required=True, description="The folio"),
         "contract": fields.String(required=True, description="The contract"),
+        "contract_id": fields.Integer(
+            required=True, description="The contract id", example=1
+        ),
         "facility": fields.String(required=True, description="The facility"),
         "contract_contact": fields.String(
             required=True, description="The contract contact"
@@ -676,13 +686,17 @@ class SMInfoForm(Form):
     )
     folio = StringField("folio", validators=[InputRequired()])
     contract = StringField("contract", validators=[InputRequired()])
+    contract_id = IntegerField(
+        "contract_id",
+        validators=[validators.number_range(min=-1, message="Invalid id")],
+    )
     facility = StringField("facility", validators=[InputRequired()])
     contract_contact = StringField("contract_contact", default="")
     client_id = IntegerField(
         "client_id", validators=[InputRequired(message="Invalid id or 0 not acepted")]
     )
     location = StringField("location", validators=[InputRequired()])
-    order_quotation = StringField("order_quotation", validators=[InputRequired()])
+    order_quotation = StringField("order_quotation", validators=[])
     emp_id = IntegerField(
         "emp_id", validators=[InputRequired(message="Invalid id or 0 not acepted")]
     )
@@ -692,9 +706,13 @@ class SMInfoForm(Form):
         "status", validators=[validators.number_range(min=0, message="Invalid id")]
     )
     comment = StringField("comment", validators=[], default="")
+    activity_description = StringField(
+        "activity_description", validators=[], default=""
+    )
     destination = StringField("destination", validators=[InputRequired()])
     # history = StringField("history", validators=[], default="[]")
     history = FieldList(FormField(HistoryFormSM, "history"))
+    project = StringField("project", validators=[], default="")
 
 
 class SMInfoControlTableForm(Form):

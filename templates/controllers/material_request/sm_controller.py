@@ -219,6 +219,7 @@ def create_items_sm_db(items: list, sm_id: int):
             "(id_sm, id_inventory, name, udm, comment, partida, quantity, dispatched, movements, state, extra_info) "
             "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
         )
+        state = 0 if item.get("id", -1) == 1 else 1
         id_inventory = item.get("id") if item.get("id", -1) != 1 else None
         val = (
             sm_id,
@@ -230,7 +231,7 @@ def create_items_sm_db(items: list, sm_id: int):
             item.get("quantity", 1),
             item.get("dispatched", 0),
             json.dumps(item.get("movements", [])),
-            item.get("state", 1),
+            state,
             json.dumps(item.get("extra_info", {})),
         )
         flag, error, id_item = execute_sql(sql, val, 4)
@@ -250,7 +251,9 @@ def update_items_sm(items: list, sm_id: int):
         is_erased = item.get("is_erased", 0)
         if is_erased == 0:
             id_inventory = item.get("id_inventory", 0)
-            if item.get("id", 0) != 0:
+            if item.get("id", 0) != 0 and item.get("id", 0) != item.get(
+                "id_inventory", 0
+            ):
                 sql = (
                     "UPDATE sql_telintec.sm_items "
                     "SET id_inventory = %s, name = %s, udm = %s, comment = %s, "
@@ -311,7 +314,7 @@ def update_items_sm(items: list, sm_id: int):
             val = (item.get("id"),)
             flag, error, result = execute_sql(sql, val, 4)
         if flag:
-            results.append({"data": result, "action": action})
+            results.append({"data": result, "action": action, "id": item.get("id")})
         else:
             errors.append(item)
 
@@ -335,6 +338,7 @@ def insert_sm_db(data, init_extra_info=None):
         "project": data["info"].get("project", ""),
         "urgent": data["info"].get("urgent", 0),
         "activity_description": data["info"].get("activity_description", ""),
+        "comment": data["info"].get("comment", ""),
         "request_date": timestamp,
         "requesting_user_status": data["info"].get("requesting_user_status", 0),
         "warehouse_reviewed": data["info"].get("warehouse_reviewed", 0),
@@ -420,6 +424,9 @@ def update_sm_db(data):
     extra_info = json.loads(result[1])
     extra_info["destination"] = data["info"]["destination"]
     extra_info["contract_contact"] = data["info"]["contract_contact"]
+    extra_info["activity_description"] = data["info"]["activity_description"]
+    extra_info["comment"] = data["info"]["comment"]
+    extra_info["project"] = data["info"]["project"]
     history = data["info"]["history"]
     time_zone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)

@@ -176,6 +176,22 @@ class ActionsSM(Resource):
         return data_out, code
 
 
+@ns.route("/cancel")
+class CancelSM(Resource):
+    @ns.expect(expected_headers_per, delete_request_sm_model)
+    def post(self):
+        flag, data_token, msg = token_verification_procedure(request, department="sm")
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        # noinspection PyUnresolvedReferences
+        validator = SMDeleteForm.from_json(ns.payload)
+        if not validator.validate():
+            return {"error": validator.errors}, 400
+        data = validator.data
+        data_out, code = cancel_sm(data, data_token)
+        return data_out, code
+
+
 @ns.route("/newclient")
 class Client(Resource):
     @ns.expect(expected_headers_per, new_cliente_model)
@@ -264,22 +280,6 @@ class DispatchSM(Resource):
             return {"msg": "ok", "data": data_out}, code
         else:
             return {"msg": "error at dispaching", "data": data_out}, code
-
-    @ns.expect(expected_headers_per, request_sm_dispatch_model)
-    def delete(self):
-        flag, data_token, msg = token_verification_procedure(request, department="sm")
-        if not flag:
-            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        # noinspection PyUnresolvedReferences
-        validator = RequestSMDispatchForm.from_json(ns.payload)
-        if not validator.validate():
-            return {"error": validator.errors}, 400
-        data = validator.data
-        code, data_out = cancel_sm(data)
-        if code == 200:
-            return {"msg": "SM cancel"}, code
-        else:
-            return {"msg": "error at canceling", "data": data_out}, code
 
 
 @ns.route("/download/pdf/<int:sm_id>")

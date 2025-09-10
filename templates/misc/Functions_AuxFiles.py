@@ -34,7 +34,9 @@ from templates.controllers.fichajes.fichajes_controller import (
     create_new_emp_fichaje,
 )
 from templates.controllers.material_request.sm_controller import get_sm_entries
-from templates.controllers.product.p_and_s_controller import get_sm_products
+from templates.controllers.product.p_and_s_controller import (
+    get_products_w_reservations,
+)
 
 import xml.etree.ElementTree as ET
 
@@ -750,7 +752,7 @@ def get_all_sm_entries(filter_status=False, is_supper=False, emp_id=None):
 
 
 def get_all_sm_products():
-    flag, error, result = get_sm_products()
+    flag, error, result = get_products_w_reservations()
     if flag:
         columns = ("ID", "udm", "Stock", "Nombre")
         # change second column to last position column
