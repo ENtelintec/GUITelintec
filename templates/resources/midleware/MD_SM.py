@@ -966,7 +966,7 @@ def check_for_partidas_updates(products: list, contract_id: int):
                 contract_id, partida, id_inventory_new
             )
             if not flag:
-                return False, error, result
+                return [False], [error], [result]
             dict_partidas[partida] = id_inventory_new
             flags.append(flag)
             errors.append(error)
