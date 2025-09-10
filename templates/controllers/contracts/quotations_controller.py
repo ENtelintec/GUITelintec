@@ -245,7 +245,7 @@ def get_items_quotation_from_cotract(contract_id):
     val = (contract_id,)
     flag, error, result = execute_sql(sql, val, 1)
     if len(result) == 0:
-        return False, "Quotation not found", None
+        return False, "Quotation not found", []
     else:
         return True, None, result
 
