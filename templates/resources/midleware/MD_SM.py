@@ -974,6 +974,7 @@ def check_for_partidas_updates(products: list, contract_id: int):
 
 
 def create_sm_from_api(data, data_token):
+    print(data)
     if len(data["items"]) == 0:
         return {
             "answer": "error no sufficient items",

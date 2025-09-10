@@ -696,7 +696,7 @@ class SMInfoForm(Form):
         "client_id", validators=[InputRequired(message="Invalid id or 0 not acepted")]
     )
     location = StringField("location", validators=[InputRequired()])
-    order_quotation = StringField("order_quotation", validators=[InputRequired()])
+    order_quotation = StringField("order_quotation", validators=[])
     emp_id = IntegerField(
         "emp_id", validators=[InputRequired(message="Invalid id or 0 not acepted")]
     )
