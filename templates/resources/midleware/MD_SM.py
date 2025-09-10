@@ -945,11 +945,13 @@ def check_item_sm_for_init_vals(items: list):
 
 
 def check_for_partidas_updates(products: list, contract_id: int):
+    flags, errors, results = ([], [], [])
+    if contract_id is None or contract_id == 0:
+        return flags, errors, results
     flag, error, old_items = get_items_quotation_from_cotract(contract_id)
     # dict partida->id_inventory
     old_items = old_items if old_items is not None else []
     dict_partidas = {item[1]: item[2] for item in old_items}
-    flags, errors, results = ([], [], [])
     for item in products:
         partida = item.get("partida", None)
         if partida is None:
