@@ -10,7 +10,6 @@ from flask_restx import Namespace, Resource
 from werkzeug.utils import secure_filename
 
 from static.Models.api_contracts_models import (
-    answer_quotation_model,
     quotation_model_insert,
     quotation_model_update,
     quotation_model_delete,
@@ -58,7 +57,7 @@ ns = Namespace("GUI/api/v1/admin/presales")
 
 @ns.route("/quotation/<string:id_q>")
 class Quotations(Resource):
-    @ns.marshal_with(answer_quotation_model)
+    # @ns.marshal_with(answer_quotation_model)
     @ns.expect(expected_headers_per)
     def get(self, id_q):
         flag, data_token, msg = token_verification_procedure(

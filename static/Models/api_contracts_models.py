@@ -73,6 +73,9 @@ products_quotation_model = api.model(
         "id": fields.Integer(
             required=False, description="The product id in the database"
         ),
+        "id_inventory": fields.Integer(
+            required=False, description="The product id in the database"
+        ),
     },
 )
 

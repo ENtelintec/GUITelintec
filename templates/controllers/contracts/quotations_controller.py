@@ -170,33 +170,60 @@ def delete_quotation(id_quotation):
 
 
 def get_quotation(id_quotation=None):
-    sql = (
-        "SELECT "
-        "q.id AS quotation_id, "
-        "q.metadata, "
-        "JSON_ARRAYAGG(JSON_OBJECT( "
-        "  'id', qi.id, "
-        "  'partida', qi.partida, "
-        "  'udm', qi.udm, "
-        "  'brand', qi.brand, "
-        "  'type_p', qi.type_p, "
-        "  'n_part', qi.n_part, "
-        "  'quantity', qi.quantity, "
-        "  'revision', qi.revision, "
-        "  'price_unit', qi.price_unit, "
-        "  'description', qi.description, "
-        "  'description_small', qi.description_small, "
-        "  'id_inventory', qi.id_inventory "
-        ")) AS products, "
-        "q.creation, "
-        "q.timestamps,"
-        "qi.contract_id "
-        "FROM sql_telintec_mod_admin.quotations q "
-        "LEFT JOIN sql_telintec_mod_admin.quotation_items qi ON qi.quotation_id = q.id "
-        "WHERE q.id = %s OR %s IS NULL "
-        "GROUP BY q.id"
-    )
-    val = (id_quotation, id_quotation)
+    if id_quotation is not None:
+        sql = (
+            "SELECT "
+            "q.id AS quotation_id, "
+            "q.metadata, "
+            "JSON_ARRAYAGG(JSON_OBJECT( "
+            "  'id', qi.id, "
+            "  'partida', qi.partida, "
+            "  'udm', qi.udm, "
+            "  'brand', qi.brand, "
+            "  'type_p', qi.type_p, "
+            "  'n_part', qi.n_part, "
+            "  'quantity', qi.quantity, "
+            "  'revision', qi.revision, "
+            "  'price_unit', ROUND(qi.price_unit, 2), "
+            "  'description', qi.description, "
+            "  'description_small', qi.description_small, "
+            "  'id_inventory', qi.id_inventory "
+            ")) AS products, "
+            "q.creation, "
+            "q.timestamps "
+            "FROM sql_telintec_mod_admin.quotations q "
+            "LEFT JOIN sql_telintec_mod_admin.quotation_items qi ON qi.quotation_id = q.id "
+            "WHERE q.id = %s "
+            "GROUP BY q.id"
+        )
+        val = (id_quotation,)
+    else:
+        sql = (
+            "SELECT "
+            "q.id AS quotation_id, "
+            "q.metadata, "
+            "JSON_ARRAYAGG(JSON_OBJECT( "
+            "  'id', qi.id, "
+            "  'partida', qi.partida, "
+            "  'udm', qi.udm, "
+            "  'brand', qi.brand, "
+            "  'type_p', qi.type_p, "
+            "  'n_part', qi.n_part, "
+            "  'quantity', qi.quantity, "
+            "  'revision', qi.revision, "
+            "  'price_unit', qi.price_unit, "
+            "  'description', qi.description, "
+            "  'description_small', qi.description_small, "
+            "  'id_inventory', qi.id_inventory "
+            ")) AS products, "
+            "q.creation, "
+            "q.timestamps "
+            "FROM sql_telintec_mod_admin.quotations q "
+            "LEFT JOIN sql_telintec_mod_admin.quotation_items qi ON qi.quotation_id = q.id "
+            "GROUP BY q.id"
+        )
+        val = ()
+
     flag, error, result = execute_sql(sql, val, 5)
     if not flag:
         return False, error, []

@@ -422,7 +422,6 @@ def datetime_filter(date):
     # return date.strftime(format_timestamps) if not isinstance(date, str) else date
     if isinstance(date, str):
         date = datetime.strptime(date, format_timestamps)
-        date = date.strftime(format_timestamps)
         return date
     else:
         return date.strftime(format_timestamps)
