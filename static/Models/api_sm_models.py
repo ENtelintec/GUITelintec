@@ -4,12 +4,12 @@ __date__ = "$ 10/may./2024  at 16:31 $"
 
 
 from flask_restx import fields
-from wtforms.fields.datetime import DateField, DateTimeField
+from wtforms.fields.datetime import DateField
 from wtforms.fields.list import FieldList
 from wtforms.fields.numeric import FloatField
 from wtforms.fields.simple import StringField, URLField, EmailField
 
-from static.Models.api_models import date_filter, datetime_filter
+from static.Models.api_models import date_filter
 from static.constants import api
 from wtforms.form import Form
 from wtforms import validators, IntegerField, FormField
@@ -612,7 +612,7 @@ class DeliveriesForm(Form):
     )
     comment = StringField("comment", validators=[], default="")
     state = IntegerField("state", validators=[], default=1)
-    timestamp = DateTimeField("timestamp", validators=[], filters=[datetime_filter])
+    timestamp = DateField("timestamp", validators=[], filters=[date_filter])
 
 
 class ItemsFormSMPUT(Form):
@@ -643,7 +643,7 @@ class ItemsFormSMPUT(Form):
     state = IntegerField("state", validators=[], default=1)
     dispatched = IntegerField("dispatched", validators=[], default=0)
     deliveries = FieldList(FormField(DeliveriesForm, "deliveries"))
-    state_delivery = IntegerField("state_delivery", validators=[], default=0)
+    state_delivery = StringField("state_delivery", validators=[], default="N/A")
     state_quantity = IntegerField("state_quantity", validators=[], default=0)
 
 
