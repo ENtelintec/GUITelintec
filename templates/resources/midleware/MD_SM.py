@@ -1107,11 +1107,13 @@ def delete_sm_from_api(data, data_token):
 
 def update_items_sm_from_api(data, data_token):
     errors, results = update_items_sm(data["items"], data["id_sm"])
+    code = 200
     msg = ""
     if len(results) > 0:
         msg = f"Items actualizados: {results}"
     if len(errors) > 0:
         msg += f"\nErrores al actualizar items: {errors}"
+        code = 400
     create_notification_permission(
         msg,
         ["sm", "administracion", "almacen"],
@@ -1120,7 +1122,7 @@ def update_items_sm_from_api(data, data_token):
         0,
     )
     write_log_file(log_file_sm_path, msg)
-    return {"answer": "ok", "data": msg, "error": errors}, 200
+    return {"answer": "ok", "data": msg, "error": errors}, code
 
 
 def get_sm_folios_from_api(data_token):
