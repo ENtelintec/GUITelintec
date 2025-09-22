@@ -643,3 +643,27 @@ def delete_item_from_sm_id(sm_id: int):
     val = (sm_id,)
     flag, error, result = execute_sql(sql, val, 3)
     return flag, error, result
+
+
+def get_sm_items_state(state: str):
+    sql = """
+          SELECT id_item, id_sm, mr.folio , name
+          FROM sql_telintec.sm_items
+          LEFT JOIN sql_telintec.materials_request mr on mr.sm_id = sm_items.id_sm
+          WHERE state = %s 
+          """
+    val = (state,)
+    flag, error, result = execute_sql(sql, val, 2)
+    return flag, error, result
+
+
+def update_inventory_state_sm_item_db(state, id_inventory, id_item):
+    sql = """
+          UPDATE sql_telintec.sm_items
+          SET state = %s,
+              id_inventory = %s
+          WHERE id_sm = %s
+          """
+    val = (state, id_inventory, id_item)
+    flag, error, result = execute_sql(sql, val, 3)
+    return flag, error, result
