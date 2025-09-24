@@ -1265,17 +1265,51 @@ def update_reservation_db(
     if not add_quantity:
         sql = (
             "UPDATE sql_telintec.product_reservations "
-            "SET status = %s, quantity = %s, history = %s "
+            "SET "
+            "status = %s, "
+            "quantity = %s, "
+            "history = %s "
             "WHERE reservation_id = %s"
         )
     else:
         sql = (
             "UPDATE sql_telintec.product_reservations "
-            "SET status = %s, quantity = quantity + %s, history = %s "
+            "SET "
+            "status = %s, "
+            "quantity = quantity + %s, "
+            "history = %s "
             "WHERE reservation_id = %s"
         )
     vals = (status, quantity, history, id_reservation)
-    flag, error, lastrowid = execute_sql(sql, vals, 4)
+    flag, error, lastrowid = execute_sql(sql, vals, 3)
+    return flag, error, lastrowid
+
+
+def update_reservation_with_smID_db(
+    id_reservation, status, quantity, history, sm_id, add_quantity=False
+):
+    if not add_quantity:
+        sql = (
+            "UPDATE sql_telintec.product_reservations "
+            "SET "
+            "status = %s, "
+            "quantity = %s, "
+            "history = %s, "
+            "sm_id = %s "
+            "WHERE reservation_id = %s"
+        )
+    else:
+        sql = (
+            "UPDATE sql_telintec.product_reservations "
+            "SET "
+            "status = %s, "
+            "quantity = quantity + %s, "
+            "history = %s, "
+            "sm_id =%s "
+            "WHERE reservation_id = %s"
+        )
+    vals = (status, quantity, history, sm_id, id_reservation)
+    flag, error, lastrowid = execute_sql(sql, vals, 3)
     return flag, error, lastrowid
 
 

@@ -53,6 +53,7 @@ from templates.controllers.product.p_and_s_controller import (
     update_reservation_db,
     delete_reservation_db,
     get_all_reservations,
+    update_reservation_with_smID_db,
 )
 from templates.controllers.supplier.suppliers_controller import (
     get_all_suppliers_amc,
@@ -398,12 +399,7 @@ def insert_product_db(data, data_token):
 
     if id_sm_item > 0:
         out_item_sm, code_sm = update_sm_item_state_and_inventory(
-            {
-                "id_inventory": lastrowid,
-                "id_item": id_sm_item,
-                "state": 1
-            },
-            data_token
+            {"id_inventory": lastrowid, "id_item": id_sm_item, "state": 1}, data_token
         )
         if code_sm != 200:
             msg += f"\n Error al actualizar el producto en la sm: {out_item_sm}"
@@ -456,12 +452,8 @@ def update_product_amc(data, data_token):
     id_sm_item = data.get("id_item", 0)
     if id_sm_item > 0:
         out_item_sm, code_sm = update_sm_item_state_and_inventory(
-            {
-                "id_inventory": data["info"]["id"],
-                "id_item": id_sm_item,
-                "state": 1
-            },
-            data_token
+            {"id_inventory": data["info"]["id"], "id_item": id_sm_item, "state": 1},
+            data_token,
         )
         if code_sm != 200:
             msg += f"\n Error al actualizar el producto en la sm: {out_item_sm}"
@@ -1290,9 +1282,20 @@ def update_reservation_from_api(data, data_token):
             "timestamp": date,
         }
     )
-    flag, error, result = update_reservation_db(
-        data["id"], status, data["quantity"], json.dumps(history), add_quantity
-    )
+    sm_id = data.get("sm_id", 0)
+    if sm_id == 0:
+        flag, error, result = update_reservation_db(
+            data["id"], status, data["quantity"], json.dumps(history), add_quantity
+        )
+    else:
+        flag, error, result = update_reservation_with_smID_db(
+            data["id"],
+            status,
+            data["quantity"],
+            json.dumps(history),
+            sm_id,
+            add_quantity,
+        )
     if not flag:
         return {"data": None, "error": str(error)}, 400
     msg = f"Reservation <{data['id']}> actualizada por el empleado {data_token.get('emp_id')} con status {data['status']}  y cantidad {data['quantity']}"

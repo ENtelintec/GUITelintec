@@ -265,6 +265,9 @@ reservation_put_model = api.model(
             required=False,
             description="The reservation history",
         ),
+        "id_sm": fields.Integer(
+            required=False, description="The material request id", example=1
+        ),
     },
 )
 
@@ -462,6 +465,11 @@ class ReservationPutForm(Form):
     quantity = FloatField("quantity", validators=[InputRequired()])
     status = IntegerField("status", validators=[], default=0)
     history = FieldList(FormField(ReservationHistoryForm), "history")
+    id_sm = IntegerField(
+        "id_sm",
+        validators=[validators.number_range(min=-1, message="Invalid id")],
+        default=0,
+    )
 
 
 class ReservationDeleteForm(Form):
