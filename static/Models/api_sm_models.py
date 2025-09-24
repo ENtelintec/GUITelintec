@@ -580,6 +580,19 @@ item_sm_put_model = api.model(
 )
 
 
+item_sm_inventory_put_model = api.model(
+    "SMItemInventoryPut",
+    {
+        "id_item": fields.Integer(
+            required=True, description="The id of the item sm to update"
+        ),
+        "id_inventory": fields.Integer(
+            required=True, description="The id of the inventory to update"
+        ),
+    },
+)
+
+
 class ItemsFormSMPost(Form):
     id = IntegerField(
         "id",
@@ -823,4 +836,14 @@ class ItemSmPutForm(Form):
     items = FieldList(FormField(ItemsFormSMPUT, "items"))
     id_sm = IntegerField(
         "id_sm", validators=[InputRequired(message="Invalid id or 0 not acepted")]
+    )
+
+
+class ItemSMInventoryPutForm(Form):
+    id_item = IntegerField(
+        "id_item", validators=[InputRequired(message="Invalid id or 0 not acepted")]
+    )
+    id_inventory = IntegerField(
+        "id_inventory",
+        validators=[InputRequired(message="Invalid id or 0 not acepted")],
     )

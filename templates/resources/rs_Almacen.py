@@ -186,7 +186,7 @@ class FetchProducts(Resource):
 
 
 @ns.route("/inventory/product")
-class InventoryProduct(Resource):
+class ProductActions(Resource):
     @ns.expect(expected_headers_per, product_insert_model)
     def post(self):
         flag, data_token, msg = token_verification_procedure(

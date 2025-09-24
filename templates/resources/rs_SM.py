@@ -27,6 +27,8 @@ from static.Models.api_sm_models import (
     SMInfoControlTablePutForm,
     item_sm_put_model,
     ItemSmPutForm,
+    item_sm_inventory_put_model,
+    ItemSMInventoryPutForm,
 )
 from templates.Functions_AuxPlots import get_data_sm_per_range
 from templates.controllers.customer.customers_controller import get_sm_clients
@@ -51,6 +53,7 @@ from templates.resources.midleware.MD_SM import (
     get_sm_folios_from_api,
     delete_sm_from_api,
     get_sm_items_from_api,
+    update_sm_item_state_and_inventory,
 )
 
 ns = Namespace("GUI/api/v1/sm")
@@ -377,4 +380,20 @@ class FetchSMItemsByState(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data_out, code = get_sm_items_from_api({"state": state}, data_token)
+        return data_out, code
+
+
+@ns.route("/item/inventory")
+class UpdateItemInventoryID(Resource):
+    @ns.expect(expected_headers_per, item_sm_inventory_put_model)
+    def put(self):
+        flag, data_token, msg = token_verification_procedure(request, department="sm")
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        validator = ItemSMInventoryPutForm.from_json(ns.payload)
+        if not validator.validate():
+            return {"error": validator.errors}, 400
+        data = validator.data
+        data["state"] = 1
+        data_out, code = update_sm_item_state_and_inventory(data, data_token)
         return data_out, code
