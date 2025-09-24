@@ -1283,11 +1283,7 @@ def update_reservation_from_api(data, data_token):
         }
     )
     sm_id = data.get("sm_id", 0)
-    if sm_id == 0:
-        flag, error, result = update_reservation_db(
-            data["id"], status, data["quantity"], json.dumps(history), add_quantity
-        )
-    else:
+    if sm_id > 0:
         flag, error, result = update_reservation_with_smID_db(
             data["id"],
             status,
@@ -1295,6 +1291,10 @@ def update_reservation_from_api(data, data_token):
             json.dumps(history),
             sm_id,
             add_quantity,
+        )
+    else:
+        flag, error, result = update_reservation_db(
+            data["id"], status, data["quantity"], json.dumps(history), add_quantity
         )
     if not flag:
         return {"data": None, "error": str(error)}, 400
