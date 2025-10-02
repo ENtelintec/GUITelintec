@@ -1283,9 +1283,7 @@ def update_reservation_from_api(data, data_token):
         }
     )
     sm_id = data.get("id_sm", 0)
-    print(sm_id)
     if sm_id > 0:
-        print("with sm")
         flag, error, result = update_reservation_with_smID_db(
             data["id"],
             status,
@@ -1295,13 +1293,15 @@ def update_reservation_from_api(data, data_token):
             add_quantity,
         )
     else:
-        print("without sm")
         flag, error, result = update_reservation_db(
             data["id"], status, data["quantity"], json.dumps(history), add_quantity
         )
     if not flag:
         return {"data": None, "error": str(error)}, 400
-    msg = f"Reservation <{data['id']}> actualizada por el empleado {data_token.get('emp_id')} con status {data['status']}  y cantidad {data['quantity']}"
+    msg = (
+        f"Reservation <{data['id']}> actualizada por el empleado {data_token.get('emp_id')} "
+        f"con status {data['status']}, cantidad {data['quantity']} y sm {sm_id}"
+    )
     create_notification_permission_notGUI(
         msg, ["almacen"], "Notifaction de Inventario", data_token.get("emp_id"), 0
     )
