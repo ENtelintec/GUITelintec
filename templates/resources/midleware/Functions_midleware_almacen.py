@@ -1282,8 +1282,10 @@ def update_reservation_from_api(data, data_token):
             "timestamp": date,
         }
     )
-    sm_id = data.get("sm_id", 0)
+    sm_id = data.get("id_sm", 0)
+    print(sm_id)
     if sm_id > 0:
+        print("with sm")
         flag, error, result = update_reservation_with_smID_db(
             data["id"],
             status,
@@ -1293,6 +1295,7 @@ def update_reservation_from_api(data, data_token):
             add_quantity,
         )
     else:
+        print("without sm")
         flag, error, result = update_reservation_db(
             data["id"], status, data["quantity"], json.dumps(history), add_quantity
         )
