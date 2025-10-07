@@ -452,3 +452,181 @@ def update_state_safety_voucher(id_voucher, user_state, epp_state, storage_state
     val = (user_state, epp_state, storage_state, id_voucher)
     flag, error, rows_changed = execute_sql(sql, val, 3)
     return flag, error, rows_changed
+
+
+def get_vouchers_vehicle_with_items(start_date, user=None):
+    """
+    Obtiene vouchers de vehículos desde una fecha específica, incluyendo su metadata e ítems relacionados.
+
+    :param start_date: Fecha de inicio (YYYY-MM-DD)
+    :param user: user ID que creó el voucher
+    :return: Lista de vouchers vehiculares con sus ítems agregados como JSON o mensaje de error
+    """
+    sql = (
+        "SELECT "
+        "vv.id_voucher_general, "
+        "vg.type, "
+        "vg.date, "
+        "vg.contract, "
+        "vg.user AS realizado_por, "
+        "vv.received_by, "
+        "vv.brand, "
+        "vv.model, "
+        "vv.color, "
+        "vv.year, "
+        "vv.placas, "
+        "vv.kilometraje, "
+        "vv.registration_card, "
+        "vv.insurance, "
+        "vv.referendo, "
+        "vv.accessories, "
+        "vv.type AS vehicle_type, "
+        "vv.observations, "
+        "JSON_ARRAYAGG("
+        "JSON_OBJECT("
+        "'id_item', vi.id_item, "
+        "'quantity', vi.quantity, "
+        "'unit', vi.unit, "
+        "'description', vi.description, "
+        "'observations', vi.observations, "
+        "'extra_info', vi.extra_info)"
+        ") AS items, "
+        "vg.history "
+        "FROM sql_telintec_mod_admin.voucher_vehicle AS vv "
+        "JOIN sql_telintec_mod_admin.vouchers_general AS vg ON vv.id_voucher_general = vg.id_voucher "
+        "LEFT JOIN sql_telintec_mod_admin.voucher_items AS vi ON vg.id_voucher = vi.id_voucher "
+        "WHERE (vg.date >= %s) AND (vg.user = %s OR %s IS NULL) "
+        "GROUP BY vv.id_voucher_general"
+    )
+    val = (start_date, user, user)
+    flag, error, vouchers = execute_sql(sql, val, 2)
+    return flag, error, vouchers
+
+
+def create_voucher_vehicle(
+    id_voucher_general,
+    brand,
+    model,
+    color=None,
+    year=None,
+    placas=None,
+    kilometraje=0,
+    registration_card=0,
+    insurance=0,
+    referendo=0,
+    accessories=None,
+    type_v=2,
+    received_by=None,
+    observations=None,
+):
+    """
+    Crea un nuevo registro en la tabla voucher_vehicle.
+
+    :param id_voucher_general: ID del voucher general creado previamente
+    :param brand: Marca del vehículo
+    :param model: Modelo del vehículo
+    :param color: Color del vehículo (opcional)
+    :param year: Año del vehículo (opcional)
+    :param placas: Placas del vehículo
+    :param kilometraje: Kilometraje (default=0)
+    :param registration_card: ¿Tiene tarjeta de circulación? (0/1)
+    :param insurance: ¿Tiene póliza de seguro? (0/1)
+    :param referendo: ¿Tiene comprobante de refrendo? (0/1)
+    :param accessories: Estado de accesorios en formato JSON
+    :param type_v: Tipo de vehículo (default=2)
+    :param received_by: ID del empleado que recibe el vehículo
+    :param observations: Observaciones generales
+    :return: Estado de la operación (éxito/error)
+    """
+    if accessories is None:
+        accessories = {}
+
+    sql = (
+        "INSERT INTO sql_telintec_mod_admin.voucher_vehicle "
+        "(id_voucher_general, brand, model, color, year, placas, kilometraje, "
+        "registration_card, insurance, referendo, accessories, type, received_by, observations) "
+        "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+    )
+    val = (
+        id_voucher_general,
+        brand,
+        model,
+        color,
+        year,
+        placas,
+        kilometraje,
+        registration_card,
+        insurance,
+        referendo,
+        json.dumps(accessories),
+        type_v,
+        received_by,
+        observations,
+    )
+    flag, error, lastrowid = execute_sql(sql, val, 4)
+    return flag, error, lastrowid
+
+
+def update_voucher_vehicle(
+    id_voucher_general,
+    brand,
+    model,
+    color=None,
+    year=None,
+    placas=None,
+    kilometraje=0,
+    registration_card=0,
+    insurance=0,
+    referendo=0,
+    accessories=None,
+    type_v=2,
+    received_by=None,
+    observations=None,
+):
+    """
+    Actualiza un registro existente en la tabla voucher_vehicle.
+
+    :param id_voucher_general: ID del voucher general.
+    :param brand: Marca del vehículo.
+    :param model: Modelo del vehículo.
+    :param color: Color del vehículo (opcional).
+    :param year: Año del vehículo (opcional).
+    :param placas: Placas del vehículo.
+    :param kilometraje: Kilometraje (default=0).
+    :param registration_card: ¿Tiene tarjeta de circulación? (0/1).
+    :param insurance: ¿Tiene póliza de seguro? (0/1).
+    :param referendo: ¿Tiene comprobante de refrendo? (0/1).
+    :param accessories: Estado de accesorios en formato JSON.
+    :param type_v: Tipo de vehículo (default=2).
+    :param received_by: ID del empleado que recibe el vehículo.
+    :param observations: Observaciones generales.
+    :return: Estado de la operación (éxito/error)
+    """
+    if accessories is None:
+        accessories = {}
+
+    sql = (
+        "UPDATE sql_telintec_mod_admin.voucher_vehicle "
+        "SET brand = %s, model = %s, color = %s, year = %s, placas = %s, kilometraje = %s, "
+        "registration_card = %s, insurance = %s, referendo = %s, accessories = %s, "
+        "type = %s, received_by = %s, observations = %s "
+        "WHERE id_voucher_general = %s"
+    )
+    val = (
+        brand,
+        model,
+        color,
+        year,
+        placas,
+        kilometraje,
+        registration_card,
+        insurance,
+        referendo,
+        json.dumps(accessories),
+        type_v,
+        received_by,
+        observations,
+        id_voucher_general,
+    )
+    flag, error, rows_changed = execute_sql(sql, val, 3)
+    return flag, error, rows_changed
