@@ -45,6 +45,9 @@ deliveries_item_model = api.model(
         "timestamp": fields.String(required=True, description="The product date"),
         "comment": fields.String(required=True, description="The product comment"),
         "state": fields.Integer(required=True, description="The product state"),
+        "folio": fields.String(
+            required=True, description="The order folio which is related"
+        ),
     },
 )
 
@@ -625,6 +628,7 @@ class DeliveriesForm(Form):
     )
     comment = StringField("comment", validators=[], default="")
     state = IntegerField("state", validators=[], default=1)
+    folio = StringField("folio", validators=[], default="")
     timestamp = DateField("timestamp", validators=[], filters=[date_filter])
 
 
