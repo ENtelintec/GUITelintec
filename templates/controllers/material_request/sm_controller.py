@@ -247,13 +247,17 @@ def update_items_sm(items: list, sm_id: int):
     errors = []
     results = []
     action = "update"
+    ids_list = []
     for item in items:
         is_erased = item.get("is_erased", 0)
         if is_erased == 0:
             id_inventory = item.get("id_inventory", 0)
+            if id_inventory in ids_list:
+                continue
             if item.get("id", 0) != 0 and item.get("id", 0) != item.get(
                 "id_inventory", 0
             ):
+                ids_list.append(id_inventory)
                 sql = (
                     "UPDATE sql_telintec.sm_items "
                     "SET id_inventory = %s, name = %s, udm = %s, comment = %s, "
