@@ -193,11 +193,13 @@ def delete_voucher_tools_api(data, data_token):
             "error": str(error),
         }, 400
     history = data["history"]
+    time_zone = pytz.timezone(timezone_software)
+    timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
     history.append(
         {
             "id_voucher": data["id"],
             "type": 0,
-            "timestamp": data["timestamp"],
+            "timestamp": timestamp,
             "user": data_token.get("emp_id"),
             "comment": "Voucher eliminado",
         }
@@ -373,11 +375,13 @@ def delete_voucher_safety_api(data, data_token):
             "error": str(error),
         }, 400
     history = data["history"]
+    time_zone = pytz.timezone(timezone_software)
+    timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
     history.append(
         {
             "id_voucher": data["id"],
             "type": 1,
-            "timestamp": data["timestamp"],
+            "timestamp": timestamp,
             "user": data_token.get("emp_id"),
             "comment": "Voucher eliminado",
         }
