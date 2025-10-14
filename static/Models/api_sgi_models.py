@@ -271,9 +271,12 @@ voucher_vehicle_put_model = api.model(
         "id_voucher_general": fields.Integer(
             required=False, description="ID del voucher general para actualizar"
         ),
-        "user": fields.Integer(required=True, description="ID del usuario que realiza el checklist"),
-        "received_by": fields.Integer(required=True, description="ID del empleado que recibe el vehículo"),
-
+        "user": fields.Integer(
+            required=True, description="ID del usuario que realiza el checklist"
+        ),
+        "received_by": fields.Integer(
+            required=True, description="ID del empleado que recibe el vehículo"
+        ),
         # Datos del vehículo
         "brand": fields.String(required=True, description="Marca del vehículo"),
         "model": fields.String(required=True, description="Modelo del vehículo"),
@@ -281,22 +284,28 @@ voucher_vehicle_put_model = api.model(
         "year": fields.Integer(description="Año del vehículo"),
         "placas": fields.String(required=True, description="Placas del vehículo"),
         "kilometraje": fields.Integer(description="Kilometraje del vehículo"),
-
         # Documentos
-        "registration_card": fields.Integer(required=True, description="¿Tiene tarjeta de circulación?"),
-        "insurance": fields.Integer(required=True, description="¿Tiene póliza de seguro?"),
-        "referendo": fields.Integer(required=True, description="¿Tiene comprobante de refrendo?"),
-
+        "registration_card": fields.Integer(
+            required=True, description="¿Tiene tarjeta de circulación?"
+        ),
+        "insurance": fields.Integer(
+            required=True, description="¿Tiene póliza de seguro?"
+        ),
+        "referendo": fields.Integer(
+            required=True, description="¿Tiene comprobante de refrendo?"
+        ),
         # Accesorios
-        "accessories": fields.List(fields.Nested(accessories_vehicles_model), required=True, description="Estado de accesorios"),
-
+        "accessories": fields.List(
+            fields.Nested(accessories_vehicles_model),
+            required=True,
+            description="Estado de accesorios",
+        ),
         # Observaciones
         "observations": fields.String(description="Observaciones generales"),
-
         # Ítems relacionados
         "items": fields.List(fields.Nested(voucher_items_put_model)),
         "history": fields.List(fields.Nested(voucher_history_model)),
-    }
+    },
 )
 
 
@@ -467,11 +476,13 @@ class VoucherVehiclePostForm(Form):
     referendo = IntegerField("referendo", [InputRequired()])
     accessories = FieldList(FormField(AccessoryForm, "accessories"))
     observations = StringField("observations", [])
-    items = FieldList(FormField(ItemsVoucherPostForm, "items"))
+    items = FieldList(
+        FormField(ItemsVoucherPostForm, "items"), validators=[], default=[]
+    )
 
 
 class VoucherVehiclePutForm(Form):
-    id_voucher = IntegerField("id_voucher", [InputRequired()])
+    id_voucher_general = IntegerField("id_voucher_general", [InputRequired()])
     type = IntegerField(
         "type", [validators.number_range(min=-1, message="Invalid type")]
     )
@@ -489,5 +500,7 @@ class VoucherVehiclePutForm(Form):
     referendo = IntegerField("referendo", [InputRequired()])
     accessories = FieldList(FormField(AccessoryForm, "accessories"))
     observations = StringField("observations", [])
-    items = FieldList(FormField(ItemsVoucherPutForm, "items"))
+    items = FieldList(
+        FormField(ItemsVoucherPutForm, "items"), validators=[], default=[]
+    )
     history = FieldList(FormField(VoucherHistoryForm, "history"))
