@@ -25,6 +25,10 @@ from templates.controllers.vouchers.vouchers_controller import (
     get_vouchers_vehicle_with_items,
     create_voucher_vehicle,
     update_voucher_vehicle,
+    delete_items_voucher,
+    delete_voucher_tools,
+    update_voucher_general_from_delete,
+    delete_voucher_vehicle,
 )
 
 
@@ -173,6 +177,43 @@ def update_voucher_tools_api(data, data_token):
     return {"data": rows_updated, "msg": "Voucher updated successfully"}, 200
 
 
+def delete_voucher_tools_api(data, data_token):
+    flag, error, rows_updated = delete_items_voucher(data["id_voucher_general"])
+    if not flag:
+        return {
+            "data": None,
+            "msg": "Error when eliminating items related to voucher",
+            "error": str(error),
+        }, 400
+    flag, error, rows_updated = delete_voucher_tools(data["id_voucher_general"])
+    if not flag:
+        return {
+            "data": None,
+            "msg": "Error at deleting voucher",
+            "error": str(error),
+        }, 400
+    history = data["history"]
+    history.append(
+        {
+            "id_voucher": data["id_voucher_general"],
+            "type": 0,
+            "timestamp": data["timestamp"],
+            "user": data_token.get("emp_id"),
+            "comment": "Voucher eliminado",
+        }
+    )
+    flag, error, result = update_voucher_general_from_delete(
+        data["id_voucher_general"], history
+    )
+    if not flag:
+        return {
+            "data": None,
+            "msg": "Error at updating voucher",
+            "error": str(error),
+        }, 400
+    return {"data": rows_updated, "msg": "Voucher updated successfully"}, 200
+
+
 def create_voucher_safety_api(data, data_token):
     time_zone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
@@ -314,6 +355,43 @@ def update_voucher_safety_api(data, data_token):
             "errors": errors,
         }, 400
     return {"data": [rows_changed], "msg": "Voucher updated successfully"}, 200
+
+
+def delete_voucher_safety_api(data, data_token):
+    flag, error, rows_updated = delete_items_voucher(data["id_voucher_general"])
+    if not flag:
+        return {
+            "data": None,
+            "msg": "Error when eliminating items related to voucher",
+            "error": str(error),
+        }, 400
+    flag, error, rows_updated = delete_voucher_tools(data["id_voucher_general"])
+    if not flag:
+        return {
+            "data": None,
+            "msg": "Error at deleting voucher",
+            "error": str(error),
+        }, 400
+    history = data["history"]
+    history.append(
+        {
+            "id_voucher": data["id_voucher_general"],
+            "type": 1,
+            "timestamp": data["timestamp"],
+            "user": data_token.get("emp_id"),
+            "comment": "Voucher eliminado",
+        }
+    )
+    flag, error, result = update_voucher_general_from_delete(
+        data["id_voucher_general"], history
+    )
+    if not flag:
+        return {
+            "data": None,
+            "msg": "Error at updating voucher",
+            "error": str(error),
+        }, 400
+    return {"data": rows_updated, "msg": "Voucher updated successfully"}, 200
 
 
 def get_vouchers_tools_api(data, data_token=None):
@@ -675,3 +753,45 @@ def update_voucher_vehicle_api(data, data_token):
         }, 400
 
     return {"data": [rows_changed], "msg": "Vehicle voucher updated successfully"}, 200
+
+
+def delete_voucher_vehicle_api(data, data_token):
+    flag, error, result = delete_voucher_item(data["id_voucher_general"])
+    if not flag:
+        return {
+            "data": None,
+            "msg": "Error at deleting vehicle voucher",
+            "error": str(error),
+        }, 400
+    flag, error, result = delete_voucher_vehicle(data["id_voucher_general"])
+    if not flag:
+        return {
+            "data": None,
+            "msg": "Error at deleting vehicle voucher",
+            "error": str(error),
+        }, 400
+    time_zone = pytz.timezone(timezone_software)
+    timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
+
+    history = data["history"]
+    history.append(
+        {
+            "id_voucher": data["id_voucher_general"],
+            "type": 2,
+            "timestamp": timestamp,
+            "user": data_token.get("emp_id"),
+            "comment": "Voucher vehicular eliminado",
+        }
+    )
+
+    flag, error, rows_changed = update_voucher_general_from_delete(
+        data["id_voucher_general"], json.dumps(history)
+    )
+    if not flag:
+        return {
+            "data": None,
+            "msg": "Error at deleting vehicle voucher",
+            "error": str(error),
+        }, 400
+
+    return {"data": [rows_changed], "msg": "Vehicle voucher deleted successfully"}, 200

@@ -276,6 +276,24 @@ def update_history_voucher(history: list, id_voucher):
     return flag, error, rows_changed
 
 
+def update_voucher_general_from_delete(id_voucher, history):
+    """
+    Actualiza el historial de un voucher en la tabla vouchers_general.
+
+    :param id_voucher: ID del voucher a actualizar
+    :param history: Nuevo historial en formato JSON
+    :return: Estado de la operación (éxito/error)
+    """
+    sql = (
+        "UPDATE sql_telintec_mod_admin.vouchers_general "
+        "SET history = %s  "
+        "WHERE id_voucher = %s"
+    )
+    val = (json.dumps(history), id_voucher)
+    flag, error, rows_changed = execute_sql(sql, val, 3)
+    return flag, error, rows_changed
+
+
 def update_voucher_item(
     id_item,
     id_inventory,
@@ -430,6 +448,51 @@ def update_state_tools_voucher(id_voucher, user_state, superior_state, storage_s
         "WHERE id_voucher_general = %s"
     )
     val = (user_state, superior_state, storage_state, id_voucher)
+    flag, error, rows_changed = execute_sql(sql, val, 3)
+    return flag, error, rows_changed
+
+
+def delete_items_voucher(id_voucher):
+    """
+    Elimina los ítems asociados a un voucher en la tabla voucher_items.
+
+    :param id_voucher: ID del voucher del cual se eliminarán los ítems
+    :return: Estado de la operación (éxito/error)
+    """
+    sql = "DELETE FROM sql_telintec_mod_admin.voucher_items " "WHERE id_voucher = %s"
+    val = (id_voucher,)
+    flag, error, rows_changed = execute_sql(sql, val, 3)
+    return flag, error, rows_changed
+
+
+def delete_voucher_tools(id_voucher):
+    """
+    Elimina un voucher de herramientas de la tabla voucher_tools.
+
+    :param id_voucher: ID del voucher de herramientas a eliminar
+    :return: Estado de la operación (éxito/error)
+    """
+    sql = (
+        "DELETE FROM sql_telintec_mod_admin.voucher_tools "
+        "WHERE id_voucher_general = %s"
+    )
+    val = (id_voucher,)
+    flag, error, rows_changed = execute_sql(sql, val, 3)
+    return flag, error, rows_changed
+
+
+def delete_voucher_safety(id_voucher):
+    """
+    Elimina un voucher de seguridad de la tabla voucher_safety.
+
+    :param id_voucher: ID del voucher de seguridad a eliminar
+    :return: Estado de la operación (éxito/error)
+    """
+    sql = (
+        "DELETE FROM sql_telintec_mod_admin.voucher_safety "
+        "WHERE id_voucher_general = %s"
+    )
+    val = (id_voucher,)
     flag, error, rows_changed = execute_sql(sql, val, 3)
     return flag, error, rows_changed
 
@@ -628,5 +691,21 @@ def update_voucher_vehicle(
         observations,
         id_voucher_general,
     )
+    flag, error, rows_changed = execute_sql(sql, val, 3)
+    return flag, error, rows_changed
+
+
+def delete_voucher_vehicle(id_voucher):
+    """
+    Elimina un registro de la tabla voucher_vehicle.
+
+    :param id_voucher: ID del voucher vehicular a eliminar
+    :return: Estado de la operación (éxito/error)
+    """
+    sql = (
+        "DELETE FROM sql_telintec_mod_admin.voucher_vehicle "
+        "WHERE id_voucher_general = %s"
+    )
+    val = (id_voucher,)
     flag, error, rows_changed = execute_sql(sql, val, 3)
     return flag, error, rows_changed

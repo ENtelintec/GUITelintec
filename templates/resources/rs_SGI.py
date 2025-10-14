@@ -25,6 +25,12 @@ from static.Models.api_sgi_models import (
     voucher_vehicle_put_model,
     VoucherVehiclePostForm,
     VoucherVehiclePutForm,
+    voucher_tools_delete_model,
+    VoucherToolsFormDelete,
+    VoucherSafetyFormDelete,
+    voucher_safety_delete_model,
+    VoucherVehicleDeleteForm,
+    vehicle_voucher_delete_model,
 )
 from templates.resources.midleware.MD_SGI import (
     create_voucher_tools_api,
@@ -38,6 +44,9 @@ from templates.resources.midleware.MD_SGI import (
     get_vouchers_vehicle_api,
     create_voucher_vehicle_api,
     update_voucher_vehicle_api,
+    delete_voucher_tools_api,
+    delete_voucher_safety_api,
+    delete_voucher_vehicle_api,
 )
 
 ns = Namespace("GUI/api/v1/sgi", description="SGI")
@@ -71,6 +80,20 @@ class VoucherToolsActions(Resource):
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
         data_out, code = update_voucher_tools_api(data, data_token)
+        return data_out, code
+
+    @ns.expect(expected_headers_per, voucher_tools_delete_model)
+    def delete(self):
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["sgi", "voucher"]
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        validator = VoucherToolsFormDelete.from_json(ns.payload)
+        if not validator.validate():
+            return {"data": validator.errors, "msg": "Error at structure"}, 400
+        data = validator.data
+        data_out, code = delete_voucher_tools_api(data, data_token)
         return data_out, code
 
 
@@ -119,6 +142,20 @@ class VoucerSafetyActions(Resource):
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
         data_out, code = update_voucher_safety_api(data, data_token)
+        return data_out, code
+
+    @ns.expect(expected_headers_per, voucher_safety_delete_model)
+    def delete(self):
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["sgi", "voucher"]
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        validator = VoucherSafetyFormDelete.from_json(ns.payload)
+        if not validator.validate():
+            return {"data": validator.errors, "msg": "Error at structure"}, 400
+        data = validator.data
+        data_out, code = delete_voucher_safety_api(data, data_token)
         return data_out, code
 
 
@@ -212,4 +249,18 @@ class VoucerVehicleActions(Resource):
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
         data_out, code = update_voucher_vehicle_api(data, data_token)
+        return data_out, code
+
+    @ns.expect(expected_headers_per, vehicle_voucher_delete_model)
+    def delete(self):
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["sgi", "voucher"]
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        validator = VoucherVehicleDeleteForm.from_json(ns.payload)
+        if not validator.validate():
+            return {"data": validator.errors, "msg": "Error at structure"}, 400
+        data = validator.data
+        data_out, code = delete_voucher_vehicle_api(data, data_token)
         return data_out, code

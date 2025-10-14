@@ -140,6 +140,14 @@ voucher_tools_status_put_model = api.model(
     },
 )
 
+voucher_tools_delete_model = api.model(
+    "VoucherToolsDelete",
+    {
+        "id": fields.Integer(required=True, description="ID del voucher"),
+        "history": fields.List(fields.Nested(voucher_history_model)),
+    },
+)
+
 
 voucher_safety_post_model = api.model(
     "VoucherSafetyPost",
@@ -204,6 +212,15 @@ voucher_safety_status_put_model = api.model(
         "storage_state": fields.Integer(
             default=0, description="Estado del encargado de almacenamiento"
         ),
+        "history": fields.List(fields.Nested(voucher_history_model)),
+    },
+)
+
+
+voucher_safety_delete_model = api.model(
+    "VoucherSafetyDelete",
+    {
+        "id": fields.Integer(required=True, description="ID del voucher"),
         "history": fields.List(fields.Nested(voucher_history_model)),
     },
 )
@@ -309,6 +326,15 @@ voucher_vehicle_put_model = api.model(
 )
 
 
+vehicle_voucher_delete_model = api.model(
+    "VehicleVoucherDelete",
+    {
+        "id": fields.Integer(required=True, description="ID del voucher"),
+        "history": fields.List(fields.Nested(voucher_history_model)),
+    },
+)
+
+
 class ItemsVoucherPostForm(Form):
     id_voucher = IntegerField("id", [])
     quantity = FloatField("quantity", [InputRequired()])
@@ -378,6 +404,13 @@ class VoucherToolsFormPut(Form):
     )
 
 
+class VoucherToolsFormDelete(Form):
+    id = IntegerField(
+        "id", [InputRequired()]
+    )
+    history = FieldList(FormField(VoucherHistoryForm, "history"))
+
+
 class VoucherSafetyFormPost(Form):
     type = IntegerField(
         "type", [validators.number_range(min=-1, message="Invalid type")]
@@ -422,6 +455,13 @@ class VoucherSafetyFormPut(Form):
         default=0,
     )
     items = FieldList(FormField(ItemsVoucherPutForm, "items"))
+    history = FieldList(FormField(VoucherHistoryForm, "history"))
+
+
+class VoucherSafetyFormDelete(Form):
+    id = IntegerField(
+        "id", [InputRequired()]
+    )
     history = FieldList(FormField(VoucherHistoryForm, "history"))
 
 
@@ -502,5 +542,12 @@ class VoucherVehiclePutForm(Form):
     observations = StringField("observations", [])
     items = FieldList(
         FormField(ItemsVoucherPutForm, "items"), validators=[], default=[]
+    )
+    history = FieldList(FormField(VoucherHistoryForm, "history"))
+
+
+class VoucherVehicleDeleteForm(Form):
+    id = IntegerField(
+        "id", [InputRequired()]
     )
     history = FieldList(FormField(VoucherHistoryForm, "history"))
