@@ -178,14 +178,14 @@ def update_voucher_tools_api(data, data_token):
 
 
 def delete_voucher_tools_api(data, data_token):
-    flag, error, rows_updated = delete_items_voucher(data["id_voucher_general"])
+    flag, error, rows_updated = delete_items_voucher(data["id"])
     if not flag:
         return {
             "data": None,
             "msg": "Error when eliminating items related to voucher",
             "error": str(error),
         }, 400
-    flag, error, rows_updated = delete_voucher_tools(data["id_voucher_general"])
+    flag, error, rows_updated = delete_voucher_tools(data["id"])
     if not flag:
         return {
             "data": None,
@@ -195,7 +195,7 @@ def delete_voucher_tools_api(data, data_token):
     history = data["history"]
     history.append(
         {
-            "id_voucher": data["id_voucher_general"],
+            "id_voucher": data["id"],
             "type": 0,
             "timestamp": data["timestamp"],
             "user": data_token.get("emp_id"),
@@ -203,7 +203,7 @@ def delete_voucher_tools_api(data, data_token):
         }
     )
     flag, error, result = update_voucher_general_from_delete(
-        data["id_voucher_general"], history
+        data["id"], history
     )
     if not flag:
         return {
@@ -358,14 +358,14 @@ def update_voucher_safety_api(data, data_token):
 
 
 def delete_voucher_safety_api(data, data_token):
-    flag, error, rows_updated = delete_items_voucher(data["id_voucher_general"])
+    flag, error, rows_updated = delete_items_voucher(data["id"])
     if not flag:
         return {
             "data": None,
             "msg": "Error when eliminating items related to voucher",
             "error": str(error),
         }, 400
-    flag, error, rows_updated = delete_voucher_tools(data["id_voucher_general"])
+    flag, error, rows_updated = delete_voucher_tools(data["id"])
     if not flag:
         return {
             "data": None,
@@ -375,7 +375,7 @@ def delete_voucher_safety_api(data, data_token):
     history = data["history"]
     history.append(
         {
-            "id_voucher": data["id_voucher_general"],
+            "id_voucher": data["id"],
             "type": 1,
             "timestamp": data["timestamp"],
             "user": data_token.get("emp_id"),
@@ -383,7 +383,7 @@ def delete_voucher_safety_api(data, data_token):
         }
     )
     flag, error, result = update_voucher_general_from_delete(
-        data["id_voucher_general"], history
+        data["id"], history
     )
     if not flag:
         return {
@@ -756,14 +756,14 @@ def update_voucher_vehicle_api(data, data_token):
 
 
 def delete_voucher_vehicle_api(data, data_token):
-    flag, error, result = delete_voucher_item(data["id_voucher_general"])
+    flag, error, result = delete_voucher_item(data["id"])
     if not flag:
         return {
             "data": None,
             "msg": "Error at deleting vehicle voucher",
             "error": str(error),
         }, 400
-    flag, error, result = delete_voucher_vehicle(data["id_voucher_general"])
+    flag, error, result = delete_voucher_vehicle(data["id"])
     if not flag:
         return {
             "data": None,
@@ -776,7 +776,7 @@ def delete_voucher_vehicle_api(data, data_token):
     history = data["history"]
     history.append(
         {
-            "id_voucher": data["id_voucher_general"],
+            "id_voucher": data["id"],
             "type": 2,
             "timestamp": timestamp,
             "user": data_token.get("emp_id"),
@@ -785,7 +785,7 @@ def delete_voucher_vehicle_api(data, data_token):
     )
 
     flag, error, rows_changed = update_voucher_general_from_delete(
-        data["id_voucher_general"], json.dumps(history)
+        data["id"], json.dumps(history)
     )
     if not flag:
         return {
