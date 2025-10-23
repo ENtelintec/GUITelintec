@@ -340,7 +340,7 @@ class EmployeeInputForm(Form):
     rfc = StringField("rfc", validators=[InputRequired()])
     curp = StringField("curp", validators=[InputRequired()])
     nss = StringField("nss", validators=[InputRequired()])
-    emergency = StringField("emergency", validators=[InputRequired()])
+    emergency = StringField("emergency", validators=[], default="{}")
     position = StringField("position", validators=[], default="")
     status = StringField("status", validators=[InputRequired()])
     departure = StringField("departure", validators=[], default="{}")
