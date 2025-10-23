@@ -21,7 +21,9 @@ employee_model = api.model(
         "lastname": fields.String(required=True, description="The employee lastname"),
         "phone": fields.String(required=True, description="The employee phone number"),
         "dep": fields.String(required=True, description="The employee department"),
-        "dep_id": fields.Integer(required=True, description="The employee department id"),
+        "dep_id": fields.Integer(
+            required=True, description="The employee department id"
+        ),
         "modality": fields.String(required=True, description="The employee modality"),
         "email": fields.String(
             required=True,
@@ -338,10 +340,10 @@ class EmployeeInputForm(Form):
     rfc = StringField("rfc", validators=[InputRequired()])
     curp = StringField("curp", validators=[InputRequired()])
     nss = StringField("nss", validators=[InputRequired()])
-    emergency = StringField("emergency", validators=[InputRequired()])
+    emergency = StringField("emergency", validators=[], default="{}")
     position = StringField("position", validators=[], default="")
     status = StringField("status", validators=[InputRequired()])
-    departure = StringField("departure", validators=[InputRequired()])
+    departure = StringField("departure", validators=[], default="{}")
     birthday = DateField(
         "birthday", validators=[InputRequired()], filters=[date_filter]
     )
