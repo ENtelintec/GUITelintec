@@ -20,8 +20,20 @@ from static.Models.api_purchases_models import (
     PurchaseOrderPutForm,
     purchase_order_delete_model,
     POAppDeleteForm,
+    remission_model_insert,
+    RemissionInsertForm,
+    RemissionUpdateForm,
+    RemissionDeleteForm,
+    remission_model_delete,
+    remission_model_update,
 )
 from templates.resources.methods.Functions_Aux_Login import token_verification_procedure
+from templates.resources.midleware.MD_Admin_Collections import (
+    create_remission_from_api,
+    update_remission_from_api,
+    delete_remission_from_api,
+    fetch_remissions_by_status_db,
+)
 from templates.resources.midleware.MD_Purchases import (
     fetch_purchase_orders,
     create_purchaser_order_api,
@@ -234,3 +246,67 @@ class FolioPO(Resource):
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data_out, code = generate_folios_po(folio, data_token)
         return data_out, code
+
+
+@ns.route("/remission")
+class RemissionAction(Resource):
+    @ns.expect(expected_headers_per, remission_model_insert)
+    def post(self):
+        flag, data_token, msg = token_verification_procedure(
+            request, department="administracion"
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+
+        validator = RemissionInsertForm.from_json(ns.payload)
+        if not validator.validate():
+            return {"data": validator.errors, "msg": "Error at structure"}, 400
+
+        data = validator.data
+        data_out, code = create_remission_from_api(data, data_token)
+        return data_out, code
+
+    @ns.expect(expected_headers_per, remission_model_update)
+    def put(self):
+        flag, data_token, msg = token_verification_procedure(
+            request, department="administracion"
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+
+        validator = RemissionUpdateForm.from_json(ns.payload)
+        if not validator.validate():
+            return {"data": validator.errors, "msg": "Error at structure"}, 400
+
+        data = validator.data
+        data_out, code = update_remission_from_api(data, data_token)
+        return data_out, code
+
+    @ns.expect(expected_headers_per, remission_model_delete)
+    def delete(self):
+        flag, data_token, msg = token_verification_procedure(
+            request, department="administracion"
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+
+        validator = RemissionDeleteForm.from_json(ns.payload)
+        if not validator.validate():
+            return {"data": validator.errors, "msg": "Error at structure"}, 400
+
+        data = validator.data
+        data_out, code = delete_remission_from_api(data, data_token)
+        return data_out, code
+
+
+@ns.route("/remissions/<string:status>")
+class FetchRemissions(Resource):
+    @ns.expect(expected_headers_per)
+    def get(self, status):
+        flag, data_token, msg = token_verification_procedure(
+            request, department="administracion"
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        data, code = fetch_remissions_by_status_db(status, data_token)
+        return data, code

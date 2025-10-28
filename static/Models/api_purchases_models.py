@@ -9,7 +9,14 @@ from static.constants import api
 from flask_restx import fields
 from wtforms.fields.datetime import DateTimeField
 from wtforms.validators import InputRequired, number_range
-from wtforms import FormField, StringField, URLField, FloatField, validators
+from wtforms import (
+    FormField,
+    StringField,
+    URLField,
+    FloatField,
+    validators,
+    BooleanField,
+)
 from wtforms.fields.list import FieldList
 from wtforms.form import Form
 
@@ -309,6 +316,135 @@ purchase_order_update_status_model = api.model(
     },
 )
 
+remission_model_insert = api.model(
+    "RemissionInsert",
+    {
+        "metadata": fields.Nested(
+            api.model(
+                "MetadataRemission",
+                {
+                    "remission_code": fields.String(
+                        required=True, example="TLA0704-459"
+                    ),
+                    "client_id": fields.Integer(required=True, example=12),
+                    "emission": fields.String(
+                        required=True, example="2025-06-05 10:00:00"
+                    ),
+                    "user": fields.String(required=True, example="jdoe"),
+                    "planta": fields.String(required=False, example="Planta Norte"),
+                    "area": fields.String(required=False, example="Producción"),
+                    "location": fields.String(required=False, example="Zona 3"),
+                    "email": fields.String(
+                        required=False, example="cliente@empresa.com"
+                    ),
+                    "phone": fields.String(required=False, example="8123456789"),
+                    "observations": fields.String(
+                        required=False, example="Entrega parcial"
+                    ),
+                    "printed": fields.Boolean(required=False, default=False),
+                    "status": fields.Integer(required=False, default=0),
+                },
+            )
+        ),
+        "contract_id": fields.Integer(required=False, example=5),
+        "products": fields.List(
+            fields.Nested(
+                api.model(
+                    "ProductsRemission",
+                    {
+                        "id": fields.Integer(required=False, example=101),
+                        "quotation_item_id": fields.Integer(required=False, example=55),
+                        "description": fields.String(
+                            required=True, example="Placa COM 01 M2"
+                        ),
+                        "quantity": fields.Float(required=True, example=4),
+                        "udm": fields.String(required=True, example="PZA"),
+                        "price_unit": fields.Float(required=True, example=1200.00),
+                    },
+                )
+            ),
+            required=False,
+        ),
+    },
+)
+
+
+remission_model_update = api.model(
+    "RemissionUpdate",
+    {
+        "id": fields.Integer(required=True, example=1),
+        "contract_id": fields.Integer(required=False, example=5),
+        "metadata": fields.Nested(
+            api.model(
+                "MetadataRemissionUpdate",
+                {
+                    "remission_code": fields.String(
+                        required=True, example="TLA0704-459"
+                    ),
+                    "client_id": fields.Integer(required=True, example=12),
+                    "emission": fields.String(
+                        required=True, example="2025-06-05 10:00:00"
+                    ),
+                    "user": fields.String(required=True, example="jdoe"),
+                    "planta": fields.String(required=False, example="Planta Norte"),
+                    "area": fields.String(required=False, example="Producción"),
+                    "location": fields.String(required=False, example="Zona 3"),
+                    "email": fields.String(
+                        required=False, example="cliente@empresa.com"
+                    ),
+                    "phone": fields.String(required=False, example="8123456789"),
+                    "observations": fields.String(
+                        required=False, example="Entrega parcial"
+                    ),
+                    "printed": fields.Boolean(required=False, default=False),
+                    "status": fields.Integer(required=False, default=0),
+                },
+            )
+        ),
+        "products": fields.List(
+            fields.Nested(
+                api.model(
+                    "ProductsRemissionUpdate",
+                    {
+                        "id": fields.Integer(required=False, example=101),
+                        "quotation_item_id": fields.Integer(required=False, example=55),
+                        "description": fields.String(
+                            required=True, example="Placa COM 01 M2"
+                        ),
+                        "quantity": fields.Float(required=True, example=4),
+                        "udm": fields.String(required=True, example="PZA"),
+                        "price_unit": fields.Float(required=True, example=1200.00),
+                    },
+                )
+            ),
+            required=False,
+        ),
+        "history": fields.List(
+            fields.Nested(
+                api.model(
+                    "RemissionHistoryEntry",
+                    {
+                        "timestamp": fields.String(
+                            required=True, example="2025-10-27 21:00:00"
+                        ),
+                        "user": fields.String(required=True, example="jdoe"),
+                        "action": fields.String(required=True, example="update"),
+                        "comment": fields.String(
+                            required=False, example="Actualización desde API"
+                        ),
+                    },
+                )
+            ),
+            required=False,
+        ),
+    },
+)
+
+
+remission_model_delete = api.model(
+    "RemissionDelete", {"id": fields.Integer(required=True, example=1)}
+)
+
 
 class HistoryPurchaseForm(Form):
     user = IntegerField("user", [InputRequired()])
@@ -479,3 +615,45 @@ class POsApplicationPutForm(Form):
     items = FieldList(
         FormField(ItemsPOApplicationUpdateForm), "items", validators=[], default=[]
     )
+
+
+class MetadataRemissionForm(Form):
+    remission_code = StringField("remission_code", [InputRequired()])
+    client_id = IntegerField("client_id", [InputRequired()])
+    emission = StringField("emission", [InputRequired()])
+    user = StringField("user", [InputRequired()])
+    planta = StringField("planta", [])
+    area = StringField("area", [])
+    location = StringField("location", [])
+    email = StringField("email", [])
+    phone = StringField("phone", [])
+    observations = StringField("observations", [])
+    printed = BooleanField("printed", [], default=False)
+    status = IntegerField("status", [], default=0)
+
+
+class ProductsPostRemissionForm(Form):
+    id = IntegerField("id", [], default=0)  # Solo si se actualiza
+    quotation_item_id = IntegerField("quotation_item_id", [], default=0)
+    description = StringField("description", [InputRequired()])
+    quantity = FloatField("quantity", [InputRequired()])
+    udm = StringField("udm", [InputRequired()])
+    price_unit = FloatField("price_unit", [InputRequired()])
+
+
+class RemissionInsertForm(Form):
+    metadata = FormField(MetadataRemissionForm, "metadata")
+    contract_id = IntegerField("contract_id", [], default=0)
+    products = FieldList(FormField(ProductsPostRemissionForm, "products"))
+
+
+class RemissionUpdateForm(Form):
+    id = IntegerField("id", [InputRequired()])
+    contract_id = IntegerField("contract_id", [], default=0)
+    metadata = FormField(MetadataRemissionForm, "metadata")
+    products = FieldList(FormField(ProductsPostRemissionForm, "products"))
+    history = FieldList(FormField(Form), "history", default=[])
+
+
+class RemissionDeleteForm(Form):
+    id = IntegerField("id", [InputRequired()])
