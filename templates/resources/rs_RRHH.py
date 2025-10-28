@@ -29,7 +29,7 @@ from static.Models.api_employee_models import (
     EmployeeMedUpdateForm,
     EmployeeMedDeleteForm,
     EmployeeVacInsertForm,
-    DeleteVacationForm,
+    DeleteVacationForm, employee_model_terminate, EmployeeTerminateForm,
 )
 from static.Models.api_fichajes_models import (
     answer_files_fichajes_model,
@@ -95,7 +95,7 @@ from templates.resources.midleware.Functions_midleware_RRHH import (
     insert_medical_db,
     update_medical_db,
     fetch_fichajes_all_employees,
-    fetch_fichaje_employee,
+    fetch_fichaje_employee, terminate_employee_from_api,
 )
 
 ns = Namespace("GUI/api/v1/rrhh")
@@ -157,6 +157,22 @@ class EmployeeGet(Resource):
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data_out, code = get_info_employee_id(id_emp)
         return data_out, code
+
+
+@ns.route("/employee/terminate")
+class EmployeeTerminate(Resource):
+    @ns.expect(expected_headers_per, employee_model_terminate)
+    def delete(self):
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        # noinspection PyUnresolvedReferences
+        validator = EmployeeTerminateForm.from_json(ns.payload)
+        if not validator.validate():
+            return {"errors": validator.errors}, 400
+        data = validator.data
+        data, code = terminate_employee_from_api(data, data_token)
+        return data, code
 
 
 @ns.route("/employees/info/<string:status>")

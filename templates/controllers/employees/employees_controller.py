@@ -153,6 +153,13 @@ def delete_employee(employee_id: int):
     return flag, e, out
 
 
+def terminate_employee_db(employee_id: int, departure: str):
+    sql = "UPDATE sql_telintec.employees SET status = 'inactivo', departure = %s WHERE employee_id = %s"
+    values = (departure, employee_id)
+    flag, e, out = execute_sql(sql, values, 3)
+    return flag, e, out
+
+
 def get_employee_id_name(name: str) -> tuple[None, str] | tuple[int, str]:
     """
     Get the id of the employee
