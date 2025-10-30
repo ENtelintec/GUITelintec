@@ -83,7 +83,7 @@ def create_remission_from_api(data, data_token):
     if flag_list.count(True) == len(flag_list):
         msg += "\nItems de remisión creados correctamente"
     elif flag_list.count(False) == len(flag_list):
-        flag, error_r = delete_remission(id_remission)
+        flag, error_r, result_r = delete_remission(id_remission)
         return {
             "data": {result_list},
             "error": error_list + [error_r],
@@ -191,7 +191,7 @@ def update_remission_from_api(data, data_token):
     if flag_list.count(True) == len(flag_list):
         msg += f"\nTodos los ítems fueron procesados correctamente ({len(flag_list)} ítems)"
     elif flag_list.count(False) == len(flag_list):
-        flag, error_r = delete_remission(id_remission)
+        flag, error_r, result_r = delete_remission(id_remission)
         return {
             "data": {result_list},
             "error": error_list + [error_r],
