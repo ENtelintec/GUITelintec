@@ -85,7 +85,7 @@ def create_remission_from_api(data, data_token):
     elif flag_list.count(False) == len(flag_list):
         flag, error_r, result_r = delete_remission(id_remission)
         return {
-            "data": {result_list},
+            "data": result_list,
             "error": error_list + [error_r],
             "msg": "Error al crear ítems. Remisión eliminada.",
         }, 400
@@ -193,7 +193,7 @@ def update_remission_from_api(data, data_token):
     elif flag_list.count(False) == len(flag_list):
         flag, error_r, result_r = delete_remission(id_remission)
         return {
-            "data": {result_list},
+            "data": result_list,
             "error": error_list + [error_r],
             "msg": "Error al actualizar ítems. Remisión eliminada.",
         }, 400
