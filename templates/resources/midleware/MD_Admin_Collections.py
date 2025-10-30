@@ -36,7 +36,7 @@ def create_remission_items_from_api(products: list, id_remission: int):
                 quotation_item_id=item.get("quotation_item_id", None),
             )
             flags.append(flag)
-            errors.append(error)
+            errors.append(str(error))
             results.append(id_item)
         except Exception as e:
             flags.append(False)
@@ -128,7 +128,7 @@ def update_remission_items_from_api(
                     quotation_item_id=item.get("quotation_item_id", None),
                 )
             flags.append(flag)
-            errors.append(error)
+            errors.append(str(error))
             results.append(result)
         except Exception as e:
             flags.append(False)
