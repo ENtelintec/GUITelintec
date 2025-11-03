@@ -283,7 +283,7 @@ def fetch_remissions_by_status_db(status: str, data_token: dict):
                 "id": item[0],
                 "code": item[1],
                 "client_id": item[2],
-                "emission": item[3],
+                "emission": item[3].strftime(format_timestamps) if not isinstance(item[3], str) else item[3],
                 "status": item[4],
                 "user": metadata.get("user", ""),
                 "planta": metadata.get("planta", ""),
