@@ -283,6 +283,7 @@ def fetch_remissions_by_status_db(status: str, data_token: dict):
 
     data_out = []
     for item in data:
+        print( item)
         metadata = json.loads(item[5]) if item[5] else {}
         contract_id = item[6]
         items = json.loads(item[7]) if item[7] else []
