@@ -55,3 +55,5 @@ __pycache__/
 /templates/forms/barcodes.pdf
 /Tests/
 tester*.py
+*test.py
+*_test.json

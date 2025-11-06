@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from templates.resources.midleware.MD_Admin_Collections import fetch_products_contracts
 __author__ = "Edisson Naula"
 __date__ = "$ 20/jun./2024  at 15:03 $"
 
@@ -371,3 +372,16 @@ class ContractsAbreviations(Resource):
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data_out, code = get_contracts_abreviations()
         return data_out, code
+
+
+@ns.route("/products/contracts")
+class ProductsContracts(Resource):
+    @ns.expect(expected_headers_per)
+    def get(self):
+        flag, data_token, msg = token_verification_procedure(
+            request, department="administracion"
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        data, code = fetch_products_contracts(data_token)
+        return data, code

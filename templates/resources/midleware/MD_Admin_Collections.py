@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from templates.controllers.contracts.contracts_controller import get_contract_and_items_from_number
+from templates.resources.midleware.MD_SM import get_iddentifiers_creation_contracts
 __author__ = "Edisson Naula"
 __date__ = "$ 27/oct/2025  at 20:37 $"
 
@@ -297,4 +299,39 @@ def fetch_remissions_by_status_db(status: str, data_token: dict):
             }
         )
 
+    return {"data": data_out, "msg": "Ok"}, 200
+
+
+def fetch_products_contracts(data_token):
+    iddentifiers, dict_tabs, code = get_iddentifiers_creation_contracts(data_token)
+    if not iddentifiers:
+        return {"data": [], "msg": code}, 400
+    data_out=[]
+    for iddentifier in iddentifiers:
+        flag, error, result = get_contract_and_items_from_number(iddentifier)
+        if not flag:
+            continue
+        items = []
+        for item in result:
+            if item[2] is None:
+                continue
+            items.append(
+                {
+                    "id": item[2],
+                    "partida": item[3],
+                    "id_inventory": item[4],
+                    "description": item[5],
+                    "udm": item[6],
+                }
+            )
+        if len(items) == 0:
+            continue
+
+        data_out.append(
+            {
+                "id": result[0][0],
+                "metadata": json.loads(result[0][1]) if result[0][1] else {},
+                "items": items,
+            }
+        )
     return {"data": data_out, "msg": "Ok"}, 200
