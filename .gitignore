@@ -57,3 +57,4 @@ __pycache__/
 tester*.py
 *test.py
 *_test.json
+pyrefly.toml
