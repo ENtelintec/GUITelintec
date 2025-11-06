@@ -47,7 +47,7 @@ def create_remission(
         status,
     )
     flag, error, id_remission = execute_sql(sql, val, 4)
-    return flag, error, id_remission
+    return flag, str(error), id_remission
 
 
 def update_remission(
@@ -79,13 +79,13 @@ def update_remission(
         )
 
     flag, error, result = execute_sql(sql, val, 3)
-    return flag, error, result
+    return flag, str(error), result
 
 
 def delete_remission(id_remission: int):
     sql = "DELETE FROM sql_telintec_mod_admin.remissions WHERE id = %s"
     flag, error, result = execute_sql(sql, (id_remission,), 3)
-    return flag, error, result
+    return flag, str(error), result
 
 
 def create_remission_item(
@@ -110,7 +110,7 @@ def create_remission_item(
         price_unit,
     )
     flag, error, id_item = execute_sql(sql, val, 4)
-    return flag, error, id_item
+    return flag, str(error), id_item
 
 
 def update_remission_item(
@@ -151,13 +151,13 @@ def update_remission_item(
     values.append(id_item)
 
     flag, error, _ = execute_sql(sql, tuple(values), 3)
-    return flag, error, id_item
+    return flag, str(error), id_item
 
 
 def delete_remission_item(id_item: int):
     sql = "DELETE FROM sql_telintec_mod_admin.remission_items WHERE id = %s"
     flag, error, _ = execute_sql(sql, (id_item,), 3)
-    return flag, error
+    return flag, str(error)
 
 
 def get_remission_items(id_remission: int):
@@ -166,13 +166,13 @@ def get_remission_items(id_remission: int):
         "FROM sql_telintec_mod_admin.remission_items WHERE remission_id = %s"
     )
     flag, error, result = execute_sql(sql, (id_remission,), 2)
-    return flag, error, result
+    return flag, str(error), result
 
 
 def delete_remission_items_by_remission(id_remission: int):
     sql = "DELETE FROM sql_telintec_mod_admin.remission_items WHERE remission_id = %s"
     flag, error, _ = execute_sql(sql, (id_remission,), 3)
-    return flag, error, id_remission
+    return flag, str(error), id_remission
 
 
 def fetch_remissions_with_items(status: str):
@@ -220,4 +220,4 @@ def fetch_remissions_with_items(status: str):
         val = (int(status),)
 
     flag, error, result = execute_sql(sql, val, 2)
-    return flag, error, result
+    return flag, str(error), result
