@@ -184,7 +184,7 @@ def fetch_remissions_with_items(status: str):
     if status == "all":
         sql = (
             "SELECT "
-            "r.id, r.code, r.client_id, r.emission, r.status, r.metadata, "
+            "r.id, r.code, r.client_id, r.emission, r.status, r.metadata, r.contract_id, "
             "JSON_ARRAYAGG(JSON_OBJECT("
             "'id', ri.id, "
             "'quotation_item_id', ri.quotation_item_id, "

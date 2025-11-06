@@ -284,13 +284,15 @@ def fetch_remissions_by_status_db(status: str, data_token: dict):
     data_out = []
     for item in data:
         metadata = json.loads(item[5]) if item[5] else {}
-        items = json.loads(item[6]) if item[6] else []
+        contract_id = item[6]
+        items = json.loads(item[7]) if item[6] else []
 
         data_out.append(
             {
                 "id": item[0],
                 "code": item[1],
                 "client_id": item[2],
+                "contract_id": contract_id,
                 "emission": item[3].strftime(format_timestamps) if not isinstance(item[3], str) else item[3],
                 "status": item[4],
                 "user": metadata.get("user", ""),
