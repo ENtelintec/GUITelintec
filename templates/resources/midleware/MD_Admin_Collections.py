@@ -285,7 +285,7 @@ def fetch_remissions_by_status_db(status: str, data_token: dict):
     for item in data:
         metadata = json.loads(item[5]) if item[5] else {}
         contract_id = item[6]
-        items = json.loads(item[7]) if item[6] else []
+        items = json.loads(item[7]) if item[7] else []
 
         data_out.append(
             {
