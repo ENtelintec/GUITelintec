@@ -346,7 +346,7 @@ remission_model_insert = api.model(
                 },
             )
         ),
-        "contract_id": fields.Integer(required=False, example=5),
+        "contract_id": fields.Integer(required=True, example=5),
         "products": fields.List(
             fields.Nested(
                 api.model(

@@ -58,6 +58,12 @@ def create_remission_from_api(data, data_token):
 
     msg = ""
     contract_id = data.get("contract_id", None)
+    if not contract_id:
+        return {
+            "data": "No se encontró contrato asociado para la remisión",
+            "error": "Falta contract_id en metadata",
+            "msg": "Error al crear remisión",
+        }, 400
 
     # Crear la remisión
     flag, error, id_remission = create_remission(
