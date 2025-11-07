@@ -66,6 +66,7 @@ def execute_sql(sql: str, values: tuple = None, type_sql=1) -> tuple[bool, str, 
     finally:
         # if not isinstance(out, list) or not isinstance(out, tuple):
         #     out = [out]
+        
         out = out if out is not None else []
         my_cursor.close()
         mydb.close()
