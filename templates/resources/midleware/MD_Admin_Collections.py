@@ -173,7 +173,7 @@ def update_remission_from_api(data, data_token):
 
     dict_items = {item["id"]: item for item in result}
     items = data["items"]
-    new_items = [item for item in items if item.get("id", -1) == -1]
+    new_items = [item for item in items if item.get("id", -1) == -1 or item.get("id") not in dict_items]
     items_to_update = [item for item in items if item.get("id", -1) != -1 and item.get("id") in dict_items]
     # Actualizar y crear ítems según corresponda
     flag_list, error_list, result_list, flags_operation = update_remission_items_from_api(
