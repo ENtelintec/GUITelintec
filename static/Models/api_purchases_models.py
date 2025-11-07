@@ -413,7 +413,6 @@ remission_model_update = api.model(
                         "quantity": fields.Float(required=True, example=4),
                         "udm": fields.String(required=True, example="PZA"),
                         "price_unit": fields.Float(required=True, example=1200.00),
-                        "importe": fields.Float(required=False, example=4800.00),
                     },
                 )
             ),
