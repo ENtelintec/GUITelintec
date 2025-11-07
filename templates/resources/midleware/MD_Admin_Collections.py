@@ -171,7 +171,7 @@ def update_remission_from_api(data, data_token):
     if not flag:
         return {"data": None, "msg": str(error)}, 400
 
-    dict_items = {item["id"]: item for item in result}
+    dict_items = {item[0]: item for item in result}
     items = data["items"]
     new_items = [item for item in items if item.get("id", -1) == -1 or item.get("id") not in dict_items]
     items_to_update = [item for item in items if item.get("id", -1) != -1 and item.get("id") in dict_items]
