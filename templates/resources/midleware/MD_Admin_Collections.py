@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from templates.controllers.contracts.remision_controller import delete_remission_item
 from templates.controllers.contracts.contracts_controller import get_contract_and_items_from_number
 from templates.resources.midleware.MD_SM import get_iddentifiers_creation_contracts
 __author__ = "Edisson Naula"
@@ -108,42 +109,39 @@ def create_remission_from_api(data, data_token):
 
 
 def update_remission_items_from_api(
-    products: list, id_remission: int, dict_items: dict
+    items_to_update: list, id_remission: int, items_to_create: list
 ):
-    flags, errors, results = [], [], []
+    flags, errors, results, flags_operation = [], [], [], []
+    for item in items_to_update:
+        # Ítem existente → actualizar
+        flag, error, result = update_remission_item(
+            id_item=item.get("id"),
+            description=item.get("description"),
+            quantity=item.get("quantity"),
+            udm=item.get("udm"),
+            price_unit=item.get("price_unit"),
+            quotation_item_id=item.get("quotation_item_id"),
+        )
+        flags.append(flag)
+        errors.append(str(error))
+        results.append(result)
+        flags_operation.append("update")
+    for item in items_to_create:
+        # Ítem nuevo → crear
+        flag, error, result = create_remission_item(
+            remission_id=id_remission,
+            description=item.get("description", ""),
+            quantity=item.get("quantity", 0),
+            udm=item.get("udm", ""),
+            price_unit=item.get("price_unit", 0),
+            quotation_item_id=item.get("quotation_item_id", None),
+        )
+        flags.append(flag)
+        errors.append(str(error))
+        results.append(result)
+        flags_operation.append("create")
 
-    for item in products:
-        try:
-            item_id = item.get("id")
-            if item_id and item_id in dict_items:
-                # Ítem existente → actualizar
-                flag, error, result = update_remission_item(
-                    id_item=item_id,
-                    description=item.get("description"),
-                    quantity=item.get("quantity"),
-                    udm=item.get("udm"),
-                    price_unit=item.get("price_unit"),
-                    quotation_item_id=item.get("quotation_item_id"),
-                )
-            else:
-                # Ítem nuevo → crear
-                flag, error, result = create_remission_item(
-                    remission_id=id_remission,
-                    description=item.get("description", ""),
-                    quantity=item.get("quantity", 0),
-                    udm=item.get("udm", ""),
-                    price_unit=item.get("price_unit", 0),
-                    quotation_item_id=item.get("quotation_item_id", None),
-                )
-            flags.append(flag)
-            errors.append(str(error))
-            results.append(result)
-        except Exception as e:
-            flags.append(False)
-            errors.append(str(e))
-            results.append(None)
-
-    return flags, errors, results
+    return flags, errors, results, flags_operation
 
 
 def update_remission_from_api(data, data_token):
@@ -158,52 +156,50 @@ def update_remission_from_api(data, data_token):
         "failed": [],
     }
 
-    # Si no hay ítems previos vinculados y se envían nuevos productos
-    if data.get("quotation_item_id", 0) == 0 and len(data.get("products", [])) > 0:
-        flag_list, error_list, result_list = create_remission_items_from_api(
-            data["products"], id_remission
-        )
-        for i, flag in enumerate(flag_list):
+    items_to_delete = data.get("items_to_delete", [])
+    # Eliminar ítems marcados para eliminación
+    for item in items_to_delete:
+        item_id = item.get("id", None)
+        if item_id:
+            flag, error, result = delete_remission_item(item_id)
             if flag:
+                item_changes["updated"].append(item_id)
+            else:
+                item_changes["failed"].append({"item": item, "error": str(error)})
+    # Obtener ítems actuales de la remisión
+    flag, error, result = get_remission_items(id_remission)
+    if not flag:
+        return {"data": None, "msg": str(error)}, 400
+
+    dict_items = {item["id"]: item for item in result}
+    items = data["items"]
+    new_items = [item for item in items if item.get("id", -1) == -1]
+    items_to_update = [item for item in items if item.get("id", -1) != -1 and item.get("id") in dict_items]
+    # Actualizar y crear ítems según corresponda
+    flag_list, error_list, result_list, flags_operation = update_remission_items_from_api(
+        new_items, id_remission, items_to_update
+    )
+    for i, flag in enumerate(flag_list):
+        if flag:
+            if flags_operation[i] == "update":
+                item_changes["updated"].append(items[i].get("id"))
+            else:
                 item_changes["created"].append(result_list[i])
-            else:
-                item_changes["failed"].append(
-                    {"item": data["products"][i], "error": error_list[i]}
-                )
-        msg += f"Se crearon {len(item_changes['created'])} ítems para la remisión ID-{id_remission} por el empleado {user}"
-    else:
-        # Obtener ítems previos
-        flag, error, result = get_remission_items(id_remission)
-        if not flag:
-            return {"data": None, "msg": str(error)}, 400
-
-        dict_items = {item["id"]: item for item in result}
-        products = data["products"]
-
-        flag_list, error_list, result_list = update_remission_items_from_api(
-            products, id_remission, dict_items
-        )
-        for i, flag in enumerate(flag_list):
-            if flag:
-                if products[i].get("id") in dict_items:
-                    item_changes["updated"].append(products[i].get("id"))
-                else:
-                    item_changes["created"].append(result_list[i])
-            else:
-                item_changes["failed"].append(
-                    {"item": products[i], "error": error_list[i]}
-                )
-        msg += f"Ítems actualizados para la remisión ID-{id_remission} por el empleado {user}"
+        else:
+            item_changes["failed"].append(
+                {"item": items[i], "error": error_list[i]}
+            )
+    msg += f"Ítems actualizados para la remisión ID-{id_remission} por el empleado {user}"
 
     # Validación de ítems
     if flag_list.count(True) == len(flag_list):
         msg += f"\nTodos los ítems fueron procesados correctamente ({len(flag_list)} ítems)"
     elif flag_list.count(False) == len(flag_list):
-        flag, error_r, result_r = delete_remission(id_remission)
+        
         return {
             "data": result_list,
-            "error": error_list + [error_r],
-            "msg": "Error al actualizar ítems. Remisión eliminada.",
+            "error": error_list,
+            "msg": "Error al actualizar ítems.",
         }, 400
     else:
         msg += (

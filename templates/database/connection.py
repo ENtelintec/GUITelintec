@@ -8,7 +8,7 @@ import mysql.connector
 from static.constants import secrets, HOST_DB_DEFAULT, USER_DB_DEFAULT, PASS_DB_DEFAULT
 
 
-def execute_sql(sql: str, values: tuple = None, type_sql=1):
+def execute_sql(sql: str, values: tuple = None, type_sql=1) -> tuple[bool, str, list | int] :
     """
     Execute the sql with the values provides (OR not) AND returns a value
     depending on the type of query.
@@ -32,10 +32,10 @@ def execute_sql(sql: str, values: tuple = None, type_sql=1):
         my_cursor = mydb.cursor(buffered=True)
     except Exception as e:
         print(e)
-        return False, e, []
+        return False, str(e), []
     out = []
     flag = True
-    exception = None
+    exception = "None"
     try:
         match type_sql:
             case 2:
@@ -62,8 +62,10 @@ def execute_sql(sql: str, values: tuple = None, type_sql=1):
             print("Error at executing sql: ", str(e), str(sql))
         out = []
         flag = False
-        exception = e
+        exception = str(e)
     finally:
+        # if not isinstance(out, list) or not isinstance(out, tuple):
+        #     out = [out]
         out = out if out is not None else []
         my_cursor.close()
         mydb.close()

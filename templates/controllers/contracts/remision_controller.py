@@ -171,8 +171,8 @@ def get_remission_items(id_remission: int):
 
 def delete_remission_items_by_remission(id_remission: int):
     sql = "DELETE FROM sql_telintec_mod_admin.remission_items WHERE remission_id = %s"
-    flag, error, _ = execute_sql(sql, (id_remission,), 3)
-    return flag, str(error), id_remission
+    flag, error, rowcount = execute_sql(sql, (id_remission,), 3)
+    return flag, str(error), rowcount
 
 
 def fetch_remissions_with_items(status: str):

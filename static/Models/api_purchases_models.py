@@ -347,12 +347,11 @@ remission_model_insert = api.model(
             )
         ),
         "contract_id": fields.Integer(required=True, example=5),
-        "products": fields.List(
+        "items": fields.List(
             fields.Nested(
                 api.model(
-                    "ProductsRemission",
+                    "ProductsPostRemission",
                     {
-                        "id": fields.Integer(required=False, example=101),
                         "quotation_item_id": fields.Integer(required=False, example=55),
                         "description": fields.String(
                             required=True, example="Placa COM 01 M2"
@@ -401,10 +400,10 @@ remission_model_update = api.model(
                 },
             )
         ),
-        "products": fields.List(
+        "items": fields.List(
             fields.Nested(
                 api.model(
-                    "ProductsRemissionUpdate",
+                    "ItemsRemissionUpdate",
                     {
                         "id": fields.Integer(required=False, example=101),
                         "quotation_item_id": fields.Integer(required=False, example=55),
@@ -414,6 +413,18 @@ remission_model_update = api.model(
                         "quantity": fields.Float(required=True, example=4),
                         "udm": fields.String(required=True, example="PZA"),
                         "price_unit": fields.Float(required=True, example=1200.00),
+                        "importe": fields.Float(required=False, example=4800.00),
+                    },
+                )
+            ),
+            required=False,
+        ),
+        "items_to_delete": fields.List(
+            fields.Nested(
+                api.model(
+                    "ItemsRemissionDelete",
+                    {
+                        "id": fields.Integer(required=True, example=101),
                     },
                 )
             ),
@@ -633,12 +644,22 @@ class MetadataRemissionForm(Form):
 
 
 class ProductsPostRemissionForm(Form):
-    id = IntegerField("id", [], default=0)  # Solo si se actualiza
     quotation_item_id = IntegerField("quotation_item_id", [], default=0)
     description = StringField("description", [InputRequired()])
     quantity = FloatField("quantity", [InputRequired()])
     udm = StringField("udm", [InputRequired()])
     price_unit = FloatField("price_unit", [InputRequired()])
+
+class ProductsPutRemissionForm(Form):
+    id = IntegerField("id", [number_range(min=-1, max=2, message="Invalid id")], default=-1)
+    quotation_item_id = IntegerField("quotation_item_id", [], default=0)
+    description = StringField("description", [InputRequired()])
+    quantity = FloatField("quantity", [InputRequired()])
+    udm = StringField("udm", [InputRequired()])
+    price_unit = FloatField("price_unit", [InputRequired()])
+
+class ProductsDeleteRemissionForm(Form):
+    id = IntegerField("id", [InputRequired()])
 
 
 class RemissionInsertForm(Form):
@@ -651,7 +672,10 @@ class RemissionUpdateForm(Form):
     id = IntegerField("id", [InputRequired()])
     contract_id = IntegerField("contract_id", [], default=0)
     metadata = FormField(MetadataRemissionForm, "metadata")
-    products = FieldList(FormField(ProductsPostRemissionForm, "products"))
+    items = FieldList(FormField(ProductsPutRemissionForm, "items"))
+    items_to_delete = FieldList(
+        FormField(ProductsDeleteRemissionForm, "items_to_delete")
+    )
     history = FieldList(FormField(Form), "history", default=[])
 
 
