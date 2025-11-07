@@ -156,8 +156,8 @@ def update_remission_item(
 
 def delete_remission_item(id_item: int):
     sql = "DELETE FROM sql_telintec_mod_admin.remission_items WHERE id = %s"
-    flag, error, _ = execute_sql(sql, (id_item,), 3)
-    return flag, str(error)
+    flag, error, result = execute_sql(sql, (id_item,), 3)
+    return flag, str(error), result
 
 
 def get_remission_items(id_remission: int):
