@@ -524,7 +524,7 @@ def dispatch_sm(data, data_token):
     folio = result[1]
     # products ids in the inventory
     ids_inventory_sm_list = [
-        item["id_inventory"] for item in products_sm if item.get("state") > 0
+        item["id_inventory"] for item in products_sm if item.get("state") > 0 and item.get("id_inventory") is not None
     ]
     updated_products = []
     flag, error, result = get_products_stock_from_ids(ids_inventory_sm_list)
