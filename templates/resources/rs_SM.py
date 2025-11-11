@@ -2,6 +2,9 @@
 __author__ = "Edisson Naula"
 __date__ = "$ 01/abr./2024  at 10:26 $"
 
+from templates.resources.midleware.MD_SM import create_urgent_sm_from_api
+from static.Models.api_sm_models import SMUrgentPostForm
+from static.Models.api_sm_models import sm_urgent_post_model
 from flask import send_file, request
 from flask_restx import Resource, Namespace
 
@@ -179,6 +182,21 @@ class ActionsSM(Resource):
         data_out, code = update_sm_from_api(data, data_token)
         return data_out, code
 
+
+@ns.route("/add/urgent")
+class ActionsUrgentSM(Resource):
+    @ns.expect(expected_headers_per, sm_urgent_post_model)
+    def post(self):
+        flag, data_token, msg = token_verification_procedure(request, department="sm")
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        # noinspection PyUnresolvedReferences
+        validator = SMUrgentPostForm.from_json(ns.payload)
+        if not validator.validate():
+            return {"error": validator.errors}, 400
+        data = validator.data
+        data_out, code = create_urgent_sm_from_api(data, data_token)
+        return data, code
 
 @ns.route("/cancel")
 class CancelSM(Resource):

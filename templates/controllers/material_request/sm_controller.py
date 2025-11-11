@@ -393,6 +393,37 @@ def insert_sm_db(data, init_extra_info=None):
     return flag, error, result
 
 
+def insert_urgent_sm_db(data):
+    init_extra_info = {
+        "urgent": 1,
+    }
+    event = [
+        {
+            "event": "Creación Urgente",
+            "date": data["info"].get("date", ""),
+            "user": data["info"]["emp_id"],
+        }
+    ]
+    sql = (
+        "INSERT INTO sql_telintec.materials_request "
+        "(folio, contract, client_id, emp_id, date, limit_date, status, history, extra_info)"
+        "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)"
+    )
+    val = (
+        data["info"]["folio"],
+        data["info"]["contract"],
+        data["info"]["client_id"],
+        data["info"]["emp_id"],
+        data["info"]["date"],
+        data["info"]["critical_date"],
+        0,
+        json.dumps(event),
+        json.dumps(init_extra_info),
+    )
+    flag, error, result = execute_sql(sql, val, 4)
+    return flag, error, result
+
+
 def delete_sm_db(id_m: int):
     sql = "DELETE FROM sql_telintec.materials_request " "WHERE sm_id = %s"
     val = (id_m,)

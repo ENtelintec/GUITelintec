@@ -155,7 +155,7 @@ products_request_model = api.model(
     },
 )
 
-sm_model_post = api.model(
+sm_info_model_post = api.model(
     "MaterialRequest",
     {
         "id": fields.Integer(
@@ -197,6 +197,32 @@ sm_model_post = api.model(
         "project": fields.String(required=True, description="The project"),
     },
 )
+
+
+sm_info_model_post_urgent = api.model(
+    "MaterialRequestUrgentInfoModel",
+    {
+        "folio": fields.String(required=True, description="The folio"),
+        "contract": fields.String(required=True, description="The contract"),
+        "contract_id": fields.Integer(
+            required=True, description="The contract id", example=1
+        ),
+        "client_id": fields.Integer(
+            required=True, description="The client id", example=1
+        ),
+        "emp_id": fields.Integer(
+            required=True, description="The employee id", example=1
+        ),
+        "date": fields.String(
+            required=True, description="The date", example="2024-06-29"
+        ),
+        "critical_date": fields.String(
+            required=True, description="The critical date", example="2024-07-15"
+        ),
+        "status": fields.Integer(required=True, description="The status of the sm")
+    },
+)
+
 
 sm_model_put = api.model(
     "MaterialRequest",
@@ -475,10 +501,19 @@ sm_product_request_model = api.model(
 sm_post_model = api.model(
     "material_requestPost",
     {
-        "info": fields.Nested(sm_model_post),
+        "info": fields.Nested(sm_info_model_post),
         "items": fields.List(fields.Nested(items_model_sm)),
     },
 )
+
+sm_urgent_post_model = api.model(
+    "material_requestUrgentPost",
+    {
+        "info": fields.Nested(sm_info_model_post_urgent),
+        "items": fields.List(fields.Nested(items_model_sm)),
+    },
+)
+
 
 sm_put_model = api.model(
     "material_requestPut",
@@ -732,6 +767,26 @@ class SMInfoForm(Form):
     project = StringField("project", validators=[], default="")
 
 
+class SMUrgentInfoForm(Form):
+    folio = StringField("folio", validators=[InputRequired()])
+    contract = StringField("contract", validators=[InputRequired()])
+    contract_id = IntegerField(
+        "contract_id",
+        validators=[validators.number_range(min=-1, message="Invalid id")],
+    )
+    client_id = IntegerField(
+        "client_id", validators=[InputRequired(message="Invalid id or 0 not acepted")]
+    )
+    emp_id = IntegerField(
+        "emp_id", validators=[InputRequired(message="Invalid id or 0 not acepted")]
+    )
+    date = DateField("date", validators=[InputRequired()], filters=[date_filter])
+    critical_date = StringField("critical_date", validators=[InputRequired()])
+    status = IntegerField(
+        "status", validators=[validators.number_range(min=0, message="Invalid id")]
+    )
+
+
 class SMInfoControlTableForm(Form):
     project = StringField("project", validators=[], default="")
     urgent = IntegerField("urgent", validators=[], default=0)
@@ -795,6 +850,11 @@ class TableRequestForm(Form):
 
 class SMPostForm(Form):
     info = FormField(SMInfoForm, "info")
+    items = FieldList(FormField(ItemsFormSMPost, "items"))
+
+
+class SMUrgentPostForm(Form):
+    info = FormField(SMUrgentInfoForm, "info")
     items = FieldList(FormField(ItemsFormSMPost, "items"))
 
 

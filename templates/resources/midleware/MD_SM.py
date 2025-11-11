@@ -1,6 +1,7 @@
 __author__ = "Edisson Naula"
 __date__ = "$ 18/dic/2024  at 12:10 $"
 
+
 import json
 import math
 import os
@@ -16,6 +17,7 @@ from static.constants import (
     log_file_sm_path,
     timezone_software,
 )
+
 from templates.controllers.contracts.contracts_controller import (
     get_contract_by_client,
     get_contracts_by_ids,
@@ -32,7 +34,6 @@ from templates.controllers.departments.heads_controller import (
 )
 from templates.controllers.employees.employees_controller import get_emp_contract
 
-# from templates.controllers.index import DataHandler
 from templates.controllers.material_request.sm_controller import (
     get_info_names_by_sm_id,
     get_sm_by_id,
@@ -49,6 +50,7 @@ from templates.controllers.material_request.sm_controller import (
     delete_item_from_sm_id,
     get_sm_items_state,
     update_inventory_state_sm_item_db,
+    insert_urgent_sm_db,
 )
 from templates.controllers.product.p_and_s_controller import (
     create_movement_db_amc,
@@ -977,7 +979,6 @@ def check_for_partidas_updates(products: list, contract_id: int):
 
 
 def create_sm_from_api(data, data_token):
-    print(data)
     if len(data["items"]) == 0:
         return {
             "msg": "error no sufficient items",
@@ -986,6 +987,47 @@ def create_sm_from_api(data, data_token):
         }, 400
     extra_info = check_item_sm_for_init_vals(data["items"])
     flag, error, result = insert_sm_db(data, extra_info)
+    if not flag:
+        print(error)
+        return {"msg": "error at updating db"}, 400
+    msg = (
+        f"Nueva SM creada #{result}, folio: {data['info']['folio']}, "
+        f"fecha limite: {data['info']['critical_date']}, "
+        f"empleado con id: {data_token.get('emp_id')}, "
+        f"comentario: {data['info']['comment']}"
+    )
+    errors_items, result_ids_items = create_items_sm_db(data["items"], result)
+    if len(result_ids_items) > 0:
+        msg += f"\nItems creados: {result_ids_items}"
+    if len(errors_items) > 0:
+        msg += f"\nErrores al crear items: {errors_items}"
+    flags, errors, result_partidas = check_for_partidas_updates(
+        data["items"], data["info"]["contract_id"]
+    )
+    if len(result_partidas) > 0:
+        msg += f"\nPartidas actualizadas: {result_partidas}"
+    if len(errors) > 0:
+        msg += f"\nErrores al actualizar partidas: {errors}"
+    create_notification_permission(
+        msg,
+        ["sm", "administracion", "almacen"],
+        "Nueva SM Recibida",
+        data_token.get("emp_id"),
+        0,
+    )
+    write_log_file(log_file_sm_path, msg)
+    return {"msg": "ok", "data": msg, "error": error}, 201
+
+
+def create_urgent_sm_from_api(data, data_token):
+    if len(data["items"]) == 0:
+        return {
+            "msg": "error no sufficient items",
+            "data": data["items"],
+            "error": "No items detected",
+        }, 400
+    extra_info = check_item_sm_for_init_vals(data["items"])
+    flag, error, result = insert_urgent_sm_db(data, extra_info)
     if not flag:
         print(error)
         return {"msg": "error at updating db"}, 400
