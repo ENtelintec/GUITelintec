@@ -335,6 +335,7 @@ def insert_sm_db(data, init_extra_info=None):
             "user": data["info"]["emp_id"],
         }
     ]
+    comment = data["info"].get("comment", [""])
     extra_info = {
         "destination": data["info"].get("destination"),
         "contract_contact": data["info"].get("contract_contact"),
@@ -342,7 +343,7 @@ def insert_sm_db(data, init_extra_info=None):
         "project": data["info"].get("project", ""),
         "urgent": data["info"].get("urgent", 0),
         "activity_description": data["info"].get("activity_description", ""),
-        "comment": data["info"].get("comment", ""),
+        "comment": comment,
         "request_date": timestamp,
         "requesting_user_status": data["info"].get("requesting_user_status", 0),
         "warehouse_reviewed": data["info"].get("warehouse_reviewed", 0),
@@ -387,7 +388,7 @@ def insert_sm_db(data, init_extra_info=None):
         json.dumps(data["items"]),
         0,
         json.dumps(event),
-        data["info"]["comment"],
+        json.dumps(comment),
         json.dumps(extra_info),
     )
     flag, error, result = execute_sql(sql, val, 4)
@@ -461,9 +462,9 @@ def update_sm_db(data):
     extra_info["destination"] = data["info"]["destination"]
     extra_info["contract_contact"] = data["info"]["contract_contact"]
     extra_info["activity_description"] = data["info"]["activity_description"]
-    extra_info["comment"] = data["info"]["comment"]
     extra_info["project"] = data["info"]["project"]
     history = data["info"]["history"]
+    comment = data["info"]["comment"]
     time_zone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
     event = {
@@ -491,7 +492,7 @@ def update_sm_db(data):
         json.dumps(data["items"]),
         data["info"]["order_quotation"],
         json.dumps(history),
-        data["info"]["comment"],
+        json.dumps(comment),
         json.dumps(extra_info),
         data["id"],
     )
