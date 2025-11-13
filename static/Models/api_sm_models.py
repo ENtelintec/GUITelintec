@@ -187,7 +187,7 @@ sm_info_model_post = api.model(
             required=True, description="The critical date", example="2024-07-15"
         ),
         "status": fields.Integer(required=True, description="The status of the sm"),
-        "comment": fields.String(required=True, description="The comment"),
+        "comment": fields.List(fields.String(required=False, description="The comment"), required=False),
         "destination": fields.String(
             required=True, description="The destination area in telintec"
         ),
@@ -260,7 +260,7 @@ sm_model_put = api.model(
         ),
         "status": fields.Integer(required=True, description="The status of the sm"),
         "history": fields.List(fields.Nested(history_model_sm)),
-        "comment": fields.String(required=True, description="The comment"),
+        "comment": fields.List(fields.String(required=False, description="The comments"), required=False),
         "destination": fields.String(
             required=True, description="The destination area in telintec"
         ),
@@ -300,7 +300,7 @@ sm_model_out = api.model(
         ),
         "status": fields.Integer(required=True, description="The status of the sm"),
         "history": fields.List(fields.Nested(history_model_sm)),
-        "comment": fields.String(required=True, description="The comment"),
+        "comment": fields.List(fields.String(required=False, description="The comments"), required=False),
         "destination": fields.String(
             required=True, description="The destination area in telintec"
         ),
@@ -386,7 +386,7 @@ control_table_sm_model = api.model(
     {
         "urgent": fields.Integer(required=False, description="Urgent", example=0),
         "project": fields.String(required=False, description="The project"),
-        "comments": fields.String(required=False, description="The comments"),
+        "comment": fields.List(fields.String(required=False, description="The comments"), required=False),
         "activity_description": fields.String(
             required=False, description="Description of activity"
         ),
@@ -694,7 +694,7 @@ class ItemsFormSMPUT(Form):
     stock = FloatField(
         "stock", validators=[validators.number_range(min=-100, message="Invalid stock")]
     )
-    comment = StringField("comment", validators=[], default="")
+    comment = FieldList(StringField("comment", validators=[], default=""))
     quantity = FloatField(
         "quantity",
         validators=[validators.number_range(min=0, message="Invalid quantity")],
@@ -769,7 +769,7 @@ class SMInfoForm(Form):
     status = IntegerField(
         "status", validators=[validators.number_range(min=0, message="Invalid id")]
     )
-    comment = StringField("comment", validators=[], default="")
+    comment = FieldList(StringField("comment", validators=[], default=""))
     activity_description = StringField(
         "activity_description", validators=[], default=""
     )
@@ -802,7 +802,7 @@ class SMUrgentInfoForm(Form):
 class SMInfoControlTableForm(Form):
     project = StringField("project", validators=[], default="")
     urgent = IntegerField("urgent", validators=[], default=0)
-    comments = StringField("comments", validators=[], default="")
+    comment = FieldList(StringField("comment", validators=[], default="")) 
     request_date = DateField("request_date", validators=[], filters=[date_filter])
     date = DateField("date", validators=[], filters=[date_filter])
     critical_date = DateField("critical_date", validators=[], filters=[date_filter])
