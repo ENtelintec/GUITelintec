@@ -635,7 +635,7 @@ def update_history_extra_info_sm_by_id(
         "SET extra_info = %s, history = %s, comment = %s "
         "WHERE sm_id = %s "
     )
-    val = (json.dumps(extra_info), json.dumps(history), comments, sm_id)
+    val = (json.dumps(extra_info), json.dumps(history), json.dumps(comments), sm_id)
     flag, error, result = execute_sql(sql, val, 4)
     return flag, error, result
 

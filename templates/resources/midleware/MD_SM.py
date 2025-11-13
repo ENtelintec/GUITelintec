@@ -768,7 +768,11 @@ def dowload_file_sm(sm_id: int, type_file="pdf"):
     items = json.loads(result[10]) if isinstance(result[10], str) else result[10]
     # status = result[11]
     # history = json.loads(result[12])
-    observations = result[13]
+    try:
+        observations = json.loads(result[13])
+    except Exception as e:
+        print(e)
+        observations = [result[13]]
     # extra_info = json.loads(result[14])
     download_path = (
         os.path.join(
@@ -894,7 +898,7 @@ def update_sm_from_control_table(data, data_token, sm_data=None):
     comment_history = f"Actualización de datos desde la tabla de control por el empleado {data_token.get('emp_id')}"
 
     extra_info = json.loads(result[14])
-    comments = ""
+    comments = []
     for k, value in data["info"].items():
         if k == "comments":
             comments = value
