@@ -240,6 +240,7 @@ def get_all_sm(limit, page=0, emp_id=-1, with_items=True):
             ),
             "operations_kpi": kpi_operations,
             "requesting_user_state": extra_info.get("requesting_user_state", ""),
+            "date_closing": extra_info.get("date_closing", ""),
         }
 
         # if isinstance(extra_info, dict):

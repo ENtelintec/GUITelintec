@@ -195,6 +195,9 @@ sm_info_model_post = api.model(
             required=True, description="The activity description"
         ),
         "project": fields.String(required=True, description="The project"),
+        "date_closing": fields.String(
+            required=False, description="The date closing", example="2024-07-15"
+        ),
     },
 )
 
@@ -260,6 +263,9 @@ sm_model_put = api.model(
         "comment": fields.String(required=True, description="The comment"),
         "destination": fields.String(
             required=True, description="The destination area in telintec"
+        ),
+        "date_closing": fields.String(
+            required=False, description="The date of closing the sm", example="2024-07-15"
         ),
     },
 )
@@ -368,6 +374,9 @@ sm_model_out = api.model(
         "requesting_user_state": fields.String(
             required=False, description="State of the requesting user"
         ),
+        "date_closing": fields.String(
+            required=False, description="Date of closing the sm", example="2024-07-15"
+        ),
     },
 )
 
@@ -445,6 +454,9 @@ control_table_sm_model = api.model(
         ),
         "requesting_user_state": fields.String(
             required=False, description="State of the requesting user"
+        ),
+        "date_closing": fields.String(
+            required=False, description="Date of closing the sm", example="2024-07-15"
         ),
     },
 )
@@ -824,6 +836,7 @@ class SMInfoControlTableForm(Form):
         "operations_notification_date", validators=[], filters=[]
     )
     operations_kpi = IntegerField("operations_kpi", validators=[], default=0)
+    date_closing = DateField("date_closing", validators=[], filters=[date_filter])
 
 
 class SMInfoControlTablePutForm(Form):
