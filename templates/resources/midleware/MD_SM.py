@@ -194,7 +194,11 @@ def get_all_sm(limit, page=0, emp_id=-1, with_items=True):
             kpi_operations = ""
         items_sm = json.loads(result[i][10]) if with_items else []
         percentage = calculate_items_delivered(json.loads(result[i][10]))
-
+        try:
+            comment = json.loads(result[i][13])
+        except Exception as e:
+            print(e)
+            comment = [result[i][13]]
         dict_sm = {
             "id": result[i][0],
             "folio": result[i][1],
@@ -214,7 +218,7 @@ def get_all_sm(limit, page=0, emp_id=-1, with_items=True):
             "percentage": percentage,
             "status": result[i][11],
             "history": json.loads(result[i][12]),
-            "comment": result[i][13],
+            "comment": comment,
             "destination": extra_info.get("destination", "Not found"),
             "contract_contact": extra_info.get("contract_contact", "Not Found"),
             # Nuevos campos agregados
