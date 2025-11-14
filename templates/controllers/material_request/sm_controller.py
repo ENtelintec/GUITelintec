@@ -395,10 +395,13 @@ def insert_sm_db(data, init_extra_info=None):
     return flag, error, result
 
 
-def insert_urgent_sm_db(data):
+def insert_urgent_sm_db(data: dict, extra_info: dict):
     init_extra_info = {
         "urgent": 1,
     }
+    if extra_info is not None:
+        for k, v in extra_info.items():
+            init_extra_info[k] = v
     event = [
         {
             "event": "Creación Urgente",
