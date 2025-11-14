@@ -68,6 +68,11 @@ from templates.resources.midleware.Functions_midleware_admin import get_iddentif
 
 
 def get_products_sm(contract: str):
+    # "c.id AS contract_id, "
+    #     "q.id AS quotation_id, "
+    #     "qi.id AS item_id, "
+    #     "qi.partida, "
+    #     "qi.id_inventory "
     if contract != "all":
         flag, error, items_contract = get_items_contract_string(contract)
     else:
@@ -83,6 +88,13 @@ def get_products_sm(contract: str):
     items_normal = []
     items_partida = []
     for product in result_p:
+        sku = product[6]
+        codes = json.loads(product[7]) if product[7] else []
+        sku_fabricante = ""
+        for code in codes:
+            if code.get("tag") == "sku_fabricante":
+                sku_fabricante = code.get("value")
+                break
         if product[0] in ids_in_contract.keys():
             items_partida.append(
                 {
@@ -93,6 +105,8 @@ def get_products_sm(contract: str):
                     "partida": ids_in_contract[product[0]],
                     "reserved": product[4],
                     "available_stock": product[5],
+                    "sku": sku,
+                    "sku_fabricante": sku_fabricante,
                 }
             )
         else:
@@ -105,6 +119,8 @@ def get_products_sm(contract: str):
                     "partida": "",
                     "reserved": product[4],
                     "available_stock": product[5],
+                    "sku": sku,
+                    "sku_fabricante": sku_fabricante,
                 }
             )
     data_out = {"data": {"contract": items_partida, "normal": items_normal}}

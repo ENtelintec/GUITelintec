@@ -859,21 +859,24 @@ def get_supply_inv_amc(id_s: int, name: str):
 def get_products_w_reservations():
     sql = """
           SELECT
-              p.id_product,
-              p.name,
-              p.udm,
-              p.stock,
-              IFNULL(r.reserved_qty, 0) AS reserved_qty,
-              p.stock - IFNULL(r.reserved_qty, 0) AS available_stock
-          FROM sql_telintec.products_amc p
-                   LEFT JOIN (
-              SELECT
-                  id_product,
-                  SUM(quantity) AS reserved_qty
-              FROM sql_telintec.product_reservations
-              WHERE status = 0 -- Solo reservas pendientes
-              GROUP BY id_product
-          ) r ON p.id_product = r.id_product \
+            p.id_product,
+            p.name,
+            p.udm,
+            p.stock,
+            IFNULL(r.reserved_qty, 0) AS reserved_qty,
+            p.stock - IFNULL(r.reserved_qty, 0) AS available_stock,
+            p.sku,
+            p.codes
+                FROM sql_telintec.products_amc p
+                LEFT JOIN (
+                    SELECT
+                        id_product,
+                        SUM(quantity) AS reserved_qty
+                    FROM sql_telintec.product_reservations
+                    WHERE status = 0 -- Solo reservas pendientes
+                    GROUP BY id_product
+                ) r ON p.id_product = r.id_product
+           ;
           """
     flag, error, result = execute_sql(sql, None, 5)
     return flag, error, result
