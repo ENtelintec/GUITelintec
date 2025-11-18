@@ -254,9 +254,7 @@ def update_items_sm(items: list, sm_id: int):
             id_inventory = item.get("id_inventory", 0)
             if id_inventory in ids_list:
                 continue
-            if item.get("id", 0) != 0 and item.get("id", 0) != item.get(
-                "id_inventory", 0
-            ):
+            if item.get("id", 0) != 0 :
                 ids_list.append(id_inventory)
                 sql = (
                     "UPDATE sql_telintec.sm_items "
