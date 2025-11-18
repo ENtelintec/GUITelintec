@@ -695,6 +695,7 @@ def get_pending_sm_db():
         "GROUP BY mr.sm_id"
     )
     flag, error, result = execute_sql(sql, None, 5)
+    return flag, error, result
 
 
 
