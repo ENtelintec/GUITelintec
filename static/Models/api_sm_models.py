@@ -155,7 +155,7 @@ products_request_model = api.model(
     },
 )
 
-sm_model_post = api.model(
+sm_info_model_post = api.model(
     "MaterialRequest",
     {
         "id": fields.Integer(
@@ -187,7 +187,7 @@ sm_model_post = api.model(
             required=True, description="The critical date", example="2024-07-15"
         ),
         "status": fields.Integer(required=True, description="The status of the sm"),
-        "comment": fields.String(required=True, description="The comment"),
+        "comment": fields.List(fields.String(required=False, description="The comment"), required=False),
         "destination": fields.String(
             required=True, description="The destination area in telintec"
         ),
@@ -195,8 +195,37 @@ sm_model_post = api.model(
             required=True, description="The activity description"
         ),
         "project": fields.String(required=True, description="The project"),
+        "date_closing": fields.String(
+            required=False, description="The date closing", example="2024-07-15"
+        ),
     },
 )
+
+
+sm_info_model_post_urgent = api.model(
+    "MaterialRequestUrgentInfoModel",
+    {
+        "folio": fields.String(required=True, description="The folio"),
+        "contract": fields.String(required=True, description="The contract"),
+        "contract_id": fields.Integer(
+            required=True, description="The contract id", example=1
+        ),
+        "client_id": fields.Integer(
+            required=True, description="The client id", example=1
+        ),
+        "emp_id": fields.Integer(
+            required=True, description="The employee id", example=1
+        ),
+        "date": fields.String(
+            required=True, description="The date", example="2024-06-29"
+        ),
+        "critical_date": fields.String(
+            required=True, description="The critical date", example="2024-07-15"
+        ),
+        "status": fields.Integer(required=True, description="The status of the sm")
+    },
+)
+
 
 sm_model_put = api.model(
     "MaterialRequest",
@@ -231,9 +260,12 @@ sm_model_put = api.model(
         ),
         "status": fields.Integer(required=True, description="The status of the sm"),
         "history": fields.List(fields.Nested(history_model_sm)),
-        "comment": fields.String(required=True, description="The comment"),
+        "comment": fields.List(fields.String(required=False, description="The comments"), required=False),
         "destination": fields.String(
             required=True, description="The destination area in telintec"
+        ),
+        "date_closing": fields.String(
+            required=False, description="The date of closing the sm", example="2024-07-15"
         ),
     },
 )
@@ -268,7 +300,7 @@ sm_model_out = api.model(
         ),
         "status": fields.Integer(required=True, description="The status of the sm"),
         "history": fields.List(fields.Nested(history_model_sm)),
-        "comment": fields.String(required=True, description="The comment"),
+        "comment": fields.List(fields.String(required=False, description="The comments"), required=False),
         "destination": fields.String(
             required=True, description="The destination area in telintec"
         ),
@@ -342,6 +374,9 @@ sm_model_out = api.model(
         "requesting_user_state": fields.String(
             required=False, description="State of the requesting user"
         ),
+        "date_closing": fields.String(
+            required=False, description="Date of closing the sm", example="2024-07-15"
+        ),
     },
 )
 
@@ -351,7 +386,7 @@ control_table_sm_model = api.model(
     {
         "urgent": fields.Integer(required=False, description="Urgent", example=0),
         "project": fields.String(required=False, description="The project"),
-        "comments": fields.String(required=False, description="The comments"),
+        "comment": fields.List(fields.String(required=False, description="The comments"), required=False),
         "activity_description": fields.String(
             required=False, description="Description of activity"
         ),
@@ -420,6 +455,9 @@ control_table_sm_model = api.model(
         "requesting_user_state": fields.String(
             required=False, description="State of the requesting user"
         ),
+        "date_closing": fields.String(
+            required=False, description="Date of closing the sm", example="2024-07-15"
+        ),
     },
 )
 
@@ -475,10 +513,19 @@ sm_product_request_model = api.model(
 sm_post_model = api.model(
     "material_requestPost",
     {
-        "info": fields.Nested(sm_model_post),
+        "info": fields.Nested(sm_info_model_post),
         "items": fields.List(fields.Nested(items_model_sm)),
     },
 )
+
+sm_urgent_post_model = api.model(
+    "material_requestUrgentPost",
+    {
+        "info": fields.Nested(sm_info_model_post_urgent),
+        "items": fields.List(fields.Nested(items_model_sm)),
+    },
+)
+
 
 sm_put_model = api.model(
     "material_requestPut",
@@ -616,7 +663,7 @@ class ItemsFormSMPost(Form):
     movement = StringField("movement", validators=[], default="")
     url = URLField("url", validators=[], default="")
     sku = StringField("sku", validators=[], default="")
-    partida = StringField("partida", validators=[], default="")
+    partida = IntegerField("partida", validators=[], default=0)
     state = IntegerField("state", validators=[], default=1)
     is_erased = IntegerField("is_erased", validators=[], default=0)
 
@@ -722,7 +769,7 @@ class SMInfoForm(Form):
     status = IntegerField(
         "status", validators=[validators.number_range(min=0, message="Invalid id")]
     )
-    comment = StringField("comment", validators=[], default="")
+    comment = FieldList(StringField("comment", validators=[], default=""))
     activity_description = StringField(
         "activity_description", validators=[], default=""
     )
@@ -732,10 +779,30 @@ class SMInfoForm(Form):
     project = StringField("project", validators=[], default="")
 
 
+class SMUrgentInfoForm(Form):
+    folio = StringField("folio", validators=[InputRequired()])
+    contract = StringField("contract", validators=[InputRequired()])
+    contract_id = IntegerField(
+        "contract_id",
+        validators=[validators.number_range(min=-1, message="Invalid id")],
+    )
+    client_id = IntegerField(
+        "client_id", validators=[InputRequired(message="Invalid id or 0 not acepted")]
+    )
+    emp_id = IntegerField(
+        "emp_id", validators=[InputRequired(message="Invalid id or 0 not acepted")]
+    )
+    date = DateField("date", validators=[InputRequired()], filters=[date_filter])
+    critical_date = StringField("critical_date", validators=[InputRequired()])
+    status = IntegerField(
+        "status", validators=[validators.number_range(min=0, message="Invalid id")]
+    )
+
+
 class SMInfoControlTableForm(Form):
     project = StringField("project", validators=[], default="")
     urgent = IntegerField("urgent", validators=[], default=0)
-    comments = StringField("comments", validators=[], default="")
+    comment = FieldList(StringField("comment", validators=[], default="")) 
     request_date = DateField("request_date", validators=[], filters=[date_filter])
     date = DateField("date", validators=[], filters=[date_filter])
     critical_date = DateField("critical_date", validators=[], filters=[date_filter])
@@ -769,6 +836,7 @@ class SMInfoControlTableForm(Form):
         "operations_notification_date", validators=[], filters=[]
     )
     operations_kpi = IntegerField("operations_kpi", validators=[], default=0)
+    date_closing = DateField("date_closing", validators=[], filters=[date_filter])
 
 
 class SMInfoControlTablePutForm(Form):
@@ -795,6 +863,11 @@ class TableRequestForm(Form):
 
 class SMPostForm(Form):
     info = FormField(SMInfoForm, "info")
+    items = FieldList(FormField(ItemsFormSMPost, "items"))
+
+
+class SMUrgentPostForm(Form):
+    info = FormField(SMUrgentInfoForm, "info")
     items = FieldList(FormField(ItemsFormSMPost, "items"))
 
 

@@ -254,9 +254,7 @@ def update_items_sm(items: list, sm_id: int):
             id_inventory = item.get("id_inventory", 0)
             if id_inventory in ids_list:
                 continue
-            if item.get("id", 0) != 0 and item.get("id", 0) != item.get(
-                "id_inventory", 0
-            ):
+            if item.get("id", 0) != 0 :
                 ids_list.append(id_inventory)
                 sql = (
                     "UPDATE sql_telintec.sm_items "
@@ -272,7 +270,7 @@ def update_items_sm(items: list, sm_id: int):
                     item.get("udm", "PZA"),
                     item.get("comment", ""),
                     item.get("partida"),
-                    item.get("quantity", 1),
+                    item.get("quantity"),
                     item.get("dispatched", 0),
                     json.dumps(item.get("movements", [])),
                     item.get("state", 1),
@@ -301,7 +299,7 @@ def update_items_sm(items: list, sm_id: int):
                     item.get("udm", "PZA"),
                     item.get("comment", ""),
                     item.get("partida"),
-                    item.get("quantity", 1),
+                    item.get("quantity"),
                     item.get("dispatched", 0),
                     json.dumps(item.get("movements", [])),
                     item.get("state", 0),
@@ -311,7 +309,6 @@ def update_items_sm(items: list, sm_id: int):
                     item.get("state_quantity", 0),
                 )
                 flag, error, result = execute_sql(sql, val, 4)
-
         else:
             action = "delete"
             sql = "DELETE FROM sql_telintec.sm_items WHERE id_item = %s"
@@ -335,6 +332,7 @@ def insert_sm_db(data, init_extra_info=None):
             "user": data["info"]["emp_id"],
         }
     ]
+    comment = data["info"].get("comment", [""])
     extra_info = {
         "destination": data["info"].get("destination"),
         "contract_contact": data["info"].get("contract_contact"),
@@ -342,7 +340,7 @@ def insert_sm_db(data, init_extra_info=None):
         "project": data["info"].get("project", ""),
         "urgent": data["info"].get("urgent", 0),
         "activity_description": data["info"].get("activity_description", ""),
-        "comment": data["info"].get("comment", ""),
+        "comment": comment,
         "request_date": timestamp,
         "requesting_user_status": data["info"].get("requesting_user_status", 0),
         "warehouse_reviewed": data["info"].get("warehouse_reviewed", 0),
@@ -363,6 +361,7 @@ def insert_sm_db(data, init_extra_info=None):
         ),
         "operations_kpi": data["info"].get("operations_kpi", 0),
         "requesting_user_state": data["info"].get("requesting_user_state", ""),
+        "date_closing": data["info"].get("date_closing", ""),
     }
     if extra_info is not None:
         for k, v in init_extra_info.items():
@@ -370,8 +369,8 @@ def insert_sm_db(data, init_extra_info=None):
     sql = (
         "INSERT INTO sql_telintec.materials_request "
         "(folio, contract, facility, location, "
-        "client_id, emp_id, pedido_cotizacion, date, limit_date, items, status, history, comment, extra_info)"
-        "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+        "client_id, emp_id, pedido_cotizacion, date, limit_date, status, history, comment, extra_info)"
+        "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
     )
     val = (
         data["info"]["folio"],
@@ -383,11 +382,44 @@ def insert_sm_db(data, init_extra_info=None):
         data["info"]["order_quotation"],
         data["info"]["date"],
         data["info"]["critical_date"],
-        json.dumps(data["items"]),
         0,
         json.dumps(event),
-        data["info"]["comment"],
+        json.dumps(comment),
         json.dumps(extra_info),
+    )
+    flag, error, result = execute_sql(sql, val, 4)
+    return flag, error, result
+
+
+def insert_urgent_sm_db(data: dict, extra_info: dict):
+    init_extra_info = {
+        "urgent": 1,
+    }
+    if extra_info is not None:
+        for k, v in extra_info.items():
+            init_extra_info[k] = v
+    event = [
+        {
+            "event": "Creación Urgente",
+            "date": data["info"].get("date", ""),
+            "user": data["info"]["emp_id"],
+        }
+    ]
+    sql = (
+        "INSERT INTO sql_telintec.materials_request "
+        "(folio, contract, client_id, emp_id, date, limit_date, status, history, extra_info)"
+        "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)"
+    )
+    val = (
+        data["info"]["folio"],
+        data["info"]["contract"],
+        data["info"]["client_id"],
+        data["info"]["emp_id"],
+        data["info"]["date"],
+        data["info"]["critical_date"],
+        0,
+        json.dumps(event),
+        json.dumps(init_extra_info),
     )
     flag, error, result = execute_sql(sql, val, 4)
     return flag, error, result
@@ -429,9 +461,9 @@ def update_sm_db(data):
     extra_info["destination"] = data["info"]["destination"]
     extra_info["contract_contact"] = data["info"]["contract_contact"]
     extra_info["activity_description"] = data["info"]["activity_description"]
-    extra_info["comment"] = data["info"]["comment"]
     extra_info["project"] = data["info"]["project"]
     history = data["info"]["history"]
+    comment = data["info"]["comment"]
     time_zone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
     event = {
@@ -443,7 +475,7 @@ def update_sm_db(data):
     sql = (
         "UPDATE sql_telintec.materials_request "
         "SET folio = %s, contract = %s, facility = %s, location = %s, "
-        "client_id = %s, emp_id = %s, date = %s, limit_date = %s, items = %s, status = 0, pedido_cotizacion = %s, "
+        "client_id = %s, emp_id = %s, date = %s, limit_date = %s, status = 0, pedido_cotizacion = %s, "
         "history = %s, comment = %s, extra_info = %s "
         "WHERE sm_id = %s"
     )
@@ -456,10 +488,9 @@ def update_sm_db(data):
         data["info"]["emp_id"],
         data["info"]["date"],
         data["info"]["critical_date"],
-        json.dumps(data["items"]),
         data["info"]["order_quotation"],
         json.dumps(history),
-        data["info"]["comment"],
+        json.dumps(comment),
         json.dumps(extra_info),
         data["id"],
     )
@@ -603,7 +634,7 @@ def update_history_extra_info_sm_by_id(
         "SET extra_info = %s, history = %s, comment = %s "
         "WHERE sm_id = %s "
     )
-    val = (json.dumps(extra_info), json.dumps(history), comments, sm_id)
+    val = (json.dumps(extra_info), json.dumps(history), json.dumps(comments), sm_id)
     flag, error, result = execute_sql(sql, val, 4)
     return flag, error, result
 
@@ -611,15 +642,61 @@ def update_history_extra_info_sm_by_id(
 def get_pending_sm_db():
     sql = (
         "SELECT "
-        "sm_id, folio, contract, facility, location, "
-        "client_id, emp_id, pedido_cotizacion, date, "
-        "limit_date, items, status, history, "
-        "comment, extra_info "
-        "FROM sql_telintec.materials_request "
-        "WHERE status = 0 "
+        "mr.sm_id, "
+        "mr.folio, "
+        "mr.contract, "
+        "mr.facility, "
+        "mr.location, "
+        "mr.client_id, "
+        "mr.emp_id, "
+        "mr.pedido_cotizacion, "
+        "mr.date, "
+        "mr.limit_date, "
+        "JSON_ARRAYAGG(JSON_OBJECT("
+        " 'id', smi.id_item, "
+        " 'id_inventory', smi.id_inventory, "
+        " 'name', smi.name, "
+        " 'udm', smi.udm, "
+        " 'comment', smi.comment, "
+        " 'partida', smi.partida, "
+        " 'quantity', smi.quantity, "
+        " 'dispatched', smi.dispatched, "
+        " 'movements', smi.movements, "
+        " 'state', smi.state, "
+        " 'extra_info', smi.extra_info, "
+        " 'reserved', IFNULL(rsv.reserved, 0), "
+        " 'reservation_id', rsv.reservation_id, "
+        " 'deliveries', smi.deliveries, "
+        " 'state_quantity', smi.state_quantity, "
+        " 'state_delivery', smi.state_delivery, "
+        " 'reserved_all', rAll.reserved_qty, "
+        " 'available_stock', IFNULL(inv.stock, 0) - IFNULL(rAll.reserved_qty, 0), "
+        " 'stock', IFNULL(inv.stock, 0) "
+        ") ) AS items, "
+        "mr.status, "
+        "mr.history, "
+        "mr.comment, "
+        "mr.extra_info "
+        "FROM sql_telintec.materials_request AS mr "
+        "LEFT JOIN sql_telintec.sm_items AS smi ON mr.sm_id = smi.id_sm "
+        "LEFT JOIN sql_telintec.products_amc AS inv ON inv.id_product = smi.id_inventory "
+        "LEFT JOIN ( "
+        "   SELECT id_product, sm_id, quantity AS reserved, reservation_id "
+        "   FROM sql_telintec.product_reservations "
+        "   WHERE status = 0 "
+        ") rsv ON (rsv.sm_id = smi.id_sm) AND (rsv.id_product = smi.id_inventory) "
+        "LEFT JOIN ( "
+        "   SELECT id_product, SUM(quantity) AS reserved_qty "
+        "   FROM sql_telintec.product_reservations "
+        "   WHERE status = 0 "
+        "   GROUP BY id_product "
+        ") rAll ON smi.id_inventory = rAll.id_product "
+        "WHERE mr.status = 0 "
+        "GROUP BY mr.sm_id"
     )
     flag, error, result = execute_sql(sql, None, 5)
     return flag, error, result
+
 
 
 def update_history_items_sm(sm_id: int, items: list, history: list):

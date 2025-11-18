@@ -73,7 +73,7 @@ items_po_model = api.model(
             required=True, description="The part number", example="1234567890"
         ),
         "duration_services": fields.String(
-            required=True, description="The duration services", example="2024-03-01"
+            required=False, description="The duration services", example="2024-03-01"
         ),
         "purchase_id": fields.Integer(
             required=False, description="The purchase id", example=0
