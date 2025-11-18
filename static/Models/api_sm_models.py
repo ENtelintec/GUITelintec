@@ -663,7 +663,7 @@ class ItemsFormSMPost(Form):
     movement = StringField("movement", validators=[], default="")
     url = URLField("url", validators=[], default="")
     sku = StringField("sku", validators=[], default="")
-    partida = StringField("partida", validators=[], default="")
+    partida = IntegerField("partida", validators=[], default=0)
     state = IntegerField("state", validators=[], default=1)
     is_erased = IntegerField("is_erased", validators=[], default=0)
 

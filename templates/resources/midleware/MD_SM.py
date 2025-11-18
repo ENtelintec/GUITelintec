@@ -986,6 +986,8 @@ def check_for_partidas_updates(products: list, contract_id: int):
         partida = item.get("partida", None)
         if partida is None:
             continue
+        if partida == "" or partida==0:
+            continue
         id_inventory_old = dict_partidas.get(partida, None)
         id_inventory_new = item.get("id", None)
         if id_inventory_new is None:
