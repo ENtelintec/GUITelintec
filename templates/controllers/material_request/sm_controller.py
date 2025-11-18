@@ -372,8 +372,8 @@ def insert_sm_db(data, init_extra_info=None):
     sql = (
         "INSERT INTO sql_telintec.materials_request "
         "(folio, contract, facility, location, "
-        "client_id, emp_id, pedido_cotizacion, date, limit_date, items, status, history, comment, extra_info)"
-        "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+        "client_id, emp_id, pedido_cotizacion, date, limit_date, status, history, comment, extra_info)"
+        "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
     )
     val = (
         data["info"]["folio"],
@@ -479,7 +479,7 @@ def update_sm_db(data):
     sql = (
         "UPDATE sql_telintec.materials_request "
         "SET folio = %s, contract = %s, facility = %s, location = %s, "
-        "client_id = %s, emp_id = %s, date = %s, limit_date = %s, items = %s, status = 0, pedido_cotizacion = %s, "
+        "client_id = %s, emp_id = %s, date = %s, limit_date = %s, status = 0, pedido_cotizacion = %s, "
         "history = %s, comment = %s, extra_info = %s "
         "WHERE sm_id = %s"
     )
@@ -492,7 +492,6 @@ def update_sm_db(data):
         data["info"]["emp_id"],
         data["info"]["date"],
         data["info"]["critical_date"],
-        json.dumps(data["items"]),
         data["info"]["order_quotation"],
         json.dumps(history),
         json.dumps(comment),

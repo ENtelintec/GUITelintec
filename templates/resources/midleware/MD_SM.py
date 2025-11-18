@@ -1059,8 +1059,7 @@ def create_urgent_sm_from_api(data, data_token):
     msg = (
         f"Nueva SM creada #{result}, folio: {data['info']['folio']}, "
         f"fecha limite: {data['info']['critical_date']}, "
-        f"empleado con id: {data_token.get('emp_id')}, "
-        f"comentario: {data['info']['comment']}"
+        f"empleado con id: {data_token.get('emp_id')}. "
     )
     errors_items, result_ids_items = create_items_sm_db(data["items"], result)
     if len(result_ids_items) > 0:
