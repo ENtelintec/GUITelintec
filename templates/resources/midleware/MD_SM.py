@@ -1090,7 +1090,7 @@ def check_if_items_sm_correct_for_update(items_in):
     items_out = []
     for item in items_in:
         items_out.append(item)
-        if item.get("quantity", 0) < item["quantity"]:
+        if item.get("quantity", 0) < item.get("stock", 0):
             all_ok = False
             error = f"Item con id {item['id']} no tiene suficiente stock"
 

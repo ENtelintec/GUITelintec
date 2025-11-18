@@ -249,6 +249,7 @@ def update_items_sm(items: list, sm_id: int):
     action = "update"
     ids_list = []
     for item in items:
+        print(item)
         is_erased = item.get("is_erased", 0)
         if is_erased == 0:
             id_inventory = item.get("id_inventory", 0)
@@ -311,7 +312,6 @@ def update_items_sm(items: list, sm_id: int):
                     item.get("state_quantity", 0),
                 )
                 flag, error, result = execute_sql(sql, val, 4)
-
         else:
             action = "delete"
             sql = "DELETE FROM sql_telintec.sm_items WHERE id_item = %s"
