@@ -154,7 +154,7 @@ class ActionsSM(Resource):
             return {"error": validator.errors}, 400
         data = validator.data
         data_out, code = create_sm_from_api(data, data_token)
-        return data, code
+        return data_out, code
 
     @ns.expect(expected_headers_per, delete_request_sm_model)
     def delete(self):
@@ -167,7 +167,7 @@ class ActionsSM(Resource):
             return {"error": validator.errors}, 400
         data = validator.data
         data_out, code = delete_sm_from_api(data, data_token)
-        return data, code
+        return data_out, code
 
     @ns.expect(expected_headers_per, sm_put_model)
     def put(self):
