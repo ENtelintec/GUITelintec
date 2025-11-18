@@ -249,7 +249,6 @@ def update_items_sm(items: list, sm_id: int):
     action = "update"
     ids_list = []
     for item in items:
-        print(item)
         is_erased = item.get("is_erased", 0)
         if is_erased == 0:
             id_inventory = item.get("id_inventory", 0)
