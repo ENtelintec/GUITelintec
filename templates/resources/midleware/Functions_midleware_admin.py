@@ -9,6 +9,7 @@ from static.constants import (
     filepath_settings,
     log_file_admin,
     dict_deps,
+    format_timestamps,
 )
 from templates.Functions_Utils import create_notification_permission
 from templates.controllers.contracts.contracts_controller import (
@@ -77,7 +78,12 @@ def get_quotations(id_quotation=None):
     if not flag:
         return {"data": None, "msg": str(error)}, 400
     if id_quotation is not None:
-        id_q, metadata, products, creation, timestamps, company, emission = result
+        id_q, metadata, products, creation, timestamps = result
+        creation = (
+            creation.strftime(format_timestamps)
+            if not isinstance(creation, str)
+            else creation
+        )
         data_out = {
             "id": id_q,
             "metadata": json.loads(metadata),
@@ -89,7 +95,12 @@ def get_quotations(id_quotation=None):
     else:
         data_out = []
         for item in result:
-            id_q, metadata, products, creation, timestamps, company, emission = item
+            id_q, metadata, products, creation, timestamps = item
+            creation = (
+                creation.strftime(format_timestamps)
+                if not isinstance(creation, str)
+                else creation
+            )
             data_out.append(
                 {
                     "id": id_q,
@@ -699,7 +710,7 @@ def get_contracts_abreviations():
     return {"data": data_out, "msg": "Ok"}, 200
 
 
-def create_items_from_api(products, id_quotation):
+def create_items_from_api(products, id_quotation, id_contract=None):
     products_list = []
     for product in products:
         description = product.get("description", "")
@@ -707,7 +718,7 @@ def create_items_from_api(products, id_quotation):
         products_list.append(
             {
                 "quotation_id": id_quotation,
-                "contract_id": None,
+                "contract_id": id_contract,
                 "partida": product.get("partida", None),
                 "udm": product.get("udm", "PZA"),
                 "brand": product.get("marca", ""),
@@ -890,7 +901,7 @@ def create_contract_from_api(data, data_token):
             "msg": str(error),
         }, 400
     flag_list, error_list, result_list = create_items_from_api(
-        data["products"], id_quotation
+        data["products"], id_quotation, id_contract
     )
     if flag_list.count(True) == len(flag_list):
         msg += "\nItems de cotizacion creados correctamente"
@@ -933,7 +944,7 @@ def update_contract_from_api(data, data_token):
             }, 400
         msg += f"Se creo una cotizacion con ID-{id_quotation} para relacionar con el contrato por el empleado {data_token.get('emp_id')}"
         flag_list, error_list, result_list = create_items_from_api(
-            data["products"], id_quotation
+            data["products"], id_quotation, data["id"]
         )
 
     else:

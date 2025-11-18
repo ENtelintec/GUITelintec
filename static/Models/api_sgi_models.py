@@ -140,6 +140,14 @@ voucher_tools_status_put_model = api.model(
     },
 )
 
+voucher_tools_delete_model = api.model(
+    "VoucherToolsDelete",
+    {
+        "id": fields.Integer(required=True, description="ID del voucher"),
+        "history": fields.List(fields.Nested(voucher_history_model)),
+    },
+)
+
 
 voucher_safety_post_model = api.model(
     "VoucherSafetyPost",
@@ -204,6 +212,124 @@ voucher_safety_status_put_model = api.model(
         "storage_state": fields.Integer(
             default=0, description="Estado del encargado de almacenamiento"
         ),
+        "history": fields.List(fields.Nested(voucher_history_model)),
+    },
+)
+
+
+voucher_safety_delete_model = api.model(
+    "VoucherSafetyDelete",
+    {
+        "id": fields.Integer(required=True, description="ID del voucher"),
+        "history": fields.List(fields.Nested(voucher_history_model)),
+    },
+)
+
+
+accessories_vehicles_model = api.model(
+    "AccessoriesVehicles",
+    {
+        "label": fields.String(required=True, description="Nombre del accesorio"),
+        "value": fields.String(required=True, description="Valor del accesorio"),
+    },
+)
+
+
+voucher_vehicle_post_model = api.model(
+    "VoucherVehiclePost",
+    {
+        "type": fields.Integer(
+            required=True, description="Tipo de voucher (ej. 2: Vehicular)"
+        ),
+        "contract": fields.Integer(required=True, description="ID del contrato"),
+        "user": fields.Integer(
+            required=True, description="ID del usuario que realiza el checklist"
+        ),
+        "received_by": fields.Integer(
+            required=True, description="ID del empleado que recibe el vehículo"
+        ),
+        # Datos del vehículo
+        "brand": fields.String(required=True, description="Marca del vehículo"),
+        "model": fields.String(required=True, description="Modelo del vehículo"),
+        "color": fields.String(description="Color del vehículo"),
+        "year": fields.Integer(description="Año del vehículo"),
+        "placas": fields.String(required=True, description="Placas del vehículo"),
+        "kilometraje": fields.Integer(description="Kilometraje del vehículo"),
+        # Documentos
+        "registration_card": fields.Integer(
+            required=True, description="¿Tiene tarjeta de circulación?"
+        ),
+        "insurance": fields.Integer(
+            required=True, description="¿Tiene póliza de seguro?"
+        ),
+        "referendo": fields.Integer(
+            required=True, description="¿Tiene comprobante de refrendo?"
+        ),
+        # Accesorios
+        "accessories": fields.List(
+            fields.Nested(accessories_vehicles_model),
+            required=True,
+            description="Estado de accesorios",
+        ),
+        # Observaciones
+        "observations": fields.String(description="Observaciones generales"),
+        # Ítems relacionados
+        "items": fields.List(fields.Nested(voucher_items_post_model)),
+    },
+)
+
+voucher_vehicle_put_model = api.model(
+    "VoucherVehiclePut",
+    {
+        "type": fields.Integer(
+            required=True, description="Tipo de voucher (ej. 2: Vehicular)"
+        ),
+        "contract": fields.Integer(required=True, description="ID del contrato"),
+        "id_voucher_general": fields.Integer(
+            required=False, description="ID del voucher general para actualizar"
+        ),
+        "user": fields.Integer(
+            required=True, description="ID del usuario que realiza el checklist"
+        ),
+        "received_by": fields.Integer(
+            required=True, description="ID del empleado que recibe el vehículo"
+        ),
+        # Datos del vehículo
+        "brand": fields.String(required=True, description="Marca del vehículo"),
+        "model": fields.String(required=True, description="Modelo del vehículo"),
+        "color": fields.String(description="Color del vehículo"),
+        "year": fields.Integer(description="Año del vehículo"),
+        "placas": fields.String(required=True, description="Placas del vehículo"),
+        "kilometraje": fields.Integer(description="Kilometraje del vehículo"),
+        # Documentos
+        "registration_card": fields.Integer(
+            required=True, description="¿Tiene tarjeta de circulación?"
+        ),
+        "insurance": fields.Integer(
+            required=True, description="¿Tiene póliza de seguro?"
+        ),
+        "referendo": fields.Integer(
+            required=True, description="¿Tiene comprobante de refrendo?"
+        ),
+        # Accesorios
+        "accessories": fields.List(
+            fields.Nested(accessories_vehicles_model),
+            required=True,
+            description="Estado de accesorios",
+        ),
+        # Observaciones
+        "observations": fields.String(description="Observaciones generales"),
+        # Ítems relacionados
+        "items": fields.List(fields.Nested(voucher_items_put_model)),
+        "history": fields.List(fields.Nested(voucher_history_model)),
+    },
+)
+
+
+vehicle_voucher_delete_model = api.model(
+    "VehicleVoucherDelete",
+    {
+        "id": fields.Integer(required=True, description="ID del voucher"),
         "history": fields.List(fields.Nested(voucher_history_model)),
     },
 )
@@ -278,6 +404,13 @@ class VoucherToolsFormPut(Form):
     )
 
 
+class VoucherToolsFormDelete(Form):
+    id = IntegerField(
+        "id", [InputRequired()]
+    )
+    history = FieldList(FormField(VoucherHistoryForm, "history"))
+
+
 class VoucherSafetyFormPost(Form):
     type = IntegerField(
         "type", [validators.number_range(min=-1, message="Invalid type")]
@@ -325,6 +458,13 @@ class VoucherSafetyFormPut(Form):
     history = FieldList(FormField(VoucherHistoryForm, "history"))
 
 
+class VoucherSafetyFormDelete(Form):
+    id = IntegerField(
+        "id", [InputRequired()]
+    )
+    history = FieldList(FormField(VoucherHistoryForm, "history"))
+
+
 class VoucherToolsStatusFormPut(Form):
     id_voucher = IntegerField("id_voucher", [InputRequired()])
     user_state = IntegerField(
@@ -349,5 +489,65 @@ class VoucherSafetyStatusFormPut(Form):
     )
     storage_state = IntegerField(
         "storage_state", [validators.number_range(min=-1, message="Invalid id")]
+    )
+    history = FieldList(FormField(VoucherHistoryForm, "history"))
+
+
+class AccessoryForm(Form):
+    label = StringField("label", [InputRequired()])
+    value = StringField("value", [InputRequired()])
+
+
+class VoucherVehiclePostForm(Form):
+    type = IntegerField(
+        "type", [validators.number_range(min=-1, message="Invalid type")]
+    )
+    contract = IntegerField("contract", [InputRequired()])
+    user = IntegerField("user", [InputRequired()])
+    received_by = IntegerField("received_by", [InputRequired()])
+    brand = StringField("brand", [InputRequired()])
+    model = StringField("model", [InputRequired()])
+    color = StringField("color", [])
+    year = IntegerField("year", [])
+    placas = StringField("placas", [InputRequired()])
+    kilometraje = IntegerField("kilometraje", [])
+    registration_card = IntegerField("registration_card", [InputRequired()])
+    insurance = IntegerField("insurance", [InputRequired()])
+    referendo = IntegerField("referendo", [InputRequired()])
+    accessories = FieldList(FormField(AccessoryForm, "accessories"))
+    observations = StringField("observations", [])
+    items = FieldList(
+        FormField(ItemsVoucherPostForm, "items"), validators=[], default=[]
+    )
+
+
+class VoucherVehiclePutForm(Form):
+    id_voucher_general = IntegerField("id_voucher_general", [InputRequired()])
+    type = IntegerField(
+        "type", [validators.number_range(min=-1, message="Invalid type")]
+    )
+    contract = IntegerField("contract", [InputRequired()])
+    user = IntegerField("user", [InputRequired()])
+    received_by = IntegerField("received_by", [InputRequired()])
+    brand = StringField("brand", [InputRequired()])
+    model = StringField("model", [InputRequired()])
+    color = StringField("color", [])
+    year = IntegerField("year", [])
+    placas = StringField("placas", [InputRequired()])
+    kilometraje = IntegerField("kilometraje", [])
+    registration_card = IntegerField("registration_card", [InputRequired()])
+    insurance = IntegerField("insurance", [InputRequired()])
+    referendo = IntegerField("referendo", [InputRequired()])
+    accessories = FieldList(FormField(AccessoryForm, "accessories"))
+    observations = StringField("observations", [])
+    items = FieldList(
+        FormField(ItemsVoucherPutForm, "items"), validators=[], default=[]
+    )
+    history = FieldList(FormField(VoucherHistoryForm, "history"))
+
+
+class VoucherVehicleDeleteForm(Form):
+    id = IntegerField(
+        "id", [InputRequired()]
     )
     history = FieldList(FormField(VoucherHistoryForm, "history"))

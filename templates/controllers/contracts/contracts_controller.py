@@ -207,3 +207,27 @@ def get_items_contract_string(key: str):
     val = (key, key)
     flag, error, result = execute_sql(sql, val, 2)
     return flag, error, result
+
+
+def get_contract_and_items_from_number(lastdigits: str):
+    """ 
+    Fetch contract and its items using the last digits of the contract number.
+    """
+    sql = (
+        "SELECT "
+        "c.id AS contract_id, "
+        "c.metadata AS contract_metadata, "
+        "qi.id AS item_id, "
+        "qi.partida, "
+        "qi.id_inventory, "
+        "qi.description, "
+        "qi.udm "
+        "FROM sql_telintec_mod_admin.contracts c "
+        "LEFT JOIN sql_telintec_mod_admin.quotations q ON q.id = c.quotation_id "
+        "LEFT JOIN sql_telintec_mod_admin.quotation_items qi ON qi.contract_id = c.id "
+        "WHERE RIGHT(JSON_UNQUOTE(JSON_EXTRACT(c.metadata, '$.contract_number')), 4) = %s"
+    )
+    val = (lastdigits,)
+    flag, error, result = execute_sql(sql, val, 2)
+    return flag, error, result
+

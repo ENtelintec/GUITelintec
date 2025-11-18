@@ -56,6 +56,9 @@ product_model_new = api.model(
         "locations": fields.Nested(locations_model, required=False),
         "brand": fields.String(required=False, description="The product brand."),
         "epp": fields.Integer(required=True, description="The product epp", example=0),
+        "id_item": fields.Integer(
+            required=False, description="The product sm id for update if required"
+        ),
     },
 )
 
@@ -86,6 +89,9 @@ product_model_update = api.model(
         "locations": fields.Nested(locations_model, required=False),
         "brand": fields.String(required=False, description="The product brand."),
         "epp": fields.Integer(required=True, description="The product epp", example=0),
+        "id_item": fields.Integer(
+            required=False, description="The product sm id for update if required"
+        ),
     },
 )
 
@@ -259,6 +265,9 @@ reservation_put_model = api.model(
             required=False,
             description="The reservation history",
         ),
+        "id_sm": fields.Integer(
+            required=False, description="The material request id", example=1
+        ),
     },
 )
 
@@ -312,6 +321,7 @@ class ProductInsertForm(Form):
     locations = FormField(LocationsForm)
     brand = StringField("brand", validators=[], default="")
     epp = IntegerField("epp", validators=[], default=0)
+    id_item = IntegerField("id_item", validators=[], default=0)
 
 
 class ProductUpdateForm(Form):
@@ -332,6 +342,7 @@ class ProductUpdateForm(Form):
     locations = FormField(LocationsForm)
     brand = StringField("brand", validators=[], default="")
     epp = IntegerField("epp", validators=[], default=0)
+    id_item = IntegerField("id_item", validators=[], default=0)
 
 
 class ProductPostForm(Form):
@@ -454,6 +465,11 @@ class ReservationPutForm(Form):
     quantity = FloatField("quantity", validators=[InputRequired()])
     status = IntegerField("status", validators=[], default=0)
     history = FieldList(FormField(ReservationHistoryForm), "history")
+    id_sm = IntegerField(
+        "id_sm",
+        validators=[validators.number_range(min=-1, message="Invalid id")],
+        default=0,
+    )
 
 
 class ReservationDeleteForm(Form):

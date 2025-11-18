@@ -53,6 +53,7 @@ from templates.controllers.product.p_and_s_controller import (
     update_reservation_db,
     delete_reservation_db,
     get_all_reservations,
+    update_reservation_with_smID_db,
 )
 from templates.controllers.supplier.suppliers_controller import (
     get_all_suppliers_amc,
@@ -68,6 +69,7 @@ from templates.resources.methods.Aux_Inventory import (
     generate_default_configuration_barcodes,
     create_excel_file,
 )
+from templates.resources.midleware.MD_SM import update_sm_item_state_and_inventory
 
 
 def get_all_movements(type_m: str):
@@ -359,7 +361,7 @@ def get_all_products_DB(type_p):
 
 def insert_product_db(data, data_token):
     if data["info"]["supplier_name"] is not None:
-        flag, error, result = create_product_db(
+        flag, error, lastrowid = create_product_db(
             sku=data["info"]["sku"],
             name=data["info"]["name"],
             udm=data["info"]["udm"],
@@ -374,7 +376,7 @@ def insert_product_db(data, data_token):
             epp=data["info"]["epp"],
         )
     else:
-        flag, error, result = create_product_db_admin(
+        flag, error, lastrowid = create_product_db_admin(
             sku=data["info"]["sku"],
             name=data["info"]["name"],
             udm=data["info"]["udm"],
@@ -390,9 +392,17 @@ def insert_product_db(data, data_token):
     #     result, "entrada", data["info"]["stock"], timestamp, None, "creation"
     # )
     msg = (
-        f"Se ha creado el producto {data['info']['name']}-{result} con sku {data['info']['sku']}-{data['info']['stock']} "
+        f"Se ha creado el producto {data['info']['name']}-{lastrowid} con sku {data['info']['sku']}-{data['info']['stock']} "
         f"por el empleado {data_token.get('emp_id')}-{data_token.get('name')} en la fecha {timestamp}"
     )
+    id_sm_item = data.get("id_item", 0)
+
+    if id_sm_item > 0:
+        out_item_sm, code_sm = update_sm_item_state_and_inventory(
+            {"id_inventory": lastrowid, "id_item": id_sm_item, "state": 1}, data_token
+        )
+        if code_sm != 200:
+            msg += f"\n Error al actualizar el producto en la sm: {out_item_sm}"
     flag = create_notification_permission_notGUI(
         msg, ["almacen"], "Notifaction de Inventario", data_token.get("emp_id"), 0
     )
@@ -400,7 +410,7 @@ def insert_product_db(data, data_token):
         msg += "\n error notification creation"
     write_log_file(log_file_almacen, msg)
 
-    return True, result
+    return True, lastrowid
 
 
 def update_product_amc(data, data_token):
@@ -439,6 +449,14 @@ def update_product_amc(data, data_token):
         f"tambien se ha registrado un movimiento de {movement_type} "
         f"de {abs(data['info']['quantity_move'])} referencia update"
     )
+    id_sm_item = data.get("id_item", 0)
+    if id_sm_item > 0:
+        out_item_sm, code_sm = update_sm_item_state_and_inventory(
+            {"id_inventory": data["info"]["id"], "id_item": id_sm_item, "state": 1},
+            data_token,
+        )
+        if code_sm != 200:
+            msg += f"\n Error al actualizar el producto en la sm: {out_item_sm}"
     create_notification_permission_notGUI(
         msg, ["almacen"], "Notifaction de Inventario", data_token.get("emp_id"), 0
     )
@@ -1264,12 +1282,26 @@ def update_reservation_from_api(data, data_token):
             "timestamp": date,
         }
     )
-    flag, error, result = update_reservation_db(
-        data["id"], status, data["quantity"], json.dumps(history), add_quantity
-    )
+    sm_id = data.get("id_sm", 0)
+    if sm_id > 0:
+        flag, error, result = update_reservation_with_smID_db(
+            data["id"],
+            status,
+            data["quantity"],
+            json.dumps(history),
+            sm_id,
+            add_quantity,
+        )
+    else:
+        flag, error, result = update_reservation_db(
+            data["id"], status, data["quantity"], json.dumps(history), add_quantity
+        )
     if not flag:
         return {"data": None, "error": str(error)}, 400
-    msg = f"Reservation <{data['id']}> actualizada por el empleado {data_token.get('emp_id')} con status {data['status']}  y cantidad {data['quantity']}"
+    msg = (
+        f"Reservation <{data['id']}> actualizada por el empleado {data_token.get('emp_id')} "
+        f"con status {data['status']}, cantidad {data['quantity']} y sm {sm_id}"
+    )
     create_notification_permission_notGUI(
         msg, ["almacen"], "Notifaction de Inventario", data_token.get("emp_id"), 0
     )

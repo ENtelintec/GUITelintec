@@ -115,6 +115,13 @@ employee_model_delete = api.model(
     {"id": fields.Integer(required=True, description="The employee id")},
 )
 
+employee_model_terminate = api.model(
+    "Employee terminate model",
+    {"id": fields.Integer(required=True, description="The employee id")},
+    {"reason": fields.String(required=True, description="The reason for termination")}
+
+)
+
 employee_model_insert = api.model(
     "Employee delete all", {"info": fields.Nested(employee_model_input)}
 )
@@ -368,6 +375,14 @@ class EmployeeDeleteForm(Form):
         "id",
         validators=[InputRequired(message="id is required or value 0 not accepted")],
     )
+
+
+class EmployeeTerminateForm(Form):
+    id = IntegerField(
+        "id",
+        validators=[InputRequired(message="id is required or value 0 not accepted")],
+    )
+    reason = StringField("reason", validators=[InputRequired()])
 
 
 class AptitudForm(Form):

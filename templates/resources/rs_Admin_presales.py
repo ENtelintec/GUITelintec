@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from templates.resources.midleware.MD_Admin_Collections import fetch_products_contracts
 __author__ = "Edisson Naula"
 __date__ = "$ 20/jun./2024  at 15:03 $"
 
@@ -10,7 +11,6 @@ from flask_restx import Namespace, Resource
 from werkzeug.utils import secure_filename
 
 from static.Models.api_contracts_models import (
-    answer_quotation_model,
     quotation_model_insert,
     quotation_model_update,
     quotation_model_delete,
@@ -58,7 +58,7 @@ ns = Namespace("GUI/api/v1/admin/presales")
 
 @ns.route("/quotation/<string:id_q>")
 class Quotations(Resource):
-    @ns.marshal_with(answer_quotation_model)
+    # @ns.marshal_with(answer_quotation_model)
     @ns.expect(expected_headers_per)
     def get(self, id_q):
         flag, data_token, msg = token_verification_procedure(
@@ -372,3 +372,16 @@ class ContractsAbreviations(Resource):
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data_out, code = get_contracts_abreviations()
         return data_out, code
+
+
+@ns.route("/products/contracts")
+class ProductsContracts(Resource):
+    @ns.expect(expected_headers_per)
+    def get(self):
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["administracion", "remission", "operaciones", "sm"]
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        data, code = fetch_products_contracts(data_token)
+        return data, code

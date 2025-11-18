@@ -22,6 +22,13 @@ from templates.controllers.vouchers.vouchers_controller import (
     update_state_tools_voucher,
     update_state_safety_voucher,
     delete_voucher_item,
+    get_vouchers_vehicle_with_items,
+    create_voucher_vehicle,
+    update_voucher_vehicle,
+    delete_items_voucher,
+    delete_voucher_tools,
+    update_voucher_general_from_delete,
+    delete_voucher_vehicle,
 )
 
 
@@ -170,6 +177,45 @@ def update_voucher_tools_api(data, data_token):
     return {"data": rows_updated, "msg": "Voucher updated successfully"}, 200
 
 
+def delete_voucher_tools_api(data, data_token):
+    flag, error, rows_updated = delete_items_voucher(data["id"])
+    if not flag:
+        return {
+            "data": None,
+            "msg": "Error when eliminating items related to voucher",
+            "error": str(error),
+        }, 400
+    flag, error, rows_updated = delete_voucher_tools(data["id"])
+    if not flag:
+        return {
+            "data": None,
+            "msg": "Error at deleting voucher",
+            "error": str(error),
+        }, 400
+    history = data["history"]
+    time_zone = pytz.timezone(timezone_software)
+    timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
+    history.append(
+        {
+            "id_voucher": data["id"],
+            "type": 0,
+            "timestamp": timestamp,
+            "user": data_token.get("emp_id"),
+            "comment": "Voucher eliminado",
+        }
+    )
+    flag, error, result = update_voucher_general_from_delete(
+        data["id"], history
+    )
+    if not flag:
+        return {
+            "data": None,
+            "msg": "Error at updating voucher",
+            "error": str(error),
+        }, 400
+    return {"data": rows_updated, "msg": "Voucher updated successfully"}, 200
+
+
 def create_voucher_safety_api(data, data_token):
     time_zone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
@@ -311,6 +357,45 @@ def update_voucher_safety_api(data, data_token):
             "errors": errors,
         }, 400
     return {"data": [rows_changed], "msg": "Voucher updated successfully"}, 200
+
+
+def delete_voucher_safety_api(data, data_token):
+    flag, error, rows_updated = delete_items_voucher(data["id"])
+    if not flag:
+        return {
+            "data": None,
+            "msg": "Error when eliminating items related to voucher",
+            "error": str(error),
+        }, 400
+    flag, error, rows_updated = delete_voucher_tools(data["id"])
+    if not flag:
+        return {
+            "data": None,
+            "msg": "Error at deleting voucher",
+            "error": str(error),
+        }, 400
+    history = data["history"]
+    time_zone = pytz.timezone(timezone_software)
+    timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
+    history.append(
+        {
+            "id_voucher": data["id"],
+            "type": 1,
+            "timestamp": timestamp,
+            "user": data_token.get("emp_id"),
+            "comment": "Voucher eliminado",
+        }
+    )
+    flag, error, result = update_voucher_general_from_delete(
+        data["id"], history
+    )
+    if not flag:
+        return {
+            "data": None,
+            "msg": "Error at updating voucher",
+            "error": str(error),
+        }, 400
+    return {"data": rows_updated, "msg": "Voucher updated successfully"}, 200
 
 
 def get_vouchers_tools_api(data, data_token=None):
@@ -456,3 +541,261 @@ def update_status_safety(data, data_token):
             "error": str(error),
         }, 400
     return {"data": [rows_updated], "msg": "Voucher updated successfully"}, 200
+
+
+def get_vouchers_vehicle_api(data, data_token=None):
+    flag, error, result = get_vouchers_vehicle_with_items(
+        data["date"], data_token.get("emp_id")
+    )
+    if not flag:
+        return {
+            "data": None,
+            "msg": "Error at getting vehicle vouchers",
+            "error": str(error),
+        }, 400
+
+    data_out = []
+    for item in result:
+        data_out.append(
+            {
+                "id_voucher_general": item[0],
+                "type": item[1],
+                "date": item[2].strftime(format_timestamps)
+                if not isinstance(item[2], str)
+                else item[2],
+                "contract": item[3],
+                "realizado_por": item[4],
+                "received_by": item[5],
+                "brand": item[6],
+                "model": item[7],
+                "color": item[8],
+                "year": item[9],
+                "placas": item[10],
+                "kilometraje": item[11],
+                "registration_card": item[12],
+                "insurance": item[13],
+                "referendo": item[14],
+                "accessories": json.loads(item[15]),
+                "vehicle_type": item[16],
+                "observations": item[17],
+                "items": json.loads(item[18]),
+                "history": json.loads(item[19]),
+            }
+        )
+    return {"data": data_out, "msg": "Vehicle vouchers retrieved successfully"}, 200
+
+
+def create_voucher_vehicle_api(data, data_token):
+    time_zone = pytz.timezone(timezone_software)
+    timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
+
+    # 1. Crear voucher general
+    flag, error, lastrowid = create_voucher_general(
+        data["type"], timestamp, data_token.get("emp_id"), data["contract"]
+    )
+    if not flag:
+        return {
+            "data": None,
+            "msg": "Error at creating general voucher",
+            "error": str(error),
+        }, 400
+
+    # 2. Crear voucher vehicular
+    flag, error, lastrowid_vehicle = create_voucher_vehicle(
+        lastrowid,
+        data["brand"],
+        data["model"],
+        data.get("color"),
+        data.get("year"),
+        data["placas"],
+        data.get("kilometraje", 0),
+        int(data["registration_card"]),
+        int(data["insurance"]),
+        int(data["referendo"]),
+        json.dumps(data["accessories"]),
+        data["type"],
+        data["received_by"],
+        data.get("observations"),
+    )
+    if not flag:
+        return {
+            "data": None,
+            "msg": "Error at creating vehicle voucher",
+            "error": str(error),
+        }, 400
+
+    # 3. Actualizar historial
+    history = [
+        {
+            "id_voucher": lastrowid_vehicle,
+            "type": 2,
+            "timestamp": timestamp,
+            "user": data_token.get("emp_id"),
+            "comment": "Voucher creado",
+        }
+    ]
+    flag, error, rows_updated = update_history_voucher(history, lastrowid)
+    if not flag:
+        return {
+            "data": None,
+            "msg": "Error at updating history voucher",
+            "error": str(error),
+        }, 400
+
+    # 4. Crear ítems relacionados
+    errors = []
+    for item in data["items"]:
+        flag, error, lastrowid_item = create_voucher_item(
+            lastrowid,
+            item["id_inventory"],
+            item["quantity"],
+            item["unit"],
+            item["description"],
+            item.get("observations"),
+        )
+        if not flag:
+            errors.append(
+                {
+                    "id_item": lastrowid_item,
+                    "error": str(error),
+                }
+            )
+
+    if len(errors) > 0:
+        return {
+            "data": [lastrowid],
+            "msg": "Voucher created but error at creating vehicle items",
+            "errors": errors,
+        }, 400
+
+    return {"data": [lastrowid], "msg": "Vehicle voucher created successfully"}, 201
+
+
+def update_voucher_vehicle_api(data, data_token):
+    time_zone = pytz.timezone(timezone_software)
+    timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
+
+    history = data["history"]
+    history.append(
+        {
+            "id_voucher": data["id_voucher_general"],
+            "type": 2,
+            "timestamp": timestamp,
+            "user": data_token.get("emp_id"),
+            "comment": "Voucher vehicular actualizado",
+        }
+    )
+
+    flag, error, rows_changed = update_voucher_vehicle(
+        data["id_voucher_general"],
+        data["brand"],
+        data["model"],
+        data.get("color"),
+        data.get("year"),
+        data["placas"],
+        data.get("kilometraje", 0),
+        int(data["registration_card"]),
+        int(data["insurance"]),
+        int(data["referendo"]),
+        json.dumps(data["accessories"]),
+        data["type"],
+        data["received_by"],
+        data.get("observations"),
+    )
+    if not flag:
+        return {
+            "data": None,
+            "msg": "Error at updating vehicle voucher",
+            "error": str(error),
+        }, 400
+
+    flag, error, rows_updated = update_history_voucher(
+        history, data["id_voucher_general"]
+    )
+    if not flag:
+        return {
+            "data": None,
+            "msg": "Error at updating history voucher",
+            "error": str(error),
+        }, 400
+
+    errors = []
+    for item in data["items"]:
+        if item["is_erased"] == 1:
+            flag, error, lastrowid = delete_voucher_item(item["id_item"])
+        elif item["id_item"] > 0:
+            flag, error, lastrowid = update_voucher_item(
+                item["id_item"],
+                item["id_inventory"],
+                item["quantity"],
+                item["unit"],
+                item["description"],
+                item["observations"],
+            )
+        else:
+            flag, error, lastrowid = create_voucher_item(
+                data["id_voucher_general"],
+                item["id_inventory"],
+                item["quantity"],
+                item["unit"],
+                item["description"],
+                item["observations"],
+            )
+        if not flag:
+            errors.append(
+                {
+                    "id_inventory": item["id_inventory"],
+                    "error": str(error),
+                }
+            )
+
+    if len(errors) > 0:
+        return {
+            "data": None,
+            "msg": "Voucher updated but error at processing vehicle items",
+            "errors": errors,
+        }, 400
+
+    return {"data": [rows_changed], "msg": "Vehicle voucher updated successfully"}, 200
+
+
+def delete_voucher_vehicle_api(data, data_token):
+    flag, error, result = delete_voucher_item(data["id"])
+    if not flag:
+        return {
+            "data": None,
+            "msg": "Error at deleting vehicle voucher",
+            "error": str(error),
+        }, 400
+    flag, error, result = delete_voucher_vehicle(data["id"])
+    if not flag:
+        return {
+            "data": None,
+            "msg": "Error at deleting vehicle voucher",
+            "error": str(error),
+        }, 400
+    time_zone = pytz.timezone(timezone_software)
+    timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
+
+    history = data["history"]
+    history.append(
+        {
+            "id_voucher": data["id"],
+            "type": 2,
+            "timestamp": timestamp,
+            "user": data_token.get("emp_id"),
+            "comment": "Voucher vehicular eliminado",
+        }
+    )
+
+    flag, error, rows_changed = update_voucher_general_from_delete(
+        data["id"], json.dumps(history)
+    )
+    if not flag:
+        return {
+            "data": None,
+            "msg": "Error at deleting vehicle voucher",
+            "error": str(error),
+        }, 400
+
+    return {"data": [rows_changed], "msg": "Vehicle voucher deleted successfully"}, 200
