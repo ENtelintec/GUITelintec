@@ -385,7 +385,6 @@ def insert_sm_db(data, init_extra_info=None):
         data["info"]["order_quotation"],
         data["info"]["date"],
         data["info"]["critical_date"],
-        json.dumps(data["items"]),
         0,
         json.dumps(event),
         json.dumps(comment),
