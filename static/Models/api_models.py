@@ -396,6 +396,8 @@ request_file_report_quizz_model = api.model(
 def date_filter(date):
     # Example filter function to format the date
     date = date if date is not None else ""
+    if date=="":
+        return ""
     # return date.strftime(format_date) if not isinstance(date, str) else date
     if isinstance(date, str):
         date = datetime.strptime(date, format_date)
