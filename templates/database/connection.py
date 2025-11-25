@@ -8,7 +8,7 @@ import mysql.connector
 from static.constants import secrets, HOST_DB_DEFAULT, USER_DB_DEFAULT, PASS_DB_DEFAULT
 
 
-def execute_sql(sql: str, values: tuple = None, type_sql=1) -> tuple[bool, str, list | int] :
+def execute_sql(sql: str, values: tuple|None = None, type_sql=1) -> tuple[bool, str, list | int] :
     """
     Execute the sql with the values provides (OR not) AND returns a value
     depending on the type of query.
@@ -39,17 +39,18 @@ def execute_sql(sql: str, values: tuple = None, type_sql=1) -> tuple[bool, str, 
     try:
         match type_sql:
             case 2:
-                my_cursor.execute(sql, values)
+                
+                my_cursor.execute(sql, values) # pyrefly: ignore
                 out = my_cursor.fetchall()
             case 1:
-                my_cursor.execute(sql, values)
+                my_cursor.execute(sql, values) # pyrefly: ignore
                 out = my_cursor.fetchone()
             case 3:
-                my_cursor.execute(sql, values)
+                my_cursor.execute(sql, values) # pyrefly: ignore
                 mydb.commit()
                 out = my_cursor.rowcount
             case 4:
-                my_cursor.execute(sql, values)
+                my_cursor.execute(sql, values) # pyrefly: ignore
                 mydb.commit()
                 out = my_cursor.lastrowid
             case 5:
@@ -65,15 +66,14 @@ def execute_sql(sql: str, values: tuple = None, type_sql=1) -> tuple[bool, str, 
         exception = str(e)
     finally:
         # if not isinstance(out, list) or not isinstance(out, tuple):
-        #     out = [out]
-        
+        #     out = [out]      
         out = out if out is not None else []
         my_cursor.close()
         mydb.close()
-        return flag, exception, out
+        return flag, exception, out # pyrefly: ignore
 
 
-def execute_sql_multiple(sql: str, values_list: list = None, type_sql=1):
+def execute_sql_multiple(sql: str, values_list: list, type_sql=1):
     """
     Execute the sql with the values provides (OR not) AND returns a value
     depending on the type of query.
@@ -83,6 +83,9 @@ def execute_sql_multiple(sql: str, values_list: list = None, type_sql=1):
     :param sql: sql query
     :return:
     """
+    out = []
+    flag = True
+    error = None
     try:
         mydb = mysql.connector.connect(
             host=secrets[HOST_DB_DEFAULT],
@@ -94,9 +97,6 @@ def execute_sql_multiple(sql: str, values_list: list = None, type_sql=1):
     except Exception as e:
         print("Error at executing sql: ", str(e))
         return False, e, []
-    out = []
-    flag = True
-    error = None
     # my_cursor = mydb.cursor(buffered=True)
     for i in range(len(values_list[0])):
         values = []
@@ -124,7 +124,8 @@ def execute_sql_multiple(sql: str, values_list: list = None, type_sql=1):
                     out.append(my_cursor.fetchall())
                 case _:
                     out.append([])
-        except Exception as error:
+        except Exception as e:
+            error = str(e)
             print(error)
             out.append([])
             flag = False
