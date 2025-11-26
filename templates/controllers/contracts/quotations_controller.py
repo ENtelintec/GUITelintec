@@ -169,7 +169,7 @@ def delete_quotation(id_quotation):
     return flag, error, out
 
 
-def get_quotation(id_quotation=None):
+def get_quotation(id_quotation: int|None=None):
     if id_quotation is not None:
         sql = (
             "SELECT "

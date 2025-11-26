@@ -69,9 +69,9 @@ from templates.resources.methods.Functions_Aux_Admin import (
 )
 
 
-def get_quotations(id_quotation=None):
+def get_quotations(id_quotation:int|None=None):
     try:
-        id_quotation = id_quotation if int(id_quotation) != -1 else None
+        id_quotation = id_quotation if id_quotation is not None and int(id_quotation) != -1 else None
     except ValueError:
         return {"data": None, "msg": "Id invalido"}, 400
     flag, error, result = get_quotation(id_quotation)
