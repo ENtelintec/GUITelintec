@@ -1028,12 +1028,9 @@ def create_sm_from_api(data, data_token):
         folio_parts = folio_new_sm.split("-")
         folio_pattern = "-".join(folio_parts[:2])
         flag, error, folios_old = get_folios_by_pattern(folio_pattern)
-        print(folio_new_sm)
-        print(folios_old)
         for folio in folios_old:
             old_number = int(folio[0].split("-")[-1])
             new_number = int(folio_parts[2])
-            print(old_number, new_number)
             if old_number < new_number <= old_number + 3:
                 break
             elif new_number > old_number + 3:
