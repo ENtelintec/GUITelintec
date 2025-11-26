@@ -204,10 +204,13 @@ def get_folio_from_contract_ternium(data_token):
             if flag and len(result) > 0:
                 ids = []
                 for item in result:
+                    print(item)
                     extra_info = json.loads(item[7])
                     ids += extra_info.get("contracts", [])
                     ids += extra_info.get("contracts_temp", [])
+                print(ids)
                 ids = list(set(ids))
+                print(ids)
                 flag, error, contracts = get_contracts_by_ids(ids)
                 if not flag or len(contracts) == 0:
                     return {"data": None, "msg": str(error)}, 400
@@ -215,7 +218,9 @@ def get_folio_from_contract_ternium(data_token):
             else:
                 return {"data": None, "msg": str(error)}, 400
     data = []
+
     for result in contracts:
+        print(result)
         folio_sm = "SM"
         metadata = json.loads(result[1])
         contract_number = result[5]
