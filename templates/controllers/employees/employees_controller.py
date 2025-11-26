@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from numpy.lib._arraysetops_impl import isin
 __author__ = "Edisson Naula"
 __date__ = "$ 01/may./2024  at 18:20 $"
 
@@ -176,6 +177,8 @@ def get_employee_id_name(name: str) -> tuple[None, str] | tuple[int, str]:
     name = name.upper()
     values = (name, name)
     flag, e, out = execute_sql(sql, values, 1)
+    if not isinstance(out, tuple):
+        return None, "Not data found or error"
     if e is not None or len(out) == 0:
         return None, str(e)
     else:
@@ -429,6 +432,8 @@ def get_emp_contract(contract: str):
     )
     val = (contract.upper(), contract.lower())
     flag, error, result = execute_sql(sql, val, type_sql=2)
+    if not isinstance(result, list):
+        return False, "No contract found or error", []
     return flag, error, result
 
 

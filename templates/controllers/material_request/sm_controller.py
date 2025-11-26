@@ -89,6 +89,8 @@ def get_sm_entries(emp_id=None):
     val = (emp_id, emp_id)
     flag, error, result = execute_sql(base_sql, val, 2)
     # result = update_sm_items_stock(result)
+    if not isinstance(result, list):
+        return False, "No SM entries found or error in query", []
     return flag, error, result
 
 
@@ -148,6 +150,8 @@ def get_sm_by_id(sm_id: int):
     )
     val = (sm_id,)
     flag, error, result = execute_sql(sql, val, 1)
+    if not isinstance(result, tuple):
+        return False, "No SM entries found or error in query", []
     return flag, error, result
 
 
@@ -322,7 +326,7 @@ def update_items_sm(items: list, sm_id: int):
     return errors, results
 
 
-def insert_sm_db(data, init_extra_info=None):
+def insert_sm_db(data, init_extra_info: dict|None=None):
     time_zone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
     event = [
@@ -363,7 +367,7 @@ def insert_sm_db(data, init_extra_info=None):
         "requesting_user_state": data["info"].get("requesting_user_state", ""),
         "date_closing": data["info"].get("date_closing", ""),
     }
-    if extra_info is not None:
+    if init_extra_info is not None:
         for k, v in init_extra_info.items():
             extra_info[k] = v
     sql = (
@@ -388,6 +392,8 @@ def insert_sm_db(data, init_extra_info=None):
         json.dumps(extra_info),
     )
     flag, error, result = execute_sql(sql, val, 4)
+    if not isinstance(result, int):
+        return False, "Error at inserting sm", None
     return flag, error, result
 
 
@@ -422,6 +428,8 @@ def insert_urgent_sm_db(data: dict, extra_info: dict):
         json.dumps(init_extra_info),
     )
     flag, error, result = execute_sql(sql, val, 4)
+    if not isinstance(result, int):
+        return False, "Error at inserting sm", None
     return flag, error, result
 
 
@@ -439,6 +447,8 @@ def delete_sm_db(id_m: int):
     )
     val = (id_m,)
     flag, error, result = execute_sql(sql, val, 1)
+    if not isinstance(result, list):
+        return False, "Error at retriving sm from db", None
     if len(result) == 0:
         return True, "Material request deleted", None
     else:
@@ -455,6 +465,8 @@ def update_sm_db(data):
     flag, error, result = execute_sql(sql, vals, 1)
     if not flag:
         return False, f"Error at retriving sm from db: {error}", None
+    if not isinstance(result, list):
+        return False, "Error at retriving sm from db", None
     if len(result) == 0:
         return False, "Material request not found", None
     extra_info = json.loads(result[1])
@@ -503,6 +515,8 @@ def cancel_sm_db(id_m: int, history: dict):
     flag, error, result = execute_sql(sql, None, 5)
     if not flag:
         return False, error, None
+    if not isinstance(result, list):
+        return False, "Error at retriving sm from db", None
     ids_sm = [i[0] for i in result]
     if id_m not in ids_sm:
         return True, "Material request not found", None
@@ -604,6 +618,8 @@ def get_info_names_by_sm_id(sm_id: int):
     )
     val = (sm_id,)
     flag, error, result = execute_sql(sql, val, 1)
+    if not isinstance(result, tuple):
+        return False, "Error at retriving sm from db", []
     return flag, error, result
 
 
@@ -623,11 +639,13 @@ def get_folios_by_pattern(pattern: str):
     sql = "SELECT folio FROM sql_telintec.materials_request WHERE folio LIKE %s ORDER BY folio DESC"
     val = (f"{pattern}%",)
     flag, error, result = execute_sql(sql, val, 2)
+    if not isinstance(result, list):
+        return False, "Error at retriving sm from db", []
     return flag, error, result
 
 
 def update_history_extra_info_sm_by_id(
-    sm_id: int, extra_info: dict, history: dict, comments: str
+    sm_id: int, extra_info: dict, history: dict, comments: list
 ):
     sql = (
         "UPDATE sql_telintec.materials_request "
@@ -716,6 +734,8 @@ def get_sm_folios_db():
         "WHERE status < 2 "
     )
     flag, error, result = execute_sql(sql, None, 5)
+    if not isinstance(result, list):
+        return False, "Error at retriving sm from db", []
     return flag, error, result
 
 
@@ -735,6 +755,8 @@ def get_sm_items_state(state: str):
           """
     val = (state,)
     flag, error, result = execute_sql(sql, val, 2)
+    if not isinstance(result, list):
+        return False, "Error at retriving sm from db", []
     return flag, error, result
 
 

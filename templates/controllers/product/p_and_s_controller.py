@@ -379,7 +379,7 @@ def create_product_db(
     codes=None,
     locations=None,
     brand=None,
-    epp=0,
+    epp: int=0,
 ):
     try:
         sku = str(sku).upper()
@@ -393,7 +393,7 @@ def create_product_db(
             locations if locations is not None else {"location_1": "", "location_2": ""}
         )
         extra_info = {"brand": brand} if brand is not None else {"brand": ""}
-        extra_info["epp"] = epp
+        extra_info["epp"] = epp # pyrefly: ignore
     except Exception as e:
         return False, str(e), None
     insert_sql = (
@@ -636,7 +636,7 @@ def insert_product_and_service(
     is_service: int,
     categories: str,
     img_url: str,
-) -> tuple[bool, Exception | None, list | None]:
+) -> tuple[bool, str | None, int]:
     sql = (
         "INSERT INTO sql_telintec.products_services (product_id, name, model, marca, description, "
         "price_retail, available_quantity, price_provider, support_offered, is_service,"
@@ -658,7 +658,8 @@ def insert_product_and_service(
         img_url,
     )
     flag, e, out = execute_sql(sql, val, 3)
-    print(out, "record inserted in products_services.")
+    if not isinstance(out, int):
+        return flag, e, 0
     return flag, None, out
 
 
@@ -675,7 +676,7 @@ def update_product_and_service(
     is_service: int,
     categories: str,
     img_url: str,
-) -> tuple[bool, Exception | None, list | None]:
+) -> tuple[bool, str | None, int]:
     sql = (
         "UPDATE sql_telintec.products_services "
         "SET "
@@ -707,6 +708,8 @@ def update_product_and_service(
         product_id,
     )
     flag, e, out = execute_sql(sql, val, 3)
+    if not isinstance(out, int):
+        return flag, e, 0
     return flag, e, out
 
 
@@ -758,6 +761,8 @@ def get_high_stock_products(category: str, quantity: int):
     )
     val = (category.lower(),)
     flag, error, result = execute_sql(sql, val, 1)
+    if not isinstance(result, tuple):
+        return False, "No category in the DB", [], columns
     if len(result) > 0:
         category_id = result[0]
         sql = (
@@ -784,6 +789,8 @@ def get_low_stock_products(category: str, quantity: int):
     )
     val = (category.lower(),)
     flag, error, result = execute_sql(sql, val, 1)
+    if not isinstance(result, tuple):
+        return False, "No category in the DB", [], columns
     if len(result) > 0:
         category_id = result[0]
         sql = (
@@ -810,6 +817,8 @@ def get_no_stock_products(category: str, quantity: int = 10):
     )
     val = (category.lower(),)
     flag, error, result = execute_sql(sql, val, 1)
+    if not isinstance(result, tuple):
+        return False, "No category in the DB", [], columns
     if len(result) > 0:
         category_id = result[0]
         sql = (
@@ -921,13 +930,15 @@ def get_product_barcode_data(id_product):
     return flag, error, result
 
 
-def get_stock_db_products():
+def get_stock_db_products() -> tuple[bool, str, list]:
     sql = (
         "SELECT id_product,stock "
         "FROM sql_telintec.products_amc "
         "WHERE products_amc.id_product like '%' "
     )
     flag, error, result = execute_sql(sql, None, 5)
+    if not isinstance(result, list):
+        return False, "No products in the DB", []
     return flag, error, result
 
 
@@ -1203,7 +1214,7 @@ def get_all_epp_inventory():
     return flag, error, result
 
 
-def get_product_by_sku_manufacture(sku: str):
+def get_product_by_sku_manufacture(sku: str) -> tuple[bool, str, list]:
     sql = (
         "SELECT "
         "sql_telintec.products_amc.id_product,"
@@ -1226,6 +1237,8 @@ def get_product_by_sku_manufacture(sku: str):
     )
     val = (sku,)
     flag, error, result = execute_sql(sql, val, 1)
+    if not isinstance(result, list):
+        return flag, error, []
     return flag, error, result
 
 
@@ -1240,6 +1253,8 @@ def get_products_stock_from_ids(ids: list):
         f"WHERE sql_telintec.products_amc.id_product IN ({','.join(map(str, ids))})"
     )
     flag, error, result = execute_sql(sql, None, 5)
+    if not isinstance(result, list):
+        return flag, "Not data found or error", []
     return flag, error, result
 
 

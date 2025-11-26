@@ -8,7 +8,7 @@ import mysql.connector
 from static.constants import secrets, HOST_DB_DEFAULT, USER_DB_DEFAULT, PASS_DB_DEFAULT
 
 
-def execute_sql(sql: str, values: tuple|None = None, type_sql=1) -> tuple[bool, str, list | int] :
+def execute_sql(sql: str, values: tuple|None = None, type_sql=1) -> tuple[bool, str, list | int | tuple] :
     """
     Execute the sql with the values provides (OR not) AND returns a value
     depending on the type of query.
@@ -17,7 +17,7 @@ def execute_sql(sql: str, values: tuple|None = None, type_sql=1) -> tuple[bool, 
     :param sql: sql query
     :param values: values for sql query
     :return: <flag , error, result> where result is:
-        | list of items if type 1 |
+        | tuple of items if type 1 |
         | item if type 2 |
         | rowcount if type 3 |
         | lastrowid if type 4 |

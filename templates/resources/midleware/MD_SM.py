@@ -572,7 +572,7 @@ def dispatch_sm(data, data_token):
     msg_items = []
     operations_done = False
     for item_n in data["items"]:
-        item_to_update = dict_products_sm.get(item_n["id"])
+        item_to_update = dict_products_sm.get(item_n["id"], {})
         old_item = item_to_update.copy()
         # si el item no existe
         if item_to_update is None:
@@ -808,7 +808,7 @@ def dowload_file_sm(sm_id: int, type_file="pdf"):
     )
     products = []
     flag, error, result = get_info_names_by_sm_id(result[0])
-    if flag and len(result) == 0:
+    if flag and len(result) > 0:
         customer_name = result[0]
         emp_name = result[1] + " " + result[2]
     else:
@@ -987,7 +987,6 @@ def check_for_partidas_updates(products: list, contract_id: int):
     if contract_id is None or contract_id == 0:
         return flags, errors, results
     flag, error, old_items = get_items_quotation_from_cotract(contract_id)
-    print(old_items)
     # dict partida->id_inventory
     old_items = old_items if old_items is not None else []
     dict_partidas = {item[1]: item[2] for item in old_items}
@@ -1043,6 +1042,8 @@ def create_sm_from_api(data, data_token):
     if not flag:
         print(error)
         return {"msg": "error at updating db"}, 400
+    if result is None:
+        return {"msg": "error at creating sm"}, 400
     msg = (
         f"Nueva SM creada #{result}, folio: {data['info']['folio']}, "
         f"fecha limite: {data['info']['critical_date']}, "
@@ -1083,7 +1084,9 @@ def create_urgent_sm_from_api(data, data_token):
     flag, error, result = insert_urgent_sm_db(data, extra_info)
     if not flag:
         print(error)
-        return {"msg": "error at updating db"}, 400
+        return {"msg": "error at creating db"}, 400
+    if result is None:
+        return {"msg": "error at creating sm"}, 400
     msg = (
         f"Nueva SM creada #{result}, folio: {data['info']['folio']}, "
         f"fecha limite: {data['info']['critical_date']}, "

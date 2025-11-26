@@ -8,7 +8,7 @@ import json
 from templates.database.connection import execute_sql
 
 
-def get_heads_db(id_department: int = None):
+def get_heads_db(id_department: int|None = None):
     sql = (
         "SELECT "
         "heads.position_id, "
@@ -30,6 +30,8 @@ def get_heads_db(id_department: int = None):
         if id_department is not None
         else execute_sql(sql, val, 5)
     )
+    if not isinstance(my_result, list):
+        return flag, "no data found or error", []
     return flag, e, my_result
 
 
@@ -103,6 +105,8 @@ def check_if_leader(id_employee: int):
     )
     val = (id_employee, id_employee)
     flag, e, my_result = execute_sql(sql, val, 2)
+    if not isinstance(my_result, list):
+        return flag, e, []
     return flag, e, my_result
 
 
@@ -128,6 +132,8 @@ def check_if_auxiliar_with_contract(id_employee: int):
     )
     val = (id_employee,)
     flag, e, my_result = execute_sql(sql, val, 2)
+    if not isinstance(my_result, list):
+        return flag, e, []
     return flag, e, my_result
 
 

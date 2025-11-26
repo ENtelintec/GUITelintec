@@ -227,6 +227,8 @@ def get_quotation(id_quotation=None):
     flag, error, result = execute_sql(sql, val, 5)
     if not flag:
         return False, error, []
+    if not isinstance(result, list):
+        return False, error, []
     if id_quotation and len(result) == 0:
         return False, "Quotation not found", []
     return True, None, result
@@ -257,6 +259,8 @@ def get_quotation_data_display(id_quotation=None):
     )
     val = (id_quotation,)
     flag, error, result = execute_sql(sql, val, 1)
+    if not isinstance(result, tuple):
+        return False, error, None
     if len(result) == 0:
         return False, "Quotation not found", None
     else:
@@ -271,6 +275,8 @@ def get_items_quotation_from_cotract(contract_id):
     )
     val = (contract_id,)
     flag, error, result = execute_sql(sql, val, 2)
+    if not isinstance(result, list):
+        return False, error, []
     if len(result) == 0:
         return False, "Quotation not found", []
     else:
