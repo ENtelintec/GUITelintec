@@ -1,3 +1,5 @@
+from templates.controllers.material_request.sm_controller import get_folios_by_pattern
+
 __author__ = "Edisson Naula"
 __date__ = "$ 18/dic/2024  at 12:10 $"
 
@@ -67,17 +69,14 @@ from templates.misc.Functions_Files import write_log_file
 from templates.resources.midleware.Functions_midleware_admin import get_iddentifiers
 
 
-def get_products_sm(contract: str):
-    # "c.id AS contract_id, "
-    #     "q.id AS quotation_id, "
-    #     "qi.id AS item_id, "
-    #     "qi.partida, "
-    #     "qi.id_inventory "
+def get_products_sm(contract: str) -> tuple[dict, int]:
     if contract != "all":
         flag, error, items_contract = get_items_contract_string(contract)
     else:
         items_contract = []
     ids_in_contract = {}
+    if isinstance(items_contract, int):
+        return {"data": {"contract": [], "normal": []}, "error": "Not valid items"}, 400
     for item in items_contract:
         if item[4] is None:
             continue
@@ -87,6 +86,11 @@ def get_products_sm(contract: str):
         return {"data": {"contract": [], "normal": []}}, 400
     items_normal = []
     items_partida = []
+    if isinstance(result_p, int):
+        return {
+            "data": {"contract": [], "normal": []},
+            "error": "Not valid items with reservation",
+        }, 400
     for product in result_p:
         sku = product[6]
         codes = json.loads(product[7]) if product[7] else []
@@ -130,6 +134,8 @@ def get_products_sm(contract: str):
 def calculate_items_delivered(items):
     total = 0
     dispatched_total = 0
+    if isinstance(items, int):
+        return 0
     for item in items:
         quantity = item.get("quantity", 1.0)
         total += quantity if quantity else 1.0
@@ -547,7 +553,9 @@ def dispatch_sm(data, data_token):
     folio = result[1]
     # products ids in the inventory
     ids_inventory_sm_list = [
-        item["id_inventory"] for item in products_sm if item.get("state") > 0 and item.get("id_inventory") is not None
+        item["id_inventory"]
+        for item in products_sm
+        if item.get("state") > 0 and item.get("id_inventory") is not None
     ]
     updated_products = []
     flag, error, result = get_products_stock_from_ids(ids_inventory_sm_list)
@@ -771,7 +779,7 @@ def get_employees_almacen():
 def dowload_file_sm(sm_id: int, type_file="pdf"):
     flag, error, result = get_sm_by_id(sm_id)
     if not flag or len(result) == 0:
-        return None, 400
+        return "None", 400
     folio = result[1]
     contract = result[2]
     facility = result[3]
@@ -848,7 +856,7 @@ def dowload_file_sm(sm_id: int, type_file="pdf"):
         )
         if not flag:
             print("error at generating pdf", download_path)
-            return None, 400
+            return "None", 400
     else:
         lista_de_items = products
         # Definir los nombres de las columnas
@@ -897,7 +905,9 @@ def create_product(
         flag, error, result = create_product_db_admin(
             sku, name, udm, stock, id_category, codes
         )
-    return {"msg": "ok", "data": result}, 201 if flag else {"msg": str(error)}, 400
+    if not flag:
+        return {"msg": str(error)}, 400
+    return {"msg": "ok", "data": result}, 201
 
 
 def update_sm_from_control_table(data, data_token, sm_data=None):
@@ -986,7 +996,7 @@ def check_for_partidas_updates(products: list, contract_id: int):
         partida = item.get("partida", None)
         if partida is None:
             continue
-        if partida == "" or partida==0:
+        if partida == "" or partida == 0:
             continue
         id_inventory_old = dict_partidas.get(partida, None)
         id_inventory_new = item.get("id", None)
@@ -1012,6 +1022,31 @@ def create_sm_from_api(data, data_token):
             "data": data["items"],
             "error": "No items detected",
         }, 400
+
+    folio_new_sm = data["info"]["folio"]
+    try:
+        folio_parts = folio_new_sm.split("-")
+        folio_pattern = "-".join(folio_parts[:2])
+        flag, error, folios_old = get_folios_by_pattern(folio_pattern)
+        for folio in folios_old:
+            old_number = int(folio[0].split("-")[-1])
+            new_number = int(folio_parts[2])
+            if old_number < new_number <= old_number + 3:
+                break
+            elif new_number > old_number + 3:
+                return {
+                    "msg": "error at creating sm",
+                    "data": [],
+                    "error": "Folio consecutivo no permitido",
+                }, 400
+    except Exception as e:
+        print(e)
+        return {
+            "msg": "error at creating sm and extracting folios",
+            "data": [],
+            "error": "Folio consecutivo no permitido",
+        }, 400
+    # start creating sm
     extra_info = check_item_sm_for_init_vals(data["items"])
     flag, error, result = insert_sm_db(data, extra_info)
     if not flag:

@@ -190,7 +190,7 @@ def get_contracts_abreviations_db():
 #     return flag, error, result
 
 
-def get_items_contract_string(key: str):
+def get_items_contract_string(key: str) -> tuple[bool, str, int | list]:
     sql = (
         "SELECT "
         "c.id AS contract_id, "

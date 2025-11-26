@@ -149,7 +149,7 @@ class ActionsSM(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
-        validator = SMPostForm.from_json(ns.payload)
+        validator = SMPostForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
             return {"error": validator.errors}, 400
         data = validator.data
@@ -162,7 +162,7 @@ class ActionsSM(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
-        validator = SMDeleteForm.from_json(ns.payload)
+        validator = SMDeleteForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
             return {"error": validator.errors}, 400
         data = validator.data
@@ -175,7 +175,7 @@ class ActionsSM(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
-        validator = SMPutForm.from_json(ns.payload)
+        validator = SMPutForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
             return {"error": validator.errors}, 400
         data = validator.data
@@ -191,12 +191,13 @@ class ActionsUrgentSM(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
-        validator = SMUrgentPostForm.from_json(ns.payload)
+        validator = SMUrgentPostForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
             return {"error": validator.errors}, 400
         data = validator.data
         data_out, code = create_urgent_sm_from_api(data, data_token)
         return data, code
+
 
 @ns.route("/cancel")
 class CancelSM(Resource):
@@ -206,7 +207,7 @@ class CancelSM(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
-        validator = SMDeleteForm.from_json(ns.payload)
+        validator = SMDeleteForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
             return {"error": validator.errors}, 400
         data = validator.data
@@ -222,7 +223,7 @@ class Client(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
-        validator = NewClienteForm.from_json(ns.payload)
+        validator = NewClienteForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
             return {"error": validator.errors}, 400
         data = validator.data
@@ -241,7 +242,7 @@ class Product(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
-        validator = NewProductForm.from_json(ns.payload)
+        validator = NewProductForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
             return {"error": validator.errors}, 400
         data = validator.data
@@ -293,7 +294,7 @@ class DispatchSM(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
-        validator = RequestSMDispatchForm.from_json(ns.payload)
+        validator = RequestSMDispatchForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
             return {"error": validator.errors}, 400
         data = validator.data
@@ -339,7 +340,7 @@ class ControlTableSM(Resource):
         flag, data_token, msg = token_verification_procedure(request, department="sm")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        validator = SMInfoControlTablePutForm.from_json(ns.payload)
+        validator = SMInfoControlTablePutForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
             return {"error": validator.errors}, 400
         data = validator.data
@@ -367,7 +368,7 @@ class SmItemsActions(Resource):
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        validator = ItemSmPutForm.from_json(ns.payload)
+        validator = ItemSmPutForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
             return {"error": validator.errors}, 400
         data = validator.data
@@ -408,7 +409,7 @@ class UpdateItemInventoryID(Resource):
         flag, data_token, msg = token_verification_procedure(request, department="sm")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        validator = ItemSMInventoryPutForm.from_json(ns.payload)
+        validator = ItemSMInventoryPutForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
             return {"error": validator.errors}, 400
         data = validator.data
