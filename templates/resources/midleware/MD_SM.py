@@ -1089,6 +1089,29 @@ def create_urgent_sm_from_api(data, data_token):
             "data": data["items"],
             "error": "No items detected",
         }, 400
+    folio_new_sm = data["info"]["folio"]
+    try:
+        folio_parts = folio_new_sm.split("-")
+        folio_pattern = "-".join(folio_parts[:2])
+        flag, error, folios_old = get_folios_by_pattern(folio_pattern)
+        for folio in folios_old:
+            old_number = int(folio[0].split("-")[-1])
+            new_number = int(folio_parts[2])
+            if old_number < new_number <= old_number + 3:
+                break
+            elif new_number > old_number + 3:
+                return {
+                    "msg": "error at creating sm",
+                    "data": [],
+                    "error": "Folio consecutivo no permitido",
+                }, 400
+    except Exception as e:
+        print(e)
+        return {
+            "msg": "error at creating sm and extracting folios",
+            "data": [],
+            "error": "Folio consecutivo no permitido",
+        }, 400
     extra_info = check_item_sm_for_init_vals(data["items"])
     flag, error, result = insert_urgent_sm_db(data, extra_info)
     if not flag:

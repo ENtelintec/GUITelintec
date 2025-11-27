@@ -194,6 +194,7 @@ def get_contracts(id_contract=None):
 
 def get_folio_from_contract_ternium(data_token):
     permissions = data_token.get("permissions", {}).values()
+    contracts = []
     if any("administrator" in item.lower().split(".")[-1] for item in permissions):
         flag, error, contracts = get_contract_by_client(40)
         if not flag:
@@ -220,7 +221,6 @@ def get_folio_from_contract_ternium(data_token):
     data = []
 
     for result in contracts:
-        print(result)
         folio_sm = "SM"
         metadata = json.loads(result[1])
         contract_number = result[5]
@@ -333,7 +333,7 @@ def products_contract_from_file(data: dict):
 
 
 def modify_pattern_phrase_contract_pdf(data: dict):
-    e = None
+    e = "None"
     try:
         settings = json.loads(filepath_settings)
         settings["phrase_pdf_contract"] = data["phrase"]
@@ -575,8 +575,8 @@ def fetch_heads_main(data_token):
     return {"data": data_out, "msg": "Ok"}, 200
 
 
-def fetch_heads(id_department: int):
-    id_department = int(id_department) if id_department >= 0 else None
+def fetch_heads(id_dep: int):
+    id_department: int|None = int(id_dep) if id_dep >= 0 else None
     flag, error, result = get_heads_db(id_department)
     if not flag:
         return {"data": [], "msg": str(error)}, 400

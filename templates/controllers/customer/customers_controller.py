@@ -17,6 +17,8 @@ def get_all_customers_db():
         "FROM sql_telintec.customers_amc ORDER BY name "
     )
     flag, error, result = execute_sql(sql, None, 5)
+    if not isinstance(result, list):
+        return False, "No contracts or error at retrieving", []
     return flag, error, result
 
 
@@ -56,13 +58,15 @@ def get_customers(limit=(0, 100)) -> list[list]:
     )
     val = (limit[0], limit[1])
     flag, e, my_result = execute_sql(sql, val, 2)
+    if not isinstance(my_result, list):
+        return []
     out = my_result if my_result is not None else []
     return out
 
 
 def insert_customer(
     name: str, lastname: str, phone: str, city: str, email: str
-) -> tuple[bool, Exception | None, int | None]:
+) -> tuple[bool, str | None, int | None]:
     sql = (
         "INSERT "
         "INTO sql_telintec.customers (name, l_name, phone_number, city, email) "
@@ -70,12 +74,14 @@ def insert_customer(
     )
     val = (name, lastname, phone, city, email)
     flag, e, out = execute_sql(sql, val, 3)
-    return flag, e, out
+    if not isinstance(out, int):
+        return False, "Error at inserting customer", 0
+    return flag, str(e), out
 
 
 def update_customer_DB(
     name: str, lastname: str, phone: str, city: str, email: str, customer_id: int
-) -> tuple[bool, Exception | None, int | None]:
+) -> tuple[bool, str | None, int | None]:
     sql = (
         "UPDATE sql_telintec.customers "
         "SET name = %s, "
@@ -87,14 +93,18 @@ def update_customer_DB(
     )
     val = (name, lastname, phone, city, email, customer_id)
     flag, e, out = execute_sql(sql, val, 3)
+    if not isinstance(out, int):
+        return False, "Error at updating customer", 0
     return flag, e, out
 
 
-def delete_customer_DB(customer_id: int) -> tuple[bool, Exception | None, int | None]:
+def delete_customer_DB(customer_id: int) -> tuple[bool, str | None, int | None]:
     sql = "DELETE FROM sql_telintec.customers " "WHERE customer_id = %s"
     val = (customer_id,)
     flag, e, out = execute_sql(sql, val, 3)
-    return flag, e, out
+    if not isinstance(out, int):
+        return False, "Error at deleting customer", 0
+    return flag, str(e), out
 
 
 def get_costumers_amc(name: str, id_c: int):

@@ -54,6 +54,8 @@ def get_heads_list_db(dep_list: list):
     )
     val = tuple(dep_list)
     flag, e, my_result = execute_sql(sql, val, 2)
+    if not isinstance(my_result, list):
+        return flag, e, []
     return flag, e, my_result
 
 
@@ -79,7 +81,8 @@ def check_if_gerente(id_employee: int):
     )
     val = (id_employee,)
     flag, e, my_result = execute_sql(sql, val, 2)
-    # print("check if genrten", my_result)
+    if not isinstance(my_result, list):
+        return flag, e, []
     return flag, e, my_result
 
 
@@ -191,8 +194,10 @@ def update_head_DB(position_id: int, department: int, employee: int, extra_info:
     return flag, e, out
 
 
-def delete_head_DB(head_id: int) -> tuple[bool, Exception | None, int | None]:
+def delete_head_DB(head_id: int) -> tuple[bool, str | None, int | None]:
     sql = "DELETE FROM sql_telintec.heads " "WHERE position_id = %s"
     val = (head_id,)
     flag, e, out = execute_sql(sql, val, 3)
+    if not isinstance(out, int):
+        return False, e, 0
     return flag, e, out

@@ -89,7 +89,9 @@ def get_contract(id_contract=None):
         )
         flag, error, result = execute_sql(sql, None, 2)
         if not flag:
-            return False, error, None
+            return False, error, []
+        if not isinstance(result, tuple) or not isinstance(result, list):
+            return False, error, []
         return True, None, result
     sql = (
         "SELECT id, metadata, creation, quotation_id, timestamps, code, client_id, emission "
@@ -98,10 +100,10 @@ def get_contract(id_contract=None):
     )
     val = (id_contract,)
     flag, error, result = execute_sql(sql, val, 1)
-    if not isinstance(result, tuple):
-        return False, error, None
+    if not isinstance(result, tuple) or not isinstance(result, list):
+        return False, error, []
     if len(result) == 0:
-        return False, "Contract not found", None
+        return False, "Contract not found", []
     else:
         return True, None, result
 

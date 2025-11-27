@@ -16,34 +16,39 @@ def get_supplier(limit=(0, 100)) -> list[list]:
     val = (limit[0], limit[1])
     flag, e, my_result = execute_sql(sql, val, 2)
     out = my_result if my_result is not None else []
+    if not isinstance(out, list):
+        return []
     return out
 
 
 def insert_supplier(
     name: str, location: str
-) -> tuple[bool, Exception | None, int | None]:
+) -> tuple[bool, str | None, int | None]:
     sql = "INSERT INTO sql_telintec.suppliers (name, location) " "VALUES (%s, %s)"
     val = (name, location)
     flag, e, out = execute_sql(sql, val, 4)
-    print(out, "record inserted.")
+    if not isinstance(out, int):
+        return False, str(e), 0
     return flag, None, out
 
 
 def insert_multiple_suppliers_name_addres_amc(
     supplier_list: tuple,
-) -> tuple[bool, Exception | None, int | None]:
+) -> tuple[bool, str | None, int | None]:
     sql = "INSERT INTO " "sql_telintec.suppliers_amc (name, address) VALUES "
     for index, supplier in enumerate(supplier_list):
         if index > 0:
             sql += ", "
         sql += f"( '{supplier[0]}', '{supplier[1]}' )"
     flag, e, out = execute_sql(sql, None, 4)
-    return flag, e, out
+    if not isinstance(out, int):
+        return False, str(e), 0
+    return flag, str(e), out
 
 
 def update_supplier_DB(
     name: str, location: str, supplier_id: int
-) -> tuple[bool, Exception | None, int | None]:
+) -> tuple[bool, str | None, int | None]:
     sql = (
         "UPDATE sql_telintec.suppliers "
         "SET name = %s, location = %s "
@@ -51,13 +56,17 @@ def update_supplier_DB(
     )
     val = (name, location, supplier_id)
     flag, e, out = execute_sql(sql, val, 3)
-    return flag, e, out
+    if not isinstance(out, int):
+        return False, str(e), 0
+    return flag, str(e), out
 
 
-def delete_supplier_DB(supplier_id: int) -> tuple[bool, Exception | None, int | None]:
+def delete_supplier_DB(supplier_id: int) -> tuple[bool, str | None, int | None]:
     sql = "DELETE FROM sql_telintec.suppliers " "WHERE supplier_id = %s"
     val = (supplier_id,)
     flag, e, out = execute_sql(sql, val, 3)
+    if not isinstance(out, int):
+        return False, e, 0
     return flag, e, out
 
 
@@ -82,6 +91,8 @@ def get_all_suppliers_amc():
         "ORDER BY name"
     )
     flag, error, result = execute_sql(sql, None, 5)
+    if not isinstance(result, list):
+        return False, error, []
     return flag, error, result
 
 
@@ -139,7 +150,7 @@ def create_supplier_amc(
     address_provider = str(address_provider)
     web_provider = str(web_provider)
     type_provider = str(type_provider)
-    extra_info = json.dumps(extra_info) if extra_info else json.dumps({"brands": [], "rfc": ""})
+    extra_info = json.dumps(extra_info) if extra_info else json.dumps({"brands": [], "rfc": ""}) # pyrefly:ignore
     insert_sql = (
         "INSERT INTO sql_telintec.suppliers_amc "
         "(name, seller_name, seller_email, phone, address, web_url, type, extra_info) "
@@ -217,7 +228,7 @@ def update_supplier_amc(
     address_provider = str(address_provider)
     web_provider = str(web_provider)
     type_provider = str(type_provider)
-    extra_info = json.dumps(extra_info) if extra_info else "{'brands': [], 'rfc': ''}"
+    extra_info = json.dumps(extra_info) if extra_info else f"{'brands': [], 'rfc': ''}"  # pyrefly: ignore
     update_sql = (
         "UPDATE sql_telintec.suppliers_amc "
         "SET name = %s, seller_name = %s, seller_email = %s, phone = %s, address = %s, web_url = %s, type = %s, "
