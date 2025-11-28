@@ -344,7 +344,6 @@ def insert_sm_db(data, init_extra_info: dict|None=None):
         "project": data["info"].get("project", ""),
         "urgent": data["info"].get("urgent", 0),
         "activity_description": data["info"].get("activity_description", ""),
-        "comment": comment,
         "request_date": timestamp,
         "requesting_user_status": data["info"].get("requesting_user_status", 0),
         "warehouse_reviewed": data["info"].get("warehouse_reviewed", 0),
@@ -400,7 +399,14 @@ def insert_sm_db(data, init_extra_info: dict|None=None):
 def insert_urgent_sm_db(data: dict, extra_info: dict):
     init_extra_info = {
         "urgent": 1,
+        "facility": data["info"].get("facility", ""),
+        "location": data["info"].get("location", ""),
+        "project": data["info"].get("project", ""),
+        "contract_contact": data["info"].get("contract_contact", ""),
+        "activity_description": data["info"].get("activity_description", ""),
+        
     }
+    comment = data["info"].get("comment", [""])
     if extra_info is not None:
         for k, v in extra_info.items():
             init_extra_info[k] = v
@@ -413,8 +419,8 @@ def insert_urgent_sm_db(data: dict, extra_info: dict):
     ]
     sql = (
         "INSERT INTO sql_telintec.materials_request "
-        "(folio, contract, client_id, emp_id, date, limit_date, status, history, extra_info)"
-        "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)"
+        "(folio, contract, client_id, emp_id, date, limit_date, status, history, extra_info, pedido_cotizacion, comment)"
+        "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
     )
     val = (
         data["info"]["folio"],
@@ -426,6 +432,8 @@ def insert_urgent_sm_db(data: dict, extra_info: dict):
         0,
         json.dumps(event),
         json.dumps(init_extra_info),
+        data["info"]["order_quotation"],
+        json.dumps(comment),
     )
     flag, error, result = execute_sql(sql, val, 4)
     if not isinstance(result, int):

@@ -222,7 +222,23 @@ sm_info_model_post_urgent = api.model(
         "critical_date": fields.String(
             required=True, description="The critical date", example="2024-07-15"
         ),
-        "status": fields.Integer(required=True, description="The status of the sm")
+        "status": fields.Integer(required=True, description="The status of the sm"),
+        "facility": fields.String(required=True, description="The facility"),
+        "location": fields.String(required=True, description="The location"),
+        "order_quotation": fields.String(
+            required=True, description="The order or quotation"
+        ),
+        "contract_contact": fields.String(
+            required=True, description="The contract contact"
+        ),
+        "project": fields.String(required=True, description="The project"),
+        "activity_description": fields.String(
+            required=True, description="The activity description"
+        ),
+        "destination": fields.String(
+            required=True, description="The destination area in telintec"
+        ),
+        "comment": fields.List(fields.String(required=False, description="The comment"), required=False),
     },
 )
 
@@ -797,7 +813,16 @@ class SMUrgentInfoForm(Form):
     status = IntegerField(
         "status", validators=[validators.number_range(min=0, message="Invalid id")]
     )
-
+    comment = FieldList(StringField("comment", validators=[], default=""))
+    activity_description = StringField(
+        "activity_description", validators=[], default=""
+    )
+    destination = StringField("destination", validators=[InputRequired()])
+    facility = StringField("facility", validators=[InputRequired()])
+    location = StringField("location", validators=[InputRequired()])
+    order_quotation = StringField("order_quotation", validators=[])
+    contract_contact = StringField("contract_contact", default="")
+    project = StringField("project", validators=[], default="")
 
 class SMInfoControlTableForm(Form):
     project = StringField("project", validators=[], default="")
