@@ -19,7 +19,21 @@ token_model = api.model(
     },
 )
 
+put_biocredentials_model = api.model(
+    "Biocredentials",
+    {
+        "emp_id": fields.Integer(required=True, description="The employee ID"),
+        "biocredentials": fields.Integer(
+            required=True, description="The biocredentials status"
+        ),
+    },
+)
 
 class TokenModelForm(Form):
     username = StringField("username", validators=[InputRequired()])
     password = PasswordField("password", validators=[InputRequired()])
+
+
+class BiocredentialsPutModelForm(Form):
+    emp_id = StringField("emp_id", validators=[InputRequired()])
+    biocredentials = StringField("biocredentials", validators=[InputRequired()])

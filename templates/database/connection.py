@@ -17,11 +17,11 @@ def execute_sql(sql: str, values: tuple|None = None, type_sql=1) -> tuple[bool, 
     :param sql: sql query
     :param values: values for sql query
     :return: <flag , error, result> where result is:
-        | tuple of items if type 1 |
-        | item if type 2 |
-        | rowcount if type 3 |
-        | lastrowid if type 4 |
-        | list of items if type 5 |
+        - tuple of items if type 1 |
+        - item if type 2 |
+        - rowcount if type 3 |
+        - lastrowid if type 4 |
+        - list of items if type 5 |
     """
     try:
         mydb = mysql.connector.connect(

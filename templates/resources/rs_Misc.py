@@ -87,7 +87,7 @@ class Notification(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
-        validator = NotificationInsertForm.from_json(ns.payload)
+        validator = NotificationInsertForm.from_json(ns.payload) # pyrefly:ignore
         if not validator.validate():
             return {"errors": validator.errors}, 400
         data = validator.data
@@ -105,7 +105,7 @@ class Notification(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
-        validator = NotificationUpdateForm.from_json(ns.payload)
+        validator = NotificationUpdateForm.from_json(ns.payload)    # pyrefly:ignore
         if not validator.validate():
             return {"errors": validator.errors}, 400
         data = validator.data
@@ -145,7 +145,7 @@ class ResponseAV(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
-        validator = RequestAVResponseForm.from_json(ns.payload)
+        validator = RequestAVResponseForm.from_json(ns.payload) # pyrefly:ignore
         if not validator.validate():
             return {"error": validator.errors}, 400
         data = validator.data
@@ -189,7 +189,7 @@ class Task(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
-        validator = TaskInsertForm.from_json(ns.payload)
+        validator = TaskInsertForm.from_json(ns.payload)    # pyrefly:ignore
         if not validator.validate():
             return {"errors": validator.errors}, 400
         data = validator.data
@@ -204,7 +204,7 @@ class Task(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
-        validator = TaskUpdateForm.from_json(ns.payload)
+        validator = TaskUpdateForm.from_json(ns.payload)    # pyrefly:ignore
         if not validator.validate():
             return {"errors": validator.errors}, 400
         data = validator.data
@@ -217,7 +217,7 @@ class Task(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
-        validator = TaskDeleteForm.from_json(ns.payload)
+        validator = TaskDeleteForm.from_json(ns.payload)    # pyrefly:ignore
         if not validator.validate():
             return {"errors": validator.errors}, 400
         data = validator.data

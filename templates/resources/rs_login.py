@@ -1,55 +1,49 @@
 # -*- coding: utf-8 -*-
+from static.Models.api_login_models import put_biocredentials_model
+from static.Models.api_models import expected_headers_per
+from static.Models.api_login_models import BiocredentialsPutModelForm
+from templates.resources.midleware.MD_UserSystem import update_biocredentials_from_api
+from templates.resources.midleware.MD_UserSystem import fectchUsersDBApi
+from templates.resources.methods.Functions_Aux_Login import token_verification_procedure
+from flask_restx import Namespace, Resource
+from flask import request
+
 __author__ = "Edisson Naula"
 __date__ = "$ 16/ene./2024  at 18:49 $"
 
-from flask_restx import Namespace, Resource
 
-from static.Models.api_login_models import TokenModelForm, token_model
-from templates.controllers.employees.us_controller import (
-    verify_user_DB,
-    get_permissions_user_password,
-)
-
-ns = Namespace("GUI/api/v1/auth")
+ns = Namespace("GUI/api/v1/UserSystem")
 
 
-@ns.route("/loginUP")
+@ns.route("/usernames-<string:status>")
 class LoginUP(Resource):
-    @ns.expect(token_model)
-    def post(self):
-        validator = TokenModelForm.from_json(ns.payload)
-        if not validator.validate():
-            return {"error": validator.errors}, 400
-        data = validator.data
-        # code, data = parse_data(ns.payload, 1)
-        out = {
-            "verified": False,
-            "user": data["username"],
-            "permissions": "invalid credentials",
-        }
-        pass_key = data["password"]
-        is_real_user = verify_user_DB(data["username"], pass_key)
-        out_dict = get_permissions_user_password(data["username"], pass_key)
-        permissions = (
-            out_dict["permissions"] if "permissions" in out_dict.keys() else {}
+    @ns.expect(expected_headers_per)
+    def get(self, status):
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["credentials", "administracion"]
         )
-        permissions = permissions if permissions is not None else {}
-        permissions_list = []
-        for v in permissions.values():
-            permissions_list.append({"role": v})
-        if not is_real_user:
-            return out, 400
-        out = {
-            "verified": True,
-            "user": data["username"],
-            "permissions": permissions_list,
-            "name": out_dict["name"],
-            "contract": out_dict["contract"],
-            "emp_id": out_dict["emp_id"],
-            "token": out_dict["token"],
-            "timestamp_token": out_dict["timestamp_token"].strftime("%Y-%m-%d %H:%M:%S")
-            if out_dict["timestamp_token"] is not None
-            else None,
-        }
-        print(out)
-        return out, 200
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        status = status if status in ["activo", "inactivo"] else "%"
+        data_out, code = fectchUsersDBApi({"status", status}, data_token)
+        return data_out, code
+
+
+@ns.route("/update-biocredentials")
+class BiocredentialUpdate(Resource):
+    @ns.expect(expected_headers_per, put_biocredentials_model)
+    def post(self):
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["credentials", "administracion"]
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        validator = BiocredentialsPutModelForm.from_json(ns.payload)    # pyrefly: ignore
+        if not validator.validate():
+            return {"errors": validator.errors}, 400
+        data = validator.data
+        data_out, code = update_biocredentials_from_api(data, data_token)
+        return data_out, code
+
+
+
