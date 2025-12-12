@@ -1,4 +1,8 @@
 # -*- coding: utf-8 -*-
+from static.constants import format_date
+from datetime import date
+from datetime import datetime
+from static.constants import format_timestamps
 from templates.controllers.employees.us_controller import update_biocredentials_DB
 from templates.controllers.employees.us_controller import fetch_employess_user_data
 
@@ -18,7 +22,9 @@ def fectchUsersDBApi(data, data_token):
             {
                 "employee_id": item[0],
                 "name": str(item[1]) + " " + str(item[2]),
-                "birthday": item[3],
+                "birthday": item[3].strftime(format_date)
+                if isinstance(item[3], date)
+                else item[3],
                 "contract": item[4],
                 "status": item[5],
                 "department_id": item[6],
