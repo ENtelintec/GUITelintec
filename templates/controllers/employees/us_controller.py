@@ -26,7 +26,6 @@ def fetch_employess_user_data(status="activo"):
         "LEFT JOIN sql_telintec.users_system on sql_telintec.users_system.emp_id=sql_telintec.employees.employee_id "
         "where status like %s"
     )
-    print(sql)
     val = (status,)
     flag, error, result = execute_sql(sql, val, 2)
     return flag, error, result
