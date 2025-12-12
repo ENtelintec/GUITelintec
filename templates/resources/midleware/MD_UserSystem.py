@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 from static.constants import format_date
 from datetime import date
-from datetime import datetime
-from static.constants import format_timestamps
 from templates.controllers.employees.us_controller import update_biocredentials_DB
 from templates.controllers.employees.us_controller import fetch_employess_user_data
 
