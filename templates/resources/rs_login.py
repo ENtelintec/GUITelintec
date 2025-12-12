@@ -25,7 +25,7 @@ class LoginUP(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         status = status if status in ["activo", "inactivo"] else "%"
-        data_out, code = fectchUsersDBApi({"status", status}, data_token)
+        data_out, code = fectchUsersDBApi({"status": status}, data_token)
         return data_out, code
 
 
