@@ -38,7 +38,7 @@ def fectchUsersDBApi(data, data_token):
 
 def update_biocredentials_from_api(data, data_token):
     flag, error, result = update_biocredentials_DB(
-        data["biocredentials"], data["emp_id"]
+        data["biocredentials"], data["emp_id"], data["user"]
     )
     if not flag:
         return {

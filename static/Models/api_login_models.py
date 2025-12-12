@@ -26,6 +26,7 @@ put_biocredentials_model = api.model(
         "biocredentials": fields.Integer(
             required=True, description="The biocredentials status"
         ),
+        "user": fields.String(required=True, description="The user name")
     },
 )
 
@@ -37,3 +38,4 @@ class TokenModelForm(Form):
 class BiocredentialsPutModelForm(Form):
     emp_id = StringField("emp_id", validators=[InputRequired()])
     biocredentials = StringField("biocredentials", validators=[InputRequired()])
+    user = StringField("user", validators=[InputRequired()])

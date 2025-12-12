@@ -31,12 +31,12 @@ def fetch_employess_user_data(status="activo"):
     return flag, error, result
 
 
-def update_biocredentials_DB(biocredentials, emp_id):
+def update_biocredentials_DB(biocredentials, emp_id, user):
     sql = (
         "UPDATE sql_telintec.users_system "
         "SET biocredentials = %s "
-        "WHERE emp_id = %s"
+        "WHERE emp_id = %s and user = %s "
     )
-    val = (biocredentials, emp_id)
+    val = (biocredentials, emp_id, user)
     flag, error, result = execute_sql(sql, val, 4)
     return flag, error, result
