@@ -27,7 +27,7 @@ def fectchUsersDBApi(data, data_token):
                 "status": item[5],
                 "department_id": item[6],
                 "department_name": item[7],
-                "usernames": item[8],
+                "user": item[8],
                 "biocredentials": item[9],
             }
         )
