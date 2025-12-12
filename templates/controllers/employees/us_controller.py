@@ -35,7 +35,7 @@ def update_biocredentials_DB(biocredentials, emp_id, user):
     sql = (
         "UPDATE sql_telintec.users_system "
         "SET biocredentials = %s "
-        "WHERE emp_id = %s and user = %s "
+        "WHERE emp_id = %s and usernames = %s "
     )
     val = (biocredentials, emp_id, user)
     flag, error, result = execute_sql(sql, val, 4)
