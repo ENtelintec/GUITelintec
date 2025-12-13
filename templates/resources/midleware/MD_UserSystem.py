@@ -1,11 +1,37 @@
 # -*- coding: utf-8 -*-
-from static.constants import format_date
-from datetime import date
-from templates.controllers.employees.us_controller import update_biocredentials_DB
+import json
+
+import jwt
+import pytz
+
+from static.constants import format_date, format_timestamps, timezone_software, secrets, filepath_permission
+from datetime import date, datetime
+from templates.controllers.employees.us_controller import (
+    update_biocredentials_DB,
+    create_user_system_with_token,
+)
 from templates.controllers.employees.us_controller import fetch_employess_user_data
 
 __author__ = "Edisson Naula"
 __date__ = "$ 09/12/2025 at 11:04 $"
+
+
+def read_permissions_file(path: str = filepath_permission):
+    """
+    read permission json file
+    :return:
+    """
+    with open(path, "r") as f:
+        data = json.load(f)
+    return data
+
+
+def fetch_permissions_from_api():
+    try:
+        permissions = read_permissions_file()
+    except Exception as e:
+        return {"data": [], "error": str(e), "msg": "Error al obtener los permisos"}, 400
+    return {"data": permissions, "error": "", "msg": "Permisos obtenidos correctamente"}, 200
 
 
 def fectchUsersDBApi(data, data_token):
@@ -49,3 +75,40 @@ def update_biocredentials_from_api(data, data_token):
         "error": "",
         "msg": "Datos actualizados correctamente",
     }, 200
+
+
+def create_employee_user_from_api(data, data_token):
+    dic_perm = {i: item for i, item in enumerate(data["permissions"])}
+    data_user = {
+        "permissions": dic_perm,
+        "emp_id": data["emp_id"],
+        "name": data["name"],
+        "contrato": data["contract"],
+        "user": data["user"],
+        "dep_id": data["dep_id"],
+    }
+    token = jwt.encode(data_user, secrets.get("TOKEN_MASTER_KEY"), algorithm="HS256")
+    time_zone = pytz.timezone(timezone_software)
+    timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
+    expires = 31536000
+    flag, error, id_user = create_user_system_with_token(
+        data["user"],
+        data["hash_pass"],
+        dic_perm,
+        token,
+        expires,
+        timestamp,
+        data["emp_id"],
+    )
+    if not flag:
+        return {
+            "data": [id_user],
+            "error": error,
+            "msg": "Error al crear el usuario",
+        }, 400
+    else:
+        return {
+            "data": [id_user],
+            "error": "",
+            "msg": "Usuario creado correctamente",
+        }, 201

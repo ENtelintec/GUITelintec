@@ -2,12 +2,13 @@
 __author__ = "Edisson Naula"
 __date__ = "$ 01/may./2024  at 19:37 $"
 
+import json
 
 from templates.database.connection import execute_sql
 
 
 def fetch_employess_user_data(status="activo"):
-    if status=="all":
+    if status == "all":
         status = "%"
     sql = (
         "SELECT "
@@ -38,5 +39,17 @@ def update_biocredentials_DB(biocredentials, emp_id, user):
         "WHERE emp_id = %s and usernames = %s "
     )
     val = (biocredentials, emp_id, user)
+    flag, error, result = execute_sql(sql, val, 4)
+    return flag, error, result
+
+
+def create_user_system_with_token(
+    user, hash_pass, dic_perm, token, exp, timestamp_token, emp_id
+):
+    sql = (
+        "INSERT INTO sql_telintec.users_system (usernames, password, permissions, emp_id, token, exp, timestamp_token) "
+        "VALUES (%s, %s, %s, %s, %s, %s, %s)"
+    )
+    val = (user, hash_pass, json.dumps(dic_perm), emp_id, token, exp, timestamp_token)
     flag, error, result = execute_sql(sql, val, 4)
     return flag, error, result
