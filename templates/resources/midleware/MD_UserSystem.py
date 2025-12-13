@@ -4,8 +4,11 @@ import json
 import jwt
 import pytz
 
-from static.constants import format_date, format_timestamps, timezone_software, secrets, filepath_permission
+from static.constants import format_date, format_timestamps, timezone_software, secrets, filepath_permission, \
+    log_file_users
 from datetime import date, datetime
+
+from templates.Functions_Utils import create_notification_permission
 from templates.controllers.employees.us_controller import (
     update_biocredentials_DB,
     create_user_system_with_token,
@@ -14,6 +17,8 @@ from templates.controllers.employees.us_controller import fetch_employess_user_d
 
 __author__ = "Edisson Naula"
 __date__ = "$ 09/12/2025 at 11:04 $"
+
+from templates.misc.Functions_Files import write_log_file
 
 
 def read_permissions_file(path: str = filepath_permission):
@@ -100,15 +105,24 @@ def create_employee_user_from_api(data, data_token):
         timestamp,
         data["emp_id"],
     )
+
     if not flag:
         return {
             "data": [id_user],
             "error": error,
             "msg": "Error al crear el usuario",
         }, 400
-    else:
-        return {
-            "data": [id_user],
-            "error": "",
-            "msg": "Usuario creado correctamente",
-        }, 201
+    msg = f"Usuario creado con ID-{id_user} por el empleado {data_token.get('emp_id')}"
+    create_notification_permission(
+        msg,
+        ["administracion", "operaciones"],
+        "Encargado Creado",
+        data_token.get("emp_id"),
+        0,
+    )
+    write_log_file(log_file_users, msg)
+    return {
+        "data": [id_user],
+        "error": "",
+        "msg": "Usuario creado correctamente",
+    }, 201
