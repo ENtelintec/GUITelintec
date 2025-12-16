@@ -44,7 +44,7 @@ post_user_model = api.model(
         "permissions": fields.List(fields.Nested(permission_model), required=True, description="The permissions"),
         "emp_id": fields.Integer(required=True, description="The employee ID"),
         "name": fields.String(required=True, description="The name"),
-        "contrato": fields.String(required=True, description="The contract"),
+        "contract": fields.String(required=True, description="The contract"),
         "user": fields.String(required=True, description="The user name"),
         "dep_id": fields.Integer(required=True, description="The department ID"),
         "hashpass": fields.String(required=True, description="The hashed password")

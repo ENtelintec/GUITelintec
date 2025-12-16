@@ -98,7 +98,7 @@ def create_employee_user_from_api(data, data_token):
     expires = 31536000
     flag, error, id_user = create_user_system_with_token(
         data["user"],
-        data["hash_pass"],
+        data["hashpass"],
         dic_perm,
         token,
         expires,
