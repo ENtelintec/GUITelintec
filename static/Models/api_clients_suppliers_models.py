@@ -72,7 +72,7 @@ supplier_model = api.model(
         "type": fields.String(required=True, description="The supplier type"),
         "extra_info": fields.Nested(extra_info_supplier_model),
         "items": fields.List(
-            fields.Nested(items_supplier_model), required=False, default=[]
+            fields.Nested(items_supplier_model), required=False
         ),
     },
 )

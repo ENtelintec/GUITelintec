@@ -81,6 +81,9 @@ items_po_model = api.model(
         "tool": fields.Integer(
             required=True, description="The state if is a tool 1", example=0
         ),
+        "comment": fields.String(
+            required=False, description="The comment", example="Some comment"
+        ),
     },
 )
 
@@ -489,6 +492,7 @@ class ItemsPOApplicationForm(Form):
     supplier = StringField("supplier", [], default="")
     purchase_id = IntegerField("purchase_id", [], default=0)
     tool = IntegerField("tool", [number_range(min=-1, max=2, message="Invalid tool")])
+    comment = StringField("comment", [], default="")
 
 
 class MetadataTelitencForm(Form):
@@ -561,6 +565,7 @@ class ItemsPOApplicationUpdateForm(Form):
     n_parte = StringField("n_parte", [], default="")
     supplier = StringField("supplier", [], default="")
     tool = IntegerField("tool", [InputRequired()])
+    comment = StringField("comment", [], default="")
 
 
 class PurchaseOrderPutForm(Form):
