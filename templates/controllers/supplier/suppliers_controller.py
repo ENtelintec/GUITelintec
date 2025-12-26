@@ -135,7 +135,7 @@ def create_supplier_amc(
     address_provider,
     web_provider,
     type_provider,
-    extra_info: dict,
+    extra_info,
 ):
     name_provider = str(name_provider)
     seller_provider = str(seller_provider)
@@ -146,7 +146,7 @@ def create_supplier_amc(
     type_provider = str(type_provider)
     extra_info = (
         json.dumps(extra_info) if extra_info else json.dumps({"brands": [], "rfc": ""})
-    )  # pyrefly:ignore
+    )
     insert_sql = (
         "INSERT INTO sql_telintec.suppliers_amc "
         "(name, seller_name, seller_email, phone, address, web_url, type, extra_info) "
@@ -166,17 +166,6 @@ def create_supplier_amc(
     return flag, error, result
 
 
-# CREATE TABLE sql_telintec_mod_admin.items_suppliers_amc
-# (
-#     id INT AUTO_INCREMENT PRIMARY KEY,
-#     id_supplier_amc INT NULL,
-#     item_name VARCHAR(255),
-#     unit_price DECIMAL(10,2) DEFAULT 0.00,
-#     part_number VARCHAR(100),
-#     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-#     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-#     FOREIGN KEY (id_supplier_amc) REFERENCES sql_telintec.suppliers_amc(id_supplier)
-# );
 def create_item_amc(
     item_name,
     unit_price,
@@ -270,7 +259,7 @@ def update_supplier_amc(
     address_provider,
     web_provider,
     type_provider,
-    extra_info: dict,
+    extra_info,
 ):
     name_provider = str(name_provider)
     seller_provider = str(seller_provider)
@@ -281,7 +270,7 @@ def update_supplier_amc(
     type_provider = str(type_provider)
     extra_info = (
         json.dumps(extra_info) if extra_info else f"{'brands': [], 'rfc': ''}"
-    )  # pyrefly: ignore
+    )
     update_sql = (
         "UPDATE sql_telintec.suppliers_amc "
         "SET name = %s, seller_name = %s, seller_email = %s, phone = %s, address = %s, web_url = %s, type = %s, "

@@ -1,13 +1,8 @@
 # -*- coding: utf-8 -*-
-from templates.controllers.supplier.suppliers_controller import update_item_amc
-from templates.controllers.supplier.suppliers_controller import create_item_amc
-
-__author__ = "Edisson Naula"
-__date__ = "$ 20/jun./2024  at 15:23 $"
-
 import json
 
-
+from templates.controllers.supplier.suppliers_controller import update_item_amc
+from templates.controllers.supplier.suppliers_controller import create_item_amc
 from static.constants import (
     filepath_settings,
     log_file_admin,
@@ -71,6 +66,8 @@ from templates.resources.methods.Functions_Aux_Admin import (
     read_exel_products_partidas,
 )
 
+__author__ = "Edisson Naula"
+__date__ = "$ 20/jun./2024  at 15:23 $"
 
 def get_quotations(id_quotation: int | None = None):
     try:
@@ -553,7 +550,7 @@ def update_supplier(data):
     )
     if not flag:
         return {"data": None, "msg": str(error)}, 400
-    # update items 
+    # update items
     errors_i = []
     items = data.get("items", [])
     for item in items:
