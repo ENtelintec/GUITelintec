@@ -71,6 +71,7 @@ def map_products_po(products: list):
                 "duration_services": item.get("duration_services"),
                 "supplier": extra_info.get("supplier"),
                 "tool": item.get("tool"),
+                "comment": extra_info.get("comment"),
             }
         )
         total_amount += float(item.get("unit_price")) * float(item.get("quantity"))
@@ -86,6 +87,7 @@ def create_extra_info_product_from_data(data: dict):
         "n_parte": data.get("n_parte", ""),
         "duration_services": data.get("duration_services", ""),
         "supplier": data.get("supplier", 0),
+        "comment": data.get("comment", ""),
     }
     return extra_info
 
@@ -483,7 +485,7 @@ def create_po_application_api(data, data_token):
     if flag:
         update_sm_control_table = True
         extra_info = {
-            "sm_id": result_sm[0],
+            "sm_id": result_sm[0]
         }
 
     time_zone = pytz.timezone(timezone_software)
