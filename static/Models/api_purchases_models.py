@@ -246,6 +246,11 @@ purchase_order_post_model = api.model(
             metadata_telintec_order_model, required=True
         ),
         "metadata_supplier": fields.Nested(metadata_supplier_model, required=True),
+        "order_quotation": fields.String(
+            required=False,
+            description="The order quotation document",
+            example="base64encodedstring",
+        ),
     },
 )
 
@@ -282,6 +287,11 @@ purchase_order_put_model = api.model(
         "metadata_supplier": fields.Nested(metadata_supplier_model, required=True),
         "sm_id": fields.Integer(
             required=False, description="The quotation sm id", example=1
+        ),
+        "order_quotation": fields.String(
+            required=False,
+            description="The order quotation document",
+            example="base64encodedstring",
         ),
     },
 )
@@ -527,6 +537,7 @@ class PurchaseOrderPostForm(Form):
     metadata_telintec = FormField(MetadataTelitencForm)
     metadata_supplier = FormField(MetadataSupplierForm)
     sm_id = IntegerField("sm_id", [], default=0)
+    order_quotation = StringField("order_quotation", [], default="")
 
 
 class ItemsPOUpdateForm(Form):
@@ -583,6 +594,7 @@ class PurchaseOrderPutForm(Form):
     metadata_telintec = FormField(MetadataTelitencForm)
     metadata_supplier = FormField(MetadataSupplierForm)
     sm_id = IntegerField("sm_id", [], default=0)
+    order_quotation = StringField("order_quotation", [], default="")
 
 
 class PurchaseOrderDeleteForm(Form):

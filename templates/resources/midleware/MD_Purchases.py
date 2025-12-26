@@ -150,6 +150,7 @@ def fetch_purchase_orders(status, data_token):
         metadata_telintec, metadata_supplier = create_metadatas_from_extra_info_po(
             extra_info
         )
+        order_quotation = extra_info.get("order_quotation", "")
         products = json.loads(products)
         products, total_amount = map_products_po(products)
         data_out.append(
@@ -169,6 +170,7 @@ def fetch_purchase_orders(status, data_token):
                 "time_delivery": time_delivery,
                 "metadata_telintec": metadata_telintec,
                 "metadata_supplier": metadata_supplier,
+                "order_quotation": order_quotation
             }
         )
 
@@ -200,6 +202,7 @@ def create_purchaser_order_api(data, data_token):
         "metadata_telintec": data.get("metadata_telintec", {}),
         "metadata_supplier": data.get("metadata_supplier", {}),
         "sm_id": sm_id,
+        "order_quotation": data.get("order_quotation", ""),
     }
     flag, error, id_order = insert_purchase_order(
         timestamp,
@@ -282,6 +285,7 @@ def update_purchase_order_api(data, data_token):
         "metadata_telintec": data.get("metadata_telintec", {}),
         "metadata_supplier": data.get("metadata_supplier", {}),
         "sm_id": data.get("sm_id", 0),
+        "order_quotation": data.get("order_quotation", ""),
     }
     flag, error, result = update_purchase_order(
         data["id"],
