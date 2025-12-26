@@ -90,6 +90,29 @@ def get_all_suppliers_amc():
     return flag, error, result
 
 
+def get_items_supplier_by_id(id_supplier=None):
+    if id_supplier is None:
+        sql = (
+            "SELECT id_item, item_name, unit_price, part_number, created_at, updated_at "
+            "FROM sql_telintec.items_amc "
+            "ORDER BY item_name"
+        )
+        vals = None
+        flag, error, result = execute_sql(sql, vals, 5)
+    else:
+        sql = (
+            "SELECT id_item, item_name, unit_price, part_number, created_at, updated_at"
+            "FROM sql_telintec.items_amc "
+            "WHERE id_supplier = %s "
+            "ORDER BY item_name"
+        )
+        vals = (id_supplier,)
+        flag, error, result = execute_sql(sql, vals, 2)
+    
+    if not isinstance(result, list):
+        return False, error, []
+    return flag, error, result
+
 def create_supplier_brands_amc(
     name_provider,
     seller_provider,

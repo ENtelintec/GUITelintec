@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from datetime import datetime
+from templates.controllers.supplier.suppliers_controller import get_items_supplier_by_id
 import json
 
 from templates.controllers.supplier.suppliers_controller import update_item_amc
@@ -68,6 +70,7 @@ from templates.resources.methods.Functions_Aux_Admin import (
 
 __author__ = "Edisson Naula"
 __date__ = "$ 20/jun./2024  at 15:23 $"
+
 
 def get_quotations(id_quotation: int | None = None):
     try:
@@ -496,6 +499,36 @@ def get_all_suppliers_data():
                 "type": item[7],
                 "brands": brands,
                 "rfc": extra_info.get("rfc", ""),
+            }
+        )
+    return {"data": data_out, "msg": "Ok"}, 200
+
+
+def get_items_supplier_name(id_supplier: str):
+    try:
+        id_s = int(id_supplier)
+    except Exception as e:
+        print(str(e))
+        id_s = None
+    flag, error, results = get_items_supplier_by_id(id_s)
+    # parse items
+    # "SELECT id_item, item_name, unit_price, part_number, created_at, updated_at "
+    if not flag:
+        return {"data": [], "msg": str(error)}, 400
+    data_out = []
+    for item in results:
+        data_out.append(
+            {
+                "id": item[0],
+                "item_name": item[1],
+                "unit_price": item[2],
+                "part_number": item[3],
+                "created_at": item[4].strftime(format_timestamps)
+                if isinstance(item[4], datetime)
+                else str(item[4]),
+                "updated_at": item[5].strftime(format_timestamps)
+                if isinstance(item[5], datetime)
+                else str(item[5]),
             }
         )
     return {"data": data_out, "msg": "Ok"}, 200
