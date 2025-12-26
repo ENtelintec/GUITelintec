@@ -40,6 +40,17 @@ extra_info_supplier_model = api.model(
     },
 )
 
+items_supplier_model = api.model(
+    "ItemSupplierAMC",
+    {
+        "item_name": fields.String(required=True, description="The item name"),
+        "unit_price": fields.Float(required=True, description="The unit price"),
+        "part_number": fields.String(required=True, description="The part number"),
+        "id": fields.Integer(required=False, description="The item id only required in update"),
+        "id_supplier": fields.Integer(required=False, description="The supplier id only required in update"),
+    },
+)
+
 supplier_model = api.model(
     "SupplierAMC",
     {
@@ -56,6 +67,7 @@ supplier_model = api.model(
         "web": fields.String(required=True, description="The supplier web url"),
         "type": fields.String(required=True, description="The supplier type"),
         "extra_info": fields.Nested(extra_info_supplier_model),
+        "items": fields.List(fields.Nested(items_supplier_model), required=False, default=[])       
     },
 )
 suppliers_output_model = api.model(
@@ -111,6 +123,19 @@ class ExtraInfoSupplierForm(Form):
     rfc = StringField(validators=[], default="")
 
 
+class ItemsSupplierFormInsert(Form):
+    item_name = StringField("item_name", validators=[InputRequired(message="Item name is required")])
+    unit_price = StringField("unit_price", validators=[InputRequired(message="Unit price is required")])
+    part_number = StringField("part_number", validators=[InputRequired(message="Part number is required")])
+
+
+class ItemsSupplierFormUpdate(Form):
+    item_name = StringField("item_name", validators=[InputRequired(message="Item name is required")])
+    unit_price = StringField("unit_price", validators=[InputRequired(message="Unit price is required")])
+    part_number = StringField("part_number", validators=[InputRequired(message="Part number is required")])
+    id = IntegerField("id", validators=[InputRequired(message="Id is required")])
+    id_supplier = IntegerField("id_supplier", validators=[InputRequired(message="Id supplier is required")])
+
 class SupplierInsertForm(Form):
     name = StringField("name", validators=[InputRequired(message="Name is required")])
     seller_name = StringField("seller_name", validators=[], default="None")
@@ -124,6 +149,7 @@ class SupplierInsertForm(Form):
     web = StringField("web", validators=[], default="")
     type = StringField("type", validators=[InputRequired(message="Type is required")])
     extra_info = FormField(ExtraInfoSupplierForm, "extra_info")
+    items = FieldList(FormField(ItemsSupplierFormInsert), "items")
 
 
 class SupplierUpdateForm(Form):
@@ -140,6 +166,7 @@ class SupplierUpdateForm(Form):
     web = StringField("web", validators=[], default="")
     type = StringField("type", validators=[InputRequired(message="Type is required")])
     extra_info = FormField(ExtraInfoSupplierForm, "extra_info")
+    items = FieldList(FormField(ItemsSupplierFormUpdate), "items")
 
 
 class SupplierDeleteForm(Form):

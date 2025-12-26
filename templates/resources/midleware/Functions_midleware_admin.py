@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+from templates.controllers.supplier.suppliers_controller import update_item_amc
+from templates.controllers.supplier.suppliers_controller import create_item_amc
+
 __author__ = "Edisson Naula"
 __date__ = "$ 20/jun./2024  at 15:23 $"
 
@@ -69,9 +72,13 @@ from templates.resources.methods.Functions_Aux_Admin import (
 )
 
 
-def get_quotations(id_quotation:int|None=None):
+def get_quotations(id_quotation: int | None = None):
     try:
-        id_quotation = id_quotation if id_quotation is not None and int(id_quotation) != -1 else None
+        id_quotation = (
+            id_quotation
+            if id_quotation is not None and int(id_quotation) != -1
+            else None
+        )
     except ValueError:
         return {"data": None, "msg": "Id invalido"}, 400
     flag, error, result = get_quotation(id_quotation)
@@ -333,7 +340,6 @@ def products_contract_from_file(data: dict):
 
 
 def modify_pattern_phrase_contract_pdf(data: dict):
-    e = "None"
     try:
         settings = json.loads(filepath_settings)
         settings["phrase_pdf_contract"] = data["phrase"]
@@ -342,7 +348,8 @@ def modify_pattern_phrase_contract_pdf(data: dict):
             json.dump(settings, file, indent=4)
     except Exception as e:
         print(e)
-    return True, str(e)
+        return False, str(e)
+    return True, "None"
 
 
 def compare_file_and_quotation(data: dict):
@@ -499,7 +506,7 @@ def get_all_suppliers_data():
 
 def insert_supplier(data):
     # name, seller_name, seller_email, phone, address, web_url, type, extra_info
-    flag, error, result = create_supplier_amc(
+    flag, error, id_supplier = create_supplier_amc(
         data.get("name").upper(),
         data.get("seller_name").upper(),
         data.get("email").upper(),
@@ -511,7 +518,25 @@ def insert_supplier(data):
     )
     if not flag:
         return {"data": None, "msg": str(error)}, 400
-    return {"data": result, "msg": "Ok"}, 201
+    # create items
+    items = data.get("items", [])
+    errors_i = []
+    for item in items:
+        flag, error, result = create_item_amc(
+            item.get("item_name"),
+            item.get("unit_price"),
+            item.get("part_number"),
+            id_supplier,
+        )
+        if not flag:
+            errors_i.append(error)
+    if len(errors_i) > 0:
+        return {
+            "data": None,
+            "msg": f"Supplier created with id {id_supplier} but some items failed to create: {errors_i}",
+        }, 422
+    else:
+        return {"data": id_supplier, "msg": "Ok"}, 201
 
 
 def update_supplier(data):
@@ -528,6 +553,24 @@ def update_supplier(data):
     )
     if not flag:
         return {"data": None, "msg": str(error)}, 400
+    # update items 
+    errors_i = []
+    items = data.get("items", [])
+    for item in items:
+        flag, error, result = update_item_amc(
+            item.get("id"),
+            item.get("item_name"),
+            item.get("unit_price"),
+            item.get("part_number"),
+            data.get("id_supplier"),
+        )
+        if not flag:
+            errors_i.append(error)
+    if len(errors_i) > 0:
+        return {
+            "data": None,
+            "msg": f"Supplier updated with id {data.get('id')} but some items failed to update: {errors_i}",
+        }, 422
     return {"data": result, "msg": "Ok"}, 200
 
 
@@ -576,7 +619,7 @@ def fetch_heads_main(data_token):
 
 
 def fetch_heads(id_dep: int):
-    id_department: int|None = int(id_dep) if id_dep >= 0 else None
+    id_department: int | None = int(id_dep) if id_dep >= 0 else None
     flag, error, result = get_heads_db(id_department)
     if not flag:
         return {"data": [], "msg": str(error)}, 400

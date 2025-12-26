@@ -8,11 +8,7 @@ from templates.database.connection import execute_sql
 
 
 def get_supplier(limit=(0, 100)) -> list[list]:
-    sql = (
-        "SELECT supplier_id, name, location "
-        "FROM sql_telintec.suppliers "
-        "LIMIT %s, %s"
-    )
+    sql = "SELECT supplier_id, name, location FROM sql_telintec.suppliers LIMIT %s, %s"
     val = (limit[0], limit[1])
     flag, e, my_result = execute_sql(sql, val, 2)
     out = my_result if my_result is not None else []
@@ -21,10 +17,8 @@ def get_supplier(limit=(0, 100)) -> list[list]:
     return out
 
 
-def insert_supplier(
-    name: str, location: str
-) -> tuple[bool, str | None, int | None]:
-    sql = "INSERT INTO sql_telintec.suppliers (name, location) " "VALUES (%s, %s)"
+def insert_supplier(name: str, location: str) -> tuple[bool, str | None, int | None]:
+    sql = "INSERT INTO sql_telintec.suppliers (name, location) VALUES (%s, %s)"
     val = (name, location)
     flag, e, out = execute_sql(sql, val, 4)
     if not isinstance(out, int):
@@ -35,7 +29,7 @@ def insert_supplier(
 def insert_multiple_suppliers_name_addres_amc(
     supplier_list: tuple,
 ) -> tuple[bool, str | None, int | None]:
-    sql = "INSERT INTO " "sql_telintec.suppliers_amc (name, address) VALUES "
+    sql = "INSERT INTO sql_telintec.suppliers_amc (name, address) VALUES "
     for index, supplier in enumerate(supplier_list):
         if index > 0:
             sql += ", "
@@ -62,7 +56,7 @@ def update_supplier_DB(
 
 
 def delete_supplier_DB(supplier_id: int) -> tuple[bool, str | None, int | None]:
-    sql = "DELETE FROM sql_telintec.suppliers " "WHERE supplier_id = %s"
+    sql = "DELETE FROM sql_telintec.suppliers WHERE supplier_id = %s"
     val = (supplier_id,)
     flag, e, out = execute_sql(sql, val, 3)
     if not isinstance(out, int):
@@ -150,7 +144,9 @@ def create_supplier_amc(
     address_provider = str(address_provider)
     web_provider = str(web_provider)
     type_provider = str(type_provider)
-    extra_info = json.dumps(extra_info) if extra_info else json.dumps({"brands": [], "rfc": ""}) # pyrefly:ignore
+    extra_info = (
+        json.dumps(extra_info) if extra_info else json.dumps({"brands": [], "rfc": ""})
+    )  # pyrefly:ignore
     insert_sql = (
         "INSERT INTO sql_telintec.suppliers_amc "
         "(name, seller_name, seller_email, phone, address, web_url, type, extra_info) "
@@ -168,6 +164,61 @@ def create_supplier_amc(
     )
     flag, error, result = execute_sql(insert_sql, vals, 4)
     return flag, error, result
+
+
+# CREATE TABLE sql_telintec_mod_admin.items_suppliers_amc
+# (
+#     id INT AUTO_INCREMENT PRIMARY KEY,
+#     id_supplier_amc INT NULL,
+#     item_name VARCHAR(255),
+#     unit_price DECIMAL(10,2) DEFAULT 0.00,
+#     part_number VARCHAR(100),
+#     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+#     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+#     FOREIGN KEY (id_supplier_amc) REFERENCES sql_telintec.suppliers_amc(id_supplier)
+# );
+def create_item_amc(
+    item_name,
+    unit_price,
+    part_number,
+    id_supplier_amc,
+):
+    insert_sql = (
+        "INSERT INTO sql_telintec_mod_admin.items_suppliers_amc "
+        "(id_supplier_amc, item_name, unit_price, part_number) "
+        "VALUES (%s, %s, %s, %s)"
+    )
+    vals = (
+        id_supplier_amc,
+        item_name,
+        unit_price,
+        part_number,
+    )
+    flag, error, rows_changed = execute_sql(insert_sql, vals, 3)
+    return flag, error, rows_changed
+
+
+def update_item_amc(
+    id_item,
+    item_name,
+    unit_price,
+    part_number,
+    id_supplier_amc,
+):
+    update_sql = (
+        "UPDATE sql_telintec_mod_admin.items_suppliers_amc "
+        "SET item_name = %s, unit_price = %s, part_number = %s,  id_supplier_amc = %s"
+        "WHERE id = %s "
+    )
+    vals = (
+        item_name,
+        unit_price,
+        part_number,
+        id_supplier_amc,
+        id_item,
+    )
+    flag, error, rows_changed = execute_sql(update_sql, vals, 3)
+    return flag, error, rows_changed
 
 
 def update_supplier_brands_amc(
@@ -228,7 +279,9 @@ def update_supplier_amc(
     address_provider = str(address_provider)
     web_provider = str(web_provider)
     type_provider = str(type_provider)
-    extra_info = json.dumps(extra_info) if extra_info else f"{'brands': [], 'rfc': ''}"  # pyrefly: ignore
+    extra_info = (
+        json.dumps(extra_info) if extra_info else f"{'brands': [], 'rfc': ''}"
+    )  # pyrefly: ignore
     update_sql = (
         "UPDATE sql_telintec.suppliers_amc "
         "SET name = %s, seller_name = %s, seller_email = %s, phone = %s, address = %s, web_url = %s, type = %s, "
@@ -251,7 +304,7 @@ def update_supplier_amc(
 
 
 def delete_supplier_amc(id_supplier):
-    delete_sql = "DELETE FROM sql_telintec.suppliers_amc " "WHERE id_supplier = %s"
+    delete_sql = "DELETE FROM sql_telintec.suppliers_amc WHERE id_supplier = %s"
     vals = (id_supplier,)
     flag, error, result = execute_sql(delete_sql, vals, 4)
     return flag, error, result

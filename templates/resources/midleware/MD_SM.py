@@ -1173,6 +1173,17 @@ def check_if_items_sm_correct_for_update(items_in):
 
 
 def update_sm_from_api(data, data_token):
+    # check date maximun 24 hours
+    date = data["info"].get("date", "2024-06-29")
+    date_sm = pd.to_datetime(date)
+    date_now = pd.to_datetime(datetime.now().strftime(format_date))
+    if (date_sm - date_now).days > 1:
+        return {
+            "msg": "error at date",
+            "data": [date_sm.strftime(format_date)],
+            "error": "El tiempo permitido para modificacion no deber ser mayor a 24 horas",
+        }, 400
+    # check parse items
     flag, items_out, error = check_if_items_sm_correct_for_update(data.get("items", []))
     if not flag:
         return {
