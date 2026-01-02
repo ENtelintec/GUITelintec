@@ -1,7 +1,10 @@
 # -*- coding: utf-8 -*-
+from templates.resources.midleware.Functions_midleware_admin import items_supplier_from_file
+import tempfile
+import os
+from werkzeug.utils import secure_filename
+from static.Models.api_fichajes_models import expected_files
 from templates.resources.midleware.Functions_midleware_admin import get_items_supplier_name
-__author__ = "Edisson Naula"
-__date__ = "$ 27/ene/2025  at 16:13 $"
 
 from flask import request
 from flask_restx import Namespace, Resource
@@ -42,6 +45,9 @@ from templates.resources.midleware.Functions_midleware_admin import (
     delete_head_from_api,
     fetch_heads_main,
 )
+
+__author__ = "Edisson Naula"
+__date__ = "$ 27/ene/2025  at 16:13 $"
 
 ns = Namespace("GUI/api/v1/admin/db")
 
@@ -270,3 +276,36 @@ class HeadDB(Resource):
         data = validator.data
         data_out, code = delete_head_from_api(data, data_token)
         return data_out, code
+
+
+@ns.route("/suppliers/items/file")
+class ItemsSupplierFileUpload(Resource):
+    @ns.expect(expected_headers_per, expected_files)
+    def post(self):
+        """
+        Read excel file and parse items for supplier. Required column in excel:
+        - ITEM
+        - UDM
+        - PRECIO UNITARIO
+        - MARCA
+        - NRO. PARTE
+        - DESCRIPCIÓN LARGA
+        - DESCRIPCIÓN CORTA
+        """
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["administracion"]
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        if "file" not in request.files:
+            return {"data": "No se detecto un archivo"}, 400
+        file = request.files["file"]
+        if file and file.filename:
+            filename = secure_filename(file.filename)
+            filepath_download = os.path.join(tempfile.mkdtemp(), filename)
+            file.save(filepath_download)
+            data = {"path": filepath_download}
+            data_out, code = items_supplier_from_file(data)
+            return data_out, code
+        else:
+            return {"msg": "No se subio el archivo"}, 400

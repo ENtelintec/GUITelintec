@@ -2,6 +2,7 @@
 from datetime import datetime
 from templates.controllers.supplier.suppliers_controller import get_items_supplier_by_id
 import json
+import pandas as pd
 
 from templates.controllers.supplier.suppliers_controller import update_item_amc
 from templates.controllers.supplier.suppliers_controller import create_item_amc
@@ -765,6 +766,37 @@ def items_quotation_from_file(data):
 def items_contract_from_file(data):
     products = read_exel_products_partidas(data["path"])
     if products is None:
+        return {"data": None, "msg": "Error at file structure"}, 400
+    return {"data": products, "msg": "Ok"}, 200
+
+
+def items_supplier_from_file(data):
+    """
+    Read excel file and parse items for supplier. Required column in excel:
+    - ITEM
+    - UDM
+    - PRECIO UNITARIO
+    - MARCA
+    - NRO. PARTE
+    - DESCRIPCIÓN LARGA
+    - DESCRIPCIÓN CORTA
+    """
+    df = pd.read_excel(data["path"])
+    df = df.fillna("")
+    data_excel = df.to_dict("records")
+    products = []
+    for index, item in enumerate(data_excel):
+        product = {
+            "partida": item.get("ITEM", index),
+            "udm": item.get("UDM"),
+            "price_unit": item.get("PRECIO UNITARIO", 0.0),
+            "marca": item.get("MARCA", ""),
+            "n_parte": item.get("NRO. PARTE", ""),
+            "description": item.get("DESCRIPCIÓN LARGA", ""),
+            "description_small": item.get("DESCRIPCIÓN CORTA", ""),
+        }
+        products.append(product)
+    if len(products) == 0:
         return {"data": None, "msg": "Error at file structure"}, 400
     return {"data": products, "msg": "Ok"}, 200
 

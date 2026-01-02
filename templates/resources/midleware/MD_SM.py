@@ -910,13 +910,15 @@ def create_product(
     return {"msg": "ok", "data": result}, 201
 
 
-def update_sm_from_control_table(data, data_token, sm_data=None):
+def update_sm_from_control_table(
+    data, data_token, sm_data=None
+) -> tuple[int, dict[str, str]]:
     if sm_data is None:
         flag, error, result = get_sm_by_id(data["id"])
     else:
         flag, error, result = True, None, sm_data
     if not flag or len(result) <= 0:
-        return 400, ["sm not foud"]
+        return 400, {"msg": "sm not foud"}
     history_sm = json.loads(result[12])
     emp_id_creation = result[6]
     time_zone = pytz.timezone(timezone_software)

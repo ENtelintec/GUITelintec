@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-__author__ = "Edisson Naula"
-__date__ = "$ 01/abr./2024  at 10:26 $"
 
 from templates.resources.midleware.MD_SM import create_urgent_sm_from_api
 from static.Models.api_sm_models import SMUrgentPostForm
@@ -58,6 +56,9 @@ from templates.resources.midleware.MD_SM import (
     get_sm_items_from_api,
     update_sm_item_state_and_inventory,
 )
+
+__author__ = "Edisson Naula"
+__date__ = "$ 01/abr./2024  at 10:26 $"
 
 ns = Namespace("GUI/api/v1/sm")
 

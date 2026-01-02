@@ -131,7 +131,7 @@ class QuotationProductsUpload(Resource):
         if "file" not in request.files:
             return {"data": "No se detecto un archivo"}, 400
         file = request.files["file"]
-        if file:
+        if file and file.filename:
             filename = secure_filename(file.filename)
             filepath_download = os.path.join(tempfile.mkdtemp(), filename)
             file.save(filepath_download)
@@ -218,7 +218,7 @@ class ContractProductsUpload(Resource):
         if "file" not in request.files:
             return {"data": "No se detecto un archivo"}, 400
         file = request.files["file"]
-        if file:
+        if file and file.filename:
             filename = secure_filename(file.filename)
             filepath_download = os.path.join(tempfile.mkdtemp(), filename)
             file.save(filepath_download)
@@ -265,7 +265,7 @@ class CompareContractQuotation(Resource):
             return {"data": "No se detecto un archivo"}, 400
         file = request.files["file"]
         #  get argument id_quotation
-        data = {}
+        data: dict[str, int | str | None] = {}
         id_quotation = request.form.get("id_quotation")
         try:
             data["id_quotation"] = int(id_quotation) if id_quotation else None
@@ -276,15 +276,15 @@ class CompareContractQuotation(Resource):
                 "data": None,
                 "msg": "Error at structure of id_quotation None value",
             }, 400
-        if file:
+        if file and file.filename:
             filename = secure_filename(file.filename)
             filepath_download = os.path.join(tempfile.mkdtemp(), filename)
             file.save(filepath_download)
             data["path"] = filepath_download
-            data, code = compare_file_and_quotation(data)
+            data_out, code = compare_file_and_quotation(data)
             if code != 200:
-                return {"data": data, "msg": "Error at file structure"}, 400
-            return {"data": data, "msg": f"Ok with filaname: {filename}"}, 200
+                return {"data": data_out, "msg": "Error at file structure"}, 400
+            return {"data": data_out, "msg": f"Ok with filaname: {filename}"}, 200
         else:
             return {"msg": "No se subio el archivo"}, 400
 
@@ -327,7 +327,7 @@ class ItemsQuotationFileUpload(Resource):
         if "file" not in request.files:
             return {"data": "No se detecto un archivo"}, 400
         file = request.files["file"]
-        if file:
+        if file and file.filename:
             filename = secure_filename(file.filename)
             filepath_download = os.path.join(tempfile.mkdtemp(), filename)
             file.save(filepath_download)
@@ -350,7 +350,7 @@ class ItemsContractFileUpload(Resource):
         if "file" not in request.files:
             return {"data": "No se detecto un archivo"}, 400
         file = request.files["file"]
-        if file:
+        if file and file.filename:
             filename = secure_filename(file.filename)
             filepath_download = os.path.join(tempfile.mkdtemp(), filename)
             file.save(filepath_download)
