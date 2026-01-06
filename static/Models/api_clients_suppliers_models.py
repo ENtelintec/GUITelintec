@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
+
 __author__ = "Edisson Naula"
 __date__ = "$ 27/ene/2025  at 16:17 $"
 
 from wtforms.form import Form
 from wtforms.validators import InputRequired
+from wtforms import validators
 
 from static.constants import api
 from flask_restx import fields
@@ -52,11 +54,14 @@ items_supplier_model = api.model(
         "id_supplier": fields.Integer(
             required=False, description="The supplier id only required in update"
         ),
+        "is_erased": fields.Integer(
+            required=False, description="The is erased flag only required in update"
+        ),
     },
 )
 
 supplier_model = api.model(
-    "SupplierAMC",
+    "SupplierAMCInsert",
     {
         "id": fields.Integer(required=True, description="The supplier id"),
         "name": fields.String(required=True, description="The supplier name"),
@@ -71,9 +76,7 @@ supplier_model = api.model(
         "web": fields.String(required=True, description="The supplier web url"),
         "type": fields.String(required=True, description="The supplier type"),
         "extra_info": fields.Nested(extra_info_supplier_model),
-        "items": fields.List(
-            fields.Nested(items_supplier_model), required=False
-        ),
+        "items": fields.List(fields.Nested(items_supplier_model), required=False),
     },
 )
 suppliers_output_model = api.model(
@@ -151,9 +154,14 @@ class ItemsSupplierFormUpdate(Form):
     part_number = StringField(
         "part_number", validators=[InputRequired(message="Part number is required")]
     )
-    id = IntegerField("id", validators=[InputRequired(message="Id is required")])
+    id = IntegerField(
+        "id", validators=[validators.number_range(min=-1, message="Invalid id")]
+    )
     id_supplier = IntegerField(
         "id_supplier", validators=[InputRequired(message="Id supplier is required")]
+    )
+    is_erased = IntegerField(
+        "is_erased", validators=[validators.number_range(min=-1, message="Invalid id")]
     )
 
 

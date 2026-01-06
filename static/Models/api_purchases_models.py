@@ -476,7 +476,7 @@ class HistoryPurchaseForm(Form):
     comment = StringField("comment", [], default="")
 
 
-class ItemsPOForm(Form):
+class ItemsPOFormPU(Form):
     description = StringField("description", [InputRequired()])
     quantity = FloatField("quantity", [InputRequired()])
     unit_price = FloatField("unit_price", [InputRequired()])

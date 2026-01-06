@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
-__author__ = "Edisson Naula"
-__date__ = "$ 20/jun./2024  at 15:06 $"
+
 
 from flask import request, send_file
 from flask_restx import Namespace, Resource
@@ -49,6 +48,9 @@ from templates.resources.midleware.MD_Purchases import (
     fetch_pos_applications_to_approve,
     generate_folios_po,
 )
+
+__author__ = "Edisson Naula"
+__date__ = "$ 20/jun./2024  at 15:06 $"
 
 ns = Namespace("GUI/api/v1/admin/collections")
 

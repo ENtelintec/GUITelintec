@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from templates.controllers.supplier.suppliers_controller import delete_item_amc
 from datetime import datetime
 from templates.controllers.supplier.suppliers_controller import get_items_supplier_by_id
 import json
@@ -588,8 +589,24 @@ def update_supplier(data):
     errors_i = []
     items = data.get("items", [])
     for item in items:
+        id_item = item.get("id")
+        if id_item == 0:
+            flag, error, result = create_item_amc(
+                item.get("item_name"),
+                item.get("unit_price"),
+                item.get("part_number"),
+                data.get("id_supplier"),
+            )
+            if not flag:
+                errors_i.append(error)
+            continue
+        if data.get("is_erased", 0)==1:
+            flag, error, result = delete_item_amc(id_item)
+            if not flag:
+                errors_i.append(error)
+            continue
         flag, error, result = update_item_amc(
-            item.get("id"),
+            id_item,
             item.get("item_name"),
             item.get("unit_price"),
             item.get("part_number"),

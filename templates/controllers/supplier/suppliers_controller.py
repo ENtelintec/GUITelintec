@@ -108,10 +108,11 @@ def get_items_supplier_by_id(id_supplier=None):
         )
         vals = (id_supplier,)
         flag, error, result = execute_sql(sql, vals, 2)
-    
+
     if not isinstance(result, list):
         return False, error, []
     return flag, error, result
+
 
 def create_supplier_brands_amc(
     name_provider,
@@ -233,6 +234,13 @@ def update_item_amc(
     return flag, error, rows_changed
 
 
+def delete_item_amc(id_item):
+    delete_sql = "DELETE FROM sql_telintec_mod_admin.items_suppliers_amc WHERE id = %s "
+    vals = (id_item,)
+    flag, error, rows_changed = execute_sql(delete_sql, vals, 3)
+    return flag, error, rows_changed
+
+
 def update_supplier_brands_amc(
     id_provider,
     name_provider,
@@ -291,9 +299,7 @@ def update_supplier_amc(
     address_provider = str(address_provider)
     web_provider = str(web_provider)
     type_provider = str(type_provider)
-    extra_info = (
-        json.dumps(extra_info) if extra_info else f"{'brands': [], 'rfc': ''}"
-    )
+    extra_info = json.dumps(extra_info) if extra_info else f"{'brands': [], 'rfc': ''}"
     update_sql = (
         "UPDATE sql_telintec.suppliers_amc "
         "SET name = %s, seller_name = %s, seller_email = %s, phone = %s, address = %s, web_url = %s, type = %s, "
