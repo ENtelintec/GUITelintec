@@ -220,7 +220,7 @@ def update_item_amc(
 ):
     update_sql = (
         "UPDATE sql_telintec_mod_admin.items_suppliers_amc "
-        "SET item_name = %s, unit_price = %s, part_number = %s,  id_supplier_amc = %s"
+        "SET item_name = %s, unit_price = %s, part_number = %s, id_supplier_amc = %s "
         "WHERE id = %s "
     )
     vals = (
