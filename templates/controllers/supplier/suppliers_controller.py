@@ -120,7 +120,7 @@ def get_all_suppliers_amc():
         "    FROM sql_telintec_mod_admin.items_suppliers_amc i"
         "    WHERE i.id IS NOT NULL"
         "    GROUP BY i.id_supplier_amc"
-        ") items ON s.id_supplier = items.id_supplier_amc"
+        ") items ON s.id_supplier = items.id_supplier_amc "
         "ORDER BY s.name;"
     )
     flag, error, result = execute_sql(sql, None, 5)
