@@ -117,7 +117,7 @@ def get_all_suppliers_amc():
 def get_items_supplier_by_id(id_supplier=None):
     if id_supplier is None:
         sql = (
-            "SELECT id_item, item_name, unit_price, part_number, created_at, updated_at "
+            "SELECT id, item_name, unit_price, part_number, created_at, updated_at "
             "FROM sql_telintec_mod_admin.items_suppliers_amc "
             "ORDER BY item_name"
         )
@@ -125,7 +125,7 @@ def get_items_supplier_by_id(id_supplier=None):
         flag, error, result = execute_sql(sql, vals, 5)
     else:
         sql = (
-            "SELECT id_item, item_name, unit_price, part_number, created_at, updated_at"
+            "SELECT id, item_name, unit_price, part_number, created_at, updated_at"
             "FROM sql_telintec_mod_admin.items_suppliers_amc "
             "WHERE id_supplier = %s "
             "ORDER BY item_name"
