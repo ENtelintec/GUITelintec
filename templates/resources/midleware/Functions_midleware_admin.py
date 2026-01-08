@@ -501,6 +501,7 @@ def get_all_suppliers_data():
                 "type": item[7],
                 "brands": brands,
                 "rfc": extra_info.get("rfc", ""),
+                "items": json.loads(item[9])
             }
         )
     return {"data": data_out, "msg": "Ok"}, 200
