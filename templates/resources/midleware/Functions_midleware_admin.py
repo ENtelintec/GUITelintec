@@ -494,7 +494,7 @@ def get_all_suppliers_data():
                 "id": item[0],
                 "name": item[1],
                 "seller_name": item[2],
-                "email": item[3],
+                "seller_email": item[3],
                 "phone": item[4],
                 "address": item[5],
                 "web_url": item[6],
@@ -541,7 +541,7 @@ def insert_supplier(data):
     flag, error, id_supplier = create_supplier_amc(
         data.get("name").upper(),
         data.get("seller_name").upper(),
-        data.get("email").upper(),
+        data.get("seller_email").upper(),
         data.get("phone"),
         data.get("address"),
         data.get("web"),
@@ -575,8 +575,8 @@ def update_supplier(data):
     flag, error, result = update_supplier_amc(
         data.get("id"),
         data.get("name").upper(),
-        data.get("seller_name").upper(),
-        data.get("email").upper(),
+        data.get("seller_name", "").upper(),
+        data.get("seller_email", "").upper(),
         data.get("phone"),
         data.get("address"),
         data.get("web"),
