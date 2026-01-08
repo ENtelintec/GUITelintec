@@ -533,7 +533,7 @@ class PurchaseOrderPostForm(Form):
     supplier = IntegerField("supplier", [InputRequired()])
     comment = StringField("comment", [])
     time_delivery = StringField("time_delivery", [], default="")
-    items = FieldList(FormField(ItemsPOForm), "items", validators=[], default=[])
+    items = FieldList(FormField(ItemsPOFormPU), "items", validators=[], default=[])
     metadata_telintec = FormField(MetadataTelitencForm)
     metadata_supplier = FormField(MetadataSupplierForm)
     sm_id = IntegerField("sm_id", [], default=0)
