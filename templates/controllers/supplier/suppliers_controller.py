@@ -95,7 +95,7 @@ def get_all_suppliers_amc():
         "SELECT s.id_supplier, s.name, s.seller_name, s.seller_email, s.phone, "
         "s.address, s.web_url, s.type, s.extra_info, "
         "COALESCE(JSON_ARRAYAGG(JSON_OBJECT("
-        "'id_item', i.id_item, "
+        "'id_item', i.id, "
         "'item_name', i.item_name, "
         "'unit_price', i.unit_price, "
         "'part_number', i.part_number, "
@@ -103,7 +103,7 @@ def get_all_suppliers_amc():
         "'updated_at', i.updated_at"
         ")), JSON_ARRAY()) AS items "
         "FROM sql_telintec.suppliers_amc s "
-        "LEFT JOIN sql_telintec.items_amc i ON s.id_supplier = i.id_supplier "
+        "LEFT JOIN sql_telintec_mod_admin.items_suppliers_amc i ON s.id_supplier = i.id_supplier_amc "
         "GROUP BY s.id_supplier, s.name, s.seller_name, s.seller_email, s.phone, "
         "s.address, s.web_url, s.type, s.extra_info "
         "ORDER BY s.name"
@@ -118,7 +118,7 @@ def get_items_supplier_by_id(id_supplier=None):
     if id_supplier is None:
         sql = (
             "SELECT id_item, item_name, unit_price, part_number, created_at, updated_at "
-            "FROM sql_telintec.items_amc "
+            "FROM sql_telintec_mod_admin.items_suppliers_amc "
             "ORDER BY item_name"
         )
         vals = None
@@ -126,7 +126,7 @@ def get_items_supplier_by_id(id_supplier=None):
     else:
         sql = (
             "SELECT id_item, item_name, unit_price, part_number, created_at, updated_at"
-            "FROM sql_telintec.items_amc "
+            "FROM sql_telintec_mod_admin.items_suppliers_amc "
             "WHERE id_supplier = %s "
             "ORDER BY item_name"
         )
