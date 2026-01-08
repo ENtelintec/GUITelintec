@@ -185,7 +185,7 @@ class SupplierUpdateForm(Form):
     id = IntegerField("id", validators=[InputRequired(message="Id is required")])
     name = StringField("name", validators=[InputRequired(message="Name is required")])
     seller_name = StringField("seller_name", validators=[], default="None")
-    email = EmailField("email", validators=[InputRequired(message="Email is required")])
+    seller_email = EmailField("seller_email", validators=[InputRequired(message="Email is required")])
     phone = StringField(
         "phone", validators=[InputRequired(message="Phone is required")]
     )
