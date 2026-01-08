@@ -78,11 +78,35 @@ def get_supplier_amc(name: str, id_s: int):
     return flag, error, result, columns
 
 
+# def get_all_suppliers_amc():
+#     sql = (
+#         "SELECT id_supplier, name, seller_name, seller_email, phone, address, web_url, type, extra_info "
+#         "FROM sql_telintec.suppliers_amc "
+#         "ORDER BY name"
+#     )
+#     flag, error, result = execute_sql(sql, None, 5)
+#     if not isinstance(result, list):
+#         return False, error, []
+#     return flag, error, result
+
+
 def get_all_suppliers_amc():
     sql = (
-        "SELECT id_supplier, name, seller_name, seller_email, phone, address, web_url, type, extra_info "
-        "FROM sql_telintec.suppliers_amc "
-        "ORDER BY name"
+        "SELECT s.id_supplier, s.name, s.seller_name, s.seller_email, s.phone, "
+        "s.address, s.web_url, s.type, s.extra_info, "
+        "COALESCE(JSON_ARRAYAGG(JSON_OBJECT("
+        "'id_item', i.id_item, "
+        "'item_name', i.item_name, "
+        "'unit_price', i.unit_price, "
+        "'part_number', i.part_number, "
+        "'created_at', i.created_at, "
+        "'updated_at', i.updated_at"
+        ")), JSON_ARRAY()) AS items "
+        "FROM sql_telintec.suppliers_amc s "
+        "LEFT JOIN sql_telintec.items_amc i ON s.id_supplier = i.id_supplier "
+        "GROUP BY s.id_supplier, s.name, s.seller_name, s.seller_email, s.phone, "
+        "s.address, s.web_url, s.type, s.extra_info "
+        "ORDER BY s.name"
     )
     flag, error, result = execute_sql(sql, None, 5)
     if not isinstance(result, list):
