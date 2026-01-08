@@ -514,8 +514,6 @@ def get_items_supplier_name(id_supplier: str):
         print(str(e))
         id_s = None
     flag, error, results = get_items_supplier_by_id(id_s)
-    # parse items
-    # "SELECT id_item, item_name, unit_price, part_number, created_at, updated_at "
     if not flag:
         return {"data": [], "msg": str(error)}, 400
     data_out = []
