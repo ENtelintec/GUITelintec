@@ -609,7 +609,7 @@ def update_supplier(data):
             item.get("item_name"),
             item.get("unit_price"),
             item.get("part_number"),
-            data.get("id_supplier"),
+            item.get("id_supplier"),
         )
         if not flag:
             errors_i.append(error)
