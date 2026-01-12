@@ -522,7 +522,7 @@ def get_items_supplier_name(id_supplier: str):
             {
                 "id": item[0],
                 "item_name": item[1],
-                "unit_price": item[2],
+                "unit_price": float(item[2]),
                 "part_number": item[3],
                 "created_at": item[4].strftime(format_timestamps)
                 if isinstance(item[4], datetime)
