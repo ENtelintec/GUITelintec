@@ -771,8 +771,10 @@ def create_metadata_for_pdf_po(extra_info: dict):
 def dowload_file_purchase(order_id: int):
     flag, error, result = get_purchase_order_with_items_by_id(order_id)
     if not isinstance(result, list):
+        print("error at getting purchase order", result)
         return None, 400
     if not flag or len(result) == 0:
+        print("error at getting purchase order", result)
         return None, 400
     date = result[0]
     download_path = os.path.join(
