@@ -57,6 +57,9 @@ items_supplier_model = api.model(
         "is_erased": fields.Integer(
             required=False, description="The is erased flag only required in update"
         ),
+        "currency": fields.String(
+            required=False, description="The currency of the unit price", example="MXN"
+        ),
     },
 )
 
@@ -142,6 +145,7 @@ class ItemsSupplierFormInsert(Form):
     part_number = StringField(
         "part_number", validators=[InputRequired(message="Part number is required")]
     )
+    currency = StringField("currency", validators=[], default="MXN")
 
 
 class ItemsSupplierFormUpdate(Form):
@@ -163,6 +167,7 @@ class ItemsSupplierFormUpdate(Form):
     is_erased = IntegerField(
         "is_erased", validators=[validators.number_range(min=-1, message="Invalid id")]
     )
+    currency = StringField("currency", validators=[], default="MXN")
 
 
 class SupplierInsertForm(Form):
