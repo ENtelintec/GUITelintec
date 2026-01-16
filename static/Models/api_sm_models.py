@@ -114,7 +114,7 @@ products_answer_model = api.model(
         "page": fields.Integer(required=True, description="The page number send"),
         "pages": fields.Integer(
             required=True,
-            description="The total number of" " pages with the selected limit",
+            description="The total number of pages with the selected limit",
         ),
         "error": fields.Raw(
             required=False,
@@ -155,6 +155,17 @@ products_request_model = api.model(
     },
 )
 
+comment_sm_model = api.model(
+    "CommentSM",
+    {
+        "text": fields.String(required=True, description="The comment text"),
+        "user": fields.String(
+            required=True, description="The user who made the comment"
+        ),
+    },
+)
+
+
 sm_info_model_post = api.model(
     "MaterialRequest",
     {
@@ -187,7 +198,7 @@ sm_info_model_post = api.model(
             required=True, description="The critical date", example="2024-07-15"
         ),
         "status": fields.Integer(required=True, description="The status of the sm"),
-        "comment": fields.List(fields.String(required=False, description="The comment"), required=False),
+        "comment": fields.List(fields.Nested(comment_sm_model), required=False),
         "destination": fields.String(
             required=True, description="The destination area in telintec"
         ),
@@ -238,7 +249,7 @@ sm_info_model_post_urgent = api.model(
         "destination": fields.String(
             required=True, description="The destination area in telintec"
         ),
-        "comment": fields.List(fields.String(required=False, description="The comment"), required=False),
+        "comment": fields.List(fields.Nested(comment_sm_model), required=False),
     },
 )
 
@@ -276,12 +287,14 @@ sm_model_put = api.model(
         ),
         "status": fields.Integer(required=True, description="The status of the sm"),
         "history": fields.List(fields.Nested(history_model_sm)),
-        "comment": fields.List(fields.String(required=False, description="The comments"), required=False),
+        "comment": fields.List(fields.Nested(comment_sm_model), required=False),
         "destination": fields.String(
             required=True, description="The destination area in telintec"
         ),
         "date_closing": fields.String(
-            required=False, description="The date of closing the sm", example="2024-07-15"
+            required=False,
+            description="The date of closing the sm",
+            example="2024-07-15",
         ),
     },
 )
@@ -316,7 +329,7 @@ sm_model_out = api.model(
         ),
         "status": fields.Integer(required=True, description="The status of the sm"),
         "history": fields.List(fields.Nested(history_model_sm)),
-        "comment": fields.List(fields.String(required=False, description="The comments"), required=False),
+        "comment": fields.List(fields.Nested(comment_sm_model), required=False),
         "destination": fields.String(
             required=True, description="The destination area in telintec"
         ),
@@ -396,13 +409,12 @@ sm_model_out = api.model(
     },
 )
 
-
 control_table_sm_model = api.model(
     "ControlTableSM",
     {
         "urgent": fields.Integer(required=False, description="Urgent", example=0),
         "project": fields.String(required=False, description="The project"),
-        "comment": fields.List(fields.String(required=False, description="The comments"), required=False),
+        "comment": fields.List(fields.Nested(comment_sm_model), required=False),
         "activity_description": fields.String(
             required=False, description="Description of activity"
         ),
@@ -492,7 +504,7 @@ table_sm_model = api.model(
         "page": fields.Integer(required=True, description="The page number send"),
         "pages": fields.Integer(
             required=True,
-            description="The total number of" " pages with the selected limit",
+            description="The total number of pages with the selected limit",
         ),
         "error": fields.Raw(
             required=False,
@@ -760,6 +772,11 @@ class HistoryFormSM(Form):
     user = IntegerField("user", validators=[InputRequired()])
 
 
+class CommentSmForm(Form):
+    text = StringField("text", validators=[InputRequired()])
+    user = StringField("user", validators=[InputRequired()])
+
+
 class SMInfoForm(Form):
     id = IntegerField(
         "id", validators=[validators.number_range(min=0, message="Invalid id sm info")]
@@ -785,7 +802,7 @@ class SMInfoForm(Form):
     status = IntegerField(
         "status", validators=[validators.number_range(min=0, message="Invalid id")]
     )
-    comment = FieldList(StringField("comment", validators=[], default=""))
+    comment = FieldList(FormField(CommentSmForm, "comment"), validators=[], default=[])
     activity_description = StringField(
         "activity_description", validators=[], default=""
     )
@@ -813,7 +830,7 @@ class SMUrgentInfoForm(Form):
     status = IntegerField(
         "status", validators=[validators.number_range(min=0, message="Invalid id")]
     )
-    comment = FieldList(StringField("comment", validators=[], default=""))
+    comment = FieldList(FormField(CommentSmForm, "comment"), validators=[], default=[])
     activity_description = StringField(
         "activity_description", validators=[], default=""
     )
@@ -824,10 +841,11 @@ class SMUrgentInfoForm(Form):
     contract_contact = StringField("contract_contact", default="")
     project = StringField("project", validators=[], default="")
 
+
 class SMInfoControlTableForm(Form):
     project = StringField("project", validators=[], default="")
     urgent = IntegerField("urgent", validators=[], default=0)
-    comment = FieldList(StringField("comment", validators=[], default="")) 
+    comment = FieldList(FormField(CommentSmForm, "comment"), validators=[], default=[])
     request_date = DateField("request_date", validators=[], filters=[date_filter])
     date = DateField("date", validators=[], filters=[date_filter])
     critical_date = DateField("critical_date", validators=[], filters=[date_filter])
