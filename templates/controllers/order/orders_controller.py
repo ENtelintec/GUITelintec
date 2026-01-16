@@ -66,7 +66,7 @@ def update_vorder_db(
 
 
 def delete_vorder_db(id_vorder: int):
-    sql = "DELETE FROM sql_telintec.virtual_orders " "WHERE vo_id = %s"
+    sql = "DELETE FROM sql_telintec.virtual_orders WHERE vo_id = %s"
     val = (id_vorder,)
     flag, e, out = execute_sql(sql, val, 3)
     return flag, e, out
@@ -92,6 +92,8 @@ def get_purchase_orders_with_items(status: int | None, created_by: int | None):
         " 'unit_price', poi.unit_price, "
         " 'extra_info', poi.extra_info, "
         " 'duration_services', poi.duration_services "
+        ",'tool', poi.tool "
+        ",'currency', poi.currency "
         ")) AS items, "
         "po.time_delivery "
         "FROM sql_telintec_mod_admin.purchase_orders AS po "
@@ -124,6 +126,7 @@ def get_purchase_order_with_items_by_id(order_id: int):
         " 'extra_info', poi.extra_info, "
         " 'duration_services', poi.duration_services, "
         " 'tool', poi.tool "
+        ",'currency', poi.currency "
         ")) AS items, "
         "po.time_delivery "
         "FROM sql_telintec_mod_admin.purchase_orders AS po "
@@ -156,6 +159,7 @@ def get_pos_application_with_items(status: int | None, created_by: int | None):
         " 'extra_info', poi.extra_info, "
         " 'duration_services', poi.duration_services, "
         " 'tool', poi.tool "
+        ",'currency', poi.currency "
         ")) AS items, "
         "po.extra_info "
         "FROM sql_telintec_mod_admin.pos_applications AS po "
@@ -186,6 +190,7 @@ def get_pos_application_with_items_to_approve():
         " 'extra_info', poi.extra_info, "
         " 'duration_services', poi.duration_services, "
         " 'tool', poi.tool "
+        " ,'currency', poi.currency "
         ")) AS items, "
         "po.extra_info "
         "FROM sql_telintec_mod_admin.pos_applications AS po "
@@ -287,7 +292,7 @@ def insert_po_application(
     reference: str,
     history: list,
     approved=1,
-    extra_info: dict = None,
+    extra_info: dict|None = None,
 ):
     sql = (
         "INSERT INTO sql_telintec_mod_admin.pos_applications "
@@ -368,11 +373,12 @@ def insert_purchase_order_item(
     duration_services: str,
     extra_info: dict,
     tool=0,
+    currency="MXN",
 ):
     sql = (
         "INSERT INTO sql_telintec_mod_admin.purchase_order_items "
-        "(order_id, quantity, unit_price, description, duration_services, extra_info, tool) "
-        "VALUES (%s, %s, %s, %s, %s, %s, %s)"
+        "(order_id, quantity, unit_price, description, duration_services, extra_info, tool, currency) "
+        "VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
     )
     val = (
         order_id,
@@ -382,6 +388,7 @@ def insert_purchase_order_item(
         duration_services,
         json.dumps(extra_info),
         tool,
+        currency,
     )
     flag, e, out = execute_sql(sql, val, 3)
     return flag, e, out
@@ -420,11 +427,13 @@ def update_po_item(
     description: str,
     duration_services: int,
     extra_info: dict,
+    currency="MXN",
 ):
     sql = (
         "UPDATE sql_telintec_mod_admin.purchase_order_items "
-        "SET purchase_id = %s, quantity = %s, unit_price = %s, description = %s, duration_services = %s, extra_info = %s "
-        "WHERE id_item = %s"
+        "SET purchase_id = %s, quantity = %s, unit_price = %s, description = %s, "
+        " duration_services = %s, extra_info = %s, currency = %s "
+        " WHERE id_item = %s"
     )
     val = (
         purchase_id,
@@ -433,6 +442,7 @@ def update_po_item(
         description,
         duration_services,
         json.dumps(extra_info),
+        currency,
         id_item,
     )
     flag, e, out = execute_sql(sql, val, 3)

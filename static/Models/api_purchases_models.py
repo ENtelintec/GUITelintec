@@ -84,6 +84,9 @@ items_po_model = api.model(
         "comment": fields.String(
             required=False, description="The comment", example="Some comment"
         ),
+        "currency": fields.String(
+            required=False, description="The currency", example="MXN"
+        ),
     },
 )
 
@@ -488,7 +491,8 @@ class ItemsPOFormPU(Form):
     duration_services = StringField("duration_services", [], default="0")
     supplier = StringField("supplier", [], default="")
     purchase_id = IntegerField("purchase_id", [], default=0)
-    id = IntegerField("id", [InputRequired()])
+    id = IntegerField("id", [number_range(min=-1, message="Invalid id")], default=-1)
+    currency = StringField("currency", [], default="MXN")
 
 
 class ItemsPOApplicationForm(Form):
@@ -541,7 +545,7 @@ class PurchaseOrderPostForm(Form):
 
 
 class ItemsPOUpdateForm(Form):
-    id = IntegerField("id", [], default=-1)
+    id = IntegerField("id", [number_range(min=-1, message="Invalid id")], default=-1)
     id_purchase = IntegerField("id_purchase", [], default=0)
     description = StringField("description", [InputRequired()])
     quantity = FloatField("quantity", [InputRequired()])
@@ -557,6 +561,7 @@ class ItemsPOUpdateForm(Form):
     n_parte = StringField("n_parte", [], default="")
     duration_services = StringField("duration_services", [], default="")
     supplier = StringField("supplier", [], default="")
+    currency = StringField("currency", [], default="MXN")
 
 
 class ItemsPOApplicationUpdateForm(Form):

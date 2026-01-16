@@ -235,22 +235,43 @@ def create_purchaser_order_api(data, data_token):
     flag_error = False
     for item in data["items"]:
         extra_info = create_extra_info_product_from_data(item)
-        flag, error, result = update_po_item(
-            item["id"],
-            id_order,
-            item["quantity"],
-            item["unit_price"],
-            item["description"],
-            item["duration_services"],
-            extra_info,
-        )
+        update_item = True
+        if item["id"] <= 0:
+            flag, error, result = insert_purchase_order_item(
+                id_order,
+                item["quantity"],
+                item["unit_price"],
+                item["description"],
+                item["duration_services"],
+                extra_info,
+                item["tool"],
+                item["currency"],
+            )
+            update_item = False
+        else:
+            flag, error, result = update_po_item(
+                item["id"],
+                id_order,
+                item["quantity"],
+                item["unit_price"],
+                item["description"],
+                item["duration_services"],
+                extra_info,
+                item["currency"],
+            )
         if not flag:
             msg_moves.append(
-                f"x-Error al crear item de orden de compra -{item['description']}-{str(error)}"
+                f"x-Error al actualizar item de orden de compra -{item['description']}-{str(error)}"
+                if update_item
+                else f"x-Error al crear item de orden de compra -{item['description']}-{str(error)}"
             )
             flag_error = True
         else:
-            msg_moves.append(f"Item de orden de compra creado con ID-{result}")
+            msg_moves.append(
+                f"Item de orden de compra creado con ID-{result}"
+                if not update_item
+                else f"Item de orden de compra actualizado con ID-{item['id']}"
+            )
     msg += "\n" + "\n".join(msg_moves)
     if update_sm_control_table:
         code, data_out = update_sm_from_control_table(
@@ -319,23 +340,42 @@ def update_purchase_order_api(data, data_token):
     flag_error = False
     for item in data["items"]:
         extra_info = create_extra_info_product_from_data(item)
-        flag, error, result = update_po_item(
-            item["id"],
-            data["id"],
-            item["quantity"],
-            item["unit_price"],
-            item["description"],
-            item["duration_services"],
-            extra_info,
-        )
+        update_item = True
+        if item["id"] <= 0:
+            flag, error, result = insert_purchase_order_item(
+                data["id"],
+                item["quantity"],
+                item["unit_price"],
+                item["description"],
+                item["duration_services"],
+                extra_info,
+                item["tool"],
+                item["currency"],
+            )
+            update_item = False
+        else:
+            flag, error, result = update_po_item(
+                item["id"],
+                data["id"],
+                item["quantity"],
+                item["unit_price"],
+                item["description"],
+                item["duration_services"],
+                extra_info,
+                item["currency"],
+            )
         if not flag:
             msg_items.append(
                 f"x-Error al actualizar item de orden de compra -{item['description']}-{str(error)}"
+                if update_item
+                else f"x-Error al crear item de orden de compra -{item['description']}-{str(error)}"
             )
             flag_error = True
         else:
             msg_items.append(
                 f"Item de orden de compra actualizado con ID-{item['id']}-{item['description']}"
+                if update_item
+                else f"Item de orden de compra creado con ID-{result}-{item['description']}"
             )
     msg += "\n" + "\n".join(msg_items)
     create_notification_permission_notGUI(
