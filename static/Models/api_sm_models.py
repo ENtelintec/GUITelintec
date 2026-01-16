@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from static.Models.api_models import datetime_filter
+from wtforms.fields.datetime import DateTimeField
 __author__ = "Edisson Naula"
 __date__ = "$ 10/may./2024  at 16:31 $"
 
@@ -155,12 +157,16 @@ products_request_model = api.model(
     },
 )
 
+
 comment_sm_model = api.model(
     "CommentSM",
     {
         "text": fields.String(required=True, description="The comment text"),
         "user": fields.String(
             required=True, description="The user who made the comment"
+        ),
+        "timestamp": fields.String(
+            required=True, description="The timestamp of the comment", example="2024-06-29 12:00:00"
         ),
     },
 )
@@ -408,6 +414,8 @@ sm_model_out = api.model(
         ),
     },
 )
+
+
 
 control_table_sm_model = api.model(
     "ControlTableSM",
@@ -775,6 +783,7 @@ class HistoryFormSM(Form):
 class CommentSmForm(Form):
     text = StringField("text", validators=[InputRequired()])
     user = StringField("user", validators=[InputRequired()])
+    timestamp = DateTimeField("timestamp", validators=[], filters=[datetime_filter])
 
 
 class SMInfoForm(Form):
