@@ -234,19 +234,21 @@ def create_item_amc(
     unit_price,
     part_number,
     id_supplier_amc,
-    currency="MXN"
+    currency="MXN",
+    id_inventory=None
 ):
     insert_sql = (
         "INSERT INTO sql_telintec_mod_admin.items_suppliers_amc "
-        "(id_supplier_amc, item_name, unit_price, part_number, currency) "
-        "VALUES (%s, %s, %s, %s, %s)"
+        "(id_supplier_amc, item_name, unit_price, part_number, currency, id_inventory) "
+        "VALUES (%s, %s, %s, %s, %s, %s)"
     )
     vals = (
         id_supplier_amc,
         item_name,
         unit_price,
         part_number,
-        currency
+        currency,
+        id_inventory
     )
     flag, error, rows_changed = execute_sql(insert_sql, vals, 3)
     return flag, error, rows_changed
@@ -258,11 +260,12 @@ def update_item_amc(
     unit_price,
     part_number,
     id_supplier_amc,
-    currency="MXN"
+    currency="MXN",
+    id_inventory=None
 ):
     update_sql = (
         "UPDATE sql_telintec_mod_admin.items_suppliers_amc "
-        "SET item_name = %s, unit_price = %s, part_number = %s, id_supplier_amc = %s, currency = %s "
+        "SET item_name = %s, unit_price = %s, part_number = %s, id_supplier_amc = %s, currency = %s, id_inventory = %s "
         "WHERE id = %s "
     )
     vals = (
@@ -271,6 +274,7 @@ def update_item_amc(
         part_number,
         id_supplier_amc,
         currency,
+        id_inventory,
         id_item,
     )
     flag, error, rows_changed = execute_sql(update_sql, vals, 3)

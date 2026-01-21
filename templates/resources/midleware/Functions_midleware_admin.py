@@ -553,11 +553,16 @@ def insert_supplier(data):
     items = data.get("items", [])
     errors_i = []
     for item in items:
+        id_inventory = item.get("id_inventory", None)
+        if id_inventory == 0:
+            id_inventory = None
         flag, error, result = create_item_amc(
             item.get("item_name"),
             item.get("unit_price"),
             item.get("part_number"),
             id_supplier,
+            currency=item.get("currency", "MXN"),
+            id_inventory=id_inventory
         )
         if not flag:
             errors_i.append(error)
@@ -589,12 +594,17 @@ def update_supplier(data):
     items = data.get("items", [])
     for item in items:
         id_item = item.get("id")
+        id_inventory = item.get("id_inventory", None)
+        if id_inventory == 0:
+            id_inventory = None
         if id_item == 0:
             flag, error, result = create_item_amc(
                 item.get("item_name"),
                 item.get("unit_price"),
                 item.get("part_number"),
                 item.get("id_supplier"),
+                currency=item.get("currency", "MXN"),
+                id_inventory=id_inventory
             )
             if not flag:
                 errors_i.append(error)
@@ -610,6 +620,8 @@ def update_supplier(data):
             item.get("unit_price"),
             item.get("part_number"),
             item.get("id_supplier"),
+            currency=item.get("currency", "MXN"),
+            id_inventory=id_inventory
         )
         if not flag:
             errors_i.append(error)

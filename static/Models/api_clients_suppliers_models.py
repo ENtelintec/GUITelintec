@@ -60,6 +60,7 @@ items_supplier_model = api.model(
         "currency": fields.String(
             required=False, description="The currency of the unit price", example="MXN"
         ),
+        "id_inventory": fields.Integer(required=False, description="The inventory id"),
     },
 )
 
@@ -146,6 +147,11 @@ class ItemsSupplierFormInsert(Form):
         "part_number", validators=[InputRequired(message="Part number is required")]
     )
     currency = StringField("currency", validators=[], default="MXN")
+    id_inventory = IntegerField(
+        "id_inventory",
+        validators=[validators.number_range(min=-1, message="Invalid id")],
+        default=0,
+    )
 
 
 class ItemsSupplierFormUpdate(Form):
@@ -168,6 +174,11 @@ class ItemsSupplierFormUpdate(Form):
         "is_erased", validators=[validators.number_range(min=-1, message="Invalid id")]
     )
     currency = StringField("currency", validators=[], default="MXN")
+    id_inventory = IntegerField(
+        "id_inventory",
+        validators=[validators.number_range(min=-1, message="Invalid id")],
+        default=0,
+    )
 
 
 class SupplierInsertForm(Form):
@@ -190,7 +201,9 @@ class SupplierUpdateForm(Form):
     id = IntegerField("id", validators=[InputRequired(message="Id is required")])
     name = StringField("name", validators=[InputRequired(message="Name is required")])
     seller_name = StringField("seller_name", validators=[], default="None")
-    seller_email = EmailField("seller_email", validators=[InputRequired(message="Email is required")])
+    seller_email = EmailField(
+        "seller_email", validators=[InputRequired(message="Email is required")]
+    )
     phone = StringField(
         "phone", validators=[InputRequired(message="Phone is required")]
     )
