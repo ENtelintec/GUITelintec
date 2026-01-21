@@ -116,6 +116,7 @@ def get_all_suppliers_amc():
         "                'created_at', i.created_at, "
         "                'updated_at', i.updated_at "
         "                , 'currency', i.currency "
+        "                , 'id_inventory', i.id_inventory "
         "            ) "
         "        ) AS items_json "
         "    FROM sql_telintec_mod_admin.items_suppliers_amc i "
@@ -133,7 +134,7 @@ def get_all_suppliers_amc():
 def get_items_supplier_by_id(id_supplier=None):
     if id_supplier is None:
         sql = (
-            "SELECT id, item_name, unit_price, part_number, created_at, updated_at, currency "
+            "SELECT id, item_name, unit_price, part_number, created_at, updated_at, currency, id_inventory "
             "FROM sql_telintec_mod_admin.items_suppliers_amc "
             "ORDER BY item_name"
         )
@@ -141,7 +142,7 @@ def get_items_supplier_by_id(id_supplier=None):
         flag, error, result = execute_sql(sql, vals, 5)
     else:
         sql = (
-            "SELECT id, item_name, unit_price, part_number, created_at, updated_at, currency "
+            "SELECT id, item_name, unit_price, part_number, created_at, updated_at, currency, id_inventory "
             "FROM sql_telintec_mod_admin.items_suppliers_amc "
             "WHERE id_supplier_amc = %s "
         )

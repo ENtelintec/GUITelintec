@@ -530,6 +530,8 @@ def get_items_supplier_name(id_supplier: str):
                 "updated_at": item[5].strftime(format_timestamps)
                 if isinstance(item[5], datetime)
                 else str(item[5]),
+                "currency": item[6],
+                "id_inventory": item[7],
             }
         )
     return {"data": data_out, "msg": "Ok"}, 200
