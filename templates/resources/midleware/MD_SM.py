@@ -928,7 +928,7 @@ def update_sm_from_control_table(
     extra_info = json.loads(result[14])
     comments = []
     for k, value in data["info"].items():
-        if k == "comments":
+        if k == "comment":
             comments = value
             continue
         extra_info[k] = value
