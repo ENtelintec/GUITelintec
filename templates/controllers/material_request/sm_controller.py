@@ -474,7 +474,7 @@ def update_sm_db(data):
     flag, error, result = execute_sql(sql, vals, 1)
     if not flag:
         return False, f"Error at retriving sm from db: {error}", None
-    if not isinstance(result, list):
+    if not (isinstance(result, list) or isinstance(result, tuple)):
         return False, "Error at retriving sm from db not list", None
     if len(result) == 0:
         return False, "Material request not found", None
