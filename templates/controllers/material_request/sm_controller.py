@@ -470,11 +470,12 @@ def update_sm_db(data):
         "WHERE sm_id = %s "
     )
     vals = (data["id"],)
+    print(f"sm retived: {data['id']}")
     flag, error, result = execute_sql(sql, vals, 1)
     if not flag:
         return False, f"Error at retriving sm from db: {error}", None
     if not isinstance(result, list):
-        return False, "Error at retriving sm from db", None
+        return False, "Error at retriving sm from db not list", None
     if len(result) == 0:
         return False, "Material request not found", None
     extra_info = json.loads(result[1])

@@ -930,6 +930,7 @@ def update_sm_from_control_table(
     for k, value in data["info"].items():
         if k == "comment":
             comments = value
+            print( "comments -->",k, value)
             continue
         extra_info[k] = value
         comment_history += f"-{k}-{value}-"
