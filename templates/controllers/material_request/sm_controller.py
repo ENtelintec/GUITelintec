@@ -559,13 +559,13 @@ def update_history_sm(sm_id, history: list, items: list, is_complete=False):
     return flag, error, result
 
 
-def update_history_status_sm(sm_id, history: list, status, extra_info):
+def update_history_status_sm(sm_id, history: list, status, extra_info, comment):
     sql = (
         "UPDATE sql_telintec.materials_request "
-        "SET history = %s, status =  %s "
+        "SET history = %s, status =  %s, extra_info = %s, comment = %s "
         "WHERE sm_id = %s "
     )
-    val = (json.dumps(history), status, sm_id)
+    val = (json.dumps(history), status, json.dumps(extra_info), json.dumps(comment), sm_id)
     flag, error, result = execute_sql(sql, val, 4)
     return flag, error, result
 

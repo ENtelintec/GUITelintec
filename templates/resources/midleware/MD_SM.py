@@ -548,6 +548,7 @@ def dispatch_sm(data, data_token):
         return 400, ["SM not foud"]
     id_user = result[6]
     products_sm = json.loads(result[10])
+    comment_general = json.loads(result[11])
     history_sm = json.loads(result[12])
     extra_info_sm = json.loads(result[14])
     folio = result[1]
@@ -571,7 +572,8 @@ def dispatch_sm(data, data_token):
         for item in products_sm
     }
     msg_items = []
-    operations_done = False
+    operations_done = flag_semidespachado
+    comments_items_updated = []
     for item_n in data["items"]:
         item_to_update = dict_products_sm.get(item_n["id"], {})
         old_item = item_to_update.copy()
@@ -648,8 +650,12 @@ def dispatch_sm(data, data_token):
         item_to_update["state"] = (
             4 if item_to_update["dispatched"] == item_to_update["quantity"] else 3
         )
+        
         # insertar al inicio de los comentarios
         item_to_update["comment"] = f"{item_n['comment']}\n{item_to_update['comment']}"
+        new_comment_item = item_n["comment"]
+        if new_comment_item.strip() != "" and new_comment_item not in comments_items_updated:
+            comments_items_updated.append(new_comment_item)
         # agregar los comandos
         item_to_update["comment"] += (
             " ;(Despachado) "
@@ -676,6 +682,15 @@ def dispatch_sm(data, data_token):
     comment_history += (
         "SM Despachada" if not flag_semidespachado else "SM Semidespachada"
     )
+    # agregar el comentario a los comentarios generales de las sm
+    if len(comments_items_updated)>0:
+        comment_general.append(
+            {
+                "user": data_token["emp_id"],
+                "date": date_now,
+                "comment": "\n".join(comments_items_updated),
+            }
+        )
     history_sm.append(
         {
             "user": data_token["emp_id"],
@@ -718,7 +733,7 @@ def dispatch_sm(data, data_token):
     for k, v in extra_info.items():
         extra_info_sm[k] = v
     flag, error, result_his = update_history_status_sm(
-        data["id"], history_sm, new_status, extra_info_sm
+        data["id"], history_sm, new_status, extra_info_sm, comment_general
     )
     msg_items.append(
         f"Historial actualizado: {str(result_his)}"

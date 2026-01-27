@@ -633,6 +633,7 @@ request_sm_dispatch_model = api.model(
             required=True, description="The id of the material request"
         ),
         "items": fields.List(fields.Nested(items_dispatch_model_sm), required=False),
+        "comment": fields.List(fields.Nested(comment_sm_model), required=False),
     },
 )
 
@@ -959,6 +960,7 @@ class RequestSMDispatchForm(Form):
         "id", validators=[InputRequired(message="Invalid id or 0 not acepted")]
     )
     items = FieldList(FormField(ItemsFormSMDispartch, "items"))
+    comment = FieldList(FormField(CommentSmForm, "comment"), validators=[], default=[])
 
 
 class ItemSmPutForm(Form):
