@@ -540,6 +540,18 @@ def determine_status_sm(items: list):
     return 2 if total_items == 0 else 1
 
 
+def eliminate_signaling_comment(comment: str):
+    comment_out = (
+        comment.replace("(Despachado)", "")
+        .replace("(Semidespachado)", "")
+        .replace("(Pedido)", "")
+        .replace("(Cancelado)", "")
+        .replace("(Nuevo)", "")
+        .replace(";;", ";")
+        # .strip("; ")
+    )
+    return comment_out
+
 def dispatch_sm(data, data_token):
     if len(data["items"]) <= 0:
         return 400, ["No item to update in sm"]
@@ -655,7 +667,7 @@ def dispatch_sm(data, data_token):
         item_to_update["comment"] = f"{item_n['comment']}\n{item_to_update['comment']}"
         new_comment_item = item_n["comment"]
         if new_comment_item.strip() != "" and new_comment_item not in comments_items_updated:
-            comments_items_updated.append(new_comment_item)
+            comments_items_updated.append(eliminate_signaling_comment(new_comment_item))
         # agregar los comandos
         item_to_update["comment"] += (
             " ;(Despachado) "
