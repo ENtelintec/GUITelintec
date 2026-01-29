@@ -86,6 +86,9 @@ items_model_sm = api.model(
         "state_delivery": fields.String(
             required=True, description="The product state delivery", example="N/A"
         ),
+        "is_tool": fields.Integer(
+            required=False, description="The product is a tool", example=0
+        ),
     },
 )
 
@@ -702,6 +705,7 @@ class ItemsFormSMPost(Form):
     partida = IntegerField("partida", validators=[], default=0)
     state = IntegerField("state", validators=[], default=1)
     is_erased = IntegerField("is_erased", validators=[], default=0)
+    is_tool = IntegerField("is_tool", validators=[], default=0)
 
 
 class DeliveriesForm(Form):
@@ -745,6 +749,7 @@ class ItemsFormSMPUT(Form):
     deliveries = FieldList(FormField(DeliveriesForm, "deliveries"))
     state_delivery = StringField("state_delivery", validators=[], default="N/A")
     state_quantity = IntegerField("state_quantity", validators=[], default=0)
+    is_tool = IntegerField("is_tool", validators=[], default=0)
 
 
 class ItemsFormSMDispartch(Form):
