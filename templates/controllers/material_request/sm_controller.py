@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from flask import json
 __author__ = "Edisson Naula"
 __date__ = "$ 01/may./2024  at 20:19 $"
 
@@ -258,7 +259,7 @@ def update_items_sm(items: list, sm_id: int):
             id_inventory = item.get("id_inventory", 0)
             if id_inventory in ids_list:
                 continue
-            if item.get("id", 0) != 0 :
+            if item.get("id", 0) != 0:
                 ids_list.append(id_inventory)
                 sql = (
                     "UPDATE sql_telintec.sm_items "
@@ -326,7 +327,7 @@ def update_items_sm(items: list, sm_id: int):
     return errors, results
 
 
-def insert_sm_db(data, init_extra_info: dict|None=None):
+def insert_sm_db(data, init_extra_info: dict | None = None):
     time_zone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
     event = [
@@ -404,7 +405,6 @@ def insert_urgent_sm_db(data: dict, extra_info: dict):
         "project": data["info"].get("project", ""),
         "contract_contact": data["info"].get("contract_contact", ""),
         "activity_description": data["info"].get("activity_description", ""),
-        
     }
     comment = data["info"].get("comment", [""])
     if extra_info is not None:
@@ -442,7 +442,7 @@ def insert_urgent_sm_db(data: dict, extra_info: dict):
 
 
 def delete_sm_db(id_m: int):
-    sql = "DELETE FROM sql_telintec.materials_request " "WHERE sm_id = %s"
+    sql = "DELETE FROM sql_telintec.materials_request WHERE sm_id = %s"
     val = (id_m,)
     flag, error, result = execute_sql(sql, val, 3)
     if not flag:
@@ -466,8 +466,7 @@ def delete_sm_db(id_m: int):
 def update_sm_db(data):
     data["id"] = data["info"]["id"]
     sql = (
-        "SELECT sm_id, extra_info FROM sql_telintec.materials_request "
-        "WHERE sm_id = %s "
+        "SELECT sm_id, extra_info FROM sql_telintec.materials_request WHERE sm_id = %s "
     )
     vals = (data["id"],)
     print(f"sm retived: {data['id']}")
@@ -520,7 +519,7 @@ def update_sm_db(data):
 
 
 def cancel_sm_db(id_m: int, history: dict):
-    sql = "SELECT sm_id " "FROM sql_telintec.materials_request "
+    sql = "SELECT sm_id FROM sql_telintec.materials_request "
     flag, error, result = execute_sql(sql, None, 5)
     if not flag:
         return False, error, None
@@ -539,22 +538,22 @@ def cancel_sm_db(id_m: int, history: dict):
     return flag, error, result
 
 
-def update_history_sm(sm_id, history: list, items: list, is_complete=False):
+def update_history_sm_from_cancel(sm_id, history: list, comments, is_complete=False):
     if is_complete:
         sql = (
             "UPDATE sql_telintec.materials_request "
-            "SET history = %s, status = 2 , items = %s "
+            "SET history = %s, status = 2 , comment = %s "
             "WHERE sm_id = %s "
         )
-        val = (json.dumps(history), json.dumps(items), sm_id)
+        val = (json.dumps(history), json.dumps(comments),  sm_id)
         flag, error, result = execute_sql(sql, val, 4)
     else:
         sql = (
             "UPDATE sql_telintec.materials_request "
-            "SET history = %s, status = 1, items = %s "
+            "SET history = %s, status = 1, comment = %s "
             "WHERE sm_id = %s "
         )
-        val = (json.dumps(history), json.dumps(items), sm_id)
+        val = (json.dumps(history), json.dumps(comments), sm_id)
         flag, error, result = execute_sql(sql, val, 4)
     return flag, error, result
 
@@ -565,20 +564,26 @@ def update_history_status_sm(sm_id, history: list, status, extra_info, comment):
         "SET history = %s, status =  %s, extra_info = %s, comment = %s "
         "WHERE sm_id = %s "
     )
-    val = (json.dumps(history), status, json.dumps(extra_info), json.dumps(comment), sm_id)
+    val = (
+        json.dumps(history),
+        status,
+        json.dumps(extra_info),
+        json.dumps(comment),
+        sm_id,
+    )
     flag, error, result = execute_sql(sql, val, 4)
     return flag, error, result
 
 
 def update_products_sm(sm_id, items: list):
-    sql = "UPDATE sql_telintec.materials_request " "SET items = %s " "WHERE sm_id = %s "
+    sql = "UPDATE sql_telintec.materials_request SET items = %s WHERE sm_id = %s "
     val = (json.dumps(items), sm_id)
     flag, error, result = execute_sql(sql, val, 4)
     return flag, error, result
 
 
 def finalize_status_sm(sm_id: int):
-    sql = "UPDATE sql_telintec.materials_request " "SET status = 3 " "WHERE sm_id = %s "
+    sql = "UPDATE sql_telintec.materials_request SET status = 3 WHERE sm_id = %s "
     val = (sm_id,)
     flag, error, result = execute_sql(sql, val, 4)
     return flag, error, result
@@ -603,12 +608,7 @@ def get_all_sm_plots(emp_id: int, is_supper=False):
 
 
 def update_only_status(status: int, sm_id: int):
-    sql = (
-        "UPDATE "
-        "sql_telintec.materials_request "
-        "SET status = %s "
-        "WHERE sm_id = %s "
-    )
+    sql = "UPDATE sql_telintec.materials_request SET status = %s WHERE sm_id = %s "
     val = (status, sm_id)
     flag, error, result = execute_sql(sql, val, 4)
     return flag, error, result
@@ -633,12 +633,7 @@ def get_info_names_by_sm_id(sm_id: int):
 
 
 def update_sm_products_by_id(sm_id: int, items: list):
-    sql = (
-        "UPDATE "
-        "sql_telintec.materials_request "
-        "SET items = %s "
-        "WHERE sm_id = %s "
-    )
+    sql = "UPDATE sql_telintec.materials_request SET items = %s WHERE sm_id = %s "
     val = (json.dumps(items), sm_id)
     flag, error, result = execute_sql(sql, val, 4)
     return flag, error, result
@@ -725,23 +720,15 @@ def get_pending_sm_db():
     return flag, error, result
 
 
-
 def update_history_items_sm(sm_id: int, items: list, history: list):
-    sql = (
-        "UPDATE sql_telintec.materials_request " "SET history = %s " "WHERE sm_id = %s "
-    )
+    sql = "UPDATE sql_telintec.materials_request SET history = %s WHERE sm_id = %s "
     val = (json.dumps(items), json.dumps(history), sm_id)
     flag, error, result = execute_sql(sql, val, 3)
     return flag, error, result
 
 
 def get_sm_folios_db():
-    sql = (
-        "SELECT "
-        "sm_id, folio "
-        "FROM sql_telintec.materials_request "
-        "WHERE status < 2 "
-    )
+    sql = "SELECT sm_id, folio FROM sql_telintec.materials_request WHERE status < 2 "
     flag, error, result = execute_sql(sql, None, 5)
     if not isinstance(result, list):
         return False, "Error at retriving sm from db", []

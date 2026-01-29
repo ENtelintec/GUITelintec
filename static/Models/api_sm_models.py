@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from static.Models.api_models import datetime_filter
 from wtforms.fields.datetime import DateTimeField
+
 __author__ = "Edisson Naula"
 __date__ = "$ 10/may./2024  at 16:31 $"
 
@@ -169,7 +170,9 @@ comment_sm_model = api.model(
             required=True, description="The user who made the comment"
         ),
         "timestamp": fields.String(
-            required=True, description="The timestamp of the comment", example="2024-06-29 12:00:00"
+            required=True,
+            description="The timestamp of the comment",
+            example="2024-06-29 12:00:00",
         ),
     },
 )
@@ -419,7 +422,6 @@ sm_model_out = api.model(
 )
 
 
-
 control_table_sm_model = api.model(
     "ControlTableSM",
     {
@@ -580,6 +582,7 @@ delete_request_sm_model = api.model(
     "DeleteRequestmaterial_request",
     {
         "id": fields.Integer(required=True, description="The id"),
+        "comment": fields.String(required=False, description="The comment"),
     },
 )
 
@@ -940,6 +943,7 @@ class SMDeleteForm(Form):
     id = IntegerField(
         "id", validators=[InputRequired(message="Invalid id or 0 not acepted")]
     )
+    comment = StringField("comment", validators=[], default="")
 
 
 class NewClienteForm(Form):

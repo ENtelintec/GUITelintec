@@ -42,7 +42,7 @@ from templates.controllers.material_request.sm_controller import (
     get_sm_entries,
     insert_sm_db,
     update_history_extra_info_sm_by_id,
-    update_history_sm,
+    update_history_sm_from_cancel,
     create_items_sm_db,
     update_items_sm,
     update_sm_db,
@@ -552,6 +552,7 @@ def eliminate_signaling_comment(comment: str):
     )
     return comment_out
 
+
 def dispatch_sm(data, data_token):
     if len(data["items"]) <= 0:
         return 400, ["No item to update in sm"]
@@ -662,11 +663,14 @@ def dispatch_sm(data, data_token):
         item_to_update["state"] = (
             4 if item_to_update["dispatched"] == item_to_update["quantity"] else 3
         )
-        
+
         # insertar al inicio de los comentarios
         item_to_update["comment"] = f"{item_n['comment']}\n{item_to_update['comment']}"
         new_comment_item = item_n["comment"]
-        if new_comment_item.strip() != "" and new_comment_item not in comments_items_updated:
+        if (
+            new_comment_item.strip() != ""
+            and new_comment_item not in comments_items_updated
+        ):
             comments_items_updated.append(eliminate_signaling_comment(new_comment_item))
         # agregar los comandos
         item_to_update["comment"] += (
@@ -695,7 +699,7 @@ def dispatch_sm(data, data_token):
         "SM Despachada" if not flag_semidespachado else "SM Semidespachada"
     )
     # agregar el comentario a los comentarios generales de las sm
-    if len(comments_items_updated)>0:
+    if len(comments_items_updated) > 0:
         comment_general.append(
             {
                 "user": data_token["emp_id"],
@@ -772,6 +776,7 @@ def cancel_sm(data, data_token):
         return 400, ["sm not foud"]
     print(result)
     history_sm = json.loads(result[12])
+    comments_general = json.loads(result[13])
     emp_id_creation = result[6]
     time_zone = pytz.timezone(timezone_software)
     date_now = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
@@ -783,7 +788,16 @@ def cancel_sm(data, data_token):
             "comment": data["comment"] + f"por el empleado {data_token['emp_id']}",
         }
     )
-    flag, error, result = update_history_sm(data["id"], history_sm, [], True)
+    comments_general.append(
+        {
+            "user": data_token["emp_id"],
+            "date": date_now,
+            "comment": data["comment"],
+        }
+    )
+    flag, error, result = update_history_sm_from_cancel(
+        data["id"], history_sm, comments_general, True
+    )
     if flag:
         msg = f"SM con ID-{data['id']} cancelada"
         create_notification_permission(
@@ -958,7 +972,7 @@ def update_sm_from_control_table(
     for k, value in data["info"].items():
         if k == "comment":
             comments = value
-            print( "comments -->",k, value)
+            print("comments -->", k, value)
             continue
         extra_info[k] = value
         comment_history += f"-{k}-{value}-"
