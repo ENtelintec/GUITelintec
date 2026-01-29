@@ -560,8 +560,8 @@ def dispatch_sm(data, data_token):
         return 400, ["SM not foud"]
     id_user = result[6]
     products_sm = json.loads(result[10])
-    comment_general = json.loads(result[11])
     history_sm = json.loads(result[12])
+    comment_general = json.loads(result[13])
     extra_info_sm = json.loads(result[14])
     folio = result[1]
     # products ids in the inventory
@@ -770,8 +770,9 @@ def cancel_sm(data, data_token):
     flag, error, result = get_sm_by_id(data["id"])
     if not flag or len(result) <= 0:
         return 400, ["sm not foud"]
-    history_sm = json.loads(result[0][12])
-    emp_id_creation = result[0][6]
+    print(result)
+    history_sm = json.loads(result[12])
+    emp_id_creation = result[6]
     time_zone = pytz.timezone(timezone_software)
     date_now = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
     history_sm.append(
