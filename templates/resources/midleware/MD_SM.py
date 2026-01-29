@@ -1236,6 +1236,7 @@ def update_sm_from_api(data, data_token):
             "data": items_out,
             "error": error,
         }, 400
+    # update metada sm
     flag, error, result = update_sm_db(data)
     if flag:
         msg = (
@@ -1244,6 +1245,7 @@ def update_sm_from_api(data, data_token):
             f"empleado con id: {data_token.get('emp_id')}, "
             f"comentario: {data['info']['comment']}"
         )
+        # update items sm
         errors, results = update_items_sm(items_out, data["id"])
         flags, errors_p, result_partidas = check_for_partidas_updates(
             data["items"], data["info"]["contract_id"]
