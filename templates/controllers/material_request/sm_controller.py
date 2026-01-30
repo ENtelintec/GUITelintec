@@ -486,6 +486,7 @@ def update_sm_db(data):
     extra_info["contract_contact"] = data["info"]["contract_contact"]
     extra_info["activity_description"] = data["info"]["activity_description"]
     extra_info["project"] = data["info"]["project"]
+    extra_info["approved_required"] = data["info"]["approved_required"]
     history = data["info"]["history"]
     comment = data["info"]["comment"]
     time_zone = pytz.timezone(timezone_software)
