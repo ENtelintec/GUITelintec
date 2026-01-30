@@ -1,7 +1,4 @@
 # -*- coding: utf-8 -*-
-from flask import json
-__author__ = "Edisson Naula"
-__date__ = "$ 01/may./2024  at 20:19 $"
 
 import json
 from datetime import datetime
@@ -11,6 +8,9 @@ import pytz
 from static.constants import format_timestamps, timezone_software
 from templates.controllers.product.p_and_s_controller import get_stock_db_products
 from templates.database.connection import execute_sql
+
+__author__ = "Edisson Naula"
+__date__ = "$ 01/may./2024  at 20:19 $"
 
 
 def update_sm_items_stock(tuple_sm):
@@ -226,6 +226,8 @@ def create_items_sm_db(items: list, sm_id: int):
         )
         state = 0 if item.get("id", -1) == -1 else 1
         id_inventory = item.get("id") if item.get("id", -1) > 0 else None
+        extra_info = item.get("extra_info", {})
+        extra_info["is_tool"] = item.get("is_tool", 0)
         val = (
             sm_id,
             id_inventory,
@@ -237,7 +239,7 @@ def create_items_sm_db(items: list, sm_id: int):
             item.get("dispatched", 0),
             json.dumps(item.get("movements", [])),
             state,
-            json.dumps(item.get("extra_info", {})),
+            json.dumps(extra_info),
         )
         flag, error, id_item = execute_sql(sql, val, 4)
         if flag:
@@ -259,6 +261,8 @@ def update_items_sm(items: list, sm_id: int):
             id_inventory = item.get("id_inventory", 0)
             if id_inventory in ids_list:
                 continue
+            extra_info = item.get("extra_info", {})
+            extra_info["is_tool"] = item.get("is_tool", 0)
             if item.get("id", 0) != 0:
                 ids_list.append(id_inventory)
                 sql = (
@@ -279,7 +283,7 @@ def update_items_sm(items: list, sm_id: int):
                     item.get("dispatched", 0),
                     json.dumps(item.get("movements", [])),
                     item.get("state", 1),
-                    json.dumps(item.get("extra_info", {})),
+                    json.dumps(extra_info),
                     json.dumps(item.get("deliveries", [])),
                     item.get("state_delivery", ""),
                     item.get("state_quantity", 0),
@@ -308,7 +312,7 @@ def update_items_sm(items: list, sm_id: int):
                     item.get("dispatched", 0),
                     json.dumps(item.get("movements", [])),
                     item.get("state", 0),
-                    json.dumps(item.get("extra_info", {})),
+                    json.dumps(extra_info),
                     json.dumps(item.get("deliveries", [])),
                     item.get("state_delivery", ""),
                     item.get("state_quantity", 0),
@@ -545,7 +549,7 @@ def update_history_sm_from_cancel(sm_id, history: list, comments, is_complete=Fa
             "SET history = %s, status = 2 , comment = %s "
             "WHERE sm_id = %s "
         )
-        val = (json.dumps(history), json.dumps(comments),  sm_id)
+        val = (json.dumps(history), json.dumps(comments), sm_id)
         flag, error, result = execute_sql(sql, val, 4)
     else:
         sql = (

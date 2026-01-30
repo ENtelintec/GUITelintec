@@ -150,6 +150,18 @@ def calculate_items_delivered_2(items):
     return round((dispatched_total / total) * 100, 2) if total else 0
 
 
+def extract_extra_info_sm_item(items: list[dict]):
+    new_items = []
+    for item in items:
+        # extract is_tool from extra info and erase is_tool from extra info
+        extra_info: dict = item.get("extra_info", {})
+        item["is_tool"] = extra_info.get("is_tool", 0)
+        extra_info.pop("is_tool", None)
+        item["extra_info"] = extra_info
+        new_items.append(item)
+    return new_items
+
+
 def get_all_sm(limit, page=0, emp_id=-1, with_items=True):
     emp_id = None if emp_id == -1 else emp_id
     flag, error, result = get_sm_entries(emp_id)
@@ -214,8 +226,11 @@ def get_all_sm(limit, page=0, emp_id=-1, with_items=True):
             )
         else:
             kpi_operations = ""
+        # process items from the sm
         items_sm = json.loads(result[i][10]) if with_items else []
+        items_sm = extract_extra_info_sm_item(items_sm)
         percentage = calculate_items_delivered(json.loads(result[i][10]))
+        # process comments if not a json text create a list of the comments
         try:
             comment = json.loads(result[i][13])
         except Exception as e:
