@@ -152,14 +152,17 @@ def calculate_items_delivered_2(items):
 
 def extract_extra_info_sm_item(items: list[dict]):
     new_items = []
+    need_aprove = False
     for item in items:
         # extract is_tool from extra info and erase is_tool from extra info
         extra_info: dict = item.get("extra_info", {})
         item["is_tool"] = extra_info.get("is_tool", 0)
+        if item["is_tool"] == 1:
+            need_aprove = True
         extra_info.pop("is_tool", None)
         item["extra_info"] = extra_info
         new_items.append(item)
-    return new_items
+    return new_items, need_aprove
 
 
 def get_all_sm(limit, page=0, emp_id=-1, with_items=True):
@@ -228,7 +231,7 @@ def get_all_sm(limit, page=0, emp_id=-1, with_items=True):
             kpi_operations = ""
         # process items from the sm
         items_sm = json.loads(result[i][10]) if with_items else []
-        items_sm = extract_extra_info_sm_item(items_sm)
+        items_sm, approve_required = extract_extra_info_sm_item(items_sm)
         percentage = calculate_items_delivered(json.loads(result[i][10]))
         # process comments if not a json text create a list of the comments
         try:
@@ -282,6 +285,7 @@ def get_all_sm(limit, page=0, emp_id=-1, with_items=True):
             "operations_kpi": kpi_operations,
             "requesting_user_state": extra_info.get("requesting_user_state", ""),
             "date_closing": extra_info.get("date_closing", ""),
+            "approve_required": approve_required
         }
 
         # if isinstance(extra_info, dict):
