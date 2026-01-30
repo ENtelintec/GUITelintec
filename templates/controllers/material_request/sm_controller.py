@@ -224,8 +224,8 @@ def create_items_sm_db(items: list, sm_id: int):
             "(id_sm, id_inventory, name, udm, comment, partida, quantity, dispatched, movements, state, extra_info) "
             "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
         )
-        state = 0 if item.get("id", -1) == 1 else 1
-        id_inventory = item.get("id") if item.get("id", -1) != 1 else None
+        state = 0 if item.get("id", -1) == -1 else 1
+        id_inventory = item.get("id") if item.get("id", -1) > 0 else None
         val = (
             sm_id,
             id_inventory,

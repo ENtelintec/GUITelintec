@@ -162,7 +162,7 @@ def get_all_sm(limit, page=0, emp_id=-1, with_items=True):
     pages = math.floor(len(result) / limit)
     if page > pages:
         return None, 204
-    items = []
+    sm_list = []
     if pages == 0:
         limit_up = len(result)
         limit_down = 0
@@ -272,8 +272,8 @@ def get_all_sm(limit, page=0, emp_id=-1, with_items=True):
         # if isinstance(extra_info, dict):
         #     for k, v in extra_info.items():
         #         dict_sm[k] = v
-        items.append(dict_sm)
-    data_out = {"data": items, "page": page, "pages": pages + 1}
+        sm_list.append(dict_sm)
+    data_out = {"data": sm_list, "page": page, "pages": pages + 1}
     return data_out, 200
 
 
