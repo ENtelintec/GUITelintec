@@ -92,7 +92,7 @@ def get_products_sm(contract: str) -> tuple[dict, int]:
             "data": {"contract": [], "normal": []},
             "error": "Not valid items with reservation",
         }, 400
-    print(result_p)
+    # print(result_p)
     for product in result_p:
         sku = product[6]
         codes = json.loads(product[7]) if product[7] else []
@@ -236,6 +236,7 @@ def get_all_sm(limit, page=0, emp_id=-1, with_items=True):
         # process items from the sm
         items_sm = json.loads(result[i][10]) if with_items else []
         items_sm, approve_required = extract_extra_info_sm_item(items_sm)
+        approve_required = 1 if approve_required else 0
         percentage = calculate_items_delivered(json.loads(result[i][10]))
         # process comments if not a json text create a list of the comments
         try:
