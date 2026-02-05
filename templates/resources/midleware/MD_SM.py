@@ -70,6 +70,7 @@ from templates.resources.midleware.Functions_midleware_admin import get_iddentif
 
 
 def get_products_sm(contract: str) -> tuple[dict, int]:
+    print(contract)
     if contract != "all":
         flag, error, items_contract = get_items_contract_string(contract)
     else:
@@ -91,6 +92,7 @@ def get_products_sm(contract: str) -> tuple[dict, int]:
             "data": {"contract": [], "normal": []},
             "error": "Not valid items with reservation",
         }, 400
+    print(result_p)
     for product in result_p:
         sku = product[6]
         codes = json.loads(product[7]) if product[7] else []
