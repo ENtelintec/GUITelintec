@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-from templates.resources.midleware.MD_SM import create_urgent_sm_from_api
 from static.Models.api_sm_models import SMUrgentPostForm
 from static.Models.api_sm_models import sm_urgent_post_model
 from flask import send_file, request
@@ -30,6 +29,8 @@ from static.Models.api_sm_models import (
     ItemSmPutForm,
     item_sm_inventory_put_model,
     ItemSMInventoryPutForm,
+    ItemStateSMForm, 
+    item_state_model
 )
 from templates.Functions_AuxPlots import get_data_sm_per_range
 from templates.controllers.customer.customers_controller import get_sm_clients
@@ -55,6 +56,8 @@ from templates.resources.midleware.MD_SM import (
     delete_sm_from_api,
     get_sm_items_from_api,
     update_sm_item_state_and_inventory,
+    update_sm_item_state,
+    create_urgent_sm_from_api
 )
 
 __author__ = "Edisson Naula"
@@ -416,4 +419,21 @@ class UpdateItemInventoryID(Resource):
         data = validator.data
         data["state"] = 1
         data_out, code = update_sm_item_state_and_inventory(data, data_token)
+        return data_out, code
+
+
+@ns.route("/item/stateUpdate")
+class UpdateItemSMState(Resource):
+    @ns.expect(expected_headers_per, item_state_model)
+    def post(self, state):
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["sm", "almacen"]
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        validator = ItemStateSMForm.from_json(ns.payload)  # pyrefly: ignore
+        if not validator.validate():
+            return {"error": validator.errors}, 400
+        data = validator.data
+        data_out, code = update_sm_item_state(data, data_token)
         return data_out, code

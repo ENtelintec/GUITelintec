@@ -774,3 +774,13 @@ def update_inventory_state_sm_item_db(state, id_inventory, id_item):
     val = (state, id_inventory, id_item)
     flag, error, result = execute_sql(sql, val, 3)
     return flag, error, result
+
+def update_state_sm_item_db(state, id_item):
+    sql = """
+          UPDATE sql_telintec.sm_items
+          SET state = %s,
+          WHERE id_sm = %s
+          """
+    val = (state, id_item)
+    flag, error, result = execute_sql(sql, val, 3)
+    return flag, error, result

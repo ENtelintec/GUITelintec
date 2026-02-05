@@ -1,3 +1,4 @@
+from templates.controllers.material_request.sm_controller import update_state_sm_item_db
 from templates.controllers.material_request.sm_controller import get_folios_by_pattern
 
 __author__ = "Edisson Naula"
@@ -159,11 +160,13 @@ def extract_extra_info_sm_item(items: list[dict]):
         # extract is_tool from extra info and erase is_tool from extra info
         extra_info: dict = item.get("extra_info", {})
         if extra_info is None:
-            extra_info = {} 
+            extra_info = {}
         item["is_tool"] = extra_info.get("is_tool", 0)
         if item["is_tool"] == 1:
             need_aprove = True
-        extra_info.pop("is_tool", None)
+        # extra_info.pop("is_tool", None)
+        approve_required = extra_info.get("approve_required", 0)
+        extra_info["approve_required"] = approve_required
         item["extra_info"] = extra_info
         new_items.append(item)
     return new_items, need_aprove
@@ -235,6 +238,7 @@ def get_all_sm(limit, page=0, emp_id=-1, with_items=True):
             kpi_operations = ""
         # process items from the sm
         items_sm = json.loads(result[i][10]) if with_items else []
+        # extract state and approved required for sm item
         items_sm, approve_required = extract_extra_info_sm_item(items_sm)
         approve_required = 1 if approve_required else 0
         percentage = calculate_items_delivered(json.loads(result[i][10]))
@@ -290,7 +294,7 @@ def get_all_sm(limit, page=0, emp_id=-1, with_items=True):
             "operations_kpi": kpi_operations,
             "requesting_user_state": extra_info.get("requesting_user_state", ""),
             "date_closing": extra_info.get("date_closing", ""),
-            "approve_required": approve_required
+            "approve_required": approve_required,
         }
 
         # if isinstance(extra_info, dict):
@@ -1378,6 +1382,25 @@ def update_sm_item_state_and_inventory(data, data_token):
     if not flag:
         return {"msg": "error at updating sm item state"}, 400
     msg = f"Item con id {data.get('id_item')} actualizado a estado {data.get('state')} con id de inventario {data.get('id_inventory')}"
+    create_notification_permission(
+        msg,
+        ["administracion", "almacen"],
+        "SM Actualizada",
+        data_token.get("emp_id"),
+        0,
+    )
+    write_log_file(log_file_sm_path, msg)
+    return {"msg": "ok", "data": result}, 200
+
+
+def update_sm_item_state(data, data_token):
+    state = data.get("state")
+    if state <= 0:
+        return {"msg": "error at updating sm item state, invalid state"}, 400
+    flag, error, result = update_state_sm_item_db(state, data.get("id_item"))
+    if not flag:
+        return {"msg": f"error at updating sm item state: {state}"}, 400
+    msg = f"Item con id {data.get('id_item')} actualizado a estado {data.get('state')}."
     create_notification_permission(
         msg,
         ["administracion", "almacen"],
