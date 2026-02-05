@@ -1,4 +1,10 @@
-from templates.controllers.material_request.sm_controller import update_state_sm_item_db
+from templates.controllers.material_request.sm_controller import (
+    update_extra_info_sm_item_db,
+)
+from templates.controllers.material_request.sm_controller import (
+    get_sm_from_item,
+    update_state_sm_item_db,
+)
 from templates.controllers.material_request.sm_controller import get_folios_by_pattern
 
 __author__ = "Edisson Naula"
@@ -1394,13 +1400,71 @@ def update_sm_item_state_and_inventory(data, data_token):
 
 
 def update_sm_item_state(data, data_token):
+    flag, error, sm_data = get_sm_from_item(data.get("id_item"))
+    if not flag:
+        return {"msg": "error at getting sm data", "error": error, "data": sm_data}, 400
     state = data.get("state")
     if state <= 0:
         return {"msg": "error at updating sm item state, invalid state"}, 400
-    flag, error, result = update_state_sm_item_db(state, data.get("id_item"))
+    time_zone = pytz.timezone(timezone_software)
+    date_now = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
+    history_sm = json.loads(sm_data[12])
+    msg = f"Item con id {data.get('id_item')} actualizado a estado {data.get('state')} de la sm {sm_data[0]}."
+    history_sm.append(
+        {
+            "user": data_token.get("emp_id"),
+            "event": "Actualizar estado de sm",
+            "date": date_now,
+            "comment": msg,
+        }
+    )
+    flag, error, result = update_state_sm_item_db(
+        state, data.get("id_item"), history_sm, sm_data[0]
+    )
     if not flag:
         return {"msg": f"error at updating sm item state: {state}"}, 400
-    msg = f"Item con id {data.get('id_item')} actualizado a estado {data.get('state')}."
+    create_notification_permission(
+        msg,
+        ["administracion", "almacen"],
+        "SM Actualizada",
+        data_token.get("emp_id"),
+        0,
+    )
+    write_log_file(log_file_sm_path, msg)
+    return {"msg": "ok", "data": result}, 200
+
+
+def update_sm_item_approve(data, data_token):
+    flag, error, sm_data = get_sm_from_item(data.get("id_item"))
+    if not flag:
+        return {"msg": "error at getting sm data", "error": error, "data": sm_data}, 400
+    approve_required = data.get("approve_required", 0)
+    if approve_required not in [0, 1]:
+        return {"msg": "error at updating sm item approve"}, 400
+    extra_info_item = {}
+    items_sm = json.loads(sm_data[11])
+    for item in items_sm:
+        if item["id"] == data.get("id_item"):
+            extra_info_item = item.get("extra_info", {})
+            break
+    extra_info_item["approve_required"] = approve_required
+    time_zone = pytz.timezone(timezone_software)
+    date_now = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
+    history_sm = json.loads(sm_data[12])
+    msg = f"Item con id {data.get('id_item')} actualizado a aprobacion {approve_required} de la sm {sm_data[0]}."
+    history_sm.append(
+        {
+            "user": data_token.get("emp_id"),
+            "event": "Actualizar aprobacion de sm",
+            "date": date_now,
+            "comment": msg,
+        }
+    )
+    flag, error, result = update_extra_info_sm_item_db(
+        extra_info_item, data.get("id_item"), history_sm, sm_data[0]
+    )
+    if not flag:
+        return {"msg": f"error at updating sm item approve: {approve_required}"}, 400
     create_notification_permission(
         msg,
         ["administracion", "almacen"],

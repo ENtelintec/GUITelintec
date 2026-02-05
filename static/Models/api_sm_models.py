@@ -90,6 +90,11 @@ items_model_sm = api.model(
         "is_tool": fields.Integer(
             required=False, description="The product is a tool", example=0
         ),
+        "approve_required": fields.Integer(
+            required=False,
+            description="Indicates if approval is required for this item (0: No, 1: Yes)",
+            example=0,
+        ),
     },
 )
 
@@ -673,7 +678,6 @@ item_sm_put_model = api.model(
         "id_sm": fields.Integer(
             required=True, description="The id of the sm to update"
         ),
-        
     },
 )
 
@@ -684,7 +688,21 @@ item_state_model = api.model(
             required=True, description="The id of the item sm to update"
         ),
         "state": fields.Integer(
-            required=True, description="The new state of the item in sm. 0: new; 1: normal; 2: canceled; 3: complete."
+            required=True,
+            description="The new state of the item in sm. 0: new; 1: normal; 2: canceled; 3: complete.",
+        ),
+    },
+)
+
+item_approve_model = api.model(
+    "SMItemApproveRequired",
+    {
+        "id_item": fields.Integer(
+            required=True, description="The id of the item sm to update"
+        ),
+        "approve_required": fields.Integer(
+            required=True,
+            description="Indicates if approval is required for this item (0: No, 1: Yes)",
         ),
     },
 )
@@ -813,7 +831,9 @@ class CommentSmForm(Form):
 
 class SMInfoPostForm(Form):
     # --- Campos existentes (tuyos) ---
-    id = IntegerField("id", validators=[validators.number_range(min=0, message="Invalid id sm info")])
+    id = IntegerField(
+        "id", validators=[validators.number_range(min=0, message="Invalid id sm info")]
+    )
     folio = StringField("folio", validators=[InputRequired()])
     contract = StringField("contract", validators=[InputRequired()])
     contract_id = IntegerField(
@@ -822,10 +842,14 @@ class SMInfoPostForm(Form):
     )
     facility = StringField("facility", validators=[InputRequired()])
     contract_contact = StringField("contract_contact", default="")
-    client_id = IntegerField("client_id", validators=[InputRequired(message="Invalid id or 0 not acepted")])
+    client_id = IntegerField(
+        "client_id", validators=[InputRequired(message="Invalid id or 0 not acepted")]
+    )
     location = StringField("location", validators=[InputRequired()])
     order_quotation = StringField("order_quotation", validators=[])
-    emp_id = IntegerField("emp_id", validators=[InputRequired(message="Invalid id or 0 not acepted")])
+    emp_id = IntegerField(
+        "emp_id", validators=[InputRequired(message="Invalid id or 0 not acepted")]
+    )
 
     # En tu versión actual 'date' ya existe y es requerido. Lo dejamos igual.
     date = DateField("date", validators=[InputRequired()], filters=[date_filter])
@@ -834,15 +858,21 @@ class SMInfoPostForm(Form):
     # Opción A (no romper compat): mantenerlo tal cual.
     critical_date = DateField("critical_date", validators=[], filters=[date_filter])
 
-    status = IntegerField("status", validators=[validators.number_range(min=0, message="Invalid id")])
+    status = IntegerField(
+        "status", validators=[validators.number_range(min=0, message="Invalid id")]
+    )
     comment = FieldList(FormField(CommentSmForm, "comment"), validators=[], default=[])
-    activity_description = StringField("activity_description", validators=[], default="")
+    activity_description = StringField(
+        "activity_description", validators=[], default=""
+    )
     destination = StringField("destination", validators=[InputRequired()])
     history = FieldList(FormField(HistoryFormSM, "history"))
     project = StringField("project", validators=[], default="")
     urgent = IntegerField("urgent", validators=[], default=0)
     date_closing = DateField("date_closing", validators=[], filters=[date_filter])
-    general_request_status = IntegerField("general_request_status", validators=[], default=1)
+    general_request_status = IntegerField(
+        "general_request_status", validators=[], default=1
+    )
 
     # --- Campos faltantes de la tabla de control (todos OPCIONALES) ---
     # request_date = DateField("request_date", validators=[], filters=[date_filter])
@@ -851,24 +881,34 @@ class SMInfoPostForm(Form):
     # Si prefieres alinear critical_date a DateField (Opción B), agrega este y migra poco a poco:
     # critical_date_dt = DateField("critical_date", validators=[Optional()], filters=[date_filter])
 
-    requesting_user_status = IntegerField("requesting_user_status", validators=[], default=0)
-    requesting_user_state = StringField("requesting_user_state", validators=[], default="")
+    requesting_user_status = IntegerField(
+        "requesting_user_status", validators=[], default=0
+    )
+    requesting_user_state = StringField(
+        "requesting_user_state", validators=[], default=""
+    )
 
     warehouse_reviewed = IntegerField("warehouse_reviewed", validators=[], default=0)
     warehouse_status = IntegerField("warehouse_status", validators=[], default=1)
 
-    admin_notification_date = StringField("admin_notification_date", validators=[], default="")
+    admin_notification_date = StringField(
+        "admin_notification_date", validators=[], default=""
+    )
     kpi_warehouse = IntegerField("kpi_warehouse", validators=[], default=0)
     warehouse_comments = StringField("warehouse_comments", validators=[], default="")
 
     admin_reviewed = IntegerField("admin_reviewed", validators=[], default=0)
     admin_status = IntegerField("admin_status", validators=[], default=1)
 
-    warehouse_notification_date = StringField("warehouse_notification_date", validators=[], default="")
+    warehouse_notification_date = StringField(
+        "warehouse_notification_date", validators=[], default=""
+    )
     purchasing_kpi = IntegerField("purchasing_kpi", validators=[], default=0)
     admin_comments = StringField("admin_comments", validators=[], default="")
 
-    operations_notification_date = StringField("operations_notification_date", validators=[], default="")
+    operations_notification_date = StringField(
+        "operations_notification_date", validators=[], default=""
+    )
     operations_kpi = IntegerField("operations_kpi", validators=[], default=0)
 
     approve_required = IntegerField("approve_required", validators=[], default=0)
@@ -876,7 +916,9 @@ class SMInfoPostForm(Form):
 
 class SMInfoForm(Form):
     # --- Campos existentes (tuyos) ---
-    id = IntegerField("id", validators=[validators.number_range(min=0, message="Invalid id sm info")])
+    id = IntegerField(
+        "id", validators=[validators.number_range(min=0, message="Invalid id sm info")]
+    )
     folio = StringField("folio", validators=[InputRequired()])
     contract = StringField("contract", validators=[InputRequired()])
     contract_id = IntegerField(
@@ -885,10 +927,14 @@ class SMInfoForm(Form):
     )
     facility = StringField("facility", validators=[InputRequired()])
     contract_contact = StringField("contract_contact", default="")
-    client_id = IntegerField("client_id", validators=[InputRequired(message="Invalid id or 0 not acepted")])
+    client_id = IntegerField(
+        "client_id", validators=[InputRequired(message="Invalid id or 0 not acepted")]
+    )
     location = StringField("location", validators=[InputRequired()])
     order_quotation = StringField("order_quotation", validators=[])
-    emp_id = IntegerField("emp_id", validators=[InputRequired(message="Invalid id or 0 not acepted")])
+    emp_id = IntegerField(
+        "emp_id", validators=[InputRequired(message="Invalid id or 0 not acepted")]
+    )
 
     # En tu versión actual 'date' ya existe y es requerido. Lo dejamos igual.
     date = DateField("date", validators=[InputRequired()], filters=[date_filter])
@@ -897,15 +943,21 @@ class SMInfoForm(Form):
     # Opción A (no romper compat): mantenerlo tal cual.
     critical_date = DateField("critical_date", validators=[], filters=[date_filter])
 
-    status = IntegerField("status", validators=[validators.number_range(min=0, message="Invalid id")])
+    status = IntegerField(
+        "status", validators=[validators.number_range(min=0, message="Invalid id")]
+    )
     comment = FieldList(FormField(CommentSmForm, "comment"), validators=[], default=[])
-    activity_description = StringField("activity_description", validators=[], default="")
+    activity_description = StringField(
+        "activity_description", validators=[], default=""
+    )
     destination = StringField("destination", validators=[InputRequired()])
     history = FieldList(FormField(HistoryFormSM, "history"))
     project = StringField("project", validators=[], default="")
     urgent = IntegerField("urgent", validators=[], default=0)
     date_closing = DateField("date_closing", validators=[], filters=[date_filter])
-    general_request_status = IntegerField("general_request_status", validators=[], default=1)
+    general_request_status = IntegerField(
+        "general_request_status", validators=[], default=1
+    )
 
     # --- Campos faltantes de la tabla de control (todos OPCIONALES) ---
     request_date = DateField("request_date", validators=[], filters=[date_filter])
@@ -914,27 +966,38 @@ class SMInfoForm(Form):
     # Si prefieres alinear critical_date a DateField (Opción B), agrega este y migra poco a poco:
     # critical_date_dt = DateField("critical_date", validators=[Optional()], filters=[date_filter])
 
-    requesting_user_status = IntegerField("requesting_user_status", validators=[], default=0)
-    requesting_user_state = StringField("requesting_user_state", validators=[], default="")
+    requesting_user_status = IntegerField(
+        "requesting_user_status", validators=[], default=0
+    )
+    requesting_user_state = StringField(
+        "requesting_user_state", validators=[], default=""
+    )
 
     warehouse_reviewed = IntegerField("warehouse_reviewed", validators=[], default=0)
     warehouse_status = IntegerField("warehouse_status", validators=[], default=1)
 
-    admin_notification_date = StringField("admin_notification_date", validators=[], default="")
+    admin_notification_date = StringField(
+        "admin_notification_date", validators=[], default=""
+    )
     kpi_warehouse = IntegerField("kpi_warehouse", validators=[], default=0)
     warehouse_comments = StringField("warehouse_comments", validators=[], default="")
 
     admin_reviewed = IntegerField("admin_reviewed", validators=[], default=0)
     admin_status = IntegerField("admin_status", validators=[], default=1)
 
-    warehouse_notification_date = StringField("warehouse_notification_date", validators=[], default="")
+    warehouse_notification_date = StringField(
+        "warehouse_notification_date", validators=[], default=""
+    )
     purchasing_kpi = IntegerField("purchasing_kpi", validators=[], default=0)
     admin_comments = StringField("admin_comments", validators=[], default="")
 
-    operations_notification_date = StringField("operations_notification_date", validators=[], default="")
+    operations_notification_date = StringField(
+        "operations_notification_date", validators=[], default=""
+    )
     operations_kpi = IntegerField("operations_kpi", validators=[], default=0)
 
     approve_required = IntegerField("approve_required", validators=[], default=0)
+
 
 # class SMInfoForm(Form):
 #     id = IntegerField(
@@ -1134,8 +1197,23 @@ class ItemSMInventoryPutForm(Form):
         validators=[InputRequired(message="Invalid id or 0 not acepted")],
     )
 
+
 class ItemStateSMForm(Form):
     id_item = IntegerField(
         "id_item", validators=[InputRequired(message="Invalid id or 0 not acepted")]
     )
     state = StringField("state", validators=[InputRequired(message="Invalid state")])
+
+
+class ItemApproveSMForm(Form):
+    id_item = IntegerField(
+        "id_item", validators=[InputRequired(message="Invalid id or 0 not acepted")]
+    )
+    approve_required = IntegerField(
+        "approve_required",
+        validators=[
+            validators.number_range(
+                min=0, max=1, message="Invalid value for approve_required"
+            )
+        ],
+    )
