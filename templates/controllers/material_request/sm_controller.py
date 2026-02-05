@@ -473,7 +473,6 @@ def update_sm_db(data):
         "SELECT sm_id, extra_info FROM sql_telintec.materials_request WHERE sm_id = %s "
     )
     vals = (data["id"],)
-    print(f"sm retived: {data['id']}")
     flag, error, result = execute_sql(sql, vals, 1)
     if not flag:
         return False, f"Error at retriving sm from db: {error}", None
@@ -486,6 +485,7 @@ def update_sm_db(data):
     extra_info["contract_contact"] = data["info"]["contract_contact"]
     extra_info["activity_description"] = data["info"]["activity_description"]
     extra_info["project"] = data["info"]["project"]
+    print(extra_info["approve_required"], data["info"]["approve_required"])
     extra_info["approve_required"] = data["info"]["approve_required"]
     history = data["info"]["history"]
     comment = data["info"]["comment"]
