@@ -485,7 +485,7 @@ def update_sm_db(data):
     extra_info["contract_contact"] = data["info"]["contract_contact"]
     extra_info["activity_description"] = data["info"]["activity_description"]
     extra_info["project"] = data["info"]["project"]
-    print(extra_info["approve_required"], data["info"]["approve_required"])
+    print(extra_info.get("approve_required", None), data["info"]["approve_required"])
     extra_info["approve_required"] = data["info"]["approve_required"]
     history = data["info"]["history"]
     comment = data["info"]["comment"]
