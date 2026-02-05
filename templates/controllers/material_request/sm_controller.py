@@ -342,6 +342,8 @@ def insert_sm_db(data, init_extra_info: dict | None = None):
         }
     ]
     comment = data["info"].get("comment", [""])
+    date_closing = data["info"].get("date_closing", "")
+    date_closing = date_closing if date_closing is not None else ""
     extra_info = {
         "destination": data["info"].get("destination"),
         "contract_contact": data["info"].get("contract_contact"),
@@ -369,7 +371,7 @@ def insert_sm_db(data, init_extra_info: dict | None = None):
         ),
         "operations_kpi": data["info"].get("operations_kpi", 0),
         "requesting_user_state": data["info"].get("requesting_user_state", ""),
-        "date_closing": data["info"].get("date_closing", ""),
+        "date_closing": date_closing,
     }
     if init_extra_info is not None:
         for k, v in init_extra_info.items():
