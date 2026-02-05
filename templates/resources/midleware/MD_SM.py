@@ -157,7 +157,7 @@ def extract_extra_info_sm_item(items: list[dict]):
         # extract is_tool from extra info and erase is_tool from extra info
         extra_info: dict = item.get("extra_info", {})
         if extra_info is None:
-            extra_info = {}
+            extra_info = {} 
         item["is_tool"] = extra_info.get("is_tool", 0)
         if item["is_tool"] == 1:
             need_aprove = True

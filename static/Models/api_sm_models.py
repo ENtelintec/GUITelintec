@@ -830,7 +830,7 @@ class SMInfoForm(Form):
     project = StringField("project", validators=[], default="")
     urgent = IntegerField("urgent", validators=[], default=0)
     date_closing = DateField("date_closing", validators=[], filters=[date_filter])
-    general_request_status = IntegerField("general_request_status", validators=[InputRequired()], default=1)
+    general_request_status = IntegerField("general_request_status", validators=[], default=1)
 
     # --- Campos faltantes de la tabla de control (todos OPCIONALES) ---
     request_date = DateField("request_date", validators=[], filters=[date_filter])
