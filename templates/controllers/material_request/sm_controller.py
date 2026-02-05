@@ -504,6 +504,7 @@ def update_sm_db(data):
         "history = %s, comment = %s, extra_info = %s "
         "WHERE sm_id = %s"
     )
+    print(history, comment, extra_info)
     val = (
         data["info"]["folio"],
         data["info"]["contract"],
