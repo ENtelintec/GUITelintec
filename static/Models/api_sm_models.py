@@ -1058,7 +1058,7 @@ class TableRequestForm(Form):
 
 
 class SMPostForm(Form):
-    info = FormField(SMInfoForm, "info")
+    info = FormField(SMInfoPostForm, "info")
     items = FieldList(FormField(ItemsFormSMPost, "items"))
 
 
