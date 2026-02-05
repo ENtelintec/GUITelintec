@@ -896,7 +896,7 @@ class SMInfoForm(Form):
     general_request_status = IntegerField("general_request_status", validators=[], default=1)
 
     # --- Campos faltantes de la tabla de control (todos OPCIONALES) ---
-    request_date = DateField("request_date", validators=[], filters=[date_filter])
+    request_date = DateTimeField("request_date", validators=[], filters=[datetime_filter])
     # NOTA: 'date' ya existe arriba (requerido). Si quisieras una fecha de control separada, usa otro nombre.
 
     # Si prefieres alinear critical_date a DateField (Opción B), agrega este y migra poco a poco:
