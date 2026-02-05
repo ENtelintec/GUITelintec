@@ -799,6 +799,69 @@ class CommentSmForm(Form):
     timestamp = DateTimeField("timestamp", validators=[], filters=[datetime_filter])
 
 
+class SMInfoPostForm(Form):
+    # --- Campos existentes (tuyos) ---
+    id = IntegerField("id", validators=[validators.number_range(min=0, message="Invalid id sm info")])
+    folio = StringField("folio", validators=[InputRequired()])
+    contract = StringField("contract", validators=[InputRequired()])
+    contract_id = IntegerField(
+        "contract_id",
+        validators=[validators.number_range(min=-1, message="Invalid id")],
+    )
+    facility = StringField("facility", validators=[InputRequired()])
+    contract_contact = StringField("contract_contact", default="")
+    client_id = IntegerField("client_id", validators=[InputRequired(message="Invalid id or 0 not acepted")])
+    location = StringField("location", validators=[InputRequired()])
+    order_quotation = StringField("order_quotation", validators=[])
+    emp_id = IntegerField("emp_id", validators=[InputRequired(message="Invalid id or 0 not acepted")])
+
+    # En tu versión actual 'date' ya existe y es requerido. Lo dejamos igual.
+    date = DateField("date", validators=[InputRequired()], filters=[date_filter])
+
+    # En tu versión actual 'critical_date' es StringField y requerido.
+    # Opción A (no romper compat): mantenerlo tal cual.
+    critical_date = DateField("critical_date", validators=[], filters=[date_filter])
+
+    status = IntegerField("status", validators=[validators.number_range(min=0, message="Invalid id")])
+    comment = FieldList(FormField(CommentSmForm, "comment"), validators=[], default=[])
+    activity_description = StringField("activity_description", validators=[], default="")
+    destination = StringField("destination", validators=[InputRequired()])
+    history = FieldList(FormField(HistoryFormSM, "history"))
+    project = StringField("project", validators=[], default="")
+    urgent = IntegerField("urgent", validators=[], default=0)
+    date_closing = DateField("date_closing", validators=[], filters=[date_filter])
+    general_request_status = IntegerField("general_request_status", validators=[], default=1)
+
+    # --- Campos faltantes de la tabla de control (todos OPCIONALES) ---
+    # request_date = DateField("request_date", validators=[], filters=[date_filter])
+    # NOTA: 'date' ya existe arriba (requerido). Si quisieras una fecha de control separada, usa otro nombre.
+
+    # Si prefieres alinear critical_date a DateField (Opción B), agrega este y migra poco a poco:
+    # critical_date_dt = DateField("critical_date", validators=[Optional()], filters=[date_filter])
+
+    requesting_user_status = IntegerField("requesting_user_status", validators=[], default=0)
+    requesting_user_state = StringField("requesting_user_state", validators=[], default="")
+
+    warehouse_reviewed = IntegerField("warehouse_reviewed", validators=[], default=0)
+    warehouse_status = IntegerField("warehouse_status", validators=[], default=1)
+
+    admin_notification_date = StringField("admin_notification_date", validators=[], default="")
+    kpi_warehouse = IntegerField("kpi_warehouse", validators=[], default=0)
+    warehouse_comments = StringField("warehouse_comments", validators=[], default="")
+
+    admin_reviewed = IntegerField("admin_reviewed", validators=[], default=0)
+    admin_status = IntegerField("admin_status", validators=[], default=1)
+
+    warehouse_notification_date = StringField("warehouse_notification_date", validators=[], default="")
+    purchasing_kpi = IntegerField("purchasing_kpi", validators=[], default=0)
+    admin_comments = StringField("admin_comments", validators=[], default="")
+
+    operations_notification_date = StringField("operations_notification_date", validators=[], default="")
+    operations_kpi = IntegerField("operations_kpi", validators=[], default=0)
+
+    approve_required = IntegerField("approve_required", validators=[], default=0)
+
+
 class SMInfoForm(Form):
     # --- Campos existentes (tuyos) ---
     id = IntegerField("id", validators=[validators.number_range(min=0, message="Invalid id sm info")])
