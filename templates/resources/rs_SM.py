@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+from static.Models.api_sm_models import item_approve_model
 from templates.resources.midleware.MD_SM import update_sm_item_approve
 from flask import send_file, request
 from flask_restx import Resource, Namespace
@@ -443,7 +444,7 @@ class UpdateItemSMState(Resource):
 
 @ns.route("/item/approveRequired")
 class UpdateItemSMApprove(Resource):
-    @ns.expect(expected_headers_per, item_state_model)
+    @ns.expect(expected_headers_per, item_approve_model)
     def post(self, state):
         flag, data_token, msg = token_verification_procedure(
             request, department=["sm", "almacen"]
