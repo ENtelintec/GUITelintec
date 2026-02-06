@@ -263,6 +263,13 @@ def update_purchase_order(
     return flag, e, out
 
 
+def delete_purchase_order(id_order: int):
+    sql = "DELETE FROM sql_telintec_mod_admin.purchase_orders WHERE id_order = %s"
+    val = (id_order,)
+    flag, e, out = execute_sql(sql, val, 3)
+    return flag, e, out
+
+
 def update_purchase_order_status(id_order: int, history: list, status: int):
     sql = (
         "UPDATE sql_telintec_mod_admin.purchase_orders "

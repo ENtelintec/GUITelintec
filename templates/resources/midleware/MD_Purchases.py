@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from templates.controllers.order.orders_controller import delete_purchase_order
 from typing import Iterable
 import os
 import tempfile
@@ -233,16 +234,20 @@ def create_purchaser_order_api(data, data_token):
     msg = f"Orden de compra creada con ID-{id_order}"
     msg_moves: list[str] = []
     flag_error = False
+    n_errors = 0
     for item in data["items"]:
         extra_info = create_extra_info_product_from_data(item)
         update_item = True
+        duration_services = item.get("duration_services")
+        if duration_services is None or duration_services == "":
+            item["duration_services"] = 0
         if item["id"] is None or item["id"] <= 0:
             flag, error, result = insert_purchase_order_item(
                 id_order,
                 item["quantity"],
                 item["unit_price"],
                 item["description"],
-                item["duration_services"],
+                duration_services,
                 extra_info,
                 item["tool"],
                 item["currency"],
@@ -255,7 +260,7 @@ def create_purchaser_order_api(data, data_token):
                 item["quantity"],
                 item["unit_price"],
                 item["description"],
-                item["duration_services"],
+                duration_services,
                 extra_info,
                 item["currency"],
             )
@@ -266,6 +271,7 @@ def create_purchaser_order_api(data, data_token):
                 else f"x-Error al crear item de orden de compra -{item['description']}-{str(error)}"
             )
             flag_error = True
+            n_errors += 1
         else:
             msg_moves.append(
                 f"Item de orden de compra creado con ID-{result}"
@@ -273,6 +279,15 @@ def create_purchaser_order_api(data, data_token):
                 else f"Item de orden de compra actualizado con ID-{item['id']}"
             )
     # falta comprobar si algun item se creo sino eliminar po.
+    if n_errors == len(data["items"]):
+        flag, error, result = delete_purchase_order(id_order)
+        return {
+            "data": [id_order if not flag else None],
+            "msg": f"Error al crear los items de la orden {id_order}"
+            if not flag
+            else "Error al crear los items de la orden, orden eliminada",
+            "error": "\n".join(msg_moves),
+        }, 400
     msg += "\n" + "\n".join(msg_moves)
     if update_sm_control_table:
         code, data_out = update_sm_from_control_table(
