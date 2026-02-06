@@ -1328,26 +1328,6 @@ def delete_sm_from_api(data, data_token):
         return {"msg": "error at updating db"}, 400
 
 
-def update_items_sm_from_api(data, data_token):
-    errors, results = update_items_sm(data["items"], data["id_sm"])
-    code = 200
-    msg = ""
-    if len(results) > 0:
-        msg = f"Items actualizados: {results}"
-    if len(errors) > 0:
-        msg += f"\nErrores al actualizar items: {errors}"
-        code = 400
-    create_notification_permission(
-        msg,
-        ["sm", "administracion", "almacen"],
-        "Nueva SM Recibida",
-        data_token.get("emp_id"),
-        0,
-    )
-    write_log_file(log_file_sm_path, msg)
-    return {"msg": "ok", "data": msg, "error": errors}, code
-
-
 def get_sm_folios_from_api(data_token):
     flag, error, result = get_sm_folios_db()
     if not flag:
@@ -1474,3 +1454,95 @@ def update_sm_item_approve(data, data_token):
     )
     write_log_file(log_file_sm_path, msg)
     return {"msg": "ok", "data": result}, 200
+
+
+def update_items_sm_from_api(data, data_token):
+    """
+    Actualiza items de una SM, genera notificación y registra historial.
+
+    Espera:
+      data: {
+        "id_sm": <int|str>,
+        "items": <list>
+      }
+      data_token: {
+        "emp_id": <int|str>
+      }
+    """
+    flag, result, sm_data = get_sm_by_id(data["id_sm"])
+    if not flag:
+        return {"msg": "error at getting sm data"}, 400
+
+    timezone = pytz.timezone(timezone_software)
+    date_now = datetime.now(pytz.utc).astimezone(timezone).strftime(format_timestamps)
+
+    # Cargar historial de forma segura
+    try:
+        history_raw = sm_data[12]
+        history_sm = json.loads(history_raw)
+        if not isinstance(history_sm, list):
+            history_sm = []
+        extra_info = json.loads(sm_data[14])
+        comments_sm = json.loads(sm_data[13])
+    except Exception:
+        return {"msg": "error at parsing sm data", "data": []}, 400
+
+    # Actualizar items
+    errors, results = update_items_sm(data["items"], data["id_sm"])
+
+    # Construcción de mensajes
+    emp_id = data_token.get("emp_id")
+    msg_parts = []
+
+    if results:
+        msg_parts.append(
+            f"{len(results)} item(s) actualizado(s) por empleado {emp_id}."
+        )
+    if errors:
+        msg_parts.append(f"{len(errors)} error(es) durante la actualización.")
+
+    msg = (
+        " ".join(msg_parts)
+        if msg_parts
+        else f"Sin cambios en los items. Operación registrada por empleado {emp_id}."
+    )
+
+    # Determinar código HTTP
+    code = 200 if not errors else 400
+
+    # Notificación (mensaje compacto con empleado)
+    create_notification_permission(
+        msg,
+        ["sm", "administracion", "almacen"],
+        "Nueva SM Recibida",
+        emp_id,
+        0,
+    )
+
+    # Escribir log
+    write_log_file(log_file_sm_path, msg)
+
+    # Comentario para historial (breve y profesional)
+    comment_history = (
+        f"Empleado {emp_id} actualizó {len(results)} item(s)"
+        + (f" y hubo {len(errors)} error(es)." if errors else ".")
+        if (results or errors)
+        else f"Empleado {emp_id} registró la operación sin cambios."
+    )
+
+    # Registrar en historial con tu formato
+    history_sm.append(
+        {
+            "user": emp_id,
+            "event": "Actualizar aprobacion de sm",
+            "date": date_now,
+            "comment": comment_history,
+        }
+    )
+    flag, error, result = update_history_extra_info_sm_by_id(
+        data["id_sm"], extra_info, history_sm, comments_sm
+    )
+    if not flag:
+        return {"msg": f"error at updating sm history: {error}"}, 400
+
+    return {"msg": "ok", "data": msg, "error": errors}, code

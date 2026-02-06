@@ -458,5 +458,5 @@ def get_folios_po_from_pattern(patterns: list):
         f"WHERE {regexp_clauses}"
     )
     val = like_patterns
-    flag, e, out = execute_sql(sql, val, 2)
+    flag, e, out = execute_sql(sql, tuple(val), 2) 
     return flag, e, out

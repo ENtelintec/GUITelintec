@@ -164,7 +164,11 @@ def get_sm_from_item(id_item: int):
     flag, error, result = execute_sql(base_sql, val, 1)
 
     # Normalización de resultados (mismo patrón que get_sm_entries)
-    if not isinstance(result, list) or not isinstance(result, tuple) or len(result) == 0:
+    if (
+        not isinstance(result, list)
+        or not isinstance(result, tuple)
+        or len(result) == 0
+    ):
         return False, "No se encontró la SM para el id_item proporcionado", []
     return flag, error, result
 
@@ -398,9 +402,18 @@ def update_items_sm(items: list, sm_id: int):
             val = (item.get("id"),)
             flag, error, result = execute_sql(sql, val, 4)
         if flag:
-            results.append({"data": result, "action": action, "id": item.get("id")})
+            results.append(
+                {"data": result, "action": action, "id": item.get("id"), "error": None}
+            )
         else:
-            errors.append(item)
+            errors.append(
+                {
+                    "data": item,
+                    "action": action,
+                    "id": item.get("id"),
+                    "error": str(error),
+                }
+            )
 
     return errors, results
 
@@ -554,9 +567,9 @@ def update_sm_db(data):
         return False, f"Error at retriving sm from db: {error}", None
     # if not (isinstance(result, list) or isinstance(result, tuple)):
     #     return False, "Error at retriving sm from db not list", None
-    if len(result) == 0:
+    if len(result) == 0:  # pyrefly: ignore
         return False, "Material request not found", None
-    extra_info = json.loads(result[1])   
+    extra_info = json.loads(result[1])  # pyrefly: ignore
     extra_info["destination"] = data["info"]["destination"]
     extra_info["contract_contact"] = data["info"]["contract_contact"]
     extra_info["activity_description"] = data["info"]["activity_description"]
@@ -730,7 +743,7 @@ def get_folios_by_pattern(pattern: str):
 
 
 def update_history_extra_info_sm_by_id(
-    sm_id: int, extra_info: dict, history: dict, comments: list
+    sm_id: int, extra_info: dict, history: list, comments: list
 ):
     sql = (
         "UPDATE sql_telintec.materials_request "
@@ -848,6 +861,7 @@ def update_inventory_state_sm_item_db(state, id_inventory, id_item):
     flag, error, result = execute_sql(sql, val, 3)
     return flag, error, result
 
+
 def update_state_sm_item_db(state, id_item, history: dict, sm_id):
     sql = """
           UPDATE sql_telintec.sm_items
@@ -867,7 +881,8 @@ def update_state_sm_item_db(state, id_item, history: dict, sm_id):
     flag, error, result = execute_sql(sql, val, 3)
     return flag, error, result
 
-def update_extra_info_sm_item_db(extra_info: dict, id_item, history:dict, sm_id):
+
+def update_extra_info_sm_item_db(extra_info: dict, id_item, history: dict, sm_id):
     sql = """
           UPDATE sql_telintec.sm_items
           SET extra_info = %s

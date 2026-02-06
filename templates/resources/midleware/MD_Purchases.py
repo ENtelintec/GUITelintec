@@ -272,6 +272,7 @@ def create_purchaser_order_api(data, data_token):
                 if not update_item
                 else f"Item de orden de compra actualizado con ID-{item['id']}"
             )
+    # falta comprobar si algun item se creo sino eliminar po.
     msg += "\n" + "\n".join(msg_moves)
     if update_sm_control_table:
         code, data_out = update_sm_from_control_table(
