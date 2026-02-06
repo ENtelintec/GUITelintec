@@ -341,7 +341,7 @@ def update_purchase_order_api(data, data_token):
     for item in data["items"]:
         extra_info = create_extra_info_product_from_data(item)
         update_item = True
-        if item["id"] <= 0:
+        if item["id"] is None or item["id"] <= 0:
             flag, error, result = insert_purchase_order_item(
                 data["id"],
                 item["quantity"],
