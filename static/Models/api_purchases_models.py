@@ -563,6 +563,7 @@ class ItemsPOUpdateForm(Form):
     duration_services = StringField("duration_services", [], default="")
     supplier = StringField("supplier", [], default="")
     currency = StringField("currency", [], default="MXN")
+    tool = IntegerField("tool", [number_range(min=-1, max=2, message="Invalid tool")])
 
 
 class ItemsPOApplicationUpdateForm(Form):
