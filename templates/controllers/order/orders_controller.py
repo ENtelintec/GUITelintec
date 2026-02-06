@@ -377,7 +377,7 @@ def insert_purchase_order_item(
 ):
     sql = (
         "INSERT INTO sql_telintec_mod_admin.purchase_order_items "
-        "(order_id, quantity, unit_price, description, duration_services, extra_info, tool, currency) "
+        "(purchase_id, quantity, unit_price, description, duration_services, extra_info, tool, currency) "
         "VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
     )
     val = (

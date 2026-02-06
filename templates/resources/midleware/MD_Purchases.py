@@ -236,7 +236,7 @@ def create_purchaser_order_api(data, data_token):
     for item in data["items"]:
         extra_info = create_extra_info_product_from_data(item)
         update_item = True
-        if item["id"] <= 0:
+        if item["id"] is None or item["id"] <= 0:
             flag, error, result = insert_purchase_order_item(
                 id_order,
                 item["quantity"],
@@ -341,6 +341,7 @@ def update_purchase_order_api(data, data_token):
     for item in data["items"]:
         extra_info = create_extra_info_product_from_data(item)
         update_item = True
+        print("items", item)
         if item["id"] is None or item["id"] <= 0:
             flag, error, result = insert_purchase_order_item(
                 data["id"],
@@ -570,7 +571,6 @@ def create_po_application_api(data, data_token):
             f"por el usuario {data_token.get('emp_id')}.",
         }
     ]
-
     flag, error, id_po_app = insert_po_application(
         timestamp,
         1,
