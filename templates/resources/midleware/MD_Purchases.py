@@ -240,7 +240,7 @@ def create_purchaser_order_api(data, data_token):
         update_item = True
         duration_services = item.get("duration_services")
         if duration_services is None or duration_services == "":
-            item["duration_services"] = 0
+            item["duration_services"] = "0"
         if item["id"] is None or item["id"] <= 0:
             flag, error, result = insert_purchase_order_item(
                 id_order,
