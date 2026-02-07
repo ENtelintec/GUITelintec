@@ -98,7 +98,10 @@ def get_purchase_orders_with_items(status: int | None, created_by: int | None):
         "po.time_delivery "
         "FROM sql_telintec_mod_admin.purchase_orders AS po "
         "LEFT JOIN sql_telintec_mod_admin.purchase_order_items AS poi ON po.id_order = poi.purchase_id "
-        "WHERE (po.status = %s or %s IS NULL ) AND (po.status != 4) AND (po.created_by = %s OR %s IS NULL) GROUP BY po.id_order"
+        "WHERE (po.status = %s or %s IS NULL ) "
+        "AND (po.status != 4) "
+        "AND (po.created_by = %s OR %s IS NULL) "
+        "GROUP BY po.id_order"
     )
     val = (status, status, created_by, created_by)
     flag, e, my_result = execute_sql(sql, val, 2)

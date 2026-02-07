@@ -1484,8 +1484,8 @@ def update_items_sm_from_api(data, data_token):
             history_sm = []
         extra_info = json.loads(sm_data[14])
         comments_sm = json.loads(sm_data[13])
-    except Exception:
-        return {"msg": "error at parsing sm data", "data": []}, 400
+    except Exception as e:
+        return {"msg": f"error at parsing sm data: {str(e)}", "data": []}, 400
 
     # Actualizar items
     errors, results = update_items_sm(data["items"], data["id_sm"])

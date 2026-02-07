@@ -428,7 +428,7 @@ class UpdateItemInventoryID(Resource):
 @ns.route("/item/stateUpdate")
 class UpdateItemSMState(Resource):
     @ns.expect(expected_headers_per, item_state_model)
-    def post(self, state):
+    def post(self):
         flag, data_token, msg = token_verification_procedure(
             request, department=["sm", "almacen"]
         )
@@ -445,7 +445,7 @@ class UpdateItemSMState(Resource):
 @ns.route("/item/approveRequired")
 class UpdateItemSMApprove(Resource):
     @ns.expect(expected_headers_per, item_approve_model)
-    def post(self, state):
+    def post(self):
         flag, data_token, msg = token_verification_procedure(
             request, department=["sm", "almacen"]
         )

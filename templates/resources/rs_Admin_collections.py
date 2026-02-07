@@ -46,7 +46,7 @@ from templates.resources.midleware.MD_Purchases import (
     fetch_pos_applications,
     dowload_file_purchase,
     fetch_pos_applications_to_approve,
-    generate_folios_po,
+    generate_folios_po, download_file_purchase_item_approved,
 )
 
 __author__ = "Edisson Naula"
@@ -227,10 +227,24 @@ class ChangeStatePOApplication(Resource):
 class DownloadPDFPurchase(Resource):
     @ns.expect(expected_headers_per)
     def get(self, po_id):
-        flag, data_token, msg = token_verification_procedure(request, department=["sm"])
+        flag, data_token, msg = token_verification_procedure(request, department=["administration"])
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data, code = dowload_file_purchase(po_id)
+        if code == 200:
+            return send_file(data, as_attachment=True)  # pyrefly: ignore
+        else:
+            return {"msg": "error at downloading"}, code
+
+
+@ns.route("/purchase/download/pdfItemsPurchaseStorage")
+class DownloadPDFPurchaseItemsStorage(Resource):
+    @ns.expect(expected_headers_per)
+    def get(self, po_id):
+        flag, data_token, msg = token_verification_procedure(request, department=["almacen", "administracion"])
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        data, code = download_file_purchase_item_approved()
         if code == 200:
             return send_file(data, as_attachment=True)  # pyrefly: ignore
         else:

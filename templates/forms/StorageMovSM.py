@@ -368,3 +368,72 @@ def FileSmPDF(dict_data: dict):
     print_footer_page_count(pdf, pages, right_text=f"Folio: {folio}", x_max=x_max)
     pdf.save()
     return True
+
+
+def FilePurchaseList(dict_data: dict, path):
+    """
+    Genera un PDF con la lista de compra:
+    - Imprime cada inventario como un ítem general con su total.
+    - Luego imprime el desglose de cada entrega asociada.
+    :param dict_data: diccionario con items agrupados por id_inventory
+    :param path: ruta de salida del PDF
+    :return:
+    """
+    pdf = canvas.Canvas(path, pagesize=(a4_y, a4_x))
+    pdf.setTitle("LISTA DE COMPRA")
+
+    create_header_telintec(
+        pdf,
+        title="LISTA DE COMPRA",
+        page_x=a4_y,
+        iso_form=4,
+        orientation="vertical",
+        offset_title=(-18, 0),
+    )
+
+    pages = 1
+    font_size = 9
+    pdf.setFont("Courier", font_size)
+
+    y_init = 500
+    limit_y = 40
+    last_y = y_init
+
+    for id_inventory, values in dict_data.items():
+        items = values["items"]
+        total = values["total"]
+
+        # --- Imprimir encabezado general del inventario ---
+        pdf.setFont("Courier-Bold", font_size)
+        pdf.drawString(30, last_y, f"Inventario: {id_inventory}")
+        pdf.drawString(200, last_y, f"Total: {total}")
+        last_y -= font_size * 2
+
+        # --- Imprimir desglose de cada item ---
+        pdf.setFont("Courier", font_size)
+        for item in items:
+            if last_y < limit_y:  # salto de página
+                print_footer_page_count(pdf, pages)
+                pdf.showPage()
+                create_header_telintec(
+                    pdf,
+                    title="LISTA DE COMPRA",
+                    page_x=a4_y,
+                    iso_form=4,
+                    orientation="vertical",
+                    offset_title=(-18, 0),
+                )
+                pages += 1
+                pdf.setFont("Courier", font_size)
+                last_y = 500
+
+            pdf.drawString(40, last_y, f"Item: {item['name']} ({item['id_item']})")
+            pdf.drawString(250, last_y, f"Cantidad: {item['quantity']}")
+            pdf.drawString(350, last_y, f"Entrega: {item.get('quantity_c', 0)}")
+            pdf.drawString(450, last_y, f"Folio PO: {item.get('folio_po', '')}")
+            last_y -= font_size * 1.5
+
+    # --- Footer final ---
+    print_footer_page_count(pdf, pages)
+    pdf.save()
+    return True

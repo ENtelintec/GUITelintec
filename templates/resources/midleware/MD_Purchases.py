@@ -19,7 +19,7 @@ from templates.controllers.contracts.contracts_controller import (
 from templates.controllers.departments.heads_controller import check_if_gerente
 from templates.controllers.material_request.sm_controller import (
     get_sm_by_id,
-    get_sm_by_folio,
+    get_sm_by_folio, get_sm_entries,
 )
 from templates.controllers.order.orders_controller import (
     insert_purchase_order,
@@ -40,6 +40,7 @@ from templates.controllers.order.orders_controller import (
     get_folios_po_from_pattern,
 )
 from templates.forms.PurchaseForms import FilePoPDF
+from templates.forms.StorageMovSM import FilePurchaseList
 from templates.misc.Functions_Files import write_log_file
 
 import json
@@ -927,7 +928,8 @@ def generate_folios_po(reference, data_token):
                 try:
                     count = int(number)
                     break
-                except Exception:
+                except Exception as e:
+                    print(e)
                     continue
             folios_out.append(f"{folio_normal}-{count + 1:03d}".upper())
         elif folio_maestro.lower() in folio.lower():
@@ -936,7 +938,8 @@ def generate_folios_po(reference, data_token):
                 try:
                     count = int(number)
                     break
-                except Exception:
+                except Exception as e:
+                    print(e)
                     continue
             folios_out.append(
                 f"{folio_maestro}-{count + 1:03d}-{dict_abbs[reference_parts[-2]].get('initial', '')}{reference_parts[-1]}".upper()
@@ -947,7 +950,8 @@ def generate_folios_po(reference, data_token):
                 try:
                     count = int(number)
                     break
-                except Exception:
+                except Exception as e:
+                    print(e)
                     continue
             folios_out.append(f"{folio_cotfc}-{count + 1:03d}".upper())
     if len(folios_out) == 0:
@@ -957,3 +961,60 @@ def generate_folios_po(reference, data_token):
             f"{folio_cotfc}".upper(),
         ]
     return {"data": folios_out, "error": None}, 200
+
+
+def group_item_by_id_inventory(items: list):
+    dict_out = {}
+    for item in items:
+        id_inventory = item.get("id_inventory", 0)
+        if id_inventory not in dict_out:
+            dict_out[id_inventory] = {
+                "items": [item],
+                "total": item["quantity"]
+            }
+        else:
+            dict_out[id_inventory]["items"].append(item)
+            dict_out[id_inventory]["total"] += item["quantity"]
+    return dict_out
+
+
+def download_file_purchase_item_approved():
+    flag, error, sm_data = get_sm_entries(None)
+    if not flag:
+        return {"data": [], "error": str(error), "msg": "Error at retrieving sm data"}, 400
+    items_with_approved = []
+    for sm in sm_data:
+        sm_id = sm[0]
+        items = json.loads(sm[10])
+        for item in items:
+            deliveries = json.loads(item.get("deliveries", "[]"))
+            if len(deliveries) > 0:
+                for delivery in deliveries:
+                    if delivery.get("state", 0) == 4:    # falta checar estado asignado al ok compra
+                        items_with_approved.append(
+                            {
+                                "id_item": item["id"],
+                                "id_inventory": item["id_inventory"],
+                                "name": item["name"],
+                                "udm": item["udm"],
+                                "id_sm": sm_id,
+                                "folio": sm[1],
+                                "quantity": item["quantity"],
+                                "delivered": item["delivered"],
+                                "quantity_c": delivery["quantity"],
+                                "timestamp": delivery["timestamp"],
+                                "comment": delivery["comment"],
+                                "state": delivery["state"],
+                                "folio_po": delivery["folio"],
+
+                            }
+                        )
+                        break
+    dict_items = group_item_by_id_inventory(items_with_approved)
+    print(dict_items)
+    download_path = os.path.join(tempfile.mkdtemp(), os.path.basename("purchase_list.pdf"))
+    flag = FilePurchaseList(dict_items, download_path)
+    if not flag:
+        return {"data": [], "error": "Error at generating pdf", "msg": "Error at generating pdf"}, 400
+    return {"data": download_path, "error": None, "msg": "ok"}, 200
+
