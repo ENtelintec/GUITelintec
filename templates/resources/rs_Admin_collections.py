@@ -240,7 +240,7 @@ class DownloadPDFPurchase(Resource):
 @ns.route("/purchase/download/pdfItemsPurchaseStorage")
 class DownloadPDFPurchaseItemsStorage(Resource):
     @ns.expect(expected_headers_per)
-    def get(self, po_id):
+    def get(self):
         flag, data_token, msg = token_verification_procedure(request, department=["almacen", "administracion"])
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
