@@ -988,6 +988,7 @@ def download_file_purchase_item_approved():
         items = json.loads(sm[10])
         for item in items:
             deliveries = item.get("deliveries", [])
+            deliveries = [] if deliveries is None else deliveries
             if len(deliveries) > 0:
                 for delivery in deliveries:
                     if delivery.get("state", 0) == 4:    # falta checar estado asignado al ok compra
