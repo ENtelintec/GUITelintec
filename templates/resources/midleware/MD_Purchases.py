@@ -1013,7 +1013,6 @@ def download_file_purchase_item_approved():
                         break
     dict_items = group_item_by_id_inventory(items_with_approved)
     download_path = os.path.join(tempfile.mkdtemp(), os.path.basename("purchase_list.pdf"))
-    print(download_path)
     flag = FilePurchaseList(dict_items, download_path)
     if not flag:
         return {"data": [], "error": "Error at generating pdf", "msg": "Error at generating pdf"}, 400
