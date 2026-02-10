@@ -245,9 +245,8 @@ class DownloadPDFPurchaseItemsStorage(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data, code = download_file_purchase_item_approved()
-        print(data, code)
         if code == 200:
-            return send_file(data, as_attachment=True)  # pyrefly: ignore
+            return send_file(data["data"], as_attachment=True)  # pyrefly: ignore
         else:
             return {"msg": "error at downloading"}, code
 
