@@ -172,6 +172,8 @@ def extract_extra_info_sm_item(items: list[dict]):
             need_aprove = True
         # extra_info.pop("is_tool", None)
         approve_required = extra_info.get("approve_required", 0)
+        if approve_required is None:
+            approve_required = 1 if item["is_tool"] == 1 else 0
         extra_info["approve_required"] = approve_required
         item["extra_info"] = extra_info
         new_items.append(item)
