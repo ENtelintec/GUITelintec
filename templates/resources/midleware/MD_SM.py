@@ -1424,7 +1424,7 @@ def update_sm_item_approve(data, data_token):
     if approve_required not in [0, 1]:
         return {"msg": "error at updating sm item approve"}, 400
     extra_info_item = {}
-    items_sm = json.loads(sm_data[11])
+    items_sm = json.loads(sm_data[10])
     for item in items_sm:
         if item["id"] == data.get("id_item"):
             extra_info_item = item.get("extra_info", {})
