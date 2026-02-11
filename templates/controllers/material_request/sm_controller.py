@@ -242,11 +242,7 @@ def get_sm_from_item(id_item: int):
     flag, error, result = execute_sql(base_sql, val, 1)
 
     # Normalización de resultados (mismo patrón que get_sm_entries)
-    if (
-        not isinstance(result, list)
-        or not isinstance(result, tuple)
-        or len(result) == 0
-    ):
+    if len(result) == 0:
         return False, "No se encontró la SM para el id_item proporcionado", []
     return flag, error, result
 
