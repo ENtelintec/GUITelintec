@@ -383,7 +383,9 @@ def create_items_sm_db(items: list, sm_id: int):
         state = 0 if item.get("id", -1) == -1 else 1
         id_inventory = item.get("id") if item.get("id", -1) > 0 else None
         extra_info = item.get("extra_info", {})
-        extra_info["is_tool"] = item.get("is_tool", 0)
+        is_tool = item.get("is_tool", 0)
+        extra_info["is_tool"] = is_tool if is_tool is not None else 0
+        extra_info["approve_required"] = 0 if is_tool != 1 else 1
         val = (
             sm_id,
             id_inventory,
@@ -418,7 +420,13 @@ def update_items_sm(items: list, sm_id: int):
             if id_inventory in ids_list:
                 continue
             extra_info = item.get("extra_info", {})
-            extra_info["is_tool"] = item.get("is_tool", 0)
+            is_tool = item.get("is_tool", 0)
+            extra_info["is_tool"] = is_tool if is_tool is not None else 0
+            approve_required = extra_info.get("approve_required", 0)
+            if approve_required is None:
+                extra_info["approve_required"] = 1 if is_tool == 1 else 0
+            else:
+                extra_info["approve_required"] = approve_required
             if item.get("id", 0) != 0:
                 ids_list.append(id_inventory)
                 sql = (
