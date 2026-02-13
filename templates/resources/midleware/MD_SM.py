@@ -997,13 +997,15 @@ def update_sm_from_control_table(
         flag, error, result = True, None, sm_data
     if not flag or len(result) <= 0:
         return 400, {"msg": "sm not foud"}
-    history_sm = json.loads(result[12])
+    history_sm_json = result[12]
+    history_sm_json = history_sm_json if history_sm_json else "[]"
+    history_sm = json.loads(history_sm_json)
     emp_id_creation = result[6]
     time_zone = pytz.timezone(timezone_software)
     date_now = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
-    comment_history = f"Actualización de datos desde la tabla de control por el empleado {data_token.get('emp_id')}"
-
     extra_info = json.loads(result[14])
+
+    comment_history = f"Actualización de datos desde la tabla de control por el empleado {data_token.get('emp_id')}"
     comments = []
     for k, value in data["info"].items():
         if k == "comment":

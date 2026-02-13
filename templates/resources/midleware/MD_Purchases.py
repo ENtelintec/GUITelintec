@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+from templates.controllers.order.orders_controller import (
+    insert_purchase_order_item_from_applications,
+)
 from templates.controllers.order.orders_controller import delete_purchase_order
 from typing import Iterable
 import os
@@ -19,7 +22,8 @@ from templates.controllers.contracts.contracts_controller import (
 from templates.controllers.departments.heads_controller import check_if_gerente
 from templates.controllers.material_request.sm_controller import (
     get_sm_by_id,
-    get_sm_by_folio, get_sm_entries,
+    get_sm_by_folio,
+    get_sm_entries,
 )
 from templates.controllers.order.orders_controller import (
     insert_purchase_order,
@@ -563,13 +567,13 @@ def fetch_pos_applications(status, data_token):
 
 
 def create_po_application_api(data, data_token):
-    sm_id = data.get("sm_id", 0)
+    sm_id = data.get("sm_id", -1)
     update_sm_control_table = False
     if sm_id > 0:
         flag, error, result_sm = get_sm_by_id(sm_id)
     else:
-        flag, error, result_sm = get_sm_by_folio(data.get("folio", ""))
-    if not isinstance(result_sm, list) or not isinstance(result_sm, tuple):
+        flag, error, result_sm = get_sm_by_folio(data.get("reference"))
+    if not (isinstance(result_sm, list) or isinstance(result_sm, tuple)):
         return {"data": None, "msg": "error", "error": "SM not found"}, 400
 
     extra_info = {}
@@ -610,7 +614,7 @@ def create_po_application_api(data, data_token):
     tool_detected = False
     for item in data["items"]:
         extra_info = create_extra_info_product_from_data(item)
-        flag, error, result = insert_purchase_order_item(
+        flag, error, result = insert_purchase_order_item_from_applications(
             id_po_app,
             item["quantity"],
             0.0,
@@ -639,12 +643,12 @@ def create_po_application_api(data, data_token):
             return {"data": None, "msg": msg + "\nerror", "error": str(error)}, 400
     if update_sm_control_table:
         code, data_out = update_sm_from_control_table(
-            {
+            data={
                 "id": result_sm[0],
                 "info": {"warehouse_reviewed": 1, "admin_notification_date": timestamp},
             },
-            data_token,
-            result_sm,
+            data_token=data_token,
+            sm_data=result_sm,
         )
         if code != 200:
             msg += (
@@ -752,9 +756,9 @@ def cancel_po_application_api(data, data_token):
         }
     )
     flag, error, result = cancel_po_application(
-        data.get("status", 4),
         history,
         data["id"],
+        data.get("status", 4),
     )
     if not flag:
         return {"data": None, "msg": "error", "error": str(error)}, 400
@@ -968,10 +972,7 @@ def group_item_by_id_inventory(items: list):
     for item in items:
         id_inventory = item.get("id_inventory", 0)
         if id_inventory not in dict_out:
-            dict_out[id_inventory] = {
-                "items": [item],
-                "total": item["quantity"]
-            }
+            dict_out[id_inventory] = {"items": [item], "total": item["quantity"]}
         else:
             dict_out[id_inventory]["items"].append(item)
             dict_out[id_inventory]["total"] += item["quantity"]
@@ -981,7 +982,11 @@ def group_item_by_id_inventory(items: list):
 def download_file_purchase_item_approved():
     flag, error, sm_data = get_sm_entries(None)
     if not flag:
-        return {"data": [], "error": str(error), "msg": "Error at retrieving sm data"}, 400
+        return {
+            "data": [],
+            "error": str(error),
+            "msg": "Error at retrieving sm data",
+        }, 400
     items_with_approved = []
     for sm in sm_data:
         sm_id = sm[0]
@@ -991,7 +996,9 @@ def download_file_purchase_item_approved():
             deliveries = [] if deliveries is None else deliveries
             if len(deliveries) > 0:
                 for delivery in deliveries:
-                    if delivery.get("state", 0) == 4:    # falta checar estado asignado al ok compra
+                    if (
+                        delivery.get("state", 0) == 4
+                    ):  # falta checar estado asignado al ok compra
                         items_with_approved.append(
                             {
                                 "id_item": item["id"],
@@ -1007,14 +1014,18 @@ def download_file_purchase_item_approved():
                                 "comment": delivery["comment"],
                                 "state": delivery["state"],
                                 "folio_po": delivery["folio"],
-
                             }
                         )
                         break
     dict_items = group_item_by_id_inventory(items_with_approved)
-    download_path = os.path.join(tempfile.mkdtemp(), os.path.basename("purchase_list.pdf"))
+    download_path = os.path.join(
+        tempfile.mkdtemp(), os.path.basename("purchase_list.pdf")
+    )
     flag = FilePurchaseList(dict_items, download_path)
     if not flag:
-        return {"data": [], "error": "Error at generating pdf", "msg": "Error at generating pdf"}, 400
+        return {
+            "data": [],
+            "error": "Error at generating pdf",
+            "msg": "Error at generating pdf",
+        }, 400
     return {"data": download_path, "error": None, "msg": "ok"}, 200
-

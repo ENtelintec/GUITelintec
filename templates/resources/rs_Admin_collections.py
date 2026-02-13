@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 
+from static.Models.api_purchases_models import po_app_delete_model
 from flask import request, send_file
 from flask_restx import Namespace, Resource
 
@@ -126,7 +127,7 @@ class APOsOperations(Resource):
         data_out, code = update_po_application_api(data, data_token)
         return data_out, code
 
-    @ns.expect(expected_headers_per)
+    @ns.expect(expected_headers_per, po_app_delete_model)
     def delete(self):
         flag, data_token, msg = token_verification_procedure(
             request, department="orders"

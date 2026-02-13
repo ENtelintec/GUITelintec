@@ -629,12 +629,16 @@ class PurchaseOrderUpdateStatusForm(Form):
 
 
 class POsApplicationPostForm(Form):
-    reference = StringField("reference", [])
-    comment = StringField("comment", [])
+    reference = StringField("reference", validators=[])
+    comment = StringField("comment", validators=[])
     items = FieldList(
         FormField(ItemsPOApplicationForm), "items", validators=[], default=[]
     )
-    sm_id = IntegerField("sm_id", [], default=0)
+    sm_id = IntegerField(
+        "sm_id",
+        validators=[validators.number_range(min=-1, message="Invalid id")],
+        default=-1,
+    )
 
 
 class POsApplicationPutForm(Form):
@@ -673,13 +677,17 @@ class ProductsPostRemissionForm(Form):
     udm = StringField("udm", [InputRequired()])
     price_unit = FloatField("price_unit", [InputRequired()])
 
+
 class ProductsPutRemissionForm(Form):
-    id = IntegerField("id", [number_range(min=-1, max=2, message="Invalid id")], default=-1)
+    id = IntegerField(
+        "id", [number_range(min=-1, max=2, message="Invalid id")], default=-1
+    )
     quotation_item_id = IntegerField("quotation_item_id", [], default=0)
     description = StringField("description", [InputRequired()])
     quantity = FloatField("quantity", [InputRequired()])
     udm = StringField("udm", [InputRequired()])
     price_unit = FloatField("price_unit", [InputRequired()])
+
 
 class ProductsDeleteRemissionForm(Form):
     id = IntegerField("id", [InputRequired()])

@@ -302,7 +302,7 @@ def insert_po_application(
     reference: str,
     history: list,
     approved=1,
-    extra_info: dict|None = None,
+    extra_info: dict | None = None,
 ):
     sql = (
         "INSERT INTO sql_telintec_mod_admin.pos_applications "
@@ -364,13 +364,15 @@ def update_po_application_status(
     return flag, error, result
 
 
-def cancel_po_application(history: list, id_order: int, status):
+def cancel_po_application(history: list, id_order: int, status: int):
     sql = (
         "UPDATE sql_telintec_mod_admin.pos_applications "
         "SET status = %s, history = %s "
         "WHERE id_order = %s"
     )
+    print(status, id_order, history)
     val = (status, json.dumps(history), id_order)
+
     flag, e, out = execute_sql(sql, val, 3)
     return flag, e, out
 
@@ -388,6 +390,35 @@ def insert_purchase_order_item(
     sql = (
         "INSERT INTO sql_telintec_mod_admin.purchase_order_items "
         "(purchase_id, quantity, unit_price, description, duration_services, extra_info, tool, currency) "
+        "VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
+    )
+    val = (
+        order_id,
+        quantity,
+        unit_price,
+        description,
+        duration_services,
+        json.dumps(extra_info),
+        tool,
+        currency,
+    )
+    flag, e, out = execute_sql(sql, val, 3)
+    return flag, e, out
+
+
+def insert_purchase_order_item_from_applications(
+    order_id: int,
+    quantity: int,
+    unit_price: float,
+    description: str,
+    duration_services: str,
+    extra_info: dict,
+    tool=0,
+    currency="MXN",
+):
+    sql = (
+        "INSERT INTO sql_telintec_mod_admin.purchase_order_items "
+        "(order_id, quantity, unit_price, description, duration_services, extra_info, tool, currency) "
         "VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
     )
     val = (
@@ -468,5 +499,5 @@ def get_folios_po_from_pattern(patterns: list):
         f"WHERE {regexp_clauses}"
     )
     val = like_patterns
-    flag, e, out = execute_sql(sql, tuple(val), 2) 
+    flag, e, out = execute_sql(sql, tuple(val), 2)
     return flag, e, out
