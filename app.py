@@ -25,6 +25,11 @@ def hello_world():  # put application's code here
     return "Hello World! GUI"
 
 
+@app.route("/health")
+def health():
+    return "OK", 200
+
+
 api.init_app(app)
 api.add_namespace(ns_rrhh)
 api.add_namespace(ns_sm)
