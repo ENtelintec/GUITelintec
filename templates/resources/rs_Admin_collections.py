@@ -1,6 +1,16 @@
 # -*- coding: utf-8 -*-
 
 
+from static.Models.api_purchases_models import (
+    QuotationActivityCreateForm,
+    QuotationActivityDeleteForm,
+    QuotationActivityUpdateForm,
+    QuotationActivityStatusUpdateForm,
+    quotation_activity_create_model,
+    quotation_activity_update_model,
+    quotation_activity_delete_model,
+    quoatation_activity_status_update_model,
+)
 from static.Models.api_purchases_models import po_app_delete_model
 from flask import request, send_file
 from flask_restx import Namespace, Resource
@@ -29,7 +39,10 @@ from static.Models.api_purchases_models import (
 )
 from templates.resources.methods.Functions_Aux_Login import token_verification_procedure
 from templates.resources.midleware.MD_Admin_Collections import (
+    create_quotation_activity_from_api,
     create_remission_from_api,
+    delete_quotation_activity_from_api,
+    update_quotation_activity_from_api,
     update_remission_from_api,
     delete_remission_from_api,
     fetch_remissions_by_status_db,
@@ -47,7 +60,8 @@ from templates.resources.midleware.MD_Purchases import (
     fetch_pos_applications,
     dowload_file_purchase,
     fetch_pos_applications_to_approve,
-    generate_folios_po, download_file_purchase_item_approved,
+    generate_folios_po,
+    download_file_purchase_item_approved,
 )
 
 __author__ = "Edisson Naula"
@@ -105,7 +119,7 @@ class APOsOperations(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
-        validator = POsApplicationPostForm.from_json(ns.payload)  # pyrefly: ignore 
+        validator = POsApplicationPostForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
@@ -120,7 +134,7 @@ class APOsOperations(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
-        validator = POsApplicationPutForm.from_json(ns.payload) # pyrefly: ignore
+        validator = POsApplicationPutForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
@@ -135,7 +149,7 @@ class APOsOperations(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
-        validator = POAppDeleteForm.from_json(ns.payload)   # pyrefly: ignore
+        validator = POAppDeleteForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
@@ -153,7 +167,7 @@ class POsOperations(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
-        validator = PurchaseOrderPostForm.from_json(ns.payload) # pyrefly: ignore
+        validator = PurchaseOrderPostForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
@@ -184,7 +198,7 @@ class POsOperations(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
-        validator = PurchaseOrderDeleteForm.from_json(ns.payload)   # pyrefly: ignore
+        validator = PurchaseOrderDeleteForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
@@ -202,7 +216,9 @@ class ChangeStateOrder(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
-        validator = PurchaseOrderUpdateStatusForm.from_json(ns.payload) # pyrefly: ignore
+        validator = PurchaseOrderUpdateStatusForm.from_json(  # pyrefly: ignore
+            ns.payload
+        )
         data = validator.data
         data_out, code = change_state_order_api(data, data_token)
         return data_out, code
@@ -218,7 +234,9 @@ class ChangeStatePOApplication(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
-        validator = PurchaseOrderUpdateStatusForm.from_json(ns.payload) # pyrefly: ignore
+        validator = PurchaseOrderUpdateStatusForm.from_json(  # pyrefly: ignore
+            ns.payload
+        )
         data = validator.data
         data_out, code = change_state_po_application_api(data, data_token)
         return data_out, code
@@ -228,7 +246,9 @@ class ChangeStatePOApplication(Resource):
 class DownloadPDFPurchase(Resource):
     @ns.expect(expected_headers_per)
     def get(self, po_id):
-        flag, data_token, msg = token_verification_procedure(request, department=["administration"])
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["administration"]
+        )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data, code = dowload_file_purchase(po_id)
@@ -242,7 +262,9 @@ class DownloadPDFPurchase(Resource):
 class DownloadPDFPurchaseItemsStorage(Resource):
     @ns.expect(expected_headers_per)
     def get(self):
-        flag, data_token, msg = token_verification_procedure(request, department=["almacen", "administracion"])
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["almacen", "administracion"]
+        )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data, code = download_file_purchase_item_approved()
@@ -275,7 +297,7 @@ class RemissionAction(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
 
-        validator = RemissionInsertForm.from_json(ns.payload)   # pyrefly: ignore
+        validator = RemissionInsertForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
 
@@ -291,7 +313,7 @@ class RemissionAction(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
 
-        validator = RemissionUpdateForm.from_json(ns.payload)   # pyrefly: ignore
+        validator = RemissionUpdateForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
 
@@ -307,7 +329,7 @@ class RemissionAction(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
 
-        validator = RemissionDeleteForm.from_json(ns.payload)   # pyrefly: ignore
+        validator = RemissionDeleteForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
 
@@ -327,3 +349,67 @@ class FetchRemissions(Resource):
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data, code = fetch_remissions_by_status_db(status, data_token)
         return data, code
+
+
+@ns.route("/activity/quotation")
+class ActivityQuotatioAction(Resource):
+    @ns.expect(expected_headers_per, quotation_activity_create_model)
+    def post(self):
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["administracion", "purchases"]
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        validator = QuotationActivityCreateForm.from_json(ns.payload)  # pyrefly: ignore
+        if not validator.validate():
+            return {"data": validator.errors, "msg": "Error at structure"}, 400
+        data = validator.data
+        data_out, code = create_quotation_activity_from_api(data, data_token)
+        return data_out, code
+
+    @ns.expect(expected_headers_per, quotation_activity_update_model)
+    def put(self):
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["administracion", "purchases"]
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        validator = QuotationActivityUpdateForm.from_json(ns.payload)  # pyrefly: ignore
+        if not validator.validate():
+            return {"data": validator.errors, "msg": "Error at structure"}, 400
+        data = validator.data
+        data_out, code = update_quotation_activity_from_api(data, data_token)
+        return data_out, code
+
+    @ns.expect(expected_headers_per, quotation_activity_delete_model)
+    def delete(self):
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["administracion", "purchases"]
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        validator = QuotationActivityDeleteForm.from_json(ns.payload)  # pyrefly: ignore
+        if not validator.validate():
+            return {"data": validator.errors, "msg": "Error at structure"}, 400
+        data = validator.data
+        data_out, code = delete_quotation_activity_from_api(data, data_token)
+        return data_out, code
+
+
+@ns.route("/activity/ChangeStatus")
+class ChangeStatusActivity(Resource):
+    @ns.expect(expected_headers_per, quoatation_activity_status_update_model)
+    def put(self):
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["administracion", "purchases"]
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        validator = QuotationActivityStatusUpdateForm.from_json(  # pyrefly: ignore
+            ns.payload
+        )
+        if not validator.validate():
+            return {"data": validator.errors, "msg": "Error at structure"}, 400
+        data = validator.data
+        data_out, code = update_quotation_activity_from_api(data, data_token)
+        return data_out, code

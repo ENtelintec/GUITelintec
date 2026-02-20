@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from templates.controllers.activities.remisions_controller import (
     delete_quotation_activity,
+    delete_quotation_activity_item,
     get_quotation_activity_by_id,
     insert_quotation_activity_item,
     update_quotation_activity,
@@ -253,6 +254,63 @@ def update_quotation_activity_from_api(data, data_token):
     )
     write_log_file(log_file_admin, msg)
     return {"data": result, "msg": "Ok", "error": None}, 200
+
+
+def delete_quotation_activity_from_api(data, data_token):
+    id_quotation = data["id"]
+    user = data_token.get("emp_id", 0)
+    msg = ""
+
+    # Retrieve quotation activity registry:
+    flag, error, result_qa = get_quotation_activity_by_id(id_quotation)
+    if not flag:
+        return {
+            "data": None,
+            "msg": "Error al obtener registro de cotización de actividad",
+            "error": str(error),
+        }, 400
+
+    # Delete items:
+    items = json.loads(result_qa[15]) if result_qa[15] else []  # pyrefly: ignore
+    if len(items) <= 0:
+        return {
+            "data": None,
+            "msg": "Error al obtener ítems de la cotización",
+            "error": str(error),
+        }, 400
+    flags = []
+    errors = []
+    results = []
+    for item in items:
+        flag, error, result = delete_quotation_activity_item(item[0])
+        flags.append(flag)
+        errors.append(str(error))
+        results.append(result)
+    if flags.count(True) == len(flags):
+        msg += "Ítems de actividad de cotización eliminados correctamente"
+    elif flags.count(False) == len(flags):
+        return {
+            "data": results,
+            "error": errors,
+            "msg": "Error al eliminar ítems de actividad de cotización",
+        }, 400
+    else:
+        msg += "Error al eliminar ciertos ítems de la actividad de cotización"
+
+    # Delete quotation activity:
+    flag, error, result = delete_quotation_activity(id_quotation)
+    if not flag:
+        return {
+            "data": None,
+            "msg": "Error al eliminar registro de cotización de actividad",
+            "error": str(error),
+        }, 400
+    msg += f"Actividad de cotización eliminada correctamente con id: {id_quotation}"
+    create_notification_permission(
+        msg, ["administracion"], "Cotización de actividad eliminada", user, 0
+    )
+    write_log_file(log_file_admin, msg)
+    return {"data": result, "msg": "Ok"}, 200
 
 
 def create_remission_items_from_api(products: list, id_remission: int):
