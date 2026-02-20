@@ -25,7 +25,7 @@ def hello_world():  # put application's code here
     return "Hello World! GUI"
 
 
-@app.route("/health")
+@app.route("/GUI/health")
 def health():
     return "OK", 200
 
