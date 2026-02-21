@@ -321,7 +321,7 @@ def compare_file_quotation(data_quotation, products_contract):
                 else [None, "", "", "", "", "", 0, 0, False, 0.0, "", ""]
             )
             flag, result, columns = compare_vectors_quotation_contract(
-                list(item2.values()), item1
+                list(item2), item1
             )
             table_rows.append(result)
             flags.append(flag)

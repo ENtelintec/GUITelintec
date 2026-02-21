@@ -20,7 +20,7 @@ from templates.Functions_GUI_Utils import (
 )
 from templates.controllers.employees.employees_controller import get_sm_employees
 from templates.controllers.material_request.sm_controller import (
-    update_history_sm,
+    update_history_sm_from_cancel,
     cancel_sm_db,
 )
 from templates.resources.midleware.MD_SM import (
@@ -328,7 +328,7 @@ class SMManagement(ttk.Frame):
         is_complete = (
             True if len(products_to_request) == 0 and len(new_products) == 0 else False
         )
-        flag, error, result = update_history_sm(
+        flag, error, result = update_history_sm_from_cancel(
             self._id_sm_to_edit, self.history_sm, self.products_sm, is_complete
         )
         if flag:

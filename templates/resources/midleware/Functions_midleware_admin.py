@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
-__author__ = "Edisson Naula"
-__date__ = "$ 20/jun./2024  at 15:23 $"
-
+from templates.controllers.supplier.suppliers_controller import delete_item_amc
+from datetime import datetime
+from templates.controllers.supplier.suppliers_controller import get_items_supplier_by_id
 import json
+import pandas as pd
 
-
+from templates.controllers.supplier.suppliers_controller import update_item_amc
+from templates.controllers.supplier.suppliers_controller import create_item_amc
 from static.constants import (
     filepath_settings,
     log_file_admin,
@@ -68,10 +70,17 @@ from templates.resources.methods.Functions_Aux_Admin import (
     read_exel_products_partidas,
 )
 
+__author__ = "Edisson Naula"
+__date__ = "$ 20/jun./2024  at 15:23 $"
 
-def get_quotations(id_quotation=None):
+
+def get_quotations(id_quotation: int | None = None):
     try:
-        id_quotation = id_quotation if int(id_quotation) != -1 else None
+        id_quotation = (
+            id_quotation
+            if id_quotation is not None and int(id_quotation) != -1
+            else None
+        )
     except ValueError:
         return {"data": None, "msg": "Id invalido"}, 400
     flag, error, result = get_quotation(id_quotation)
@@ -194,6 +203,7 @@ def get_contracts(id_contract=None):
 
 def get_folio_from_contract_ternium(data_token):
     permissions = data_token.get("permissions", {}).values()
+    contracts = []
     if any("administrator" in item.lower().split(".")[-1] for item in permissions):
         flag, error, contracts = get_contract_by_client(40)
         if not flag:
@@ -220,7 +230,6 @@ def get_folio_from_contract_ternium(data_token):
     data = []
 
     for result in contracts:
-        print(result)
         folio_sm = "SM"
         metadata = json.loads(result[1])
         contract_number = result[5]
@@ -333,7 +342,6 @@ def products_contract_from_file(data: dict):
 
 
 def modify_pattern_phrase_contract_pdf(data: dict):
-    e = None
     try:
         settings = json.loads(filepath_settings)
         settings["phrase_pdf_contract"] = data["phrase"]
@@ -342,7 +350,8 @@ def modify_pattern_phrase_contract_pdf(data: dict):
             json.dump(settings, file, indent=4)
     except Exception as e:
         print(e)
-    return True, str(e)
+        return False, str(e)
+    return True, "None"
 
 
 def compare_file_and_quotation(data: dict):
@@ -485,13 +494,44 @@ def get_all_suppliers_data():
                 "id": item[0],
                 "name": item[1],
                 "seller_name": item[2],
-                "email": item[3],
+                "seller_email": item[3],
                 "phone": item[4],
                 "address": item[5],
                 "web_url": item[6],
                 "type": item[7],
                 "brands": brands,
                 "rfc": extra_info.get("rfc", ""),
+                "items": json.loads(item[9])
+            }
+        )
+    return {"data": data_out, "msg": "Ok"}, 200
+
+
+def get_items_supplier_name(id_supplier: str):
+    try:
+        id_s = int(id_supplier)
+    except Exception as e:
+        print(str(e))
+        id_s = None
+    flag, error, results = get_items_supplier_by_id(id_s)
+    if not flag:
+        return {"data": [], "msg": str(error)}, 400
+    data_out = []
+    for item in results:
+        data_out.append(
+            {
+                "id": item[0],
+                "item_name": item[1],
+                "unit_price": float(item[2]),
+                "part_number": item[3],
+                "created_at": item[4].strftime(format_timestamps)
+                if isinstance(item[4], datetime)
+                else str(item[4]),
+                "updated_at": item[5].strftime(format_timestamps)
+                if isinstance(item[5], datetime)
+                else str(item[5]),
+                "currency": item[6],
+                "id_inventory": item[7],
             }
         )
     return {"data": data_out, "msg": "Ok"}, 200
@@ -499,10 +539,10 @@ def get_all_suppliers_data():
 
 def insert_supplier(data):
     # name, seller_name, seller_email, phone, address, web_url, type, extra_info
-    flag, error, result = create_supplier_amc(
+    flag, error, id_supplier = create_supplier_amc(
         data.get("name").upper(),
         data.get("seller_name").upper(),
-        data.get("email").upper(),
+        data.get("seller_email").upper(),
         data.get("phone"),
         data.get("address"),
         data.get("web"),
@@ -511,15 +551,38 @@ def insert_supplier(data):
     )
     if not flag:
         return {"data": None, "msg": str(error)}, 400
-    return {"data": result, "msg": "Ok"}, 201
+    # create items
+    items = data.get("items", [])
+    errors_i = []
+    for item in items:
+        id_inventory = item.get("id_inventory", None)
+        if id_inventory == 0:
+            id_inventory = None
+        flag, error, result = create_item_amc(
+            item.get("item_name"),
+            item.get("unit_price"),
+            item.get("part_number"),
+            id_supplier,
+            currency=item.get("currency", "MXN"),
+            id_inventory=id_inventory
+        )
+        if not flag:
+            errors_i.append(error)
+    if len(errors_i) > 0:
+        return {
+            "data": None,
+            "msg": f"Supplier created with id {id_supplier} but some items failed to create: {errors_i}",
+        }, 422
+    else:
+        return {"data": id_supplier, "msg": "Ok"}, 201
 
 
 def update_supplier(data):
     flag, error, result = update_supplier_amc(
         data.get("id"),
         data.get("name").upper(),
-        data.get("seller_name").upper(),
-        data.get("email").upper(),
+        data.get("seller_name", "").upper(),
+        data.get("seller_email", "").upper(),
         data.get("phone"),
         data.get("address"),
         data.get("web"),
@@ -528,6 +591,47 @@ def update_supplier(data):
     )
     if not flag:
         return {"data": None, "msg": str(error)}, 400
+    # update items
+    errors_i = []
+    items = data.get("items", [])
+    for item in items:
+        id_item = item.get("id")
+        id_inventory = item.get("id_inventory", None)
+        if id_inventory == 0:
+            id_inventory = None
+        if id_item == 0:
+            flag, error, result = create_item_amc(
+                item.get("item_name"),
+                item.get("unit_price"),
+                item.get("part_number"),
+                item.get("id_supplier"),
+                currency=item.get("currency", "MXN"),
+                id_inventory=id_inventory
+            )
+            if not flag:
+                errors_i.append(error)
+            continue
+        if data.get("is_erased", 0)==1:
+            flag, error, result = delete_item_amc(id_item)
+            if not flag:
+                errors_i.append(error)
+            continue
+        flag, error, result = update_item_amc(
+            id_item,
+            item.get("item_name"),
+            item.get("unit_price"),
+            item.get("part_number"),
+            item.get("id_supplier"),
+            currency=item.get("currency", "MXN"),
+            id_inventory=id_inventory
+        )
+        if not flag:
+            errors_i.append(error)
+    if len(errors_i) > 0:
+        return {
+            "data": None,
+            "msg": f"Supplier updated with id {data.get('id')} but some items failed to update: {errors_i}",
+        }, 422
     return {"data": result, "msg": "Ok"}, 200
 
 
@@ -575,8 +679,8 @@ def fetch_heads_main(data_token):
     return {"data": data_out, "msg": "Ok"}, 200
 
 
-def fetch_heads(id_department: int):
-    id_department = int(id_department) if id_department >= 0 else None
+def fetch_heads(id_dep: int):
+    id_department: int | None = int(id_dep) if id_dep >= 0 else None
     flag, error, result = get_heads_db(id_department)
     if not flag:
         return {"data": [], "msg": str(error)}, 400
@@ -692,6 +796,37 @@ def items_quotation_from_file(data):
 def items_contract_from_file(data):
     products = read_exel_products_partidas(data["path"])
     if products is None:
+        return {"data": None, "msg": "Error at file structure"}, 400
+    return {"data": products, "msg": "Ok"}, 200
+
+
+def items_supplier_from_file(data):
+    """
+    Read excel file and parse items for supplier. Required column in excel:
+    - ITEM
+    - UDM
+    - PRECIO UNITARIO
+    - MARCA
+    - NRO. PARTE
+    - DESCRIPCIÓN LARGA
+    - DESCRIPCIÓN CORTA
+    """
+    df = pd.read_excel(data["path"])
+    df = df.fillna("")
+    data_excel = df.to_dict("records")
+    products = []
+    for index, item in enumerate(data_excel):
+        product = {
+            "partida": item.get("ITEM", index),
+            "udm": item.get("UDM"),
+            "price_unit": item.get("PRECIO UNITARIO", 0.0),
+            "marca": item.get("MARCA", ""),
+            "n_parte": item.get("NRO. PARTE", ""),
+            "description": item.get("DESCRIPCIÓN LARGA", ""),
+            "description_small": item.get("DESCRIPCIÓN CORTA", ""),
+        }
+        products.append(product)
+    if len(products) == 0:
         return {"data": None, "msg": "Error at file structure"}, 400
     return {"data": products, "msg": "Ok"}, 200
 

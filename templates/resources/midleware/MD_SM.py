@@ -1,3 +1,10 @@
+from templates.controllers.material_request.sm_controller import (
+    update_extra_info_sm_item_db,
+)
+from templates.controllers.material_request.sm_controller import (
+    get_sm_from_item,
+    update_state_sm_item_db,
+)
 from templates.controllers.material_request.sm_controller import get_folios_by_pattern
 
 __author__ = "Edisson Naula"
@@ -42,7 +49,7 @@ from templates.controllers.material_request.sm_controller import (
     get_sm_entries,
     insert_sm_db,
     update_history_extra_info_sm_by_id,
-    update_history_sm,
+    update_history_sm_from_cancel,
     create_items_sm_db,
     update_items_sm,
     update_sm_db,
@@ -70,6 +77,7 @@ from templates.resources.midleware.Functions_midleware_admin import get_iddentif
 
 
 def get_products_sm(contract: str) -> tuple[dict, int]:
+    print(contract)
     if contract != "all":
         flag, error, items_contract = get_items_contract_string(contract)
     else:
@@ -91,6 +99,7 @@ def get_products_sm(contract: str) -> tuple[dict, int]:
             "data": {"contract": [], "normal": []},
             "error": "Not valid items with reservation",
         }, 400
+    # print(result_p)
     for product in result_p:
         sku = product[6]
         codes = json.loads(product[7]) if product[7] else []
@@ -150,6 +159,27 @@ def calculate_items_delivered_2(items):
     return round((dispatched_total / total) * 100, 2) if total else 0
 
 
+def extract_extra_info_sm_item(items: list[dict]):
+    new_items = []
+    need_aprove = False
+    for item in items:
+        # extract is_tool from extra info and erase is_tool from extra info
+        extra_info: dict = item.get("extra_info", {})
+        if extra_info is None:
+            extra_info = {}
+        item["is_tool"] = extra_info.get("is_tool", 0)
+        if item["is_tool"] == 1:
+            need_aprove = True
+        # extra_info.pop("is_tool", None)
+        approve_required = extra_info.get("approve_required", 0)
+        if approve_required is None:
+            approve_required = 1 if item["is_tool"] == 1 else 0
+        extra_info["approve_required"] = approve_required
+        item["extra_info"] = extra_info
+        new_items.append(item)
+    return new_items, need_aprove
+
+
 def get_all_sm(limit, page=0, emp_id=-1, with_items=True):
     emp_id = None if emp_id == -1 else emp_id
     flag, error, result = get_sm_entries(emp_id)
@@ -162,7 +192,7 @@ def get_all_sm(limit, page=0, emp_id=-1, with_items=True):
     pages = math.floor(len(result) / limit)
     if page > pages:
         return None, 204
-    items = []
+    sm_list = []
     if pages == 0:
         limit_up = len(result)
         limit_down = 0
@@ -214,8 +244,13 @@ def get_all_sm(limit, page=0, emp_id=-1, with_items=True):
             )
         else:
             kpi_operations = ""
+        # process items from the sm
         items_sm = json.loads(result[i][10]) if with_items else []
+        # extract state and approved required for sm item
+        items_sm, approve_required = extract_extra_info_sm_item(items_sm)
+        approve_required = 1 if approve_required else 0
         percentage = calculate_items_delivered(json.loads(result[i][10]))
+        # process comments if not a json text create a list of the comments
         try:
             comment = json.loads(result[i][13])
         except Exception as e:
@@ -267,13 +302,14 @@ def get_all_sm(limit, page=0, emp_id=-1, with_items=True):
             "operations_kpi": kpi_operations,
             "requesting_user_state": extra_info.get("requesting_user_state", ""),
             "date_closing": extra_info.get("date_closing", ""),
+            "approve_required": approve_required,
         }
 
         # if isinstance(extra_info, dict):
         #     for k, v in extra_info.items():
         #         dict_sm[k] = v
-        items.append(dict_sm)
-    data_out = {"data": items, "page": page, "pages": pages + 1}
+        sm_list.append(dict_sm)
+    data_out = {"data": sm_list, "page": page, "pages": pages + 1}
     return data_out, 200
 
 
@@ -540,6 +576,19 @@ def determine_status_sm(items: list):
     return 2 if total_items == 0 else 1
 
 
+def eliminate_signaling_comment(comment: str):
+    comment_out = (
+        comment.replace("(Despachado)", "")
+        .replace("(Semidespachado)", "")
+        .replace("(Pedido)", "")
+        .replace("(Cancelado)", "")
+        .replace("(Nuevo)", "")
+        .replace(";;", ";")
+        # .strip("; ")
+    )
+    return comment_out
+
+
 def dispatch_sm(data, data_token):
     if len(data["items"]) <= 0:
         return 400, ["No item to update in sm"]
@@ -549,6 +598,7 @@ def dispatch_sm(data, data_token):
     id_user = result[6]
     products_sm = json.loads(result[10])
     history_sm = json.loads(result[12])
+    comment_general = json.loads(result[13])
     extra_info_sm = json.loads(result[14])
     folio = result[1]
     # products ids in the inventory
@@ -571,9 +621,10 @@ def dispatch_sm(data, data_token):
         for item in products_sm
     }
     msg_items = []
-    operations_done = False
+    operations_done = flag_semidespachado
+    comments_items_updated = []
     for item_n in data["items"]:
-        item_to_update = dict_products_sm.get(item_n["id"])
+        item_to_update = dict_products_sm.get(item_n["id"], {})
         old_item = item_to_update.copy()
         # si el item no existe
         if item_to_update is None:
@@ -648,8 +699,15 @@ def dispatch_sm(data, data_token):
         item_to_update["state"] = (
             4 if item_to_update["dispatched"] == item_to_update["quantity"] else 3
         )
+
         # insertar al inicio de los comentarios
         item_to_update["comment"] = f"{item_n['comment']}\n{item_to_update['comment']}"
+        new_comment_item = item_n["comment"]
+        if (
+            new_comment_item.strip() != ""
+            and new_comment_item not in comments_items_updated
+        ):
+            comments_items_updated.append(eliminate_signaling_comment(new_comment_item))
         # agregar los comandos
         item_to_update["comment"] += (
             " ;(Despachado) "
@@ -676,6 +734,15 @@ def dispatch_sm(data, data_token):
     comment_history += (
         "SM Despachada" if not flag_semidespachado else "SM Semidespachada"
     )
+    # agregar el comentario a los comentarios generales de las sm
+    if len(comments_items_updated) > 0:
+        comment_general.append(
+            {
+                "user": data_token["emp_id"],
+                "date": date_now,
+                "comment": "\n".join(comments_items_updated),
+            }
+        )
     history_sm.append(
         {
             "user": data_token["emp_id"],
@@ -718,7 +785,7 @@ def dispatch_sm(data, data_token):
     for k, v in extra_info.items():
         extra_info_sm[k] = v
     flag, error, result_his = update_history_status_sm(
-        data["id"], history_sm, new_status, extra_info_sm
+        data["id"], history_sm, new_status, extra_info_sm, comment_general
     )
     msg_items.append(
         f"Historial actualizado: {str(result_his)}"
@@ -743,8 +810,10 @@ def cancel_sm(data, data_token):
     flag, error, result = get_sm_by_id(data["id"])
     if not flag or len(result) <= 0:
         return 400, ["sm not foud"]
-    history_sm = json.loads(result[0][12])
-    emp_id_creation = result[0][6]
+    print(result)
+    history_sm = json.loads(result[12])
+    comments_general = json.loads(result[13])
+    emp_id_creation = result[6]
     time_zone = pytz.timezone(timezone_software)
     date_now = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
     history_sm.append(
@@ -755,7 +824,16 @@ def cancel_sm(data, data_token):
             "comment": data["comment"] + f"por el empleado {data_token['emp_id']}",
         }
     )
-    flag, error, result = update_history_sm(data["id"], history_sm, [], True)
+    comments_general.append(
+        {
+            "user": data_token["emp_id"],
+            "date": date_now,
+            "comment": data["comment"],
+        }
+    )
+    flag, error, result = update_history_sm_from_cancel(
+        data["id"], history_sm, comments_general, True
+    )
     if flag:
         msg = f"SM con ID-{data['id']} cancelada"
         create_notification_permission(
@@ -809,7 +887,7 @@ def dowload_file_sm(sm_id: int, type_file="pdf"):
     )
     products = []
     flag, error, result = get_info_names_by_sm_id(result[0])
-    if flag and len(result) == 0:
+    if flag and len(result) > 0:
         customer_name = result[0]
         emp_name = result[1] + " " + result[2]
     else:
@@ -910,24 +988,29 @@ def create_product(
     return {"msg": "ok", "data": result}, 201
 
 
-def update_sm_from_control_table(data, data_token, sm_data=None):
+def update_sm_from_control_table(
+    data, data_token, sm_data=None
+) -> tuple[int, dict[str, str]]:
     if sm_data is None:
         flag, error, result = get_sm_by_id(data["id"])
     else:
         flag, error, result = True, None, sm_data
     if not flag or len(result) <= 0:
-        return 400, ["sm not foud"]
-    history_sm = json.loads(result[12])
+        return 400, {"msg": "sm not foud"}
+    history_sm_json = result[12]
+    history_sm_json = history_sm_json if history_sm_json else "[]"
+    history_sm = json.loads(history_sm_json)
     emp_id_creation = result[6]
     time_zone = pytz.timezone(timezone_software)
     date_now = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
-    comment_history = f"Actualización de datos desde la tabla de control por el empleado {data_token.get('emp_id')}"
-
     extra_info = json.loads(result[14])
+
+    comment_history = f"Actualización de datos desde la tabla de control por el empleado {data_token.get('emp_id')}"
     comments = []
     for k, value in data["info"].items():
-        if k == "comments":
+        if k == "comment":
             comments = value
+            print("comments -->", k, value)
             continue
         extra_info[k] = value
         comment_history += f"-{k}-{value}-"
@@ -988,7 +1071,6 @@ def check_for_partidas_updates(products: list, contract_id: int):
     if contract_id is None or contract_id == 0:
         return flags, errors, results
     flag, error, old_items = get_items_quotation_from_cotract(contract_id)
-    print(old_items)
     # dict partida->id_inventory
     old_items = old_items if old_items is not None else []
     dict_partidas = {item[1]: item[2] for item in old_items}
@@ -1052,6 +1134,8 @@ def create_sm_from_api(data, data_token):
     if not flag:
         print(error)
         return {"msg": "error at updating db"}, 400
+    if result is None:
+        return {"msg": "error at creating sm"}, 400
     msg = (
         f"Nueva SM creada #{result}, folio: {data['info']['folio']}, "
         f"fecha limite: {data['info']['critical_date']}, "
@@ -1088,11 +1172,36 @@ def create_urgent_sm_from_api(data, data_token):
             "data": data["items"],
             "error": "No items detected",
         }, 400
+    folio_new_sm = data["info"]["folio"]
+    try:
+        folio_parts = folio_new_sm.split("-")
+        folio_pattern = "-".join(folio_parts[:2])
+        flag, error, folios_old = get_folios_by_pattern(folio_pattern)
+        for folio in folios_old:
+            old_number = int(folio[0].split("-")[-1])
+            new_number = int(folio_parts[2])
+            if old_number < new_number <= old_number + 3:
+                break
+            elif new_number > old_number + 3:
+                return {
+                    "msg": "error at creating sm",
+                    "data": [],
+                    "error": "Folio consecutivo no permitido",
+                }, 400
+    except Exception as e:
+        print(e)
+        return {
+            "msg": "error at creating sm and extracting folios",
+            "data": [],
+            "error": "Folio consecutivo no permitido",
+        }, 400
     extra_info = check_item_sm_for_init_vals(data["items"])
     flag, error, result = insert_urgent_sm_db(data, extra_info)
     if not flag:
         print(error)
-        return {"msg": "error at updating db"}, 400
+        return {"msg": "error at creating db"}, 400
+    if result is None:
+        return {"msg": "error at creating sm"}, 400
     msg = (
         f"Nueva SM creada #{result}, folio: {data['info']['folio']}, "
         f"fecha limite: {data['info']['critical_date']}, "
@@ -1147,6 +1256,17 @@ def check_if_items_sm_correct_for_update(items_in):
 
 
 def update_sm_from_api(data, data_token):
+    # check date maximun 24 hours
+    date = data["info"].get("date", "2024-06-29")
+    date_sm = pd.to_datetime(date)
+    date_now = pd.to_datetime(datetime.now().strftime(format_date))
+    if (date_sm - date_now).days > 1:
+        return {
+            "msg": "error at date",
+            "data": [date_sm.strftime(format_date)],
+            "error": "El tiempo permitido para modificacion no deber ser mayor a 24 horas",
+        }, 400
+    # check parse items
     flag, items_out, error = check_if_items_sm_correct_for_update(data.get("items", []))
     if not flag:
         return {
@@ -1154,6 +1274,7 @@ def update_sm_from_api(data, data_token):
             "data": items_out,
             "error": error,
         }, 400
+    # update metada sm
     flag, error, result = update_sm_db(data)
     if flag:
         msg = (
@@ -1162,6 +1283,7 @@ def update_sm_from_api(data, data_token):
             f"empleado con id: {data_token.get('emp_id')}, "
             f"comentario: {data['info']['comment']}"
         )
+        # update items sm
         errors, results = update_items_sm(items_out, data["id"])
         flags, errors_p, result_partidas = check_for_partidas_updates(
             data["items"], data["info"]["contract_id"]
@@ -1208,26 +1330,6 @@ def delete_sm_from_api(data, data_token):
     else:
         print(error)
         return {"msg": "error at updating db"}, 400
-
-
-def update_items_sm_from_api(data, data_token):
-    errors, results = update_items_sm(data["items"], data["id_sm"])
-    code = 200
-    msg = ""
-    if len(results) > 0:
-        msg = f"Items actualizados: {results}"
-    if len(errors) > 0:
-        msg += f"\nErrores al actualizar items: {errors}"
-        code = 400
-    create_notification_permission(
-        msg,
-        ["sm", "administracion", "almacen"],
-        "Nueva SM Recibida",
-        data_token.get("emp_id"),
-        0,
-    )
-    write_log_file(log_file_sm_path, msg)
-    return {"msg": "ok", "data": msg, "error": errors}, code
 
 
 def get_sm_folios_from_api(data_token):
@@ -1279,3 +1381,172 @@ def update_sm_item_state_and_inventory(data, data_token):
     )
     write_log_file(log_file_sm_path, msg)
     return {"msg": "ok", "data": result}, 200
+
+
+def update_sm_item_state(data, data_token):
+    flag, error, sm_data = get_sm_from_item(data.get("id_item"))
+    if not flag:
+        return {"msg": "error at getting sm data", "error": error, "data": sm_data}, 400
+    state = data.get("state")
+    if state <= 0:
+        return {"msg": "error at updating sm item state, invalid state"}, 400
+    time_zone = pytz.timezone(timezone_software)
+    date_now = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
+    history_sm = json.loads(sm_data[12])
+    msg = f"Item con id {data.get('id_item')} actualizado a estado {data.get('state')} de la sm {sm_data[0]}."
+    history_sm.append(
+        {
+            "user": data_token.get("emp_id"),
+            "event": "Actualizar estado de sm",
+            "date": date_now,
+            "comment": msg,
+        }
+    )
+    flag, error, result = update_state_sm_item_db(
+        state, data.get("id_item"), history_sm, sm_data[0]
+    )
+    if not flag:
+        return {"msg": f"error at updating sm item state: {state}"}, 400
+    create_notification_permission(
+        msg,
+        ["administracion", "almacen"],
+        "SM Actualizada",
+        data_token.get("emp_id"),
+        0,
+    )
+    write_log_file(log_file_sm_path, msg)
+    return {"msg": "ok", "data": result}, 200
+
+
+def update_sm_item_approve(data, data_token):
+    flag, error, sm_data = get_sm_from_item(data.get("id_item"))
+    if not flag:
+        return {"msg": "error at getting sm data", "error": error, "data": sm_data}, 400
+    approve_required = data.get("approve_required", 0)
+    if approve_required not in [0, 1]:
+        return {"msg": "error at updating sm item approve"}, 400
+    extra_info_item = {}
+    items_sm = json.loads(sm_data[10])
+    for item in items_sm:
+        if item["id"] == data.get("id_item"):
+            extra_info_item = item.get("extra_info", {})
+            break
+    extra_info_item["approve_required"] = approve_required
+    time_zone = pytz.timezone(timezone_software)
+    date_now = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
+    history_sm = json.loads(sm_data[12])
+    msg = f"Item con id {data.get('id_item')} actualizado a aprobacion {approve_required} de la sm {sm_data[0]}."
+    history_sm.append(
+        {
+            "user": data_token.get("emp_id"),
+            "event": "Actualizar aprobacion de sm",
+            "date": date_now,
+            "comment": msg,
+        }
+    )
+    flag, error, result = update_extra_info_sm_item_db(
+        extra_info_item, data.get("id_item"), history_sm, sm_data[0]
+    )
+    if not flag:
+        return {"msg": f"error at updating sm item approve: {approve_required}"}, 400
+    create_notification_permission(
+        msg,
+        ["administracion", "almacen"],
+        "SM Actualizada",
+        data_token.get("emp_id"),
+        0,
+    )
+    write_log_file(log_file_sm_path, msg)
+    return {"msg": "ok", "data": result}, 200
+
+
+def update_items_sm_from_api(data, data_token):
+    """
+    Actualiza items de una SM, genera notificación y registra historial.
+
+    Espera:
+      data: {
+        "id_sm": <int|str>,
+        "items": <list>
+      }
+      data_token: {
+        "emp_id": <int|str>
+      }
+    """
+    flag, result, sm_data = get_sm_by_id(data["id_sm"])
+    if not flag:
+        return {"msg": "error at getting sm data"}, 400
+
+    timezone = pytz.timezone(timezone_software)
+    date_now = datetime.now(pytz.utc).astimezone(timezone).strftime(format_timestamps)
+
+    # Cargar historial de forma segura
+    try:
+        history_raw = sm_data[12]
+        history_sm = json.loads(history_raw)
+        if not isinstance(history_sm, list):
+            history_sm = []
+        extra_info = json.loads(sm_data[14])
+        comments_sm = json.loads(sm_data[13])
+    except Exception as e:
+        return {"msg": f"error at parsing sm data: {str(e)}", "data": []}, 400
+
+    # Actualizar items
+    errors, results = update_items_sm(data["items"], data["id_sm"])
+
+    # Construcción de mensajes
+    emp_id = data_token.get("emp_id")
+    msg_parts = []
+
+    if results:
+        msg_parts.append(
+            f"{len(results)} item(s) actualizado(s) por empleado {emp_id}."
+        )
+    if errors:
+        msg_parts.append(f"{len(errors)} error(es) durante la actualización.")
+
+    msg = (
+        " ".join(msg_parts)
+        if msg_parts
+        else f"Sin cambios en los items. Operación registrada por empleado {emp_id}."
+    )
+
+    # Determinar código HTTP
+    code = 200 if not errors else 400
+
+    # Notificación (mensaje compacto con empleado)
+    create_notification_permission(
+        msg,
+        ["sm", "administracion", "almacen"],
+        "Nueva SM Recibida",
+        emp_id,
+        0,
+    )
+
+    # Escribir log
+    write_log_file(log_file_sm_path, msg)
+
+    # Comentario para historial (breve y profesional)
+    comment_history = (
+        f"Empleado {emp_id} actualizó {len(results)} item(s)"
+        + (f" y hubo {len(errors)} error(es)." if errors else ".")
+        if (results or errors)
+        else f"Empleado {emp_id} registró la operación sin cambios."
+    )
+
+    # Registrar en historial con tu formato
+    history_sm.append(
+        {
+            "user": emp_id,
+            "event": "Actualizar aprobacion de sm",
+            "date": date_now,
+            "comment": comment_history,
+        }
+    )
+    flag, error, result = update_history_extra_info_sm_by_id(
+        data["id_sm"], extra_info, history_sm, comments_sm
+    )
+    if not flag:
+        return {"msg": f"error at updating sm history: {error}"}, 400
+
+    return {"msg": "ok", "data": msg, "error": errors}, code

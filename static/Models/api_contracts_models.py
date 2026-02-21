@@ -45,7 +45,7 @@ metadata_quotation_model = api.model(
     },
 )
 products_quotation_model = api.model(
-    "ProductsQuotation",
+    "ProductsQuotationInsert",
     {
         "partida": fields.Integer(
             required=True,
@@ -80,7 +80,7 @@ products_quotation_model = api.model(
 )
 
 products_quotation_put_model = api.model(
-    "ProductsQuotation",
+    "ProductsQuotationPut",
     {
         "partida": fields.Integer(
             required=True,

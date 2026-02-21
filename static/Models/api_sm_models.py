@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+from static.Models.api_models import datetime_filter
+from wtforms.fields.datetime import DateTimeField
+
 __author__ = "Edisson Naula"
 __date__ = "$ 10/may./2024  at 16:31 $"
 
@@ -84,6 +87,14 @@ items_model_sm = api.model(
         "state_delivery": fields.String(
             required=True, description="The product state delivery", example="N/A"
         ),
+        "is_tool": fields.Integer(
+            required=False, description="The product is a tool", example=0
+        ),
+        "approve_required": fields.Integer(
+            required=False,
+            description="Indicates if approval is required for this item (0: No, 1: Yes)",
+            example=0,
+        ),
     },
 )
 
@@ -114,7 +125,7 @@ products_answer_model = api.model(
         "page": fields.Integer(required=True, description="The page number send"),
         "pages": fields.Integer(
             required=True,
-            description="The total number of" " pages with the selected limit",
+            description="The total number of pages with the selected limit",
         ),
         "error": fields.Raw(
             required=False,
@@ -155,6 +166,23 @@ products_request_model = api.model(
     },
 )
 
+
+comment_sm_model = api.model(
+    "CommentSM",
+    {
+        "text": fields.String(required=True, description="The comment text"),
+        "user": fields.String(
+            required=True, description="The user who made the comment"
+        ),
+        "timestamp": fields.String(
+            required=True,
+            description="The timestamp of the comment",
+            example="2024-06-29 12:00:00",
+        ),
+    },
+)
+
+
 sm_info_model_post = api.model(
     "MaterialRequest",
     {
@@ -187,7 +215,7 @@ sm_info_model_post = api.model(
             required=True, description="The critical date", example="2024-07-15"
         ),
         "status": fields.Integer(required=True, description="The status of the sm"),
-        "comment": fields.List(fields.String(required=False, description="The comment"), required=False),
+        "comment": fields.List(fields.Nested(comment_sm_model), required=False),
         "destination": fields.String(
             required=True, description="The destination area in telintec"
         ),
@@ -222,7 +250,23 @@ sm_info_model_post_urgent = api.model(
         "critical_date": fields.String(
             required=True, description="The critical date", example="2024-07-15"
         ),
-        "status": fields.Integer(required=True, description="The status of the sm")
+        "status": fields.Integer(required=True, description="The status of the sm"),
+        "facility": fields.String(required=True, description="The facility"),
+        "location": fields.String(required=True, description="The location"),
+        "order_quotation": fields.String(
+            required=True, description="The order or quotation"
+        ),
+        "contract_contact": fields.String(
+            required=True, description="The contract contact"
+        ),
+        "project": fields.String(required=True, description="The project"),
+        "activity_description": fields.String(
+            required=True, description="The activity description"
+        ),
+        "destination": fields.String(
+            required=True, description="The destination area in telintec"
+        ),
+        "comment": fields.List(fields.Nested(comment_sm_model), required=False),
     },
 )
 
@@ -260,12 +304,19 @@ sm_model_put = api.model(
         ),
         "status": fields.Integer(required=True, description="The status of the sm"),
         "history": fields.List(fields.Nested(history_model_sm)),
-        "comment": fields.List(fields.String(required=False, description="The comments"), required=False),
+        "comment": fields.List(fields.Nested(comment_sm_model), required=False),
         "destination": fields.String(
             required=True, description="The destination area in telintec"
         ),
         "date_closing": fields.String(
-            required=False, description="The date of closing the sm", example="2024-07-15"
+            required=False,
+            description="The date of closing the sm",
+            example="2024-07-15",
+        ),
+        "approve_required": fields.Integer(
+            required=False,
+            description="Indicates if approval is required (0: No, 1: Yes)",
+            example=0,
         ),
     },
 )
@@ -300,7 +351,7 @@ sm_model_out = api.model(
         ),
         "status": fields.Integer(required=True, description="The status of the sm"),
         "history": fields.List(fields.Nested(history_model_sm)),
-        "comment": fields.List(fields.String(required=False, description="The comments"), required=False),
+        "comment": fields.List(fields.Nested(comment_sm_model), required=False),
         "destination": fields.String(
             required=True, description="The destination area in telintec"
         ),
@@ -386,7 +437,7 @@ control_table_sm_model = api.model(
     {
         "urgent": fields.Integer(required=False, description="Urgent", example=0),
         "project": fields.String(required=False, description="The project"),
-        "comment": fields.List(fields.String(required=False, description="The comments"), required=False),
+        "comment": fields.List(fields.Nested(comment_sm_model), required=False),
         "activity_description": fields.String(
             required=False, description="Description of activity"
         ),
@@ -476,7 +527,7 @@ table_sm_model = api.model(
         "page": fields.Integer(required=True, description="The page number send"),
         "pages": fields.Integer(
             required=True,
-            description="The total number of" " pages with the selected limit",
+            description="The total number of pages with the selected limit",
         ),
         "error": fields.Raw(
             required=False,
@@ -541,6 +592,7 @@ delete_request_sm_model = api.model(
     "DeleteRequestmaterial_request",
     {
         "id": fields.Integer(required=True, description="The id"),
+        "comment": fields.String(required=False, description="The comment"),
     },
 )
 
@@ -629,6 +681,31 @@ item_sm_put_model = api.model(
     },
 )
 
+item_state_model = api.model(
+    "SMItemStatus",
+    {
+        "id_item": fields.Integer(
+            required=True, description="The id of the item sm to update"
+        ),
+        "state": fields.Integer(
+            required=True,
+            description="The new state of the item in sm. 0: new; 1: normal; 2: canceled; 3: complete.",
+        ),
+    },
+)
+
+item_approve_model = api.model(
+    "SMItemApproveRequired",
+    {
+        "id_item": fields.Integer(
+            required=True, description="The id of the item sm to update"
+        ),
+        "approve_required": fields.Integer(
+            required=True,
+            description="Indicates if approval is required for this item (0: No, 1: Yes)",
+        ),
+    },
+)
 
 item_sm_inventory_put_model = api.model(
     "SMItemInventoryPut",
@@ -666,6 +743,7 @@ class ItemsFormSMPost(Form):
     partida = IntegerField("partida", validators=[], default=0)
     state = IntegerField("state", validators=[], default=1)
     is_erased = IntegerField("is_erased", validators=[], default=0)
+    is_tool = IntegerField("is_tool", validators=[], default=0)
 
 
 class DeliveriesForm(Form):
@@ -709,6 +787,7 @@ class ItemsFormSMPUT(Form):
     deliveries = FieldList(FormField(DeliveriesForm, "deliveries"))
     state_delivery = StringField("state_delivery", validators=[], default="N/A")
     state_quantity = IntegerField("state_quantity", validators=[], default=0)
+    is_tool = IntegerField("is_tool", validators=[], default=0)
 
 
 class ItemsFormSMDispartch(Form):
@@ -744,7 +823,14 @@ class HistoryFormSM(Form):
     user = IntegerField("user", validators=[InputRequired()])
 
 
-class SMInfoForm(Form):
+class CommentSmForm(Form):
+    text = StringField("text", validators=[InputRequired()])
+    user = StringField("user", validators=[InputRequired()])
+    timestamp = DateTimeField("timestamp", validators=[], filters=[datetime_filter])
+
+
+class SMInfoPostForm(Form):
+    # --- Campos existentes (tuyos) ---
     id = IntegerField(
         "id", validators=[validators.number_range(min=0, message="Invalid id sm info")]
     )
@@ -764,19 +850,193 @@ class SMInfoForm(Form):
     emp_id = IntegerField(
         "emp_id", validators=[InputRequired(message="Invalid id or 0 not acepted")]
     )
+
+    # En tu versión actual 'date' ya existe y es requerido. Lo dejamos igual.
     date = DateField("date", validators=[InputRequired()], filters=[date_filter])
-    critical_date = StringField("critical_date", validators=[InputRequired()])
+
+    # En tu versión actual 'critical_date' es StringField y requerido.
+    # Opción A (no romper compat): mantenerlo tal cual.
+    critical_date = DateField("critical_date", validators=[], filters=[date_filter])
+
     status = IntegerField(
         "status", validators=[validators.number_range(min=0, message="Invalid id")]
     )
-    comment = FieldList(StringField("comment", validators=[], default=""))
+    comment = FieldList(FormField(CommentSmForm, "comment"), validators=[], default=[])
     activity_description = StringField(
         "activity_description", validators=[], default=""
     )
     destination = StringField("destination", validators=[InputRequired()])
-    # history = StringField("history", validators=[], default="[]")
     history = FieldList(FormField(HistoryFormSM, "history"))
     project = StringField("project", validators=[], default="")
+    urgent = IntegerField("urgent", validators=[], default=0)
+    date_closing = DateField("date_closing", validators=[], filters=[date_filter])
+    general_request_status = IntegerField(
+        "general_request_status", validators=[], default=1
+    )
+
+    # --- Campos faltantes de la tabla de control (todos OPCIONALES) ---
+    # request_date = DateField("request_date", validators=[], filters=[date_filter])
+    # NOTA: 'date' ya existe arriba (requerido). Si quisieras una fecha de control separada, usa otro nombre.
+
+    # Si prefieres alinear critical_date a DateField (Opción B), agrega este y migra poco a poco:
+    # critical_date_dt = DateField("critical_date", validators=[Optional()], filters=[date_filter])
+
+    requesting_user_status = IntegerField(
+        "requesting_user_status", validators=[], default=0
+    )
+    requesting_user_state = StringField(
+        "requesting_user_state", validators=[], default=""
+    )
+
+    warehouse_reviewed = IntegerField("warehouse_reviewed", validators=[], default=0)
+    warehouse_status = IntegerField("warehouse_status", validators=[], default=1)
+
+    admin_notification_date = StringField(
+        "admin_notification_date", validators=[], default=""
+    )
+    kpi_warehouse = IntegerField("kpi_warehouse", validators=[], default=0)
+    warehouse_comments = StringField("warehouse_comments", validators=[], default="")
+
+    admin_reviewed = IntegerField("admin_reviewed", validators=[], default=0)
+    admin_status = IntegerField("admin_status", validators=[], default=1)
+
+    warehouse_notification_date = StringField(
+        "warehouse_notification_date", validators=[], default=""
+    )
+    purchasing_kpi = IntegerField("purchasing_kpi", validators=[], default=0)
+    admin_comments = StringField("admin_comments", validators=[], default="")
+
+    operations_notification_date = StringField(
+        "operations_notification_date", validators=[], default=""
+    )
+    operations_kpi = IntegerField("operations_kpi", validators=[], default=0)
+
+    approve_required = IntegerField("approve_required", validators=[], default=0)
+
+
+class SMInfoForm(Form):
+    # --- Campos existentes (tuyos) ---
+    id = IntegerField(
+        "id", validators=[validators.number_range(min=0, message="Invalid id sm info")]
+    )
+    folio = StringField("folio", validators=[InputRequired()])
+    contract = StringField("contract", validators=[InputRequired()])
+    contract_id = IntegerField(
+        "contract_id",
+        validators=[validators.number_range(min=-1, message="Invalid id")],
+    )
+    facility = StringField("facility", validators=[InputRequired()])
+    contract_contact = StringField("contract_contact", default="")
+    client_id = IntegerField(
+        "client_id", validators=[InputRequired(message="Invalid id or 0 not acepted")]
+    )
+    location = StringField("location", validators=[InputRequired()])
+    order_quotation = StringField("order_quotation", validators=[])
+    emp_id = IntegerField(
+        "emp_id", validators=[InputRequired(message="Invalid id or 0 not acepted")]
+    )
+
+    # En tu versión actual 'date' ya existe y es requerido. Lo dejamos igual.
+    date = DateField("date", validators=[InputRequired()], filters=[date_filter])
+
+    # En tu versión actual 'critical_date' es StringField y requerido.
+    # Opción A (no romper compat): mantenerlo tal cual.
+    critical_date = DateField("critical_date", validators=[], filters=[date_filter])
+
+    status = IntegerField(
+        "status", validators=[validators.number_range(min=0, message="Invalid id")]
+    )
+    comment = FieldList(FormField(CommentSmForm, "comment"), validators=[], default=[])
+    activity_description = StringField(
+        "activity_description", validators=[], default=""
+    )
+    destination = StringField("destination", validators=[InputRequired()])
+    history = FieldList(FormField(HistoryFormSM, "history"))
+    project = StringField("project", validators=[], default="")
+    urgent = IntegerField("urgent", validators=[], default=0)
+    date_closing = DateField("date_closing", validators=[], filters=[date_filter])
+    general_request_status = IntegerField(
+        "general_request_status", validators=[], default=1
+    )
+
+    # --- Campos faltantes de la tabla de control (todos OPCIONALES) ---
+    request_date = DateField("request_date", validators=[], filters=[date_filter])
+    # NOTA: 'date' ya existe arriba (requerido). Si quisieras una fecha de control separada, usa otro nombre.
+
+    # Si prefieres alinear critical_date a DateField (Opción B), agrega este y migra poco a poco:
+    # critical_date_dt = DateField("critical_date", validators=[Optional()], filters=[date_filter])
+
+    requesting_user_status = IntegerField(
+        "requesting_user_status", validators=[], default=0
+    )
+    requesting_user_state = StringField(
+        "requesting_user_state", validators=[], default=""
+    )
+
+    warehouse_reviewed = IntegerField("warehouse_reviewed", validators=[], default=0)
+    warehouse_status = IntegerField("warehouse_status", validators=[], default=1)
+
+    admin_notification_date = StringField(
+        "admin_notification_date", validators=[], default=""
+    )
+    kpi_warehouse = IntegerField("kpi_warehouse", validators=[], default=0)
+    warehouse_comments = StringField("warehouse_comments", validators=[], default="")
+
+    admin_reviewed = IntegerField("admin_reviewed", validators=[], default=0)
+    admin_status = IntegerField("admin_status", validators=[], default=1)
+
+    warehouse_notification_date = StringField(
+        "warehouse_notification_date", validators=[], default=""
+    )
+    purchasing_kpi = IntegerField("purchasing_kpi", validators=[], default=0)
+    admin_comments = StringField("admin_comments", validators=[], default="")
+
+    operations_notification_date = StringField(
+        "operations_notification_date", validators=[], default=""
+    )
+    operations_kpi = IntegerField("operations_kpi", validators=[], default=0)
+
+    approve_required = IntegerField("approve_required", validators=[], default=0)
+
+
+# class SMInfoForm(Form):
+#     id = IntegerField(
+#         "id", validators=[validators.number_range(min=0, message="Invalid id sm info")]
+#     )
+#     folio = StringField("folio", validators=[InputRequired()])
+#     contract = StringField("contract", validators=[InputRequired()])
+#     contract_id = IntegerField(
+#         "contract_id",
+#         validators=[validators.number_range(min=-1, message="Invalid id")],
+#     )
+#     facility = StringField("facility", validators=[InputRequired()])
+#     contract_contact = StringField("contract_contact", default="")
+#     client_id = IntegerField(
+#         "client_id", validators=[InputRequired(message="Invalid id or 0 not acepted")]
+#     )
+#     location = StringField("location", validators=[InputRequired()])
+#     order_quotation = StringField("order_quotation", validators=[])
+#     emp_id = IntegerField(
+#         "emp_id", validators=[InputRequired(message="Invalid id or 0 not acepted")]
+#     )
+#     date = DateField("date", validators=[InputRequired()], filters=[date_filter])
+#     critical_date = StringField("critical_date", validators=[InputRequired()])
+#     status = IntegerField(
+#         "status", validators=[validators.number_range(min=0, message="Invalid id")]
+#     )
+#     comment = FieldList(FormField(CommentSmForm, "comment"), validators=[], default=[])
+#     activity_description = StringField(
+#         "activity_description", validators=[], default=""
+#     )
+#     destination = StringField("destination", validators=[InputRequired()])
+#     # history = StringField("history", validators=[], default="[]")
+#     history = FieldList(FormField(HistoryFormSM, "history"))
+#     project = StringField("project", validators=[], default="")
+#     urgent = IntegerField("urgent", validators=[], default=0)
+#     date_closing = DateField("date_closing", validators=[], filters=[date_filter])
+#     general_request_status = IntegerField(
+#         "general_request_status", validators=[InputRequired()], default=1
+#     )
 
 
 class SMUrgentInfoForm(Form):
@@ -797,12 +1057,22 @@ class SMUrgentInfoForm(Form):
     status = IntegerField(
         "status", validators=[validators.number_range(min=0, message="Invalid id")]
     )
+    comment = FieldList(FormField(CommentSmForm, "comment"), validators=[], default=[])
+    activity_description = StringField(
+        "activity_description", validators=[], default=""
+    )
+    destination = StringField("destination", validators=[InputRequired()])
+    facility = StringField("facility", validators=[InputRequired()])
+    location = StringField("location", validators=[InputRequired()])
+    order_quotation = StringField("order_quotation", validators=[])
+    contract_contact = StringField("contract_contact", default="")
+    project = StringField("project", validators=[], default="")
 
 
 class SMInfoControlTableForm(Form):
     project = StringField("project", validators=[], default="")
     urgent = IntegerField("urgent", validators=[], default=0)
-    comment = FieldList(StringField("comment", validators=[], default="")) 
+    comment = FieldList(FormField(CommentSmForm, "comment"), validators=[], default=[])
     request_date = DateField("request_date", validators=[], filters=[date_filter])
     date = DateField("date", validators=[], filters=[date_filter])
     critical_date = DateField("critical_date", validators=[], filters=[date_filter])
@@ -837,6 +1107,7 @@ class SMInfoControlTableForm(Form):
     )
     operations_kpi = IntegerField("operations_kpi", validators=[], default=0)
     date_closing = DateField("date_closing", validators=[], filters=[date_filter])
+    approve_required = IntegerField("approve_required", validators=[], default=0)
 
 
 class SMInfoControlTablePutForm(Form):
@@ -862,7 +1133,7 @@ class TableRequestForm(Form):
 
 
 class SMPostForm(Form):
-    info = FormField(SMInfoForm, "info")
+    info = FormField(SMInfoPostForm, "info")
     items = FieldList(FormField(ItemsFormSMPost, "items"))
 
 
@@ -883,6 +1154,7 @@ class SMDeleteForm(Form):
     id = IntegerField(
         "id", validators=[InputRequired(message="Invalid id or 0 not acepted")]
     )
+    comment = StringField("comment", validators=[], default="")
 
 
 class NewClienteForm(Form):
@@ -923,4 +1195,25 @@ class ItemSMInventoryPutForm(Form):
     id_inventory = IntegerField(
         "id_inventory",
         validators=[InputRequired(message="Invalid id or 0 not acepted")],
+    )
+
+
+class ItemStateSMForm(Form):
+    id_item = IntegerField(
+        "id_item", validators=[InputRequired(message="Invalid id or 0 not acepted")]
+    )
+    state = StringField("state", validators=[InputRequired(message="Invalid state")])
+
+
+class ItemApproveSMForm(Form):
+    id_item = IntegerField(
+        "id_item", validators=[InputRequired(message="Invalid id or 0 not acepted")]
+    )
+    approve_required = IntegerField(
+        "approve_required",
+        validators=[
+            validators.number_range(
+                min=0, max=1, message="Invalid value for approve_required"
+            )
+        ],
     )

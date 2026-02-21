@@ -66,7 +66,7 @@ def update_vorder_db(
 
 
 def delete_vorder_db(id_vorder: int):
-    sql = "DELETE FROM sql_telintec.virtual_orders " "WHERE vo_id = %s"
+    sql = "DELETE FROM sql_telintec.virtual_orders WHERE vo_id = %s"
     val = (id_vorder,)
     flag, e, out = execute_sql(sql, val, 3)
     return flag, e, out
@@ -92,11 +92,16 @@ def get_purchase_orders_with_items(status: int | None, created_by: int | None):
         " 'unit_price', poi.unit_price, "
         " 'extra_info', poi.extra_info, "
         " 'duration_services', poi.duration_services "
+        ",'tool', poi.tool "
+        ",'currency', poi.currency "
         ")) AS items, "
         "po.time_delivery "
         "FROM sql_telintec_mod_admin.purchase_orders AS po "
         "LEFT JOIN sql_telintec_mod_admin.purchase_order_items AS poi ON po.id_order = poi.purchase_id "
-        "WHERE (po.status = %s or %s IS NULL ) AND (po.status != 4) AND (po.created_by = %s OR %s IS NULL) GROUP BY po.id_order"
+        "WHERE (po.status = %s or %s IS NULL ) "
+        "AND (po.status != 4) "
+        "AND (po.created_by = %s OR %s IS NULL) "
+        "GROUP BY po.id_order"
     )
     val = (status, status, created_by, created_by)
     flag, e, my_result = execute_sql(sql, val, 2)
@@ -124,6 +129,7 @@ def get_purchase_order_with_items_by_id(order_id: int):
         " 'extra_info', poi.extra_info, "
         " 'duration_services', poi.duration_services, "
         " 'tool', poi.tool "
+        ",'currency', poi.currency "
         ")) AS items, "
         "po.time_delivery "
         "FROM sql_telintec_mod_admin.purchase_orders AS po "
@@ -156,6 +162,7 @@ def get_pos_application_with_items(status: int | None, created_by: int | None):
         " 'extra_info', poi.extra_info, "
         " 'duration_services', poi.duration_services, "
         " 'tool', poi.tool "
+        ",'currency', poi.currency "
         ")) AS items, "
         "po.extra_info "
         "FROM sql_telintec_mod_admin.pos_applications AS po "
@@ -186,6 +193,7 @@ def get_pos_application_with_items_to_approve():
         " 'extra_info', poi.extra_info, "
         " 'duration_services', poi.duration_services, "
         " 'tool', poi.tool "
+        " ,'currency', poi.currency "
         ")) AS items, "
         "po.extra_info "
         "FROM sql_telintec_mod_admin.pos_applications AS po "
@@ -258,6 +266,13 @@ def update_purchase_order(
     return flag, e, out
 
 
+def delete_purchase_order(id_order: int):
+    sql = "DELETE FROM sql_telintec_mod_admin.purchase_orders WHERE id_order = %s"
+    val = (id_order,)
+    flag, e, out = execute_sql(sql, val, 3)
+    return flag, e, out
+
+
 def update_purchase_order_status(id_order: int, history: list, status: int):
     sql = (
         "UPDATE sql_telintec_mod_admin.purchase_orders "
@@ -287,7 +302,7 @@ def insert_po_application(
     reference: str,
     history: list,
     approved=1,
-    extra_info: dict = None,
+    extra_info: dict | None = None,
 ):
     sql = (
         "INSERT INTO sql_telintec_mod_admin.pos_applications "
@@ -349,13 +364,15 @@ def update_po_application_status(
     return flag, error, result
 
 
-def cancel_po_application(history: list, id_order: int, status):
+def cancel_po_application(history: list, id_order: int, status: int):
     sql = (
         "UPDATE sql_telintec_mod_admin.pos_applications "
         "SET status = %s, history = %s "
         "WHERE id_order = %s"
     )
+    print(status, id_order, history)
     val = (status, json.dumps(history), id_order)
+
     flag, e, out = execute_sql(sql, val, 3)
     return flag, e, out
 
@@ -368,11 +385,12 @@ def insert_purchase_order_item(
     duration_services: str,
     extra_info: dict,
     tool=0,
+    currency="MXN",
 ):
     sql = (
         "INSERT INTO sql_telintec_mod_admin.purchase_order_items "
-        "(order_id, quantity, unit_price, description, duration_services, extra_info, tool) "
-        "VALUES (%s, %s, %s, %s, %s, %s, %s)"
+        "(purchase_id, quantity, unit_price, description, duration_services, extra_info, tool, currency) "
+        "VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
     )
     val = (
         order_id,
@@ -382,6 +400,36 @@ def insert_purchase_order_item(
         duration_services,
         json.dumps(extra_info),
         tool,
+        currency,
+    )
+    flag, e, out = execute_sql(sql, val, 3)
+    return flag, e, out
+
+
+def insert_purchase_order_item_from_applications(
+    order_id: int,
+    quantity: int,
+    unit_price: float,
+    description: str,
+    duration_services: str,
+    extra_info: dict,
+    tool=0,
+    currency="MXN",
+):
+    sql = (
+        "INSERT INTO sql_telintec_mod_admin.purchase_order_items "
+        "(order_id, quantity, unit_price, description, duration_services, extra_info, tool, currency) "
+        "VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
+    )
+    val = (
+        order_id,
+        quantity,
+        unit_price,
+        description,
+        duration_services,
+        json.dumps(extra_info),
+        tool,
+        currency,
     )
     flag, e, out = execute_sql(sql, val, 3)
     return flag, e, out
@@ -420,11 +468,13 @@ def update_po_item(
     description: str,
     duration_services: int,
     extra_info: dict,
+    currency="MXN",
 ):
     sql = (
         "UPDATE sql_telintec_mod_admin.purchase_order_items "
-        "SET purchase_id = %s, quantity = %s, unit_price = %s, description = %s, duration_services = %s, extra_info = %s "
-        "WHERE id_item = %s"
+        "SET purchase_id = %s, quantity = %s, unit_price = %s, description = %s, "
+        " duration_services = %s, extra_info = %s, currency = %s "
+        " WHERE id_item = %s"
     )
     val = (
         purchase_id,
@@ -433,6 +483,7 @@ def update_po_item(
         description,
         duration_services,
         json.dumps(extra_info),
+        currency,
         id_item,
     )
     flag, e, out = execute_sql(sql, val, 3)
@@ -448,5 +499,5 @@ def get_folios_po_from_pattern(patterns: list):
         f"WHERE {regexp_clauses}"
     )
     val = like_patterns
-    flag, e, out = execute_sql(sql, val, 2)
+    flag, e, out = execute_sql(sql, tuple(val), 2)
     return flag, e, out

@@ -89,7 +89,9 @@ def get_contract(id_contract=None):
         )
         flag, error, result = execute_sql(sql, None, 2)
         if not flag:
-            return False, error, None
+            return False, error, []
+        if not isinstance(result, tuple) or not isinstance(result, list):
+            return False, error, []
         return True, None, result
     sql = (
         "SELECT id, metadata, creation, quotation_id, timestamps, code, client_id, emission "
@@ -98,8 +100,10 @@ def get_contract(id_contract=None):
     )
     val = (id_contract,)
     flag, error, result = execute_sql(sql, val, 1)
+    if not isinstance(result, tuple) or not isinstance(result, list):
+        return False, error, []
     if len(result) == 0:
-        return False, "Contract not found", None
+        return False, "Contract not found", []
     else:
         return True, None, result
 
@@ -112,6 +116,8 @@ def get_contract_from_abb(contract_abb: str):
     )
     val = (contract_abb.upper(),)
     flag, error, result = execute_sql(sql, val, 1)
+    if not isinstance(result, tuple):
+        return False, error, None
     if len(result) == 0:
         return False, "Contract not found", None
     else:
@@ -126,6 +132,8 @@ def get_contract_by_client(client_id: int):
     )
     val = (client_id,)
     flag, error, result = execute_sql(sql, val, 2)
+    if not isinstance(result, list):
+        return False, error, []
     return flag, error, result
 
 
@@ -140,6 +148,8 @@ def get_contracts_by_ids(ids_list: list):
     )
     val = tuple(ids_list)
     flag, error, result = execute_sql(sql, val, 2)
+    if not isinstance(result, list):
+        return False, error, []
     return flag, error, result
 
 
@@ -168,26 +178,12 @@ def get_contracts_abreviations_db():
         "FROM sql_telintec.areas "
     )
     flag, error, result = execute_sql(sql, None, 5)
+    if not isinstance(result, list):
+        return False, "Not data found or error", []
     if len(result) == 0:
-        return False, "Contract not found", None
+        return False, "Contract not found", []
     else:
         return True, None, result
-
-
-# def get_items_contract_string(key: str):
-#     sql = (
-#         "SELECT contracts.id, "
-#         "contracts.metadata, "
-#         "quotation_id, "
-#         "sql_telintec_mod_admin.quotations.products as items "
-#         "FROM sql_telintec_mod_admin.contracts "
-#         "LEFT JOIN sql_telintec_mod_admin.quotations ON  sql_telintec_mod_admin.quotations.id = contracts.quotation_id "
-#         "WHERE RIGHT(JSON_UNQUOTE(JSON_EXTRACT(sql_telintec_mod_admin.contracts.metadata, '$.contract_number')), 4) = %s "
-#         "OR JSON_EXTRACT(sql_telintec_mod_admin.contracts.metadata, '$.abbreviation') = %s"
-#     )
-#     val = (key, key)
-#     flag, error, result = execute_sql(sql, val, 1)
-#     return flag, error, result
 
 
 def get_items_contract_string(key: str) -> tuple[bool, str, int | list]:
@@ -206,6 +202,8 @@ def get_items_contract_string(key: str) -> tuple[bool, str, int | list]:
     )
     val = (key, key)
     flag, error, result = execute_sql(sql, val, 2)
+    if not isinstance(result, list):
+        return False, error, []
     return flag, error, result
 
 

@@ -81,6 +81,12 @@ items_po_model = api.model(
         "tool": fields.Integer(
             required=True, description="The state if is a tool 1", example=0
         ),
+        "comment": fields.String(
+            required=False, description="The comment", example="Some comment"
+        ),
+        "currency": fields.String(
+            required=False, description="The currency", example="MXN"
+        ),
     },
 )
 
@@ -243,6 +249,11 @@ purchase_order_post_model = api.model(
             metadata_telintec_order_model, required=True
         ),
         "metadata_supplier": fields.Nested(metadata_supplier_model, required=True),
+        "order_quotation": fields.String(
+            required=False,
+            description="The order quotation document",
+            example="base64encodedstring",
+        ),
     },
 )
 
@@ -280,6 +291,11 @@ purchase_order_put_model = api.model(
         "sm_id": fields.Integer(
             required=False, description="The quotation sm id", example=1
         ),
+        "order_quotation": fields.String(
+            required=False,
+            description="The order quotation document",
+            example="base64encodedstring",
+        ),
     },
 )
 
@@ -313,6 +329,285 @@ purchase_order_update_status_model = api.model(
         "approved": fields.Integer(
             required=True, description="The quotation approved", example=1
         ),
+    },
+)
+
+
+quotation_activity_insert_item_model = api.model(
+    "QuotationActivityItem",
+    {
+        "report_id": fields.Integer(
+            required=False,
+            description="ID de reporte asociado (si aplica)",
+            example=1452,
+        ),
+        "description": fields.String(
+            required=True,
+            description="Descripción del concepto/servicio a cotizar",
+            example="Calibración de sensor de presión en línea 3",
+        ),
+        "udm": fields.String(
+            required=True,
+            description="Unidad de medida",
+            example="servicio",
+        ),
+        "quantity": fields.Float(
+            required=True,
+            description="Cantidad requerida",
+            example=2.0,
+        ),
+        "unit_price": fields.Float(
+            required=True,
+            description="Precio unitario",
+            example=1500.00,
+        ),
+        "client_id": fields.Integer(
+            # attribute="item_c_id",
+            required=False,
+            description="ID del cliente asociado al ítem (si difiere del de la cabecera)",
+            example=321,
+        ),
+    },
+)
+
+
+quotation_activity_item_upsert_model = api.model(
+    "QuotationActivityItemUpsert",
+    {
+        "id": fields.Integer(
+            required=False,
+            description=(
+                "ID del ítem. Si se omite o es <= 0, se creará un nuevo ítem."
+                "Si es > 0, se actualizará el ítem existente."
+            ),
+            example=58,
+        ),
+        "report_id": fields.Integer(
+            required=False,
+            description="ID de reporte asociado (si aplica)",
+            example=1452,
+        ),
+        "client_id": fields.Integer(
+            required=False,
+            description="ID del cliente asociado al ítem (si aplica)",
+            example=321,
+        ),
+        "description": fields.String(
+            required=True,
+            description="Descripción del concepto/servicio a cotizar",
+            example="Calibración de sensor de presión en línea 3",
+        ),
+        "udm": fields.String(
+            required=True,
+            description="Unidad de medida",
+            example="servicio",
+        ),
+        "quantity": fields.Float(
+            required=True,
+            description="Cantidad requerida",
+            example=2.0,
+        ),
+        "unit_price": fields.Float(
+            required=True,
+            description="Precio unitario",
+            example=1500.00,
+        ),
+        "is_erased": fields.Boolean(
+            required=False,
+            description="Indica si el ítem está marcado para eliminación (solo para actualizaciones)",
+            example=False,
+        ),
+    },
+)
+
+
+quotation_activity_create_model = api.model(
+    "QuotationActivityCreate",
+    {
+        "date_activity": fields.String(
+            required=True,
+            description="Fecha de la actividad",
+            example="2026-02-25",
+        ),
+        "folio": fields.String(
+            required=True,
+            description="Folio o referencia interna de la cotización",
+            example="QA-2026-00045",
+        ),
+        "client_id": fields.Integer(
+            required=True,
+            description="ID del cliente",
+            example=120,
+        ),
+        "client_company_name": fields.String(
+            required=True,
+            description="Nombre de la empresa del cliente",
+            example="Acme Industrial S.A. de C.V.",
+        ),
+        "client_contact_name": fields.String(
+            required=True,
+            description="Nombre del contacto del cliente",
+            example="María López",
+        ),
+        "client_phone": fields.String(
+            required=False,
+            description="Teléfono del contacto del cliente",
+            example="+52 81 1234 5678",
+        ),
+        "client_email": fields.String(
+            required=False,
+            description="Correo electrónico del contacto del cliente",
+            example="maria.lopez@acme.com",
+        ),
+        "plant": fields.String(
+            required=True,
+            description="Planta del cliente donde se realizará la actividad",
+            example="Planta Monterrey",
+        ),
+        "area": fields.String(
+            required=True,
+            description="Área dentro de la planta",
+            example="Producción",
+        ),
+        "location": fields.String(
+            required=True,
+            description="Ubicación específica o referencia",
+            example="Línea 3 - Nodo PZ-34",
+        ),
+        "general_description": fields.String(
+            required=True,
+            description="Descripción general de la actividad a cotizar",
+            example="Servicio de mantenimiento preventivo y calibración de sensores",
+        ),
+        "comments": fields.String(
+            required=False,
+            description="Comentarios generales adicionales",
+            example="Requiere acceso fuera de horario laboral.",
+        ),
+        "status": fields.Integer(
+            required=True,
+            description="Estatus de la actividad de cotización",
+            example=0,
+        ),
+        "items": fields.List(
+            fields.Nested(quotation_activity_insert_item_model),
+            required=True,
+            description="Lista de ítems a cotizar",
+        ),
+    },
+)
+
+
+quotation_activity_update_model = api.model(
+    "QuotationActivityUpdate",
+    {
+        "id": fields.Integer(
+            required=True,
+            description="ID de la actividad de cotización a actualizar",
+            example=1012,
+        ),
+        "date_activity": fields.String(
+            required=True,
+            description="Fecha de la actividad",
+            example="2026-03-10",
+        ),
+        "folio": fields.String(
+            required=True,
+            description="Folio o referencia interna de la cotización",
+            example="QA-2026-00045",
+        ),
+        "client_id": fields.Integer(
+            required=True,
+            description="ID del cliente",
+            example=120,
+        ),
+        "client_company_name": fields.String(
+            required=True,
+            description="Nombre de la empresa del cliente",
+            example="Acme Industrial S.A. de C.V.",
+        ),
+        "client_contact_name": fields.String(
+            required=True,
+            description="Nombre del contacto del cliente",
+            example="María López",
+        ),
+        "client_phone": fields.String(
+            required=False,
+            description="Teléfono del contacto del cliente",
+            example="+52 81 1234 5678",
+        ),
+        "client_email": fields.String(
+            required=False,
+            description="Correo electrónico del contacto del cliente",
+            example="maria.lopez@acme.com",
+        ),
+        "plant": fields.String(
+            required=True,
+            description="Planta del cliente",
+            example="Planta Monterrey",
+        ),
+        "area": fields.String(
+            required=True,
+            description="Área dentro de la planta",
+            example="Producción",
+        ),
+        "location": fields.String(
+            required=True,
+            description="Ubicación específica",
+            example="Línea 3 - Nodo PZ-34",
+        ),
+        "general_description": fields.String(
+            required=True,
+            description="Descripción general de la actividad",
+            example="Servicio de mantenimiento preventivo y calibración de sensores",
+        ),
+        "comments": fields.String(
+            required=False,
+            description="Comentarios generales adicionales",
+            example="Coordinar ingreso con seguridad industrial.",
+        ),
+        "status": fields.Integer(
+            required=True,
+            description="Estatus de la actividad de cotización",
+            example=1,
+        ),
+        "items": fields.List(
+            fields.Nested(quotation_activity_item_upsert_model),
+            required=True,
+            description=(
+                "Lista de ítems a crear/actualizar. Si un ítem no trae 'id' o éste es <= 0, se crea; "
+                "si 'id' > 0, se actualiza el correspondiente. La lista solo debe incluir items actualizados o por crear"
+            ),
+        ),
+    },
+)
+
+
+quotation_activity_delete_model = api.model(
+    "QuotationActivityDelete",
+    {
+        "id": fields.Integer(
+            required=True,
+            description="ID de la actividad de cotización a eliminar",
+            example=1012,
+        )
+    },
+)
+
+
+quoatation_activity_status_update_model = api.model(
+    "QuotationActivityStatusUpdate",
+    {
+        "id": fields.Integer(
+            required=True,
+            description="ID de la actividad de cotización a actualizar",
+            example=1012,
+        ),
+        "status": fields.Integer(
+            required=True,
+            description="Nuevo estatus de la actividad de cotización",
+            example=2,
+        )
     },
 )
 
@@ -463,7 +758,7 @@ class HistoryPurchaseForm(Form):
     comment = StringField("comment", [], default="")
 
 
-class ItemsPOForm(Form):
+class ItemsPOFormPU(Form):
     description = StringField("description", [InputRequired()])
     quantity = FloatField("quantity", [InputRequired()])
     unit_price = FloatField("unit_price", [InputRequired()])
@@ -475,7 +770,9 @@ class ItemsPOForm(Form):
     duration_services = StringField("duration_services", [], default="0")
     supplier = StringField("supplier", [], default="")
     purchase_id = IntegerField("purchase_id", [], default=0)
-    id = IntegerField("id", [InputRequired()])
+    id = IntegerField("id", [number_range(min=-1, message="Invalid id")], default=-1)
+    currency = StringField("currency", [], default="MXN")
+    tool = IntegerField("tool", [number_range(min=-1, max=2, message="Invalid tool")])
 
 
 class ItemsPOApplicationForm(Form):
@@ -489,6 +786,7 @@ class ItemsPOApplicationForm(Form):
     supplier = StringField("supplier", [], default="")
     purchase_id = IntegerField("purchase_id", [], default=0)
     tool = IntegerField("tool", [number_range(min=-1, max=2, message="Invalid tool")])
+    comment = StringField("comment", [], default="")
 
 
 class MetadataTelitencForm(Form):
@@ -519,14 +817,15 @@ class PurchaseOrderPostForm(Form):
     supplier = IntegerField("supplier", [InputRequired()])
     comment = StringField("comment", [])
     time_delivery = StringField("time_delivery", [], default="")
-    items = FieldList(FormField(ItemsPOForm), "items", validators=[], default=[])
+    items = FieldList(FormField(ItemsPOFormPU), "items", validators=[], default=[])
     metadata_telintec = FormField(MetadataTelitencForm)
     metadata_supplier = FormField(MetadataSupplierForm)
     sm_id = IntegerField("sm_id", [], default=0)
+    order_quotation = StringField("order_quotation", [], default="")
 
 
 class ItemsPOUpdateForm(Form):
-    id = IntegerField("id", [], default=-1)
+    id = IntegerField("id", [number_range(min=-1, message="Invalid id")], default=-1)
     id_purchase = IntegerField("id_purchase", [], default=0)
     description = StringField("description", [InputRequired()])
     quantity = FloatField("quantity", [InputRequired()])
@@ -542,6 +841,8 @@ class ItemsPOUpdateForm(Form):
     n_parte = StringField("n_parte", [], default="")
     duration_services = StringField("duration_services", [], default="")
     supplier = StringField("supplier", [], default="")
+    currency = StringField("currency", [], default="MXN")
+    tool = IntegerField("tool", [number_range(min=-1, max=2, message="Invalid tool")])
 
 
 class ItemsPOApplicationUpdateForm(Form):
@@ -561,6 +862,7 @@ class ItemsPOApplicationUpdateForm(Form):
     n_parte = StringField("n_parte", [], default="")
     supplier = StringField("supplier", [], default="")
     tool = IntegerField("tool", [InputRequired()])
+    comment = StringField("comment", [], default="")
 
 
 class PurchaseOrderPutForm(Form):
@@ -578,6 +880,7 @@ class PurchaseOrderPutForm(Form):
     metadata_telintec = FormField(MetadataTelitencForm)
     metadata_supplier = FormField(MetadataSupplierForm)
     sm_id = IntegerField("sm_id", [], default=0)
+    order_quotation = StringField("order_quotation", [], default="")
 
 
 class PurchaseOrderDeleteForm(Form):
@@ -605,12 +908,16 @@ class PurchaseOrderUpdateStatusForm(Form):
 
 
 class POsApplicationPostForm(Form):
-    reference = StringField("reference", [])
-    comment = StringField("comment", [])
+    reference = StringField("reference", validators=[])
+    comment = StringField("comment", validators=[])
     items = FieldList(
         FormField(ItemsPOApplicationForm), "items", validators=[], default=[]
     )
-    sm_id = IntegerField("sm_id", [], default=0)
+    sm_id = IntegerField(
+        "sm_id",
+        validators=[validators.number_range(min=-1, message="Invalid id")],
+        default=-1,
+    )
 
 
 class POsApplicationPutForm(Form):
@@ -649,13 +956,17 @@ class ProductsPostRemissionForm(Form):
     udm = StringField("udm", [InputRequired()])
     price_unit = FloatField("price_unit", [InputRequired()])
 
+
 class ProductsPutRemissionForm(Form):
-    id = IntegerField("id", [number_range(min=-1, max=2, message="Invalid id")], default=-1)
+    id = IntegerField(
+        "id", [number_range(min=-1, max=2, message="Invalid id")], default=-1
+    )
     quotation_item_id = IntegerField("quotation_item_id", [], default=0)
     description = StringField("description", [InputRequired()])
     quantity = FloatField("quantity", [InputRequired()])
     udm = StringField("udm", [InputRequired()])
     price_unit = FloatField("price_unit", [InputRequired()])
+
 
 class ProductsDeleteRemissionForm(Form):
     id = IntegerField("id", [InputRequired()])
@@ -680,3 +991,62 @@ class RemissionUpdateForm(Form):
 
 class RemissionDeleteForm(Form):
     id = IntegerField("id", [InputRequired()])
+
+class QuotationInsertItemForm(Form):
+    report_id = IntegerField("report_id", [], default=0)
+    description = StringField("description", [InputRequired()])
+    udm = StringField("udm", [InputRequired()])
+    quantity = FloatField("quantity", [InputRequired()])
+    unit_price = FloatField("unit_price", [InputRequired()])
+    client_id = IntegerField("client_id", [], default=0)
+
+class QuotationUpsertItemForm(Form):
+    id = IntegerField("id", validators=[number_range(min=-1, message="Invalid id")], default=-1)
+    report_id = IntegerField("report_id", [], default=0)
+    description = StringField("description", [InputRequired()])
+    udm = StringField("udm", [InputRequired()])
+    quantity = FloatField("quantity", [InputRequired()])
+    unit_price = FloatField("unit_price", [InputRequired()])
+    client_id = IntegerField("client_id", [], default=0)
+    is_erased = BooleanField("is_erased", [], default=False)
+
+class QuotationActivityCreateForm(Form):
+    date_activity = StringField("date_activity", [InputRequired()])
+    folio = StringField("folio", [InputRequired()])
+    client_id = IntegerField("client_id", [InputRequired()])
+    client_company_name = StringField("client_company_name", [InputRequired()])
+    client_contact_name = StringField("client_contact_name", [InputRequired()])
+    client_phone = StringField("client_phone", [InputRequired()])
+    client_email = StringField("client_email", [InputRequired()])
+    plant = StringField("plant", [InputRequired()])
+    area = StringField("area", [InputRequired()])
+    location = StringField("location", [InputRequired()])
+    general_description = StringField("general_description", [InputRequired()])
+    comments = StringField("comments", [InputRequired()])
+    items = FieldList(FormField(QuotationUpsertItemForm), "items", validators=[], default=[])
+    status = IntegerField("status", [InputRequired()], default=0)
+
+class QuotationActivityUpdateForm(Form):
+    id = IntegerField("id", [InputRequired()])
+    date_activity = StringField("date_activity", [InputRequired()])
+    folio = StringField("folio", [InputRequired()])
+    client_id = IntegerField("client_id", [InputRequired()])
+    client_company_name = StringField("client_company_name", [InputRequired()])
+    client_contact_name = StringField("client_contact_name", [InputRequired()])
+    client_phone = StringField("client_phone", [InputRequired()])
+    client_email = StringField("client_email", [InputRequired()])
+    plant = StringField("plant", [InputRequired()])
+    area = StringField("area", [InputRequired()])
+    location = StringField("location", [InputRequired()])
+    general_description = StringField("general_description", [InputRequired()])
+    comments = StringField("comments", [InputRequired()])
+    items = FieldList(FormField(QuotationUpsertItemForm), "items", validators=[], default=[])
+    status = IntegerField("status", [InputRequired()], default=0)
+
+class QuotationActivityDeleteForm(Form):
+    id = IntegerField("id", [InputRequired()])
+    status = IntegerField("status", [InputRequired()], default=-1)
+
+class QuotationActivityStatusUpdateForm(Form):
+    id = IntegerField("id", [InputRequired()])
+    status = IntegerField("status", [InputRequired()], default=-1)

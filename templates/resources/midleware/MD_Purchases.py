@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
-__author__ = "Edisson Naula"
-__date__ = "$ 02/jun/2025  at 11:09 $"
-
+from templates.controllers.order.orders_controller import (
+    insert_purchase_order_item_from_applications,
+)
+from templates.controllers.order.orders_controller import delete_purchase_order
+from typing import Iterable
 import os
 import tempfile
 from datetime import datetime
@@ -21,6 +23,7 @@ from templates.controllers.departments.heads_controller import check_if_gerente
 from templates.controllers.material_request.sm_controller import (
     get_sm_by_id,
     get_sm_by_folio,
+    get_sm_entries,
 )
 from templates.controllers.order.orders_controller import (
     insert_purchase_order,
@@ -41,11 +44,16 @@ from templates.controllers.order.orders_controller import (
     get_folios_po_from_pattern,
 )
 from templates.forms.PurchaseForms import FilePoPDF
+from templates.forms.StorageMovSM import FilePurchaseList
 from templates.misc.Functions_Files import write_log_file
 
 import json
 
 from templates.resources.midleware.MD_SM import update_sm_from_control_table
+
+
+__author__ = "Edisson Naula"
+__date__ = "$ 02/jun/2025  at 11:09 $"
 
 
 def map_products_po(products: list):
@@ -71,6 +79,7 @@ def map_products_po(products: list):
                 "duration_services": item.get("duration_services"),
                 "supplier": extra_info.get("supplier"),
                 "tool": item.get("tool"),
+                "comment": extra_info.get("comment"),
             }
         )
         total_amount += float(item.get("unit_price")) * float(item.get("quantity"))
@@ -86,6 +95,7 @@ def create_extra_info_product_from_data(data: dict):
         "n_parte": data.get("n_parte", ""),
         "duration_services": data.get("duration_services", ""),
         "supplier": data.get("supplier", 0),
+        "comment": data.get("comment", ""),
     }
     return extra_info
 
@@ -129,7 +139,13 @@ def fetch_purchase_orders(status, data_token):
     status = status_map.get(status, None)  # Si status no es válido, se usa None
     flag, error, result = get_purchase_orders_with_items(status, emp_id)
     if not flag:
-        return {"data": None, "msg": "error", "error": str(error)}, 400
+        return {"data": result, "msg": "error", "error": str(error)}, 400
+    if not isinstance(result, Iterable):
+        return {
+            "data": result,
+            "msg": "Error at retrieving data from db",
+            "error": None,
+        }, 400
     data_out = []
     for item in result:
         (
@@ -148,6 +164,7 @@ def fetch_purchase_orders(status, data_token):
         metadata_telintec, metadata_supplier = create_metadatas_from_extra_info_po(
             extra_info
         )
+        order_quotation = extra_info.get("order_quotation", "")
         products = json.loads(products)
         products, total_amount = map_products_po(products)
         data_out.append(
@@ -167,6 +184,7 @@ def fetch_purchase_orders(status, data_token):
                 "time_delivery": time_delivery,
                 "metadata_telintec": metadata_telintec,
                 "metadata_supplier": metadata_supplier,
+                "order_quotation": order_quotation,
             }
         )
 
@@ -198,6 +216,7 @@ def create_purchaser_order_api(data, data_token):
         "metadata_telintec": data.get("metadata_telintec", {}),
         "metadata_supplier": data.get("metadata_supplier", {}),
         "sm_id": sm_id,
+        "order_quotation": data.get("order_quotation", ""),
     }
     flag, error, id_order = insert_purchase_order(
         timestamp,
@@ -211,27 +230,69 @@ def create_purchaser_order_api(data, data_token):
     )
     if not flag:
         return {"data": None, "msg": "error", "error": str(error)}, 400
+    if not isinstance(id_order, int) or id_order <= 0:
+        return {
+            "data": id_order,
+            "msg": "error al crear orden",
+            "error": "No se pudo crear la orden",
+        }, 400
     msg = f"Orden de compra creada con ID-{id_order}"
-    msg_moves = []
+    msg_moves: list[str] = []
     flag_error = False
+    n_errors = 0
     for item in data["items"]:
         extra_info = create_extra_info_product_from_data(item)
-        flag, error, result = update_po_item(
-            item["id"],
-            id_order,
-            item["quantity"],
-            item["unit_price"],
-            item["description"],
-            item["duration_services"],
-            extra_info,
-        )
+        update_item = True
+        duration_services = item.get("duration_services")
+        if duration_services is None or duration_services == "":
+            item["duration_services"] = "0"
+        if item["id"] is None or item["id"] <= 0:
+            flag, error, result = insert_purchase_order_item(
+                id_order,
+                item["quantity"],
+                item["unit_price"],
+                item["description"],
+                duration_services,
+                extra_info,
+                item["tool"],
+                item["currency"],
+            )
+            update_item = False
+        else:
+            flag, error, result = update_po_item(
+                item["id"],
+                id_order,
+                item["quantity"],
+                item["unit_price"],
+                item["description"],
+                duration_services,
+                extra_info,
+                item["currency"],
+            )
         if not flag:
             msg_moves.append(
-                f"x-Error al crear item de orden de compra -{item['description']}-{str(error)}"
+                f"x-Error al actualizar item de orden de compra -{item['description']}-{str(error)}"
+                if update_item
+                else f"x-Error al crear item de orden de compra -{item['description']}-{str(error)}"
             )
             flag_error = True
+            n_errors += 1
         else:
-            msg_moves.append(f"Item de orden de compra creado con ID-{result}")
+            msg_moves.append(
+                f"Item de orden de compra creado con ID-{result}"
+                if not update_item
+                else f"Item de orden de compra actualizado con ID-{item['id']}"
+            )
+    # falta comprobar si algun item se creo sino eliminar po.
+    if n_errors == len(data["items"]):
+        flag, error, result = delete_purchase_order(id_order)
+        return {
+            "data": [id_order if not flag else None],
+            "msg": f"Error al crear los items de la orden {id_order}"
+            if not flag
+            else "Error al crear los items de la orden, orden eliminada",
+            "error": "\n".join(msg_moves),
+        }, 400
     msg += "\n" + "\n".join(msg_moves)
     if update_sm_control_table:
         code, data_out = update_sm_from_control_table(
@@ -280,6 +341,7 @@ def update_purchase_order_api(data, data_token):
         "metadata_telintec": data.get("metadata_telintec", {}),
         "metadata_supplier": data.get("metadata_supplier", {}),
         "sm_id": data.get("sm_id", 0),
+        "order_quotation": data.get("order_quotation", ""),
     }
     flag, error, result = update_purchase_order(
         data["id"],
@@ -295,27 +357,47 @@ def update_purchase_order_api(data, data_token):
     if not flag:
         return {"data": None, "msg": "error", "error": str(error)}, 400
     msg = f"Orden de compra actualizada con ID-{data['id']}"
-    msg_items = []
+    msg_items: list[str] = []
     flag_error = False
     for item in data["items"]:
         extra_info = create_extra_info_product_from_data(item)
-        flag, error, result = update_po_item(
-            item["id"],
-            data["id"],
-            item["quantity"],
-            item["unit_price"],
-            item["description"],
-            item["duration_services"],
-            extra_info,
-        )
+        update_item = True
+        print("items", item)
+        if item["id"] is None or item["id"] <= 0:
+            flag, error, result = insert_purchase_order_item(
+                data["id"],
+                item["quantity"],
+                item["unit_price"],
+                item["description"],
+                item["duration_services"],
+                extra_info,
+                item["tool"],
+                item["currency"],
+            )
+            update_item = False
+        else:
+            flag, error, result = update_po_item(
+                item["id"],
+                data["id"],
+                item["quantity"],
+                item["unit_price"],
+                item["description"],
+                item["duration_services"],
+                extra_info,
+                item["currency"],
+            )
         if not flag:
             msg_items.append(
                 f"x-Error al actualizar item de orden de compra -{item['description']}-{str(error)}"
+                if update_item
+                else f"x-Error al crear item de orden de compra -{item['description']}-{str(error)}"
             )
             flag_error = True
         else:
             msg_items.append(
                 f"Item de orden de compra actualizado con ID-{item['id']}-{item['description']}"
+                if update_item
+                else f"Item de orden de compra creado con ID-{result}-{item['description']}"
             )
     msg += "\n" + "\n".join(msg_items)
     create_notification_permission_notGUI(
@@ -388,12 +470,18 @@ def change_state_order_api(data, data_token):
 
 
 def fetch_pos_applications_to_approve(data_token):
-    permissions = data_token.get("permissions")
-    permissions_last = [item.lower().split(".")[-1] for item in permissions.values()]
+    # permissions = data_token.get("permissions")
+    # permissions_last = [item.lower().split(".")[-1] for item in permissions.values()]
     flag, error, result = get_pos_application_with_items_to_approve()
     if not flag:
         return {"data": None, "msg": "error", "error": str(error)}, 400
     data_out = []
+    if not isinstance(result, Iterable):
+        return {
+            "data": result,
+            "msg": "Error at retrieving data from db",
+            "error": None,
+        }, 400
     for item in result:
         (
             id_order,
@@ -439,6 +527,12 @@ def fetch_pos_applications(status, data_token):
     if not flag:
         return {"data": None, "msg": "error", "error": str(error)}, 400
     data_out = []
+    if not isinstance(result, Iterable):
+        return {
+            "data": result,
+            "msg": "Error at retrieving data from db",
+            "error": None,
+        }, 400
     for item in result:
         (
             id_order,
@@ -473,18 +567,19 @@ def fetch_pos_applications(status, data_token):
 
 
 def create_po_application_api(data, data_token):
-    sm_id = data.get("sm_id", 0)
+    sm_id = data.get("sm_id", -1)
     update_sm_control_table = False
     if sm_id > 0:
         flag, error, result_sm = get_sm_by_id(sm_id)
     else:
-        flag, error, result_sm = get_sm_by_folio(data.get("folio", ""))
+        flag, error, result_sm = get_sm_by_folio(data.get("reference"))
+    if not (isinstance(result_sm, list) or isinstance(result_sm, tuple)):
+        return {"data": None, "msg": "error", "error": "SM not found"}, 400
+
     extra_info = {}
     if flag:
         update_sm_control_table = True
-        extra_info = {
-            "sm_id": result_sm[0],
-        }
+        extra_info = {"sm_id": result_sm[0]}
 
     time_zone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
@@ -497,7 +592,6 @@ def create_po_application_api(data, data_token):
             f"por el usuario {data_token.get('emp_id')}.",
         }
     ]
-
     flag, error, id_po_app = insert_po_application(
         timestamp,
         1,
@@ -508,13 +602,19 @@ def create_po_application_api(data, data_token):
     )
     if not flag:
         return {"data": None, "msg": "error", "error": str(error)}, 400
+    if not isinstance(id_po_app, int):
+        return {
+            "data": None,
+            "msg": "error in id of order application",
+            "error": str(error),
+        }, 400
     msg = f"Solicitud de Orden de compra creada con ID-{id_po_app}"
-    msg_moves = []
+    msg_moves: list[str] = []
     flag_error = False
     tool_detected = False
     for item in data["items"]:
         extra_info = create_extra_info_product_from_data(item)
-        flag, error, result = insert_purchase_order_item(
+        flag, error, result = insert_purchase_order_item_from_applications(
             id_po_app,
             item["quantity"],
             0.0,
@@ -543,12 +643,12 @@ def create_po_application_api(data, data_token):
             return {"data": None, "msg": msg + "\nerror", "error": str(error)}, 400
     if update_sm_control_table:
         code, data_out = update_sm_from_control_table(
-            {
+            data={
                 "id": result_sm[0],
                 "info": {"warehouse_reviewed": 1, "admin_notification_date": timestamp},
             },
-            data_token,
-            result_sm,
+            data_token=data_token,
+            sm_data=result_sm,
         )
         if code != 200:
             msg += (
@@ -598,7 +698,7 @@ def update_po_application_api(data, data_token):
     if not flag:
         return {"data": None, "msg": "error", "error": str(error)}, 400
     msg = f"Solicitud de Orden de compra actualizada con ID-{data['id']}"
-    msg_items = []
+    msg_items: list[str] = []
     flag_error = False
     for item in data["items"]:
         extra_info = create_extra_info_product_from_data(item)
@@ -656,9 +756,9 @@ def cancel_po_application_api(data, data_token):
         }
     )
     flag, error, result = cancel_po_application(
-        data.get("status", 4),
         history,
         data["id"],
+        data.get("status", 4),
     )
     if not flag:
         return {"data": None, "msg": "error", "error": str(error)}, 400
@@ -731,7 +831,11 @@ def create_metadata_for_pdf_po(extra_info: dict):
 
 def dowload_file_purchase(order_id: int):
     flag, error, result = get_purchase_order_with_items_by_id(order_id)
+    if not isinstance(result, list):
+        print("error at getting purchase order", result)
+        return None, 400
     if not flag or len(result) == 0:
+        print("error at getting purchase order", result)
         return None, 400
     date = result[0]
     download_path = os.path.join(
@@ -811,9 +915,13 @@ def generate_folios_po(reference, data_token):
     flag, error, result = get_folios_po_from_pattern(
         [folio_normal.lower(), folio_maestro.lower(), folio_cotfc.lower()]
     )
-
     if not flag:
         return {"data": [], "error": str(error)}, 400
+    if not isinstance(result, Iterable):
+        return {
+            "data": result,
+            "error": "Error at retrieving data from db",
+        }, 400
     folios_out = []
     for po_order in result:
         id_order, folio = po_order
@@ -824,19 +932,21 @@ def generate_folios_po(reference, data_token):
                 try:
                     count = int(number)
                     break
-                except Exception:
+                except Exception as e:
+                    print(e)
                     continue
-            folios_out.append(f"{folio_normal}-{count+1:03d}".upper())
+            folios_out.append(f"{folio_normal}-{count + 1:03d}".upper())
         elif folio_maestro.lower() in folio.lower():
             folio_temp = folio.lower().replace(folio_maestro.lower(), "").split("-")
             for number in folio_temp:
                 try:
                     count = int(number)
                     break
-                except Exception:
+                except Exception as e:
+                    print(e)
                     continue
             folios_out.append(
-                f"{folio_maestro}-{count+1:03d}-{dict_abbs[reference_parts[-2]].get('initial', '')}{reference_parts[-1]}".upper()
+                f"{folio_maestro}-{count + 1:03d}-{dict_abbs[reference_parts[-2]].get('initial', '')}{reference_parts[-1]}".upper()
             )
         else:
             folio_temp = folio.lower().replace(folio_cotfc.lower(), "").split("-")
@@ -844,9 +954,10 @@ def generate_folios_po(reference, data_token):
                 try:
                     count = int(number)
                     break
-                except Exception:
+                except Exception as e:
+                    print(e)
                     continue
-            folios_out.append(f"{folio_cotfc}-{count+1:03d}".upper())
+            folios_out.append(f"{folio_cotfc}-{count + 1:03d}".upper())
     if len(folios_out) == 0:
         folios_out = [
             f"{folio_normal}".upper(),
@@ -854,3 +965,67 @@ def generate_folios_po(reference, data_token):
             f"{folio_cotfc}".upper(),
         ]
     return {"data": folios_out, "error": None}, 200
+
+
+def group_item_by_id_inventory(items: list):
+    dict_out = {}
+    for item in items:
+        id_inventory = item.get("id_inventory", 0)
+        if id_inventory not in dict_out:
+            dict_out[id_inventory] = {"items": [item], "total": item["quantity"]}
+        else:
+            dict_out[id_inventory]["items"].append(item)
+            dict_out[id_inventory]["total"] += item["quantity"]
+    return dict_out
+
+
+def download_file_purchase_item_approved():
+    flag, error, sm_data = get_sm_entries(None)
+    if not flag:
+        return {
+            "data": [],
+            "error": str(error),
+            "msg": "Error at retrieving sm data",
+        }, 400
+    items_with_approved = []
+    for sm in sm_data:
+        sm_id = sm[0]
+        items = json.loads(sm[10])
+        for item in items:
+            deliveries = item.get("deliveries", [])
+            deliveries = [] if deliveries is None else deliveries
+            if len(deliveries) > 0:
+                for delivery in deliveries:
+                    if (
+                        delivery.get("state", 0) == 4
+                    ):  # falta checar estado asignado al ok compra
+                        items_with_approved.append(
+                            {
+                                "id_item": item["id"],
+                                "id_inventory": item["id_inventory"],
+                                "name": item["name"],
+                                "udm": item["udm"],
+                                "id_sm": sm_id,
+                                "folio": sm[1],
+                                "quantity": item["quantity"],
+                                "delivered": item["delivered"],
+                                "quantity_c": delivery["quantity"],
+                                "timestamp": delivery["timestamp"],
+                                "comment": delivery["comment"],
+                                "state": delivery["state"],
+                                "folio_po": delivery["folio"],
+                            }
+                        )
+                        break
+    dict_items = group_item_by_id_inventory(items_with_approved)
+    download_path = os.path.join(
+        tempfile.mkdtemp(), os.path.basename("purchase_list.pdf")
+    )
+    flag = FilePurchaseList(dict_items, download_path)
+    if not flag:
+        return {
+            "data": [],
+            "error": "Error at generating pdf",
+            "msg": "Error at generating pdf",
+        }, 400
+    return {"data": download_path, "error": None, "msg": "ok"}, 200

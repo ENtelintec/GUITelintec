@@ -1,22 +1,62 @@
-{
-  "0": {
-    "name": "ReadOnly.DB",
-    "description": "Only read the db"
+[
+  {
+    "name": "App.Department.Director",
+    "description": "the director permission"
   },
-  "1": {
-    "name": "Write.DB",
-    "description": "Write on the db"
+  {
+    "name": "App.Department.RRHH",
+    "description": "the rrhh permission"
   },
-  "2": {
-    "name": "Administrator",
-    "description": "Administrator permissions"
+  {
+    "name": "App.Department.Administrator",
+    "description": "the administrator permission"
   },
-  "3": {
-    "name": "Access.Chatgpt",
-    "description": "Has access to chatgpt"
+  {
+    "name": "App.Department.ALMACEN",
+    "description": "the almacén permission"
   },
-  "4": {
-    "name": "App.Deparment.RRHH",
-    "description": "Access for rrhh."
+  {
+    "name": "App.Department.Bitacoras",
+    "description": "the bitacoras permission"
+  },
+  {
+    "name": "App.Department.SM",
+    "description": "the sm permission"
+  },
+  {
+    "name": "App.Department.SM-URGENT",
+    "description": "the sm permission"
+  },
+  {
+    "name": "App.Department.ALMACEN-VISUAL",
+    "description": "the sm permission"
+  },
+  {
+    "name": "App.Department.Administracion",
+    "description": "the administracion permission"
+  },
+  {
+    "name": "App.Department.Common",
+    "description": "the common permission"
+  },
+  {
+    "name": "App.Department.Basic",
+    "description": "the basic permission"
+  },
+  {
+    "name": "App.Department.Operaciones",
+    "description": "the basic permission for op department"
+  },
+  {
+    "name": "App.Department.Epp",
+    "description": "the basic permission for security inventory group"
+  },
+  {
+    "name": "App.Department.Voucher",
+    "description": "the basic permission for voucher managment"
+  },
+  {
+    "name": "App.Department.SGI",
+    "description": "the basic permission for sgi group"
   }
-}
+]

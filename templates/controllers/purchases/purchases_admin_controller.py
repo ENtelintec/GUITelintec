@@ -16,6 +16,8 @@ def get_purchases_admin_db(limit=(0, 100)):
     )
     val = (limit[0], limit[1])
     flag, error, my_result = execute_sql(sql, val, 2)
+    if not isinstance(my_result, list):
+        return False, "No contracts or error at retrieving", []
     return flag, error, my_result
 
 
