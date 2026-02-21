@@ -371,11 +371,11 @@ def create_items_sm_db(items: list, sm_id: int):
     errors = []
     results = []
     for item in items:
-        sql = (
-            "INSERT INTO sql_telintec.sm_items "
-            "(id_sm, id_inventory, name, udm, comment, partida, quantity, dispatched, movements, state, extra_info) "
-            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
-        )
+        sql = """
+                INSERT INTO sql_telintec.sm_items
+                (id_sm, id_inventory, name, udm, comment, partida, quantity, dispatched, movements, state, extra_info) 
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """
         state = 0 if item.get("id", -1) == -1 else 1
         id_inventory = item.get("id") if item.get("id", -1) > 0 else None
         extra_info = item.get("extra_info", {})

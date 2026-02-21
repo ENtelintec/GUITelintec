@@ -20,7 +20,7 @@ def insert_quotation_activity(
     general_description: str,
     comments: str,
     history: list,
-    status: int = 0,  # 0: Pendiente, 1: Aprobada, 2: Rechazada
+    status: int = 0,  # 0: Pendiente, 1: Aprobada, 2: Rechazada, 3: Cancelada
 ):
     sql = (
         "INSERT INTO sql_telintec_mod_admin.quotations_activities "
