@@ -860,6 +860,7 @@ def get_suppliers_db():
             web_url,
             type_s,
             extra_info,
+            items
         ) = item
         extra_info = json.loads(extra_info) if extra_info is not None else {}
         brands = extra_info.get("brands", "[]")
