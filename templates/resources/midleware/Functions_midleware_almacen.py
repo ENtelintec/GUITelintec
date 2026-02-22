@@ -876,6 +876,7 @@ def get_suppliers_db():
                 "web_url": web_url,
                 "type": type_s,
                 "brands": brands,
+                "items": items,
             }
         )
     return 200, out
