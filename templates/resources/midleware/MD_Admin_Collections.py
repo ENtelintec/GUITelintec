@@ -81,6 +81,14 @@ def create_quotation_activity_from_api(data, data_token):
     flag_list = []
     errors = []
     results = []
+    history_item = [
+        {
+            timestamp: timestamp,
+            "user": user,
+            "action": "Creacion",
+            "comment": "Creación de ítem de actividad de cotización.",
+        }
+    ]
     for item in data["items"]:
         flag, error, id_item = insert_quotation_activity_item(
             quotation_id=id_quotation,  # pyrefly: ignore
@@ -89,7 +97,7 @@ def create_quotation_activity_from_api(data, data_token):
             udm=item["udm"],
             quantity=item["quantity"],
             unit_price=item["unit_price"],
-            history=item["history"],
+            history=history_item,
             item_c_id=item.get("client_id", None),
         )
         flag_list.append(flag)
