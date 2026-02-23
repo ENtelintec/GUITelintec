@@ -42,6 +42,7 @@ from templates.resources.midleware.MD_Admin_Collections import (
     create_quotation_activity_from_api,
     create_remission_from_api,
     delete_quotation_activity_from_api,
+    get_quotations_from_api,
     update_quotation_activity_from_api,
     update_remission_from_api,
     delete_remission_from_api,
@@ -395,6 +396,18 @@ class ActivityQuotatioAction(Resource):
         data_out, code = delete_quotation_activity_from_api(data, data_token)
         return data_out, code
 
+
+@ns.route("/activity/quotations-<string:id_quotation>")
+class FetchActivitieQuotationById(Resource):
+    @ns.expect(expected_headers_per)
+    def get(self, id_quotation):
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["administracion", "purchases"]
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        data_out, code = get_quotations_from_api(id_quotation, data_token)
+        return data_out, code
 
 @ns.route("/activity/ChangeStatus")
 class ChangeStatusActivity(Resource):

@@ -256,6 +256,81 @@ def update_quotation_activity_from_api(data, data_token):
     return {"data": result, "msg": "Ok", "error": None}, 200
 
 
+# def get_quotation_activity_by_id(id_quotation):
+#     sql = (
+#         "SELECT "
+#         "qa.qa_id, "
+#         "qa.date_activity, "
+#         "qa.folio, "
+#         "qa.client_id, "
+#         "qa.client_company_name, "
+#         "qa.client_contact_name, "
+#         "qa.client_phone, "
+#         "qa.client_email, "
+#         "qa.plant, "
+#         "qa.area, "
+#         "qa.location, "
+#         "qa.general_description, "
+#         "qa.comments, "
+#         "qa.status, "
+#         "qa.history, "
+#         "JSON_ARRAYAGG("
+#         "JSON_OBJECT("
+#         " 'qa_item_id', qai.qa_item_id, "
+#         " 'quotation_id', qai.quotation_id, "
+#         " 'report_id', qai.report_id, "
+#         " 'item_c_id', qai.item_c_id "
+#         " 'description', qai.description, "
+#         " 'udm', qai.udm, "
+#         " 'quantity', qai.quantity, "
+#         " 'unit_price', qai.unit_price, "
+#         " 'line_total', qai.line_total"
+#         " 'history', qai.history, "
+#         ")) AS items "
+#         "FROM sql_telintec_mod_admin.quotations_activities AS qa "
+#         "LEFT JOIN sql_telintec_mod_admin.quotation_activity_items AS qai ON qa.qa_id = qai.quotation_id "
+#         "WHERE( qa.qa_id = %s  OR %s IS NULL)"
+#         "GROUP BY qa.qa_id"
+#     )
+#     val = (id_quotation,)
+#     flag, e, out = (
+#         execute_sql(sql, val, 1)
+#         if id_quotation is not None
+#         else execute_sql(sql, val, 2)
+#     )
+#     return flag, e, out
+def get_quotations_from_api(id_quotation: int|None, data_token):
+    flag, e, out = get_quotation_activity_by_id(id_quotation)
+    if not flag:
+        return {"data": None, "msg": str(e)}, 400
+    data_out = []
+    if not (isinstance(out, list) or isinstance(out, tuple)):
+        return {"data": None, "msg": "No se encontraron actividades de cotización"}, 400
+    if isinstance(out[0], tuple):
+        out = [out]
+    data_out.append(
+        {
+            "id": out[0][0],
+            "date_activity": out[0][1],
+            "folio": out[0][2],
+            "client_id": out[0][3],
+            "client_company_name": out[0][4],
+            "client_contact_name": out[0][5],
+            "client_phone": out[0][6],
+            "client_email": out[0][7],
+            "plant": out[0][8],
+            "area": out[0][9],
+            "location": out[0][10],
+            "general_description": out[0][11],
+            "comments": out[0][12],
+            "status": out[0][13],
+            "history": out[0][14],
+            "items": out[0][15],
+        }
+    )
+    return {"data": data_out, "msg": "Ok"}, 200
+
+
 def delete_quotation_activity_from_api(data, data_token):
     id_quotation = data["id"]
     user = data_token.get("emp_id", 0)

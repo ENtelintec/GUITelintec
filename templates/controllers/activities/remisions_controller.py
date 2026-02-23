@@ -202,14 +202,14 @@ def delete_activity_report(report_id: int):
 
 
 def insert_quotation_activity_item(
-    quotation_id: int| None,
-    report_id: int|None,
+    quotation_id: int | None,
+    report_id: int | None,
     description: str,
     udm: str,
     quantity: float,
     unit_price: float,
     history: list,
-    item_c_id: int|None,
+    item_c_id: int | None,
 ):
     sql = (
         "INSERT INTO sql_telintec_mod_admin.quotation_activity_items "
@@ -301,9 +301,13 @@ def get_quotation_activity_by_id(id_quotation):
         ")) AS items "
         "FROM sql_telintec_mod_admin.quotations_activities AS qa "
         "LEFT JOIN sql_telintec_mod_admin.quotation_activity_items AS qai ON qa.qa_id = qai.quotation_id "
-        "WHERE qa.qa_id = %s "
+        "WHERE( qa.qa_id = %s  OR %s IS NULL)"
         "GROUP BY qa.qa_id"
     )
     val = (id_quotation,)
-    flag, e, out = execute_sql(sql, val, 1)
+    flag, e, out = (
+        execute_sql(sql, val, 1)
+        if id_quotation is not None
+        else execute_sql(sql, val, 2)
+    )
     return flag, e, out
