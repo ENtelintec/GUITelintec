@@ -264,13 +264,16 @@ def update_quotation_activity_from_api(data, data_token):
 
 
 def get_quotations_from_api(id_quotation: int | None, data_token):
-    if id_quotation is not None and id_quotation<=0:
+    if id_quotation is not None and id_quotation <= 0:
         id_quotation = None
     flag, e, out = get_quotation_activity_by_id(id_quotation)
     if not flag:
         return {"data": None, "msg": str(e)}, 400
     if not (isinstance(out, list) or isinstance(out, tuple)):
-        return {"data": None, "msg": "No se encontraron actividades de cotización validas"}, 400
+        return {
+            "data": None,
+            "msg": "No se encontraron actividades de cotización validas",
+        }, 400
     # if len(out)<=0:
     #     return {"data": out, "msg": "No se encontraron actividades de cotización"}, 200
     if isinstance(out, tuple):
@@ -281,7 +284,9 @@ def get_quotations_from_api(id_quotation: int | None, data_token):
         data_out.append(
             {
                 "id": item[0],
-                "date_activity": item[1],
+                "date_activity": item[1].strftime(format_timestamps)
+                if not isinstance(item[1], str)
+                else item[1],
                 "folio": item[2],
                 "client_id": item[3],
                 "client_company_name": item[4],
