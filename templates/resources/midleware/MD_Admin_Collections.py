@@ -278,7 +278,6 @@ def get_quotations_from_api(id_quotation: int | None, data_token):
     #     return {"data": out, "msg": "No se encontraron actividades de cotización"}, 200
     if isinstance(out, tuple):
         out = [out]
-    print(out)
     data_out = []
     for item in out:
         data_out.append(
