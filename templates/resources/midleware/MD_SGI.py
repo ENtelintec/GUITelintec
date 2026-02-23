@@ -918,3 +918,68 @@ def create_voucher_vehicle_attachment_api(data, data_token):
     )
     write_log_file(log_file_sgi_chv, msg)
     return {"data": path_aws, "msg": msg}, 201
+
+
+
+def download_voucher_vehicle_attachment_api(data, data_token):
+    time_zone = pytz.timezone(timezone_software)
+    timestamp = datetime.now(pytz.utc).astimezone(time_zone)
+    timestamp_year_ago = timestamp - timedelta(days=365)
+    flag, error, result = get_vouchers_vehicle_with_items(
+        timestamp_year_ago.strftime(format_date), data_token.get("emp_id")
+    )
+    if not flag:
+        return {
+            "data": None,
+            "msg": "Error at getting checklist vehicular by id",
+            "error": str(error),
+        }, 400
+    if not isinstance(result, list):
+        return {
+            "data": None,
+            "msg": "Error at getting checklist vehicular by id: result is not a list",
+            "error": str(result),
+        }, 400
+    voucher_data = []
+    for item in result:
+        if item[0] == data["id_voucher"]:
+            voucher_data = item
+            break
+    if len(voucher_data) <= 0:
+        return {
+            "data": None,
+            "msg": "Error at getting checklist vehicular by id: voucher not found",
+            "error": str(voucher_data),
+        }, 400
+    extra_info = json.loads(voucher_data[20])
+    files = extra_info.get("files", [])
+    path_aws = data["filename"]
+    flag_found = False
+    for file in files:
+        if file["filename"] == path_aws:
+            flag_found = True
+            break
+    if not flag_found:
+        return {"data": None, "msg": "File not found in voucher"}, 400
+    s3_client = boto3.client("s3")
+    bucket_name = secrets.get("S3_CH_BUCKET")
+    try:
+        s3_client.download_file(
+            Bucket=bucket_name, Key=path_aws, Filename=data["filepath"]
+        )
+    except FileNotFoundError:
+        return {"data": None, "msg": "Local file not found"}, 400
+    except NoCredentialsError:
+        return {"data": None, "msg": "AWS credentials not found"}, 400
+    except ClientError as e:
+        error_code = e.response["Error"]["Code"]
+        if error_code == "NoSuchBucket":
+            return {"data": None, "msg": f"Bucket does not exist: {bucket_name}"}, 400
+        elif error_code == "AccessDenied":
+            return {"data": None, "msg": f"Access denied to bucket: {bucket_name}"}, 400
+        elif error_code == "NoSuchKey":
+           return {"data": None, "msg": f"File not found: {path_aws}"}, 400
+        else:
+            return {"data": None, "msg": f"Error downloading file: {str(e)}"}, 400
+    
+    return data["filename"], 200

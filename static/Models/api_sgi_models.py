@@ -338,6 +338,13 @@ vehicle_voucher_upload_attachment_model = api.model(
     }
 )
 
+vehicle_voucher_download_att_model = api.model(
+    "VehicleVoucherDownloadAttachment",
+    {
+        "id_voucher": fields.Integer(required=True, description="ID del voucher"),
+        "filename": fields.String(required=True, description="Nombre del archivo a descargar (direccion aws)"),
+    },
+
 
 
 
@@ -561,3 +568,8 @@ class VoucherVehicleDeleteForm(Form):
 
 class VehicleVoucherUploadAttachmentForm(Form):
     id_voucher = IntegerField("id_voucher", [InputRequired()])
+
+
+class VehicleVoucherDownloadAttachmentForm(Form):
+    id_voucher = IntegerField("id_voucher", [InputRequired()])
+    filename = StringField("filename", [InputRequired()])

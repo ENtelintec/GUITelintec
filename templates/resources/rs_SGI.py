@@ -1,4 +1,9 @@
 # -*- coding: utf-8 -*-
+from static.Models.api_sgi_models import VehicleVoucherDownloadAttachmentForm
+from static.Models.api_sgi_models import vehicle_voucher_download_att_model
+from flask import send_file
+from _interpchannels import send
+from templates.resources.midleware.MD_SGI import download_voucher_vehicle_attachment_api
 from static.Models.api_sgi_models import VehicleVoucherUploadAttachmentForm
 from static.Models.api_sgi_models import vehicle_voucher_upload_attachment_model
 from static.Models.api_sgi_models import expected_files_attachment
@@ -276,7 +281,7 @@ class VoucerVehicleActions(Resource):
 
 
 @ns.route("/voucher/vehicle/attachment")
-class VehicleVoucherAttachment(Resource):
+class UploadVehicleVoucherAttachment(Resource):
     @ns.expect(
         expected_headers_per,
         expected_files_attachment,
@@ -310,3 +315,27 @@ class VehicleVoucherAttachment(Resource):
             return {"data": data, "msg": f"Ok with filaname: {filename}"}, 201
         else:
             return {"msg": "No se subio el archivo"}, 400
+
+
+@ns.route("/voucher/vehicle/attachment/download")
+class DownloadVehicleVoucherAttachment(Resource):
+    @ns.expect(expected_headers_per, vehicle_voucher_download_att_model)
+    def post(self):
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["sgi", "voucher"]
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        validator = VehicleVoucherDownloadAttachmentForm.from_json(  # pyrefly: ignore
+            ns.payload
+        )
+        if not validator.validate():
+            return {"data": validator.errors, "msg": "Error at structure"}, 400
+        data = validator.data
+        filename = data["filename"].split("/")[-1]
+        temp_filepath = os.path.join(tempfile.mkdtemp(), filename)
+        data["filepath"] = temp_filepath
+        data_out, code = download_voucher_vehicle_attachment_api(data, data_token)
+        return send_file(
+            temp_filepath, as_attachment=True, download_name=filename
+        ), code
