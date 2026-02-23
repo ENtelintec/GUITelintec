@@ -3,7 +3,6 @@ from static.constants import log_file_sgi_chv
 from templates.misc.Functions_Files import write_log_file
 from templates.Functions_Utils import create_notification_permission_notGUI
 from static.constants import format_date
-from botocore.exceptions import ClientError, NoCredentialsError
 from static.constants import secrets
 
 __author__ = "Edisson Naula"
@@ -873,17 +872,7 @@ def create_voucher_vehicle_attachment_api(data, data_token):
 
     try:
         s3_client.upload_file(Filename=filepath_down, Bucket=bucket_name, Key=path_aws)
-    except FileNotFoundError:
-        return {"data": None, "msg": "Local file not found"}, 400
-    except NoCredentialsError:
-        return {"data": None, "msg": "AWS credentials not found"}, 400
-    except ClientError as e:
-        error_code = e.response["Error"]["Code"]
-        if error_code == "NoSuchBucket":
-            return {"data": None, "msg": f"Bucket does not exist: {bucket_name}"}, 400
-        elif error_code == "AccessDenied":
-            return {"data": None, "msg": f"Access denied to bucket: {bucket_name}"}, 400
-        else:
+    except Exception as e:
             return {"data": None, "msg": f"AWS error: {str(e)}"}, 400
     history.append(
         {
@@ -967,19 +956,7 @@ def download_voucher_vehicle_attachment_api(data, data_token):
         s3_client.download_file(
             Bucket=bucket_name, Key=path_aws, Filename=data["filepath"]
         )
-    except FileNotFoundError:
-        return {"data": None, "msg": "Local file not found"}, 400
-    except NoCredentialsError:
-        return {"data": None, "msg": "AWS credentials not found"}, 400
-    except ClientError as e:
-        error_code = e.response["Error"]["Code"]
-        if error_code == "NoSuchBucket":
-            return {"data": None, "msg": f"Bucket does not exist: {bucket_name}"}, 400
-        elif error_code == "AccessDenied":
-            return {"data": None, "msg": f"Access denied to bucket: {bucket_name}"}, 400
-        elif error_code == "NoSuchKey":
-           return {"data": None, "msg": f"File not found: {path_aws}"}, 400
-        else:
-            return {"data": None, "msg": f"Error downloading file: {str(e)}"}, 400
     
+    except Exception as e:
+        return {"data": None, "msg": f"Error downloading file: {str(e)}"}, 400
     return data["filename"], 200
