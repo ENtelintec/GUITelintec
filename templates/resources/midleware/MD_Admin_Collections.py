@@ -263,35 +263,39 @@ def update_quotation_activity_from_api(data, data_token):
     return {"data": result, "msg": "Ok", "error": None}, 200
 
 
-def get_quotations_from_api(id_quotation: int|None, data_token):
+def get_quotations_from_api(id_quotation: int | None, data_token):
     flag, e, out = get_quotation_activity_by_id(id_quotation)
     if not flag:
         return {"data": None, "msg": str(e)}, 400
-    data_out = []
     if not (isinstance(out, list) or isinstance(out, tuple)):
-        return {"data": None, "msg": "No se encontraron actividades de cotización"}, 400
-    if isinstance(out[0], tuple):
+        return {"data": None, "msg": "No se encontraron actividades de cotización validas"}, 400
+    # if len(out)<=0:
+    #     return {"data": out, "msg": "No se encontraron actividades de cotización"}, 200
+    if isinstance(out, tuple):
         out = [out]
-    data_out.append(
-        {
-            "id": out[0][0],
-            "date_activity": out[0][1],
-            "folio": out[0][2],
-            "client_id": out[0][3],
-            "client_company_name": out[0][4],
-            "client_contact_name": out[0][5],
-            "client_phone": out[0][6],
-            "client_email": out[0][7],
-            "plant": out[0][8],
-            "area": out[0][9],
-            "location": out[0][10],
-            "general_description": out[0][11],
-            "comments": out[0][12],
-            "status": out[0][13],
-            "history": out[0][14],
-            "items": out[0][15],
-        }
-    )
+    print(out)
+    data_out = []
+    for item in out:
+        data_out.append(
+            {
+                "id": item[0],
+                "date_activity": item[1],
+                "folio": item[2],
+                "client_id": item[3],
+                "client_company_name": item[4],
+                "client_contact_name": item[5],
+                "client_phone": item[6],
+                "client_email": item[7],
+                "plant": item[8],
+                "area": item[9],
+                "location": item[10],
+                "general_description": item[11],
+                "comments": item[12],
+                "status": item[13],
+                "history": json.loads(item[14]) if item[14] else [],
+                "items": json.loads(item[15]) if item[15] else [],
+            }
+        )
     return {"data": data_out, "msg": "Ok"}, 200
 
 
