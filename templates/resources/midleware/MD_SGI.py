@@ -845,7 +845,18 @@ def create_voucher_vehicle_attachment_api(data, data_token):
             "msg": "Error at getting checklist vehicular by id: result is not a list",
             "error": str(result),
         }, 400
-    history = json.loads(result[0][19])
+    voucher_data = []
+    for item in result:
+        if item[0] == data["id_voucher"]:
+            voucher_data = item
+            break
+    if len(voucher_data) <= 0:
+        return {
+            "data": None,
+            "msg": "Error at getting checklist vehicular by id: voucher not found",
+            "error": str(voucher_data),
+        }, 400
+    history = json.loads(voucher_data[19])
     # reconocer el tipo de archivo [pdf, image, zip]
     filepath_down = data["filepath"]
     file_extension = filepath_down.split(".")[-1].lower()
@@ -883,7 +894,7 @@ def create_voucher_vehicle_attachment_api(data, data_token):
             "comment": f"Archivo adjunto agregado: {path_aws}",
         }
     )
-    extra_info = json.loads(result[0][20])
+    extra_info = json.loads(voucher_data[20])
     files = extra_info.get("files", [])
     files.append(
         {

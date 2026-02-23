@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from static.Models.api_sgi_models import VehicleVoucherUploadAttachmentForm
 from static.Models.api_sgi_models import vehicle_voucher_upload_attachment_model
 from static.Models.api_sgi_models import expected_files_attachment
 import tempfile
@@ -276,7 +277,11 @@ class VoucerVehicleActions(Resource):
 
 @ns.route("/voucher/vehicle/attachment")
 class VehicleVoucherAttachment(Resource):
-    @ns.expect(expected_headers_per, expected_files_attachment, vehicle_voucher_upload_attachment_model)
+    @ns.expect(
+        expected_headers_per,
+        expected_files_attachment,
+        vehicle_voucher_upload_attachment_model,
+    )
     def post(self):
         flag, data_token, msg = token_verification_procedure(
             request, department=["sgi", "voucher"]
@@ -290,9 +295,15 @@ class VehicleVoucherAttachment(Resource):
             filename = secure_filename(file.filename)
             filepath_download = os.path.join(tempfile.mkdtemp(), filename)
             file.save(filepath_download)
-            
-            data, code = create_voucher_vehicle_attachment_api(
-                {"filepath": filepath_download, "filename": filename}, data_token
+            validator = VehicleVoucherUploadAttachmentForm.from_json(  # pyrefly: ignore
+                ns.payload
+            )
+            if not validator.validate():
+                return {"data": validator.errors, "msg": "Error at structure"}, 400
+            data = validator.data
+            data_out, code = create_voucher_vehicle_attachment_api(
+                {"filepath": filepath_download, "filename": filename, **data},
+                data_token,
             )
             if code != 201:
                 return {"data": data, "msg": "Error at file structure"}, 400
