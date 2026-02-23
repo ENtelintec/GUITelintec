@@ -1024,7 +1024,7 @@ class QuotationActivityCreateForm(Form):
     general_description = StringField("general_description", [InputRequired()])
     comments = StringField("comments", [InputRequired()])
     items = FieldList(FormField(QuotationUpsertItemForm), "items", validators=[], default=[])
-    status = IntegerField("status", [InputRequired()], default=0)
+    status = IntegerField("status", [number_range(min=-1, message="Invalid status")], default=0)
 
 class QuotationActivityUpdateForm(Form):
     id = IntegerField("id", [InputRequired()])
@@ -1041,12 +1041,12 @@ class QuotationActivityUpdateForm(Form):
     general_description = StringField("general_description", [InputRequired()])
     comments = StringField("comments", [InputRequired()])
     items = FieldList(FormField(QuotationUpsertItemForm), "items", validators=[], default=[])
-    status = IntegerField("status", [InputRequired()], default=0)
+    status = IntegerField("status", [number_range(min=-1, message="Invalid status")], default=0)
 
 class QuotationActivityDeleteForm(Form):
     id = IntegerField("id", [InputRequired()])
-    status = IntegerField("status", [InputRequired()], default=-1)
+    status = IntegerField("status", [number_range(min=-1, message="Invalid status")], default=-1)
 
 class QuotationActivityStatusUpdateForm(Form):
     id = IntegerField("id", [InputRequired()])
-    status = IntegerField("status", [InputRequired()], default=-1)
+    status = IntegerField("status", [number_range(min=-1, message="Invalid status")], default=-1)
