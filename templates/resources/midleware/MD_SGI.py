@@ -956,7 +956,7 @@ def download_voucher_vehicle_attachment_api(data, data_token):
     path_aws = data["filename"]
     flag_found = False
     for file in files:
-        if file["filename"] == path_aws:
+        if file["path"] == path_aws:
             flag_found = True
             break
     if not flag_found:
