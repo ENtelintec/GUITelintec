@@ -292,8 +292,8 @@ class VehicleVoucherAttachment(Resource):
             data, code = create_voucher_vehicle_attachment_api(
                 {"filepath": filepath_download, "filename": filename}, data_token
             )
-            if code != 200:
+            if code != 201:
                 return {"data": data, "msg": "Error at file structure"}, 400
-            return {"data": data, "msg": f"Ok with filaname: {filename}"}, 200
+            return {"data": data, "msg": f"Ok with filaname: {filename}"}, 201
         else:
             return {"msg": "No se subio el archivo"}, 400
