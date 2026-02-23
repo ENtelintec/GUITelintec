@@ -264,6 +264,8 @@ def update_quotation_activity_from_api(data, data_token):
 
 
 def get_quotations_from_api(id_quotation: int | None, data_token):
+    if id_quotation is not None and id_quotation<=0:
+        id_quotation = None
     flag, e, out = get_quotation_activity_by_id(id_quotation)
     if not flag:
         return {"data": None, "msg": str(e)}, 400
