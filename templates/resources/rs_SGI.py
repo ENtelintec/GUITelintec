@@ -2,7 +2,6 @@
 from static.Models.api_sgi_models import VehicleVoucherDownloadAttachmentForm
 from static.Models.api_sgi_models import vehicle_voucher_download_att_model
 from flask import send_file
-from _interpchannels import send
 from templates.resources.midleware.MD_SGI import download_voucher_vehicle_attachment_api
 from static.Models.api_sgi_models import VehicleVoucherUploadAttachmentForm
 from static.Models.api_sgi_models import vehicle_voucher_upload_attachment_model
