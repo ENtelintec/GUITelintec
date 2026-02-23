@@ -403,7 +403,7 @@ def date_filter(date):
     # return date.strftime(format_date) if not isinstance(date, str) else date with pandas
     if isinstance(date, str):
         date = pd.to_datetime(date, format=format_date)
-        date = datetime.strptime(date, format_date)
+        # date = datetime.strptime(date, format_date)
         date = date.strftime(format_date)
         return date
     else:
