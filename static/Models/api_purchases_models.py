@@ -361,10 +361,10 @@ quotation_activity_insert_item_model = api.model(
             description="Precio unitario",
             example=1500.00,
         ),
-        "client_id": fields.Integer(
+        "item_contract_id": fields.Integer(
             # attribute="item_c_id",
             required=False,
-            description="ID del cliente asociado al ítem (si difiere del de la cabecera)",
+            description="ID del del item de contrato asociado (si aplica)",
             example=321,
         ),
     },
@@ -387,9 +387,9 @@ quotation_activity_item_upsert_model = api.model(
             description="ID de reporte asociado (si aplica)",
             example=1452,
         ),
-        "client_id": fields.Integer(
+        "item_contract_id": fields.Integer(
             required=False,
-            description="ID del cliente asociado al ítem (si aplica)",
+            description="ID del del item de contrato asociado (si aplica)",
             example=321,
         ),
         "description": fields.String(
@@ -998,7 +998,7 @@ class QuotationInsertItemForm(Form):
     udm = StringField("udm", [InputRequired()])
     quantity = FloatField("quantity", [InputRequired()])
     unit_price = FloatField("unit_price", [InputRequired()])
-    client_id = IntegerField("client_id", [], default=0)
+    item_contract_id = IntegerField("item_contract_id", [], default=0)
 
 class QuotationUpsertItemForm(Form):
     id = IntegerField("id", validators=[number_range(min=-1, message="Invalid id")], default=-1)
@@ -1007,7 +1007,7 @@ class QuotationUpsertItemForm(Form):
     udm = StringField("udm", [InputRequired()])
     quantity = FloatField("quantity", [InputRequired()])
     unit_price = FloatField("unit_price", [InputRequired()])
-    client_id = IntegerField("client_id", [], default=0)
+    item_contract_id = IntegerField("item_contract_id", [], default=0)
     is_erased = BooleanField("is_erased", [], default=False)
 
 class QuotationActivityCreateForm(Form):

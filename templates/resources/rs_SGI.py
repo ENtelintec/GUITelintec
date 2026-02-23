@@ -1,4 +1,10 @@
 # -*- coding: utf-8 -*-
+from static.Models.api_sgi_models import expected_files_attachment
+import tempfile
+import os
+
+from werkzeug.utils import secure_filename
+
 __author__ = "Edisson Naula"
 __date__ = "$ 06/jun/2025  at 14:51 $"
 
@@ -35,6 +41,7 @@ from static.Models.api_sgi_models import (
 from templates.resources.midleware.MD_SGI import (
     create_voucher_tools_api,
     create_voucher_safety_api,
+    create_voucher_vehicle_attachment_api,
     update_voucher_tools_api,
     update_voucher_safety_api,
     get_vouchers_tools_api,
@@ -264,3 +271,29 @@ class VoucerVehicleActions(Resource):
         data = validator.data
         data_out, code = delete_voucher_vehicle_api(data, data_token)
         return data_out, code
+
+
+@ns.route("/voucher/vehicle/attachment")
+class VehicleVoucherAttachment(Resource):
+    @ns.expect(expected_headers_per, expected_files_attachment)
+    def post(self):
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["sgi", "voucher"]
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        if "file" not in request.files:
+            return {"data": "No se detecto un archivo"}, 400
+        file = request.files["file"]
+        if file and file.filename:
+            filename = secure_filename(file.filename)
+            filepath_download = os.path.join(tempfile.mkdtemp(), filename)
+            file.save(filepath_download)
+            data, code = create_voucher_vehicle_attachment_api(
+                {"filepath": filepath_download, "filename": filename}, data_token
+            )
+            if code != 200:
+                return {"data": data, "msg": "Error at file structure"}, 400
+            return {"data": data, "msg": f"Ok with filaname: {filename}"}, 200
+        else:
+            return {"msg": "No se subio el archivo"}, 400

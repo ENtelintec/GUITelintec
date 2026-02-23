@@ -799,3 +799,11 @@ def delete_voucher_vehicle_api(data, data_token):
         }, 400
 
     return {"data": [rows_changed], "msg": "Vehicle voucher deleted successfully"}, 200
+
+
+def create_voucher_vehicle_attachment_api(data, data_token):
+    """{"filepath": filepath_download, "filename": filename}, data_token"""
+    # reconocer el tipo de archivo [pdf, image, zip]
+    filepath_down = data["filepath"]
+    file_extension = filepath_down.split(".")[-1].lower()
+    return {}, 201
