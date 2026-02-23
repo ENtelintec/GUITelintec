@@ -88,7 +88,6 @@ def get_contract(id_contract=None):
             "FROM sql_telintec_mod_admin.contracts"
         )
         flag, error, result = execute_sql(sql, None, 2)
-        print(flag, error, result)
         if not flag:
             return False, error, []
         if not (isinstance(result, tuple) or isinstance(result, list)):

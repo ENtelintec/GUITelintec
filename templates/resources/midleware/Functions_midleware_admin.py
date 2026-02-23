@@ -161,18 +161,6 @@ def get_contracts(id_contract=None):
     if not flag:
         return {"data": result, "msg": "Error at retrieving contract", "error": str(error)}, 400
     result = [result] if id_contract is not None else result
-    # if id_contract is not None:
-    #     id_c, metadata, creation, quotation_id, timestamps = result
-    #     metadata = validate_metadata(json.loads(metadata))
-    #     data_out = {
-    #         "id": id_c,
-    #         "metadata": metadata,
-    #         "creation": creation,
-    #         "quotation_id": quotation_id,
-    #         "timestamps": json.loads(timestamps),
-    #     }
-    #     return {"data": [data_out], "msg": None}, 200
-    # else:
     data_out = []
     for item in result:
         (
