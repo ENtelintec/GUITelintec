@@ -1390,6 +1390,8 @@ def update_sm_item_state(data, data_token):
     state = data.get("state")
     if state <= 0:
         return {"msg": "error at updating sm item state, invalid state"}, 400
+    if not (isinstance(sm_data, list) or isinstance(sm_data, tuple)):
+        return {"msg": "error at updating sm item state, invalid sm data"}, 400
     time_zone = pytz.timezone(timezone_software)
     date_now = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
     history_sm = json.loads(sm_data[12])
@@ -1425,7 +1427,10 @@ def update_sm_item_approve(data, data_token):
     approve_required = data.get("approve_required", 0)
     if approve_required not in [0, 1]:
         return {"msg": "error at updating sm item approve"}, 400
+    if not (isinstance(sm_data, list) or isinstance(sm_data, tuple)):
+        return {"msg": "error at updating sm item approve, invalid sm data"}, 400
     extra_info_item = {}
+
     items_sm = json.loads(sm_data[10])
     for item in items_sm:
         if item["id"] == data.get("id_item"):

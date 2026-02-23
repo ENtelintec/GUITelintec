@@ -1,4 +1,8 @@
 # -*- coding: utf-8 -*-
+from static.constants import log_file_sgi_chv
+from templates.misc.Functions_Files import write_log_file
+from templates.Functions_Utils import create_notification_permission_notGUI
+from static.constants import format_date
 from botocore.exceptions import ClientError, NoCredentialsError
 from static.constants import secrets
 
@@ -6,7 +10,7 @@ __author__ = "Edisson Naula"
 __date__ = "$ 06/jun/2025  at 14:54 $"
 
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import boto3
 import pytz
@@ -33,6 +37,7 @@ from templates.controllers.vouchers.vouchers_controller import (
     delete_voucher_tools,
     update_voucher_general_from_delete,
     delete_voucher_vehicle,
+    update_voucher_vehicle_files,
 )
 
 
@@ -573,6 +578,7 @@ def get_vouchers_vehicle_api(data, data_token):
         }, 400
     data_out = []
     for item in result:
+        extra_info = json.loads(item[20])
         data_out.append(
             {
                 "id_voucher_general": item[0],
@@ -597,6 +603,7 @@ def get_vouchers_vehicle_api(data, data_token):
                 "observations": item[17],
                 "items": json.loads(item[18]),
                 "history": json.loads(item[19]),
+                "files": extra_info.get("files"),
             }
         )
     return {"data": data_out, "msg": "Vehicle vouchers retrieved successfully"}, 200
@@ -702,7 +709,6 @@ def update_voucher_vehicle_api(data, data_token):
             "comment": "Voucher vehicular actualizado",
         }
     )
-
     flag, error, rows_changed = update_voucher_vehicle(
         data["id_voucher_general"],
         data["brand"],
@@ -820,26 +826,35 @@ def delete_voucher_vehicle_api(data, data_token):
 
 def create_voucher_vehicle_attachment_api(data, data_token):
     """{"filepath": filepath_download, "filename": filename}, data_token"""
-    flag, error, result_chv = get_checklist_vehicular_by_id(data["id"])
+    time_zone = pytz.timezone(timezone_software)
+    # timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
+    timestamp = datetime.now(pytz.utc).astimezone(time_zone)
+    timestamp_year_ago = timestamp - timedelta(days=365)
+    flag, error, result = get_vouchers_vehicle_with_items(
+        timestamp_year_ago.strftime(format_date), data_token.get("emp_id")
+    )
     if not flag:
         return {
             "data": None,
             "msg": "Error at getting checklist vehicular by id",
             "error": str(error),
         }, 400
+    if not isinstance(result, list):
+        return {
+            "data": None,
+            "msg": "Error at getting checklist vehicular by id: result is not a list",
+            "error": str(result),
+        }, 400
+    history = json.loads(result[0][19])
     # reconocer el tipo de archivo [pdf, image, zip]
     filepath_down = data["filepath"]
     file_extension = filepath_down.split(".")[-1].lower()
-    valid_extension = ["pdf", "jpg", "jpeg", "png", "zip"]
+    valid_extension = ["pdf", "jpg", "jpeg", "png", "zip", "webp"]
     if file_extension not in valid_extension:
         return (
             {"data": None, "msg": "Formato de archivo no valido"},
             400,
         )
-    # use boto3 to upload file to aws
-    time_zone = pytz.timezone(timezone_software)
-    # timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
-    timestamp = datetime.now(pytz.utc).astimezone(time_zone)
     # create name vouchers_vehicles/year/month/day/filename
     path_aws = f"checklistV/{timestamp.strftime('%Y/%m/%d/')}{data['filename']}"
     s3_client = boto3.client("s3")
@@ -847,8 +862,6 @@ def create_voucher_vehicle_attachment_api(data, data_token):
 
     try:
         s3_client.upload_file(Filename=filepath_down, Bucket=bucket_name, Key=path_aws)
-        url_file = f"https://{bucket_name}.s3.amazonaws.com/{path_aws}"
-        return {"data": url_file, "msg": "File uploaded successfully"}, 201
     except FileNotFoundError:
         return {"data": None, "msg": "Local file not found"}, 400
     except NoCredentialsError:
@@ -861,4 +874,36 @@ def create_voucher_vehicle_attachment_api(data, data_token):
             return {"data": None, "msg": f"Access denied to bucket: {bucket_name}"}, 400
         else:
             return {"data": None, "msg": f"AWS error: {str(e)}"}, 400
-
+    history.append(
+        {
+            "id_voucher": data["id_voucher"],
+            "type": 2,
+            "timestamp": timestamp.strftime(format_timestamps),
+            "user": data_token.get("emp_id"),
+            "comment": f"Archivo adjunto agregado: {path_aws}",
+        }
+    )
+    extra_info = json.loads(result[0][20])
+    files = extra_info.get("files", [])
+    files.append(
+        {
+            "filename": data["filename"],
+            "path": path_aws,
+        }
+    )
+    extra_info["files"] = files
+    flag, error, rows_updated = update_voucher_vehicle_files(
+        data["id_voucher"], json.dumps(history), extra_info
+    )
+    if not flag:
+        return {
+            "data": None,
+            "msg": "Error at updating history voucher but file uploaded",
+            "error": str(error),
+        }, 400
+    msg = "File uploaded successfully but error at updating history voucher"
+    create_notification_permission_notGUI(
+        msg, ["administracion", "operaciones", "sgi"], data_token.get("emp_id"), 0
+    )
+    write_log_file(log_file_sgi_chv, msg)
+    return {"data": path_aws, "msg": msg}, 201
