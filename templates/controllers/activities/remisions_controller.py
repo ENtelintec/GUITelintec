@@ -297,7 +297,7 @@ def get_quotation_activity_by_id(id_quotation):
         " 'quantity', qai.quantity, "
         " 'unit_price', qai.unit_price, "
         " 'line_total', qai.line_total"
-        " 'history', qai.history, "
+        " 'history', qai.history "
         ")) AS items "
         "FROM sql_telintec_mod_admin.quotations_activities AS qa "
         "LEFT JOIN sql_telintec_mod_admin.quotation_activity_items AS qai ON qa.qa_id = qai.quotation_id "
