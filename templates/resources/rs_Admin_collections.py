@@ -406,6 +406,11 @@ class FetchActivitieQuotationById(Resource):
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        try:
+            id_quotation = int(id_quotation)
+        except Exception as e:
+            print(f"retrieviong all {e}")
+            id_quotation = None
         data_out, code = get_quotations_from_api(id_quotation, data_token)
         return data_out, code
 
