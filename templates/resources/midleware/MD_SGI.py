@@ -11,7 +11,7 @@ __date__ = "$ 06/jun/2025  at 14:54 $"
 import json
 from datetime import datetime, timedelta
 
-import boto3
+# import boto3
 import pytz
 
 from static.constants import timezone_software, format_timestamps
