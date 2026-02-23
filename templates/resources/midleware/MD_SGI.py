@@ -1,10 +1,14 @@
 # -*- coding: utf-8 -*-
+from botocore.exceptions import ClientError, NoCredentialsError
+from static.constants import secrets
+
 __author__ = "Edisson Naula"
 __date__ = "$ 06/jun/2025  at 14:54 $"
 
 import json
 from datetime import datetime
 
+import boto3
 import pytz
 
 from static.constants import timezone_software, format_timestamps
@@ -204,9 +208,7 @@ def delete_voucher_tools_api(data, data_token):
             "comment": "Voucher eliminado",
         }
     )
-    flag, error, result = update_voucher_general_from_delete(
-        data["id"], history
-    )
+    flag, error, result = update_voucher_general_from_delete(data["id"], history)
     if not flag:
         return {
             "data": None,
@@ -386,9 +388,7 @@ def delete_voucher_safety_api(data, data_token):
             "comment": "Voucher eliminado",
         }
     )
-    flag, error, result = update_voucher_general_from_delete(
-        data["id"], history
-    )
+    flag, error, result = update_voucher_general_from_delete(data["id"], history)
     if not flag:
         return {
             "data": None,
@@ -398,7 +398,7 @@ def delete_voucher_safety_api(data, data_token):
     return {"data": rows_updated, "msg": "Voucher updated successfully"}, 200
 
 
-def get_vouchers_tools_api(data, data_token=None):
+def get_vouchers_tools_api(data, data_token):
     flag, error, result = get_vouchers_tools_with_items_date(
         data["date"], data_token.get("emp_id")
     )
@@ -407,6 +407,12 @@ def get_vouchers_tools_api(data, data_token=None):
             "data": None,
             "msg": "Error at getting vouchers",
             "error": str(error),
+        }, 400
+    if not (isinstance(result, list) or isinstance(result, tuple)):
+        return {
+            "data": None,
+            "msg": "Error at getting vouchers: result is not a list or tuple",
+            "error": str(result),
         }, 400
     data_out = []
     for item in result:
@@ -435,7 +441,7 @@ def get_vouchers_tools_api(data, data_token=None):
     return {"data": data_out, "msg": "Vouchers retrieved successfully"}, 200
 
 
-def get_vouchers_safety_api(data, data_token=None):
+def get_vouchers_safety_api(data, data_token):
     flag, error, result = get_vouchers_safety_with_items(
         data["date"], data_token.get("emp_id")
     )
@@ -444,6 +450,12 @@ def get_vouchers_safety_api(data, data_token=None):
             "data": None,
             "msg": "Error at getting vouchers",
             "error": str(error),
+        }, 400
+    if not (isinstance(result, list) or isinstance(result, tuple)):
+        return {
+            "data": None,
+            "msg": "Error at getting vouchers: result is not a list or tuple",
+            "error": str(result),
         }, 400
     data_out = []
     for item in result:
@@ -543,7 +555,7 @@ def update_status_safety(data, data_token):
     return {"data": [rows_updated], "msg": "Voucher updated successfully"}, 200
 
 
-def get_vouchers_vehicle_api(data, data_token=None):
+def get_vouchers_vehicle_api(data, data_token):
     flag, error, result = get_vouchers_vehicle_with_items(
         data["date"], data_token.get("emp_id")
     )
@@ -553,7 +565,12 @@ def get_vouchers_vehicle_api(data, data_token=None):
             "msg": "Error at getting vehicle vouchers",
             "error": str(error),
         }, 400
-
+    if not (isinstance(result, list) or isinstance(result, tuple)):
+        return {
+            "data": None,
+            "msg": "Error at getting vehicle vouchers: result is not a list or tuple",
+            "error": str(result),
+        }, 400
     data_out = []
     for item in result:
         data_out.append(
@@ -806,4 +823,35 @@ def create_voucher_vehicle_attachment_api(data, data_token):
     # reconocer el tipo de archivo [pdf, image, zip]
     filepath_down = data["filepath"]
     file_extension = filepath_down.split(".")[-1].lower()
-    return {}, 201
+    valid_extension = ["pdf", "jpg", "jpeg", "png", "zip"]
+    if file_extension not in valid_extension:
+        return (
+            {"data": None, "msg": "Formato de archivo no valido"},
+            400,
+        )
+    # use boto3 to upload file to aws
+    time_zone = pytz.timezone(timezone_software)
+    # timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
+    timestamp = datetime.now(pytz.utc).astimezone(time_zone)
+    # create name vouchers_vehicles/year/month/day/filename
+    path_aws = f"checklistV/{timestamp.strftime('%Y/%m/%d/')}{data['filename']}"
+    s3_client = boto3.client("s3")
+    bucket_name = secrets.get("S3_CH_BUCKET")
+
+    try:
+        s3_client.upload_file(Filename=filepath_down, Bucket=bucket_name, Key=path_aws)
+        url_file = f"https://{bucket_name}.s3.amazonaws.com/{path_aws}"
+        return {"data": url_file, "msg": "File uploaded successfully"}, 201
+    except FileNotFoundError:
+        return {"data": None, "msg": "Local file not found"}, 400
+    except NoCredentialsError:
+        return {"data": None, "msg": "AWS credentials not found"}, 400
+    except ClientError as e:
+        error_code = e.response["Error"]["Code"]
+        if error_code == "NoSuchBucket":
+            return {"data": None, "msg": f"Bucket does not exist: {bucket_name}"}, 400
+        elif error_code == "AccessDenied":
+            return {"data": None, "msg": f"Access denied to bucket: {bucket_name}"}, 400
+        else:
+            return {"data": None, "msg": f"AWS error: {str(e)}"}, 400
+
