@@ -2,6 +2,7 @@
 __author__ = "Edisson Naula"
 __date__ = "$ 06/jun/2025  at 14:54 $"
 
+from werkzeug.datastructures import FileStorage
 from wtforms.fields.datetime import DateTimeField
 from wtforms.fields.form import FormField
 
@@ -13,17 +14,13 @@ from wtforms import StringField, FloatField, IntegerField, FieldList, validators
 from wtforms.form import Form
 
 
-# voucher_model = api.model(
-#     "Voucher",
-#     {
-#         "type": fields.Integer(
-#             required=True, description="Tipo de voucher (0: Tools, 1: Safety)"
-#         ),
-#         "date": fields.String(required=True, description="Fecha del voucher"),
-#         "user": fields.Integer(required=True, description="ID del usuario"),
-#         "contract": fields.Integer(required=True, description="ID del contrato"),
-#     },
-# )
+expected_files_attachment = api.parser()
+expected_files_attachment.add_argument(
+    "file",
+    type=FileStorage,
+    location="files",
+    required=True,
+)
 
 voucher_items_post_model = api.model(
     "VoucherItemsPost",
@@ -334,6 +331,23 @@ vehicle_voucher_delete_model = api.model(
     },
 )
 
+vehicle_voucher_upload_attachment_model = api.model(
+    "VehicleVoucherUploadAttachment",
+    {
+        "id_voucher": fields.Integer(required=True, description="ID del voucher"),
+    }
+)
+
+vehicle_voucher_download_att_model = api.model(
+    "VehicleVoucherDownloadAttachment",
+    {
+        "id_voucher": fields.Integer(required=True, description="ID del voucher"),
+        "filename": fields.String(required=True, description="Nombre del archivo a descargar (direccion aws)"),
+    }
+)
+
+
+
 
 class ItemsVoucherPostForm(Form):
     id_voucher = IntegerField("id", [])
@@ -551,3 +565,12 @@ class VoucherVehicleDeleteForm(Form):
         "id", [InputRequired()]
     )
     history = FieldList(FormField(VoucherHistoryForm, "history"))
+
+
+class VehicleVoucherUploadAttachmentForm(Form):
+    id_voucher = IntegerField("id_voucher", [InputRequired()])
+
+
+class VehicleVoucherDownloadAttachmentForm(Form):
+    id_voucher = IntegerField("id_voucher", [InputRequired()])
+    filename = StringField("filename", [InputRequired()])

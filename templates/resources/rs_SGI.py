@@ -1,4 +1,17 @@
 # -*- coding: utf-8 -*-
+from static.Models.api_sgi_models import VehicleVoucherDownloadAttachmentForm
+from static.Models.api_sgi_models import vehicle_voucher_download_att_model
+from flask import send_file
+from _interpchannels import send
+from templates.resources.midleware.MD_SGI import download_voucher_vehicle_attachment_api
+from static.Models.api_sgi_models import VehicleVoucherUploadAttachmentForm
+from static.Models.api_sgi_models import vehicle_voucher_upload_attachment_model
+from static.Models.api_sgi_models import expected_files_attachment
+import tempfile
+import os
+
+from werkzeug.utils import secure_filename
+
 __author__ = "Edisson Naula"
 __date__ = "$ 06/jun/2025  at 14:51 $"
 
@@ -35,6 +48,7 @@ from static.Models.api_sgi_models import (
 from templates.resources.midleware.MD_SGI import (
     create_voucher_tools_api,
     create_voucher_safety_api,
+    create_voucher_vehicle_attachment_api,
     update_voucher_tools_api,
     update_voucher_safety_api,
     get_vouchers_tools_api,
@@ -61,7 +75,7 @@ class VoucherToolsActions(Resource):
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        validator = VoucherToolsFormPost.from_json(ns.payload)
+        validator = VoucherToolsFormPost.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
@@ -75,7 +89,7 @@ class VoucherToolsActions(Resource):
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        validator = VoucherToolsFormPut.from_json(ns.payload)
+        validator = VoucherToolsFormPut.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
@@ -89,7 +103,7 @@ class VoucherToolsActions(Resource):
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        validator = VoucherToolsFormDelete.from_json(ns.payload)
+        validator = VoucherToolsFormDelete.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
@@ -106,7 +120,7 @@ class VoucherToolsState(Resource):
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        validator = VoucherToolsStatusFormPut.from_json(ns.payload)
+        validator = VoucherToolsStatusFormPut.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
@@ -123,7 +137,7 @@ class VoucerSafetyActions(Resource):
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        validator = VoucherSafetyFormPost.from_json(ns.payload)
+        validator = VoucherSafetyFormPost.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
@@ -137,7 +151,7 @@ class VoucerSafetyActions(Resource):
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        validator = VoucherSafetyFormPut.from_json(ns.payload)
+        validator = VoucherSafetyFormPut.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
@@ -151,7 +165,7 @@ class VoucerSafetyActions(Resource):
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        validator = VoucherSafetyFormDelete.from_json(ns.payload)
+        validator = VoucherSafetyFormDelete.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
@@ -198,7 +212,7 @@ class VoucherSafetyState(Resource):
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        validator = VoucherSafetyStatusFormPut.from_json(ns.payload)
+        validator = VoucherSafetyStatusFormPut.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
@@ -230,7 +244,7 @@ class VoucerVehicleActions(Resource):
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        validator = VoucherVehiclePostForm.from_json(ns.payload)
+        validator = VoucherVehiclePostForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
@@ -244,7 +258,7 @@ class VoucerVehicleActions(Resource):
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        validator = VoucherVehiclePutForm.from_json(ns.payload)
+        validator = VoucherVehiclePutForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
@@ -258,9 +272,70 @@ class VoucerVehicleActions(Resource):
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        validator = VoucherVehicleDeleteForm.from_json(ns.payload)
+        validator = VoucherVehicleDeleteForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
         data_out, code = delete_voucher_vehicle_api(data, data_token)
         return data_out, code
+
+
+@ns.route("/voucher/vehicle/attachment")
+class UploadVehicleVoucherAttachment(Resource):
+    @ns.expect(
+        expected_headers_per,
+        expected_files_attachment,
+        vehicle_voucher_upload_attachment_model,
+    )
+    def post(self):
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["sgi", "voucher"]
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        if "file" not in request.files:
+            return {"data": "No se detecto un archivo"}, 400
+        file = request.files["file"]
+        if file and file.filename:
+            filename = secure_filename(file.filename)
+            filepath_download = os.path.join(tempfile.mkdtemp(), filename)
+            file.save(filepath_download)
+            validator = VehicleVoucherUploadAttachmentForm.from_json(  # pyrefly: ignore
+                ns.payload
+            )
+            if not validator.validate():
+                return {"data": validator.errors, "msg": "Error at structure"}, 400
+            data = validator.data
+            data_out, code = create_voucher_vehicle_attachment_api(
+                {"filepath": filepath_download, "filename": filename, **data},
+                data_token,
+            )
+            if code != 201:
+                return {"data": data, "msg": "Error at file structure"}, 400
+            return {"data": data, "msg": f"Ok with filaname: {filename}"}, 201
+        else:
+            return {"msg": "No se subio el archivo"}, 400
+
+
+@ns.route("/voucher/vehicle/attachment/download")
+class DownloadVehicleVoucherAttachment(Resource):
+    @ns.expect(expected_headers_per, vehicle_voucher_download_att_model)
+    def post(self):
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["sgi", "voucher"]
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        validator = VehicleVoucherDownloadAttachmentForm.from_json(  # pyrefly: ignore
+            ns.payload
+        )
+        if not validator.validate():
+            return {"data": validator.errors, "msg": "Error at structure"}, 400
+        data = validator.data
+        filename = data["filename"].split("/")[-1]
+        temp_filepath = os.path.join(tempfile.mkdtemp(), filename)
+        data["filepath"] = temp_filepath
+        data_out, code = download_voucher_vehicle_attachment_api(data, data_token)
+        return send_file(
+            temp_filepath, as_attachment=True, download_name=filename
+        ), code

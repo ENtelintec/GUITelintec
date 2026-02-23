@@ -75,7 +75,7 @@ def update_contract(
 
 
 def delete_contract(id_contract):
-    sql = "DELETE FROM sql_telintec_mod_admin.contracts " "WHERE id = %s"
+    sql = "DELETE FROM sql_telintec_mod_admin.contracts WHERE id = %s"
     val = (id_contract,)
     flag, error, out = execute_sql(sql, val, 3)
     return flag, error, out
@@ -90,7 +90,7 @@ def get_contract(id_contract=None):
         flag, error, result = execute_sql(sql, None, 2)
         if not flag:
             return False, error, []
-        if not isinstance(result, tuple) or not isinstance(result, list):
+        if not (isinstance(result, tuple) or isinstance(result, list)):
             return False, error, []
         return True, None, result
     sql = (
@@ -208,7 +208,7 @@ def get_items_contract_string(key: str) -> tuple[bool, str, int | list]:
 
 
 def get_contract_and_items_from_number(lastdigits: str):
-    """ 
+    """
     Fetch contract and its items using the last digits of the contract number.
     """
     sql = (
@@ -228,4 +228,3 @@ def get_contract_and_items_from_number(lastdigits: str):
     val = (lastdigits,)
     flag, error, result = execute_sql(sql, val, 2)
     return flag, error, result
-

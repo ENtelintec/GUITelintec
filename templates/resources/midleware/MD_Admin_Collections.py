@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 from templates.controllers.activities.remisions_controller import (
     delete_quotation_activity,
     delete_quotation_activity_item,
@@ -81,6 +80,14 @@ def create_quotation_activity_from_api(data, data_token):
     flag_list = []
     errors = []
     results = []
+    history_item = [
+        {
+            timestamp: timestamp,
+            "user": user,
+            "action": "Creacion",
+            "comment": "Creación de ítem de actividad de cotización.",
+        }
+    ]
     for item in data["items"]:
         flag, error, id_item = insert_quotation_activity_item(
             quotation_id=id_quotation,  # pyrefly: ignore
@@ -89,8 +96,8 @@ def create_quotation_activity_from_api(data, data_token):
             udm=item["udm"],
             quantity=item["quantity"],
             unit_price=item["unit_price"],
-            history=item["history"],
-            item_c_id=item.get("client_id", None),
+            history=history_item,
+            item_c_id=item.get("item_contract_id", None),
         )
         flag_list.append(flag)
         errors.append(str(error))
@@ -254,6 +261,42 @@ def update_quotation_activity_from_api(data, data_token):
     )
     write_log_file(log_file_admin, msg)
     return {"data": result, "msg": "Ok", "error": None}, 200
+
+
+def get_quotations_from_api(id_quotation: int | None, data_token):
+    flag, e, out = get_quotation_activity_by_id(id_quotation)
+    if not flag:
+        return {"data": None, "msg": str(e)}, 400
+    if not (isinstance(out, list) or isinstance(out, tuple)):
+        return {"data": None, "msg": "No se encontraron actividades de cotización validas"}, 400
+    # if len(out)<=0:
+    #     return {"data": out, "msg": "No se encontraron actividades de cotización"}, 200
+    if isinstance(out, tuple):
+        out = [out]
+    print(out)
+    data_out = []
+    for item in out:
+        data_out.append(
+            {
+                "id": item[0],
+                "date_activity": item[1],
+                "folio": item[2],
+                "client_id": item[3],
+                "client_company_name": item[4],
+                "client_contact_name": item[5],
+                "client_phone": item[6],
+                "client_email": item[7],
+                "plant": item[8],
+                "area": item[9],
+                "location": item[10],
+                "general_description": item[11],
+                "comments": item[12],
+                "status": item[13],
+                "history": json.loads(item[14]) if item[14] else [],
+                "items": json.loads(item[15]) if item[15] else [],
+            }
+        )
+    return {"data": data_out, "msg": "Ok"}, 200
 
 
 def delete_quotation_activity_from_api(data, data_token):

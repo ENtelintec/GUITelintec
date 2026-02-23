@@ -294,6 +294,24 @@ def update_voucher_general_from_delete(id_voucher, history):
     return flag, error, rows_changed
 
 
+def update_voucher_vehicle_files(id_voucher, history, extra_info):
+    """
+    Actualiza el historial y la información extra de un voucher vehicular en la tabla voucher_vehicle.
+
+    :param id_voucher: ID del voucher a actualizar
+    :param history: Nuevo historial en formato JSON
+    :param extra_info: Nueva información extra en formato JSON
+    :return: Estado de la operación (éxito/error)
+    """
+    sql = (
+        "UPDATE sql_telintec_mod_admin.voucher_vehicle "
+        "SET extra_info = %s, observations = %s "
+        "WHERE id_voucher_general = %s"
+    )
+    val = (json.dumps(extra_info), json.dumps(history), id_voucher)
+    flag, error, rows_changed = execute_sql(sql, val, 3)
+    return flag, error, rows_changed
+
 def update_voucher_item(
     id_item,
     id_inventory,
@@ -554,7 +572,8 @@ def get_vouchers_vehicle_with_items(start_date, user=None):
         "'observations', vi.observations, "
         "'extra_info', vi.extra_info)"
         ") AS items, "
-        "vg.history "
+        "vg.history, " \
+        "vv.extra_info "
         "FROM sql_telintec_mod_admin.voucher_vehicle AS vv "
         "JOIN sql_telintec_mod_admin.vouchers_general AS vg ON vv.id_voucher_general = vg.id_voucher "
         "LEFT JOIN sql_telintec_mod_admin.voucher_items AS vi ON vg.id_voucher = vi.id_voucher "
@@ -645,6 +664,7 @@ def update_voucher_vehicle(
     type_v=2,
     received_by=None,
     observations=None,
+    extra_info=None,
 ):
     """
     Actualiza un registro existente en la tabla voucher_vehicle.

@@ -1,10 +1,18 @@
 # -*- coding: utf-8 -*-
+from static.constants import log_file_sgi_chv
+from templates.misc.Functions_Files import write_log_file
+from templates.Functions_Utils import create_notification_permission_notGUI
+from static.constants import format_date
+from botocore.exceptions import ClientError, NoCredentialsError
+from static.constants import secrets
+
 __author__ = "Edisson Naula"
 __date__ = "$ 06/jun/2025  at 14:54 $"
 
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 
+import boto3
 import pytz
 
 from static.constants import timezone_software, format_timestamps
@@ -29,6 +37,7 @@ from templates.controllers.vouchers.vouchers_controller import (
     delete_voucher_tools,
     update_voucher_general_from_delete,
     delete_voucher_vehicle,
+    update_voucher_vehicle_files,
 )
 
 
@@ -204,9 +213,7 @@ def delete_voucher_tools_api(data, data_token):
             "comment": "Voucher eliminado",
         }
     )
-    flag, error, result = update_voucher_general_from_delete(
-        data["id"], history
-    )
+    flag, error, result = update_voucher_general_from_delete(data["id"], history)
     if not flag:
         return {
             "data": None,
@@ -386,9 +393,7 @@ def delete_voucher_safety_api(data, data_token):
             "comment": "Voucher eliminado",
         }
     )
-    flag, error, result = update_voucher_general_from_delete(
-        data["id"], history
-    )
+    flag, error, result = update_voucher_general_from_delete(data["id"], history)
     if not flag:
         return {
             "data": None,
@@ -398,7 +403,7 @@ def delete_voucher_safety_api(data, data_token):
     return {"data": rows_updated, "msg": "Voucher updated successfully"}, 200
 
 
-def get_vouchers_tools_api(data, data_token=None):
+def get_vouchers_tools_api(data, data_token):
     flag, error, result = get_vouchers_tools_with_items_date(
         data["date"], data_token.get("emp_id")
     )
@@ -407,6 +412,12 @@ def get_vouchers_tools_api(data, data_token=None):
             "data": None,
             "msg": "Error at getting vouchers",
             "error": str(error),
+        }, 400
+    if not (isinstance(result, list) or isinstance(result, tuple)):
+        return {
+            "data": None,
+            "msg": "Error at getting vouchers: result is not a list or tuple",
+            "error": str(result),
         }, 400
     data_out = []
     for item in result:
@@ -435,7 +446,7 @@ def get_vouchers_tools_api(data, data_token=None):
     return {"data": data_out, "msg": "Vouchers retrieved successfully"}, 200
 
 
-def get_vouchers_safety_api(data, data_token=None):
+def get_vouchers_safety_api(data, data_token):
     flag, error, result = get_vouchers_safety_with_items(
         data["date"], data_token.get("emp_id")
     )
@@ -444,6 +455,12 @@ def get_vouchers_safety_api(data, data_token=None):
             "data": None,
             "msg": "Error at getting vouchers",
             "error": str(error),
+        }, 400
+    if not (isinstance(result, list) or isinstance(result, tuple)):
+        return {
+            "data": None,
+            "msg": "Error at getting vouchers: result is not a list or tuple",
+            "error": str(result),
         }, 400
     data_out = []
     for item in result:
@@ -543,7 +560,7 @@ def update_status_safety(data, data_token):
     return {"data": [rows_updated], "msg": "Voucher updated successfully"}, 200
 
 
-def get_vouchers_vehicle_api(data, data_token=None):
+def get_vouchers_vehicle_api(data, data_token):
     flag, error, result = get_vouchers_vehicle_with_items(
         data["date"], data_token.get("emp_id")
     )
@@ -553,9 +570,15 @@ def get_vouchers_vehicle_api(data, data_token=None):
             "msg": "Error at getting vehicle vouchers",
             "error": str(error),
         }, 400
-
+    if not (isinstance(result, list) or isinstance(result, tuple)):
+        return {
+            "data": None,
+            "msg": "Error at getting vehicle vouchers: result is not a list or tuple",
+            "error": str(result),
+        }, 400
     data_out = []
     for item in result:
+        extra_info = json.loads(item[20])
         data_out.append(
             {
                 "id_voucher_general": item[0],
@@ -580,6 +603,7 @@ def get_vouchers_vehicle_api(data, data_token=None):
                 "observations": item[17],
                 "items": json.loads(item[18]),
                 "history": json.loads(item[19]),
+                "files": extra_info.get("files"),
             }
         )
     return {"data": data_out, "msg": "Vehicle vouchers retrieved successfully"}, 200
@@ -685,7 +709,6 @@ def update_voucher_vehicle_api(data, data_token):
             "comment": "Voucher vehicular actualizado",
         }
     )
-
     flag, error, rows_changed = update_voucher_vehicle(
         data["id_voucher_general"],
         data["brand"],
@@ -799,3 +822,164 @@ def delete_voucher_vehicle_api(data, data_token):
         }, 400
 
     return {"data": [rows_changed], "msg": "Vehicle voucher deleted successfully"}, 200
+
+
+def create_voucher_vehicle_attachment_api(data, data_token):
+    """{"filepath": filepath_download, "filename": filename}, data_token"""
+    time_zone = pytz.timezone(timezone_software)
+    # timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
+    timestamp = datetime.now(pytz.utc).astimezone(time_zone)
+    timestamp_year_ago = timestamp - timedelta(days=365)
+    flag, error, result = get_vouchers_vehicle_with_items(
+        timestamp_year_ago.strftime(format_date), data_token.get("emp_id")
+    )
+    if not flag:
+        return {
+            "data": None,
+            "msg": "Error at getting checklist vehicular by id",
+            "error": str(error),
+        }, 400
+    if not isinstance(result, list):
+        return {
+            "data": None,
+            "msg": "Error at getting checklist vehicular by id: result is not a list",
+            "error": str(result),
+        }, 400
+    voucher_data = []
+    for item in result:
+        if item[0] == data["id_voucher"]:
+            voucher_data = item
+            break
+    if len(voucher_data) <= 0:
+        return {
+            "data": None,
+            "msg": "Error at getting checklist vehicular by id: voucher not found",
+            "error": str(voucher_data),
+        }, 400
+    history = json.loads(voucher_data[19])
+    # reconocer el tipo de archivo [pdf, image, zip]
+    filepath_down = data["filepath"]
+    file_extension = filepath_down.split(".")[-1].lower()
+    valid_extension = ["pdf", "jpg", "jpeg", "png", "zip", "webp"]
+    if file_extension not in valid_extension:
+        return (
+            {"data": None, "msg": "Formato de archivo no valido"},
+            400,
+        )
+    # create name vouchers_vehicles/year/month/day/filename
+    path_aws = f"checklistV/{timestamp.strftime('%Y/%m/%d/')}{data['filename']}"
+    s3_client = boto3.client("s3")
+    bucket_name = secrets.get("S3_CH_BUCKET")
+
+    try:
+        s3_client.upload_file(Filename=filepath_down, Bucket=bucket_name, Key=path_aws)
+    except FileNotFoundError:
+        return {"data": None, "msg": "Local file not found"}, 400
+    except NoCredentialsError:
+        return {"data": None, "msg": "AWS credentials not found"}, 400
+    except ClientError as e:
+        error_code = e.response["Error"]["Code"]
+        if error_code == "NoSuchBucket":
+            return {"data": None, "msg": f"Bucket does not exist: {bucket_name}"}, 400
+        elif error_code == "AccessDenied":
+            return {"data": None, "msg": f"Access denied to bucket: {bucket_name}"}, 400
+        else:
+            return {"data": None, "msg": f"AWS error: {str(e)}"}, 400
+    history.append(
+        {
+            "id_voucher": data["id_voucher"],
+            "type": 2,
+            "timestamp": timestamp.strftime(format_timestamps),
+            "user": data_token.get("emp_id"),
+            "comment": f"Archivo adjunto agregado: {path_aws}",
+        }
+    )
+    extra_info = json.loads(voucher_data[20])
+    files = extra_info.get("files", [])
+    files.append(
+        {
+            "filename": data["filename"],
+            "path": path_aws,
+        }
+    )
+    extra_info["files"] = files
+    flag, error, rows_updated = update_voucher_vehicle_files(
+        data["id_voucher"], json.dumps(history), extra_info
+    )
+    if not flag:
+        return {
+            "data": None,
+            "msg": "Error at updating history voucher but file uploaded",
+            "error": str(error),
+        }, 400
+    msg = "File uploaded successfully but error at updating history voucher"
+    create_notification_permission_notGUI(
+        msg, ["administracion", "operaciones", "sgi"], data_token.get("emp_id"), 0
+    )
+    write_log_file(log_file_sgi_chv, msg)
+    return {"data": path_aws, "msg": msg}, 201
+
+
+
+def download_voucher_vehicle_attachment_api(data, data_token):
+    time_zone = pytz.timezone(timezone_software)
+    timestamp = datetime.now(pytz.utc).astimezone(time_zone)
+    timestamp_year_ago = timestamp - timedelta(days=365)
+    flag, error, result = get_vouchers_vehicle_with_items(
+        timestamp_year_ago.strftime(format_date), data_token.get("emp_id")
+    )
+    if not flag:
+        return {
+            "data": None,
+            "msg": "Error at getting checklist vehicular by id",
+            "error": str(error),
+        }, 400
+    if not isinstance(result, list):
+        return {
+            "data": None,
+            "msg": "Error at getting checklist vehicular by id: result is not a list",
+            "error": str(result),
+        }, 400
+    voucher_data = []
+    for item in result:
+        if item[0] == data["id_voucher"]:
+            voucher_data = item
+            break
+    if len(voucher_data) <= 0:
+        return {
+            "data": None,
+            "msg": "Error at getting checklist vehicular by id: voucher not found",
+            "error": str(voucher_data),
+        }, 400
+    extra_info = json.loads(voucher_data[20])
+    files = extra_info.get("files", [])
+    path_aws = data["filename"]
+    flag_found = False
+    for file in files:
+        if file["path"] == path_aws:
+            flag_found = True
+            break
+    if not flag_found:
+        return {"data": None, "msg": "File not found in voucher"}, 400
+    s3_client = boto3.client("s3")
+    bucket_name = secrets.get("S3_CH_BUCKET")
+    try:
+        s3_client.download_file(
+            Bucket=bucket_name, Key=path_aws, Filename=data["filepath"]
+        )
+    except FileNotFoundError:
+        return {"data": None, "msg": "Local file not found"}, 400
+    except NoCredentialsError:
+        return {"data": None, "msg": "AWS credentials not found"}, 400
+    except ClientError as e:
+        error_code = e.response["Error"]["Code"]
+        if error_code == "NoSuchBucket":
+            return {"data": None, "msg": f"Bucket does not exist: {bucket_name}"}, 400
+        elif error_code == "AccessDenied":
+            return {"data": None, "msg": f"Access denied to bucket: {bucket_name}"}, 400
+        elif error_code == "NoSuchKey":
+           return {"data": None, "msg": f"File not found: {path_aws}"}, 400
+        else:
+            return {"data": None, "msg": f"Error downloading file: {str(e)}"}, 400
+    
+    return data["filename"], 200
