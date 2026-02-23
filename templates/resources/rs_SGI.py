@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from static.Models.api_sgi_models import vehicle_voucher_upload_attachment_model
 from static.Models.api_sgi_models import expected_files_attachment
 import tempfile
 import os
@@ -275,7 +276,7 @@ class VoucerVehicleActions(Resource):
 
 @ns.route("/voucher/vehicle/attachment")
 class VehicleVoucherAttachment(Resource):
-    @ns.expect(expected_headers_per, expected_files_attachment)
+    @ns.expect(expected_headers_per, expected_files_attachment, vehicle_voucher_upload_attachment_model)
     def post(self):
         flag, data_token, msg = token_verification_procedure(
             request, department=["sgi", "voucher"]
@@ -289,6 +290,7 @@ class VehicleVoucherAttachment(Resource):
             filename = secure_filename(file.filename)
             filepath_download = os.path.join(tempfile.mkdtemp(), filename)
             file.save(filepath_download)
+            
             data, code = create_voucher_vehicle_attachment_api(
                 {"filepath": filepath_download, "filename": filename}, data_token
             )

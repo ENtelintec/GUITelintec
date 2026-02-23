@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 from templates.controllers.activities.remisions_controller import (
     delete_quotation_activity,
     delete_quotation_activity_item,

@@ -304,7 +304,7 @@ def get_quotation_activity_by_id(id_quotation):
         "WHERE( qa.qa_id = %s  OR %s IS NULL)"
         "GROUP BY qa.qa_id"
     )
-    val = (id_quotation,)
+    val = (id_quotation, id_quotation)
     flag, e, out = (
         execute_sql(sql, val, 1)
         if id_quotation is not None
