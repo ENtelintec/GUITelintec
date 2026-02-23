@@ -343,7 +343,8 @@ vehicle_voucher_download_att_model = api.model(
     {
         "id_voucher": fields.Integer(required=True, description="ID del voucher"),
         "filename": fields.String(required=True, description="Nombre del archivo a descargar (direccion aws)"),
-    },
+    }
+)
 
 
 
