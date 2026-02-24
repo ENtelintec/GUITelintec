@@ -279,14 +279,10 @@ class VoucerVehicleActions(Resource):
         return data_out, code
 
 
-@ns.route("/voucher/vehicle/attachment")
+@ns.route("/voucher/vehicle/attachment-<string:id_voucher>")
 class UploadVehicleVoucherAttachment(Resource):
-    @ns.expect(
-        expected_headers_per,
-        expected_files_attachment,
-        vehicle_voucher_upload_attachment_model,
-    )
-    def post(self):
+    @ns.expect(expected_headers_per, expected_files_attachment)
+    def post(self, id_voucher):
         flag, data_token, msg = token_verification_procedure(
             request, department=["sgi", "voucher"]
         )
@@ -299,14 +295,8 @@ class UploadVehicleVoucherAttachment(Resource):
             filename = secure_filename(file.filename)
             filepath_download = os.path.join(tempfile.mkdtemp(), filename)
             file.save(filepath_download)
-            validator = VehicleVoucherUploadAttachmentForm.from_json(  # pyrefly: ignore
-                ns.payload
-            )
-            if not validator.validate():
-                return {"data": validator.errors, "msg": "Error at structure"}, 400
-            data = validator.data
             data_out, code = create_voucher_vehicle_attachment_api(
-                {"filepath": filepath_download, "filename": filename, **data},
+                {"filepath": filepath_download, "filename": filename, "id_voucher": id_voucher},
                 data_token,
             )
             if code != 201:
