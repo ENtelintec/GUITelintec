@@ -300,8 +300,8 @@ class UploadVehicleVoucherAttachment(Resource):
                 data_token,
             )
             if code != 201:
-                return {"data": data, "msg": "Error at file structure"}, 400
-            return {"data": data, "msg": f"Ok with filaname: {filename}"}, 201
+                return {"data": data_out, "msg": "Error at file structure"}, 400
+            return {"data": data_out, "msg": f"Ok with filaname: {filename}"}, 201
         else:
             return {"msg": "No se subio el archivo"}, 400
 
