@@ -129,7 +129,7 @@ def update_quotation_activity_from_api(data, data_token):
             "error": str(error),
         }, 400
     # get history
-    history = result_qa[14] if result_qa[14] else []  # pyrefly: ignore
+    history = json.loads(result_qa[14]) if result_qa[14] else []  # pyrefly: ignore
     if len(history) <= 0:
         return {
             "data": None,
