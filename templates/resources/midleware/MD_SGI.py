@@ -623,6 +623,14 @@ def create_voucher_vehicle_api(data, data_token):
             "msg": "Error at creating general voucher",
             "error": str(error),
         }, 400
+    try:
+        accessories = json.dumps(data["accessories"])
+    except Exception as e:
+        return {
+            "data": None,
+            "msg": "Error at processing accessories data",
+            "error": str(e),
+        }, 400
 
     # 2. Crear voucher vehicular
     flag, error, lastrowid_vehicle = create_voucher_vehicle(
@@ -636,7 +644,7 @@ def create_voucher_vehicle_api(data, data_token):
         int(data["registration_card"]),
         int(data["insurance"]),
         int(data["referendo"]),
-        json.dumps(data["accessories"]),
+        accessories,
         data["type"],
         data["received_by"],
         data.get("observations"),
@@ -709,6 +717,14 @@ def update_voucher_vehicle_api(data, data_token):
             "comment": "Voucher vehicular actualizado",
         }
     )
+    try: 
+        accessories = json.dumps(data["accessories"])
+    except Exception as e:
+        return {
+            "data": None,
+            "msg": "Error at processing accessories data",
+            "error": str(e),
+        }, 400
     flag, error, rows_changed = update_voucher_vehicle(
         data["id_voucher_general"],
         data["brand"],
@@ -720,7 +736,7 @@ def update_voucher_vehicle_api(data, data_token):
         int(data["registration_card"]),
         int(data["insurance"]),
         int(data["referendo"]),
-        json.dumps(data["accessories"]),
+        accessories,
         data["type"],
         data["received_by"],
         data.get("observations"),
