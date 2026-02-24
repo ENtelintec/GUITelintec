@@ -154,7 +154,7 @@ def update_quotation_activity_from_api(data, data_token):
     if len(items_to_update) <= 0:
         msg += "No hay ítems para actualizar"
     else:
-        dict_items = {item[0]: item for item in items}
+        dict_items = {item["qa_item_id"]: item for item in items}
         for new_item in items_to_update:
             item_id = new_item.get("id", 0)
             if item_id <= 0:
@@ -181,7 +181,7 @@ def update_quotation_activity_from_api(data, data_token):
             else:
                 # update old item
                 history_item = (
-                    json.loads(dict_items[item_id][8]) if dict_items[item_id][8] else []
+                    json.loads(dict_items[item_id]["history"]) if dict_items[item_id]["history"] else []
                 )
                 if len(history_item) <= 0:
                     flag, error, result = (
@@ -331,7 +331,7 @@ def delete_quotation_activity_from_api(data, data_token):
     errors = []
     results = []
     for item in items:
-        flag, error, result = delete_quotation_activity_item(item[0])
+        flag, error, result = delete_quotation_activity_item(item["qa_item_id"])
         flags.append(flag)
         errors.append(str(error))
         results.append(result)
