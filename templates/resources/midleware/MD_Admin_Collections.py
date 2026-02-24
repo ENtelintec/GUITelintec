@@ -225,6 +225,7 @@ def update_quotation_activity_from_api(data, data_token):
         }, 400
     else:
         msg += "Error al actualizar ciertos ítems de la actividad de cotización"
+    print(history)
     history.append(
         {
             timestamp: timestamp,
