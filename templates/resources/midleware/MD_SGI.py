@@ -886,7 +886,7 @@ def create_voucher_vehicle_attachment_api(data, data_token):
         }, 400
     voucher_data = []
     for item in result:
-        if item[0] == data["id_voucher"]:
+        if int(item[0]) == int(data["id_voucher"]):
             voucher_data = item
             break
     if len(voucher_data) <= 0:
