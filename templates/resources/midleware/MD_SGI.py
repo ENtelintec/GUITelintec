@@ -895,6 +895,7 @@ def create_voucher_vehicle_attachment_api(data, data_token):
             "msg": "Error at getting checklist vehicular by id: voucher not found",
             "error": str(voucher_data),
         }, 400
+    date_voucher = voucher_data[2]
     history = json.loads(voucher_data[19])
     # reconocer el tipo de archivo [pdf, image, zip]
     filepath_down = data["filepath"]
@@ -906,7 +907,7 @@ def create_voucher_vehicle_attachment_api(data, data_token):
             400,
         )
     # create name vouchers_vehicles/year/month/day/filename
-    path_aws = f"checklistV/{timestamp.strftime('%Y/%m/%d/')}{data['filename']}"
+    path_aws = f"checklistV/{date_voucher.strftime('%Y/%m/%d/')}{data['filename']}"
     s3_client = boto3.client("s3")
     bucket_name = secrets.get("S3_CH_BUCKET")
 
