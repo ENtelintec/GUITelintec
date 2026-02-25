@@ -115,7 +115,7 @@ def insert_activity_report(
     general_description: str,
     comments: str,
     quotation_id: int,
-    history: dict,
+    history: list,
     status: int = 0,
 ):
     sql = (
@@ -146,6 +146,17 @@ def insert_activity_report(
     return flag, e, out
 
 
+def update_items_quotation_w_report(report_id, id_quotation):
+    sql = (
+        "UPDATE sql_telintec_mod_admin.quotation_activity_items "
+        "SET report_id=%s "
+        "WHERE quotation_id=%s"
+    )
+    val = (report_id, id_quotation)
+    flag, e, out = execute_sql(sql, val, 3)
+    return flag, e, out
+
+
 def update_activity_report(
     report_id: int,
     date: str,
@@ -162,7 +173,7 @@ def update_activity_report(
     comments: str,
     quotation_id: int,
     status: int,
-    history: dict,
+    history: list,
 ):
     sql = (
         "UPDATE sql_telintec_mod_admin.activity_reports "
@@ -259,7 +270,7 @@ def update_quotation_activity_item(
     )
     flag, e, out = execute_sql(sql, val, 3)
     return flag, e, out
-
+    
 
 def delete_quotation_activity_item(qa_item_id: int):
     sql = "DELETE FROM sql_telintec_mod_admin.quotation_activity_items WHERE qa_item_id=%s"
@@ -309,5 +320,49 @@ def get_quotation_activity_by_id(id_quotation):
         execute_sql(sql, val, 1)
         if id_quotation is not None
         else execute_sql(sql, val, 2)
+    )
+    return flag, e, out
+
+
+def get_report_activity_by_id(id_report: int | None):
+    sql = (
+        "SELECT "
+        "ar.id, "
+        "ar.date, "
+        "ar.folio, "
+        "ar.client_id, "
+        "ar.client_company_name, "
+        "ar.client_contact_name, "
+        "ar.client_phone, "
+        "ar.client_email, "
+        "ar.plant, "
+        "ar.area, "
+        "ar.location, "
+        "ar.general_description, "
+        "ar.comments, "
+        "ar.quotation_id, "
+        "ar.status, "
+        "ar.history, "
+        "JSON_ARRAYAGG("
+        "JSON_OBJECT("
+        " 'qa_item_id', qai.qa_item_id, "
+        " 'quotation_id', qai.quotation_id, "
+        " 'report_id', qai.report_id, "
+        " 'item_c_id', qai.item_c_id, "
+        " 'description', qai.description, "
+        " 'udm', qai.udm, "
+        " 'quantity', qai.quantity, "
+        " 'unit_price', qai.unit_price, "
+        " 'line_total', qai.line_total, "
+        " 'history', qai.history "
+        ")) AS items "
+        "FROM sql_telintec_mod_admin.activity_reports AS ar "
+        "LEFT JOIN sql_telintec_mod_admin.quotation_activity_items AS qai ON ar.id = qai.report_id "
+        "WHERE( ar.id = %s  OR %s IS NULL)"
+        "GROUP BY ar.id"
+    )
+    val = (id_report, id_report)
+    flag, e, out = (
+        execute_sql(sql, val, 1) if id_report is not None else execute_sql(sql, val, 2)
     )
     return flag, e, out

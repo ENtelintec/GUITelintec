@@ -1,3 +1,12 @@
+from templates.controllers.activities.remisions_controller import update_activity_report
+from templates.controllers.activities.remisions_controller import (
+    get_report_activity_by_id,
+)
+from templates.controllers.activities.remisions_controller import delete_activity_report
+from templates.controllers.activities.remisions_controller import (
+    update_items_quotation_w_report,
+)
+from templates.controllers.activities.remisions_controller import insert_activity_report
 from templates.controllers.activities.remisions_controller import (
     delete_quotation_activity,
     delete_quotation_activity_item,
@@ -9,7 +18,6 @@ from templates.controllers.activities.remisions_controller import (
 from templates.controllers.activities.remisions_controller import (
     insert_quotation_activity,
 )
-from templates.controllers.contracts.remision_controller import delete_remission_item
 from templates.controllers.contracts.contracts_controller import (
     get_contract_and_items_from_number,
 )
@@ -22,16 +30,6 @@ import pytz
 
 from static.constants import log_file_admin, timezone_software, format_timestamps
 from templates.Functions_Utils import create_notification_permission
-from templates.controllers.contracts.remision_controller import (
-    create_remission,
-    create_remission_item,
-    delete_remission,
-    update_remission,
-    get_remission_items,
-    update_remission_item,
-    delete_remission_items_by_remission,
-    fetch_remissions_with_items,
-)
 from templates.misc.Functions_Files import write_log_file
 
 __author__ = "Edisson Naula"
@@ -181,7 +179,9 @@ def update_quotation_activity_from_api(data, data_token):
             else:
                 # update old item
                 history_item = (
-                    json.loads(dict_items[item_id]["history"]) if dict_items[item_id]["history"] else []
+                    json.loads(dict_items[item_id]["history"])
+                    if dict_items[item_id]["history"]
+                    else []
                 )
                 if len(history_item) <= 0:
                     flag, error, result = (
@@ -363,294 +363,590 @@ def delete_quotation_activity_from_api(data, data_token):
     return {"data": result, "msg": "Ok"}, 200
 
 
-def create_remission_items_from_api(products: list, id_remission: int):
-    flags, errors, results = [], [], []
-    for item in products:
-        try:
-            flag, error, id_item = create_remission_item(
-                remission_id=id_remission,
-                description=item.get("description", ""),
-                quantity=item.get("quantity", 0),
-                udm=item.get("udm", ""),
-                price_unit=item.get("price_unit", 0),
-                quotation_item_id=item.get("quotation_item_id", None),
+def create_report_activity_from_api(data, data_token):
+    timezone = pytz.timezone(timezone_software)
+    timestamp = datetime.now(pytz.utc).astimezone(timezone).strftime(format_timestamps)
+    user = data_token.get("emp_id", "desconocido")
+    history_report = [
+        {
+            timestamp: timestamp,
+            "user": user,
+            "action": "Creación",
+            "comment": "Creación de reporte de actividad.",
+        }
+    ]
+    # create quotation activity
+    flag, error, id_report = insert_activity_report(
+        date=data["date"],
+        folio=data["folio"],
+        client_id=data["client_id"],
+        client_company_name=data["client_company_name"],
+        client_contact_name=data["client_contact_name"],
+        client_phone=data["client_phone"],
+        client_email=data["client_email"],
+        plant=data["plant"],
+        area=data["area"],
+        location=data["location"],
+        general_description=data["general_description"],
+        comments=data["comments"],
+        quotation_id=data["quotation_id"],
+        history=history_report,
+    )
+    if not flag:
+        return {
+            "data": None,
+            "msg": "Error al crear reporte de actividad",
+            "error": str(error),
+        }, 400
+    if not isinstance(id_report, int):
+        return {
+            "data": None,
+            "msg": "Error al crear reporte de actividad, id_report no es un entero",
+            "error": str(id_report),
+        }, 400
+    flag_list = []
+    errors = []
+    results = []
+    if data["quotation_id"] is not None:
+        flag, error, result = update_items_quotation_w_report(
+            id_report, data["quotation_id"]
+        )
+        flag_list.append(flag)
+        errors.append(str(error))
+        results.append(result)
+    else:
+        # create items quoatation from report
+        history_item = [
+            {
+                timestamp: timestamp,
+                "user": user,
+                "action": "Creacion",
+                "comment": "Creación de ítem de actividad de cotización.",
+            }
+        ]
+        for item in data["items"]:
+            flag, error, id_item = insert_quotation_activity_item(
+                quotation_id=None,
+                report_id=id_report,
+                description=item["description"],
+                udm=item["udm"],
+                quantity=item["quantity"],
+                unit_price=item["unit_price"],
+                history=history_item,
+                item_c_id=item.get("item_contract_id", None),
             )
-            flags.append(flag)
+            flag_list.append(flag)
             errors.append(str(error))
             results.append(id_item)
-        except Exception as e:
-            flags.append(False)
-            errors.append(str(e))
-            results.append(None)
-
-    return flags, errors, results
-
-
-def create_remission_from_api(data, data_token):
-    # Extraer campos clave del metadata
-    remission_code = data["metadata"].pop("remission_code", "error rcode")
-    client_id = data["metadata"].pop("client_id", 50)
-    emission = data["metadata"].pop("emission", "error edate")
-    status = data["metadata"].pop("status", 0)
-    user = data_token.get("emp_id", "desconocido")
-
-    msg = ""
-    contract_id = data.get("contract_id", None)
-    if not contract_id:
-        return {
-            "data": "No se encontró contrato asociado para la remisión",
-            "error": "Falta contract_id en metadata",
-            "msg": "Error al crear remisión",
-        }, 400
-
-    # Crear la remisión
-    flag, error, id_remission = create_remission(
-        remission_code,
-        contract_id,
-        client_id,
-        emission,
-        data["metadata"],
-        user,
-        status,
-    )
-
-    if not flag:
-        return {
-            "data": "No fue posible crear la remisión",
-            "error": error,
-            "msg": "Error al crear remisión",
-        }, 400
-
-    # Crear ítems de la remisión
-    flag_list, error_list, result_list = create_remission_items_from_api(
-        data["products"],
-        id_remission,  # pyrefly: ignore
-    )
-
     if flag_list.count(True) == len(flag_list):
-        msg += "\nItems de remisión creados correctamente"
+        msg = "Reporte de actividad creado correctamente con id: " + str(id_report)
+        if data["quotation_id"] is not None:
+            msg += " y items de cotización actualizados correctamente"
+        else:
+            msg += " y items de cotización creados correctamente"
     elif flag_list.count(False) == len(flag_list):
-        flag, error_r, result_r = delete_remission(id_remission)  # pyrefly: ignore
+        flag, error, result = delete_activity_report(id_report)
+        msg = "Error al crear items de cotización. Reporte eliminado."
         return {
-            "data": result_list,
-            "error": error_list + [error_r],
-            "msg": "Error al crear ítems. Remisión eliminada.",
+            "data": results,
+            "error": errors + [error],
+            "msg": msg,
         }, 400
     else:
-        msg += "\nError al crear ciertos ítems de la remisión"
-
-    msg += f"\nRemisión creada con ID-{id_remission} por el empleado {user}"
-    create_notification_permission(msg, ["administracion"], "Remisión Creada", user, 0)
+        msg = "Reporte de actividad creado con id: " + str(id_report)
+        if data["quotation_id"] is not None:
+            msg += ", pero error al actualizar ciertos items de cotización"
+        else:
+            msg += ", pero error al crear ciertos items de cotización"
+    create_notification_permission(
+        msg, ["administracion"], "Reporte de actividad creado", user, 0
+    )
     write_log_file(log_file_admin, msg)
-
-    return {"data": result_list, "msg": "Ok"}, 201
-
-
-def update_remission_items_from_api(
-    items_to_update: list, id_remission: int, items_to_create: list
-):
-    flags, errors, results, flags_operation = [], [], [], []
-    for item in items_to_update:
-        # Ítem existente → actualizar
-        flag, error, result = update_remission_item(
-            id_item=item.get("id"),
-            description=item.get("description"),
-            quantity=item.get("quantity"),
-            udm=item.get("udm"),
-            price_unit=item.get("price_unit"),
-            quotation_item_id=item.get("quotation_item_id"),
-        )
-        flags.append(flag)
-        errors.append(str(error))
-        results.append(result)
-        flags_operation.append("update")
-    for item in items_to_create:
-        # Ítem nuevo → crear
-        flag, error, result = create_remission_item(
-            remission_id=id_remission,
-            description=item.get("description", ""),
-            quantity=item.get("quantity", 0),
-            udm=item.get("udm", ""),
-            price_unit=item.get("price_unit", 0),
-            quotation_item_id=item.get("quotation_item_id", None),
-        )
-        flags.append(flag)
-        errors.append(str(error))
-        results.append(result)
-        flags_operation.append("create")
-
-    return flags, errors, results, flags_operation
+    return {"data": results, "msg": "Ok"}, 201
 
 
-def update_remission_from_api(data, data_token):
-    msg = ""
-    id_remission = data["id"]
-    user = data_token.get("emp_id", 0)
-
-    # Inicializar trazabilidad por ítem
-    item_changes = {
-        "created": [],
-        "updated": [],
-        "failed": [],
-    }
-
-    items_to_delete = data.get("items_to_delete", [])
-    # Eliminar ítems marcados para eliminación
-    for item in items_to_delete:
-        item_id = item.get("id", None)
-        if item_id:
-            flag, error, result = delete_remission_item(item_id)
-            if flag:
-                item_changes["updated"].append(item_id)
-            else:
-                item_changes["failed"].append({"item": item, "error": str(error)})
-    # Obtener ítems actuales de la remisión
-    flag, error, result = get_remission_items(id_remission)
+def get_report_activity_from_api(id_report: int | None, data_token):
+    if id_report is not None and id_report <= 0:
+        id_report = None
+    flag, error, result = get_report_activity_by_id(id_report)
     if not flag:
         return {"data": None, "msg": str(error)}, 400
-
-    dict_items = {item[0]: item for item in result}  # pyrefly: ignore
-    items = data["items"]
-    new_items = [
-        item
-        for item in items
-        if item.get("id", -1) == -1 or item.get("id") not in dict_items
-    ]
-    items_to_update = [
-        item
-        for item in items
-        if item.get("id", -1) != -1 and item.get("id") in dict_items
-    ]
-    # Actualizar y crear ítems según corresponda
-    flag_list, error_list, result_list, flags_operation = (
-        update_remission_items_from_api(new_items, id_remission, items_to_update)
-    )
-    for i, flag in enumerate(flag_list):
-        if flag:
-            if flags_operation[i] == "update":
-                item_changes["updated"].append(items[i].get("id"))
-            else:
-                item_changes["created"].append(result_list[i])
-        else:
-            item_changes["failed"].append({"item": items[i], "error": error_list[i]})
-    msg += (
-        f"Ítems actualizados para la remisión ID-{id_remission} por el empleado {user}"
-    )
-
-    # Validación de ítems
-    if flag_list.count(True) == len(flag_list):
-        msg += f"\nTodos los ítems fueron procesados correctamente ({len(flag_list)} ítems)"
-    elif flag_list.count(False) == len(flag_list):
+    if not (isinstance(result, list) or isinstance(result, tuple)):
         return {
-            "data": result_list,
-            "error": error_list,
-            "msg": "Error al actualizar ítems.",
+            "data": None,
+            "msg": "No se encontraron reportes de actividad validos",
         }, 400
-    else:
-        msg += (
-            f"\nError parcial: {len(item_changes['failed'])} ítems fallaron"
-            + str(error_list)
-            + "\n"
-            + str(result_list)
+    if isinstance(result, tuple):
+        result = [result]
+    data_out = []
+    for item in result:
+        data_out.append(
+            {
+                "id": item[0],
+                "date": item[1].strftime(format_timestamps)
+                if not isinstance(item[1], str)
+                else item[1],
+                "folio": item[2],
+                "client_id": item[3],
+                "client_company_name": item[4],
+                "client_contact_name": item[5],
+                "client_phone": item[6],
+                "client_email": item[7],
+                "plant": item[8],
+                "area": item[9],
+                "location": item[10],
+                "general_description": item[11],
+                "comments": item[12],
+                "quotation_id": item[13],
+                "history": json.loads(item[14]) if item[14] else [],
+                "items": json.loads(item[15]) if item[15] else [],
+            }
         )
+    return {"data": data_out, "msg": "Ok"}, 200
 
-    # Extraer campos clave
-    remission_code = data["metadata"].pop("remission_code", "error rcode")
-    client_id = data["metadata"].pop("client_id", 50)
-    emission = data["metadata"].pop("emission", "error edate")
-    status = data["metadata"].pop("status", 0)
-    time_zone = pytz.timezone(timezone_software)
-    timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
 
-    history = data.get("history", [])
+def update_report_activity_from_api(data, data_token):
+    timezone = pytz.timezone(timezone_software)
+    timestamp = datetime.now(pytz.utc).astimezone(timezone).strftime(format_timestamps)
+    user = data_token.get("emp_id", "desconocido")
+    msg = ""
+
+    # Retrieve report activity registry:
+    flag, error, result_ra = get_report_activity_by_id(data["id"])
+    if not flag:
+        return {
+            "data": None,
+            "msg": "Error al obtener registro de reporte de actividad",
+            "error": str(error),
+        }, 400
+
+    history = result_ra[14]  # pyrefly: ignore
+    history = json.loads(history) if history else []
     history.append(
         {
-            "timestamp": timestamp,
+            timestamp: timestamp,
             "user": user,
-            "action": "update",
-            "comment": f"Actualizar remisión. Ítems creados: {len(item_changes['created'])}, "
-            f"actualizados: {len(item_changes['updated'])}, fallidos: {len(item_changes['failed'])}",
+            "action": "Actualización",
+            "comment": "Actualización de reporte de actividad.",
         }
     )
 
-    # Actualizar remisión
-    flag, error, result = update_remission(
-        id_remission, data["metadata"], history=history, status=status
+    # Update report activity:
+    flag, error, result = update_activity_report(
+        report_id=data["id"],
+        date=data["date"],
+        folio=data["folio"],
+        client_id=data["client_id"],
+        client_company_name=data["client_company_name"],
+        client_contact_name=data["client_contact_name"],
+        client_phone=data["client_phone"],
+        client_email=data["client_email"],
+        plant=data["plant"],
+        area=data["area"],
+        location=data["location"],
+        general_description=data["general_description"],
+        comments=data["comments"],
+        quotation_id=data["quotation_id"],
+        history=history,
+        status=data["status"],
     )
     if not flag:
-        return {"data": None, "msg": str(error)}, 400
+        return {
+            "data": None,
+            "msg": "Error al actualizar registro de reporte de actividad",
+            "error": str(error),
+        }, 400
+    msg = "Reporte de actividad actualizado correctamente con id: " + str(data["id"])
 
-    msg += f"\nRemisión actualizada con ID-{id_remission} por el empleado {user}"
+    # Update items:
+    flag_list = []
+    errors = []
+    results = []
+    for item in data["items"]:
+        if "qa_item_id" in item and item["qa_item_id"] is not None:
+            flag, error, result = update_quotation_activity_item(
+                item["qa_item_id"],
+                item["quotation_id"],
+                data["id"],
+                item.get("item_contract_id", None),
+                item["description"],
+                item["udm"],
+                item["quantity"],
+                item["unit_price"],
+                item["history"],
+            )
+        else:
+            flag, error, result = insert_quotation_activity_item(
+                quotation_id=None,
+                report_id=data["id"],
+                description=item["description"],
+                udm=item["udm"],
+                quantity=item["quantity"],
+                unit_price=item["unit_price"],
+                history=item["history"],
+                item_c_id=item.get("item_contract_id", None),
+            )
+        flag_list.append(flag)
+        errors.append(str(error))
+        results.append(result)
+    if flag_list.count(True) == len(flag_list):
+        msg += " y items de de reporte actualizados correctamente"
+    elif flag_list.count(False) == len(flag_list):
+        msg += " pero error al actualizar ciertos items de reporte"
+    else:
+        msg += " pero error al actualizar ciertos items de reporte"
     create_notification_permission(
-        msg, ["administracion"], "Remisión Actualizada", user, 0
+        msg, ["administracion"], "Reporte de actividad actualizado", user, 0
     )
     write_log_file(log_file_admin, msg)
-
-    return {
-        "data": result,
-        "error": error_list,
-        "msg": msg,
-        "changes": item_changes,
-    }, 200
+    return {"data": result, "msg": "Ok", "error": None}, 200
 
 
-def delete_remission_from_api(data, data_token):
-    id_remission = data["id"]
+def delete_report_activity_from_api(data, data_token):
+    id_report = data["id"]
     user = data_token.get("emp_id", 0)
+    msg = ""
 
-    # Eliminar ítems vinculados a la remisión
-    flag, error, result = delete_remission_items_by_remission(id_remission)
+    # Retrieve report activity registry:
+    flag, error, result_ra = get_report_activity_by_id(id_report)
     if not flag:
-        return {"data": None, "msg": f"Error al eliminar ítems: {error}"}, 400
+        return {
+            "data": None,
+            "msg": "Error al obtener registro de reporte de actividad",
+            "error": str(error),
+        }, 400
 
-    # Eliminar la remisión
-    flag, error, result = delete_remission(id_remission)
+    # Delete items:
+    items = json.loads(result_ra[15]) if result_ra[15] else []  # pyrefly: ignore
+    if len(items) <= 0:
+        return {
+            "data": None,
+            "msg": "Error al obtener ítems del reporte",
+            "error": str(error),
+        }, 400
+    flags = []
+    errors = []
+    results = []
+    for item in items:
+        flag, error, result = delete_quotation_activity_item(item["qa_item_id"])
+        flags.append(flag)
+        errors.append(str(error))
+        results.append(result)
+    if flags.count(True) == len(flags):
+        msg += "Ítems de reporte de actividad eliminados correctamente"
+    elif flags.count(False) == len(flags):
+        return {
+            "data": results,
+            "error": errors,
+            "msg": "Error al eliminar ítems de reporte de actividad",
+        }, 400
+    else:
+        msg += "Error al eliminar ciertos ítems del reporte de actividad"
+
+    # Delete report activity:
+    flag, error, result = delete_activity_report(id_report)
     if not flag:
-        return {"data": None, "msg": f"Error al eliminar remisión: {error}"}, 400
-
-    msg = f"Remisión eliminada con ID-{id_remission} por el empleado {user}"
+        return {
+            "data": None,
+            "msg": "Error al eliminar registro de reporte de actividad",
+            "error": str(error),
+        }, 400
+    msg += f"Reporte de actividad eliminado correctamente con id: {id_report}"
     create_notification_permission(
-        msg, ["administracion"], "Remisión Eliminada", user, 0
+        msg, ["administracion"], "Reporte de actividad eliminado", user, 0
     )
     write_log_file(log_file_admin, msg)
     return {"data": result, "msg": "Ok"}, 200
 
 
-def fetch_remissions_by_status_db(status: str, data_token: dict):
-    flag, error, data = fetch_remissions_with_items(status)
+# def create_remission_items_from_api(products: list, id_remission: int):
+#     flags, errors, results = [], [], []
+#     for item in products:
+#         try:
+#             flag, error, id_item = create_remission_item(
+#                 remission_id=id_remission,
+#                 description=item.get("description", ""),
+#                 quantity=item.get("quantity", 0),
+#                 udm=item.get("udm", ""),
+#                 price_unit=item.get("price_unit", 0),
+#                 quotation_item_id=item.get("quotation_item_id", None),
+#             )
+#             flags.append(flag)
+#             errors.append(str(error))
+#             results.append(id_item)
+#         except Exception as e:
+#             flags.append(False)
+#             errors.append(str(e))
+#             results.append(None)
 
-    if not flag:
-        return {"data": [], "msg": str(error)}, 400
+#     return flags, errors, results
 
-    data_out = []
-    for item in data:  # pyrefly: ignore
-        metadata = json.loads(item[5]) if item[5] else {}
-        contract_id = item[6]
-        items = json.loads(item[7]) if item[7] else []
 
-        data_out.append(
-            {
-                "id": item[0],
-                "code": item[1],
-                "client_id": item[2],
-                "contract_id": contract_id,
-                "emission": item[3].strftime(format_timestamps)
-                if not isinstance(item[3], str)
-                else item[3],
-                "status": item[4],
-                "user": metadata.get("user", ""),
-                "planta": metadata.get("planta", ""),
-                "area": metadata.get("area", ""),
-                "location": metadata.get("location", ""),
-                "email": metadata.get("email", ""),
-                "phone": metadata.get("phone", ""),
-                "observations": metadata.get("observations", ""),
-                "printed": metadata.get("printed", False),
-                "items": items,
-            }
-        )
+# def create_remission_from_api(data, data_token):
+#     # Extraer campos clave del metadata
+#     remission_code = data["metadata"].pop("remission_code", "error rcode")
+#     client_id = data["metadata"].pop("client_id", 50)
+#     emission = data["metadata"].pop("emission", "error edate")
+#     status = data["metadata"].pop("status", 0)
+#     user = data_token.get("emp_id", "desconocido")
 
-    return {"data": data_out, "msg": "Ok"}, 200
+#     msg = ""
+#     contract_id = data.get("contract_id", None)
+#     if not contract_id:
+#         return {
+#             "data": "No se encontró contrato asociado para la remisión",
+#             "error": "Falta contract_id en metadata",
+#             "msg": "Error al crear remisión",
+#         }, 400
+
+#     # Crear la remisión
+#     flag, error, id_remission = create_remission(
+#         remission_code,
+#         contract_id,
+#         client_id,
+#         emission,
+#         data["metadata"],
+#         user,
+#         status,
+#     )
+
+#     if not flag:
+#         return {
+#             "data": "No fue posible crear la remisión",
+#             "error": error,
+#             "msg": "Error al crear remisión",
+#         }, 400
+
+#     # Crear ítems de la remisión
+#     flag_list, error_list, result_list = create_remission_items_from_api(
+#         data["products"],
+#         id_remission,  # pyrefly: ignore
+#     )
+
+#     if flag_list.count(True) == len(flag_list):
+#         msg += "\nItems de remisión creados correctamente"
+#     elif flag_list.count(False) == len(flag_list):
+#         flag, error_r, result_r = delete_remission(id_remission)  # pyrefly: ignore
+#         return {
+#             "data": result_list,
+#             "error": error_list + [error_r],
+#             "msg": "Error al crear ítems. Remisión eliminada.",
+#         }, 400
+#     else:
+#         msg += "\nError al crear ciertos ítems de la remisión"
+
+#     msg += f"\nRemisión creada con ID-{id_remission} por el empleado {user}"
+#     create_notification_permission(msg, ["administracion"], "Remisión Creada", user, 0)
+#     write_log_file(log_file_admin, msg)
+
+#     return {"data": result_list, "msg": "Ok"}, 201
+
+
+# def update_remission_items_from_api(
+#     items_to_update: list, id_remission: int, items_to_create: list
+# ):
+#     flags, errors, results, flags_operation = [], [], [], []
+#     for item in items_to_update:
+#         # Ítem existente → actualizar
+#         flag, error, result = update_remission_item(
+#             id_item=item.get("id"),
+#             description=item.get("description"),
+#             quantity=item.get("quantity"),
+#             udm=item.get("udm"),
+#             price_unit=item.get("price_unit"),
+#             quotation_item_id=item.get("quotation_item_id"),
+#         )
+#         flags.append(flag)
+#         errors.append(str(error))
+#         results.append(result)
+#         flags_operation.append("update")
+#     for item in items_to_create:
+#         # Ítem nuevo → crear
+#         flag, error, result = create_remission_item(
+#             remission_id=id_remission,
+#             description=item.get("description", ""),
+#             quantity=item.get("quantity", 0),
+#             udm=item.get("udm", ""),
+#             price_unit=item.get("price_unit", 0),
+#             quotation_item_id=item.get("quotation_item_id", None),
+#         )
+#         flags.append(flag)
+#         errors.append(str(error))
+#         results.append(result)
+#         flags_operation.append("create")
+
+#     return flags, errors, results, flags_operation
+
+
+# def update_remission_from_api(data, data_token):
+#     msg = ""
+#     id_remission = data["id"]
+#     user = data_token.get("emp_id", 0)
+
+#     # Inicializar trazabilidad por ítem
+#     item_changes = {
+#         "created": [],
+#         "updated": [],
+#         "failed": [],
+#     }
+
+#     items_to_delete = data.get("items_to_delete", [])
+#     # Eliminar ítems marcados para eliminación
+#     for item in items_to_delete:
+#         item_id = item.get("id", None)
+#         if item_id:
+#             flag, error, result = delete_remission_item(item_id)
+#             if flag:
+#                 item_changes["updated"].append(item_id)
+#             else:
+#                 item_changes["failed"].append({"item": item, "error": str(error)})
+#     # Obtener ítems actuales de la remisión
+#     flag, error, result = get_remission_items(id_remission)
+#     if not flag:
+#         return {"data": None, "msg": str(error)}, 400
+
+#     dict_items = {item[0]: item for item in result}  # pyrefly: ignore
+#     items = data["items"]
+#     new_items = [
+#         item
+#         for item in items
+#         if item.get("id", -1) == -1 or item.get("id") not in dict_items
+#     ]
+#     items_to_update = [
+#         item
+#         for item in items
+#         if item.get("id", -1) != -1 and item.get("id") in dict_items
+#     ]
+#     # Actualizar y crear ítems según corresponda
+#     flag_list, error_list, result_list, flags_operation = (
+#         update_remission_items_from_api(new_items, id_remission, items_to_update)
+#     )
+#     for i, flag in enumerate(flag_list):
+#         if flag:
+#             if flags_operation[i] == "update":
+#                 item_changes["updated"].append(items[i].get("id"))
+#             else:
+#                 item_changes["created"].append(result_list[i])
+#         else:
+#             item_changes["failed"].append({"item": items[i], "error": error_list[i]})
+#     msg += (
+#         f"Ítems actualizados para la remisión ID-{id_remission} por el empleado {user}"
+#     )
+
+#     # Validación de ítems
+#     if flag_list.count(True) == len(flag_list):
+#         msg += f"\nTodos los ítems fueron procesados correctamente ({len(flag_list)} ítems)"
+#     elif flag_list.count(False) == len(flag_list):
+#         return {
+#             "data": result_list,
+#             "error": error_list,
+#             "msg": "Error al actualizar ítems.",
+#         }, 400
+#     else:
+#         msg += (
+#             f"\nError parcial: {len(item_changes['failed'])} ítems fallaron"
+#             + str(error_list)
+#             + "\n"
+#             + str(result_list)
+#         )
+
+#     # Extraer campos clave
+#     remission_code = data["metadata"].pop("remission_code", "error rcode")
+#     client_id = data["metadata"].pop("client_id", 50)
+#     emission = data["metadata"].pop("emission", "error edate")
+#     status = data["metadata"].pop("status", 0)
+#     time_zone = pytz.timezone(timezone_software)
+#     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
+
+#     history = data.get("history", [])
+#     history.append(
+#         {
+#             "timestamp": timestamp,
+#             "user": user,
+#             "action": "update",
+#             "comment": f"Actualizar remisión. Ítems creados: {len(item_changes['created'])}, "
+#             f"actualizados: {len(item_changes['updated'])}, fallidos: {len(item_changes['failed'])}",
+#         }
+#     )
+
+#     # Actualizar remisión
+#     flag, error, result = update_remission(
+#         id_remission, data["metadata"], history=history, status=status
+#     )
+#     if not flag:
+#         return {"data": None, "msg": str(error)}, 400
+
+#     msg += f"\nRemisión actualizada con ID-{id_remission} por el empleado {user}"
+#     create_notification_permission(
+#         msg, ["administracion"], "Remisión Actualizada", user, 0
+#     )
+#     write_log_file(log_file_admin, msg)
+
+#     return {
+#         "data": result,
+#         "error": error_list,
+#         "msg": msg,
+#         "changes": item_changes,
+#     }, 200
+
+
+# def delete_remission_from_api(data, data_token):
+#     id_remission = data["id"]
+#     user = data_token.get("emp_id", 0)
+
+#     # Eliminar ítems vinculados a la remisión
+#     flag, error, result = delete_remission_items_by_remission(id_remission)
+#     if not flag:
+#         return {"data": None, "msg": f"Error al eliminar ítems: {error}"}, 400
+
+#     # Eliminar la remisión
+#     flag, error, result = delete_remission(id_remission)
+#     if not flag:
+#         return {"data": None, "msg": f"Error al eliminar remisión: {error}"}, 400
+
+#     msg = f"Remisión eliminada con ID-{id_remission} por el empleado {user}"
+#     create_notification_permission(
+#         msg, ["administracion"], "Remisión Eliminada", user, 0
+#     )
+#     write_log_file(log_file_admin, msg)
+#     return {"data": result, "msg": "Ok"}, 200
+
+
+# def fetch_remissions_by_status_db(status: str, data_token: dict):
+#     flag, error, data = fetch_remissions_with_items(status)
+
+#     if not flag:
+#         return {"data": [], "msg": str(error)}, 400
+
+#     data_out = []
+#     for item in data:  # pyrefly: ignore
+#         metadata = json.loads(item[5]) if item[5] else {}
+#         contract_id = item[6]
+#         items = json.loads(item[7]) if item[7] else []
+
+#         data_out.append(
+#             {
+#                 "id": item[0],
+#                 "code": item[1],
+#                 "client_id": item[2],
+#                 "contract_id": contract_id,
+#                 "emission": item[3].strftime(format_timestamps)
+#                 if not isinstance(item[3], str)
+#                 else item[3],
+#                 "status": item[4],
+#                 "user": metadata.get("user", ""),
+#                 "planta": metadata.get("planta", ""),
+#                 "area": metadata.get("area", ""),
+#                 "location": metadata.get("location", ""),
+#                 "email": metadata.get("email", ""),
+#                 "phone": metadata.get("phone", ""),
+#                 "observations": metadata.get("observations", ""),
+#                 "printed": metadata.get("printed", False),
+#                 "items": items,
+#             }
+#         )
+
+#     return {"data": data_out, "msg": "Ok"}, 200
 
 
 def fetch_products_contracts(data_token):
