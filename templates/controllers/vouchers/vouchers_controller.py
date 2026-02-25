@@ -324,7 +324,7 @@ def update_voucher_vehicle_files(id_voucher, history, extra_info):
         )
         if not flag_history:
             return flag_history, error_history, rows_changed_history
-    return flag, error, rows_changed
+        return True, None, rows_changed_history
 
 def update_voucher_item(
     id_item,
