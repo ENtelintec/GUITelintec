@@ -332,4 +332,5 @@ class DownloadVehicleVoucherAttachment(Resource):
         if isinstance(data_out.get("path"), str):
             return send_file(data_out["path"], as_attachment=True), code
         else:
+            print(data)
             return {"data": data_out, "msg": "Error at file structure"}, 400

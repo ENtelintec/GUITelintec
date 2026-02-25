@@ -1023,4 +1023,4 @@ def download_voucher_vehicle_attachment_api(data, data_token):
         else:
             return {"data": None, "msg": f"Error downloading file: {str(e)}"}, 400
     # print("Data: ", data, path_aws)
-    return {"path": data["filepath"]}, 200
+    return {"path": path_aws}, 200
