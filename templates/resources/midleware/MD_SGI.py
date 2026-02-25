@@ -986,7 +986,7 @@ def download_voucher_vehicle_attachment_api(data, data_token):
     if len(voucher_data) <= 0:
         return {
             "data": None,
-            "msg": "Error at getting checklist vehicular by id: voucher not found",
+            "msg": f"Error at getting checklist vehicular by id: {data['id_voucher']} not in db",
             "error": str(voucher_data),
         }, 400
     extra_info = json.loads(voucher_data[20])

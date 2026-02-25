@@ -325,7 +325,7 @@ class DownloadVehicleVoucherAttachment(Resource):
         temp_filepath = os.path.join(tempfile.mkdtemp(), filename)
         data["filepath"] = temp_filepath
         data_out, code = download_voucher_vehicle_attachment_api(data, data_token)
-        if isinstance(data_out["path"], str):
+        if isinstance(data_out.get("path"), str):
             return send_file(
                 data_out["path"], as_attachment=True
             ), code
