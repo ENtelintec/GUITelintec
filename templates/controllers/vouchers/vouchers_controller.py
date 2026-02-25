@@ -294,7 +294,7 @@ def update_voucher_general_from_delete(id_voucher, history):
     return flag, error, rows_changed
 
 
-def update_voucher_vehicle_files(id_voucher, history, extra_info):
+def update_voucher_vehicle_files(id_voucher, history, extra_info, status):
     """
     Actualiza el historial y la información extra de un voucher vehicular en la tabla voucher_vehicle.
 
@@ -305,10 +305,10 @@ def update_voucher_vehicle_files(id_voucher, history, extra_info):
     """
     sql = (
         "UPDATE sql_telintec_mod_admin.voucher_vehicle "
-        "SET extra_info = %s"
+        "SET extra_info = %s, status = %s "
         "WHERE id_voucher_general = %s"
     )
-    val = (json.dumps(extra_info), id_voucher)
+    val = (json.dumps(extra_info), status, id_voucher)
     flag, error, rows_changed = execute_sql(sql, val, 3)
     if not flag:
         return flag, error, rows_changed
@@ -325,6 +325,7 @@ def update_voucher_vehicle_files(id_voucher, history, extra_info):
         if not flag_history:
             return flag_history, error_history, rows_changed_history
         return True, None, rows_changed_history
+
 
 def update_voucher_item(
     id_item,
@@ -371,7 +372,7 @@ def update_voucher_item(
 
 
 def delete_voucher_item(id_item: int):
-    sql = "DELETE FROM sql_telintec_mod_admin.voucher_items " "WHERE id_item = %s"
+    sql = "DELETE FROM sql_telintec_mod_admin.voucher_items WHERE id_item = %s"
     val = (id_item,)
     flag, error, rows_changed = execute_sql(sql, val, 3)
     return flag, error, rows_changed
@@ -491,7 +492,7 @@ def delete_items_voucher(id_voucher):
     :param id_voucher: ID del voucher del cual se eliminarán los ítems
     :return: Estado de la operación (éxito/error)
     """
-    sql = "DELETE FROM sql_telintec_mod_admin.voucher_items " "WHERE id_voucher = %s"
+    sql = "DELETE FROM sql_telintec_mod_admin.voucher_items WHERE id_voucher = %s"
     val = (id_voucher,)
     flag, error, rows_changed = execute_sql(sql, val, 3)
     return flag, error, rows_changed
@@ -505,8 +506,7 @@ def delete_voucher_tools(id_voucher):
     :return: Estado de la operación (éxito/error)
     """
     sql = (
-        "DELETE FROM sql_telintec_mod_admin.voucher_tools "
-        "WHERE id_voucher_general = %s"
+        "DELETE FROM sql_telintec_mod_admin.voucher_tools WHERE id_voucher_general = %s"
     )
     val = (id_voucher,)
     flag, error, rows_changed = execute_sql(sql, val, 3)
@@ -549,7 +549,7 @@ def update_state_safety_voucher(id_voucher, user_state, epp_state, storage_state
     return flag, error, rows_changed
 
 
-def get_vouchers_vehicle_with_items(start_date, user=None):
+def get_vouchers_vehicle_with_items(start_date, user=None, id_voucher=None):
     """
     Obtiene vouchers de vehículos desde una fecha específica, incluyendo su metadata e ítems relacionados.
 
@@ -586,15 +586,16 @@ def get_vouchers_vehicle_with_items(start_date, user=None):
         "'observations', vi.observations, "
         "'extra_info', vi.extra_info)"
         ") AS items, "
-        "vg.history, " \
-        "vv.extra_info "
+        "vg.history, "
+        "vv.extra_info, "
+        " vv.status "
         "FROM sql_telintec_mod_admin.voucher_vehicle AS vv "
         "JOIN sql_telintec_mod_admin.vouchers_general AS vg ON vv.id_voucher_general = vg.id_voucher "
         "LEFT JOIN sql_telintec_mod_admin.voucher_items AS vi ON vg.id_voucher = vi.id_voucher "
-        "WHERE (vg.date >= %s) AND (vg.user = %s OR %s IS NULL) "
+        "WHERE (vg.date >= %s) AND ((vg.user = %s OR %s IS NULL) OR (vv.id_voucher_general = %s OR %s IS NULL)) "
         "GROUP BY vv.id_voucher_general"
     )
-    val = (start_date, user, user)
+    val = (start_date, user, user, id_voucher, id_voucher)
     flag, error, vouchers = execute_sql(sql, val, 2)
     return flag, error, vouchers
 
@@ -678,7 +679,7 @@ def update_voucher_vehicle(
     type_v=2,
     received_by=None,
     observations=None,
-    extra_info=None,
+    status=None,
 ):
     """
     Actualiza un registro existente en la tabla voucher_vehicle.
@@ -697,6 +698,8 @@ def update_voucher_vehicle(
     :param type_v: Tipo de vehículo (default=2).
     :param received_by: ID del empleado que recibe el vehículo.
     :param observations: Observaciones generales.
+    :param extra_info: Información adicional sobre el voucher.
+    :param status: Estado del voucher (pendiente, aprobado, rechazado).
     :return: Estado de la operación (éxito/error)
     """
     if accessories is None:
@@ -706,7 +709,7 @@ def update_voucher_vehicle(
         "UPDATE sql_telintec_mod_admin.voucher_vehicle "
         "SET brand = %s, model = %s, color = %s, year = %s, placas = %s, kilometraje = %s, "
         "registration_card = %s, insurance = %s, referendo = %s, accessories = %s, "
-        "type = %s, received_by = %s, observations = %s "
+        "type = %s, received_by = %s, observations = %s, status = %s "
         "WHERE id_voucher_general = %s"
     )
     val = (
@@ -723,6 +726,7 @@ def update_voucher_vehicle(
         type_v,
         received_by,
         observations,
+        status,
         id_voucher_general,
     )
     flag, error, rows_changed = execute_sql(sql, val, 3)
@@ -741,5 +745,23 @@ def delete_voucher_vehicle(id_voucher):
         "WHERE id_voucher_general = %s"
     )
     val = (id_voucher,)
+    flag, error, rows_changed = execute_sql(sql, val, 3)
+    return flag, error, rows_changed
+
+
+def update_voucher_vehicle_status(status, id_voucher_general):
+    """
+    Actualiza el estado de un voucher vehicular en la tabla voucher_vehicle.
+
+    :param status: Nuevo estado del voucher (0: Pendiente, 1: firmado revisado, 2: aceptado, 3: cancelado)
+    :param id_voucher_general: ID del voucher general asociado
+    :return: Estado de la operación (éxito/error)
+    """
+    sql = (
+        "UPDATE sql_telintec_mod_admin.voucher_vehicle "
+        "SET status = %s "
+        "WHERE id_voucher_general = %s"
+    )
+    val = (status, id_voucher_general)
     flag, error, rows_changed = execute_sql(sql, val, 3)
     return flag, error, rows_changed

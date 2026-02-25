@@ -319,6 +319,7 @@ voucher_vehicle_put_model = api.model(
         # Ítems relacionados
         "items": fields.List(fields.Nested(voucher_items_put_model)),
         "history": fields.List(fields.Nested(voucher_history_model)),
+        "status": fields.Integer(required=True, description="Estado del voucher"),
     },
 )
 
@@ -563,6 +564,7 @@ class VoucherVehiclePutForm(Form):
         FormField(ItemsVoucherPutForm, "items"), validators=[], default=[]
     )
     history = FieldList(FormField(VoucherHistoryForm, "history"))
+    status = IntegerField("status", [validators.number_range(min=-1, message="Invalid status")])
 
 
 class VoucherVehicleDeleteForm(Form):
