@@ -305,11 +305,25 @@ def update_voucher_vehicle_files(id_voucher, history, extra_info):
     """
     sql = (
         "UPDATE sql_telintec_mod_admin.voucher_vehicle "
-        "SET extra_info = %s, observations = %s "
+        "SET extra_info = %s"
         "WHERE id_voucher_general = %s"
     )
-    val = (json.dumps(extra_info), json.dumps(history), id_voucher)
+    val = (json.dumps(extra_info), id_voucher)
     flag, error, rows_changed = execute_sql(sql, val, 3)
+    if not flag:
+        return flag, error, rows_changed
+    else:
+        sql_history = (
+            "UPDATE sql_telintec_mod_admin.vouchers_general "
+            "SET history = %s  "
+            "WHERE id_voucher = %s"
+        )
+        val_history = (json.dumps(history), id_voucher)
+        flag_history, error_history, rows_changed_history = execute_sql(
+            sql_history, val_history, 3
+        )
+        if not flag_history:
+            return flag_history, error_history, rows_changed_history
     return flag, error, rows_changed
 
 def update_voucher_item(
