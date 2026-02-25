@@ -992,11 +992,12 @@ def download_voucher_vehicle_attachment_api(data, data_token):
         }, 400
     extra_info = json.loads(voucher_data[20])
     files = extra_info.get("files", [])
-    path_aws = data["filename"]
+    name_file = data["filename"]
     flag_found = False
     for file in files:
-        if file["path"] == path_aws:
+        if file["filename"] == name_file:
             flag_found = True
+            path_aws = file["path"]
             break
     if not flag_found:
         return {"data": None, "msg": "File not found in voucher"}, 400
