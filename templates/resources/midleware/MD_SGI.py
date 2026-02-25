@@ -994,6 +994,7 @@ def download_voucher_vehicle_attachment_api(data, data_token):
     files = extra_info.get("files", [])
     name_file = data["filename"]
     flag_found = False
+    path_aws = ""
     for file in files:
         if file["filename"] == name_file:
             flag_found = True
@@ -1021,5 +1022,5 @@ def download_voucher_vehicle_attachment_api(data, data_token):
             return {"data": None, "msg": f"File not found: {path_aws}"}, 400
         else:
             return {"data": None, "msg": f"Error downloading file: {str(e)}"}, 400
-    print("Data: ", data, path_aws)
+    # print("Data: ", data, path_aws)
     return {"path": data["filepath"]}, 200
