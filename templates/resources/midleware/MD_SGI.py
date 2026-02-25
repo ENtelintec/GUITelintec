@@ -607,6 +607,7 @@ def get_vouchers_vehicle_api(data, data_token):
                 "items": json.loads(item[18]),
                 "history": json.loads(item[19]),
                 "files": extra_info.get("files"),
+                "status": item[21],
             }
         )
     return {"data": data_out, "msg": "Vehicle vouchers retrieved successfully"}, 200
