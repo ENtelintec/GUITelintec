@@ -335,18 +335,18 @@ vehicle_voucher_upload_attachment_model = api.model(
     "VehicleVoucherUploadAttachment",
     {
         "id_voucher": fields.Integer(required=True, description="ID del voucher"),
-    }
+    },
 )
 
 vehicle_voucher_download_att_model = api.model(
     "VehicleVoucherDownloadAttachment",
     {
         "id_voucher": fields.Integer(required=True, description="ID del voucher"),
-        "filename": fields.String(required=True, description="Nombre del archivo a descargar (direccion aws)"),
-    }
+        "filename": fields.String(
+            required=True, description="Nombre del archivo a descargar (direccion aws)"
+        ),
+    },
 )
-
-
 
 
 class ItemsVoucherPostForm(Form):
@@ -419,9 +419,7 @@ class VoucherToolsFormPut(Form):
 
 
 class VoucherToolsFormDelete(Form):
-    id = IntegerField(
-        "id", [InputRequired()]
-    )
+    id = IntegerField("id", [InputRequired()])
     history = FieldList(FormField(VoucherHistoryForm, "history"))
 
 
@@ -473,9 +471,7 @@ class VoucherSafetyFormPut(Form):
 
 
 class VoucherSafetyFormDelete(Form):
-    id = IntegerField(
-        "id", [InputRequired()]
-    )
+    id = IntegerField("id", [InputRequired()])
     history = FieldList(FormField(VoucherHistoryForm, "history"))
 
 
@@ -525,9 +521,18 @@ class VoucherVehiclePostForm(Form):
     year = IntegerField("year", [])
     placas = StringField("placas", [InputRequired()])
     kilometraje = IntegerField("kilometraje", [])
-    registration_card = IntegerField("registration_card", [InputRequired()])
-    insurance = IntegerField("insurance", [InputRequired()])
-    referendo = IntegerField("referendo", [InputRequired()])
+    registration_card = IntegerField(
+        "registration_card",
+        [validators.number_range(min=-1, message="Invalid registration_card state")],
+    )
+    insurance = IntegerField(
+        "insurance",
+        [validators.number_range(min=-1, message="Invalid insurance state")],
+    )
+    referendo = IntegerField(
+        "referendo",
+        [validators.number_range(min=-1, message="Invalid referendo state")],
+    )
     accessories = FieldList(FormField(AccessoryForm, "accessories"))
     observations = StringField("observations", [])
     items = FieldList(
@@ -561,9 +566,7 @@ class VoucherVehiclePutForm(Form):
 
 
 class VoucherVehicleDeleteForm(Form):
-    id = IntegerField(
-        "id", [InputRequired()]
-    )
+    id = IntegerField("id", [InputRequired()])
     history = FieldList(FormField(VoucherHistoryForm, "history"))
 
 

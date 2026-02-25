@@ -1003,7 +1003,6 @@ def download_voucher_vehicle_attachment_api(data, data_token):
     if not flag_found:
         return {"data": None, "msg": "File not found in voucher"}, 400
     s3_client = boto3.client("s3")
-    print("path aws: ", path_aws)
     bucket_name = secrets.get("S3_CH_BUCKET")
     try:
         s3_client.download_file(
@@ -1023,5 +1022,4 @@ def download_voucher_vehicle_attachment_api(data, data_token):
             return {"data": None, "msg": f"File not found: {path_aws}"}, 400
         else:
             return {"data": None, "msg": f"Error downloading file: {str(e)}"}, 400
-    # print("Data: ", data, path_aws)
     return {"path": data["filepath"]}, 200
