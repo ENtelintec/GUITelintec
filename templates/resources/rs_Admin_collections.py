@@ -1,6 +1,16 @@
 # -*- coding: utf-8 -*-
 
 
+from templates.resources.midleware.MD_Admin_Collections import download_report_activity_attachment_api
+from static.Models.api_purchases_models import ReportActivityDownloadAttForm
+from static.Models.api_purchases_models import report_activity_download_att_model
+from templates.resources.midleware.MD_Admin_Collections import (
+    create_activity_report_attachment_api,
+)
+import os
+import tempfile
+from werkzeug.utils import secure_filename
+from static.Models.api_sgi_models import expected_files_attachment
 from templates.resources.midleware.MD_Admin_Collections import get_quotations_from_api
 from templates.resources.midleware.MD_Admin_Collections import (
     delete_quotation_activity_from_api,
@@ -444,6 +454,63 @@ class FetchActivitieReportById(Resource):
             id_report = None
         data_out, code = get_report_activity_from_api(id_report, data_token)
         return data_out, code
+
+
+@ns.route("/activity/report/attachment-<string:id_report>")
+class UploadActivityReportAttachment(Resource):
+    @ns.expect(expected_headers_per, expected_files_attachment)
+    def post(self, id_report):
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["administracion", "operaciones"]
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        if "file" not in request.files:
+            return {"data": "No se detecto un archivo"}, 400
+        file = request.files["file"]
+        if file and file.filename:
+            filename = secure_filename(file.filename)
+            filepath_download = os.path.join(tempfile.mkdtemp(), filename)
+            file.save(filepath_download)
+            data_out, code = create_activity_report_attachment_api(
+                {
+                    "filepath": filepath_download,
+                    "filename": filename,
+                    "id_voucher": id_report,
+                },
+                data_token,
+            )
+            if code != 201:
+                return {"data": data_out, "msg": "Error at file structure"}, 400
+            return {"data": data_out, "msg": f"Ok with filaname: {filename}"}, 201
+        else:
+            return {"msg": "No se subio el archivo"}, 400
+
+
+@ns.route("/voucher/vehicle/attachment/download")
+class DownloadVehicleVoucherAttachment(Resource):
+    @ns.expect(expected_headers_per, report_activity_download_att_model)
+    def post(self):
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["sgi", "voucher"]
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        validator = ReportActivityDownloadAttForm.from_json(  # pyrefly: ignore
+            ns.payload
+        )
+        if not validator.validate():
+            return {"data": validator.errors, "msg": "Error at structure"}, 400
+        data = validator.data
+        filename = data["filename"].split("/")[-1]
+        temp_filepath = os.path.join(tempfile.mkdtemp(), filename)
+        data["filepath"] = temp_filepath
+        data_out, code = download_report_activity_attachment_api(data, data_token)
+        if isinstance(data_out.get("path"), str):
+            return send_file(data_out["path"], as_attachment=True)
+        else:
+            print(data)
+            return {"data": data_out, "msg": "Error at file structure"}, 400
 
 
 # @ns.route("/remission")

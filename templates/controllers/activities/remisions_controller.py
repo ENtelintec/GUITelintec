@@ -355,7 +355,8 @@ def get_report_activity_by_id(id_report: int | None):
         " 'unit_price', qai.unit_price, "
         " 'line_total', qai.line_total, "
         " 'history', qai.history "
-        ")) AS items "
+        ")) AS items, " 
+        "ar.files "
         "FROM sql_telintec_mod_admin.activity_reports AS ar "
         "LEFT JOIN sql_telintec_mod_admin.quotation_activity_items AS qai ON ar.id = qai.report_id "
         "WHERE( ar.id = %s  OR %s IS NULL)"
@@ -366,3 +367,15 @@ def get_report_activity_by_id(id_report: int | None):
         execute_sql(sql, val, 1) if id_report is not None else execute_sql(sql, val, 2)
     )
     return flag, e, out
+
+
+def update_report_activity_files(id_report, history, files, status):
+    sql = (
+        "UPDATE sql_telintec_mod_admin.activity_reports "
+        "SET history=%s, files=%s, status=%s "
+        "WHERE id=%s"
+    )
+    val = (json.dumps(history), json.dumps(files), status, id_report)
+    flag, e, out = execute_sql(sql, val, 3)
+    return flag, e, out
+

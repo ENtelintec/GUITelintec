@@ -1,3 +1,12 @@
+from templates.controllers.activities.remisions_controller import (
+    update_report_activity_files,
+)
+from static.constants import secrets
+import boto3
+from botocore.exceptions import ClientError
+from botocore.exceptions import NoCredentialsError
+from static.constants import log_file_admin_collecions
+from templates.Functions_Utils import create_notification_permission_notGUI
 from templates.controllers.activities.remisions_controller import update_activity_report
 from templates.controllers.activities.remisions_controller import (
     get_report_activity_by_id,
@@ -28,7 +37,7 @@ from datetime import datetime
 
 import pytz
 
-from static.constants import log_file_admin, timezone_software, format_timestamps
+from static.constants import timezone_software, format_timestamps
 from templates.Functions_Utils import create_notification_permission
 from templates.misc.Functions_Files import write_log_file
 
@@ -113,7 +122,7 @@ def create_quotation_activity_from_api(data, data_token):
     else:
         msg += "Error al crear ciertos ítems de la actividad de cotización"
     create_notification_permission(msg, ["administracion"], "Remisión Creada", user, 0)
-    write_log_file(log_file_admin, msg)
+    write_log_file(log_file_admin_collecions, msg)
     return {"data": results, "msg": "Ok"}, 201
 
 
@@ -260,7 +269,7 @@ def update_quotation_activity_from_api(data, data_token):
     create_notification_permission(
         msg, ["administracion"], "Cotización de actividad actualizada", user, 0
     )
-    write_log_file(log_file_admin, msg)
+    write_log_file(log_file_admin_collecions, msg)
     return {"data": result, "msg": "Ok", "error": None}, 200
 
 
@@ -359,7 +368,7 @@ def delete_quotation_activity_from_api(data, data_token):
     create_notification_permission(
         msg, ["administracion"], "Cotización de actividad eliminada", user, 0
     )
-    write_log_file(log_file_admin, msg)
+    write_log_file(log_file_admin_collecions, msg)
     return {"data": result, "msg": "Ok"}, 200
 
 
@@ -461,7 +470,7 @@ def create_report_activity_from_api(data, data_token):
     create_notification_permission(
         msg, ["administracion"], "Reporte de actividad creado", user, 0
     )
-    write_log_file(log_file_admin, msg)
+    write_log_file(log_file_admin_collecions, msg)
     return {"data": results, "msg": "Ok"}, 201
 
 
@@ -598,7 +607,7 @@ def update_report_activity_from_api(data, data_token):
     create_notification_permission(
         msg, ["administracion"], "Reporte de actividad actualizado", user, 0
     )
-    write_log_file(log_file_admin, msg)
+    write_log_file(log_file_admin_collecions, msg)
     return {"data": result, "msg": "Ok", "error": None}, 200
 
 
@@ -655,8 +664,187 @@ def delete_report_activity_from_api(data, data_token):
     create_notification_permission(
         msg, ["administracion"], "Reporte de actividad eliminado", user, 0
     )
-    write_log_file(log_file_admin, msg)
+    write_log_file(log_file_admin_collecions, msg)
     return {"data": result, "msg": "Ok"}, 200
+
+
+def create_activity_report_attachment_api(data, data_token):
+    filename = data["filename"]
+    id_report_name = filename.split("-")[0]
+    try:
+        if (
+            int(id_report_name) != int(data["id_report"])
+            and int(data["id_report"]) <= 0
+        ):
+            return (
+                {
+                    "data": None,
+                    "msg": "El nombre del archivo no corresponde al voucher",
+                },
+                400,
+            )
+    except Exception as e:
+        return (
+            {
+                "data": None,
+                "msg": "Error al procesar el nombre del archivo",
+                "error": str(e),
+            },
+            400,
+        )
+    time_zone = pytz.timezone(timezone_software)
+    # timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
+    timestamp = datetime.now(pytz.utc).astimezone(time_zone)
+    flag, error, result = get_report_activity_by_id(data["id_report"])
+    if not flag:
+        return {
+            "data": None,
+            "msg": "Error at getting report by id",
+            "error": str(error),
+        }, 400
+    if not isinstance(result, list):
+        return {
+            "data": None,
+            "msg": "Error at getting report activity by id: result is not a list",
+            "error": str(result),
+        }, 400
+    report_data = []
+    for item in result:
+        if int(item[0]) == int(data["id_report"]):
+            report_data = item
+            break
+    if len(report_data) <= 0:
+        return {
+            "data": None,
+            "msg": "Error at getting report activity by id: voucher not found",
+            "error": str(report_data),
+        }, 400
+    date_report = report_data[1]
+    history = json.loads(report_data[15])
+    # reconocer el tipo de archivo [pdf, image, zip]
+    filepath_down = data["filepath"]
+    file_extension = filepath_down.split(".")[-1].lower()
+    valid_extension = ["pdf", "jpg", "jpeg", "png", "zip", "webp"]
+    if file_extension not in valid_extension:
+        return (
+            {"data": None, "msg": "Formato de archivo no valido"},
+            400,
+        )
+    # create name vouchers_vehicles/year/month/day/filename
+    path_aws = f"reportActivity/{date_report.strftime('%Y/%m/%d/')}{data['filename']}"
+    s3_client = boto3.client("s3")
+    bucket_name = secrets.get("S3_ADMIN_BUCKET")
+
+    try:
+        s3_client.upload_file(Filename=filepath_down, Bucket=bucket_name, Key=path_aws)
+    except FileNotFoundError:
+        return {"data": None, "msg": "Local file not found"}, 400
+    except NoCredentialsError:
+        return {"data": None, "msg": "AWS credentials not found"}, 400
+    except ClientError as e:
+        error_code = e.response["Error"]["Code"]
+        if error_code == "NoSuchBucket":
+            return {"data": None, "msg": f"Bucket does not exist: {bucket_name}"}, 400
+        elif error_code == "AccessDenied":
+            return {"data": None, "msg": f"Access denied to bucket: {bucket_name}"}, 400
+        else:
+            return {"data": None, "msg": f"AWS error: {str(e)}"}, 400
+    msg = f"Archivo adjunto agregado: {filename} al voucher {data['id_report']} por el empleado {data_token.get('emp_id')}"
+    status = report_data[14]
+    if "firma-realizado" in filename.lower():  # if is sign file change status to 1
+        status = 1
+        msg += " y estado actualizado a (firmado)"
+    if "firma-recibido" in filename.lower():  # if is sign file change status to 1
+        status = 2
+        msg += " y estado actualizado a (aprobado)"
+    history.append(
+        {
+            "timestamp": timestamp.strftime(format_timestamps),
+            "user": data_token.get("emp_id"),
+            "action": "Adjuntar archivo",
+            "comment": msg,
+        }
+    )
+    files = json.loads(report_data[17])
+    files.append(
+        {
+            "filename": data["filename"],
+            "path": path_aws,
+        }
+    )
+    flag, error, rows_updated = update_report_activity_files(
+        data["id_report"], history, status, files
+    )
+    if not flag:
+        return {
+            "data": None,
+            "msg": "Error at updating history report but file uploaded",
+            "error": str(error),
+        }, 400
+    create_notification_permission_notGUI(
+        msg, ["administracion", "operaciones", "sgi"], data_token.get("emp_id"), 0
+    )
+    write_log_file(log_file_admin_collecions, msg)
+    return {"data": path_aws, "msg": msg}, 201
+
+
+def download_report_activity_attachment_api(data, data_token):
+    flag, error, result = get_report_activity_by_id(data["id_report"])
+    if not flag:
+        return {
+            "data": None,
+            "msg": "Error at getting checklist vehicular by id",
+            "error": str(error),
+        }, 400
+    if not isinstance(result, list):
+        return {
+            "data": None,
+            "msg": "Error at getting checklist vehicular by id: result is not a list",
+            "error": str(result),
+        }, 400
+    report_data = []
+    for item in result:
+        if item[0] == data["id_voucher"]:
+            report_data = item
+            break
+    if len(report_data) <= 0:
+        return {
+            "data": None,
+            "msg": f"Error at getting report activity by id: {data['id_voucher']} not in db",
+            "error": str(report_data),
+        }, 400
+    files = json.loads(report_data[17]) if report_data[17] else []
+    name_file = data["filename"]
+    flag_found = False
+    path_aws = ""
+    for file in files:
+        if file["filename"] == name_file:
+            flag_found = True
+            path_aws = file["path"]
+            break
+    if not flag_found:
+        return {"data": None, "msg": "File not found in voucher"}, 400
+    s3_client = boto3.client("s3")
+    bucket_name = secrets.get("S3_ADMIN_BUCKET")
+    try:
+        s3_client.download_file(
+            Bucket=bucket_name, Key=path_aws, Filename=data["filepath"]
+        )
+    except FileNotFoundError:
+        return {"data": None, "msg": "Local file not found"}, 400
+    except NoCredentialsError:
+        return {"data": None, "msg": "AWS credentials not found"}, 400
+    except ClientError as e:
+        error_code = e.response["Error"]["Code"]
+        if error_code == "NoSuchBucket":
+            return {"data": None, "msg": f"Bucket does not exist: {bucket_name}"}, 400
+        elif error_code == "AccessDenied":
+            return {"data": None, "msg": f"Access denied to bucket: {bucket_name}"}, 400
+        elif error_code == "NoSuchKey":
+            return {"data": None, "msg": f"File not found: {path_aws}"}, 400
+        else:
+            return {"data": None, "msg": f"Error downloading file: {str(e)}"}, 400
+    return {"path": data["filepath"]}, 200
 
 
 # def create_remission_items_from_api(products: list, id_remission: int):
@@ -737,7 +925,7 @@ def delete_report_activity_from_api(data, data_token):
 
 #     msg += f"\nRemisión creada con ID-{id_remission} por el empleado {user}"
 #     create_notification_permission(msg, ["administracion"], "Remisión Creada", user, 0)
-#     write_log_file(log_file_admin, msg)
+#     write_log_file(log_file_admin_collecions, msg)
 
 #     return {"data": result_list, "msg": "Ok"}, 201
 
@@ -880,7 +1068,7 @@ def delete_report_activity_from_api(data, data_token):
 #     create_notification_permission(
 #         msg, ["administracion"], "Remisión Actualizada", user, 0
 #     )
-#     write_log_file(log_file_admin, msg)
+#     write_log_file(log_file_admin_collecions, msg)
 
 #     return {
 #         "data": result,
@@ -908,7 +1096,7 @@ def delete_report_activity_from_api(data, data_token):
 #     create_notification_permission(
 #         msg, ["administracion"], "Remisión Eliminada", user, 0
 #     )
-#     write_log_file(log_file_admin, msg)
+#     write_log_file(log_file_admin_collecions, msg)
 #     return {"data": result, "msg": "Ok"}, 200
 
 

@@ -798,6 +798,16 @@ report_activity_delete_model = api.model(
     },
 )
 
+report_activity_download_att_model = api.model(
+    "ReportActivityDownloadAttachment",
+    {
+        "id_report": fields.Integer(required=True, description="ID del reporte"),
+        "filename": fields.String(
+            required=True, description="Nombre del archivo a descargar"
+        ),
+    },
+)
+
 remission_model_insert = api.model(
     "RemissionInsert",
     {
@@ -1306,3 +1316,7 @@ class ReportActivityDeleteForm(Form):
     status = IntegerField(
         "status", [number_range(min=-1, message="Invalid status")], default=-1
     )
+
+class ReportActivityDownloadAttForm(Form):
+    id_report = IntegerField("id_report", [InputRequired()])
+    filename = StringField("filename", [InputRequired()])
