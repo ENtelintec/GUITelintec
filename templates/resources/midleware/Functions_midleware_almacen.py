@@ -90,6 +90,7 @@ def get_all_movements(type_m: str):
             sku,
             supplier,
             codes,
+            description
         ) = item
         reference = json.loads(reference) if reference is not None else None
         codes = json.loads(codes) if codes is not None else []
@@ -112,6 +113,7 @@ def get_all_movements(type_m: str):
                 "sku": sku,
                 "supplier": supplier,
                 "sku_fabricante": sku_fabricante,
+                "description": description,
             }
         )
     return out, 200
