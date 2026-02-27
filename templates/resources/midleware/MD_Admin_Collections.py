@@ -1,8 +1,11 @@
 from templates.controllers.activities.remisions_controller import (
     update_report_activity_files,
 )
-from static.constants import secrets
 import boto3
+import json
+import pytz
+from datetime import datetime
+from static.constants import secrets
 from botocore.exceptions import ClientError
 from botocore.exceptions import NoCredentialsError
 from static.constants import log_file_admin_collecions
@@ -31,11 +34,6 @@ from templates.controllers.contracts.contracts_controller import (
     get_contract_and_items_from_number,
 )
 from templates.resources.midleware.MD_SM import get_iddentifiers_creation_contracts
-
-import json
-from datetime import datetime
-
-import pytz
 
 from static.constants import timezone_software, format_timestamps
 from templates.Functions_Utils import create_notification_permission

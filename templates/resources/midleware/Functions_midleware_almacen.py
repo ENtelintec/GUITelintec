@@ -74,14 +74,6 @@ from templates.resources.midleware.MD_SM import update_sm_item_state_and_invento
 
 def get_all_movements(type_m: str):
     type_m = type_m if type_m in ["entrada", "salida"] else type_m
-    # if "salida" in type_m:
-    #     type_m = "salida"
-    #     flag, error, result = get_movements_type_db(type_m)
-    # elif "entrada" in type_m:
-    #     type_m = "entrada"
-    #     flag, error, result = get_movements_type_db(type_m)
-    # else:
-    #     flag, error, result = get_movements_type_db_all()
     flag, error, result = get_movements_type_db_all(type_m)
     out = []
     if not flag:
