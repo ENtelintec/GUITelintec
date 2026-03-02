@@ -582,6 +582,7 @@ def get_vouchers_vehicle_api(data, data_token):
     data_out = []
     for item in result:
         extra_info = json.loads(item[20])
+        accesories = json.loads(item[15]) if item[15] else []
         data_out.append(
             {
                 "id_voucher_general": item[0],
@@ -601,7 +602,9 @@ def get_vouchers_vehicle_api(data, data_token):
                 "registration_card": item[12],
                 "insurance": item[13],
                 "referendo": item[14],
-                "accessories": json.loads(item[15]),
+                "accessories": accesories
+                if isinstance(accesories, list)
+                else json.loads(accesories),
                 "vehicle_type": item[16],
                 "observations": item[17],
                 "items": json.loads(item[18]),
