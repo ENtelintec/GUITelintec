@@ -1000,7 +1000,7 @@ def create_voucher_vehicle_attachment_api(data, data_token):
     )
     extra_info["files"] = files
     flag, error, rows_updated = update_voucher_vehicle_files(
-        data["id_voucher"], history, status, extra_info
+        data["id_voucher"], history, extra_info, status
     )
     if not flag:
         return {
