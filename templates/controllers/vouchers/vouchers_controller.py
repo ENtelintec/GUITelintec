@@ -703,7 +703,7 @@ def update_voucher_vehicle(
     :return: Estado de la operación (éxito/error)
     """
     if accessories is None:
-        accessories = {}
+        accessories = []
 
     sql = (
         "UPDATE sql_telintec_mod_admin.voucher_vehicle "

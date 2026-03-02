@@ -308,7 +308,6 @@ voucher_vehicle_put_model = api.model(
         "referendo": fields.Integer(
             required=True, description="¿Tiene comprobante de refrendo?"
         ),
-        # Accesorios
         "accessories": fields.List(
             fields.Nested(accessories_vehicles_model),
             required=True,
