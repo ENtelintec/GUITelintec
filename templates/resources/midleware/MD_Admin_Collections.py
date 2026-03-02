@@ -186,7 +186,7 @@ def update_quotation_activity_from_api(data, data_token):
             else:
                 # update old item
                 history_item = (
-                    json.loads(dict_items[item_id]["history"])
+                    dict_items[item_id]["history"]
                     if dict_items[item_id]["history"]
                     else []
                 )
