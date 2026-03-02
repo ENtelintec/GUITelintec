@@ -327,7 +327,6 @@ vehicle_voucher_delete_model = api.model(
     "VehicleVoucherDelete",
     {
         "id": fields.Integer(required=True, description="ID del voucher"),
-        "history": fields.List(fields.Nested(voucher_history_model)),
     },
 )
 
@@ -568,7 +567,6 @@ class VoucherVehiclePutForm(Form):
 
 class VoucherVehicleDeleteForm(Form):
     id = IntegerField("id", [InputRequired()])
-    history = FieldList(FormField(VoucherHistoryForm, "history"))
 
 
 class VehicleVoucherUploadAttachmentForm(Form):

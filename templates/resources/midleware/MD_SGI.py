@@ -825,7 +825,7 @@ def delete_voucher_vehicle_api(data, data_token):
             "msg": "Error at getting vehicle voucher by id: result is not a list or tuple",
             "error": str(voucher_data),
         }, 400
-    status = voucher_data[20]
+    status = voucher_data[0][21]
     if status == 0:  # delete if was not signed
         flag, error, result = delete_voucher_item(data["id"])
         if not flag:
@@ -853,7 +853,7 @@ def delete_voucher_vehicle_api(data, data_token):
     time_zone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
 
-    history = data["history"]
+    history = json.loads(voucher_data[0][19])
     history.append(
         {
             "id_voucher": data["id"],
