@@ -553,9 +553,9 @@ class VoucherVehiclePutForm(Form):
     year = IntegerField("year", [])
     placas = StringField("placas", [InputRequired()])
     kilometraje = IntegerField("kilometraje", [])
-    registration_card = IntegerField("registration_card", [InputRequired()])
-    insurance = IntegerField("insurance", [InputRequired()])
-    referendo = IntegerField("referendo", [InputRequired()])
+    registration_card = IntegerField("registration_card", [validators.number_range(min=-1, message="Invalid state")])
+    insurance = IntegerField("insurance", [validators.number_range(min=-1, message="Invalid state")])
+    referendo = IntegerField("referendo", [validators.number_range(min=-1, message="Invalid state")])
     accessories = FieldList(FormField(AccessoryForm, "accessories"))
     observations = StringField("observations", [])
     items = FieldList(
