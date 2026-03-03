@@ -573,18 +573,21 @@ def update_report_activity_from_api(data, data_token):
     errors = []
     results = []
     for item in data["items"]:
-        if "qa_item_id" in item and item["qa_item_id"] is not None:
-            flag, error, result = update_quotation_activity_item(
-                item["qa_item_id"],
-                item["quotation_id"],
-                data["id"],
-                item.get("item_contract_id", None),
-                item["description"],
-                item["udm"],
-                item["quantity"],
-                item["unit_price"],
-                item["history"],
-            )
+        if item["id"] is not None:
+            if item["is_erased"]==1:
+                flag, error, result = delete_quotation_activity_item(item["id"])
+            else:
+                flag, error, result = update_quotation_activity_item(
+                    item["id"],
+                    item["quotation_id"],
+                    data["id"],
+                    item.get("item_contract_id", None),
+                    item["description"],
+                    item["udm"],
+                    item["quantity"],
+                    item["unit_price"],
+                    item["history"],
+                )
         else:
             flag, error, result = insert_quotation_activity_item(
                 quotation_id=None,
