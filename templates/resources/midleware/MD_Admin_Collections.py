@@ -159,7 +159,7 @@ def update_quotation_activity_from_api(data, data_token):
     if len(items_to_update) <= 0:
         msg += "No hay ítems para actualizar"
     else:
-        dict_items = {item["qa_item_id"]: item for item in items}
+        dict_items = {int(item["qa_item_id"]): item for item in items}
         for new_item in items_to_update:
             item_id = new_item.get("id", 0)
             if item_id <= 0:
@@ -184,38 +184,41 @@ def update_quotation_activity_from_api(data, data_token):
                 )
                 result = id_item
             else:
-                # update old item
-                history_item = (
-                    dict_items[item_id]["history"]
-                    if dict_items[item_id]["history"]
-                    else []
-                )
-                if len(history_item) <= 0:
-                    flag, error, result = (
-                        False,
-                        f"Historial de ítem vacío para item: {item_id}",
-                        None,
-                    )
+                if new_item.get("is_erased", 0) != 0:
+                    flag, error, result = delete_quotation_activity_item(item_id)
                 else:
-                    history_item.append(
-                        {
-                            timestamp: timestamp,
-                            "user": user,
-                            "action": "Actualización",
-                            "comment": "Actualización de ítem de actividad de cotización.",
-                        }
+                    # update old item
+                    history_item = (
+                        dict_items[item_id]["history"]
+                        if dict_items[item_id]["history"]
+                        else []
                     )
-                    flag, error, result = update_quotation_activity_item(
-                        qa_item_id=item_id,
-                        quotation_id=data["id"],
-                        report_id=new_item.get("report_id", None),
-                        item_c_id=new_item.get("client_id", None),
-                        description=new_item["description"],
-                        udm=new_item["udm"],
-                        quantity=new_item["quantity"],
-                        unit_price=new_item["unit_price"],
-                        history=history_item,
-                    )
+                    if len(history_item) <= 0:
+                        flag, error, result = (
+                            False,
+                            f"Historial de ítem vacío para item: {item_id}",
+                            None,
+                        )
+                    else:
+                        history_item.append(
+                            {
+                                timestamp: timestamp,
+                                "user": user,
+                                "action": "Actualización",
+                                "comment": "Actualización de ítem de actividad de cotización.",
+                            }
+                        )
+                        flag, error, result = update_quotation_activity_item(
+                            qa_item_id=item_id,
+                            quotation_id=data["id"],
+                            report_id=new_item.get("report_id", None),
+                            item_c_id=new_item.get("client_id", None),
+                            description=new_item["description"],
+                            udm=new_item["udm"],
+                            quantity=new_item["quantity"],
+                            unit_price=new_item["unit_price"],
+                            history=history_item,
+                        )
             flags.append(flag)
             errors.append(str(error))
             results.append(item_id)
@@ -570,18 +573,21 @@ def update_report_activity_from_api(data, data_token):
     errors = []
     results = []
     for item in data["items"]:
-        if "qa_item_id" in item and item["qa_item_id"] is not None:
-            flag, error, result = update_quotation_activity_item(
-                item["qa_item_id"],
-                item["quotation_id"],
-                data["id"],
-                item.get("item_contract_id", None),
-                item["description"],
-                item["udm"],
-                item["quantity"],
-                item["unit_price"],
-                item["history"],
-            )
+        if item["id"] is not None:
+            if item["is_erased"]==1:
+                flag, error, result = delete_quotation_activity_item(item["id"])
+            else:
+                flag, error, result = update_quotation_activity_item(
+                    item["id"],
+                    item["quotation_id"],
+                    data["id"],
+                    item.get("item_contract_id", None),
+                    item["description"],
+                    item["udm"],
+                    item["quantity"],
+                    item["unit_price"],
+                    item["history"],
+                )
         else:
             flag, error, result = insert_quotation_activity_item(
                 quotation_id=None,
