@@ -576,7 +576,7 @@ def update_report_activity_from_api(data, data_token):
     errors = []
     results = []
     for item in data["items"]:
-        if item["id"] is not None:
+        if item["id"] is not None and item["id"]>0:
             if item["is_erased"]==1:
                 flag, error, result = delete_quotation_activity_item(item["id"])
             else:
