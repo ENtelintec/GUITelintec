@@ -569,7 +569,8 @@ def update_report_activity_from_api(data, data_token):
             "error": str(error),
         }, 400
     msg = "Reporte de actividad actualizado correctamente con id: " + str(data["id"])
-
+    items_report = json.loads(result_ra[15]) if result_ra[15] else []  
+    dict_items = {int(item["qa_item_id"]): item for item in items_report}  
     # Update items:
     flag_list = []
     errors = []
@@ -579,6 +580,15 @@ def update_report_activity_from_api(data, data_token):
             if item["is_erased"]==1:
                 flag, error, result = delete_quotation_activity_item(item["id"])
             else:
+                history_item = dict_items[item["id"]]["history"]
+                history_item.append(
+                    {
+                        timestamp: timestamp,
+                        "user": user,
+                        "action": "Actualización",
+                        "comment": "Actualización de ítem de reporte de actividad.",
+                    }
+                    )
                 flag, error, result = update_quotation_activity_item(
                     item["id"],
                     quotation_id,
@@ -588,9 +598,17 @@ def update_report_activity_from_api(data, data_token):
                     item["udm"],
                     item["quantity"],
                     item["unit_price"],
-                    item["history"],
+                    history_item,
                 )
         else:
+            history_item = [
+                {
+                    timestamp: timestamp,
+                    "user": user,
+                    "action": "Creación",
+                    "comment": "Creación de ítem de reporte de actividad.",
+                }
+            ]
             flag, error, result = insert_quotation_activity_item(
                 quotation_id=None,
                 report_id=data["id"],
@@ -598,7 +616,7 @@ def update_report_activity_from_api(data, data_token):
                 udm=item["udm"],
                 quantity=item["quantity"],
                 unit_price=item["unit_price"],
-                history=item["history"],
+                history=history_item,
                 item_c_id=item.get("item_contract_id", None),
             )
         flag_list.append(flag)
