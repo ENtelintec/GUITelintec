@@ -532,7 +532,7 @@ def update_report_activity_from_api(data, data_token):
             "error": str(error),
         }, 400
 
-    history = result_ra[14]  # pyrefly: ignore
+    history = result_ra[15]  # pyrefly: ignore
     history = json.loads(history) if history else []
     history.append(
         {
@@ -569,7 +569,7 @@ def update_report_activity_from_api(data, data_token):
             "error": str(error),
         }, 400
     msg = "Reporte de actividad actualizado correctamente con id: " + str(data["id"])
-    items_report = json.loads(result_ra[15]) if result_ra[15] else []  
+    items_report = json.loads(result_ra[16]) if result_ra[16] else []  
     dict_items = {int(item["qa_item_id"]): item for item in items_report}  
     # Update items:
     flag_list = []
