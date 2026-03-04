@@ -581,7 +581,7 @@ def update_report_activity_from_api(data, data_token):
             else:
                 flag, error, result = update_quotation_activity_item(
                     item["id"],
-                    item["quotation_id"],
+                    quotation_id,
                     data["id"],
                     item.get("item_contract_id", None),
                     item["description"],
