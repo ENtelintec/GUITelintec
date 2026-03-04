@@ -732,6 +732,7 @@ def update_voucher_vehicle_api(data, data_token):
             "msg": "Error at processing accessories data",
             "error": str(e),
         }, 400
+    print(data)
     flag, error, rows_changed = update_voucher_vehicle(
         data["id_voucher_general"],
         data["brand"],

@@ -114,7 +114,7 @@ def insert_activity_report(
     location: str,
     general_description: str,
     comments: str,
-    quotation_id: int,
+    quotation_id: int|None,
     history: list,
     status: int = 0,
 ):
@@ -171,7 +171,7 @@ def update_activity_report(
     location: str,
     general_description: str,
     comments: str,
-    quotation_id: int,
+    quotation_id: int|None,
     status: int,
     history: list,
 ):

@@ -386,6 +386,7 @@ def create_report_activity_from_api(data, data_token):
         }
     ]
     # create quotation activity
+    quotation_id = data.get("quotation_id", None)
     flag, error, id_report = insert_activity_report(
         date=data["date"],
         folio=data["folio"],
@@ -399,7 +400,7 @@ def create_report_activity_from_api(data, data_token):
         location=data["location"],
         general_description=data["general_description"],
         comments=data["comments"],
-        quotation_id=data["quotation_id"],
+        quotation_id=quotation_id if quotation_id or quotation_id>0 else None,
         history=history_report,
     )
     if not flag:
@@ -508,8 +509,9 @@ def get_report_activity_from_api(id_report: int | None, data_token):
                 "general_description": item[11],
                 "comments": item[12],
                 "quotation_id": item[13],
-                "history": json.loads(item[14]) if item[14] else [],
-                "items": json.loads(item[15]) if item[15] else [],
+                "status": item[14],
+                "history": json.loads(item[15]) if item[15] else [],
+                "items": json.loads(item[16]) if item[16] else [],
             }
         )
     return {"data": data_out, "msg": "Ok"}, 200
@@ -540,7 +542,7 @@ def update_report_activity_from_api(data, data_token):
             "comment": "Actualización de reporte de actividad.",
         }
     )
-
+    quotation_id = data.get("quotation_id", None)
     # Update report activity:
     flag, error, result = update_activity_report(
         report_id=data["id"],
@@ -556,7 +558,7 @@ def update_report_activity_from_api(data, data_token):
         location=data["location"],
         general_description=data["general_description"],
         comments=data["comments"],
-        quotation_id=data["quotation_id"],
+        quotation_id=quotation_id if quotation_id or quotation_id>0 else None,
         history=history,
         status=data["status"],
     )
