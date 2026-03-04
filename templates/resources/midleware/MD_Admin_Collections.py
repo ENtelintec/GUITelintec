@@ -400,7 +400,7 @@ def create_report_activity_from_api(data, data_token):
         location=data["location"],
         general_description=data["general_description"],
         comments=data["comments"],
-        quotation_id=quotation_id if quotation_id or quotation_id>0 else None,
+        quotation_id=quotation_id if quotation_id or quotation_id > 0 else None,
         history=history_report,
     )
     if not flag:
@@ -558,7 +558,7 @@ def update_report_activity_from_api(data, data_token):
         location=data["location"],
         general_description=data["general_description"],
         comments=data["comments"],
-        quotation_id=quotation_id if quotation_id or quotation_id>0 else None,
+        quotation_id=quotation_id if quotation_id or quotation_id > 0 else None,
         history=history,
         status=data["status"],
     )
@@ -569,15 +569,15 @@ def update_report_activity_from_api(data, data_token):
             "error": str(error),
         }, 400
     msg = "Reporte de actividad actualizado correctamente con id: " + str(data["id"])
-    items_report = json.loads(result_ra[16]) if result_ra[16] else []  
-    dict_items = {int(item["qa_item_id"]): item for item in items_report}  
+    items_report = json.loads(result_ra[16]) if result_ra[16] else []
+    dict_items = {int(item["qa_item_id"]): item for item in items_report}
     # Update items:
     flag_list = []
     errors = []
     results = []
     for item in data["items"]:
-        if item["id"] is not None and item["id"]>0:
-            if item["is_erased"]==1:
+        if item["id"] is not None and item["id"] > 0:
+            if item["is_erased"] == 1:
                 flag, error, result = delete_quotation_activity_item(item["id"])
             else:
                 history_item = dict_items[item["id"]]["history"]
@@ -588,7 +588,7 @@ def update_report_activity_from_api(data, data_token):
                         "action": "Actualización",
                         "comment": "Actualización de ítem de reporte de actividad.",
                     }
-                    )
+                )
                 flag, error, result = update_quotation_activity_item(
                     item["id"],
                     quotation_id,
@@ -650,7 +650,7 @@ def delete_report_activity_from_api(data, data_token):
         }, 400
 
     # Delete items:
-    items = json.loads(result_ra[15]) if result_ra[15] else []  # pyrefly: ignore
+    items = json.loads(result_ra[16]) if result_ra[16] else []  # pyrefly: ignore
     if len(items) <= 0:
         return {
             "data": None,
