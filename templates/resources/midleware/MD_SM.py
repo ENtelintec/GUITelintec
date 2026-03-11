@@ -876,13 +876,14 @@ def dowload_file_sm(sm_id: int, type_file="pdf"):
         print(e)
         observations = [result[13]]
     # extra_info = json.loads(result[14])
+    basename = f"sm_{folio}"
     download_path = (
         os.path.join(
-            tempfile.mkdtemp(), os.path.basename(f"sm_{result[0]}_{folio}.pdf")
+            tempfile.mkdtemp(), os.path.basename(basename + ".pdf")
         )
         if type_file == "pdf"
         else os.path.join(
-            tempfile.mkdtemp(), os.path.basename(f"sm_{result[0]}_{folio}.xlsx")
+            tempfile.mkdtemp(), os.path.basename(basename + ".xlsx")
         )
     )
     products = []
