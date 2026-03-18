@@ -308,7 +308,6 @@ voucher_vehicle_put_model = api.model(
         "referendo": fields.Integer(
             required=True, description="¿Tiene comprobante de refrendo?"
         ),
-        # Accesorios
         "accessories": fields.List(
             fields.Nested(accessories_vehicles_model),
             required=True,
@@ -319,6 +318,7 @@ voucher_vehicle_put_model = api.model(
         # Ítems relacionados
         "items": fields.List(fields.Nested(voucher_items_put_model)),
         "history": fields.List(fields.Nested(voucher_history_model)),
+        "status": fields.Integer(required=True, description="Estado del voucher"),
     },
 )
 
@@ -327,7 +327,6 @@ vehicle_voucher_delete_model = api.model(
     "VehicleVoucherDelete",
     {
         "id": fields.Integer(required=True, description="ID del voucher"),
-        "history": fields.List(fields.Nested(voucher_history_model)),
     },
 )
 
@@ -335,18 +334,18 @@ vehicle_voucher_upload_attachment_model = api.model(
     "VehicleVoucherUploadAttachment",
     {
         "id_voucher": fields.Integer(required=True, description="ID del voucher"),
-    }
+    },
 )
 
 vehicle_voucher_download_att_model = api.model(
     "VehicleVoucherDownloadAttachment",
     {
         "id_voucher": fields.Integer(required=True, description="ID del voucher"),
-        "filename": fields.String(required=True, description="Nombre del archivo a descargar (direccion aws)"),
-    }
+        "filename": fields.String(
+            required=True, description="Nombre del archivo a descargar (direccion aws)"
+        ),
+    },
 )
-
-
 
 
 class ItemsVoucherPostForm(Form):
@@ -419,9 +418,7 @@ class VoucherToolsFormPut(Form):
 
 
 class VoucherToolsFormDelete(Form):
-    id = IntegerField(
-        "id", [InputRequired()]
-    )
+    id = IntegerField("id", [InputRequired()])
     history = FieldList(FormField(VoucherHistoryForm, "history"))
 
 
@@ -473,9 +470,7 @@ class VoucherSafetyFormPut(Form):
 
 
 class VoucherSafetyFormDelete(Form):
-    id = IntegerField(
-        "id", [InputRequired()]
-    )
+    id = IntegerField("id", [InputRequired()])
     history = FieldList(FormField(VoucherHistoryForm, "history"))
 
 
@@ -525,9 +520,18 @@ class VoucherVehiclePostForm(Form):
     year = IntegerField("year", [])
     placas = StringField("placas", [InputRequired()])
     kilometraje = IntegerField("kilometraje", [])
-    registration_card = IntegerField("registration_card", [InputRequired()])
-    insurance = IntegerField("insurance", [InputRequired()])
-    referendo = IntegerField("referendo", [InputRequired()])
+    registration_card = IntegerField(
+        "registration_card",
+        [validators.number_range(min=-1, message="Invalid registration_card state")],
+    )
+    insurance = IntegerField(
+        "insurance",
+        [validators.number_range(min=-1, message="Invalid insurance state")],
+    )
+    referendo = IntegerField(
+        "referendo",
+        [validators.number_range(min=-1, message="Invalid referendo state")],
+    )
     accessories = FieldList(FormField(AccessoryForm, "accessories"))
     observations = StringField("observations", [])
     items = FieldList(
@@ -549,22 +553,20 @@ class VoucherVehiclePutForm(Form):
     year = IntegerField("year", [])
     placas = StringField("placas", [InputRequired()])
     kilometraje = IntegerField("kilometraje", [])
-    registration_card = IntegerField("registration_card", [InputRequired()])
-    insurance = IntegerField("insurance", [InputRequired()])
-    referendo = IntegerField("referendo", [InputRequired()])
+    registration_card = IntegerField("registration_card", [validators.number_range(min=-1, message="Invalid state")])
+    insurance = IntegerField("insurance", [validators.number_range(min=-1, message="Invalid state")])
+    referendo = IntegerField("referendo", [validators.number_range(min=-1, message="Invalid state")])
     accessories = FieldList(FormField(AccessoryForm, "accessories"))
     observations = StringField("observations", [])
     items = FieldList(
         FormField(ItemsVoucherPutForm, "items"), validators=[], default=[]
     )
     history = FieldList(FormField(VoucherHistoryForm, "history"))
+    status = IntegerField("status", [validators.number_range(min=-1, message="Invalid status")])
 
 
 class VoucherVehicleDeleteForm(Form):
-    id = IntegerField(
-        "id", [InputRequired()]
-    )
-    history = FieldList(FormField(VoucherHistoryForm, "history"))
+    id = IntegerField("id", [InputRequired()])
 
 
 class VehicleVoucherUploadAttachmentForm(Form):

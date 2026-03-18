@@ -1,6 +1,44 @@
 # -*- coding: utf-8 -*-
 
 
+from templates.resources.midleware.MD_Admin_Collections import download_report_activity_attachment_api
+from static.Models.api_purchases_models import ReportActivityDownloadAttForm
+from static.Models.api_purchases_models import report_activity_download_att_model
+from templates.resources.midleware.MD_Admin_Collections import (
+    create_activity_report_attachment_api,
+)
+import os
+import tempfile
+from werkzeug.utils import secure_filename
+from static.Models.api_sgi_models import expected_files_attachment
+from templates.resources.midleware.MD_Admin_Collections import get_quotations_from_api
+from templates.resources.midleware.MD_Admin_Collections import (
+    delete_quotation_activity_from_api,
+)
+from templates.resources.midleware.MD_Admin_Collections import (
+    update_quotation_activity_from_api,
+)
+from templates.resources.midleware.MD_Admin_Collections import (
+    create_quotation_activity_from_api,
+)
+from static.Models.api_purchases_models import ReportActivityDeleteForm
+from static.Models.api_purchases_models import report_activity_delete_model
+from templates.resources.midleware.MD_Admin_Collections import (
+    delete_report_activity_from_api,
+)
+from static.Models.api_purchases_models import ReportActivityUpdateForm
+from static.Models.api_purchases_models import report_activity_update_model
+from templates.resources.midleware.MD_Admin_Collections import (
+    update_report_activity_from_api,
+)
+from static.Models.api_purchases_models import ReportActivityCreateForm
+from static.Models.api_purchases_models import report_activity_create_model
+from templates.resources.midleware.MD_Admin_Collections import (
+    create_report_activity_from_api,
+)
+from templates.resources.midleware.MD_Admin_Collections import (
+    get_report_activity_from_api,
+)
 from static.Models.api_purchases_models import (
     QuotationActivityCreateForm,
     QuotationActivityDeleteForm,
@@ -30,24 +68,9 @@ from static.Models.api_purchases_models import (
     PurchaseOrderPutForm,
     purchase_order_delete_model,
     POAppDeleteForm,
-    remission_model_insert,
-    RemissionInsertForm,
-    RemissionUpdateForm,
-    RemissionDeleteForm,
-    remission_model_delete,
-    remission_model_update,
 )
 from templates.resources.methods.Functions_Aux_Login import token_verification_procedure
-from templates.resources.midleware.MD_Admin_Collections import (
-    create_quotation_activity_from_api,
-    create_remission_from_api,
-    delete_quotation_activity_from_api,
-    get_quotations_from_api,
-    update_quotation_activity_from_api,
-    update_remission_from_api,
-    delete_remission_from_api,
-    fetch_remissions_by_status_db,
-)
+
 from templates.resources.midleware.MD_Purchases import (
     fetch_purchase_orders,
     create_purchaser_order_api,
@@ -288,70 +311,6 @@ class FolioPO(Resource):
         return data_out, code
 
 
-@ns.route("/remission")
-class RemissionAction(Resource):
-    @ns.expect(expected_headers_per, remission_model_insert)
-    def post(self):
-        flag, data_token, msg = token_verification_procedure(
-            request, department="administracion"
-        )
-        if not flag:
-            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-
-        validator = RemissionInsertForm.from_json(ns.payload)  # pyrefly: ignore
-        if not validator.validate():
-            return {"data": validator.errors, "msg": "Error at structure"}, 400
-
-        data = validator.data
-        data_out, code = create_remission_from_api(data, data_token)
-        return data_out, code
-
-    @ns.expect(expected_headers_per, remission_model_update)
-    def put(self):
-        flag, data_token, msg = token_verification_procedure(
-            request, department="administracion"
-        )
-        if not flag:
-            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-
-        validator = RemissionUpdateForm.from_json(ns.payload)  # pyrefly: ignore
-        if not validator.validate():
-            return {"data": validator.errors, "msg": "Error at structure"}, 400
-
-        data = validator.data
-        data_out, code = update_remission_from_api(data, data_token)
-        return data_out, code
-
-    @ns.expect(expected_headers_per, remission_model_delete)
-    def delete(self):
-        flag, data_token, msg = token_verification_procedure(
-            request, department="administracion"
-        )
-        if not flag:
-            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-
-        validator = RemissionDeleteForm.from_json(ns.payload)  # pyrefly: ignore
-        if not validator.validate():
-            return {"data": validator.errors, "msg": "Error at structure"}, 400
-
-        data = validator.data
-        data_out, code = delete_remission_from_api(data, data_token)
-        return data_out, code
-
-
-@ns.route("/remissions/<string:status>")
-class FetchRemissions(Resource):
-    @ns.expect(expected_headers_per)
-    def get(self, status):
-        flag, data_token, msg = token_verification_procedure(
-            request, department="administracion"
-        )
-        if not flag:
-            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        data, code = fetch_remissions_by_status_db(status, data_token)
-        return data, code
-
-
 @ns.route("/activity/quotation")
 class ActivityQuotatioAction(Resource):
     @ns.expect(expected_headers_per, quotation_activity_create_model)
@@ -406,8 +365,14 @@ class FetchActivitieQuotationById(Resource):
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        try:
+            id_quotation = int(id_quotation)
+        except Exception as e:
+            print(f"retrieviong all {e}")
+            id_quotation = None
         data_out, code = get_quotations_from_api(id_quotation, data_token)
         return data_out, code
+
 
 @ns.route("/activity/ChangeStatus")
 class ChangeStatusActivity(Resource):
@@ -426,3 +391,187 @@ class ChangeStatusActivity(Resource):
         data = validator.data
         data_out, code = update_quotation_activity_from_api(data, data_token)
         return data_out, code
+
+
+@ns.route("/activity/report")
+class ActivityReportAction(Resource):
+    @ns.expect(expected_headers_per, report_activity_create_model)
+    def post(self):
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["administracion", "purchases"]
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        validator = ReportActivityCreateForm.from_json(ns.payload)  # pyrefly: ignore
+        if not validator.validate():
+            return {"data": validator.errors, "msg": "Error at structure"}, 400
+        data = validator.data
+        data_out, code = create_report_activity_from_api(data, data_token)
+        return data_out, code
+
+    @ns.expect(expected_headers_per, report_activity_update_model)
+    def put(self):
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["administracion", "purchases"]
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        validator = ReportActivityUpdateForm.from_json(ns.payload)  # pyrefly: ignore
+        if not validator.validate():
+            return {"data": validator.errors, "msg": "Error at structure"}, 400
+        data = validator.data
+        data_out, code = update_report_activity_from_api(data, data_token)
+        return data_out, code
+
+    @ns.expect(expected_headers_per, report_activity_delete_model)
+    def delete(self):
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["administracion", "purchases"]
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        validator = ReportActivityDeleteForm.from_json(ns.payload)  # pyrefly: ignore
+        if not validator.validate():
+            return {"data": validator.errors, "msg": "Error at structure"}, 400
+        data = validator.data
+        data_out, code = delete_report_activity_from_api(data, data_token)
+        return data_out, code
+
+
+@ns.route("/activity/reports-<string:id_report>")
+class FetchActivitieReportById(Resource):
+    @ns.expect(expected_headers_per)
+    def get(self, id_report):
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["administracion", "purchases"]
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        try:
+            id_report = int(id_report)
+        except Exception as e:
+            print(f"retrieviong all {e}")
+            id_report = None
+        data_out, code = get_report_activity_from_api(id_report, data_token)
+        return data_out, code
+
+
+@ns.route("/activity/report/attachment-<string:id_report>")
+class UploadActivityReportAttachment(Resource):
+    @ns.expect(expected_headers_per, expected_files_attachment)
+    def post(self, id_report):
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["administracion", "operaciones"]
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        if "file" not in request.files:
+            return {"data": "No se detecto un archivo"}, 400
+        file = request.files["file"]
+        if file and file.filename:
+            filename = secure_filename(file.filename)
+            filepath_download = os.path.join(tempfile.mkdtemp(), filename)
+            file.save(filepath_download)
+            data_out, code = create_activity_report_attachment_api(
+                {
+                    "filepath": filepath_download,
+                    "filename": filename,
+                    "id_voucher": id_report,
+                },
+                data_token,
+            )
+            if code != 201:
+                return {"data": data_out, "msg": "Error at file structure"}, 400
+            return {"data": data_out, "msg": f"Ok with filaname: {filename}"}, 201
+        else:
+            return {"msg": "No se subio el archivo"}, 400
+
+
+@ns.route("/voucher/vehicle/attachment/download")
+class DownloadVehicleVoucherAttachment(Resource):
+    @ns.expect(expected_headers_per, report_activity_download_att_model)
+    def post(self):
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["sgi", "voucher"]
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        validator = ReportActivityDownloadAttForm.from_json(  # pyrefly: ignore
+            ns.payload
+        )
+        if not validator.validate():
+            return {"data": validator.errors, "msg": "Error at structure"}, 400
+        data = validator.data
+        filename = data["filename"].split("/")[-1]
+        temp_filepath = os.path.join(tempfile.mkdtemp(), filename)
+        data["filepath"] = temp_filepath
+        data_out, code = download_report_activity_attachment_api(data, data_token)
+        if isinstance(data_out.get("path"), str):
+            return send_file(data_out["path"], as_attachment=True)
+        else:
+            print(data)
+            return {"data": data_out, "msg": "Error at file structure"}, 400
+
+
+# @ns.route("/remission")
+# class RemissionAction(Resource):
+#     @ns.expect(expected_headers_per, remission_model_insert)
+#     def post(self):
+#         flag, data_token, msg = token_verification_procedure(
+#             request, department="administracion"
+#         )
+#         if not flag:
+#             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+
+#         validator = RemissionInsertForm.from_json(ns.payload)  # pyrefly: ignore
+#         if not validator.validate():
+#             return {"data": validator.errors, "msg": "Error at structure"}, 400
+
+#         data = validator.data
+#         data_out, code = create_remission_from_api(data, data_token)
+#         return data_out, code
+
+#     @ns.expect(expected_headers_per, remission_model_update)
+#     def put(self):
+#         flag, data_token, msg = token_verification_procedure(
+#             request, department="administracion"
+#         )
+#         if not flag:
+#             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+
+#         validator = RemissionUpdateForm.from_json(ns.payload)  # pyrefly: ignore
+#         if not validator.validate():
+#             return {"data": validator.errors, "msg": "Error at structure"}, 400
+
+#         data = validator.data
+#         data_out, code = update_remission_from_api(data, data_token)
+#         return data_out, code
+
+#     @ns.expect(expected_headers_per, remission_model_delete)
+#     def delete(self):
+#         flag, data_token, msg = token_verification_procedure(
+#             request, department="administracion"
+#         )
+#         if not flag:
+#             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+
+#         validator = RemissionDeleteForm.from_json(ns.payload)  # pyrefly: ignore
+#         if not validator.validate():
+#             return {"data": validator.errors, "msg": "Error at structure"}, 400
+
+#         data = validator.data
+#         data_out, code = delete_remission_from_api(data, data_token)
+#         return data_out, code
+
+
+# @ns.route("/remissions/<string:status>")
+# class FetchRemissions(Resource):
+#     @ns.expect(expected_headers_per)
+#     def get(self, status):
+#         flag, data_token, msg = token_verification_procedure(
+#             request, department="administracion"
+#         )
+#         if not flag:
+#             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+#         data, code = fetch_remissions_by_status_db(status, data_token)
+#         return data, code

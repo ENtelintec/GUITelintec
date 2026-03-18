@@ -1,8 +1,12 @@
 # -*- coding: utf-8 -*-
+from templates.controllers.vouchers.vouchers_controller import (
+    update_voucher_vehicle_status,
+)
 from static.constants import log_file_sgi_chv
 from templates.misc.Functions_Files import write_log_file
 from templates.Functions_Utils import create_notification_permission_notGUI
 from static.constants import format_date
+from botocore.exceptions import ClientError, NoCredentialsError
 from static.constants import secrets
 
 __author__ = "Edisson Naula"
@@ -11,7 +15,7 @@ __date__ = "$ 06/jun/2025  at 14:54 $"
 import json
 from datetime import datetime, timedelta
 
-# import boto3
+import boto3
 import pytz
 
 from static.constants import timezone_software, format_timestamps
@@ -578,6 +582,7 @@ def get_vouchers_vehicle_api(data, data_token):
     data_out = []
     for item in result:
         extra_info = json.loads(item[20])
+        accesories = json.loads(item[15]) if item[15] else []
         data_out.append(
             {
                 "id_voucher_general": item[0],
@@ -597,12 +602,15 @@ def get_vouchers_vehicle_api(data, data_token):
                 "registration_card": item[12],
                 "insurance": item[13],
                 "referendo": item[14],
-                "accessories": json.loads(item[15]),
+                "accessories": accesories
+                if isinstance(accesories, list)
+                else json.loads(accesories),
                 "vehicle_type": item[16],
                 "observations": item[17],
                 "items": json.loads(item[18]),
                 "history": json.loads(item[19]),
                 "files": extra_info.get("files"),
+                "status": item[21],
             }
         )
     return {"data": data_out, "msg": "Vehicle vouchers retrieved successfully"}, 200
@@ -622,6 +630,14 @@ def create_voucher_vehicle_api(data, data_token):
             "msg": "Error at creating general voucher",
             "error": str(error),
         }, 400
+    try:
+        accessories = json.dumps(data["accessories"])
+    except Exception as e:
+        return {
+            "data": None,
+            "msg": "Error at processing accessories data",
+            "error": str(e),
+        }, 400
 
     # 2. Crear voucher vehicular
     flag, error, lastrowid_vehicle = create_voucher_vehicle(
@@ -635,7 +651,7 @@ def create_voucher_vehicle_api(data, data_token):
         int(data["registration_card"]),
         int(data["insurance"]),
         int(data["referendo"]),
-        json.dumps(data["accessories"]),
+        accessories,
         data["type"],
         data["received_by"],
         data.get("observations"),
@@ -708,6 +724,15 @@ def update_voucher_vehicle_api(data, data_token):
             "comment": "Voucher vehicular actualizado",
         }
     )
+    try:
+        accessories = json.dumps(data["accessories"])
+    except Exception as e:
+        return {
+            "data": None,
+            "msg": "Error at processing accessories data",
+            "error": str(e),
+        }, 400
+    print(data)
     flag, error, rows_changed = update_voucher_vehicle(
         data["id_voucher_general"],
         data["brand"],
@@ -719,10 +744,11 @@ def update_voucher_vehicle_api(data, data_token):
         int(data["registration_card"]),
         int(data["insurance"]),
         int(data["referendo"]),
-        json.dumps(data["accessories"]),
+        accessories,
         data["type"],
         data["received_by"],
         data.get("observations"),
+        data.get("status"),
     )
     if not flag:
         return {
@@ -782,31 +808,62 @@ def update_voucher_vehicle_api(data, data_token):
 
 
 def delete_voucher_vehicle_api(data, data_token):
-    flag, error, result = delete_voucher_item(data["id"])
+    time_zone = pytz.timezone(timezone_software)
+    time_older = datetime.now(pytz.utc).astimezone(time_zone) - timedelta(days=365)
+    timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
+    flag, error, voucher_data = get_vouchers_vehicle_with_items(
+        time_older, id_voucher=data["id"]
+    )
     if not flag:
         return {
             "data": None,
-            "msg": "Error at deleting vehicle voucher",
+            "msg": "Error at getting vehicle voucher by id",
             "error": str(error),
         }, 400
-    flag, error, result = delete_voucher_vehicle(data["id"])
-    if not flag:
+    if not (isinstance(voucher_data, list) or isinstance(voucher_data, tuple)):
         return {
             "data": None,
-            "msg": "Error at deleting vehicle voucher",
-            "error": str(error),
+            "msg": "Error at getting vehicle voucher by id: result is not a list or tuple",
+            "error": str(voucher_data),
         }, 400
+    status = voucher_data[0][21]
+    if status == 0:  # delete if was not signed
+        flag, error, result = delete_voucher_item(data["id"])
+        if not flag:
+            return {
+                "data": None,
+                "msg": "Error at deleting vehicle voucher",
+                "error": str(error),
+            }, 400
+        flag, error, result = delete_voucher_vehicle(data["id"])
+        if not flag:
+            return {
+                "data": None,
+                "msg": "Error at deleting vehicle voucher",
+                "error": str(error),
+            }, 400
+    else:  # cancel if was signed
+        flag, error, result = update_voucher_vehicle_status(3, data["id"])
+        if not flag:
+            return {
+                "data": None,
+                "msg": "Error at canceling vehicle voucher",
+                "error": str(error),
+            }, 400
+
     time_zone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
 
-    history = data["history"]
+    history = json.loads(voucher_data[0][19])
     history.append(
         {
             "id_voucher": data["id"],
             "type": 2,
             "timestamp": timestamp,
             "user": data_token.get("emp_id"),
-            "comment": "Voucher vehicular eliminado",
+            "comment": "Voucher vehicular eliminado"
+            if status == 0
+            else "Voucher vehicular cancelado",
         }
     )
 
@@ -819,12 +876,44 @@ def delete_voucher_vehicle_api(data, data_token):
             "msg": "Error at deleting vehicle voucher",
             "error": str(error),
         }, 400
-
+    msg = (
+        f"Voucher vehicular eliminado correctamente por el empleado {data_token.get('emp_id')}"
+        if status == 0
+        else f"Voucher vehicular cancelado correctamente por el empleado {data_token.get('emp_id')}"
+    )
+    create_notification_permission_notGUI(
+        msg, ["administracion", "operaciones", "sgi"], data_token.get("emp_id"), 0
+    )
+    write_log_file(log_file_sgi_chv, msg)
     return {"data": [rows_changed], "msg": "Vehicle voucher deleted successfully"}, 200
 
 
 def create_voucher_vehicle_attachment_api(data, data_token):
     """{"filepath": filepath_download, "filename": filename}, data_token"""
+    filename = data["filename"]
+
+    id_voucher_name = filename.split("-")[0]
+    try:
+        if (
+            int(id_voucher_name) != int(data["id_voucher"])
+            and int(data["id_voucher"]) <= 0
+        ):
+            return (
+                {
+                    "data": None,
+                    "msg": "El nombre del archivo no corresponde al voucher",
+                },
+                400,
+            )
+    except Exception as e:
+        return (
+            {
+                "data": None,
+                "msg": "Error al procesar el nombre del archivo",
+                "error": str(e),
+            },
+            400,
+        )
     time_zone = pytz.timezone(timezone_software)
     # timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone)
@@ -846,7 +935,7 @@ def create_voucher_vehicle_attachment_api(data, data_token):
         }, 400
     voucher_data = []
     for item in result:
-        if item[0] == data["id_voucher"]:
+        if int(item[0]) == int(data["id_voucher"]):
             voucher_data = item
             break
     if len(voucher_data) <= 0:
@@ -855,6 +944,7 @@ def create_voucher_vehicle_attachment_api(data, data_token):
             "msg": "Error at getting checklist vehicular by id: voucher not found",
             "error": str(voucher_data),
         }, 400
+    date_voucher = voucher_data[2]
     history = json.loads(voucher_data[19])
     # reconocer el tipo de archivo [pdf, image, zip]
     filepath_down = data["filepath"]
@@ -866,14 +956,32 @@ def create_voucher_vehicle_attachment_api(data, data_token):
             400,
         )
     # create name vouchers_vehicles/year/month/day/filename
-    path_aws = f"checklistV/{timestamp.strftime('%Y/%m/%d/')}{data['filename']}"
+    path_aws = f"checklistV/{date_voucher.strftime('%Y/%m/%d/')}{data['filename']}"
     s3_client = boto3.client("s3")
     bucket_name = secrets.get("S3_CH_BUCKET")
 
     try:
         s3_client.upload_file(Filename=filepath_down, Bucket=bucket_name, Key=path_aws)
-    except Exception as e:
+    except FileNotFoundError:
+        return {"data": None, "msg": "Local file not found"}, 400
+    except NoCredentialsError:
+        return {"data": None, "msg": "AWS credentials not found"}, 400
+    except ClientError as e:
+        error_code = e.response["Error"]["Code"]
+        if error_code == "NoSuchBucket":
+            return {"data": None, "msg": f"Bucket does not exist: {bucket_name}"}, 400
+        elif error_code == "AccessDenied":
+            return {"data": None, "msg": f"Access denied to bucket: {bucket_name}"}, 400
+        else:
             return {"data": None, "msg": f"AWS error: {str(e)}"}, 400
+    msg = f"Archivo adjunto agregado: {filename} al voucher {data['id_voucher']} por el empleado {data_token.get('emp_id')}"
+    status = voucher_data[21]
+    if "firma-realizado" in filename.lower():  # if is sign file change status to 1
+        status = 1
+        msg += " y estado actualizado a (firmado)"
+    if "firma-recibido" in filename.lower():  # if is sign file change status to 1
+        status = 2
+        msg += " y estado actualizado a (aprobado)"
     history.append(
         {
             "id_voucher": data["id_voucher"],
@@ -893,7 +1001,7 @@ def create_voucher_vehicle_attachment_api(data, data_token):
     )
     extra_info["files"] = files
     flag, error, rows_updated = update_voucher_vehicle_files(
-        data["id_voucher"], json.dumps(history), extra_info
+        data["id_voucher"], history, extra_info, status
     )
     if not flag:
         return {
@@ -901,13 +1009,11 @@ def create_voucher_vehicle_attachment_api(data, data_token):
             "msg": "Error at updating history voucher but file uploaded",
             "error": str(error),
         }, 400
-    msg = "File uploaded successfully but error at updating history voucher"
     create_notification_permission_notGUI(
         msg, ["administracion", "operaciones", "sgi"], data_token.get("emp_id"), 0
     )
     write_log_file(log_file_sgi_chv, msg)
     return {"data": path_aws, "msg": msg}, 201
-
 
 
 def download_voucher_vehicle_attachment_api(data, data_token):
@@ -937,16 +1043,18 @@ def download_voucher_vehicle_attachment_api(data, data_token):
     if len(voucher_data) <= 0:
         return {
             "data": None,
-            "msg": "Error at getting checklist vehicular by id: voucher not found",
+            "msg": f"Error at getting checklist vehicular by id: {data['id_voucher']} not in db",
             "error": str(voucher_data),
         }, 400
     extra_info = json.loads(voucher_data[20])
     files = extra_info.get("files", [])
-    path_aws = data["filename"]
+    name_file = data["filename"]
     flag_found = False
+    path_aws = ""
     for file in files:
-        if file["path"] == path_aws:
+        if file["filename"] == name_file:
             flag_found = True
+            path_aws = file["path"]
             break
     if not flag_found:
         return {"data": None, "msg": "File not found in voucher"}, 400
@@ -956,7 +1064,18 @@ def download_voucher_vehicle_attachment_api(data, data_token):
         s3_client.download_file(
             Bucket=bucket_name, Key=path_aws, Filename=data["filepath"]
         )
-    
-    except Exception as e:
-        return {"data": None, "msg": f"Error downloading file: {str(e)}"}, 400
-    return data["filename"], 200
+    except FileNotFoundError:
+        return {"data": None, "msg": "Local file not found"}, 400
+    except NoCredentialsError:
+        return {"data": None, "msg": "AWS credentials not found"}, 400
+    except ClientError as e:
+        error_code = e.response["Error"]["Code"]
+        if error_code == "NoSuchBucket":
+            return {"data": None, "msg": f"Bucket does not exist: {bucket_name}"}, 400
+        elif error_code == "AccessDenied":
+            return {"data": None, "msg": f"Access denied to bucket: {bucket_name}"}, 400
+        elif error_code == "NoSuchKey":
+            return {"data": None, "msg": f"File not found: {path_aws}"}, 400
+        else:
+            return {"data": None, "msg": f"Error downloading file: {str(e)}"}, 400
+    return {"path": data["filepath"]}, 200

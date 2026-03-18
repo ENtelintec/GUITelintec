@@ -105,7 +105,7 @@ employees_resume_model = api.model(
 
 
 class EmployeesResumeModelForm(Form):
-    data = FieldList(
+    info = FieldList(
         FormField(ResumeModelForm), validators=[validators.input_required()]
     )
 

@@ -3,8 +3,6 @@ from static.Models.api_sgi_models import VehicleVoucherDownloadAttachmentForm
 from static.Models.api_sgi_models import vehicle_voucher_download_att_model
 from flask import send_file
 from templates.resources.midleware.MD_SGI import download_voucher_vehicle_attachment_api
-from static.Models.api_sgi_models import VehicleVoucherUploadAttachmentForm
-from static.Models.api_sgi_models import vehicle_voucher_upload_attachment_model
 from static.Models.api_sgi_models import expected_files_attachment
 import tempfile
 import os
@@ -279,14 +277,10 @@ class VoucerVehicleActions(Resource):
         return data_out, code
 
 
-@ns.route("/voucher/vehicle/attachment")
+@ns.route("/voucher/vehicle/attachment-<string:id_voucher>")
 class UploadVehicleVoucherAttachment(Resource):
-    @ns.expect(
-        expected_headers_per,
-        expected_files_attachment,
-        vehicle_voucher_upload_attachment_model,
-    )
-    def post(self):
+    @ns.expect(expected_headers_per, expected_files_attachment)
+    def post(self, id_voucher):
         flag, data_token, msg = token_verification_procedure(
             request, department=["sgi", "voucher"]
         )
@@ -299,19 +293,17 @@ class UploadVehicleVoucherAttachment(Resource):
             filename = secure_filename(file.filename)
             filepath_download = os.path.join(tempfile.mkdtemp(), filename)
             file.save(filepath_download)
-            validator = VehicleVoucherUploadAttachmentForm.from_json(  # pyrefly: ignore
-                ns.payload
-            )
-            if not validator.validate():
-                return {"data": validator.errors, "msg": "Error at structure"}, 400
-            data = validator.data
             data_out, code = create_voucher_vehicle_attachment_api(
-                {"filepath": filepath_download, "filename": filename, **data},
+                {
+                    "filepath": filepath_download,
+                    "filename": filename,
+                    "id_voucher": id_voucher,
+                },
                 data_token,
             )
             if code != 201:
-                return {"data": data, "msg": "Error at file structure"}, 400
-            return {"data": data, "msg": f"Ok with filaname: {filename}"}, 201
+                return {"data": data_out, "msg": "Error at file structure"}, 400
+            return {"data": data_out, "msg": f"Ok with filaname: {filename}"}, 201
         else:
             return {"msg": "No se subio el archivo"}, 400
 
@@ -335,6 +327,8 @@ class DownloadVehicleVoucherAttachment(Resource):
         temp_filepath = os.path.join(tempfile.mkdtemp(), filename)
         data["filepath"] = temp_filepath
         data_out, code = download_voucher_vehicle_attachment_api(data, data_token)
-        return send_file(
-            temp_filepath, as_attachment=True, download_name=filename
-        ), code
+        if isinstance(data_out.get("path"), str):
+            return send_file(data_out["path"], as_attachment=True)
+        else:
+            print(data)
+            return {"data": data_out, "msg": "Error at file structure"}, 400
