@@ -58,3 +58,4 @@ tester*.py
 *test.py
 *_test.json
 pyrefly.toml
+Test*.py
