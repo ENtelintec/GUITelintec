@@ -185,13 +185,12 @@ def read_exel_products_bidding(path: str):
 
 
 def read_exel_products_partidas(path: str):
-    df = pd.read_excel(path)
+    # skiprow from 1 to 21 in 21 the headers
+    df = pd.read_excel(path, header=20)
     df = df.fillna("")
     data_excel = df.to_dict("records")
-
     products = []
     for index, item in enumerate(data_excel):
-        # partida: number; quantity: number; udm: string; price_unit: number; type_p: string; marca: string; n_parte: string; description: string; description_small: string; id: number; comment: string;
         n_parte = item.get("NRO. PARTE", "")
         id_p = None
         if n_parte != "":
@@ -200,7 +199,7 @@ def read_exel_products_partidas(path: str):
                 id_p = result[0]
         product = {
             "partida": item.get("PARTIDA", index),
-            "quantity": 1,
+            "quantity": item.get("CANTIDAD", 1),
             "udm": item.get("UDM"),
             "price_unit": item.get("PRECIO UNITARIO", 0.0),
             "type_p": item.get("TIPO", ""),
