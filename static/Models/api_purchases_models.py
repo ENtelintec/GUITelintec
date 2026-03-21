@@ -336,11 +336,6 @@ purchase_order_update_status_model = api.model(
 quotation_activity_insert_item_model = api.model(
     "QuotationActivityItem",
     {
-        "report_id": fields.Integer(
-            required=False,
-            description="ID de reporte asociado (si aplica)",
-            example=1452,
-        ),
         "description": fields.String(
             required=True,
             description="Descripción del concepto/servicio a cotizar",
@@ -381,11 +376,6 @@ quotation_activity_item_upsert_model = api.model(
                 "Si es > 0, se actualizará el ítem existente."
             ),
             example=58,
-        ),
-        "report_id": fields.Integer(
-            required=False,
-            description="ID de reporte asociado (si aplica)",
-            example=1452,
         ),
         "item_contract_id": fields.Integer(
             required=False,
@@ -611,18 +601,18 @@ quoatation_activity_status_update_model = api.model(
     },
 )
 
-report_activity_create_model = api.model(
-    "ReportActivityCreate",
+basic_metadata_activity_model = api.model(
+    "BasicActivityMetadaModel",
     {
-        "date": fields.String(
-            required=True,
-            description="Fecha del reporte (YYYY-MM-DD o formato acordado)",
-            example="2026-03-12",
-        ),
         "folio": fields.String(
             required=True,
             description="Folio o referencia interna del reporte",
             example="RA-2026-00115",
+        ),
+        "date": fields.String(
+            required=True,
+            description="Fecha del reporte (YYYY-MM-DD o formato acordado)",
+            example="2026-03-12",
         ),
         "client_id": fields.Integer(
             required=True,
@@ -664,25 +654,38 @@ report_activity_create_model = api.model(
             description="Ubicación específica",
             example="Línea 3 - Nodo PZ-34",
         ),
-        "general_description": fields.String(
+        "user": fields.String(
             required=True,
-            description="Descripción general del trabajo realizado o a reportar",
-            example="Mantenimiento correctivo a manifold neumático y verificación de fugas",
+            description="Usuario que genera el reporte",
+            example="Juan Pérez",
         ),
-        "comments": fields.String(
+        "pedido_exiros": fields.String(
             required=False,
-            description="Comentarios generales adicionales",
-            example="Se requiere autorización para pruebas con línea en operación.",
+            description="Número de pedido de Exiros",
+            example="EX-2026-00123",
         ),
-        "quotation_id": fields.Integer(
+        "pedido": fields.String(
             required=False,
-            description=(
-                "ID de la cotización relacionada. "
-                "Si se envía un valor (no nulo), se actualizan ítems de esa cotización. "
-                "Si es null o se omite, se crearán ítems de cotización asociados al reporte."
-            ),
-            example=None,
+            description="Número de pedido interno",
+            example="PED-2026-00456",
         ),
+        "remito": fields.Integer(
+            required=False,
+            description="Número de remito",
+            example="2",
+        ),
+        "contract_id": fields.Integer(
+            required=False,
+            description="ID del contrato asociado",
+            example=501,
+        ),
+    },
+)
+
+remission_activity_create_model = api.model(
+    "RemissionActivityCreate",
+    {
+        "metadata": fields.Nested(basic_metadata_activity_model),
         "items": fields.List(
             fields.Nested(quotation_activity_insert_item_model),
             required=False,
@@ -694,87 +697,27 @@ report_activity_create_model = api.model(
     },
 )
 
-report_activity_update_model = api.model(
-    "ReportActivityUpdate",
+remission_activity_upsert_metadata_model = api.inherit(
+    "RemissionActivityUpdateMetadata",
+    basic_metadata_activity_model,
     {
         "id": fields.Integer(
             required=True,
             description="ID del reporte de actividad a actualizar",
             example=1012,
         ),
-        "date": fields.String(
-            required=True,
-            description="Fecha del reporte (YYYY-MM-DD o formato acordado)",
-            example="2026-03-15",
-        ),
-        "folio": fields.String(
-            required=True,
-            description="Folio o referencia del reporte",
-            example="RA-2026-00125",
-        ),
-        "client_id": fields.Integer(
-            required=True,
-            description="ID del cliente",
-            example=120,
-        ),
-        "client_company_name": fields.String(
-            required=True,
-            description="Nombre de la empresa del cliente",
-            example="Acme Industrial S.A. de C.V.",
-        ),
-        "client_contact_name": fields.String(
-            required=True,
-            description="Nombre del contacto del cliente",
-            example="María López",
-        ),
-        "client_phone": fields.String(
-            required=False,
-            description="Teléfono del contacto",
-            example="+52 81 1234 5678",
-        ),
-        "client_email": fields.String(
-            required=False,
-            description="Correo del contacto",
-            example="maria.lopez@acme.com",
-        ),
-        "plant": fields.String(
-            required=True,
-            description="Planta del cliente",
-            example="Planta Monterrey",
-        ),
-        "area": fields.String(
-            required=True,
-            description="Área dentro de la planta",
-            example="Producción",
-        ),
-        "location": fields.String(
-            required=True,
-            description="Ubicación específica",
-            example="Línea 3 - Nodo PZ-34",
-        ),
-        "general_description": fields.String(
-            required=True,
-            description="Descripción general del trabajo reportado",
-            example="Mantenimiento correctivo y calibración de sensores",
-        ),
-        "comments": fields.String(
-            required=False,
-            description="Comentarios adicionales",
-            example="Se requieren EPP adicionales para la próxima intervención.",
-        ),
-        "quotation_id": fields.Integer(
-            required=False,
-            description=(
-                "ID de la cotización relacionada al reporte (si aplica). "
-                "Se actualiza en el reporte; para ítems, usa el 'quotation_id' del ítem solo en caso de actualización."
-            ),
-            example=2048,
-        ),
         "status": fields.Integer(
             required=True,
             description="Estatus del reporte",
             example=1,
         ),
+    },
+)
+
+remission_activity_update_model = api.model(
+    "RemissionActivityUpdate",
+    {
+        "metadata": fields.Nested(remission_activity_upsert_metadata_model),
         "items": fields.List(
             fields.Nested(quotation_activity_item_upsert_model),
             required=True,
@@ -1269,7 +1212,7 @@ class QuotationActivityStatusUpdateForm(Form):
     )
 
 
-class ReportActivityCreateForm(Form):
+class MetadataActivityReportForm(Form):
     date = StringField("date", [InputRequired()])
     folio = StringField("folio", [InputRequired()])
     client_id = IntegerField("client_id", [InputRequired()])
@@ -1283,29 +1226,27 @@ class ReportActivityCreateForm(Form):
     general_description = StringField("general_description", [InputRequired()])
     comments = StringField("comments", [InputRequired()])
     quotation_id = IntegerField("quotation_id", [], default=0)
+    contract_id = IntegerField("contract_id", [], default=0)
+    pedido = StringField("pedido", [], default="")
+    pedido_exiros = StringField("pedido_exiros", [], default="")
+
+
+class ReportActivityCreateForm(Form):
+    metadata = FormField(MetadataActivityReportForm, "metadata")
     items = FieldList(
         FormField(QuotationInsertItemForm), "items", validators=[], default=[]
     )
 
 
-class ReportActivityUpdateForm(Form):
+class MetadataReportActivityUpdateForm(MetadataActivityReportForm):
     id = IntegerField("id", [InputRequired()])
-    date = StringField("date", [InputRequired()])
-    folio = StringField("folio", [InputRequired()])
-    client_id = IntegerField("client_id", [InputRequired()])
-    client_company_name = StringField("client_company_name", [InputRequired()])
-    client_contact_name = StringField("client_contact_name", [InputRequired()])
-    client_phone = StringField("client_phone", [InputRequired()])
-    client_email = StringField("client_email", [InputRequired()])
-    plant = StringField("plant", [InputRequired()])
-    area = StringField("area", [InputRequired()])
-    location = StringField("location", [InputRequired()])
-    general_description = StringField("general_description", [InputRequired()])
-    comments = StringField("comments", [InputRequired()])
-    quotation_id = IntegerField("quotation_id", [], default=0)
     status = IntegerField(
         "status", [number_range(min=-1, message="Invalid status")], default=0
     )
+
+
+class ReportActivityUpdateForm(Form):
+    metadata = FormField(MetadataReportActivityUpdateForm, "metadata")
     items = FieldList(
         FormField(QuotationUpsertItemForm), "items", validators=[], default=[]
     )
@@ -1316,6 +1257,7 @@ class ReportActivityDeleteForm(Form):
     status = IntegerField(
         "status", [number_range(min=-1, message="Invalid status")], default=-1
     )
+
 
 class ReportActivityDownloadAttForm(Form):
     id_report = IntegerField("id_report", [InputRequired()])

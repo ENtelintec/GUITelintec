@@ -12,13 +12,13 @@ from static.constants import log_file_admin_collecions
 from templates.Functions_Utils import create_notification_permission_notGUI
 from templates.controllers.activities.remisions_controller import update_activity_report
 from templates.controllers.activities.remisions_controller import (
-    get_report_activity_by_id,
+    get_remission_by_id,
 )
-from templates.controllers.activities.remisions_controller import delete_activity_report
+from templates.controllers.activities.remisions_controller import delete_remission_db
 from templates.controllers.activities.remisions_controller import (
-    update_items_quotation_w_report,
+    update_items_quotation_w_remission,
 )
-from templates.controllers.activities.remisions_controller import insert_activity_report
+from templates.controllers.activities.remisions_controller import insert_remission
 from templates.controllers.activities.remisions_controller import (
     delete_quotation_activity,
     delete_quotation_activity_item,
@@ -373,7 +373,7 @@ def delete_quotation_activity_from_api(data, data_token):
     return {"data": result, "msg": "Ok"}, 200
 
 
-def create_report_activity_from_api(data, data_token):
+def create_remission_from_api(data, data_token):
     timezone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(timezone).strftime(format_timestamps)
     user = data_token.get("emp_id", "desconocido")
@@ -382,26 +382,28 @@ def create_report_activity_from_api(data, data_token):
             timestamp: timestamp,
             "user": user,
             "action": "Creación",
-            "comment": "Creación de reporte de actividad.",
+            "comment": "Creación de remision de actividad.",
         }
     ]
-    # create quotation activity
-    quotation_id = data.get("quotation_id", None)
-    flag, error, id_report = insert_activity_report(
-        date=data["date"],
-        folio=data["folio"],
-        client_id=data["client_id"],
-        client_company_name=data["client_company_name"],
-        client_contact_name=data["client_contact_name"],
-        client_phone=data["client_phone"],
-        client_email=data["client_email"],
-        plant=data["plant"],
-        area=data["area"],
-        location=data["location"],
-        general_description=data["general_description"],
-        comments=data["comments"],
+    quotation_id = data["metadata"].get("quotation_id", None)
+    flag, error, id_remission = insert_remission(
+        date=data["metadata"]["date"],
+        folio=data["metadata"]["folio"],
+        client_id=data["metadata"]["client_id"],
+        client_company_name=data["metadata"]["client_company_name"],
+        client_contact_name=data["metadata"]["client_contact_name"],
+        client_phone=data["metadata"]["client_phone"],
+        client_email=data["metadata"]["client_email"],
+        plant=data["metadata"]["plant"],
+        area=data["metadata"]["area"],
+        location=data["metadata"]["location"],
+        general_description=data["metadata"]["description"],
+        comments=data["metadata"]["comments"],
         quotation_id=quotation_id if quotation_id or quotation_id > 0 else None,
         history=history_report,
+        contract_id=data["metadata"].get("contract_id", None),
+        pedido=data["metadata"].get("pedido", ""),
+        pedido_exiros=data["metadata"].get("pedido_exiros", ""),
     )
     if not flag:
         return {
@@ -409,18 +411,18 @@ def create_report_activity_from_api(data, data_token):
             "msg": "Error al crear reporte de actividad",
             "error": str(error),
         }, 400
-    if not isinstance(id_report, int):
+    if not isinstance(id_remission, int):
         return {
             "data": None,
             "msg": "Error al crear reporte de actividad, id_report no es un entero",
-            "error": str(id_report),
+            "error": str(id_remission),
         }, 400
     flag_list = []
     errors = []
     results = []
-    if data["quotation_id"] is not None:
-        flag, error, result = update_items_quotation_w_report(
-            id_report, data["quotation_id"]
+    if data["metadata"]["quotation_id"] is not None:
+        flag, error, result = update_items_quotation_w_remission(
+            id_remission, data["metadata"]["quotation_id"]
         )
         flag_list.append(flag)
         errors.append(str(error))
@@ -438,7 +440,7 @@ def create_report_activity_from_api(data, data_token):
         for item in data["items"]:
             flag, error, id_item = insert_quotation_activity_item(
                 quotation_id=None,
-                report_id=id_report,
+                report_id=id_remission,
                 description=item["description"],
                 udm=item["udm"],
                 quantity=item["quantity"],
@@ -450,13 +452,13 @@ def create_report_activity_from_api(data, data_token):
             errors.append(str(error))
             results.append(id_item)
     if flag_list.count(True) == len(flag_list):
-        msg = "Reporte de actividad creado correctamente con id: " + str(id_report)
-        if data["quotation_id"] is not None:
+        msg = "Reporte de actividad creado correctamente con id: " + str(id_remission)
+        if quotation_id is not None:
             msg += " y items de cotización actualizados correctamente"
         else:
             msg += " y items de cotización creados correctamente"
     elif flag_list.count(False) == len(flag_list):
-        flag, error, result = delete_activity_report(id_report)
+        flag, error, result = delete_remission_db(id_remission)
         msg = "Error al crear items de cotización. Reporte eliminado."
         return {
             "data": results,
@@ -464,22 +466,22 @@ def create_report_activity_from_api(data, data_token):
             "msg": msg,
         }, 400
     else:
-        msg = "Reporte de actividad creado con id: " + str(id_report)
-        if data["quotation_id"] is not None:
+        msg = "Reporte de actividad creado con id: " + str(id_remission)
+        if quotation_id is not None:
             msg += ", pero error al actualizar ciertos items de cotización"
         else:
             msg += ", pero error al crear ciertos items de cotización"
     create_notification_permission(
-        msg, ["administracion"], "Reporte de actividad creado", user, 0
+        msg, ["administracion"], "Remision de actividad creado", user, 0
     )
     write_log_file(log_file_admin_collecions, msg)
     return {"data": results, "msg": "Ok"}, 201
 
 
-def get_report_activity_from_api(id_report: int | None, data_token):
+def get_remission_from_api(id_report: int | None, data_token):
     if id_report is not None and id_report <= 0:
         id_report = None
-    flag, error, result = get_report_activity_by_id(id_report)
+    flag, error, result = get_remission_by_id(id_report)
     if not flag:
         return {"data": None, "msg": str(error)}, 400
     if not (isinstance(result, list) or isinstance(result, tuple)):
@@ -491,6 +493,7 @@ def get_report_activity_from_api(id_report: int | None, data_token):
         result = [result]
     data_out = []
     for item in result:
+        extra_info = json.loads(item[19])
         data_out.append(
             {
                 "id": item[0],
@@ -512,19 +515,23 @@ def get_report_activity_from_api(id_report: int | None, data_token):
                 "status": item[14],
                 "history": json.loads(item[15]) if item[15] else [],
                 "items": json.loads(item[16]) if item[16] else [],
+                "files": json.loads(item[17]) if item[17] else [],
+                "contract_id": item[18],
+                "pedido": extra_info.get("pedido", ""),
+                "pedido_exiros": extra_info.get("pedido_exiros", ""),
             }
         )
     return {"data": data_out, "msg": "Ok"}, 200
 
 
-def update_report_activity_from_api(data, data_token):
+def update_remission_from_api(data, data_token):
     timezone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(timezone).strftime(format_timestamps)
     user = data_token.get("emp_id", "desconocido")
     msg = ""
 
     # Retrieve report activity registry:
-    flag, error, result_ra = get_report_activity_by_id(data["id"])
+    flag, error, result_ra = get_remission_by_id(data["id"])
     if not flag:
         return {
             "data": None,
@@ -539,36 +546,41 @@ def update_report_activity_from_api(data, data_token):
             timestamp: timestamp,
             "user": user,
             "action": "Actualización",
-            "comment": "Actualización de reporte de actividad.",
+            "comment": "Actualización de remision de actividad.",
         }
     )
     quotation_id = data.get("quotation_id", None)
     # Update report activity:
     flag, error, result = update_activity_report(
-        report_id=data["id"],
-        date=data["date"],
-        folio=data["folio"],
-        client_id=data["client_id"],
-        client_company_name=data["client_company_name"],
-        client_contact_name=data["client_contact_name"],
-        client_phone=data["client_phone"],
-        client_email=data["client_email"],
-        plant=data["plant"],
-        area=data["area"],
-        location=data["location"],
-        general_description=data["general_description"],
-        comments=data["comments"],
+        report_id=data["metadata"]["id"],
+        date=data["metadata"]["date"],
+        folio=data["metadata"]["folio"],
+        client_id=data["metadata"]["client_id"],
+        client_company_name=data["metadata"]["client_company_name"],
+        client_contact_name=data["metadata"]["client_contact_name"],
+        client_phone=data["metadata"]["client_phone"],
+        client_email=data["metadata"]["client_email"],
+        plant=data["metadata"]["plant"],
+        area=data["metadata"]["area"],
+        location=data["metadata"]["location"],
+        general_description=data["metadata"]["description"],
+        comments=data["metadata"]["comments"],
         quotation_id=quotation_id if quotation_id or quotation_id > 0 else None,
         history=history,
-        status=data["status"],
+        status=data["metadata"]["status"],
+        contract_id=data["metadata"].get("contract_id", None),
+        pedido=data["metadata"].get("pedido", ""),
+        pedido_exiros=data["metadata"].get("pedido_exiros", ""),
     )
     if not flag:
         return {
             "data": None,
-            "msg": "Error al actualizar registro de reporte de actividad",
+            "msg": "Error al actualizar registro de remision  de actividad",
             "error": str(error),
         }, 400
-    msg = "Reporte de actividad actualizado correctamente con id: " + str(data["id"])
+    msg = "Remision de actividad actualizado correctamente con id: " + str(
+        data["metadata"]["id"]
+    )
     items_report = json.loads(result_ra[16]) if result_ra[16] else []
     dict_items = {int(item["qa_item_id"]): item for item in items_report}
     # Update items:
@@ -592,7 +604,7 @@ def update_report_activity_from_api(data, data_token):
                 flag, error, result = update_quotation_activity_item(
                     item["id"],
                     quotation_id,
-                    data["id"],
+                    data["metadata"]["id"],
                     item.get("item_contract_id", None),
                     item["description"],
                     item["udm"],
@@ -611,7 +623,7 @@ def update_report_activity_from_api(data, data_token):
             ]
             flag, error, result = insert_quotation_activity_item(
                 quotation_id=None,
-                report_id=data["id"],
+                report_id=data["metadata"]["id"],
                 description=item["description"],
                 udm=item["udm"],
                 quantity=item["quantity"],
@@ -623,25 +635,25 @@ def update_report_activity_from_api(data, data_token):
         errors.append(str(error))
         results.append(result)
     if flag_list.count(True) == len(flag_list):
-        msg += " y items de de reporte actualizados correctamente"
+        msg += " y items de de remision actualizados correctamente"
     elif flag_list.count(False) == len(flag_list):
-        msg += " pero error al actualizar ciertos items de reporte"
+        msg += " pero error al actualizar ciertos items de remision"
     else:
-        msg += " pero error al actualizar ciertos items de reporte"
+        msg += " pero error al actualizar ciertos items de remision"
     create_notification_permission(
-        msg, ["administracion"], "Reporte de actividad actualizado", user, 0
+        msg, ["administracion"], "Remision de actividad actualizado", user, 0
     )
     write_log_file(log_file_admin_collecions, msg)
     return {"data": result, "msg": "Ok", "error": None}, 200
 
 
-def delete_report_activity_from_api(data, data_token):
-    id_report = data["id"]
+def delete_remission_from_api(data, data_token):
+    id_remission = data["id"]
     user = data_token.get("emp_id", 0)
     msg = ""
 
     # Retrieve report activity registry:
-    flag, error, result_ra = get_report_activity_by_id(id_report)
+    flag, error, result_ra = get_remission_by_id(id_remission)
     if not flag:
         return {
             "data": None,
@@ -677,14 +689,14 @@ def delete_report_activity_from_api(data, data_token):
         msg += "Error al eliminar ciertos ítems del reporte de actividad"
 
     # Delete report activity:
-    flag, error, result = delete_activity_report(id_report)
+    flag, error, result = delete_remission_db(id_remission)
     if not flag:
         return {
             "data": None,
             "msg": "Error al eliminar registro de reporte de actividad",
             "error": str(error),
         }, 400
-    msg += f"Reporte de actividad eliminado correctamente con id: {id_report}"
+    msg += f"Reporte de actividad eliminado correctamente con id: {id_remission}"
     create_notification_permission(
         msg, ["administracion"], "Reporte de actividad eliminado", user, 0
     )
@@ -719,7 +731,7 @@ def create_activity_report_attachment_api(data, data_token):
     time_zone = pytz.timezone(timezone_software)
     # timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone)
-    flag, error, result = get_report_activity_by_id(data["id_report"])
+    flag, error, result = get_remission_by_id(data["id_report"])
     if not flag:
         return {
             "data": None,
@@ -813,7 +825,7 @@ def create_activity_report_attachment_api(data, data_token):
 
 
 def download_report_activity_attachment_api(data, data_token):
-    flag, error, result = get_report_activity_by_id(data["id_report"])
+    flag, error, result = get_remission_by_id(data["id_report"])
     if not flag:
         return {
             "data": None,

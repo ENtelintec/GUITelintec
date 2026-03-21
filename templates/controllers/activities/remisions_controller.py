@@ -101,7 +101,7 @@ def delete_quotation_activity(qa_id: int):
     return flag, e, out
 
 
-def insert_activity_report(
+def insert_remission(
     date: str,
     folio: str,
     client_id: int,
@@ -114,16 +114,23 @@ def insert_activity_report(
     location: str,
     general_description: str,
     comments: str,
-    quotation_id: int|None,
+    quotation_id: int | None,
     history: list,
     status: int = 0,
+    contract_id: int | None = None,
+    pedido: str = "",
+    pedido_exiros: str = "",
 ):
+    extra_info = {
+        "pedido": pedido,
+        "pedido_exiros": pedido_exiros,
+    }
     sql = (
         "INSERT INTO sql_telintec_mod_admin.activity_reports "
         "(date, folio, client_id, client_company_name, client_contact_name, client_phone, "
         " client_email, plant, area, location, general_description, comments, quotation_id, "
-        " status, history) "
-        "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+        " status, history, contract_id, extra_info) "
+        "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s. %s, %s)"
     )
     val = (
         date,
@@ -141,18 +148,20 @@ def insert_activity_report(
         quotation_id,
         status,
         json.dumps(history),
+        contract_id,
+        json.dumps(extra_info),
     )
     flag, e, out = execute_sql(sql, val, 4)
     return flag, e, out
 
 
-def update_items_quotation_w_report(report_id, id_quotation):
+def update_items_quotation_w_remission(remission_id, id_quotation):
     sql = (
         "UPDATE sql_telintec_mod_admin.quotation_activity_items "
         "SET report_id=%s "
         "WHERE quotation_id=%s"
     )
-    val = (report_id, id_quotation)
+    val = (remission_id, id_quotation)
     flag, e, out = execute_sql(sql, val, 3)
     return flag, e, out
 
@@ -171,16 +180,23 @@ def update_activity_report(
     location: str,
     general_description: str,
     comments: str,
-    quotation_id: int|None,
+    quotation_id: int | None,
     status: int,
     history: list,
+    contract_id: int | None = None,
+    pedido: str = "",
+    pedido_exiros: str = "",
 ):
+    extra_info = {
+        "pedido": pedido,
+        "pedido_exiros": pedido_exiros,
+    }
     sql = (
         "UPDATE sql_telintec_mod_admin.activity_reports "
         "SET date=%s, folio=%s, client_id=%s, client_company_name=%s, "
         "    client_contact_name=%s, client_phone=%s, client_email=%s, plant=%s, area=%s, "
         "    location=%s, general_description=%s, comments=%s, quotation_id=%s, "
-        "    status=%s, history=%s "
+        "    status=%s, history=%s, contract_id=%s, extra_info=%s "
         "WHERE id=%s"
     )
     val = (
@@ -199,13 +215,15 @@ def update_activity_report(
         quotation_id,
         status,
         json.dumps(history),
+        contract_id,
+        json.dumps(extra_info),
         report_id,
     )
     flag, e, out = execute_sql(sql, val, 3)
     return flag, e, out
 
 
-def delete_activity_report(report_id: int):
+def delete_remission_db(report_id: int):
     sql = "DELETE FROM sql_telintec_mod_admin.activity_reports WHERE id=%s"
     val = (report_id,)
     flag, e, out = execute_sql(sql, val, 3)
@@ -270,7 +288,7 @@ def update_quotation_activity_item(
     )
     flag, e, out = execute_sql(sql, val, 3)
     return flag, e, out
-    
+
 
 def delete_quotation_activity_item(qa_item_id: int):
     sql = "DELETE FROM sql_telintec_mod_admin.quotation_activity_items WHERE qa_item_id=%s"
@@ -324,7 +342,7 @@ def get_quotation_activity_by_id(id_quotation):
     return flag, e, out
 
 
-def get_report_activity_by_id(id_report: int | None):
+def get_remission_by_id(id_report: int | None):
     sql = (
         "SELECT "
         "ar.id, "
@@ -355,8 +373,10 @@ def get_report_activity_by_id(id_report: int | None):
         " 'unit_price', qai.unit_price, "
         " 'line_total', qai.line_total, "
         " 'history', qai.history "
-        ")) AS items, " 
-        "ar.files "
+        ")) AS items, "
+        "ar.files, "
+        "ar.contract_id, "
+        "ar.extra_info "
         "FROM sql_telintec_mod_admin.activity_reports AS ar "
         "LEFT JOIN sql_telintec_mod_admin.quotation_activity_items AS qai ON ar.id = qai.report_id "
         "WHERE( ar.id = %s  OR %s IS NULL)"
@@ -378,4 +398,3 @@ def update_report_activity_files(id_report, history, files, status):
     val = (json.dumps(history), json.dumps(files), status, id_report)
     flag, e, out = execute_sql(sql, val, 3)
     return flag, e, out
-
