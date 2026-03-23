@@ -105,10 +105,6 @@ def insert_remission(
     date: str,
     folio: str,
     client_id: int,
-    client_company_name: str,
-    client_contact_name: str,
-    client_phone: str,
-    client_email: str,
     plant: str,
     area: str,
     location: str,
@@ -130,16 +126,12 @@ def insert_remission(
         "(date, folio, client_id, client_company_name, client_contact_name, client_phone, "
         " client_email, plant, area, location, general_description, comments, quotation_id, "
         " status, history, contract_id, extra_info) "
-        "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s. %s, %s)"
+        "VALUES %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s. %s, %s)"
     )
     val = (
         date,
         folio,
         client_id,
-        client_company_name,
-        client_contact_name,
-        client_phone,
-        client_email,
         plant,
         area,
         location,
@@ -171,10 +163,6 @@ def update_activity_report(
     date: str,
     folio: str,
     client_id: int,
-    client_company_name: str,
-    client_contact_name: str,
-    client_phone: str,
-    client_email: str,
     plant: str,
     area: str,
     location: str,
@@ -193,8 +181,7 @@ def update_activity_report(
     }
     sql = (
         "UPDATE sql_telintec_mod_admin.activity_reports "
-        "SET date=%s, folio=%s, client_id=%s, client_company_name=%s, "
-        "    client_contact_name=%s, client_phone=%s, client_email=%s, plant=%s, area=%s, "
+        "SET date=%s, folio=%s, client_id=%s, plant=%s, area=%s, "
         "    location=%s, general_description=%s, comments=%s, quotation_id=%s, "
         "    status=%s, history=%s, contract_id=%s, extra_info=%s "
         "WHERE id=%s"
@@ -203,10 +190,6 @@ def update_activity_report(
         date,
         folio,
         client_id,
-        client_company_name,
-        client_contact_name,
-        client_phone,
-        client_email,
         plant,
         area,
         location,
