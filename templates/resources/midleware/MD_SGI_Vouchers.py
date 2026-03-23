@@ -1,15 +1,14 @@
+from static.constants import secrets
 from templates.controllers.vouchers.vouchers_controller import (
     update_voucher_tools_files,
 )
 from static.constants import log_file_sgi_vouchers
-from static.constants import log_file_sgi_chv
 from templates.misc.Functions_Files import write_log_file
 from templates.Functions_Utils import create_notification_permission_notGUI
 from templates.controllers.vouchers.vouchers_controller import update_voucher_epp_files
 from static.constants import format_timestamps
 from botocore.client import ClientError
 from botocore.exceptions import NoCredentialsError
-import secrets
 from static.constants import format_date
 from templates.controllers.vouchers.vouchers_controller import (
     get_vouchers_safety_with_items,

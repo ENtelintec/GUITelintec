@@ -619,26 +619,6 @@ basic_metadata_activity_model = api.model(
             description="ID del cliente",
             example=120,
         ),
-        "client_company_name": fields.String(
-            required=True,
-            description="Nombre de la empresa del cliente",
-            example="Acme Industrial S.A. de C.V.",
-        ),
-        "client_contact_name": fields.String(
-            required=True,
-            description="Nombre del contacto del cliente",
-            example="María López",
-        ),
-        "client_phone": fields.String(
-            required=False,
-            description="Teléfono del contacto del cliente",
-            example="+52 81 1234 5678",
-        ),
-        "client_email": fields.String(
-            required=False,
-            description="Correo electrónico del contacto del cliente",
-            example="maria.lopez@acme.com",
-        ),
         "plant": fields.String(
             required=True,
             description="Planta del cliente",
@@ -1216,10 +1196,6 @@ class MetadataActivityReportForm(Form):
     date = StringField("date", [InputRequired()])
     folio = StringField("folio", [InputRequired()])
     client_id = IntegerField("client_id", [InputRequired()])
-    client_company_name = StringField("client_company_name", [InputRequired()])
-    client_contact_name = StringField("client_contact_name", [InputRequired()])
-    client_phone = StringField("client_phone", [InputRequired()])
-    client_email = StringField("client_email", [InputRequired()])
     plant = StringField("plant", [InputRequired()])
     area = StringField("area", [InputRequired()])
     location = StringField("location", [InputRequired()])
