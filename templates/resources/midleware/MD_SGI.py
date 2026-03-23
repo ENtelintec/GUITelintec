@@ -976,12 +976,12 @@ def create_voucher_vehicle_attachment_api(data, data_token):
             return {"data": None, "msg": f"AWS error: {str(e)}"}, 400
     msg = f"Archivo adjunto agregado: {filename} al voucher {data['id_voucher']} por el empleado {data_token.get('emp_id')}"
     status = voucher_data[21]
-    if "firma-realizado" in filename.lower():  # if is sign file change status to 1
+    if "firma-aprobado" in filename.lower():  # if is sign file change status to 1
         status = 1
-        msg += " y estado actualizado a (firmado)"
+        msg += " y estado actualizado a (aprobado)"
     if "firma-recibido" in filename.lower():  # if is sign file change status to 1
         status = 2
-        msg += " y estado actualizado a (aprobado)"
+        msg += " y estado actualizado a (recibido)"
     history.append(
         {
             "id_voucher": data["id_voucher"],
