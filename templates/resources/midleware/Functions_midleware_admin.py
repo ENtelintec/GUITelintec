@@ -267,7 +267,7 @@ def get_iddentifiers(data_token, all_data_keys):
         abbs_area = []
         for check_func in (check_if_gerente, check_if_head_not_auxiliar):
             flag, error, result = check_func(data_token.get("emp_id"))
-            if flag and result:
+            if flag and result:   
                 abbs_area = get_department_identifiers(result)
                 break
             elif not flag:

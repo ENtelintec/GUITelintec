@@ -82,7 +82,6 @@ from templates.resources.midleware.Functions_midleware_admin import get_iddentif
 
 
 def get_products_sm(contract: str) -> tuple[dict, int]:
-    print(contract)
     if contract != "all":
         flag, error, items_contract = get_items_contract_string(contract)
     else:
@@ -815,7 +814,6 @@ def cancel_sm(data, data_token):
     flag, error, result = get_sm_by_id(data["id"])
     if not flag or len(result) <= 0:
         return 400, ["sm not foud"]
-    print(result)
     history_sm = json.loads(result[12])
     comments_general = json.loads(result[13])
     emp_id_creation = result[6]
@@ -1016,7 +1014,6 @@ def update_sm_from_control_table(
     for k, value in data["info"].items():
         if k == "comment":
             comments = value
-            print("comments -->", k, value)
             continue
         extra_info[k] = value
         comment_history += f"-{k}-{value}-"
@@ -1605,6 +1602,7 @@ def create_sm_attachment_api(data, data_token):
             "msg": "Error at getting sm by id: result is not a list",
             "error": str(result),
         }, 400
+    sm_data = []
     for item in result:
         if int(item[0]) == int(data["id_sm"]):
             sm_data = item

@@ -8,7 +8,7 @@ import json
 from templates.database.connection import execute_sql
 
 
-def get_heads_db(id_department: int|None = None):
+def get_heads_db(id_department: int | None = None):
     sql = (
         "SELECT "
         "heads.position_id, "
@@ -195,7 +195,7 @@ def update_head_DB(position_id: int, department: int, employee: int, extra_info:
 
 
 def delete_head_DB(head_id: int) -> tuple[bool, str | None, int | None]:
-    sql = "DELETE FROM sql_telintec.heads " "WHERE position_id = %s"
+    sql = "DELETE FROM sql_telintec.heads WHERE position_id = %s"
     val = (head_id,)
     flag, e, out = execute_sql(sql, val, 3)
     if not isinstance(out, int):

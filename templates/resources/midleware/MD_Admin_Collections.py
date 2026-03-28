@@ -532,6 +532,12 @@ def update_remission_from_api(data, data_token):
 
     # Retrieve report activity registry:
     flag, error, result_ra = get_remission_by_id(data["id"])
+    if not(isinstance(result_ra, list) or isinstance(result_ra, tuple)):
+        return {
+            "data": None,
+            "msg": "Error al obtener registro de reporte de actividad",
+            "error": "valor devuelto por la db no esperado",
+        }, 400
     if not flag:
         return {
             "data": None,
@@ -539,7 +545,7 @@ def update_remission_from_api(data, data_token):
             "error": str(error),
         }, 400
 
-    history = result_ra[15]  # pyrefly: ignore
+    history = result_ra[15]  
     history = json.loads(history) if history else []
     history.append(
         {
