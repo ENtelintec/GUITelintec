@@ -187,6 +187,7 @@ def read_exel_products_bidding(path: str):
 def read_exel_products_partidas(path: str):
     # skiprow from 1 to 21 in 21 the headers
     df = pd.read_excel(path, header=20)
+    print(path, df.head())
     df = df.fillna("")
     data_excel = df.to_dict("records")
     products = []
@@ -197,20 +198,26 @@ def read_exel_products_partidas(path: str):
             flag, error, result = get_product_by_sku_manufacture(n_parte)
             if flag and len(result) > 0:
                 id_p = result[0]
-        product = {
-            "partida": item.get("PARTIDA", index),
-            "quantity": item.get("CANTIDAD", 1),
-            "udm": item.get("UDM"),
-            "price_unit": item.get("PRECIO UNITARIO", 0.0),
-            "type_p": item.get("TIPO", ""),
-            "marca": item.get("MARCA", ""),
-            "n_parte": item.get("NRO. PARTE", ""),
-            "description": item.get("DESCRIPCIÓN LARGA", ""),
-            "description_small": item.get("DESCRIPCIÓN CORTA", ""),
-            "id": id_p,
-            "comment": "",
-        }
-        products.append(product)
+        partida = item.get("PARTIDA", index)
+        try:
+            partida = int(partida)
+            product = {
+                "partida": partida,
+                "quantity": item.get("CANTIDAD", 1),
+                "udm": item.get("UDM"),
+                "price_unit": item.get("PRECIO UNITARIO", 0.0),
+                "type_p": item.get("TIPO", ""),
+                "marca": item.get("MARCA", ""),
+                "n_parte": item.get("NRO. PARTE", ""),
+                "description": item.get("DESCRIPCIÓN LARGA", ""),
+                "description_small": item.get("DESCRIPCIÓN CORTA", ""),
+                "id": id_p,
+                "comment": "",
+            }
+            products.append(product)
+        except Exception as e:
+            # print(e)
+            continue
     return products
 
 

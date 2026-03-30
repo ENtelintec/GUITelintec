@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from static.Models.api_models import id_filter_default
 __author__ = "Edisson Naula"
 __date__ = "$ 20/jun./2024  at 15:08 $"
 
@@ -106,7 +107,7 @@ products_quotation_put_model = api.model(
         ),
         "comment": fields.String(required=False, description="The product comment"),
         "id": fields.Integer(
-            required=False, description="The product id in the database"
+            required=False, description="The product id in the database", example=0
         ),
         "is_erased": fields.Integer(
             required=False, description="The product needs to be erased", example=0
@@ -288,6 +289,7 @@ contract_model_update = api.model(
             required=True, description="The quotation id", example=1
         ),
         "timestamps": fields.Nested(timestamps_quotation_model),
+        "products": fields.List(fields.Nested(products_quotation_put_model)),
     },
 )
 contract_model_delete = api.model(
@@ -376,8 +378,11 @@ class ProductsPostQuotationForm(Form):
 
 class ProductsPutQuotationForm(Form):
     id = IntegerField(
-        "id", validators=[validators.number_range(min=-1, message="Invalid id")]
+        "id", validators=[], default=0
     )
+    # id = IntegerField(
+    #     "id", validators=[validators.number_range(min=-1, message="Invalid id")], default=0
+    # )
     partida = IntegerField("partida", validators=[InputRequired()])
     revision = IntegerField("revision", validators=[], default=0)
     type_p = StringField("type_p", validators=[])

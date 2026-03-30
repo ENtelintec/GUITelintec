@@ -436,6 +436,11 @@ def datetime_filter(date):
         return date.strftime(format_timestamps)
 
 
+def id_filter_default(id_number):
+    if id_number is None:
+        return 0
+    return id_number
+
 def validate_json(form, field):
     try:
         json.loads(field.data) if isinstance(field.data, str) else None

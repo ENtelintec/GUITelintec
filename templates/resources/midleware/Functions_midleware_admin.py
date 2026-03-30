@@ -172,11 +172,13 @@ def get_contracts(id_contract=None):
             code,
             client_id,
             emission,
+            abbreviation,
         ) = item
         metadata = validate_metadata(json.loads(metadata))
         metadata["contract_number"] = code
         metadata["client_id"] = client_id
         metadata["emission"] = emission
+        metadata["abbreviation"] = abbreviation
         data_out.append(
             {
                 "id": id_c,
@@ -1003,9 +1005,10 @@ def delete_quotation_from_api(data, data_token):
 
 def create_contract_from_api(data, data_token):
     # Extraer y eliminar claves específicas del metadata
-    contract_number = data["metadata"].pop("contract_number", "error cnumber")
+    contract_number = data["metadata"].pop("contract_number", "")
     client_id = data["metadata"].pop("client_id", 50)
-    emission = data["metadata"].pop("emission", "error edate")
+    emission = data["metadata"].pop("emission", "")
+    abbreviation = data["metadata"].pop("abbreviation", "")
     msg = ""
     if data.get("quotation_id", 0) == 0:
         flag, error, id_quotation = create_quotation(data["metadata"], status=2)
@@ -1013,12 +1016,12 @@ def create_contract_from_api(data, data_token):
             return {"data": None, "msg": str(error)}, 400
         msg += f"Cotizacion creada con ID-{id_quotation} por el empleado {data_token.get('emp_id')}"
         flag, error, id_contract = create_contract(
-            id_quotation, data["metadata"], contract_number, client_id, emission
+            id_quotation, data["metadata"], contract_number, client_id, emission, abbreviation
         )
 
     else:
         flag, error, id_contract = create_contract(
-            data["quotation_id"], data["metadata"], contract_number, client_id, emission
+            data["quotation_id"], data["metadata"], contract_number, client_id, emission, abbreviation
         )
         id_quotation = data["quotation_id"]
     if not flag:
@@ -1110,6 +1113,7 @@ def update_contract_from_api(data, data_token):
     contract_number = data["metadata"].pop("contract_number", "error cnumber")
     client_id = data["metadata"].pop("client_id", 50)
     emission = data["metadata"].pop("emission", "error edate")
+    abbreviaton = data["metadata"].pop("abbreviation", "error abbrev")
     # actualizar contrato
     flag, error, result = update_contract(
         data["id"],
@@ -1119,6 +1123,7 @@ def update_contract_from_api(data, data_token):
         emission,
         data["timestamps"],
         id_quotation,
+        abbreviaton
     )
     if not flag:
         return {"data": None, "msg": str(error)}, 400

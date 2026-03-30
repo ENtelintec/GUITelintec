@@ -18,13 +18,14 @@ def create_contract(
     client_id: int,
     emission: str,
     status=0,
+    abbreviation=None
 ):
     time_zone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
     metadata["status"] = status
     sql = (
-        "INSERT INTO sql_telintec_mod_admin.contracts (metadata, creation, quotation_id, code, client_id, emission) "
-        "VALUES (%s, %s, %s, %s, %s, %s)"
+        "INSERT INTO sql_telintec_mod_admin.contracts (metadata, creation, quotation_id, code, client_id, emission, abbreviation) "
+        "VALUES (%s, %s, %s, %s, %s, %s, %s)"
     )
     val = (
         json.dumps(metadata),
@@ -33,6 +34,7 @@ def create_contract(
         contract_number,
         client_id,
         emission,
+        abbreviation
     )
     flag, error, id_contract = execute_sql(sql, val, 4)
     return flag, error, id_contract
@@ -46,6 +48,7 @@ def update_contract(
     emission: str,
     timestamps=None,
     quotation_id=None,
+    abbreviation=None,
 ):
     time_zone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
@@ -58,7 +61,7 @@ def update_contract(
         timestamps["update"].append({"timestamp": timestamp, "comment": "update"})
     sql = (
         "UPDATE sql_telintec_mod_admin.contracts "
-        "SET metadata = %s, timestamps = %s, quotation_id = %s, code = %s, client_id =  %s, emission = %s "
+        "SET metadata = %s, timestamps = %s, quotation_id = %s, code = %s, client_id =  %s, emission = %s , abbreviation = %s "
         "WHERE id = %s"
     )
     val = (
@@ -68,6 +71,7 @@ def update_contract(
         contract_number,
         client_id,
         emission,
+        abbreviation,
         id_contract,
     )
     flag, error, out = execute_sql(sql, val, 3)
@@ -84,7 +88,7 @@ def delete_contract(id_contract):
 def get_contract(id_contract=None):
     if id_contract is None:
         sql = (
-            "SELECT id, metadata, creation, quotation_id, timestamps, code, client_id, emission "
+            "SELECT id, metadata, creation, quotation_id, timestamps, code, client_id, emission, abbreviation "
             "FROM sql_telintec_mod_admin.contracts"
         )
         flag, error, result = execute_sql(sql, None, 2)
@@ -94,7 +98,7 @@ def get_contract(id_contract=None):
             return False, error, []
         return True, None, result
     sql = (
-        "SELECT id, metadata, creation, quotation_id, timestamps, code, client_id, emission "
+        "SELECT id, metadata, creation, quotation_id, timestamps, code, client_id, emission, abbreviation "
         "FROM sql_telintec_mod_admin.contracts "
         "WHERE id = %s"
     )
