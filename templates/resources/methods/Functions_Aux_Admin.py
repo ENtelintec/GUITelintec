@@ -185,22 +185,36 @@ def read_exel_products_bidding(path: str):
 
 
 def read_exel_products_partidas(path: str):
-    # skiprow from 1 to 21 in 21 the headers
-    df = pd.read_excel(path, header=20)
-    print(path, df.head())
-    df = df.fillna("")
+    df = pd.read_excel(path, header=20).fillna("")
     data_excel = df.to_dict("records")
-    products = []
+    print(df.head())
+    groups = []
+    current_group = {"group_title": "General", "items": []}
+
     for index, item in enumerate(data_excel):
-        n_parte = item.get("NRO. PARTE", "")
-        id_p = None
-        if n_parte != "":
-            flag, error, result = get_product_by_sku_manufacture(n_parte)
-            if flag and len(result) > 0:
-                id_p = result[0]
+        udm = item.get("UDM", "")
         partida = item.get("PARTIDA", index)
+        # Detectar subtítulo
+        if udm == "" and item.get("PRECIO UNITARIO", "") == "":
+            print("nre", item.get("DESCRIPCIÓN LARGA", ""))
+            # Cerrar grupo anterior si tiene items
+            if current_group["items"]:
+                groups.append(current_group)
+            # Crear nuevo grupo
+            current_group = {
+                "group_title": item.get("DESCRIPCIÓN LARGA", ""),
+                "items": []
+            }
+            continue
+
         try:
             partida = int(partida)
+            id_p = None
+            if udm != "":
+                flag, error, result = get_product_by_sku_manufacture(udm)
+                if flag and len(result) > 0:
+                    id_p = result[0]
+
             product = {
                 "partida": partida,
                 "quantity": item.get("CANTIDAD", 1),
@@ -208,17 +222,56 @@ def read_exel_products_partidas(path: str):
                 "price_unit": item.get("PRECIO UNITARIO", 0.0),
                 "type_p": item.get("TIPO", ""),
                 "marca": item.get("MARCA", ""),
-                "n_parte": item.get("NRO. PARTE", ""),
+                "n_parte": udm,
                 "description": item.get("DESCRIPCIÓN LARGA", ""),
                 "description_small": item.get("DESCRIPCIÓN CORTA", ""),
                 "id": id_p,
                 "comment": "",
             }
-            products.append(product)
-        except Exception as e:
-            # print(e)
+            current_group["items"].append(product)
+        except Exception:
             continue
-    return products
+
+    # Agregar último grupo
+    if current_group["items"]:
+        groups.append(current_group)
+    return groups
+
+# def read_exel_products_partidas(path: str):
+#     # skiprow from 1 to 21 in 21 the headers
+#     df = pd.read_excel(path, header=20)
+#     print(path, df.head())
+#     df = df.fillna("")
+#     data_excel = df.to_dict("records")
+#     products = []
+#     for index, item in enumerate(data_excel):
+#         n_parte = item.get("NRO. PARTE", "")
+#         id_p = None
+#         if n_parte != "":
+#             flag, error, result = get_product_by_sku_manufacture(n_parte)
+#             if flag and len(result) > 0:
+#                 id_p = result[0]
+#         partida = item.get("PARTIDA", index)
+#         try:
+#             partida = int(partida)
+#             product = {
+#                 "partida": partida,
+#                 "quantity": item.get("CANTIDAD", 1),
+#                 "udm": item.get("UDM"),
+#                 "price_unit": item.get("PRECIO UNITARIO", 0.0),
+#                 "type_p": item.get("TIPO", ""),
+#                 "marca": item.get("MARCA", ""),
+#                 "n_parte": item.get("NRO. PARTE", ""),
+#                 "description": item.get("DESCRIPCIÓN LARGA", ""),
+#                 "description_small": item.get("DESCRIPCIÓN CORTA", ""),
+#                 "id": id_p,
+#                 "comment": "",
+#             }
+#             products.append(product)
+#         except Exception as e:
+#             # print(e)
+#             continue
+#     return products
 
 
 def read_exel_products_quotation(path: str):

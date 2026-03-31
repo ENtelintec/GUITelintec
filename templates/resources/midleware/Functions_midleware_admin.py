@@ -67,7 +67,7 @@ from templates.resources.methods.Functions_Aux_Admin import (
     read_exel_products_quotation,
     compare_file_quotation,
     read_exel_products_bidding,
-    read_exel_products_partidas,
+    read_exel_products_partidas
 )
 
 __author__ = "Edisson Naula"
