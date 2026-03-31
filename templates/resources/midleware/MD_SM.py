@@ -840,7 +840,7 @@ def cancel_sm(data, data_token):
     if flag:
         msg = f"SM con ID-{data['id']} cancelada"
         create_notification_permission(
-            msg, ["sm"], "SM Cancelada", data["emp_id"], emp_id_creation
+            msg, ["sm"], "SM Cancelada", data["info"]["emp_id"], emp_id_creation
         )
         write_log_file(log_file_sm_path, msg)
         return 200, {"msg": "ok"}
