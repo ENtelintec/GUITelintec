@@ -579,7 +579,7 @@ def create_po_application_api(data, data_token):
     if flag:
         update_sm_control_table = True
         extra_info = {"sm_id": result_sm[0]}
-
+    data["reference"] = data["reference"] + "-" + result_sm[1]
     time_zone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
     history = [
