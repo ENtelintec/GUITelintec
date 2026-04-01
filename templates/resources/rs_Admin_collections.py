@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 
 
-from templates.resources.midleware.MD_Admin_Collections import download_report_activity_attachment_api
+from templates.resources.midleware.MD_Admin_Collections import (
+    download_report_activity_attachment_api,
+)
 from static.Models.api_purchases_models import ReportActivityDownloadAttForm
 from static.Models.api_purchases_models import report_activity_download_att_model
 from templates.resources.midleware.MD_Admin_Collections import (
@@ -24,20 +26,20 @@ from templates.resources.midleware.MD_Admin_Collections import (
 from static.Models.api_purchases_models import ReportActivityDeleteForm
 from static.Models.api_purchases_models import report_activity_delete_model
 from templates.resources.midleware.MD_Admin_Collections import (
-    delete_report_activity_from_api,
+    delete_remission_from_api,
 )
 from static.Models.api_purchases_models import ReportActivityUpdateForm
-from static.Models.api_purchases_models import report_activity_update_model
+from static.Models.api_purchases_models import remission_activity_update_model
 from templates.resources.midleware.MD_Admin_Collections import (
-    update_report_activity_from_api,
+    update_remission_from_api,
 )
 from static.Models.api_purchases_models import ReportActivityCreateForm
-from static.Models.api_purchases_models import report_activity_create_model
+from static.Models.api_purchases_models import remission_activity_create_model
 from templates.resources.midleware.MD_Admin_Collections import (
-    create_report_activity_from_api,
+    create_remission_from_api,
 )
 from templates.resources.midleware.MD_Admin_Collections import (
-    get_report_activity_from_api,
+    get_remission_from_api,
 )
 from static.Models.api_purchases_models import (
     QuotationActivityCreateForm,
@@ -393,9 +395,9 @@ class ChangeStatusActivity(Resource):
         return data_out, code
 
 
-@ns.route("/activity/report")
-class ActivityReportAction(Resource):
-    @ns.expect(expected_headers_per, report_activity_create_model)
+@ns.route("/activity/remission")
+class ActivityRemissionAction(Resource):
+    @ns.expect(expected_headers_per, remission_activity_create_model)
     def post(self):
         flag, data_token, msg = token_verification_procedure(
             request, department=["administracion", "purchases"]
@@ -406,10 +408,10 @@ class ActivityReportAction(Resource):
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
-        data_out, code = create_report_activity_from_api(data, data_token)
+        data_out, code = create_remission_from_api(data, data_token)
         return data_out, code
 
-    @ns.expect(expected_headers_per, report_activity_update_model)
+    @ns.expect(expected_headers_per, remission_activity_update_model)
     def put(self):
         flag, data_token, msg = token_verification_procedure(
             request, department=["administracion", "purchases"]
@@ -420,7 +422,7 @@ class ActivityReportAction(Resource):
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
-        data_out, code = update_report_activity_from_api(data, data_token)
+        data_out, code = update_remission_from_api(data, data_token)
         return data_out, code
 
     @ns.expect(expected_headers_per, report_activity_delete_model)
@@ -434,7 +436,7 @@ class ActivityReportAction(Resource):
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
-        data_out, code = delete_report_activity_from_api(data, data_token)
+        data_out, code = delete_remission_from_api(data, data_token)
         return data_out, code
 
 
@@ -452,7 +454,7 @@ class FetchActivitieReportById(Resource):
         except Exception as e:
             print(f"retrieviong all {e}")
             id_report = None
-        data_out, code = get_report_activity_from_api(id_report, data_token)
+        data_out, code = get_remission_from_api(id_report, data_token)
         return data_out, code
 
 
@@ -511,67 +513,3 @@ class DownloadVehicleVoucherAttachment(Resource):
         else:
             print(data)
             return {"data": data_out, "msg": "Error at file structure"}, 400
-
-
-# @ns.route("/remission")
-# class RemissionAction(Resource):
-#     @ns.expect(expected_headers_per, remission_model_insert)
-#     def post(self):
-#         flag, data_token, msg = token_verification_procedure(
-#             request, department="administracion"
-#         )
-#         if not flag:
-#             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-
-#         validator = RemissionInsertForm.from_json(ns.payload)  # pyrefly: ignore
-#         if not validator.validate():
-#             return {"data": validator.errors, "msg": "Error at structure"}, 400
-
-#         data = validator.data
-#         data_out, code = create_remission_from_api(data, data_token)
-#         return data_out, code
-
-#     @ns.expect(expected_headers_per, remission_model_update)
-#     def put(self):
-#         flag, data_token, msg = token_verification_procedure(
-#             request, department="administracion"
-#         )
-#         if not flag:
-#             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-
-#         validator = RemissionUpdateForm.from_json(ns.payload)  # pyrefly: ignore
-#         if not validator.validate():
-#             return {"data": validator.errors, "msg": "Error at structure"}, 400
-
-#         data = validator.data
-#         data_out, code = update_remission_from_api(data, data_token)
-#         return data_out, code
-
-#     @ns.expect(expected_headers_per, remission_model_delete)
-#     def delete(self):
-#         flag, data_token, msg = token_verification_procedure(
-#             request, department="administracion"
-#         )
-#         if not flag:
-#             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-
-#         validator = RemissionDeleteForm.from_json(ns.payload)  # pyrefly: ignore
-#         if not validator.validate():
-#             return {"data": validator.errors, "msg": "Error at structure"}, 400
-
-#         data = validator.data
-#         data_out, code = delete_remission_from_api(data, data_token)
-#         return data_out, code
-
-
-# @ns.route("/remissions/<string:status>")
-# class FetchRemissions(Resource):
-#     @ns.expect(expected_headers_per)
-#     def get(self, status):
-#         flag, data_token, msg = token_verification_procedure(
-#             request, department="administracion"
-#         )
-#         if not flag:
-#             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-#         data, code = fetch_remissions_by_status_db(status, data_token)
-#         return data, code

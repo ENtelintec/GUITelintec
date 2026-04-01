@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from templates.resources.midleware.MD_SGI_Vouchers import create_voucher_tools_attachment_api
+from templates.resources.midleware.MD_SGI_Vouchers import create_voucher_epp_attachment_api
 from static.Models.api_sgi_models import VehicleVoucherDownloadAttachmentForm
 from static.Models.api_sgi_models import vehicle_voucher_download_att_model
 from flask import send_file
@@ -332,3 +334,64 @@ class DownloadVehicleVoucherAttachment(Resource):
         else:
             print(data)
             return {"data": data_out, "msg": "Error at file structure"}, 400
+
+
+@ns.route("/voucher/epp/attachment-<string:id_voucher>")
+class UploadEppVoucherAttachment(Resource):
+    @ns.expect(expected_headers_per, expected_files_attachment)
+    def post(self, id_voucher):
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["sgi", "voucher"]
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        if "file" not in request.files:
+            return {"data": "No se detecto un archivo"}, 400
+        file = request.files["file"]
+        if file and file.filename:
+            filename = secure_filename(file.filename)
+            filepath_download = os.path.join(tempfile.mkdtemp(), filename)
+            file.save(filepath_download)
+            data_out, code = create_voucher_epp_attachment_api(
+                {
+                    "filepath": filepath_download,
+                    "filename": filename,
+                    "id_voucher": id_voucher,
+                },
+                data_token,
+            )
+            if code != 201:
+                return {"data": data_out, "msg": "Error at file structure"}, 400
+            return {"data": data_out, "msg": f"Ok with filaname: {filename}"}, 201
+        else:
+            return {"msg": "No se subio el archivo"}, 400
+
+@ns.route("/voucher/tools/attachment-<string:id_voucher>")
+class UploadToolsVoucherAttachment(Resource):
+    @ns.expect(expected_headers_per, expected_files_attachment)
+    def post(self, id_voucher):
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["sgi", "voucher"]
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        if "file" not in request.files:
+            return {"data": "No se detecto un archivo"}, 400
+        file = request.files["file"]
+        if file and file.filename:
+            filename = secure_filename(file.filename)
+            filepath_download = os.path.join(tempfile.mkdtemp(), filename)
+            file.save(filepath_download)
+            data_out, code = create_voucher_tools_attachment_api(
+                {
+                    "filepath": filepath_download,
+                    "filename": filename,
+                    "id_voucher": id_voucher,
+                },
+                data_token,
+            )
+            if code != 201:
+                return {"data": data_out, "msg": "Error at file structure"}, 400
+            return {"data": data_out, "msg": f"Ok with filaname: {filename}"}, 201
+        else:
+            return {"msg": "No se subio el archivo"}, 400

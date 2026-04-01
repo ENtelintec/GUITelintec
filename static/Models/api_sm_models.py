@@ -362,9 +362,9 @@ sm_model_out = api.model(
         "activity_description": fields.String(
             required=False, description="Description of activity"
         ),
-        "request_date": fields.String(
-            required=True, description="Request date", example="2024-06-29 12:00:00"
-        ),
+        # "request_date": fields.String(
+        #     required=True, description="Request date", example="2024-06-29 12:00:00"
+        # ),
         "requesting_user_status": fields.Integer(
             required=False,
             description="Status of the requesting user (pendiente:1, recibido:2, cancelado:3, reprogramado:4)",
@@ -960,7 +960,7 @@ class SMInfoForm(Form):
     )
 
     # --- Campos faltantes de la tabla de control (todos OPCIONALES) ---
-    request_date = DateField("request_date", validators=[], filters=[date_filter])
+    # request_date = DateField("request_date", validators=[], filters=[date_filter])
     # NOTA: 'date' ya existe arriba (requerido). Si quisieras una fecha de control separada, usa otro nombre.
 
     # Si prefieres alinear critical_date a DateField (Opción B), agrega este y migra poco a poco:
@@ -1073,7 +1073,7 @@ class SMInfoControlTableForm(Form):
     project = StringField("project", validators=[], default="")
     urgent = IntegerField("urgent", validators=[], default=0)
     comment = FieldList(FormField(CommentSmForm, "comment"), validators=[], default=[])
-    request_date = DateField("request_date", validators=[], filters=[date_filter])
+    # request_date = DateField("request_date", validators=[], filters=[date_filter])
     date = DateField("date", validators=[], filters=[date_filter])
     critical_date = DateField("critical_date", validators=[], filters=[date_filter])
     activity_description = StringField(

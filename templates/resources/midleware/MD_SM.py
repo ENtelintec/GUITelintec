@@ -1,3 +1,8 @@
+from botocore.exceptions import ClientError
+from botocore.exceptions import NoCredentialsError
+from static.constants import secrets
+import boto3
+from templates.Functions_Utils import create_notification_permission_notGUI
 from templates.controllers.material_request.sm_controller import (
     update_extra_info_sm_item_db,
 )
@@ -77,7 +82,6 @@ from templates.resources.midleware.Functions_midleware_admin import get_iddentif
 
 
 def get_products_sm(contract: str) -> tuple[dict, int]:
-    print(contract)
     if contract != "all":
         flag, error, items_contract = get_items_contract_string(contract)
     else:
@@ -810,7 +814,6 @@ def cancel_sm(data, data_token):
     flag, error, result = get_sm_by_id(data["id"])
     if not flag or len(result) <= 0:
         return 400, ["sm not foud"]
-    print(result)
     history_sm = json.loads(result[12])
     comments_general = json.loads(result[13])
     emp_id_creation = result[6]
@@ -837,7 +840,7 @@ def cancel_sm(data, data_token):
     if flag:
         msg = f"SM con ID-{data['id']} cancelada"
         create_notification_permission(
-            msg, ["sm"], "SM Cancelada", data["emp_id"], emp_id_creation
+            msg, ["sm"], "SM Cancelada", data["info"]["emp_id"], emp_id_creation
         )
         write_log_file(log_file_sm_path, msg)
         return 200, {"msg": "ok"}
@@ -878,13 +881,9 @@ def dowload_file_sm(sm_id: int, type_file="pdf"):
     # extra_info = json.loads(result[14])
     basename = f"sm_{folio}"
     download_path = (
-        os.path.join(
-            tempfile.mkdtemp(), os.path.basename(basename + ".pdf")
-        )
+        os.path.join(tempfile.mkdtemp(), os.path.basename(basename + ".pdf"))
         if type_file == "pdf"
-        else os.path.join(
-            tempfile.mkdtemp(), os.path.basename(basename + ".xlsx")
-        )
+        else os.path.join(tempfile.mkdtemp(), os.path.basename(basename + ".xlsx"))
     )
     products = []
     flag, error, result = get_info_names_by_sm_id(result[0])
@@ -1004,14 +1003,13 @@ def update_sm_from_control_table(
     emp_id_creation = result[6]
     time_zone = pytz.timezone(timezone_software)
     date_now = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
-    extra_info = json.loads(result[14])
+    extra_info = json.loads(result[14]) if result[14] else {}
 
     comment_history = f"Actualización de datos desde la tabla de control por el empleado {data_token.get('emp_id')}"
     comments = []
     for k, value in data["info"].items():
         if k == "comment":
             comments = value
-            print("comments -->", k, value)
             continue
         extra_info[k] = value
         comment_history += f"-{k}-{value}-"
@@ -1556,3 +1554,126 @@ def update_items_sm_from_api(data, data_token):
         return {"msg": f"error at updating sm history: {error}"}, 400
 
     return {"msg": "ok", "data": msg, "error": errors}, code
+
+
+def create_sm_attachment_api(data, data_token):
+    filename = data["filename"]
+    if "firma" not in filename.lower():
+        return {"data": None, "msg": "Nombre de archivo incorrecto"}, 400
+    id_report_name = filename.split("-")[0]
+    try:
+        if int(id_report_name) != int(data["id_sm"]) and int(data["id_sm"]) <= 0:
+            return (
+                {
+                    "data": None,
+                    "msg": "El nombre del archivo no corresponde al voucher",
+                },
+                400,
+            )
+    except Exception as e:
+        return (
+            {
+                "data": None,
+                "msg": "Error al procesar el nombre del archivo",
+                "error": str(e),
+            },
+            400,
+        )
+    time_zone = pytz.timezone(timezone_software)
+    # timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
+    timestamp = datetime.now(pytz.utc).astimezone(time_zone)
+    flag, error, result = get_sm_by_id(data["id_sm"])
+    if not flag:
+        return {
+            "data": None,
+            "msg": "Error at getting sm by id",
+            "error": str(error),
+        }, 400
+    if not isinstance(result, list):
+        return {
+            "data": None,
+            "msg": "Error at getting sm by id: result is not a list",
+            "error": str(result),
+        }, 400
+    sm_data = []
+    for item in result:
+        if int(item[0]) == int(data["id_sm"]):
+            sm_data = item
+            break
+    if len(sm_data) <= 0:
+        return {
+            "data": None,
+            "msg": "Error at getting sm by id: sm not found",
+            "error": str(sm_data),
+        }, 400
+    date_report = sm_data[8]
+    history = json.loads(sm_data[12])
+    # reconocer el tipo de archivo [pdf, image, zip]
+    filepath_down = data["filepath"]
+    file_extension = filepath_down.split(".")[-1].lower()
+    valid_extension = ["pdf", "jpg", "jpeg", "png", "zip", "webp"]
+    if file_extension not in valid_extension:
+        return (
+            {"data": None, "msg": "Formato de archivo no valido"},
+            400,
+        )
+    # create name vouchers_vehicles/year/month/day/filename
+    path_aws = f"smData/{date_report.strftime('%Y/%m/%d/')}{data['filename']}"
+    s3_client = boto3.client("s3")
+    bucket_name = secrets.get("S3_ADMIN_BUCKET")
+    msg = f"Archivo adjunto agregado: {filename} al voucher {data['id_report']} por el empleado {data_token.get('emp_id')}"
+    status = sm_data[11]
+    if "firma-recibido" in filename.lower():  # if is sign file change status to 1
+        status = 5
+        msg += " y estado actualizado a (firmado)"
+    else:
+        return {"data": None, "msg": "Nombre de archivo incorrecto"}, 400
+
+    try:
+        s3_client.upload_file(Filename=filepath_down, Bucket=bucket_name, Key=path_aws)
+    except FileNotFoundError:
+        return {"data": None, "msg": "Local file not found"}, 400
+    except NoCredentialsError:
+        return {"data": None, "msg": "AWS credentials not found"}, 400
+    except ClientError as e:
+        error_code = e.response["Error"]["Code"]
+        if error_code == "NoSuchBucket":
+            return {"data": None, "msg": f"Bucket does not exist: {bucket_name}"}, 400
+        elif error_code == "AccessDenied":
+            return {"data": None, "msg": f"Access denied to bucket: {bucket_name}"}, 400
+        else:
+            return {"data": None, "msg": f"AWS error: {str(e)}"}, 400
+
+    history.append(
+        {
+            "timestamp": timestamp.strftime(format_timestamps),
+            "user": data_token.get("emp_id"),
+            "action": "Adjuntar archivo",
+            "comment": msg,
+        }
+    )
+    extra_info = json.loads(sm_data[14])
+    comments = json.loads(sm_data[13])
+    files = extra_info.get("files", [])
+    files.append(
+        {
+            "filename": data["filename"],
+            "path": path_aws,
+        }
+    )
+    extra_info["files"] = files
+    flag, error, rows_updated = update_history_status_sm(
+        data["id_sm"], history, status, extra_info, comments
+    )
+    if not flag:
+        return {
+            "data": None,
+            "msg": "Error at updating history sm but file uploaded",
+            "error": str(error),
+        }, 400
+    user_created_sm = sm_data[6]
+    create_notification_permission_notGUI(
+        msg, ["administracion", "sm"], data_token.get("emp_id"), user_created_sm
+    )
+    write_log_file(log_file_sm_path, msg)
+    return {"data": path_aws, "msg": msg}, 201

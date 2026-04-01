@@ -1,5 +1,10 @@
 # -*- coding: utf-8 -*-
 
+import os
+from templates.resources.midleware.MD_SM import create_sm_attachment_api
+import tempfile
+from werkzeug.utils import secure_filename
+from static.Models.api_sgi_models import expected_files_attachment
 from static.Models.api_sm_models import item_approve_model
 from templates.resources.midleware.MD_SM import update_sm_item_approve
 from flask import send_file, request
@@ -457,3 +462,34 @@ class UpdateItemSMApprove(Resource):
         data = validator.data
         data_out, code = update_sm_item_approve(data, data_token)
         return data_out, code
+
+
+@ns.route("/attachment-<string:id_sm>")
+class UploadSMAttachment(Resource):
+    @ns.expect(expected_headers_per, expected_files_attachment)
+    def post(self, id_sm):
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["administracion", "operaciones"]
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        if "file" not in request.files:
+            return {"data": "No se detecto un archivo"}, 400
+        file = request.files["file"]
+        if file and file.filename:
+            filename = secure_filename(file.filename)
+            filepath_download = os.path.join(tempfile.mkdtemp(), filename)
+            file.save(filepath_download)
+            data_out, code = create_sm_attachment_api(
+                {
+                    "filepath": filepath_download,
+                    "filename": filename,
+                    "id_sm": id_sm,
+                },
+                data_token,
+            )
+            if code != 201:
+                return {"data": data_out, "msg": "Error at file structure"}, 400
+            return {"data": data_out, "msg": f"Ok with filaname: {filename}"}, 201
+        else:
+            return {"msg": "No se subio el archivo"}, 400

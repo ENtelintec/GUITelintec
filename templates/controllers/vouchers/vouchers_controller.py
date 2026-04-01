@@ -326,6 +326,69 @@ def update_voucher_vehicle_files(id_voucher, history, extra_info, status):
             return flag_history, error_history, rows_changed_history
         return True, None, rows_changed_history
 
+def update_voucher_epp_files(id_voucher, history, extra_info, status):
+    """
+    Actualiza el historial y la información extra de un voucherepp en la tabla voucher safety.
+
+    :param id_voucher: ID del voucher a actualizar
+    :param history: Nuevo historial en formato JSON
+    :param extra_info: Nueva información extra en formato JSON
+    :return: Estado de la operación (éxito/error)
+    """
+    sql = (
+        "UPDATE sql_telintec_mod_admin.voucher_safety "
+        "SET extra_info = %s, status = %s "
+        "WHERE id_voucher_general = %s"
+    )
+    val = (json.dumps(extra_info), status, id_voucher)
+    flag, error, rows_changed = execute_sql(sql, val, 3)
+    if not flag:
+        return flag, error, rows_changed
+    else:
+        sql_history = (
+            "UPDATE sql_telintec_mod_admin.vouchers_general "
+            "SET history = %s  "
+            "WHERE id_voucher = %s"
+        )
+        val_history = (json.dumps(history), id_voucher)
+        flag_history, error_history, rows_changed_history = execute_sql(
+            sql_history, val_history, 3
+        )
+        if not flag_history:
+            return flag_history, error_history, rows_changed_history
+        return True, None, rows_changed_history
+
+def update_voucher_tools_files(id_voucher, history, extra_info, status):
+    """
+    Actualiza el historial y la información extra de un voucherepp en la tabla voucher tools.
+
+    :param id_voucher: ID del voucher a actualizar
+    :param history: Nuevo historial en formato JSON
+    :param extra_info: Nueva información extra en formato JSON
+    :return: Estado de la operación (éxito/error)
+    """
+    sql = (
+        "UPDATE sql_telintec_mod_admin.voucher_tools "
+        "SET extra_info = %s, status = %s "
+        "WHERE id_voucher_general = %s"
+    )
+    val = (json.dumps(extra_info), status, id_voucher)
+    flag, error, rows_changed = execute_sql(sql, val, 3)
+    if not flag:
+        return flag, error, rows_changed
+    else:
+        sql_history = (
+            "UPDATE sql_telintec_mod_admin.vouchers_general "
+            "SET history = %s  "
+            "WHERE id_voucher = %s"
+        )
+        val_history = (json.dumps(history), id_voucher)
+        flag_history, error_history, rows_changed_history = execute_sql(
+            sql_history, val_history, 3
+        )
+        if not flag_history:
+            return flag_history, error_history, rows_changed_history
+        return True, None, rows_changed_history
 
 def update_voucher_item(
     id_item,
@@ -411,18 +474,20 @@ def get_vouchers_tools_with_items_date(start_date, user=None):
         "'observations', vi.observations, "
         "'extra_info', vi.extra_info)"
         ") AS items, "
-        "vg.history "
+        "vg.history, "
+        "vt.status "
         "FROM sql_telintec_mod_admin.voucher_tools AS vt "
         "JOIN sql_telintec_mod_admin.vouchers_general AS vg ON vt.id_voucher_general = vg.id_voucher "
         "LEFT JOIN sql_telintec_mod_admin.voucher_items AS vi ON vg.id_voucher = vi.id_voucher "
-        "WHERE (vg.date >= %s) AND (vg.user = %s OR %s IS NULL) GROUP BY vt.id_voucher_general"
+        "WHERE (vg.date >= %s) AND (vg.user = %s OR %s IS NULL) OR (vt.id_voucher_general = %s OR %s IS NULL)) "
+        "GROUP BY vt.id_voucher_general"
     )
     val = (start_date, user, user)
     flag, error, vouchers = execute_sql(sql, val, 2)
     return flag, error, vouchers
 
 
-def get_vouchers_safety_with_items(start_date, user=None):
+def get_vouchers_safety_with_items(start_date, user=None, id_voucher=None):
     """
     Obtiene vouchers de seguridad desde una fecha específica, incluyendo su metadata e ítems relacionados.
 
@@ -454,13 +519,15 @@ def get_vouchers_safety_with_items(start_date, user=None):
         "'observations', vi.observations, "
         "'extra_info', vi.extra_info)"
         ") AS items, "
-        "vg.history "
+        "vg.history, "
+        "vs.status "
         "FROM sql_telintec_mod_admin.voucher_safety AS vs "
         "JOIN sql_telintec_mod_admin.vouchers_general AS vg ON vs.id_voucher_general = vg.id_voucher "
         "LEFT JOIN sql_telintec_mod_admin.voucher_items AS vi ON vg.id_voucher = vi.id_voucher "
-        "WHERE (vg.date >= %s) AND (vg.user = %s OR %s IS NULL) GROUP BY vs.id_voucher_general "
+        "WHERE (vg.date >= %s) AND (vg.user = %s OR %s IS NULL) OR (vs.id_voucher_general = %s OR %s IS NULL)) "
+        "GROUP BY vs.id_voucher_general "
     )
-    val = (start_date, user, user)
+    val = (start_date, user, user, id_voucher, id_voucher)
     flag, error, vouchers = execute_sql(sql, val, 2)
     return flag, error, vouchers
 
