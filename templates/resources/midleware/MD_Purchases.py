@@ -230,7 +230,6 @@ def create_purchaser_order_api(data, data_token):
     )
     if not flag:
         return {"data": None, "msg": "error", "error": str(error)}, 400
-    print(flag, error, id_order)
     if not isinstance(id_order, int) or id_order <= 0:
         return {
             "data": id_order,
@@ -260,7 +259,6 @@ def create_purchaser_order_api(data, data_token):
             )
             update_item = False
         else:
-            print(id_order)
             flag, error, result = update_po_item(
                 item["id"],
                 id_order,
@@ -364,7 +362,6 @@ def update_purchase_order_api(data, data_token):
     for item in data["items"]:
         extra_info = create_extra_info_product_from_data(item)
         update_item = True
-        print("items", item)
         if item["id"] is None or item["id"] <= 0:
             flag, error, result = insert_purchase_order_item(
                 data["id"],
@@ -935,7 +932,7 @@ def generate_folios_po(reference, data_token):
                     count = int(number)
                     break
                 except Exception as e:
-                    print(e)
+                    print("error when parsing count:", str(e))
                     continue
             folios_out.append(f"{folio_normal}-{count + 1:03d}".upper())
         elif folio_maestro.lower() in folio.lower():
@@ -945,7 +942,7 @@ def generate_folios_po(reference, data_token):
                     count = int(number)
                     break
                 except Exception as e:
-                    print(e)
+                    print("error when parsing count:", str(e))
                     continue
             folios_out.append(
                 f"{folio_maestro}-{count + 1:03d}-{dict_abbs[reference_parts[-2]].get('initial', '')}{reference_parts[-1]}".upper()
@@ -957,7 +954,7 @@ def generate_folios_po(reference, data_token):
                     count = int(number)
                     break
                 except Exception as e:
-                    print(e)
+                    print("error when parsing count:", str(e))
                     continue
             folios_out.append(f"{folio_cotfc}-{count + 1:03d}".upper())
     if len(folios_out) == 0:
