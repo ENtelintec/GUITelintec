@@ -230,6 +230,7 @@ def create_purchaser_order_api(data, data_token):
     )
     if not flag:
         return {"data": None, "msg": "error", "error": str(error)}, 400
+    print(flag, error, id_order)
     if not isinstance(id_order, int) or id_order <= 0:
         return {
             "data": id_order,
@@ -259,6 +260,7 @@ def create_purchaser_order_api(data, data_token):
             )
             update_item = False
         else:
+            print(id_order)
             flag, error, result = update_po_item(
                 item["id"],
                 id_order,

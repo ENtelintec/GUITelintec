@@ -1129,19 +1129,19 @@ def create_sm_from_api(data, data_token):
         }, 400
     # start creating sm
     extra_info = check_item_sm_for_init_vals(data["items"])
-    flag, error, result = insert_sm_db(data, extra_info)
+    flag, error, sm_result = insert_sm_db(data, extra_info)
     if not flag:
         print(error)
         return {"msg": "error at updating db"}, 400
-    if result is None:
+    if sm_result is None:
         return {"msg": "error at creating sm"}, 400
     msg = (
-        f"Nueva SM creada #{result}, folio: {data['info']['folio']}, "
+        f"Nueva SM creada #{sm_result}, folio: {data['info']['folio']}, "
         f"fecha limite: {data['info']['critical_date']}, "
         f"empleado con id: {data_token.get('emp_id')}, "
         f"comentario: {data['info']['comment']}"
     )
-    errors_items, result_ids_items = create_items_sm_db(data["items"], result)
+    errors_items, result_ids_items = create_items_sm_db(data["items"], sm_result)
     if len(result_ids_items) > 0:
         msg += f"\nItems creados: {result_ids_items}"
     if len(errors_items) > 0:
