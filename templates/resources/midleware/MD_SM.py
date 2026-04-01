@@ -881,13 +881,9 @@ def dowload_file_sm(sm_id: int, type_file="pdf"):
     # extra_info = json.loads(result[14])
     basename = f"sm_{folio}"
     download_path = (
-        os.path.join(
-            tempfile.mkdtemp(), os.path.basename(basename + ".pdf")
-        )
+        os.path.join(tempfile.mkdtemp(), os.path.basename(basename + ".pdf"))
         if type_file == "pdf"
-        else os.path.join(
-            tempfile.mkdtemp(), os.path.basename(basename + ".xlsx")
-        )
+        else os.path.join(tempfile.mkdtemp(), os.path.basename(basename + ".xlsx"))
     )
     products = []
     flag, error, result = get_info_names_by_sm_id(result[0])
@@ -1007,7 +1003,7 @@ def update_sm_from_control_table(
     emp_id_creation = result[6]
     time_zone = pytz.timezone(timezone_software)
     date_now = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
-    extra_info = json.loads(result[14])
+    extra_info = json.loads(result[14]) if result[14] else {}
 
     comment_history = f"Actualización de datos desde la tabla de control por el empleado {data_token.get('emp_id')}"
     comments = []
@@ -1566,10 +1562,7 @@ def create_sm_attachment_api(data, data_token):
         return {"data": None, "msg": "Nombre de archivo incorrecto"}, 400
     id_report_name = filename.split("-")[0]
     try:
-        if (
-            int(id_report_name) != int(data["id_sm"])
-            and int(data["id_sm"]) <= 0
-        ):
+        if int(id_report_name) != int(data["id_sm"]) and int(data["id_sm"]) <= 0:
             return (
                 {
                     "data": None,
@@ -1635,7 +1628,7 @@ def create_sm_attachment_api(data, data_token):
         msg += " y estado actualizado a (firmado)"
     else:
         return {"data": None, "msg": "Nombre de archivo incorrecto"}, 400
-    
+
     try:
         s3_client.upload_file(Filename=filepath_down, Bucket=bucket_name, Key=path_aws)
     except FileNotFoundError:
@@ -1650,7 +1643,7 @@ def create_sm_attachment_api(data, data_token):
             return {"data": None, "msg": f"Access denied to bucket: {bucket_name}"}, 400
         else:
             return {"data": None, "msg": f"AWS error: {str(e)}"}, 400
-    
+
     history.append(
         {
             "timestamp": timestamp.strftime(format_timestamps),
