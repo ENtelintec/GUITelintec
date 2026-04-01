@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from templates.controllers.order.orders_controller import delete_po_application
 from templates.controllers.order.orders_controller import (
     insert_purchase_order_item_from_applications,
 )
@@ -611,6 +612,7 @@ def create_po_application_api(data, data_token):
     msg_moves: list[str] = []
     flag_error = False
     tool_detected = False
+    count_errors = 0
     for item in data["items"]:
         extra_info = create_extra_info_product_from_data(item)
         flag, error, result = insert_purchase_order_item_from_applications(
@@ -629,9 +631,18 @@ def create_po_application_api(data, data_token):
                 f"x-Error al crear item de orden de compra -{item['description']}-{str(error)}"
             )
             flag_error = True
+            count_errors += 1
         else:
             msg_moves.append(f"Item de orden de compra creado con ID-{result}")
     msg += "\n" + "\n".join(msg_moves)
+    if count_errors == len(data["items"]):
+        flag, error, result_del = delete_po_application(id_po_app)
+        if not flag:
+            msg += f"\nError al eliminar la solicitud de orden de compra: {error}"
+        else:
+            msg = f"Solicitud de Orden de compra eliminada con ID-{id_po_app} por errores en los items"
+            return {"data": None, "msg": msg + "\nerror", "error": str(error)}
+        
     if tool_detected:
         msg += (
             "\n"
