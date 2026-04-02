@@ -257,8 +257,8 @@ def get_all_sm(limit, page=0, emp_id=-1, with_items=True):
         # process comments if not a json text create a list of the comments
         try:
             comment = json.loads(result[i][13])
-        except Exception as e:
-            print(e)
+        except Exception:
+            # print("error parse comment: ", e, result[i][13])
             comment = [result[i][13]]
         dict_sm = {
             "id": result[i][0],
@@ -349,7 +349,8 @@ def get_iddentifiers_creation_contracts(data_token):
         if str(idn_contract) not in identifier_list:
             identifier_list.append(f"{idn_contract}")
             dict_tabs[f"sm-{idn_contract}-"] = metadata_contract.get(
-                "abbreviation", f"{idn_contract}"
+                "abbreviation_sm",
+                metadata_contract.get("identifier", f"{idn_contract}"),
             )
     if not identifier_list:
         return {"data": None, "msg": "Folios for user not found"}, dict_tabs, 200
@@ -382,14 +383,15 @@ def get_iddentifiers_ternium(data_token):
                 break
 
     identifier_list = []
-    for result in contracts:
-        contract_number = result[5]
-        metadata_contract = json.loads(result[1])
+    for result_contract in contracts:
+        contract_number = result_contract[5]
+        metadata_contract = json.loads(result_contract[1])
         idn_contract = contract_number[-4:]
         if str(idn_contract) not in identifier_list:
             identifier_list.append(f"{idn_contract}")
             dict_tabs[f"sm-{idn_contract}-"] = metadata_contract.get(
-                "abbreviation", f"{idn_contract}"
+                "abbreviation_sm",
+                metadata_contract.get("identifier", f"{idn_contract}"),
             )
     if not identifier_list:
         return {"data": None, "msg": "Folios for user not found"}, dict_tabs, 200
@@ -425,7 +427,9 @@ def fetch_all_sm_with_permissions(data_token):
     iddentifiers, dict_tabs, code = get_iddentifiers_creation_contracts(data_token)
     if code != 200 or isinstance(iddentifiers, dict):
         iddentifiers = []
-    abbs_list_departments, code = get_iddentifiers(data_token, ["administrator"])
+    abbs_list_departments, code = get_iddentifiers(
+        data_token, ["administrator"], from_where="create_folio"
+    )
     for abb in abbs_list_departments:
         dict_tabs[f"sm-{abb.lower()}-"] = abb
     if code != 200 or isinstance(abbs_list_departments, dict):
@@ -876,7 +880,7 @@ def dowload_file_sm(sm_id: int, type_file="pdf"):
     try:
         observations = json.loads(result[13])
     except Exception as e:
-        print(e)
+        print("erro download", str(e))
         observations = [result[13]]
     # extra_info = json.loads(result[14])
     basename = f"sm_{folio}"
@@ -1121,7 +1125,7 @@ def create_sm_from_api(data, data_token):
                     "error": "Folio consecutivo no permitido",
                 }, 400
     except Exception as e:
-        print(e)
+        print("error parse folio: ", str(e))
         return {
             "msg": "error at creating sm and extracting folios",
             "data": [],
@@ -1129,19 +1133,19 @@ def create_sm_from_api(data, data_token):
         }, 400
     # start creating sm
     extra_info = check_item_sm_for_init_vals(data["items"])
-    flag, error, result = insert_sm_db(data, extra_info)
+    flag, error, sm_result = insert_sm_db(data, extra_info)
     if not flag:
-        print(error)
+        print("error insert sm: ", error)
         return {"msg": "error at updating db"}, 400
-    if result is None:
+    if sm_result is None:
         return {"msg": "error at creating sm"}, 400
     msg = (
-        f"Nueva SM creada #{result}, folio: {data['info']['folio']}, "
+        f"Nueva SM creada #{sm_result}, folio: {data['info']['folio']}, "
         f"fecha limite: {data['info']['critical_date']}, "
         f"empleado con id: {data_token.get('emp_id')}, "
         f"comentario: {data['info']['comment']}"
     )
-    errors_items, result_ids_items = create_items_sm_db(data["items"], result)
+    errors_items, result_ids_items = create_items_sm_db(data["items"], sm_result)
     if len(result_ids_items) > 0:
         msg += f"\nItems creados: {result_ids_items}"
     if len(errors_items) > 0:
@@ -1197,7 +1201,7 @@ def create_urgent_sm_from_api(data, data_token):
     extra_info = check_item_sm_for_init_vals(data["items"])
     flag, error, result = insert_urgent_sm_db(data, extra_info)
     if not flag:
-        print(error)
+        print("error inser urgent sm: ", error)
         return {"msg": "error at creating db"}, 400
     if result is None:
         return {"msg": "error at creating sm"}, 400
@@ -1327,7 +1331,7 @@ def delete_sm_from_api(data, data_token):
         write_log_file(log_file_sm_path, msg)
         return {"msg": "ok", "data": error}, 200
     else:
-        print(error)
+        print("error create notification", error)
         return {"msg": "error at updating db"}, 400
 
 

@@ -31,7 +31,7 @@ def execute_sql(sql: str, values: tuple|None = None, type_sql=1) -> tuple[bool, 
         )
         my_cursor = mydb.cursor(buffered=True)
     except Exception as e:
-        print(e)
+        print("error sql execute: ", e)
         return False, str(e), []
     out = []
     flag = True

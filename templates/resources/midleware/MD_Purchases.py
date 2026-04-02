@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from templates.controllers.order.orders_controller import delete_po_application
 from templates.controllers.order.orders_controller import (
     insert_purchase_order_item_from_applications,
 )
@@ -362,7 +363,6 @@ def update_purchase_order_api(data, data_token):
     for item in data["items"]:
         extra_info = create_extra_info_product_from_data(item)
         update_item = True
-        print("items", item)
         if item["id"] is None or item["id"] <= 0:
             flag, error, result = insert_purchase_order_item(
                 data["id"],
@@ -580,7 +580,7 @@ def create_po_application_api(data, data_token):
     if flag:
         update_sm_control_table = True
         extra_info = {"sm_id": result_sm[0]}
-
+    data["reference"] = data["reference"] + "-" + result_sm[1]
     time_zone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
     history = [
@@ -612,6 +612,7 @@ def create_po_application_api(data, data_token):
     msg_moves: list[str] = []
     flag_error = False
     tool_detected = False
+    count_errors = 0
     for item in data["items"]:
         extra_info = create_extra_info_product_from_data(item)
         flag, error, result = insert_purchase_order_item_from_applications(
@@ -630,9 +631,18 @@ def create_po_application_api(data, data_token):
                 f"x-Error al crear item de orden de compra -{item['description']}-{str(error)}"
             )
             flag_error = True
+            count_errors += 1
         else:
             msg_moves.append(f"Item de orden de compra creado con ID-{result}")
     msg += "\n" + "\n".join(msg_moves)
+    if count_errors == len(data["items"]):
+        flag, error, result_del = delete_po_application(id_po_app)
+        if not flag:
+            msg += f"\nError al eliminar la solicitud de orden de compra: {error}"
+        else:
+            msg = f"Solicitud de Orden de compra eliminada con ID-{id_po_app} por errores en los items"
+            return {"data": None, "msg": msg + "\nerror", "error": str(error)}
+        
     if tool_detected:
         msg += (
             "\n"
@@ -933,7 +943,7 @@ def generate_folios_po(reference, data_token):
                     count = int(number)
                     break
                 except Exception as e:
-                    print(e)
+                    print("error when parsing count:", str(e))
                     continue
             folios_out.append(f"{folio_normal}-{count + 1:03d}".upper())
         elif folio_maestro.lower() in folio.lower():
@@ -943,7 +953,7 @@ def generate_folios_po(reference, data_token):
                     count = int(number)
                     break
                 except Exception as e:
-                    print(e)
+                    print("error when parsing count:", str(e))
                     continue
             folios_out.append(
                 f"{folio_maestro}-{count + 1:03d}-{dict_abbs[reference_parts[-2]].get('initial', '')}{reference_parts[-1]}".upper()
@@ -955,7 +965,7 @@ def generate_folios_po(reference, data_token):
                     count = int(number)
                     break
                 except Exception as e:
-                    print(e)
+                    print("error when parsing count:", str(e))
                     continue
             folios_out.append(f"{folio_cotfc}-{count + 1:03d}".upper())
     if len(folios_out) == 0:

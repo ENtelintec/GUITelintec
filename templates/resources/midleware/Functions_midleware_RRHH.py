@@ -24,7 +24,8 @@ from static.constants import (
     filepath_recommendations,
     format_date,
     filepath_fichaje_temp,
-    cache_file_resume_fichaje_path, log_file_rh,
+    cache_file_resume_fichaje_path,
+    log_file_rh,
 )
 from templates.Functions_Sharepoint import (
     get_files_site,
@@ -40,7 +41,8 @@ from templates.controllers.employees.em_controller import (
 )
 from templates.controllers.employees.employees_controller import (
     new_employee,
-    update_employee, terminate_employee_db,
+    update_employee,
+    terminate_employee_db,
 )
 from templates.controllers.employees.vacations_controller import (
     insert_vacation,
@@ -67,7 +69,8 @@ from templates.misc.Functions_Files import (
     get_info_t_file_name,
     get_info_bitacora,
     unify_data_employee,
-    get_fichajes_resume_cache, write_log_file,
+    get_fichajes_resume_cache,
+    write_log_file,
 )
 from templates.misc.Functions_Files_RH import check_fichajes_files_in_directory
 
@@ -162,9 +165,15 @@ def terminate_employee_from_api(data, data_token):
     departure = {"date": date, "reason": data["reason"]}
     flag, error, result = terminate_employee_db(data["id"], json.dumps(departure))
     if not flag:
-        return {"data": str(result), "error": str(error), "msg": "Error al dar de baja"}, 400
-    msg = (f"Empleado con id: {data['id']} dado de baja por {data['reason']}. "
-           f"Realizado por el empleado con id: {data_token['emp_id']} ")
+        return {
+            "data": str(result),
+            "error": str(error),
+            "msg": "Error al dar de baja",
+        }, 400
+    msg = (
+        f"Empleado con id: {data['id']} dado de baja por {data['reason']}. "
+        f"Realizado por el empleado con id: {data_token['emp_id']} "
+    )
     write_log_file(log_file_rh, msg)
     create_notification_permission(
         msg, ["rrhh"], "Empleado dato de baja", data_token.get("emp_id"), 0
@@ -720,14 +729,21 @@ def recommendations_results_quizzes(dict_results: dict, tipo_q: int):
     dict_recommendations["c_final_r"] = dict_conversions_recomen["c_final_r"].get(
         final_score, ["No hay recomendaciones específicas."]
     )
-
+    print(dict_results)
     # Aquí necesitas modificar el código según cómo desees manejar las recomendaciones de dominio y categoría
     # dado que en tu JSON 'c_dom_r' es solo una cadena, puedes necesitar un enfoque diferente o más información
     # Si 'c_dom_r' debería ser una estructura similar a 'c_final_r', ajusta tu JSON y tu código en consecuencia
-
+    print(cat_score)
+    # check max score cat
+    max_cat_score = ""
+    maxv = 0
+    for k, v in cat_score.items():
+        if maxv< v:
+            maxv= v
+            max_cat_score = k 
     # Acceder a las recomendaciones de categoría
-    if cat_score in dict_conversions_recomen["c_cat_r"]:
-        dict_recommendations["c_cat_r"] = dict_conversions_recomen["c_cat_r"][cat_score]
+    if max_cat_score in dict_conversions_recomen["c_cat_r"]:
+        dict_recommendations["c_cat_r"] = dict_conversions_recomen["c_cat_r"][max_cat_score]
     else:
         dict_recommendations["c_cat_r"] = [
             "No hay recomendaciones específicas para esta categoría."

@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from templates.controllers.departments.heads_controller import check_if_auxiliar
 from templates.controllers.supplier.suppliers_controller import delete_item_amc
 from datetime import datetime
 from templates.controllers.supplier.suppliers_controller import get_items_supplier_by_id
@@ -67,7 +68,7 @@ from templates.resources.methods.Functions_Aux_Admin import (
     read_exel_products_quotation,
     compare_file_quotation,
     read_exel_products_bidding,
-    read_exel_products_partidas
+    read_exel_products_partidas,
 )
 
 __author__ = "Edisson Naula"
@@ -132,7 +133,7 @@ def validate_metadata(metadata: dict):
         # "client_id": metadata.get("client_id", 0),
         # "contract_number": metadata.get("contract_number", ""),
         "identifier": metadata.get("identifier", ""),
-        "abbreviation": metadata.get("abbreviation", ""),
+        "abbreviation_sm": metadata.get("abbreviation_sm", ""),
         "remitos": metadata.get("remitos", ""),
         "fecha_solicitud": metadata.get("fecha_solicitud", ""),
         "coordinador": metadata.get("coordinador", ""),
@@ -159,7 +160,11 @@ def get_contracts(id_contract=None):
     id_contract = None if id_contract == -1 or id_contract == "-1" else id_contract
     flag, error, result = get_contract(id_contract)
     if not flag:
-        return {"data": result, "msg": "Error at retrieving contract", "error": str(error)}, 400
+        return {
+            "data": result,
+            "msg": "Error at retrieving contract",
+            "error": str(error),
+        }, 400
     result = [result] if id_contract is not None else result
     data_out = []
     for item in result:
@@ -204,13 +209,10 @@ def get_folio_from_contract_ternium(data_token):
             if flag and len(result) > 0:
                 ids = []
                 for item in result:
-                    print(item)
                     extra_info = json.loads(item[7])
                     ids += extra_info.get("contracts", [])
                     ids += extra_info.get("contracts_temp", [])
-                print(ids)
                 ids = list(set(ids))
-                print(ids)
                 flag, error, contracts = get_contracts_by_ids(ids)
                 if not flag or len(contracts) == 0:
                     return {"data": None, "msg": str(error)}, 400
@@ -252,24 +254,38 @@ def get_department_identifiers(result):
     abbs = []
     for item in result:
         # print("dep", item)
-        if item[9]:
+        if item[9] and item[9] != "":
             abbs.append(item[8])
         else:
-            abbs.append(item[10])
-            abbs.append(item[8]) if item[8] else None
+            if item[10] and item[10] != "":
+                abbs.append(item[10])
+            if item[8] and item[8] != "":
+                abbs.append(item[8])
+
     return abbs
 
 
-def get_iddentifiers(data_token, all_data_keys):
+def get_iddentifiers(data_token, all_data_keys, from_where="fetch"):
     permissions = data_token.get("permissions", {}).values()
     if any(item.lower().split(".")[-1] in all_data_keys for item in permissions):
         flag, error, result_abb = get_contracts_abreviations_db()
         abbs_area = [item[0] for item in result_abb if item[4] == 0 and item[0] != ""]
     else:
         abbs_area = []
-        for check_func in (check_if_gerente, check_if_head_not_auxiliar):
+        if from_where == "fetch":
+            check_funcs = (
+                check_if_auxiliar,
+                check_if_gerente,
+                check_if_head_not_auxiliar,
+            )
+        else:
+            check_funcs = (
+                check_if_gerente,
+                check_if_head_not_auxiliar,
+            )
+        for check_func in check_funcs:
             flag, error, result = check_func(data_token.get("emp_id"))
-            if flag and result:   
+            if flag and result:
                 abbs_area = get_department_identifiers(result)
                 break
             elif not flag:
@@ -281,7 +297,9 @@ def get_iddentifiers(data_token, all_data_keys):
 
 
 def folio_from_department(data_token):
-    abbs_list, code = get_iddentifiers(data_token, ["administrator"])
+    abbs_list, code = get_iddentifiers(
+        data_token, ["administrator"], from_where="create_folio"
+    )
     if code != 200:
         return abbs_list, code
     folio_list = [
@@ -339,7 +357,7 @@ def modify_pattern_phrase_contract_pdf(data: dict):
         with open(filepath_settings, "w") as file:
             json.dump(settings, file, indent=4)
     except Exception as e:
-        print(e)
+        print("error save settigns: ", e)
         return False, str(e)
     return True, "None"
 
@@ -491,7 +509,7 @@ def get_all_suppliers_data():
                 "type": item[7],
                 "brands": brands,
                 "rfc": extra_info.get("rfc", ""),
-                "items": json.loads(item[9])
+                "items": json.loads(item[9]),
             }
         )
     return {"data": data_out, "msg": "Ok"}, 200
@@ -501,7 +519,7 @@ def get_items_supplier_name(id_supplier: str):
     try:
         id_s = int(id_supplier)
     except Exception as e:
-        print(str(e))
+        print("error parse id supplier: ", str(e))
         id_s = None
     flag, error, results = get_items_supplier_by_id(id_s)
     if not flag:
@@ -554,7 +572,7 @@ def insert_supplier(data):
             item.get("part_number"),
             id_supplier,
             currency=item.get("currency", "MXN"),
-            id_inventory=id_inventory
+            id_inventory=id_inventory,
         )
         if not flag:
             errors_i.append(error)
@@ -596,12 +614,12 @@ def update_supplier(data):
                 item.get("part_number"),
                 item.get("id_supplier"),
                 currency=item.get("currency", "MXN"),
-                id_inventory=id_inventory
+                id_inventory=id_inventory,
             )
             if not flag:
                 errors_i.append(error)
             continue
-        if data.get("is_erased", 0)==1:
+        if data.get("is_erased", 0) == 1:
             flag, error, result = delete_item_amc(id_item)
             if not flag:
                 errors_i.append(error)
@@ -613,7 +631,7 @@ def update_supplier(data):
             item.get("part_number"),
             item.get("id_supplier"),
             currency=item.get("currency", "MXN"),
-            id_inventory=id_inventory
+            id_inventory=id_inventory,
         )
         if not flag:
             errors_i.append(error)
@@ -1016,12 +1034,22 @@ def create_contract_from_api(data, data_token):
             return {"data": None, "msg": str(error)}, 400
         msg += f"Cotizacion creada con ID-{id_quotation} por el empleado {data_token.get('emp_id')}"
         flag, error, id_contract = create_contract(
-            id_quotation, data["metadata"], contract_number, client_id, emission, abbreviation
+            id_quotation,
+            data["metadata"],
+            contract_number,
+            client_id,
+            emission,
+            abbreviation,
         )
 
     else:
         flag, error, id_contract = create_contract(
-            data["quotation_id"], data["metadata"], contract_number, client_id, emission, abbreviation
+            data["quotation_id"],
+            data["metadata"],
+            contract_number,
+            client_id,
+            emission,
+            abbreviation,
         )
         id_quotation = data["quotation_id"]
     if not flag:
@@ -1123,7 +1151,7 @@ def update_contract_from_api(data, data_token):
         emission,
         data["timestamps"],
         id_quotation,
-        abbreviaton
+        abbreviaton,
     )
     if not flag:
         return {"data": None, "msg": str(error)}, 400

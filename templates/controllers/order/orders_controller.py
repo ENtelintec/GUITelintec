@@ -204,6 +204,13 @@ def get_pos_application_with_items_to_approve():
     return flag, e, my_result
 
 
+def delete_po_application(po_id: int):
+    sql = "DELETE FROM sql_telintec_mod_admin.pos_applications WHERE id_order = %s"
+    val = (po_id,)
+    flag, e, out = execute_sql(sql, val, 3)
+    return flag, e, out
+
+
 def insert_purchase_order(
     timestamp: str,
     status: int,
