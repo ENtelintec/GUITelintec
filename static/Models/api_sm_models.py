@@ -51,6 +51,7 @@ deliveries_item_model = api.model(
         "folio": fields.String(
             required=True, description="The order folio which is related"
         ),
+        "color": fields.String(required=True, description="The cell color"),
     },
 )
 
@@ -755,6 +756,7 @@ class DeliveriesForm(Form):
     state = IntegerField("state", validators=[], default=1)
     folio = StringField("folio", validators=[], default="")
     timestamp = DateField("timestamp", validators=[], filters=[date_filter])
+    color = StringField("color", validators=[], default="#ffffff")
 
 
 class ItemsFormSMPUT(Form):
