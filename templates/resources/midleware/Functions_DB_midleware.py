@@ -47,6 +47,7 @@ def get_info_employees_with_status(status: str):
             legajo,
             extra_info,
             dep_id,
+            username
         ) = item
         extra_info = json.loads(extra_info)
         data_out.append(
@@ -72,6 +73,7 @@ def get_info_employees_with_status(status: str):
                 "legajo": legajo,
                 "id_leader": extra_info.get("id_leader", 0),
                 "dep_id": dep_id,
+                "username": username
             }
         )
 
