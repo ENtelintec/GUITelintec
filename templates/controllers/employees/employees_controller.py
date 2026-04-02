@@ -250,7 +250,7 @@ def get_name_employee(id_employee: int) -> None | str:
     :param id_employee: id of the employee
     :return: name of the employee
     """
-    sql = "SELECT name, l_name " "FROM sql_telintec.employees " "WHERE employee_id = %s"
+    sql = "SELECT name, l_name FROM sql_telintec.employees WHERE employee_id = %s"
     values = (id_employee,)
     flag, e, out = execute_sql(sql, values, 1)
     if e is not None or len(out) == 0:
@@ -368,11 +368,14 @@ def get_all_data_employees(status: str):
         "employees.legajo ,"
         "employees.extra_info,"
         "employees.department_id "
+        "us.usernames "
         "FROM sql_telintec.employees "
         "LEFT JOIN sql_telintec.departments "
         "ON sql_telintec.employees.department_id = sql_telintec.departments.department_id "
         "LEFT JOIN sql_telintec.examenes_med "
         "ON (sql_telintec.employees.employee_id = sql_telintec.examenes_med.empleado_id) "
+        "LEFT JOIN sql_telintec.users_system  as us"
+        "ON (sql_telintec.employees.employee_id = sql_telintec.users_system.emp_id) "
         "WHERE employees.status LIKE %s "
         "ORDER BY employees.name, employees.l_name "
     )
@@ -417,7 +420,7 @@ def get_all_data_employee(id_employee: int):
 
 
 def get_contract_employes(emp_id):
-    sql = "SELECT contrato " "FROM sql_telintec.employees " "WHERE employee_id = %s"
+    sql = "SELECT contrato FROM sql_telintec.employees WHERE employee_id = %s"
     val = (emp_id,)
     flag, error, result = execute_sql(sql, val, type_sql=1)
     return flag, error, result
@@ -437,14 +440,14 @@ def get_emp_contract(contract: str):
 
 
 def get_emp_mail(emp_id):
-    sql = "SELECT email " "FROM sql_telintec.employees " "WHERE employee_id = %s"
+    sql = "SELECT email FROM sql_telintec.employees WHERE employee_id = %s"
     val = (emp_id,)
     flag, error, result = execute_sql(sql, val, type_sql=1)
     return flag, error, result
 
 
 def get_contracts_operaciones():
-    sql = "SELECT contrato " "FROM sql_telintec.employees " "WHERE department_id = 2"
+    sql = "SELECT contrato FROM sql_telintec.employees WHERE department_id = 2"
     flag, error, result = execute_sql(sql, type_sql=5)
     return flag, error, result
 

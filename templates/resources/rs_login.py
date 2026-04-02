@@ -63,7 +63,7 @@ class UsersAction(Resource):
 
 
 @ns.route("/permissions")
-class UsersAction(Resource):
+class UsersPermissionsFetch(Resource):
     @ns.expect(expected_headers_per)
     def get(self):
         flag, data_token, msg = token_verification_procedure(request, department=["credentials"])
