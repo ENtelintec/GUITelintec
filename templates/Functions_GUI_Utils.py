@@ -8,7 +8,6 @@ from tkinter import StringVar, Misc, filedialog
 from typing import Any
 
 import ttkbootstrap as ttk
-from ttkbootstrap.tableview import Tableview
 
 from static.constants import (
     conversion_quizzes_path,
@@ -17,20 +16,9 @@ from static.constants import (
     format_date,
 )
 from static.constants import filepath_recommendations
-from templates.controllers.chatbot.chatbot_controller import get_chats
-from templates.controllers.customer.customers_controller import get_customers
-from templates.controllers.departments.department_controller import get_departments
-from templates.controllers.departments.heads_controller import get_heads_db
-from templates.controllers.employees.employees_controller import get_employees
-from templates.controllers.employees.us_controller import get_users
 from templates.controllers.notifications.Notifications_controller import (
     insert_notification,
 )
-from templates.controllers.order.orders_controller import get_orders, get_v_orders
-from templates.controllers.product.p_and_s_controller import get_p_and_s
-from templates.controllers.purchases.purchases_controller import get_purchases
-from templates.controllers.supplier.suppliers_controller import get_supplier
-from templates.controllers.tickets.tickets_controller import get_tickets
 
 
 class ComboBoxSearch(ttk.Combobox):
@@ -437,122 +425,6 @@ def clean_entries(entries: list[ttk.Entry]):
         elif isinstance(entry, ttk.Combobox):
             entry.current(0)
     return entries
-
-
-def create_visualizer_treeview(
-    master: Misc,
-    table: str,
-    pad_x: int = 5,
-    pad_y: int = 5,
-    row: int = 0,
-    column: int = 0,
-    style: str = "primary",
-    data=None,
-) -> tuple[Tableview, list[Any] | list[list] | Any]:
-    match table:
-        case "employees":
-            columns = [
-                "Id",
-                "Nombre",
-                "Apellido",
-                "CURP",
-                "Telefono",
-                "Modalidad",
-                "Departamento",
-                "Contrato",
-                "Ingreso",
-                "RFC",
-                "NSS",
-                "Puesto",
-                "Estatus",
-                "Baja",
-                "Cumpleaños",
-                "# de Legajo",
-                "Email",
-                "Emg. Info.",
-            ]
-            # columns = ["Id", "Nombre", "Apellido", "Telefono", "Dep. ID.", "Modalidad", "Email", "Contrato",
-            #            "Ingreso", "RFC", "CURP", "NSS", "Emg. Info.", "Puesto", "Estatus", "Baja", "Cumpleaños", "# de Legajo"]
-            data = get_employees() if data is None else data
-        case "customers":
-            columns = ["Id", "Nombre", "Apellido", "Telefono", "Ciudad", "Email"]
-            data = get_customers() if data is None else data
-        case "departments":
-            columns = ["Id", "Name", "Location"]
-            data = get_departments() if data is None else data
-        case "heads":
-            columns = ["Cargo", "Empleado", "Dep.ID", "Dep. Name", "Nombre", "Email"]
-            flag, error, data = get_heads_db() if data is None else data
-        case "supplier":
-            columns = ["Id", "Name", "Location"]
-            data = get_supplier() if data is None else data
-        case "p_and_s":
-            columns = [
-                "ID",
-                "Name",
-                "Model",
-                "Brand",
-                "Description",
-                "Price retail",
-                "Quantity",
-                "Price Provider",
-                "Support",
-                "Is_service",
-                "Category",
-                "Img URL",
-            ]
-            data = get_p_and_s() if data is None else data
-        case "orders":
-            columns = ["Id", "Product ID", "Quantity", "Date", "Customer", "Employee"]
-            data = get_orders() if data is None else data
-        case "v_orders":
-            columns = ["Id", "Products", "Date", "Customer", "Employee", "Chat ID"]
-            data = get_v_orders() if data is None else data
-        case "purchases":
-            columns = ["Id", "Product ID", "Quantity", "Date", "Supplier"]
-            data = get_purchases() if data is None else data
-        case "tickets":
-            columns = ["Id", "Content", "Is review?", "Is answered?", "Timestamp"]
-            data = get_tickets() if data is None else data
-        case "users":
-            columns = ["Id", "Username", "Permissions", "Expiration", "Timestamp"]
-            data = get_users() if data is None else data
-        case "chats":
-            columns = [
-                "ID",
-                "Context",
-                "Start",
-                "End",
-                "Receiver",
-                "Sender",
-                "Platform",
-                "Is alive?",
-                "Is reviewed?",
-            ]
-            data = get_chats() if data is None else data
-        case _:
-            columns = []
-            data = []
-            print("Error in create_visualizer_treeview")
-    column_span = len(columns)
-    treeview = Tableview(
-        master,
-        coldata=columns,
-        rowdata=data,
-        paginated=True,
-        searchable=True,
-        autofit=True,
-        bootstyle=style,
-    )
-    treeview.grid(
-        row=row,
-        column=column,
-        padx=pad_x,
-        pady=pad_y,
-        columnspan=column_span,
-        sticky="nswe",
-    )
-    return treeview, data
 
 
 def create_widget_input_DB(master, table) -> list:
