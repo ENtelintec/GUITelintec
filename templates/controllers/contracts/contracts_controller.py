@@ -18,7 +18,7 @@ def create_contract(
     client_id: int,
     emission: str,
     status=0,
-    abbreviation=None
+    abbreviation=None,
 ):
     time_zone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
@@ -34,7 +34,7 @@ def create_contract(
         contract_number,
         client_id,
         emission,
-        abbreviation
+        abbreviation,
     )
     flag, error, id_contract = execute_sql(sql, val, 4)
     return flag, error, id_contract
@@ -116,7 +116,7 @@ def get_contract_from_abb(contract_abb: str):
     sql = (
         "SELECT id, metadata, creation, quotation_id, timestamps "
         "FROM sql_telintec_mod_admin.contracts "
-        "WHERE metadata->'$.abbreviation' = %s"
+        "WHERE metadata->'$.abbreviation_sm' = %s"
     )
     val = (contract_abb.upper(),)
     flag, error, result = execute_sql(sql, val, 1)
@@ -160,26 +160,24 @@ def get_contracts_by_ids(ids_list: list):
 def get_contracts_abreviations_db():
     sql = (
         "SELECT "
-        "JSON_UNQUOTE(metadata->'$.abbreviation'), "
+        "JSON_UNQUOTE(metadata->'$.abbreviation_sm'), "
         "id, "
         "metadata, "
         "abbreviation, "
         "1 "
         "FROM sql_telintec_mod_admin.contracts "
         "UNION SELECT "
-        "abbreviation, "
-        "department_id, "
-        "JSON_OBJECT( 'name', name, 'location', location ),   "
-        "'',"
-        "0 "
-        "FROM sql_telintec.departments "
+        "   abbreviation, "
+        "   department_id, "
+        "   JSON_OBJECT( 'name', name, 'location', location ),   "
+        "   '', 0 "
+        "   FROM sql_telintec.departments "
         "UNION SELECT "
-        "abbreviation, "
-        "id, "
-        "JSON_OBJECT( 'name', name, 'department', id_department),"
-        "'', "
-        "0 "
-        "FROM sql_telintec.areas "
+        "   abbreviation, "
+        "   id, "
+        "   JSON_OBJECT( 'name', name, 'department', id_department),"
+        "   '', 0 "
+        "   FROM sql_telintec.areas "
     )
     flag, error, result = execute_sql(sql, None, 5)
     if not isinstance(result, list):
@@ -202,7 +200,7 @@ def get_items_contract_string(key: str) -> tuple[bool, str, int | list]:
         "LEFT JOIN sql_telintec_mod_admin.quotations q ON q.id = c.quotation_id "
         "LEFT JOIN sql_telintec_mod_admin.quotation_items qi ON qi.contract_id = c.id "
         "WHERE RIGHT(JSON_UNQUOTE(JSON_EXTRACT(c.metadata, '$.contract_number')), 4) = %s "
-        "OR JSON_EXTRACT(c.metadata, '$.abbreviation') = %s"
+        "OR JSON_EXTRACT(c.metadata, '$.abbreviation_sm') = %s"
     )
     val = (key, key)
     flag, error, result = execute_sql(sql, val, 2)
