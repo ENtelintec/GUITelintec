@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from templates.controllers.departments.heads_controller import check_if_gerente_admin
 from templates.controllers.departments.heads_controller import check_if_auxiliar
 from templates.controllers.supplier.suppliers_controller import delete_item_amc
 from datetime import datetime
@@ -267,6 +268,7 @@ def get_department_identifiers(result):
 
 def get_iddentifiers(data_token, all_data_keys, from_where="fetch"):
     permissions = data_token.get("permissions", {}).values()
+    print(permissions)
     if any(item.lower().split(".")[-1] in all_data_keys for item in permissions):
         flag, error, result_abb = get_contracts_abreviations_db()
         abbs_area = [item[0] for item in result_abb if item[4] == 0 and item[0] != ""]
@@ -274,12 +276,14 @@ def get_iddentifiers(data_token, all_data_keys, from_where="fetch"):
         abbs_area = []
         if from_where == "fetch":
             check_funcs = (
-                check_if_auxiliar,
+                check_if_gerente_admin,
                 check_if_gerente,
                 check_if_head_not_auxiliar,
+                check_if_auxiliar,
             )
         else:
             check_funcs = (
+                check_if_gerente_admin,
                 check_if_gerente,
                 check_if_head_not_auxiliar,
             )

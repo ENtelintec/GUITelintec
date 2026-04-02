@@ -200,6 +200,35 @@ def check_if_auxiliar(id_employee: int):
     return flag, e, my_result
 
 
+def check_if_gerente_admin(id_employee: int):
+    """
+    Join all departments when is jefe admin
+    """
+    sql = (
+        "SELECT "
+        "heads.position_id, "
+        "heads.name, "
+        "heads.employee, "
+        "heads.department, "
+        "departments.name, "
+        "UPPER(CONCAT(employees.name, ' ', employees.l_name)) as name_emp, "
+        "employees.email, "
+        "heads.extra_info,"
+        "areas.abbreviation, "
+        "JSON_UNQUOTE(heads.extra_info->'$.area'), "
+        "departments.abbreviation "
+        "FROM sql_telintec.heads "
+        "LEFT JOIN sql_telintec.employees ON heads.employee = employees.employee_id "
+        "JOIN sql_telintec.departments ON departments.department_id not like '' "
+        "LEFT JOIN sql_telintec.areas ON JSON_UNQUOTE(heads.extra_info->'$.area') = areas.id "
+        "WHERE heads.employee = %s AND (LOWER(heads.name) like '%gerente%' OR LOWER(heads.name) like '%jefe%')"
+    )
+    val = (id_employee,)
+    flag, e, my_result = execute_sql(sql, val, 2)
+    print("check admin", my_result)
+    return flag, e, my_result
+
+
 def insert_head_DB(
     position_name: str, department: int, employee: int, extra_info: dict
 ):
