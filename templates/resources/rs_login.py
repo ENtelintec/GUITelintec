@@ -66,7 +66,7 @@ class UsersAction(Resource):
 class UsersPermissionsFetch(Resource):
     @ns.expect(expected_headers_per)
     def get(self):
-        flag, data_token, msg = token_verification_procedure(request, department=["credentials"])
+        flag, data_token, msg = token_verification_procedure(request, department=["credentials", "RRHH"])
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data_out, code = fetch_permissions_from_api()
