@@ -580,7 +580,7 @@ def create_po_application_api(data, data_token):
     if flag:
         update_sm_control_table = True
         extra_info = {"sm_id": result_sm[0]}
-    data["reference"] = data["reference"] + "-" + result_sm[1]
+        data["reference"] = data["reference"] + "-" + result_sm[1]
     time_zone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
     history = [
@@ -642,7 +642,7 @@ def create_po_application_api(data, data_token):
         else:
             msg = f"Solicitud de Orden de compra eliminada con ID-{id_po_app} por errores en los items"
             return {"data": None, "msg": msg + "\nerror", "error": str(error)}
-        
+
     if tool_detected:
         msg += (
             "\n"
