@@ -625,6 +625,9 @@ def get_files_list_nomina(emp_id):
 
 
 def insert_medical_db(data):
+    allergies = data["info"]["allergies"]
+    observations = data["info"]["observations"]
+    extra_info = {"allergies": allergies, "observations": observations}
     flag, error, result = insert_new_exam_med(
         data["info"]["name"],
         data["info"]["blood"],
@@ -633,6 +636,7 @@ def insert_medical_db(data):
         data["info"]["dates"],
         data["info"]["apt_actual"],
         data["info"]["emp_id"],
+        extra_info
     )
     if flag:
         return {"data": str(result)}, 201
@@ -644,11 +648,15 @@ def update_medical_db(data):
     apt_actual = (
         data["info"]["aptitudes"][-1] if len(data["info"]["aptitudes"]) > 0 else 0
     )
+    allergies = data["info"]["allergies"]
+    observations = data["info"]["observations"]
+    extra_info = {"allergies": allergies, "observations": observations}
     flag, error, result = update_aptitud_renovacion(
         data["info"]["aptitudes"],
         data["info"]["dates"],
         apt_actual,
         exam_id=data["id"],
+        extra_info= extra_info
     )
     if flag:
         return {"data": str(result)}, 200

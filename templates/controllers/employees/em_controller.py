@@ -15,10 +15,11 @@ def insert_new_exam_med(
     renovaciones: list,
     apt_actual: int,
     emp_id: int,
+    extra_info: dict,
 ) -> tuple[bool, Exception | None, int | None]:
     sql = (
         "INSERT INTO sql_telintec.examenes_med "
-        "(name, blood, status, aptitud, renovacion, aptitude_actual, empleado_id) "
+        "(name, blood, status, aptitud, renovacion, aptitude_actual, empleado_id, extra_info) "
         "VALUES (%s, %s, %s, %s, %s, %s, %s)"
     )
     val = (
@@ -29,6 +30,7 @@ def insert_new_exam_med(
         json.dumps(renovaciones),
         apt_actual,
         emp_id,
+        json.dumps(extra_info),
     )
     flag, e, out = execute_sql(sql, val, 4)
     print(out, "record inserted.")
@@ -36,21 +38,27 @@ def insert_new_exam_med(
 
 
 def update_aptitud_renovacion(
-    aptitud: list, renovaciones: list, apt_actual: int, exam_id
+    aptitud: list, renovaciones: list, apt_actual: int, exam_id, extra_info: dict
 ):
     sql = (
         "UPDATE sql_telintec.examenes_med "
-        "SET aptitud = %s, renovacion = %s, aptitude_actual = %s "
+        "SET aptitud = %s, renovacion = %s, aptitude_actual = %s, extra_info = %s "
         "WHERE examen_id = %s"
     )
-    val = (json.dumps(aptitud), json.dumps(renovaciones), apt_actual, exam_id)
+    val = (
+        json.dumps(aptitud),
+        json.dumps(renovaciones),
+        apt_actual,
+        json.dumps(extra_info),
+        exam_id,
+    )
     flag, e, out = execute_sql(sql, val, 3)
     print(out, "record inserted.")
     return flag, e, out
 
 
 def delete_exam_med(exm_id: int):
-    sql = "DELETE FROM sql_telintec.examenes_med " "WHERE examen_id = %s"
+    sql = "DELETE FROM sql_telintec.examenes_med WHERE examen_id = %s"
     val = (exm_id,)
     flag, e, out = execute_sql(sql, val, 3)
     return flag, e, out
@@ -91,7 +99,7 @@ def update_aptitud(aptitud: list, apt_actual: int, emp_id: int = None, exam_id=N
 
 
 def get_aptitud(emp_id: int):
-    sql = "SELECT aptitud " "FROM sql_telintec.examenes_med " "WHERE empleado_id = %s"
+    sql = "SELECT aptitud FROM sql_telintec.examenes_med WHERE empleado_id = %s"
     val = (emp_id,)
     flag, e, out = execute_sql(sql, val, 1)
     return flag, e, out
@@ -102,16 +110,10 @@ def update_renovacion(
     renovaciones: list, last_date: str, emp_id: int = None, exam_id=None
 ):
     sql = (
-        (
-            "UPDATE sql_telintec.examenes_med "
-            "SET renovacion = %s "
-            "WHERE empleado_id = %s"
-        )
+        ("UPDATE sql_telintec.examenes_med SET renovacion = %s WHERE empleado_id = %s")
         if exam_id is None
         else (
-            "UPDATE sql_telintec.examenes_med "
-            "SET renovacion = %s "
-            "WHERE examen_id = %s"
+            "UPDATE sql_telintec.examenes_med SET renovacion = %s WHERE examen_id = %s"
         )
     )
     val = (
@@ -125,17 +127,9 @@ def update_renovacion(
 
 def get_renovacion(emp_id: int, exam_id=None):
     sql = (
-        (
-            "SELECT renovacion "
-            "FROM sql_telintec.examenes_med "
-            "WHERE empleado_id = %s"
-        )
+        ("SELECT renovacion FROM sql_telintec.examenes_med WHERE empleado_id = %s")
         if exam_id is None
-        else (
-            "SELECT renovacion "
-            "FROM sql_telintec.examenes_med "
-            "WHERE examen_id = %s"
-        )
+        else ("SELECT renovacion FROM sql_telintec.examenes_med WHERE examen_id = %s")
     )
     val = (emp_id,)
     flag, e, out = execute_sql(sql, val, 1)

@@ -47,6 +47,7 @@ def get_info_employees_with_status(status: str):
             legajo,
             extra_info,
             dep_id,
+            username,
         ) = item
         extra_info = json.loads(extra_info)
         data_out.append(
@@ -59,7 +60,9 @@ def get_info_employees_with_status(status: str):
                 "modality": modality,
                 "email": email,
                 "contract": contract,
-                "admission": admission,
+                "admission": admission
+                if admission is None or isinstance(admission, str)
+                else admission.strftime(format_date),
                 "rfc": rfc,
                 "curp": curp,
                 "nss": nss,
@@ -68,10 +71,13 @@ def get_info_employees_with_status(status: str):
                 "status": status,
                 "departure": departure,
                 "exam_id": examen,
-                "birthday": birthday,
+                "birthday": birthday
+                if birthday is None or isinstance(birthday, str)
+                else birthday.strftime(format_date),
                 "legajo": legajo,
                 "id_leader": extra_info.get("id_leader", 0),
                 "dep_id": dep_id,
+                "username": username,
             }
         )
 

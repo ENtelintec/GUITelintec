@@ -404,6 +404,8 @@ class EmployeeMedForm(Form):
         "emp_id",
         validators=[InputRequired(message="id is required or value 0 not accepted")],
     )
+    allergies = StringField("allergies", validators=[], default="")
+    observations = StringField("observations", validators=[], default="")
 
 
 class EmployeeMedFormUpdate(Form):
@@ -414,6 +416,8 @@ class EmployeeMedFormUpdate(Form):
         "emp_id",
         validators=[InputRequired(message="id is required or value 0 not accepted")],
     )
+    allergies = StringField("allergies", validators=[], default="")
+    observations = StringField("observations", validators=[], default="")
 
 
 class EmployeeMedInsertForm(Form):

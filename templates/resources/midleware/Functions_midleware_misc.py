@@ -120,6 +120,9 @@ def get_all_vacations_data_date():
     time_zone = pytz.timezone(timezone_software)
     date_today = datetime.now(pytz.utc).astimezone(time_zone)
     date_today.replace(day=1)
+    month_retrieve = date_today.month - 1
+    month_retrieve = month_retrieve if month_retrieve > 0 else 12
+    date_today = date_today.replace(month=month_retrieve)
     out = []
     for item in result:
         seniority_raw = json.loads(item[4])
