@@ -29,7 +29,9 @@ from static.Models.api_employee_models import (
     EmployeeMedUpdateForm,
     EmployeeMedDeleteForm,
     EmployeeVacInsertForm,
-    DeleteVacationForm, employee_model_terminate, EmployeeTerminateForm,
+    DeleteVacationForm,
+    employee_model_terminate,
+    EmployeeTerminateForm,
 )
 from static.Models.api_fichajes_models import (
     answer_files_fichajes_model,
@@ -95,7 +97,8 @@ from templates.resources.midleware.Functions_midleware_RRHH import (
     insert_medical_db,
     update_medical_db,
     fetch_fichajes_all_employees,
-    fetch_fichaje_employee, terminate_employee_from_api,
+    fetch_fichaje_employee,
+    terminate_employee_from_api,
 )
 
 ns = Namespace("GUI/api/v1/rrhh")
@@ -177,7 +180,6 @@ class EmployeeTerminate(Resource):
 
 @ns.route("/employees/info/<string:status>")
 class EmployeesInfo(Resource):
-    @ns.marshal_with(employees_info_model)
     @ns.expect(expected_headers_per)
     def get(self, status):
         flag, data_token, msg = token_verification_procedure(
