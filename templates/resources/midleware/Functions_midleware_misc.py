@@ -142,8 +142,28 @@ def get_all_vacations_data_date():
                     "emp_id": item[0],
                     "name": item[1].upper() + " " + item[2].upper(),
                     "dates": dates_vacation,
+                    "type": "vacation",
                 }
             )
+        medical_dates = json.loads(item[5]) if item[5] else []
+        if len(medical_dates) > 0:
+            # filter by date base on the current month and go on
+            medical_dates = [
+                date
+                for date in medical_dates
+                if datetime.strptime(date, format_timestamps).replace(tzinfo=time_zone)
+                >= date_today
+            ]
+            if len(medical_dates) > 0:
+                out.append(
+                    {
+                        "emp_id": item[0],
+                        "name": item[1].upper() + " " + item[2].upper(),
+                        "dates": medical_dates,
+                        "type": "medical",
+                    }
+                )
+
     return out, 200
 
 
