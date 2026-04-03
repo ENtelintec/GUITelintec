@@ -376,8 +376,9 @@ def create_items_sm_db(items: list, sm_id: int):
                 (id_sm, id_inventory, name, udm, comment, partida, quantity, dispatched, movements, state, extra_info) 
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """
-        state = 0 if item.get("id", -1) == -1 else 1
-        id_inventory = item.get("id") if item.get("id", -1) > 0 else None
+        id_inventory = item.get("id_inventory", 0)
+        state = 0 if id_inventory == 0 else 1
+        id_inventory = None if id_inventory == 0 else id_inventory
         extra_info = item.get("extra_info", {})
         is_tool = item.get("is_tool", 0)
         extra_info["is_tool"] = is_tool if is_tool is not None else 0
@@ -460,9 +461,9 @@ def update_items_sm(items: list, sm_id: int):
                     "dispatched, movements, state, extra_info, deliveries, state_delivery, state_quantity) "
                     "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
                 )
-                id_new = item.get("id", -1)
-                id_new = None if id_new == -1 else id_new
-                id_inventory = id_new if (id_inventory <= 0) else id_inventory
+                id_inventory = item.get("id_inventory", 0)
+                state = 0 if id_inventory == 0 else item.get("state", 1)
+                id_inventory = None if id_inventory == 0 else id_inventory
                 val = (
                     sm_id,
                     id_inventory,
@@ -473,7 +474,7 @@ def update_items_sm(items: list, sm_id: int):
                     item.get("quantity"),
                     item.get("dispatched", 0),
                     json.dumps(item.get("movements", [])),
-                    item.get("state", 0),
+                    state,
                     json.dumps(extra_info),
                     json.dumps(item.get("deliveries", [])),
                     item.get("state_delivery", ""),
