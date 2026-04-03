@@ -1009,7 +1009,7 @@ def update_sm_from_control_table(
     date_now = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
     extra_info = json.loads(result[14]) if result[14] else {}
 
-    comment_history = f"Actualización de datos desde la tabla de control por el empleado {data_token.get('emp_id')}"
+    comment_history = f"Actualización de datos desde la tabla de control por el empleado {data_token.get('name')}"
     comments = []
     for k, value in data["info"].items():
         if k == "comment":
@@ -1142,7 +1142,7 @@ def create_sm_from_api(data, data_token):
     msg = (
         f"Nueva SM creada #{sm_result}, folio: {data['info']['folio']}, "
         f"fecha limite: {data['info']['critical_date']}, "
-        f"empleado con id: {data_token.get('emp_id')}, "
+        f"empleado con id: {data_token.get('name')}, "
         f"comentario: {data['info']['comment']}"
     )
     errors_items, result_ids_items = create_items_sm_db(data["items"], sm_result)
@@ -1208,7 +1208,7 @@ def create_urgent_sm_from_api(data, data_token):
     msg = (
         f"Nueva SM creada #{result}, folio: {data['info']['folio']}, "
         f"fecha limite: {data['info']['critical_date']}, "
-        f"empleado con id: {data_token.get('emp_id')}. "
+        f"empleado con id: {data_token.get('name')}. "
     )
     errors_items, result_ids_items = create_items_sm_db(data["items"], result)
     if len(result_ids_items) > 0:
@@ -1625,7 +1625,7 @@ def create_sm_attachment_api(data, data_token):
     path_aws = f"smData/{date_report.strftime('%Y/%m/%d/')}{data['filename']}"
     s3_client = boto3.client("s3")
     bucket_name = secrets.get("S3_ADMIN_BUCKET")
-    msg = f"Archivo adjunto agregado: {filename} al voucher {data['id_report']} por el empleado {data_token.get('emp_id')}"
+    msg = f"Archivo adjunto agregado: {filename} al voucher {data['id_report']} por el empleado {data_token.get('name')}"
     status = sm_data[11]
     if "firma-recibido" in filename.lower():  # if is sign file change status to 1
         status = 5

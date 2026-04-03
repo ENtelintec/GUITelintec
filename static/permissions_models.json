@@ -16,6 +16,10 @@
     "description": "the almacén permission"
   },
   {
+    "name": "App.Department.ALMACEN-VISUAL",
+    "description": "the sm permission"
+  },
+  {
     "name": "App.Department.Bitacoras",
     "description": "the bitacoras permission"
   },
@@ -28,12 +32,36 @@
     "description": "the sm permission"
   },
   {
-    "name": "App.Department.ALMACEN-VISUAL",
-    "description": "the sm permission"
+    "name": "App.Department.smControl",
+    "description": "the control table sm permission"
+  },
+  {
+    "name": "App.Department.smCreate",
+    "description": "the permission for create sm"
+  },
+  {
+    "name": "App.Department.smDespachar",
+    "description": "the sm permission for dispatch"
+  },
+  {
+    "name": "App.Department.smEntregasAdmin",
+    "description": "the sm permission for deliveries on admin"
   },
   {
     "name": "App.Department.Administracion",
     "description": "the administracion permission"
+  },
+  {
+    "name": "App.Department.adminCompras",
+    "description": "the administracion permission for purchases"
+  },
+  {
+    "name": "App.Department.adminDB",
+    "description": "the administracion permission for clients, provider, contracts"
+  },
+  {
+    "name": "App.Department.adminRem",
+    "description": "the administracion permission for remissions"
   },
   {
     "name": "App.Department.Common",
@@ -52,11 +80,43 @@
     "description": "the basic permission for security inventory group"
   },
   {
+    "name": "App.Department.eppVisual",
+    "description": "the basic permission for security inventory group"
+  },
+  {
+    "name": "App.Department.eppApprove",
+    "description": "the basic permission for security inventory group"
+  },
+  {
     "name": "App.Department.Voucher",
+    "description": "the basic permission for voucher managment"
+  },
+  {
+    "name": "App.Department.voucherSafe",
+    "description": "the basic permission for voucher managment"
+  },
+  {
+    "name": "App.Department.voucherTool",
+    "description": "the basic permission for voucher managment"
+  },
+  {
+    "name": "App.Department.voucherApprove",
     "description": "the basic permission for voucher managment"
   },
   {
     "name": "App.Department.SGI",
     "description": "the basic permission for sgi group"
+  },
+  {
+    "name": "App.Department.checkvehicular",
+    "description": "the basic permission for sgi group"
+  },
+  {
+    "name": "App.Department.checkvApprove",
+    "description": "the basic permission for sgi group"
+  },
+  {
+    "name": "App.Department.comprasCreate",
+    "description": "the basic permission for create purchase applications"
   }
 ]

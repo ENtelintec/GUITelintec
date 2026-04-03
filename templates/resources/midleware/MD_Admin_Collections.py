@@ -791,7 +791,7 @@ def create_activity_report_attachment_api(data, data_token):
             return {"data": None, "msg": f"Access denied to bucket: {bucket_name}"}, 400
         else:
             return {"data": None, "msg": f"AWS error: {str(e)}"}, 400
-    msg = f"Archivo adjunto agregado: {filename} al voucher {data['id_report']} por el empleado {data_token.get('emp_id')}"
+    msg = f"Archivo adjunto agregado: {filename} al voucher {data['id_report']} por el empleado {data_token.get('name')}"
     status = report_data[14]
     if "firma-realizado" in filename.lower():  # if is sign file change status to 1
         status = 1

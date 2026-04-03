@@ -877,9 +877,9 @@ def delete_voucher_vehicle_api(data, data_token):
             "error": str(error),
         }, 400
     msg = (
-        f"Voucher vehicular eliminado correctamente por el empleado {data_token.get('emp_id')}"
+        f"Voucher vehicular eliminado correctamente por el empleado {data_token.get('name')}"
         if status == 0
-        else f"Voucher vehicular cancelado correctamente por el empleado {data_token.get('emp_id')}"
+        else f"Voucher vehicular cancelado correctamente por el empleado {data_token.get('name')}"
     )
     create_notification_permission_notGUI(
         msg, ["administracion", "operaciones", "sgi"], data_token.get("emp_id"), 0
@@ -974,7 +974,7 @@ def create_voucher_vehicle_attachment_api(data, data_token):
             return {"data": None, "msg": f"Access denied to bucket: {bucket_name}"}, 400
         else:
             return {"data": None, "msg": f"AWS error: {str(e)}"}, 400
-    msg = f"Archivo adjunto agregado: {filename} al voucher {data['id_voucher']} por el empleado {data_token.get('emp_id')}"
+    msg = f"Archivo adjunto agregado: {filename} al voucher {data['id_voucher']} por el empleado {data_token.get('name')}"
     status = voucher_data[21]
     if "firma-aprobado" in filename.lower():  # if is sign file change status to 1
         status = 1

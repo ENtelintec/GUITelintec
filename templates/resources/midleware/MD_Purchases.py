@@ -203,7 +203,7 @@ def create_purchaser_order_api(data, data_token):
         result_sm = [0]
     time_zone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
-    comment_history = f"Orden de compra creada por {data_token.get('emp_id')}"
+    comment_history = f"Orden de compra creada por {data_token.get('name')}"
     history = [
         {
             "user": data_token.get("emp_id"),
@@ -589,7 +589,7 @@ def create_po_application_api(data, data_token):
             "event": "Creación de solicitud",
             "date": timestamp,
             "comment": f"Se creo una solicitud de orden de compra con referencia {data['reference']} "
-            f"por el usuario {data_token.get('emp_id')}.",
+            f"por el usuario {data_token.get('name')}.",
         }
     ]
     flag, error, id_po_app = insert_po_application(

@@ -738,7 +738,7 @@ def insert_head_from_api(data, data_token):
     )
     if not flag:
         return {"data": None, "msg": str(error)}, 400
-    msg = f"Encargado creado con ID-{result} por el empleado {data_token.get('emp_id')}"
+    msg = f"Encargado creado con ID-{result} por el empleado {data_token.get('name')}"
     create_notification_permission(
         msg,
         ["administracion", "operaciones"],
@@ -770,7 +770,7 @@ def update_head_from_api(data, data_token):
     )
     if not flag:
         return {"data": None, "msg": str(error)}, 400
-    msg = f"Encargado actualizado con ID-{data['id']} por el empleado {data_token.get('emp_id')}"
+    msg = f"Encargado actualizado con ID-{data['id']} por el empleado {data_token.get('name')}"
     create_notification_permission(
         msg,
         ["administracion", "operaciones"],
@@ -786,7 +786,7 @@ def delete_head_from_api(data, data_token):
     flag, error, result = delete_head_DB(data["id"])
     if not flag:
         return {"data": None, "msg": str(error)}, 400
-    msg = f"Encargado eliminado con ID-{data['id']} por el empleado {data_token.get('emp_id')}"
+    msg = f"Encargado eliminado con ID-{data['id']} por el empleado {data_token.get('name')}"
     create_notification_permission(
         msg,
         ["administracion", "operaciones"],
@@ -896,7 +896,7 @@ def create_quotation_from_api(data, data_token):
     flag, error, id_quotation = create_quotation(data["metadata"])
     if not flag:
         return {"data": None, "msg": str(error)}, 400
-    msg = f"Cotizacion creada con ID-{id_quotation} por el empleado {data_token.get('emp_id')}"
+    msg = f"Cotizacion creada con ID-{id_quotation} por el empleado {data_token.get('name')}"
     flag_list, error_list, result_list = create_items_from_api(
         data["products"], id_quotation
     )
@@ -982,7 +982,7 @@ def update_quoation_from_api(data, data_token):
     flag, error, result = update_quotation(data["id"], data["metadata"])
     if not flag:
         return {"data": None, "msg": str(error)}, 400
-    msg = f"Cotizacion actualizada con ID-{data['id']} por el empleado {data_token.get('emp_id')}"
+    msg = f"Cotizacion actualizada con ID-{data['id']} por el empleado {data_token.get('name')}"
     flag, error, result = get_quotation(data["id"])
     if not flag:
         return {"data": None, "msg": str(error)}, 400
@@ -1017,7 +1017,7 @@ def delete_quotation_from_api(data, data_token):
     flag, error, result = delete_quotation(data["id"])
     if not flag:
         return {"data": "Quoation unable to be deleted", "msg": str(error)}, 400
-    msg = f"Cotizacion eliminada con ID-{data['id']} por el empleado {data_token.get('emp_id')}"
+    msg = f"Cotizacion eliminada con ID-{data['id']} por el empleado {data_token.get('name')}"
     create_notification_permission(
         msg, ["administracion"], "Cotizacion Eliminada", data_token.get("emp_id"), 0
     )
@@ -1036,7 +1036,7 @@ def create_contract_from_api(data, data_token):
         flag, error, id_quotation = create_quotation(data["metadata"], status=2)
         if not flag:
             return {"data": None, "msg": str(error)}, 400
-        msg += f"Cotizacion creada con ID-{id_quotation} por el empleado {data_token.get('emp_id')}"
+        msg += f"Cotizacion creada con ID-{id_quotation} por el empleado {data_token.get('name')}"
         flag, error, id_contract = create_contract(
             id_quotation,
             data["metadata"],
@@ -1080,7 +1080,7 @@ def create_contract_from_api(data, data_token):
         }, 400
     else:
         msg += "\nError al crear ciertos items de la cotización"
-    msg += f"Contrato creado con ID-{id_contract} por el empleado {data_token.get('emp_id')}"
+    msg += f"Contrato creado con ID-{id_contract} por el empleado {data_token.get('name')}"
     create_notification_permission(
         msg, ["administracion"], "Contrato Creado", data_token.get("emp_id"), 0
     )
@@ -1105,7 +1105,7 @@ def update_contract_from_api(data, data_token):
                 "data": None,
                 "msg": "No se pudo obtener el id correcto de una cotizacion para relacionar con el contrato",
             }, 400
-        msg += f"Se creo una cotizacion con ID-{id_quotation} para relacionar con el contrato por el empleado {data_token.get('emp_id')}"
+        msg += f"Se creo una cotizacion con ID-{id_quotation} para relacionar con el contrato por el empleado {data_token.get('name')}"
         flag_list, error_list, result_list = create_items_from_api(
             data["products"], id_quotation, data["id"]
         )
@@ -1138,9 +1138,9 @@ def update_contract_from_api(data, data_token):
     else:
         msg += (
             "\nError al crear o actualizar ciertos items de la cotización"
-            + str(error_list)
+            + f"items con error: {len(error_list)}"
             + "\n"
-            + str(result_list)
+            +f"items correctos: {len(result_list)}"
         )
     contract_number = data["metadata"].pop("contract_number", "error cnumber")
     client_id = data["metadata"].pop("client_id", 50)
@@ -1159,7 +1159,7 @@ def update_contract_from_api(data, data_token):
     )
     if not flag:
         return {"data": None, "msg": str(error)}, 400
-    msg += f"Contrato actualizado con ID-{data['id']} por el empleado {data_token.get('emp_id')}"
+    msg += f"Contrato actualizado con ID-{data['id']} por el empleado {data_token.get('name')}"
     create_notification_permission(
         msg, ["administracion"], "Contrato Actualizado", data_token.get("emp_id"), 0
     )
@@ -1174,7 +1174,7 @@ def delete_contract_from_api(data, data_token):
     flag, error, result = delete_contract(data["id"])
     if not flag:
         return {"data": None, "msg": str(error)}, 400
-    msg = f"Contrato eliminado con ID-{data['id']} por el empleado {data_token.get('emp_id')}"
+    msg = f"Contrato eliminado con ID-{data['id']} por el empleado {data_token.get('name')}"
     create_notification_permission(
         msg, ["administracion"], "Contrato Eliminado", data_token.get("emp_id"), 0
     )
