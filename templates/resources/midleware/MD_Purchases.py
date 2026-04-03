@@ -306,6 +306,7 @@ def create_purchaser_order_api(data, data_token):
             data_token,
             result_sm,
         )
+        print(code, data_out, )
         if code != 200:
             msg += (
                 "\n"
