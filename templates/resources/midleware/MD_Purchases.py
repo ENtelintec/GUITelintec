@@ -430,6 +430,8 @@ def cancel_purchase_order_api(data, data_token):
         history,
         data["id"],
     )
+    print(flag, error, result)
+    print(history, data["id"])
     if not flag:
         return {"data": None, "msg": "error", "error": str(error)}, 400
     msg = f"Orden de compra cancelada con ID-{data['id']}"
