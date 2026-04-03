@@ -41,7 +41,7 @@ def get_response_bard(prompt: str) -> str:
     try:
         response = bard.get_answer(prompt)["content"]
     except Exception as e:
-        print(e)
+        print("errot at getting answer: ", e)
         response = "Error in Bard API:  " + str(e)
     return response
 

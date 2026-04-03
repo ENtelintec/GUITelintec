@@ -586,7 +586,7 @@ def create_po_application_api(data, data_token):
     if flag:
         update_sm_control_table = True
         extra_info = {"sm_id": result_sm[0]}
-        data["reference"] = data["reference"] + "-" + result_sm[1]
+        data["reference"] = result_sm[1]
     time_zone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
     history = [
@@ -658,7 +658,6 @@ def create_po_application_api(data, data_token):
         if not flag:
             return {"data": None, "msg": msg + "\nerror", "error": str(error)}, 400
     if update_sm_control_table:
-        print("actualizando sm control table")
         code, data_out = update_sm_from_control_table(
             data={
                 "id": result_sm[0],
