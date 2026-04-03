@@ -202,6 +202,7 @@ def create_purchaser_order_api(data, data_token):
     else:
         result_sm = [0]
         print("sm not found")
+    print("result_sm;; ", result_sm)
     time_zone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
     comment_history = f"Orden de compra creada por {data_token.get('name')}"
