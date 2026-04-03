@@ -636,7 +636,7 @@ def insert_medical_db(data):
         data["info"]["dates"],
         data["info"]["apt_actual"],
         data["info"]["emp_id"],
-        extra_info
+        extra_info,
     )
     if flag:
         return {"data": str(result)}, 201
@@ -656,7 +656,7 @@ def update_medical_db(data):
         data["info"]["dates"],
         apt_actual,
         exam_id=data["id"],
-        extra_info= extra_info
+        extra_info=extra_info,
     )
     if flag:
         return {"data": str(result)}, 200
@@ -746,12 +746,14 @@ def recommendations_results_quizzes(dict_results: dict, tipo_q: int):
     max_cat_score = ""
     maxv = 0
     for k, v in cat_score.items():
-        if maxv< v:
-            maxv= v
-            max_cat_score = k 
+        if maxv < v:
+            maxv = v
+            max_cat_score = k
     # Acceder a las recomendaciones de categoría
     if max_cat_score in dict_conversions_recomen["c_cat_r"]:
-        dict_recommendations["c_cat_r"] = dict_conversions_recomen["c_cat_r"][max_cat_score]
+        dict_recommendations["c_cat_r"] = dict_conversions_recomen["c_cat_r"][
+            max_cat_score
+        ]
     else:
         dict_recommendations["c_cat_r"] = [
             "No hay recomendaciones específicas para esta categoría."
@@ -1043,7 +1045,7 @@ def fetch_medicals():
                 "dates": json.loads(fechas),
                 "apt_last": apt_actual,
                 "emp_id": emp_id,
-                "alergies": extra_info.get("alergies", ""),
+                "allergies": extra_info.get("allergies", ""),
                 "observations": extra_info.get("observations", ""),
             }
         )

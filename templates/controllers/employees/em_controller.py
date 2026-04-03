@@ -20,7 +20,7 @@ def insert_new_exam_med(
     sql = (
         "INSERT INTO sql_telintec.examenes_med "
         "(name, blood, status, aptitud, renovacion, aptitude_actual, empleado_id, extra_info) "
-        "VALUES (%s, %s, %s, %s, %s, %s, %s)"
+        "VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
     )
     val = (
         name.upper(),

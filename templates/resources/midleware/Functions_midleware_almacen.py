@@ -1170,7 +1170,7 @@ def update_brand_procedure(data, data_token):
     msg_list, _providers_dict_amc, brands_dict = update_brand_list(
         supplier_name, brand, _providers_dict_amc, brands_dict
     )
-    msg = f"Marca {brand} creada por el empleado {data_token.get('emp_id')} " + msg_list
+    msg = f"Marca {brand} creada por el empleado {data_token.get('name')} " + msg_list
     create_notification_permission_notGUI(
         msg, ["almacen", "administracion"], "Marca Creada", data_token.get("emp_id"), 0
     )
@@ -1251,7 +1251,7 @@ def create_reservation_from_api(data, data_token):
     if not flag:
         return {"data": None, "error": str(error)}, 400
     msg = (
-        f"Reservation <{lastrowid}> creada por el empleado {data_token.get('emp_id')} "
+        f"Reservation <{lastrowid}> creada por el empleado {data_token.get('name')} "
         f"con cantidad {data['quantity']} y id producto {data['id_product']} para la sm {data['sm_id']}"
     )
     create_notification_permission_notGUI(
@@ -1295,7 +1295,7 @@ def update_reservation_from_api(data, data_token):
     if not flag:
         return {"data": None, "error": str(error)}, 400
     msg = (
-        f"Reservation <{data['id']}> actualizada por el empleado {data_token.get('emp_id')} "
+        f"Reservation <{data['id']}> actualizada por el empleado {data_token.get('name')} "
         f"con status {data['status']}, cantidad {data['quantity']} y sm {sm_id}"
     )
     create_notification_permission_notGUI(
@@ -1309,7 +1309,7 @@ def delete_reservation_from_api(data, data_token):
     flag, error, result = delete_reservation_db(data["id"])
     if not flag:
         return {"data": None, "error": str(error)}, 400
-    msg = f"Reservation <{data['id']}> eliminada por el empleado {data_token.get('emp_id')}"
+    msg = f"Reservation <{data['id']}> eliminada por el empleado {data_token.get('name')}"
     create_notification_permission_notGUI(
         msg, ["almacen"], "Notifaction de Inventario", data_token.get("emp_id"), 0
     )

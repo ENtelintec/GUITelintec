@@ -377,7 +377,6 @@ def cancel_po_application(history: list, id_order: int, status: int):
         "SET status = %s, history = %s "
         "WHERE id_order = %s"
     )
-    print(status, id_order, history)
     val = (status, json.dumps(history), id_order)
 
     flag, e, out = execute_sql(sql, val, 3)

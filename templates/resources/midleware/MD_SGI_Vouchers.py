@@ -110,7 +110,7 @@ def create_voucher_epp_attachment_api(data, data_token):
             return {"data": None, "msg": f"Access denied to bucket: {bucket_name}"}, 400
         else:
             return {"data": None, "msg": f"AWS error: {str(e)}"}, 400
-    msg = f"Archivo adjunto agregado: {filename} al voucher {data['id_voucher']} por el empleado {data_token.get('emp_id')}"
+    msg = f"Archivo adjunto agregado: {filename} al voucher {data['id_voucher']} por el empleado {data_token.get('name')}"
     status = voucher_data[15]
     if "firma-aprobado" in filename.lower():  # if is sign file change status to 1
         status = 1
@@ -241,7 +241,7 @@ def create_voucher_tools_attachment_api(data, data_token):
             return {"data": None, "msg": f"Access denied to bucket: {bucket_name}"}, 400
         else:
             return {"data": None, "msg": f"AWS error: {str(e)}"}, 400
-    msg = f"Archivo adjunto agregado: {filename} al voucher {data['id_voucher']} por el empleado {data_token.get('emp_id')}"
+    msg = f"Archivo adjunto agregado: {filename} al voucher {data['id_voucher']} por el empleado {data_token.get('name')}"
     status = voucher_data[16]
     if "firma-aprobado" in filename.lower():  # if is sign file change status to 1
         status = 1
