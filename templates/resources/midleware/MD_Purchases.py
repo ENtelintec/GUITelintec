@@ -641,7 +641,7 @@ def create_po_application_api(data, data_token):
             msg += f"\nError al eliminar la solicitud de orden de compra: {error}"
         else:
             msg = f"Solicitud de Orden de compra eliminada con ID-{id_po_app} por errores en los items"
-            return {"data": None, "msg": msg + "\nerror", "error": str(error)}
+            return {"data": None, "msg": msg + "\nerror", "error": str(error)}, 400
 
     if tool_detected:
         msg += (
