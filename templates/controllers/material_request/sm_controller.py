@@ -378,6 +378,7 @@ def create_items_sm_db(items: list, sm_id: int):
                 """
         id_inventory = item.get("id_inventory", 0)
         state = 0 if id_inventory == 0 else 1
+        print("state", state)
         id_inventory = None if id_inventory == 0 else id_inventory
         extra_info = item.get("extra_info", {})
         is_tool = item.get("is_tool", 0)

@@ -201,7 +201,6 @@ def create_purchaser_order_api(data, data_token):
     else:
         result_sm = [0]
         print("sm not found")
-    print("result_sm;; ", result_sm)
     if len(result_sm)<2:
         update_sm_control_table = False
     time_zone = pytz.timezone(timezone_software)
@@ -307,7 +306,6 @@ def create_purchaser_order_api(data, data_token):
             data_token,
             result_sm,
         )
-        print(code, data_out, )
         if code != 200:
             msg += (
                 "\n"
@@ -433,8 +431,7 @@ def cancel_purchase_order_api(data, data_token):
         history,
         data["id"],
     )
-    print(flag, error, result)
-    print(history, data["id"])
+
     if not flag:
         return {"data": None, "msg": "error", "error": str(error)}, 400
     msg = f"Orden de compra cancelada con ID-{data['id']}"

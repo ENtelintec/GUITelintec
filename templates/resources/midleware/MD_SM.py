@@ -923,7 +923,6 @@ def update_sm_from_control_table(
             "comment": comment_history,
         }
     )
-    print(extra_info)
     flag, error, result = update_history_extra_info_sm_by_id(
         data["id"], extra_info, history_sm, comments
     )
