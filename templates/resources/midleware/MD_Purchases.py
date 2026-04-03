@@ -194,15 +194,16 @@ def fetch_purchase_orders(status, data_token):
 
 def create_purchaser_order_api(data, data_token):
     sm_id = data.get("sm_id", 0)
-    update_sm_control_table = False
+    update_sm_control_table = True
     if sm_id >= 0:
         flag, error, result_sm = get_sm_by_id(sm_id)
-        if not flag:
-            update_sm_control_table = True
+        
     else:
         result_sm = [0]
         print("sm not found")
     print("result_sm;; ", result_sm)
+    if len(result_sm)<2:
+        update_sm_control_table = False
     time_zone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
     comment_history = f"Orden de compra creada por {data_token.get('name')}"
