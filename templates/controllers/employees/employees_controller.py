@@ -345,40 +345,79 @@ def get_all_data_employees(status: str):
         status = "inactivo"
     else:
         status = "activo"
-    sql = (
-        "SELECT "
-        "employees.employee_id, "
-        "employees.name, "
-        "employees.l_name, "
-        "employees.phone_number, "
-        "sql_telintec.departments.name, "
-        "employees.modality, "
-        "employees.email, "
-        "employees.contrato, "
-        "employees.date_admission, "
-        "employees.rfc, "
-        "employees.curp, "
-        "employees.nss, "
-        "employees.emergency_contact, "
-        "employees.puesto, "
-        "employees.status, "
-        "employees.departure, "
-        "sql_telintec.examenes_med.examen_id, "
-        "employees.birthday, "
-        "employees.legajo ,"
-        "employees.extra_info,"
-        "employees.department_id, "
-        " sql_telintec.users_system.usernames "
-        "FROM sql_telintec.employees "
-        "LEFT JOIN sql_telintec.departments "
-        "ON sql_telintec.employees.department_id = sql_telintec.departments.department_id "
-        "LEFT JOIN sql_telintec.examenes_med "
-        "ON (sql_telintec.employees.employee_id = sql_telintec.examenes_med.empleado_id) "
-        "LEFT JOIN sql_telintec.users_system "
-        "ON (sql_telintec.employees.employee_id = sql_telintec.users_system.emp_id) "
-        "WHERE employees.status LIKE %s "
-        "ORDER BY employees.name, employees.l_name "
-    )
+    # sql = (
+    #     "SELECT "
+    #     "employees.employee_id, "
+    #     "employees.name, "
+    #     "employees.l_name, "
+    #     "employees.phone_number, "
+    #     "sql_telintec.departments.name, "
+    #     "employees.modality, "
+    #     "employees.email, "
+    #     "employees.contrato, "
+    #     "employees.date_admission, "
+    #     "employees.rfc, "
+    #     "employees.curp, "
+    #     "employees.nss, "
+    #     "employees.emergency_contact, "
+    #     "employees.puesto, "
+    #     "employees.status, "
+    #     "employees.departure, "
+    #     "sql_telintec.examenes_med.examen_id, "
+    #     "employees.birthday, "
+    #     "employees.legajo ,"
+    #     "employees.extra_info,"
+    #     "employees.department_id, "
+    #     " GROUP_CONCAT(sql_telintec.users_system.usernames) AS usernames "
+    #     "FROM sql_telintec.employees "
+    #     "LEFT JOIN sql_telintec.departments "
+    #     "ON sql_telintec.employees.department_id = sql_telintec.departments.department_id "
+    #     "LEFT JOIN sql_telintec.examenes_med "
+    #     "ON (sql_telintec.employees.employee_id = sql_telintec.examenes_med.empleado_id) "
+    #     "LEFT JOIN sql_telintec.users_system "
+    #     "ON (sql_telintec.employees.employee_id = sql_telintec.users_system.emp_id) "
+    #     "WHERE employees.status LIKE %s "
+    #     "ORDER BY employees.name, employees.l_name "
+    # )
+    sql = """
+    SELECT 
+        e.employee_id,
+        e.name,
+        e.l_name,
+        e.phone_number,
+        d.name AS department_name,
+        e.modality,
+        e.email,
+        e.contrato,
+        e.date_admission,
+        e.rfc,
+        e.curp,
+        e.nss,
+        e.emergency_contact,
+        e.puesto,
+        e.status,
+        e.departure,
+        em.examen_id, 
+        e.birthday,
+        e.legajo,
+        e.extra_info,
+        e.department_id,
+        GROUP_CONCAT(u.usernames) AS usernames -- todos los usuarios en una sola columna
+    FROM sql_telintec.employees e
+    LEFT JOIN sql_telintec.departments d
+        ON e.department_id = d.department_id
+    LEFT JOIN sql_telintec.examenes_med em
+        ON e.employee_id = em.empleado_id
+    LEFT JOIN sql_telintec.users_system u
+        ON e.employee_id = u.emp_id
+    WHERE e.status LIKE %s
+    GROUP BY e.employee_id, e.name, e.l_name, e.phone_number, d.name,
+            e.modality, e.email, e.contrato, e.date_admission, e.rfc, e.curp,
+            e.nss, e.emergency_contact, e.puesto, e.status, e.departure,
+            e.birthday, e.legajo, e.extra_info, e.department_id
+    ORDER BY e.name, e.l_name;
+
+    """
     val = (status,)
     flag, error, result = execute_sql(sql, val, type_sql=2)
     return flag, error, result
