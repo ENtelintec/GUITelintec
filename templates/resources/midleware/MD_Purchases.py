@@ -568,6 +568,13 @@ def fetch_pos_applications(status, data_token):
 
 def create_po_application_api(data, data_token):
     sm_id = data.get("sm_id", -1)
+    if sm_id == -1:
+        return {
+            "data": None,
+            "msg": "error",
+            "error": "sm_id o reference son requeridos",
+        }, 400
+
     update_sm_control_table = False
     if sm_id > 0:
         flag, error, result_sm = get_sm_by_id(sm_id)
@@ -575,12 +582,11 @@ def create_po_application_api(data, data_token):
         flag, error, result_sm = get_sm_by_folio(data.get("reference"))
     if not (isinstance(result_sm, list) or isinstance(result_sm, tuple)):
         return {"data": None, "msg": "error", "error": "SM not found"}, 400
-
     extra_info = {}
     if flag:
         update_sm_control_table = True
         extra_info = {"sm_id": result_sm[0]}
-        data["reference"] = data["reference"] + "-" + result_sm[1]
+        data["reference"] = result_sm[1]
     time_zone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
     history = [

@@ -446,7 +446,7 @@ def validate_json(form, field):
         json.loads(field.data) if isinstance(field.data, str) else None
     # except ValueError:
     except Exception as e:
-        print(e)
+        print("erorr at vaidate json field: ", str(e))
         raise ValidationError("Invalid JSON data.")
 
 
