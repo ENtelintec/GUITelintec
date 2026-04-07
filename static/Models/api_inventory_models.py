@@ -56,7 +56,7 @@ product_model_new = api.model(
         "locations": fields.Nested(locations_model, required=False),
         "brand": fields.String(required=False, description="The product brand."),
         "epp": fields.Integer(required=True, description="The product epp", example=0),
-        "id_item": fields.Integer(
+        "sm_id": fields.Integer(
             required=False, description="The product sm id for update if required"
         ),
     },
@@ -322,6 +322,7 @@ class ProductInsertForm(Form):
     brand = StringField("brand", validators=[], default="")
     epp = IntegerField("epp", validators=[], default=0)
     id_item = IntegerField("id_item", validators=[], default=0)
+    sm_id = IntegerField("sm_id", validators=[], default=0)
 
 
 class ProductUpdateForm(Form):

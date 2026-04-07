@@ -927,7 +927,7 @@ def update_inventory_state_sm_item_db(state, id_inventory, id_item):
           UPDATE sql_telintec.sm_items
           SET state = %s,
               id_inventory = %s
-          WHERE id_sm = %s
+          WHERE id_item = %s
           """
     val = (state, id_inventory, id_item)
     flag, error, result = execute_sql(sql, val, 3)
