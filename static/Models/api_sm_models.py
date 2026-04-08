@@ -745,6 +745,7 @@ class ItemsFormSMPost(Form):
     state = IntegerField("state", validators=[], default=1)
     is_erased = IntegerField("is_erased", validators=[], default=0)
     is_tool = IntegerField("is_tool", validators=[], default=0)
+    id_inventory = IntegerField("id_inventory", validators=[], default=0)
 
 
 class DeliveriesForm(Form):

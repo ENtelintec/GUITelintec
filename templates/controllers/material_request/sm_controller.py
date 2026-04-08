@@ -378,7 +378,6 @@ def create_items_sm_db(items: list, sm_id: int):
                 """
         id_inventory = item.get("id_inventory", 0)
         state = 0 if id_inventory == 0 else 1
-        print("state", state)
         id_inventory = None if id_inventory == 0 else id_inventory
         extra_info = item.get("extra_info", {})
         is_tool = item.get("is_tool", 0)
@@ -927,7 +926,7 @@ def update_inventory_state_sm_item_db(state, id_inventory, id_item):
           UPDATE sql_telintec.sm_items
           SET state = %s,
               id_inventory = %s
-          WHERE id_sm = %s
+          WHERE id_item = %s
           """
     val = (state, id_inventory, id_item)
     flag, error, result = execute_sql(sql, val, 3)

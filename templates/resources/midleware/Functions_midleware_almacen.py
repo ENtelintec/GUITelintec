@@ -90,7 +90,7 @@ def get_all_movements(type_m: str):
             sku,
             supplier,
             codes,
-            description
+            description,
         ) = item
         reference = json.loads(reference) if reference is not None else None
         codes = json.loads(codes) if codes is not None else []
@@ -389,8 +389,7 @@ def insert_product_db(data, data_token):
         f"Se ha creado el producto {data['info']['name']}-{lastrowid} con sku {data['info']['sku']}-{data['info']['stock']} "
         f"por el empleado {data_token.get('emp_id')}-{data_token.get('name')} en la fecha {timestamp}"
     )
-    id_sm_item = data.get("id_item", 0)
-
+    id_sm_item = data["info"].get("id_item", 0)
     if id_sm_item > 0:
         out_item_sm, code_sm = update_sm_item_state_and_inventory(
             {"id_inventory": lastrowid, "id_item": id_sm_item, "state": 1}, data_token
@@ -854,7 +853,7 @@ def get_suppliers_db():
             web_url,
             type_s,
             extra_info,
-            items
+            items,
         ) = item
         extra_info = json.loads(extra_info) if extra_info is not None else {}
         brands = extra_info.get("brands", "[]")
@@ -1309,7 +1308,9 @@ def delete_reservation_from_api(data, data_token):
     flag, error, result = delete_reservation_db(data["id"])
     if not flag:
         return {"data": None, "error": str(error)}, 400
-    msg = f"Reservation <{data['id']}> eliminada por el empleado {data_token.get('name')}"
+    msg = (
+        f"Reservation <{data['id']}> eliminada por el empleado {data_token.get('name')}"
+    )
     create_notification_permission_notGUI(
         msg, ["almacen"], "Notifaction de Inventario", data_token.get("emp_id"), 0
     )

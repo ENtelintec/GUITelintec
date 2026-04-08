@@ -395,7 +395,7 @@ class ChangeStatusActivity(Resource):
         return data_out, code
 
 
-@ns.route("/activity/remission")
+@ns.route("/remission")
 class ActivityRemissionAction(Resource):
     @ns.expect(expected_headers_per, remission_activity_create_model)
     def post(self):
@@ -440,7 +440,7 @@ class ActivityRemissionAction(Resource):
         return data_out, code
 
 
-@ns.route("/activity/reports-<string:id_report>")
+@ns.route("/remission-<string:id_report>")
 class FetchActivitieReportById(Resource):
     @ns.expect(expected_headers_per)
     def get(self, id_report):
@@ -451,6 +451,8 @@ class FetchActivitieReportById(Resource):
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         try:
             id_report = int(id_report)
+            if id_report == 0:
+                id_report = None
         except Exception as e:
             print(f"retrieviong all {e}")
             id_report = None
@@ -458,7 +460,7 @@ class FetchActivitieReportById(Resource):
         return data_out, code
 
 
-@ns.route("/activity/report/attachment-<string:id_report>")
+@ns.route("/remission/attachment-<string:id_report>")
 class UploadActivityReportAttachment(Resource):
     @ns.expect(expected_headers_per, expected_files_attachment)
     def post(self, id_report):
