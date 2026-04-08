@@ -150,6 +150,7 @@ def get_all_examenes():
         "sql_telintec.examenes_med.extra_info "
         "FROM sql_telintec.examenes_med "
         "LEFT JOIN sql_telintec.employees on employees.employee_id = examenes_med.empleado_id "
+        "WHERE sql_telintec.employees.status = 'activo' "
         "ORDER BY name "
     )
     flag, e, out = execute_sql(sql, type_sql=5)

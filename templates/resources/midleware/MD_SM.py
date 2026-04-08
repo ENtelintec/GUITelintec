@@ -359,10 +359,9 @@ def get_iddentifiers_ternium(data_token):
     permissions = data_token.get("permissions", {}).values()
     contracts = []
     dict_tabs = {}
+    last_part_perm = [item.lower().split(".")[-1] for item in permissions]
     if any(
-        word in item.lower().split(".")[-1]
-        for word in ["administrator", "almacen"]
-        for item in permissions
+        perm in word for perm in last_part_perm for word in ["administrator", "almacen"]
     ):
         flag, error, contracts = get_contract_by_client(40)
     else:
@@ -455,6 +454,7 @@ def get_all_sm_control_table(data_token):
     data_sm, code = get_all_sm(-1, 0, -1, with_items=False)
     if code != 200:
         return {"data": [], "msg": data_sm}, 400
+    print(iddentifiers_contracts + abbs_list_departments)
     data_out = clasify_sm(
         iddentifiers_contracts + abbs_list_departments,
         data_sm,
