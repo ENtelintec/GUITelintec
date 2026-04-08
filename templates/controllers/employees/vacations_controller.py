@@ -34,6 +34,7 @@ def get_vacations_data():
         "FROM sql_telintec.vacations "
         "INNER JOIN sql_telintec.employees ON sql_telintec.vacations.emp_id = sql_telintec.employees.employee_id "
         "LEFT JOIN sql_telintec.examenes_med ON sql_telintec.vacations.emp_id = sql_telintec.examenes_med.empleado_id  "
+        "WHERE sql_telintec.employees.status = 'activo' "
         "ORDER BY name, l_name"
     )
     flag, error, result = execute_sql(sql, type_sql=5)

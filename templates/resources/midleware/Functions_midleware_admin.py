@@ -268,7 +268,6 @@ def get_department_identifiers(result):
 
 def get_iddentifiers(data_token, all_data_keys, from_where="fetch"):
     permissions = data_token.get("permissions", {}).values()
-    print(permissions)
     if any(item.lower().split(".")[-1] in all_data_keys for item in permissions):
         flag, error, result_abb = get_contracts_abreviations_db()
         abbs_area = [item[0] for item in result_abb if item[4] == 0 and item[0] != ""]
@@ -291,6 +290,7 @@ def get_iddentifiers(data_token, all_data_keys, from_where="fetch"):
             flag, error, result = check_func(data_token.get("emp_id"))
             if flag and result:
                 abbs_area = get_department_identifiers(result)
+                # print(abbs_area, result, check_func)
                 break
             elif not flag:
                 return {"data": None, "msg": str(error)}, 400
@@ -1080,7 +1080,9 @@ def create_contract_from_api(data, data_token):
         }, 400
     else:
         msg += "\nError al crear ciertos items de la cotización"
-    msg += f"Contrato creado con ID-{id_contract} por el empleado {data_token.get('name')}"
+    msg += (
+        f"Contrato creado con ID-{id_contract} por el empleado {data_token.get('name')}"
+    )
     create_notification_permission(
         msg, ["administracion"], "Contrato Creado", data_token.get("emp_id"), 0
     )
@@ -1140,7 +1142,7 @@ def update_contract_from_api(data, data_token):
             "\nError al crear o actualizar ciertos items de la cotización"
             + f"items con error: {len(error_list)}"
             + "\n"
-            +f"items correctos: {len(result_list)}"
+            + f"items correctos: {len(result_list)}"
         )
     contract_number = data["metadata"].pop("contract_number", "error cnumber")
     client_id = data["metadata"].pop("client_id", 50)
