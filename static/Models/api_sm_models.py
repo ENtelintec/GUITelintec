@@ -739,7 +739,7 @@ class ItemsFormSMPost(Form):
         validators=[validators.number_range(min=0, message="Invalid quantity")],
     )
     movement = StringField("movement", validators=[], default="")
-    url = URLField("url", validators=[], default="")
+    url = StringField("url", validators=[], default="")
     sku = StringField("sku", validators=[], default="")
     partida = IntegerField("partida", validators=[], default=0)
     state = IntegerField("state", validators=[], default=1)
