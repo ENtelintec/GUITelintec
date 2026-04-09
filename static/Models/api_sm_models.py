@@ -781,7 +781,7 @@ class ItemsFormSMPUT(Form):
         validators=[validators.number_range(min=0, message="Invalid quantity")],
     )
     movement = StringField("movement", validators=[], default="")
-    url = URLField("url", validators=[], default="")
+    url = StringField("url", validators=[], default="")
     sku = StringField("sku", validators=[], default="")
     partida = StringField("partida", validators=[], default="")
     is_erased = IntegerField("is_erased", validators=[], default=0)
