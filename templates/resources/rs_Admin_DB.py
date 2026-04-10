@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+from templates.resources.midleware.Functions_midleware_admin import update_extra_info_supplier
+from static.Models.api_clients_suppliers_models import SupplierEInfoUpdateForm
+from static.Models.api_clients_suppliers_models import update_extra_info_model
 from templates.resources.midleware.Functions_midleware_admin import items_supplier_from_file
 import tempfile
 import os
@@ -155,7 +158,7 @@ class SupplierActions(Resource):
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
-        data, code = insert_supplier(data)
+        data, code = insert_supplier(data, data_token)
         return data, code
 
     @ns.expect(expected_headers_per, supplier_model)
@@ -185,7 +188,25 @@ class SupplierActions(Resource):
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
-        data, code = delete_supplier(data)
+        data, code = delete_supplier(data, data_token)
+        return data, code
+
+
+@ns.route("/extraInfoSupplier")
+class UpdateEISupplier(Resource):
+    @ns.expect(expected_headers_per, update_extra_info_model)
+    def post(self):
+        flag, data_token, msg = token_verification_procedure(
+            request, department="administracion"
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        # noinspection PyUnresolvedReferences
+        validator = SupplierEInfoUpdateForm.from_json(ns.payload)   
+        if not validator.validate():
+            return {"data": validator.errors, "msg": "Error at structure"}, 400
+        data = validator.data
+        data, code = update_extra_info_supplier(data, data_token)
         return data, code
 
 

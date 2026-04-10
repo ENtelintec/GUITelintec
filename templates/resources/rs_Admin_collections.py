@@ -140,7 +140,7 @@ class APOsOperations(Resource):
     @ns.expect(expected_headers_per, pos_application_post_model)
     def post(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department="orders"
+            request, department=["orders", "administracion"]
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -155,7 +155,7 @@ class APOsOperations(Resource):
     @ns.expect(expected_headers_per, pos_application_put_model)
     def put(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department="orders"
+            request, department=["orders", "administracion"]
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -170,7 +170,7 @@ class APOsOperations(Resource):
     @ns.expect(expected_headers_per, po_app_delete_model)
     def delete(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department="orders"
+            request, department=["orders", "administracion"]
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -188,7 +188,7 @@ class POsOperations(Resource):
     @ns.expect(expected_headers_per, purchase_order_post_model)
     def post(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department="orders"
+            request, department=["orders", "administracion"]
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -202,7 +202,9 @@ class POsOperations(Resource):
 
     @ns.expect(expected_headers_per, purchase_order_put_model)
     def put(self):
-        flag, error, result = token_verification_procedure(request, department="orders")
+        flag, error, result = token_verification_procedure(
+            request, department=["orders", "administracion"]
+        )
         if not flag:
             return {
                 "error": error if error != "" else "No autorizado. Token invalido"
@@ -219,7 +221,7 @@ class POsOperations(Resource):
     @ns.expect(expected_headers_per, purchase_order_delete_model)
     def delete(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department="orders"
+            request, department=["orders", "administracion"]
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -237,7 +239,7 @@ class ChangeStateOrder(Resource):
     @ns.expect(expected_headers_per, purchase_order_update_status_model)
     def put(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department="orders"
+            request, department=["orders", "administracion"]
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -255,7 +257,7 @@ class ChangeStatePOApplication(Resource):
     @ns.expect(expected_headers_per, purchase_order_update_status_model)
     def put(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department="orders"
+            request, department=["orders", "administracion"]
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401

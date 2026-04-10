@@ -209,7 +209,7 @@ def create_supplier_amc(
     web_provider = str(web_provider)
     type_provider = str(type_provider)
     extra_info = (
-        json.dumps(extra_info) if extra_info else json.dumps({"brands": [], "rfc": ""})
+        json.dumps(extra_info) if extra_info else json.dumps({"brands": [], "rfc": "", "fast_order": 0})
     )
     insert_sql = (
         "INSERT INTO sql_telintec.suppliers_amc "
@@ -385,4 +385,15 @@ def update_brands_supplier(supplier_id, brands: list):
     vals = (json.dumps(brands), supplier_id)
     # vals = (brands, supplier_id)
     flag, error, result = execute_sql(update_sql, vals, 4)
+    return flag, error, result
+
+
+def update_extra_info_supplier_db(id_supplier, extra_info: dict):
+    update_sql = (
+        "UPDATE sql_telintec.suppliers_amc "
+        "SET extra_info = %s "
+        "WHERE id_supplier = %s"
+    )
+    vals = (json.dumps(extra_info), id_supplier)
+    flag, error, result = execute_sql(update_sql, vals, 3)
     return flag, error, result
