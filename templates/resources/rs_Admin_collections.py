@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 
+from templates.resources.midleware.MD_Purchases import fetch_po_item_sm_item_id
 from templates.resources.midleware.MD_Admin_Collections import (
     download_report_activity_attachment_api,
 )
@@ -232,6 +233,20 @@ class POsOperations(Resource):
         data = validator.data
         data_out, code = cancel_purchase_order_api(data, data_token)
         return data_out, code
+
+
+@ns.route("/POItemsFoDelivery")
+class FetchPoItemForFastDelivery(Resource):
+    @ns.expect(expected_headers_per)
+    def get(self):
+        # get_all_item_purchase_order_with_id_item_sm
+        flag, data_token, msg = token_verification_procedure(
+            request, department="administracion"
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        data, code = fetch_po_item_sm_item_id(data_token)
+        return data, code
 
 
 @ns.route("/order/status")

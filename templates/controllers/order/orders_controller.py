@@ -280,6 +280,30 @@ def delete_purchase_order(id_order: int):
     return flag, e, out
 
 
+def get_all_item_purchase_order_with_id_item_sm():
+    sql = """
+            SELECT 
+            poi.id_item,
+            poi.purchase_id,
+            po.folio,
+            JSON_EXTRACT(poi.extra_info, '$.id_item_sm') AS id_item_sm,
+            poi.quantity,
+            JSON_UNQUOTE(JSON_EXTRACT(sa.extra_info, '$.fast_order')) AS fast_order
+        FROM sql_telintec_mod_admin.purchase_order_items poi
+        JOIN sql_telintec_mod_admin.purchase_orders po
+            ON poi.purchase_id = po.id_order
+        LEFT JOIN sql_telintec.suppliers_amc sa
+            ON po.supplier_id = sa.id_supplier
+        WHERE JSON_EXTRACT(poi.extra_info, '$.id_item_sm') IS NOT NULL
+        AND CAST(JSON_UNQUOTE(JSON_EXTRACT(poi.extra_info, '$.id_item_sm')) AS UNSIGNED) > 0
+        AND poi.purchase_id IS NOT NULL
+        AND poi.purchase_id <> 0;
+    """
+    val= None
+    flag, e, out= execute_sql(sql, val, 5)
+    return flag, e, out
+
+
 def update_purchase_order_status(id_order: int, history: list, status: int):
     sql = (
         "UPDATE sql_telintec_mod_admin.purchase_orders "

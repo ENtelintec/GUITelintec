@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+from templates.controllers.order.orders_controller import (
+    get_all_item_purchase_order_with_id_item_sm,
+)
 from templates.controllers.order.orders_controller import delete_po_application
 from templates.controllers.order.orders_controller import (
     insert_purchase_order_item_from_applications,
@@ -81,6 +84,7 @@ def map_products_po(products: list):
                 "supplier": extra_info.get("supplier"),
                 "tool": item.get("tool"),
                 "comment": extra_info.get("comment"),
+                "id_item_sm": extra_info.get("id_item_sm"),
             }
         )
         total_amount += float(item.get("unit_price")) * float(item.get("quantity"))
@@ -97,6 +101,7 @@ def create_extra_info_product_from_data(data: dict):
         "duration_services": data.get("duration_services", ""),
         "supplier": data.get("supplier", 0),
         "comment": data.get("comment", ""),
+        "id_item_sm": data.get("id_item_sm"),
     }
     return extra_info
 
@@ -197,11 +202,11 @@ def create_purchaser_order_api(data, data_token):
     update_sm_control_table = True
     if sm_id >= 0:
         flag, error, result_sm = get_sm_by_id(sm_id)
-        
+
     else:
         result_sm = [0]
         print("sm not found")
-    if len(result_sm)<2:
+    if len(result_sm) < 2:
         update_sm_control_table = False
     time_zone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
@@ -567,6 +572,27 @@ def fetch_pos_applications(status, data_token):
         )
 
     return {"data": data_out, "msg": "ok", "error": None}, 200
+
+
+def fetch_po_item_sm_item_id(data_token):
+    flag, error, result = get_all_item_purchase_order_with_id_item_sm()
+    if not flag:
+        return {"data": None, "msg": "error", "error": str(error)}, 400
+    data_out = []
+
+    for item in result:
+        id_item, id_order, folio, id_item_sm, quantity, fast_order = item
+        data_out.append(
+            {
+                "id_item": id_item,
+                "id_order": id_order,
+                "folio": folio,
+                "id_item_sm": id_item_sm,
+                "quantity": quantity,
+                "fast_order": fast_order,
+            }
+        )
+    return {"data": data_out, "msg": "ok", "error": None}
 
 
 def create_po_application_api(data, data_token):
