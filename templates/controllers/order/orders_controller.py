@@ -291,6 +291,7 @@ def get_all_item_purchase_order_with_id_item_sm():
             JSON_UNQUOTE(JSON_EXTRACT(sa.extra_info, '$.fast_order')) AS fast_order,
             poi.description,
             poi.tool,
+            sa.id_supplier
         FROM sql_telintec_mod_admin.purchase_order_items poi
         JOIN sql_telintec_mod_admin.purchase_orders po
             ON poi.purchase_id = po.id_order

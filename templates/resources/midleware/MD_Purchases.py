@@ -590,6 +590,7 @@ def fetch_po_item_sm_item_id(data_token):
             fast_order,
             description,
             tool,
+            id_supplier,
         ) = item
         data_out.append(
             {
@@ -601,6 +602,7 @@ def fetch_po_item_sm_item_id(data_token):
                 "fast_order": fast_order,
                 "description": description,
                 "tool": tool,
+                "id_supplier": id_supplier,
             }
         )
     return {"data": data_out, "msg": "ok", "error": None}
