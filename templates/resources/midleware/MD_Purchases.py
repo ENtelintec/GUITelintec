@@ -581,7 +581,16 @@ def fetch_po_item_sm_item_id(data_token):
     data_out = []
 
     for item in result:
-        id_item, id_order, folio, id_item_sm, quantity, fast_order = item
+        (
+            id_item,
+            id_order,
+            folio,
+            id_item_sm,
+            quantity,
+            fast_order,
+            description,
+            tool,
+        ) = item
         data_out.append(
             {
                 "id_item": id_item,
@@ -590,6 +599,8 @@ def fetch_po_item_sm_item_id(data_token):
                 "id_item_sm": id_item_sm,
                 "quantity": quantity,
                 "fast_order": fast_order,
+                "description": description,
+                "tool": tool,
             }
         )
     return {"data": data_out, "msg": "ok", "error": None}
