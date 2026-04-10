@@ -39,7 +39,7 @@ extra_info_supplier_model = api.model(
     {
         "brands": fields.List(fields.String(), required=True, default=[]),
         "rfc": fields.String(required=False, default=""),
-        "fast_order": filter.Integer(required=False, default=0)
+        "fast_order": fields.Integer(required=False, default=0)
     },
 )
 # remission_activity_upsert_metadata_model = api.inherit(
