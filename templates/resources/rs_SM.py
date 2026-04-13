@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-from templates.resources.midleware.MD_SGI import create_voucher_vehicle_attachment_api
 import os
 from templates.resources.midleware.MD_SM import create_sm_attachment_api
 import tempfile
@@ -327,7 +326,11 @@ class DownloadPDFSM(Resource):
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data, code = dowload_file_sm(sm_id)
         if code == 200:
-            return send_file(data, as_attachment=True, download_name=data.replace("\\","/").split("/")[-1])
+            return send_file(
+                data,
+                as_attachment=True,
+                download_name=data.replace("\\", "/").split("/")[-1],
+            )
         else:
             return {"msg": "error at downloading"}, code
 
@@ -341,7 +344,11 @@ class DownloadExcelSM(Resource):
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data, code = dowload_file_sm(sm_id, type_file="excel")
         if code == 200:
-            return send_file(data, as_attachment=True, download_name=data.replace("\\","/").split("/")[-1])
+            return send_file(
+                data,
+                as_attachment=True,
+                download_name=data.replace("\\", "/").split("/")[-1],
+            )
         else:
             return {"msg": "error at downloading"}, code
 

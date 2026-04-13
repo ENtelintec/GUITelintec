@@ -1,4 +1,3 @@
-from datetime import timedelta
 from botocore.exceptions import ClientError
 from botocore.exceptions import NoCredentialsError
 from static.constants import secrets
