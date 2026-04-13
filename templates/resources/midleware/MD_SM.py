@@ -454,7 +454,6 @@ def get_all_sm_control_table(data_token):
     data_sm, code = get_all_sm(-1, 0, -1, with_items=False)
     if code != 200:
         return {"data": [], "msg": data_sm}, 400
-    print(iddentifiers_contracts + abbs_list_departments)
     data_out = clasify_sm(
         iddentifiers_contracts + abbs_list_departments,
         data_sm,
