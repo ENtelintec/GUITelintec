@@ -59,4 +59,4 @@ tester*.py
 *_test.json
 pyrefly.toml
 Test*.py
-/template/modules/
+/template/modules/*
