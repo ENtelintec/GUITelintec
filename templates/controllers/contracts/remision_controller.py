@@ -54,7 +54,7 @@ def update_remission(
     id_remission: int,
     metadata_update: dict,
     history: list,
-    status: int = None,
+    status: int | None = None,
 ):
     if status is not None:
         sql = (
@@ -94,7 +94,7 @@ def create_remission_item(
     quantity: float,
     udm: str,
     price_unit: float,
-    quotation_item_id: int = None,
+    quotation_item_id: int | None = None,
 ):
     sql = (
         "INSERT INTO sql_telintec_mod_admin.remission_items "
@@ -115,11 +115,11 @@ def create_remission_item(
 
 def update_remission_item(
     id_item: int,
-    description: str = None,
-    quantity: float = None,
-    udm: str = None,
-    price_unit: float = None,
-    quotation_item_id: int = None,
+    description: str | None = None,
+    quantity: float | None = None,
+    udm: str | None = None,
+    price_unit: float | None = None,
+    quotation_item_id: int | None = None,
 ):
     # Construir dinámicamente los campos a actualizar
     fields = []
@@ -130,16 +130,16 @@ def update_remission_item(
         values.append(description)
     if quantity is not None:
         fields.append("quantity = %s")
-        values.append(quantity)
+        values.append(str(quantity))
     if udm is not None:
         fields.append("udm = %s")
         values.append(udm)
     if price_unit is not None:
         fields.append("price_unit = %s")
-        values.append(price_unit)
+        values.append(str(price_unit))
     if quotation_item_id is not None:
         fields.append("quotation_item_id = %s")
-        values.append(quotation_item_id)
+        values.append(str(quotation_item_id))
 
     if not fields:
         return False, "No hay campos para actualizar", None
@@ -148,7 +148,7 @@ def update_remission_item(
         f"UPDATE sql_telintec_mod_admin.remission_items SET {', '.join(fields)} "
         "WHERE id = %s"
     )
-    values.append(id_item)
+    values.append(str(id_item))
 
     flag, error, _ = execute_sql(sql, tuple(values), 3)
     return flag, str(error), id_item

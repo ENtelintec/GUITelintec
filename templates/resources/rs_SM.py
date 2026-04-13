@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+from templates.resources.midleware.MD_SGI import create_voucher_vehicle_attachment_api
 import os
 from templates.resources.midleware.MD_SM import create_sm_attachment_api
 import tempfile

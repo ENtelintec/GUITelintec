@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
-from templates.controllers.supplier.suppliers_controller import update_extra_info_supplier_db
+from templates.controllers.supplier.suppliers_controller import (
+    update_extra_info_supplier_db,
+)
 from templates.controllers.departments.heads_controller import check_if_gerente_admin
 from templates.controllers.departments.heads_controller import check_if_auxiliar
 from templates.controllers.supplier.suppliers_controller import delete_item_amc
@@ -662,6 +664,7 @@ def update_supplier(data, data_token):
         )
         if not flag:
             errors_i.append(error)
+    msg = ""
     if len(errors_i) > 0:
         if len(errors_i) == len(items):
             flag, error, result = delete_supplier_amc(item.get("id_supplier"))
@@ -702,7 +705,9 @@ def delete_supplier(data, data_token):
 
 
 def update_extra_info_supplier(data, data_token):
-    flag, error, result = update_extra_info_supplier_db(data.get("id"), data.get("brands"))
+    flag, error, result = update_extra_info_supplier_db(
+        data.get("id"), data.get("brands")
+    )
     if not flag:
         return {"data": None, "msg": str(error)}, 400
     msg = f"Informacion extra actualizada para el proveedor con ID-{data.get('id')} por el empleado {data_token.get('name')}"

@@ -1,13 +1,19 @@
 # -*- coding: utf-8 -*-
-from templates.resources.midleware.Functions_midleware_admin import update_extra_info_supplier
+from templates.resources.midleware.Functions_midleware_admin import (
+    update_extra_info_supplier,
+)
 from static.Models.api_clients_suppliers_models import SupplierEInfoUpdateForm
 from static.Models.api_clients_suppliers_models import update_extra_info_model
-from templates.resources.midleware.Functions_midleware_admin import items_supplier_from_file
+from templates.resources.midleware.Functions_midleware_admin import (
+    items_supplier_from_file,
+)
 import tempfile
 import os
 from werkzeug.utils import secure_filename
 from static.Models.api_fichajes_models import expected_files
-from templates.resources.midleware.Functions_midleware_admin import get_items_supplier_name
+from templates.resources.midleware.Functions_midleware_admin import (
+    get_items_supplier_name,
+)
 
 from flask import request
 from flask_restx import Namespace, Resource
@@ -143,7 +149,6 @@ class FetchSuppliersItems(Resource):
         return data, code
 
 
-
 @ns.route("/supplier")
 class SupplierActions(Resource):
     @ns.expect(expected_headers_per, supplier_model)
@@ -154,7 +159,7 @@ class SupplierActions(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
-        validator = SupplierInsertForm.from_json(ns.payload)    # pyrefly: ignore
+        validator = SupplierInsertForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
@@ -169,11 +174,11 @@ class SupplierActions(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
-        validator = SupplierUpdateForm.from_json(ns.payload)    # pyrefly: ignore
+        validator = SupplierUpdateForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
-        data, code = update_supplier(data)
+        data, code = update_supplier(data, data_token)
         return data, code
 
     @ns.expect(expected_headers_per, supplier_delete_model)
@@ -184,7 +189,7 @@ class SupplierActions(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
-        validator = SupplierDeleteForm.from_json(ns.payload)    # pyrefly: ignore
+        validator = SupplierDeleteForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
@@ -202,7 +207,7 @@ class UpdateEISupplier(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
-        validator = SupplierEInfoUpdateForm.from_json(ns.payload)   
+        validator = SupplierEInfoUpdateForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
@@ -220,7 +225,7 @@ class HeadsDepartmentAuto(Resource):
                 "administracion",
                 "operaciones",
                 "rrhh",
-                "ia" "otros",
+                "iaotros",
                 "respe",
             ],
         )
@@ -261,7 +266,7 @@ class HeadDB(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
-        validator = HeadInputForm.from_json(ns.payload)     # pyrefly: ignore
+        validator = HeadInputForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
@@ -276,7 +281,7 @@ class HeadDB(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
-        validator = HeadUpdateForm.from_json(ns.payload)    # pyrefly: ignore
+        validator = HeadUpdateForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
@@ -291,7 +296,7 @@ class HeadDB(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
-        validator = HeadDeleteForm.from_json(ns.payload)    # pyrefly: ignore
+        validator = HeadDeleteForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data

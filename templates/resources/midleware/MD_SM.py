@@ -1,3 +1,4 @@
+from datetime import timedelta
 from botocore.exceptions import ClientError
 from botocore.exceptions import NoCredentialsError
 from static.constants import secrets
@@ -179,7 +180,7 @@ def extract_extra_info_sm_item(items: list[dict]):
             approve_required = 1 if item["is_tool"] == 1 else 0
         extra_info["approve_required"] = approve_required
         item["extra_info"] = extra_info
-        item["url"] = extra_info.imte("url", "")
+        item["url"] = extra_info.get("url", "")
         item["approve_required"] = approve_required
         new_items.append(item)
     return new_items, need_aprove
@@ -1509,7 +1510,7 @@ def create_sm_attachment_api(data, data_token):
             "msg": "Error at getting sm by id: sm not found",
             "error": str(sm_data),
         }, 400
-    date_report = sm_data[8]
+    date_sm = sm_data[8]
     history = json.loads(sm_data[12])
     # reconocer el tipo de archivo [pdf, image, zip]
     filepath_down = data["filepath"]
@@ -1520,11 +1521,11 @@ def create_sm_attachment_api(data, data_token):
             {"data": None, "msg": "Formato de archivo no valido"},
             400,
         )
-    # create name vouchers_vehicles/year/month/day/filename
-    path_aws = f"smData/{date_report.strftime('%Y/%m/%d/')}{data['filename']}"
+    # create name sm/year/month/day/filename
+    path_aws = f"smData/{date_sm.strftime('%Y/%m/%d/')}{data['filename']}"
     s3_client = boto3.client("s3")
     bucket_name = secrets.get("S3_ADMIN_BUCKET")
-    msg = f"Archivo adjunto agregado: {filename} al voucher {data['id_report']} por el empleado {data_token.get('name')}"
+    msg = f"Archivo adjunto agregado: {filename} al sm {data['id_sm']} por el empleado {data_token.get('name')}"
     status = sm_data[11]
     if "firma-recibido" in filename.lower():  # if is sign file change status to 1
         status = 5

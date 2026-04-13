@@ -41,7 +41,7 @@ class DownloadFilesPayroll(Resource):
     @ns.expect(request_file_model, expected_headers_per)
     def post(self):
         # noinspection PyUnresolvedReferences
-        validator = RequestFileForm.from_json(ns.payload)
+        validator = RequestFileForm.from_json(ns.payload) # pyrefly: ignore
         if not validator.validate():
             return {"error": validator.errors}, 400
         data = validator.data
