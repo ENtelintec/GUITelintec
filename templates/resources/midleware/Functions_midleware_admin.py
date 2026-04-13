@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from templates.controllers.supplier.suppliers_controller import update_extra_info_supplier_db
 from templates.controllers.departments.heads_controller import check_if_gerente_admin
 from templates.controllers.departments.heads_controller import check_if_auxiliar
 from templates.controllers.supplier.suppliers_controller import delete_item_amc
@@ -549,7 +550,7 @@ def get_items_supplier_name(id_supplier: str):
     return {"data": data_out, "msg": "Ok"}, 200
 
 
-def insert_supplier(data):
+def insert_supplier(data, data_token):
     # name, seller_name, seller_email, phone, address, web_url, type, extra_info
     flag, error, id_supplier = create_supplier_amc(
         data.get("name").upper(),
@@ -580,16 +581,38 @@ def insert_supplier(data):
         )
         if not flag:
             errors_i.append(error)
+
     if len(errors_i) > 0:
-        return {
-            "data": None,
-            "msg": f"Supplier created with id {id_supplier} but some items failed to create: {errors_i}",
-        }, 422
+        if len(errors_i) == len(items):
+            flag, error, result = delete_supplier_amc(id_supplier)
+            if flag:
+                msg = "supplier not created because items where not created"
+                return {"data": None, "msg": msg, "error": errors_i}, 400
+        else:
+            msg = f"Supplier created with id {id_supplier} but some items failed to create: {len(errors_i)}"
+            create_notification_permission(
+                msg,
+                ["administracion", "almacen"],
+                "Error Proveedor Creado",
+                data_token.get("emp_id"),
+                0,
+            )
+            write_log_file(log_file_admin, msg)
+        return {"data": None, "msg": msg, "error": errors_i}, 422
     else:
+        msg = f"Proveedor creado con ID-{id_supplier} por el empleado {data_token.get('name')}"
+        create_notification_permission(
+            msg,
+            ["administracion", "almacen"],
+            "Proveedor Creado",
+            data_token.get("emp_id"),
+            0,
+        )
+        write_log_file(log_file_admin, msg)
         return {"data": id_supplier, "msg": "Ok"}, 201
 
 
-def update_supplier(data):
+def update_supplier(data, data_token):
     flag, error, result = update_supplier_amc(
         data.get("id"),
         data.get("name").upper(),
@@ -640,17 +663,57 @@ def update_supplier(data):
         if not flag:
             errors_i.append(error)
     if len(errors_i) > 0:
-        return {
-            "data": None,
-            "msg": f"Supplier updated with id {data.get('id')} but some items failed to update: {errors_i}",
-        }, 422
+        if len(errors_i) == len(items):
+            flag, error, result = delete_supplier_amc(item.get("id_supplier"))
+            if flag:
+                msg = "supplier not updated because items where not updated"
+                return {"data": None, "msg": msg, "error": errors_i}, 400
+            else:
+                return {"data": None, "msg": msg, "error": errors_i}, 422
+        else:
+            msg = f"Supplier created with id {item.get('id_supplier')} but some items failed to create: {len(errors_i)}"
+            create_notification_permission(
+                msg,
+                ["administracion", "almacen"],
+                "Error Proveedor Creado",
+                data_token.get("emp_id"),
+                0,
+            )
+            write_log_file(log_file_admin, msg)
+            return {"data": None, "msg": msg, "error": errors_i}, 422
+
     return {"data": result, "msg": "Ok"}, 200
 
 
-def delete_supplier(data):
+def delete_supplier(data, data_token):
     flag, error, result = delete_supplier_amc(data.get("id"))
     if not flag:
         return {"data": None, "msg": str(error)}, 400
+    msg = f"Proveedor eliminado con ID-{data.get('id')} por el empleado {data_token.get('name')}"
+    create_notification_permission(
+        msg,
+        ["administracion", "almacen"],
+        "Proveedor Eliminado",
+        data_token.get("emp_id"),
+        0,
+    )
+    write_log_file(log_file_admin, msg)
+    return {"data": result, "msg": "Ok"}, 200
+
+
+def update_extra_info_supplier(data, data_token):
+    flag, error, result = update_extra_info_supplier_db(data.get("id"), data.get("brands"))
+    if not flag:
+        return {"data": None, "msg": str(error)}, 400
+    msg = f"Informacion extra actualizada para el proveedor con ID-{data.get('id')} por el empleado {data_token.get('name')}"
+    create_notification_permission(
+        msg,
+        ["administracion", "almacen"],
+        "Proveedor actualizado",
+        data_token.get("emp_id"),
+        0,
+    )
+    write_log_file(log_file_admin, msg)
     return {"data": result, "msg": "Ok"}, 200
 
 

@@ -87,6 +87,9 @@ items_po_model = api.model(
         "currency": fields.String(
             required=False, description="The currency", example="MXN"
         ),
+        "id_item_sm": fields.Integer(
+            required=True, description="The sm id for relations and deliveries", example=0
+        ),
     },
 )
 
@@ -907,6 +910,7 @@ class ItemsPOApplicationForm(Form):
     purchase_id = IntegerField("purchase_id", [], default=0)
     tool = IntegerField("tool", [number_range(min=-1, max=2, message="Invalid tool")])
     comment = StringField("comment", [], default="")
+    id_item_sm = IntegerField("tool", [number_range(min=-1, message="Invalid id item sm")], default=0)
 
 
 class MetadataTelitencForm(Form):
@@ -963,6 +967,7 @@ class ItemsPOUpdateForm(Form):
     supplier = StringField("supplier", [], default="")
     currency = StringField("currency", [], default="MXN")
     tool = IntegerField("tool", [number_range(min=-1, max=2, message="Invalid tool")])
+    id_item_sm = IntegerField("tool", [number_range(min=-1, message="Invalid id item sm")], default=0)
 
 
 class ItemsPOApplicationUpdateForm(Form):
@@ -983,6 +988,7 @@ class ItemsPOApplicationUpdateForm(Form):
     supplier = StringField("supplier", [], default="")
     tool = IntegerField("tool", [InputRequired()])
     comment = StringField("comment", [], default="")
+    id_item_sm = IntegerField("tool", [number_range(min=-1, message="Invalid id item sm")], default=0)
 
 
 class PurchaseOrderPutForm(Form):

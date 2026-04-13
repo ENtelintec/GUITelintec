@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 
+from templates.resources.midleware.MD_Purchases import fetch_po_item_sm_item_id
 from templates.resources.midleware.MD_Admin_Collections import (
     download_report_activity_attachment_api,
 )
@@ -140,7 +141,7 @@ class APOsOperations(Resource):
     @ns.expect(expected_headers_per, pos_application_post_model)
     def post(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department="orders"
+            request, department=["orders", "administracion"]
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -155,7 +156,7 @@ class APOsOperations(Resource):
     @ns.expect(expected_headers_per, pos_application_put_model)
     def put(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department="orders"
+            request, department=["orders", "administracion"]
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -170,7 +171,7 @@ class APOsOperations(Resource):
     @ns.expect(expected_headers_per, po_app_delete_model)
     def delete(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department="orders"
+            request, department=["orders", "administracion"]
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -188,7 +189,7 @@ class POsOperations(Resource):
     @ns.expect(expected_headers_per, purchase_order_post_model)
     def post(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department="orders"
+            request, department=["orders", "administracion"]
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -202,7 +203,9 @@ class POsOperations(Resource):
 
     @ns.expect(expected_headers_per, purchase_order_put_model)
     def put(self):
-        flag, error, result = token_verification_procedure(request, department="orders")
+        flag, error, result = token_verification_procedure(
+            request, department=["orders", "administracion"]
+        )
         if not flag:
             return {
                 "error": error if error != "" else "No autorizado. Token invalido"
@@ -219,7 +222,7 @@ class POsOperations(Resource):
     @ns.expect(expected_headers_per, purchase_order_delete_model)
     def delete(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department="orders"
+            request, department=["orders", "administracion"]
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -232,12 +235,26 @@ class POsOperations(Resource):
         return data_out, code
 
 
+@ns.route("/POItemsFoDelivery")
+class FetchPoItemForFastDelivery(Resource):
+    @ns.expect(expected_headers_per)
+    def get(self):
+        # get_all_item_purchase_order_with_id_item_sm
+        flag, data_token, msg = token_verification_procedure(
+            request, department="administracion"
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        data, code = fetch_po_item_sm_item_id(data_token)
+        return data, code
+
+
 @ns.route("/order/status")
 class ChangeStateOrder(Resource):
     @ns.expect(expected_headers_per, purchase_order_update_status_model)
     def put(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department="orders"
+            request, department=["orders", "administracion"]
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -255,7 +272,7 @@ class ChangeStatePOApplication(Resource):
     @ns.expect(expected_headers_per, purchase_order_update_status_model)
     def put(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department="orders"
+            request, department=["orders", "administracion"]
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
