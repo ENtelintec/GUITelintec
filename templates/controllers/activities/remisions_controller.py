@@ -123,8 +123,7 @@ def insert_remission(
     }
     sql = (
         "INSERT INTO sql_telintec_mod_admin.activity_reports "
-        "(date, folio, client_id, client_company_name, client_contact_name, client_phone, "
-        " client_email, plant, area, location, general_description, comments, quotation_id, "
+        "(date, folio, client_id, plant, area, location, general_description, comments, quotation_id, "
         " status, history, contract_id, extra_info) "
         "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
     )
