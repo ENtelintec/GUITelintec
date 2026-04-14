@@ -504,7 +504,9 @@ def get_all_suppliers_data():
         extra_info = json.loads(item[8])
         brands = extra_info.get("brands", [])
         brands.sort()
+        fast_order = extra_info.get("fast_order", 0)
         extra_info["brands"] = brands
+        extra_info["fast_order"] = fast_order
         data_out.append(
             {
                 "id": item[0],
