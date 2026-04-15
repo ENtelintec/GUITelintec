@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 
 
+from static.Models.api_purchases_models import ReportActivityCreateControlTableForm
+from static.Models.api_purchases_models import basic_control_table_report_model
 from templates.resources.midleware.MD_Purchases import fetch_po_item_sm_item_id
 from templates.resources.midleware.MD_Admin_Collections import (
     download_report_activity_attachment_api,
@@ -454,6 +456,22 @@ class ActivityRemissionAction(Resource):
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
         data_out, code = delete_remission_from_api(data, data_token)
+        return data_out, code
+
+@ns.route("/remissionControlTable")
+class ActivityRemissionAction(Resource):
+    @ns.expect(expected_headers_per, basic_control_table_report_model)
+    def post(self):
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["administracion", "purchases"]
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        validator = ReportActivityCreateControlTableForm.from_json(ns.payload)  # pyrefly: ignore
+        if not validator.validate():
+            return {"data": validator.errors, "msg": "Error at structure"}, 400
+        data = validator.data
+        data_out, code = create_remission_from_api(data, data_token)
         return data_out, code
 
 

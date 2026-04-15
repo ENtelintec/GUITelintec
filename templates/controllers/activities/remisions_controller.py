@@ -116,11 +116,14 @@ def insert_remission(
     contract_id: int | None = None,
     pedido: str = "",
     pedido_exiros: str = "",
+    extra_info = None
 ):
-    extra_info = {
-        "pedido": pedido,
-        "pedido_exiros": pedido_exiros,
-    }
+    if extra_info is None:
+        extra_info = {}
+    if "pedido" not in extra_info:
+        extra_info["pedido"] = pedido
+    if "pedido_exiros" not in extra_info:
+        extra_info["pedido_exiros"] = pedido_exiros
     sql = (
         "INSERT INTO sql_telintec_mod_admin.activity_reports "
         "(date, folio, client_id, plant, area, location, general_description, comments, quotation_id, "

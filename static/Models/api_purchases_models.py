@@ -604,18 +604,29 @@ quoatation_activity_status_update_model = api.model(
     },
 )
 
-basic_metadata_activity_model = api.model(
-    "BasicActivityMetadaModel",
+
+basic_control_table_report_model = api.model(
+    "BasicControlTableMetadaModel",
     {
-        "folio": fields.String(
-            required=True,
-            description="Folio o referencia interna del reporte",
-            example="RA-2026-00115",
+        "contract_id": fields.Integer(
+            required=False,
+            description="ID del contrato asociado",
+            example=501,
         ),
         "date": fields.String(
             required=True,
             description="Fecha del reporte (YYYY-MM-DD o formato acordado)",
             example="2026-03-12",
+        ),
+        "quotation_id": fields.Integer(
+            required=False,
+            description="ID de la cotizacion asociada",
+            example=501,
+        ),
+        "folio": fields.String(
+            required=True,
+            description="Folio o referencia interna del reporte",
+            example="RA-2026-00115",
         ),
         "client_id": fields.Integer(
             required=True,
@@ -627,20 +638,44 @@ basic_metadata_activity_model = api.model(
             description="Planta del cliente",
             example="Planta Monterrey",
         ),
-        "area": fields.String(
-            required=True,
-            description="Área dentro de la planta",
-            example="Producción",
-        ),
         "location": fields.String(
             required=True,
             description="Ubicación específica",
             example="Línea 3 - Nodo PZ-34",
         ),
+        "activity": fields.String(
+            required=True,
+            description="Área dentro de la planta",
+            example="Producción",
+        ),
         "user": fields.String(
             required=True,
             description="Usuario que genera el reporte",
             example="Juan Pérez",
+        ),
+        "remision": fields.Integer(
+            required=False,
+            description="remision number",
+            example=501,
+        ),
+        "remito": fields.Integer(
+            required=False,
+            description="Número de remito de la remision",
+            example="2",
+        ),
+        
+    },
+)
+
+basic_metadata_activity_model = api.model(
+    "BasicActivityMetadaModel",
+    basic_control_table_report_model,
+    {
+        
+        "area": fields.String(
+            required=True,
+            description="Área dentro de la planta",
+            example="Producción",
         ),
         "pedido_exiros": fields.String(
             required=False,
@@ -651,17 +686,7 @@ basic_metadata_activity_model = api.model(
             required=False,
             description="Número de pedido interno",
             example="PED-2026-00456",
-        ),
-        "remito": fields.Integer(
-            required=False,
-            description="Número de remito",
-            example="2",
-        ),
-        "contract_id": fields.Integer(
-            required=False,
-            description="ID del contrato asociado",
-            example=501,
-        ),
+        )
     },
 )
 
@@ -679,6 +704,13 @@ remission_activity_create_model = api.model(
         ),
     },
 )
+remission_activity_create_control_table_model = api.model(
+    "RemissionActivityCreateControlTable",
+    {
+        "metadata": fields.Nested(basic_metadata_activity_model),
+       
+    },
+) 
 
 remission_activity_upsert_metadata_model = api.inherit(
     "RemissionActivityUpdateMetadata",
@@ -1198,19 +1230,25 @@ class QuotationActivityStatusUpdateForm(Form):
     )
 
 
-class MetadataActivityReportForm(Form):
+class MetadataControlTableRemissionForm(Form):
     date = StringField("date", [InputRequired()])
     folio = StringField("folio", [InputRequired()])
     client_id = IntegerField("client_id", [InputRequired()])
     plant = StringField("plant", [InputRequired()])
-    area = StringField("area", [InputRequired()])
+    activity = StringField("activity", [InputRequired()])
     location = StringField("location", [InputRequired()])
     general_description = StringField("general_description", [InputRequired()])
     comments = StringField("comments", [InputRequired()])
     quotation_id = IntegerField("quotation_id", [], default=0)
     contract_id = IntegerField("contract_id", [], default=0)
+    remision = StringField("remision", [], default="")
+    remito = StringField("remito", [], default="")
+
+
+class MetadataActivityReportForm(MetadataControlTableRemissionForm): 
     pedido = StringField("pedido", [], default="")
     pedido_exiros = StringField("pedido_exiros", [], default="")
+    area = StringField("area", [InputRequired()])
 
 
 class ReportActivityCreateForm(Form):
@@ -1219,6 +1257,8 @@ class ReportActivityCreateForm(Form):
         FormField(QuotationInsertItemForm), "items", validators=[], default=[]
     )
 
+class ReportActivityCreateControlTableForm(Form):
+    metadata = FormField(MetadataControlTableRemissionForm, "metadata")
 
 class MetadataReportActivityUpdateForm(MetadataActivityReportForm):
     id = IntegerField("id", [InputRequired()])
