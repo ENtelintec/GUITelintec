@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from datetime import timedelta
 __author__ = "Edisson Naula"
 __date__ = "$ 28/jun./2024  at 16:28 $"
 
@@ -1020,7 +1021,20 @@ def fetch_medicals():
         out = {"data": []}
         code = 400
         return out, code
+
     data_out = []
+    messages = []
+
+    # Definir límites por tipo de aptitud
+    limits = {
+        "APTO 1": timedelta(days=365),   # revisión anual
+        "APTO 2": timedelta(days=180),   # revisión cada 6 meses
+        "APTO 3": timedelta(days=90),    # revisión cada 3 meses
+        "APTO 4": None                   # NO APTO
+    }
+
+    warning_threshold = timedelta(days=30)
+
     for row in result:
         (
             id_exam,
@@ -1033,23 +1047,59 @@ def fetch_medicals():
             emp_id,
             extra_info,
         ) = row
+
         extra_info = json.loads(extra_info)
-        data_out.append(
-            {
-                "exist": True,
-                "id_exam": id_exam,
-                "name": nombre,
-                "blood": sangre,
-                "status": status if status is not None else "INACTIVO",
-                "aptitudes": json.loads(aptitud),
-                "dates": json.loads(fechas),
-                "apt_last": apt_actual,
-                "emp_id": emp_id,
-                "allergies": extra_info.get("allergies", ""),
-                "observations": extra_info.get("observations", ""),
-            }
-        )
+        aptitudes = json.loads(aptitud)
+        dates = json.loads(fechas)
+
+        # Última fecha registrada
+        last_date = None
+        if dates:
+            last_date = datetime.strptime(max(dates), format_timestamps)
+
+        exam_data = {
+            "exist": True,
+            "id_exam": id_exam,
+            "name": nombre,
+            "blood": sangre,
+            "status": status if status is not None else "INACTIVO",
+            "aptitudes": aptitudes,
+            "dates": dates,
+            "apt_last": apt_actual,
+            "emp_id": emp_id,
+            "allergies": extra_info.get("allergies", ""),
+            "observations": extra_info.get("observations", ""),
+        }
+        data_out.append(exam_data)
+
+        # Validación de fechas según aptitud
+        if apt_actual in limits and limits[apt_actual] is not None and last_date:
+            delta = datetime.now() - last_date
+            limite = limits[apt_actual]
+
+            if delta > limite:
+                # Mensaje crítico
+                messages.append(
+                    f"[CRÍTICO] El empleado {nombre} requiere revisión: "
+                    f"Aptitud {apt_actual}, última fecha {last_date.strftime(format_timestamps)}, "
+                    f"supera el límite de {limite.days} días."
+                )
+            elif limite - delta <= warning_threshold:
+                # Mensaje de aviso
+                remaining = limite - delta
+                messages.append(
+                    f"[AVISO] El empleado {nombre} está próximo a revisión: "
+                    f"Aptitud {apt_actual}, última fecha {last_date.strftime(format_timestamps)}, "
+                    f"faltan {remaining.days} días para el límite de {limite.days} días."
+                )
+
+        elif apt_actual == "APTO 4":
+            messages.append(
+                f"[CRÍTICO] El empleado {nombre} (ID {id_exam}) está marcado como NO APTO."
+            )
+
     out["data"] = data_out
+    out["messages"] = messages
     return out, 200
 
 
