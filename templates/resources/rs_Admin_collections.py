@@ -459,7 +459,7 @@ class ActivityRemissionAction(Resource):
         return data_out, code
 
 @ns.route("/remissionControlTable")
-class ActivityRemissionAction(Resource):
+class ActivityRemissionTableAction(Resource):
     @ns.expect(expected_headers_per, basic_control_table_report_model)
     def post(self):
         flag, data_token, msg = token_verification_procedure(

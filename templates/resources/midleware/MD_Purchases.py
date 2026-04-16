@@ -605,7 +605,7 @@ def fetch_po_item_sm_item_id(data_token):
                 "id_supplier": id_supplier,
             }
         )
-    return {"data": data_out, "msg": "ok", "error": None}
+    return {"data": data_out, "msg": "ok", "error": None}, 200
 
 
 def create_po_application_api(data, data_token):
