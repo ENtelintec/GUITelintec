@@ -42,22 +42,7 @@ extra_info_supplier_model = api.model(
         "fast_order": fields.Integer(required=False, default=0)
     },
 )
-# remission_activity_upsert_metadata_model = api.inherit(
-#     "RemissionActivityUpdateMetadata",
-#     basic_metadata_activity_model,
-#     {
-#         "id": fields.Integer(
-#             required=True,
-#             description="ID del reporte de actividad a actualizar",
-#             example=1012,
-#         ),
-#         "status": fields.Integer(
-#             required=True,
-#             description="Estatus del reporte",
-#             example=1,
-#         ),
-#     },
-# )
+
 update_extra_info_model = api.inherit(
     "EInfoSupplierModel",
     extra_info_supplier_model,

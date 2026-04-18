@@ -377,6 +377,63 @@ def delete_quotation_activity_from_api(data, data_token):
     return {"data": result, "msg": "Ok"}, 200
 
 
+def create_extra_info_remision(data: dict):
+    extra_info = {}
+    extra_info["pedido"] = data["metadata"].get("pedido", "")
+    extra_info["pedido_exiros"] = data["metadata"].get("pedido_exiros", "")
+    extra_info["activity"] = data["metadata"].get("activity", "")
+    extra_info["remision"] = data["metadata"].get("remision", "")
+    extra_info["remito"] = data["metadata"].get("remito", "")
+    extra_info["date_report"] = data["metadata"].get("date_report", "")
+    extra_info["date_sign"] = data["metadata"].get("date_sign", "")
+    extra_info["date_delivery"] = data["metadata"].get("date_delivery", "")
+    return 
+
+
+def create_remission_control_table_from_api(data, data_token):
+    timezone = pytz.timezone(timezone_software)
+    timestamp = datetime.now(pytz.utc).astimezone(timezone).strftime(format_timestamps)
+    user = data_token.get("emp_id", "desconocido")
+    history_report = [
+        {
+            timestamp: timestamp,
+            "user": user,
+            "action": "Creación",
+            "comment": "Creación de remision de actividad.",
+        }
+    ]
+    quotation_id = data["metadata"].get("quotation_id", None)
+    extra_info = create_extra_info_remision(data)
+    flag, error, id_remission = insert_remission(
+        date=data["metadata"]["date"],
+        folio=data["metadata"]["folio"],
+        client_id=data["metadata"]["client_id"],
+        plant=data["metadata"].get("plant"),
+        area=data["metadata"].get("area"),
+        location=data["metadata"].get("location"),
+        general_description=data["metadata"].get("general_description"),
+        comments=data["metadata"].get("comments"),
+        quotation_id=quotation_id if quotation_id or quotation_id > 0 else None,
+        history=history_report,
+        contract_id=data["metadata"].get("contract_id", None),
+        pedido=data["metadata"].get("pedido", ""),
+        pedido_exiros=data["metadata"].get("pedido_exiros", ""),
+        extra_info=extra_info,
+    )
+    if not flag:
+        return {
+            "data": None,
+            "msg": "Error al crear reporte de actividad",
+            "error": str(error),
+        }, 400
+    msg = "Item en tabla de control creado correctamente con id: " + str(id_remission) + f" por el usuario {data_token['name']}."
+    create_notification_permission(
+        msg, ["administracion"], "Item de tabla de control creado", user, 0
+    )
+    write_log_file(log_file_admin_collecions, msg)
+    return {"data": id_remission, "msg": "Ok"}, 201
+
+
 def create_remission_from_api(data, data_token):
     timezone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(timezone).strftime(format_timestamps)
@@ -390,14 +447,11 @@ def create_remission_from_api(data, data_token):
         }
     ]
     quotation_id = data["metadata"].get("quotation_id", None)
+    extra_info = create_extra_info_remision(data)
     flag, error, id_remission = insert_remission(
         date=data["metadata"]["date"],
         folio=data["metadata"]["folio"],
         client_id=data["metadata"]["client_id"],
-        # client_company_name=data["metadata"]["client_company_name"],
-        # client_contact_name=data["metadata"]["client_contact_name"],
-        # client_phone=data["metadata"]["client_phone"],
-        # client_email=data["metadata"]["client_email"],
         plant=data["metadata"].get("plant"),
         area=data["metadata"].get("area"),
         location=data["metadata"].get("location"),
@@ -408,6 +462,7 @@ def create_remission_from_api(data, data_token):
         contract_id=data["metadata"].get("contract_id", None),
         pedido=data["metadata"].get("pedido", ""),
         pedido_exiros=data["metadata"].get("pedido_exiros", ""),
+        extra_info=extra_info,
         data_token=data_token,
     )
     if not flag:
