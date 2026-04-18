@@ -70,7 +70,7 @@ class ClientsAll(Resource):
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        data, code = get_all_clients_data()
+        data, code = get_all_clients_data(data_token)
         return data, code
 
 
@@ -89,7 +89,7 @@ class ClientDB(Resource):
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
-        data, code = insert_customer(data)
+        data, code = insert_customer(data, data_token)
         return data, code
 
     @ns.expect(expected_headers_per, client_model)
@@ -104,7 +104,7 @@ class ClientDB(Resource):
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
-        data, code = update_customer(data)
+        data, code = update_customer(data, data_token)
         return data, code
 
     @ns.expect(expected_headers_per, client_model)
@@ -119,7 +119,7 @@ class ClientDB(Resource):
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
-        data, code = delete_customer(data)
+        data, code = delete_customer(data, data_token)
         return data, code
 
 
@@ -132,7 +132,7 @@ class SuppliersAll(Resource):
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        data, code = get_all_suppliers_data()
+        data, code = get_all_suppliers_data(data_token)
         return data, code
 
 
@@ -145,7 +145,7 @@ class FetchSuppliersItems(Resource):
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        data, code = get_items_supplier_name(id_s)
+        data, code = get_items_supplier_name(id_s, data_token)
         return data, code
 
 
@@ -252,7 +252,7 @@ class HeadsDepartment(Resource):
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        data, code = fetch_heads(int(id_d))
+        data, code = fetch_heads(int(id_d), data_token)
         return data, code
 
 

@@ -5,7 +5,7 @@ __date__ = "$ 29/abr./2024  at 17:53 $"
 from templates.database.connection import execute_sql
 
 
-def get_all_customers_db():
+def get_all_customers_db(data_token):
     sql = (
         "SELECT "
         "id_customer, "
@@ -16,48 +16,48 @@ def get_all_customers_db():
         "address "
         "FROM sql_telintec.customers_amc ORDER BY name "
     )
-    flag, error, result = execute_sql(sql, None, 5)
+    flag, error, result = execute_sql(sql, None, 5, data_token)
     if not isinstance(result, list):
         return False, "No contracts or error at retrieving", []
     return flag, error, result
 
 
-def create_customer_db(name, email, phone, rfc, address):
+def create_customer_db(name, email, phone, rfc, address, data_token):
     insert_sql = (
         "INSERT INTO sql_telintec.customers_amc (name, email, phone, rfc, address) "
         "VALUES (%s, %s, %s, %s, %s)"
     )
     vals = (name, email, phone, rfc, address)
-    flag, error, result = execute_sql(insert_sql, vals, 4)
+    flag, error, result = execute_sql(insert_sql, vals, 4, data_token)
     return flag, error, result
 
 
-def update_customer_db(id_customer, name, email, phone, rfc, address):
+def update_customer_db(id_customer, name, email, phone, rfc, address, data_token):
     update_sql = (
         "UPDATE sql_telintec.customers_amc "
         "SET name = %s, email = %s, phone = %s, rfc = %s, address = %s "
         "WHERE id_customer = %s"
     )
     vals = (name, email, phone, rfc, address, id_customer)
-    flag, error, result = execute_sql(update_sql, vals, 4)
+    flag, error, result = execute_sql(update_sql, vals, 4, data_token)
     return flag, error, result
 
 
-def delete_customer_db(id_customer):
-    delete_sql = "DELETE FROM sql_telintec.customers_amc " "WHERE id_customer = %s"
+def delete_customer_db(id_customer, data_token):
+    delete_sql = "DELETE FROM sql_telintec.customers_amc WHERE id_customer = %s"
     vals = (id_customer,)
-    flag, error, result = execute_sql(delete_sql, vals, 4)
+    flag, error, result = execute_sql(delete_sql, vals, 4, data_token)
     return flag, error, result
 
 
-def get_customers(limit=(0, 100)) -> list[list]:
+def get_customers(limit=(0, 100), data_token=None) -> list[list]:
     sql = (
         "SELECT customer_id, name, l_name, phone_number, city, email "
         "FROM sql_telintec.customers "
         "LIMIT %s, %s"
     )
     val = (limit[0], limit[1])
-    flag, e, my_result = execute_sql(sql, val, 2)
+    flag, e, my_result = execute_sql(sql, val, 2, data_token)
     if not isinstance(my_result, list):
         return []
     out = my_result if my_result is not None else []
@@ -65,7 +65,7 @@ def get_customers(limit=(0, 100)) -> list[list]:
 
 
 def insert_customer(
-    name: str, lastname: str, phone: str, city: str, email: str
+    name: str, lastname: str, phone: str, city: str, email: str, data_token
 ) -> tuple[bool, str | None, int | None]:
     sql = (
         "INSERT "
@@ -73,14 +73,20 @@ def insert_customer(
         "VALUES (%s, %s, %s, %s, %s)"
     )
     val = (name, lastname, phone, city, email)
-    flag, e, out = execute_sql(sql, val, 3)
+    flag, e, out = execute_sql(sql, val, 3, data_token)
     if not isinstance(out, int):
         return False, "Error at inserting customer", 0
     return flag, str(e), out
 
 
 def update_customer_DB(
-    name: str, lastname: str, phone: str, city: str, email: str, customer_id: int
+    name: str,
+    lastname: str,
+    phone: str,
+    city: str,
+    email: str,
+    customer_id: int,
+    data_token,
 ) -> tuple[bool, str | None, int | None]:
     sql = (
         "UPDATE sql_telintec.customers "
@@ -92,22 +98,24 @@ def update_customer_DB(
         "WHERE customer_id = %s"
     )
     val = (name, lastname, phone, city, email, customer_id)
-    flag, e, out = execute_sql(sql, val, 3)
+    flag, e, out = execute_sql(sql, val, 3, data_token)
     if not isinstance(out, int):
         return False, "Error at updating customer", 0
     return flag, e, out
 
 
-def delete_customer_DB(customer_id: int) -> tuple[bool, str | None, int | None]:
-    sql = "DELETE FROM sql_telintec.customers " "WHERE customer_id = %s"
+def delete_customer_DB(
+    customer_id: int, data_token
+) -> tuple[bool, str | None, int | None]:
+    sql = "DELETE FROM sql_telintec.customers WHERE customer_id = %s"
     val = (customer_id,)
-    flag, e, out = execute_sql(sql, val, 3)
+    flag, e, out = execute_sql(sql, val, 3, data_token)
     if not isinstance(out, int):
         return False, "Error at deleting customer", 0
     return flag, str(e), out
 
 
-def get_costumers_amc(name: str, id_c: int):
+def get_costumers_amc(name: str, id_c: int, data_token):
     columns = ("id_customer", "name", "phone", "email", "address")
     sql = (
         "SELECT id_customer, name, phone, email, address "
@@ -116,22 +124,22 @@ def get_costumers_amc(name: str, id_c: int):
         "LIMIT 10"
     )
     val = (id_c, name)
-    flag, error, result = execute_sql(sql, val, 2)
+    flag, error, result = execute_sql(sql, val, 2, data_token)
     return flag, error, result, columns
 
 
-def get_sm_clients():
-    sql = "SELECT id_customer, name " "FROM sql_telintec.customers_amc  "
-    flag, error, result = execute_sql(sql, None, 5)
+def get_sm_clients(data_token):
+    sql = "SELECT id_customer, name FROM sql_telintec.customers_amc  "
+    flag, error, result = execute_sql(sql, None, 5, data_token)
     return flag, error, result
 
 
-def get_customer_amc_by_id(id_customer: int):
+def get_customer_amc_by_id(id_customer: int, data_token):
     sql = (
         "SELECT id_customer, name, email, phone, rfc, address "
         "FROM sql_telintec.customers_amc "
         "WHERE id_customer = %s"
     )
-    val = (id_customer,)
-    flag, error, result = execute_sql(sql, val, 1)
+    val = (id_customer, data_token)
+    flag, error, result = execute_sql(sql, val, 1, data_token)
     return flag, error, result if result else []

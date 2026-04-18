@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from templates.resources.midleware.MD_Admin_Collections import fetch_products_contracts
+
 __author__ = "Edisson Naula"
 __date__ = "$ 20/jun./2024  at 15:03 $"
 
@@ -80,7 +81,7 @@ class QuotationAction(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
-        validator = QuotationInsertForm.from_json(ns.payload)   # pyrefly: ignore
+        validator = QuotationInsertForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
@@ -95,7 +96,7 @@ class QuotationAction(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
-        validator = QuotationUpdateForm.from_json(ns.payload)   # pyrefly: ignore
+        validator = QuotationUpdateForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
@@ -111,7 +112,7 @@ class QuotationAction(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
-        validator = QuotationDeleteForm.from_json(ns.payload)   # pyrefly: ignore
+        validator = QuotationDeleteForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
@@ -167,7 +168,7 @@ class ContractAction(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
-        validator = ContractInsertForm.from_json(ns.payload)    # pyrefly: ignore
+        validator = ContractInsertForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
@@ -182,7 +183,7 @@ class ContractAction(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
-        validator = ContractUpdateForm.from_json(ns.payload)    # pyrefly: ignore
+        validator = ContractUpdateForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
@@ -197,7 +198,7 @@ class ContractAction(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
-        validator = ContractDeleteForm.from_json(ns.payload)    # pyrefly: ignore
+        validator = ContractDeleteForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
@@ -370,7 +371,7 @@ class ContractsAbreviations(Resource):
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        data_out, code = get_contracts_abreviations()
+        data_out, code = get_contracts_abreviations(data_token)
         return data_out, code
 
 

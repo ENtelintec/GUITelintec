@@ -204,12 +204,12 @@ def get_folio_from_contract_ternium(data_token):
     permissions = data_token.get("permissions", {}).values()
     contracts = []
     if any("administrator" in item.lower().split(".")[-1] for item in permissions):
-        flag, error, contracts = get_contract_by_client(40)
+        flag, error, contracts = get_contract_by_client(40, data_token)
         if not flag:
             return {"data": None, "msg": str(error)}, 400
     else:
         for check_func in (check_if_leader,):
-            flag, error, result = check_func(data_token.get("emp_id"))
+            flag, error, result = check_func(data_token.get("emp_id"), data_token)
             if flag and len(result) > 0:
                 ids = []
                 for item in result:
@@ -217,7 +217,7 @@ def get_folio_from_contract_ternium(data_token):
                     ids += extra_info.get("contracts", [])
                     ids += extra_info.get("contracts_temp", [])
                 ids = list(set(ids))
-                flag, error, contracts = get_contracts_by_ids(ids)
+                flag, error, contracts = get_contracts_by_ids(ids, data_token)
                 if not flag or len(contracts) == 0:
                     return {"data": None, "msg": str(error)}, 400
                 break
@@ -272,7 +272,7 @@ def get_department_identifiers(result):
 def get_iddentifiers(data_token, all_data_keys, from_where="fetch"):
     permissions = data_token.get("permissions", {}).values()
     if any(item.lower().split(".")[-1] in all_data_keys for item in permissions):
-        flag, error, result_abb = get_contracts_abreviations_db()
+        flag, error, result_abb = get_contracts_abreviations_db(data_token)
         abbs_area = [item[0] for item in result_abb if item[4] == 0 and item[0] != ""]
     else:
         abbs_area = []
@@ -290,7 +290,7 @@ def get_iddentifiers(data_token, all_data_keys, from_where="fetch"):
                 check_if_head_not_auxiliar,
             )
         for check_func in check_funcs:
-            flag, error, result = check_func(data_token.get("emp_id"))
+            flag, error, result = check_func(data_token.get("emp_id"), data_token)
             if flag and result:
                 abbs_area = get_department_identifiers(result)
                 # print(abbs_area, result, check_func)
@@ -441,8 +441,8 @@ def get_data_table_purchases(data):
     return {"data": data_out, "columns": columns, "msg": "Ok"}, 200
 
 
-def get_all_clients_data():
-    flag, error, data = get_all_customers_db()
+def get_all_clients_data(data_token):
+    flag, error, data = get_all_customers_db(data_token)
 
     if not flag:
         return {"data": [], "msg": str(error)}, 400
@@ -461,20 +461,21 @@ def get_all_clients_data():
     return {"data": data_out, "msg": "Ok"}, 200
 
 
-def insert_customer(data):
+def insert_customer(data, data_token):
     flag, error, result = create_customer_db(
         data.get("name").upper(),
         data.get("email").upper(),
         data.get("phone"),
         data.get("rfc").upper(),
         data.get("address"),
+        data_token,
     )
     if not flag:
         return {"data": None, "msg": str(error)}, 400
     return {"data": result, "msg": "Ok"}, 201
 
 
-def update_customer(data):
+def update_customer(data, data_token):
     flag, error, result = update_customer_db(
         data.get("id"),
         data.get("name").upper(),
@@ -482,21 +483,22 @@ def update_customer(data):
         data.get("phone"),
         data.get("rfc").upper(),
         data.get("address"),
+        data_token,
     )
     if not flag:
         return {"data": None, "msg": str(error)}, 400
     return {"data": result, "msg": "Ok"}, 200
 
 
-def delete_customer(data):
-    flag, error, result = delete_customer_db(data.get("id"))
+def delete_customer(data, data_token):
+    flag, error, result = delete_customer_db(data.get("id"), data_token)
     if not flag:
         return {"data": None, "msg": str(error)}, 400
     return {"data": result, "msg": "Ok"}, 200
 
 
-def get_all_suppliers_data():
-    flag, error, data = get_all_suppliers_amc()
+def get_all_suppliers_data(data_token):
+    flag, error, data = get_all_suppliers_amc(data_token)
     if not flag:
         return {"data": [], "msg": str(error)}, 400
     data_out = []
@@ -525,13 +527,13 @@ def get_all_suppliers_data():
     return {"data": data_out, "msg": "Ok"}, 200
 
 
-def get_items_supplier_name(id_supplier: str):
+def get_items_supplier_name(id_supplier: str, data_token):
     try:
         id_s = int(id_supplier)
     except Exception as e:
         print("error parse id supplier: ", str(e))
         id_s = None
-    flag, error, results = get_items_supplier_by_id(id_s)
+    flag, error, results = get_items_supplier_by_id(id_s, data_token)
     if not flag:
         return {"data": [], "msg": str(error)}, 400
     data_out = []
@@ -566,6 +568,7 @@ def insert_supplier(data, data_token):
         data.get("web"),
         data.get("type"),
         data.get("extra_info"),
+        data_token,
     )
     if not flag:
         return {"data": None, "msg": str(error)}, 400
@@ -583,13 +586,14 @@ def insert_supplier(data, data_token):
             id_supplier,
             currency=item.get("currency", "MXN"),
             id_inventory=id_inventory,
+            data_token=data_token,
         )
         if not flag:
             errors_i.append(error)
 
     if len(errors_i) > 0:
         if len(errors_i) == len(items):
-            flag, error, result = delete_supplier_amc(id_supplier)
+            flag, error, result = delete_supplier_amc(id_supplier, data_token)
             if flag:
                 msg = "supplier not created because items where not created"
                 return {"data": None, "msg": msg, "error": errors_i}, 400
@@ -628,6 +632,7 @@ def update_supplier(data, data_token):
         data.get("web"),
         data.get("type"),
         data.get("extra_info"),
+        data_token,
     )
     if not flag:
         return {"data": None, "msg": str(error)}, 400
@@ -647,12 +652,13 @@ def update_supplier(data, data_token):
                 item.get("id_supplier"),
                 currency=item.get("currency", "MXN"),
                 id_inventory=id_inventory,
+                data_token=data_token,
             )
             if not flag:
                 errors_i.append(error)
             continue
         if data.get("is_erased", 0) == 1:
-            flag, error, result = delete_item_amc(id_item)
+            flag, error, result = delete_item_amc(id_item, data_token)
             if not flag:
                 errors_i.append(error)
             continue
@@ -664,13 +670,16 @@ def update_supplier(data, data_token):
             item.get("id_supplier"),
             currency=item.get("currency", "MXN"),
             id_inventory=id_inventory,
+            data_token=data_token,
         )
         if not flag:
             errors_i.append(error)
     msg = ""
     if len(errors_i) > 0:
         if len(errors_i) == len(items):
-            flag, error, result = delete_supplier_amc(item.get("id_supplier"))
+            flag, error, result = delete_supplier_amc(
+                item.get("id_supplier"), data_token
+            )
             if flag:
                 msg = "supplier not updated because items where not updated"
                 return {"data": None, "msg": msg, "error": errors_i}, 400
@@ -692,7 +701,7 @@ def update_supplier(data, data_token):
 
 
 def delete_supplier(data, data_token):
-    flag, error, result = delete_supplier_amc(data.get("id"))
+    flag, error, result = delete_supplier_amc(data.get("id"), data_token)
     if not flag:
         return {"data": None, "msg": str(error)}, 400
     msg = f"Proveedor eliminado con ID-{data.get('id')} por el empleado {data_token.get('name')}"
@@ -709,7 +718,7 @@ def delete_supplier(data, data_token):
 
 def update_extra_info_supplier(data, data_token):
     flag, error, result = update_extra_info_supplier_db(
-        data.get("id"), data.get("brands")
+        data.get("id"), data.get("brands"), data_token
     )
     if not flag:
         return {"data": None, "msg": str(error)}, 400
@@ -729,7 +738,7 @@ def fetch_heads_main(data_token):
     dep_id = data_token.get("dep_id")
     permissions = data_token.get("permissions")
     permissions_last = [item.lower().split(".")[-1] for item in permissions.values()]
-    flag, error, result = check_if_gerente(data_token.get("emp_id"))
+    flag, error, result = check_if_gerente(data_token.get("emp_id"), data_token)
     if len(result) == 0 and "administrator" not in permissions_last:
         return {"data": [], "msg": str(error)}, 400
     dep_ids_list = [dep_id]
@@ -739,7 +748,7 @@ def fetch_heads_main(data_token):
             continue
         if k.lower() in permissions_last:
             dep_ids_list.append(v)
-    flag, error, result = get_heads_list_db(dep_ids_list)
+    flag, error, result = get_heads_list_db(dep_ids_list, data_token)
     if not flag:
         return {"data": [], "msg": str(error)}, 400
     data_out = []
@@ -762,9 +771,9 @@ def fetch_heads_main(data_token):
     return {"data": data_out, "msg": "Ok"}, 200
 
 
-def fetch_heads(id_dep: int):
+def fetch_heads(id_dep: int, data_token):
     id_department: int | None = int(id_dep) if id_dep >= 0 else None
-    flag, error, result = get_heads_db(id_department)
+    flag, error, result = get_heads_db(id_department, data_token)
     if not flag:
         return {"data": [], "msg": str(error)}, 400
     data_out = []
@@ -784,8 +793,6 @@ def fetch_heads(id_dep: int):
                 "other_leaders": extra_info.get("other_leaders", []),
             }
         )
-    # data_abb, code_abb = get_contracts_abreviations()
-    # return {"data": data_out, "msg": "Ok", "data_abbreviations": data_abb}, 200
     return {"data": data_out, "msg": "Ok"}, 200
 
 
@@ -802,10 +809,7 @@ def insert_head_from_api(data, data_token):
     if "contracts_temp" not in extra_info:
         extra_info["contracts_temp"] = []
     flag, error, result = insert_head_DB(
-        data["name"],
-        data["department"],
-        data["employee"],
-        extra_info,
+        data["name"], data["department"], data["employee"], extra_info, data_token
     )
     if not flag:
         return {"data": None, "msg": str(error)}, 400
@@ -834,10 +838,7 @@ def update_head_from_api(data, data_token):
     if "contracts_temp" not in extra_info:
         extra_info["contracts_temp"] = []
     flag, error, result = update_head_DB(
-        data["id"],
-        data["department"],
-        data["employee"],
-        extra_info,
+        data["id"], data["department"], data["employee"], extra_info, data_token
     )
     if not flag:
         return {"data": None, "msg": str(error)}, 400
@@ -854,7 +855,7 @@ def update_head_from_api(data, data_token):
 
 
 def delete_head_from_api(data, data_token):
-    flag, error, result = delete_head_DB(data["id"])
+    flag, error, result = delete_head_DB(data["id"], data_token)
     if not flag:
         return {"data": None, "msg": str(error)}, 400
     msg = f"Encargado eliminado con ID-{data['id']} por el empleado {data_token.get('name')}"
@@ -914,8 +915,8 @@ def items_supplier_from_file(data):
     return {"data": products, "msg": "Ok"}, 200
 
 
-def get_contracts_abreviations():
-    flag, error, result = get_contracts_abreviations_db()
+def get_contracts_abreviations(data_token):
+    flag, error, result = get_contracts_abreviations_db(data_token)
     if not flag:
         return {"data": [], "msg": str(error)}, 400
     data_out = []
@@ -933,7 +934,7 @@ def get_contracts_abreviations():
     return {"data": data_out, "msg": "Ok"}, 200
 
 
-def create_items_from_api(products, id_quotation, id_contract=None):
+def create_items_from_api(products, id_quotation, data_token, id_contract=None):
     products_list = []
     for product in products:
         description = product.get("description", "")
@@ -959,23 +960,24 @@ def create_items_from_api(products, id_quotation, id_contract=None):
                 "id_inventory": product.get("id", None),
             }
         )
-    flag_list, error_list, result_list = create_items_quotation(products_list)
+    flag_list, error_list, result_list = create_items_quotation(
+        products_list, data_token
+    )
     return flag_list, error_list, result_list
 
 
 def create_quotation_from_api(data, data_token):
-    flag, error, id_quotation = create_quotation(data["metadata"])
+    flag, error, id_quotation = create_quotation(data["metadata"], data_token)
     if not flag:
         return {"data": None, "msg": str(error)}, 400
     msg = f"Cotizacion creada con ID-{id_quotation} por el empleado {data_token.get('name')}"
     flag_list, error_list, result_list = create_items_from_api(
-        data["products"], id_quotation
+        data["products"], id_quotation, data_token=data_token
     )
     if flag_list.count(True) == len(flag_list):
         msg += "\nItems de cotizacion creados correctamente"
     elif flag_list.count(False) == len(flag_list):
-        print("No items created")
-        flag, error, result = delete_quotation(id_quotation)
+        flag, error, result = delete_quotation(id_quotation, data_token)
         return {
             "data": {result_list},
             "error": error_list,
@@ -990,7 +992,9 @@ def create_quotation_from_api(data, data_token):
     return {"data": id_quotation, "msg": "Ok"}, 201
 
 
-def update_items_quotation_from_api(products, id_quotation, id_contract, dict_products):
+def update_items_quotation_from_api(
+    products, id_quotation, id_contract, dict_products, data_token
+):
     flag_list = []
     error_list = []
     result_list = []
@@ -1018,11 +1022,12 @@ def update_items_quotation_from_api(products, id_quotation, id_contract, dict_pr
                     if len(description_small) <= 255
                     else description_small[:255],
                     "id_inventory": new_product.get("id", None),
-                }
+                },
+                data_token,
             )
         else:
             if new_product.get("is_erased", 0) != 0:
-                flag, error, result = delete_item_quotation(id_item)
+                flag, error, result = delete_item_quotation(id_item, data_token)
             else:
                 old_product = dict_products.get(id_item, {})
                 old_product["partida"] = new_product.get("partida", None)
@@ -1042,7 +1047,9 @@ def update_items_quotation_from_api(products, id_quotation, id_contract, dict_pr
                     else description_small[:255]
                 )
                 old_product["id_inventory"] = new_product.get("id", None)
-                flag, error, result = update_item_quotation(id_item, old_product)
+                flag, error, result = update_item_quotation(
+                    id_item, old_product, data_token
+                )
         flag_list.append(flag)
         error_list.append(error)
         result_list.append(result)
@@ -1050,7 +1057,7 @@ def update_items_quotation_from_api(products, id_quotation, id_contract, dict_pr
 
 
 def update_quoation_from_api(data, data_token):
-    flag, error, result = update_quotation(data["id"], data["metadata"])
+    flag, error, result = update_quotation(data["id"], data["metadata"], data_token)
     if not flag:
         return {"data": None, "msg": str(error)}, 400
     msg = f"Cotizacion actualizada con ID-{data['id']} por el empleado {data_token.get('name')}"
@@ -1062,7 +1069,7 @@ def update_quoation_from_api(data, data_token):
     products = data["products"]
     contract_id = result[5]
     flag_list, error_list, result_list = update_items_quotation_from_api(
-        products, data["id"], contract_id, dict_products
+        products, data["id"], contract_id, dict_products, data_token
     )
     if flag_list.count(True) == len(flag_list):
         msg += "\nItems de cotizacion actualizados correctamente"
@@ -1082,10 +1089,10 @@ def update_quoation_from_api(data, data_token):
 
 
 def delete_quotation_from_api(data, data_token):
-    flag, error, result_items = delete_quotation_items(data["id"])
+    flag, error, result_items = delete_quotation_items(data["id"], data_token)
     if not flag:
         return {"data": "Items cant be erased", "msg": str(error)}, 400
-    flag, error, result = delete_quotation(data["id"])
+    flag, error, result = delete_quotation(data["id"], data_token)
     if not flag:
         return {"data": "Quoation unable to be deleted", "msg": str(error)}, 400
     msg = f"Cotizacion eliminada con ID-{data['id']} por el empleado {data_token.get('name')}"
@@ -1104,7 +1111,9 @@ def create_contract_from_api(data, data_token):
     abbreviation = data["metadata"].pop("abbreviation", "")
     msg = ""
     if data.get("quotation_id", 0) == 0:
-        flag, error, id_quotation = create_quotation(data["metadata"], status=2)
+        flag, error, id_quotation = create_quotation(
+            data["metadata"], status=2, data_token=data_token
+        )
         if not flag:
             return {"data": None, "msg": str(error)}, 400
         msg += f"Cotizacion creada con ID-{id_quotation} por el empleado {data_token.get('name')}"
@@ -1128,7 +1137,7 @@ def create_contract_from_api(data, data_token):
         )
         id_quotation = data["quotation_id"]
     if not flag:
-        flag, error, result = delete_quotation(id_quotation)
+        flag, error, result = delete_quotation(id_quotation, data_token)
         return {
             "data": "Not posible to create contract",
             "error": result,
@@ -1140,8 +1149,8 @@ def create_contract_from_api(data, data_token):
     if flag_list.count(True) == len(flag_list):
         msg += "\nItems de cotizacion creados correctamente"
     elif flag_list.count(False) == len(flag_list):
-        flag, error_q, result_q = delete_quotation(id_quotation)
-        flag, error_c, result_c = delete_contract(id_contract)
+        flag, error_q, result_q = delete_quotation(id_quotation, data_token)
+        flag, error_c, result_c = delete_contract(id_contract, data_token)
         return {
             "data": {result_list},
             "error": error_list + [error_q, error_c],
@@ -1165,7 +1174,9 @@ def update_contract_from_api(data, data_token):
     msg = ""
     if data.get("quotation_id", 0) == 0 and len(data.get("products", [])) > 0:
         id_contract = data["id"]
-        flag, error, result = create_quotation(data["metadata"], status=1)
+        flag, error, result = create_quotation(
+            data["metadata"], status=1, data_token=data_token
+        )
         if not flag:
             return {
                 "data": None,
@@ -1194,13 +1205,13 @@ def update_contract_from_api(data, data_token):
         products = data["products"]
         contract_id = result[5]
         flag_list, error_list, result_list = update_items_quotation_from_api(
-            products, data["id"], contract_id, dict_products
+            products, data["id"], contract_id, dict_products, data_token
         )
     if flag_list.count(True) == len(flag_list):
         msg += "\nItems de cotizacion creados/actualizados correctamente"
     elif flag_list.count(False) == len(flag_list):
-        flag, error_q, result_q = delete_quotation(id_quotation)
-        flag, error_c, result_c = delete_contract(id_contract)
+        flag, error_q, result_q = delete_quotation(id_quotation, data_token)
+        flag, error_c, result_c = delete_contract(id_contract, data_token)
         return {
             "data": {result_list},
             "error": error_list + [error_q, error_c],
@@ -1241,10 +1252,10 @@ def update_contract_from_api(data, data_token):
 
 
 def delete_contract_from_api(data, data_token):
-    flag, error, result = delete_contract_from_item_quotation(data["id"])
+    flag, error, result = delete_contract_from_item_quotation(data["id"], data_token)
     if not flag:
         return {"data": None, "msg": str(error)}, 400
-    flag, error, result = delete_contract(data["id"])
+    flag, error, result = delete_contract(data["id"], data_token)
     if not flag:
         return {"data": None, "msg": str(error)}, 400
     msg = f"Contrato eliminado con ID-{data['id']} por el empleado {data_token.get('name')}"

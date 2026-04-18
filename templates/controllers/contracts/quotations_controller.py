@@ -11,7 +11,7 @@ from static.constants import format_timestamps, timezone_software
 from templates.database.connection import execute_sql
 
 
-def create_quotation(metadata: dict, status=0):
+def create_quotation(metadata: dict, data_token, status=0):
     time_zone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
     metadata["status"] = status
@@ -20,11 +20,11 @@ def create_quotation(metadata: dict, status=0):
         "VALUES (%s, %s)"
     )
     val = (json.dumps(metadata), timestamp)
-    flag, error, id_quotation = execute_sql(sql, val, 4)
+    flag, error, id_quotation = execute_sql(sql, val, 4, data_token)
     return flag, error, id_quotation
 
 
-def create_items_quotation(items: list):
+def create_items_quotation(items: list, data_token):
     result_list = []
     error_list = []
     flag_list = []
@@ -51,14 +51,14 @@ def create_items_quotation(items: list):
             "id_inventory) "
             "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
         )
-        flag, error, lastrowid = execute_sql(sql, val, 4)
+        flag, error, lastrowid = execute_sql(sql, val, 4, data_token)
         flag_list.append(flag)
         error_list.append(error)
         result_list.append(lastrowid)
     return flag_list, error_list, result_list
 
 
-def update_quotation(id_quotation, metadata: dict, timestamps=None):
+def update_quotation(id_quotation, metadata: dict, data_token, timestamps=None):
     time_zone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
     if timestamps is None:
@@ -78,11 +78,11 @@ def update_quotation(id_quotation, metadata: dict, timestamps=None):
         json.dumps(timestamps),
         id_quotation,
     )
-    flag, error, out = execute_sql(sql, val, 3)
+    flag, error, out = execute_sql(sql, val, 3, data_token)
     return flag, error, out
 
 
-def create_item_quotation(item: dict):
+def create_item_quotation(item: dict, data_token):
     sql = (
         "INSERT INTO sql_telintec_mod_admin.quotation_items "
         "(quotation_id, contract_id, partida, udm, brand, type_p, n_part, "
@@ -105,11 +105,11 @@ def create_item_quotation(item: dict):
         item["description_small"],
         item["id_inventory"],
     )
-    flag, error, out = execute_sql(sql, val, 3)
+    flag, error, out = execute_sql(sql, val, 3, data_token)
     return flag, error, out
 
 
-def update_item_quotation(id_item, item: dict):
+def update_item_quotation(id_item, item: dict, data_token):
     sql = (
         "UPDATE sql_telintec_mod_admin.quotation_items "
         "SET partida = %s, udm = %s, brand = %s, type_p = %s, n_part = %s, quantity = %s, "
@@ -131,45 +131,43 @@ def update_item_quotation(id_item, item: dict):
         item["id_inventory"],
         id_item,
     )
-    flag, error, out = execute_sql(sql, val, 3)
+    flag, error, out = execute_sql(sql, val, 3, data_token)
     return flag, error, out
 
 
-def delete_item_quotation(id_item):
-    sql = "DELETE FROM sql_telintec_mod_admin.quotation_items " "WHERE id = %s"
+def delete_item_quotation(id_item, data_token):
+    sql = "DELETE FROM sql_telintec_mod_admin.quotation_items WHERE id = %s"
     val = (id_item,)
-    flag, error, out = execute_sql(sql, val, 3)
+    flag, error, out = execute_sql(sql, val, 3, data_token)
     return flag, error, out
 
 
-def delete_quotation_items(id_quotation):
-    sql = (
-        "DELETE FROM sql_telintec_mod_admin.quotation_items " "WHERE quotation_id = %s"
-    )
+def delete_quotation_items(id_quotation, data_token):
+    sql = "DELETE FROM sql_telintec_mod_admin.quotation_items WHERE quotation_id = %s"
     val = (id_quotation,)
-    flag, error, out = execute_sql(sql, val, 3)
+    flag, error, out = execute_sql(sql, val, 3, data_token)
     return flag, error, out
 
 
-def delete_contract_from_item_quotation(contract_id):
+def delete_contract_from_item_quotation(contract_id, data_token):
     sql = (
         "UPDATE sql_telintec_mod_admin.quotation_items "
         "SET contract_id = NULL "
         "WHERE contract_id = %s"
     )
     val = (contract_id,)
-    flag, error, out = execute_sql(sql, val, 3)
+    flag, error, out = execute_sql(sql, val, 3, data_token)
     return flag, error, out
 
 
-def delete_quotation(id_quotation):
-    sql = "DELETE FROM sql_telintec_mod_admin.quotations " "WHERE id = %s"
+def delete_quotation(id_quotation, data_token):
+    sql = "DELETE FROM sql_telintec_mod_admin.quotations WHERE id = %s"
     val = (id_quotation,)
-    flag, error, out = execute_sql(sql, val, 3)
+    flag, error, out = execute_sql(sql, val, 3, data_token)
     return flag, error, out
 
 
-def get_quotation(id_quotation: int|None=None):
+def get_quotation(data_token, id_quotation: int | None = None):
     if id_quotation is not None:
         sql = (
             "SELECT "
@@ -224,7 +222,7 @@ def get_quotation(id_quotation: int|None=None):
         )
         val = ()
 
-    flag, error, result = execute_sql(sql, val, 5)
+    flag, error, result = execute_sql(sql, val, 5, data_token)
     if not flag:
         return False, error, []
     if not isinstance(result, list):
@@ -234,7 +232,7 @@ def get_quotation(id_quotation: int|None=None):
     return True, None, result
 
 
-def get_quotation_data_display(id_quotation=None):
+def get_quotation_data_display(data_token, id_quotation=None):
     if id_quotation is None:
         sql = (
             "SELECT id, "
@@ -244,7 +242,7 @@ def get_quotation_data_display(id_quotation=None):
             "creation "
             "FROM sql_telintec_mod_admin.quotations"
         )
-        flag, error, result = execute_sql(sql, None, 5)
+        flag, error, result = execute_sql(sql, None, 5, data_token)
         if not flag:
             return False, error, None
         return True, None, result
@@ -258,7 +256,7 @@ def get_quotation_data_display(id_quotation=None):
         "WHERE id = %s"
     )
     val = (id_quotation,)
-    flag, error, result = execute_sql(sql, val, 1)
+    flag, error, result = execute_sql(sql, val, 1, data_token)
     if not isinstance(result, tuple):
         return False, error, None
     if len(result) == 0:
@@ -267,14 +265,14 @@ def get_quotation_data_display(id_quotation=None):
         return True, None, result[0]
 
 
-def get_items_quotation_from_cotract(contract_id):
+def get_items_quotation_from_cotract(contract_id, data_token):
     sql = (
         "SELECT id, partida, id_inventory, quotation_id "
         "FROM sql_telintec_mod_admin.quotation_items "
         "WHERE contract_id = %s"
     )
     val = (contract_id,)
-    flag, error, result = execute_sql(sql, val, 2)
+    flag, error, result = execute_sql(sql, val, 2, data_token)
     if not isinstance(result, list):
         return False, error, []
     if len(result) == 0:
@@ -283,12 +281,14 @@ def get_items_quotation_from_cotract(contract_id):
         return True, None, result
 
 
-def update_quotation_item_partida_from_sm(contract_id, partida, id_inventory):
+def update_quotation_item_partida_from_sm(
+    contract_id, partida, id_inventory, data_token
+):
     sql = (
         "UPDATE sql_telintec_mod_admin.quotation_items "
         "SET id_inventory = %s "
         "WHERE contract_id = %s AND partida = %s"
     )
     val = (id_inventory, contract_id, partida)
-    flag, error, out = execute_sql(sql, val, 3)
+    flag, error, out = execute_sql(sql, val, 3, data_token)
     return flag, error, out

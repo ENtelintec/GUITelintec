@@ -71,7 +71,7 @@ def create_quotation_activity_from_api(data, data_token):
         general_description=data["general_description"],
         comments=data["comments"],
         history=history_qa,
-        status=data["status"],
+        status=data["status"], data_token=data_token,
     )
     if not flag:
         return {
@@ -103,6 +103,7 @@ def create_quotation_activity_from_api(data, data_token):
             unit_price=item["unit_price"],
             history=history_item,
             item_c_id=item.get("item_contract_id", None),
+            data_token=data_token,
         )
         flag_list.append(flag)
         errors.append(str(error))
@@ -126,7 +127,7 @@ def create_quotation_activity_from_api(data, data_token):
 
 def update_quotation_activity_from_api(data, data_token):
     # retrieve quotation activity registry:
-    flag, error, result_qa = get_quotation_activity_by_id(data["id"])
+    flag, error, result_qa = get_quotation_activity_by_id(data["id"], data_token)
     if not flag:
         return {
             "data": None,
@@ -181,11 +182,12 @@ def update_quotation_activity_from_api(data, data_token):
                     unit_price=new_item["unit_price"],
                     history=history_item,
                     item_c_id=new_item.get("client_id", None),
+                    data_token=data_token,
                 )
                 result = id_item
             else:
                 if new_item.get("is_erased", 0) != 0:
-                    flag, error, result = delete_quotation_activity_item(item_id)
+                    flag, error, result = delete_quotation_activity_item(item_id, data_token)
                 else:
                     # update old item
                     history_item = (
@@ -218,6 +220,7 @@ def update_quotation_activity_from_api(data, data_token):
                             quantity=new_item["quantity"],
                             unit_price=new_item["unit_price"],
                             history=history_item,
+                            data_token=data_token,
                         )
             flags.append(flag)
             errors.append(str(error))
@@ -260,6 +263,7 @@ def update_quotation_activity_from_api(data, data_token):
         comments=data["comments"],
         history=history,
         status=data["status"],
+        data_token=data_token,
     )
     if not flag:
         return {
@@ -277,7 +281,7 @@ def update_quotation_activity_from_api(data, data_token):
 def get_quotations_from_api(id_quotation: int | None, data_token):
     if id_quotation is not None and id_quotation <= 0:
         id_quotation = None
-    flag, e, out = get_quotation_activity_by_id(id_quotation)
+    flag, e, out = get_quotation_activity_by_id(id_quotation, data_token)
     if not flag:
         return {"data": None, "msg": str(e)}, 400
     if not (isinstance(out, list) or isinstance(out, tuple)):
@@ -322,7 +326,7 @@ def delete_quotation_activity_from_api(data, data_token):
     msg = ""
 
     # Retrieve quotation activity registry:
-    flag, error, result_qa = get_quotation_activity_by_id(id_quotation)
+    flag, error, result_qa = get_quotation_activity_by_id(id_quotation, data_token)
     if not flag:
         return {
             "data": None,
@@ -342,7 +346,7 @@ def delete_quotation_activity_from_api(data, data_token):
     errors = []
     results = []
     for item in items:
-        flag, error, result = delete_quotation_activity_item(item["qa_item_id"])
+        flag, error, result = delete_quotation_activity_item(item["qa_item_id"], data_token)
         flags.append(flag)
         errors.append(str(error))
         results.append(result)
@@ -358,7 +362,7 @@ def delete_quotation_activity_from_api(data, data_token):
         msg += "Error al eliminar ciertos ítems de la actividad de cotización"
 
     # Delete quotation activity:
-    flag, error, result = delete_quotation_activity(id_quotation)
+    flag, error, result = delete_quotation_activity(id_quotation, data_token)
     if not flag:
         return {
             "data": None,
@@ -404,6 +408,7 @@ def create_remission_from_api(data, data_token):
         contract_id=data["metadata"].get("contract_id", None),
         pedido=data["metadata"].get("pedido", ""),
         pedido_exiros=data["metadata"].get("pedido_exiros", ""),
+        data_token=data_token,
     )
     if not flag:
         return {
@@ -422,7 +427,7 @@ def create_remission_from_api(data, data_token):
     results = []
     if data["metadata"]["quotation_id"] is not None:
         flag, error, result = update_items_quotation_w_remission(
-            id_remission, data["metadata"]["quotation_id"]
+            id_remission, data["metadata"]["quotation_id"], data_token
         )
         flag_list.append(flag)
         errors.append(str(error))
@@ -447,6 +452,7 @@ def create_remission_from_api(data, data_token):
                 unit_price=item["unit_price"],
                 history=history_item,
                 item_c_id=item.get("item_contract_id", None),
+                data_token=data_token,
             )
             flag_list.append(flag)
             errors.append(str(error))
@@ -458,7 +464,7 @@ def create_remission_from_api(data, data_token):
         else:
             msg += " y items de cotización creados correctamente"
     elif flag_list.count(False) == len(flag_list):
-        flag, error, result = delete_remission_db(id_remission)
+        flag, error, result = delete_remission_db(id_remission, data_token)
         msg = "Error al crear items de cotización. Reporte eliminado."
         return {
             "data": results,
@@ -481,7 +487,7 @@ def create_remission_from_api(data, data_token):
 def get_remission_from_api(id_report: int | None, data_token):
     if id_report is not None and id_report <= 0:
         id_report = None
-    flag, error, result = get_remission_by_id(id_report)
+    flag, error, result = get_remission_by_id(id_report, data_token)
     if not flag:
         return {"data": None, "msg": str(error)}, 400
     if not (isinstance(result, list) or isinstance(result, tuple)):
@@ -531,7 +537,7 @@ def update_remission_from_api(data, data_token):
     msg = ""
 
     # Retrieve report activity registry:
-    flag, error, result_ra = get_remission_by_id(data["id"])
+    flag, error, result_ra = get_remission_by_id(data["id"], data_token)
     if not(isinstance(result_ra, list) or isinstance(result_ra, tuple)):
         return {
             "data": None,
@@ -577,6 +583,7 @@ def update_remission_from_api(data, data_token):
         contract_id=data["metadata"].get("contract_id", None),
         pedido=data["metadata"].get("pedido", ""),
         pedido_exiros=data["metadata"].get("pedido_exiros", ""),
+        data_token=data_token,
     )
     if not flag:
         return {
@@ -596,7 +603,7 @@ def update_remission_from_api(data, data_token):
     for item in data["items"]:
         if item["id"] is not None and item["id"] > 0:
             if item["is_erased"] == 1:
-                flag, error, result = delete_quotation_activity_item(item["id"])
+                flag, error, result = delete_quotation_activity_item(item["id"], data_token)
             else:
                 history_item = dict_items[item["id"]]["history"]
                 history_item.append(
@@ -616,7 +623,7 @@ def update_remission_from_api(data, data_token):
                     item["udm"],
                     item["quantity"],
                     item["unit_price"],
-                    history_item,
+                    history_item, data_token,
                 )
         else:
             history_item = [
@@ -636,6 +643,7 @@ def update_remission_from_api(data, data_token):
                 unit_price=item["unit_price"],
                 history=history_item,
                 item_c_id=item.get("item_contract_id", None),
+                data_token=data_token,
             )
         flag_list.append(flag)
         errors.append(str(error))
@@ -659,7 +667,7 @@ def delete_remission_from_api(data, data_token):
     msg = ""
 
     # Retrieve report activity registry:
-    flag, error, result_ra = get_remission_by_id(id_remission)
+    flag, error, result_ra = get_remission_by_id(id_remission, data_token)
     if not flag:
         return {
             "data": None,
@@ -679,7 +687,7 @@ def delete_remission_from_api(data, data_token):
     errors = []
     results = []
     for item in items:
-        flag, error, result = delete_quotation_activity_item(item["qa_item_id"])
+        flag, error, result = delete_quotation_activity_item(item["qa_item_id"], data_token)
         flags.append(flag)
         errors.append(str(error))
         results.append(result)
@@ -695,7 +703,7 @@ def delete_remission_from_api(data, data_token):
         msg += "Error al eliminar ciertos ítems del reporte de actividad"
 
     # Delete report activity:
-    flag, error, result = delete_remission_db(id_remission)
+    flag, error, result = delete_remission_db(id_remission, data_token)
     if not flag:
         return {
             "data": None,
@@ -737,7 +745,7 @@ def create_activity_report_attachment_api(data, data_token):
     time_zone = pytz.timezone(timezone_software)
     # timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone)
-    flag, error, result = get_remission_by_id(data["id_report"])
+    flag, error, result = get_remission_by_id(data["id_report"], data_token)
     if not flag:
         return {
             "data": None,
@@ -815,7 +823,7 @@ def create_activity_report_attachment_api(data, data_token):
         }
     )
     flag, error, rows_updated = update_report_activity_files(
-        data["id_report"], history, status, files
+        data["id_report"], history, status, files, data_token
     )
     if not flag:
         return {
@@ -831,7 +839,7 @@ def create_activity_report_attachment_api(data, data_token):
 
 
 def download_report_activity_attachment_api(data, data_token):
-    flag, error, result = get_remission_by_id(data["id_report"])
+    flag, error, result = get_remission_by_id(data["id_report"], data_token)
     if not flag:
         return {
             "data": None,
@@ -895,7 +903,7 @@ def fetch_products_contracts(data_token):
         return {"data": [], "msg": code}, 400
     data_out = []
     for iddentifier in iddentifiers:
-        flag, error, result = get_contract_and_items_from_number(iddentifier)
+        flag, error, result = get_contract_and_items_from_number(iddentifier, data_token)
         if not flag:
             continue
         items = []

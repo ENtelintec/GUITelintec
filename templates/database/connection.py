@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+
 __author__ = "Edisson Naula"
 __date__ = "$ 27/jul./2023  at 16:41 $"
 
@@ -8,7 +9,9 @@ import mysql.connector
 from static.constants import secrets, HOST_DB_DEFAULT, USER_DB_DEFAULT, PASS_DB_DEFAULT
 
 
-def execute_sql(sql: str, values: tuple|None = None, type_sql=1) -> tuple[bool, str, list | int | tuple] :
+def execute_sql(
+    sql: str, values: tuple | None = None, type_sql=1, data_token=None
+) -> tuple[bool, str, list | int | tuple]:
     """
     Execute the sql with the values provides (OR not) AND returns a value
     depending on the type of query.
@@ -24,10 +27,21 @@ def execute_sql(sql: str, values: tuple|None = None, type_sql=1) -> tuple[bool, 
         - list of items if type 5 |
     """
     try:
+        host_db = secrets[HOST_DB_DEFAULT]
+        user_db = secrets[USER_DB_DEFAULT]
+        pass_db = secrets[PASS_DB_DEFAULT]
+        try:
+            if data_token is not None:
+                if data_token["is_tester"]:
+                    host_db = secrets["HOST_DB_TEST"]
+                    user_db = secrets["USER_DB_TEST"]
+                    pass_db = secrets["PASS_DB_TEST"]
+        except Exception:
+            pass
         mydb = mysql.connector.connect(
-            host=secrets[HOST_DB_DEFAULT],
-            user=secrets[USER_DB_DEFAULT],
-            password=secrets[PASS_DB_DEFAULT],
+            host=host_db,
+            user=user_db,
+            password=pass_db,
         )
         my_cursor = mydb.cursor(buffered=True)
     except Exception as e:
@@ -39,18 +53,17 @@ def execute_sql(sql: str, values: tuple|None = None, type_sql=1) -> tuple[bool, 
     try:
         match type_sql:
             case 2:
-                
-                my_cursor.execute(sql, values) # pyrefly: ignore
+                my_cursor.execute(sql, values)  # pyrefly: ignore
                 out = my_cursor.fetchall()
             case 1:
-                my_cursor.execute(sql, values) # pyrefly: ignore
+                my_cursor.execute(sql, values)  # pyrefly: ignore
                 out = my_cursor.fetchone()
             case 3:
-                my_cursor.execute(sql, values) # pyrefly: ignore
+                my_cursor.execute(sql, values)  # pyrefly: ignore
                 mydb.commit()
                 out = my_cursor.rowcount
             case 4:
-                my_cursor.execute(sql, values) # pyrefly: ignore
+                my_cursor.execute(sql, values)  # pyrefly: ignore
                 mydb.commit()
                 out = my_cursor.lastrowid
             case 5:
@@ -66,14 +79,14 @@ def execute_sql(sql: str, values: tuple|None = None, type_sql=1) -> tuple[bool, 
         exception = str(e)
     finally:
         # if not isinstance(out, list) or not isinstance(out, tuple):
-        #     out = [out]      
+        #     out = [out]
         out = out if out is not None else []
         my_cursor.close()
         mydb.close()
-        return flag, exception, out # pyrefly: ignore
+        return flag, exception, out  # pyrefly: ignore
 
 
-def execute_sql_multiple(sql: str, values_list: list, type_sql=1):
+def execute_sql_multiple(sql: str, values_list: list, type_sql=1, data_token=None):
     """
     Execute the sql with the values provides (OR not) AND returns a value
     depending on the type of query.
@@ -87,11 +100,21 @@ def execute_sql_multiple(sql: str, values_list: list, type_sql=1):
     flag = True
     error = None
     try:
+        host_db = secrets[HOST_DB_DEFAULT]
+        user_db = secrets[USER_DB_DEFAULT]
+        pass_db = secrets[PASS_DB_DEFAULT]
+        try:
+            if data_token is not None:
+                if data_token["is_tester"]:
+                    host_db = secrets["HOST_DB_TEST"]
+                    user_db = secrets["USER_DB_TEST"]
+                    pass_db = secrets["PASS_DB_TEST"]
+        except Exception:
+            pass
         mydb = mysql.connector.connect(
-            host=secrets[HOST_DB_DEFAULT],
-            user=secrets[USER_DB_DEFAULT],
-            password=secrets[PASS_DB_DEFAULT],
-            database="sql_telintec",
+            host=host_db,
+            user=user_db,
+            password=pass_db,
         )
         my_cursor = mydb.cursor(buffered=True)
     except Exception as e:

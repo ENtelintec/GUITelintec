@@ -90,7 +90,7 @@ def get_supplier_amc(name: str, id_s: int):
 #     return flag, error, result
 
 
-def get_all_suppliers_amc():
+def get_all_suppliers_amc(data_token):
     sql = (
         "SELECT  "
         "    s.id_supplier, "
@@ -125,13 +125,13 @@ def get_all_suppliers_amc():
         ") items ON s.id_supplier = items.id_supplier_amc "
         "ORDER BY s.name;"
     )
-    flag, error, result = execute_sql(sql, None, 5)
+    flag, error, result = execute_sql(sql, None, 5, data_token)
     if not isinstance(result, list):
         return False, error, []
     return flag, error, result
 
 
-def get_items_supplier_by_id(id_supplier=None):
+def get_items_supplier_by_id( data_token,id_supplier=None):
     if id_supplier is None:
         sql = (
             "SELECT id, item_name, unit_price, part_number, created_at, updated_at, currency, id_inventory "
@@ -139,7 +139,7 @@ def get_items_supplier_by_id(id_supplier=None):
             "ORDER BY item_name"
         )
         vals = None
-        flag, error, result = execute_sql(sql, vals, 5)
+        flag, error, result = execute_sql(sql, vals, 5, data_token)
     else:
         sql = (
             "SELECT id, item_name, unit_price, part_number, created_at, updated_at, currency, id_inventory "
@@ -147,7 +147,7 @@ def get_items_supplier_by_id(id_supplier=None):
             "WHERE id_supplier_amc = %s "
         )
         vals = (id_supplier,)
-        flag, error, result = execute_sql(sql, vals, 2)
+        flag, error, result = execute_sql(sql, vals, 2, data_token)
 
     if not isinstance(result, list):
         return False, error, []
@@ -162,6 +162,7 @@ def create_supplier_brands_amc(
     address_provider,
     web_provider,
     type_provider,
+    data_token,
     brands=None,
 ):
     name_provider = str(name_provider)
@@ -187,7 +188,7 @@ def create_supplier_brands_amc(
         type_provider,
         json.dumps(extra_info),
     )
-    flag, error, result = execute_sql(insert_sql, vals, 4)
+    flag, error, result = execute_sql(insert_sql, vals, 4, data_token)
     return flag, error, result
 
 
@@ -200,6 +201,7 @@ def create_supplier_amc(
     web_provider,
     type_provider,
     extra_info,
+    data_token
 ):
     name_provider = str(name_provider)
     seller_provider = str(seller_provider)
@@ -226,7 +228,7 @@ def create_supplier_amc(
         type_provider,
         extra_info,
     )
-    flag, error, result = execute_sql(insert_sql, vals, 4)
+    flag, error, result = execute_sql(insert_sql, vals, 4, data_token)
     return flag, error, result
 
 
@@ -235,6 +237,7 @@ def create_item_amc(
     unit_price,
     part_number,
     id_supplier_amc,
+    data_token,
     currency="MXN",
     id_inventory=None
 ):
@@ -251,7 +254,7 @@ def create_item_amc(
         currency,
         id_inventory
     )
-    flag, error, rows_changed = execute_sql(insert_sql, vals, 3)
+    flag, error, rows_changed = execute_sql(insert_sql, vals, 3, data_token)
     return flag, error, rows_changed
 
 
@@ -260,7 +263,7 @@ def update_item_amc(
     item_name,
     unit_price,
     part_number,
-    id_supplier_amc,
+    id_supplier_amc, data_token,
     currency="MXN",
     id_inventory=None
 ):
@@ -278,14 +281,14 @@ def update_item_amc(
         id_inventory,
         id_item,
     )
-    flag, error, rows_changed = execute_sql(update_sql, vals, 3)
+    flag, error, rows_changed = execute_sql(update_sql, vals, 3, data_token)
     return flag, error, rows_changed
 
 
-def delete_item_amc(id_item):
+def delete_item_amc(id_item, data_token):
     delete_sql = "DELETE FROM sql_telintec_mod_admin.items_suppliers_amc WHERE id = %s "
     vals = (id_item,)
-    flag, error, rows_changed = execute_sql(delete_sql, vals, 3)
+    flag, error, rows_changed = execute_sql(delete_sql, vals, 3, data_token)
     return flag, error, rows_changed
 
 
@@ -297,7 +300,7 @@ def update_supplier_brands_amc(
     phone_provider,
     address_provider,
     web_provider,
-    type_provider,
+    type_provider, data_token,
     brands=None,
 ):
     name_provider = str(name_provider)
@@ -325,7 +328,7 @@ def update_supplier_brands_amc(
         json.dumps(brands),
         id_provider,
     )
-    flag, error, result = execute_sql(update_sql, vals, 3)
+    flag, error, result = execute_sql(update_sql, vals, 3, data_token)
     return flag, error, result
 
 
@@ -338,7 +341,7 @@ def update_supplier_amc(
     address_provider,
     web_provider,
     type_provider,
-    extra_info,
+    extra_info, data_token,
 ):
     name_provider = str(name_provider)
     seller_provider = str(seller_provider)
@@ -365,18 +368,18 @@ def update_supplier_amc(
         extra_info,
         id_provider,
     )
-    flag, error, result = execute_sql(update_sql, vals, 3)
+    flag, error, result = execute_sql(update_sql, vals, 3, data_token)
     return flag, error, result
 
 
-def delete_supplier_amc(id_supplier):
+def delete_supplier_amc(id_supplier, data_token):
     delete_sql = "DELETE FROM sql_telintec.suppliers_amc WHERE id_supplier = %s"
     vals = (id_supplier,)
-    flag, error, result = execute_sql(delete_sql, vals, 4)
+    flag, error, result = execute_sql(delete_sql, vals, 4, data_token)
     return flag, error, result
 
 
-def update_brands_supplier(supplier_id, brands: list):
+def update_brands_supplier(supplier_id, brands: list, data_token):
     update_sql = (
         "UPDATE sql_telintec.suppliers_amc "
         "SET extra_info = JSON_SET(extra_info, '$.brands', %s) "
@@ -384,16 +387,16 @@ def update_brands_supplier(supplier_id, brands: list):
     )
     vals = (json.dumps(brands), supplier_id)
     # vals = (brands, supplier_id)
-    flag, error, result = execute_sql(update_sql, vals, 4)
+    flag, error, result = execute_sql(update_sql, vals, 4, data_token)
     return flag, error, result
 
 
-def update_extra_info_supplier_db(id_supplier, extra_info: dict):
+def update_extra_info_supplier_db(id_supplier, extra_info: dict, data_token):
     update_sql = (
         "UPDATE sql_telintec.suppliers_amc "
         "SET extra_info = %s "
         "WHERE id_supplier = %s"
     )
     vals = (json.dumps(extra_info), id_supplier)
-    flag, error, result = execute_sql(update_sql, vals, 3)
+    flag, error, result = execute_sql(update_sql, vals, 3, data_token)
     return flag, error, result
