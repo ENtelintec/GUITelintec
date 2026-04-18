@@ -139,11 +139,11 @@ def fetch_purchase_orders(status, data_token):
     if "administrator" in permissions_last:
         emp_id = None
     else:
-        flag, error, result = check_if_gerente(data_token.get("emp_id"))
+        flag, error, result = check_if_gerente(data_token.get("emp_id"), data_token)
         emp_id = data_token.get("emp_id") if not flag and len(result) <= 0 else None
     status_map = {"pendiente": 0, "recibido": 1, "cancelado": 4}
     status = status_map.get(status, None)  # Si status no es válido, se usa None
-    flag, error, result = get_purchase_orders_with_items(status, emp_id)
+    flag, error, result = get_purchase_orders_with_items(status, emp_id, data_token)
     if not flag:
         return {"data": result, "msg": "error", "error": str(error)}, 400
     if not isinstance(result, Iterable):
@@ -201,7 +201,7 @@ def create_purchaser_order_api(data, data_token):
     sm_id = data.get("sm_id", 0)
     update_sm_control_table = True
     if sm_id >= 0:
-        flag, error, result_sm = get_sm_by_id(sm_id)
+        flag, error, result_sm = get_sm_by_id(sm_id, data_token)
 
     else:
         result_sm = [0]
@@ -234,7 +234,7 @@ def create_purchaser_order_api(data, data_token):
         data["folio"],
         history,
         data["time_delivery"],
-        extra_info,
+        extra_info, data_token,
     )
     if not flag:
         return {"data": None, "msg": "error", "error": str(error)}, 400
@@ -261,7 +261,7 @@ def create_purchaser_order_api(data, data_token):
                 item["unit_price"],
                 item["description"],
                 duration_services,
-                extra_info,
+                extra_info, data_token,
                 item["tool"],
                 item["currency"],
             )
@@ -274,7 +274,7 @@ def create_purchaser_order_api(data, data_token):
                 item["unit_price"],
                 item["description"],
                 duration_services,
-                extra_info,
+                extra_info, data_token,
                 item["currency"],
             )
         if not flag:
@@ -293,7 +293,7 @@ def create_purchaser_order_api(data, data_token):
             )
     # falta comprobar si algun item se creo sino eliminar po.
     if n_errors == len(data["items"]):
-        flag, error, result = delete_purchase_order(id_order)
+        flag, error, result = delete_purchase_order(id_order, data_token)
         return {
             "data": [id_order if not flag else None],
             "msg": f"Error al crear los items de la orden {id_order}"
@@ -360,7 +360,7 @@ def update_purchase_order_api(data, data_token):
         data["folio"],
         history,
         extra_info,
-        data["time_delivery"],
+        data["time_delivery"], data_token,
     )
     if not flag:
         return {"data": None, "msg": "error", "error": str(error)}, 400
@@ -377,7 +377,7 @@ def update_purchase_order_api(data, data_token):
                 item["unit_price"],
                 item["description"],
                 item["duration_services"],
-                extra_info,
+                extra_info, data_token,
                 item["tool"],
                 item["currency"],
             )
@@ -390,7 +390,7 @@ def update_purchase_order_api(data, data_token):
                 item["unit_price"],
                 item["description"],
                 item["duration_services"],
-                extra_info,
+                extra_info, data_token,
                 item["currency"],
             )
         if not flag:
@@ -434,7 +434,7 @@ def cancel_purchase_order_api(data, data_token):
     )
     flag, error, result = cancel_purchase_order(
         history,
-        data["id"],
+        data["id"], data_token,
     )
 
     if not flag:
@@ -462,7 +462,7 @@ def change_state_order_api(data, data_token):
     flag, error, result = update_purchase_order_status(
         data["id"],
         history,
-        data["status"],
+        data["status"], data_token,
     )
     if not flag:
         return {"data": None, "msg": "error", "error": str(error)}, 400
@@ -480,7 +480,7 @@ def change_state_order_api(data, data_token):
 def fetch_pos_applications_to_approve(data_token):
     # permissions = data_token.get("permissions")
     # permissions_last = [item.lower().split(".")[-1] for item in permissions.values()]
-    flag, error, result = get_pos_application_with_items_to_approve()
+    flag, error, result = get_pos_application_with_items_to_approve(data_token)
     if not flag:
         return {"data": None, "msg": "error", "error": str(error)}, 400
     data_out = []
@@ -527,11 +527,11 @@ def fetch_pos_applications(status, data_token):
     if "administrator" in permissions_last:
         emp_id = None
     else:
-        flag, error, result = check_if_gerente(data_token.get("emp_id"))
+        flag, error, result = check_if_gerente(data_token.get("emp_id"), data_token)
         emp_id = data_token.get("emp_id") if not flag and len(result) <= 0 else None
     status_map = {"pendiente": 0, "recibido": 1, "cancelado": 4}
     status = status_map.get(status, None)  # Si status no es válido, se usa None
-    flag, error, result = get_pos_application_with_items(status, emp_id)
+    flag, error, result = get_pos_application_with_items(status, emp_id, data_token)
     if not flag:
         return {"data": None, "msg": "error", "error": str(error)}, 400
     data_out = []
@@ -575,11 +575,16 @@ def fetch_pos_applications(status, data_token):
 
 
 def fetch_po_item_sm_item_id(data_token):
-    flag, error, result = get_all_item_purchase_order_with_id_item_sm()
+    flag, error, result = get_all_item_purchase_order_with_id_item_sm( data_token)
     if not flag:
         return {"data": None, "msg": "error", "error": str(error)}, 400
     data_out = []
-
+    if not (isinstance(result, list) or isinstance(result, tuple)):
+        return {
+            "data": result,
+            "msg": "Error at retrieving data from db",
+            "error": None,
+        }, 400
     for item in result:
         (
             id_item,
@@ -619,9 +624,9 @@ def create_po_application_api(data, data_token):
 
     update_sm_control_table = False
     if sm_id > 0:
-        flag, error, result_sm = get_sm_by_id(sm_id)
+        flag, error, result_sm = get_sm_by_id(sm_id, data_token)
     else:
-        flag, error, result_sm = get_sm_by_folio(data.get("reference"))
+        flag, error, result_sm = get_sm_by_folio(data.get("reference"), data_token)
     if not (isinstance(result_sm, list) or isinstance(result_sm, tuple)):
         return {"data": None, "msg": "error", "error": "SM not found"}, 400
     extra_info = {}
@@ -645,7 +650,7 @@ def create_po_application_api(data, data_token):
         1,
         data_token.get("emp_id"),
         data["reference"],
-        history,
+        history, data_token,
         extra_info=extra_info,
     )
     if not flag:
@@ -669,7 +674,7 @@ def create_po_application_api(data, data_token):
             0.0,
             item["description"],
             "0",
-            extra_info,
+            extra_info, data_token,
             item["tool"],
         )
         if item["tool"] == 1:
@@ -684,7 +689,7 @@ def create_po_application_api(data, data_token):
             msg_moves.append(f"Item de orden de compra creado con ID-{result}")
     msg += "\n" + "\n".join(msg_moves)
     if count_errors == len(data["items"]):
-        flag, error, result_del = delete_po_application(id_po_app)
+        flag, error, result_del = delete_po_application(id_po_app, data_token)
         if not flag:
             msg += f"\nError al eliminar la solicitud de orden de compra: {error}"
         else:
@@ -696,7 +701,7 @@ def create_po_application_api(data, data_token):
             "\n"
             + "Se detectó que se solicita una herramienta, esta requerira aprobacion."
         )
-        flag, error, result = update_po_application_status(id_po_app, history, 0, 0)
+        flag, error, result = update_po_application_status(id_po_app, history, 0, 0, data_token)
         if not flag:
             return {"data": None, "msg": msg + "\nerror", "error": str(error)}, 400
     if update_sm_control_table:
@@ -751,7 +756,7 @@ def update_po_application_api(data, data_token):
         data["status"],
         data["created_by"],
         data["reference"],
-        history,
+        history, data_token,
     )
     if not flag:
         return {"data": None, "msg": "error", "error": str(error)}, 400
@@ -767,7 +772,7 @@ def update_po_application_api(data, data_token):
                 0.0,
                 item["description"],
                 "0",
-                extra_info,
+                extra_info, data_token,
             )
         else:
             flag, error, result = update_po_application_item(
@@ -776,7 +781,7 @@ def update_po_application_api(data, data_token):
                 0.0,
                 0,
                 item["description"],
-                extra_info,
+                extra_info, data_token,
             )
         if not flag:
             msg_items.append(
@@ -816,7 +821,7 @@ def cancel_po_application_api(data, data_token):
     flag, error, result = cancel_po_application(
         history,
         data["id"],
-        data.get("status", 4),
+        data.get("status", 4), data_token,
     )
     if not flag:
         return {"data": None, "msg": "error", "error": str(error)}, 400
@@ -845,7 +850,7 @@ def change_state_po_application_api(data, data_token):
         }
     )
     flag, error, result = update_po_application_status(
-        data["id"], history, data["status"], data["approved"]
+        data["id"], history, data["status"], data["approved"], data_token
     )
     if not flag:
         return {"data": None, "msg": "error", "error": str(error)}, 400
@@ -887,8 +892,8 @@ def create_metadata_for_pdf_po(extra_info: dict):
     return metadata_telintec, metadata_supplier
 
 
-def dowload_file_purchase(order_id: int):
-    flag, error, result = get_purchase_order_with_items_by_id(order_id)
+def dowload_file_purchase(order_id: int, data_token):
+    flag, error, result = get_purchase_order_with_items_by_id(order_id, data_token)
     if not isinstance(result, list):
         print("error at getting purchase order", result)
         return None, 400
@@ -943,7 +948,7 @@ def dowload_file_purchase(order_id: int):
 
 
 def generate_folios_po(reference, data_token):
-    flag, error, result_abb = get_contracts_abreviations_db()
+    flag, error, result_abb = get_contracts_abreviations_db( data_token)
     abbs_area = []
     dict_abbs = {}
     for item in result_abb:
@@ -971,7 +976,7 @@ def generate_folios_po(reference, data_token):
     folio_maestro = "OCM-GC" + f"{reference_parts[-2]}"
     folio_cotfc = "OC-GCCOTFC" + f"-{'-'.join(reference_parts[-2:])}"
     flag, error, result = get_folios_po_from_pattern(
-        [folio_normal.lower(), folio_maestro.lower(), folio_cotfc.lower()]
+        [folio_normal.lower(), folio_maestro.lower(), folio_cotfc.lower()], data_token
     )
     if not flag:
         return {"data": [], "error": str(error)}, 400
@@ -1037,8 +1042,8 @@ def group_item_by_id_inventory(items: list):
     return dict_out
 
 
-def download_file_purchase_item_approved():
-    flag, error, sm_data = get_sm_entries(None)
+def download_file_purchase_item_approved(data_token):
+    flag, error, sm_data = get_sm_entries(data_token,None)
     if not flag:
         return {
             "data": [],

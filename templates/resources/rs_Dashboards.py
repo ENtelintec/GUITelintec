@@ -45,7 +45,7 @@ class MovementenInventoryChart(Resource):
         if not validator.validate():
             return {"errors": validator.errors}, 400
         data = validator.data
-        data_chart, code = get_data_chart_movements(data)
+        data_chart, code = get_data_chart_movements(data, data_token)
         if code == 200:
             return data_chart, 200
         else:
@@ -62,7 +62,7 @@ class SMChart(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data = {"range": range_g, "type_chart": type_chart}
-        data_chart, code = get_data_chart_sm(data)
+        data_chart, code = get_data_chart_sm(data, data_token)
         if code == 200:
             return data_chart, 200
         else:

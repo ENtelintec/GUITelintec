@@ -50,7 +50,7 @@ class DownloadFilesPayroll(Resource):
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        filepath, code = download_nomina_docs(data)
+        filepath, code = download_nomina_docs(data, data_token)
         if code != 200:
             return {"data": None, "msg": "No files"}, code
         return send_file(filepath, as_attachment=True)
@@ -64,7 +64,7 @@ class VacationsEvents(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
 
-        data, code = get_all_vacations_data_date()
+        data, code = get_all_vacations_data_date(data_token)
         if code != 200:
             return {"data": None, "msg": f"No files: {str(data)}"}, code
         return {"data": data, "msg": "ok"}, code

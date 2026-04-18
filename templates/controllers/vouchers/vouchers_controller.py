@@ -7,7 +7,7 @@ import json
 from templates.database.connection import execute_sql
 
 
-def create_voucher_general(voucher_type, date, user, contract):
+def create_voucher_general(voucher_type, date, user, contract, data_token):
     """
     Crea un nuevo registro en la tabla vouchers_general.
 
@@ -23,7 +23,7 @@ def create_voucher_general(voucher_type, date, user, contract):
         "VALUES (%s, %s, %s, %s)"
     )
     val = (voucher_type, date, user, contract)
-    flag, error, lastrowid = execute_sql(sql, val, 4)  # Ejecuta la inserción
+    flag, error, lastrowid = execute_sql(sql, val, 4, data_token)  # Ejecuta la inserción
     return flag, error, lastrowid
 
 
@@ -33,7 +33,7 @@ def create_voucher_tools(
     type_transaction,
     superior,
     storage_emp,
-    desiganted_emp,
+    desiganted_emp, data_token,
     extra_info=None,
 ):
     """
@@ -68,7 +68,7 @@ def create_voucher_tools(
         0,
         json.dumps(extra_info),
     )
-    flag, error, lastrowid = execute_sql(sql, val, 4)
+    flag, error, lastrowid = execute_sql(sql, val, 4, data_token)
     return flag, error, lastrowid
 
 
@@ -78,7 +78,7 @@ def update_voucher_tools(
     type_transaction,
     superior,
     storage_emp,
-    designated_emp,
+    designated_emp, data_token,
     user_state=0,
     superior_state=0,
     storage_state=0,
@@ -120,7 +120,7 @@ def update_voucher_tools(
         json.dumps(extra_info),
         id_voucher_general,
     )
-    flag, error, rows_changed = execute_sql(sql, val, 3)
+    flag, error, rows_changed = execute_sql(sql, val, 3, data_token)
     return flag, error, rows_changed
 
 
@@ -129,7 +129,7 @@ def create_voucher_safety(
     motive,
     epp_emp,
     storage_emp,
-    designated_emp,
+    designated_emp, data_token,
     extra_info=None,
 ):
     """
@@ -161,7 +161,7 @@ def create_voucher_safety(
         motive,
         json.dumps(extra_info),
     )
-    flag, error, lastrowid = execute_sql(sql, val, 4)
+    flag, error, lastrowid = execute_sql(sql, val, 4, data_token)
     return flag, error, lastrowid
 
 
@@ -169,7 +169,7 @@ def update_voucher_safety(
     id_voucher_general,
     epp_emp,
     storage_emp,
-    designated_emp,
+    designated_emp, data_token,
     user_state=1,
     epp_state=0,
     storage_state=0,
@@ -210,7 +210,7 @@ def update_voucher_safety(
         json.dumps(extra_info),
         id_voucher_general,
     )
-    flag, error, rows_changed = execute_sql(sql, val, 3)
+    flag, error, rows_changed = execute_sql(sql, val, 3, data_token)
     return flag, error, rows_changed
 
 
@@ -219,7 +219,7 @@ def create_voucher_item(
     id_inventory,
     quantity,
     unit,
-    description,
+    description, data_token,
     observations=None,
     extra_info=None,
 ):
@@ -254,11 +254,11 @@ def create_voucher_item(
         observations,
         json.dumps(extra_info),
     )
-    flag, error, lastrowid = execute_sql(sql, val, 4)
+    flag, error, lastrowid = execute_sql(sql, val, 4, data_token)
     return flag, error, lastrowid
 
 
-def update_history_voucher(history: list, id_voucher):
+def update_history_voucher(history: list, id_voucher, data_token):
     """
     Actualiza el historial de un voucher en la tabla vouchers_general.
 
@@ -272,11 +272,11 @@ def update_history_voucher(history: list, id_voucher):
         "WHERE id_voucher = %s"
     )
     val = (json.dumps(history), id_voucher)
-    flag, error, rows_changed = execute_sql(sql, val, 3)
+    flag, error, rows_changed = execute_sql(sql, val, 3, data_token)
     return flag, error, rows_changed
 
 
-def update_voucher_general_from_delete(id_voucher, history):
+def update_voucher_general_from_delete(id_voucher, history, data_token):
     """
     Actualiza el historial de un voucher en la tabla vouchers_general.
 
@@ -290,11 +290,11 @@ def update_voucher_general_from_delete(id_voucher, history):
         "WHERE id_voucher = %s"
     )
     val = (json.dumps(history), id_voucher)
-    flag, error, rows_changed = execute_sql(sql, val, 3)
+    flag, error, rows_changed = execute_sql(sql, val, 3, data_token)
     return flag, error, rows_changed
 
 
-def update_voucher_vehicle_files(id_voucher, history, extra_info, status):
+def update_voucher_vehicle_files(id_voucher, history, extra_info, status, data_token):
     """
     Actualiza el historial y la información extra de un voucher vehicular en la tabla voucher_vehicle.
 
@@ -309,7 +309,7 @@ def update_voucher_vehicle_files(id_voucher, history, extra_info, status):
         "WHERE id_voucher_general = %s"
     )
     val = (json.dumps(extra_info), status, id_voucher)
-    flag, error, rows_changed = execute_sql(sql, val, 3)
+    flag, error, rows_changed = execute_sql(sql, val, 3, data_token)
     if not flag:
         return flag, error, rows_changed
     else:
@@ -320,13 +320,13 @@ def update_voucher_vehicle_files(id_voucher, history, extra_info, status):
         )
         val_history = (json.dumps(history), id_voucher)
         flag_history, error_history, rows_changed_history = execute_sql(
-            sql_history, val_history, 3
+            sql_history, val_history, 3, data_token
         )
         if not flag_history:
             return flag_history, error_history, rows_changed_history
         return True, None, rows_changed_history
 
-def update_voucher_epp_files(id_voucher, history, extra_info, status):
+def update_voucher_epp_files(id_voucher, history, extra_info, status, data_token):
     """
     Actualiza el historial y la información extra de un voucherepp en la tabla voucher safety.
 
@@ -341,7 +341,7 @@ def update_voucher_epp_files(id_voucher, history, extra_info, status):
         "WHERE id_voucher_general = %s"
     )
     val = (json.dumps(extra_info), status, id_voucher)
-    flag, error, rows_changed = execute_sql(sql, val, 3)
+    flag, error, rows_changed = execute_sql(sql, val, 3, data_token)
     if not flag:
         return flag, error, rows_changed
     else:
@@ -352,13 +352,13 @@ def update_voucher_epp_files(id_voucher, history, extra_info, status):
         )
         val_history = (json.dumps(history), id_voucher)
         flag_history, error_history, rows_changed_history = execute_sql(
-            sql_history, val_history, 3
+            sql_history, val_history, 3, data_token
         )
         if not flag_history:
             return flag_history, error_history, rows_changed_history
         return True, None, rows_changed_history
 
-def update_voucher_tools_files(id_voucher, history, extra_info, status):
+def update_voucher_tools_files(id_voucher, history, extra_info, status, data_token):
     """
     Actualiza el historial y la información extra de un voucherepp en la tabla voucher tools.
 
@@ -373,7 +373,7 @@ def update_voucher_tools_files(id_voucher, history, extra_info, status):
         "WHERE id_voucher_general = %s"
     )
     val = (json.dumps(extra_info), status, id_voucher)
-    flag, error, rows_changed = execute_sql(sql, val, 3)
+    flag, error, rows_changed = execute_sql(sql, val, 3, data_token)
     if not flag:
         return flag, error, rows_changed
     else:
@@ -384,7 +384,7 @@ def update_voucher_tools_files(id_voucher, history, extra_info, status):
         )
         val_history = (json.dumps(history), id_voucher)
         flag_history, error_history, rows_changed_history = execute_sql(
-            sql_history, val_history, 3
+            sql_history, val_history, 3, data_token
         )
         if not flag_history:
             return flag_history, error_history, rows_changed_history
@@ -395,7 +395,7 @@ def update_voucher_item(
     id_inventory,
     quantity,
     unit,
-    description,
+    description, data_token,
     observations=None,
     extra_info=None,
 ):
@@ -430,18 +430,18 @@ def update_voucher_item(
         json.dumps(extra_info),
         id_item,
     )
-    flag, error, rows_changed = execute_sql(sql, val, 3)
+    flag, error, rows_changed = execute_sql(sql, val, 3, data_token)
     return flag, error, rows_changed
 
 
-def delete_voucher_item(id_item: int):
+def delete_voucher_item(id_item: int, data_token):
     sql = "DELETE FROM sql_telintec_mod_admin.voucher_items WHERE id_item = %s"
     val = (id_item,)
-    flag, error, rows_changed = execute_sql(sql, val, 3)
+    flag, error, rows_changed = execute_sql(sql, val, 3, data_token)
     return flag, error, rows_changed
 
 
-def get_vouchers_tools_with_items_date(start_date, user=None):
+def get_vouchers_tools_with_items_date(start_date, data_token, user=None):
     """
     Obtiene vouchers de herramientas desde una fecha específica, incluyendo su metadata e ítems relacionados.
 
@@ -483,11 +483,11 @@ def get_vouchers_tools_with_items_date(start_date, user=None):
         "GROUP BY vt.id_voucher_general"
     )
     val = (start_date, user, user)
-    flag, error, vouchers = execute_sql(sql, val, 2)
+    flag, error, vouchers = execute_sql(sql, val, 2, data_token)
     return flag, error, vouchers
 
 
-def get_vouchers_safety_with_items(start_date, user=None, id_voucher=None):
+def get_vouchers_safety_with_items(start_date, data_token, user=None, id_voucher=None):
     """
     Obtiene vouchers de seguridad desde una fecha específica, incluyendo su metadata e ítems relacionados.
 
@@ -528,11 +528,11 @@ def get_vouchers_safety_with_items(start_date, user=None, id_voucher=None):
         "GROUP BY vs.id_voucher_general "
     )
     val = (start_date, user, user, id_voucher, id_voucher)
-    flag, error, vouchers = execute_sql(sql, val, 2)
+    flag, error, vouchers = execute_sql(sql, val, 2, data_token)
     return flag, error, vouchers
 
 
-def update_state_tools_voucher(id_voucher, user_state, superior_state, storage_state):
+def update_state_tools_voucher(id_voucher, user_state, superior_state, storage_state, data_token):
     """
     Actualiza los estados de un voucher de herramientas en la tabla voucher_tools.
 
@@ -548,11 +548,11 @@ def update_state_tools_voucher(id_voucher, user_state, superior_state, storage_s
         "WHERE id_voucher_general = %s"
     )
     val = (user_state, superior_state, storage_state, id_voucher)
-    flag, error, rows_changed = execute_sql(sql, val, 3)
+    flag, error, rows_changed = execute_sql(sql, val, 3, data_token)
     return flag, error, rows_changed
 
 
-def delete_items_voucher(id_voucher):
+def delete_items_voucher(id_voucher, data_token):
     """
     Elimina los ítems asociados a un voucher en la tabla voucher_items.
 
@@ -561,11 +561,11 @@ def delete_items_voucher(id_voucher):
     """
     sql = "DELETE FROM sql_telintec_mod_admin.voucher_items WHERE id_voucher = %s"
     val = (id_voucher,)
-    flag, error, rows_changed = execute_sql(sql, val, 3)
+    flag, error, rows_changed = execute_sql(sql, val, 3, data_token)
     return flag, error, rows_changed
 
 
-def delete_voucher_tools(id_voucher):
+def delete_voucher_tools(id_voucher, data_token):
     """
     Elimina un voucher de herramientas de la tabla voucher_tools.
 
@@ -576,11 +576,11 @@ def delete_voucher_tools(id_voucher):
         "DELETE FROM sql_telintec_mod_admin.voucher_tools WHERE id_voucher_general = %s"
     )
     val = (id_voucher,)
-    flag, error, rows_changed = execute_sql(sql, val, 3)
+    flag, error, rows_changed = execute_sql(sql, val, 3, data_token)
     return flag, error, rows_changed
 
 
-def delete_voucher_safety(id_voucher):
+def delete_voucher_safety(id_voucher, data_token):
     """
     Elimina un voucher de seguridad de la tabla voucher_safety.
 
@@ -592,11 +592,11 @@ def delete_voucher_safety(id_voucher):
         "WHERE id_voucher_general = %s"
     )
     val = (id_voucher,)
-    flag, error, rows_changed = execute_sql(sql, val, 3)
+    flag, error, rows_changed = execute_sql(sql, val, 3, data_token)
     return flag, error, rows_changed
 
 
-def update_state_safety_voucher(id_voucher, user_state, epp_state, storage_state):
+def update_state_safety_voucher(id_voucher, user_state, epp_state, storage_state, data_token):
     """
     Actualiza los estados de un voucher de seguridad en la tabla voucher_safety.
 
@@ -612,11 +612,11 @@ def update_state_safety_voucher(id_voucher, user_state, epp_state, storage_state
         "WHERE id_voucher_general = %s"
     )
     val = (user_state, epp_state, storage_state, id_voucher)
-    flag, error, rows_changed = execute_sql(sql, val, 3)
+    flag, error, rows_changed = execute_sql(sql, val, 3, data_token)
     return flag, error, rows_changed
 
 
-def get_vouchers_vehicle_with_items(start_date, user=None, id_voucher=None):
+def get_vouchers_vehicle_with_items(start_date, data_token, user=None, id_voucher=None):
     """
     Obtiene vouchers de vehículos desde una fecha específica, incluyendo su metadata e ítems relacionados.
 
@@ -663,14 +663,14 @@ def get_vouchers_vehicle_with_items(start_date, user=None, id_voucher=None):
         "GROUP BY vv.id_voucher_general"
     )
     val = (start_date, user, user, id_voucher, id_voucher)
-    flag, error, vouchers = execute_sql(sql, val, 2)
+    flag, error, vouchers = execute_sql(sql, val, 2, data_token)
     return flag, error, vouchers
 
 
 def create_voucher_vehicle(
     id_voucher_general,
     brand,
-    model,
+    model, data_token,
     color=None,
     year=None,
     placas=None,
@@ -727,14 +727,14 @@ def create_voucher_vehicle(
         received_by,
         observations,
     )
-    flag, error, lastrowid = execute_sql(sql, val, 4)
+    flag, error, lastrowid = execute_sql(sql, val, 4, data_token)
     return flag, error, lastrowid
 
 
 def update_voucher_vehicle(
     id_voucher_general,
     brand,
-    model,
+    model, data_token,
     color=None,
     year=None,
     placas=None,
@@ -796,11 +796,11 @@ def update_voucher_vehicle(
         status,
         id_voucher_general,
     )
-    flag, error, rows_changed = execute_sql(sql, val, 3)
+    flag, error, rows_changed = execute_sql(sql, val, 3, data_token)
     return flag, error, rows_changed
 
 
-def delete_voucher_vehicle(id_voucher):
+def delete_voucher_vehicle(id_voucher, data_token):
     """
     Elimina un registro de la tabla voucher_vehicle.
 
@@ -812,11 +812,11 @@ def delete_voucher_vehicle(id_voucher):
         "WHERE id_voucher_general = %s"
     )
     val = (id_voucher,)
-    flag, error, rows_changed = execute_sql(sql, val, 3)
+    flag, error, rows_changed = execute_sql(sql, val, 3, data_token)
     return flag, error, rows_changed
 
 
-def update_voucher_vehicle_status(status, id_voucher_general):
+def update_voucher_vehicle_status(status, id_voucher_general, data_token):
     """
     Actualiza el estado de un voucher vehicular en la tabla voucher_vehicle.
 
@@ -830,5 +830,5 @@ def update_voucher_vehicle_status(status, id_voucher_general):
         "WHERE id_voucher_general = %s"
     )
     val = (status, id_voucher_general)
-    flag, error, rows_changed = execute_sql(sql, val, 3)
+    flag, error, rows_changed = execute_sql(sql, val, 3, data_token)
     return flag, error, rows_changed

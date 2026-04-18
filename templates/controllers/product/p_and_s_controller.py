@@ -12,7 +12,7 @@ from templates.database.connection import execute_sql
 from templates.Functions_Utils import clean_name
 
 
-def get_ins_db():
+def get_ins_db( data_token):
     sql = (
         "SELECT "
         "sql_telintec.product_movements_amc.id_movement, "
@@ -26,11 +26,11 @@ def get_ins_db():
         "JOIN sql_telintec.products_amc ON sql_telintec.product_movements_amc.id_product = sql_telintec.products_amc.id_product "
         "WHERE sql_telintec.product_movements_amc.movement_type = 'entrada'"
     )
-    flag, error, my_result = execute_sql(sql, None, 5)
+    flag, error, my_result = execute_sql(sql, None, 5, data_token)
     return flag, error, my_result
 
 
-def get_ins_db_detail():
+def get_ins_db_detail( data_token):
     sql = (
         "SELECT "
         "sql_telintec.product_movements_amc.id_movement, "
@@ -50,12 +50,12 @@ def get_ins_db_detail():
         "LEFT JOIN sql_telintec.suppliers_amc ON sql_telintec.products_amc.id_supplier = sql_telintec.suppliers_amc.id_supplier "
         "WHERE sql_telintec.product_movements_amc.movement_type = 'entrada' ORDER BY movement_date DESC;"
     )
-    flag, error, my_result = execute_sql(sql, None, 5)
+    flag, error, my_result = execute_sql(sql, None, 5, data_token)
     return flag, error, my_result
 
 
 def create_in_movement_db(
-    id_product, movement_type, quantity, movement_date, sm_id, reference=None
+    id_product, movement_type, quantity, movement_date, sm_id, data_token, reference=None
 ):
     extra_info = {"reference": reference.upper()} if reference else {"reference": ""}
     extra_info = json.dumps(extra_info) if extra_info else None
@@ -64,7 +64,7 @@ def create_in_movement_db(
         "VALUES (%s, %s, %s, %s, %s, %s)"
     )
     vals = (id_product, movement_type, quantity, movement_date, sm_id, extra_info)
-    flag, error, result = execute_sql(insert_sql, vals, 4)
+    flag, error, result = execute_sql(insert_sql, vals, 4, data_token)
     return flag, error, result
 
 
@@ -72,7 +72,7 @@ def update_movement_db(
     id_movement,
     quantity,
     movement_date,
-    sm_id,
+    sm_id, data_token,
     type_m=None,
     id_product=None,
     reference=None,
@@ -123,18 +123,18 @@ def update_movement_db(
             "WHERE id_movement = %s "
         )
         vals = (quantity, movement_date, sm_id, id_movement)
-    flag, error, result = execute_sql(update_sql, vals, 4)
+    flag, error, result = execute_sql(update_sql, vals, 4, data_token)
     return flag, error, result
 
 
-def delete_movement_db(id_movement):
+def delete_movement_db(id_movement, data_token):
     delete_sql = "DELETE FROM sql_telintec.product_movements_amc WHERE id_movement = %s"
     vals = (id_movement,)
-    flag, error, result = execute_sql(delete_sql, vals, 4)
+    flag, error, result = execute_sql(delete_sql, vals, 4, data_token)
     return flag, error, result
 
 
-def get_outs_db():
+def get_outs_db( data_token):
     sql = (
         "SELECT "
         "sql_telintec.product_movements_amc.id_movement, "
@@ -148,11 +148,11 @@ def get_outs_db():
         "JOIN sql_telintec.products_amc ON sql_telintec.product_movements_amc.id_product = sql_telintec.products_amc.id_product "
         "WHERE sql_telintec.product_movements_amc.movement_type = 'salida'"
     )
-    flag, error, result = execute_sql(sql, None, 5)
+    flag, error, result = execute_sql(sql, None, 5, data_token)
     return flag, error, result
 
 
-def get_outs_db_detail():
+def get_outs_db_detail( data_token):
     sql = (
         "SELECT "
         "sql_telintec.product_movements_amc.id_movement, "
@@ -172,11 +172,11 @@ def get_outs_db_detail():
         "LEFT JOIN sql_telintec.suppliers_amc ON sql_telintec.products_amc.id_supplier = sql_telintec.suppliers_amc.id_supplier "
         "WHERE sql_telintec.product_movements_amc.movement_type = 'salida' ORDER BY movement_date DESC;"
     )
-    flag, error, result = execute_sql(sql, None, 5)
+    flag, error, result = execute_sql(sql, None, 5, data_token)
     return flag, error, result
 
 
-def get_all_movements_db_detail(type_m="all"):
+def get_all_movements_db_detail( data_token,type_m="all"):
     type_m = type_m if type_m in ["entrada", "salida"] else "%"
     sql = (
         "SELECT "
@@ -198,11 +198,11 @@ def get_all_movements_db_detail(type_m="all"):
         "WHERE sql_telintec.product_movements_amc.movement_type like %s ORDER BY movement_date DESC;"
     )
     vals = (type_m,)
-    flag, error, result = execute_sql(sql, vals, 2)
+    flag, error, result = execute_sql(sql, vals, 2, data_token)
     return flag, error, result
 
 
-def get_movements_type_db(type_m: str):
+def get_movements_type_db(type_m: str, data_token):
     sql = (
         "SELECT "
         "id_movement, "
@@ -221,11 +221,11 @@ def get_movements_type_db(type_m: str):
         "WHERE movement_type LIKE %s ORDER BY movement_date DESC"
     )
     vals = (type_m,)
-    flag, error, result = execute_sql(sql, vals, 2)
+    flag, error, result = execute_sql(sql, vals, 2, data_token)
     return flag, error, result
 
 
-def get_movements_type_db_all(type_m="all"):
+def get_movements_type_db_all(data_token,type_m="all"):
     type_m = type_m if type_m in ["entrada", "salida"] else "%"
     sql = (
         "SELECT "
@@ -247,11 +247,11 @@ def get_movements_type_db_all(type_m="all"):
         "ORDER BY movement_date DESC"
     )
     vals = (type_m,)
-    flag, error, result = execute_sql(sql, vals, 2)
+    flag, error, result = execute_sql(sql, vals, 2, data_token)
     return flag, error, result
 
 
-def get_epp_movements_db(type_m):
+def get_epp_movements_db(type_m, data_token):
     if type_m in ["salida", "entrada"]:
         type_m = type_m
     else:
@@ -275,11 +275,11 @@ def get_epp_movements_db(type_m):
         "ORDER BY movement_date DESC"
     )
     vals = (type_m,)
-    flag, error, result = execute_sql(sql, vals, 2)
+    flag, error, result = execute_sql(sql, vals, 2, data_token)
     return flag, error, result
 
 
-def get_epp_movements_db_detail(type_m):
+def get_epp_movements_db_detail(type_m, data_token):
     type_m = type_m if type_m in ["entrada", "salida"] else "%"
     sql = (
         "SELECT "
@@ -302,7 +302,7 @@ def get_epp_movements_db_detail(type_m):
         "ORDER BY movement_date DESC;"
     )
     vals = (type_m,)
-    flag, error, result = execute_sql(sql, vals, 2)
+    flag, error, result = execute_sql(sql, vals, 2, data_token)
     return flag, error, result
 
 
@@ -311,7 +311,7 @@ def create_movement_db_amc(
     movement_type,
     quantity,
     movement_date,
-    sm_id,
+    sm_id, data_token,
     reference=None,
     type_m=None,
 ):
@@ -322,49 +322,49 @@ def create_movement_db_amc(
         "VALUES (%s, %s, %s, %s, %s, %s)"
     )
     vals = (id_product, movement_type, quantity, movement_date, sm_id, extra_info)
-    flag, error, result = execute_sql(sql, vals, 4)
+    flag, error, result = execute_sql(sql, vals, 4, data_token)
     return flag, error, result
 
 
-def get_all_categories_db():
+def get_all_categories_db( data_token):
     sql = (
         "SELECT  id_category, name FROM sql_telintec.product_categories_amc "
         "ORDER By name;"
     )
-    flag, error, result = execute_sql(sql, None, 5)
+    flag, error, result = execute_sql(sql, None, 5, data_token)
     return flag, error, result
 
 
-def create_category_db(name: str):
+def create_category_db(name: str, data_token):
     insert_sql = "INSERT INTO sql_telintec.product_categories_amc (name) VALUES (%s)"
     vals = (name,)
-    flag, error, result = execute_sql(insert_sql, vals, 4)
+    flag, error, result = execute_sql(insert_sql, vals, 4, data_token)
     return flag, error, result
 
 
-def update_category_db(id_category, name):
+def update_category_db(id_category, name, data_token):
     update_sql = (
         "UPDATE sql_telintec.product_categories_amc "
         "SET name = %s "
         "WHERE id_category = %s"
     )
     vals = (name, id_category)
-    flag, error, result = execute_sql(update_sql, vals, 4)
+    flag, error, result = execute_sql(update_sql, vals, 4, data_token)
     return flag, error, result
 
 
-def delete_category_db(id_category):
+def delete_category_db(id_category, data_token):
     delete_sql = (
-        "DELETE FROM sql_telintec.product_categories_amc " "WHERE id_category = %s"
+        "DELETE FROM sql_telintec.product_categories_amc WHERE id_category = %s"
     )
     vals = (id_category,)
-    flag, error, result = execute_sql(delete_sql, vals, 4)
+    flag, error, result = execute_sql(delete_sql, vals, 4, data_token)
     return flag, error, result
 
 
-def get_skus():
+def get_skus( data_token):
     sql = "SELECT sku, stock, id_product FROM sql_telintec.products_amc"
-    flag, error, result = execute_sql(sql, None, 5)
+    flag, error, result = execute_sql(sql, None, 5, data_token)
     return flag, error, result
 
 
@@ -376,11 +376,11 @@ def create_product_db(
     id_category,
     id_supplier,
     is_tool,
-    is_internal,
+    is_internal, data_token,
     codes=None,
     locations=None,
     brand=None,
-    epp: int=0,
+    epp: int = 0,
 ):
     try:
         sku = str(sku).upper()
@@ -394,7 +394,7 @@ def create_product_db(
             locations if locations is not None else {"location_1": "", "location_2": ""}
         )
         extra_info = {"brand": brand} if brand is not None else {"brand": ""}
-        extra_info["epp"] = epp # pyrefly: ignore
+        extra_info["epp"] = epp  # pyrefly: ignore
     except Exception as e:
         return False, str(e), None
     insert_sql = (
@@ -415,7 +415,7 @@ def create_product_db(
         json.dumps(locations),
         json.dumps(extra_info),
     )
-    flag, error, result = execute_sql(insert_sql, vals, 4)
+    flag, error, result = execute_sql(insert_sql, vals, 4, data_token)
     return flag, error, result
 
 
@@ -428,7 +428,7 @@ def update_product_db(
     id_category,
     id_supplier,
     is_tool,
-    is_internal,
+    is_internal, data_token,
     codes=None,
     locations=None,
     brand=None,
@@ -471,11 +471,11 @@ def update_product_db(
         epp,
         id_product,
     )
-    flag, error, result = execute_sql(update_sql, vals, 3)
+    flag, error, result = execute_sql(update_sql, vals, 3, data_token)
     return flag, error, result
 
 
-def create_product_db_admin(sku, name, udm, stock, id_category, codes=None):
+def create_product_db_admin(sku, name, udm, stock, id_category, data_token, codes=None):
     try:
         sku = str(sku)
         name = str(name)
@@ -498,17 +498,17 @@ def create_product_db_admin(sku, name, udm, stock, id_category, codes=None):
         "codes = new.codes; "
     )
     vals = (sku, name, udm, stock, id_category, codes)
-    flag, error, result = execute_sql(insert_sql, vals, 4)
+    flag, error, result = execute_sql(insert_sql, vals, 4, data_token)
     return flag, error, result
 
 
-def get_last_sku():
+def get_last_sku( data_token):
     sql = "SELECT sku FROM sql_telintec.products_amc ORDER BY sku DESC"
-    flag, error, result = execute_sql(sql, None, 5)
+    flag, error, result = execute_sql(sql, None, 5, data_token)
     return flag, error, result
 
 
-def get_all_products_db_old():
+def get_all_products_db_old( data_token):
     sql = (
         "SELECT "
         "sql_telintec.products_amc.id_product,"
@@ -530,34 +530,11 @@ def get_all_products_db_old():
         "LEFT JOIN sql_telintec.suppliers_amc ON (sql_telintec.products_amc.id_supplier = sql_telintec.suppliers_amc.id_supplier) "
         "ORDER BY products_amc.name "
     )
-    flag, error, result = execute_sql(sql, None, 5)
+    flag, error, result = execute_sql(sql, None, 5, data_token)
     return flag, error, result
 
 
-# def get_sm_products():
-#     sql = """
-#           SELECT
-#               p.id_product,
-#               p.name,
-#               p.udm,
-#               p.stock,
-#               IFNULL(r.reserved_qty, 0) AS reserved_qty,
-#               p.stock - IFNULL(r.reserved_qty, 0) AS available_stock
-#           FROM sql_telintec.products_amc p
-#                    LEFT JOIN (
-#               SELECT
-#                   id_product,
-#                   SUM(quantity) AS reserved_qty
-#               FROM sql_telintec.product_reservations
-#               WHERE status = 0 -- Solo reservas pendientes
-#               GROUP BY id_product
-#           ) r ON p.id_product = r.id_product \
-#           """
-#     flag, error, result = execute_sql(sql, None, 5)
-#     return flag, error, result
-
-
-def get_all_products_db_tool_internal(is_tool: int, is_internal: int):
+def get_all_products_db_tool_internal(is_tool: int|str, is_internal: int|str, data_token):
     sql = (
         "SELECT "
         "sql_telintec.products_amc.id_product,"
@@ -587,24 +564,22 @@ def get_all_products_db_tool_internal(is_tool: int, is_internal: int):
         "WHERE products_amc.is_internal like %s AND products_amc.is_tool like %s "
     )
     vals = (is_internal, is_tool)
-    flag, error, result = execute_sql(sql, vals, 2)
+    flag, error, result = execute_sql(sql, vals, 2, data_token)
 
     return flag, error, result
 
 
-def delete_product_db(id_product):
-    delete_sql = "DELETE FROM sql_telintec.products_amc " "WHERE id_product = %s"
+def delete_product_db(id_product, data_token):
+    delete_sql = "DELETE FROM sql_telintec.products_amc WHERE id_product = %s"
     vals = (id_product,)
-    flag, error, result = execute_sql(delete_sql, vals, 3)
+    flag, error, result = execute_sql(delete_sql, vals, 3, data_token)
     return flag, error, result
 
 
-def update_stock_db(id_product, stock, just_add=False):
+def update_stock_db(id_product, stock, data_token, just_add=False):
     if not just_add:
         update_sql = (
-            "UPDATE sql_telintec.products_amc "
-            "SET stock = %s "
-            "WHERE id_product = %s"
+            "UPDATE sql_telintec.products_amc SET stock = %s WHERE id_product = %s"
         )
     else:
         update_sql = (
@@ -613,14 +588,14 @@ def update_stock_db(id_product, stock, just_add=False):
             "WHERE id_product = %s"
         )
     vals = (stock, id_product)
-    flag, error, result = execute_sql(update_sql, vals, 3)
+    flag, error, result = execute_sql(update_sql, vals, 3, data_token)
     return flag, error, result
 
 
-def get_stock_db(id_product):
-    sql = "SELECT stock " "FROM sql_telintec.products_amc " "WHERE id_product = %s"
+def get_stock_db(id_product, data_token):
+    sql = "SELECT stock FROM sql_telintec.products_amc WHERE id_product = %s"
     vals = (id_product,)
-    flag, error, result = execute_sql(sql, vals, 1)
+    flag, error, result = execute_sql(sql, vals, 1, data_token)
     return flag, error, result
 
 
@@ -636,7 +611,7 @@ def insert_product_and_service(
     support: int,
     is_service: int,
     categories: str,
-    img_url: str,
+    img_url: str, data_token,
 ) -> tuple[bool, str | None, int]:
     sql = (
         "INSERT INTO sql_telintec.products_services (product_id, name, model, marca, description, "
@@ -658,7 +633,7 @@ def insert_product_and_service(
         categories,
         img_url,
     )
-    flag, e, out = execute_sql(sql, val, 3)
+    flag, e, out = execute_sql(sql, val, 3, data_token)
     if not isinstance(out, int):
         return flag, e, 0
     return flag, None, out
@@ -676,7 +651,7 @@ def update_product_and_service(
     support: int,
     is_service: int,
     categories: str,
-    img_url: str,
+    img_url: str, data_token,
 ) -> tuple[bool, str | None, int]:
     sql = (
         "UPDATE sql_telintec.products_services "
@@ -708,20 +683,20 @@ def update_product_and_service(
         img_url,
         product_id,
     )
-    flag, e, out = execute_sql(sql, val, 3)
+    flag, e, out = execute_sql(sql, val, 3, data_token)
     if not isinstance(out, int):
         return flag, e, 0
     return flag, e, out
 
 
-def delete_product_and_service(id_ps: int):
-    sql = "DELETE FROM sql_telintec.products_services " "WHERE product_id = %s"
+def delete_product_and_service(id_ps: int, data_token):
+    sql = "DELETE FROM sql_telintec.products_services WHERE product_id = %s"
     val = (id_ps,)
-    flag, e, out = execute_sql(sql, val, 3)
+    flag, e, out = execute_sql(sql, val, 3, data_token)
     return flag, e, out
 
 
-def get_product_categories():
+def get_product_categories( data_token):
     columns = ("id_category", "name")
     sql = (
         "SELECT "
@@ -730,11 +705,11 @@ def get_product_categories():
         "FROM sql_telintec.product_categories_amc "
         "LIMIT 20 "
     )
-    flag, error, result = execute_sql(sql, type_sql=5)
+    flag, error, result = execute_sql(sql, type_sql=5, data_token=data_token)
     return flag, error, result, columns
 
 
-def get_products_almacen(id_p: int, name: str, category: str, limit: int = 10):
+def get_products_almacen(id_p: int, name: str, category: str, data_token, limit: int = 10):
     columns = ("id_product", "name", "udm", "stock", "id_category")
     sql = (
         "SELECT "
@@ -748,11 +723,11 @@ def get_products_almacen(id_p: int, name: str, category: str, limit: int = 10):
         "LIMIT %s"
     )
     val = (id_p, name, category, limit)
-    flag, error, result = execute_sql(sql, val, 2)
+    flag, error, result = execute_sql(sql, val, 2, data_token)
     return flag, error, result, columns
 
 
-def get_high_stock_products(category: str, quantity: int):
+def get_high_stock_products(category: str, quantity: int, data_token):
     columns = ("id_product", "name", "udm", "stock", "id_category")
     # get category
     sql = (
@@ -761,7 +736,7 @@ def get_high_stock_products(category: str, quantity: int):
         "WHERE name = %s"
     )
     val = (category.lower(),)
-    flag, error, result = execute_sql(sql, val, 1)
+    flag, error, result = execute_sql(sql, val, 1, data_token)
     if not isinstance(result, tuple):
         return False, "No category in the DB", [], columns
     if len(result) > 0:
@@ -774,13 +749,13 @@ def get_high_stock_products(category: str, quantity: int):
             "LIMIT %s"
         )
         val = (category_id, quantity)
-        flag, error, result = execute_sql(sql, val, 2)
+        flag, error, result = execute_sql(sql, val, 2, data_token)
         return flag, error, result, columns
     else:
         return False, "No category in the DB", [], columns
 
 
-def get_low_stock_products(category: str, quantity: int):
+def get_low_stock_products(category: str, quantity: int, data_token):
     columns = ("id_product", "name", "udm", "stock", "id_category")
     # get category
     sql = (
@@ -789,7 +764,7 @@ def get_low_stock_products(category: str, quantity: int):
         "WHERE name = %s"
     )
     val = (category.lower(),)
-    flag, error, result = execute_sql(sql, val, 1)
+    flag, error, result = execute_sql(sql, val, 1, data_token)
     if not isinstance(result, tuple):
         return False, "No category in the DB", [], columns
     if len(result) > 0:
@@ -802,13 +777,13 @@ def get_low_stock_products(category: str, quantity: int):
             "LIMIT %s"
         )
         val = (category_id, quantity)
-        flag, error, result = execute_sql(sql, val, 2)
+        flag, error, result = execute_sql(sql, val, 2, data_token)
         return flag, error, result, columns
     else:
         return False, "No category in the DB", [], columns
 
 
-def get_no_stock_products(category: str, quantity: int = 10):
+def get_no_stock_products(category: str, data_token, quantity: int = 10):
     columns = ("id_product", "name", "udm", "stock", "id_category")
     # get category
     sql = (
@@ -817,7 +792,7 @@ def get_no_stock_products(category: str, quantity: int = 10):
         "WHERE name = %s"
     )
     val = (category.lower(),)
-    flag, error, result = execute_sql(sql, val, 1)
+    flag, error, result = execute_sql(sql, val, 1, data_token)
     if not isinstance(result, tuple):
         return False, "No category in the DB", [], columns
     if len(result) > 0:
@@ -830,13 +805,13 @@ def get_no_stock_products(category: str, quantity: int = 10):
             "LIMIT %s"
         )
         val = (category_id, quantity)
-        flag, error, result = execute_sql(sql, val, 2)
+        flag, error, result = execute_sql(sql, val, 2, data_token)
         return flag, error, result, columns
     else:
         return False, "No category in the DB", [], columns
 
 
-def get_product_movement_amc(type_m: str, id_m: int, id_p: int, date: str):
+def get_product_movement_amc(type_m: str, id_m: int, id_p: int, date: str, data_token):
     columns = ("id_movement", "id_product", "type", "quantity", "date")
     sql = (
         "SELECT id_movement, id_product, movement_type, quantity, movement_date "
@@ -848,11 +823,11 @@ def get_product_movement_amc(type_m: str, id_m: int, id_p: int, date: str):
         sql = sql + " AND movement_date = %s"
     sql = sql + " LIMIT 10"
     val = (id_m, id_p, type_m, date)
-    flag, error, result = execute_sql(sql, val, 2)
+    flag, error, result = execute_sql(sql, val, 2, data_token)
     return flag, error, result, columns
 
 
-def get_supply_inv_amc(id_s: int, name: str):
+def get_supply_inv_amc(id_s: int, name: str, data_token):
     columns = ("id_supply", "name", "id_supplier", "date", "status")
     sql = (
         "SELECT id_supply, name, stock "
@@ -862,11 +837,11 @@ def get_supply_inv_amc(id_s: int, name: str):
         "LIMIT 10"
     )
     val = (id_s, name)
-    flag, error, result = execute_sql(sql, val, 2)
+    flag, error, result = execute_sql(sql, val, 2, data_token)
     return flag, error, result, columns
 
 
-def get_products_w_reservations():
+def get_products_w_reservations( data_token):
     sql = """
           SELECT
             p.id_product,
@@ -888,20 +863,20 @@ def get_products_w_reservations():
                 ) r ON p.id_product = r.id_product
            ;
           """
-    flag, error, result = execute_sql(sql, None, 5)
+    flag, error, result = execute_sql(sql, None, 5, data_token)
     return flag, error, result
 
 
-def get_all_suppliers():
+def get_all_suppliers( data_token):
     sql = (
         "SELECT id_supplier, name, seller_name, seller_email, phone, address, web_url, type "
         "FROM sql_telintec.suppliers_amc "
     )
-    flag, error, result = execute_sql(sql, None, 5)
+    flag, error, result = execute_sql(sql, None, 5, data_token)
     return flag, error, result
 
 
-def get_movements_type(type_m: str, limit=10):
+def get_movements_type(type_m: str, data_token, limit=10):
     sql = (
         "SELECT sql_telintec.product_movements_amc.id_product, "
         "cast(sum(sql_telintec.product_movements_amc.quantity) as float) as total_move, "
@@ -915,51 +890,47 @@ def get_movements_type(type_m: str, limit=10):
         "LIMIT %s "
     )
 
-    val = (type_m, limit)
-    flag, error, result = execute_sql(sql, val, 2)
+    val = (type_m, limit, data_token)
+    flag, error, result = execute_sql(sql, val, 2, data_token)
     return flag, error, result
 
 
-def get_product_barcode_data(id_product):
-    sql = (
-        "SELECT name, sku, codes "
-        "FROM sql_telintec.products_amc "
-        "WHERE id_product = %s"
-    )
+def get_product_barcode_data(id_product, data_token):
+    sql = "SELECT name, sku, codes FROM sql_telintec.products_amc WHERE id_product = %s"
     val = (id_product,)
-    flag, error, result = execute_sql(sql, val, 1)
+    flag, error, result = execute_sql(sql, val, 1, data_token)
     return flag, error, result
 
 
-def get_stock_db_products() -> tuple[bool, str, list]:
+def get_stock_db_products(data_token) -> tuple[bool, str, list]:
     sql = (
         "SELECT id_product,stock "
         "FROM sql_telintec.products_amc "
         "WHERE products_amc.id_product like '%' "
     )
-    flag, error, result = execute_sql(sql, None, 5)
+    flag, error, result = execute_sql(sql, None, 5, data_token)
     if not isinstance(result, list):
         return False, "No products in the DB", []
     return flag, error, result
 
 
-def update_stock_db_sku(skus: list, stocks: list):
+def update_stock_db_sku(skus: list, stocks: list, data_token):
     if len(skus) != len(stocks) or len(skus) == 0:
         return [], "No products to update", []
     flags = []
     errors = []
     results = []
     for sku, stock in zip(skus, stocks):
-        sql = "UPDATE sql_telintec.products_amc " "SET stock = %s " "WHERE sku = %s"
+        sql = "UPDATE sql_telintec.products_amc SET stock = %s WHERE sku = %s"
         vals = (stock, sku)
-        flag, error, result = execute_sql(sql, vals, 3)
+        flag, error, result = execute_sql(sql, vals, 3, data_token)
         flags.append(flag)
         errors.append(error)
         results.append(result)
     return flags, errors, results
 
 
-def update_stock_db_ids(ids: list, stocks: list):
+def update_stock_db_ids(ids: list, stocks: list, data_token):
     if len(ids) != len(stocks) or len(ids) == 0:
         return [], "No products to update", []
     flags = []
@@ -972,14 +943,16 @@ def update_stock_db_ids(ids: list, stocks: list):
             "WHERE id_product = %s"
         )
         vals = (stock, _id)
-        flag, error, result = execute_sql(sql, vals, 3)
+        flag, error, result = execute_sql(sql, vals, 3, data_token)
         flags.append(flag)
         errors.append(error)
         results.append(result)
     return flags, errors, results
 
 
-def insert_multiple_row_products_amc(products: tuple, dict_cat=None, dict_supp=None):
+def insert_multiple_row_products_amc(
+    products: tuple, data_token, dict_cat=None, dict_supp=None
+):
     codec = "ASCII"
     if len(products) == 0:
         return [], ["No products to insert"], []
@@ -1026,14 +999,16 @@ def insert_multiple_row_products_amc(products: tuple, dict_cat=None, dict_supp=N
             locations,
             extra_info,
         )
-        flag, error, result = execute_sql(sql, vals, 4)
+        flag, error, result = execute_sql(sql, vals, 4, data_token)
         flags.append(flag)
         errors.append(error)
         results.append(result)
     return flags, errors, results
 
 
-def update_multiple_row_products_amc(products: tuple, dict_cat=None, dict_supp=None):
+def update_multiple_row_products_amc(
+    products: tuple, data_token, dict_cat=None, dict_supp=None
+):
     if len(products) == 0:
         return [], ["No products to update"], []
     flags = []
@@ -1078,14 +1053,14 @@ def update_multiple_row_products_amc(products: tuple, dict_cat=None, dict_supp=N
             epp,
             product[0],
         )
-        flag, error, result = execute_sql(sql, vals, 3)
+        flag, error, result = execute_sql(sql, vals, 3, data_token)
         flags.append(flag)
         errors.append(error)
         results.append(result)
     return flags, errors, results
 
 
-def insert_multiple_row_movements_amc(movements: tuple):
+def insert_multiple_row_movements_amc(movements: tuple, data_token):
     if len(movements) == 0:
         return [], ["No movements to insert"], []
     flags = []
@@ -1105,32 +1080,30 @@ def insert_multiple_row_movements_amc(movements: tuple):
             "VALUES (%s, %s, %s, %s, %s, %s);"
         )
         vals = (movement[0], movement[1], movement[2], date, sm_id, extra_info)
-        flag, error, result = execute_sql(sql, vals, 4)
+        flag, error, result = execute_sql(sql, vals, 4, data_token)
         flags.append(flag)
         errors.append(error)
         results.append(result)
     return flags, errors, results
 
 
-def update_multiple_products_suppliers(products: tuple):
+def update_multiple_products_suppliers(products: tuple, data_token):
     if len(products) == 0:
         return [], ["No products to update"], []
     flags = []
     errors = []
     results = []
     for product in products:
-        sql = (
-            "UPDATE sql_telintec.products_amc " "SET id_supplier = %s " "WHERE sku = %s"
-        )
+        sql = "UPDATE sql_telintec.products_amc SET id_supplier = %s WHERE sku = %s"
         vals = (product[1], product[0])
-        flag, error, result = execute_sql(sql, vals, 3)
+        flag, error, result = execute_sql(sql, vals, 3, data_token)
         flags.append(flag)
         errors.append(error)
         results.append(result)
     return flags, errors, results
 
 
-def insert_multiple_categories_amc(categories: tuple):
+def insert_multiple_categories_amc(categories: tuple, data_token):
     if len(categories) == 0:
         return [], ["No categories to insert"], []
     flags = []
@@ -1143,14 +1116,14 @@ def insert_multiple_categories_amc(categories: tuple):
             "ON DUPLICATE KEY UPDATE name = %s"
         )
         vals = (category, category)
-        flag, error, result = execute_sql(sql, vals, 4)
+        flag, error, result = execute_sql(sql, vals, 4, data_token)
         flags.append(flag)
         errors.append(error)
         results.append(result)
     return flags, errors, results
 
 
-def update_multiple_products_categories(products: tuple):
+def update_multiple_products_categories(products: tuple, data_token):
     if len(products) == 0:
         return [], ["No products to update"], []
     flags = []
@@ -1162,34 +1135,30 @@ def update_multiple_products_categories(products: tuple):
             SET id_category = %s WHERE sku = %s
             """
         vals = (product[1], product[0])
-        flag, error, result = execute_sql(sql, vals, 3)
+        flag, error, result = execute_sql(sql, vals, 3, data_token)
         flags.append(flag)
         errors.append(error)
         results.append(result)
     return flags, errors, results
 
 
-def udpate_multiple_row_stock_ids(data):
+def udpate_multiple_row_stock_ids(data, data_token):
     if len(data) == 0:
         return [], ["No products to update"], []
     flags = []
     errors = []
     results = []
     for item in data:
-        sql = (
-            "UPDATE sql_telintec.products_amc "
-            "SET stock = %s "
-            "WHERE id_product = %s"
-        )
+        sql = "UPDATE sql_telintec.products_amc SET stock = %s WHERE id_product = %s"
         vals = (item[1], item[0])
-        flag, error, result = execute_sql(sql, vals, 3)
+        flag, error, result = execute_sql(sql, vals, 3, data_token)
         flags.append(flag)
         errors.append(error)
         results.append(result)
     return flags, errors, results
 
 
-def get_all_epp_inventory():
+def get_all_epp_inventory(data_token):
     sql = (
         "SELECT "
         "sql_telintec.products_amc.id_product,"
@@ -1211,11 +1180,11 @@ def get_all_epp_inventory():
         "WHERE sql_telintec.products_amc.extra_info->>'$.epp' = 1 "
         "ORDER BY name "
     )
-    flag, error, result = execute_sql(sql, None, 5)
+    flag, error, result = execute_sql(sql, None, 5, data_token)
     return flag, error, result
 
 
-def get_product_by_sku_manufacture(sku: str) -> tuple[bool, str, list]:
+def get_product_by_sku_manufacture(sku: str, data_token) -> tuple[bool, str, list]:
     sql = (
         "SELECT "
         "sql_telintec.products_amc.id_product,"
@@ -1237,13 +1206,13 @@ def get_product_by_sku_manufacture(sku: str) -> tuple[bool, str, list]:
         "ORDER BY name "
     )
     val = (sku,)
-    flag, error, result = execute_sql(sql, val, 1)
+    flag, error, result = execute_sql(sql, val, 1, data_token)
     if not isinstance(result, list):
         return flag, error, []
     return flag, error, result
 
 
-def get_products_stock_from_ids(ids: list):
+def get_products_stock_from_ids(ids: list, data_token):
     if len(ids) == 0:
         return [], ["No products to retrieve"], []
     sql = (
@@ -1253,13 +1222,13 @@ def get_products_stock_from_ids(ids: list):
         "FROM sql_telintec.products_amc "
         f"WHERE sql_telintec.products_amc.id_product IN ({','.join(map(str, ids))})"
     )
-    flag, error, result = execute_sql(sql, None, 5)
+    flag, error, result = execute_sql(sql, None, 5, data_token)
     if not isinstance(result, list):
         return flag, "Not data found or error", []
     return flag, error, result
 
 
-def insert_reservation_db(id_product, quantity, sm_id, history):
+def insert_reservation_db(id_product, quantity, sm_id, history, data_token):
     sql = (
         "INSERT INTO sql_telintec.product_reservations "
         "(id_product, quantity, sm_id, status, created_at, history) "
@@ -1274,12 +1243,12 @@ def insert_reservation_db(id_product, quantity, sm_id, history):
         history_dict_list[-1].get("timestamp"),
         history,
     )
-    flag, error, lastrowid = execute_sql(sql, vals, 4)
+    flag, error, lastrowid = execute_sql(sql, vals, 4, data_token)
     return flag, error, lastrowid
 
 
 def update_reservation_db(
-    id_reservation, status, quantity, history, add_quantity=False
+    id_reservation, status, quantity, history, data_token, add_quantity=False
 ):
     if not add_quantity:
         sql = (
@@ -1300,12 +1269,12 @@ def update_reservation_db(
             "WHERE reservation_id = %s"
         )
     vals = (status, quantity, history, id_reservation)
-    flag, error, lastrowid = execute_sql(sql, vals, 3)
+    flag, error, lastrowid = execute_sql(sql, vals, 3, data_token)
     return flag, error, lastrowid
 
 
 def update_reservation_with_smID_db(
-    id_reservation, status, quantity, history, sm_id, add_quantity=False
+    id_reservation, status, quantity, history, sm_id, data_token, add_quantity=False
 ):
     if not add_quantity:
         sql = (
@@ -1328,29 +1297,29 @@ def update_reservation_with_smID_db(
             "WHERE reservation_id = %s"
         )
     vals = (status, quantity, history, sm_id, id_reservation)
-    flag, error, lastrowid = execute_sql(sql, vals, 3)
+    flag, error, lastrowid = execute_sql(sql, vals, 3, data_token)
     return flag, error, lastrowid
 
 
-def delete_reservation_db(id_reservation):
+def delete_reservation_db(id_reservation, data_token):
     sql = "DELETE FROM sql_telintec.product_reservations WHERE reservation_id = %s"
     vals = (id_reservation,)
-    flag, error, lastrowid = execute_sql(sql, vals, 4)
+    flag, error, lastrowid = execute_sql(sql, vals, 4, data_token)
     return flag, error, lastrowid
 
 
-def complete_reservation_db(id_reservation):
+def complete_reservation_db(id_reservation, data_token):
     sql = (
         "UPDATE sql_telintec.product_reservations "
         "SET status = 1 "
         "WHERE reservation_id = %s"
     )
     vals = (id_reservation,)
-    flag, error, lastrowid = execute_sql(sql, vals, 4)
+    flag, error, lastrowid = execute_sql(sql, vals, 4, data_token)
     return flag, error, lastrowid
 
 
-def get_all_reservations():
+def get_all_reservations(data_token):
     sql = (
         "SELECT "
         "sql_telintec.product_reservations.reservation_id, "
@@ -1367,5 +1336,5 @@ def get_all_reservations():
         "LEFT JOIN sql_telintec.materials_request ON (sql_telintec.product_reservations.sm_id = sql_telintec.materials_request.sm_id) "
         "ORDER BY reservation_id DESC "
     )
-    flag, error, result = execute_sql(sql, None, 5)
+    flag, error, result = execute_sql(sql, None, 5, data_token)
     return flag, error, result

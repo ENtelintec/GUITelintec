@@ -419,6 +419,7 @@ def create_remission_control_table_from_api(data, data_token):
         pedido=data["metadata"].get("pedido", ""),
         pedido_exiros=data["metadata"].get("pedido_exiros", ""),
         extra_info=extra_info,
+        data_token=data_token,
     )
     if not flag:
         return {

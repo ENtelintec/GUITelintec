@@ -11,7 +11,7 @@ from templates.controllers.fichajes.fichajes_controller import get_fichaje_DB
 from templates.misc.Functions_Files import get_cumulative_data_fichajes_dict
 
 
-def get_data_chart_movements(data):
+def get_data_chart_movements(data, data_token):
     type_m = data["type_m"]
     types = []
     if type_m == "all":
@@ -24,7 +24,9 @@ def get_data_chart_movements(data):
         return ["Error type invalid"], 400
     data_out_full = {}
     for t in types:
-        data_chart = get_data_movements_type(data["type_m"], data["n_products"])
+        data_chart = get_data_movements_type(
+            data["type_m"], data["n_products"], data_token
+        )
         data_dict = data_chart.get("data")
         values = [v for k, v in data_dict.items()]
         x_tags = [k for k, v in data_dict.items()]
@@ -49,12 +51,12 @@ def validate_type_chart(type_chart: str):
         return False
 
 
-def get_data_chart_sm(data):
+def get_data_chart_sm(data, data_token):
     if not validate_range(data["range"]):
         return {"message": "Error range invalid"}, 400
     if not validate_type_chart(data["type_chart"]):
         return {"message": "Error type chart invalid or not supported yet"}, 400
-    data_chart = get_data_sm_per_range(data["range"], data["type_chart"])
+    data_chart = get_data_sm_per_range(data["range"], data["type_chart"], data_token)
     data_out = []
     val_y = np.array(data_chart["val_y"])
     for index, item in enumerate(data_chart["legend"]):
@@ -80,6 +82,8 @@ def get_data_chart_fichaje_emp(data):
         return {"message": str(error)}, 400
     if len(result) <= 0:
         return {"message": "No data found"}, 400
+    if not (isinstance(result, list) or isinstance(result, tuple)):
+        return {"message": f"Error data format {result}"}, 200
     data_fichaje = [result] if data["emp_id"] != -1 else result
     data_out = []
     for emp in data_fichaje:

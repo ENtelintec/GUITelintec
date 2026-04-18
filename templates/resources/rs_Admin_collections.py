@@ -296,7 +296,7 @@ class DownloadPDFPurchase(Resource):
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        data, code = dowload_file_purchase(po_id)
+        data, code = dowload_file_purchase(po_id, data_token)
         if code == 200:
             return send_file(data, as_attachment=True)  # pyrefly: ignore
         else:
@@ -312,7 +312,7 @@ class DownloadPDFPurchaseItemsStorage(Resource):
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        data, code = download_file_purchase_item_approved()
+        data, code = download_file_purchase_item_approved(data_token)
         if code == 200:
             return send_file(data["data"], as_attachment=True)  # pyrefly: ignore
         else:
@@ -457,6 +457,7 @@ class ActivityRemissionAction(Resource):
         data = validator.data
         data_out, code = delete_remission_from_api(data, data_token)
         return data_out, code
+
 
 @ns.route("/remissionControlTable")
 class ActivityRemissionTableAction(Resource):

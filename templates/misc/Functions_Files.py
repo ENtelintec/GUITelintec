@@ -1925,7 +1925,7 @@ def get_info_t_file_name(
 
 def get_info_bitacora(df: pd.DataFrame, name: str, id_emp: int, flag, date_limit=None):
     if not flag:
-        return 0.0, 0.0, 0.0, 0.0, [], [], [], [], [], [], []
+        return 0.0, 0.0, 0.0, 0.0, [], [], [], [], [], [], [], []
     df_name = df[df["ID"] == id_emp]
     # convert timestamp to datetime format
     df_name["Timestamp"] = pd.to_datetime(df_name["Timestamp"])
@@ -1994,9 +1994,7 @@ def get_info_bitacora(df: pd.DataFrame, name: str, id_emp: int, flag, date_limit
     )
 
 
-def get_info_o_file_name(
-    contracts, name: str, id_2=None, flag=False
-) -> tuple[str, list, list, list, float, list]:
+def get_info_o_file_name(contracts, name: str, id_2=None, flag=False):
     if flag:
         id_2, name_db = get_name_id_contracts(contracts, name)
         if id_2 is not None:

@@ -231,7 +231,7 @@ def get_folio_from_contract_ternium(data_token):
         contract_number = result[5]
         idn_contract = contract_number[-4:]
         folio = folio_sm + "-" + idn_contract
-        flag, error, folios = get_folios_by_pattern(folio)
+        flag, error, folios = get_folios_by_pattern(folio, data_token)
         numbers = []
         for item in folios:
             try:
@@ -316,7 +316,7 @@ def folio_from_department(data_token):
     ]
     folios_out = []
     for folio in folio_list:
-        flag, error, folios = get_folios_by_pattern(folio)
+        flag, error, folios = get_folios_by_pattern(folio, data_token)
         numbers = []
         for item in folios:
             try:

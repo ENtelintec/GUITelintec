@@ -107,5 +107,5 @@ if __name__ == "__main__":
             )
         # print({"info": metadata, "items": items})
         # print("str", json.dumps({"info": metadata, "items": items}))
-        flag, error, result = insert_sm_db({"info": metadata, "items": items})
+        flag, error, result = insert_sm_db({"info": metadata, "items": items}, data_token)
         print(flag, error, result)

@@ -88,7 +88,7 @@ class GetMovements(Resource):
                 "data": [],
                 "error": msg if msg != "" else "No autorizado. Token invalido",
             }, 401
-        data, code = get_all_movements(type_m)
+        data, code = get_all_movements(type_m, data_token)
         data_out = {"data": data, "msg": "Ok" if code == 200 else "Error"}
         return data_out, code
 
@@ -181,7 +181,7 @@ class FetchProducts(Resource):
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        data, code = get_all_products_DB(type_p)
+        data, code = get_all_products_DB(type_p, data_token)
         return {"data": data, "msg": "Ok" if code == 200 else "Error"}, code
 
 
@@ -288,7 +288,7 @@ class InventoryCategories(Resource):
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        code, data = get_categories_db()
+        code, data = get_categories_db(data_token)
         return {"data": data, "msg": "Ok" if code == 200 else "Error"}, code
 
 
@@ -302,7 +302,7 @@ class InventorySuppliers(Resource):
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        code, data = get_suppliers_db()
+        code, data = get_suppliers_db( data_token)
         return {"data": data, "msg": "Ok" if code == 200 else "Error"}, code
 
 
@@ -315,7 +315,7 @@ class GenerateCode(Resource):
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        data_out, code = get_new_code_products()
+        data_out, code = get_new_code_products( data_token)
         return {"data": data_out, "msg": "Ok" if code == 200 else "Error"}, code
 
 
@@ -338,7 +338,9 @@ class UploadInventoryeFile(Resource):
             new_name = "inventario.xlsx"
             file.save(os.path.join("files", new_name))
             try:
-                data_out = upload_product_db_from_file(os.path.join("files", new_name))
+                data_out = upload_product_db_from_file(
+                    os.path.join("files", new_name), token_data=data_token
+                )
                 return {"data": data_out, "msg": f"Ok with filaname: {new_name}"}, 200
             except Exception as e:
                 print(e)
@@ -367,7 +369,7 @@ class UploadInventoryeFileTool(Resource):
             file.save(os.path.join("files", new_name))
             try:
                 data_out = upload_product_db_from_file(
-                    os.path.join("files", new_name), is_tool=True
+                    os.path.join("files", new_name), is_tool=True, token_data=data_token
                 )
                 return {"data": data_out, "msg": f"Ok with filaname: {new_name}"}, 200
             except Exception as e:
@@ -397,7 +399,9 @@ class UploadInventoryeFileInternal(Resource):
             file.save(os.path.join("files", new_name))
             try:
                 data_out = upload_product_db_from_file(
-                    os.path.join("files", new_name), is_internal=1
+                    os.path.join("files", new_name),
+                    is_internal=1,
+                    token_data=data_token,
                 )
                 return {"data": data_out, "msg": f"Ok with filaname: {new_name}"}, 200
             except Exception as e:
@@ -416,7 +420,7 @@ class DownloadInventoryFilePDF(Resource):
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        filepath, code = create_file_inventory_pdf()
+        filepath, code = create_file_inventory_pdf(data_token)
         if code != 200 or filepath is None:
             return {"data": filepath, "msg": "Error at creating file"}, 400
         return send_file(filepath, as_attachment=True)
@@ -431,7 +435,7 @@ class DownloadInventoryFileExcel(Resource):
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        filepath, code = create_file_inventory_excel()
+        filepath, code = create_file_inventory_excel(data_token)
         if code != 200 or filepath is None:
             return {"data": filepath, "msg": "Error at creating file"}, 400
         return send_file(filepath, as_attachment=True)
@@ -451,7 +455,7 @@ class DownloadMovementsFilePDF(Resource):
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
-        filepath, code = create_file_movements_amc(data)
+        filepath, code = create_file_movements_amc(data, data_token)
         if code != 200 or filepath is None:
             return {"data": filepath, "msg": "Error at creating file"}, 400
         return send_file(filepath, as_attachment=True)
@@ -471,7 +475,7 @@ class DownloadMovementsFileExcel(Resource):
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
-        filepath, code = create_file_movements_amc(data, type_file="excel")
+        filepath, code = create_file_movements_amc(data, data_token, type_file="excel")
         if code != 200 or filepath is None:
             return {"data": filepath, "msg": "Error at creating file"}, 400
         return send_file(filepath, as_attachment=True)
@@ -491,7 +495,7 @@ class DownloadBarcodeFile(Resource):
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
-        filepath, code = create_pdf_barcode(data)
+        filepath, code = create_pdf_barcode(data, data_token)
         return (
             send_file(filepath, as_attachment=True)
             if code == 200
@@ -528,7 +532,7 @@ class InventoryEpp(Resource):
         flag, data_token, msg = token_verification_procedure(request, department="epp")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        data, code = get_epp_db()
+        data, code = get_epp_db(data_token)
         return {"data": data, "msg": "Ok" if code == 200 else "Error"}, code
 
 
@@ -539,7 +543,7 @@ class GetMovementsEpp(Resource):
         flag, data_token, msg = token_verification_procedure(request, department="epp")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        data, code = get_epp_movements(type_m)
+        data, code = get_epp_movements(type_m, data_token)
         data_out = {"data": data, "msg": "Ok" if code == 200 else "Error"}
         return data_out, code
 
@@ -556,7 +560,7 @@ class DownloadEppMovementsFilePDF(Resource):
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
-        filepath, code = create_file_movements_amc(data, epp=1)
+        filepath, code = create_file_movements_amc(data, data_token, epp=1)
         if code != 200 or filepath is None:
             return {"data": filepath, "msg": "Error at creating file"}, 400
         return send_file(filepath, as_attachment=True)
@@ -574,7 +578,7 @@ class DownloadEppMovementsFileExcel(Resource):
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
-        filepath, code = create_file_movements_amc(data, type_file="excel", epp=1)
+        filepath, code = create_file_movements_amc(data, data_token, type_file="excel", epp=1)
         if code != 200 or filepath is None:
             return {"data": filepath, "msg": "Error at creating file"}, 400
         return send_file(filepath, as_attachment=True)

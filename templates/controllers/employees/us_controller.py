@@ -7,7 +7,7 @@ import json
 from templates.database.connection import execute_sql
 
 
-def fetch_employess_user_data(status="activo"):
+def fetch_employess_user_data(data_token, status="activo"):
     if status == "all":
         status = "%"
     sql = (
@@ -28,28 +28,28 @@ def fetch_employess_user_data(status="activo"):
         "where status like %s"
     )
     val = (status,)
-    flag, error, result = execute_sql(sql, val, 2)
+    flag, error, result = execute_sql(sql, val, 2, data_token)
     return flag, error, result
 
 
-def update_biocredentials_DB(biocredentials, emp_id, user):
+def update_biocredentials_DB(biocredentials, emp_id, user, data_token):
     sql = (
         "UPDATE sql_telintec.users_system "
         "SET biocredentials = %s "
         "WHERE emp_id = %s and usernames = %s "
     )
     val = (biocredentials, emp_id, user)
-    flag, error, result = execute_sql(sql, val, 4)
+    flag, error, result = execute_sql(sql, val, 4, data_token)
     return flag, error, result
 
 
 def create_user_system_with_token(
-    user, hash_pass, dic_perm, token, exp, timestamp_token, emp_id
+    user, hash_pass, dic_perm, token, exp, timestamp_token, emp_id, data_token
 ):
     sql = (
         "INSERT INTO sql_telintec.users_system (usernames, password, permissions, emp_id, token, exp, timestamp_token) "
         "VALUES (%s, %s, %s, %s, %s, %s, %s)"
     )
     val = (user, hash_pass, json.dumps(dic_perm), emp_id, token, exp, timestamp_token)
-    flag, error, result = execute_sql(sql, val, 4)
+    flag, error, result = execute_sql(sql, val, 4, data_token)
     return flag, error, result

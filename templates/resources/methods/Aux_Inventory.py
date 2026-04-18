@@ -212,7 +212,7 @@ def divide_movements(movements_data):
 
 
 def fetch_all_movements():
-    flag, error, movements = get_all_movements_db_detail()
+    flag, error, movements = get_all_movements_db_detail( data_token)
     if not flag:
         print("Error al obtener los movimientos:", str(error))
         return []

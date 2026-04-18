@@ -81,9 +81,9 @@ from templates.misc.Functions_Files import write_log_file
 from templates.resources.midleware.Functions_midleware_admin import get_iddentifiers
 
 
-def get_products_sm(contract: str) -> tuple[dict, int]:
+def get_products_sm(contract: str, data_token) -> tuple[dict, int]:
     if contract != "all":
-        flag, error, items_contract = get_items_contract_string(contract)
+        flag, error, items_contract = get_items_contract_string(contract, data_token)
     else:
         items_contract = []
     ids_in_contract = {}
@@ -93,7 +93,7 @@ def get_products_sm(contract: str) -> tuple[dict, int]:
         if item[4] is None:
             continue
         ids_in_contract[item[4]] = item[3]
-    flag, error, result_p = get_products_w_reservations()
+    flag, error, result_p = get_products_w_reservations( data_token)
     if not flag:
         return {"data": {"contract": [], "normal": []}}, 400
     items_normal = []
@@ -185,9 +185,9 @@ def extract_extra_info_sm_item(items: list[dict]):
     return new_items, need_aprove
 
 
-def get_all_sm(limit, page=0, emp_id=-1, with_items=True):
+def get_all_sm(limit, data_token, page=0, emp_id=-1, with_items=True):
     emp_id = None if emp_id == -1 else emp_id
-    flag, error, result = get_sm_entries(emp_id)
+    flag, error, result = get_sm_entries(data_token, emp_id)
     if limit == -1:
         limit = len(result) + 1
     limit = limit if limit > 0 else 10
@@ -326,10 +326,10 @@ def get_iddentifiers_creation_contracts(data_token):
         for word in ["administrator"]
         for item in permissions
     ):
-        flag, error, contracts = get_contract_by_client(40)
+        flag, error, contracts = get_contract_by_client(40, data_token)
     else:
         for check_func in (check_if_leader,):
-            flag, error, result = check_func(data_token.get("emp_id"))
+            flag, error, result = check_func(data_token.get("emp_id"), data_token)
             if flag and len(result) > 0:
                 ids = []
                 for item in result:
@@ -337,7 +337,7 @@ def get_iddentifiers_creation_contracts(data_token):
                     ids += extra_info.get("contracts", [])
                     ids += extra_info.get("contracts_temp", [])
                 ids = list(set(ids))
-                flag, error, contracts = get_contracts_by_ids(ids)
+                flag, error, contracts = get_contracts_by_ids(ids, data_token)
                 if not flag:
                     return {"data": None, "msg": str(error)}, dict_tabs, 400
                 break
@@ -365,10 +365,10 @@ def get_iddentifiers_ternium(data_token):
     if any(
         perm in word for perm in last_part_perm for word in ["administrator", "almacen"]
     ):
-        flag, error, contracts = get_contract_by_client(40)
+        flag, error, contracts = get_contract_by_client(40, data_token)
     else:
         for check_func in (check_if_leader, check_if_auxiliar_with_contract):
-            flag, error, result = check_func(data_token.get("emp_id"))
+            flag, error, result = check_func(data_token.get("emp_id"), data_token)
             if flag and len(result) > 0:
                 ids = []
                 for item in result:
@@ -376,7 +376,7 @@ def get_iddentifiers_ternium(data_token):
                     ids += extra_info.get("contracts", [])
                     ids += extra_info.get("contracts_temp", [])
                 ids = list(set(ids))
-                flag, error, contracts = get_contracts_by_ids(ids)
+                flag, error, contracts = get_contracts_by_ids(ids, data_token)
                 if not flag:
                     return {"data": None, "msg": str(error)}, dict_tabs, 400
                 break
@@ -433,7 +433,7 @@ def fetch_all_sm_with_permissions(data_token):
         dict_tabs[f"sm-{abb.lower()}-"] = abb
     if code != 200 or isinstance(abbs_list_departments, dict):
         abbs_list_departments = []
-    data_sm, code = get_all_sm(-1, 0, -1)
+    data_sm, code = get_all_sm(-1, data_token, 0, -1)
     if code != 200:
         return {"data": [], "msg": data_sm}, 400
     data_out = clasify_sm(
@@ -453,7 +453,7 @@ def get_all_sm_control_table(data_token):
         abbs_list_departments = []
     for abb in abbs_list_departments:
         dict_tabs_contracts[f"sm-{abb.lower()}-"] = abb
-    data_sm, code = get_all_sm(-1, 0, -1, with_items=False)
+    data_sm, code = get_all_sm(-1, data_token, 0, -1, with_items=False)
     if code != 200:
         return {"data": [], "msg": data_sm}, 400
     data_out = clasify_sm(
@@ -499,7 +499,7 @@ def eliminate_signaling_comment(comment: str):
 def dispatch_sm(data, data_token):
     if len(data["items"]) <= 0:
         return 400, ["No item to update in sm"]
-    flag, error, result = get_sm_by_id(data["id"])
+    flag, error, result = get_sm_by_id(data["id"], data_token)
     if not flag or len(result) <= 0:
         return 400, ["SM not foud"]
     id_user = result[6]
@@ -515,7 +515,7 @@ def dispatch_sm(data, data_token):
         if item.get("state") > 0 and item.get("id_inventory") is not None
     ]
     updated_products = []
-    flag, error, result = get_products_stock_from_ids(ids_inventory_sm_list)
+    flag, error, result = get_products_stock_from_ids(ids_inventory_sm_list, data_token)
     if not flag:
         return 400, {"msg": f"Error at retrieving stock: {str(error)}"}
     flag_semidespachado = False
@@ -574,7 +574,7 @@ def dispatch_sm(data, data_token):
             "salida",
             item_n["quantity"],
             date_now,
-            folio,
+            folio, data_token,
             "Despachado de SM",
         )
         if not flag:
@@ -588,7 +588,7 @@ def dispatch_sm(data, data_token):
         )
         # -- actualizar stock del producto
         flag, error, res_stock = update_stock_db(
-            item_to_update["id_inventory"], -item_n["quantity"], True
+            item_to_update["id_inventory"], -item_n["quantity"], data_token, True
         )
         msg_items.append(
             f"x---Error al actualizar el stock para el producto {item_to_update['id_inventory']}: {str(error)}"
@@ -596,7 +596,7 @@ def dispatch_sm(data, data_token):
             f"---Stock actualizado para el item {item_to_update['id_inventory']}: {str(res_stock)}"
         )
         # -- actualizar el estado de la reservación
-        flag, error, res_res = complete_reservation_db(item_to_update["reservation_id"])
+        flag, error, res_res = complete_reservation_db(item_to_update["reservation_id"], data_token)
         msg_items.append(
             f"x---Error al tratar de completar la reservación {item_to_update['id']}: {str(error)}"
         ) if not flag else msg_items.append(
@@ -658,7 +658,7 @@ def dispatch_sm(data, data_token):
             "comment": comment_history + f" por el empleado {data_token['emp_id']}",
         }
     )
-    errors, results_smi = update_items_sm(updated_products, data["id"])
+    errors, results_smi = update_items_sm(updated_products, data["id"], data_token)
     if len(errors) > 0:
         msg_items.append(f"Error al actualizar items: {errors}")
     if len(results_smi) > 0:
@@ -692,7 +692,7 @@ def dispatch_sm(data, data_token):
     for k, v in extra_info.items():
         extra_info_sm[k] = v
     flag, error, result_his = update_history_status_sm(
-        data["id"], history_sm, new_status, extra_info_sm, comment_general
+        data["id"], history_sm, new_status, extra_info_sm, comment_general, data_token
     )
     msg_items.append(
         f"Historial actualizado: {str(result_his)}"
@@ -714,7 +714,7 @@ def dispatch_sm(data, data_token):
 
 
 def cancel_sm(data, data_token):
-    flag, error, result = get_sm_by_id(data["id"])
+    flag, error, result = get_sm_by_id(data["id"], data_token)
     if not flag or len(result) <= 0:
         return 400, ["sm not foud"]
     history_sm = json.loads(result[12])
@@ -738,7 +738,7 @@ def cancel_sm(data, data_token):
         }
     )
     flag, error, result = update_history_sm_from_cancel(
-        data["id"], history_sm, comments_general, True
+        data["id"], history_sm, comments_general, data_token, True
     )
     if flag:
         msg = f"SM con ID-{data['id']} cancelada"
@@ -751,8 +751,8 @@ def cancel_sm(data, data_token):
         return 400, {"msg": str(error)}
 
 
-def get_employees_almacen():
-    flag, error, result = get_emp_contract("almacen")
+def get_employees_almacen(data_token):
+    flag, error, result = get_emp_contract("almacen", data_token)
     data_out = []
     for item in result:
         id_emp, name, lastname = item
@@ -760,8 +760,8 @@ def get_employees_almacen():
     return data_out, 200
 
 
-def dowload_file_sm(sm_id: int, type_file="pdf"):
-    flag, error, result = get_sm_by_id(sm_id)
+def dowload_file_sm(sm_id: int, data_token, type_file="pdf"):
+    flag, error, result = get_sm_by_id(sm_id, data_token)
     if not flag or len(result) == 0:
         return "None", 400
     folio = result[1]
@@ -789,7 +789,7 @@ def dowload_file_sm(sm_id: int, type_file="pdf"):
         else os.path.join(tempfile.mkdtemp(), os.path.basename(basename + ".xlsx"))
     )
     products = []
-    flag, error, result = get_info_names_by_sm_id(result[0])
+    flag, error, result = get_info_names_by_sm_id(result[0], data_token)
     if flag and len(result) > 0:
         customer_name = result[0]
         emp_name = result[1] + " " + result[2]
@@ -849,8 +849,8 @@ def dowload_file_sm(sm_id: int, type_file="pdf"):
     return download_path, 200
 
 
-def create_customer(name, email, phone, rfc, address):
-    flag, error, result = create_customer_db(name, email, phone, rfc, address)
+def create_customer(name, email, phone, rfc, address, data_token):
+    flag, error, result = create_customer_db(name, email, phone, rfc, address, data_token)
     if flag:
         return {"msg": "ok", "data": result}, 201
     else:
@@ -863,7 +863,7 @@ def create_product(
     udm,
     stock,
     id_category,
-    id_supplier,
+    id_supplier, data_token,
     is_tool=0,
     is_internal=0,
     codes=None,
@@ -878,13 +878,13 @@ def create_product(
             id_category,
             id_supplier,
             is_tool,
-            is_internal,
+            is_internal, data_token,
             codes,
             locations,
         )
     else:
         flag, error, result = create_product_db_admin(
-            sku, name, udm, stock, id_category, codes
+            sku, name, udm, stock, id_category, data_token, codes
         )
     if not flag:
         return {"msg": str(error)}, 400
@@ -895,7 +895,7 @@ def update_sm_from_control_table(
     data, data_token, sm_data=None
 ) -> tuple[int, dict[str, str]]:
     if sm_data is None:
-        flag, error, result = get_sm_by_id(data["id"])
+        flag, error, result = get_sm_by_id(data["id"], data_token)
     else:
         flag, error, result = True, None, sm_data
     if not flag or len(result) <= 0:
@@ -925,7 +925,7 @@ def update_sm_from_control_table(
         }
     )
     flag, error, result = update_history_extra_info_sm_by_id(
-        data["id"], extra_info, history_sm, comments
+        data["id"], extra_info, history_sm, comments, data_token
     )
     if flag:
         msg = f"SM con ID-{data['id']} actualizada"
@@ -968,11 +968,11 @@ def check_item_sm_for_init_vals(items: list):
     return extra_info
 
 
-def check_for_partidas_updates(products: list, contract_id: int):
+def check_for_partidas_updates(products: list, contract_id: int, data_token):
     flags, errors, results = ([], [], [])
     if contract_id is None or contract_id == 0:
         return flags, errors, results
-    flag, error, old_items = get_items_quotation_from_cotract(contract_id)
+    flag, error, old_items = get_items_quotation_from_cotract(contract_id, data_token)
     # dict partida->id_inventory
     old_items = old_items if old_items is not None else []
     dict_partidas = {item[1]: item[2] for item in old_items}
@@ -988,7 +988,7 @@ def check_for_partidas_updates(products: list, contract_id: int):
             continue
         if id_inventory_old != id_inventory_new:
             flag, error, result = update_quotation_item_partida_from_sm(
-                contract_id, partida, id_inventory_new
+                contract_id, partida, id_inventory_new, data_token
             )
             if not flag:
                 return [False], [error], [result]
@@ -1011,7 +1011,7 @@ def create_sm_from_api(data, data_token):
     try:
         folio_parts = folio_new_sm.split("-")
         folio_pattern = "-".join(folio_parts[:2])
-        flag, error, folios_old = get_folios_by_pattern(folio_pattern)
+        flag, error, folios_old = get_folios_by_pattern(folio_pattern, data_token)
         for folio in folios_old:
             old_number = int(folio[0].split("-")[-1])
             new_number = int(folio_parts[2])
@@ -1032,7 +1032,7 @@ def create_sm_from_api(data, data_token):
         }, 400
     # start creating sm
     extra_info = check_item_sm_for_init_vals(data["items"])
-    flag, error, sm_result = insert_sm_db(data, extra_info)
+    flag, error, sm_result = insert_sm_db(data, data_token, extra_info)
     if not flag:
         print("error insert sm: ", error)
         return {"msg": "error at updating db"}, 400
@@ -1044,13 +1044,13 @@ def create_sm_from_api(data, data_token):
         f"empleado con id: {data_token.get('name')}, "
         f"comentario: {data['info']['comment']}"
     )
-    errors_items, result_ids_items = create_items_sm_db(data["items"], sm_result)
+    errors_items, result_ids_items = create_items_sm_db(data["items"], sm_result, data_token)
     if len(result_ids_items) > 0:
         msg += f"\nItems creados: {result_ids_items}"
     if len(errors_items) > 0:
         msg += f"\nErrores al crear items: {errors_items}"
     flags, errors, result_partidas = check_for_partidas_updates(
-        data["items"], data["info"]["contract_id"]
+        data["items"], data["info"]["contract_id"], data_token
     )
     if len(result_partidas) > 0:
         msg += f"\nPartidas actualizadas: {result_partidas}"
@@ -1078,7 +1078,7 @@ def create_urgent_sm_from_api(data, data_token):
     try:
         folio_parts = folio_new_sm.split("-")
         folio_pattern = "-".join(folio_parts[:2])
-        flag, error, folios_old = get_folios_by_pattern(folio_pattern)
+        flag, error, folios_old = get_folios_by_pattern(folio_pattern, data_token)
         for folio in folios_old:
             old_number = int(folio[0].split("-")[-1])
             new_number = int(folio_parts[2])
@@ -1098,7 +1098,7 @@ def create_urgent_sm_from_api(data, data_token):
             "error": "Folio consecutivo no permitido",
         }, 400
     extra_info = check_item_sm_for_init_vals(data["items"])
-    flag, error, result = insert_urgent_sm_db(data, extra_info)
+    flag, error, result = insert_urgent_sm_db(data, data_token, extra_info)
     if not flag:
         print("error inser urgent sm: ", error)
         return {"msg": "error at creating db"}, 400
@@ -1109,13 +1109,13 @@ def create_urgent_sm_from_api(data, data_token):
         f"fecha limite: {data['info']['critical_date']}, "
         f"empleado con id: {data_token.get('name')}. "
     )
-    errors_items, result_ids_items = create_items_sm_db(data["items"], result)
+    errors_items, result_ids_items = create_items_sm_db(data["items"], result, data_token)
     if len(result_ids_items) > 0:
         msg += f"\nItems creados: {result_ids_items}"
     if len(errors_items) > 0:
         msg += f"\nErrores al crear items: {errors_items}"
     flags, errors, result_partidas = check_for_partidas_updates(
-        data["items"], data["info"]["contract_id"]
+        data["items"], data["info"]["contract_id"], data_token
     )
     if len(result_partidas) > 0:
         msg += f"\nPartidas actualizadas: {result_partidas}"
@@ -1177,7 +1177,7 @@ def update_sm_from_api(data, data_token):
             "error": error,
         }, 400
     # update metada sm
-    flag, error, result = update_sm_db(data)
+    flag, error, result = update_sm_db(data, data_token)
     if flag:
         msg = (
             f"SM  actualizada  #{data['info']['id']}, folio: {data['info']['folio']}, "
@@ -1186,9 +1186,9 @@ def update_sm_from_api(data, data_token):
             f"comentario: {data['info']['comment']}"
         )
         # update items sm
-        errors, results = update_items_sm(items_out, data["id"])
+        errors, results = update_items_sm(items_out, data["id"], data_token)
         flags, errors_p, result_partidas = check_for_partidas_updates(
-            data["items"], data["info"]["contract_id"]
+            data["items"], data["info"]["contract_id"], data_token
         )
         if len(result_partidas) > 0:
             msg += f"\nPartidas actualizadas: {result_partidas}"
@@ -1212,11 +1212,11 @@ def update_sm_from_api(data, data_token):
 
 
 def delete_sm_from_api(data, data_token):
-    flag, error, result = delete_item_from_sm_id(data["id"])
+    flag, error, result = delete_item_from_sm_id(data["id"], data_token)
     if not flag:
         return {"msg": "error at deleting items of sm in db"}, 400
     msg = f"Items eliminados <{result}> de la sm con id: {data['id']}\n"
-    flag, error, result = delete_sm_db(data["id"])
+    flag, error, result = delete_sm_db(data["id"], data_token)
     if flag:
         msg += (
             f"SM #{data['id']} eliminada, empleado con id: {data_token.get('emp_id')}"
@@ -1235,7 +1235,7 @@ def delete_sm_from_api(data, data_token):
 
 
 def get_sm_folios_from_api(data_token):
-    flag, error, result = get_sm_folios_db()
+    flag, error, result = get_sm_folios_db( data_token)
     if not flag:
         return {"msg": "error at getting sm folios"}, 400
     folios = []
@@ -1251,7 +1251,7 @@ def get_sm_folios_from_api(data_token):
 
 def get_sm_items_from_api(data, data_token):
     # id_sm, mr.folio , name
-    flag, error, result = get_sm_items_state(data.get("state", 0))
+    flag, error, result = get_sm_items_state(data.get("state", 0), data_token)
     if not flag:
         return {"msg": "error at getting sm items"}, 400
     items = []
@@ -1269,7 +1269,7 @@ def get_sm_items_from_api(data, data_token):
 
 def update_sm_item_state_and_inventory(data, data_token):
     flag, error, result = update_inventory_state_sm_item_db(
-        data.get("state", 0), data.get("id_inventory"), data.get("id_item")
+        data.get("state", 0), data.get("id_inventory"), data.get("id_item"), data_token
     )
     if not flag:
         return {"msg": "error at updating sm item state"}, 400
@@ -1286,7 +1286,7 @@ def update_sm_item_state_and_inventory(data, data_token):
 
 
 def update_sm_item_state(data, data_token):
-    flag, error, sm_data = get_sm_from_item(data.get("id_item"))
+    flag, error, sm_data = get_sm_from_item(data.get("id_item"), data_token)
     if not flag:
         return {"msg": "error at getting sm data", "error": error, "data": sm_data}, 400
     state = data.get("state")
@@ -1307,7 +1307,7 @@ def update_sm_item_state(data, data_token):
         }
     )
     flag, error, result = update_state_sm_item_db(
-        state, data.get("id_item"), history_sm, sm_data[0]
+        state, data.get("id_item"), history_sm, sm_data[0], data_token
     )
     if not flag:
         return {"msg": f"error at updating sm item state: {state}"}, 400
@@ -1323,7 +1323,7 @@ def update_sm_item_state(data, data_token):
 
 
 def update_sm_item_approve(data, data_token):
-    flag, error, sm_data = get_sm_from_item(data.get("id_item"))
+    flag, error, sm_data = get_sm_from_item(data.get("id_item"), data_token)
     if not flag:
         return {"msg": "error at getting sm data", "error": error, "data": sm_data}, 400
     approve_required = data.get("approve_required", 0)
@@ -1352,7 +1352,7 @@ def update_sm_item_approve(data, data_token):
         }
     )
     flag, error, result = update_extra_info_sm_item_db(
-        extra_info_item, data.get("id_item"), history_sm, sm_data[0]
+        extra_info_item, data.get("id_item"), history_sm, sm_data[0], data_token
     )
     if not flag:
         return {"msg": f"error at updating sm item approve: {approve_required}"}, 400
@@ -1380,7 +1380,7 @@ def update_items_sm_from_api(data, data_token):
         "emp_id": <int|str>
       }
     """
-    flag, result, sm_data = get_sm_by_id(data["id_sm"])
+    flag, result, sm_data = get_sm_by_id(data["id_sm"], data_token)
     if not flag:
         return {"msg": "error at getting sm data"}, 400
 
@@ -1399,7 +1399,7 @@ def update_items_sm_from_api(data, data_token):
         return {"msg": f"error at parsing sm data: {str(e)}", "data": []}, 400
 
     # Actualizar items
-    errors, results = update_items_sm(data["items"], data["id_sm"])
+    errors, results = update_items_sm(data["items"], data["id_sm"], data_token)
 
     # Construcción de mensajes
     emp_id = data_token.get("emp_id")
@@ -1451,7 +1451,7 @@ def update_items_sm_from_api(data, data_token):
         }
     )
     flag, error, result = update_history_extra_info_sm_by_id(
-        data["id_sm"], extra_info, history_sm, comments_sm
+        data["id_sm"], extra_info, history_sm, comments_sm, data_token
     )
     if not flag:
         return {"msg": f"error at updating sm history: {error}"}, 400
@@ -1485,7 +1485,7 @@ def create_sm_attachment_api(data, data_token):
     time_zone = pytz.timezone(timezone_software)
     # timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone)
-    flag, error, result = get_sm_by_id(data["id_sm"])
+    flag, error, result = get_sm_by_id(data["id_sm"], data_token)
     if not flag:
         return {
             "data": None,
@@ -1566,7 +1566,7 @@ def create_sm_attachment_api(data, data_token):
     )
     extra_info["files"] = files
     flag, error, rows_updated = update_history_status_sm(
-        data["id_sm"], history, status, extra_info, comments
+        data["id_sm"], history, status, extra_info, comments, data_token
     )
     if not flag:
         return {

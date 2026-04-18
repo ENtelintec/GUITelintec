@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from datetime import timedelta
+
 __author__ = "Edisson Naula"
 __date__ = "$ 28/jun./2024  at 16:28 $"
 
@@ -104,7 +105,7 @@ class GraceMinutes:
         return self.minutes
 
 
-def create_new_employee_db(data):
+def create_new_employee_db(data, data_token):
     flag, error, result = new_employee(
         data["info"]["name"],
         data["info"]["lastname"],
@@ -122,7 +123,7 @@ def create_new_employee_db(data):
         data["info"]["birthday"],
         data["info"]["legajo"],
         data["info"]["email"],
-        data["info"]["emergency"],
+        data["info"]["emergency"], data_token,
         data["info"]["id_leader"],
     )
     if flag:
@@ -131,7 +132,7 @@ def create_new_employee_db(data):
         return {"error": str(error)}, 400
 
 
-def update_employee_db(data):
+def update_employee_db(data, data_token):
     flag, error, result = update_employee(
         data["id"],
         data["info"]["name"],
@@ -150,7 +151,7 @@ def update_employee_db(data):
         data["info"]["birthday"],
         data["info"]["legajo"],
         data["info"]["email"],
-        data["info"]["emergency"],
+        data["info"]["emergency"], data_token,
         data["info"]["id_leader"],
     )
     if flag:
@@ -484,8 +485,8 @@ def upload_nomina_doc(data):
     return 200, None
 
 
-def update_files_data_nominas(key: str, paths_pdf_xml: dict, data_xml: dict):
-    flag, error, result = get_payrolls(data_xml["emp_id"])
+def update_files_data_nominas(key: str, paths_pdf_xml: dict, data_xml: dict, data_token):
+    flag, error, result = get_payrolls(data_xml["emp_id"], data_token)
     data_emp = {} if not flag or len(result) == 0 else json.loads(result[1])
     try:
         date = pd.to_datetime(data_xml["date"])
@@ -573,7 +574,7 @@ def update_data_docs_nomina(patterns=None, use_index=False):
     return results
 
 
-def download_nomina_docs(data):
+def download_nomina_docs(data, data_token):
     settings = json.load(open(filepath_settings, "r"))
     url_shrpt = settings["gui"]["RRHH"]["url_shrpt"]
     folder_rrhh = settings["gui"]["RRHH"]["folder_rrhh"]
@@ -625,7 +626,7 @@ def get_files_list_nomina(emp_id):
     return 200, files
 
 
-def insert_medical_db(data):
+def insert_medical_db(data, data_token):
     allergies = data["info"]["allergies"]
     observations = data["info"]["observations"]
     extra_info = {"allergies": allergies, "observations": observations}
@@ -638,6 +639,7 @@ def insert_medical_db(data):
         data["info"]["apt_actual"],
         data["info"]["emp_id"],
         extra_info,
+        data_token,
     )
     if flag:
         return {"data": str(result)}, 201
@@ -645,7 +647,7 @@ def insert_medical_db(data):
         return {"error": str(error)}, 400
 
 
-def update_medical_db(data):
+def update_medical_db(data, data_token):
     apt_actual = (
         data["info"]["aptitudes"][-1] if len(data["info"]["aptitudes"]) > 0 else 0
     )
@@ -658,6 +660,7 @@ def update_medical_db(data):
         apt_actual,
         exam_id=data["id"],
         extra_info=extra_info,
+        data_token=data_token,
     )
     if flag:
         return {"data": str(result)}, 200
@@ -665,7 +668,7 @@ def update_medical_db(data):
         return {"error": str(error)}, 400
 
 
-def insert_new_vacation(data):
+def insert_new_vacation(data, data_token):
     seniority_dict = {}
     for item in data["seniority"]:
         seniority_dict[str(item["year"])] = {
@@ -675,11 +678,13 @@ def insert_new_vacation(data):
         }
     if not len(seniority_dict) > 0:
         return False, "No hay informacion que insertar", None
-    flag, error, result = insert_vacation(data["emp_id"], seniority_dict)
+    flag, error, result = insert_vacation(
+        data["emp_id"], seniority_dict, data_token=data_token
+    )
     return flag, error, result
 
 
-def update_vacation(data):
+def update_vacation(data, data_token):
     seniority_dict = {}
     for item in data["seniority"]:
         seniority_dict[str(item["year"])] = {
@@ -690,7 +695,9 @@ def update_vacation(data):
         }
     if not len(seniority_dict) > 0:
         return False, "No hay informacion que actualizar o corrupcion de info.", None
-    flag, error, result = update_registry_vac(data["emp_id"], seniority_dict)
+    flag, error, result = update_registry_vac(
+        data["emp_id"], seniority_dict, data_token
+    )
     return flag, error, result
 
 
@@ -843,7 +850,7 @@ def calculate_results_quizzes(dict_quizz: dict, tipo_q: int):
     return dict_results
 
 
-def generate_pdf_from_json(data):
+def generate_pdf_from_json(data, data_token):
     from static.FramesClasses import dict_typer_quizz_generator
 
     json_dict = data["body"]
@@ -868,7 +875,9 @@ def generate_pdf_from_json(data):
         data_raw["recommendations"] = dict_recomendations
         is_update = False
     if not is_update:
-        flag, error, result = update_task(data["id"], data["body"], data_raw=data_raw)
+        flag, error, result = update_task(
+            data["id"], data["body"], data_raw=data_raw, data_token=data_token
+        )
         if not flag:
             print("Error al actualizar el task", error, result)
     try:
@@ -1027,10 +1036,10 @@ def fetch_medicals():
 
     # Definir límites por tipo de aptitud
     limits = {
-        "APTO 1": timedelta(days=365),   # revisión anual
-        "APTO 2": timedelta(days=180),   # revisión cada 6 meses
-        "APTO 3": timedelta(days=90),    # revisión cada 3 meses
-        "APTO 4": None                   # NO APTO
+        "APTO 1": timedelta(days=365),  # revisión anual
+        "APTO 2": timedelta(days=180),  # revisión cada 6 meses
+        "APTO 3": timedelta(days=90),  # revisión cada 3 meses
+        "APTO 4": None,  # NO APTO
     }
 
     warning_threshold = timedelta(days=30)

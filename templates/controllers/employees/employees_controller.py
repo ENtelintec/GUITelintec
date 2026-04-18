@@ -7,7 +7,7 @@ import json
 from templates.database.connection import execute_sql, execute_sql_multiple
 
 
-def get_employees(limit=(0, 100)) -> list[list]:
+def get_employees( data_token,limit=(0, 100)):
     sql = (
         "SELECT "
         "employees.employee_id, "
@@ -34,8 +34,10 @@ def get_employees(limit=(0, 100)) -> list[list]:
         "LIMIT  %s "
     )
     val = (limit[1],)
-    flag, e, my_result = execute_sql(sql, val, 2)
+    flag, e, my_result = execute_sql(sql, val, 2, data_token)
     out = my_result if my_result is not None else []
+    if not (isinstance(out, list) or isinstance(out, tuple)):
+        return []
     return out
 
 
@@ -56,7 +58,7 @@ def new_employee(
     birthday,
     legajo,
     email,
-    emergency,
+    emergency, data_token,
     id_leader=0,
 ):
     extra_info = {"id_leader": id_leader}
@@ -86,7 +88,7 @@ def new_employee(
         legajo,
         json.dumps(extra_info),
     )
-    flag, e, out = execute_sql(sql, values, 4)
+    flag, e, out = execute_sql(sql, values, 4, data_token)
     return flag, e, out
 
 
@@ -108,7 +110,7 @@ def update_employee(
     birthday,
     legajo,
     email,
-    emergency,
+    emergency, data_token,
     id_leader=0,
 ):
     sql = (
@@ -138,29 +140,29 @@ def update_employee(
         id_leader,
         employee_id,
     )
-    flag, e, out = execute_sql(sql, values, 3)
+    flag, e, out = execute_sql(sql, values, 3, data_token)
     return flag, e, out
 
 
-def delete_employee(employee_id: int):
+def delete_employee(employee_id: int, data_token):
     try:
         employee_id = int(employee_id)
     except ValueError:
         return False, None, None
     sql = "DELETE FROM sql_telintec.employees WHERE employee_id = %s"
     values = (employee_id,)
-    flag, e, out = execute_sql(sql, values, 3)
+    flag, e, out = execute_sql(sql, values, 3, data_token)
     return flag, e, out
 
 
-def terminate_employee_db(employee_id: int, departure: str):
+def terminate_employee_db(employee_id: int, departure: str, data_token):
     sql = "UPDATE sql_telintec.employees SET status = 'inactivo', departure = %s WHERE employee_id = %s"
     values = (departure, employee_id)
-    flag, e, out = execute_sql(sql, values, 3)
+    flag, e, out = execute_sql(sql, values, 3, data_token)
     return flag, e, out
 
 
-def get_employee_id_name(name: str) -> tuple[None, str] | tuple[int, str]:
+def get_employee_id_name(name: str, data_token) -> tuple[None, str] | tuple[int, str]:
     """
     Get the id of the employee
     :param name: name of the employee
@@ -175,7 +177,7 @@ def get_employee_id_name(name: str) -> tuple[None, str] | tuple[int, str]:
     )
     name = name.upper()
     values = (name, name)
-    flag, e, out = execute_sql(sql, values, 1)
+    flag, e, out = execute_sql(sql, values, 1, data_token)
     if not isinstance(out, tuple):
         return None, "Not data found or error"
     if e is not None or len(out) == 0:
@@ -184,7 +186,7 @@ def get_employee_id_name(name: str) -> tuple[None, str] | tuple[int, str]:
         return out[0], f"{out[1].title()} {out[2].title()}"
 
 
-def get_employees_w_status(status: str, quantity: int, date: str):
+def get_employees_w_status(status: str, quantity: int, date: str, data_token):
     columns = ("employee_id", "name", "l_name", "date_admission", "status")
     sql = (
         "SELECT employee_id, name, l_name, date_admission, status "
@@ -195,11 +197,11 @@ def get_employees_w_status(status: str, quantity: int, date: str):
         sql = sql + " AND date_admission >= %s "
     sql = sql + " ORDER BY date_admission  LIMIT %s "
     val = (status, date, quantity)
-    flag, error, result = execute_sql(sql, val, 2)
+    flag, error, result = execute_sql(sql, val, 2, data_token)
     return flag, error, result, columns
 
 
-def get_employee_info(id_e: int):
+def get_employee_info(id_e: int, data_token):
     columns = (
         "employee_id",
         "name",
@@ -217,7 +219,7 @@ def get_employee_info(id_e: int):
         "WHERE employee_id = %s"
     )
     val = (id_e,)
-    flag, error, result = execute_sql(sql, val, 1)
+    flag, error, result = execute_sql(sql, val, 1, data_token)
     return flag, error, result, columns
 
 
@@ -237,7 +239,8 @@ def get_id_employee(name: str) -> None | int:
     name = name.upper()
     values = (name, name)
     flag, e, out = execute_sql(sql, values, 1)
-    # print(name, flag, e, out)
+    if not isinstance(out, tuple):
+        return None
     if e is not None or len(out) == 0:
         return None
     else:
@@ -253,6 +256,8 @@ def get_name_employee(id_employee: int) -> None | str:
     sql = "SELECT name, l_name FROM sql_telintec.employees WHERE employee_id = %s"
     values = (id_employee,)
     flag, e, out = execute_sql(sql, values, 1)
+    if not isinstance(out, tuple):
+        return None
     if e is not None or len(out) == 0:
         return None
     else:
@@ -345,40 +350,6 @@ def get_all_data_employees(status: str):
         status = "inactivo"
     else:
         status = "activo"
-    # sql = (
-    #     "SELECT "
-    #     "employees.employee_id, "
-    #     "employees.name, "
-    #     "employees.l_name, "
-    #     "employees.phone_number, "
-    #     "sql_telintec.departments.name, "
-    #     "employees.modality, "
-    #     "employees.email, "
-    #     "employees.contrato, "
-    #     "employees.date_admission, "
-    #     "employees.rfc, "
-    #     "employees.curp, "
-    #     "employees.nss, "
-    #     "employees.emergency_contact, "
-    #     "employees.puesto, "
-    #     "employees.status, "
-    #     "employees.departure, "
-    #     "sql_telintec.examenes_med.examen_id, "
-    #     "employees.birthday, "
-    #     "employees.legajo ,"
-    #     "employees.extra_info,"
-    #     "employees.department_id, "
-    #     " GROUP_CONCAT(sql_telintec.users_system.usernames) AS usernames "
-    #     "FROM sql_telintec.employees "
-    #     "LEFT JOIN sql_telintec.departments "
-    #     "ON sql_telintec.employees.department_id = sql_telintec.departments.department_id "
-    #     "LEFT JOIN sql_telintec.examenes_med "
-    #     "ON (sql_telintec.employees.employee_id = sql_telintec.examenes_med.empleado_id) "
-    #     "LEFT JOIN sql_telintec.users_system "
-    #     "ON (sql_telintec.employees.employee_id = sql_telintec.users_system.emp_id) "
-    #     "WHERE employees.status LIKE %s "
-    #     "ORDER BY employees.name, employees.l_name "
-    # )
     sql = """
     SELECT 
         e.employee_id,
@@ -423,7 +394,7 @@ def get_all_data_employees(status: str):
     return flag, error, result
 
 
-def get_all_data_employee(id_employee: int):
+def get_all_data_employee(id_employee: int, data_token):
     sql = (
         "SELECT "
         "employees.employee_id, "
@@ -454,49 +425,49 @@ def get_all_data_employee(id_employee: int):
         "WHERE employee_id = %s"
     )
     val = (id_employee,)
-    flag, error, result = execute_sql(sql, val, type_sql=1)
+    flag, error, result = execute_sql(sql, val, 1, data_token)
     return flag, error, result
 
 
-def get_contract_employes(emp_id):
+def get_contract_employes(emp_id, data_token):
     sql = "SELECT contrato FROM sql_telintec.employees WHERE employee_id = %s"
     val = (emp_id,)
-    flag, error, result = execute_sql(sql, val, type_sql=1)
+    flag, error, result = execute_sql(sql, val, 1, data_token)
     return flag, error, result
 
 
-def get_emp_contract(contract: str):
+def get_emp_contract(contract: str, data_token):
     sql = (
         "SELECT employee_id, name, l_name "
         "FROM sql_telintec.employees "
         "WHERE UPPER(contrato) LIKE %s OR LOWER(contrato) LIKE %s"
     )
     val = (contract.upper(), contract.lower())
-    flag, error, result = execute_sql(sql, val, type_sql=2)
+    flag, error, result = execute_sql(sql, val, 2, data_token)
     if not isinstance(result, list):
         return False, "No contract found or error", []
     return flag, error, result
 
 
-def get_emp_mail(emp_id):
+def get_emp_mail(emp_id, data_token):
     sql = "SELECT email FROM sql_telintec.employees WHERE employee_id = %s"
     val = (emp_id,)
-    flag, error, result = execute_sql(sql, val, type_sql=1)
+    flag, error, result = execute_sql(sql, val, 1, data_token)
     return flag, error, result
 
 
-def get_contracts_operaciones():
+def get_contracts_operaciones(data_token):
     sql = "SELECT contrato FROM sql_telintec.employees WHERE department_id = 2"
-    flag, error, result = execute_sql(sql, type_sql=5)
+    flag, error, result = execute_sql(sql, type_sql=5, data_token=data_token)
     return flag, error, result
 
 
-def test_id_employee(emp_id: int):
+def test_id_employee(emp_id: int, data_token):
     sql = (
         "SELECT employee_id, status, contrato "
         "FROM sql_telintec.employees "
         "WHERE employee_id = %s"
     )
     val = (emp_id,)
-    flag, error, result = execute_sql(sql, val, type_sql=1)
+    flag, error, result = execute_sql(sql, val, 1, data_token)
     return flag, error, result

@@ -55,7 +55,7 @@ def create_voucher_epp_attachment_api(data, data_token):
     timestamp = datetime.now(pytz.utc).astimezone(time_zone)
     timestamp_year_ago = timestamp - timedelta(days=365)
     flag, error, result = get_vouchers_safety_with_items(
-        timestamp_year_ago.strftime(format_date), data_token.get("emp_id")
+        timestamp_year_ago.strftime(format_date), data_token, data_token.get("emp_id")
     )
     if not flag:
         return {
@@ -186,7 +186,7 @@ def create_voucher_tools_attachment_api(data, data_token):
     timestamp = datetime.now(pytz.utc).astimezone(time_zone)
     timestamp_year_ago = timestamp - timedelta(days=365)
     flag, error, result = get_vouchers_safety_with_items(
-        timestamp_year_ago.strftime(format_date), data_token.get("emp_id")
+        timestamp_year_ago.strftime(format_date), data_token, data_token.get("emp_id")
     )
     if not flag:
         return {

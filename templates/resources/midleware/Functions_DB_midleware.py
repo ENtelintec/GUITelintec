@@ -23,6 +23,8 @@ from templates.controllers.misc.tasks_controller import (
 
 def get_info_employees_with_status(status: str):
     flag, error, result = get_all_data_employees(status)
+    if not (isinstance(result, list) or isinstance(result, tuple)):
+        return {"error": "No se encontraron empleados"}, 200
     data_out = []
     for item in result:
         (
@@ -86,6 +88,8 @@ def get_info_employees_with_status(status: str):
 
 def create_csv_file_employees(status: str):
     flag, error, result = get_all_data_employees(status)
+    if not (isinstance(result, list) or isinstance(result, tuple)):
+        return {"error": "No se encontraron empleados"}, 200
     result = result if flag else []
     # create file
     filepath = "files/emp.csv"
@@ -122,8 +126,10 @@ def create_csv_file_employees(status: str):
     return filepath
 
 
-def get_info_employee_id(id_emp: int):
-    flag, error, result = get_all_data_employee(id_emp)
+def get_info_employee_id(id_emp: int, data_token):
+    flag, error, result = get_all_data_employee(id_emp, data_token)
+    if not (isinstance(result, list) or isinstance(result, tuple)):
+        return {"error": "No se encontro el empleado"}, 200
     (
         id_emp,
         name,
@@ -170,9 +176,11 @@ def get_info_employee_id(id_emp: int):
     return (data_out, 200) if flag else ({}, 400)
 
 
-def get_vacations_employee(emp_id: int):
-    flag, error, result = get_vacations_data_emp(emp_id)
+def get_vacations_employee(emp_id: int, data_token):
+    flag, error, result = get_vacations_data_emp(emp_id, data_token)
     out = None
+    if not (isinstance(result, list) or isinstance(result, tuple)):
+        return {"error": "No se encontraron vacaciones para el empleado"}, 200
     if not flag or len(result) == 0:
         return out, 400
     seniority_raw = json.loads(result[4])
@@ -194,8 +202,10 @@ def get_vacations_employee(emp_id: int):
     return out, 200
 
 
-def get_all_vacations():
-    flag, error, result = get_vacations_data()
+def get_all_vacations(data_token):
+    flag, error, result = get_vacations_data(data_token)
+    if not (isinstance(result, list) or isinstance(result, tuple)):
+        return {"error": "No se encontraron vacaciones"}, 200
     out = []
     if not flag or len(result) == 0:
         return [], 400
@@ -223,7 +233,7 @@ def get_all_vacations():
     return out, 200
 
 
-def create_task_from_api(data):
+def create_task_from_api(data, data_token):
     quizzes_dir = json.load(open(quizzes_dir_path, encoding="utf-8"))
     dict_quizz = json.load(
         open(
@@ -238,6 +248,7 @@ def create_task_from_api(data):
         data["date_limit"],
         data["metadata"],
         dict_quizz,
+        data_token,
     )
     if flag:
         msg = f"Se creo una tarea ({result}) {data['title']} para {data['metadata']['name_emp']}"
@@ -254,13 +265,15 @@ def create_task_from_api(data):
         return {"msg": "Ok", "data": str(error)}, 400
 
 
-def update_task_from_api(data):
+def update_task_from_api(data, data_token):
     data_raw = (
         json.loads(data["data_raw"])
         if isinstance(data["data_raw"], str)
         else data["data_raw"]
     )
-    flag, error, result = update_task(data["id"], data["body"], data_raw=data_raw)
+    flag, error, result = update_task(
+        data["id"], data["body"], data_raw=data_raw, data_token=data_token
+    )
     if flag:
         msg = f"Se actualizo la tarea {data['body']['title']} para {data['body']['metadata']['name_emp']}"
         create_notification_permission_notGUI(
@@ -276,7 +289,7 @@ def update_task_from_api(data):
 
 
 def delete_task_from_api(data, data_token):
-    flag, error, result = delete_task(data["id"])
+    flag, error, result = delete_task(data["id"], data_token)
     if flag:
         msg = f"Se elimino la tarea {data['id']}"
         create_notification_permission_notGUI(

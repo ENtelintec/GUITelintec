@@ -13,8 +13,8 @@ __author__ = "Edisson Naula"
 __date__ = "$ 01/may./2024  at 20:19 $"
 
 
-def update_sm_items_stock(tuple_sm):
-    flag, error, result = get_stock_db_products()
+def update_sm_items_stock(tuple_sm, data_token):
+    flag, error, result = get_stock_db_products( data_token)
     tuple_out = []
     product_ids = [product[0] for product in result]
     if flag:
@@ -32,74 +32,7 @@ def update_sm_items_stock(tuple_sm):
     return tuple_out
 
 
-# def get_sm_entries(emp_id=None, not_status=(4, 5)):
-#     """
-#     Recupera las entradas de SM (materials_request) con sus respectivos items agrupados en formato JSON.
-#     :param emp_id:  id del empleado que genero la sm
-#     :param not_status: status que no se quieren incluir en la consulta
-#     :return:
-#     """
-#     base_sql = (
-#         "SELECT "
-#         "mr.sm_id, "
-#         "mr.folio, "
-#         "mr.contract, "
-#         "mr.facility, "
-#         "mr.location, "
-#         "mr.client_id, "
-#         "mr.emp_id, "
-#         "mr.pedido_cotizacion, "
-#         "mr.date, "
-#         "mr.limit_date, "
-#         "JSON_ARRAYAGG(JSON_OBJECT("
-#         " 'id', smi.id_item, "
-#         " 'id_inventory', smi.id_inventory, "
-#         " 'name', smi.name, "
-#         " 'udm', smi.udm, "
-#         " 'comment', smi.comment, "
-#         " 'partida', smi.partida, "
-#         " 'quantity', smi.quantity, "
-#         " 'dispatched', smi.dispatched, "
-#         " 'movements', smi.movements, "
-#         " 'state', smi.state, "
-#         " 'extra_info', smi.extra_info, "
-#         " 'reserved', IFNULL(rsv.reserved, 0), "
-#         " 'reservation_id', rsv.reservation_id,"
-#         " 'deliveries', smi.deliveries,"
-#         " 'state_quantity', smi.state_quantity, "
-#         " 'state_delivery', smi.state_delivery , "
-#         " 'reserved_all', rAll.reserved_qty, "
-#         " 'available_stock', IFNULL(inv.stock, 0) - IFNULL(rAll.reserved_qty, 0), "
-#         " 'stock', IFNULL(inv.stock, 0) )"
-#         ") AS items, "
-#         "mr.status, "
-#         "mr.history, "
-#         "mr.comment, "
-#         "mr.extra_info "
-#         "FROM sql_telintec.materials_request AS mr "
-#         "LEFT JOIN sql_telintec.sm_items AS smi ON mr.sm_id = smi.id_sm "
-#         "LEFT JOIN sql_telintec.products_amc AS inv ON inv.id_product = smi.id_inventory "
-#         "LEFT JOIN ( "
-#         "   SELECT id_product, sm_id, quantity AS reserved, reservation_id "
-#         "   FROM sql_telintec.product_reservations "
-#         "   WHERE status = 0 "
-#         ") rsv ON (rsv.sm_id = smi.id_sm) AND (rsv.id_product = smi.id_inventory)  "
-#         "LEFT JOIN ( "
-#         "   SELECT id_product, "
-#         "       SUM(quantity) AS reserved_qty "
-#         "   FROM sql_telintec.product_reservations"
-#         "   WHERE status = 0 "
-#         "   GROUP BY id_product) rAll ON smi.id_inventory = rAll.id_product "
-#         "WHERE (mr.emp_id = %s OR %s IS NULL) "
-#         "GROUP BY mr.sm_id"
-#     )
-#     val = (emp_id, emp_id)
-#     flag, error, result = execute_sql(base_sql, val, 2)
-#     # result = update_sm_items_stock(result)
-#     if not isinstance(result, list):
-#         return False, "No SM entries found or error in query", []
-#     return flag, error, result
-def get_sm_entries(emp_id=None, not_status=()):
+def get_sm_entries( data_token, emp_id=None, not_status=()):
     """
     Recupera las entradas de SM (materials_request) con sus respectivos items agrupados en formato JSON.
     :param emp_id: id del empleado que generó la SM
@@ -166,14 +99,14 @@ def get_sm_entries(emp_id=None, not_status=()):
 
     base_sql += "GROUP BY mr.sm_id"
 
-    flag, error, result = execute_sql(base_sql, tuple(val), 2)
+    flag, error, result = execute_sql(base_sql, tuple(val), 2, data_token)
     # result = update_sm_items_stock(result)
     if not isinstance(result, list):
         return False, "No SM entries found or error in query", []
     return flag, error, result
 
 
-def get_sm_from_item(id_item: int):
+def get_sm_from_item(id_item: int, data_token):
     """
     Recupera la SM (materials_request) a la que pertenece un id_item de la tabla sm_items,
     devolviendo la misma estructura agregada (JSON_ARRAYAGG de items) que get_sm_entries.
@@ -239,7 +172,7 @@ def get_sm_from_item(id_item: int):
 
     # Parametrización segura
     val = (id_item,)
-    flag, error, result = execute_sql(base_sql, val, 1)
+    flag, error, result = execute_sql(base_sql, val, 1, data_token)
 
     # Normalización de resultados (mismo patrón que get_sm_entries)
     if len(result) == 0:  # pyrefly: ignore
@@ -247,7 +180,7 @@ def get_sm_from_item(id_item: int):
     return flag, error, result
 
 
-def get_sm_by_id(sm_id: int):
+def get_sm_by_id(sm_id: int, data_token):
     sql = (
         "SELECT "
         "mr.sm_id, "
@@ -302,13 +235,13 @@ def get_sm_by_id(sm_id: int):
         "WHERE mr.sm_id = %s"
     )
     val = (sm_id,)
-    flag, error, result = execute_sql(sql, val, 1)
+    flag, error, result = execute_sql(sql, val, 1, data_token)
     if not isinstance(result, tuple):
         return False, "No SM entries found or error in query", []
     return flag, error, result
 
 
-def get_sm_by_folio(folio: str):
+def get_sm_by_folio(folio: str, data_token):
     sql = (
         "SELECT "
         "mr.sm_id, "
@@ -363,11 +296,11 @@ def get_sm_by_folio(folio: str):
         "WHERE mr.folio = %s"
     )
     val = (folio,)
-    flag, error, result = execute_sql(sql, val, 1)
+    flag, error, result = execute_sql(sql, val, 1, data_token)
     return flag, error, result
 
 
-def create_items_sm_db(items: list, sm_id: int):
+def create_items_sm_db(items: list, sm_id: int, data_token):
     errors = []
     results = []
     for item in items:
@@ -397,7 +330,7 @@ def create_items_sm_db(items: list, sm_id: int):
             state,
             json.dumps(extra_info),
         )
-        flag, error, id_item = execute_sql(sql, val, 4)
+        flag, error, id_item = execute_sql(sql, val, 4, data_token)
         if flag:
             results.append({"data": id_item, "action": "new"})
         else:
@@ -406,7 +339,7 @@ def create_items_sm_db(items: list, sm_id: int):
     return errors, results
 
 
-def update_items_sm(items: list, sm_id: int):
+def update_items_sm(items: list, sm_id: int, data_token):
     errors = []
     results = []
     action = "update"
@@ -452,7 +385,7 @@ def update_items_sm(items: list, sm_id: int):
                     item.get("state_quantity", 0),
                     item.get("id"),
                 )
-                flag, error, result = execute_sql(sql, val, 4)
+                flag, error, result = execute_sql(sql, val, 4, data_token)
             else:
                 action = "new"
                 sql = (
@@ -462,7 +395,7 @@ def update_items_sm(items: list, sm_id: int):
                     "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
                 )
                 id_inventory = item.get("id_inventory", 0)
-                state = 0 if id_inventory == 0 else item.get("state", 1)
+                state = 0 if id_inventory == 0 else item.get("state", 1, data_token)
                 id_inventory = None if id_inventory == 0 else id_inventory
                 val = (
                     sm_id,
@@ -480,12 +413,12 @@ def update_items_sm(items: list, sm_id: int):
                     item.get("state_delivery", ""),
                     item.get("state_quantity", 0),
                 )
-                flag, error, result = execute_sql(sql, val, 4)
+                flag, error, result = execute_sql(sql, val, 4, data_token)
         else:
             action = "delete"
             sql = "DELETE FROM sql_telintec.sm_items WHERE id_item = %s"
             val = (item.get("id"),)
-            flag, error, result = execute_sql(sql, val, 4)
+            flag, error, result = execute_sql(sql, val, 4, data_token)
         if flag:
             results.append(
                 {"data": result, "action": action, "id": item.get("id"), "error": None}
@@ -503,7 +436,7 @@ def update_items_sm(items: list, sm_id: int):
     return errors, results
 
 
-def insert_sm_db(data, init_extra_info: dict | None = None):
+def insert_sm_db(data, data_token, init_extra_info: dict | None = None):
     time_zone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
     event = [
@@ -569,13 +502,13 @@ def insert_sm_db(data, init_extra_info: dict | None = None):
         json.dumps(comment),
         json.dumps(extra_info),
     )
-    flag, error, result = execute_sql(sql, val, 4)
+    flag, error, result = execute_sql(sql, val, 4, data_token)
     if not isinstance(result, int):
         return False, "Error at inserting sm", None
     return flag, error, result
 
 
-def insert_urgent_sm_db(data: dict, extra_info: dict):
+def insert_urgent_sm_db(data: dict, data_token, extra_info: dict):
     init_extra_info = {
         "urgent": 1,
         "facility": data["info"].get("facility", ""),
@@ -613,16 +546,16 @@ def insert_urgent_sm_db(data: dict, extra_info: dict):
         data["info"]["order_quotation"],
         json.dumps(comment),
     )
-    flag, error, result = execute_sql(sql, val, 4)
+    flag, error, result = execute_sql(sql, val, 4, data_token)
     if not isinstance(result, int):
         return False, "Error at inserting sm", None
     return flag, error, result
 
 
-def delete_sm_db(id_m: int):
+def delete_sm_db(id_m: int, data_token):
     sql = "DELETE FROM sql_telintec.materials_request WHERE sm_id = %s"
     val = (id_m,)
-    flag, error, result = execute_sql(sql, val, 3)
+    flag, error, result = execute_sql(sql, val, 3, data_token)
     if not flag:
         return False, error, None
     sql = (
@@ -632,7 +565,7 @@ def delete_sm_db(id_m: int):
         "WHERE sm_id = %s "
     )
     val = (id_m,)
-    flag, error, result = execute_sql(sql, val, 1)
+    flag, error, result = execute_sql(sql, val, 1, data_token)
     if not isinstance(result, list):
         return False, "Error at retriving sm from db", None
     if len(result) == 0:
@@ -641,13 +574,13 @@ def delete_sm_db(id_m: int):
         return False, "Material request not deleted", None
 
 
-def update_sm_db(data):
+def update_sm_db(data, data_token):
     data["id"] = data["info"]["id"]
     sql = (
         "SELECT sm_id, extra_info FROM sql_telintec.materials_request WHERE sm_id = %s "
     )
     vals = (data["id"],)
-    flag, error, result = execute_sql(sql, vals, 1)
+    flag, error, result = execute_sql(sql, vals, 1, data_token)
     if not flag:
         return False, f"Error at retriving sm from db: {error}", None
     # if not (isinstance(result, list) or isinstance(result, tuple)):
@@ -693,13 +626,13 @@ def update_sm_db(data):
         json.dumps(extra_info),
         data["id"],
     )
-    flag, error, result = execute_sql(sql, val, 4)
+    flag, error, result = execute_sql(sql, val, 4, data_token)
     return flag, error, result
 
 
-def cancel_sm_db(id_m: int, history: dict):
+def cancel_sm_db(id_m: int, history: dict, data_token):
     sql = "SELECT sm_id FROM sql_telintec.materials_request "
-    flag, error, result = execute_sql(sql, None, 5)
+    flag, error, result = execute_sql(sql, None, 5, data_token)
     if not flag:
         return False, error, None
     if not isinstance(result, list):
@@ -713,11 +646,11 @@ def cancel_sm_db(id_m: int, history: dict):
         "WHERE sm_id = %s "
     )
     val = (json.dumps(history), id_m)
-    flag, error, result = execute_sql(sql, val, 4)
+    flag, error, result = execute_sql(sql, val, 4, data_token)
     return flag, error, result
 
 
-def update_history_sm_from_cancel(sm_id, history: list, comments, is_complete=False):
+def update_history_sm_from_cancel(sm_id, history: list, comments, data_token, is_complete=False):
     if is_complete:
         sql = (
             "UPDATE sql_telintec.materials_request "
@@ -725,7 +658,7 @@ def update_history_sm_from_cancel(sm_id, history: list, comments, is_complete=Fa
             "WHERE sm_id = %s "
         )
         val = (json.dumps(history), json.dumps(comments), sm_id)
-        flag, error, result = execute_sql(sql, val, 4)
+        flag, error, result = execute_sql(sql, val, 4, data_token)
     else:
         sql = (
             "UPDATE sql_telintec.materials_request "
@@ -733,11 +666,11 @@ def update_history_sm_from_cancel(sm_id, history: list, comments, is_complete=Fa
             "WHERE sm_id = %s "
         )
         val = (json.dumps(history), json.dumps(comments), sm_id)
-        flag, error, result = execute_sql(sql, val, 4)
+        flag, error, result = execute_sql(sql, val, 4, data_token)
     return flag, error, result
 
 
-def update_history_status_sm(sm_id, history: list, status, extra_info, comment):
+def update_history_status_sm(sm_id, history: list, status, extra_info, comment, data_token):
     sql = (
         "UPDATE sql_telintec.materials_request "
         "SET history = %s, status =  %s, extra_info = %s, comment = %s "
@@ -750,18 +683,18 @@ def update_history_status_sm(sm_id, history: list, status, extra_info, comment):
         json.dumps(comment),
         sm_id,
     )
-    flag, error, result = execute_sql(sql, val, 4)
+    flag, error, result = execute_sql(sql, val, 4, data_token)
     return flag, error, result
 
 
-def finalize_status_sm(sm_id: int):
+def finalize_status_sm(sm_id: int, data_token):
     sql = "UPDATE sql_telintec.materials_request SET status = 3 WHERE sm_id = %s "
     val = (sm_id,)
-    flag, error, result = execute_sql(sql, val, 4)
+    flag, error, result = execute_sql(sql, val, 4, data_token)
     return flag, error, result
 
 
-def get_all_sm_plots(emp_id: int, is_supper=False):
+def get_all_sm_plots(emp_id: int, data_token, is_supper=False):
     if is_supper:
         sql = (
             "SELECT sm_id, emp_id, date, limit_date, status "
@@ -775,18 +708,18 @@ def get_all_sm_plots(emp_id: int, is_supper=False):
             "WHERE emp_id = %s "
         )
         val = (emp_id,)
-    flag, error, result = execute_sql(sql, val, 5 if is_supper else 2)
+    flag, error, result = execute_sql(sql, val, 5 if is_supper else 2, data_token)
     return flag, error, result
 
 
-def update_only_status(status: int, sm_id: int):
+def update_only_status(status: int, sm_id: int, data_token):
     sql = "UPDATE sql_telintec.materials_request SET status = %s WHERE sm_id = %s "
     val = (status, sm_id)
-    flag, error, result = execute_sql(sql, val, 4)
+    flag, error, result = execute_sql(sql, val, 4, data_token)
     return flag, error, result
 
 
-def get_info_names_by_sm_id(sm_id: int):
+def get_info_names_by_sm_id(sm_id: int, data_token):
     sql = (
         "SELECT "
         "sql_telintec.customers_amc.name, "
@@ -798,23 +731,23 @@ def get_info_names_by_sm_id(sm_id: int):
         "WHERE sm_id = %s"
     )
     val = (sm_id,)
-    flag, error, result = execute_sql(sql, val, 1)
+    flag, error, result = execute_sql(sql, val, 1, data_token)
     if not isinstance(result, tuple):
         return False, "Error at retriving sm from db", []
     return flag, error, result
 
 
-def get_folios_by_pattern(pattern: str):
+def get_folios_by_pattern(pattern: str, data_token):
     sql = "SELECT folio FROM sql_telintec.materials_request WHERE folio LIKE %s ORDER BY folio DESC"
     val = (f"{pattern}%",)
-    flag, error, result = execute_sql(sql, val, 2)
+    flag, error, result = execute_sql(sql, val, 2, data_token)
     if not isinstance(result, list):
         return False, "Error at retriving sm from db", []
     return flag, error, result
 
 
 def update_history_extra_info_sm_by_id(
-    sm_id: int, extra_info: dict, history: list, comments: list
+    sm_id: int, extra_info: dict, history: list, comments: list, data_token
 ):
     sql = (
         "UPDATE sql_telintec.materials_request "
@@ -822,11 +755,11 @@ def update_history_extra_info_sm_by_id(
         "WHERE sm_id = %s "
     )
     val = (json.dumps(extra_info), json.dumps(history), json.dumps(comments), sm_id)
-    flag, error, result = execute_sql(sql, val, 4)
+    flag, error, result = execute_sql(sql, val, 4, data_token)
     return flag, error, result
 
 
-def get_pending_sm_db():
+def get_pending_sm_db( data_token):
     sql = (
         "SELECT "
         "mr.sm_id, "
@@ -881,33 +814,33 @@ def get_pending_sm_db():
         "WHERE mr.status = 0 "
         "GROUP BY mr.sm_id"
     )
-    flag, error, result = execute_sql(sql, None, 5)
+    flag, error, result = execute_sql(sql, None, 5, data_token)
     return flag, error, result
 
 
-def update_history_items_sm(sm_id: int, items: list, history: list):
+def update_history_items_sm(sm_id: int, items: list, history: list, data_token):
     sql = "UPDATE sql_telintec.materials_request SET history = %s WHERE sm_id = %s "
     val = (json.dumps(items), json.dumps(history), sm_id)
-    flag, error, result = execute_sql(sql, val, 3)
+    flag, error, result = execute_sql(sql, val, 3, data_token)
     return flag, error, result
 
 
-def get_sm_folios_db():
+def get_sm_folios_db( data_token):
     sql = "SELECT sm_id, folio FROM sql_telintec.materials_request WHERE status < 2 "
-    flag, error, result = execute_sql(sql, None, 5)
+    flag, error, result = execute_sql(sql, None, 5, data_token)
     if not isinstance(result, list):
         return False, "Error at retriving sm from db", []
     return flag, error, result
 
 
-def delete_item_from_sm_id(sm_id: int):
+def delete_item_from_sm_id(sm_id: int, data_token):
     sql = """DELETE FROM sql_telintec.sm_items WHERE id_sm = %s """
     val = (sm_id,)
-    flag, error, result = execute_sql(sql, val, 3)
+    flag, error, result = execute_sql(sql, val, 3, data_token)
     return flag, error, result
 
 
-def get_sm_items_state(state: str):
+def get_sm_items_state(state: str, data_token):
     sql = """
           SELECT id_item, id_sm, mr.folio , name
           FROM sql_telintec.sm_items
@@ -915,13 +848,13 @@ def get_sm_items_state(state: str):
           WHERE state = %s 
           """
     val = (state,)
-    flag, error, result = execute_sql(sql, val, 2)
+    flag, error, result = execute_sql(sql, val, 2, data_token)
     if not isinstance(result, list):
         return False, "Error at retriving sm from db", []
     return flag, error, result
 
 
-def update_inventory_state_sm_item_db(state, id_inventory, id_item):
+def update_inventory_state_sm_item_db(state, id_inventory, id_item, data_token):
     sql = """
           UPDATE sql_telintec.sm_items
           SET state = %s,
@@ -929,18 +862,18 @@ def update_inventory_state_sm_item_db(state, id_inventory, id_item):
           WHERE id_item = %s
           """
     val = (state, id_inventory, id_item)
-    flag, error, result = execute_sql(sql, val, 3)
+    flag, error, result = execute_sql(sql, val, 3, data_token)
     return flag, error, result
 
 
-def update_state_sm_item_db(state, id_item, history: dict, sm_id):
+def update_state_sm_item_db(state, id_item, history: dict, sm_id, data_token):
     sql = """
           UPDATE sql_telintec.sm_items
           SET state = %s
           WHERE id_sm = %s
           """
     val = (state, id_item)
-    flag, error, result = execute_sql(sql, val, 3)
+    flag, error, result = execute_sql(sql, val, 3, data_token)
     if not flag:
         return False, error, result
     sql = """
@@ -949,18 +882,18 @@ def update_state_sm_item_db(state, id_item, history: dict, sm_id):
           WHERE sm_id = %s
           """
     val = (json.dumps(history), sm_id)
-    flag, error, result = execute_sql(sql, val, 3)
+    flag, error, result = execute_sql(sql, val, 3, data_token)
     return flag, error, result
 
 
-def update_extra_info_sm_item_db(extra_info: dict, id_item, history: dict, sm_id):
+def update_extra_info_sm_item_db(extra_info: dict, id_item, history: dict, sm_id, data_token):
     sql = """
           UPDATE sql_telintec.sm_items
           SET extra_info = %s
           WHERE id_item = %s
           """
     val = (json.dumps(extra_info), id_item)
-    flag, error, result = execute_sql(sql, val, 3)
+    flag, error, result = execute_sql(sql, val, 3, data_token)
     if not flag:
         return False, error, result
     sql = """
@@ -969,5 +902,5 @@ def update_extra_info_sm_item_db(extra_info: dict, id_item, history: dict, sm_id
           WHERE sm_id = %s
           """
     val = (json.dumps(history), sm_id)
-    flag, error, result = execute_sql(sql, val, 3)
+    flag, error, result = execute_sql(sql, val, 3, data_token)
     return flag, error, result

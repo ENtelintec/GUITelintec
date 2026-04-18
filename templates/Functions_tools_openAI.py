@@ -44,7 +44,9 @@ def getProductCategories(**kwargs):
         match k:
             case _:
                 pass
-    flag, error, result, columns = get_product_categories()
+    flag, error, result, columns = get_product_categories(
+        kwargs.get("data_token", None)
+    )
     if flag:
         result.insert(0, columns)
         return result
@@ -71,7 +73,9 @@ def getProductsAlmacen(**kwargs):
     id_p = id_p if id_p is not None else "%"
     name = name if name is not None else "%"
     category = category if category is not None else "%"
-    flag, error, result, columns = get_products_almacen(id_p, name, category)
+    flag, error, result, columns = get_products_almacen(
+        id_p, name, category, kwargs.get("data_token", None)
+    )
     if flag:
         result.insert(0, columns)
         return result
@@ -94,7 +98,7 @@ def getHighStockProducts(**kwargs):
     category = category if category is not None else "%"
     quantity = quantity if quantity is not None else 10
     flag, error, result, columns = get_high_stock_products(
-        category=category, quantity=quantity
+        category=category, quantity=quantity, data_token=kwargs.get("data_token", None)
     )
     if flag:
         result.insert(0, columns)
@@ -118,7 +122,7 @@ def getLowStockProducts(**kwargs):
     category = category if category is not None else "%"
     quantity = quantity if quantity is not None else 10
     flag, error, result, columns = get_low_stock_products(
-        category=category, quantity=quantity
+        category=category, quantity=quantity, data_token=kwargs.get("data_token", None)
     )
     if flag:
         result.insert(0, columns)
@@ -137,7 +141,9 @@ def getNoStockProducts(**kwargs):
             case _:
                 pass
     category = category if category is not None else "%"
-    flag, error, result, columns = get_no_stock_products(category=category)
+    flag, error, result, columns = get_no_stock_products(
+        category=category, data_token=kwargs.get("data_token", None)
+    )
     if flag:
         result.insert(0, columns)
         return result
@@ -159,7 +165,9 @@ def getCostumer(**kwargs):
                 pass
     name = name if name is not None else "%"
     id_c = id_c if id_c is not None else "%"
-    flag, error, result, columns = get_costumers_amc(name, id_c)
+    flag, error, result, columns = get_costumers_amc(
+        name, id_c, data_token=kwargs.get("data_token", None)
+    )
     if flag:
         result.insert(0, columns)
         return result
@@ -245,7 +253,7 @@ def getProductMovement(**kwargs):
     id_m = id_m if id_m is not None else "%"
     id_p = id_p if id_p is not None else "%"
     flag, error, result, columns = get_product_movement_amc(
-        type_movement, id_m, id_p, date
+        type_movement, id_m, id_p, date, data_token=kwargs.get("data_token", None)
     )
     if flag:
         result.insert(0, columns)
@@ -268,7 +276,9 @@ def getSupplyInventory(**kwargs):
                 pass
     name = name if name is not None else "%"
     id_s = id_s if id_s is not None else "%"
-    flag, error, result, columns = get_supply_inv_amc(name, id_s)
+    flag, error, result, columns = get_supply_inv_amc(
+        name, id_s, data_token=kwargs.get("data_token", None)
+    )
     if flag:
         result.insert(0, columns)
         return result
@@ -343,7 +353,7 @@ def getActiveEmployees(**kwargs):
                 pass
     status = status if status is not None else "%"
     quantity = quantity if quantity is not None else 10
-    flag, error, result, columns = get_employees_w_status(status, quantity, date)
+    flag, error, result, columns = get_employees_w_status(status, quantity, date, data_token=kwargs.get("data_token", None))
     if flag:
         result.insert(0, columns)
         return result
@@ -361,7 +371,9 @@ def getEmployeeInfo(**kwargs):
             case _:
                 pass
     id_e = id_e if id_e is not None else None
-    flag, error, result, columns = get_employee_info(id_e)
+    flag, error, result, columns = get_employee_info(
+        id_e, data_token=kwargs.get("data_token", None)
+    )
     if flag:
         result = [result]
         result.insert(0, columns)

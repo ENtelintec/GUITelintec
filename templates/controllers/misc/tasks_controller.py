@@ -11,7 +11,7 @@ from static.constants import format_timestamps, timezone_software
 from templates.database.connection import execute_sql
 
 
-def create_task(task_title, emp_destiny, emp_origin, task_date, metadata, dict_quizz):
+def create_task(task_title, emp_destiny, emp_origin, task_date, metadata, dict_quizz, data_token):
     time_zone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
     body = {
@@ -29,11 +29,11 @@ def create_task(task_title, emp_destiny, emp_origin, task_date, metadata, dict_q
         "VALUES (%s, %s, %s)"
     )
     val = (json.dumps(body), timestamp, json.dumps(data_raw))
-    flag, error, id_task = execute_sql(sql, val, 4)
+    flag, error, id_task = execute_sql(sql, val, 4, data_token)
     return flag, error, id_task
 
 
-def update_task(id_task, body: dict, status=None, metadata=None, data_raw=None):
+def update_task(id_task, body: dict, data_token, status=None, metadata=None, data_raw=None):
     time_zone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
     body["status"] = status if status is not None else body["status"]
@@ -51,19 +51,19 @@ def update_task(id_task, body: dict, status=None, metadata=None, data_raw=None):
         "WHERE id = %s"
     )
     val = (json.dumps(body), timestamp, json.dumps(data_raw), id_task)
-    flag, error, out = execute_sql(sql, val, 3)
+    flag, error, out = execute_sql(sql, val, 3, data_token)
     return flag, error, out
 
 
-def delete_task(id_task):
+def delete_task(id_task, data_token):
     sql = "DELETE FROM sql_telintec.tasks_gui " "WHERE id = %s"
     val = (id_task,)
-    flag, error, out = execute_sql(sql, val, 3)
+    flag, error, out = execute_sql(sql, val, 3, data_token)
     return flag, error, out
 
 
 def get_all_tasks_by_status(
-    status, id_task=None, id_destiny=None, id_origin=None, title="quizz"
+    status, data_token, id_task=None, id_destiny=None, id_origin=None, title="quizz"
 ):
     if status is None or status == -1 or id_task is not None:
         status = "%"
@@ -86,16 +86,16 @@ def get_all_tasks_by_status(
         if id_origin is not None:
             sql += "AND body->'$.emp_origin' = %s "
             vals += (id_origin,)
-    flag, error, result = execute_sql(sql, vals, 2)
+    flag, error, result = execute_sql(sql, vals, 2, data_token)
     return flag, error, result
 
 
-def get_task_by_id_emp(id_emp):
+def get_task_by_id_emp(id_emp, data_token):
     sql = (
         "SELECT id, body, data_raw, timestamp "
         "FROM sql_telintec.tasks_gui "
         "WHERE body->'$.emp_destiny' = %s "
     )
     vals = (id_emp,)
-    flag, error, result = execute_sql(sql, vals, 2)
+    flag, error, result = execute_sql(sql, vals, 2, data_token)
     return flag, error, result

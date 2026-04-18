@@ -685,8 +685,8 @@ def read_setting_file(file_path: str) -> dict:
     return setting
 
 
-def get_all_sm_entries(filter_status=False, is_supper=False, emp_id=None):
-    flag, error, result = get_sm_entries()
+def get_all_sm_entries( data_token, filter_status=False, is_supper=False, emp_id=None):
+    flag, error, result = get_sm_entries(data_token)
     if flag:
         columns = (
             "ID",
@@ -751,8 +751,8 @@ def get_all_sm_entries(filter_status=False, is_supper=False, emp_id=None):
         return None, None
 
 
-def get_all_sm_products():
-    flag, error, result = get_products_w_reservations()
+def get_all_sm_products( data_token):
+    flag, error, result = get_products_w_reservations(data_token)
     if flag:
         columns = ("ID", "udm", "Stock", "Nombre")
         # change second column to last position column

@@ -11,7 +11,6 @@ from flask_restx import Namespace, Resource
 from werkzeug.utils import secure_filename
 
 from static.Models.api_employee_models import (
-    employees_info_model,
     employee_model_insert,
     employee_model_update,
     employee_model_delete,
@@ -157,7 +156,7 @@ class EmployeeGet(Resource):
         flag, data_token, msg = token_verification_procedure(request, department="rrhh")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        data_out, code = get_info_employee_id(id_emp)
+        data_out, code = get_info_employee_id(id_emp, data_token)
         return data_out, code
 
 
@@ -236,7 +235,7 @@ class EMRegistry(Resource):
         if not validator.validate():
             return {"errors": validator.errors}, 400
         data = validator.data
-        data_out, code = insert_medical_db(data)
+        data_out, code = insert_medical_db(data, data_token)
         return data_out, code
 
     @ns.expect(expected_headers_per, employee_exam_model_update)
@@ -249,7 +248,7 @@ class EMRegistry(Resource):
         if not validator.validate():
             return {"errors": validator.errors}, 400
         data = validator.data
-        data_out, code = update_medical_db(data)
+        data_out, code = update_medical_db(data, data_token)
         return data_out, code
 
     @ns.expect(expected_headers_per, employee_exam_model_delete)
@@ -262,7 +261,7 @@ class EMRegistry(Resource):
         if not validator.validate():
             return {"errors": validator.errors}, 400
         data = validator.data
-        flag, error, result = delete_exam_med(data["id"])
+        flag, error, result = delete_exam_med(data["id"], data_token)
         if flag:
             return {"data": str(result)}, 200
         else:
@@ -277,7 +276,7 @@ class VacationsAll(Resource):
         flag, data_token, msg = token_verification_procedure(request, department="rrhh")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        data, code = get_all_vacations()
+        data, code = get_all_vacations(data_token)
         if code == 200:
             return {"data": data, "msg": "ok"}, code
         else:
@@ -291,7 +290,7 @@ class VacationsEmployeesID(Resource):
         flag, data_token, msg = token_verification_procedure(request, department="rrhh")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        data, code = get_vacations_employee(id_emp)
+        data, code = get_vacations_employee(id_emp, data_token)
         if code == 200:
             return data, code
         else:
@@ -310,7 +309,7 @@ class VacationRegistry(Resource):
         if not validator.validate():
             return {"errors": validator.errors}, 400
         data = validator.data
-        flag, error, result = insert_new_vacation(data)
+        flag, error, result = insert_new_vacation(data, data_token)
         if flag:
             return {"data": str(result)}, 201
         else:
@@ -326,7 +325,7 @@ class VacationRegistry(Resource):
         if not validator.validate():
             return {"errors": validator.errors}, 400
         data = validator.data
-        flag, error, result = update_vacation(data)
+        flag, error, result = update_vacation(data, data_token)
         if flag:
             return {"data": str(result)}, 200
         else:
@@ -342,7 +341,7 @@ class VacationRegistry(Resource):
         if not validator.validate():
             return {"errors": validator.errors}, 400
         data = validator.data
-        flag, error, result = delete_vacation(data["emp_id"])
+        flag, error, result = delete_vacation(data["emp_id"], data_token)
         if flag:
             return {"data": str(result)}, 200
         else:
@@ -533,7 +532,7 @@ class DownloadFileMedical(Resource):
         flag, data_token, msg = token_verification_procedure(request, department="rrhh")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        flag, e, result = get_all_examenes()
+        flag, e, result = get_all_examenes(data_token)
         if not (isinstance(result, list) and isinstance(result, tuple)):
             return {"data": None, "msg": "Error al obtener los datos del empleado"}, 400
         filepath = "files/medical.csv"
@@ -560,7 +559,7 @@ class DownloadFileVacations(Resource):
         flag, data_token, msg = token_verification_procedure(request, department="rrhh")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        flag, error, data = get_vacations_data()
+        flag, error, data = get_vacations_data(data_token)
         filepath = "files/vacations.csv"
         if not (isinstance(data, list) and isinstance(data, tuple)):
             return {"data": None, "msg": "Error al obtener los datos del empleado"}, 400
@@ -587,7 +586,7 @@ class DownloadFileQuizzReport(Resource):
         if not validator.validate():
             return {"error": validator.errors}, 400
         data = validator.data
-        code, data_out = generate_pdf_from_json(data)
+        code, data_out = generate_pdf_from_json(data, data_token)
         if code == 400:
             return {"data": None, "msg": data_out}, code
         else:
