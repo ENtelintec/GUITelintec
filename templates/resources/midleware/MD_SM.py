@@ -93,7 +93,7 @@ def get_products_sm(contract: str, data_token) -> tuple[dict, int]:
         if item[4] is None:
             continue
         ids_in_contract[item[4]] = item[3]
-    flag, error, result_p = get_products_w_reservations( data_token)
+    flag, error, result_p = get_products_w_reservations(data_token)
     if not flag:
         return {"data": {"contract": [], "normal": []}}, 400
     items_normal = []
@@ -574,7 +574,8 @@ def dispatch_sm(data, data_token):
             "salida",
             item_n["quantity"],
             date_now,
-            folio, data_token,
+            folio,
+            data_token,
             "Despachado de SM",
         )
         if not flag:
@@ -596,7 +597,9 @@ def dispatch_sm(data, data_token):
             f"---Stock actualizado para el item {item_to_update['id_inventory']}: {str(res_stock)}"
         )
         # -- actualizar el estado de la reservación
-        flag, error, res_res = complete_reservation_db(item_to_update["reservation_id"], data_token)
+        flag, error, res_res = complete_reservation_db(
+            item_to_update["reservation_id"], data_token
+        )
         msg_items.append(
             f"x---Error al tratar de completar la reservación {item_to_update['id']}: {str(error)}"
         ) if not flag else msg_items.append(
@@ -708,7 +711,7 @@ def dispatch_sm(data, data_token):
         msg += "\n" + "\n".join(msg_items)
     write_log_file(log_file_sm_path, msg)
     create_notification_permission(
-        msg, ["sm"], "SM Despachada", data_token["emp_id"], id_user
+        msg, data_token, ["sm"], "SM Despachada", data_token["emp_id"], id_user
     )
     return 200, {"msg": msg_items}
 
@@ -743,7 +746,12 @@ def cancel_sm(data, data_token):
     if flag:
         msg = f"SM con ID-{data['id']} cancelada"
         create_notification_permission(
-            msg, ["sm"], "SM Cancelada", data["info"]["emp_id"], emp_id_creation
+            msg,
+            data_token,
+            ["sm"],
+            "SM Cancelada",
+            data["info"]["emp_id"],
+            emp_id_creation,
         )
         write_log_file(log_file_sm_path, msg)
         return 200, {"msg": "ok"}
@@ -850,7 +858,9 @@ def dowload_file_sm(sm_id: int, data_token, type_file="pdf"):
 
 
 def create_customer(name, email, phone, rfc, address, data_token):
-    flag, error, result = create_customer_db(name, email, phone, rfc, address, data_token)
+    flag, error, result = create_customer_db(
+        name, email, phone, rfc, address, data_token
+    )
     if flag:
         return {"msg": "ok", "data": result}, 201
     else:
@@ -863,7 +873,8 @@ def create_product(
     udm,
     stock,
     id_category,
-    id_supplier, data_token,
+    id_supplier,
+    data_token,
     is_tool=0,
     is_internal=0,
     codes=None,
@@ -878,7 +889,8 @@ def create_product(
             id_category,
             id_supplier,
             is_tool,
-            is_internal, data_token,
+            is_internal,
+            data_token,
             codes,
             locations,
         )
@@ -931,6 +943,7 @@ def update_sm_from_control_table(
         msg = f"SM con ID-{data['id']} actualizada"
         create_notification_permission(
             msg,
+            data_token,
             ["sm", "almacen", "administracion"],
             "SM Actualizada",
             data_token.get("emp_id"),
@@ -1044,7 +1057,9 @@ def create_sm_from_api(data, data_token):
         f"empleado con id: {data_token.get('name')}, "
         f"comentario: {data['info']['comment']}"
     )
-    errors_items, result_ids_items = create_items_sm_db(data["items"], sm_result, data_token)
+    errors_items, result_ids_items = create_items_sm_db(
+        data["items"], sm_result, data_token
+    )
     if len(result_ids_items) > 0:
         msg += f"\nItems creados: {result_ids_items}"
     if len(errors_items) > 0:
@@ -1058,6 +1073,7 @@ def create_sm_from_api(data, data_token):
         msg += f"\nErrores al actualizar partidas: {errors}"
     create_notification_permission(
         msg,
+        data_token,
         ["sm", "administracion", "almacen"],
         "Nueva SM Recibida",
         data_token.get("emp_id"),
@@ -1109,7 +1125,9 @@ def create_urgent_sm_from_api(data, data_token):
         f"fecha limite: {data['info']['critical_date']}, "
         f"empleado con id: {data_token.get('name')}. "
     )
-    errors_items, result_ids_items = create_items_sm_db(data["items"], result, data_token)
+    errors_items, result_ids_items = create_items_sm_db(
+        data["items"], result, data_token
+    )
     if len(result_ids_items) > 0:
         msg += f"\nItems creados: {result_ids_items}"
     if len(errors_items) > 0:
@@ -1123,6 +1141,7 @@ def create_urgent_sm_from_api(data, data_token):
         msg += f"\nErrores al actualizar partidas: {errors}"
     create_notification_permission(
         msg,
+        data_token,
         ["sm", "administracion", "almacen"],
         "Nueva SM Recibida",
         data_token.get("emp_id"),
@@ -1200,6 +1219,7 @@ def update_sm_from_api(data, data_token):
             msg += f"\nErrores al actualizar items: {errors}"
         create_notification_permission(
             msg,
+            data_token,
             ["sm", "administracion", "almacen"],
             "Nueva SM Recibida",
             data_token.get("emp_id"),
@@ -1223,6 +1243,7 @@ def delete_sm_from_api(data, data_token):
         )
         create_notification_permission(
             msg,
+            data_token,
             ["sm", "administracion", "almacen"],
             "SM Eliminada",
             sender_id=data.get("id_emp"),
@@ -1235,7 +1256,7 @@ def delete_sm_from_api(data, data_token):
 
 
 def get_sm_folios_from_api(data_token):
-    flag, error, result = get_sm_folios_db( data_token)
+    flag, error, result = get_sm_folios_db(data_token)
     if not flag:
         return {"msg": "error at getting sm folios"}, 400
     folios = []
@@ -1276,6 +1297,7 @@ def update_sm_item_state_and_inventory(data, data_token):
     msg = f"Item con id {data.get('id_item')} actualizado a estado {data.get('state')} con id de inventario {data.get('id_inventory')}"
     create_notification_permission(
         msg,
+        data_token,
         ["administracion", "almacen"],
         "SM Actualizada",
         data_token.get("emp_id"),
@@ -1313,6 +1335,7 @@ def update_sm_item_state(data, data_token):
         return {"msg": f"error at updating sm item state: {state}"}, 400
     create_notification_permission(
         msg,
+        data_token,
         ["administracion", "almacen"],
         "SM Actualizada",
         data_token.get("emp_id"),
@@ -1358,6 +1381,7 @@ def update_sm_item_approve(data, data_token):
         return {"msg": f"error at updating sm item approve: {approve_required}"}, 400
     create_notification_permission(
         msg,
+        data_token,
         ["administracion", "almacen"],
         "SM Actualizada",
         data_token.get("emp_id"),
@@ -1424,6 +1448,7 @@ def update_items_sm_from_api(data, data_token):
     # Notificación (mensaje compacto con empleado)
     create_notification_permission(
         msg,
+        data_token,
         ["sm", "administracion", "almacen"],
         "Nueva SM Recibida",
         emp_id,
@@ -1576,7 +1601,11 @@ def create_sm_attachment_api(data, data_token):
         }, 400
     user_created_sm = sm_data[6]
     create_notification_permission_notGUI(
-        msg, ["administracion", "sm"], data_token.get("emp_id"), user_created_sm
+        msg,
+        data_token,
+        ["administracion", "sm"],
+        data_token.get("emp_id"),
+        user_created_sm,
     )
     write_log_file(log_file_sm_path, msg)
     return {"data": path_aws, "msg": msg}, 201

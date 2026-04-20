@@ -16,7 +16,7 @@ from templates.Functions_Utils import (
 from templates.resources.midleware.Functions_midleware_RRHH import fetch_medicals
 
 
-def MedicalNotifications():
+def MedicalNotifications( data_token):
     time_zone = pytz.timezone(timezone_software)
     timestamp_today = datetime.now(pytz.utc).astimezone(time_zone)
     out, code = fetch_medicals()
@@ -36,19 +36,20 @@ def MedicalNotifications():
     if len(medical_to_notify) > 0:
         msg = "Notificaciones de sistema\n" + "\n".join(medical_to_notify)
         create_notification_permission_notGUI(
-            msg, ["rrhh"], "Notificaciones de sistema", 0, 0
+            msg, data_token, ["rrhh"], "Notificaciones de sistema", 0, 0
         )
 
 
 class NotificationsSearch(threading.Thread):
-    def __init__(self, type_n="medical"):
+    def __init__(self, data_token, type_n="medical"):
         super().__init__()
         self.type_n = type_n
+        self.data_token=data_token
 
     def run(self):
         match self.type_n:
             case "medical":
-                MedicalNotifications()
+                MedicalNotifications(self.data_token)
                 update_flag_daemons(flag_medical=True)
             case "payroll":
                 print("searching for payroll notifications")

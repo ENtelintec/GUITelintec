@@ -600,7 +600,7 @@ def insert_supplier(data, data_token):
         else:
             msg = f"Supplier created with id {id_supplier} but some items failed to create: {len(errors_i)}"
             create_notification_permission(
-                msg,
+                msg, data_token,
                 ["administracion", "almacen"],
                 "Error Proveedor Creado",
                 data_token.get("emp_id"),
@@ -611,7 +611,7 @@ def insert_supplier(data, data_token):
     else:
         msg = f"Proveedor creado con ID-{id_supplier} por el empleado {data_token.get('name')}"
         create_notification_permission(
-            msg,
+            msg, data_token,
             ["administracion", "almacen"],
             "Proveedor Creado",
             data_token.get("emp_id"),
@@ -688,7 +688,7 @@ def update_supplier(data, data_token):
         else:
             msg = f"Supplier created with id {item.get('id_supplier')} but some items failed to create: {len(errors_i)}"
             create_notification_permission(
-                msg,
+                msg, data_token,
                 ["administracion", "almacen"],
                 "Error Proveedor Creado",
                 data_token.get("emp_id"),
@@ -706,7 +706,7 @@ def delete_supplier(data, data_token):
         return {"data": None, "msg": str(error)}, 400
     msg = f"Proveedor eliminado con ID-{data.get('id')} por el empleado {data_token.get('name')}"
     create_notification_permission(
-        msg,
+        msg, data_token,
         ["administracion", "almacen"],
         "Proveedor Eliminado",
         data_token.get("emp_id"),
@@ -724,7 +724,7 @@ def update_extra_info_supplier(data, data_token):
         return {"data": None, "msg": str(error)}, 400
     msg = f"Informacion extra actualizada para el proveedor con ID-{data.get('id')} por el empleado {data_token.get('name')}"
     create_notification_permission(
-        msg,
+        msg, data_token,
         ["administracion", "almacen"],
         "Proveedor actualizado",
         data_token.get("emp_id"),
@@ -815,7 +815,7 @@ def insert_head_from_api(data, data_token):
         return {"data": None, "msg": str(error)}, 400
     msg = f"Encargado creado con ID-{result} por el empleado {data_token.get('name')}"
     create_notification_permission(
-        msg,
+        msg, data_token,
         ["administracion", "operaciones"],
         "Encargado Creado",
         data_token.get("emp_id"),
@@ -844,7 +844,7 @@ def update_head_from_api(data, data_token):
         return {"data": None, "msg": str(error)}, 400
     msg = f"Encargado actualizado con ID-{data['id']} por el empleado {data_token.get('name')}"
     create_notification_permission(
-        msg,
+        msg, data_token,
         ["administracion", "operaciones"],
         "Encargado Actualizado",
         data_token.get("emp_id"),
@@ -860,7 +860,7 @@ def delete_head_from_api(data, data_token):
         return {"data": None, "msg": str(error)}, 400
     msg = f"Encargado eliminado con ID-{data['id']} por el empleado {data_token.get('name')}"
     create_notification_permission(
-        msg,
+        msg, data_token,
         ["administracion", "operaciones"],
         "Encargado Eliminado",
         data_token.get("emp_id"),
@@ -986,7 +986,7 @@ def create_quotation_from_api(data, data_token):
     else:
         msg += "\nError al crear ciertos items de la cotización"
     create_notification_permission(
-        msg, ["administracion"], "Cotizacion Creada", data_token.get("emp_id"), 0
+        msg, data_token, ["administracion"], "Cotizacion Creada", data_token.get("emp_id"), 0
     )
     write_log_file(log_file_admin, msg)
     return {"data": id_quotation, "msg": "Ok"}, 201
@@ -1082,7 +1082,7 @@ def update_quoation_from_api(data, data_token):
     else:
         msg += "\nError al actualizar ciertos items de la cotización"
     create_notification_permission(
-        msg, ["administracion"], "Cotizacion Actualizada", data_token.get("emp_id"), 0
+        msg, data_token, ["administracion"], "Cotizacion Actualizada", data_token.get("emp_id"), 0
     )
     write_log_file(log_file_admin, msg)
     return {"data": result_list, "error": error_list, "msg": msg}, 200
@@ -1097,7 +1097,7 @@ def delete_quotation_from_api(data, data_token):
         return {"data": "Quoation unable to be deleted", "msg": str(error)}, 400
     msg = f"Cotizacion eliminada con ID-{data['id']} por el empleado {data_token.get('name')}"
     create_notification_permission(
-        msg, ["administracion"], "Cotizacion Eliminada", data_token.get("emp_id"), 0
+        msg, data_token, ["administracion"], "Cotizacion Eliminada", data_token.get("emp_id"), 0
     )
     write_log_file(log_file_admin, msg)
     return {"data": result, "msg": "Ok"}, 200
@@ -1164,7 +1164,7 @@ def create_contract_from_api(data, data_token):
         f"Contrato creado con ID-{id_contract} por el empleado {data_token.get('name')}"
     )
     create_notification_permission(
-        msg, ["administracion"], "Contrato Creado", data_token.get("emp_id"), 0
+        msg, data_token, ["administracion"], "Contrato Creado", data_token.get("emp_id"), 0
     )
     write_log_file(log_file_admin, msg)
     return {"data": result_list, "msg": "Ok"}, 201
@@ -1245,7 +1245,7 @@ def update_contract_from_api(data, data_token):
         return {"data": None, "msg": str(error)}, 400
     msg += f"Contrato actualizado con ID-{data['id']} por el empleado {data_token.get('name')}"
     create_notification_permission(
-        msg, ["administracion"], "Contrato Actualizado", data_token.get("emp_id"), 0
+        msg, data_token, ["administracion"], "Contrato Actualizado", data_token.get("emp_id"), 0
     )
     write_log_file(log_file_admin, msg)
     return {"data": result, "error": error_list, "msg": result_list}, 200
@@ -1260,7 +1260,7 @@ def delete_contract_from_api(data, data_token):
         return {"data": None, "msg": str(error)}, 400
     msg = f"Contrato eliminado con ID-{data['id']} por el empleado {data_token.get('name')}"
     create_notification_permission(
-        msg, ["administracion"], "Contrato Eliminado", data_token.get("emp_id"), 0
+        msg, data_token, ["administracion"], "Contrato Eliminado", data_token.get("emp_id"), 0
     )
     write_log_file(log_file_admin, msg)
     return {"data": result, "msg": "Ok"}, 200

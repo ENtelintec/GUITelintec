@@ -129,7 +129,7 @@ def create_employee_user_from_api(data, data_token):
         }, 400
     msg = f"Usuario creado con ID-{id_user} por el empleado {data_token.get('name')}"
     create_notification_permission(
-        msg,
+        msg, data_token,
         ["administracion", "operaciones"],
         "Encargado Creado",
         data_token.get("emp_id"),

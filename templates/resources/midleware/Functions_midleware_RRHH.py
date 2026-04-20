@@ -123,7 +123,8 @@ def create_new_employee_db(data, data_token):
         data["info"]["birthday"],
         data["info"]["legajo"],
         data["info"]["email"],
-        data["info"]["emergency"], data_token,
+        data["info"]["emergency"],
+        data_token,
         data["info"]["id_leader"],
     )
     if flag:
@@ -151,7 +152,8 @@ def update_employee_db(data, data_token):
         data["info"]["birthday"],
         data["info"]["legajo"],
         data["info"]["email"],
-        data["info"]["emergency"], data_token,
+        data["info"]["emergency"],
+        data_token,
         data["info"]["id_leader"],
     )
     if flag:
@@ -165,7 +167,9 @@ def terminate_employee_from_api(data, data_token):
     timestamp = datetime.now(pytz.utc).astimezone(time_zone)
     date = timestamp.strftime(format_timestamps)
     departure = {"date": date, "reason": data["reason"]}
-    flag, error, result = terminate_employee_db(data["id"], json.dumps(departure))
+    flag, error, result = terminate_employee_db(
+        data["id"], json.dumps(departure), data_token
+    )
     if not flag:
         return {
             "data": str(result),
@@ -178,12 +182,12 @@ def terminate_employee_from_api(data, data_token):
     )
     write_log_file(log_file_rh, msg)
     create_notification_permission(
-        msg, ["rrhh"], "Empleado dato de baja", data_token.get("emp_id"), 0
+        msg, data_token, ["rrhh"], "Empleado dato de baja", data_token.get("emp_id"), 0
     )
     return {"data": str(result), "msg": msg}, 200
 
 
-def get_files_fichaje():
+def get_files_fichaje(data_token):
     flag, files = check_fichajes_files_in_directory(patterns_files_fichaje)
     if not flag:
         return False, files
@@ -191,7 +195,7 @@ def get_files_fichaje():
     return True, files_list
 
 
-def fetch_fichajes_all_employees():
+def fetch_fichajes_all_employees(data_token):
     fichajes_resume, flag = get_fichajes_resume_cache(
         cache_file_resume_fichaje_path, is_hard_update=True
     )
@@ -284,6 +288,8 @@ def get_data_file(filename: str, type_f: str):
     else:
         if ".xls" in filename or ".xlsx" in filename or ".csv" in filename:
             dft = extract_fichajes_file(filename)
+            if dft is None:
+                return False, ["No aceptable extension detected"]
             coldata = []
             for i, col in enumerate(dft.columns.tolist()):
                 coldata.append({"text": col, "stretch": True})
@@ -485,7 +491,9 @@ def upload_nomina_doc(data):
     return 200, None
 
 
-def update_files_data_nominas(key: str, paths_pdf_xml: dict, data_xml: dict, data_token):
+def update_files_data_nominas(
+    key: str, paths_pdf_xml: dict, data_xml: dict, data_token
+):
     flag, error, result = get_payrolls(data_xml["emp_id"], data_token)
     data_emp = {} if not flag or len(result) == 0 else json.loads(result[1])
     try:
@@ -508,7 +516,7 @@ def update_files_data_nominas(key: str, paths_pdf_xml: dict, data_xml: dict, dat
     return data_emp, True
 
 
-def update_data_docs_nomina(patterns=None, use_index=False):
+def update_data_docs_nomina(data_token, patterns=None, use_index=False):
     print("Updating data docs nomina ", patterns)
     settings = json.load(open(filepath_settings, "r"))
     url_shrpt = settings["gui"]["RRHH"]["url_shrpt"]
@@ -562,11 +570,11 @@ def update_data_docs_nomina(patterns=None, use_index=False):
             )
             continue
         data_emps[data_file["emp_id"]], flag = update_files_data_nominas(
-            k, v, data_file
+            k, v, data_file, data_token
         )
         if flag:
             flag, error, result = update_payroll(
-                data_emps[data_file["emp_id"]], data_file["emp_id"]
+                data_emps[data_file["emp_id"]], data_file["emp_id"], data_token
             )
             results.append((flag, error, result))
         else:
@@ -591,8 +599,8 @@ def download_nomina_docs(data, data_token):
     return file_temp_zip, code
 
 
-def get_files_list_nomina_RH(emp_id):
-    flag, error, result = get_payrolls(emp_id)
+def get_files_list_nomina_RH(emp_id, data_token):
+    flag, error, result = get_payrolls(emp_id, data_token)
     dicts_data = []
     for item in result:
         emp_id = int(item[0])
@@ -602,8 +610,8 @@ def get_files_list_nomina_RH(emp_id):
     return 200, dicts_data
 
 
-def get_files_list_nomina(emp_id):
-    flag, error, result = get_payrolls(emp_id)
+def get_files_list_nomina(emp_id, data_token):
+    flag, error, result = get_payrolls(emp_id, data_token)
     files = []
     dicts_data = []
     for item in result:
@@ -701,8 +709,10 @@ def update_vacation(data, data_token):
     return flag, error, result
 
 
-def get_all_quizzes():
-    flag, error, tasks = get_all_tasks_by_status(status=-1, title="quizz")
+def get_all_quizzes(data_token):
+    flag, error, tasks = get_all_tasks_by_status(
+        status=-1, title="quizz", data_token=data_token
+    )
     if not flag:
         return False, error, []
     data_out = []
@@ -920,13 +930,13 @@ def download_fichaje_file(data):
     return download_path, code
 
 
-def update_files_payroll(data):
+def update_files_payroll(data, data_token):
     quincena = data["quincena"]
     quincena = quincena if quincena != "" else None
     patterns = [data["year"], data["month"], quincena]
     from templates.daemons.Files_handling import UpdaterSharepointNomina
 
-    thread_update = UpdaterSharepointNomina(patterns)
+    thread_update = UpdaterSharepointNomina(patterns, data_token)
     thread_update.start()
     flags_daemons = json.load(open(filepath_daemons, "r"))
     flags_daemons["update_files_nomina"] = True
@@ -965,12 +975,12 @@ def create_mail_payroll(data):
     return code, response
 
 
-def update_payroll_list_employees():
+def update_payroll_list_employees(data_token):
     flags_daemons = json.load(open(filepath_daemons, "r"))
     if flags_daemons["update_files_nomina"]:
         msg = "Accion no permitida mientras se actualizan los datos."
         return 400, msg
-    flag, error, result = update_payroll_employees()
+    flag, error, result = update_payroll_employees(data_token)
     msg = "Se han agregado correctamente:\n"
     counter = 0
     for item in result:
@@ -984,9 +994,9 @@ def update_payroll_list_employees():
     return 200 if flag else 400, msg
 
 
-def update_data_employee(data):
+def update_data_employee(data, data_token):
     data_dict = json.loads(data["data_dict"])
-    flag, error, result = update_payroll(data_dict, data["id"])
+    flag, error, result = update_payroll(data_dict, data["id"], data_token)
     return (
         (200, {"data": result, "msg": "ok"})
         if flag
@@ -994,9 +1004,9 @@ def update_data_employee(data):
     )
 
 
-def fetch_employees_without_records():
+def fetch_employees_without_records(data_token):
     # name, l_name, status, birthday, date_admission, employee_id
-    flag, error, result = get_employees_without_records()
+    flag, error, result = get_employees_without_records(data_token)
     if not flag:
         return 400, {"data": None, "msg": str(error)}
     out = []
@@ -1023,8 +1033,8 @@ def fetch_employees_without_records():
     return 200, {"data": out, "msg": "ok"}
 
 
-def fetch_medicals():
-    flag, e, result = get_all_examenes()
+def fetch_medicals(data_token):
+    flag, e, result = get_all_examenes(data_token)
     out = {"data": None}
     if not flag:
         out = {"data": []}
@@ -1085,6 +1095,8 @@ def fetch_medicals():
         if apt_actual in limits and limits[apt_actual] is not None and last_date:
             delta = datetime.now() - last_date
             limite = limits[apt_actual]
+            if limite is None:
+                continue 
 
             if delta > limite:
                 # Mensaje crítico
@@ -1112,8 +1124,8 @@ def fetch_medicals():
     return out, 200
 
 
-def fetch_medical_employee(id_emp):
-    flag, e, result = get_all_examenes()
+def fetch_medical_employee(id_emp, data_token):
+    flag, e, result = get_all_examenes(data_token)
     out = {"exist": False, "data": None}
     if not flag:
         return out, 400

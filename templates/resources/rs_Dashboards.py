@@ -105,7 +105,7 @@ class NotificationsMedicals(Resource):
             last_date = datetime.strptime(last_date, format_date)
             last_date = time_zone.localize(last_date)
         if last_date is None or last_date.date() < timestamp.date():
-            sercher = NotificationsSearch()
+            sercher = NotificationsSearch(data_token)
             sercher.start()
             update_flag_daemons(
                 last_date_medicals=timestamp.strftime(format_date), flag_medical=False

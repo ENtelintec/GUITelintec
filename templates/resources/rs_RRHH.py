@@ -116,7 +116,7 @@ class Employee(Resource):
             return {"errors": validator.errors}, 400
         data = validator.data
         print(data)
-        data_out, code = create_new_employee_db(data)
+        data_out, code = create_new_employee_db(data, data_token)
         return data_out, code
 
     @ns.expect(expected_headers_per, employee_model_update)
@@ -129,7 +129,7 @@ class Employee(Resource):
         if not validator.validate():
             return {"errors": validator.errors}, 400
         data = validator.data
-        data_out, code = update_employee_db(data)
+        data_out, code = update_employee_db(data, data_token)
         return data_out, code
 
     @ns.expect(expected_headers_per, employee_model_delete)
@@ -142,7 +142,7 @@ class Employee(Resource):
         if not validator.validate():
             return {"errors": validator.errors}, 400
         data = validator.data
-        flag, error, result = delete_employee(data["id"])
+        flag, error, result = delete_employee(data["id"], data_token)
         if flag:
             return {"data": str(result)}, 200
         else:
@@ -196,7 +196,7 @@ class EMResumeEmployees(Resource):
         flag, data_token, msg = token_verification_procedure(request, department="rrhh")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        out, code = fetch_medical_employee(id_emp)
+        out, code = fetch_medical_employee(id_emp, data_token)
         return out, code
 
 
@@ -208,7 +208,7 @@ class EMResumeAll(Resource):  # noqa: F811
         flag, data_token, msg = token_verification_procedure(request, department="rrhh")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        out, code = fetch_medicals()
+        out, code = fetch_medicals(data_token)
         return out, code
 
 
@@ -219,7 +219,7 @@ class EMEmployeesListLess(Resource):
         flag, data_token, msg = token_verification_procedure(request, department="rrhh")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        code, data_out = fetch_employees_without_records()
+        code, data_out = fetch_employees_without_records(data_token)
         return data_out, code
 
 
@@ -355,7 +355,7 @@ class TaskQuizzes(Resource):
         flag, data_token, msg = token_verification_procedure(request, department="rrhh")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        flag, error, data_out = get_all_quizzes()
+        flag, error, data_out = get_all_quizzes(data_token)
         if flag:
             return {"data": data_out, "msg": "ok"}, 200
         else:
@@ -370,7 +370,7 @@ class EmployeesResume(Resource):
         flag, data_token, msg = token_verification_procedure(request, department="rrhh")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        out, code = fetch_fichajes_all_employees()
+        out, code = fetch_fichajes_all_employees( data_token)
         return out, code
 
 
@@ -401,7 +401,7 @@ class FilesPayroll(Resource):
         if flags_daemons.get("update_files_nomina", False):
             msg = "Accion no permitida mientras se actualizan los datos."
             return {"data": None, "msg": msg}, 400
-        code, msg = update_files_payroll(data)
+        code, msg = update_files_payroll(data, data_token)
         return {"data": None, "msg": msg}, code
 
 
@@ -428,7 +428,7 @@ class DownloadFilesPayroll(Resource):
         flag, data_token, msg = token_verification_procedure(request, department="rrhh")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        code, dicts_data = get_files_list_nomina_RH(emp_id)
+        code, dicts_data = get_files_list_nomina_RH(emp_id, data_token)
         if code != 200:
             return {"data_raw": None, "msg": "No files"}, code
         return {"data_raw": dicts_data, "msg": "ok"}, code
@@ -446,7 +446,7 @@ class UpdatePayroll(Resource):
         if not validator.validate():
             return {"errors": validator.errors}, 400
         data = validator.data
-        code, data_out = update_data_employee(data)
+        code, data_out = update_data_employee(data, data_token)
         return data_out, code
 
 
@@ -457,7 +457,7 @@ class UpdateEmployees(Resource):
         flag, data_token, msg = token_verification_procedure(request, department="rrhh")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        code, msg = update_payroll_list_employees()
+        code, msg = update_payroll_list_employees( data_token)
         return {"data": None, "msg": str(msg)}, code
 
 
@@ -469,7 +469,7 @@ class FilesFichaje(Resource):
         flag, data_token, msg = token_verification_procedure(request, department="rrhh")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        flag, files = get_files_fichaje()
+        flag, files = get_files_fichaje( data_token)
         if flag:
             return {"data": files, "msg": "ok"}, 200
         else:

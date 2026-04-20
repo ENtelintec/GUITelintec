@@ -1056,7 +1056,7 @@ def select_path():
 
 
 def create_notification_permission(
-    msg: str, permissions: list, title: str, sender_id: int, recierver_id=0
+    msg: str, data_token, permissions: list, title: str, sender_id: int, recierver_id=0
 ):
     """
     Función para crear una notificación de permiso
@@ -1080,7 +1080,7 @@ def create_notification_permission(
         "receiver_id": recierver_id,
         "app": permissions,
     }
-    flag, error, result = insert_notification(body)
+    flag, error, result = insert_notification(body, data_token)
     return flag
 
 

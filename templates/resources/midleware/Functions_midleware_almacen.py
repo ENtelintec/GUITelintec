@@ -213,7 +213,7 @@ def insert_movement(data, data_token):
         f"con fecha {timestamp} y referencia {data['info']['reference']} del empleado {data_token.get('emp_id')}-{data_token.get('name')}"
     )
     create_notification_permission_notGUI(
-        msg_notification,
+        msg_notification, data_token,
         ["almacen"],
         "Notifaction de creación de Movimiento",
         data_token.get("emp_id"),
@@ -275,7 +275,7 @@ def update_movement(data, data_token):
         f"del empleado {data_token.get('emp_id')}-{data_token.get('name')}"
     )
     create_notification_permission_notGUI(
-        msg_notification,
+        msg_notification, data_token,
         ["almacen"],
         "Notifaction de actualización de Movimiento",
         data_token.get("emp_id"),
@@ -300,7 +300,7 @@ def delete_movement_amc(data, data_token):
             + f" en la fecha {date}"
         )
         create_notification_permission_notGUI(
-            msg_notification,
+            msg_notification, data_token,
             ["almacen"],
             "Notifaction de eliminacion de Movimiento",
             0,
@@ -412,7 +412,7 @@ def insert_product_db(data, data_token):
         if code_sm != 200:
             msg += f"\n Error al actualizar el producto en la sm: {out_item_sm}"
     flag = create_notification_permission_notGUI(
-        msg, ["almacen"], "Notifaction de Inventario", data_token.get("emp_id"), 0
+        msg, data_token, ["almacen"], "Notifaction de Inventario", data_token.get("emp_id"), 0
     )
     if not flag:
         msg += "\n error notification creation"
@@ -468,7 +468,7 @@ def update_product_amc(data, data_token):
         if code_sm != 200:
             msg += f"\n Error al actualizar el producto en la sm: {out_item_sm}"
     create_notification_permission_notGUI(
-        msg, ["almacen"], "Notifaction de Inventario", data_token.get("emp_id"), 0
+        msg, data_token, ["almacen"], "Notifaction de Inventario", data_token.get("emp_id"), 0
     )
     write_log_file(log_file_almacen, msg)
     return True, result
@@ -482,7 +482,7 @@ def delete_product_from_api(data, data_token):
     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
     msg = f"Se ha eliminado el producto con id {data['id']} por el empleado {data_token.get('emp_id')}-{data_token.get('name')} en la fecha {timestamp}"
     create_notification_permission_notGUI(
-        msg, ["almacen"], "Notifaction de Inventario", data_token.get("emp_id"), 0
+        msg, data_token, ["almacen"], "Notifaction de Inventario", data_token.get("emp_id"), 0
     )
     write_log_file(log_file_almacen, msg)
     return True, result
@@ -640,7 +640,7 @@ def insert_and_update_multiple_products_from_api(data, token_data=None):
         + "\n".join(data_out_update["msg"])
     )
     create_notification_permission_notGUI(
-        msg_notification, ["almacen"], "Notifaction de Inventario", 0, 0
+        msg_notification, token_data, ["almacen"], "Notifaction de Inventario", 0, 0
     )
     time_zone = pytz.timezone(timezone_software)
     timestamp = (
@@ -698,7 +698,7 @@ def insert_multiple_movements_from_api(data, data_token):
     msg_notification += f"[Name: {data_token.get('name', 'No name')}]"
 
     create_notification_permission_notGUI(
-        msg_notification, ["almacen"], "Notifaction de Movimientos", 0, 0
+        msg_notification, data_token, ["almacen"], "Notifaction de Movimientos", 0, 0
     )
     write_log_file(log_file_almacen, msg_notification)
     return True, data_out
@@ -825,7 +825,7 @@ def upload_product_db_from_file(
         + "\n".join(data_out_update["msg"])
     )
     create_notification_permission_notGUI(
-        msg_notification, ["almacen"], "Notification de Inventario", 0, 0
+        msg_notification, token_data, ["almacen"], "Notification de Inventario", 0, 0
     )
     time_zone = pytz.timezone(timezone_software)
     timestamp = (
@@ -1198,7 +1198,7 @@ def update_brand_procedure(data, data_token):
     )
     msg = f"Marca {brand} creada por el empleado {data_token.get('name')} " + msg_list
     create_notification_permission_notGUI(
-        msg, ["almacen", "administracion"], "Marca Creada", data_token.get("emp_id"), 0
+        msg, data_token, ["almacen", "administracion"], "Marca Creada", data_token.get("emp_id"), 0
     )
     write_log_file([log_file_almacen, log_file_admin], msg)
     return msg_list, _providers_dict_amc, brands_dict, 201
@@ -1285,7 +1285,7 @@ def create_reservation_from_api(data, data_token):
         f"con cantidad {data['quantity']} y id producto {data['id_product']} para la sm {data['sm_id']}"
     )
     create_notification_permission_notGUI(
-        msg, ["almacen"], "Notifaction de Inventario", data_token.get("emp_id"), 0
+        msg, data_token, ["almacen"], "Notifaction de Inventario", data_token.get("emp_id"), 0
     )
     write_log_file(log_file_almacen, msg)
     return {"data": lastrowid, "error": str(error)}, 201
@@ -1335,7 +1335,7 @@ def update_reservation_from_api(data, data_token):
         f"con status {data['status']}, cantidad {data['quantity']} y sm {sm_id}"
     )
     create_notification_permission_notGUI(
-        msg, ["almacen"], "Notifaction de Inventario", data_token.get("emp_id"), 0
+        msg, data_token, ["almacen"], "Notifaction de Inventario", data_token.get("emp_id"), 0
     )
     write_log_file(log_file_almacen, msg)
     return {"data": result, "error": str(error)}, 201
@@ -1349,7 +1349,7 @@ def delete_reservation_from_api(data, data_token):
         f"Reservation <{data['id']}> eliminada por el empleado {data_token.get('name')}"
     )
     create_notification_permission_notGUI(
-        msg, ["almacen"], "Notifaction de Inventario", data_token.get("emp_id"), 0
+        msg, data_token, ["almacen"], "Notifaction de Inventario", data_token.get("emp_id"), 0
     )
     write_log_file(log_file_almacen, msg)
     return {"data": result, "error": str(error)}, 201

@@ -253,7 +253,7 @@ def get_events_bitacora(data):
     return {"data": events, "dataEvents": data_events, "columns": columns}, 200
 
 
-def create_event_bitacora_from_api(data):
+def create_event_bitacora_from_api(data, data_token):
     out = check_date_difference(data["date"], delta_bitacora_edit)
     flag = False
     error = None
@@ -282,7 +282,7 @@ def create_event_bitacora_from_api(data):
             f"Evento: {data['event']}, Valor: {data['value']}, Comentario: {data['comment']}"
         )
         create_notification_permission(
-            msg,
+            msg, data_token,
             ["bitacora", "operaciones"],
             "Nuevo evento bitacora",
             data["id_leader"],
@@ -297,7 +297,7 @@ def create_event_bitacora_from_api(data):
         return {"answer": "Fail to add registry"}, 404
 
 
-def update_event_bitacora_from_api(data):
+def update_event_bitacora_from_api(data, data_token):
     out = check_date_difference(data["date"], delta_bitacora_edit)
     if not out:
         return {"answer": "No se puede alterar la bitcaora en esta fecha."}, 403
@@ -312,7 +312,7 @@ def update_event_bitacora_from_api(data):
             f"Evento: {data['event']}, Valor: {data['value']}, Comentario: {data['comment']}"
         )
         create_notification_permission(
-            msg,
+            msg, data_token,
             ["bitacora", "operaciones"],
             "Evento bitacora actualizado",
             data["id_leader"],
@@ -327,7 +327,7 @@ def update_event_bitacora_from_api(data):
         return {"answer": "Fail to update registry"}, 404
 
 
-def delete_event_bitacora_from_api(data):
+def delete_event_bitacora_from_api(data, data_token):
     out = check_date_difference(data["date"], delta_bitacora_edit)
     if not out:
         return {"answer": "No se puede alterar la bitcaora en esta fecha."}, 403
@@ -340,7 +340,7 @@ def delete_event_bitacora_from_api(data):
             f"Evento: {data['event']}"
         )
         create_notification_permission(
-            msg,
+            msg, data_token,
             ["bitacora", "operaciones"],
             "Evento bitacora eliminado",
             data["id_leader"],
@@ -385,7 +385,7 @@ def get_file_report_bitacora(data):
     return filepath_bitacora_download, 200
 
 
-def create_multiple_event_bitacora_from_api(data):
+def create_multiple_event_bitacora_from_api(data, data_token):
     events_recieved = data["events"]
     events_added = []
     msg = f"---Agregando nuevos eventos por el lider {data['id_leader']}---"
@@ -419,7 +419,7 @@ def create_multiple_event_bitacora_from_api(data):
             )
             msg += f"\nid_emp: {event['id_emp']}, {event['event']}_{event['value']}, flag: {flag}, error: {str(error)}, result: {result}"
     create_notification_permission(
-        msg,
+        msg, data_token,
         ["bitacora", "operaciones"],
         "Nuevo evento bitacora",
         data["id_leader"],
@@ -429,7 +429,7 @@ def create_multiple_event_bitacora_from_api(data):
     return {"answer": "The events were proccessed.", "data": events_added}, 200
 
 
-def aprove_event_bitacora_from_api(data):
+def aprove_event_bitacora_from_api(data, data_token):
     flag, error, result = update_bitacora(
         data["id_emp"],
         "extra",
@@ -439,7 +439,7 @@ def aprove_event_bitacora_from_api(data):
     if flag:
         msg = f"Evento extra aprovado: {data['id_emp']}, {data['date']}, {data['value']}, {data['comment']}"
         create_notification_permission(
-            msg,
+            msg, data_token,
             ["bitacora", "operaciones"],
             "Evento extra aprovado bitacora",
             data["id_leader"],
@@ -507,7 +507,7 @@ def create_event_bitacora_rh_from_api(data, data_token):
     if flag:
         msg = f"Evento de bitacora registrado por RH: {data['emp_id']}, {data['timestamp']}, {data['type']}, {data['value']}"
         create_notification_permission(
-            msg,
+            msg, data_token,
             ["RH"],
             "Evento de bitacora registrado",
             data_token.get("emp_id", 0),
@@ -534,7 +534,7 @@ def update_event_bitacora_rh_from_api(data, data_token):
     if flag:
         msg = f"Evento de bitacora actualizado por RH: {data['emp_id']}, {data['timestamp']}, {data['type']}, {data['value']}"
         create_notification_permission(
-            msg,
+            msg, data_token,
             ["RH"],
             "Evento de bitacora actualizado",
             data_token.get("emp_id", 0),
@@ -556,7 +556,7 @@ def delete_event_bitacora_rh_from_api(data, data_token):
     if flag:
         msg = f"Evento de bitacora eliminado por RH: {data['id']}"
         create_notification_permission(
-            msg,
+            msg, data_token,
             ["RH"],
             "Evento de bitacora eliminado",
             data_token.get("emp_id", 0),

@@ -320,7 +320,7 @@ def create_purchaser_order_api(data, data_token):
         else:
             msg += "\n" + f"Tabla de control de SM con id {sm_id} actualizada"
     create_notification_permission_notGUI(
-        msg, ["orders"], "Orden de compra creada", data_token.get("emp_id")
+        msg, data_token, ["orders"], "Orden de compra creada", data_token.get("emp_id")
     )
     write_log_file(log_file_po, msg)
     if flag_error:
@@ -408,7 +408,7 @@ def update_purchase_order_api(data, data_token):
             )
     msg += "\n" + "\n".join(msg_items)
     create_notification_permission_notGUI(
-        msg, ["orders"], "Orden de compra creada", data_token.get("emp_id")
+        msg, data_token, ["orders"], "Orden de compra creada", data_token.get("emp_id")
     )
     write_log_file(log_file_po, msg)
     if flag_error:
@@ -441,7 +441,7 @@ def cancel_purchase_order_api(data, data_token):
         return {"data": None, "msg": "error", "error": str(error)}, 400
     msg = f"Orden de compra cancelada con ID-{data['id']}"
     create_notification_permission_notGUI(
-        msg, ["orders"], "Orden de compra cancelada", data_token.get("emp_id")
+        msg, data_token, ["orders"], "Orden de compra cancelada", data_token.get("emp_id")
     )
     write_log_file(log_file_po, msg)
     return {"data": [data["id"]], "msg": "ok", "error": None}, 200
@@ -468,7 +468,7 @@ def change_state_order_api(data, data_token):
         return {"data": None, "msg": "error", "error": str(error)}, 400
     msg = f"Orden de compra actualizada con ID-{data['id']} a estado {data['status']}"
     create_notification_permission_notGUI(
-        msg,
+        msg, data_token,
         ["orders", "administracion"],
         "Orden de compra actualizada",
         data_token.get("emp_id"),
@@ -723,7 +723,7 @@ def create_po_application_api(data, data_token):
             msg += "\n" + f"Tabla de control de SM con id {result_sm[0]} actualizada"
 
     create_notification_permission_notGUI(
-        msg,
+        msg, data_token,
         ["orders", "almacen", "sm"],
         "Solicitud de orden de compra creada",
         data_token.get("emp_id"),
@@ -794,7 +794,7 @@ def update_po_application_api(data, data_token):
             )
     msg += "\n" + "\n".join(msg_items)
     create_notification_permission_notGUI(
-        msg, ["orders"], "Solicitud de Orden de compra creada", data_token.get("emp_id")
+        msg, data_token, ["orders"], "Solicitud de Orden de compra creada", data_token.get("emp_id")
     )
     write_log_file(log_file_po, msg)
     if flag_error:
@@ -827,7 +827,7 @@ def cancel_po_application_api(data, data_token):
         return {"data": None, "msg": "error", "error": str(error)}, 400
     msg = f"Solicitud de Orden de compra cancelada con ID-{data['id']}"
     create_notification_permission_notGUI(
-        msg,
+        msg, data_token,
         ["orders"],
         "Solicitud de Orden de compra cancelada",
         data_token.get("emp_id"),
@@ -856,7 +856,7 @@ def change_state_po_application_api(data, data_token):
         return {"data": None, "msg": "error", "error": str(error)}, 400
     msg = f"Solicitud de Orden de compra actualizada con ID-{data['id']} a estado {data['status']}"
     create_notification_permission_notGUI(
-        msg,
+        msg, data_token,
         ["orders", "administracion"],
         "Solicitud de Orden de compra actualizada",
         data_token.get("emp_id"),

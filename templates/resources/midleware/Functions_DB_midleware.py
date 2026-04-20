@@ -253,7 +253,7 @@ def create_task_from_api(data, data_token):
     if flag:
         msg = f"Se creo una tarea ({result}) {data['title']} para {data['metadata']['name_emp']}"
         create_notification_permission_notGUI(
-            msg,
+            msg, data_token,
             ["RRHH"],
             "Nuevo tarea quizz creada",
             data["emp_origin"],
@@ -277,7 +277,7 @@ def update_task_from_api(data, data_token):
     if flag:
         msg = f"Se actualizo la tarea {data['body']['title']} para {data['body']['metadata']['name_emp']}"
         create_notification_permission_notGUI(
-            msg,
+            msg, data_token,
             ["RRHH"],
             "Tarea quizz actualizada",
             data["body"]["emp_origin"],
@@ -293,7 +293,7 @@ def delete_task_from_api(data, data_token):
     if flag:
         msg = f"Se elimino la tarea {data['id']}"
         create_notification_permission_notGUI(
-            msg,
+            msg, data_token,
             ["RRHH"],
             "Tarea quizz eliminada",
             data_token.get("emp_id"),

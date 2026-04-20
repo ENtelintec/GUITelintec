@@ -104,7 +104,7 @@ class FichajeEvent(Resource):
         if not validator.validate():
             return {"error": validator.errors}, 400
         data = validator.data
-        response, code = create_event_bitacora_from_api(data)
+        response, code = create_event_bitacora_from_api(data, data_token)
         return response, code
 
     @ns.expect(expected_headers_per, fichaje_add_update_request_model)
@@ -119,7 +119,7 @@ class FichajeEvent(Resource):
         if not validator.validate():
             return {"error": validator.errors}, 400
         data = validator.data
-        response, code = update_event_bitacora_from_api(data)
+        response, code = update_event_bitacora_from_api(data, data_token)
         return response, code
 
     @ns.expect(expected_headers_per, fichaje_delete_request_model)
@@ -134,7 +134,7 @@ class FichajeEvent(Resource):
         if not validator.validate():
             return {"error": validator.errors}, 400
         data = validator.data
-        response, code = delete_event_bitacora_from_api(data)
+        response, code = delete_event_bitacora_from_api(data, data_token)
         return response, code
 
 
@@ -152,7 +152,7 @@ class BitacoraDownloadReport(Resource):
         if not validator.validate():
             return {"error": validator.errors}, 400
         data = validator.data
-        filepath, code = get_file_report_bitacora(data)
+        filepath, code = get_file_report_bitacora(data, data_token)
         # data_out = transform_bitacora_data_to_dict(event_filtered, columns)
         try:
             return send_file(filepath, as_attachment=True)
@@ -169,7 +169,7 @@ class BitacoraEmployeesList(Resource):
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        flag, error, result = get_contracts_operaciones()
+        flag, error, result = get_contracts_operaciones( data_token)
         # filtering unique contracts
         contracts = list(set([item[0] for item in result] + ["OTROS"]))
         contracts.sort()
@@ -193,7 +193,7 @@ class FichajeMultipleEvent(Resource):
         if not validator.validate():
             return {"error": validator.errors}, 400
         data = validator.data
-        response, code = create_multiple_event_bitacora_from_api(data)
+        response, code = create_multiple_event_bitacora_from_api(data, data_token)
         return response, code
 
 
@@ -211,7 +211,7 @@ class FichajesGetExtra(Resource):
         if not validator.validate():
             return {"error": validator.errors}, 400
         data = validator.data
-        data, code = get_events_extra(data)
+        data, code = get_events_extra(data, data_token)
         return {"data": data}, code
 
 
@@ -229,7 +229,7 @@ class FichajesAproveExtra(Resource):
         if not validator.validate():
             return {"error": validator.errors}, 400
         data = validator.data
-        response, code = aprove_event_bitacora_from_api(data)
+        response, code = aprove_event_bitacora_from_api(data, data_token)
         return response, code
 
 
@@ -242,7 +242,7 @@ class BitacoraRHAll(Resource):
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        data, code = fetch_all_bitacora_rh()
+        data, code = fetch_all_bitacora_rh( data_token)
         return {"data": data}, code
 
 

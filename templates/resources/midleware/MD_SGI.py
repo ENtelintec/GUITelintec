@@ -882,7 +882,7 @@ def delete_voucher_vehicle_api(data, data_token):
         else f"Voucher vehicular cancelado correctamente por el empleado {data_token.get('name')}"
     )
     create_notification_permission_notGUI(
-        msg, ["administracion", "operaciones", "sgi"], data_token.get("emp_id"), 0
+        msg, data_token, ["administracion", "operaciones", "sgi"], data_token.get("emp_id"), 0
     )
     write_log_file(log_file_sgi_chv, msg)
     return {"data": [rows_changed], "msg": "Vehicle voucher deleted successfully"}, 200
@@ -1010,7 +1010,7 @@ def create_voucher_vehicle_attachment_api(data, data_token):
             "error": str(error),
         }, 400
     create_notification_permission_notGUI(
-        msg, ["administracion", "operaciones", "sgi"], data_token.get("emp_id"), 0
+        msg, data_token, ["administracion", "operaciones", "sgi"], data_token.get("emp_id"), 0
     )
     write_log_file(log_file_sgi_chv, msg)
     return {"data": path_aws, "msg": msg}, 201

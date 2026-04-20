@@ -24,7 +24,13 @@ import os
 
 
 def create_notification_permission(
-    msg: str, permissions: list, title: str, sender_id: int, recierver_id=0, extra_emps=None
+    msg: str,
+    data_token,
+    permissions: list,
+    title: str,
+    sender_id: int,
+    recierver_id=0,
+    extra_emps=None,
 ):
     """
     Función para crear una notificación de permiso
@@ -49,9 +55,9 @@ def create_notification_permission(
         "sender_id": sender_id,
         "receiver_id": recierver_id,
         "app": permissions,
-        "extra_emps": extra_emps
+        "extra_emps": extra_emps,
     }
-    flag, error, result = insert_notification(body)
+    flag, error, result = insert_notification(body, data_token)
     return flag
 
 
@@ -61,11 +67,14 @@ def unpack_token(token: str) -> dict:
     :param token: <string>
     :return: <dict>
     """
-    return jwt.decode(token, secrets.get("TOKEN_MASTER_KEY"), algorithms="HS256")
+    token_key = secrets.get("TOKEN_MASTER_KEY")
+    if token_key is None:
+        return {"error": "Token master key not found"}
+    return jwt.decode(token, token_key, algorithms="HS256")
 
 
 def create_notification_permission_notGUI(
-    msg: str, permissions: list, title: str, sender_id: int, recierver_id=0
+    msg: str, data_token, permissions: list, title: str, sender_id: int, recierver_id=0
 ):
     """
     Función para crear una notificación de permiso
@@ -90,7 +99,7 @@ def create_notification_permission_notGUI(
         "receiver_id": recierver_id,
         "app": permissions,
     }
-    flag, error, result = insert_notification(body)
+    flag, error, result = insert_notification(body, data_token)
     return flag
 
 

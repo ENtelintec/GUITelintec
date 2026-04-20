@@ -30,7 +30,7 @@ class ListFilesPayroll(Resource):
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        code, data_out = get_files_list_nomina(emp_id)
+        code, data_out = get_files_list_nomina(emp_id, data_token)
         if code != 200:
             return {"data": None, "msg": "No files"}, code
         return {"data": data_out, "msg": "ok"}, code
