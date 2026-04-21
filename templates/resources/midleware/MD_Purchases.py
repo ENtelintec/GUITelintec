@@ -101,7 +101,7 @@ def create_extra_info_product_from_data(data: dict):
         "duration_services": data.get("duration_services", ""),
         "supplier": data.get("supplier", 0),
         "comment": data.get("comment", ""),
-        "id_item_sm": data.get("id_item_sm"),
+        "id_item_sm": data.get("id_item_sm", 0),
     }
     return extra_info
 

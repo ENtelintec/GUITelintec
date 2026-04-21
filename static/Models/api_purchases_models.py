@@ -927,6 +927,9 @@ class ItemsPOFormPU(Form):
     id = IntegerField("id", [number_range(min=-1, message="Invalid id")], default=-1)
     currency = StringField("currency", [], default="MXN")
     tool = IntegerField("tool", [number_range(min=-1, max=2, message="Invalid tool")])
+    id_item_sm = IntegerField(
+        "id_item_sm", [number_range(min=-1, message="Invalid id item sm")], default=0
+    )
 
 
 class ItemsPOApplicationForm(Form):
