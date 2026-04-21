@@ -197,7 +197,7 @@ def get_extras_last_month(extras_dict: dict, date=None):
     return events
 
 
-def get_events_extra(data):
+def get_events_extra(data, data_token):
     flag, error, result = get_all_fichajes_op()
     date = (
         datetime.strptime(data["date"], format_date)

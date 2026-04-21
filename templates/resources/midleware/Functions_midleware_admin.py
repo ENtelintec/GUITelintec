@@ -773,7 +773,7 @@ def fetch_heads_main(data_token):
 
 def fetch_heads(id_dep: int, data_token):
     id_department: int | None = int(id_dep) if id_dep >= 0 else None
-    flag, error, result = get_heads_db(id_department, data_token)
+    flag, error, result = get_heads_db( data_token, id_department)
     if not flag:
         return {"data": [], "msg": str(error)}, 400
     data_out = []

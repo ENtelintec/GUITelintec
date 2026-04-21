@@ -53,6 +53,7 @@ def get_heads_list_db(dep_list: list, data_token):
         f"WHERE heads.department IN ({placeholders})"
     )
     val = tuple(dep_list)
+    print(sql, val)
     flag, e, my_result = execute_sql(sql, val, 2, data_token)
     if not isinstance(my_result, list):
         return flag, e, []
