@@ -103,7 +103,7 @@ def writeSettings(settings: dict):
         return False
 
 
-def check_tester_permission(permissions: list):
+def check_tester_permission(permissions: dict):
     for perm, value in permissions.items():
         if "testerUser" in value:
             return True
