@@ -92,6 +92,7 @@ def token_verification_procedure(request, **kwargs):
         msg = "errort at token verification procedure: " + str(e)
         return False, {}, msg
 
+
 def writeSettings(settings: dict):
     try:
         with open("./static/settings.json", "w") as f:
@@ -101,10 +102,12 @@ def writeSettings(settings: dict):
         print(e)
         return False
 
+
 def check_tester_permission(permissions: list):
-    for perm in permissions:
-        if "testerUser" in perm:
+    for perm, value in permissions.items():
+        if "testerUser" in value:
             return True
+    return False
 
 
 def verify_token(
@@ -119,8 +122,8 @@ def verify_token(
     """
     try:
         data = unpack_token(token)
-        is_tester= check_tester_permission(data.get("permissions"))
-        data[is_tester] = is_tester
+        is_tester = check_tester_permission(data.get("permissions"))
+        data["is_tester"] = is_tester
         if emp_id:
             if verify_employee_id(data, emp_id):
                 return True, data
