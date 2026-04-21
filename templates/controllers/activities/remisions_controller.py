@@ -155,7 +155,7 @@ def update_items_quotation_w_remission(remission_id, id_quotation, data_token):
         "SET report_id=%s "
         "WHERE quotation_id=%s"
     )
-    val = (remission_id, id_quotation, data_token)
+    val = (remission_id, id_quotation)
     flag, e, out = execute_sql(sql, val, 3, data_token)
     return flag, e, out
 
