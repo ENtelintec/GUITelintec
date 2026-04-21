@@ -452,7 +452,9 @@ def delete_voucher_item(id_item: int, data_token):
     return flag, error, rows_changed
 
 
-def get_vouchers_tools_with_items_date(start_date, data_token, user=None):
+def get_vouchers_tools_with_items_date(
+    start_date, data_token, user=None, id_voucher=None
+):
     """
     Obtiene vouchers de herramientas desde una fecha específica, incluyendo su metadata e ítems relacionados.
 
@@ -490,10 +492,10 @@ def get_vouchers_tools_with_items_date(start_date, data_token, user=None):
         "FROM sql_telintec_mod_admin.voucher_tools AS vt "
         "JOIN sql_telintec_mod_admin.vouchers_general AS vg ON vt.id_voucher_general = vg.id_voucher "
         "LEFT JOIN sql_telintec_mod_admin.voucher_items AS vi ON vg.id_voucher = vi.id_voucher "
-        "WHERE (vg.date >= %s) AND (vg.user = %s OR %s IS NULL) OR (vt.id_voucher_general = %s OR %s IS NULL)) "
+        "WHERE ((vg.date >= %s) AND (vg.user = %s OR %s IS NULL) OR (vt.id_voucher_general = %s OR %s IS NULL)) "
         "GROUP BY vt.id_voucher_general"
     )
-    val = (start_date, user, user)
+    val = (start_date, user, user, id_voucher, id_voucher)
     flag, error, vouchers = execute_sql(sql, val, 2, data_token)
     return flag, error, vouchers
 
