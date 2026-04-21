@@ -88,7 +88,9 @@ items_po_model = api.model(
             required=False, description="The currency", example="MXN"
         ),
         "id_item_sm": fields.Integer(
-            required=True, description="The sm id for relations and deliveries", example=0
+            required=True,
+            description="The sm id for relations and deliveries",
+            example=0,
         ),
     },
 )
@@ -663,7 +665,6 @@ basic_control_table_report_model = api.model(
             description="Número de remito de la remision",
             example="2",
         ),
-        
     },
 )
 
@@ -671,7 +672,6 @@ basic_metadata_activity_model = api.model(
     "BasicActivityMetadaModel",
     basic_control_table_report_model,
     {
-        
         "area": fields.String(
             required=True,
             description="Área dentro de la planta",
@@ -686,7 +686,7 @@ basic_metadata_activity_model = api.model(
             required=False,
             description="Número de pedido interno",
             example="PED-2026-00456",
-        )
+        ),
     },
 )
 
@@ -708,9 +708,8 @@ remission_activity_create_control_table_model = api.model(
     "RemissionActivityCreateControlTable",
     {
         "metadata": fields.Nested(basic_metadata_activity_model),
-       
     },
-) 
+)
 
 remission_activity_upsert_metadata_model = api.inherit(
     "RemissionActivityUpdateMetadata",
@@ -942,7 +941,9 @@ class ItemsPOApplicationForm(Form):
     purchase_id = IntegerField("purchase_id", [], default=0)
     tool = IntegerField("tool", [number_range(min=-1, max=2, message="Invalid tool")])
     comment = StringField("comment", [], default="")
-    id_item_sm = IntegerField("tool", [number_range(min=-1, message="Invalid id item sm")], default=0)
+    id_item_sm = IntegerField(
+        "tool", [number_range(min=-1, message="Invalid id item sm")], default=0
+    )
 
 
 class MetadataTelitencForm(Form):
@@ -956,10 +957,10 @@ class MetadataTelitencForm(Form):
 
 
 class MetadataSupplierForm(Form):
-    name = StringField("name", [InputRequired()])
-    address_invoice = StringField("address_invoice", [InputRequired()])
-    rfc = StringField("rfc", [InputRequired()])
-    salesman = StringField("salesman", [InputRequired()])
+    name = StringField("name", [], default="N/A")
+    address_invoice = StringField("address_invoice", [], default="N/A")
+    rfc = StringField("rfc", [], default="N/A")
+    salesman = StringField("salesman", [], default="N/A")
     payment_method = StringField("payment_method", [InputRequired()])
     delivery_conditions = StringField("delivery_conditions", [InputRequired()])
     delivery_address = StringField("delivery_address", [InputRequired()])
@@ -999,7 +1000,9 @@ class ItemsPOUpdateForm(Form):
     supplier = StringField("supplier", [], default="")
     currency = StringField("currency", [], default="MXN")
     tool = IntegerField("tool", [number_range(min=-1, max=2, message="Invalid tool")])
-    id_item_sm = IntegerField("tool", [number_range(min=-1, message="Invalid id item sm")], default=0)
+    id_item_sm = IntegerField(
+        "tool", [number_range(min=-1, message="Invalid id item sm")], default=0
+    )
 
 
 class ItemsPOApplicationUpdateForm(Form):
@@ -1020,7 +1023,9 @@ class ItemsPOApplicationUpdateForm(Form):
     supplier = StringField("supplier", [], default="")
     tool = IntegerField("tool", [InputRequired()])
     comment = StringField("comment", [], default="")
-    id_item_sm = IntegerField("tool", [number_range(min=-1, message="Invalid id item sm")], default=0)
+    id_item_sm = IntegerField(
+        "tool", [number_range(min=-1, message="Invalid id item sm")], default=0
+    )
 
 
 class PurchaseOrderPutForm(Form):
@@ -1245,7 +1250,7 @@ class MetadataControlTableRemissionForm(Form):
     remito = StringField("remito", [], default="")
 
 
-class MetadataActivityReportForm(MetadataControlTableRemissionForm): 
+class MetadataActivityReportForm(MetadataControlTableRemissionForm):
     pedido = StringField("pedido", [], default="")
     pedido_exiros = StringField("pedido_exiros", [], default="")
     area = StringField("area", [InputRequired()])
@@ -1257,8 +1262,10 @@ class ReportActivityCreateForm(Form):
         FormField(QuotationInsertItemForm), "items", validators=[], default=[]
     )
 
+
 class ReportActivityCreateControlTableForm(Form):
     metadata = FormField(MetadataControlTableRemissionForm, "metadata")
+
 
 class MetadataReportActivityUpdateForm(MetadataActivityReportForm):
     id = IntegerField("id", [InputRequired()])
