@@ -23,7 +23,9 @@ def create_voucher_general(voucher_type, date, user, contract, data_token):
         "VALUES (%s, %s, %s, %s)"
     )
     val = (voucher_type, date, user, contract)
-    flag, error, lastrowid = execute_sql(sql, val, 4, data_token)  # Ejecuta la inserción
+    flag, error, lastrowid = execute_sql(
+        sql, val, 4, data_token
+    )  # Ejecuta la inserción
     return flag, error, lastrowid
 
 
@@ -33,7 +35,8 @@ def create_voucher_tools(
     type_transaction,
     superior,
     storage_emp,
-    desiganted_emp, data_token,
+    desiganted_emp,
+    data_token,
     extra_info=None,
 ):
     """
@@ -78,7 +81,8 @@ def update_voucher_tools(
     type_transaction,
     superior,
     storage_emp,
-    designated_emp, data_token,
+    designated_emp,
+    data_token,
     user_state=0,
     superior_state=0,
     storage_state=0,
@@ -129,7 +133,8 @@ def create_voucher_safety(
     motive,
     epp_emp,
     storage_emp,
-    designated_emp, data_token,
+    designated_emp,
+    data_token,
     extra_info=None,
 ):
     """
@@ -169,7 +174,8 @@ def update_voucher_safety(
     id_voucher_general,
     epp_emp,
     storage_emp,
-    designated_emp, data_token,
+    designated_emp,
+    data_token,
     user_state=1,
     epp_state=0,
     storage_state=0,
@@ -219,7 +225,8 @@ def create_voucher_item(
     id_inventory,
     quantity,
     unit,
-    description, data_token,
+    description,
+    data_token,
     observations=None,
     extra_info=None,
 ):
@@ -326,6 +333,7 @@ def update_voucher_vehicle_files(id_voucher, history, extra_info, status, data_t
             return flag_history, error_history, rows_changed_history
         return True, None, rows_changed_history
 
+
 def update_voucher_epp_files(id_voucher, history, extra_info, status, data_token):
     """
     Actualiza el historial y la información extra de un voucherepp en la tabla voucher safety.
@@ -357,6 +365,7 @@ def update_voucher_epp_files(id_voucher, history, extra_info, status, data_token
         if not flag_history:
             return flag_history, error_history, rows_changed_history
         return True, None, rows_changed_history
+
 
 def update_voucher_tools_files(id_voucher, history, extra_info, status, data_token):
     """
@@ -390,12 +399,14 @@ def update_voucher_tools_files(id_voucher, history, extra_info, status, data_tok
             return flag_history, error_history, rows_changed_history
         return True, None, rows_changed_history
 
+
 def update_voucher_item(
     id_item,
     id_inventory,
     quantity,
     unit,
-    description, data_token,
+    description,
+    data_token,
     observations=None,
     extra_info=None,
 ):
@@ -524,7 +535,7 @@ def get_vouchers_safety_with_items(start_date, data_token, user=None, id_voucher
         "FROM sql_telintec_mod_admin.voucher_safety AS vs "
         "JOIN sql_telintec_mod_admin.vouchers_general AS vg ON vs.id_voucher_general = vg.id_voucher "
         "LEFT JOIN sql_telintec_mod_admin.voucher_items AS vi ON vg.id_voucher = vi.id_voucher "
-        "WHERE (vg.date >= %s) AND (vg.user = %s OR %s IS NULL) OR (vs.id_voucher_general = %s OR %s IS NULL)) "
+        "WHERE ((vg.date >= %s) AND (vg.user = %s OR %s IS NULL) OR (vs.id_voucher_general = %s OR %s IS NULL)) "
         "GROUP BY vs.id_voucher_general "
     )
     val = (start_date, user, user, id_voucher, id_voucher)
@@ -532,7 +543,9 @@ def get_vouchers_safety_with_items(start_date, data_token, user=None, id_voucher
     return flag, error, vouchers
 
 
-def update_state_tools_voucher(id_voucher, user_state, superior_state, storage_state, data_token):
+def update_state_tools_voucher(
+    id_voucher, user_state, superior_state, storage_state, data_token
+):
     """
     Actualiza los estados de un voucher de herramientas en la tabla voucher_tools.
 
@@ -596,7 +609,9 @@ def delete_voucher_safety(id_voucher, data_token):
     return flag, error, rows_changed
 
 
-def update_state_safety_voucher(id_voucher, user_state, epp_state, storage_state, data_token):
+def update_state_safety_voucher(
+    id_voucher, user_state, epp_state, storage_state, data_token
+):
     """
     Actualiza los estados de un voucher de seguridad en la tabla voucher_safety.
 
@@ -670,7 +685,8 @@ def get_vouchers_vehicle_with_items(start_date, data_token, user=None, id_vouche
 def create_voucher_vehicle(
     id_voucher_general,
     brand,
-    model, data_token,
+    model,
+    data_token,
     color=None,
     year=None,
     placas=None,
@@ -734,7 +750,8 @@ def create_voucher_vehicle(
 def update_voucher_vehicle(
     id_voucher_general,
     brand,
-    model, data_token,
+    model,
+    data_token,
     color=None,
     year=None,
     placas=None,
