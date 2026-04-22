@@ -2092,7 +2092,9 @@ def get_list_files(
     return files_pairs, files_names_f
 
 
-def write_log_file(paths: list | str, text, username_data=None):
+def write_log_file(paths: list | str, text, data_token=None):
+    if data_token and data_token["is_tester"]:
+        return True
     time_zone = pytz.timezone(timezone_software)
     date = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_date)
     paths = paths if isinstance(paths, list) else [paths]
