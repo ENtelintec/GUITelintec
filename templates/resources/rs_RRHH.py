@@ -522,7 +522,7 @@ class DownloadFileEMPs(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         filepath = create_csv_file_employees(status)
-        return send_file(filepath, as_attachment=True)
+        return send_file(str(filepath), as_attachment=True)
 
 
 @ns.route("/download/employees/medical")

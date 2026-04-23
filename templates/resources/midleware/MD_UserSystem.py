@@ -106,7 +106,7 @@ def create_employee_user_from_api(data, data_token):
         "user": data["user"],
         "dep_id": data["dep_id"],
     }
-    token = jwt.encode(data_user, secrets.get("TOKEN_MASTER_KEY"), algorithm="HS256")
+    token = jwt.encode(data_user, str(secrets.get("TOKEN_MASTER_KEY")), algorithm="HS256")
     time_zone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
     expires = 31536000

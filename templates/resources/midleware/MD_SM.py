@@ -1558,7 +1558,7 @@ def create_sm_attachment_api(data, data_token):
         return {"data": None, "msg": "Nombre de archivo incorrecto"}, 400
 
     try:
-        s3_client.upload_file(Filename=filepath_down, Bucket=bucket_name, Key=path_aws)
+        s3_client.upload_file(Filename=filepath_down, Bucket=str(bucket_name), Key=path_aws)
     except FileNotFoundError:
         return {"data": None, "msg": "Local file not found"}, 400
     except NoCredentialsError:

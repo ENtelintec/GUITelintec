@@ -9,7 +9,7 @@ from static.constants import format_timestamps
 from templates.database.connection import execute_sql
 
 
-def get_all_bitacora_rh_db():
+def get_all_bitacora_rh_db(data_token):
     sql = (
         "SELECT "
         "sql_telintec.bitacora_rh.id_event, "
@@ -24,7 +24,7 @@ def get_all_bitacora_rh_db():
         "LEFT JOIN sql_telintec.employees ON bitacora_rh.emp_id = employees.employee_id "
         "ORDER BY name, l_name DESC "
     )
-    flag, error, my_result = execute_sql(sql, None, 5)
+    flag, error, my_result = execute_sql(sql, None, 5, data_token)
     return flag, error, my_result
 
 

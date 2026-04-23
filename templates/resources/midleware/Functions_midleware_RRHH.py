@@ -1009,6 +1009,8 @@ def fetch_employees_without_records(data_token):
     flag, error, result = get_employees_without_records(data_token)
     if not flag:
         return 400, {"data": None, "msg": str(error)}
+    if not (isinstance(result, list) and isinstance(result, tuple)):
+        return 400, {"data": [], "msg": "No hay empleados sin registros"}
     out = []
     for item in result:
         birthday = (
@@ -1035,6 +1037,8 @@ def fetch_employees_without_records(data_token):
 
 def fetch_medicals(data_token):
     flag, e, result = get_all_examenes(data_token)
+    if not (isinstance(result, list) and isinstance(result, tuple)):
+        return 400, {"data": [], "msg": "No hay  registros"}
     out = {"data": None}
     if not flag:
         out = {"data": []}

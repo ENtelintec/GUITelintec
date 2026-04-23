@@ -673,7 +673,7 @@ def insert_and_update_multiple_products_from_api(data, token_data):
     data_out = {"insert": data_out_insert, "update": data_out_update}
     msg_notification += f"[Timestamp: {timestamp}]"
     msg_notification += f"[ID: {token_data.get('emp_id', 'No id')}]"
-    write_log_file(log_file_almacen, msg_notification, data_token)
+    write_log_file(log_file_almacen, msg_notification, token_data)
     return data_out
 
 

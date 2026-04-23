@@ -184,7 +184,7 @@ def read_exel_products_bidding(path: str):
     return products
 
 
-def read_exel_products_partidas(path: str):
+def read_exel_products_partidas(path: str, data_token):
     df = pd.read_excel(path, header=20).fillna("")
     data_excel = df.to_dict("records")
     print(df.head())
@@ -211,7 +211,7 @@ def read_exel_products_partidas(path: str):
             partida = int(partida)
             id_p = None
             if udm != "":
-                flag, error, result = get_product_by_sku_manufacture(udm)
+                flag, error, result = get_product_by_sku_manufacture(udm, data_token)
                 if flag and len(result) > 0:
                     id_p = result[0]
 

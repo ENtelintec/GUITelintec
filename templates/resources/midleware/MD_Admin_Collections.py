@@ -842,7 +842,7 @@ def create_activity_report_attachment_api(data, data_token):
     bucket_name = secrets.get("S3_ADMIN_BUCKET")
 
     try:
-        s3_client.upload_file(Filename=filepath_down, Bucket=bucket_name, Key=path_aws)
+        s3_client.upload_file(Filename=filepath_down, Bucket=str(bucket_name), Key=path_aws)
     except FileNotFoundError:
         return {"data": None, "msg": "Local file not found"}, 400
     except NoCredentialsError:
@@ -934,7 +934,7 @@ def download_report_activity_attachment_api(data, data_token):
     bucket_name = secrets.get("S3_ADMIN_BUCKET")
     try:
         s3_client.download_file(
-            Bucket=bucket_name, Key=path_aws, Filename=data["filepath"]
+            Bucket=str(bucket_name), Key=path_aws, Filename=data["filepath"]
         )
     except FileNotFoundError:
         return {"data": None, "msg": "Local file not found"}, 400

@@ -877,8 +877,8 @@ def items_quotation_from_file(data):
     return {"data": products, "msg": "Ok"}, 200
 
 
-def items_contract_from_file(data):
-    products = read_exel_products_partidas(data["path"])
+def items_contract_from_file(data, data_token):
+    products = read_exel_products_partidas(data["path"], data_token)
     if products is None:
         return {"data": None, "msg": "Error at file structure"}, 400
     return {"data": products, "msg": "Ok"}, 200
