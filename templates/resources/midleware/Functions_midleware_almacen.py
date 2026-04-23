@@ -224,7 +224,7 @@ def insert_movement(data, data_token):
         data_token.get("emp_id"),
         0,
     )
-    write_log_file(log_file_almacen, msg_notification)
+    write_log_file(log_file_almacen, msg_notification, data_token)
     if not flag:
         return False, e
     return True, result
@@ -289,7 +289,7 @@ def update_movement(data, data_token):
         data_token.get("emp_id"),
         0,
     )
-    write_log_file(log_file_almacen, msg_notification)
+    write_log_file(log_file_almacen, msg_notification, data_token)
     if not flag:
         return False, e
     return True, result
@@ -315,7 +315,7 @@ def delete_movement_amc(data, data_token):
             0,
             0,
         )
-        write_log_file(log_file_almacen, msg_notification)
+        write_log_file(log_file_almacen, msg_notification, data_token)
         return True, result
     else:
         return False, str(error)
@@ -430,7 +430,7 @@ def insert_product_db(data, data_token):
     )
     if not flag:
         msg += "\n error notification creation"
-    write_log_file(log_file_almacen, msg)
+    write_log_file(log_file_almacen, msg, data_token)
 
     return True, lastrowid
 
@@ -489,7 +489,7 @@ def update_product_amc(data, data_token):
         data_token.get("emp_id"),
         0,
     )
-    write_log_file(log_file_almacen, msg)
+    write_log_file(log_file_almacen, msg, data_token)
     return True, result
 
 
@@ -508,7 +508,7 @@ def delete_product_from_api(data, data_token):
         data_token.get("emp_id"),
         0,
     )
-    write_log_file(log_file_almacen, msg)
+    write_log_file(log_file_almacen, msg, data_token)
     return True, result
 
 
@@ -673,7 +673,7 @@ def insert_and_update_multiple_products_from_api(data, token_data):
     data_out = {"insert": data_out_insert, "update": data_out_update}
     msg_notification += f"[Timestamp: {timestamp}]"
     msg_notification += f"[ID: {token_data.get('emp_id', 'No id')}]"
-    write_log_file(log_file_almacen, msg_notification)
+    write_log_file(log_file_almacen, msg_notification, data_token)
     return data_out
 
 
@@ -1259,7 +1259,7 @@ def update_brand_procedure(data, data_token):
         data_token.get("emp_id"),
         0,
     )
-    write_log_file([log_file_almacen, log_file_admin], msg)
+    write_log_file([log_file_almacen, log_file_admin], msg, data_token)
     return msg_list, _providers_dict_amc, brands_dict, 201
 
 
@@ -1355,7 +1355,7 @@ def create_reservation_from_api(data, data_token):
         data_token.get("emp_id"),
         0,
     )
-    write_log_file(log_file_almacen, msg)
+    write_log_file(log_file_almacen, msg, data_token)
     return {"data": lastrowid, "error": str(error)}, 201
 
 
@@ -1410,7 +1410,7 @@ def update_reservation_from_api(data, data_token):
         data_token.get("emp_id"),
         0,
     )
-    write_log_file(log_file_almacen, msg)
+    write_log_file(log_file_almacen, msg, data_token)
     return {"data": result, "error": str(error)}, 201
 
 
@@ -1429,7 +1429,7 @@ def delete_reservation_from_api(data, data_token):
         data_token.get("emp_id"),
         0,
     )
-    write_log_file(log_file_almacen, msg)
+    write_log_file(log_file_almacen, msg, data_token)
     return {"data": result, "error": str(error)}, 201
 
 

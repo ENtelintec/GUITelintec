@@ -121,7 +121,7 @@ def create_quotation_activity_from_api(data, data_token):
     else:
         msg += "Error al crear ciertos ítems de la actividad de cotización"
     create_notification_permission(msg, data_token, ["administracion"], "Remisión Creada", user, 0)
-    write_log_file(log_file_admin_collecions, msg)
+    write_log_file(log_file_admin_collecions, msg, data_token)
     return {"data": results, "msg": "Ok"}, 201
 
 
@@ -274,7 +274,7 @@ def update_quotation_activity_from_api(data, data_token):
     create_notification_permission(
         msg, data_token, ["administracion"], "Cotización de actividad actualizada", user, 0
     )
-    write_log_file(log_file_admin_collecions, msg)
+    write_log_file(log_file_admin_collecions, msg, data_token)
     return {"data": result, "msg": "Ok", "error": None}, 200
 
 
@@ -373,7 +373,7 @@ def delete_quotation_activity_from_api(data, data_token):
     create_notification_permission(
         msg, data_token, ["administracion"], "Cotización de actividad eliminada", user, 0
     )
-    write_log_file(log_file_admin_collecions, msg)
+    write_log_file(log_file_admin_collecions, msg, data_token)
     return {"data": result, "msg": "Ok"}, 200
 
 
@@ -431,7 +431,7 @@ def create_remission_control_table_from_api(data, data_token):
     create_notification_permission(
         msg, data_token, ["administracion"], "Item de tabla de control creado", user, 0
     )
-    write_log_file(log_file_admin_collecions, msg)
+    write_log_file(log_file_admin_collecions, msg, data_token)
     return {"data": id_remission, "msg": "Ok"}, 201
 
 
@@ -536,7 +536,7 @@ def create_remission_from_api(data, data_token):
     create_notification_permission(
         msg, data_token, ["administracion"], "Remision de actividad creado", user, 0
     )
-    write_log_file(log_file_admin_collecions, msg)
+    write_log_file(log_file_admin_collecions, msg, data_token)
     return {"data": results, "msg": "Ok"}, 201
 
 
@@ -713,7 +713,7 @@ def update_remission_from_api(data, data_token):
     create_notification_permission(
         msg, data_token, ["administracion"], "Remision de actividad actualizado", user, 0
     )
-    write_log_file(log_file_admin_collecions, msg)
+    write_log_file(log_file_admin_collecions, msg, data_token)
     return {"data": result, "msg": "Ok", "error": None}, 200
 
 
@@ -770,7 +770,7 @@ def delete_remission_from_api(data, data_token):
     create_notification_permission(
         msg, data_token, ["administracion"], "Reporte de actividad eliminado", user, 0
     )
-    write_log_file(log_file_admin_collecions, msg)
+    write_log_file(log_file_admin_collecions, msg, data_token)
     return {"data": result, "msg": "Ok"}, 200
 
 
@@ -890,7 +890,7 @@ def create_activity_report_attachment_api(data, data_token):
     create_notification_permission_notGUI(
         msg, data_token, ["administracion", "operaciones", "sgi"], data_token.get("emp_id"), 0
     )
-    write_log_file(log_file_admin_collecions, msg)
+    write_log_file(log_file_admin_collecions, msg, data_token)
     return {"data": path_aws, "msg": msg}, 201
 
 

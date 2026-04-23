@@ -180,7 +180,7 @@ def terminate_employee_from_api(data, data_token):
         f"Empleado con id: {data['id']} dado de baja por {data['reason']}. "
         f"Realizado por el empleado con id: {data_token['emp_id']} "
     )
-    write_log_file(log_file_rh, msg)
+    write_log_file(log_file_rh, msg, data_token)
     create_notification_permission(
         msg, data_token, ["rrhh"], "Empleado dato de baja", data_token.get("emp_id"), 0
     )

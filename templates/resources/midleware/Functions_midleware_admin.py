@@ -606,7 +606,7 @@ def insert_supplier(data, data_token):
                 data_token.get("emp_id"),
                 0,
             )
-            write_log_file(log_file_admin, msg)
+            write_log_file(log_file_admin, msg, data_token)
         return {"data": None, "msg": msg, "error": errors_i}, 422
     else:
         msg = f"Proveedor creado con ID-{id_supplier} por el empleado {data_token.get('name')}"
@@ -617,7 +617,7 @@ def insert_supplier(data, data_token):
             data_token.get("emp_id"),
             0,
         )
-        write_log_file(log_file_admin, msg)
+        write_log_file(log_file_admin, msg, data_token)
         return {"data": id_supplier, "msg": "Ok"}, 201
 
 
@@ -694,7 +694,7 @@ def update_supplier(data, data_token):
                 data_token.get("emp_id"),
                 0,
             )
-            write_log_file(log_file_admin, msg)
+            write_log_file(log_file_admin, msg, data_token)
             return {"data": None, "msg": msg, "error": errors_i}, 422
 
     return {"data": result, "msg": "Ok"}, 200
@@ -712,7 +712,7 @@ def delete_supplier(data, data_token):
         data_token.get("emp_id"),
         0,
     )
-    write_log_file(log_file_admin, msg)
+    write_log_file(log_file_admin, msg, data_token)
     return {"data": result, "msg": "Ok"}, 200
 
 
@@ -730,7 +730,7 @@ def update_extra_info_supplier(data, data_token):
         data_token.get("emp_id"),
         0,
     )
-    write_log_file(log_file_admin, msg)
+    write_log_file(log_file_admin, msg, data_token)
     return {"data": result, "msg": "Ok"}, 200
 
 
@@ -821,7 +821,7 @@ def insert_head_from_api(data, data_token):
         data_token.get("emp_id"),
         0,
     )
-    write_log_file(log_file_admin, msg)
+    write_log_file(log_file_admin, msg, data_token)
     return {"data": result, "msg": "Ok"}, 201
 
 
@@ -850,7 +850,7 @@ def update_head_from_api(data, data_token):
         data_token.get("emp_id"),
         0,
     )
-    write_log_file(log_file_admin, msg)
+    write_log_file(log_file_admin, msg, data_token)
     return {"data": result, "msg": "Ok"}, 200
 
 
@@ -866,7 +866,7 @@ def delete_head_from_api(data, data_token):
         data_token.get("emp_id"),
         0,
     )
-    write_log_file(log_file_admin, msg)
+    write_log_file(log_file_admin, msg, data_token)
     return {"data": result, "msg": "Ok"}, 200
 
 
@@ -988,7 +988,7 @@ def create_quotation_from_api(data, data_token):
     create_notification_permission(
         msg, data_token, ["administracion"], "Cotizacion Creada", data_token.get("emp_id"), 0
     )
-    write_log_file(log_file_admin, msg)
+    write_log_file(log_file_admin, msg, data_token)
     return {"data": id_quotation, "msg": "Ok"}, 201
 
 
@@ -1084,7 +1084,7 @@ def update_quoation_from_api(data, data_token):
     create_notification_permission(
         msg, data_token, ["administracion"], "Cotizacion Actualizada", data_token.get("emp_id"), 0
     )
-    write_log_file(log_file_admin, msg)
+    write_log_file(log_file_admin, msg, data_token)
     return {"data": result_list, "error": error_list, "msg": msg}, 200
 
 
@@ -1099,7 +1099,7 @@ def delete_quotation_from_api(data, data_token):
     create_notification_permission(
         msg, data_token, ["administracion"], "Cotizacion Eliminada", data_token.get("emp_id"), 0
     )
-    write_log_file(log_file_admin, msg)
+    write_log_file(log_file_admin, msg, data_token)
     return {"data": result, "msg": "Ok"}, 200
 
 
@@ -1166,7 +1166,7 @@ def create_contract_from_api(data, data_token):
     create_notification_permission(
         msg, data_token, ["administracion"], "Contrato Creado", data_token.get("emp_id"), 0
     )
-    write_log_file(log_file_admin, msg)
+    write_log_file(log_file_admin, msg, data_token)
     return {"data": result_list, "msg": "Ok"}, 201
 
 
@@ -1247,7 +1247,7 @@ def update_contract_from_api(data, data_token):
     create_notification_permission(
         msg, data_token, ["administracion"], "Contrato Actualizado", data_token.get("emp_id"), 0
     )
-    write_log_file(log_file_admin, msg)
+    write_log_file(log_file_admin, msg, data_token)
     return {"data": result, "error": error_list, "msg": result_list}, 200
 
 
@@ -1262,5 +1262,5 @@ def delete_contract_from_api(data, data_token):
     create_notification_permission(
         msg, data_token, ["administracion"], "Contrato Eliminado", data_token.get("emp_id"), 0
     )
-    write_log_file(log_file_admin, msg)
+    write_log_file(log_file_admin, msg, data_token)
     return {"data": result, "msg": "Ok"}, 200

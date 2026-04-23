@@ -709,7 +709,7 @@ def dispatch_sm(data, data_token):
     )
     if msg_items:
         msg += "\n" + "\n".join(msg_items)
-    write_log_file(log_file_sm_path, msg)
+    write_log_file(log_file_sm_path, msg, data_token)
     create_notification_permission(
         msg, data_token, ["sm"], "SM Despachada", data_token["emp_id"], id_user
     )
@@ -753,7 +753,7 @@ def cancel_sm(data, data_token):
             data["info"]["emp_id"],
             emp_id_creation,
         )
-        write_log_file(log_file_sm_path, msg)
+        write_log_file(log_file_sm_path, msg, data_token)
         return 200, {"msg": "ok"}
     else:
         return 400, {"msg": str(error)}
@@ -1079,7 +1079,7 @@ def create_sm_from_api(data, data_token):
         data_token.get("emp_id"),
         0,
     )
-    write_log_file(log_file_sm_path, msg)
+    write_log_file(log_file_sm_path, msg, data_token)
     return {"msg": "ok", "data": msg, "error": error}, 201
 
 
@@ -1147,7 +1147,7 @@ def create_urgent_sm_from_api(data, data_token):
         data_token.get("emp_id"),
         0,
     )
-    write_log_file(log_file_sm_path, msg)
+    write_log_file(log_file_sm_path, msg, data_token)
     return {"msg": "ok", "data": msg, "error": error}, 201
 
 
@@ -1225,7 +1225,7 @@ def update_sm_from_api(data, data_token):
             data_token.get("emp_id"),
             0,
         )
-        write_log_file(log_file_sm_path, msg)
+        write_log_file(log_file_sm_path, msg, data_token)
         return {"msg": "ok", "data": msg, "error": error}, 200
     else:
         return {"msg": "error at updating db", "data": "", "error": error}, 400
@@ -1248,7 +1248,7 @@ def delete_sm_from_api(data, data_token):
             "SM Eliminada",
             sender_id=data.get("id_emp"),
         )
-        write_log_file(log_file_sm_path, msg)
+        write_log_file(log_file_sm_path, msg, data_token)
         return {"msg": "ok", "data": error}, 200
     else:
         print("error create notification", error)
@@ -1303,7 +1303,7 @@ def update_sm_item_state_and_inventory(data, data_token):
         data_token.get("emp_id"),
         0,
     )
-    write_log_file(log_file_sm_path, msg)
+    write_log_file(log_file_sm_path, msg, data_token)
     return {"msg": "ok", "data": result}, 200
 
 
@@ -1341,7 +1341,7 @@ def update_sm_item_state(data, data_token):
         data_token.get("emp_id"),
         0,
     )
-    write_log_file(log_file_sm_path, msg)
+    write_log_file(log_file_sm_path, msg, data_token)
     return {"msg": "ok", "data": result}, 200
 
 
@@ -1387,7 +1387,7 @@ def update_sm_item_approve(data, data_token):
         data_token.get("emp_id"),
         0,
     )
-    write_log_file(log_file_sm_path, msg)
+    write_log_file(log_file_sm_path, msg, data_token)
     return {"msg": "ok", "data": result}, 200
 
 
@@ -1456,7 +1456,7 @@ def update_items_sm_from_api(data, data_token):
     )
 
     # Escribir log
-    write_log_file(log_file_sm_path, msg)
+    write_log_file(log_file_sm_path, msg, data_token)
 
     # Comentario para historial (breve y profesional)
     comment_history = (
@@ -1607,5 +1607,5 @@ def create_sm_attachment_api(data, data_token):
         data_token.get("emp_id"),
         user_created_sm,
     )
-    write_log_file(log_file_sm_path, msg)
+    write_log_file(log_file_sm_path, msg, data_token)
     return {"data": path_aws, "msg": msg}, 201

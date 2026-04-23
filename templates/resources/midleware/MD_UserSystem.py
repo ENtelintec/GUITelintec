@@ -135,7 +135,7 @@ def create_employee_user_from_api(data, data_token):
         data_token.get("emp_id"),
         0,
     )
-    write_log_file(log_file_users, msg)
+    write_log_file(log_file_users, msg, data_token)
     return {
         "data": [id_user],
         "error": "",

@@ -151,7 +151,7 @@ def create_voucher_epp_attachment_api(data, data_token):
     create_notification_permission_notGUI(
         msg, data_token, ["administracion", "operaciones", "sgi"], data_token.get("emp_id"), 0
     )
-    write_log_file(log_file_sgi_vouchers, msg)
+    write_log_file(log_file_sgi_vouchers, msg, data_token)
     return {"data": path_aws, "msg": msg}, 201
 
 
@@ -282,5 +282,5 @@ def create_voucher_tools_attachment_api(data, data_token):
     create_notification_permission_notGUI(
         msg, data_token, ["administracion", "operaciones", "sgi"], data_token.get("emp_id"), 0
     )
-    write_log_file(log_file_sgi_vouchers, msg)
+    write_log_file(log_file_sgi_vouchers, msg, data_token)
     return {"data": path_aws, "msg": msg}, 201

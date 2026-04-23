@@ -913,7 +913,7 @@ def delete_voucher_vehicle_api(data, data_token):
         data_token.get("emp_id"),
         0,
     )
-    write_log_file(log_file_sgi_chv, msg)
+    write_log_file(log_file_sgi_chv, msg, data_token)
     return {"data": [rows_changed], "msg": "Vehicle voucher deleted successfully"}, 200
 
 
@@ -1045,7 +1045,7 @@ def create_voucher_vehicle_attachment_api(data, data_token):
         data_token.get("emp_id"),
         0,
     )
-    write_log_file(log_file_sgi_chv, msg)
+    write_log_file(log_file_sgi_chv, msg, data_token)
     return {"data": path_aws, "msg": msg}, 201
 
 

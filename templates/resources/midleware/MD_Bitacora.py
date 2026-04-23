@@ -288,7 +288,7 @@ def create_event_bitacora_from_api(data, data_token):
             data["id_leader"],
             data["id_emp"],
         )
-        write_log_file(log_file_bitacora_path, msg)
+        write_log_file(log_file_bitacora_path, msg, data_token)
         return {"answer": "The event has been added", "data": events_added}, 201
     elif error is not None:
         print(error)
@@ -318,7 +318,7 @@ def update_event_bitacora_from_api(data, data_token):
             data["id_leader"],
             data["id_emp"],
         )
-        write_log_file(log_file_bitacora_path, msg)
+        write_log_file(log_file_bitacora_path, msg, data_token)
         return {"answer": "The event has been updated"}, 200
     elif error is not None:
         print(error)
@@ -346,7 +346,7 @@ def delete_event_bitacora_from_api(data, data_token):
             data["id_leader"],
             data["id_emp"],
         )
-        write_log_file(log_file_bitacora_path, msg)
+        write_log_file(log_file_bitacora_path, msg, data_token)
         return {"answer": "The event has been deleted"}, 200
     elif error is not None:
         print(error)
@@ -425,7 +425,7 @@ def create_multiple_event_bitacora_from_api(data, data_token):
         data["id_leader"],
         data["id_leader"],
     )
-    write_log_file(log_file_bitacora_path, msg)
+    write_log_file(log_file_bitacora_path, msg, data_token)
     return {"answer": "The events were proccessed.", "data": events_added}, 200
 
 
@@ -445,7 +445,7 @@ def aprove_event_bitacora_from_api(data, data_token):
             data["id_leader"],
             data["id_emp"],
         )
-        write_log_file(log_file_bitacora_path, msg)
+        write_log_file(log_file_bitacora_path, msg, data_token)
         return {"answer": "The event has been updated"}, 200
     elif error is not None:
         print(error)
@@ -513,7 +513,7 @@ def create_event_bitacora_rh_from_api(data, data_token):
             data_token.get("emp_id", 0),
             data["emp_id"],
         )
-        write_log_file(log_file_bitacora_path, msg)
+        write_log_file(log_file_bitacora_path, msg, data_token)
         return {"msg": "The event has been updated"}, 200
     elif error is not None:
         print(error)
@@ -540,7 +540,7 @@ def update_event_bitacora_rh_from_api(data, data_token):
             data_token.get("emp_id", 0),
             data["emp_id"],
         )
-        write_log_file(log_file_bitacora_path, msg)
+        write_log_file(log_file_bitacora_path, msg, data_token)
         return {"msg": "The event has been updated"}, 200
     elif error is not None:
         print(error)
@@ -562,7 +562,7 @@ def delete_event_bitacora_rh_from_api(data, data_token):
             data_token.get("emp_id", 0),
             data["emp_id"],
         )
-        write_log_file(log_file_bitacora_path, msg)
+        write_log_file(log_file_bitacora_path, msg, data_token)
         return {"msg": "The event has been deleted"}, 200
     elif error is not None:
         print(error)
