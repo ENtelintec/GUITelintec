@@ -4,8 +4,14 @@ import json
 import jwt
 import pytz
 
-from static.constants import format_date, format_timestamps, timezone_software, secrets, filepath_permission, \
-    log_file_users
+from static.constants import (
+    format_date,
+    format_timestamps,
+    timezone_software,
+    secrets,
+    filepath_permission,
+    log_file_users,
+)
 from datetime import date, datetime
 
 from templates.Functions_Utils import create_notification_permission
@@ -35,12 +41,20 @@ def fetch_permissions_from_api():
     try:
         permissions = read_permissions_file()
     except Exception as e:
-        return {"data": [], "error": str(e), "msg": "Error al obtener los permisos"}, 400
-    return {"data": permissions, "error": "", "msg": "Permisos obtenidos correctamente"}, 200
+        return {
+            "data": [],
+            "error": str(e),
+            "msg": "Error al obtener los permisos",
+        }, 400
+    return {
+        "data": permissions,
+        "error": "",
+        "msg": "Permisos obtenidos correctamente",
+    }, 200
 
 
 def fectchUsersDBApi(data, data_token):
-    flag, error, result = fetch_employess_user_data(data["status"])
+    flag, error, result = fetch_employess_user_data(data["status"], data_token)
     if not flag:
         return {data: [], "error": error, "msg": "Error al obtener los usuarios"}, 400
     if not isinstance(result, list):
@@ -67,7 +81,7 @@ def fectchUsersDBApi(data, data_token):
 
 def update_biocredentials_from_api(data, data_token):
     flag, error, result = update_biocredentials_DB(
-        data["biocredentials"], data["emp_id"], data["user"]
+        data["biocredentials"], data["emp_id"], data["user"], data_token
     )
     if not flag:
         return {
@@ -92,7 +106,7 @@ def create_employee_user_from_api(data, data_token):
         "user": data["user"],
         "dep_id": data["dep_id"],
     }
-    token = jwt.encode(data_user, secrets.get("TOKEN_MASTER_KEY"), algorithm="HS256")
+    token = jwt.encode(data_user, str(secrets.get("TOKEN_MASTER_KEY")), algorithm="HS256")
     time_zone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
     expires = 31536000
@@ -104,6 +118,7 @@ def create_employee_user_from_api(data, data_token):
         expires,
         timestamp,
         data["emp_id"],
+        data_token,
     )
 
     if not flag:
@@ -114,13 +129,13 @@ def create_employee_user_from_api(data, data_token):
         }, 400
     msg = f"Usuario creado con ID-{id_user} por el empleado {data_token.get('name')}"
     create_notification_permission(
-        msg,
+        msg, data_token,
         ["administracion", "operaciones"],
         "Encargado Creado",
         data_token.get("emp_id"),
         0,
     )
-    write_log_file(log_file_users, msg)
+    write_log_file(log_file_users, msg, data_token)
     return {
         "data": [id_user],
         "error": "",

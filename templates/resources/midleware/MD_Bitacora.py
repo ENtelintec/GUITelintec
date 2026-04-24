@@ -197,14 +197,15 @@ def get_extras_last_month(extras_dict: dict, date=None):
     return events
 
 
-def get_events_extra(data):
+def get_events_extra(data, data_token):
     flag, error, result = get_all_fichajes_op()
     date = (
         datetime.strptime(data["date"], format_date)
         if isinstance(data["date"], str)
         else data["date"]
     )
-    print("flag", flag, "error", error)
+    if not (isinstance(result, list) or isinstance(result, tuple)):
+        return {"data": [], "msg": "No hay registros"}, 400
     events_out = []
     for row in result:
         extras_dict = json.loads(row[8])
@@ -253,7 +254,7 @@ def get_events_bitacora(data):
     return {"data": events, "dataEvents": data_events, "columns": columns}, 200
 
 
-def create_event_bitacora_from_api(data):
+def create_event_bitacora_from_api(data, data_token):
     out = check_date_difference(data["date"], delta_bitacora_edit)
     flag = False
     error = None
@@ -282,13 +283,13 @@ def create_event_bitacora_from_api(data):
             f"Evento: {data['event']}, Valor: {data['value']}, Comentario: {data['comment']}"
         )
         create_notification_permission(
-            msg,
+            msg, data_token,
             ["bitacora", "operaciones"],
             "Nuevo evento bitacora",
             data["id_leader"],
             data["id_emp"],
         )
-        write_log_file(log_file_bitacora_path, msg)
+        write_log_file(log_file_bitacora_path, msg, data_token)
         return {"answer": "The event has been added", "data": events_added}, 201
     elif error is not None:
         print(error)
@@ -297,7 +298,7 @@ def create_event_bitacora_from_api(data):
         return {"answer": "Fail to add registry"}, 404
 
 
-def update_event_bitacora_from_api(data):
+def update_event_bitacora_from_api(data, data_token):
     out = check_date_difference(data["date"], delta_bitacora_edit)
     if not out:
         return {"answer": "No se puede alterar la bitcaora en esta fecha."}, 403
@@ -312,13 +313,13 @@ def update_event_bitacora_from_api(data):
             f"Evento: {data['event']}, Valor: {data['value']}, Comentario: {data['comment']}"
         )
         create_notification_permission(
-            msg,
+            msg, data_token,
             ["bitacora", "operaciones"],
             "Evento bitacora actualizado",
             data["id_leader"],
             data["id_emp"],
         )
-        write_log_file(log_file_bitacora_path, msg)
+        write_log_file(log_file_bitacora_path, msg, data_token)
         return {"answer": "The event has been updated"}, 200
     elif error is not None:
         print(error)
@@ -327,7 +328,7 @@ def update_event_bitacora_from_api(data):
         return {"answer": "Fail to update registry"}, 404
 
 
-def delete_event_bitacora_from_api(data):
+def delete_event_bitacora_from_api(data, data_token):
     out = check_date_difference(data["date"], delta_bitacora_edit)
     if not out:
         return {"answer": "No se puede alterar la bitcaora en esta fecha."}, 403
@@ -340,13 +341,13 @@ def delete_event_bitacora_from_api(data):
             f"Evento: {data['event']}"
         )
         create_notification_permission(
-            msg,
+            msg, data_token,
             ["bitacora", "operaciones"],
             "Evento bitacora eliminado",
             data["id_leader"],
             data["id_emp"],
         )
-        write_log_file(log_file_bitacora_path, msg)
+        write_log_file(log_file_bitacora_path, msg, data_token)
         return {"answer": "The event has been deleted"}, 200
     elif error is not None:
         print(error)
@@ -355,7 +356,7 @@ def delete_event_bitacora_from_api(data):
         return {"answer": "Fail to delete registry"}, 404
 
 
-def get_file_report_bitacora(data):
+def get_file_report_bitacora(data, data_token):
     date = data["date"]
     date = datetime.strptime(date, format_date) if isinstance(date, str) else date
     events, columns = get_events_op_date(date, False, emp_id=data["id_emp"])
@@ -385,7 +386,7 @@ def get_file_report_bitacora(data):
     return filepath_bitacora_download, 200
 
 
-def create_multiple_event_bitacora_from_api(data):
+def create_multiple_event_bitacora_from_api(data, data_token):
     events_recieved = data["events"]
     events_added = []
     msg = f"---Agregando nuevos eventos por el lider {data['id_leader']}---"
@@ -419,17 +420,17 @@ def create_multiple_event_bitacora_from_api(data):
             )
             msg += f"\nid_emp: {event['id_emp']}, {event['event']}_{event['value']}, flag: {flag}, error: {str(error)}, result: {result}"
     create_notification_permission(
-        msg,
+        msg, data_token,
         ["bitacora", "operaciones"],
         "Nuevo evento bitacora",
         data["id_leader"],
         data["id_leader"],
     )
-    write_log_file(log_file_bitacora_path, msg)
+    write_log_file(log_file_bitacora_path, msg, data_token)
     return {"answer": "The events were proccessed.", "data": events_added}, 200
 
 
-def aprove_event_bitacora_from_api(data):
+def aprove_event_bitacora_from_api(data, data_token):
     flag, error, result = update_bitacora(
         data["id_emp"],
         "extra",
@@ -439,13 +440,13 @@ def aprove_event_bitacora_from_api(data):
     if flag:
         msg = f"Evento extra aprovado: {data['id_emp']}, {data['date']}, {data['value']}, {data['comment']}"
         create_notification_permission(
-            msg,
+            msg, data_token,
             ["bitacora", "operaciones"],
             "Evento extra aprovado bitacora",
             data["id_leader"],
             data["id_emp"],
         )
-        write_log_file(log_file_bitacora_path, msg)
+        write_log_file(log_file_bitacora_path, msg, data_token)
         return {"answer": "The event has been updated"}, 200
     elif error is not None:
         print(error)
@@ -454,8 +455,10 @@ def aprove_event_bitacora_from_api(data):
         return {"answer": "Fail to update registry"}, 404
 
 
-def fetch_all_bitacora_rh():
-    flag, error, result = get_all_bitacora_rh_db()
+def fetch_all_bitacora_rh(data_token):
+    flag, error, result = get_all_bitacora_rh_db( data_token)
+    if not(isinstance(result, list) or isinstance(result, tuple)):
+        return {"data": [result], "msg": "error"}, 400
     dict_emps = {}
     # id_event, emp_id, event, timestamp, extra_info, name, l_name, contrato
     for item in result:
@@ -507,13 +510,13 @@ def create_event_bitacora_rh_from_api(data, data_token):
     if flag:
         msg = f"Evento de bitacora registrado por RH: {data['emp_id']}, {data['timestamp']}, {data['type']}, {data['value']}"
         create_notification_permission(
-            msg,
+            msg, data_token,
             ["RH"],
             "Evento de bitacora registrado",
             data_token.get("emp_id", 0),
             data["emp_id"],
         )
-        write_log_file(log_file_bitacora_path, msg)
+        write_log_file(log_file_bitacora_path, msg, data_token)
         return {"msg": "The event has been updated"}, 200
     elif error is not None:
         print(error)
@@ -534,13 +537,13 @@ def update_event_bitacora_rh_from_api(data, data_token):
     if flag:
         msg = f"Evento de bitacora actualizado por RH: {data['emp_id']}, {data['timestamp']}, {data['type']}, {data['value']}"
         create_notification_permission(
-            msg,
+            msg, data_token,
             ["RH"],
             "Evento de bitacora actualizado",
             data_token.get("emp_id", 0),
             data["emp_id"],
         )
-        write_log_file(log_file_bitacora_path, msg)
+        write_log_file(log_file_bitacora_path, msg, data_token)
         return {"msg": "The event has been updated"}, 200
     elif error is not None:
         print(error)
@@ -556,13 +559,13 @@ def delete_event_bitacora_rh_from_api(data, data_token):
     if flag:
         msg = f"Evento de bitacora eliminado por RH: {data['id']}"
         create_notification_permission(
-            msg,
+            msg, data_token,
             ["RH"],
             "Evento de bitacora eliminado",
             data_token.get("emp_id", 0),
             data["emp_id"],
         )
-        write_log_file(log_file_bitacora_path, msg)
+        write_log_file(log_file_bitacora_path, msg, data_token)
         return {"msg": "The event has been deleted"}, 200
     elif error is not None:
         print(error)
@@ -574,7 +577,8 @@ def delete_event_bitacora_rh_from_api(data, data_token):
 def fetch_bitacora_rh_from_api_by_date(data):
     flag, error, result = get_bitacora_rh_db_by_date(data["date"])
     dict_emps = {}
-    # id_event, emp_id, event, timestamp, extra_info, name, l_name, contrato
+    if not (isinstance(result, list) or isinstance(result, tuple)):
+        return {"data": [result], "msg": "error"}, 400
     for item in result:
         extra_info = json.loads(item[4])
         if item[1] in dict_emps.keys():

@@ -135,9 +135,11 @@ def generate_bar_data_from_dict(data_dict: dict, type_range: str, type_chart: st
     return data_chart
 
 
-def get_data_sm_per_range(type_r: str, type_chart: str):
-    flag, error, results = get_all_sm_plots(16, False)
+def get_data_sm_per_range(type_r: str, type_chart: str, data_token):
+    flag, error, results = get_all_sm_plots(16, data_token, False)
     dict_results = {}
+    if not (isinstance(results, list) or isinstance(results, tuple)):
+        return []
     for item in results:
         id_sm, id_emp, date_init, date_limit, status = item
         month = date_init.month
@@ -165,10 +167,12 @@ def get_data_sm_per_range(type_r: str, type_chart: str):
     return generate_bar_data_from_dict(dict_results, type_r, type_chart)
 
 
-def get_data_movements_type(type_m: str, n_elements: int):
-    flag, error, results = get_movements_type(type_m, n_elements)
+def get_data_movements_type(type_m: str, n_elements: int, data_token):
+    flag, error, results = get_movements_type(type_m, n_elements, data_token)
     if not flag:
         return None
+    if not(isinstance(results, list) or isinstance(results, tuple)):
+        return []
     data_dict_p = {}
     for item in results:
         id_prod, quantity, name, udm = item

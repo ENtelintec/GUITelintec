@@ -30,7 +30,7 @@ class ListFilesPayroll(Resource):
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        code, data_out = get_files_list_nomina(emp_id)
+        code, data_out = get_files_list_nomina(emp_id, data_token)
         if code != 200:
             return {"data": None, "msg": "No files"}, code
         return {"data": data_out, "msg": "ok"}, code
@@ -41,7 +41,7 @@ class DownloadFilesPayroll(Resource):
     @ns.expect(request_file_model, expected_headers_per)
     def post(self):
         # noinspection PyUnresolvedReferences
-        validator = RequestFileForm.from_json(ns.payload)
+        validator = RequestFileForm.from_json(ns.payload) # pyrefly: ignore
         if not validator.validate():
             return {"error": validator.errors}, 400
         data = validator.data
@@ -50,7 +50,7 @@ class DownloadFilesPayroll(Resource):
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        filepath, code = download_nomina_docs(data)
+        filepath, code = download_nomina_docs(data, data_token)
         if code != 200:
             return {"data": None, "msg": "No files"}, code
         return send_file(filepath, as_attachment=True)
@@ -64,7 +64,7 @@ class VacationsEvents(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
 
-        data, code = get_all_vacations_data_date()
+        data, code = get_all_vacations_data_date(data_token)
         if code != 200:
             return {"data": None, "msg": f"No files: {str(data)}"}, code
         return {"data": data, "msg": "ok"}, code

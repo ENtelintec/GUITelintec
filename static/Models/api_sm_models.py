@@ -52,6 +52,9 @@ deliveries_item_model = api.model(
             required=True, description="The order folio which is related"
         ),
         "color": fields.String(required=True, description="The cell color"),
+        "id_order": fields.Integer(
+            required=False, description="The order id which is related if avaliable"
+        ),
     },
 )
 
@@ -739,7 +742,7 @@ class ItemsFormSMPost(Form):
         validators=[validators.number_range(min=0, message="Invalid quantity")],
     )
     movement = StringField("movement", validators=[], default="")
-    url = URLField("url", validators=[], default="")
+    url = StringField("url", validators=[], default="")
     sku = StringField("sku", validators=[], default="")
     partida = IntegerField("partida", validators=[], default=0)
     state = IntegerField("state", validators=[], default=1)
@@ -758,6 +761,7 @@ class DeliveriesForm(Form):
     folio = StringField("folio", validators=[], default="")
     timestamp = DateField("timestamp", validators=[], filters=[date_filter])
     color = StringField("color", validators=[], default="#ffffff")
+    id_order = IntegerField("id_order", validators=[], default=None)
 
 
 class ItemsFormSMPUT(Form):
@@ -781,7 +785,7 @@ class ItemsFormSMPUT(Form):
         validators=[validators.number_range(min=0, message="Invalid quantity")],
     )
     movement = StringField("movement", validators=[], default="")
-    url = URLField("url", validators=[], default="")
+    url = StringField("url", validators=[], default="")
     sku = StringField("sku", validators=[], default="")
     partida = StringField("partida", validators=[], default="")
     is_erased = IntegerField("is_erased", validators=[], default=0)

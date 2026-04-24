@@ -1925,7 +1925,7 @@ def get_info_t_file_name(
 
 def get_info_bitacora(df: pd.DataFrame, name: str, id_emp: int, flag, date_limit=None):
     if not flag:
-        return 0.0, 0.0, 0.0, 0.0, [], [], [], [], [], [], []
+        return 0.0, 0.0, 0.0, 0.0, [], [], [], [], [], [], [], []
     df_name = df[df["ID"] == id_emp]
     # convert timestamp to datetime format
     df_name["Timestamp"] = pd.to_datetime(df_name["Timestamp"])
@@ -1994,9 +1994,7 @@ def get_info_bitacora(df: pd.DataFrame, name: str, id_emp: int, flag, date_limit
     )
 
 
-def get_info_o_file_name(
-    contracts, name: str, id_2=None, flag=False
-) -> tuple[str, list, list, list, float, list]:
+def get_info_o_file_name(contracts, name: str, id_2=None, flag=False):
     if flag:
         id_2, name_db = get_name_id_contracts(contracts, name)
         if id_2 is not None:
@@ -2094,7 +2092,9 @@ def get_list_files(
     return files_pairs, files_names_f
 
 
-def write_log_file(paths: list | str, text, username_data=None):
+def write_log_file(paths: list | str, text, data_token=None):
+    if data_token and data_token["is_tester"]:
+        return True
     time_zone = pytz.timezone(timezone_software)
     date = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_date)
     paths = paths if isinstance(paths, list) else [paths]

@@ -12,12 +12,13 @@ from templates.resources.midleware.Functions_midleware_RRHH import (
 
 
 class UpdaterSharepointNomina(threading.Thread):
-    def __init__(self, patterns):
+    def __init__(self, patterns, data_token):
         super().__init__()
         self.patterns = patterns
+        self.data_token = data_token
 
     def run(self):
-        update_data_docs_nomina(patterns=self.patterns)
+        update_data_docs_nomina(self.data_token,patterns=self.patterns)
         flags_daemons = json.load(open(filepath_daemons, "r"))
         flags_daemons["update_files_nomina"] = False
         json.dump(flags_daemons, open(filepath_daemons, "w"))

@@ -58,7 +58,7 @@ class Notifications(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         status = status if status in [0, 1] else "%"
-        code, result = get_all_notification_db_user_status(id_emp, status)
+        code, result = get_all_notification_db_user_status(id_emp, status, data_token)
         return {"data": result, "msg": "Ok" if code == 200 else "Error"}, code
 
 
@@ -87,11 +87,11 @@ class Notification(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
-        validator = NotificationInsertForm.from_json(ns.payload) # pyrefly:ignore
+        validator = NotificationInsertForm.from_json(ns.payload)  # pyrefly:ignore
         if not validator.validate():
             return {"errors": validator.errors}, 400
         data = validator.data
-        flag, error, result = insert_notification(data["info"])
+        flag, error, result = insert_notification(data["info"], data_token)
         if flag:
             return {"msg": "Ok", "data": str(result)}, 200
         else:
@@ -105,13 +105,13 @@ class Notification(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
-        validator = NotificationUpdateForm.from_json(ns.payload)    # pyrefly:ignore
+        validator = NotificationUpdateForm.from_json(ns.payload)  # pyrefly:ignore
         if not validator.validate():
             return {"errors": validator.errors}, 400
         data = validator.data
         # data["id"] = data["info"]["id"]
         flag, error, result = update_status_notification(
-            data["id"], data["info"]["status"]
+            data["id"], data["info"]["status"], data_token
         )
         if flag:
             return {"msg": "Ok", "data": str(result)}, 200
@@ -145,7 +145,7 @@ class ResponseAV(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
-        validator = RequestAVResponseForm.from_json(ns.payload) # pyrefly:ignore
+        validator = RequestAVResponseForm.from_json(ns.payload)  # pyrefly:ignore
         if not validator.validate():
             return {"error": validator.errors}, 400
         data = validator.data
@@ -189,11 +189,11 @@ class Task(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
-        validator = TaskInsertForm.from_json(ns.payload)    # pyrefly:ignore
+        validator = TaskInsertForm.from_json(ns.payload)  # pyrefly:ignore
         if not validator.validate():
             return {"errors": validator.errors}, 400
         data = validator.data
-        response, code = create_task_from_api(data)
+        response, code = create_task_from_api(data, data_token)
         return response, code
 
     @ns.expect(expected_headers_per, task_update_model)
@@ -204,11 +204,11 @@ class Task(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
-        validator = TaskUpdateForm.from_json(ns.payload)    # pyrefly:ignore
+        validator = TaskUpdateForm.from_json(ns.payload)  # pyrefly:ignore
         if not validator.validate():
             return {"errors": validator.errors}, 400
         data = validator.data
-        reponse, code = update_task_from_api(data)
+        reponse, code = update_task_from_api(data, data_token)
         return reponse, code
 
     @ns.expect(expected_headers_per, task_delete_model)
@@ -217,7 +217,7 @@ class Task(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
-        validator = TaskDeleteForm.from_json(ns.payload)    # pyrefly:ignore
+        validator = TaskDeleteForm.from_json(ns.payload)  # pyrefly:ignore
         if not validator.validate():
             return {"errors": validator.errors}, 400
         data = validator.data
@@ -232,7 +232,7 @@ class TaskGui(Resource):
         flag, data_token, msg = token_verification_procedure(request, emp_id=emp_id)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        data, code = get_task_by_id_employee(emp_id)
+        data, code = get_task_by_id_employee(emp_id, data_token)
         if code == 200:
             return {"data": data}, 200
         else:

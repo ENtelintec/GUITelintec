@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from datetime import timedelta
+
 __author__ = "Edisson Naula"
 __date__ = "$ 28/jun./2024  at 16:28 $"
 
@@ -103,7 +105,7 @@ class GraceMinutes:
         return self.minutes
 
 
-def create_new_employee_db(data):
+def create_new_employee_db(data, data_token):
     flag, error, result = new_employee(
         data["info"]["name"],
         data["info"]["lastname"],
@@ -122,6 +124,7 @@ def create_new_employee_db(data):
         data["info"]["legajo"],
         data["info"]["email"],
         data["info"]["emergency"],
+        data_token,
         data["info"]["id_leader"],
     )
     if flag:
@@ -130,7 +133,7 @@ def create_new_employee_db(data):
         return {"error": str(error)}, 400
 
 
-def update_employee_db(data):
+def update_employee_db(data, data_token):
     flag, error, result = update_employee(
         data["id"],
         data["info"]["name"],
@@ -150,6 +153,7 @@ def update_employee_db(data):
         data["info"]["legajo"],
         data["info"]["email"],
         data["info"]["emergency"],
+        data_token,
         data["info"]["id_leader"],
     )
     if flag:
@@ -163,7 +167,9 @@ def terminate_employee_from_api(data, data_token):
     timestamp = datetime.now(pytz.utc).astimezone(time_zone)
     date = timestamp.strftime(format_timestamps)
     departure = {"date": date, "reason": data["reason"]}
-    flag, error, result = terminate_employee_db(data["id"], json.dumps(departure))
+    flag, error, result = terminate_employee_db(
+        data["id"], json.dumps(departure), data_token
+    )
     if not flag:
         return {
             "data": str(result),
@@ -174,14 +180,14 @@ def terminate_employee_from_api(data, data_token):
         f"Empleado con id: {data['id']} dado de baja por {data['reason']}. "
         f"Realizado por el empleado con id: {data_token['emp_id']} "
     )
-    write_log_file(log_file_rh, msg)
+    write_log_file(log_file_rh, msg, data_token)
     create_notification_permission(
-        msg, ["rrhh"], "Empleado dato de baja", data_token.get("emp_id"), 0
+        msg, data_token, ["rrhh"], "Empleado dato de baja", data_token.get("emp_id"), 0
     )
     return {"data": str(result), "msg": msg}, 200
 
 
-def get_files_fichaje():
+def get_files_fichaje(data_token):
     flag, files = check_fichajes_files_in_directory(patterns_files_fichaje)
     if not flag:
         return False, files
@@ -189,7 +195,7 @@ def get_files_fichaje():
     return True, files_list
 
 
-def fetch_fichajes_all_employees():
+def fetch_fichajes_all_employees(data_token):
     fichajes_resume, flag = get_fichajes_resume_cache(
         cache_file_resume_fichaje_path, is_hard_update=True
     )
@@ -282,6 +288,8 @@ def get_data_file(filename: str, type_f: str):
     else:
         if ".xls" in filename or ".xlsx" in filename or ".csv" in filename:
             dft = extract_fichajes_file(filename)
+            if dft is None:
+                return False, ["No aceptable extension detected"]
             coldata = []
             for i, col in enumerate(dft.columns.tolist()):
                 coldata.append({"text": col, "stretch": True})
@@ -483,8 +491,10 @@ def upload_nomina_doc(data):
     return 200, None
 
 
-def update_files_data_nominas(key: str, paths_pdf_xml: dict, data_xml: dict):
-    flag, error, result = get_payrolls(data_xml["emp_id"])
+def update_files_data_nominas(
+    key: str, paths_pdf_xml: dict, data_xml: dict, data_token
+):
+    flag, error, result = get_payrolls(data_xml["emp_id"], data_token)
     data_emp = {} if not flag or len(result) == 0 else json.loads(result[1])
     try:
         date = pd.to_datetime(data_xml["date"])
@@ -506,7 +516,7 @@ def update_files_data_nominas(key: str, paths_pdf_xml: dict, data_xml: dict):
     return data_emp, True
 
 
-def update_data_docs_nomina(patterns=None, use_index=False):
+def update_data_docs_nomina(data_token, patterns=None, use_index=False):
     print("Updating data docs nomina ", patterns)
     settings = json.load(open(filepath_settings, "r"))
     url_shrpt = settings["gui"]["RRHH"]["url_shrpt"]
@@ -560,11 +570,11 @@ def update_data_docs_nomina(patterns=None, use_index=False):
             )
             continue
         data_emps[data_file["emp_id"]], flag = update_files_data_nominas(
-            k, v, data_file
+            k, v, data_file, data_token
         )
         if flag:
             flag, error, result = update_payroll(
-                data_emps[data_file["emp_id"]], data_file["emp_id"]
+                data_emps[data_file["emp_id"]], data_file["emp_id"], data_token
             )
             results.append((flag, error, result))
         else:
@@ -572,7 +582,7 @@ def update_data_docs_nomina(patterns=None, use_index=False):
     return results
 
 
-def download_nomina_docs(data):
+def download_nomina_docs(data, data_token):
     settings = json.load(open(filepath_settings, "r"))
     url_shrpt = settings["gui"]["RRHH"]["url_shrpt"]
     folder_rrhh = settings["gui"]["RRHH"]["folder_rrhh"]
@@ -589,8 +599,8 @@ def download_nomina_docs(data):
     return file_temp_zip, code
 
 
-def get_files_list_nomina_RH(emp_id):
-    flag, error, result = get_payrolls(emp_id)
+def get_files_list_nomina_RH(emp_id, data_token):
+    flag, error, result = get_payrolls(emp_id, data_token)
     dicts_data = []
     for item in result:
         emp_id = int(item[0])
@@ -600,8 +610,8 @@ def get_files_list_nomina_RH(emp_id):
     return 200, dicts_data
 
 
-def get_files_list_nomina(emp_id):
-    flag, error, result = get_payrolls(emp_id)
+def get_files_list_nomina(emp_id, data_token):
+    flag, error, result = get_payrolls(emp_id, data_token)
     files = []
     dicts_data = []
     for item in result:
@@ -624,7 +634,7 @@ def get_files_list_nomina(emp_id):
     return 200, files
 
 
-def insert_medical_db(data):
+def insert_medical_db(data, data_token):
     allergies = data["info"]["allergies"]
     observations = data["info"]["observations"]
     extra_info = {"allergies": allergies, "observations": observations}
@@ -637,6 +647,7 @@ def insert_medical_db(data):
         data["info"]["apt_actual"],
         data["info"]["emp_id"],
         extra_info,
+        data_token,
     )
     if flag:
         return {"data": str(result)}, 201
@@ -644,7 +655,7 @@ def insert_medical_db(data):
         return {"error": str(error)}, 400
 
 
-def update_medical_db(data):
+def update_medical_db(data, data_token):
     apt_actual = (
         data["info"]["aptitudes"][-1] if len(data["info"]["aptitudes"]) > 0 else 0
     )
@@ -657,6 +668,7 @@ def update_medical_db(data):
         apt_actual,
         exam_id=data["id"],
         extra_info=extra_info,
+        data_token=data_token,
     )
     if flag:
         return {"data": str(result)}, 200
@@ -664,7 +676,7 @@ def update_medical_db(data):
         return {"error": str(error)}, 400
 
 
-def insert_new_vacation(data):
+def insert_new_vacation(data, data_token):
     seniority_dict = {}
     for item in data["seniority"]:
         seniority_dict[str(item["year"])] = {
@@ -674,11 +686,13 @@ def insert_new_vacation(data):
         }
     if not len(seniority_dict) > 0:
         return False, "No hay informacion que insertar", None
-    flag, error, result = insert_vacation(data["emp_id"], seniority_dict)
+    flag, error, result = insert_vacation(
+        data["emp_id"], seniority_dict, data_token=data_token
+    )
     return flag, error, result
 
 
-def update_vacation(data):
+def update_vacation(data, data_token):
     seniority_dict = {}
     for item in data["seniority"]:
         seniority_dict[str(item["year"])] = {
@@ -689,12 +703,16 @@ def update_vacation(data):
         }
     if not len(seniority_dict) > 0:
         return False, "No hay informacion que actualizar o corrupcion de info.", None
-    flag, error, result = update_registry_vac(data["emp_id"], seniority_dict)
+    flag, error, result = update_registry_vac(
+        data["emp_id"], seniority_dict, data_token
+    )
     return flag, error, result
 
 
-def get_all_quizzes():
-    flag, error, tasks = get_all_tasks_by_status(status=-1, title="quizz")
+def get_all_quizzes(data_token):
+    flag, error, tasks = get_all_tasks_by_status(
+        status=-1, title="quizz", data_token=data_token
+    )
     if not flag:
         return False, error, []
     data_out = []
@@ -842,7 +860,7 @@ def calculate_results_quizzes(dict_quizz: dict, tipo_q: int):
     return dict_results
 
 
-def generate_pdf_from_json(data):
+def generate_pdf_from_json(data, data_token):
     from static.FramesClasses import dict_typer_quizz_generator
 
     json_dict = data["body"]
@@ -867,7 +885,9 @@ def generate_pdf_from_json(data):
         data_raw["recommendations"] = dict_recomendations
         is_update = False
     if not is_update:
-        flag, error, result = update_task(data["id"], data["body"], data_raw=data_raw)
+        flag, error, result = update_task(
+            data["id"], data["body"], data_raw=data_raw, data_token=data_token
+        )
         if not flag:
             print("Error al actualizar el task", error, result)
     try:
@@ -910,13 +930,13 @@ def download_fichaje_file(data):
     return download_path, code
 
 
-def update_files_payroll(data):
+def update_files_payroll(data, data_token):
     quincena = data["quincena"]
     quincena = quincena if quincena != "" else None
     patterns = [data["year"], data["month"], quincena]
     from templates.daemons.Files_handling import UpdaterSharepointNomina
 
-    thread_update = UpdaterSharepointNomina(patterns)
+    thread_update = UpdaterSharepointNomina(patterns, data_token)
     thread_update.start()
     flags_daemons = json.load(open(filepath_daemons, "r"))
     flags_daemons["update_files_nomina"] = True
@@ -955,12 +975,12 @@ def create_mail_payroll(data):
     return code, response
 
 
-def update_payroll_list_employees():
+def update_payroll_list_employees(data_token):
     flags_daemons = json.load(open(filepath_daemons, "r"))
     if flags_daemons["update_files_nomina"]:
         msg = "Accion no permitida mientras se actualizan los datos."
         return 400, msg
-    flag, error, result = update_payroll_employees()
+    flag, error, result = update_payroll_employees(data_token)
     msg = "Se han agregado correctamente:\n"
     counter = 0
     for item in result:
@@ -974,9 +994,9 @@ def update_payroll_list_employees():
     return 200 if flag else 400, msg
 
 
-def update_data_employee(data):
+def update_data_employee(data, data_token):
     data_dict = json.loads(data["data_dict"])
-    flag, error, result = update_payroll(data_dict, data["id"])
+    flag, error, result = update_payroll(data_dict, data["id"], data_token)
     return (
         (200, {"data": result, "msg": "ok"})
         if flag
@@ -984,11 +1004,13 @@ def update_data_employee(data):
     )
 
 
-def fetch_employees_without_records():
+def fetch_employees_without_records(data_token):
     # name, l_name, status, birthday, date_admission, employee_id
-    flag, error, result = get_employees_without_records()
+    flag, error, result = get_employees_without_records(data_token)
     if not flag:
         return 400, {"data": None, "msg": str(error)}
+    if not (isinstance(result, list) or isinstance(result, tuple)):
+        return 400, {"data": [], "msg": "No hay empleados sin registros"}
     out = []
     for item in result:
         birthday = (
@@ -1013,14 +1035,29 @@ def fetch_employees_without_records():
     return 200, {"data": out, "msg": "ok"}
 
 
-def fetch_medicals():
-    flag, e, result = get_all_examenes()
+def fetch_medicals(data_token):
+    flag, e, result = get_all_examenes(data_token)
+    if not (isinstance(result, list) or isinstance(result, tuple)):
+        return 400, {"data": [], "msg": "No hay  registros"}
     out = {"data": None}
     if not flag:
         out = {"data": []}
         code = 400
         return out, code
+
     data_out = []
+    messages = []
+
+    # Definir límites por tipo de aptitud
+    limits = {
+        "APTO 1": timedelta(days=365),  # revisión anual
+        "APTO 2": timedelta(days=180),  # revisión cada 6 meses
+        "APTO 3": timedelta(days=90),  # revisión cada 3 meses
+        "APTO 4": None,  # NO APTO
+    }
+
+    warning_threshold = timedelta(days=30)
+
     for row in result:
         (
             id_exam,
@@ -1033,28 +1070,66 @@ def fetch_medicals():
             emp_id,
             extra_info,
         ) = row
+
         extra_info = json.loads(extra_info)
-        data_out.append(
-            {
-                "exist": True,
-                "id_exam": id_exam,
-                "name": nombre,
-                "blood": sangre,
-                "status": status if status is not None else "INACTIVO",
-                "aptitudes": json.loads(aptitud),
-                "dates": json.loads(fechas),
-                "apt_last": apt_actual,
-                "emp_id": emp_id,
-                "allergies": extra_info.get("allergies", ""),
-                "observations": extra_info.get("observations", ""),
-            }
-        )
+        aptitudes = json.loads(aptitud)
+        dates = json.loads(fechas)
+
+        # Última fecha registrada
+        last_date = None
+        if dates:
+            last_date = datetime.strptime(max(dates), format_timestamps)
+
+        exam_data = {
+            "exist": True,
+            "id_exam": id_exam,
+            "name": nombre,
+            "blood": sangre,
+            "status": status if status is not None else "INACTIVO",
+            "aptitudes": aptitudes,
+            "dates": dates,
+            "apt_last": apt_actual,
+            "emp_id": emp_id,
+            "allergies": extra_info.get("allergies", ""),
+            "observations": extra_info.get("observations", ""),
+        }
+        data_out.append(exam_data)
+
+        # Validación de fechas según aptitud
+        if apt_actual in limits and limits[apt_actual] is not None and last_date:
+            delta = datetime.now() - last_date
+            limite = limits[apt_actual]
+            if limite is None:
+                continue 
+
+            if delta > limite:
+                # Mensaje crítico
+                messages.append(
+                    f"[CRÍTICO] El empleado {nombre} requiere revisión: "
+                    f"Aptitud {apt_actual}, última fecha {last_date.strftime(format_timestamps)}, "
+                    f"supera el límite de {limite.days} días."
+                )
+            elif limite - delta <= warning_threshold:
+                # Mensaje de aviso
+                remaining = limite - delta
+                messages.append(
+                    f"[AVISO] El empleado {nombre} está próximo a revisión: "
+                    f"Aptitud {apt_actual}, última fecha {last_date.strftime(format_timestamps)}, "
+                    f"faltan {remaining.days} días para el límite de {limite.days} días."
+                )
+
+        elif apt_actual == "APTO 4":
+            messages.append(
+                f"[CRÍTICO] El empleado {nombre} (ID {id_exam}) está marcado como NO APTO."
+            )
+
     out["data"] = data_out
+    out["messages"] = messages
     return out, 200
 
 
-def fetch_medical_employee(id_emp):
-    flag, e, result = get_all_examenes()
+def fetch_medical_employee(id_emp, data_token):
+    flag, e, result = get_all_examenes(data_token)
     out = {"exist": False, "data": None}
     if not flag:
         return out, 400

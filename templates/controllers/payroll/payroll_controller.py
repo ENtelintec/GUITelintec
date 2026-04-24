@@ -7,7 +7,7 @@ import json
 from templates.database.connection import execute_sql
 
 
-def get_payrolls(employee_id):
+def get_payrolls(employee_id, data_token):
     if employee_id <= 0:
         sql = (
             "SELECT id, files_data, sql_telintec.employees.name, sql_telintec.employees.l_name "
@@ -16,7 +16,7 @@ def get_payrolls(employee_id):
             "WHERE sql_telintec.employees.status = 'activo' "
             "ORDER BY sql_telintec.employees.name, sql_telintec.employees.l_name "
         )
-        flag, error, result = execute_sql(sql, None, 5)
+        flag, error, result = execute_sql(sql, None, 5, data_token)
         return flag, error, result
     else:
         sql = (
@@ -26,32 +26,32 @@ def get_payrolls(employee_id):
             "WHERE id = %s"
         )
         vals = (employee_id,)
-        flag, error, result = execute_sql(sql, vals, 1)
+        flag, error, result = execute_sql(sql, vals, 1, data_token)
         return flag, error, [result]
 
 
-def create_payroll(data, emp_id):
-    sql = "INSERT INTO " "sql_telintec.payroll (id, files_data) " "VALUES (%s, %s)"
+def create_payroll(data, emp_id, data_token):
+    sql = "INSERT INTO sql_telintec.payroll (id, files_data) VALUES (%s, %s)"
     vals = (emp_id, data)
-    flag, error, result = execute_sql(sql, vals, 4)
+    flag, error, result = execute_sql(sql, vals, 4, data_token)
     return flag, error, result
 
 
-def update_payroll(data: dict, emp_id):
-    sql = "UPDATE sql_telintec.payroll " "SET files_data = %s " "WHERE id = %s"
+def update_payroll(data: dict, emp_id, data_token):
+    sql = "UPDATE sql_telintec.payroll SET files_data = %s WHERE id = %s"
     vals = (json.dumps(data), emp_id)
-    flag, error, result = execute_sql(sql, vals, 3)
+    flag, error, result = execute_sql(sql, vals, 3, data_token)
     return flag, error, result
 
 
-def delete_payroll(emp_id):
-    sql = "DELETE FROM sql_telintec.payroll " "WHERE id = %s"
+def delete_payroll(emp_id, data_token):
+    sql = "DELETE FROM sql_telintec.payroll WHERE id = %s"
     vals = (emp_id,)
-    flag, error, result = execute_sql(sql, vals, 3)
+    flag, error, result = execute_sql(sql, vals, 3, data_token)
     return flag, error, result
 
 
-def get_payrolls_with_info(employee_id):
+def get_payrolls_with_info(employee_id, data_token):
     if employee_id <= 0:
         sql = (
             "SELECT "
@@ -59,7 +59,7 @@ def get_payrolls_with_info(employee_id):
             "FROM sql_telintec.payroll "
             "INNER JOIN sql_telintec.employees ON employees.employee_id = payroll.id"
         )
-        flag, error, result = execute_sql(sql, None, 5)
+        flag, error, result = execute_sql(sql, None, 5, data_token)
     else:
         sql = (
             "SELECT id, UPPER(name), UPPER(l_name), files_data "
@@ -68,11 +68,11 @@ def get_payrolls_with_info(employee_id):
             "WHERE id = %s"
         )
         vals = (employee_id,)
-        flag, error, result = execute_sql(sql, vals, 1)
+        flag, error, result = execute_sql(sql, vals, 1, data_token)
     return flag, error, result
 
 
-def update_payroll_employees():
+def update_payroll_employees(data_token):
     sql = "SELECT employee_id from sql_telintec.employees"
     flag, error, result = execute_sql(sql, None, 5)
     if not flag:
@@ -82,6 +82,6 @@ def update_payroll_employees():
         emp_id = employee[0]
         sql = "INSERT INTO sql_telintec.payroll (id) VALUES (%s)"
         vals = (emp_id,)
-        flag, error, result = execute_sql(sql, vals, 4)
+        flag, error, result = execute_sql(sql, vals, 4, data_token)
         data_out.append([flag, error, emp_id])
     return True, None, data_out

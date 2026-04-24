@@ -17,6 +17,7 @@ def create_contract(
     contract_number: str,
     client_id: int,
     emission: str,
+    data_token,
     status=0,
     abbreviation=None,
 ):
@@ -36,7 +37,7 @@ def create_contract(
         emission,
         abbreviation,
     )
-    flag, error, id_contract = execute_sql(sql, val, 4)
+    flag, error, id_contract = execute_sql(sql, val, 4, data_token)
     return flag, error, id_contract
 
 
@@ -46,6 +47,7 @@ def update_contract(
     contract_number: str,
     client_id: int,
     emission: str,
+    data_token,
     timestamps=None,
     quotation_id=None,
     abbreviation=None,
@@ -74,24 +76,24 @@ def update_contract(
         abbreviation,
         id_contract,
     )
-    flag, error, out = execute_sql(sql, val, 3)
+    flag, error, out = execute_sql(sql, val, 3, data_token)
     return flag, error, out
 
 
-def delete_contract(id_contract):
+def delete_contract(id_contract, data_token):
     sql = "DELETE FROM sql_telintec_mod_admin.contracts WHERE id = %s"
     val = (id_contract,)
-    flag, error, out = execute_sql(sql, val, 3)
+    flag, error, out = execute_sql(sql, val, 3, data_token)
     return flag, error, out
 
 
-def get_contract(id_contract=None):
+def get_contract(data_token, id_contract=None):
     if id_contract is None:
         sql = (
             "SELECT id, metadata, creation, quotation_id, timestamps, code, client_id, emission, abbreviation "
             "FROM sql_telintec_mod_admin.contracts"
         )
-        flag, error, result = execute_sql(sql, None, 2)
+        flag, error, result = execute_sql(sql, None, 2, data_token)
         if not flag:
             return False, error, []
         if not (isinstance(result, tuple) or isinstance(result, list)):
@@ -103,7 +105,7 @@ def get_contract(id_contract=None):
         "WHERE id = %s"
     )
     val = (id_contract,)
-    flag, error, result = execute_sql(sql, val, 1)
+    flag, error, result = execute_sql(sql, val, 1, data_token)
     if not isinstance(result, tuple) or not isinstance(result, list):
         return False, error, []
     if len(result) == 0:
@@ -112,14 +114,14 @@ def get_contract(id_contract=None):
         return True, None, result
 
 
-def get_contract_from_abb(contract_abb: str):
+def get_contract_from_abb(contract_abb: str, data_token):
     sql = (
         "SELECT id, metadata, creation, quotation_id, timestamps "
         "FROM sql_telintec_mod_admin.contracts "
         "WHERE metadata->'$.abbreviation_sm' = %s"
     )
     val = (contract_abb.upper(),)
-    flag, error, result = execute_sql(sql, val, 1)
+    flag, error, result = execute_sql(sql, val, 1, data_token)
     if not isinstance(result, tuple):
         return False, error, None
     if len(result) == 0:
@@ -128,20 +130,20 @@ def get_contract_from_abb(contract_abb: str):
         return True, None, result
 
 
-def get_contract_by_client(client_id: int):
+def get_contract_by_client(client_id: int, data_token):
     sql = (
         "SELECT id, metadata, creation, quotation_id, timestamps, code "
         "FROM sql_telintec_mod_admin.contracts "
         "WHERE client_id = %s"
     )
     val = (client_id,)
-    flag, error, result = execute_sql(sql, val, 2)
+    flag, error, result = execute_sql(sql, val, 2, data_token)
     if not isinstance(result, list):
         return False, error, []
     return flag, error, result
 
 
-def get_contracts_by_ids(ids_list: list):
+def get_contracts_by_ids(ids_list: list, data_token):
     if len(ids_list) == 0:
         return True, "Contract not found", []
     regexp_clauses = " OR ".join(["id = %s"] * len(ids_list))
@@ -151,13 +153,13 @@ def get_contracts_by_ids(ids_list: list):
         f"WHERE {regexp_clauses}"
     )
     val = tuple(ids_list)
-    flag, error, result = execute_sql(sql, val, 2)
+    flag, error, result = execute_sql(sql, val, 2, data_token)
     if not isinstance(result, list):
         return False, error, []
     return flag, error, result
 
 
-def get_contracts_abreviations_db():
+def get_contracts_abreviations_db(data_token):
     sql = (
         "SELECT "
         "JSON_UNQUOTE(metadata->'$.abbreviation_sm'), "
@@ -179,7 +181,7 @@ def get_contracts_abreviations_db():
         "   '', 0 "
         "   FROM sql_telintec.areas "
     )
-    flag, error, result = execute_sql(sql, None, 5)
+    flag, error, result = execute_sql(sql, None, 5, data_token)
     if not isinstance(result, list):
         return False, "Not data found or error", []
     if len(result) == 0:
@@ -188,7 +190,7 @@ def get_contracts_abreviations_db():
         return True, None, result
 
 
-def get_items_contract_string(key: str) -> tuple[bool, str, int | list]:
+def get_items_contract_string(key: str, data_token) -> tuple[bool, str, int | list]:
     sql = (
         "SELECT "
         "c.id AS contract_id, "
@@ -203,13 +205,13 @@ def get_items_contract_string(key: str) -> tuple[bool, str, int | list]:
         "OR JSON_EXTRACT(c.metadata, '$.abbreviation_sm') = %s"
     )
     val = (key, key)
-    flag, error, result = execute_sql(sql, val, 2)
+    flag, error, result = execute_sql(sql, val, 2, data_token)
     if not isinstance(result, list):
         return False, error, []
     return flag, error, result
 
 
-def get_contract_and_items_from_number(lastdigits: str):
+def get_contract_and_items_from_number(lastdigits: str, data_token):
     """
     Fetch contract and its items using the last digits of the contract number.
     """
@@ -228,5 +230,5 @@ def get_contract_and_items_from_number(lastdigits: str):
         "WHERE RIGHT(JSON_UNQUOTE(JSON_EXTRACT(c.metadata, '$.contract_number')), 4) = %s"
     )
     val = (lastdigits,)
-    flag, error, result = execute_sql(sql, val, 2)
+    flag, error, result = execute_sql(sql, val, 2, data_token)
     return flag, error, result

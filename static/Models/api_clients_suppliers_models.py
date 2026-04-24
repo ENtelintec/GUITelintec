@@ -39,7 +39,20 @@ extra_info_supplier_model = api.model(
     {
         "brands": fields.List(fields.String(), required=True, default=[]),
         "rfc": fields.String(required=False, default=""),
+        "fast_order": fields.Integer(required=False, default=0)
     },
+)
+
+update_extra_info_model = api.inherit(
+    "EInfoSupplierModel",
+    extra_info_supplier_model,
+    {
+        "id_supplier": fields.Integer(
+            required=True,
+            description="ID del proveedor a actualizar",
+            example=1012,
+        )
+    }
 )
 
 items_supplier_model = api.model(
@@ -134,6 +147,7 @@ class ClientDeleteForm(Form):
 class ExtraInfoSupplierForm(Form):
     brands = FieldList(StringField(validators=[], default=""), "brands")
     rfc = StringField(validators=[], default="")
+    fast_order = IntegerField(validators=[], default=0)
 
 
 class ItemsSupplierFormInsert(Form):
@@ -218,6 +232,12 @@ class SupplierUpdateForm(Form):
 
 class SupplierDeleteForm(Form):
     id = IntegerField(
+        "id",
+        validators=[InputRequired(message="Id is required or value 0 not accepted")],
+    )
+
+class SupplierEInfoUpdateForm(ExtraInfoSupplierForm):
+    id_supplier = IntegerField(
         "id",
         validators=[InputRequired(message="Id is required or value 0 not accepted")],
     )

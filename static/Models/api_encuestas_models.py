@@ -6,10 +6,3 @@ from flask_restx import fields
 from static.constants import api
 
 
-request_quizz_file_model = api.model(
-    "Employee delete all",
-    {
-        "type_q": fields.String(required=True, description="Tipo de quizz"),
-        "file": fields.File(required=True, description="Archivo de quizz"),
-    },
-)

@@ -41,11 +41,11 @@ class MovementenInventoryChart(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
         # noinspection PyUnresolvedReferences
-        validator = MovementsChartsForm.from_json(ns.payload)
+        validator = MovementsChartsForm.from_json(ns.payload) # pyrefly: ignore
         if not validator.validate():
             return {"errors": validator.errors}, 400
         data = validator.data
-        data_chart, code = get_data_chart_movements(data)
+        data_chart, code = get_data_chart_movements(data, data_token)
         if code == 200:
             return data_chart, 200
         else:
@@ -62,7 +62,7 @@ class SMChart(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data = {"range": range_g, "type_chart": type_chart}
-        data_chart, code = get_data_chart_sm(data)
+        data_chart, code = get_data_chart_sm(data, data_token)
         if code == 200:
             return data_chart, 200
         else:
@@ -77,7 +77,7 @@ class FichajeEmpChart(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
-        validator = FichajeEmpForm.from_json(ns.payload)
+        validator = FichajeEmpForm.from_json(ns.payload) # pyrefly: ignore
         if not validator.validate():
             return {"errors": validator.errors}, 400
         data = validator.data
@@ -105,7 +105,7 @@ class NotificationsMedicals(Resource):
             last_date = datetime.strptime(last_date, format_date)
             last_date = time_zone.localize(last_date)
         if last_date is None or last_date.date() < timestamp.date():
-            sercher = NotificationsSearch()
+            sercher = NotificationsSearch(data_token)
             sercher.start()
             update_flag_daemons(
                 last_date_medicals=timestamp.strftime(format_date), flag_medical=False

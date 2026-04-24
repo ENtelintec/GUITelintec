@@ -5,6 +5,7 @@ __date__ = "$ 23/sept/2024  at 14:21 $"
 import jwt
 
 from static.constants import secrets
+import json
 
 
 def unpack_token(token: str) -> dict:
@@ -57,7 +58,7 @@ def verify_department_or_employee_permission(
         return False
 
 
-def verify_employee_id(token_data: dict, emp_id: int) -> bool:
+def verify_employee_id(token_data: dict, emp_id: int):
     """
     Verifies the employee id.
     :param token_data: <dict>
@@ -92,6 +93,23 @@ def token_verification_procedure(request, **kwargs):
         return False, {}, msg
 
 
+def writeSettings(settings: dict):
+    try:
+        with open("./static/settings.json", "w") as f:
+            json.dump(settings, f, indent=4)
+        return True
+    except Exception as e:
+        print(e)
+        return False
+
+
+def check_tester_permission(permissions: dict):
+    for perm, value in permissions.items():
+        if "testerUser" in value:
+            return True
+    return False
+
+
 def verify_token(
     token: str, department: str | list = None, emp_id: int = None
 ) -> tuple[bool, dict]:
@@ -104,6 +122,8 @@ def verify_token(
     """
     try:
         data = unpack_token(token)
+        is_tester = check_tester_permission(data.get("permissions"))
+        data["is_tester"] = is_tester
         if emp_id:
             if verify_employee_id(data, emp_id):
                 return True, data

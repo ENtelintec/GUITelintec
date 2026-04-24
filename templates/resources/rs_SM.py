@@ -43,7 +43,6 @@ from static.Models.api_sm_models import (
 from templates.Functions_AuxPlots import get_data_sm_per_range
 from templates.controllers.customer.customers_controller import get_sm_clients
 from templates.controllers.employees.employees_controller import get_sm_employees
-from templates.controllers.index import DataHandler
 from templates.resources.methods.Functions_Aux_Login import token_verification_procedure
 from templates.resources.midleware.MD_SM import (
     get_products_sm,
@@ -97,7 +96,7 @@ class Clients(Resource):
         flag, data_token, msg = token_verification_procedure(request, department="sm")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        flag, error, result = get_sm_clients()
+        flag, error, result = get_sm_clients(data_token)
         if flag:
             return {"data": result, "comment": error}, 200
         else:
@@ -111,7 +110,7 @@ class Products(Resource):
         flag, data_token, msg = token_verification_procedure(request, department="sm")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        data_out, code = get_products_sm(contract)
+        data_out, code = get_products_sm(contract, data_token)
         return data_out, code
 
 
@@ -124,7 +123,7 @@ class FetchAllSm(Resource):
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        data_out, code = get_all_sm(-1, 0, -1)
+        data_out, code = get_all_sm(-1, data_token, 0, -1)
         return data_out, code
 
 
@@ -149,7 +148,7 @@ class AllSmEmployee(Resource):
         flag, data_token, msg = token_verification_procedure(request, department="sm")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        data_out, code = get_all_sm(-1, 0, data_token.get("emp_id"))
+        data_out, code = get_all_sm(-1, data_token, 0, data_token.get("emp_id"))
         return data_out, code
 
 
@@ -239,9 +238,8 @@ class Client(Resource):
         if not validator.validate():
             return {"error": validator.errors}, 400
         data = validator.data
-        _data = DataHandler()
         result, code = create_customer(
-            data["name"], data["email"], data["phone"], data["rfc"], data["address"]
+            data["name"], data["email"], data["phone"], data["rfc"], data["address"], data_token
         )
         return result, code
 
@@ -264,7 +262,7 @@ class Product(Resource):
             data["udm"],
             data["stock"],
             data["category"],
-            data["supplier"],
+            data["supplier"], data_token,
         )
         return response, code
 
@@ -277,7 +275,7 @@ class PlotSMData(Resource):
         flag, data_token, msg = token_verification_procedure(request, department="sm")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        data_out = get_data_sm_per_range(typerange, "normal")
+        data_out = get_data_sm_per_range(typerange, "normal", data_token)
         return {"data": data_out, "type": "normal plot lines"}, 200
 
 
@@ -289,7 +287,7 @@ class AlmacenEmployees(Resource):
         flag, data_token, msg = token_verification_procedure(request, department="sm")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        data_out, code = get_employees_almacen()
+        data_out, code = get_employees_almacen(data_token)
         if code == 200:
             return {"data": data_out, "msg": "ok"}, code
         else:
@@ -324,9 +322,13 @@ class DownloadPDFSM(Resource):
         flag, data_token, msg = token_verification_procedure(request, department=["sm"])
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        data, code = dowload_file_sm(sm_id)
+        data, code = dowload_file_sm(sm_id, data_token)
         if code == 200:
-            return send_file(data, as_attachment=True, download_name=data.replace("\\","/").split("/")[-1])
+            return send_file(
+                data,
+                as_attachment=True,
+                download_name=data.replace("\\", "/").split("/")[-1],
+            )
         else:
             return {"msg": "error at downloading"}, code
 
@@ -338,9 +340,13 @@ class DownloadExcelSM(Resource):
         flag, data_token, msg = token_verification_procedure(request, department=["sm"])
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        data, code = dowload_file_sm(sm_id, type_file="excel")
+        data, code = dowload_file_sm(sm_id, data_token, type_file="excel")
         if code == 200:
-            return send_file(data, as_attachment=True, download_name=data.replace("\\","/").split("/")[-1])
+            return send_file(
+                data,
+                as_attachment=True,
+                download_name=data.replace("\\", "/").split("/")[-1],
+            )
         else:
             return {"msg": "error at downloading"}, code
 

@@ -48,7 +48,7 @@ def create_voucher_tools_api(data, data_token):
     time_zone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
     flag, error, lastrowid = create_voucher_general(
-        data["type"], timestamp, data_token.get("emp_id"), data["contract"]
+        data["type"], timestamp, data_token.get("emp_id"), data["contract"], data_token
     )
     if not flag:
         return {
@@ -63,6 +63,7 @@ def create_voucher_tools_api(data, data_token):
         data["superior"],
         data["storage_emp"],
         data["designated_emp"],
+        data_token,
     )
     if not flag:
         return {
@@ -79,7 +80,7 @@ def create_voucher_tools_api(data, data_token):
             "comment": "Voucher creado",
         }
     ]
-    flag, error, rows_updated = update_history_voucher(history, lastrowid)
+    flag, error, rows_updated = update_history_voucher(history, lastrowid, data_token)
     if not flag:
         return {
             "data": None,
@@ -94,6 +95,7 @@ def create_voucher_tools_api(data, data_token):
             item["quantity"],
             item["unit"],
             item["description"],
+            data_token,
             item["observations"],
         )
         if not flag:
@@ -132,6 +134,7 @@ def update_voucher_tools_api(data, data_token):
         data["superior"],
         data["storage_emp"],
         data["designated_emp"],
+        data_token,
         data["user_state"],
         data["superior_state"],
         data["storage_state"],
@@ -143,7 +146,7 @@ def update_voucher_tools_api(data, data_token):
             "error": str(error),
         }, 400
     flag, error, rows_updated = update_history_voucher(
-        history, data["id_voucher_general"]
+        history, data["id_voucher_general"], data_token
     )
     if not flag:
         return {
@@ -154,7 +157,7 @@ def update_voucher_tools_api(data, data_token):
     errors = []
     for item in data["items"]:
         if item["is_erased"] == 1:
-            flag, error, result = delete_voucher_item(item["id_item"])
+            flag, error, result = delete_voucher_item(item["id_item"], data_token)
         elif item["id_item"] > 0:
             flag, error, result = update_voucher_item(
                 item["id_item"],
@@ -162,6 +165,7 @@ def update_voucher_tools_api(data, data_token):
                 item["quantity"],
                 item["unit"],
                 item["description"],
+                data_token,
                 item["observations"],
             )
         else:
@@ -171,6 +175,7 @@ def update_voucher_tools_api(data, data_token):
                 item["quantity"],
                 item["unit"],
                 item["description"],
+                data_token,
                 item["observations"],
             )
         if not flag:
@@ -190,14 +195,14 @@ def update_voucher_tools_api(data, data_token):
 
 
 def delete_voucher_tools_api(data, data_token):
-    flag, error, rows_updated = delete_items_voucher(data["id"])
+    flag, error, rows_updated = delete_items_voucher(data["id"], data_token)
     if not flag:
         return {
             "data": None,
             "msg": "Error when eliminating items related to voucher",
             "error": str(error),
         }, 400
-    flag, error, rows_updated = delete_voucher_tools(data["id"])
+    flag, error, rows_updated = delete_voucher_tools(data["id"], data_token)
     if not flag:
         return {
             "data": None,
@@ -216,7 +221,9 @@ def delete_voucher_tools_api(data, data_token):
             "comment": "Voucher eliminado",
         }
     )
-    flag, error, result = update_voucher_general_from_delete(data["id"], history)
+    flag, error, result = update_voucher_general_from_delete(
+        data["id"], history, data_token
+    )
     if not flag:
         return {
             "data": None,
@@ -230,7 +237,7 @@ def create_voucher_safety_api(data, data_token):
     time_zone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
     flag, error, lastrowid = create_voucher_general(
-        data["type"], timestamp, data_token.get("emp_id"), data["contract"]
+        data["type"], timestamp, data_token.get("emp_id"), data["contract"], data_token
     )
     if not flag:
         return {
@@ -244,6 +251,7 @@ def create_voucher_safety_api(data, data_token):
         data["epp_emp"],
         data["storage_emp"],
         data["designated_emp"],
+        data_token,
     )
     if not flag:
         return {
@@ -260,7 +268,7 @@ def create_voucher_safety_api(data, data_token):
             "comment": "Voucher creado",
         }
     ]
-    flag, error, rows_updated = update_history_voucher(history, lastrowid)
+    flag, error, rows_updated = update_history_voucher(history, lastrowid, data_token)
     if not flag:
         return {
             "data": None,
@@ -275,6 +283,7 @@ def create_voucher_safety_api(data, data_token):
             item["quantity"],
             item["unit"],
             item["description"],
+            data_token,
             item["observations"],
         )
         if not flag:
@@ -312,6 +321,7 @@ def update_voucher_safety_api(data, data_token):
         data["epp_emp"],
         data["storage_emp"],
         data["designated_emp"],
+        data_token,
         data["epp_state"],
         data["storage_state"],
         data["motive"],
@@ -323,7 +333,7 @@ def update_voucher_safety_api(data, data_token):
             "error": str(error),
         }, 400
     flag, error, rows_updated = update_history_voucher(
-        history, data["id_voucher_general"]
+        history, data["id_voucher_general"], data_token
     )
     if not flag:
         return {
@@ -334,7 +344,7 @@ def update_voucher_safety_api(data, data_token):
     errors = []
     for item in data["items"]:
         if item["is_erased"] == 1:
-            flag, error, lastrowid = delete_voucher_item(item["id_item"])
+            flag, error, lastrowid = delete_voucher_item(item["id_item"], data_token)
         elif item["id_item"] > 0:
             flag, error, lastrowid = update_voucher_item(
                 item["id_item"],
@@ -342,6 +352,7 @@ def update_voucher_safety_api(data, data_token):
                 item["quantity"],
                 item["unit"],
                 item["description"],
+                data_token,
                 item["observations"],
             )
         else:
@@ -351,6 +362,7 @@ def update_voucher_safety_api(data, data_token):
                 item["quantity"],
                 item["unit"],
                 item["description"],
+                data_token,
                 item["observations"],
             )
         if not flag:
@@ -370,14 +382,14 @@ def update_voucher_safety_api(data, data_token):
 
 
 def delete_voucher_safety_api(data, data_token):
-    flag, error, rows_updated = delete_items_voucher(data["id"])
+    flag, error, rows_updated = delete_items_voucher(data["id"], data_token)
     if not flag:
         return {
             "data": None,
             "msg": "Error when eliminating items related to voucher",
             "error": str(error),
         }, 400
-    flag, error, rows_updated = delete_voucher_tools(data["id"])
+    flag, error, rows_updated = delete_voucher_tools(data["id"], data_token)
     if not flag:
         return {
             "data": None,
@@ -396,7 +408,9 @@ def delete_voucher_safety_api(data, data_token):
             "comment": "Voucher eliminado",
         }
     )
-    flag, error, result = update_voucher_general_from_delete(data["id"], history)
+    flag, error, result = update_voucher_general_from_delete(
+        data["id"], history, data_token
+    )
     if not flag:
         return {
             "data": None,
@@ -408,7 +422,7 @@ def delete_voucher_safety_api(data, data_token):
 
 def get_vouchers_tools_api(data, data_token):
     flag, error, result = get_vouchers_tools_with_items_date(
-        data["date"], data_token.get("emp_id")
+        data["date"], data_token, data_token.get("emp_id")
     )
     if not flag:
         return {
@@ -451,7 +465,7 @@ def get_vouchers_tools_api(data, data_token):
 
 def get_vouchers_safety_api(data, data_token):
     flag, error, result = get_vouchers_safety_with_items(
-        data["date"], data_token.get("emp_id")
+        data["date"], data_token=data_token, user=data_token.get("emp_id")
     )
     if not flag:
         return {
@@ -510,6 +524,7 @@ def update_status_tools(data, data_token):
         data["user_state"],
         data["superior_state"],
         data["storage_state"],
+        data_token,
     )
     if not flag:
         return {
@@ -517,7 +532,9 @@ def update_status_tools(data, data_token):
             "msg": "Error at updating tools voucher",
             "error": str(error),
         }, 400
-    flag, error, rows_updated = update_history_voucher(history, data["id_voucher"])
+    flag, error, rows_updated = update_history_voucher(
+        history, data["id_voucher"], data_token
+    )
     if not flag:
         return {
             "data": None,
@@ -546,6 +563,7 @@ def update_status_safety(data, data_token):
         data["user_state"],
         data["epp_state"],
         data["storage_state"],
+        data_token,
     )
     if not flag:
         return {
@@ -553,7 +571,9 @@ def update_status_safety(data, data_token):
             "msg": "Error at updating safety voucher",
             "error": str(error),
         }, 400
-    flag, error, rows_updated = update_history_voucher(history, data["id_voucher"])
+    flag, error, rows_updated = update_history_voucher(
+        history, data["id_voucher"], data_token
+    )
     if not flag:
         return {
             "data": None,
@@ -565,7 +585,7 @@ def update_status_safety(data, data_token):
 
 def get_vouchers_vehicle_api(data, data_token):
     flag, error, result = get_vouchers_vehicle_with_items(
-        data["date"], data_token.get("emp_id")
+        data["date"], data_token, data_token.get("emp_id")
     )
     if not flag:
         return {
@@ -622,7 +642,7 @@ def create_voucher_vehicle_api(data, data_token):
 
     # 1. Crear voucher general
     flag, error, lastrowid = create_voucher_general(
-        data["type"], timestamp, data_token.get("emp_id"), data["contract"]
+        data["type"], timestamp, data_token.get("emp_id"), data["contract"], data_token
     )
     if not flag:
         return {
@@ -644,6 +664,7 @@ def create_voucher_vehicle_api(data, data_token):
         lastrowid,
         data["brand"],
         data["model"],
+        data_token,
         data.get("color"),
         data.get("year"),
         data["placas"],
@@ -673,7 +694,7 @@ def create_voucher_vehicle_api(data, data_token):
             "comment": "Voucher creado",
         }
     ]
-    flag, error, rows_updated = update_history_voucher(history, lastrowid)
+    flag, error, rows_updated = update_history_voucher(history, lastrowid, data_token)
     if not flag:
         return {
             "data": None,
@@ -690,6 +711,7 @@ def create_voucher_vehicle_api(data, data_token):
             item["quantity"],
             item["unit"],
             item["description"],
+            data_token,
             item.get("observations"),
         )
         if not flag:
@@ -737,6 +759,7 @@ def update_voucher_vehicle_api(data, data_token):
         data["id_voucher_general"],
         data["brand"],
         data["model"],
+        data_token,
         data.get("color"),
         data.get("year"),
         data["placas"],
@@ -758,7 +781,7 @@ def update_voucher_vehicle_api(data, data_token):
         }, 400
 
     flag, error, rows_updated = update_history_voucher(
-        history, data["id_voucher_general"]
+        history, data["id_voucher_general"], data_token
     )
     if not flag:
         return {
@@ -770,7 +793,7 @@ def update_voucher_vehicle_api(data, data_token):
     errors = []
     for item in data["items"]:
         if item["is_erased"] == 1:
-            flag, error, lastrowid = delete_voucher_item(item["id_item"])
+            flag, error, lastrowid = delete_voucher_item(item["id_item"], data_token)
         elif item["id_item"] > 0:
             flag, error, lastrowid = update_voucher_item(
                 item["id_item"],
@@ -778,6 +801,7 @@ def update_voucher_vehicle_api(data, data_token):
                 item["quantity"],
                 item["unit"],
                 item["description"],
+                data_token,
                 item["observations"],
             )
         else:
@@ -787,6 +811,7 @@ def update_voucher_vehicle_api(data, data_token):
                 item["quantity"],
                 item["unit"],
                 item["description"],
+                data_token,
                 item["observations"],
             )
         if not flag:
@@ -812,7 +837,7 @@ def delete_voucher_vehicle_api(data, data_token):
     time_older = datetime.now(pytz.utc).astimezone(time_zone) - timedelta(days=365)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
     flag, error, voucher_data = get_vouchers_vehicle_with_items(
-        time_older, id_voucher=data["id"]
+        time_older, data_token, id_voucher=data["id"]
     )
     if not flag:
         return {
@@ -828,14 +853,14 @@ def delete_voucher_vehicle_api(data, data_token):
         }, 400
     status = voucher_data[0][21]
     if status == 0:  # delete if was not signed
-        flag, error, result = delete_voucher_item(data["id"])
+        flag, error, result = delete_voucher_item(data["id"], data_token)
         if not flag:
             return {
                 "data": None,
                 "msg": "Error at deleting vehicle voucher",
                 "error": str(error),
             }, 400
-        flag, error, result = delete_voucher_vehicle(data["id"])
+        flag, error, result = delete_voucher_vehicle(data["id"], data_token)
         if not flag:
             return {
                 "data": None,
@@ -843,7 +868,7 @@ def delete_voucher_vehicle_api(data, data_token):
                 "error": str(error),
             }, 400
     else:  # cancel if was signed
-        flag, error, result = update_voucher_vehicle_status(3, data["id"])
+        flag, error, result = update_voucher_vehicle_status(3, data["id"], data_token)
         if not flag:
             return {
                 "data": None,
@@ -868,7 +893,7 @@ def delete_voucher_vehicle_api(data, data_token):
     )
 
     flag, error, rows_changed = update_voucher_general_from_delete(
-        data["id"], json.dumps(history)
+        data["id"], json.dumps(history), data_token
     )
     if not flag:
         return {
@@ -882,9 +907,13 @@ def delete_voucher_vehicle_api(data, data_token):
         else f"Voucher vehicular cancelado correctamente por el empleado {data_token.get('name')}"
     )
     create_notification_permission_notGUI(
-        msg, ["administracion", "operaciones", "sgi"], data_token.get("emp_id"), 0
+        msg,
+        data_token,
+        ["administracion", "operaciones", "sgi"],
+        data_token.get("emp_id"),
+        0,
     )
-    write_log_file(log_file_sgi_chv, msg)
+    write_log_file(log_file_sgi_chv, msg, data_token)
     return {"data": [rows_changed], "msg": "Vehicle voucher deleted successfully"}, 200
 
 
@@ -919,7 +948,7 @@ def create_voucher_vehicle_attachment_api(data, data_token):
     timestamp = datetime.now(pytz.utc).astimezone(time_zone)
     timestamp_year_ago = timestamp - timedelta(days=365)
     flag, error, result = get_vouchers_vehicle_with_items(
-        timestamp_year_ago.strftime(format_date), data_token.get("emp_id")
+        timestamp_year_ago.strftime(format_date), data_token, data_token.get("emp_id")
     )
     if not flag:
         return {
@@ -961,7 +990,7 @@ def create_voucher_vehicle_attachment_api(data, data_token):
     bucket_name = secrets.get("S3_CH_BUCKET")
 
     try:
-        s3_client.upload_file(Filename=filepath_down, Bucket=bucket_name, Key=path_aws)
+        s3_client.upload_file(Filename=filepath_down, Bucket=str(bucket_name), Key=path_aws)
     except FileNotFoundError:
         return {"data": None, "msg": "Local file not found"}, 400
     except NoCredentialsError:
@@ -1001,7 +1030,7 @@ def create_voucher_vehicle_attachment_api(data, data_token):
     )
     extra_info["files"] = files
     flag, error, rows_updated = update_voucher_vehicle_files(
-        data["id_voucher"], history, extra_info, status
+        data["id_voucher"], history, extra_info, status, data_token
     )
     if not flag:
         return {
@@ -1010,9 +1039,13 @@ def create_voucher_vehicle_attachment_api(data, data_token):
             "error": str(error),
         }, 400
     create_notification_permission_notGUI(
-        msg, ["administracion", "operaciones", "sgi"], data_token.get("emp_id"), 0
+        msg,
+        data_token,
+        ["administracion", "operaciones", "sgi"],
+        data_token.get("emp_id"),
+        0,
     )
-    write_log_file(log_file_sgi_chv, msg)
+    write_log_file(log_file_sgi_chv, msg, data_token)
     return {"data": path_aws, "msg": msg}, 201
 
 
@@ -1021,7 +1054,7 @@ def download_voucher_vehicle_attachment_api(data, data_token):
     timestamp = datetime.now(pytz.utc).astimezone(time_zone)
     timestamp_year_ago = timestamp - timedelta(days=365)
     flag, error, result = get_vouchers_vehicle_with_items(
-        timestamp_year_ago.strftime(format_date), data_token.get("emp_id")
+        timestamp_year_ago.strftime(format_date), data_token, data_token.get("emp_id")
     )
     if not flag:
         return {
@@ -1062,7 +1095,7 @@ def download_voucher_vehicle_attachment_api(data, data_token):
     bucket_name = secrets.get("S3_CH_BUCKET")
     try:
         s3_client.download_file(
-            Bucket=bucket_name, Key=path_aws, Filename=data["filepath"]
+            Bucket=str(bucket_name), Key=path_aws, Filename=data["filepath"]
         )
     except FileNotFoundError:
         return {"data": None, "msg": "Local file not found"}, 400

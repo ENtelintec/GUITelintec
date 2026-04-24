@@ -11,7 +11,6 @@ from flask_restx import Namespace, Resource
 from werkzeug.utils import secure_filename
 
 from static.Models.api_employee_models import (
-    employees_info_model,
     employee_model_insert,
     employee_model_update,
     employee_model_delete,
@@ -112,13 +111,12 @@ class Employee(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
-        print(ns.payload)
-        validator = EmployeeInsertForm.from_json(ns.payload)
+        validator = EmployeeInsertForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
             return {"errors": validator.errors}, 400
         data = validator.data
         print(data)
-        data_out, code = create_new_employee_db(data)
+        data_out, code = create_new_employee_db(data, data_token)
         return data_out, code
 
     @ns.expect(expected_headers_per, employee_model_update)
@@ -127,11 +125,11 @@ class Employee(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
-        validator = EmployeeUpdateForm.from_json(ns.payload)
+        validator = EmployeeUpdateForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
             return {"errors": validator.errors}, 400
         data = validator.data
-        data_out, code = update_employee_db(data)
+        data_out, code = update_employee_db(data, data_token)
         return data_out, code
 
     @ns.expect(expected_headers_per, employee_model_delete)
@@ -140,11 +138,11 @@ class Employee(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
-        validator = EmployeeDeleteForm.from_json(ns.payload)
+        validator = EmployeeDeleteForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
             return {"errors": validator.errors}, 400
         data = validator.data
-        flag, error, result = delete_employee(data["id"])
+        flag, error, result = delete_employee(data["id"], data_token)
         if flag:
             return {"data": str(result)}, 200
         else:
@@ -158,7 +156,7 @@ class EmployeeGet(Resource):
         flag, data_token, msg = token_verification_procedure(request, department="rrhh")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        data_out, code = get_info_employee_id(id_emp)
+        data_out, code = get_info_employee_id(id_emp, data_token)
         return data_out, code
 
 
@@ -170,7 +168,7 @@ class EmployeeTerminate(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
-        validator = EmployeeTerminateForm.from_json(ns.payload)
+        validator = EmployeeTerminateForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
             return {"errors": validator.errors}, 400
         data = validator.data
@@ -198,7 +196,7 @@ class EMResumeEmployees(Resource):
         flag, data_token, msg = token_verification_procedure(request, department="rrhh")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        out, code = fetch_medical_employee(id_emp)
+        out, code = fetch_medical_employee(id_emp, data_token)
         return out, code
 
 
@@ -210,7 +208,7 @@ class EMResumeAll(Resource):  # noqa: F811
         flag, data_token, msg = token_verification_procedure(request, department="rrhh")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        out, code = fetch_medicals()
+        out, code = fetch_medicals(data_token)
         return out, code
 
 
@@ -221,7 +219,7 @@ class EMEmployeesListLess(Resource):
         flag, data_token, msg = token_verification_procedure(request, department="rrhh")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        code, data_out = fetch_employees_without_records()
+        code, data_out = fetch_employees_without_records(data_token)
         return data_out, code
 
 
@@ -233,11 +231,11 @@ class EMRegistry(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
-        validator = EmployeeMedInsertForm.from_json(ns.payload)
+        validator = EmployeeMedInsertForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
             return {"errors": validator.errors}, 400
         data = validator.data
-        data_out, code = insert_medical_db(data)
+        data_out, code = insert_medical_db(data, data_token)
         return data_out, code
 
     @ns.expect(expected_headers_per, employee_exam_model_update)
@@ -246,11 +244,11 @@ class EMRegistry(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
-        validator = EmployeeMedUpdateForm.from_json(ns.payload)
+        validator = EmployeeMedUpdateForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
             return {"errors": validator.errors}, 400
         data = validator.data
-        data_out, code = update_medical_db(data)
+        data_out, code = update_medical_db(data, data_token)
         return data_out, code
 
     @ns.expect(expected_headers_per, employee_exam_model_delete)
@@ -259,11 +257,11 @@ class EMRegistry(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
-        validator = EmployeeMedDeleteForm.from_json(ns.payload)
+        validator = EmployeeMedDeleteForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
             return {"errors": validator.errors}, 400
         data = validator.data
-        flag, error, result = delete_exam_med(data["id"])
+        flag, error, result = delete_exam_med(data["id"], data_token)
         if flag:
             return {"data": str(result)}, 200
         else:
@@ -278,7 +276,7 @@ class VacationsAll(Resource):
         flag, data_token, msg = token_verification_procedure(request, department="rrhh")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        data, code = get_all_vacations()
+        data, code = get_all_vacations(data_token)
         if code == 200:
             return {"data": data, "msg": "ok"}, code
         else:
@@ -292,7 +290,7 @@ class VacationsEmployeesID(Resource):
         flag, data_token, msg = token_verification_procedure(request, department="rrhh")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        data, code = get_vacations_employee(id_emp)
+        data, code = get_vacations_employee(id_emp, data_token)
         if code == 200:
             return data, code
         else:
@@ -307,11 +305,11 @@ class VacationRegistry(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
-        validator = EmployeeVacInsertForm.from_json(ns.payload)
+        validator = EmployeeVacInsertForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
             return {"errors": validator.errors}, 400
         data = validator.data
-        flag, error, result = insert_new_vacation(data)
+        flag, error, result = insert_new_vacation(data, data_token)
         if flag:
             return {"data": str(result)}, 201
         else:
@@ -323,11 +321,11 @@ class VacationRegistry(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
-        validator = EmployeeVacInsertForm.from_json(ns.payload)
+        validator = EmployeeVacInsertForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
             return {"errors": validator.errors}, 400
         data = validator.data
-        flag, error, result = update_vacation(data)
+        flag, error, result = update_vacation(data, data_token)
         if flag:
             return {"data": str(result)}, 200
         else:
@@ -339,11 +337,11 @@ class VacationRegistry(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
-        validator = DeleteVacationForm.from_json(ns.payload)
+        validator = DeleteVacationForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
             return {"errors": validator.errors}, 400
         data = validator.data
-        flag, error, result = delete_vacation(data["emp_id"])
+        flag, error, result = delete_vacation(data["emp_id"], data_token)
         if flag:
             return {"data": str(result)}, 200
         else:
@@ -357,7 +355,7 @@ class TaskQuizzes(Resource):
         flag, data_token, msg = token_verification_procedure(request, department="rrhh")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        flag, error, data_out = get_all_quizzes()
+        flag, error, data_out = get_all_quizzes(data_token)
         if flag:
             return {"data": data_out, "msg": "ok"}, 200
         else:
@@ -372,7 +370,7 @@ class EmployeesResume(Resource):
         flag, data_token, msg = token_verification_procedure(request, department="rrhh")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        out, code = fetch_fichajes_all_employees()
+        out, code = fetch_fichajes_all_employees( data_token)
         return out, code
 
 
@@ -395,7 +393,7 @@ class FilesPayroll(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
-        validator = UpdateFilesForm.from_json(ns.payload)
+        validator = UpdateFilesForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
             return {"errors": validator.errors}, 400
         data = validator.data
@@ -403,7 +401,7 @@ class FilesPayroll(Resource):
         if flags_daemons.get("update_files_nomina", False):
             msg = "Accion no permitida mientras se actualizan los datos."
             return {"data": None, "msg": msg}, 400
-        code, msg = update_files_payroll(data)
+        code, msg = update_files_payroll(data, data_token)
         return {"data": None, "msg": msg}, code
 
 
@@ -415,7 +413,7 @@ class CreateMailPayroll(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
-        validator = CreateMailForm.from_json(ns.payload)
+        validator = CreateMailForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
             return {"errors": validator.errors}, 400
         data = validator.data
@@ -430,7 +428,7 @@ class DownloadFilesPayroll(Resource):
         flag, data_token, msg = token_verification_procedure(request, department="rrhh")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        code, dicts_data = get_files_list_nomina_RH(emp_id)
+        code, dicts_data = get_files_list_nomina_RH(emp_id, data_token)
         if code != 200:
             return {"data_raw": None, "msg": "No files"}, code
         return {"data_raw": dicts_data, "msg": "ok"}, code
@@ -444,11 +442,11 @@ class UpdatePayroll(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
-        validator = UpdateDataPayrollForm.from_json(ns.payload)
+        validator = UpdateDataPayrollForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
             return {"errors": validator.errors}, 400
         data = validator.data
-        code, data_out = update_data_employee(data)
+        code, data_out = update_data_employee(data, data_token)
         return data_out, code
 
 
@@ -459,7 +457,7 @@ class UpdateEmployees(Resource):
         flag, data_token, msg = token_verification_procedure(request, department="rrhh")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        code, msg = update_payroll_list_employees()
+        code, msg = update_payroll_list_employees( data_token)
         return {"data": None, "msg": str(msg)}, code
 
 
@@ -471,7 +469,7 @@ class FilesFichaje(Resource):
         flag, data_token, msg = token_verification_procedure(request, department="rrhh")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        flag, files = get_files_fichaje()
+        flag, files = get_files_fichaje( data_token)
         if flag:
             return {"data": files, "msg": "ok"}, 200
         else:
@@ -487,7 +485,7 @@ class DataFichajeFiles(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
-        validator = DataFichajesFileForm.from_json(ns.payload)
+        validator = DataFichajesFileForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
             return {"data": None, "msg": validator.errors}, 400
         data = validator.data
@@ -508,7 +506,7 @@ class UploadFicahjeFile(Resource):
         if "file" not in request.files:
             return {"data": "No se detecto un archivo"}, 401
         file = request.files["file"]
-        if file:
+        if file and file.filename:
             filename = secure_filename(file.filename)
             file.save(os.path.join(path_contract_files, filename))
             return {"data": "Archivo subido correctamente"}, 200
@@ -524,7 +522,7 @@ class DownloadFileEMPs(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         filepath = create_csv_file_employees(status)
-        return send_file(filepath, as_attachment=True)
+        return send_file(str(filepath), as_attachment=True)
 
 
 @ns.route("/download/employees/medical")
@@ -534,7 +532,9 @@ class DownloadFileMedical(Resource):
         flag, data_token, msg = token_verification_procedure(request, department="rrhh")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        flag, e, result = get_all_examenes()
+        flag, e, result = get_all_examenes(data_token)
+        if not (isinstance(result, list) or isinstance(result, tuple)):
+            return {"data": None, "msg": "Error al obtener los datos del empleado"}, 400
         filepath = "files/medical.csv"
         with open(filepath, "w") as file:
             file.write(
@@ -559,8 +559,10 @@ class DownloadFileVacations(Resource):
         flag, data_token, msg = token_verification_procedure(request, department="rrhh")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        flag, error, data = get_vacations_data()
+        flag, error, data = get_vacations_data(data_token)
         filepath = "files/vacations.csv"
+        if not (isinstance(data, list) or isinstance(data, tuple)):
+            return {"data": None, "msg": "Error al obtener los datos del empleado"}, 400
         with open(filepath, "w") as file:
             file.write("emp_id, Nombre, Apellido, fecha_inicio, body\n")
             for item in data:
@@ -580,11 +582,11 @@ class DownloadFileQuizzReport(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
-        validator = RequestFileReportQuizzForm.from_json(ns.payload)
+        validator = RequestFileReportQuizzForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
             return {"error": validator.errors}, 400
         data = validator.data
-        code, data_out = generate_pdf_from_json(data)
+        code, data_out = generate_pdf_from_json(data, data_token)
         if code == 400:
             return {"data": None, "msg": data_out}, code
         else:

@@ -69,7 +69,7 @@ if __name__ == "__main__":
             "facility": array_metadata[4][1],
             "destination": array_metadata[4][3],
             "location": array_metadata[5][1],
-            "critical_date": critical_date.strftime(format_timestamps)
+            "critical_date": critical_date.strftime(format_timestamps) if not isinstance(critical_date, str) else critical_date
             if isinstance(critical_date, str)
             else None,
             "client_id": 40,
@@ -79,7 +79,7 @@ if __name__ == "__main__":
         if metadata["emp_name"].lower() in name_to_id:
             metadata["emp_id"] = name_to_id[metadata["emp_name"].lower()]
         else:
-            result, error = get_employee_id_name(metadata["emp_name"].lower())
+            result, error = get_employee_id_name(metadata["emp_name"].lower(), {})
             if result is not None:
                 metadata["emp_id"] = result
                 name_to_id[metadata["emp_name"].lower()] = result
@@ -107,5 +107,5 @@ if __name__ == "__main__":
             )
         # print({"info": metadata, "items": items})
         # print("str", json.dumps({"info": metadata, "items": items}))
-        flag, error, result = insert_sm_db({"info": metadata, "items": items})
+        flag, error, result = insert_sm_db({"info": metadata, "items": items}, None)
         print(flag, error, result)

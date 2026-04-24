@@ -55,7 +55,7 @@ def create_voucher_epp_attachment_api(data, data_token):
     timestamp = datetime.now(pytz.utc).astimezone(time_zone)
     timestamp_year_ago = timestamp - timedelta(days=365)
     flag, error, result = get_vouchers_safety_with_items(
-        timestamp_year_ago.strftime(format_date), data_token.get("emp_id")
+        timestamp_year_ago.strftime(format_date), data_token, data_token.get("emp_id")
     )
     if not flag:
         return {
@@ -97,7 +97,7 @@ def create_voucher_epp_attachment_api(data, data_token):
     bucket_name = secrets.get("S3_CH_BUCKET")
 
     try:
-        s3_client.upload_file(Filename=filepath_down, Bucket=bucket_name, Key=path_aws)
+        s3_client.upload_file(Filename=filepath_down, Bucket=str(bucket_name), Key=path_aws)
     except FileNotFoundError:
         return {"data": None, "msg": "Local file not found"}, 400
     except NoCredentialsError:
@@ -140,7 +140,7 @@ def create_voucher_epp_attachment_api(data, data_token):
     )
     extra_info["files"] = files
     flag, error, rows_updated = update_voucher_epp_files(
-        data["id_voucher"], history, extra_info, status
+        data["id_voucher"], history, extra_info, status, data_token
     )
     if not flag:
         return {
@@ -149,9 +149,9 @@ def create_voucher_epp_attachment_api(data, data_token):
             "error": str(error),
         }, 400
     create_notification_permission_notGUI(
-        msg, ["administracion", "operaciones", "sgi"], data_token.get("emp_id"), 0
+        msg, data_token, ["administracion", "operaciones", "sgi"], data_token.get("emp_id"), 0
     )
-    write_log_file(log_file_sgi_vouchers, msg)
+    write_log_file(log_file_sgi_vouchers, msg, data_token)
     return {"data": path_aws, "msg": msg}, 201
 
 
@@ -186,7 +186,7 @@ def create_voucher_tools_attachment_api(data, data_token):
     timestamp = datetime.now(pytz.utc).astimezone(time_zone)
     timestamp_year_ago = timestamp - timedelta(days=365)
     flag, error, result = get_vouchers_safety_with_items(
-        timestamp_year_ago.strftime(format_date), data_token.get("emp_id")
+        timestamp_year_ago.strftime(format_date), data_token, data_token.get("emp_id")
     )
     if not flag:
         return {
@@ -228,7 +228,7 @@ def create_voucher_tools_attachment_api(data, data_token):
     bucket_name = secrets.get("S3_CH_BUCKET")
 
     try:
-        s3_client.upload_file(Filename=filepath_down, Bucket=bucket_name, Key=path_aws)
+        s3_client.upload_file(Filename=filepath_down, Bucket=str(bucket_name), Key=path_aws)
     except FileNotFoundError:
         return {"data": None, "msg": "Local file not found"}, 400
     except NoCredentialsError:
@@ -271,7 +271,7 @@ def create_voucher_tools_attachment_api(data, data_token):
     )
     extra_info["files"] = files
     flag, error, rows_updated = update_voucher_tools_files(
-        data["id_voucher"], history, extra_info, status
+        data["id_voucher"], history, extra_info, status, data_token
     )
     if not flag:
         return {
@@ -280,7 +280,7 @@ def create_voucher_tools_attachment_api(data, data_token):
             "error": str(error),
         }, 400
     create_notification_permission_notGUI(
-        msg, ["administracion", "operaciones", "sgi"], data_token.get("emp_id"), 0
+        msg, data_token, ["administracion", "operaciones", "sgi"], data_token.get("emp_id"), 0
     )
-    write_log_file(log_file_sgi_vouchers, msg)
+    write_log_file(log_file_sgi_vouchers, msg, data_token)
     return {"data": path_aws, "msg": msg}, 201

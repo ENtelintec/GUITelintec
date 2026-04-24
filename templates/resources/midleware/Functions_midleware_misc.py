@@ -24,9 +24,11 @@ from templates.controllers.notifications.Notifications_controller import (
 )
 
 
-def get_all_notification_db_user_status(id_emp, status):
+def get_all_notification_db_user_status(id_emp, status, data_token):
     code = 200
-    flag, error, result = get_notifications_by_user(id_emp, status)
+    flag, error, result = get_notifications_by_user(id_emp, data_token, status)
+    if not (isinstance(result, list) or isinstance(result, tuple)):
+        return [f"no notifications {result}"], 400
     data_out = []
     for item in result:
         body = json.loads(item[2])
@@ -40,8 +42,10 @@ def get_all_notification_db_permission(status, data_token):
     permissions = data_token.get("permissions", {})
     terms_list = [item.split(".")[-1].lower() for item in permissions.values()]
     flag, error, result = get_notifications_by_permission(
-        terms_list, data_token.get("emp_id", "%"), status
+        terms_list, data_token, data_token.get("emp_id", "%"), status
     )
+    if not (isinstance(result, list) or isinstance(result, tuple)):
+        return [f"no notifications: {result}"], 400
     data_out = []
     for item in result:
         body = json.loads(item[2])
@@ -93,9 +97,11 @@ def get_response_AV(
     return files_av, res, id_chat
 
 
-def get_task_by_id_employee(id_emp: int):
-    flag, error, result = get_task_by_id_emp(id_emp)
+def get_task_by_id_employee(id_emp: int, data_token):
+    flag, error, result = get_task_by_id_emp(id_emp, data_token)
     if flag:
+        if not (isinstance(result, list) or isinstance(result, tuple)):
+            return [f"no tasks {result}"], 400
         data_out = []
         for item in result:
             data_out.append(
@@ -110,13 +116,15 @@ def get_task_by_id_employee(id_emp: int):
             )
         return data_out, 200
     else:
-        return [str(error, result)], 400
+        return [str(error) + str(result)], 400
 
 
-def get_all_vacations_data_date():
-    flag, error, result = get_vacations_data()
+def get_all_vacations_data_date(data_token):
+    flag, error, result = get_vacations_data(data_token)
     if not flag:
         return error, 400
+    if not (isinstance(result, list) or isinstance(result, tuple)):
+        return [f"no vacations {result}"], 400
     time_zone = pytz.timezone(timezone_software)
     date_today = datetime.now(pytz.utc).astimezone(time_zone)
     date_today.replace(day=1)
@@ -172,8 +180,10 @@ def get_all_dashboard_data(data_token):
     terms_list = [item.split(".")[-1].lower() for item in permissions.values()]
     #  get all notifications
     flag, error, result = get_notifications_by_permission(
-        terms_list, data_token.get("emp_id", "%")
+        terms_list, data_token, data_token.get("emp_id", "%")
     )
+    if not (isinstance(result, list) or isinstance(result, tuple)):
+        return [f"no notifications: {result}"], 400
     data_out = {}
     if not flag:
         return error, 400
@@ -186,9 +196,11 @@ def get_all_dashboard_data(data_token):
     # get sm pending if almacen in term list
     out_sm = []
     if "almacen" in terms_list:
-        flag, error, result = get_pending_sm_db()
+        flag, error, result = get_pending_sm_db(data_token)
         if not flag:
             return error, 400
+        if not (isinstance(result, list) or isinstance(result, tuple)):
+            return [f"no sm pending: {result}"], 400
         for item in result:
             out_sm.append(
                 {

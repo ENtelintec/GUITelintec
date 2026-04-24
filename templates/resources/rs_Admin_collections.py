@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 
 
+from static.Models.api_purchases_models import ReportActivityCreateControlTableForm
+from static.Models.api_purchases_models import basic_control_table_report_model
+from templates.resources.midleware.MD_Purchases import fetch_po_item_sm_item_id
 from templates.resources.midleware.MD_Admin_Collections import (
     download_report_activity_attachment_api,
 )
@@ -140,7 +143,7 @@ class APOsOperations(Resource):
     @ns.expect(expected_headers_per, pos_application_post_model)
     def post(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department="orders"
+            request, department=["orders", "administracion"]
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -155,7 +158,7 @@ class APOsOperations(Resource):
     @ns.expect(expected_headers_per, pos_application_put_model)
     def put(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department="orders"
+            request, department=["orders", "administracion"]
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -170,7 +173,7 @@ class APOsOperations(Resource):
     @ns.expect(expected_headers_per, po_app_delete_model)
     def delete(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department="orders"
+            request, department=["orders", "administracion"]
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -188,7 +191,7 @@ class POsOperations(Resource):
     @ns.expect(expected_headers_per, purchase_order_post_model)
     def post(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department="orders"
+            request, department=["orders", "administracion"]
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -202,7 +205,9 @@ class POsOperations(Resource):
 
     @ns.expect(expected_headers_per, purchase_order_put_model)
     def put(self):
-        flag, error, result = token_verification_procedure(request, department="orders")
+        flag, error, result = token_verification_procedure(
+            request, department=["orders", "administracion"]
+        )
         if not flag:
             return {
                 "error": error if error != "" else "No autorizado. Token invalido"
@@ -219,7 +224,7 @@ class POsOperations(Resource):
     @ns.expect(expected_headers_per, purchase_order_delete_model)
     def delete(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department="orders"
+            request, department=["orders", "administracion"]
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -232,12 +237,26 @@ class POsOperations(Resource):
         return data_out, code
 
 
+@ns.route("/POItemsFoDelivery")
+class FetchPoItemForFastDelivery(Resource):
+    @ns.expect(expected_headers_per)
+    def get(self):
+        # get_all_item_purchase_order_with_id_item_sm
+        flag, data_token, msg = token_verification_procedure(
+            request, department="administracion"
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        data, code = fetch_po_item_sm_item_id(data_token)
+        return data, code
+
+
 @ns.route("/order/status")
 class ChangeStateOrder(Resource):
     @ns.expect(expected_headers_per, purchase_order_update_status_model)
     def put(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department="orders"
+            request, department=["orders", "administracion"]
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -255,7 +274,7 @@ class ChangeStatePOApplication(Resource):
     @ns.expect(expected_headers_per, purchase_order_update_status_model)
     def put(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department="orders"
+            request, department=["orders", "administracion"]
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -277,7 +296,7 @@ class DownloadPDFPurchase(Resource):
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        data, code = dowload_file_purchase(po_id)
+        data, code = dowload_file_purchase(po_id, data_token)
         if code == 200:
             return send_file(data, as_attachment=True)  # pyrefly: ignore
         else:
@@ -293,7 +312,7 @@ class DownloadPDFPurchaseItemsStorage(Resource):
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        data, code = download_file_purchase_item_approved()
+        data, code = download_file_purchase_item_approved(data_token)
         if code == 200:
             return send_file(data["data"], as_attachment=True)  # pyrefly: ignore
         else:
@@ -437,6 +456,23 @@ class ActivityRemissionAction(Resource):
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
         data_out, code = delete_remission_from_api(data, data_token)
+        return data_out, code
+
+
+@ns.route("/remissionControlTable")
+class ActivityRemissionTableAction(Resource):
+    @ns.expect(expected_headers_per, basic_control_table_report_model)
+    def post(self):
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["administracion", "purchases"]
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        validator = ReportActivityCreateControlTableForm.from_json(ns.payload)  # pyrefly: ignore
+        if not validator.validate():
+            return {"data": validator.errors, "msg": "Error at structure"}, 400
+        data = validator.data
+        data_out, code = create_remission_from_api(data, data_token)
         return data_out, code
 
 

@@ -19,7 +19,7 @@ def insert_quotation_activity(
     location: str,
     general_description: str,
     comments: str,
-    history: list,
+    history: list, data_token,
     status: int = 0,  # 0: Pendiente, 1: Aprobada, 2: Rechazada, 3: Cancelada
 ):
     sql = (
@@ -45,7 +45,7 @@ def insert_quotation_activity(
         status,
         json.dumps(history),
     )
-    flag, e, out = execute_sql(sql, val, 4)
+    flag, e, out = execute_sql(sql, val, 4, data_token)
     return flag, e, out
 
 
@@ -64,7 +64,7 @@ def update_quotation_activity(
     general_description: str,
     comments: str,
     history: list,
-    status: int,
+    status: int, data_token,
 ):
     sql = (
         "UPDATE sql_telintec_mod_admin.quotations_activities "
@@ -90,14 +90,14 @@ def update_quotation_activity(
         json.dumps(history),
         qa_id,
     )
-    flag, e, out = execute_sql(sql, val, 3)
+    flag, e, out = execute_sql(sql, val, 3, data_token)
     return flag, e, out
 
 
-def delete_quotation_activity(qa_id: int):
+def delete_quotation_activity(qa_id: int, data_token):
     sql = "DELETE FROM sql_telintec_mod_admin.quotations_activities WHERE qa_id=%s"
     val = (qa_id,)
-    flag, e, out = execute_sql(sql, val, 3)
+    flag, e, out = execute_sql(sql, val, 3, data_token)
     return flag, e, out
 
 
@@ -111,22 +111,24 @@ def insert_remission(
     general_description: str,
     comments: str,
     quotation_id: int | None,
-    history: list,
+    history: list, data_token,
     status: int = 0,
     contract_id: int | None = None,
     pedido: str = "",
     pedido_exiros: str = "",
+    extra_info = None
 ):
-    extra_info = {
-        "pedido": pedido,
-        "pedido_exiros": pedido_exiros,
-    }
+    if extra_info is None:
+        extra_info = {}
+    if "pedido" not in extra_info:
+        extra_info["pedido"] = pedido
+    if "pedido_exiros" not in extra_info:
+        extra_info["pedido_exiros"] = pedido_exiros
     sql = (
         "INSERT INTO sql_telintec_mod_admin.activity_reports "
-        "(date, folio, client_id, client_company_name, client_contact_name, client_phone, "
-        " client_email, plant, area, location, general_description, comments, quotation_id, "
+        "(date, folio, client_id, plant, area, location, general_description, comments, quotation_id, "
         " status, history, contract_id, extra_info) "
-        "VALUES %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s. %s, %s)"
+        "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
     )
     val = (
         date,
@@ -143,18 +145,18 @@ def insert_remission(
         contract_id,
         json.dumps(extra_info),
     )
-    flag, e, out = execute_sql(sql, val, 4)
+    flag, e, out = execute_sql(sql, val, 4, data_token)
     return flag, e, out
 
 
-def update_items_quotation_w_remission(remission_id, id_quotation):
+def update_items_quotation_w_remission(remission_id, id_quotation, data_token):
     sql = (
         "UPDATE sql_telintec_mod_admin.quotation_activity_items "
         "SET report_id=%s "
         "WHERE quotation_id=%s"
     )
     val = (remission_id, id_quotation)
-    flag, e, out = execute_sql(sql, val, 3)
+    flag, e, out = execute_sql(sql, val, 3, data_token)
     return flag, e, out
 
 
@@ -170,7 +172,7 @@ def update_activity_report(
     comments: str,
     quotation_id: int | None,
     status: int,
-    history: list,
+    history: list, data_token,
     contract_id: int | None = None,
     pedido: str = "",
     pedido_exiros: str = "",
@@ -202,14 +204,14 @@ def update_activity_report(
         json.dumps(extra_info),
         report_id,
     )
-    flag, e, out = execute_sql(sql, val, 3)
+    flag, e, out = execute_sql(sql, val, 3, data_token)
     return flag, e, out
 
 
-def delete_remission_db(report_id: int):
+def delete_remission_db(report_id: int, data_token):
     sql = "DELETE FROM sql_telintec_mod_admin.activity_reports WHERE id=%s"
     val = (report_id,)
-    flag, e, out = execute_sql(sql, val, 3)
+    flag, e, out = execute_sql(sql, val, 3, data_token)
     return flag, e, out
 
 
@@ -220,7 +222,7 @@ def insert_quotation_activity_item(
     udm: str,
     quantity: float,
     unit_price: float,
-    history: list,
+    history: list, data_token,
     item_c_id: int | None,
 ):
     sql = (
@@ -238,7 +240,7 @@ def insert_quotation_activity_item(
         unit_price,
         json.dumps(history),
     )
-    flag, e, out = execute_sql(sql, val, 4)
+    flag, e, out = execute_sql(sql, val, 4, data_token)
     return flag, e, out
 
 
@@ -251,7 +253,7 @@ def update_quotation_activity_item(
     udm: str,
     quantity: float,
     unit_price: float,
-    history: list,
+    history: list, data_token,
 ):
     sql = (
         "UPDATE sql_telintec_mod_admin.quotation_activity_items "
@@ -269,18 +271,18 @@ def update_quotation_activity_item(
         quotation_id,
         qa_item_id,
     )
-    flag, e, out = execute_sql(sql, val, 3)
+    flag, e, out = execute_sql(sql, val, 3, data_token)
     return flag, e, out
 
 
-def delete_quotation_activity_item(qa_item_id: int):
+def delete_quotation_activity_item(qa_item_id: int, data_token):
     sql = "DELETE FROM sql_telintec_mod_admin.quotation_activity_items WHERE qa_item_id=%s"
     val = (qa_item_id,)
-    flag, e, out = execute_sql(sql, val, 3)
+    flag, e, out = execute_sql(sql, val, 3, data_token)
     return flag, e, out
 
 
-def get_quotation_activity_by_id(id_quotation):
+def get_quotation_activity_by_id(id_quotation, data_token):
     sql = (
         "SELECT "
         "qa.qa_id, "
@@ -318,14 +320,14 @@ def get_quotation_activity_by_id(id_quotation):
     )
     val = (id_quotation, id_quotation)
     flag, e, out = (
-        execute_sql(sql, val, 1)
+        execute_sql(sql, val, 1, data_token)
         if id_quotation is not None
-        else execute_sql(sql, val, 2)
+        else execute_sql(sql, val, 2, data_token)
     )
     return flag, e, out
 
 
-def get_remission_by_id(id_report: int | None):
+def get_remission_by_id(id_report: int | None, data_token):
     sql = (
         "SELECT "
         "ar.id, "
@@ -367,17 +369,17 @@ def get_remission_by_id(id_report: int | None):
     )
     val = (id_report, id_report)
     flag, e, out = (
-        execute_sql(sql, val, 1) if id_report is not None else execute_sql(sql, val, 2)
+        execute_sql(sql, val, 1) if id_report is not None else execute_sql(sql, val, 2, data_token)
     )
     return flag, e, out
 
 
-def update_report_activity_files(id_report, history, files, status):
+def update_report_activity_files(id_report, history, files, status, data_token):
     sql = (
         "UPDATE sql_telintec_mod_admin.activity_reports "
         "SET history=%s, files=%s, status=%s "
         "WHERE id=%s"
     )
     val = (json.dumps(history), json.dumps(files), status, id_report)
-    flag, e, out = execute_sql(sql, val, 3)
+    flag, e, out = execute_sql(sql, val, 3, data_token)
     return flag, e, out
