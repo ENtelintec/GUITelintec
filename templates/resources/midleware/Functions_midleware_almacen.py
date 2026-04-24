@@ -181,7 +181,7 @@ def insert_movement(data, data_token):
     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
     flag, error, result = get_stock_db(data["info"]["id_product"], data_token)
     if not (isinstance(result, list) and isinstance(result, tuple)):
-        return {"data": [result], "error": str(error)}, 400
+        return False, "no data"
     if not flag or result is None:
         return (
             False,
