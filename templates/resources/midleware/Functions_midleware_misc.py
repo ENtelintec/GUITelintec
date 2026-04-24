@@ -28,7 +28,7 @@ def get_all_notification_db_user_status(id_emp, status, data_token):
     code = 200
     flag, error, result = get_notifications_by_user(id_emp, data_token, status)
     if not (isinstance(result, list) or isinstance(result, tuple)):
-        return [f"no notifications {result}"], 200
+        return [f"no notifications {result}"], 400
     data_out = []
     for item in result:
         body = json.loads(item[2])
@@ -45,7 +45,7 @@ def get_all_notification_db_permission(status, data_token):
         terms_list, data_token, data_token.get("emp_id", "%"), status
     )
     if not (isinstance(result, list) or isinstance(result, tuple)):
-        return [f"no notifications: {result}"], 200
+        return [f"no notifications: {result}"], 400
     data_out = []
     for item in result:
         body = json.loads(item[2])
@@ -101,7 +101,7 @@ def get_task_by_id_employee(id_emp: int, data_token):
     flag, error, result = get_task_by_id_emp(id_emp, data_token)
     if flag:
         if not (isinstance(result, list) or isinstance(result, tuple)):
-            return [f"no tasks {result}"], 200
+            return [f"no tasks {result}"], 400
         data_out = []
         for item in result:
             data_out.append(
@@ -124,7 +124,7 @@ def get_all_vacations_data_date(data_token):
     if not flag:
         return error, 400
     if not (isinstance(result, list) or isinstance(result, tuple)):
-        return [f"no vacations {result}"], 200
+        return [f"no vacations {result}"], 400
     time_zone = pytz.timezone(timezone_software)
     date_today = datetime.now(pytz.utc).astimezone(time_zone)
     date_today.replace(day=1)
@@ -183,7 +183,7 @@ def get_all_dashboard_data(data_token):
         terms_list, data_token, data_token.get("emp_id", "%")
     )
     if not (isinstance(result, list) or isinstance(result, tuple)):
-        return [f"no notifications: {result}"], 200
+        return [f"no notifications: {result}"], 400
     data_out = {}
     if not flag:
         return error, 400
@@ -200,7 +200,7 @@ def get_all_dashboard_data(data_token):
         if not flag:
             return error, 400
         if not (isinstance(result, list) or isinstance(result, tuple)):
-            return [f"no sm pending: {result}"], 200
+            return [f"no sm pending: {result}"], 400
         for item in result:
             out_sm.append(
                 {

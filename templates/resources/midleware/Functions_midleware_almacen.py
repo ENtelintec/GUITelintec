@@ -81,7 +81,7 @@ def get_all_movements(type_m: str, data_token):
     if not flag:
         return ["error at retrieving data"], 400
     if not (isinstance(result, list) or isinstance(result, tuple)):
-        return [f"error at retrieving data {result}"], 200
+        return [f"error at retrieving data {result}"], 400
     for item in result:
         (
             id_m,
@@ -126,7 +126,7 @@ def get_epp_movements(type_m, data_token):
     if not flag:
         return ["error at retrieving data"], 400
     if not (isinstance(result, list) or isinstance(result, tuple)):
-        return ["error at retrieving data"], 200
+        return ["error at retrieving data"], 400
     out = []
     for item in result:
         (
@@ -231,7 +231,7 @@ def update_movement(data, data_token):
     if not flag or isinstance(actual_stock, list):
         return False, str(error) + f" -No se encontro el producto {data['info']['id_product']}- " + str(actual_stock)
     if not (isinstance(actual_stock, list) or isinstance(actual_stock, tuple)):
-        return {"data": [actual_stock], "error": str(error)}, 200
+        return {"data": [actual_stock], "error": str(error)}, 400
     time_zone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
     quantity = data["info"]["quantity"]
@@ -318,7 +318,7 @@ def get_all_products_DB(type_p, data_token):
     if not flag:
         return [], 400
     if not (isinstance(result, list) or isinstance(result, tuple)):
-        return ["error at retrieving data"], 200
+        return ["error at retrieving data"], 400
     out = []
     for item in result:
         # (id_product, sku, name, udm, stock, category_name, supplier_name, is_tool, is_internal, codes, locations, extra_info) = item
@@ -758,7 +758,7 @@ def get_categories_db(data_token):
         return [], 400
     out = []
     if not (isinstance(result, list) or isinstance(result, tuple)):
-        return [f"no data {result}"], 200
+        return [f"no data {result}"], 400
     for item in result:
         id_category, name = item
         out.append(
@@ -814,7 +814,7 @@ def read_excel_file_regular(file: str, data_token, is_tool=False, is_internal=0)
     items = df.values.tolist()
     flag, error, result_sku = get_skus(data_token)
     if not (isinstance(result_sku, list) or isinstance(result_sku, tuple)):
-        return {"data": [result_sku], "error": str(error)}, 200
+        return {"data": [result_sku], "error": str(error)}, 400
     skus = [sku[0] for sku in result_sku]
     flag, error, suppliers = get_all_suppliers_amc(data_token)
     dict_suppliers = {supplier[1]: supplier[0] for supplier in suppliers}
@@ -866,7 +866,7 @@ def retrieve_data_file_inventory(data_token, type_data="dict", data=None):
         if _products is None:
             return [], 400
         if not (isinstance(_products, list) or isinstance(_products, tuple)):
-            return {"data": [_products], "error": str(error)}, 200
+            return {"data": [_products], "error": str(error)}, 400
         _products.sort(key=lambda x: x[0])
         if type_data == "dict":
             products = {
@@ -947,7 +947,7 @@ def retrieve_data_movement_file(data, data_token, complete=False, epp=0):
     else:
         flag, error, _movements = get_epp_movements_db_detail(data_token, type_m)
     if not (isinstance(_movements, list) or isinstance(_movements, tuple)):
-        return {"data": [_movements], "error": str(error)}, 200
+        return {"data": [_movements], "error": str(error)}, 400
     date_init = pd.to_datetime(data["date_init"])
     date_end = pd.to_datetime(data["date_end"])
     # set hour init 0:00:00 and hour end 23:59:59
@@ -1145,7 +1145,7 @@ def get_epp_db(data_token):
     if not flag:
         return error, 400
     if not (isinstance(result, list) or isinstance(result, tuple)):
-        return {"data": [result], "error": str(error)}, 200
+        return {"data": [result], "error": str(error)}, 400
     data = []
     for item in result:
         codes_raw = json.loads(item[9])
@@ -1286,7 +1286,7 @@ def get_reservations_db(data_token):
     if not flag:
         return {"data": None, "error": str(error)}, 400
     if not (isinstance(result, list) or isinstance(result, tuple)):
-        return {"data": [result], "error": str(error)}, 200
+        return {"data": [result], "error": str(error)}, 400
     data = []
     for item in result:
         history = json.loads(item[5])

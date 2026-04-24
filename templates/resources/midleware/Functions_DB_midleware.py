@@ -24,7 +24,7 @@ from templates.controllers.misc.tasks_controller import (
 def get_info_employees_with_status(status: str):
     flag, error, result = get_all_data_employees(status)
     if not (isinstance(result, list) or isinstance(result, tuple)):
-        return {"error": "No se encontraron empleados"}, 200
+        return {"error": "No se encontraron empleados"}, 400
     data_out = []
     for item in result:
         (
@@ -89,7 +89,7 @@ def get_info_employees_with_status(status: str):
 def create_csv_file_employees(status: str):
     flag, error, result = get_all_data_employees(status)
     if not (isinstance(result, list) or isinstance(result, tuple)):
-        return {"error": "No se encontraron empleados"}, 200
+        return {"error": "No se encontraron empleados"}, 400
     result = result if flag else []
     # create file
     filepath = "files/emp.csv"
@@ -129,7 +129,7 @@ def create_csv_file_employees(status: str):
 def get_info_employee_id(id_emp: int, data_token):
     flag, error, result = get_all_data_employee(id_emp, data_token)
     if not (isinstance(result, list) or isinstance(result, tuple)):
-        return {"error": "No se encontro el empleado"}, 200
+        return {"error": "No se encontro el empleado"}, 400
     (
         id_emp,
         name,
@@ -180,7 +180,7 @@ def get_vacations_employee(emp_id: int, data_token):
     flag, error, result = get_vacations_data_emp(emp_id, data_token)
     out = None
     if not (isinstance(result, list) or isinstance(result, tuple)):
-        return {"error": "No se encontraron vacaciones para el empleado"}, 200
+        return {"error": "No se encontraron vacaciones para el empleado"}, 400
     if not flag or len(result) == 0:
         return out, 400
     seniority_raw = json.loads(result[4])
@@ -205,7 +205,7 @@ def get_vacations_employee(emp_id: int, data_token):
 def get_all_vacations(data_token):
     flag, error, result = get_vacations_data(data_token)
     if not (isinstance(result, list) or isinstance(result, tuple)):
-        return {"error": "No se encontraron vacaciones"}, 200
+        return {"error": "No se encontraron vacaciones"}, 400
     out = []
     if not flag or len(result) == 0:
         return [], 400

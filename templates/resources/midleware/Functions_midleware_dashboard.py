@@ -83,7 +83,7 @@ def get_data_chart_fichaje_emp(data):
     if len(result) <= 0:
         return {"message": "No data found"}, 400
     if not (isinstance(result, list) or isinstance(result, tuple)):
-        return {"message": f"Error data format {result}"}, 200
+        return {"message": f"Error data format {result}"}, 400
     data_fichaje = [result] if data["emp_id"] != -1 else result
     data_out = []
     for emp in data_fichaje:
