@@ -109,9 +109,7 @@ def get_all_movements(type_m: str, data_token):
                 "id_product": id_product,
                 "type_m": type_m,
                 "quantity": quantity,
-                "movement_date": movement_date.strftime(format_timestamps)
-                if movement_date is not None
-                else None,
+                "movement_date": movement_date.strftime(format_timestamps) if movement_date is not None else None,
                 "sm_id": sm_id,
                 "reference": reference,
                 "sku": sku,
@@ -156,9 +154,7 @@ def get_epp_movements(type_m, data_token):
                 "id_product": id_product,
                 "type_m": type_m,
                 "quantity": quantity,
-                "movement_date": movement_date.strftime(format_timestamps)
-                if movement_date is not None
-                else None,
+                "movement_date": movement_date.strftime(format_timestamps) if movement_date is not None else None,
                 "sm_id": sm_id,
                 "reference": reference,
                 "sku": sku,
@@ -180,21 +176,16 @@ def insert_movement(data, data_token):
     time_zone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
     flag, error, result = get_stock_db(data["info"]["id_product"], data_token)
-    if not (isinstance(result, list) and isinstance(result, tuple)):
+
+    if not (isinstance(result, list) or isinstance(result, tuple)):
         return False, "no data"
     if not flag or result is None:
         return (
             False,
-            str(error)
-            + f" -No se encontro el stock del producto {data['info']['id_product']}- "
-            + str(result),
+            str(error) + f" -No se encontro el stock del producto {data['info']['id_product']}- " + str(result),
         )
     try:
-        quantity_final = (
-            result[0] - data["info"]["quantity"]
-            if type_m == "salida"
-            else result[0] + data["info"]["quantity"]
-        )
+        quantity_final = result[0] - data["info"]["quantity"] if type_m == "salida" else result[0] + data["info"]["quantity"]
         if quantity_final < 0:
             return False, "No hay suficiente stock"
     except Exception as e:
@@ -208,9 +199,7 @@ def insert_movement(data, data_token):
         data_token,
         data["info"]["reference"],
     )
-    update_stock_db(
-        data["info"]["id_product"], quantity_final, data_token, just_add=False
-    )
+    update_stock_db(data["info"]["id_product"], quantity_final, data_token, just_add=False)
     msg_notification = (
         "--System Notification--\n" + f"Se ha realizado un movimiento de {type_m} "
         f"de {data['info']['quantity']} unidades del producto {data['info']['id_product']} "
@@ -240,12 +229,8 @@ def update_movement(data, data_token):
         return False, "Invalid type"
     flag, error, actual_stock = get_stock_db(data["info"]["id_product"], data_token)
     if not flag or isinstance(actual_stock, list):
-        return False, str(
-            error
-        ) + f" -No se encontro el producto {data['info']['id_product']}- " + str(
-            actual_stock
-        )
-    if not (isinstance(actual_stock, list) and isinstance(actual_stock, tuple)):
+        return False, str(error) + f" -No se encontro el producto {data['info']['id_product']}- " + str(actual_stock)
+    if not (isinstance(actual_stock, list) or isinstance(actual_stock, tuple)):
         return {"data": [actual_stock], "error": str(error)}, 200
     time_zone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
@@ -268,9 +253,7 @@ def update_movement(data, data_token):
     if p_quantity != quantity:
         flag, error, result = update_stock_db(
             data["info"]["id_product"],
-            actual_stock[0] - p_quantity + quantity
-            if type_m == "entrada"
-            else actual_stock[0] + p_quantity - quantity,
+            actual_stock[0] - p_quantity + quantity if type_m == "entrada" else actual_stock[0] + p_quantity - quantity,
             data_token,
             just_add=False,
         )
@@ -331,9 +314,7 @@ def get_all_products_DB(type_p, data_token):
     else:
         is_tool = "%"
         is_internal = "%"
-    flag, error, result = get_all_products_db_tool_internal(
-        is_tool, is_internal, data_token
-    )
+    flag, error, result = get_all_products_db_tool_internal(is_tool, is_internal, data_token)
     if not flag:
         return [], 400
     if not (isinstance(result, list) or isinstance(result, tuple)):
@@ -415,9 +396,7 @@ def insert_product_db(data, data_token):
     )
     id_sm_item = data["info"].get("id_item", 0)
     if id_sm_item > 0:
-        out_item_sm, code_sm = update_sm_item_state_and_inventory(
-            {"id_inventory": lastrowid, "id_item": id_sm_item, "state": 1}, data_token
-        )
+        out_item_sm, code_sm = update_sm_item_state_and_inventory({"id_inventory": lastrowid, "id_item": id_sm_item, "state": 1}, data_token)
         if code_sm != 200:
             msg += f"\n Error al actualizar el producto en la sm: {out_item_sm}"
     flag = create_notification_permission_notGUI(
@@ -538,16 +517,12 @@ def insert_multiple_products_from_api(data, data_token):
         )
         for item in products_new
     ]
-    flags, errors, lastrowids = insert_multiple_row_products_amc(
-        tuple(products_aux), data_token
-    )
+    flags, errors, lastrowids = insert_multiple_row_products_amc(tuple(products_aux), data_token)
     movements = []
     time_zone = pytz.timezone(timezone_software)
     date = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps_tz)
     for flag, error, lastrowid, item in zip(flags, errors, lastrowids, products_new):
-        data_out["errors_insert"].append(
-            f"Error at insert->{error}"
-        ) if not flag else data_out["inserted"].append(lastrowid)
+        data_out["errors_insert"].append(f"Error at insert->{error}") if not flag else data_out["inserted"].append(lastrowid)
         # (id_product, movement_type, quantity, movement_date, sm_id, extra_info)
         movements.append(
             (
@@ -560,25 +535,13 @@ def insert_multiple_products_from_api(data, data_token):
             )
         ) if flag else None
     msg = f"Se insertaron {len(data_out['inserted'])} productos."
-    msg += (
-        f"\nHubo {len(data_out['errors_insert'])} errores al insertar productos."
-        if len(data_out["errors_insert"]) > 0
-        else ""
-    )
+    msg += f"\nHubo {len(data_out['errors_insert'])} errores al insertar productos." if len(data_out["errors_insert"]) > 0 else ""
     # create movements in
-    flags, errors, results = insert_multiple_row_movements_amc(
-        tuple(movements), data_token
-    )
+    flags, errors, results = insert_multiple_row_movements_amc(tuple(movements), data_token)
     for flag, error, result in zip(flags, errors, results):
-        data_out["errors"].append(
-            f"Error at insert movement->{error}"
-        ) if not flag else data_out["movements"].append(result)
+        data_out["errors"].append(f"Error at insert movement->{error}") if not flag else data_out["movements"].append(result)
     msg += f"\nSe generaron {len(movements)} movimientos."
-    msg += (
-        f"\nHubo {len(data_out['errors_movements'])} errores al insertar movimientos."
-        if len(data_out["errors_movements"]) > 0
-        else ""
-    )
+    msg += f"\nHubo {len(data_out['errors_movements'])} errores al insertar movimientos." if len(data_out["errors_movements"]) > 0 else ""
     return data_out
 
 
@@ -608,17 +571,13 @@ def update_multiple_products_from_api(data, data_token):
         )
         for item in products_update
     ]
-    flags, errors, results = update_multiple_row_products_amc(
-        tuple(products_aux), data_token=data_token
-    )
+    flags, errors, results = update_multiple_row_products_amc(tuple(products_aux), data_token=data_token)
     movements = []
     # date utc -6
     time_zone = pytz.timezone(timezone_software)
     date = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps_tz)
     for flag, error, result, item in zip(flags, errors, results, products_update):
-        data_out["errors_update"].append(
-            f"Error at update->{error}"
-        ) if not flag else data_out["updated"].append(result)
+        data_out["errors_update"].append(f"Error at update->{error}") if not flag else data_out["updated"].append(result)
         # (id_product, movement_type, quantity, movement_date, sm_id, extra_info)
         movement_type = "entrada" if item["quantity_move"] > 0 else "salida"
         movements.append(
@@ -632,24 +591,12 @@ def update_multiple_products_from_api(data, data_token):
             )
         ) if flag else None
     msg = f"Se actualizaron {len(data_out['updated'])} productos."
-    msg += (
-        f"\nHubo {len(data_out['errors_update'])} errores al actualizar productos."
-        if len(data_out["errors_update"]) > 0
-        else ""
-    )
-    flags, errors, results = insert_multiple_row_movements_amc(
-        tuple(movements), data_token
-    )
+    msg += f"\nHubo {len(data_out['errors_update'])} errores al actualizar productos." if len(data_out["errors_update"]) > 0 else ""
+    flags, errors, results = insert_multiple_row_movements_amc(tuple(movements), data_token)
     for flag, error, result in zip(flags, errors, results):
-        data_out["errors_movements"].append(
-            f"Error at insert movement->{error}"
-        ) if not flag else data_out["movements"].append(result)
+        data_out["errors_movements"].append(f"Error at insert movement->{error}") if not flag else data_out["movements"].append(result)
     msg += f"\nSe generaron {len(movements)} movimientos."
-    msg += (
-        f"\nHubo {len(data_out['errors_movements'])} errores al insertar movimientos."
-        if len(data_out["errors_movements"]) > 0
-        else ""
-    )
+    msg += f"\nHubo {len(data_out['errors_movements'])} errores al insertar movimientos." if len(data_out["errors_movements"]) > 0 else ""
     data_out["msg"] = [msg]
     return data_out
 
@@ -657,19 +604,10 @@ def update_multiple_products_from_api(data, data_token):
 def insert_and_update_multiple_products_from_api(data, token_data):
     data_out_insert = insert_multiple_products_from_api(data, token_data)
     data_out_update = update_multiple_products_from_api(data, token_data)
-    msg_notification = (
-        "--System Notification--\n"
-        + "\n".join(data_out_insert["msg"])
-        + "\n"
-        + "\n".join(data_out_update["msg"])
-    )
-    create_notification_permission_notGUI(
-        msg_notification, token_data, ["almacen"], "Notifaction de Inventario", 0, 0
-    )
+    msg_notification = "--System Notification--\n" + "\n".join(data_out_insert["msg"]) + "\n" + "\n".join(data_out_update["msg"])
+    create_notification_permission_notGUI(msg_notification, token_data, ["almacen"], "Notifaction de Inventario", 0, 0)
     time_zone = pytz.timezone(timezone_software)
-    timestamp = (
-        datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps_tz)
-    )
+    timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps_tz)
     data_out = {"insert": data_out_insert, "update": data_out_update}
     msg_notification += f"[Timestamp: {timestamp}]"
     msg_notification += f"[ID: {token_data.get('emp_id', 'No id')}]"
@@ -696,46 +634,29 @@ def insert_multiple_movements_from_api(data, data_token):
     stock_update_ids = [item["id_product"] for item in movements]
     # "sql_telintec.products_amc.id_product, "
     #     "sql_telintec.products_amc.stock "
-    flag, error, resul_products = get_products_stock_from_ids(
-        stock_update_ids, data_token
-    )
+    flag, error, resul_products = get_products_stock_from_ids(stock_update_ids, data_token)
     if not flag:
         return False, ["Error at retrieving data from db: " + str(error)]
     products_dict = {item[0]: item[1] for item in resul_products}  # id_product: stock
-    stock_update_vals = [
-        item["quantity"] if item["type_m"] == "entrada" else -item["quantity"]
-        for item in movements
-    ]
+    stock_update_vals = [item["quantity"] if item["type_m"] == "entrada" else -item["quantity"] for item in movements]
     # check if stock not negative:
     for item in movements:
         id_product, type_m, quantity, _, _, _ = item
         stock_old = products_dict.get(id_product, 0)
-        stock_new = (
-            stock_old + quantity if type_m == "entrada" else stock_old - quantity
-        )
+        stock_new = stock_old + quantity if type_m == "entrada" else stock_old - quantity
         if stock_new < 0:
             return (
                 False,
-                [
-                    f"Stock negativo para producto {id_product}. Stock anterior: {stock_old}, Cantidad: {quantity}, Tipo: {type_m}"
-                ],
+                [f"Stock negativo para producto {id_product}. Stock anterior: {stock_old}, Cantidad: {quantity}, Tipo: {type_m}"],
             )
-    flag, error, result = insert_multiple_row_movements_amc(
-        tuple(movements_aux), data_token
-    )
+    flag, error, result = insert_multiple_row_movements_amc(tuple(movements_aux), data_token)
     if not flag:
-        data_out.append(
-            f"Insert multiple movements failed. Error: {str(error)}. Result: {result}"
-        )
+        data_out.append(f"Insert multiple movements failed. Error: {str(error)}. Result: {result}")
     else:
         data_out.append(f"Insert multiple movements success. Result: {result}")
-        flag, error, result = update_stock_db_ids(
-            stock_update_ids, stock_update_vals, data_token
-        )
+        flag, error, result = update_stock_db_ids(stock_update_ids, stock_update_vals, data_token)
         if not flag:
-            data_out.append(
-                f"Update stock failed. Error: {str(error)}. Result: {result}"
-            )
+            data_out.append(f"Update stock failed. Error: {str(error)}. Result: {result}")
         else:
             data_out.append(f"Update stock success. Result: {result}")
     msg_notification = "--System Notification--\n" + "\n".join(data_out)
@@ -743,25 +664,19 @@ def insert_multiple_movements_from_api(data, data_token):
     msg_notification += f"[ID: {data_token.get('emp_id', 'No id')}]"
     msg_notification += f"[Name: {data_token.get('name', 'No name')}]"
 
-    create_notification_permission_notGUI(
-        msg_notification, data_token, ["almacen"], "Notifaction de Movimientos", 0, 0
-    )
+    create_notification_permission_notGUI(msg_notification, data_token, ["almacen"], "Notifaction de Movimientos", 0, 0)
     write_log_file(log_file_almacen, msg_notification, data_token)
     return True, data_out
 
 
 def insert_new_product(new_items, data_token):
     data_out = {"inserted": [], "errors_insert": [], "movements": []}
-    flags, errors, lastrowids = insert_multiple_row_products_amc(
-        tuple(new_items), data_token
-    )
+    flags, errors, lastrowids = insert_multiple_row_products_amc(tuple(new_items), data_token)
     movements = []
     time_zone = pytz.timezone(timezone_software)
     date = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps_tz)
     for flag, error, lastrowid, item in zip(flags, errors, lastrowids, new_items):
-        data_out["errors_insert"].append(
-            f"Error at insert->{error}"
-        ) if not flag else data_out["inserted"].append(lastrowid)
+        data_out["errors_insert"].append(f"Error at insert->{error}") if not flag else data_out["inserted"].append(lastrowid)
         # (id_product, movement_type, quantity, movement_date, sm_id, extra_info)
         movements.append(
             (
@@ -774,49 +689,29 @@ def insert_new_product(new_items, data_token):
             )
         ) if flag else None
     msg = f"Se insertaron {len(data_out['inserted'])} productos."
-    msg += (
-        f"\nHubo {len(data_out['errors_insert'])} errores al insertar productos."
-        if len(data_out["errors_insert"]) > 0
-        else ""
-    )
-    flags, errors, results = insert_multiple_row_movements_amc(
-        tuple(movements), data_token
-    )
+    msg += f"\nHubo {len(data_out['errors_insert'])} errores al insertar productos." if len(data_out["errors_insert"]) > 0 else ""
+    flags, errors, results = insert_multiple_row_movements_amc(tuple(movements), data_token)
     for flag, error, result in zip(flags, errors, results):
-        data_out["errors"].append(
-            f"Error at insert movement->{error}"
-        ) if not flag else data_out["movements"].append(result)
+        data_out["errors"].append(f"Error at insert movement->{error}") if not flag else data_out["movements"].append(result)
     msg += f"\nSe generaron {len(movements)} movimientos."
-    msg += (
-        f"\nHubo {len(data_out['errors_movements'])} errores al insertar movimientos."
-        if len(data_out["errors_movements"]) > 0
-        else ""
-    )
+    msg += f"\nHubo {len(data_out['errors_movements'])} errores al insertar movimientos." if len(data_out["errors_movements"]) > 0 else ""
     data_out["msg"] = [msg]
     return data_out
 
 
-def update_old_products(
-    update_items, stocks_update, new_input_quantity, skus, result_sku, data_token
-):
+def update_old_products(update_items, stocks_update, new_input_quantity, skus, result_sku, data_token):
     data_out = {
         "updated": [],
         "errors_update": [],
         "movements": [],
         "errors_movements": [],
     }
-    flags, errors, results = update_stock_db_sku(
-        update_items, stocks_update, data_token
-    )
+    flags, errors, results = update_stock_db_sku(update_items, stocks_update, data_token)
     movements = []
     time_zone = pytz.timezone(timezone_software)
     date = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps_tz)
-    for flag, error, result, item in zip(
-        flags, errors, results, update_items, new_input_quantity
-    ):
-        data_out["errors_update"].append(
-            f"Error at update->{error}"
-        ) if not flag else data_out["updated"].append(result)
+    for flag, error, result, item in zip(flags, errors, results, update_items, new_input_quantity):
+        data_out["errors_update"].append(f"Error at update->{error}") if not flag else data_out["updated"].append(result)
         # (id_product, movement_type, quantity, movement_date, sm_id, extra_info)
         movement_type = "entrada" if item["quantity_move"] > 0 else "salida"
         movements.append(
@@ -831,50 +726,25 @@ def update_old_products(
         ) if flag else None
 
     msg = f"Se actualizaron {len(data_out['updated'])} productos."
-    msg += (
-        f"\nHubo {len(data_out['errors_update'])} errores al actualizar productos."
-        if len(data_out["errors_update"]) > 0
-        else ""
-    )
-    flags, errors, results = insert_multiple_row_movements_amc(
-        tuple(movements), data_token
-    )
+    msg += f"\nHubo {len(data_out['errors_update'])} errores al actualizar productos." if len(data_out["errors_update"]) > 0 else ""
+    flags, errors, results = insert_multiple_row_movements_amc(tuple(movements), data_token)
     for flag, error, result in zip(flags, errors, results):
-        data_out["errors_movements"].append(
-            f"Error at insert movement->{error}"
-        ) if not flag else data_out["movements"].append(result)
+        data_out["errors_movements"].append(f"Error at insert movement->{error}") if not flag else data_out["movements"].append(result)
     msg += f"\nSe generaron {len(movements)} movimientos."
-    msg += (
-        f"\nHubo {len(data_out['errors_movements'])} errores al insertar movimientos."
-        if len(data_out["errors_movements"]) > 0
-        else ""
-    )
+    msg += f"\nHubo {len(data_out['errors_movements'])} errores al insertar movimientos." if len(data_out["errors_movements"]) > 0 else ""
     data_out["msg"] = [msg]
     return data_out
 
 
 def upload_product_db_from_file(file: str, token_data, is_internal=0, is_tool=False):
-    (new_items, update_items, stocks_update, new_input_quantity, result_sku, skus) = (
-        read_excel_file_regular(file, token_data, is_tool, is_internal)
-    )
+    (new_items, update_items, stocks_update, new_input_quantity, result_sku, skus) = read_excel_file_regular(file, token_data, is_tool, is_internal)
 
     data_out_insert = insert_new_product(new_items, token_data)
-    data_out_update = update_old_products(
-        update_items, stocks_update, new_input_quantity, skus, result_sku, token_data
-    )
-    msg_notification = (
-        "--System Notification--\n"
-        + "\n".join(data_out_insert["msg"])
-        + "\n"
-        + "\n".join(data_out_update["msg"])
-    )
-    create_notification_permission_notGUI(
-        msg_notification, token_data, ["almacen"], "Notification de Inventario", 0, 0
-    )
+    data_out_update = update_old_products(update_items, stocks_update, new_input_quantity, skus, result_sku, token_data)
+    msg_notification = "--System Notification--\n" + "\n".join(data_out_insert["msg"]) + "\n" + "\n".join(data_out_update["msg"])
+    create_notification_permission_notGUI(msg_notification, token_data, ["almacen"], "Notification de Inventario", 0, 0)
     time_zone = pytz.timezone(timezone_software)
-    timestamp = (
-        datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps_tz)
-    )
+    timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps_tz)
     data_out = {"insert": data_out_insert, "update": data_out_update}
     msg_notification += f"[Timestamp: {timestamp}]"
     msg_notification += f"[ID: {token_data.get('emp_id', 'No id')}]"
@@ -943,14 +813,14 @@ def read_excel_file_regular(file: str, data_token, is_tool=False, is_internal=0)
     df = df.fillna("")
     items = df.values.tolist()
     flag, error, result_sku = get_skus(data_token)
-    if not (isinstance(result_sku, list) and isinstance(result_sku, tuple)):
+    if not (isinstance(result_sku, list) or isinstance(result_sku, tuple)):
         return {"data": [result_sku], "error": str(error)}, 200
     skus = [sku[0] for sku in result_sku]
     flag, error, suppliers = get_all_suppliers_amc(data_token)
     dict_suppliers = {supplier[1]: supplier[0] for supplier in suppliers}
     flag, error, categories = get_all_categories_db(data_token)
-    if not (isinstance(categories, list) and isinstance(categories, tuple)):
-        return {"data": [categories], "error": str(error)}, 200
+    if not (isinstance(categories, list) or isinstance(categories, tuple)):
+        return {"data": [categories], "error": str(error)}, 400
     dict_categories = {category[1]: category[0] for category in categories}
     new_items = []
     update_items = []
@@ -986,9 +856,7 @@ def read_excel_file_regular(file: str, data_token, is_tool=False, is_internal=0)
 
 
 def retrieve_data_file_inventory(data_token, type_data="dict", data=None):
-    flag, error, _products = (
-        get_all_products_db_old(data_token) if data is None else (True, None, data)
-    )
+    flag, error, _products = get_all_products_db_old(data_token) if data is None else (True, None, data)
     if not flag:
         return error, 400
     products = {}
@@ -997,7 +865,7 @@ def retrieve_data_file_inventory(data_token, type_data="dict", data=None):
         # sort by ID
         if _products is None:
             return [], 400
-        if not (isinstance(_products, list) and isinstance(_products, tuple)):
+        if not (isinstance(_products, list) or isinstance(_products, tuple)):
             return {"data": [_products], "error": str(error)}, 200
         _products.sort(key=lambda x: x[0])
         if type_data == "dict":
@@ -1050,9 +918,7 @@ def retrieve_data_file_inventory(data_token, type_data="dict", data=None):
 
 
 def create_file_inventory_pdf(data_token):
-    products, code = retrieve_data_file_inventory(
-        data_token=data_token, type_data="list"
-    )
+    products, code = retrieve_data_file_inventory(data_token=data_token, type_data="list")
     if code != 200:
         return None, 400
     flag = InventoryStoragePDF(
@@ -1080,7 +946,7 @@ def retrieve_data_movement_file(data, data_token, complete=False, epp=0):
         flag, error, _movements = get_all_movements_db_detail(data_token, type_m)
     else:
         flag, error, _movements = get_epp_movements_db_detail(data_token, type_m)
-    if not (isinstance(_movements, list) and isinstance(_movements, tuple)):
+    if not (isinstance(_movements, list) or isinstance(_movements, tuple)):
         return {"data": [_movements], "error": str(error)}, 200
     date_init = pd.to_datetime(data["date_init"])
     date_end = pd.to_datetime(data["date_end"])
@@ -1134,9 +1000,7 @@ def create_file_movements_amc(data, data_token, type_file="pdf", epp=0):
         )
         filepath = filepath_inventory_form_movements_pdf
     elif type_file == "excel":
-        movements, code = retrieve_data_movement_file(
-            data, data_token, complete=True, epp=epp
-        )
+        movements, code = retrieve_data_movement_file(data, data_token, complete=True, epp=epp)
         if code != 200:
             return None, 400
         columns = [
@@ -1164,13 +1028,11 @@ def create_pdf_barcode(data, data_token):
     format_dict = data.get("format", {})
     if format_dict == {}:
         flag, error, result = get_product_barcode_data(id_product, data_token)
-        if not (isinstance(result, list) and isinstance(result, tuple)):
-            return {"data": [result], "error": str(error)}, 200
+        if not (isinstance(result, list) or isinstance(result, tuple)):
+            return {"data": [result], "error": str(error)}, 400
         codes = json.loads(result[2])
         codigo = codes[0].get("value", "None") if len(codes) > 0 else "None"
-        kw, values = generate_default_configuration_barcodes(
-            name=result[0], code=result[1], sku=codigo
-        )
+        kw, values = generate_default_configuration_barcodes(name=result[0], code=result[1], sku=codigo)
     else:
         kw, values = generate_default_configuration_barcodes(**format_dict)
     create_one_code(**kw)
@@ -1196,9 +1058,7 @@ def create_pdf_barcode_multiple(data):
     return kw.get("filepath", file_codebar), 200
 
 
-def update_brand_list(
-    supplier_name, brand_name, providers_dict_amc, brands_dict, data_token
-):
+def update_brand_list(supplier_name, brand_name, providers_dict_amc, brands_dict, data_token):
     msg = ""
     if supplier_name != "None" and supplier_name != "":
         brands_list = brands_dict.get(supplier_name, [])
@@ -1209,9 +1069,7 @@ def update_brand_list(
             else:
                 brands_dict[supplier_name] = brands_list
                 brands_list.append(brand_name.upper())
-                flag, error, result = update_brands_supplier(
-                    supplier_id, brands_list, data_token
-                )
+                flag, error, result = update_brands_supplier(supplier_id, brands_list, data_token)
                 if not flag:
                     print("Error, could not update brands supplier")
                     msg += f"Error al actualizar marcas: {brands_list} para supplier_id {supplier_id} "
@@ -1247,9 +1105,7 @@ def update_brand_procedure(data, data_token):
         return "Could not retrive suppliers list", None, None, 400
     _providers_dict_amc, brands_dict = get_providers_dict(data_raw_providers)
     supplier_name, brand = data.get("supplier_name", ""), data.get("brand", "")
-    msg_list, _providers_dict_amc, brands_dict = update_brand_list(
-        supplier_name, brand, _providers_dict_amc, brands_dict, data_token
-    )
+    msg_list, _providers_dict_amc, brands_dict = update_brand_list(supplier_name, brand, _providers_dict_amc, brands_dict, data_token)
     msg = f"Marca {brand} creada por el empleado {data_token.get('name')} " + msg_list
     create_notification_permission_notGUI(
         msg,
@@ -1268,8 +1124,8 @@ def get_new_code_products(data_token):
     code_length = 11
     prefix = "1001"
     flag, error, result = get_last_sku(data_token)
-    if not (isinstance(result, list) and isinstance(result, tuple)):
-        return {"data": [result], "error": str(error)}, 200
+    if not (isinstance(result, list) or isinstance(result, tuple)):
+        return {"data": [result], "error": str(error)}, 400
     out = 0
     for item in result:
         number = item[0][len(prefix) :]
@@ -1288,7 +1144,7 @@ def get_epp_db(data_token):
     flag, error, result = get_all_epp_inventory(data_token)
     if not flag:
         return error, 400
-    if not (isinstance(result, list) and isinstance(result, tuple)):
+    if not (isinstance(result, list) or isinstance(result, tuple)):
         return {"data": [result], "error": str(error)}, 200
     data = []
     for item in result:
@@ -1343,10 +1199,7 @@ def create_reservation_from_api(data, data_token):
     )
     if not flag:
         return {"data": None, "error": str(error)}, 400
-    msg = (
-        f"Reservation <{lastrowid}> creada por el empleado {data_token.get('name')} "
-        f"con cantidad {data['quantity']} y id producto {data['id_product']} para la sm {data['sm_id']}"
-    )
+    msg = f"Reservation <{lastrowid}> creada por el empleado {data_token.get('name')} con cantidad {data['quantity']} y id producto {data['id_product']} para la sm {data['sm_id']}"
     create_notification_permission_notGUI(
         msg,
         data_token,
@@ -1398,10 +1251,7 @@ def update_reservation_from_api(data, data_token):
         )
     if not flag:
         return {"data": None, "error": str(error)}, 400
-    msg = (
-        f"Reservation <{data['id']}> actualizada por el empleado {data_token.get('name')} "
-        f"con status {data['status']}, cantidad {data['quantity']} y sm {sm_id}"
-    )
+    msg = f"Reservation <{data['id']}> actualizada por el empleado {data_token.get('name')} con status {data['status']}, cantidad {data['quantity']} y sm {sm_id}"
     create_notification_permission_notGUI(
         msg,
         data_token,
@@ -1418,9 +1268,7 @@ def delete_reservation_from_api(data, data_token):
     flag, error, result = delete_reservation_db(data["id"], data_token)
     if not flag:
         return {"data": None, "error": str(error)}, 400
-    msg = (
-        f"Reservation <{data['id']}> eliminada por el empleado {data_token.get('name')}"
-    )
+    msg = f"Reservation <{data['id']}> eliminada por el empleado {data_token.get('name')}"
     create_notification_permission_notGUI(
         msg,
         data_token,
@@ -1437,7 +1285,7 @@ def get_reservations_db(data_token):
     flag, error, result = get_all_reservations(data_token)
     if not flag:
         return {"data": None, "error": str(error)}, 400
-    if not (isinstance(result, list) and isinstance(result, tuple)):
+    if not (isinstance(result, list) or isinstance(result, tuple)):
         return {"data": [result], "error": str(error)}, 200
     data = []
     for item in result:

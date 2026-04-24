@@ -204,7 +204,7 @@ def get_events_extra(data, data_token):
         if isinstance(data["date"], str)
         else data["date"]
     )
-    if not (isinstance(result, list) and isinstance(result, tuple)):
+    if not (isinstance(result, list) or isinstance(result, tuple)):
         return {"data": [], "msg": "No hay registros"}, 400
     events_out = []
     for row in result:
@@ -457,7 +457,7 @@ def aprove_event_bitacora_from_api(data, data_token):
 
 def fetch_all_bitacora_rh(data_token):
     flag, error, result = get_all_bitacora_rh_db( data_token)
-    if not(isinstance(result, list) and isinstance(result, tuple)):
+    if not(isinstance(result, list) or isinstance(result, tuple)):
         return {"data": [result], "msg": "error"}, 400
     dict_emps = {}
     # id_event, emp_id, event, timestamp, extra_info, name, l_name, contrato
@@ -577,7 +577,7 @@ def delete_event_bitacora_rh_from_api(data, data_token):
 def fetch_bitacora_rh_from_api_by_date(data):
     flag, error, result = get_bitacora_rh_db_by_date(data["date"])
     dict_emps = {}
-    if not (isinstance(result, list) and isinstance(result, tuple)):
+    if not (isinstance(result, list) or isinstance(result, tuple)):
         return {"data": [result], "msg": "error"}, 400
     for item in result:
         extra_info = json.loads(item[4])

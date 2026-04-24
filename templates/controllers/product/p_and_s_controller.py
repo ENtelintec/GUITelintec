@@ -593,7 +593,7 @@ def update_stock_db(id_product, stock, data_token, just_add=False):
 
 
 def get_stock_db(id_product, data_token):
-    sql = "SELECT stock FROM sql_telintec.products_amc WHERE id_product = %s"
+    sql = "SELECT stock, name FROM sql_telintec.products_amc WHERE id_product = %s"
     vals = (id_product,)
     flag, error, result = execute_sql(sql, vals, 1, data_token)
     return flag, error, result

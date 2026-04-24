@@ -533,7 +533,7 @@ class DownloadFileMedical(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         flag, e, result = get_all_examenes(data_token)
-        if not (isinstance(result, list) and isinstance(result, tuple)):
+        if not (isinstance(result, list) or isinstance(result, tuple)):
             return {"data": None, "msg": "Error al obtener los datos del empleado"}, 400
         filepath = "files/medical.csv"
         with open(filepath, "w") as file:
@@ -561,7 +561,7 @@ class DownloadFileVacations(Resource):
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         flag, error, data = get_vacations_data(data_token)
         filepath = "files/vacations.csv"
-        if not (isinstance(data, list) and isinstance(data, tuple)):
+        if not (isinstance(data, list) or isinstance(data, tuple)):
             return {"data": None, "msg": "Error al obtener los datos del empleado"}, 400
         with open(filepath, "w") as file:
             file.write("emp_id, Nombre, Apellido, fecha_inicio, body\n")
