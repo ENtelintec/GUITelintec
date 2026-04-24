@@ -640,9 +640,8 @@ def insert_multiple_movements_from_api(data, data_token):
     products_dict = {item[0]: item[1] for item in resul_products}  # id_product: stock
     stock_update_vals = [item["quantity"] if item["type_m"] == "entrada" else -item["quantity"] for item in movements]
     # check if stock not negative:
-    for item in movements:
+    for item in movements_aux:
         id_product, type_m, quantity, _, _, _ = item
-        print(quantity)
         quantity = float(quantity)
         stock_old = float(products_dict.get(id_product, 0.0))
         stock_new = stock_old + quantity if type_m == "entrada" else stock_old - quantity
