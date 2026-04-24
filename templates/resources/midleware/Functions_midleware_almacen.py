@@ -642,7 +642,8 @@ def insert_multiple_movements_from_api(data, data_token):
     # check if stock not negative:
     for item in movements:
         id_product, type_m, quantity, _, _, _ = item
-        stock_old = products_dict.get(id_product, 0)
+        quantity = float(quantity)
+        stock_old = float(products_dict.get(id_product, 0.0))
         stock_new = stock_old + quantity if type_m == "entrada" else stock_old - quantity
         if stock_new < 0:
             return (
