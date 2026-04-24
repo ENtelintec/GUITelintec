@@ -913,7 +913,7 @@ def delete_voucher_vehicle_api(data, data_token):
         data_token.get("emp_id"),
         0,
     )
-    write_log_file(log_file_sgi_chv, msg)
+    write_log_file(log_file_sgi_chv, msg, data_token)
     return {"data": [rows_changed], "msg": "Vehicle voucher deleted successfully"}, 200
 
 
@@ -990,7 +990,7 @@ def create_voucher_vehicle_attachment_api(data, data_token):
     bucket_name = secrets.get("S3_CH_BUCKET")
 
     try:
-        s3_client.upload_file(Filename=filepath_down, Bucket=bucket_name, Key=path_aws)
+        s3_client.upload_file(Filename=filepath_down, Bucket=str(bucket_name), Key=path_aws)
     except FileNotFoundError:
         return {"data": None, "msg": "Local file not found"}, 400
     except NoCredentialsError:
@@ -1045,7 +1045,7 @@ def create_voucher_vehicle_attachment_api(data, data_token):
         data_token.get("emp_id"),
         0,
     )
-    write_log_file(log_file_sgi_chv, msg)
+    write_log_file(log_file_sgi_chv, msg, data_token)
     return {"data": path_aws, "msg": msg}, 201
 
 
@@ -1095,7 +1095,7 @@ def download_voucher_vehicle_attachment_api(data, data_token):
     bucket_name = secrets.get("S3_CH_BUCKET")
     try:
         s3_client.download_file(
-            Bucket=bucket_name, Key=path_aws, Filename=data["filepath"]
+            Bucket=str(bucket_name), Key=path_aws, Filename=data["filepath"]
         )
     except FileNotFoundError:
         return {"data": None, "msg": "Local file not found"}, 400

@@ -322,7 +322,7 @@ def create_purchaser_order_api(data, data_token):
     create_notification_permission_notGUI(
         msg, data_token, ["orders"], "Orden de compra creada", data_token.get("emp_id")
     )
-    write_log_file(log_file_po, msg)
+    write_log_file(log_file_po, msg, data_token)
     if flag_error:
         return {
             "data": [id_order],
@@ -410,7 +410,7 @@ def update_purchase_order_api(data, data_token):
     create_notification_permission_notGUI(
         msg, data_token, ["orders"], "Orden de compra creada", data_token.get("emp_id")
     )
-    write_log_file(log_file_po, msg)
+    write_log_file(log_file_po, msg, data_token)
     if flag_error:
         return {
             "data": [data["id"]],
@@ -443,7 +443,7 @@ def cancel_purchase_order_api(data, data_token):
     create_notification_permission_notGUI(
         msg, data_token, ["orders"], "Orden de compra cancelada", data_token.get("emp_id")
     )
-    write_log_file(log_file_po, msg)
+    write_log_file(log_file_po, msg, data_token)
     return {"data": [data["id"]], "msg": "ok", "error": None}, 200
 
 
@@ -473,7 +473,7 @@ def change_state_order_api(data, data_token):
         "Orden de compra actualizada",
         data_token.get("emp_id"),
     )
-    write_log_file(log_file_po, msg)
+    write_log_file(log_file_po, msg, data_token)
     return {"data": [result], "msg": "ok", "error": None}, 200
 
 
@@ -728,7 +728,7 @@ def create_po_application_api(data, data_token):
         "Solicitud de orden de compra creada",
         data_token.get("emp_id"),
     )
-    write_log_file(log_file_po, msg)
+    write_log_file(log_file_po, msg, data_token)
     if flag_error:
         return {
             "data": [id_po_app],
@@ -796,7 +796,7 @@ def update_po_application_api(data, data_token):
     create_notification_permission_notGUI(
         msg, data_token, ["orders"], "Solicitud de Orden de compra creada", data_token.get("emp_id")
     )
-    write_log_file(log_file_po, msg)
+    write_log_file(log_file_po, msg, data_token)
     if flag_error:
         return {
             "data": [data["id"]],
@@ -832,7 +832,7 @@ def cancel_po_application_api(data, data_token):
         "Solicitud de Orden de compra cancelada",
         data_token.get("emp_id"),
     )
-    write_log_file(log_file_po, msg)
+    write_log_file(log_file_po, msg, data_token)
     return {"data": [data["id"]], "msg": "ok", "error": None}, 200
 
 
@@ -861,7 +861,7 @@ def change_state_po_application_api(data, data_token):
         "Solicitud de Orden de compra actualizada",
         data_token.get("emp_id"),
     )
-    write_log_file(log_file_po, msg)
+    write_log_file(log_file_po, msg, data_token)
     return {"data": [result], "msg": "ok", "error": None}, 200
 
 

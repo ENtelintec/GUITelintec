@@ -356,7 +356,7 @@ class ItemsContractFileUpload(Resource):
             filepath_download = os.path.join(tempfile.mkdtemp(), filename)
             file.save(filepath_download)
             data = {"path": filepath_download}
-            data_out, code = items_contract_from_file(data)
+            data_out, code = items_contract_from_file(data, data_token)
             return data_out, code
         else:
             return {"msg": "No se subio el archivo"}, 400

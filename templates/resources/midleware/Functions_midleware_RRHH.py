@@ -180,7 +180,7 @@ def terminate_employee_from_api(data, data_token):
         f"Empleado con id: {data['id']} dado de baja por {data['reason']}. "
         f"Realizado por el empleado con id: {data_token['emp_id']} "
     )
-    write_log_file(log_file_rh, msg)
+    write_log_file(log_file_rh, msg, data_token)
     create_notification_permission(
         msg, data_token, ["rrhh"], "Empleado dato de baja", data_token.get("emp_id"), 0
     )
@@ -1009,6 +1009,8 @@ def fetch_employees_without_records(data_token):
     flag, error, result = get_employees_without_records(data_token)
     if not flag:
         return 400, {"data": None, "msg": str(error)}
+    if not (isinstance(result, list) and isinstance(result, tuple)):
+        return 400, {"data": [], "msg": "No hay empleados sin registros"}
     out = []
     for item in result:
         birthday = (
@@ -1035,6 +1037,8 @@ def fetch_employees_without_records(data_token):
 
 def fetch_medicals(data_token):
     flag, e, result = get_all_examenes(data_token)
+    if not (isinstance(result, list) and isinstance(result, tuple)):
+        return 400, {"data": [], "msg": "No hay  registros"}
     out = {"data": None}
     if not flag:
         out = {"data": []}

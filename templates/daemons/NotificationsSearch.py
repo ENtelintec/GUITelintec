@@ -19,7 +19,7 @@ from templates.resources.midleware.Functions_midleware_RRHH import fetch_medical
 def MedicalNotifications( data_token):
     time_zone = pytz.timezone(timezone_software)
     timestamp_today = datetime.now(pytz.utc).astimezone(time_zone)
-    out, code = fetch_medicals()
+    out, code = fetch_medicals(data_token)
     data = out.get("data", [])
     medical_to_notify = []
     for item in data:

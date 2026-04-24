@@ -268,7 +268,7 @@ def delete_file_openai(file_id):
 
 
 def upload_file_openai(file_path: str):
-    e = None
+    e = "None"
     try:
         file = client.files.create(file=open(file_path, "rb"), purpose="assistants")
         while True:
