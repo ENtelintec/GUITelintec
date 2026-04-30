@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from templates.controllers.order.orders_controller import get_all_item_sm_with_supplier_fast_order
 from templates.controllers.order.orders_controller import (
     get_all_item_purchase_order_with_id_item_sm,
 )
@@ -561,7 +562,7 @@ def fetch_pos_applications(status, data_token):
 def fetch_po_item_sm_item_id(data_token):
     flag, error, result = get_all_item_purchase_order_with_id_item_sm(data_token)
     if not flag:
-        return {"data": None, "msg": "error", "error": str(error)}, 400
+        return {"data": None, "msg": "error", "error": error}, 400
     data_out = []
     if not (isinstance(result, list) or isinstance(result, tuple)):
         return {
@@ -1013,7 +1014,7 @@ def download_file_purchase_item_approved(data_token):
     if not flag:
         return {
             "data": [],
-            "error": str(error),
+            "error": error,
             "msg": "Error at retrieving sm data",
         }, 400
     items_with_approved = []
@@ -1043,7 +1044,6 @@ def download_file_purchase_item_approved(data_token):
                                 "folio_po": delivery["folio"],
                             }
                         )
-                        print(delivery)
                         break
     dict_items = group_item_by_id_inventory(items_with_approved)
     download_path = os.path.join(tempfile.mkdtemp(), os.path.basename("purchase_list.pdf"))
@@ -1055,3 +1055,29 @@ def download_file_purchase_item_approved(data_token):
             "msg": "Error at generating pdf",
         }, 400
     return {"data": download_path, "error": None, "msg": "ok"}, 200
+
+
+def get_items_with_fast_order(data_token):
+    flag, error, result = get_all_item_sm_with_supplier_fast_order(data_token)
+    if not flag:
+        return {"data": [], "error": error}, 400
+    if not (isinstance(result, Iterable)):
+        return {"data": [], "error": "Error at retrieving data"}, 400
+    data_out=[]
+    for item in result:
+        data_out.append(
+            {
+                "id_item": item[0],
+                "id_purchase": item[1],
+                "id_item_sm": item[2],
+                "id_inventory": item[3],
+                "quantity": item[4],
+                "fast_order": item[5],
+                "description": item[6],
+                "tool": item[7],
+                "id_supplier": item[8],
+                "name_supplier": item[9],
+                "n_parte": item[10],
+            }
+        )
+    return {"data": data_out, "error": None}, 200

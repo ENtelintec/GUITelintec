@@ -8,11 +8,7 @@ import json
 
 
 def get_v_orders(data_token, limit=(0, 100)):
-    sql = (
-        "SELECT vo_id, products, date_order, customer_id, employee_id, chat_id "
-        "FROM sql_telintec.virtual_orders "
-        "LIMIT %s, %s"
-    )
+    sql = "SELECT vo_id, products, date_order, customer_id, employee_id, chat_id FROM sql_telintec.virtual_orders LIMIT %s, %s"
     val = (limit[0], limit[1])
     flag, e, my_result = execute_sql(sql, val, 2, data_token)
     out = my_result if my_result is not None else []
@@ -24,19 +20,10 @@ def insert_vorder_db(
     products: str,
     date_order,
     id_customer: int,
-    id_employee: int, data_token,
+    id_employee: int,
+    data_token,
 ):
-    sql = (
-        "INSERT "
-        "INTO sql_telintec.virtual_orders "
-        "(vo_id, "
-        "products, "
-        "date_order, "
-        "customer_id, "
-        "employee_id, "
-        "chat_id) "
-        "VALUES (%s, %s, %s, %s, %s, %s)"
-    )
+    sql = "INSERT INTO sql_telintec.virtual_orders (vo_id, products, date_order, customer_id, employee_id, chat_id) VALUES (%s, %s, %s, %s, %s, %s)"
     val = (id_vorder, products, date_order, id_customer, id_employee)
     flag, e, out = execute_sql(sql, val, 3, data_token)
     return flag, None, out
@@ -48,18 +35,10 @@ def update_vorder_db(
     date_order,
     id_customer: int,
     id_employee: int,
-    chat_id: int, data_token,
+    chat_id: int,
+    data_token,
 ):
-    sql = (
-        "UPDATE sql_telintec.virtual_orders "
-        "SET "
-        "products = %s, "
-        "date_order = %s, "
-        "customer_id = %s, "
-        "employee_id = %s, "
-        "chat_id = %s "
-        "WHERE vo_id = %s"
-    )
+    sql = "UPDATE sql_telintec.virtual_orders SET products = %s, date_order = %s, customer_id = %s, employee_id = %s, chat_id = %s WHERE vo_id = %s"
     val = (products, date_order, id_customer, id_employee, chat_id, id_vorder)
     flag, e, out = execute_sql(sql, val, 3, data_token)
     return flag, e, out
@@ -174,7 +153,7 @@ def get_pos_application_with_items(status: int | None, created_by: int | None, d
     return flag, e, my_result
 
 
-def get_pos_application_with_items_to_approve( data_token):
+def get_pos_application_with_items_to_approve(data_token):
     sql = (
         "SELECT "
         "po.id_order, "
@@ -219,14 +198,10 @@ def insert_purchase_order(
     folio: str,
     history: list,
     time_delivery: str,
-    extra_info: dict, data_token,
+    extra_info: dict,
+    data_token,
 ):
-    sql = (
-        "INSERT INTO sql_telintec_mod_admin.purchase_orders "
-        "(timestamp, status, created_by, "
-        "supplier_id, folio, history, time_delivery, extra_info) "
-        "VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
-    )
+    sql = "INSERT INTO sql_telintec_mod_admin.purchase_orders (timestamp, status, created_by, supplier_id, folio, history, time_delivery, extra_info) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
     val = (
         timestamp,
         status,
@@ -250,7 +225,8 @@ def update_purchase_order(
     folio: str,
     history: list,
     extra_info: dict,
-    time_delivery: str, data_token,
+    time_delivery: str,
+    data_token,
 ):
     sql = (
         "UPDATE sql_telintec_mod_admin.purchase_orders "
@@ -280,7 +256,7 @@ def delete_purchase_order(id_order: int, data_token):
     return flag, e, out
 
 
-def get_all_item_purchase_order_with_id_item_sm( data_token):
+def get_all_item_purchase_order_with_id_item_sm(data_token):
     sql = """
             SELECT 
             poi.id_item,
@@ -307,23 +283,53 @@ def get_all_item_purchase_order_with_id_item_sm( data_token):
     return flag, e, out
 
 
+def get_all_item_sm_with_supplier_fast_order(data_token):
+    sql = """
+        SELECT 
+            poi.id_item,
+            poi.purchase_id,
+            JSON_EXTRACT(poi.extra_info, '$.id_item_sm') AS id_item_sm,
+            JSON_EXTRACT(poi.extra_info, '$.id_inventory') AS id_inventory,
+            poi.quantity,
+            JSON_UNQUOTE(JSON_EXTRACT(sa.extra_info, '$.fast_order')) AS fast_order,
+            poi.description,
+            poi.tool,
+            sa.id_supplier,
+            sa.name,
+            poi.unit_price
+        FROM sql_telintec_mod_admin.purchase_order_items poi
+        JOIN sql_telintec.suppliers_amc sa
+            ON sa.id_supplier = CAST(
+                JSON_UNQUOTE(JSON_EXTRACT(poi.extra_info, '$.supplier')) 
+                AS UNSIGNED
+            )
+        WHERE
+            (poi.purchase_id IS NULL)
+            AND JSON_EXTRACT(poi.extra_info, '$.id_item_sm') IS NOT NULL
+            AND CAST(
+                JSON_UNQUOTE(JSON_EXTRACT(poi.extra_info, '$.id_item_sm')) 
+                AS UNSIGNED
+            ) > 0
+            AND JSON_EXTRACT(poi.extra_info, '$.supplier') IS NOT NULL
+            AND CAST(
+                JSON_UNQUOTE(JSON_EXTRACT(sa.extra_info, '$.fast_order')) 
+                AS UNSIGNED
+            ) = 1;
+    """
+    val = None
+    flag, e, out = execute_sql(sql, val, 5, data_token)
+    return flag, e, out
+
+
 def update_purchase_order_status(id_order: int, history: list, status: int, data_token):
-    sql = (
-        "UPDATE sql_telintec_mod_admin.purchase_orders "
-        "SET status = %s, history = %s "
-        "WHERE id_order = %s"
-    )
+    sql = "UPDATE sql_telintec_mod_admin.purchase_orders SET status = %s, history = %s WHERE id_order = %s"
     val = (status, json.dumps(history), id_order)
     flag, error, result = execute_sql(sql, val, 3, data_token)
     return flag, error, result
 
 
 def cancel_purchase_order(history: list, id_order: int, data_token):
-    sql = (
-        "UPDATE sql_telintec_mod_admin.purchase_orders "
-        "SET status = 4, history = %s "
-        "WHERE id_order = %s"
-    )
+    sql = "UPDATE sql_telintec_mod_admin.purchase_orders SET status = 4, history = %s WHERE id_order = %s"
     val = (json.dumps(history), id_order)
     flag, e, out = execute_sql(sql, val, 3, data_token)
     return flag, e, out
@@ -334,16 +340,12 @@ def insert_po_application(
     status: int,
     created_by: int,
     reference: str,
-    history: list, data_token,
+    history: list,
+    data_token,
     approved=1,
     extra_info: dict | None = None,
 ):
-    sql = (
-        "INSERT INTO sql_telintec_mod_admin.pos_applications "
-        "(timestamp, status, created_by, "
-        "reference, history, approved, extra_info) "
-        "VALUES (%s, %s, %s, %s, %s, %s, %s)"
-    )
+    sql = "INSERT INTO sql_telintec_mod_admin.pos_applications (timestamp, status, created_by, reference, history, approved, extra_info) VALUES (%s, %s, %s, %s, %s, %s, %s)"
     if extra_info is None:
         extra_info = {"sm_id": 0}
     val = (
@@ -365,14 +367,10 @@ def update_po_application(
     status: int,
     created_by: int,
     reference: str,
-    history: list, data_token,
+    history: list,
+    data_token,
 ):
-    sql = (
-        "UPDATE sql_telintec_mod_admin.pos_applications "
-        "SET timestamp = %s, status = %s, created_by = %s, "
-        "reference = %s, history = %s "
-        "WHERE id_order = %s "
-    )
+    sql = "UPDATE sql_telintec_mod_admin.pos_applications SET timestamp = %s, status = %s, created_by = %s, reference = %s, history = %s WHERE id_order = %s "
     val = (
         timestamp,
         status,
@@ -385,25 +383,15 @@ def update_po_application(
     return flag, e, out
 
 
-def update_po_application_status(
-    id_order: int, history: list, status: int, approved: int, data_token
-):
-    sql = (
-        "UPDATE sql_telintec_mod_admin.pos_applications "
-        "SET status = %s, history = %s , approved = %s "
-        "WHERE id_order = %s"
-    )
+def update_po_application_status(id_order: int, history: list, status: int, approved: int, data_token):
+    sql = "UPDATE sql_telintec_mod_admin.pos_applications SET status = %s, history = %s , approved = %s WHERE id_order = %s"
     val = (status, json.dumps(history), approved, id_order)
     flag, error, result = execute_sql(sql, val, 3, data_token)
     return flag, error, result
 
 
 def cancel_po_application(history: list, id_order: int, status: int, data_token):
-    sql = (
-        "UPDATE sql_telintec_mod_admin.pos_applications "
-        "SET status = %s, history = %s "
-        "WHERE id_order = %s"
-    )
+    sql = "UPDATE sql_telintec_mod_admin.pos_applications SET status = %s, history = %s WHERE id_order = %s"
     val = (status, json.dumps(history), id_order)
 
     flag, e, out = execute_sql(sql, val, 3, data_token)
@@ -416,7 +404,8 @@ def insert_purchase_order_item(
     unit_price: float,
     description: str,
     duration_services: str,
-    extra_info: dict, data_token,
+    extra_info: dict,
+    data_token,
     tool=0,
     currency="MXN",
 ):
@@ -445,15 +434,12 @@ def insert_purchase_order_item_from_applications(
     unit_price: float,
     description: str,
     duration_services: str,
-    extra_info: dict, data_token,
+    extra_info: dict,
+    data_token,
     tool=0,
     currency="MXN",
 ):
-    sql = (
-        "INSERT INTO sql_telintec_mod_admin.purchase_order_items "
-        "(order_id, quantity, unit_price, description, duration_services, extra_info, tool, currency) "
-        "VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
-    )
+    sql = "INSERT INTO sql_telintec_mod_admin.purchase_order_items (order_id, quantity, unit_price, description, duration_services, extra_info, tool, currency) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
     val = (
         order_id,
         quantity,
@@ -474,13 +460,10 @@ def update_po_application_item(
     unit_price: float,
     duration_services: int,
     description: str,
-    extra_info: dict, data_token,
+    extra_info: dict,
+    data_token,
 ):
-    sql = (
-        "UPDATE sql_telintec_mod_admin.purchase_order_items "
-        "SET quantity = %s, unit_price = %s, description = %s, duration_services = %s, extra_info = %s "
-        "WHERE id_item = %s"
-    )
+    sql = "UPDATE sql_telintec_mod_admin.purchase_order_items SET quantity = %s, unit_price = %s, description = %s, duration_services = %s, extra_info = %s WHERE id_item = %s"
     val = (
         quantity,
         unit_price,
@@ -500,7 +483,8 @@ def update_po_item(
     unit_price: float,
     description: str,
     duration_services: int,
-    extra_info: dict, data_token,
+    extra_info: dict,
+    data_token,
     currency="MXN",
 ):
     sql = (
@@ -526,11 +510,7 @@ def update_po_item(
 def get_folios_po_from_pattern(patterns: list, data_token):
     regexp_clauses = " OR ".join(["folio LIKE %s"] * len(patterns))
     like_patterns = [f"%{p}%" for p in patterns]
-    sql = (
-        "SELECT id_order, folio "
-        "FROM sql_telintec_mod_admin.purchase_orders "
-        f"WHERE {regexp_clauses}"
-    )
+    sql = f"SELECT id_order, folio FROM sql_telintec_mod_admin.purchase_orders WHERE {regexp_clauses}"
     val = like_patterns
     flag, e, out = execute_sql(sql, tuple(val), 2, data_token)
     return flag, e, out
