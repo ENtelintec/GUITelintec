@@ -54,9 +54,9 @@ def fetch_permissions_from_api():
 
 
 def fectchUsersDBApi(data, data_token):
-    flag, error, result = fetch_employess_user_data(data["status"], data_token)
+    flag, error, result = fetch_employess_user_data(status=data["status"], data_token=data_token)
     if not flag:
-        return {data: [], "error": error, "msg": "Error al obtener los usuarios"}, 400
+        return {data: [], "error": str(error), "msg": "Error al obtener los usuarios"}, 400
     if not isinstance(result, list):
         return {"error": "Error al obtener los usuarios"}, 400
     out = []

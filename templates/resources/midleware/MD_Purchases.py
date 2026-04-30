@@ -1043,6 +1043,7 @@ def download_file_purchase_item_approved(data_token):
                                 "folio_po": delivery["folio"],
                             }
                         )
+                        print(delivery)
                         break
     dict_items = group_item_by_id_inventory(items_with_approved)
     download_path = os.path.join(tempfile.mkdtemp(), os.path.basename("purchase_list.pdf"))
