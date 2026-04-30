@@ -593,7 +593,7 @@ def update_remission_from_api(data, data_token):
     msg = ""
 
     # Retrieve report activity registry:
-    flag, error, result_ra = get_remission_by_id(data["id"], data_token)
+    flag, error, result_ra = get_remission_by_id(data["metadata"]["id"], data_token)
     if not(isinstance(result_ra, list) or isinstance(result_ra, tuple)):
         return {
             "data": None,
@@ -617,7 +617,7 @@ def update_remission_from_api(data, data_token):
             "comment": "Actualización de remision de actividad.",
         }
     )
-    quotation_id = data.get("quotation_id", None)
+    quotation_id = data["metadata"].get("quotation_id", None)
     # Update report activity:
     flag, error, result = update_activity_report(
         report_id=data["metadata"]["id"],
