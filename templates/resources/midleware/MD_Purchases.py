@@ -169,6 +169,7 @@ def fetch_purchase_orders(status, data_token):
         extra_info = json.loads(extra_info)
         metadata_telintec, metadata_supplier = create_metadatas_from_extra_info_po(extra_info)
         order_quotation = extra_info.get("order_quotation", "")
+        folio_supplier = extra_info.get("folio_supplier", "")
         products = json.loads(products)
         products, total_amount = map_products_po(products)
         data_out.append(
@@ -187,6 +188,7 @@ def fetch_purchase_orders(status, data_token):
                 "metadata_telintec": metadata_telintec,
                 "metadata_supplier": metadata_supplier,
                 "order_quotation": order_quotation,
+                "folio_supplier": folio_supplier,
             }
         )
 
@@ -221,6 +223,7 @@ def create_purchaser_order_api(data, data_token):
         "metadata_supplier": data.get("metadata_supplier", {}),
         "sm_id": sm_id,
         "order_quotation": data.get("order_quotation", ""),
+        "folio_supplier": data.get("folio_supplier", ""),
     }
     flag, error, id_order = insert_purchase_order(
         timestamp,
@@ -336,6 +339,7 @@ def update_purchase_order_api(data, data_token):
         "metadata_supplier": data.get("metadata_supplier", {}),
         "sm_id": data.get("sm_id", 0),
         "order_quotation": data.get("order_quotation", ""),
+        "folio_supplier": data.get("folio_supplier", ""),
     }
     flag, error, result = update_purchase_order(
         data["id"],
@@ -651,7 +655,7 @@ def create_po_application_api(data, data_token):
         flag, error, result = insert_purchase_order_item_from_applications(
             id_po_app,
             item["quantity"],
-            0.0,
+            item["unit_price"],
             item["description"],
             "0",
             extra_info,
@@ -744,7 +748,7 @@ def update_po_application_api(data, data_token):
             flag, error, result = insert_purchase_order_item(
                 data["id"],
                 item["quantity"],
-                0.0,
+                item["unit_price"],
                 item["description"],
                 "0",
                 extra_info,
@@ -754,7 +758,7 @@ def update_po_application_api(data, data_token):
             flag, error, result = update_po_application_item(
                 item["id"],
                 item["quantity"],
-                0.0,
+                item["unit_price"],
                 0,
                 item["description"],
                 extra_info,
