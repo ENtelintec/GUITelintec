@@ -123,9 +123,9 @@ def insert_remission(
 ):
     if extra_info is None:
         extra_info = {}
-    if "pedido" not in extra_info:
+    if "pedido" not in extra_info.keys():
         extra_info["pedido"] = pedido
-    if "pedido_exiros" not in extra_info:
+    if "pedido_exiros" not in extra_info.keys():
         extra_info["pedido_exiros"] = pedido_exiros
     sql = (
         "INSERT INTO sql_telintec_mod_admin.activity_reports "
@@ -176,11 +176,15 @@ def update_activity_report(
     contract_id: int | None = None,
     pedido: str = "",
     pedido_exiros: str = "",
+    extra_info: dict | None = None,
 ):
-    extra_info = {
-        "pedido": pedido,
-        "pedido_exiros": pedido_exiros,
-    }
+    if extra_info:
+        extra_info.update({"pedido": pedido, "pedido_exiros": pedido_exiros})
+    else:
+        extra_info = {
+            "pedido": pedido,
+            "pedido_exiros": pedido_exiros,
+        }
     sql = (
         "UPDATE sql_telintec_mod_admin.activity_reports "
         "SET date=%s, folio=%s, client_id=%s, plant=%s, area=%s, "
