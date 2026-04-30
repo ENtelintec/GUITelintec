@@ -371,7 +371,7 @@ def create_extra_info_remision(data: dict):
     extra_info = {}
     extra_info["pedido"] = data["metadata"].get("pedido", "")
     extra_info["pedido_exiros"] = data["metadata"].get("pedido_exiros", "")
-    extra_info["activity"] = data["metadata"].get("activity", "")
+    extra_info["activity"] = data["metadata"].get("activity")
     extra_info["remision"] = data["metadata"].get("remision", "")
     extra_info["remito"] = data["metadata"].get("remito", "")
     extra_info["date_report"] = data["metadata"].get("date_report", "")
@@ -617,7 +617,7 @@ def get_remission_from_api(id_report: int | None, data_token):
                 "contract_id": item[18],
                 "pedido": extra_info.get("pedido", ""),
                 "pedido_exiros": extra_info.get("pedido_exiros", ""),
-                "activity": extra_info.get("activity", ""),
+                "activity": extra_info.get("activity"),
                 "remision": extra_info.get("remision", ""),
                 "remito": extra_info.get("remito", ""),
                 "date_report": extra_info.get("date_report", ""),
