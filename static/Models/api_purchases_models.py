@@ -1097,7 +1097,7 @@ class MetadataControlTableRemissionForm(Form):
     location = StringField("location", [InputRequired()])
     general_description = StringField("general_description", [InputRequired()])
     comments = StringField("comments", [InputRequired()])
-    quotation_id = IntegerField("quotation_id", [], default=0)
+    quotation_id = IntegerField("quotation_id", [], default=None)
     contract_id = IntegerField("contract_id", [], default=0)
     remision = StringField("remision", [], default="")
     remito = StringField("remito", [], default="")
