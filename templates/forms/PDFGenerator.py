@@ -34,9 +34,7 @@ def create_datos_personales(
     master.drawString(dim_x + 10, dim_y - 70 - pady, "Fecha de inicio:")
     master.drawString(dim_x + 10, dim_y - 85 - pady, "Fecha de fin:")
     master.drawString(dim_x + 10, dim_y - 100 - pady, "De entrevista:")
-    master.drawString(
-        dim_x + 10, dim_y - 115 - pady, "Nombre y firma del entrevistador:"
-    )
+    master.drawString(dim_x + 10, dim_y - 115 - pady, "Nombre y firma del entrevistador:")
     master.setFont("Courier", 10)
     master.drawString(dim_x + 180, dim_y - 25 - pady, emp)
     master.drawString(dim_x + 60, dim_y - 40 - pady, puesto)
@@ -115,7 +113,7 @@ def create_header_telintec(
     master: canvas.Canvas,
     img=None,
     title=None,
-    page_x=None,
+    page_x=841.89,
     date_int=None,
     iso_form=1,
     orientation="vertical",
@@ -136,6 +134,7 @@ def create_header_telintec(
     img = img if img is not None else image_logo
     # header
     # bottom line
+    print(start_box_x, position_header_y + height_box - pady, page_x - start_box_x, position_header_y + height_box - pady)
     master.line(
         start_box_x,
         position_header_y + height_box - pady,
@@ -198,9 +197,7 @@ def create_header_telintec(
     else:
         nlines = len(title)
         x_title = page_x / 2 + offset_title[0]
-        y_title = (
-            position_header_y + height_logo / 2 + ((nlines - 1) * title_height) / 2
-        ) + offset_title[1]
+        y_title = (position_header_y + height_logo / 2 + ((nlines - 1) * title_height) / 2) + offset_title[1]
         for index, line in enumerate(title):
             master.setFont("Courier-Bold", title_height - 2 * index)
             master.drawCentredString(x_title, y_title, line)
@@ -308,9 +305,7 @@ def create_header_materials(
     else:
         nlines = len(title)
         x_title = page_x / 2
-        y_title = (
-            position_header_y + height_logo / 2 + ((nlines - 1) * title_height) / 2
-        )
+        y_title = position_header_y + height_logo / 2 + ((nlines - 1) * title_height) / 2
         for index, line in enumerate(title):
             master.setFont("Courier-Bold", title_height - 2 * index)
             master.drawCentredString(x_title, y_title, line)
@@ -341,17 +336,13 @@ def create_header_materials(
     )
     position_header_y -= font_size * 2.5
     master.setFont("Courier", font_size)
-    master.drawString(
-        position_header_x, position_header_y, f"Nombre:  {info_dict['emp_name']}"
-    )
+    master.drawString(position_header_x, position_header_y, f"Nombre:  {info_dict['emp_name']}")
     master.drawString(
         position_header_x,
         position_header_y - font_size * 1.5,
         f"Contrato:  {info_dict['contrato']}",
     )
-    master.drawString(
-        page_x - codes_width - padx, position_header_y, f"Fecha:  {info_dict['date']}"
-    )
+    master.drawString(page_x - codes_width - padx, position_header_y, f"Fecha:  {info_dict['date']}")
     master.drawString(
         page_x - codes_width - padx,
         position_header_y - font_size * 1.5,
@@ -359,9 +350,7 @@ def create_header_materials(
     )
     position_header_y -= font_size * 3.5
     master.setFont("Courier-Bold", font_size)
-    master.drawString(
-        position_header_x, position_header_y, "Datos del quien recibe la devolucion"
-    )
+    master.drawString(position_header_x, position_header_y, "Datos del quien recibe la devolucion")
     position_header_y -= font_size * 2.5
     master.setFont("Courier", font_size)
     master.drawString(
@@ -374,9 +363,7 @@ def create_header_materials(
         position_header_y - font_size * 1.5,
         f"Puesto:  {info_dict['puesto']}",
     )
-    master.drawString(
-        page_x - codes_width - padx, position_header_y, "Tipo de devolición:"
-    )
+    master.drawString(page_x - codes_width - padx, position_header_y, "Tipo de devolición:")
     master.drawString(
         page_x - codes_width - padx,
         position_header_y - font_size * 1.5,

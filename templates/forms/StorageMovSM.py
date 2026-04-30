@@ -53,17 +53,13 @@ def print_headers_table_inventory(pdf, font_size=10, y_init=500, type_form="Move
     x_position = 20
     headers = list(dict_wrappers_headers[type_form].keys())
     for header_key in headers:
-        header = textwrap.wrap(
-            header_key, width=dict_wrappers_headers[type_form][header_key][font_size]
-        )
+        header = textwrap.wrap(header_key, width=dict_wrappers_headers[type_form][header_key][font_size])
         y_position = y_init
         for letter in header:
             pdf.drawString(x_position, y_position, letter)
             y_position -= font_size
         # pdf.drawString(x_position, y_position, header)
-        x_position += (
-            font_size * dict_wrappers_headers[type_form][header_key][font_size] * 0.8
-        )
+        x_position += font_size * dict_wrappers_headers[type_form][header_key][font_size] * 0.8
     return y_init - font_size * 1.5
 
 
@@ -108,17 +104,13 @@ def print_metadata(pdf, metadata, font_size=10, y_init=480, columns=2):
 
         # Restaurar la fuente normal para el valor
         pdf.setFont("Courier", font_size)
-        pdf.drawString(
-            x_position + len(key) * font_size * 0.7, y_position, f"{metadata[key]}"
-        )
+        pdf.drawString(x_position + len(key) * font_size * 0.7, y_position, f"{metadata[key]}")
         x_position += separation
         count += 1
     return y_position - font_size * 2.5
 
 
-def print_products_list(
-    pdf, products, headers, font_size=8, y_last_headers=500.0, pages=1
-):
+def print_products_list(pdf, products, headers, font_size=8, y_last_headers=500.0, pages=1):
     pdf.setFont("Courier", font_size)
     y_init = y_last_headers
     last_y = y_init
@@ -144,15 +136,11 @@ def print_products_list(
                 pdf.drawString(x_position, y_position, letter)
                 y_position -= font_size
                 last_y = y_position if y_position < last_y else last_y
-            x_position += (
-                font_size * dict_wrappers_headers["SM"][headers[index]][font_size] * 0.8
-            )
+            x_position += font_size * dict_wrappers_headers["SM"][headers[index]][font_size] * 0.8
     return last_y - font_size * 1.5, pages
 
 
-def print_footer_signing(
-    pdf, font_size=10, y_position=50.0, margin_bottom=75.0, y_max=a4_y, pages=1
-):
+def print_footer_signing(pdf, font_size=10, y_position=50.0, margin_bottom=75.0, y_max=a4_y, pages=1):
     """
     Función para imprimir un footer en un PDF, creando una nueva página si no hay suficiente espacio.
 
@@ -189,9 +177,7 @@ def print_footer_signing(
 def calculate_last_y(item, y_limit, font_size, y_position, type_form="Movements"):
     headers = list(dict_wrappers_headers[type_form].keys())
     for index, key in enumerate(item):
-        value = textwrap.wrap(
-            str(key), width=dict_wrappers_headers[type_form][headers[index]][font_size]
-        )
+        value = textwrap.wrap(str(key), width=dict_wrappers_headers[type_form][headers[index]][font_size])
         y_hat = y_position - font_size * len(value) * 1.5
         if y_hat < y_limit:
             return True
@@ -204,23 +190,13 @@ def InventoryStoragePDF(dict_data: dict, type_form="Movements"):
     :param dict_data:
     :return:
     """
-    file_name = (
-        "files/inventory_storage.pdf"
-        if dict_data["filename_out"] is None
-        else dict_data["filename_out"]
-    )
+    file_name = "files/inventory_storage.pdf" if dict_data["filename_out"] is None else dict_data["filename_out"]
     pdf = canvas.Canvas(file_name, pagesize=(a4_y, a4_x))
-    pdf.setTitle(
-        "Inventario: Registro de Entradas y Salidas"
-    ) if type_form == "Movements" else pdf.setTitle(
-        "Inventario: Registro de Materiales"
-    )
+    pdf.setTitle("Inventario: Registro de Entradas y Salidas") if type_form == "Movements" else pdf.setTitle("Inventario: Registro de Materiales")
     products = dict_data["products"]
     create_header_telintec(
         pdf,
-        title=["Inventario", "Registro de Entradas y Salidas", "Almacen-Nogalar"]
-        if type_form == "Movements"
-        else ["Inventario", "Registro de Materiales", "Almacen-Nogalar"],
+        title=["Inventario", "Registro de Entradas y Salidas", "Almacen-Nogalar"] if type_form == "Movements" else ["Inventario", "Registro de Materiales", "Almacen-Nogalar"],
         page_x=a4_y,
         iso_form=2,
         orientation="Horizontal",
@@ -257,11 +233,7 @@ def InventoryStoragePDF(dict_data: dict, type_form="Movements"):
                 pdf.drawString(x_position, y_position, letter)
                 y_position -= font_size
                 last_y = y_position if y_position < last_y else last_y
-            x_position += (
-                font_size
-                * dict_wrappers_headers[type_form][headers[index]][font_size]
-                * 0.8
-            )
+            x_position += font_size * dict_wrappers_headers[type_form][headers[index]][font_size] * 0.8
     print_footer_page_count(pdf, pages)
     pdf.save()
     return True
@@ -272,17 +244,11 @@ def ReturnMaterials(dict_data: dict):
     :param dict_data:
     :return:
     """
-    file_name = (
-        "files/return_materials.pdf"
-        if dict_data["filename_out"] is None
-        else dict_data["filename_out"]
-    )
+    file_name = "files/return_materials.pdf" if dict_data["filename_out"] is None else dict_data["filename_out"]
     pdf = canvas.Canvas(file_name, pagesize=(a4_y, a4_x))
     pdf.setTitle("Devolucion de Materiales")
     products = dict_data["products"]
-    create_header_telintec(
-        pdf, title="DEVOLUCION DE MATERIALES", page_x=a4_y, date_int="2023-06-14"
-    )
+    create_header_telintec(pdf, title="DEVOLUCION DE MATERIALES", page_x=a4_y, date_int="2023-06-14")
     pages = 1
     # ----------------------------------------header table of products-----------------------------------------------
     print_headers_table_inventory(pdf, type_form="Materials")
@@ -313,11 +279,7 @@ def ReturnMaterials(dict_data: dict):
                 pdf.drawString(x_position, y_position, letter)
                 y_position -= font_size
                 last_y = y_position if y_position < last_y else last_y
-            x_position += (
-                font_size
-                * dict_wrappers_headers["Materials"][headers[index]][font_size]
-                * 0.8
-            )
+            x_position += font_size * dict_wrappers_headers["Materials"][headers[index]][font_size] * 0.8
 
     pages += 1
     print_footer_page_count(pdf, pages)
@@ -330,11 +292,7 @@ def FileSmPDF(dict_data: dict):
     :param dict_data:
     :return:
     """
-    file_name = (
-        filepath_sm_pdf
-        if dict_data["filename_out"] is None
-        else dict_data["filename_out"]
-    )
+    file_name = filepath_sm_pdf if dict_data["filename_out"] is None else dict_data["filename_out"]
     x_max = a4_x
     y_max = a4_y
     pdf = canvas.Canvas(file_name, pagesize=(x_max, y_max))
@@ -353,18 +311,12 @@ def FileSmPDF(dict_data: dict):
     # ----------------------------------------Metadata---------------------------------------------------------------
     y_last_metada = print_metadata(pdf, dict_data["metadata"], y_init=740)
     # ----------------------------------------header table of products-----------------------------------------------
-    y_last_headers = print_headers_table_inventory(
-        pdf, type_form="SM", y_init=y_last_metada
-    )
+    y_last_headers = print_headers_table_inventory(pdf, type_form="SM", y_init=y_last_metada)
     # ---------------------------------------------products---------------------------------------------------------
     headers = list(dict_wrappers_headers["SM"].keys())
     font_size = 8
-    y_last_products, pages = print_products_list(
-        pdf, products, headers, font_size, y_last_headers, pages
-    )
-    y_last_signs, pages = print_footer_signing(
-        pdf, font_size, y_last_products, pages=pages, y_max=y_max
-    )
+    y_last_products, pages = print_products_list(pdf, products, headers, font_size, y_last_headers, pages)
+    y_last_signs, pages = print_footer_signing(pdf, font_size, y_last_products, pages=pages, y_max=y_max)
     print_footer_page_count(pdf, pages, right_text=f"Folio: {folio}", x_max=x_max)
     pdf.save()
     return True
@@ -381,14 +333,13 @@ def FilePurchaseList(dict_data: dict, path):
     """
     pdf = canvas.Canvas(path, pagesize=(a4_y, a4_x))
     pdf.setTitle("LISTA DE COMPRA")
-
     create_header_telintec(
         pdf,
         title="LISTA DE COMPRA",
         page_x=a4_y,
         iso_form=4,
-        orientation="vertical",
-        offset_title=(-18, 0),
+        orientation="horizontal",
+        offset_title=(0, 0),
     )
 
     pages = 1
@@ -426,11 +377,15 @@ def FilePurchaseList(dict_data: dict, path):
                 pages += 1
                 pdf.setFont("Courier", font_size)
                 last_y = 500
-
-            pdf.drawString(40, last_y, f"Item: {item['name']} ({item['id_item']})")
-            pdf.drawString(250, last_y, f"Cantidad: {item['quantity']}")
-            pdf.drawString(350, last_y, f"Entrega: {item.get('quantity_c', 0)}")
-            pdf.drawString(450, last_y, f"Folio PO: {item.get('folio_po', '')}")
+            lines_name = textwrap.wrap(f"Item: {item['name']} ({item['id_item']})", width=30)
+            line_y = last_y
+            for line in lines_name:
+                pdf.drawString(40, last_y, line)
+                last_y -= font_size
+            pdf.drawString(250, line_y, f"Cantidad: {item['quantity']}")
+            pdf.drawString(350, line_y, f"Entregados: {item.get('quantity_c', 0)}")
+            pdf.drawString(440, line_y, f"Folio PO: {item.get('folio_po', '')}")
+            pdf.drawString(680, line_y, f"SM: {item.get('folio', '')}")
             last_y -= font_size * 1.5
 
     # --- Footer final ---
