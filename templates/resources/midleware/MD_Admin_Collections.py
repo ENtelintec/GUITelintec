@@ -436,7 +436,7 @@ def create_remission_from_api(data, data_token):
         }
     ]
     quotation_id = data["metadata"].get("quotation_id", 0)
-    quotation_id = quotation_id if quotation_id > 0 else None
+    quotation_id = quotation_id if quotation_id and quotation_id > 0 else None
     extra_info = create_extra_info_remision(data)
     flag, error, id_remission = insert_remission(
         date=data["metadata"]["date"],
@@ -472,20 +472,6 @@ def create_remission_from_api(data, data_token):
     results = []
     dict_quotation_items = {}
     if quotation_id is not None:
-        """
-        SELECT qa_item_id, 
-        description, 
-        udm, 
-        quantity, 
-        unit_price, 
-        line_total, 
-        history, 
-        item_c_id, 
-        report_id, 
-        quotation_id 
-        FROM sql_telintec_mod_admin.quotation_activity_items 
-        WHERE quotation_id = %s
-        """
         flag, error, result = get_quotation_activity_items(quotation_id, data_token)
         if not flag:
             return {
@@ -515,32 +501,6 @@ def create_remission_from_api(data, data_token):
             }
             for item in quotation_items
         }
-    #         def update_quotation_activity_item(
-    #     qa_item_id: int,
-    #     quotation_id: int,
-    #     report_id: int,
-    #     item_c_id: int,
-    #     description: str,
-    #     udm: str,
-    #     quantity: float,
-    #     unit_price: float,
-    #     history: list,
-    #     data_token,
-    # ):
-    #     sql = "UPDATE sql_telintec_mod_admin.quotation_activity_items SET description=%s, udm=%s, quantity=%s, unit_price=%s, history=%s, item_c_id=%s, report_id=%s , quotation_id=%s WHERE qa_item_id=%s"
-    #     val = (
-    #         description,
-    #         udm,
-    #         quantity,
-    #         unit_price,
-    #         json.dumps(history),
-    #         item_c_id,
-    #         report_id,
-    #         quotation_id,
-    #         qa_item_id,
-    #     )
-    #     flag, e, out = execute_sql(sql, val, 3, data_token)
-    #     return flag, e, out
 
     for remision_item in data["items"]:
         qa_item_id = remision_item["id"]
