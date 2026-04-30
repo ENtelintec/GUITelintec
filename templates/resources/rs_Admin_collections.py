@@ -488,7 +488,7 @@ class FetchActivitieReportById(Resource):
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         try:
             id_report = int(id_report)
-            if id_report == 0:
+            if id_report <= 0:
                 id_report = None
         except Exception as e:
             print(f"retrieviong all {e}")
