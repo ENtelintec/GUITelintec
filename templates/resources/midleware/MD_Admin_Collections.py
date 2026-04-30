@@ -377,7 +377,7 @@ def create_extra_info_remision(data: dict):
     extra_info["date_report"] = data["metadata"].get("date_report", "")
     extra_info["date_sign"] = data["metadata"].get("date_sign", "")
     extra_info["date_delivery"] = data["metadata"].get("date_delivery", "")
-    return
+    return extra_info
 
 
 def create_remission_control_table_from_api(data, data_token):
@@ -438,8 +438,8 @@ def create_remission_from_api(data, data_token):
     quotation_id = data["metadata"].get("quotation_id", 0)
     quotation_id = quotation_id if quotation_id and quotation_id > 0 else None
     extra_info = create_extra_info_remision(data)
-    print("extra_info:", extra_info)
-    print("data metadata", data["metadata"])
+    # print("extra_info:", extra_info)
+    # print("data metadata", data["metadata"])
     flag, error, id_remission = insert_remission(
         date=data["metadata"]["date"],
         folio=data["metadata"]["folio"],
