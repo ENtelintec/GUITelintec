@@ -288,8 +288,8 @@ def get_all_item_sm_with_supplier_fast_order(data_token):
         SELECT 
             poi.id_item,
             poi.purchase_id,
-            JSON_EXTRACT(poi.extra_info, '$.id_item_sm') AS id_item_sm,
-            JSON_EXTRACT(poi.extra_info, '$.id_inventory') AS id_inventory,
+            CAST(JSON_EXTRACT(poi.extra_info, '$.id_item_sm') AS UNSIGNED) AS id_item_sm,
+            CAST(JSON_EXTRACT(poi.extra_info, '$.id_inventory') AS UNSIGNED) AS id_inventory,
             poi.quantity,
             JSON_UNQUOTE(JSON_EXTRACT(sa.extra_info, '$.fast_order')) AS fast_order,
             poi.description,

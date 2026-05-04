@@ -1063,7 +1063,7 @@ def get_items_with_fast_order(data_token):
         return {"data": [], "error": error}, 400
     if not (isinstance(result, Iterable)):
         return {"data": [], "error": "Error at retrieving data"}, 400
-    data_out=[]
+    data_out = []
     for item in result:
         data_out.append(
             {
@@ -1077,7 +1077,8 @@ def get_items_with_fast_order(data_token):
                 "tool": item[7],
                 "id_supplier": item[8],
                 "name_supplier": item[9],
-                "n_parte": item[10],
+                "unit_price": float(item[10]),
             }
         )
+    print(data_out)
     return {"data": data_out, "error": None}, 200
