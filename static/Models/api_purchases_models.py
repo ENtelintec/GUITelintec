@@ -643,6 +643,16 @@ remission_activity_upsert_metadata_model = api.inherit(
             description="Estatus del reporte",
             example=1,
         ),
+        "project": fields.String(
+            required=False,
+            description="Proyecto asociado al reporte",
+            example="Modernización de línea de producción",
+        ),
+        "project_description": fields.String(
+            required=False,
+            description= "DEscripcion de proyecto",
+            example="Descripcion de proyecto"
+        )
     },
 )
 
@@ -1121,6 +1131,8 @@ class ReportActivityCreateControlTableForm(Form):
 class MetadataReportActivityUpdateForm(MetadataActivityReportForm):
     id = IntegerField("id", [InputRequired()])
     status = IntegerField("status", [number_range(min=-1, message="Invalid status")], default=0)
+    project = StringField("project", [], default="")
+    project_description = StringField("project_description", [], default="")
 
 
 class ReportActivityUpdateForm(Form):

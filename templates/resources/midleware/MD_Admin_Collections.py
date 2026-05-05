@@ -627,6 +627,8 @@ def get_remission_from_api(id_report: int | None, data_token):
                 "date_report": extra_info.get("date_report", ""),
                 "date_sign": extra_info.get("date_sign", ""),
                 "date_delivery": extra_info.get("date_delivery", ""),
+                "project": extra_info.get("project", ""),
+                "project_description": extra_info.get("project_description", ""),
             }
         )
     return {"data": data_out, "msg": "Ok"}, 200
@@ -665,6 +667,11 @@ def update_remission_from_api(data, data_token):
     )
     quotation_id = data["metadata"].get("quotation_id", None)
     # Update report activity:
+    extra_info = {
+        "project": data["metadata"]["project"],
+        "project_description": data["metadata"]["project_description"]
+    }
+
     flag, error, result = update_activity_report(
         report_id=data["metadata"]["id"],
         date=data["metadata"]["date"],
@@ -686,6 +693,7 @@ def update_remission_from_api(data, data_token):
         pedido=data["metadata"].get("pedido", ""),
         pedido_exiros=data["metadata"].get("pedido_exiros", ""),
         data_token=data_token,
+        extra_info=extra_info,
     )
     if not flag:
         return {
