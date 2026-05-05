@@ -247,9 +247,9 @@ def insert_quotation_activity_item(
 
 def update_quotation_activity_item(
     qa_item_id: int,
-    quotation_id: int|None,
+    quotation_id: int | None,
     report_id: int,
-    item_c_id: int|None,
+    item_c_id: int | None,
     description: str,
     udm: str,
     quantity: float,
@@ -342,45 +342,55 @@ def get_quotation_activity_by_id(id_quotation, data_token):
 
 
 def get_remission_by_id(id_report: int | None, data_token):
-    sql = (
-        "SELECT "
-        "ar.id, "
-        "ar.date, "
-        "ar.folio, "
-        "ar.client_id, "
-        "ar.client_company_name, "
-        "ar.client_contact_name, "
-        "ar.client_phone, "
-        "ar.client_email, "
-        "ar.plant, "
-        "ar.area, "
-        "ar.location, "
-        "ar.general_description, "
-        "ar.comments, "
-        "ar.quotation_id, "
-        "ar.status, "
-        "ar.history, "
-        "JSON_ARRAYAGG("
-        "JSON_OBJECT("
-        " 'qa_item_id', qai.qa_item_id, "
-        " 'quotation_id', qai.quotation_id, "
-        " 'report_id', qai.report_id, "
-        " 'item_c_id', qai.item_c_id, "
-        " 'description', qai.description, "
-        " 'udm', qai.udm, "
-        " 'quantity', qai.quantity, "
-        " 'unit_price', qai.unit_price, "
-        " 'line_total', qai.line_total, "
-        " 'history', qai.history "
-        ")) AS items, "
-        "ar.files, "
-        "ar.contract_id, "
-        "ar.extra_info "
-        "FROM sql_telintec_mod_admin.activity_reports AS ar "
-        "LEFT JOIN sql_telintec_mod_admin.quotation_activity_items AS qai ON ar.id = qai.report_id "
-        "WHERE( ar.id = %s  OR %s IS NULL)"
-        "GROUP BY ar.id"
-    )
+    sql = """
+    SELECT 
+        ar.id, 
+        ar.date, 
+        ar.folio, 
+        ar.client_id, 
+        ar.client_company_name, 
+        ar.client_contact_name, 
+        ar.client_phone, 
+        ar.client_email, 
+        ar.plant, 
+        ar.area, 
+        ar.location, 
+        ar.general_description, 
+        ar.comments, 
+        ar.quotation_id, 
+        ar.status, 
+        ar.history, 
+        JSON_REMOVE(
+            COALESCE(
+                JSON_ARRAYAGG(
+                CASE 
+                    WHEN qai.qa_item_id IS NOT NULL THEN JSON_OBJECT(
+                    'qa_item_id', qai.qa_item_id,
+                    'quotation_id', qai.quotation_id,
+                    'report_id', qai.report_id,
+                    'item_c_id', qai.item_c_id,
+                    'description', qai.description,
+                    'udm', qai.udm,
+                    'quantity', qai.quantity,
+                    'unit_price', qai.unit_price,
+                    'line_total', qai.line_total,
+                    'history', qai.history
+                    )
+                    ELSE NULL
+                END
+                ),
+                JSON_ARRAY()
+            ),
+            '$[0]'
+            ) AS items, 
+        ar.files, 
+        ar.contract_id, 
+        ar.extra_info 
+        FROM sql_telintec_mod_admin.activity_reports AS ar 
+        LEFT JOIN sql_telintec_mod_admin.quotation_activity_items AS qai ON ar.id = qai.report_id 
+        WHERE( ar.id = %s  OR %s IS NULL)
+        GROUP BY ar.id"""
+
     val = (id_report, id_report)
     flag, e, out = execute_sql(sql, val, 1) if id_report is not None else execute_sql(sql, val, 2, data_token)
     return flag, e, out

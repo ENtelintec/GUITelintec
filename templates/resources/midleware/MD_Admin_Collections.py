@@ -595,7 +595,9 @@ def get_remission_from_api(id_report: int | None, data_token):
         result = [result]
     data_out = []
     for item in result:
+        print(item)
         extra_info = json.loads(item[19])
+        
         data_out.append(
             {
                 "id": item[0],
