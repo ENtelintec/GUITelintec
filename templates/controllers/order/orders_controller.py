@@ -296,8 +296,11 @@ def get_all_item_sm_with_supplier_fast_order(data_token):
             poi.tool,
             sa.id_supplier,
             sa.name,
-            poi.unit_price
+            poi.unit_price,
+            smi.id_sm
         FROM sql_telintec_mod_admin.purchase_order_items poi
+        LEFT JOIN sql_telintec.sm_items smi
+            ON CAST(JSON_EXTRACT(poi.extra_info, '$.id_item_sm') AS UNSIGNED) = smi.id_item
         JOIN sql_telintec.suppliers_amc sa
             ON sa.id_supplier = CAST(
                 JSON_UNQUOTE(JSON_EXTRACT(poi.extra_info, '$.supplier')) 
