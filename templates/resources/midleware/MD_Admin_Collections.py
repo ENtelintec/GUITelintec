@@ -708,7 +708,7 @@ def update_remission_from_api(data, data_token):
         plant=data["metadata"]["plant"],
         area=data["metadata"]["area"],
         location=data["metadata"]["location"],
-        general_description=data["metadata"]["description"],
+        general_description=data["metadata"]["general_description"],
         comments=data["metadata"]["comments"],
         quotation_id=quotation_id if quotation_id or quotation_id > 0 else None,
         history=history,
