@@ -48,7 +48,7 @@ def check_only_read_conflict(name: str) -> bool:
     return False
 
 
-def get_files_foldes_dropbox(fname: str, online=False) -> tuple[list[str], list[str]]:
+def get_files_foldes_dropbox(fname: str, online=False):
     """
     Gets the files and folders from dropbox
     :param online:
@@ -62,15 +62,13 @@ def get_files_foldes_dropbox(fname: str, online=False) -> tuple[list[str], list[
             dbx = dropbox.Dropbox(secrets["APP_DROPBOX_TOKEN"])
             print("Exploring: ", fname)
             data = dbx.files_list_folder(path=fname)
+            if data is None:
+                raise Exception
             for entry in data.entries:
                 if hasattr(entry, "shared_folder_id"):
-                    folders.append(entry.name) if not check_only_read_conflict(
-                        entry.name
-                    ) else None
+                    folders.append(str(entry.name)) if not check_only_read_conflict(entry.name) else None
                 else:
-                    files.append(entry.name) if not check_only_read_conflict(
-                        entry.name
-                    ) else None
+                    files.append(str(entry.name)) if not check_only_read_conflict(entry.name) else None
         except Exception as e:
             print(e)
             print("Error dropbox")
@@ -106,7 +104,7 @@ def map_dropbox_folders(fname: str, father=None, online=False):
     return root_dir
 
 
-def save_directory_index(rpaths: dict, exclude: list = None, online=False, father=""):
+def save_directory_index(rpaths: dict, exclude: list | None = None, online=False, father=""):
     """
     Saves the directory to a file
     :param father:
@@ -126,7 +124,7 @@ def save_directory_index(rpaths: dict, exclude: list = None, online=False, fathe
                 pickle.dump(directory, f)
 
 
-def load_directory_file(paths: dict, exclude: list = None, local=False) -> list:
+def load_directory_file(paths: dict, exclude: list | None = None, local=False) -> list:
     """
     Loads the directory from a file
     :param local:
@@ -255,9 +253,7 @@ def make_empty_zeros(txt: str) -> float:
     return out
 
 
-def clean_data_contract(
-    status, fechas, comments, extras, primas, in_door, out_door
-) -> tuple[list, list, list, list, list, list, list]:
+def clean_data_contract(status, fechas, comments, extras, primas, in_door, out_door) -> tuple[list, list, list, list, list, list, list]:
     """
     Cleans data from contract.csv
 
@@ -292,9 +288,7 @@ def clean_parenthesis_txt(name: str) -> str:
     return name
 
 
-def get_data_from_cache_sheet(
-    filepath: str, excel_file, sheet: str, inital_skip_rows
-) -> list | None:
+def get_data_from_cache_sheet(filepath: str, excel_file, sheet: str, inital_skip_rows) -> list | None:
     """
     Gets data from cache
     :param filepath:
@@ -310,9 +304,7 @@ def get_data_from_cache_sheet(
     df = pd.read_excel(excel_file, skiprows=skip_rows, sheet_name=sheet)
     df.to_csv(filepath)
     data = []
-    with open(
-        filepath, mode="r", encoding="utf-8"
-    ) as csv_file:  # "r" represents the read mode
+    with open(filepath, mode="r", encoding="utf-8") as csv_file:  # "r" represents the read mode
         reader = csv.reader(csv_file)  # this is the reader object
         for item in reader:
             data.append(item)
@@ -395,7 +387,11 @@ def extract_data_file_contracts(filename: str) -> dict:
         bad_names = []
         for sheet in sheet_names:
             data = get_data_from_cache_sheet(
-                cache_oct_file_temp_path, excel_file, sheet, inital_skip_rows
+                cache_oct_file_temp_path,
+                excel_file,
+                # pyrefly: ignore [bad-argument-type]
+                sheet,
+                inital_skip_rows,
             )
             if data is None:
                 continue
@@ -416,19 +412,17 @@ def extract_data_file_contracts(filename: str) -> dict:
                         name,
                     ) = get_data_from_sliced(data_aux)
                     if name != "":
-                        status, fechas, comments, extras, primas, in_door, out_door = (
-                            clean_data_contract(
-                                status,
-                                fechas,
-                                comments,
-                                extras,
-                                primas,
-                                in_door,
-                                out_door,
-                            )
+                        status, fechas, comments, extras, primas, in_door, out_door = clean_data_contract(
+                            status,
+                            fechas,
+                            comments,
+                            extras,
+                            primas,
+                            in_door,
+                            out_door,
                         )
                         if name not in contracts[sheet].keys():
-                            id2, name_db = get_employee_id_name(name)
+                            id2, name_db = get_employee_id_name(name, None)
                             contracts[sheet][name] = {}
                             contracts[sheet][name]["id"] = id2
                             contracts[sheet][name]["name_db"] = name_db
@@ -459,9 +453,7 @@ def extract_data_file_contracts(filename: str) -> dict:
     return contracts
 
 
-def get_name_id_contracts(
-    contracts: dict, name: str
-) -> tuple[Any, str] | tuple[None, str]:
+def get_name_id_contracts(contracts: dict, name: str) -> tuple[Any, str] | tuple[None, str]:
     """
     Gets the name and id of an employee from a dictionary.
     :param contracts:
@@ -470,13 +462,8 @@ def get_name_id_contracts(
     """
     for contract in contracts.keys():
         for emp in contracts[contract].keys():
-            if (
-                name.lower() == contracts[contract][emp]["name_db"].lower()
-                or name.lower() == emp.lower()
-            ):
-                return contracts[contract][emp]["id"], contracts[contract][emp][
-                    "name_db"
-                ]
+            if name.lower() == contracts[contract][emp]["name_db"].lower() or name.lower() == emp.lower():
+                return contracts[contract][emp]["id"], contracts[contract][emp]["name_db"]
     return None, name
 
 
@@ -507,9 +494,7 @@ def generate_table_from_dict_contracts(contracts: dict):
                             emp_name,
                             contracts[con_name][emp_name]["id"],
                             contracts[con_name][emp_name]["fechas"][i],
-                            clean_status_contracts(
-                                contracts[con_name][emp_name]["status"][i]
-                            ),
+                            clean_status_contracts(contracts[con_name][emp_name]["status"][i]),
                             contracts[con_name][emp_name]["extras"][i],
                             contracts[con_name][emp_name]["primas"][i],
                             contracts[con_name][emp_name]["in_door"][i],
@@ -540,34 +525,23 @@ def extract_fichajes_file(filename: str):
     """
     try:
         skip_rows = [0, 1, 2]
-        cols = (
-            [0, 1, 2]
-            if "Ternium" in filename
-            else [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
-        )
+        cols = [0, 1, 2] if "Ternium" in filename else [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
         warnings.simplefilter("ignore")
         # noinspection PyTypeChecker
         df = pd.read_excel(filename, skiprows=skip_rows)
         if "Ternium" in filename:
             df.dropna(inplace=True)
             df["Fecha/hora"] = clean_date(df["Fecha/hora"].tolist())
-            df["Fecha/hora"] = pd.to_datetime(
-                df["Fecha/hora"], format="mixed", dayfirst=True
-            )
+            df["Fecha/hora"] = pd.to_datetime(df["Fecha/hora"], format="mixed", dayfirst=True)
             df.dropna(subset=["Fecha/hora"], inplace=True)
-            df["status"], df["name"], df["card"], df["in_out"] = clean_text(
-                df["Texto"].to_list()
-            )
+            df["status"], df["name"], df["card"], df["in_out"] = clean_text(df["Texto"].to_list())
+            # pyrefly: ignore [missing-attribute]
             df["in_out"] = clean_in_out(df["in_out"].tolist())
         else:
             df.dropna(inplace=True)
             df = df[df["Fecha de fichaje a la entrada"] != "--"]
             df = df[df["Fecha de fichaje a la salida"] != "--"]
-            df["Fecha/hora_in"] = (
-                df["Fecha de fichaje a la entrada"]
-                + " "
-                + df["Hora de fichaje a la entrada"]
-            )
+            df["Fecha/hora_in"] = df["Fecha de fichaje a la entrada"] + " " + df["Hora de fichaje a la entrada"]
             df.drop(
                 columns=[
                     "Fecha de fichaje a la entrada",
@@ -575,26 +549,16 @@ def extract_fichajes_file(filename: str):
                 ],
                 inplace=True,
             )
-            df["Fecha/hora_out"] = (
-                df["Fecha de fichaje a la salida"]
-                + " "
-                + df["Hora de fichaje a la salida"]
-            )
+            df["Fecha/hora_out"] = df["Fecha de fichaje a la salida"] + " " + df["Hora de fichaje a la salida"]
             df.drop(
                 columns=["Fecha de fichaje a la salida", "Hora de fichaje a la salida"],
                 inplace=True,
             )
-            df["Fecha/hora_in"] = pd.to_datetime(
-                df["Fecha/hora_in"], format="mixed", dayfirst=True
-            )
-            df["Fecha/hora_out"] = pd.to_datetime(
-                df["Fecha/hora_out"], format="mixed", dayfirst=True
-            )
+            df["Fecha/hora_in"] = pd.to_datetime(df["Fecha/hora_in"], format="mixed", dayfirst=True)
+            df["Fecha/hora_out"] = pd.to_datetime(df["Fecha/hora_out"], format="mixed", dayfirst=True)
             df["Fecha"] = pd.to_datetime(df["Fecha"], format="mixed", dayfirst=True)
             df["name"] = df["Nombre"].str.upper() + " " + df["Apellido"].str.upper()
-            df["Horas trabajadas"] = transform_hours_to_float(
-                df["Horas trabajadas"].tolist()
-            )
+            df["Horas trabajadas"] = transform_hours_to_float(df["Horas trabajadas"].tolist())
             df.drop(columns=["Nombre", "Apellido"], inplace=True)
         return df
     except Exception as e:
@@ -620,15 +584,7 @@ class DirectoryDbp:
         return len(self.children)
 
     def __str__(self):
-        return (
-            self.name
-            + " "
-            + str(self.father)
-            + " "
-            + str(len(self.children))
-            + " "
-            + str(len(self.files))
-        )
+        return self.name + " " + str(self.father) + " " + str(len(self.children)) + " " + str(len(self.files))
 
     def __repr__(self):
         return self.name
@@ -639,11 +595,7 @@ def get_dict_fichaje(dict_list: list[dict], data: list[dict]):
         dict_f = dict_list[i]
         if item_dict is not None:
             for timestamp_key, item in item_dict.items():
-                timestamp = (
-                    pd.to_datetime(timestamp_key)
-                    if isinstance(timestamp_key, str)
-                    else timestamp_key
-                )
+                timestamp = pd.to_datetime(timestamp_key) if isinstance(timestamp_key, str) else timestamp_key
                 year = str(timestamp.year)
                 month = str(timestamp.month)
                 day = str(timestamp.day)
@@ -723,7 +675,7 @@ def get_dic_from_list_fichajes(data_fichaje: tuple, **kwargs) -> tuple:
     Right now just acepted type of files is oct and ternium data.
     :return: Tuple(dic_list_missing, dic_list_late, dic_list_extra, dic_list_primes)
     """
-    days_missing_o, days_late_o, days_extra_o, primes_o, normal_o, early_o, pasive_o = (
+    days_missing_o, days_late_o, days_extra_o, primes_o, normal_o, _, _ = (
         None,
         None,
         None,
@@ -732,7 +684,7 @@ def get_dic_from_list_fichajes(data_fichaje: tuple, **kwargs) -> tuple:
         None,
         None,
     )
-    days_missing_t, days_late_t, days_extra_t, primes_t, normal_t, early_t, pasive_t = (
+    days_missing_t, days_late_t, days_extra_t, primes_t, normal_t, _, _ = (
         None,
         None,
         None,
@@ -741,9 +693,7 @@ def get_dic_from_list_fichajes(data_fichaje: tuple, **kwargs) -> tuple:
         None,
         None,
     )
-    days_missing_f, days_late_f, days_extra_f, primes_f, normal_f, early_f, pasive_f = (
-        data_fichaje
-    )
+    days_missing_f, days_late_f, days_extra_f, primes_f, normal_f, early_f, pasive_f = data_fichaje
     for key, value in kwargs.items():
         if key == "oct_file":
             days_missing_o, days_late_o, days_extra_o, primes_o, normal_o = value
@@ -756,41 +706,38 @@ def get_dic_from_list_fichajes(data_fichaje: tuple, **kwargs) -> tuple:
         {},
         {},
     )
-    days_missing_dict, days_late_dict, days_extra_dict, primes_dict, normal_dic = (
-        get_dict_fichaje(
-            [
-                days_missing_dict,
-                days_late_dict,
-                days_extra_dict,
-                primes_dict,
-                normal_dic,
-            ],
-            [days_missing_f, days_late_f, days_extra_f, primes_f, normal_t],
-        )
+    days_missing_dict, days_late_dict, days_extra_dict, primes_dict, normal_dic = get_dict_fichaje(
+        [
+            days_missing_dict,
+            days_late_dict,
+            days_extra_dict,
+            primes_dict,
+            normal_dic,
+        ],
+        # pyrefly: ignore [bad-argument-type]
+        [days_missing_f, days_late_f, days_extra_f, primes_f, normal_t],
     )
-    days_missing_dict, days_late_dict, days_extra_dict, primes_dict, normal_dic = (
-        get_dict_oct(
-            [
-                days_missing_dict,
-                days_late_dict,
-                days_extra_dict,
-                primes_dict,
-                normal_dic,
-            ],
-            [days_missing_o, days_late_o, days_extra_o, primes_o, normal_o],
-        )
+    days_missing_dict, days_late_dict, days_extra_dict, primes_dict, normal_dic = get_dict_oct(
+        [
+            days_missing_dict,
+            days_late_dict,
+            days_extra_dict,
+            primes_dict,
+            normal_dic,
+        ],
+        # pyrefly: ignore [bad-argument-type]
+        [days_missing_o, days_late_o, days_extra_o, primes_o, normal_o],
     )
-    days_missing_dict, days_late_dict, days_extra_dict, primes_dict, normal_dic = (
-        get_dict_fichaje(
-            [
-                days_missing_dict,
-                days_late_dict,
-                days_extra_dict,
-                primes_dict,
-                normal_dic,
-            ],
-            [days_missing_t, days_late_t, days_extra_t, primes_t, normal_t],
-        )
+    days_missing_dict, days_late_dict, days_extra_dict, primes_dict, normal_dic = get_dict_fichaje(
+        [
+            days_missing_dict,
+            days_late_dict,
+            days_extra_dict,
+            primes_dict,
+            normal_dic,
+        ],
+        # pyrefly: ignore [bad-argument-type]
+        [days_missing_t, days_late_t, days_extra_t, primes_t, normal_t],
     )
     return days_missing_dict, days_late_dict, days_extra_dict, primes_dict, normal_dic
 
@@ -818,11 +765,7 @@ def get_cumulative_data_fichajes_dict(dic_data: dict, date=None) -> tuple[int, i
         for year in dic_data.keys():
             for month in dic_data[year].keys():
                 for day in dic_data[year][month].keys():
-                    if (
-                        date.month <= int(month)
-                        and date.year <= int(year)
-                        and date.day <= int(day)
-                    ):
+                    if date.month <= int(month) and date.year <= int(year) and date.day <= int(day):
                         value = dic_data[year][month][day]["value"]
                         total_days += 1
                         if value is not None and value != "":
@@ -945,18 +888,10 @@ def update_cache_data(cache_data, new_data, id_emp_up=None, deletion=False):
                             extras_dic.update(extras_dic2)
                             primas_dic.update(primas_dic2)
                             normal_dic.update(normal_dic2)
-                        new_faltas, new_faltas_value = (
-                            get_cumulative_data_fichajes_dict(faltas_dic)
-                        )
-                        new_lates, new_lates_value = get_cumulative_data_fichajes_dict(
-                            lates_dic
-                        )
-                        new_extras, new_extras_value = (
-                            get_cumulative_data_fichajes_dict(extras_dic)
-                        )
-                        new_primas, new_primas_value = (
-                            get_cumulative_data_fichajes_dict(primas_dic)
-                        )
+                        new_faltas, new_faltas_value = get_cumulative_data_fichajes_dict(faltas_dic)
+                        new_lates, new_lates_value = get_cumulative_data_fichajes_dict(lates_dic)
+                        new_extras, new_extras_value = get_cumulative_data_fichajes_dict(extras_dic)
+                        new_primas, new_primas_value = get_cumulative_data_fichajes_dict(primas_dic)
                         aux = (
                             id_emp,
                             name,
@@ -996,7 +931,7 @@ def update_cache_data(cache_data, new_data, id_emp_up=None, deletion=False):
                 break
 
 
-def update_fichajes_resume_cache(filepath: str, data=None, just_file=False):
+def update_fichajes_resume_cache(filepath: str, data: list, just_file=False):
     """
     Updates the fichajes resume cache
     :param just_file:
@@ -1009,6 +944,8 @@ def update_fichajes_resume_cache(filepath: str, data=None, just_file=False):
     else:
         error = None
         fichajes_resume = data
+    if not (isinstance(fichajes_resume, list)):
+        return False, "Badn data db"
     if len(fichajes_resume) == 0 or error is not None:
         fichajes_resume = data
         print("Replazing cache into db")
@@ -1047,12 +984,8 @@ def update_fichajes_resume_cache(filepath: str, data=None, just_file=False):
                     new_value = []
                     for i in range(len(dicts_old)):
                         dicts_old[i].update(dicts_new[i])
-                        new_total.append(
-                            get_cumulative_data_fichajes_dict(dicts_old[i])[0]
-                        )
-                        new_value.append(
-                            get_cumulative_data_fichajes_dict(dicts_old[i])[1]
-                        )
+                        new_total.append(get_cumulative_data_fichajes_dict(dicts_old[i])[0])
+                        new_value.append(get_cumulative_data_fichajes_dict(dicts_old[i])[1])
                     aux = (
                         id_emp,
                         name,
@@ -1165,9 +1098,7 @@ def get_fichajes_resume_cache(filepath, is_hard_update=False) -> tuple[list, boo
         try:
             with open(filepath, "rb") as file:
                 fichajes_resume = pickle.load(file)
-            flag = (
-                False if len(fichajes_resume) == 0 or fichajes_resume is None else True
-            )
+            flag = False if len(fichajes_resume) == 0 or fichajes_resume is None else True
         except Exception as e:
             print("Error at getting cache file: ", e)
             fichajes_resume = []
@@ -1192,24 +1123,12 @@ def get_fichajes_resume_cache(filepath, is_hard_update=False) -> tuple[list, boo
                 normal = row[9]
                 early = row[10]
                 pasiva = row[11]
-                new_faltas, new_faltas_value = get_cumulative_data_fichajes_dict(
-                    json.loads(absences)
-                )
-                new_tardanzas, new_tardanzas_value = get_cumulative_data_fichajes_dict(
-                    json.loads(lates)
-                )
-                new_extras, new_extras_value = get_cumulative_data_fichajes_dict(
-                    json.loads(extras)
-                )
-                new_primas, new_primas_value = get_cumulative_data_fichajes_dict(
-                    json.loads(primes)
-                )
-                new_early, new_early_value = get_cumulative_data_fichajes_dict(
-                    json.loads(early)
-                )
-                new_pasiva, new_pasiva_value = get_cumulative_data_fichajes_dict(
-                    json.loads(pasiva)
-                )
+                new_faltas, new_faltas_value = get_cumulative_data_fichajes_dict(json.loads(absences))
+                new_tardanzas, new_tardanzas_value = get_cumulative_data_fichajes_dict(json.loads(lates))
+                new_extras, new_extras_value = get_cumulative_data_fichajes_dict(json.loads(extras))
+                new_primas, new_primas_value = get_cumulative_data_fichajes_dict(json.loads(primes))
+                new_early, new_early_value = get_cumulative_data_fichajes_dict(json.loads(early))
+                new_pasiva, new_pasiva_value = get_cumulative_data_fichajes_dict(json.loads(pasiva))
                 new_row = (
                     id_emp,
                     name.title() + lastname.title(),
@@ -1400,9 +1319,7 @@ def unify_data_display_fichaje(data: list[tuple[any, float, str]]) -> dict:
         if isinstance(value, pd.Timedelta):
             value = value.total_seconds() / 3600
         comment = "Sin registro\n" if comment is None else comment
-        timestamp = (
-            pd.to_datetime(timestamp) if isinstance(timestamp, str) else timestamp
-        )
+        timestamp = pd.to_datetime(timestamp) if isinstance(timestamp, str) else timestamp
         year = timestamp.year
         month = timestamp.month
         day = timestamp.day
@@ -1504,9 +1421,7 @@ def unify_data_employee(
             continue
         if isinstance(group, dict):
             for k, v in group.items():
-                late_data.append(
-                    (k, v[0], f"------Fichaje------\nPuerta entrada: {v[1]}")
-                )
+                late_data.append((k, v[0], f"------Fichaje------\nPuerta entrada: {v[1]}"))
         else:
             for item in group:
                 if isinstance(item, tuple):
@@ -1521,9 +1436,7 @@ def unify_data_employee(
             continue
         if isinstance(group, dict):
             for k, v in group.items():
-                extra_data.append(
-                    (k, v[0], f"------Fichaje------\nPuerta salida: {v[1]}")
-                )
+                extra_data.append((k, v[0], f"------Fichaje------\nPuerta salida: {v[1]}"))
         else:
             for item in group:
                 if isinstance(item, tuple):
@@ -1658,9 +1571,7 @@ def get_worked_days(df_name: pd.DataFrame, type_f=1, month=None, date_max=None):
                 days_for_work.remove(day_worked.day)
         days_not_worked = get_date_from_days_list(last_date, days_for_work)
         date_lower_limit = datetime(last_date.year, month, 1)
-        days_worked = df_name[df_name["Fecha/hora"] >= date_lower_limit][
-            ["Fecha/hora", "Puerta"]
-        ].values.tolist()
+        days_worked = df_name[df_name["Fecha/hora"] >= date_lower_limit][["Fecha/hora", "Puerta"]].values.tolist()
         # days_worked = df_name[["Fecha/hora", "Puerta"]].values.tolist()
         return days_worked, days_not_worked
 
@@ -1710,68 +1621,40 @@ def get_info_f_file_name(
     # set entrance hour
     aux_hour = int(hour_in) + int(window_time_in.get() / 60)
     aux_min = int(min_in) + int(window_time_in.get() % 60)
-    limit_hour = pd.Timestamp(
-        year=1, month=1, day=1, hour=aux_hour, minute=aux_min, second=0
-    )
+    limit_hour = pd.Timestamp(year=1, month=1, day=1, hour=aux_hour, minute=aux_min, second=0)
     # count the number of rows where the person is late
-    late_name = df_name[
-        (df_name["Fecha/hora_in"].dt.time > limit_hour.time())
-        & (df_name["Fecha/hora_in"] <= date_max)
-    ]
+    late_name = df_name[(df_name["Fecha/hora_in"].dt.time > limit_hour.time()) & (df_name["Fecha/hora_in"] <= date_max)]
     count_late = len(late_name)
     # calculate the time difference between the entrance hour and the limit hour
     late_dic = {}
     for i in late_name[["Fecha/hora_in", "Dispositivo de fichaje de entrada"]].values:
-        time_str = pd.Timestamp(
-            year=1, month=1, day=1, hour=i[0].hour, minute=i[0].minute, second=0
-        )
+        time_str = pd.Timestamp(year=1, month=1, day=1, hour=i[0].hour, minute=i[0].minute, second=0)
         late_dic[i[0]] = (time_str - limit_hour, i[1])
     # filter extra hours at entrance
-    extra_name_in = df_name[
-        (df_name["Fecha/hora_in"].dt.time <= limit_hour.time())
-        & (df_name["Fecha/hora_in"] <= date_max)
-    ]
+    extra_name_in = df_name[(df_name["Fecha/hora_in"].dt.time <= limit_hour.time()) & (df_name["Fecha/hora_in"] <= date_max)]
     count_extra = 0
     count_extra += len(extra_name_in)
     extra_dic = {}
-    for i in extra_name_in[
-        ["Fecha/hora_in", "Dispositivo de fichaje de entrada"]
-    ].values:
-        time_str = pd.Timestamp(
-            year=1, month=1, day=1, hour=i[0].hour, minute=i[0].minute, second=0
-        )
+    for i in extra_name_in[["Fecha/hora_in", "Dispositivo de fichaje de entrada"]].values:
+        time_str = pd.Timestamp(year=1, month=1, day=1, hour=i[0].hour, minute=i[0].minute, second=0)
         extra_dic[i[0]] = (limit_hour - time_str, f"Entrada-->{i[1]}")
     # set exit hour
     aux_hour = int(hour_out) + int(window_time_out.get() / 60)
     aux_min = int(min_out) + int(window_time_out.get() % 60)
-    limit_hour = pd.Timestamp(
-        year=1, month=1, day=1, hour=aux_hour, minute=aux_min, second=0
-    )
+    limit_hour = pd.Timestamp(year=1, month=1, day=1, hour=aux_hour, minute=aux_min, second=0)
     # count the number of rows where the person is with extra time
-    extra_name_out = df_name[
-        (df_name["Fecha/hora_out"].dt.time > limit_hour.time())
-        & (df_name["Fecha/hora_out"] <= date_max)
-    ]
+    extra_name_out = df_name[(df_name["Fecha/hora_out"].dt.time > limit_hour.time()) & (df_name["Fecha/hora_out"] <= date_max)]
     count_extra += len(extra_name_out)
     # calculate the time difference between the entrance hour and the extra hour
     extra_dic = {} if extra_dic is None else extra_dic
-    for i in extra_name_out[
-        ["Fecha/hora_out", "Dispositivo de fichaje de salida"]
-    ].values:
-        time_str = pd.Timestamp(
-            year=1, month=1, day=1, hour=i[0].hour, minute=i[0].minute, second=0
-        )
+    for i in extra_name_out[["Fecha/hora_out", "Dispositivo de fichaje de salida"]].values:
+        time_str = pd.Timestamp(year=1, month=1, day=1, hour=i[0].hour, minute=i[0].minute, second=0)
         extra_dic[i[0]] = (time_str - limit_hour, f"Salida-->{i[1]}")
     # early leavings
-    early_name = df_name[
-        (df_name["Fecha/hora_out"].dt.time < limit_hour.time())
-        & (df_name["Fecha/hora_out"] <= date_max)
-    ]
+    early_name = df_name[(df_name["Fecha/hora_out"].dt.time < limit_hour.time()) & (df_name["Fecha/hora_out"] <= date_max)]
     early_dic = {}
     for i in early_name[["Fecha/hora_out", "Dispositivo de fichaje de salida"]].values:
-        time_str = pd.Timestamp(
-            year=1, month=1, day=1, hour=i[0].hour, minute=i[0].minute, second=0
-        )
+        time_str = pd.Timestamp(year=1, month=1, day=1, hour=i[0].hour, minute=i[0].minute, second=0)
         early_dic[i[0]] = (limit_hour - time_str, f"Salida {i[1]}")
     return (
         days_worked,
@@ -1796,25 +1679,11 @@ def get_info_t_file_name(
 ):
     if not flag:
         return "NA", "NA", "NA", "NA", {}, {}, [], [], {}
-    date_min = pd.Timestamp(
-        year=date_max.year, month=date_max.month, day=1, hour=0, minute=0, second=0
-    )
-    df_name = df[
-        (df["name"] == name)
-        & (df["Fecha/hora"] <= date_max)
-        & (df["Fecha/hora"] >= date_min)
-    ]
+    date_min = pd.Timestamp(year=date_max.year, month=date_max.month, day=1, hour=0, minute=0, second=0)
+    df_name = df[(df["name"] == name) & (df["Fecha/hora"] <= date_max) & (df["Fecha/hora"] >= date_min)]
     days_worked, days_not_worked = get_worked_days(df_name, 2, month, date_max=date_max)
-    df_name_entrada = df_name[
-        (df_name["in_out"] == "DENTRO")
-        & (df["Fecha/hora"] <= date_max)
-        & (df["Fecha/hora"] >= date_min)
-    ]
-    df_name_salida = df_name[
-        (df_name["in_out"] == "FUERA")
-        & (df["Fecha/hora"] <= date_max)
-        & (df["Fecha/hora"] >= date_min)
-    ]
+    df_name_entrada = df_name[(df_name["in_out"] == "DENTRO") & (df["Fecha/hora"] <= date_max) & (df["Fecha/hora"] >= date_min)]
+    df_name_salida = df_name[(df_name["in_out"] == "FUERA") & (df["Fecha/hora"] <= date_max) & (df["Fecha/hora"] >= date_min)]
     worked_days = len(df_name["name"].to_list())
     min_in = clocks[0]["entrada"][0].get()
     hour_in = clocks[0]["entrada"][1].get()
@@ -1822,23 +1691,14 @@ def get_info_t_file_name(
     hour_out = clocks[1]["salida"][1].get()
     # filter worked days
     df_name.set_index("Fecha/hora", inplace=True)
-    worked_intime = len(
-        df_name.between_time(
-            start_time=f"{hour_in}:{min_in}:00", end_time=f"{hour_out}:{min_out}:00"
-        )
-    )
+    worked_intime = len(df_name.between_time(start_time=f"{hour_in}:{min_in}:00", end_time=f"{hour_out}:{min_out}:00"))
     # filter late days and extra hours
     # set entrance hour
     aux_hour = int(hour_in) + int(window_time_in.get() / 60)
     aux_min = int(min_in) + int(window_time_in.get() % 60)
-    limit_hour = pd.Timestamp(
-        year=1, month=1, day=1, hour=aux_hour, minute=aux_min, second=0
-    )
+    limit_hour = pd.Timestamp(year=1, month=1, day=1, hour=aux_hour, minute=aux_min, second=0)
     # count the number of rows where the person is late
-    late_name = df_name_entrada[
-        (df_name_entrada["Fecha/hora"].dt.time > limit_hour.time())
-        & (df_name_entrada["Fecha/hora"] <= date_max)
-    ]
+    late_name = df_name_entrada[(df_name_entrada["Fecha/hora"].dt.time > limit_hour.time()) & (df_name_entrada["Fecha/hora"] <= date_max)]
     count = len(late_name)
     # calculate the time difference between the entrance hour and the late hour
     time_late = {}
@@ -1855,10 +1715,7 @@ def get_info_t_file_name(
         time_late[i[0]] = (diff, i[1])
     # calculate the number of days when the person worked extra hours
     extra_time = {}
-    extra_name_in = df_name_salida[
-        (df_name_salida["Fecha/hora"].dt.time < limit_hour.time())
-        & (df_name_salida["Fecha/hora"] <= date_max)
-    ]
+    extra_name_in = df_name_salida[(df_name_salida["Fecha/hora"].dt.time < limit_hour.time()) & (df_name_salida["Fecha/hora"] <= date_max)]
     count2 = len(extra_name_in)
     for i in extra_name_in[["Fecha/hora", "Puerta"]].values:
         time_str = pd.Timestamp(
@@ -1874,13 +1731,8 @@ def get_info_t_file_name(
     # set hour for leaving
     aux_hour = int(hour_out) + int(window_time_out.get() / 60)
     aux_min = int(min_out) + int(window_time_out.get() % 60)
-    limit_hour2 = pd.Timestamp(
-        year=1, month=1, day=1, hour=aux_hour, minute=aux_min, second=0
-    )
-    extra_name = df_name_salida[
-        (df_name_salida["Fecha/hora"].dt.time > limit_hour2.time())
-        & (df_name_salida["Fecha/hora"] <= date_max)
-    ]
+    limit_hour2 = pd.Timestamp(year=1, month=1, day=1, hour=aux_hour, minute=aux_min, second=0)
+    extra_name = df_name_salida[(df_name_salida["Fecha/hora"].dt.time > limit_hour2.time()) & (df_name_salida["Fecha/hora"] <= date_max)]
     count2 += len(extra_name)
     extra_time = {} if extra_time is None else extra_time
     for i in extra_name[["Fecha/hora", "Puerta"]].values:
@@ -1894,10 +1746,7 @@ def get_info_t_file_name(
         )
         diff = time_str - limit_hour2
         extra_time[i[0]] = (diff, i[1])
-    ealy_name = df_name_salida[
-        (df_name_salida["Fecha/hora"].dt.time < limit_hour2.time())
-        & (df_name_salida["Fecha/hora"] <= date_max)
-    ]
+    ealy_name = df_name_salida[(df_name_salida["Fecha/hora"].dt.time < limit_hour2.time()) & (df_name_salida["Fecha/hora"] <= date_max)]
     early_time = {}
     for i in ealy_name[["Fecha/hora", "Puerta"]].values:
         time_str = pd.Timestamp(
@@ -1966,18 +1815,14 @@ def get_info_bitacora(df: pd.DataFrame, name: str, id_emp: int, flag, date_limit
         lates.append((val, df_atraso["Comentario"].iloc[i], df_atraso["Valor"].iloc[i]))
     normals = []
     for i, val in enumerate(df_normal["Timestamp"]):
-        normals.append(
-            (val, df_normal["Comentario"].iloc[i], df_normal["Valor"].iloc[i])
-        )
+        normals.append((val, df_normal["Comentario"].iloc[i], df_normal["Valor"].iloc[i]))
     early = []
     for i, val in enumerate(df_early["Timestamp"]):
         early.append((val, df_early["Comentario"].iloc[i], df_early["Valor"].iloc[i]))
     contract = df_name["Contrato"].iloc[0] if len(df_name) > 0 else "NA"
     pasive = []
     for i, val in enumerate(df_pasive["Timestamp"]):
-        pasive.append(
-            (val, df_pasive["Comentario"].iloc[i], df_pasive["Valor"].iloc[i])
-        )
+        pasive.append((val, df_pasive["Comentario"].iloc[i], df_pasive["Valor"].iloc[i]))
     return (
         days_falta,
         days_extra,
@@ -2064,9 +1909,7 @@ def divide_pairs(files_pairs: list):
     return oct_files, ternium_files
 
 
-def get_list_files(
-    files, filename=None
-) -> tuple[tuple[list[Any], list[Any]], list[Any]]:
+def get_list_files(files, filename=None) -> tuple[tuple[list[Any], list[Any]], list[Any]]:
     files_pairs = []
     files_names_f = []
     if filename is None:
@@ -2077,17 +1920,13 @@ def get_list_files(
             selected = files_names_f[0]
             for k, v in files.items():
                 if k == selected:
-                    files_pairs = (
-                        v["pairs"] if v["pairs"] is not None else ["No pair avaliable"]
-                    )
+                    files_pairs = v["pairs"] if v["pairs"] is not None else ["No pair avaliable"]
     else:
         for k, v in files.items():
             if "Fichaje" in v["report"]:
                 files_names_f.append(k)
                 if k == filename:
-                    files_pairs = (
-                        v["pairs"] if v["pairs"] is not None else ["No pair avaliable"]
-                    )
+                    files_pairs = v["pairs"] if v["pairs"] is not None else ["No pair avaliable"]
     files_pairs = divide_pairs(files_pairs)
     return files_pairs, files_names_f
 
@@ -2164,22 +2003,13 @@ def extract_data_encuesta(data: list, type_q=2):
                         continue
                     elif isinstance(items_list, list):
                         range_items = range(items_list[0], items_list[1] + 1)
-                        answers = (
-                            v["answer"]
-                            if isinstance(v["answer"], list)
-                            else [[i, 0] for i in range(len(list(range_items)))]
-                        )
+                        answers = v["answer"] if isinstance(v["answer"], list) else [[i, 0] for i in range(len(list(range_items)))]
                         if number not in range_items:
                             continue
                         options = v["options"]
                         options = [op.title() for op in options]
                         value = record_dict[key]
-                        if (
-                            value.lower() in options
-                            or value.upper() in options
-                            or value.title() in options
-                            or value in options
-                        ):
+                        if value.lower() in options or value.upper() in options or value.title() in options or value in options:
                             index = range_items.index(number)
                             index_val = options.index(value.title())
                             answers[index] = [index, index_val]

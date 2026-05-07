@@ -34,7 +34,7 @@ from templates.controllers.fichajes.fichajes_controller import (
     create_new_emp_fichaje,
 )
 from templates.controllers.material_request.sm_controller import get_sm_entries
-from templates.controllers.product.p_and_s_controller import (
+from templates.controllers.product.products_controller import (
     get_products_w_reservations,
 )
 

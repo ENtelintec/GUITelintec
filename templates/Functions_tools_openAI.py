@@ -12,15 +12,15 @@ from templates.controllers.employees.employees_controller import (
     get_employee_info,
 )
 from templates.controllers.fichajes.fichajes_controller import get_fichaje_emp_AV
-from templates.controllers.product.p_and_s_controller import (
+from templates.controllers.product.products_controller import (
     get_product_categories,
     get_products_almacen,
     get_high_stock_products,
     get_low_stock_products,
     get_no_stock_products,
-    get_product_movement_amc,
     get_supply_inv_amc,
 )
+from templates.controllers.product.movements_controller import get_product_movement_amc
 from templates.controllers.supplier.suppliers_controller import get_supplier_amc
 
 

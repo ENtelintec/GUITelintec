@@ -18,7 +18,7 @@ from static.constants import (
     timezone_software,
 )
 from templates.Functions_Utils import create_notification_permission
-from templates.controllers.fichajes.bitacora_rh_controller import (
+from templates.controllers.employees.bitacora_rh_controller import (
     get_all_bitacora_rh_db,
     insert_bitacora_rh_db,
     update_bitacora_rh_db,

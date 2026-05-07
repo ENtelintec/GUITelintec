@@ -24,7 +24,7 @@ from templates.Functions_Utils import create_notification_permission_notGUI
 from templates.controllers.contracts.contracts_controller import (
     get_contracts_abreviations_db,
 )
-from templates.controllers.departments.heads_controller import check_if_gerente
+from templates.controllers.heads.heads_controller import check_if_gerente
 from templates.controllers.material_request.sm_controller import (
     get_sm_by_id,
     get_sm_by_folio,

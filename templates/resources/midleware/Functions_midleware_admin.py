@@ -2,8 +2,8 @@
 from templates.controllers.supplier.suppliers_controller import (
     update_extra_info_supplier_db,
 )
-from templates.controllers.departments.heads_controller import check_if_gerente_admin
-from templates.controllers.departments.heads_controller import check_if_auxiliar
+from templates.controllers.heads.heads_controller import check_if_gerente_admin
+from templates.controllers.heads.heads_controller import check_if_auxiliar
 from templates.controllers.supplier.suppliers_controller import delete_item_amc
 from datetime import datetime
 from templates.controllers.supplier.suppliers_controller import get_items_supplier_by_id
@@ -46,7 +46,7 @@ from templates.controllers.customer.customers_controller import (
     update_customer_db,
     delete_customer_db,
 )
-from templates.controllers.departments.heads_controller import (
+from templates.controllers.heads.heads_controller import (
     get_heads_db,
     insert_head_DB,
     update_head_DB,
@@ -57,9 +57,6 @@ from templates.controllers.departments.heads_controller import (
     check_if_leader,
 )
 from templates.controllers.material_request.sm_controller import get_folios_by_pattern
-from templates.controllers.purchases.purchases_admin_controller import (
-    get_purchases_admin_db,
-)
 from templates.controllers.supplier.suppliers_controller import (
     create_supplier_amc,
     update_supplier_amc,

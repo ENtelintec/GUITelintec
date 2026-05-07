@@ -1,5 +1,5 @@
-from templates.controllers.activities.remisions_controller import get_quotation_activity_items
-from templates.controllers.activities.remisions_controller import (
+from templates.controllers.presales.remisions_controller import get_quotation_activity_items
+from templates.controllers.presales.remisions_controller import (
     update_report_activity_files,
 )
 import boto3
@@ -11,16 +11,16 @@ from botocore.exceptions import ClientError
 from botocore.exceptions import NoCredentialsError
 from static.constants import log_file_admin_collecions
 from templates.Functions_Utils import create_notification_permission_notGUI
-from templates.controllers.activities.remisions_controller import update_activity_report
-from templates.controllers.activities.remisions_controller import (
+from templates.controllers.presales.remisions_controller import update_activity_report
+from templates.controllers.presales.remisions_controller import (
     get_remission_by_id,
 )
-from templates.controllers.activities.remisions_controller import delete_remission_db
-from templates.controllers.activities.remisions_controller import (
+from templates.controllers.presales.remisions_controller import delete_remission_db
+from templates.controllers.presales.remisions_controller import (
     update_items_quotation_w_remission,
 )
-from templates.controllers.activities.remisions_controller import insert_remission
-from templates.controllers.activities.remisions_controller import (
+from templates.controllers.presales.remisions_controller import insert_remission
+from templates.controllers.presales.remisions_controller import (
     delete_quotation_activity,
     delete_quotation_activity_item,
     get_quotation_activity_by_id,
@@ -28,7 +28,7 @@ from templates.controllers.activities.remisions_controller import (
     update_quotation_activity,
     update_quotation_activity_item,
 )
-from templates.controllers.activities.remisions_controller import (
+from templates.controllers.presales.remisions_controller import (
     insert_quotation_activity,
 )
 from templates.controllers.contracts.contracts_controller import (
@@ -79,7 +79,7 @@ def create_quotation_activity_from_api(data, data_token):
         return {
             "data": None,
             "msg": "error al crear registro de cotizacion de actividad",
-            "error": str(error),
+            "error": error,
         }, 400
     msg += f"Actividad de cotización creada correctamente con id: {id_quotation}"
 
@@ -108,7 +108,7 @@ def create_quotation_activity_from_api(data, data_token):
             data_token=data_token,
         )
         flag_list.append(flag)
-        errors.append(str(error))
+        errors.append(error)
         results.append(id_item)
     if flag_list.count(True) == len(flag_list):
         msg += "Items de actividad de cotización creada correctamente"
@@ -134,7 +134,7 @@ def update_quotation_activity_from_api(data, data_token):
         return {
             "data": None,
             "msg": "Error al obtener registro de cotización de actividad",
-            "error": str(error),
+            "error": error,
         }, 400
     # get history
     history = json.loads(result_qa[14]) if result_qa[14] else []  # pyrefly: ignore
@@ -142,14 +142,14 @@ def update_quotation_activity_from_api(data, data_token):
         return {
             "data": None,
             "msg": "Error al obtener historial de la cotización",
-            "error": str(error),
+            "error": error,
         }, 400
     items = json.loads(result_qa[15]) if result_qa[15] else []  # pyrefly: ignore
     if len(items) <= 0:
         return {
             "data": None,
             "msg": "Error al obtener ítems de la cotización",
-            "error": str(error),
+            "error": error,
         }, 400
     time_zone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
@@ -192,7 +192,9 @@ def update_quotation_activity_from_api(data, data_token):
                     flag, error, result = delete_quotation_activity_item(item_id, data_token)
                 else:
                     # update old item
-                    history_item = dict_items[item_id]["history"] if dict_items[item_id]["history"] else []
+                    history_item = (
+                        dict_items[item_id]["history"] if dict_items[item_id]["history"] else []
+                    )
                     if len(history_item) <= 0:
                         flag, error, result = (
                             False,
@@ -221,7 +223,7 @@ def update_quotation_activity_from_api(data, data_token):
                             data_token=data_token,
                         )
             flags.append(flag)
-            errors.append(str(error))
+            errors.append(error)
             results.append(item_id)
     if flags.count(True) == len(flags):
         msg += "Items de actividad de cotización actualizados correctamente: " + str(results)
@@ -265,9 +267,11 @@ def update_quotation_activity_from_api(data, data_token):
         return {
             "data": None,
             "msg": "Error al actualizar registro de cotización de actividad, pero item/s actualizados",
-            "error": str(error),
+            "error": error,
         }, 400
-    create_notification_permission(msg, data_token, ["administracion"], "Cotización de actividad actualizada", user, 0)
+    create_notification_permission(
+        msg, data_token, ["administracion"], "Cotización de actividad actualizada", user, 0
+    )
     write_log_file(log_file_admin_collecions, msg, data_token)
     return {"data": result, "msg": "Ok", "error": None}, 200
 
@@ -292,7 +296,9 @@ def get_quotations_from_api(id_quotation: int | None, data_token):
         data_out.append(
             {
                 "id": item[0],
-                "date_activity": item[1].strftime(format_timestamps) if not isinstance(item[1], str) else item[1],
+                "date_activity": item[1].strftime(format_timestamps)
+                if not isinstance(item[1], str)
+                else item[1],
                 "folio": item[2],
                 "client_id": item[3],
                 "client_company_name": item[4],
@@ -323,7 +329,7 @@ def delete_quotation_activity_from_api(data, data_token):
         return {
             "data": None,
             "msg": "Error al obtener registro de cotización de actividad",
-            "error": str(error),
+            "error": error,
         }, 400
 
     # Delete items:
@@ -332,7 +338,7 @@ def delete_quotation_activity_from_api(data, data_token):
         return {
             "data": None,
             "msg": "Error al obtener ítems de la cotización",
-            "error": str(error),
+            "error": error,
         }, 400
     flags = []
     errors = []
@@ -340,7 +346,7 @@ def delete_quotation_activity_from_api(data, data_token):
     for item in items:
         flag, error, result = delete_quotation_activity_item(item["qa_item_id"], data_token)
         flags.append(flag)
-        errors.append(str(error))
+        errors.append(error)
         results.append(result)
     if flags.count(True) == len(flags):
         msg += "Ítems de actividad de cotización eliminados correctamente"
@@ -359,10 +365,12 @@ def delete_quotation_activity_from_api(data, data_token):
         return {
             "data": None,
             "msg": "Error al eliminar registro de cotización de actividad",
-            "error": str(error),
+            "error": error,
         }, 400
     msg += f"Actividad de cotización eliminada correctamente con id: {id_quotation}"
-    create_notification_permission(msg, data_token, ["administracion"], "Cotización de actividad eliminada", user, 0)
+    create_notification_permission(
+        msg, data_token, ["administracion"], "Cotización de actividad eliminada", user, 0
+    )
     write_log_file(log_file_admin_collecions, msg, data_token)
     return {"data": result, "msg": "Ok"}, 200
 
@@ -377,6 +385,10 @@ def create_extra_info_remision(data: dict):
     extra_info["date_report"] = data["metadata"].get("date_report", "")
     extra_info["date_sign"] = data["metadata"].get("date_sign", "")
     extra_info["date_delivery"] = data["metadata"].get("date_delivery", "")
+    extra_info["user"] = data["metadata"].get("user", "")
+    extra_info["project"] = (data["metadata"].get("project", ""),)
+    extra_info["project_description"] = data["metadata"].get("project_description")
+
     return extra_info
 
 
@@ -415,10 +427,16 @@ def create_remission_control_table_from_api(data, data_token):
         return {
             "data": None,
             "msg": "Error al crear reporte de actividad",
-            "error": str(error),
+            "error": error,
         }, 400
-    msg = "Item en tabla de control creado correctamente con id: " + str(id_remission) + f" por el usuario {data_token['name']}."
-    create_notification_permission(msg, data_token, ["administracion"], "Item de tabla de control creado", user, 0)
+    msg = (
+        "Item en tabla de control creado correctamente con id: "
+        + str(id_remission)
+        + f" por el usuario {data_token['name']}."
+    )
+    create_notification_permission(
+        msg, data_token, ["administracion"], "Item de tabla de control creado", user, 0
+    )
     write_log_file(log_file_admin_collecions, msg, data_token)
     return {"data": id_remission, "msg": "Ok"}, 201
 
@@ -575,7 +593,9 @@ def create_remission_from_api(data, data_token):
             msg += ", pero error al actualizar ciertos items de cotización"
         else:
             msg += ", pero error al crear ciertos items de cotización"
-    create_notification_permission(msg, data_token, ["administracion"], "Remision de actividad creado", user, 0)
+    create_notification_permission(
+        msg, data_token, ["administracion"], "Remision de actividad creado", user, 0
+    )
     write_log_file(log_file_admin_collecions, msg, data_token)
     return {"data": results, "msg": "Ok"}, 201
 
@@ -597,11 +617,13 @@ def get_remission_from_api(id_report: int | None, data_token):
     for item in result:
         print(item)
         extra_info = json.loads(item[19])
-        
+
         data_out.append(
             {
                 "id": item[0],
-                "date": item[1].strftime(format_timestamps) if not isinstance(item[1], str) else item[1],
+                "date": item[1].strftime(format_timestamps)
+                if not isinstance(item[1], str)
+                else item[1],
                 "folio": item[2],
                 "client_id": item[3],
                 "client_company_name": item[4],
@@ -629,6 +651,7 @@ def get_remission_from_api(id_report: int | None, data_token):
                 "date_delivery": extra_info.get("date_delivery", ""),
                 "project": extra_info.get("project", ""),
                 "project_description": extra_info.get("project_description", ""),
+                "user": extra_info.get("user", ""),
             }
         )
     return {"data": data_out, "msg": "Ok"}, 200
@@ -652,7 +675,7 @@ def update_remission_from_api(data, data_token):
         return {
             "data": None,
             "msg": "Error al obtener registro de reporte de actividad",
-            "error": str(error),
+            "error": error,
         }, 400
 
     history = result_ra[15]
@@ -667,10 +690,11 @@ def update_remission_from_api(data, data_token):
     )
     quotation_id = data["metadata"].get("quotation_id", None)
     # Update report activity:
-    extra_info = {
-        "project": data["metadata"]["project"],
-        "project_description": data["metadata"]["project_description"]
-    }
+    # extra_info = {
+    #     "project": data["metadata"]["project"],
+    #     "project_description": data["metadata"]["project_description"],
+    # }
+    extra_info = create_extra_info_remision(data)
 
     flag, error, result = update_activity_report(
         report_id=data["metadata"]["id"],
@@ -699,7 +723,7 @@ def update_remission_from_api(data, data_token):
         return {
             "data": None,
             "msg": "Error al actualizar registro de remision  de actividad",
-            "error": str(error),
+            "error": error,
         }, 400
     msg = "Remision de actividad actualizado correctamente con id: " + str(data["metadata"]["id"])
     items_report = json.loads(result_ra[16]) if result_ra[16] else []
@@ -755,7 +779,7 @@ def update_remission_from_api(data, data_token):
                 data_token=data_token,
             )
         flag_list.append(flag)
-        errors.append(str(error))
+        errors.append(error)
         results.append(result)
     if flag_list.count(True) == len(flag_list):
         msg += " y items de de remision actualizados correctamente"
@@ -763,7 +787,9 @@ def update_remission_from_api(data, data_token):
         msg += " pero error al actualizar ciertos items de remision"
     else:
         msg += " pero error al actualizar ciertos items de remision"
-    create_notification_permission(msg, data_token, ["administracion"], "Remision de actividad actualizado", user, 0)
+    create_notification_permission(
+        msg, data_token, ["administracion"], "Remision de actividad actualizado", user, 0
+    )
     write_log_file(log_file_admin_collecions, msg, data_token)
     return {"data": result, "msg": "Ok", "error": None}, 200
 
@@ -779,7 +805,7 @@ def delete_remission_from_api(data, data_token):
         return {
             "data": None,
             "msg": "Error al obtener registro de reporte de actividad",
-            "error": str(error),
+            "error": error,
         }, 400
 
     # Delete items:
@@ -788,7 +814,7 @@ def delete_remission_from_api(data, data_token):
         return {
             "data": None,
             "msg": "Error al obtener ítems del reporte",
-            "error": str(error),
+            "error": error,
         }, 400
     flags = []
     errors = []
@@ -796,7 +822,7 @@ def delete_remission_from_api(data, data_token):
     for item in items:
         flag, error, result = delete_quotation_activity_item(item["qa_item_id"], data_token)
         flags.append(flag)
-        errors.append(str(error))
+        errors.append(error)
         results.append(result)
     if flags.count(True) == len(flags):
         msg += "Ítems de reporte de actividad eliminados correctamente"
@@ -815,10 +841,12 @@ def delete_remission_from_api(data, data_token):
         return {
             "data": None,
             "msg": "Error al eliminar registro de reporte de actividad",
-            "error": str(error),
+            "error": error,
         }, 400
     msg += f"Reporte de actividad eliminado correctamente con id: {id_remission}"
-    create_notification_permission(msg, data_token, ["administracion"], "Reporte de actividad eliminado", user, 0)
+    create_notification_permission(
+        msg, data_token, ["administracion"], "Reporte de actividad eliminado", user, 0
+    )
     write_log_file(log_file_admin_collecions, msg, data_token)
     return {"data": result, "msg": "Ok"}, 200
 
@@ -852,7 +880,7 @@ def create_activity_report_attachment_api(data, data_token):
         return {
             "data": None,
             "msg": "Error at getting report by id",
-            "error": str(error),
+            "error": error,
         }, 400
     if not isinstance(result, list):
         return {
@@ -924,14 +952,18 @@ def create_activity_report_attachment_api(data, data_token):
             "path": path_aws,
         }
     )
-    flag, error, rows_updated = update_report_activity_files(data["id_report"], history, status, files, data_token)
+    flag, error, rows_updated = update_report_activity_files(
+        data["id_report"], history, status, files, data_token
+    )
     if not flag:
         return {
             "data": None,
             "msg": "Error at updating history report but file uploaded",
-            "error": str(error),
+            "error": error,
         }, 400
-    create_notification_permission_notGUI(msg, data_token, ["administracion", "operaciones", "sgi"], data_token.get("emp_id"), 0)
+    create_notification_permission_notGUI(
+        msg, data_token, ["administracion", "operaciones", "sgi"], data_token.get("emp_id"), 0
+    )
     write_log_file(log_file_admin_collecions, msg, data_token)
     return {"data": path_aws, "msg": msg}, 201
 
@@ -942,7 +974,7 @@ def download_report_activity_attachment_api(data, data_token):
         return {
             "data": None,
             "msg": "Error at getting checklist vehicular by id",
-            "error": str(error),
+            "error": error,
         }, 400
     if not isinstance(result, list):
         return {

@@ -21,11 +21,7 @@ def update_fichaje_DB(
 ):
     early = early if early is not None else {}
     pasiva = pasiva if pasiva is not None else {}
-    sql = (
-        "UPDATE sql_telintec.fichajes "
-        "SET absences = %s, lates = %s, extras = %s, primes = %s, normal = %s, early = %s, pasiva = %s "
-        "WHERE emp_id = %s"
-    )
+    sql = "UPDATE sql_telintec.fichajes SET absences = %s, lates = %s, extras = %s, primes = %s, normal = %s, early = %s, pasiva = %s WHERE emp_id = %s"
     val = (
         json.dumps(absences),
         json.dumps(lates),
@@ -48,23 +44,19 @@ def create_new_emp_fichaje(emp_id: int, contract: str):
 
 
 def insert_new_fichaje_DB(
-    emp_id: int,
-    contract: str,
-    absences: dict,
-    lates: dict,
-    extras: dict,
-    primes: dict,
-    normals: dict,
+    emp_id,
+    contract,
+    absences,
+    lates,
+    extras,
+    primes,
+    normals,
     early=None,
     pasiva=None,
 ):
     early = early if early is not None else {}
     pasiva = pasiva if pasiva is not None else {}
-    sql = (
-        "INSERT INTO sql_telintec.fichajes "
-        "(emp_id, contract, absences, lates, extras, primes, normal, early, pasiva) "
-        "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)"
-    )
+    sql = "INSERT INTO sql_telintec.fichajes (emp_id, contract, absences, lates, extras, primes, normal, early, pasiva) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)"
     val = (
         emp_id,
         contract,
@@ -80,26 +72,14 @@ def insert_new_fichaje_DB(
     return flag, error, result
 
 
-def get_fichaje_DB(emp_id: int):
+def get_fichaje_DB(emp_id: int | str):
     if emp_id == -1:
         emp_id = "%"
-        sql = (
-            "SELECT "
-            "ficha_id, emp_id, contract, "
-            "absences, lates, extras, primes, normal, early, pasiva "
-            "FROM sql_telintec.fichajes "
-            "WHERE emp_id like %s"
-        )
+        sql = "SELECT ficha_id, emp_id, contract, absences, lates, extras, primes, normal, early, pasiva FROM sql_telintec.fichajes WHERE emp_id like %s"
         val = (emp_id,)
         flag, error, result = execute_sql(sql, val, 2)
     else:
-        sql = (
-            "SELECT "
-            "ficha_id, emp_id, contract, "
-            "absences, lates, extras, primes, normal, early, pasiva "
-            "FROM sql_telintec.fichajes "
-            "WHERE emp_id = %s"
-        )
+        sql = "SELECT ficha_id, emp_id, contract, absences, lates, extras, primes, normal, early, pasiva FROM sql_telintec.fichajes WHERE emp_id = %s"
         val = (emp_id,)
         flag, error, result = execute_sql(sql, val, 1)
     return flag, error, result
@@ -151,7 +131,7 @@ def get_all_fichajes_op():
     return flag, error, result
 
 
-def get_fichaje_emp_AV(name: str, id_e: int):
+def get_fichaje_emp_AV(name: str, id_e: int | None):
     columns = (
         "id_employee",
         "absences",
@@ -161,13 +141,9 @@ def get_fichaje_emp_AV(name: str, id_e: int):
         "extras_value[h]",
         "primes",
     )
-    sql = (
-        "SELECT emp_id, absences, lates, extras, primes "
-        "FROM sql_telintec.fichajes "
-        "WHERE emp_id = %s"
-    )
+    sql = "SELECT emp_id, absences, lates, extras, primes FROM sql_telintec.fichajes WHERE emp_id = %s"
     if id_e is None:
-        id_e, name_db = get_employee_id_name(name)
+        id_e, name_db = get_employee_id_name(name, data_token=None)
         if id_e is None:
             return False, "No employee in the DB", [], columns
     val = (id_e,)

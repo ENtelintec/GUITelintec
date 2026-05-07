@@ -34,13 +34,14 @@ class VerticalText(Flowable):
     def draw(self):
         c = self.canv
         c.rotate(90)
-        fs = c._fontsize
+        fs = c._fontsize  # pyrefly: ignore
         c.translate(1, -fs / 1.2)  # canvas._leading?
         c.drawString(0, 0, self.text)
 
     def wrap(self, aW, aH):
         canv = self.canv
-        fn, fs = canv._fontname, canv._fontsize
+        fn, fs = canv._fontname, canv._fontsize  # pyrefly: ignore
+        # pyrefly: ignore [missing-attribute]
         return canv._leading, 1 + canv.stringWidth(self.text, fn, fs)
 
 
@@ -149,6 +150,7 @@ def BarcodeUsps4s(filepath, code, x, y, size):
     Create barcode examples and embed in a PDF
     """
     c = canvas.Canvas(filepath, pagesize=size)
+    # pyrefly: ignore [missing-attribute]
     barcode_usps4s = usps4s.FIM(code)
     barcode_usps4s.drawOn(c, 1 * mm, 1 * mm)
     return barcode_usps4s
@@ -159,6 +161,7 @@ def BarCodeEcc200DataMatrix(filepath, code, x, y, size):
     Create barcode examples and embed in a PDF
     """
     c = canvas.Canvas(filepath, pagesize=size)
+    # pyrefly: ignore [missing-attribute]
     barcode_ecc200datamatrix = ecc200datamatrix.DataMatrixWidget(code)
     # bounds = barcode_ecc200datamatrix.getBounds()
     # width = bounds[2] - bounds[0]
@@ -177,9 +180,7 @@ def BarCodeQR(c, code, x, y, y_offset, width_q, height_q):
     bounds = qr_code.getBounds()
     width = bounds[2] - bounds[0]
     height = bounds[3] - bounds[1]
-    d = Drawing(
-        width_q, height_q, transform=[width_q / width, 0, 0, width_q / height, 0, 0]
-    )
+    d = Drawing(width_q, height_q, transform=[width_q / width, 0, 0, width_q / height, 0, 0])
     d.add(qr_code)
     renderPDF.draw(d, c, x, y + y_offset)
     return qr_code
@@ -242,13 +243,12 @@ def selectBarcodeType(
     return barcode
 
 
-def create_BarCodeFormat(
-    code, sku, name, filepath, type_code, pagesize="default", orientation="horizontal"
-):
+def create_BarCodeFormat(code, sku, name, filepath, type_code, pagesize="default", orientation="horizontal"):
     pagesize = get_page_size(pagesize)
     pagesize = [pagesize[0] * mm, pagesize[1] * mm]
     pagesize = (pagesize[1], pagesize[0]) if orientation == "horizontal" else pagesize
-    c = canvas.Canvas(filepath, pagesize=pagesize)
+    # pyrefly: ignore [bad-argument-type]
+    c = canvas.Canvas(filepath, pagesize=pagesize)  
     draw_border(c, 0, 0, pagesize[0], pagesize[1])
     c.setFont("Helvetica", 14)
     c.drawCentredString(
@@ -263,14 +263,10 @@ def create_BarCodeFormat(
         c.drawString(5 * mm, pagesize[1] - 30 - i * font_name, line)
     c.setFont("Helvetica", 6)
     c.drawString(5 * mm, pagesize[1] - len(name_list) * font_name - 30, f"SKU: {sku}")
-    barcode = selectBarcodeType(
-        c, type_code, code, filepath=filepath, pagesize=pagesize
-    )
+    barcode = selectBarcodeType(c, type_code, code, filepath=filepath, pagesize=pagesize)
     height_barcode = barcode.height if barcode else 10
     c.setFont("Helvetica", 7)
-    c.drawCentredString(
-        pagesize[0] / 2, pagesize[1] / 2 - 20 - height_barcode / 2 - 8, code
-    )
+    c.drawCentredString(pagesize[0] / 2, pagesize[1] / 2 - 20 - height_barcode / 2 - 8, code)
     c.save()
     print("Barcode created: ", filepath)
 
@@ -328,6 +324,7 @@ def create_one_code(**kwargs):
     pagesize = [pagesize[0] * mm, pagesize[1] * mm]
     pagesize = (pagesize[1], pagesize[0]) if orientation == "horizontal" else pagesize
     # -------------------------------------create canvas-------------------------------------
+    # pyrefly: ignore [bad-argument-type]
     c = canvas.Canvas(filepath, pagesize=pagesize)
     # -------------------------------------create border-------------------------------------
     if border_on:
@@ -442,6 +439,7 @@ def create_multiple_barcodes_products(code_list, sku_list, name_list, **kwargs):
     pagesize = [pagesize[0] * mm, pagesize[1] * mm]
     pagesize = (pagesize[1], pagesize[0]) if orientation == "horizontal" else pagesize
     # -------------------------------------create canvas-------------------------------------
+    # pyrefly: ignore [bad-argument-type]
     c = canvas.Canvas(filepath, pagesize=pagesize)
     for name, code, sku in zip(name_list, code_list, sku_list):
         # -------------------------------------create border-------------------------------------
@@ -505,6 +503,7 @@ def create_multiple_barcodes(
     pagesize = get_page_size(pagesize)
     pagesize = [pagesize[0] * mm, pagesize[1] * mm]
     pagesize = (pagesize[1], pagesize[0]) if orientation == "horizontal" else pagesize
+    # pyrefly: ignore [bad-argument-type]
     c = canvas.Canvas(filepath, pagesize=pagesize)
     for code, sku, name in zip(code_list, sku_list, name_list):
         draw_border(c, 0, 0, pagesize[0], pagesize[1])
@@ -520,12 +519,8 @@ def create_multiple_barcodes(
         for i, line in enumerate(name_list):
             c.drawString(5 * mm, pagesize[1] - 30 - i * font_name, line)
         c.setFont("Helvetica", 6)
-        c.drawString(
-            5 * mm, pagesize[1] - len(name_list) * font_name - 30, f"SKU: {sku}"
-        )
-        barcode = selectBarcodeType(
-            c, type_code, code, filepath=filepath, pagesize=pagesize
-        )
+        c.drawString(5 * mm, pagesize[1] - len(name_list) * font_name - 30, f"SKU: {sku}")
+        barcode = selectBarcodeType(c, type_code, code, filepath=filepath, pagesize=pagesize)
         height_barcode = barcode.height if barcode else 10
         c.setFont("Helvetica", 7)
         c.drawCentredString(
@@ -554,11 +549,8 @@ def create_two_code_one_page_multiple(
         pagesize_whole[0] * mm,
         pagesize_whole[1] * mm,
     ]
-    pagesize_whole = (
-        (pagesize_whole[1], pagesize_whole[0])
-        if orientation == "horizontal"
-        else pagesize_whole
-    )
+    pagesize_whole = (pagesize_whole[1], pagesize_whole[0]) if orientation == "horizontal" else pagesize_whole
+    # pyrefly: ignore [bad-argument-type]
     c = canvas.Canvas(filepath, pagesize=pagesize_whole)
     code_per_page = 2
     counter = 0
@@ -578,10 +570,7 @@ def create_two_code_one_page_multiple(
         for i, line in enumerate(name_list_aux[0:2]):
             c.drawString(
                 2 * mm,
-                pagesize_whole[1]
-                - 3 * mm
-                - (pagesize_whole[1] / 2) * counter
-                - i * font_name,
+                pagesize_whole[1] - 3 * mm - (pagesize_whole[1] / 2) * counter - i * font_name,
                 line,
             )
         sku_list_aux = wrap_text(str(sku).upper(), 10)
@@ -603,19 +592,13 @@ def create_two_code_one_page_multiple(
         text_sku.drawOn(
             c,
             2 * mm,
-            pagesize_whole[1]
-            - pagesize_whole[1] / 2
-            + 1 * mm
-            - (pagesize_whole[1] / 2) * counter,
+            pagesize_whole[1] - pagesize_whole[1] / 2 + 1 * mm - (pagesize_whole[1] / 2) * counter,
         )
         text_code = VerticalText(text=str(code))
         text_code.drawOn(
             c,
             pagesize_whole[0] - 5 * mm,
-            pagesize_whole[1]
-            - pagesize_whole[1] / 2
-            + 1 * mm
-            - (pagesize_whole[1] / 2) * counter,
+            pagesize_whole[1] - pagesize_whole[1] / 2 + 1 * mm - (pagesize_whole[1] / 2) * counter,
         )
 
         counter += 1
@@ -632,11 +615,7 @@ def create_multiple_element_from_pdf(pagesize, filepath, **kwargs):
     orientation_image = kwargs.get("orientation_image", "horizontal")
     orientation = kwargs.get("orientation", "vertical")
     pagesize = (pagesize[1], pagesize[0]) if orientation == "horizontal" else pagesize
-    pagesize_image = (
-        (pagesize_image[1], pagesize_image[0])
-        if orientation_image == "horizontal"
-        else pagesize_image
-    )
+    pagesize_image = (pagesize_image[1], pagesize_image[0]) if orientation_image == "horizontal" else pagesize_image
     x_init = kwargs.get("x_init", 0)
     y_init = kwargs.get("y_init", 0)
     columns = kwargs.get("columns", 2)
@@ -660,11 +639,7 @@ def create_multiple_element_from_pdf(pagesize, filepath, **kwargs):
                 # image.save(temp_file_img)
                 image_reader = ImageReader(image_io)
                 x = pagesize[0] / columns * j + x_init
-                y = (
-                    pagesize[1]
-                    - pagesize_image[1] * 2
-                    - (pagesize[1] / rows * i + y_init)
-                )
+                y = pagesize[1] - pagesize_image[1] * 2 - (pagesize[1] / rows * i + y_init)
                 c.drawImage(
                     image_reader,
                     x,

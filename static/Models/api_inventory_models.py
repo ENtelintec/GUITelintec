@@ -38,16 +38,10 @@ product_model_new = api.model(
         "sku": fields.String(required=True, description="The product sku"),
         "udm": fields.String(required=True, description="The product udm"),
         "stock": fields.Float(required=True, description="The product stock"),
-        "category_name": fields.String(
-            required=True, description="The product category name or id for edition"
-        ),
-        "supplier_name": fields.String(
-            required=True, description="The product supplier name or id for edition"
-        ),
+        "category_name": fields.String(required=True, description="The product category name or id for edition"),
+        "supplier_name": fields.String(required=True, description="The product supplier name or id for edition"),
         "is_tool": fields.Integer(required=True, description="The product is tool"),
-        "is_internal": fields.Integer(
-            required=True, description="The product is internal"
-        ),
+        "is_internal": fields.Integer(required=True, description="The product is internal"),
         "quantity_move": fields.Float(
             required=False,
             description="The product quantity movement in for news (optional)",
@@ -56,9 +50,7 @@ product_model_new = api.model(
         "locations": fields.Nested(locations_model, required=False),
         "brand": fields.String(required=False, description="The product brand."),
         "epp": fields.Integer(required=True, description="The product epp", example=0),
-        "sm_id": fields.Integer(
-            required=False, description="The product sm id for update if required"
-        ),
+        "sm_id": fields.Integer(required=False, description="The product sm id for update if required"),
     },
 )
 
@@ -70,28 +62,19 @@ product_model_update = api.model(
         "sku": fields.String(required=True, description="The product sku"),
         "udm": fields.String(required=True, description="The product udm"),
         "stock": fields.Float(required=True, description="The product stock"),
-        "category_name": fields.String(
-            required=True, description="The product category name or id for edition"
-        ),
-        "supplier_name": fields.String(
-            required=True, description="The product supplier name or id for edition"
-        ),
+        "category_name": fields.String(required=True, description="The product category name or id for edition"),
+        "supplier_name": fields.String(required=True, description="The product supplier name or id for edition"),
         "is_tool": fields.Integer(required=True, description="The product is tool"),
-        "is_internal": fields.Integer(
-            required=True, description="The product is internal"
-        ),
+        "is_internal": fields.Integer(required=True, description="The product is internal"),
         "quantity_move": fields.Float(
             required=False,
-            description="The product quantity movement in or out, for movements creation. "
-            "If negative, out movements with abs(value), else in movements with value",
+            description="The product quantity movement in or out, for movements creation. If negative, out movements with abs(value), else in movements with value",
         ),
         "codes": fields.List(fields.Nested(code_model), required=False),
         "locations": fields.Nested(locations_model, required=False),
         "brand": fields.String(required=False, description="The product brand."),
         "epp": fields.Integer(required=True, description="The product epp", example=0),
-        "id_item": fields.Integer(
-            required=False, description="The product sm id for update if required"
-        ),
+        "id_item": fields.Integer(required=False, description="The product sm id for update if required"),
     },
 )
 
@@ -154,22 +137,12 @@ categories_output_model = api.model(
 movement_model = api.model(
     "MovementSAMC",
     {
-        "id_product": fields.Integer(
-            required=True, description="The product id", example=1
-        ),
-        "type_m": fields.String(
-            required=True, description="The movement type", example="entrada"
-        ),
+        "id_product": fields.Integer(required=True, description="The product id", example=1),
+        "type_m": fields.String(required=True, description="The movement type", example="entrada"),
         "quantity": fields.Float(required=True, description="The movement quantity"),
-        "sm_id": fields.String(
-            required=True, description="The movement id", example="folio-sm"
-        ),
-        "old_stock": fields.Float(
-            required=True, description="The movement old stock", example=1.0
-        ),
-        "reference": fields.String(
-            required=True, description="The movement reference", example="reference"
-        ),
+        "sm_id": fields.String(required=True, description="The movement id", example="folio-sm"),
+        "old_stock": fields.Float(required=True, description="The movement old stock", example=1.0),
+        "reference": fields.String(required=True, description="The movement reference", example="reference"),
     },
 )
 
@@ -181,9 +154,7 @@ movements_list_post_model = api.model(
 )
 
 expected_files_almacen = api.parser()
-expected_files_almacen.add_argument(
-    "file", type=FileStorage, location="files", required=True
-)
+expected_files_almacen.add_argument("file", type=FileStorage, location="files", required=True)
 
 file_movements_request_model = api.model(
     "FileMovementsAMC",
@@ -198,9 +169,7 @@ file_movements_request_model = api.model(
             description="The date end for movements",
             example="2024-01-01",
         ),
-        "type": fields.String(
-            required=True, description="The type of movements", example="entrada"
-        ),
+        "type": fields.String(required=True, description="The type of movements", example="entrada"),
     },
 )
 
@@ -241,51 +210,37 @@ reservation_history_model = api.model(
 reservation_post_model = api.model(
     "ReservationPostAMC",
     {
-        "id_product": fields.Integer(
-            required=True, description="The product id", example=1
-        ),
+        "id_product": fields.Integer(required=True, description="The product id", example=1),
         "quantity": fields.Float(required=True, description="The reservation quantity"),
-        "sm_id": fields.Integer(
-            required=True, description="The material request id", example=1
-        ),
+        "sm_id": fields.Integer(required=True, description="The material request id", example=1),
     },
 )
 reservation_put_model = api.model(
     "ReservationPutAMC",
     {
-        "id": fields.Integer(
-            required=True, description="The reservation id", example=1
-        ),
+        "id": fields.Integer(required=True, description="The reservation id", example=1),
         "quantity": fields.Float(required=True, description="The reservation quantity"),
-        "status": fields.Integer(
-            required=False, description="The reservation status", example=0
-        ),
+        "status": fields.Integer(required=False, description="The reservation status", example=0),
         "history": fields.List(
             fields.Nested(reservation_history_model),
             required=False,
             description="The reservation history",
         ),
-        "id_sm": fields.Integer(
-            required=False, description="The material request id", example=1
-        ),
+        "id_sm": fields.Integer(required=False, description="The material request id", example=1),
     },
 )
 
 reservation_delete_model = api.model(
     "ReservationDeleteAMC",
     {
-        "id": fields.Integer(
-            required=True, description="The reservation id", example=1
-        ),
+        "id": fields.Integer(required=True, description="The reservation id", example=1),
     },
 )
 
 file_barcode_request_model = api.model(
     "FileBarcodeAMC",
     {
-        "id_product": fields.Integer(
-            required=True, description="The product id", example=1
-        ),
+        "id_product": fields.Integer(required=True, description="The product id", example=1),
         "format": fields.Nested(format_barcode_model),
     },
 )
@@ -293,7 +248,7 @@ file_barcode_request_model = api.model(
 file_barcode_multiple_request_model = api.model(
     "FileBarcodeMultipleRequestAMC",
     {
-        "data": fields.List(fields.Nested(file_barcode_request_model)),
+        "data_barcode": fields.List(fields.Nested(file_barcode_request_model)),
     },
 )
 
@@ -366,16 +321,12 @@ class ProductsListPostForm(Form):
 class MovementForm(Form):
     id_product = IntegerField(
         "id_product",
-        validators=[
-            InputRequired(message="Id product is required or value 0 not accepted")
-        ],
+        validators=[InputRequired(message="Id product is required or value 0 not accepted")],
     )
     type_m = StringField("type", validators=[InputRequired()], default="entrada")
     quantity = FloatField("quantity", validators=[InputRequired()])
     sm_id = StringField("sm_id", validators=[], default="")
-    old_stock = FloatField(
-        "old_stock", validators=[NumberRange(min=-100.0)], default=0.0
-    )
+    old_stock = FloatField("old_stock", validators=[NumberRange(min=-100.0)], default=0.0)
     # old_stock = FloatField("old_stock", validators=[], default=0.0)
     reference = StringField("reference", validators=[], default="")
 
@@ -392,12 +343,8 @@ class ProductDeleteForm(Form):
 
 
 class FileMovementsForm(Form):
-    date_init = StringField(
-        "date_init", validators=[InputRequired()], filters=[date_filter]
-    )
-    date_end = StringField(
-        "date_end", validators=[InputRequired()], filters=[date_filter]
-    )
+    date_init = StringField("date_init", validators=[InputRequired()], filters=[date_filter])
+    date_end = StringField("date_end", validators=[InputRequired()], filters=[date_filter])
     type = StringField("type", validators=[], default="all")
 
 
@@ -426,33 +373,25 @@ class FormatBarcodeForm(Form):
 class FileBarcodeForm(Form):
     id_product = IntegerField(
         "id_product",
-        validators=[
-            InputRequired(message="Id product is required or value 0 not accepted")
-        ],
+        validators=[InputRequired(message="Id product is required or value 0 not accepted")],
     )
     format = FormField(FormatBarcodeForm, "format")
 
 
 class FileBarcodeMultipleForm(Form):
-    data = FieldList(FormField(FileBarcodeForm), "data")
+    data_barcode = FieldList(FormField(FileBarcodeForm), "data_barcode")
 
 
 class ReservationHistoryForm(Form):
-    timestamp = DateTimeField(
-        "timestamp", validators=[InputRequired()], filters=[datetime_filter]
-    )
-    user = IntegerField(
-        "user", validators=[validators.number_range(min=-1, message="Invalid id")]
-    )
+    timestamp = DateTimeField("timestamp", validators=[InputRequired()], filters=[datetime_filter])
+    user = IntegerField("user", validators=[validators.number_range(min=-1, message="Invalid id")])
     comment = StringField("comment", validators=[InputRequired()])
 
 
 class ReservationPostForm(Form):
     id_product = IntegerField(
         "id_product",
-        validators=[
-            InputRequired(message="Id product is required or value 0 not accepted")
-        ],
+        validators=[InputRequired(message="Id product is required or value 0 not accepted")],
     )
     quantity = FloatField("quantity", validators=[InputRequired()])
     sm_id = IntegerField("sm_id", validators=[InputRequired()])

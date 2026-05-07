@@ -195,9 +195,11 @@ def create_header_telintec(
             title.upper(),
         )
     else:
+        # pyrefly: ignore [bad-argument-type]
         nlines = len(title)
         x_title = page_x / 2 + offset_title[0]
         y_title = (position_header_y + height_logo / 2 + ((nlines - 1) * title_height) / 2) + offset_title[1]
+        # pyrefly: ignore [bad-argument-type]
         for index, line in enumerate(title):
             master.setFont("Courier-Bold", title_height - 2 * index)
             master.drawCentredString(x_title, y_title, line)
@@ -222,13 +224,23 @@ def create_header_materials(
     master: canvas.Canvas,
     img=None,
     title=None,
-    page_x=None,
+    page_x=0.0,
     date_int=None,
     type_form=1,
     orientation="vertical",
     title_font=None,
     info_dict=None,
 ):
+    if info_dict is None:
+        info_dict = {
+            "emp_name": "",
+            "contrato": "",
+            "date": "",
+            "lugar": "",
+            "emp_storage_name": "",
+            "puesto": "",
+            "type_return": "",
+        }
     position_header_y = 770 if orientation == "vertical" else 535
     position_header_x = 25 if orientation == "vertical" else 25
     height_logo = 30
@@ -303,9 +315,11 @@ def create_header_materials(
             title.upper(),
         )
     else:
+        # pyrefly: ignore [bad-argument-type]
         nlines = len(title)
         x_title = page_x / 2
         y_title = position_header_y + height_logo / 2 + ((nlines - 1) * title_height) / 2
+        # pyrefly: ignore [bad-argument-type]
         for index, line in enumerate(title):
             master.setFont("Courier-Bold", title_height - 2 * index)
             master.drawCentredString(x_title, y_title, line)
