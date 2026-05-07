@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 
+from templates.resources.midleware.MD_Purchases import get_items_with_fast_order
 from static.Models.api_purchases_models import ReportActivityCreateControlTableForm
 from static.Models.api_purchases_models import basic_control_table_report_model
 from templates.resources.midleware.MD_Purchases import fetch_po_item_sm_item_id
@@ -487,7 +488,7 @@ class FetchActivitieReportById(Resource):
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         try:
             id_report = int(id_report)
-            if id_report == 0:
+            if id_report <= 0:
                 id_report = None
         except Exception as e:
             print(f"retrieviong all {e}")
@@ -551,3 +552,17 @@ class DownloadVehicleVoucherAttachment(Resource):
         else:
             print(data)
             return {"data": data_out, "msg": "Error at file structure"}, 400
+
+
+@ns.route("/APOItemsFastOrder")
+class FetchAPoItemForFastDelivery(Resource):
+    @ns.expect(expected_headers_per)
+    def get(self):
+        # get_all_item_purchase_order_with_id_item_sm
+        flag, data_token, msg = token_verification_procedure(
+            request, department="administracion"
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        data, code = get_items_with_fast_order(data_token)
+        return data, code

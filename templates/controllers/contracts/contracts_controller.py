@@ -24,10 +24,7 @@ def create_contract(
     time_zone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
     metadata["status"] = status
-    sql = (
-        "INSERT INTO sql_telintec_mod_admin.contracts (metadata, creation, quotation_id, code, client_id, emission, abbreviation) "
-        "VALUES (%s, %s, %s, %s, %s, %s, %s)"
-    )
+    sql = "INSERT INTO sql_telintec_mod_admin.contracts (metadata, creation, quotation_id, code, client_id, emission, abbreviation) VALUES (%s, %s, %s, %s, %s, %s, %s)"
     val = (
         json.dumps(metadata),
         timestamp,
@@ -61,11 +58,7 @@ def update_contract(
         }
     else:
         timestamps["update"].append({"timestamp": timestamp, "comment": "update"})
-    sql = (
-        "UPDATE sql_telintec_mod_admin.contracts "
-        "SET metadata = %s, timestamps = %s, quotation_id = %s, code = %s, client_id =  %s, emission = %s , abbreviation = %s "
-        "WHERE id = %s"
-    )
+    sql = "UPDATE sql_telintec_mod_admin.contracts SET metadata = %s, timestamps = %s, quotation_id = %s, code = %s, client_id =  %s, emission = %s , abbreviation = %s WHERE id = %s"
     val = (
         json.dumps(metadata),
         json.dumps(timestamps),
@@ -89,21 +82,14 @@ def delete_contract(id_contract, data_token):
 
 def get_contract(data_token, id_contract=None):
     if id_contract is None:
-        sql = (
-            "SELECT id, metadata, creation, quotation_id, timestamps, code, client_id, emission, abbreviation "
-            "FROM sql_telintec_mod_admin.contracts"
-        )
+        sql = "SELECT id, metadata, creation, quotation_id, timestamps, code, client_id, emission, abbreviation FROM sql_telintec_mod_admin.contracts"
         flag, error, result = execute_sql(sql, None, 2, data_token)
         if not flag:
             return False, error, []
         if not (isinstance(result, tuple) or isinstance(result, list)):
             return False, error, []
         return True, None, result
-    sql = (
-        "SELECT id, metadata, creation, quotation_id, timestamps, code, client_id, emission, abbreviation "
-        "FROM sql_telintec_mod_admin.contracts "
-        "WHERE id = %s"
-    )
+    sql = "SELECT id, metadata, creation, quotation_id, timestamps, code, client_id, emission, abbreviation FROM sql_telintec_mod_admin.contracts WHERE id = %s"
     val = (id_contract,)
     flag, error, result = execute_sql(sql, val, 1, data_token)
     if not isinstance(result, tuple) or not isinstance(result, list):
@@ -115,11 +101,7 @@ def get_contract(data_token, id_contract=None):
 
 
 def get_contract_from_abb(contract_abb: str, data_token):
-    sql = (
-        "SELECT id, metadata, creation, quotation_id, timestamps "
-        "FROM sql_telintec_mod_admin.contracts "
-        "WHERE metadata->'$.abbreviation_sm' = %s"
-    )
+    sql = "SELECT id, metadata, creation, quotation_id, timestamps FROM sql_telintec_mod_admin.contracts WHERE metadata->'$.abbreviation_sm' = %s"
     val = (contract_abb.upper(),)
     flag, error, result = execute_sql(sql, val, 1, data_token)
     if not isinstance(result, tuple):
@@ -131,11 +113,7 @@ def get_contract_from_abb(contract_abb: str, data_token):
 
 
 def get_contract_by_client(client_id: int, data_token):
-    sql = (
-        "SELECT id, metadata, creation, quotation_id, timestamps, code "
-        "FROM sql_telintec_mod_admin.contracts "
-        "WHERE client_id = %s"
-    )
+    sql = "SELECT id, metadata, creation, quotation_id, timestamps, code FROM sql_telintec_mod_admin.contracts WHERE client_id = %s"
     val = (client_id,)
     flag, error, result = execute_sql(sql, val, 2, data_token)
     if not isinstance(result, list):
@@ -147,11 +125,7 @@ def get_contracts_by_ids(ids_list: list, data_token):
     if len(ids_list) == 0:
         return True, "Contract not found", []
     regexp_clauses = " OR ".join(["id = %s"] * len(ids_list))
-    sql = (
-        f"SELECT id, metadata, creation, quotation_id, timestamps, code "
-        f"FROM sql_telintec_mod_admin.contracts "
-        f"WHERE {regexp_clauses}"
-    )
+    sql = f"SELECT id, metadata, creation, quotation_id, timestamps, code FROM sql_telintec_mod_admin.contracts WHERE {regexp_clauses}"
     val = tuple(ids_list)
     flag, error, result = execute_sql(sql, val, 2, data_token)
     if not isinstance(result, list):
@@ -232,3 +206,37 @@ def get_contract_and_items_from_number(lastdigits: str, data_token):
     val = (lastdigits,)
     flag, error, result = execute_sql(sql, val, 2, data_token)
     return flag, error, result
+
+
+def get_contracts_with_items(data_token):
+    sql = (
+        "SELECT "
+        "c.id, "
+        "c.metadata, "
+        "c.creation, "
+        "c.quotation_id, "
+        "c.timestamps, "
+        "c.code, "
+        "c.client_id, "
+        "c.emission, "
+        "c.abbreviation, "
+        "JSON_ARRAYAGG(JSON_OBJECT("
+        "   'item_id', qi.id, "
+        "   'partida', qi.partida, "
+        "   'id_inventory', qi.id_inventory, "
+        "   'description', qi.description, "
+        "   'udm', qi.udm, "
+        "   'quantity', qi.quantity, "
+        "   'unit_price', qi.price_unit "
+        ")) AS items "
+        "FROM sql_telintec_mod_admin.contracts c "
+        "LEFT JOIN sql_telintec_mod_admin.quotation_items qi ON qi.quotation_id = c.quotation_id "
+        "GROUP BY c.id "
+        "ORDER BY c.creation DESC"
+    )
+    flag, error, result = execute_sql(sql, None, 2, data_token)
+    if not flag:
+        return False, error, []
+    if not (isinstance(result, tuple) or isinstance(result, list)):
+        return False, error, []
+    return True, None, result
