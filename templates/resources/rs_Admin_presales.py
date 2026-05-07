@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from templates.resources.midleware.Functions_midleware_admin import get_contractsWithItems
 from templates.resources.midleware.MD_Admin_Collections import fetch_products_contracts
 
 __author__ = "Edisson Naula"
@@ -62,9 +63,7 @@ class Quotations(Resource):
     # @ns.marshal_with(answer_quotation_model)
     @ns.expect(expected_headers_per)
     def get(self, id_q):
-        flag, data_token, msg = token_verification_procedure(
-            request, department="administracion"
-        )
+        flag, data_token, msg = token_verification_procedure(request, department="administracion")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data, code = get_quotations(id_q)
@@ -75,9 +74,7 @@ class Quotations(Resource):
 class QuotationAction(Resource):
     @ns.expect(expected_headers_per, quotation_model_insert)
     def post(self):
-        flag, data_token, msg = token_verification_procedure(
-            request, department="administracion"
-        )
+        flag, data_token, msg = token_verification_procedure(request, department="administracion")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
@@ -90,9 +87,7 @@ class QuotationAction(Resource):
 
     @ns.expect(expected_headers_per, quotation_model_update)
     def put(self):
-        flag, data_token, msg = token_verification_procedure(
-            request, department="administracion"
-        )
+        flag, data_token, msg = token_verification_procedure(request, department="administracion")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
@@ -106,9 +101,7 @@ class QuotationAction(Resource):
     @ns.marshal_with(quotation_model_delete)
     @ns.expect(expected_headers_per)
     def delete(self):
-        flag, data_token, msg = token_verification_procedure(
-            request, department="administracion"
-        )
+        flag, data_token, msg = token_verification_procedure(request, department="administracion")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
@@ -124,9 +117,7 @@ class QuotationAction(Resource):
 class QuotationProductsUpload(Resource):
     @ns.expect(expected_headers_per, expected_files_quotation)
     def post(self):
-        flag, data_token, msg = token_verification_procedure(
-            request, department="administracion"
-        )
+        flag, data_token, msg = token_verification_procedure(request, department="administracion")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         if "file" not in request.files:
@@ -149,12 +140,21 @@ class Contracts(Resource):
     @ns.marshal_with(answer_contract_model)
     @ns.expect(expected_headers_per)
     def get(self, id_c):
-        flag, data_token, msg = token_verification_procedure(
-            request, department="administracion"
-        )
+        flag, data_token, msg = token_verification_procedure(request, department="administracion")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        data, code = get_contracts(id_c)
+        data, code = get_contracts(id_c, data_token)
+        return data, code
+
+
+@ns.route("/contracts/products")
+class ContractsWProducts(Resource):
+    @ns.expect(expected_headers_per)
+    def get(self):
+        flag, data_token, msg = token_verification_procedure(request, department="administracion")
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        data, code = get_contractsWithItems(data_token)
         return data, code
 
 
@@ -162,9 +162,7 @@ class Contracts(Resource):
 class ContractAction(Resource):
     @ns.expect(expected_headers_per, contract_model_insert)
     def post(self):
-        flag, data_token, msg = token_verification_procedure(
-            request, department="administracion"
-        )
+        flag, data_token, msg = token_verification_procedure(request, department="administracion")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
@@ -177,9 +175,7 @@ class ContractAction(Resource):
 
     @ns.expect(expected_headers_per, contract_model_update)
     def put(self):
-        flag, data_token, msg = token_verification_procedure(
-            request, department="administracion"
-        )
+        flag, data_token, msg = token_verification_procedure(request, department="administracion")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
@@ -192,9 +188,7 @@ class ContractAction(Resource):
 
     @ns.expect(expected_headers_per, contract_model_delete)
     def delete(self):
-        flag, data_token, msg = token_verification_procedure(
-            request, department="administracion"
-        )
+        flag, data_token, msg = token_verification_procedure(request, department="administracion")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
@@ -210,9 +204,7 @@ class ContractAction(Resource):
 class ContractProductsUpload(Resource):
     @ns.expect(expected_headers_per, expected_files_contract)
     def post(self):
-        flag, data_token, msg = token_verification_procedure(
-            request, department="administracion"
-        )
+        flag, data_token, msg = token_verification_procedure(request, department="administracion")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
@@ -237,9 +229,7 @@ class ContractProductsUpload(Resource):
 class ContractSettings(Resource):
     @ns.expect(expected_headers_per, contract_settings_model)
     def post(self):
-        flag, data_token, msg = token_verification_procedure(
-            request, department="administracion"
-        )
+        flag, data_token, msg = token_verification_procedure(request, department="administracion")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
@@ -257,9 +247,7 @@ class ContractSettings(Resource):
 class CompareContractQuotation(Resource):
     @ns.expect(expected_headers_per, expected_files_contract_comparison)
     def post(self):
-        flag, data_token, msg = token_verification_procedure(
-            request, department="administracion"
-        )
+        flag, data_token, msg = token_verification_procedure(request, department="administracion")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         if "file" not in request.files:
@@ -294,9 +282,7 @@ class CompareContractQuotation(Resource):
 class FolioTernium(Resource):
     @ns.expect(expected_headers_per)
     def get(self):
-        flag, data_token, msg = token_verification_procedure(
-            request, department=["administracion", "almacen", "sm"]
-        )
+        flag, data_token, msg = token_verification_procedure(request, department=["administracion", "almacen", "sm"])
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data_out, code = get_folio_from_contract_ternium(data_token)
@@ -307,9 +293,7 @@ class FolioTernium(Resource):
 class FolioCotfc(Resource):
     @ns.expect(expected_headers_per)
     def get(self):
-        flag, data_token, msg = token_verification_procedure(
-            request, department=["administracion", "almacen", "sm"]
-        )
+        flag, data_token, msg = token_verification_procedure(request, department=["administracion", "almacen", "sm"])
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data_out, code = folio_from_department(data_token)
@@ -320,9 +304,7 @@ class FolioCotfc(Resource):
 class ItemsQuotationFileUpload(Resource):
     @ns.expect(expected_headers_per, expected_files)
     def post(self):
-        flag, data_token, msg = token_verification_procedure(
-            request, department="administracion"
-        )
+        flag, data_token, msg = token_verification_procedure(request, department="administracion")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         if "file" not in request.files:
@@ -343,9 +325,7 @@ class ItemsQuotationFileUpload(Resource):
 class ItemsContractFileUpload(Resource):
     @ns.expect(expected_headers_per, expected_files)
     def post(self):
-        flag, data_token, msg = token_verification_procedure(
-            request, department="administracion"
-        )
+        flag, data_token, msg = token_verification_procedure(request, department="administracion")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         if "file" not in request.files:
@@ -366,9 +346,7 @@ class ItemsContractFileUpload(Resource):
 class ContractsAbreviations(Resource):
     @ns.expect(expected_headers_per)
     def get(self):
-        flag, data_token, msg = token_verification_procedure(
-            request, department=["administracion", "rrhh", "operaciones", "sm"]
-        )
+        flag, data_token, msg = token_verification_procedure(request, department=["administracion", "rrhh", "operaciones", "sm"])
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data_out, code = get_contracts_abreviations(data_token)
@@ -379,9 +357,7 @@ class ContractsAbreviations(Resource):
 class ProductsContracts(Resource):
     @ns.expect(expected_headers_per)
     def get(self):
-        flag, data_token, msg = token_verification_procedure(
-            request, department=["administracion", "remission", "operaciones", "sm"]
-        )
+        flag, data_token, msg = token_verification_procedure(request, department=["administracion", "remission", "operaciones", "sm"])
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data, code = fetch_products_contracts(data_token)

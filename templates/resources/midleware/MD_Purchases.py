@@ -1078,6 +1078,7 @@ def get_items_with_fast_order(data_token):
                 "id_supplier": item[8],
                 "name_supplier": item[9],
                 "unit_price": float(item[10]),
+                "id_sm": item[11],
             }
         )
     print(data_out)
