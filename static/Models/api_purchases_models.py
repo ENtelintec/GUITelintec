@@ -62,9 +62,15 @@ items_po_model = api.model(
         "brand": fields.String(required=True, description="The brand"),
         "category": fields.String(required=True, description="The supplier"),
         "id_inventory": fields.Integer(required=True, description="The inventory id", example=0),
-        "url": fields.String(required=True, description="The url", example="https://www.example.com"),
-        "n_parte": fields.String(required=True, description="The part number", example="1234567890"),
-        "duration_services": fields.String(required=False, description="The duration services", example="2024-03-01"),
+        "url": fields.String(
+            required=True, description="The url", example="https://www.example.com"
+        ),
+        "n_parte": fields.String(
+            required=True, description="The part number", example="1234567890"
+        ),
+        "duration_services": fields.String(
+            required=False, description="The duration services", example="2024-03-01"
+        ),
         "purchase_id": fields.Integer(required=False, description="The purchase id", example=0),
         "tool": fields.Integer(required=True, description="The state if is a tool 1", example=0),
         "comment": fields.String(required=False, description="The comment", example="Some comment"),
@@ -149,7 +155,9 @@ pos_application_post_model = api.model(
             description="The quotation creation date",
             example="2024-03-01",
         ),
-        "comment": fields.String(required=True, description="The quotation comment", example="Some comment"),
+        "comment": fields.String(
+            required=True, description="The quotation comment", example="Some comment"
+        ),
         "sm_id": fields.Integer(required=False, description="The quotation sm id", example=1),
         "items": fields.List(fields.Nested(items_po_model, required=True)),
     },
@@ -165,10 +173,14 @@ pos_application_put_model = api.model(
             description="The application reference",
             example="alm-xxx-xx",
         ),
-        "comment": fields.String(required=True, description="The quotation comment", example="Some comment"),
+        "comment": fields.String(
+            required=True, description="The quotation comment", example="Some comment"
+        ),
         "history": fields.List(fields.Nested(history_purchase_model), required=True),
         "status": fields.Integer(required=True, description="The quotation status", example=0),
-        "created_by": fields.Integer(required=True, description="The quotation created by", example=1),
+        "created_by": fields.Integer(
+            required=True, description="The quotation created by", example=1
+        ),
         "items": fields.List(fields.Nested(items_po_model, required=True)),
     },
 )
@@ -183,8 +195,12 @@ purchase_order_post_model = api.model(
         ),
         "sm_id": fields.Integer(required=False, description="The quotation sm id", example=1),
         "supplier": fields.Integer(required=True, description="The supplier id", example=1),
-        "comment": fields.String(required=True, description="The quotation comment", example="Some comment"),
-        "time_delivery": fields.String(required=True, description="The quotation time delivery", example="3 weeks"),
+        "comment": fields.String(
+            required=True, description="The quotation comment", example="Some comment"
+        ),
+        "time_delivery": fields.String(
+            required=True, description="The quotation time delivery", example="3 weeks"
+        ),
         "items": fields.List(fields.Nested(items_po_model, required=True)),
         "metadata_telintec": fields.Nested(metadata_telintec_order_model, required=True),
         "metadata_supplier": fields.Nested(metadata_supplier_model, required=True),
@@ -212,11 +228,17 @@ purchase_order_put_model = api.model(
             example="2024-03-01",
         ),
         "supplier": fields.Integer(required=True, description="The supplier id", example=1),
-        "comment": fields.String(required=True, description="The quotation comment", example="Some comment"),
+        "comment": fields.String(
+            required=True, description="The quotation comment", example="Some comment"
+        ),
         "history": fields.List(fields.Nested(history_purchase_model), required=True),
         "status": fields.Integer(required=True, description="The quotation status", example=0),
-        "created_by": fields.Integer(required=True, description="The quotation created by", example=1),
-        "time_delivery": fields.String(required=True, description="The quotation time delivery", example="3 weeks"),
+        "created_by": fields.Integer(
+            required=True, description="The quotation created by", example=1
+        ),
+        "time_delivery": fields.String(
+            required=True, description="The quotation time delivery", example="3 weeks"
+        ),
         "items": fields.List(fields.Nested(items_po_model, required=True)),
         "metadata_telintec": fields.Nested(metadata_telintec_order_model, required=True),
         "metadata_supplier": fields.Nested(metadata_supplier_model, required=True),
@@ -300,7 +322,9 @@ quotation_activity_item_upsert_model = api.model(
     {
         "id": fields.Integer(
             required=False,
-            description=("ID del ítem. Si se omite o es <= 0, se creará un nuevo ítem.Si es > 0, se actualizará el ítem existente."),
+            description=(
+                "ID del ítem. Si se omite o es <= 0, se creará un nuevo ítem.Si es > 0, se actualizará el ítem existente."
+            ),
             example=58,
         ),
         "item_contract_id": fields.Integer(
@@ -576,6 +600,11 @@ basic_control_table_report_model = api.model(
             description="Usuario que genera el reporte",
             example="Juan Pérez",
         ),
+        "user_id": fields.Integer(
+            required=True,
+            description="ID del usuario de telintec que genera el reporte",
+            example=5050,
+        ),
         "remision": fields.Integer(
             required=False,
             description="remision number",
@@ -618,7 +647,9 @@ remission_activity_create_model = api.model(
         "items": fields.List(
             fields.Nested(quotation_activity_insert_item_model),
             required=False,
-            description=("Obligatorio si 'quotation_id' es null u omitido. Lista de ítems de cotización a crear y asociar al reporte."),
+            description=(
+                "Obligatorio si 'quotation_id' es null u omitido. Lista de ítems de cotización a crear y asociar al reporte."
+            ),
         ),
     },
 )
@@ -649,10 +680,8 @@ remission_activity_upsert_metadata_model = api.inherit(
             example="Modernización de línea de producción",
         ),
         "project_description": fields.String(
-            required=False,
-            description= "DEscripcion de proyecto",
-            example="Descripcion de proyecto"
-        )
+            required=False, description="DEscripcion de proyecto", example="Descripcion de proyecto"
+        ),
     },
 )
 
@@ -663,7 +692,9 @@ remission_activity_update_model = api.model(
         "items": fields.List(
             fields.Nested(quotation_activity_item_upsert_model),
             required=True,
-            description=("Lista de ítems a crear/actualizar. Ítems con 'qa_item_id' se actualizan; sin 'qa_item_id' se crean asociados al reporte."),
+            description=(
+                "Lista de ítems a crear/actualizar. Ítems con 'qa_item_id' se actualizan; sin 'qa_item_id' se crean asociados al reporte."
+            ),
         ),
     },
 )
@@ -799,7 +830,9 @@ remission_model_update = api.model(
 )
 
 
-remission_model_delete = api.model("RemissionDelete", {"id": fields.Integer(required=True, example=1)})
+remission_model_delete = api.model(
+    "RemissionDelete", {"id": fields.Integer(required=True, example=1)}
+)
 
 
 class HistoryPurchaseForm(Form):
@@ -824,7 +857,9 @@ class ItemsPOFormPU(Form):
     id = IntegerField("id", [number_range(min=-1, message="Invalid id")], default=-1)
     currency = StringField("currency", [], default="MXN")
     tool = IntegerField("tool", [number_range(min=-1, max=2, message="Invalid tool")])
-    id_item_sm = IntegerField("id_item_sm", [number_range(min=-1, message="Invalid id item sm")], default=0)
+    id_item_sm = IntegerField(
+        "id_item_sm", [number_range(min=-1, message="Invalid id item sm")], default=0
+    )
 
 
 class ItemsPOApplicationForm(Form):
@@ -839,7 +874,9 @@ class ItemsPOApplicationForm(Form):
     purchase_id = IntegerField("purchase_id", [], default=0)
     tool = IntegerField("tool", [number_range(min=-1, max=2, message="Invalid tool")])
     comment = StringField("comment", [], default="")
-    id_item_sm = IntegerField("tool", [number_range(min=-1, message="Invalid id item sm")], default=0)
+    id_item_sm = IntegerField(
+        "tool", [number_range(min=-1, message="Invalid id item sm")], default=0
+    )
     unit_price = FloatField("unit_price", [], default=0.0)
 
 
@@ -898,7 +935,9 @@ class ItemsPOUpdateForm(Form):
     supplier = StringField("supplier", [], default="")
     currency = StringField("currency", [], default="MXN")
     tool = IntegerField("tool", [number_range(min=-1, max=2, message="Invalid tool")])
-    id_item_sm = IntegerField("tool", [number_range(min=-1, message="Invalid id item sm")], default=0)
+    id_item_sm = IntegerField(
+        "tool", [number_range(min=-1, message="Invalid id item sm")], default=0
+    )
 
 
 class ItemsPOApplicationUpdateForm(Form):
@@ -919,7 +958,9 @@ class ItemsPOApplicationUpdateForm(Form):
     supplier = StringField("supplier", [], default="")
     tool = IntegerField("tool", [InputRequired()])
     comment = StringField("comment", [], default="")
-    id_item_sm = IntegerField("tool", [number_range(min=-1, message="Invalid id item sm")], default=0)
+    id_item_sm = IntegerField(
+        "tool", [number_range(min=-1, message="Invalid id item sm")], default=0
+    )
 
 
 class PurchaseOrderPutForm(Form):
@@ -1112,6 +1153,7 @@ class MetadataControlTableRemissionForm(Form):
     remision = StringField("remision", [], default="")
     remito = StringField("remito", [], default="")
     user = StringField("user", [], default="")
+    user_id = IntegerField("user_id", [number_range(min=-1, message="Invalid id")], default=0)
 
 
 class MetadataActivityReportForm(MetadataControlTableRemissionForm):

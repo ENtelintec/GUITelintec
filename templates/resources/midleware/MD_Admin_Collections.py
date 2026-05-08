@@ -389,6 +389,7 @@ def create_extra_info_remision(data: dict):
     extra_info["user"] = data["metadata"].get("user", "")
     extra_info["project"] = (data["metadata"].get("project", ""),)
     extra_info["project_description"] = data["metadata"].get("project_description")
+    extra_info["user_id"] = data["metadata"].get("user_id")
 
     return extra_info
 
@@ -598,7 +599,7 @@ def create_remission_from_api(data, data_token):
         msg, data_token, ["administracion"], "Remision de actividad creado", user, 0
     )
     write_log_file(log_file_admin_collecions, msg, data_token)
-    return {"data": results+[id_remission], "msg": "Ok"}, 201
+    return {"data": results + [id_remission], "msg": "Ok"}, 201
 
 
 def get_remission_from_api(id_report: int | None, data_token):
@@ -653,6 +654,7 @@ def get_remission_from_api(id_report: int | None, data_token):
                 "project": extra_info.get("project", ""),
                 "project_description": extra_info.get("project_description", ""),
                 "user": extra_info.get("user", ""),
+                "user_id": extra_info.get("user_id", ""),
             }
         )
     return {"data": data_out, "msg": "Ok"}, 200
