@@ -376,6 +376,7 @@ def delete_quotation_activity_from_api(data, data_token):
 
 
 def create_extra_info_remision(data: dict):
+    print(data["metadata"])
     extra_info = {}
     extra_info["pedido"] = data["metadata"].get("pedido", "")
     extra_info["pedido_exiros"] = data["metadata"].get("pedido_exiros", "")
@@ -597,7 +598,7 @@ def create_remission_from_api(data, data_token):
         msg, data_token, ["administracion"], "Remision de actividad creado", user, 0
     )
     write_log_file(log_file_admin_collecions, msg, data_token)
-    return {"data": results, "msg": "Ok"}, 201
+    return {"data": results+[id_remission], "msg": "Ok"}, 201
 
 
 def get_remission_from_api(id_report: int | None, data_token):

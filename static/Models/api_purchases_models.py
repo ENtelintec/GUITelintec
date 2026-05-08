@@ -1111,6 +1111,7 @@ class MetadataControlTableRemissionForm(Form):
     contract_id = IntegerField("contract_id", [], default=0)
     remision = StringField("remision", [], default="")
     remito = StringField("remito", [], default="")
+    user = StringField("user", [], default="")
 
 
 class MetadataActivityReportForm(MetadataControlTableRemissionForm):
