@@ -956,7 +956,7 @@ class ItemsPOApplicationUpdateForm(Form):
     url = URLField("url", [], default="")
     n_parte = StringField("n_parte", [], default="")
     supplier = StringField("supplier", [], default="")
-    tool = IntegerField("tool", [InputRequired()])
+    tool = IntegerField("tool", [number_range(min=-1, max=2, message="Invalid tool")])
     comment = StringField("comment", [], default="")
     id_item_sm = IntegerField(
         "tool", [number_range(min=-1, message="Invalid id item sm")], default=0
