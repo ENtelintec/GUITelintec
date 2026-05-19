@@ -39,6 +39,8 @@ from static.Models.api_sm_models import (
     ItemApproveSMForm,
     SMUrgentPostForm,
     sm_urgent_post_model,
+    items_bulk_put_model,
+    ItemsBulkSmPutForm,
 )
 from templates.Functions_AuxPlots import get_data_sm_per_range
 from templates.controllers.customer.customers_controller import get_sm_clients
@@ -65,6 +67,7 @@ from templates.resources.midleware.MD_SM import (
     update_sm_item_state_and_inventory,
     update_sm_item_state,
     create_urgent_sm_from_api,
+    update_items_bulk_sm_from_api,
 )
 
 __author__ = "Edisson Naula"
@@ -450,6 +453,23 @@ class UpdateItemSMState(Resource):
             return {"error": validator.errors}, 400
         data = validator.data
         data_out, code = update_sm_item_state(data, data_token)
+        return data_out, code
+
+
+@ns.route("/items/bulk")
+class SmItemsBulkActions(Resource):
+    @ns.expect(expected_headers_per, items_bulk_put_model)
+    def put(self):
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["sm", "administracion", "almacen"]
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        validator = ItemsBulkSmPutForm.from_json(ns.payload)  # pyrefly: ignore
+        if not validator.validate():
+            return {"error": validator.errors}, 400
+        data = validator.data
+        data_out, code = update_items_bulk_sm_from_api(data, data_token)
         return data_out, code
 
 

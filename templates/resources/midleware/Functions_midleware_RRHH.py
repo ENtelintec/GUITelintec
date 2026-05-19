@@ -446,13 +446,13 @@ def get_data_name_fichaje(
 
 
 def get_fichaje_data(data: dict):
-    files = data.get("files")
-    clock_h = ClockFichajeHours(data.get("time_in"))
-    clock_m = ClockFichajeMinutes(data.get("time_in"))
-    clock_h_out = ClockFichajeHours(data.get("time_out"))
-    clock_m_out = ClockFichajeMinutes(data.get("time_out"))
-    grace_in = GraceMinutes(data.get("grace_init"))
-    grace_out = GraceMinutes(data.get("grace_end"))
+    files = data.get("files", [])
+    clock_h = ClockFichajeHours(data.get("time_in",""))
+    clock_m = ClockFichajeMinutes(data.get("time_in", ""))
+    clock_h_out = ClockFichajeHours(data.get("time_out", ""))
+    clock_m_out = ClockFichajeMinutes(data.get("time_out", ""))
+    grace_in = GraceMinutes(data.get("grace_init", ""))
+    grace_out = GraceMinutes(data.get("grace_end", ""))
     clocks = [{"entrada": [clock_m, clock_h]}, {"salida": [clock_m_out, clock_h_out]}]
     data_files = []
     name_list = []
@@ -470,6 +470,8 @@ def get_fichaje_data(data: dict):
         flag, data_file = get_data_file(filepath_fichaje_temp, file["report"])
         if not flag:
             return 400, data_file
+        if not(isinstance(data_file, list) or isinstance(data_file, tuple)):
+            return 400, "Error al procesar el archivo"
         data_files.append(data_file) if flag else data_files.append([])
         name_list.extend(data_file["names"]) if "names" in data_file.keys() else None
         if file["report"].lower() == "fichaje":
@@ -1035,10 +1037,10 @@ def fetch_employees_without_records(data_token):
     return 200, {"data": out, "msg": "ok"}
 
 
-def fetch_medicals(data_token):
+def fetch_medicals(data_token)-> tuple[dict, int]:
     flag, e, result = get_all_examenes(data_token)
     if not (isinstance(result, list) or isinstance(result, tuple)):
-        return 400, {"data": [], "msg": "No hay  registros"}
+        return {"data": [], "msg": "No hay  registros"}, 400
     out = {"data": None}
     if not flag:
         out = {"data": []}
@@ -1132,6 +1134,8 @@ def fetch_medical_employee(id_emp, data_token):
     flag, e, result = get_all_examenes(data_token)
     out = {"exist": False, "data": None}
     if not flag:
+        return out, 400
+    if not (isinstance(result, list) or isinstance(result, tuple)):
         return out, 400
     for row in result:
         id_exam, nombre, sangre, status, aptitud, fechas, apt_actual, emp_id = row

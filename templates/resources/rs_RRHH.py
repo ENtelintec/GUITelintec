@@ -265,7 +265,7 @@ class EMRegistry(Resource):
         if flag:
             return {"data": str(result)}, 200
         else:
-            return {"error": str(error)}, 400
+            return {"error": error}, 400
 
 
 @ns.route("/employees/vacations/all")
@@ -313,7 +313,7 @@ class VacationRegistry(Resource):
         if flag:
             return {"data": str(result)}, 201
         else:
-            return {"error": str(error)}, 400
+            return {"error": error}, 400
 
     @ns.expect(expected_headers_per, employee_vacation_model_insert)
     def put(self):
@@ -329,7 +329,7 @@ class VacationRegistry(Resource):
         if flag:
             return {"data": str(result)}, 200
         else:
-            return {"error": str(error)}, 400
+            return {"error": error}, 400
 
     @ns.expect(expected_headers_per, employee_vacation_model_delete)
     def delete(self):
@@ -345,7 +345,7 @@ class VacationRegistry(Resource):
         if flag:
             return {"data": str(result)}, 200
         else:
-            return {"error": str(error)}, 400
+            return {"error": error}, 400
 
 
 @ns.route("/quizzes")

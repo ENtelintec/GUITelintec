@@ -8,7 +8,7 @@ import re
 import pandas as pd
 from PyPDF2 import PdfReader
 
-from templates.controllers.product.p_and_s_controller import (
+from templates.controllers.product.products_controller import (
     get_product_by_sku_manufacture,
 )
 
