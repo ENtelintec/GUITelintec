@@ -1081,5 +1081,4 @@ def get_items_with_fast_order(data_token):
                 "id_sm": item[11],
             }
         )
-    print(data_out)
     return {"data": data_out, "error": None}, 200
