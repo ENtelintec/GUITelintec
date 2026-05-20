@@ -324,10 +324,8 @@ def FileSmPDF(dict_data: dict):
 
 def FilePurchaseList(dict_data: dict, path):
     """
-    Genera un PDF con la lista de compra:
-    - Imprime cada inventario como un ítem general con su total.
-    - Luego imprime el desglose de cada entrega asociada.
-    :param dict_data: diccionario con items agrupados por id_inventory
+    Genera un PDF con la lista de compra agrupada por proveedor e inventario.
+    :param dict_data: diccionario con items agrupados por supplier_id -> inventories -> id_inventory
     :param path: ruta de salida del PDF
     :return:
     """
@@ -344,51 +342,77 @@ def FilePurchaseList(dict_data: dict, path):
 
     pages = 1
     font_size = 9
-    pdf.setFont("Courier", font_size)
-
-    y_init = 500
     limit_y = 40
-    last_y = y_init
+    last_y = 500
 
-    for id_inventory, values in dict_data.items():
-        items = values["items"]
-        total = values["total"]
+    def check_page_break(y):
+        nonlocal pages, last_y
+        if y < limit_y:
+            print_footer_page_count(pdf, pages)
+            pdf.showPage()
+            create_header_telintec(
+                pdf,
+                title="LISTA DE COMPRA",
+                page_x=a4_y,
+                iso_form=4,
+                orientation="horizontal",
+                offset_title=(0, 0),
+            )
+            pages += 1
+            last_y = 500
+            return last_y
+        return y
 
-        # --- Imprimir encabezado general del inventario ---
-        pdf.setFont("Courier-Bold", font_size)
-        pdf.drawString(30, last_y, f"Inventario: {id_inventory}")
-        pdf.drawString(200, last_y, f"Total: {total}")
-        last_y -= font_size * 2
+    for supplier_id, supplier_data in dict_data.items():
+        supplier_name = supplier_data.get("supplier_name", "Sin proveedor")
+        inventories = supplier_data.get("inventories", {})
 
-        # --- Imprimir desglose de cada item ---
-        pdf.setFont("Courier", font_size)
-        for item in items:
-            if last_y < limit_y:  # salto de página
-                print_footer_page_count(pdf, pages)
-                pdf.showPage()
-                create_header_telintec(
-                    pdf,
-                    title="LISTA DE COMPRA",
-                    page_x=a4_y,
-                    iso_form=4,
-                    orientation="vertical",
-                    offset_title=(-18, 0),
-                )
-                pages += 1
-                pdf.setFont("Courier", font_size)
-                last_y = 500
-            lines_name = textwrap.wrap(f"Item: {item['name']} ({item['id_item']})", width=30)
-            line_y = last_y
-            for line in lines_name:
-                pdf.drawString(40, last_y, line)
-                last_y -= font_size
-            pdf.drawString(250, line_y, f"Cantidad: {item['quantity']}")
-            pdf.drawString(350, line_y, f"Entregados: {item.get('quantity_c', 0)}")
-            pdf.drawString(440, line_y, f"Folio PO: {item.get('folio_po', '')}")
-            pdf.drawString(680, line_y, f"SM: {item.get('folio', '')}")
-            last_y -= font_size * 1.5
+        last_y = check_page_break(last_y)
 
-    # --- Footer final ---
+        # --- Encabezado de proveedor ---
+        pdf.setFillColorRGB(0.15, 0.35, 0.6)
+        pdf.rect(20, last_y - 4, a4_y - 40, font_size + 8, fill=1, stroke=0)
+        pdf.setFillColorRGB(1, 1, 1)
+        pdf.setFont("Courier-Bold", font_size + 1)
+        pdf.drawString(25, last_y, f"Proveedor: {supplier_name}  (ID: {supplier_id})")
+        pdf.setFillColorRGB(0, 0, 0)
+        last_y -= font_size * 2.5
+
+        for id_inventory, inv_data in inventories.items():
+            items = inv_data["items"]
+            total_qty = inv_data["total_qty"]
+            total_amount = inv_data["total_amount"]
+
+            last_y = check_page_break(last_y)
+
+            # --- Encabezado de inventario ---
+            pdf.setFont("Courier-Bold", font_size)
+            pdf.drawString(30, last_y, f"Inventario: {id_inventory}")
+            pdf.drawString(220, last_y, f"Cant. total: {total_qty}")
+            pdf.drawString(360, last_y, f"Monto total: ${total_amount:,.2f}")
+            last_y -= font_size * 1.8
+
+            # --- Items del inventario ---
+            pdf.setFont("Courier", font_size - 1)
+            for item in items:
+                last_y = check_page_break(last_y)
+                price_unit = float(item.get("price_unit", 0))
+                qty_c = item.get("quantity_c", 0)
+                subtotal = price_unit * qty_c
+                lines_name = textwrap.wrap(f"{item['name']} (ID:{item['id_item']})", width=32)
+                line_y = last_y
+                for line in lines_name:
+                    pdf.drawString(45, last_y, line)
+                    last_y -= font_size
+                pdf.drawString(310, line_y, f"Cant: {qty_c}")
+                pdf.drawString(380, line_y, f"P.Unit: ${price_unit:,.2f}")
+                pdf.drawString(500, line_y, f"Total: ${subtotal:,.2f}")
+                pdf.drawString(640, line_y, f"PO: {item.get('folio_po', '')}")
+                pdf.drawString(750, line_y, f"SM: {item.get('folio', '')}")
+                last_y -= font_size * 0.8
+
+            last_y -= font_size
+
     print_footer_page_count(pdf, pages)
     pdf.save()
     return True

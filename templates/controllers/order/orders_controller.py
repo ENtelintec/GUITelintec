@@ -524,3 +524,30 @@ def get_folios_po_from_pattern(patterns: list, data_token):
     val = like_patterns
     flag, e, out = execute_sql(sql, tuple(val), 2, data_token)
     return flag, e, out
+
+
+def get_item_with_po_folio(folio: str, id_item_sm: int, data_token):
+    sql = """
+    SELECT 
+        poi.id_item, 
+        poi.purchase_id, 
+        poi.quantity, 
+        poi.unit_price, 
+        poi.description, 
+        poi.duration_services, 
+        poi.extra_info,
+        po.supplier_id,
+        sa.name AS supplier_name
+    FROM sql_telintec_mod_admin.purchase_orders po
+    INNER JOIN sql_telintec_mod_admin.purchase_order_items poi
+        ON poi.purchase_id = po.id_order
+    LEFT JOIN sql_telintec.suppliers_amc sa
+        ON sa.id_supplier = po.supplier_id
+    WHERE po.folio = %s
+      AND JSON_EXTRACT(poi.extra_info, '$.id_item_sm') = %s
+    LIMIT 1
+    """
+
+    val = (folio, id_item_sm)
+    flag, e, out = execute_sql(sql, val, 1, data_token)
+    return flag, e, out

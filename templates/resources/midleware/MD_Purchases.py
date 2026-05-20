@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from templates.controllers.order.orders_controller import get_item_with_po_folio
 from templates.controllers.order.orders_controller import get_all_item_sm_with_supplier_fast_order
 from templates.controllers.order.orders_controller import (
     get_all_item_purchase_order_with_id_item_sm,
@@ -993,7 +994,7 @@ def generate_folios_po(reference, data_token):
         [folio_normal.lower(), folio_maestro.lower(), folio_cotfc.lower()], data_token
     )
     if not flag:
-        return {"data": [], "error": str(error)}, 400
+        return {"data": [], "error": error}, 400
     if not isinstance(result, Iterable):
         return {
             "data": result,
@@ -1044,15 +1045,25 @@ def generate_folios_po(reference, data_token):
     return {"data": folios_out, "error": None}, 200
 
 
-def group_item_by_id_inventory(items: list):
+def group_item_by_supplier_and_inventory(items: list):
     dict_out = {}
     for item in items:
+        supplier_id = item.get("supplier_id", 0)
+        supplier_name = item.get("supplier_name", "Sin proveedor")
         id_inventory = item.get("id_inventory", 0)
-        if id_inventory not in dict_out:
-            dict_out[id_inventory] = {"items": [item], "total": item["quantity"]}
+        if supplier_id not in dict_out:
+            dict_out[supplier_id] = {"supplier_name": supplier_name, "inventories": {}}
+        inventories = dict_out[supplier_id]["inventories"]
+        if id_inventory not in inventories:
+            inventories[id_inventory] = {
+                "items": [item],
+                "total_qty": item.get("quantity_c", item["quantity"]),
+                "total_amount": float(item.get("price_unit", 0)) * float(item.get("quantity_c", item["quantity"])),
+            }
         else:
-            dict_out[id_inventory]["items"].append(item)
-            dict_out[id_inventory]["total"] += item["quantity"]
+            inventories[id_inventory]["items"].append(item)
+            inventories[id_inventory]["total_qty"] += item.get("quantity_c", item["quantity"])
+            inventories[id_inventory]["total_amount"] += float(item.get("price_unit", 0)) * float(item.get("quantity_c", item["quantity"]))
     return dict_out
 
 
@@ -1074,6 +1085,23 @@ def download_file_purchase_item_approved(data_token):
             if len(deliveries) > 0:
                 for delivery in deliveries:
                     if delivery.get("state", 0) == 4:  # falta checar estado asignado al ok compra
+                        flag, error, items_po = get_item_with_po_folio(
+                            delivery["folio"], item["id"], data_token
+                        )
+                        try:
+                            if not(isinstance(items_po, Iterable)):
+                                price_unit=0.0
+                                supplier_id = 0
+                                supplier_name = "None"
+                            else:
+                                price_unit = items_po[3]
+                                supplier_id = items_po[7]
+                                supplier_name = items_po[8]
+                        except Exception:
+                            price_unit = 0.0
+                            supplier_id = 0
+                            supplier_name = "None"
+                            
                         items_with_approved.append(
                             {
                                 "id_item": item["id"],
@@ -1089,10 +1117,13 @@ def download_file_purchase_item_approved(data_token):
                                 "comment": delivery["comment"],
                                 "state": delivery["state"],
                                 "folio_po": delivery["folio"],
+                                "price_unit": price_unit,
+                                "supplier_id": supplier_id,
+                                "supplier_name": supplier_name,
                             }
                         )
                         break
-    dict_items = group_item_by_id_inventory(items_with_approved)
+    dict_items = group_item_by_supplier_and_inventory(items_with_approved)
     download_path = os.path.join(tempfile.mkdtemp(), os.path.basename("purchase_list.pdf"))
     flag = FilePurchaseList(dict_items, download_path)
     if not flag:
