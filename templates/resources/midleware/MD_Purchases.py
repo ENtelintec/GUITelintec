@@ -1160,5 +1160,4 @@ def get_items_with_fast_order(data_token):
                 "folio_sm": item[12],
             }
         )
-    print(data_out)
     return {"data": data_out, "error": None}, 200
