@@ -618,6 +618,18 @@ basic_control_table_report_model = api.model(
     },
 )
 
+basic_control_table_report_update_model = api.inherit(
+    "BasicControlTableUpdateModel",
+    basic_control_table_report_model,
+    {
+        "id": fields.Integer(
+            required=True,
+            description="ID del reporte a actualizar",
+            example=1,
+        ),
+    },
+)
+
 basic_metadata_activity_model = api.model(
     "BasicActivityMetadaModel",
     basic_control_table_report_model,
@@ -1154,6 +1166,14 @@ class MetadataControlTableRemissionForm(Form):
     remito = StringField("remito", [], default="")
     user = StringField("user", [], default="")
     user_id = IntegerField("user_id", [number_range(min=-1, message="Invalid id")], default=0)
+
+
+class MetadataControlTableRemissionUpdateForm(MetadataControlTableRemissionForm):
+    id = IntegerField("id", [InputRequired()])
+
+
+class ReportActivityUpdateControlTableForm(Form):
+    metadata = FormField(MetadataControlTableRemissionUpdateForm, "metadata")
 
 
 class MetadataActivityReportForm(MetadataControlTableRemissionForm):

@@ -376,7 +376,6 @@ def delete_quotation_activity_from_api(data, data_token):
 
 
 def create_extra_info_remision(data: dict):
-    print(data["metadata"])
     extra_info = {}
     extra_info["pedido"] = data["metadata"].get("pedido", "")
     extra_info["pedido_exiros"] = data["metadata"].get("pedido_exiros", "")
@@ -704,10 +703,6 @@ def update_remission_from_api(data, data_token):
         date=data["metadata"]["date"],
         folio=data["metadata"]["folio"],
         client_id=data["metadata"]["client_id"],
-        # client_company_name=data["metadata"]["client_company_name"],
-        # client_contact_name=data["metadata"]["client_contact_name"],
-        # client_phone=data["metadata"]["client_phone"],
-        # client_email=data["metadata"]["client_email"],
         plant=data["metadata"]["plant"],
         area=data["metadata"]["area"],
         location=data["metadata"]["location"],
@@ -792,6 +787,79 @@ def update_remission_from_api(data, data_token):
         msg += " pero error al actualizar ciertos items de remision"
     create_notification_permission(
         msg, data_token, ["administracion"], "Remision de actividad actualizado", user, 0
+    )
+    write_log_file(log_file_admin_collecions, msg, data_token)
+    return {"data": result, "msg": "Ok", "error": None}, 200
+
+
+def update_remission_control_table_from_api(data, data_token):
+    timezone = pytz.timezone(timezone_software)
+    timestamp = datetime.now(pytz.utc).astimezone(timezone).strftime(format_timestamps)
+    user = data_token.get("emp_id", "desconocido")
+
+    flag, error, result_ra = get_remission_by_id(data["metadata"]["id"], data_token)
+    if not (isinstance(result_ra, list) or isinstance(result_ra, tuple)):
+        return {
+            "data": None,
+            "msg": "Error al obtener registro de reporte de actividad",
+            "error": "valor devuelto por la db no esperado",
+        }, 400
+    if not flag:
+        return {
+            "data": None,
+            "msg": "Error al obtener registro de reporte de actividad",
+            "error": error,
+        }, 400
+
+    area = result_ra[9]
+    status = result_ra[14]
+
+    history = result_ra[15]
+    history = json.loads(history) if history else []
+    history.append(
+        {
+            timestamp: timestamp,
+            "user": user,
+            "action": "Actualización",
+            "comment": "Actualización de tabla de control de remision.",
+        }
+    )
+
+    existing_extra_info = result_ra[19]
+    existing_extra_info = json.loads(existing_extra_info) if existing_extra_info else {}
+    existing_extra_info.update(create_extra_info_remision(data))
+
+    quotation_id = data["metadata"].get("quotation_id", None)
+    quotation_id = quotation_id if quotation_id and quotation_id > 0 else None
+
+    flag, error, result = update_activity_report(
+        report_id=data["metadata"]["id"],
+        date=data["metadata"]["date"],
+        folio=data["metadata"]["folio"],
+        client_id=data["metadata"]["client_id"],
+        plant=data["metadata"]["plant"],
+        area=area,
+        location=data["metadata"]["location"],
+        general_description=data["metadata"]["general_description"],
+        comments=data["metadata"]["comments"],
+        quotation_id=quotation_id,
+        history=history,
+        status=status,
+        contract_id=data["metadata"].get("contract_id", None),
+        pedido=existing_extra_info.get("pedido", ""),
+        pedido_exiros=existing_extra_info.get("pedido_exiros", ""),
+        data_token=data_token,
+        extra_info=existing_extra_info,
+    )
+    if not flag:
+        return {
+            "data": None,
+            "msg": "Error al actualizar tabla de control de remision de actividad",
+            "error": error,
+        }, 400
+    msg = "Tabla de control de remision actualizada correctamente con id: " + str(data["metadata"]["id"])
+    create_notification_permission(
+        msg, data_token, ["administracion"], "Tabla de control actualizada", user, 0
     )
     write_log_file(log_file_admin_collecions, msg, data_token)
     return {"data": result, "msg": "Ok", "error": None}, 200

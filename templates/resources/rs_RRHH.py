@@ -115,7 +115,6 @@ class Employee(Resource):
         if not validator.validate():
             return {"errors": validator.errors}, 400
         data = validator.data
-        print(data)
         data_out, code = create_new_employee_db(data, data_token)
         return data_out, code
 
