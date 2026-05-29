@@ -1,5 +1,5 @@
-import json
 import os
+import tempfile
 
 from flask import send_file, request
 
@@ -46,8 +46,7 @@ from static.Models.api_models import (
     request_file_report_quizz_model,
 )
 from static.Models.api_payroll_models import (
-    update_files_model,
-    UpdateFilesForm,
+    update_files_parser,
     create_mail_model,
     CreateMailForm,
     UpdateDataPayrollForm,
@@ -55,7 +54,6 @@ from static.Models.api_payroll_models import (
 )
 from static.constants import (
     path_contract_files,
-    filepath_daemons,
 )
 from templates.resources.methods.Functions_Aux_Login import token_verification_procedure
 from templates.resources.midleware.Functions_DB_midleware import (
@@ -83,7 +81,7 @@ from templates.resources.midleware.Functions_midleware_RRHH import (
     update_vacation,
     get_all_quizzes,
     generate_pdf_from_json,
-    update_files_payroll,
+    create_payroll_file_attachment_api,
     create_mail_payroll,
     update_payroll_list_employees,
     update_data_employee,
@@ -386,22 +384,40 @@ class FichajeResume(Resource):  # noqa: F811
 
 @ns.route("/payroll/files/update")
 class FilesPayroll(Resource):
-    @ns.expect(expected_headers_per, update_files_model)
+    @ns.expect(expected_headers_per, update_files_parser)
     def post(self):
         flag, data_token, msg = token_verification_procedure(request, department="rrhh")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        # noinspection PyUnresolvedReferences
-        validator = UpdateFilesForm.from_json(ns.payload)  # pyrefly: ignore
-        if not validator.validate():
-            return {"errors": validator.errors}, 400
-        data = validator.data
-        flags_daemons = json.load(open(filepath_daemons, "r"))
-        if flags_daemons.get("update_files_nomina", False):
-            msg = "Accion no permitida mientras se actualizan los datos."
-            return {"data": None, "msg": msg}, 400
-        code, msg = update_files_payroll(data, data_token)
-        return {"data": None, "msg": msg}, code
+        if "file" not in request.files:
+            return {"data": None, "msg": "No se detecto un archivo"}, 400
+        file = request.files["file"]
+        year = request.form.get("year")
+        month = request.form.get("month")
+        emp_id = request.form.get("emp_id")
+        key = request.form.get("key")
+        if not all([year, month, emp_id, key]):
+            return {
+                "data": None,
+                "msg": "Faltan campos requeridos: year, month, emp_id, key",
+            }, 400
+        if not (file and file.filename):
+            return {"data": None, "msg": "No se subio el archivo"}, 400
+        filename = secure_filename(file.filename)
+        filepath_download = os.path.join(tempfile.mkdtemp(), filename)
+        file.save(filepath_download)
+        data_out, code = create_payroll_file_attachment_api(
+            {
+                "filepath": filepath_download,
+                "filename": filename,
+                "year": year,
+                "month": month,
+                "emp_id": emp_id,
+                "key": key,
+            },
+            data_token,
+        )
+        return data_out, code
 
 
 @ns.route("/payroll/mail")
@@ -457,7 +473,7 @@ class UpdateEmployees(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         code, msg = update_payroll_list_employees( data_token)
-        return {"data": None, "msg": str(msg)}, code
+        return {"data": None, "msg": msg}, code
 
 
 @ns.route("/fichajes/files")

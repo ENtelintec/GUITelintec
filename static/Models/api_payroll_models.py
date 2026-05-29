@@ -3,6 +3,7 @@ __author__ = "Edisson Naula"
 __date__ = "$ 11/feb/2025  at 21:36 $"
 
 from flask_restx import fields
+from werkzeug.datastructures import FileStorage
 from wtforms.fields.numeric import IntegerField
 from wtforms.fields.simple import StringField
 from wtforms.form import Form
@@ -11,19 +12,31 @@ from wtforms.validators import InputRequired
 from static.Models.api_models import validate_json
 from static.constants import api
 
-update_files_model = api.model(
-    "UpdateFilesModel",
-    {
-        "year": fields.String(
-            required=True, description="The year of the file", example="2025"
-        ),
-        "month": fields.String(
-            required=True, description="The month of the file", example="Enero"
-        ),
-        "quincena": fields.String(
-            required=False, description="The quincena patter", example="1Q"
-        ),
-    },
+# Multipart parser: payroll file uploaded straight to the S3 RH bucket under
+# payroll/<year>/<month>/<emp_id>/<filename>. Replaces the old SharePoint scan model.
+update_files_parser = api.parser()
+update_files_parser.add_argument(
+    "file",
+    type=FileStorage,
+    location="files",
+    required=True,
+    help="Archivo de nomina (pdf o xml)",
+)
+update_files_parser.add_argument(
+    "year", type=str, location="form", required=True, help="Anio, ej. 2025"
+)
+update_files_parser.add_argument(
+    "month", type=str, location="form", required=True, help="Mes 01-12"
+)
+update_files_parser.add_argument(
+    "emp_id", type=str, location="form", required=True, help="Id del empleado"
+)
+update_files_parser.add_argument(
+    "key",
+    type=str,
+    location="form",
+    required=True,
+    help="Identificador de la nomina (agrupa pdf y xml)",
 )
 
 create_mail_model = api.model(
@@ -71,12 +84,6 @@ request_file_model = api.model(
         "xml": fields.String(required=True, description="The file xml url"),
     },
 )
-
-
-class UpdateFilesForm(Form):
-    year = StringField("year", validators=[InputRequired()])
-    month = StringField("month", validators=[InputRequired()])
-    quincena = StringField("quincena", validators=[], default="")
 
 
 class CreateMailForm(Form):

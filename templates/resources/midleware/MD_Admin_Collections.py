@@ -236,7 +236,6 @@ def update_quotation_activity_from_api(data, data_token):
         }, 400
     else:
         msg += "Error al actualizar ciertos ítems de la actividad de cotización"
-    print(history)
     history.append(
         {
             timestamp: timestamp,
@@ -457,8 +456,6 @@ def create_remission_from_api(data, data_token):
     quotation_id = data["metadata"].get("quotation_id", 0)
     quotation_id = quotation_id if quotation_id and quotation_id > 0 else None
     extra_info = create_extra_info_remision(data)
-    # print("extra_info:", extra_info)
-    # print("data metadata", data["metadata"])
     flag, error, id_remission = insert_remission(
         date=data["metadata"]["date"],
         folio=data["metadata"]["folio"],
@@ -616,7 +613,6 @@ def get_remission_from_api(id_report: int | None, data_token):
         result = [result]
     data_out = []
     for item in result:
-        print(item)
         extra_info = json.loads(item[19])
 
         data_out.append(
