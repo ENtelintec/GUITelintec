@@ -2,8 +2,12 @@
 
 
 from templates.resources.midleware.MD_Purchases import get_items_with_fast_order
-from static.Models.api_purchases_models import ReportActivityCreateControlTableForm
-from static.Models.api_purchases_models import basic_control_table_report_model
+from static.Models.api_purchases_models import (
+    ReportActivityCreateControlTableForm,
+    ReportActivityUpdateControlTableForm,
+    basic_control_table_report_model,
+    basic_control_table_report_update_model,
+)
 from templates.resources.midleware.MD_Purchases import fetch_po_item_sm_item_id
 from templates.resources.midleware.MD_Admin_Collections import (
     download_report_activity_attachment_api,
@@ -36,6 +40,7 @@ from static.Models.api_purchases_models import ReportActivityUpdateForm
 from static.Models.api_purchases_models import remission_activity_update_model
 from templates.resources.midleware.MD_Admin_Collections import (
     update_remission_from_api,
+    update_remission_control_table_from_api,
 )
 from static.Models.api_purchases_models import ReportActivityCreateForm
 from static.Models.api_purchases_models import remission_activity_create_model
@@ -476,6 +481,20 @@ class ActivityRemissionTableAction(Resource):
         data_out, code = create_remission_from_api(data, data_token)
         return data_out, code
 
+    @ns.expect(expected_headers_per, basic_control_table_report_update_model)
+    def put(self):
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["administracion", "purchases"]
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        validator = ReportActivityUpdateControlTableForm.from_json(ns.payload)  # pyrefly: ignore
+        if not validator.validate():
+            return {"data": validator.errors, "msg": "Error at structure"}, 400
+        data = validator.data
+        data_out, code = update_remission_control_table_from_api(data, data_token)
+        return data_out, code
+
 
 @ns.route("/remission-<string:id_report>")
 class FetchActivitieReportById(Resource):
@@ -550,7 +569,6 @@ class DownloadVehicleVoucherAttachment(Resource):
         if isinstance(data_out.get("path"), str):
             return send_file(data_out["path"], as_attachment=True)
         else:
-            print(data)
             return {"data": data_out, "msg": "Error at file structure"}, 400
 
 

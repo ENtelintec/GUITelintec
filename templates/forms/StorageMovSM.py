@@ -322,14 +322,61 @@ def FileSmPDF(dict_data: dict):
     return True
 
 
+# Anclas de columna de la lista de compra (página horizontal, ancho = a4_y).
+# Las columnas de dinero/cantidad usan drawRightString: el valor TERMINA en la x dada.
+# Las columnas de texto (Descripción, PO, SM) usan drawString: el valor EMPIEZA en la x dada.
+_PL_X_DESC = 45     # Descripción (izquierda)
+_PL_X_CANT = 410    # Cant (derecha)
+_PL_X_PUNIT = 515   # P. Unit (derecha)
+_PL_X_PO = 550      # PO (izquierda)
+_PL_X_SM = 660      # SM (izquierda)
+_PL_X_TOTAL = 820   # Total / subtotal (derecha)
+
+
 def FilePurchaseList(dict_data: dict, path):
     """
-    Genera un PDF con la lista de compra:
-    - Imprime cada inventario como un ítem general con su total.
-    - Luego imprime el desglose de cada entrega asociada.
-    :param dict_data: diccionario con items agrupados por id_inventory
+    Genera un PDF de LISTA DE COMPRA agrupada por proveedor e inventario, con
+    apariencia de tabla/ticket de compra.
+
+    Estructura esperada de ``dict_data`` (ver
+    ``group_item_by_supplier_and_inventory`` en MD_Purchases.py)::
+
+        {
+            supplier_id: {
+                "supplier_name": str,
+                "inventories": {
+                    id_inventory: {
+                        "items": [ {  # una fila por ítem
+                            "name": str,
+                            "id_item": int,
+                            "quantity_c": int,      # cantidad comprada
+                            "price_unit": float,    # precio unitario
+                            "folio_po": str,        # folio de la PO
+                            "folio": str,           # folio de la SM
+                        }, ... ],
+                        "total_qty": int,           # suma de cantidades
+                        "total_amount": float,      # suma de price_unit*quantity_c
+                    },
+                },
+            },
+        }
+
+    Layout por página (horizontal):
+      - Barra azul por proveedor con su nombre e ID.
+      - Fila de encabezados de columna (Descripción | Cant | P. Unit | PO | SM |
+        Total) una sola vez por proveedor.
+      - Por inventario: línea resumen (Cant. total / Monto total) y luego sus
+        ítems; Cant, P. Unit y Total se alinean a la derecha.
+      - Subtotal por proveedor en negrita alineado a la derecha al cerrar cada
+        proveedor.
+      - GRAN TOTAL global en barra resaltada al final del documento.
+
+    Columnas alineadas según las anclas ``_PL_X_*`` definidas a nivel de módulo.
+    Más detalle del formato en ``docs/purchase_list_pdf.md``.
+
+    :param dict_data: diccionario con items agrupados por supplier_id -> inventories -> id_inventory
     :param path: ruta de salida del PDF
-    :return:
+    :return: True si el PDF se generó correctamente
     """
     pdf = canvas.Canvas(path, pagesize=(a4_y, a4_x))
     pdf.setTitle("LISTA DE COMPRA")
@@ -344,51 +391,115 @@ def FilePurchaseList(dict_data: dict, path):
 
     pages = 1
     font_size = 9
-    pdf.setFont("Courier", font_size)
-
-    y_init = 500
     limit_y = 40
-    last_y = y_init
+    last_y = 500
 
-    for id_inventory, values in dict_data.items():
-        items = values["items"]
-        total = values["total"]
+    def check_page_break(y):
+        nonlocal pages, last_y
+        if y < limit_y:
+            print_footer_page_count(pdf, pages)
+            pdf.showPage()
+            create_header_telintec(
+                pdf,
+                title="LISTA DE COMPRA",
+                page_x=a4_y,
+                iso_form=4,
+                orientation="horizontal",
+                offset_title=(0, 0),
+            )
+            pages += 1
+            last_y = 500
+            return last_y
+        return y
 
-        # --- Imprimir encabezado general del inventario ---
+    def print_column_headers(y):
+        """Fila de encabezados de columna (una vez por proveedor)."""
+        pdf.setFont("Courier-Bold", font_size - 1)
+        pdf.drawString(_PL_X_DESC, y, "Descripcion")
+        pdf.drawRightString(_PL_X_CANT, y, "Cant")
+        pdf.drawRightString(_PL_X_PUNIT, y, "P. Unit")
+        pdf.drawString(_PL_X_PO, y, "PO")
+        pdf.drawString(_PL_X_SM, y, "SM")
+        pdf.drawRightString(_PL_X_TOTAL, y, "Total")
+        y -= 3
+        pdf.setLineWidth(0.5)
+        pdf.line(_PL_X_DESC, y, _PL_X_TOTAL, y)
+        return y - font_size
+
+    grand_total = 0.0
+
+    for supplier_id, supplier_data in dict_data.items():
+        supplier_name = supplier_data.get("supplier_name", "Sin proveedor")
+        inventories = supplier_data.get("inventories", {})
+        supplier_subtotal = 0.0
+
+        last_y = check_page_break(last_y)
+
+        # --- Encabezado de proveedor ---
+        pdf.setFillColorRGB(0.15, 0.35, 0.6)
+        pdf.rect(20, last_y - 4, a4_y - 40, font_size + 8, fill=1, stroke=0)
+        pdf.setFillColorRGB(1, 1, 1)
+        pdf.setFont("Courier-Bold", font_size + 1)
+        pdf.drawString(25, last_y, f"Proveedor: {supplier_name}  (ID: {supplier_id})")
+        pdf.setFillColorRGB(0, 0, 0)
+        last_y -= font_size * 2.2
+
+        # --- Encabezados de columna (una vez por proveedor) ---
+        last_y = print_column_headers(last_y)
+
+        for id_inventory, inv_data in inventories.items():
+            items = inv_data["items"]
+            total_qty = inv_data["total_qty"]
+            total_amount = inv_data["total_amount"]
+            supplier_subtotal += total_amount
+
+            last_y = check_page_break(last_y)
+
+            # --- Encabezado de inventario ---
+            pdf.setFont("Courier-Bold", font_size)
+            pdf.drawString(30, last_y, f"Inventario: {id_inventory}")
+            pdf.drawString(220, last_y, f"Cant. total: {total_qty}")
+            pdf.drawString(360, last_y, f"Monto total: ${total_amount:,.2f}")
+            last_y -= font_size * 1.8
+
+            # --- Items del inventario ---
+            pdf.setFont("Courier", font_size - 1)
+            for item in items:
+                last_y = check_page_break(last_y)
+                price_unit = float(item.get("price_unit", 0))
+                qty_c = item.get("quantity_c", 0)
+                subtotal = price_unit * qty_c
+                lines_name = textwrap.wrap(f"{item['name']} (ID:{item['id_item']})", width=40)
+                line_y = last_y
+                for line in lines_name:
+                    pdf.drawString(_PL_X_DESC, last_y, line)
+                    last_y -= font_size
+                pdf.drawRightString(_PL_X_CANT, line_y, f"{qty_c}")
+                pdf.drawRightString(_PL_X_PUNIT, line_y, f"${price_unit:,.2f}")
+                pdf.drawString(_PL_X_PO, line_y, f"{item.get('folio_po', '')}")
+                pdf.drawString(_PL_X_SM, line_y, f"{item.get('folio', '')}")
+                pdf.drawRightString(_PL_X_TOTAL, line_y, f"${subtotal:,.2f}")
+                last_y -= font_size * 0.8
+
+            last_y -= font_size * 0.5
+
+        # --- Subtotal por proveedor (negrita, alineado a la derecha) ---
+        last_y = check_page_break(last_y)
         pdf.setFont("Courier-Bold", font_size)
-        pdf.drawString(30, last_y, f"Inventario: {id_inventory}")
-        pdf.drawString(200, last_y, f"Total: {total}")
-        last_y -= font_size * 2
+        pdf.drawRightString(_PL_X_TOTAL, last_y, f"Subtotal proveedor: ${supplier_subtotal:,.2f}")
+        last_y -= font_size * 2.0
+        grand_total += supplier_subtotal
 
-        # --- Imprimir desglose de cada item ---
-        pdf.setFont("Courier", font_size)
-        for item in items:
-            if last_y < limit_y:  # salto de página
-                print_footer_page_count(pdf, pages)
-                pdf.showPage()
-                create_header_telintec(
-                    pdf,
-                    title="LISTA DE COMPRA",
-                    page_x=a4_y,
-                    iso_form=4,
-                    orientation="vertical",
-                    offset_title=(-18, 0),
-                )
-                pages += 1
-                pdf.setFont("Courier", font_size)
-                last_y = 500
-            lines_name = textwrap.wrap(f"Item: {item['name']} ({item['id_item']})", width=30)
-            line_y = last_y
-            for line in lines_name:
-                pdf.drawString(40, last_y, line)
-                last_y -= font_size
-            pdf.drawString(250, line_y, f"Cantidad: {item['quantity']}")
-            pdf.drawString(350, line_y, f"Entregados: {item.get('quantity_c', 0)}")
-            pdf.drawString(440, line_y, f"Folio PO: {item.get('folio_po', '')}")
-            pdf.drawString(680, line_y, f"SM: {item.get('folio', '')}")
-            last_y -= font_size * 1.5
+    # --- GRAN TOTAL global (barra resaltada al final) ---
+    last_y = check_page_break(last_y)
+    pdf.setFillColorRGB(0.10, 0.25, 0.50)
+    pdf.rect(20, last_y - 5, a4_y - 40, font_size + 10, fill=1, stroke=0)
+    pdf.setFillColorRGB(1, 1, 1)
+    pdf.setFont("Courier-Bold", font_size + 2)
+    pdf.drawString(25, last_y, "GRAN TOTAL")
+    pdf.drawRightString(_PL_X_TOTAL, last_y, f"${grand_total:,.2f}")
+    pdf.setFillColorRGB(0, 0, 0)
 
-    # --- Footer final ---
     print_footer_page_count(pdf, pages)
     pdf.save()
     return True

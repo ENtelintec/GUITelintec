@@ -6,30 +6,10 @@ from datetime import datetime
 import pytz
 
 from static.constants import format_timestamps, timezone_software
-from templates.controllers.product.p_and_s_controller import get_stock_db_products
 from templates.database.connection import execute_sql
 
 __author__ = "Edisson Naula"
 __date__ = "$ 01/may./2024  at 20:19 $"
-
-
-def update_sm_items_stock(tuple_sm, data_token):
-    flag, error, result = get_stock_db_products( data_token)
-    tuple_out = []
-    product_ids = [product[0] for product in result]
-    if flag:
-        for sm_data in tuple_sm:
-            items_db = json.loads(sm_data[10])
-            items_out = []
-            for item in items_db:
-                if item.get("id", 0) in product_ids:
-                    index = product_ids.index(item["id"])
-                    item["stock"] = result[index][1]
-                items_out.append(item)
-            sm_data = list(sm_data)
-            sm_data[10] = json.dumps(items_out)
-            tuple_out.append(sm_data)
-    return tuple_out
 
 
 def get_sm_entries( data_token, emp_id=None, not_status=()):

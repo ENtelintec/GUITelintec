@@ -82,7 +82,7 @@ class FichajeTable(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
-        validator = FichajeRequestFormr.from_json(ns.payload)
+        validator = FichajeRequestFormr.from_json(ns.payload)   # pyrefly: ignore
         if not validator.validate():
             return {"error": validator.errors}, 400
         data = validator.data
@@ -100,7 +100,7 @@ class FichajeEvent(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
-        validator = FichajeAddUpdateRequestForm.from_json(ns.payload)
+        validator = FichajeAddUpdateRequestForm.from_json(ns.payload)   # pyrefly: ignore
         if not validator.validate():
             return {"error": validator.errors}, 400
         data = validator.data
@@ -115,7 +115,7 @@ class FichajeEvent(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
-        validator = FichajeAddUpdateRequestForm.from_json(ns.payload)
+        validator = FichajeAddUpdateRequestForm.from_json(ns.payload)   # pyrefly: ignore
         if not validator.validate():
             return {"error": validator.errors}, 400
         data = validator.data
@@ -130,7 +130,7 @@ class FichajeEvent(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
-        validator = FichajeDeleteRequestForm.from_json(ns.payload)
+        validator = FichajeDeleteRequestForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
             return {"error": validator.errors}, 400
         data = validator.data
@@ -148,7 +148,7 @@ class BitacoraDownloadReport(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
-        validator = BitacoraDownloadReportForm.from_json(ns.payload)
+        validator = BitacoraDownloadReportForm.from_json(ns.payload)    # pyrefly: ignore
         if not validator.validate():
             return {"error": validator.errors}, 400
         data = validator.data
@@ -191,7 +191,7 @@ class FichajeMultipleEvent(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
-        validator = FichajeRequestMultipleEvents.from_json(ns.payload)
+        validator = FichajeRequestMultipleEvents.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
             return {"error": validator.errors}, 400
         data = validator.data
@@ -209,7 +209,7 @@ class FichajesGetExtra(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
-        validator = FichajeRequestExtras.from_json(ns.payload)
+        validator = FichajeRequestExtras.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
             return {"error": validator.errors}, 400
         data = validator.data
@@ -227,7 +227,7 @@ class FichajesAproveExtra(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
-        validator = FichajeAproveExtras.from_json(ns.payload)
+        validator = FichajeAproveExtras.from_json(ns.payload)   # pyrefly: ignore
         if not validator.validate():
             return {"error": validator.errors}, 400
         data = validator.data
@@ -256,7 +256,7 @@ class BitacoraRHEvent(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
-        validator = BitacoraInsertRHForm.from_json(ns.payload)
+        validator = BitacoraInsertRHForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
             return {"error": validator.errors}, 400
         data = validator.data
@@ -269,7 +269,7 @@ class BitacoraRHEvent(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
-        validator = BitacoraUpdateRHForm.from_json(ns.payload)
+        validator = BitacoraUpdateRHForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
             return {"error": validator.errors}, 400
         data = validator.data
@@ -282,7 +282,7 @@ class BitacoraRHEvent(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
-        validator = BitacoraDeleteRHForm.from_json(ns.payload)
+        validator = BitacoraDeleteRHForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
             return {"error": validator.errors}, 400
         data = validator.data

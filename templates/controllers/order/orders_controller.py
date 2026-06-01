@@ -297,7 +297,8 @@ def get_all_item_sm_with_supplier_fast_order(data_token):
             sa.id_supplier,
             sa.name,
             poi.unit_price,
-            smi.id_sm
+            smi.id_sm,
+            sm.folio
         FROM sql_telintec_mod_admin.purchase_order_items poi
         LEFT JOIN sql_telintec.sm_items smi
             ON CAST(JSON_EXTRACT(poi.extra_info, '$.id_item_sm') AS UNSIGNED) = smi.id_item
@@ -306,7 +307,9 @@ def get_all_item_sm_with_supplier_fast_order(data_token):
                 JSON_UNQUOTE(JSON_EXTRACT(poi.extra_info, '$.supplier')) 
                 AS UNSIGNED
             )
-        WHERE
+        LEFT JOIN sql_telintec.materials_request sm
+            ON smi.id_sm = sm.sm_id
+            WHERE
             (poi.purchase_id IS NULL)
             AND JSON_EXTRACT(poi.extra_info, '$.id_item_sm') IS NOT NULL
             AND CAST(
@@ -386,7 +389,9 @@ def update_po_application(
     return flag, e, out
 
 
-def update_po_application_status(id_order: int, history: list, status: int, approved: int, data_token):
+def update_po_application_status(
+    id_order: int, history: list, status: int, approved: int, data_token
+):
     sql = "UPDATE sql_telintec_mod_admin.pos_applications SET status = %s, history = %s , approved = %s WHERE id_order = %s"
     val = (status, json.dumps(history), approved, id_order)
     flag, error, result = execute_sql(sql, val, 3, data_token)
@@ -513,7 +518,36 @@ def update_po_item(
 def get_folios_po_from_pattern(patterns: list, data_token):
     regexp_clauses = " OR ".join(["folio LIKE %s"] * len(patterns))
     like_patterns = [f"%{p}%" for p in patterns]
-    sql = f"SELECT id_order, folio FROM sql_telintec_mod_admin.purchase_orders WHERE {regexp_clauses}"
+    sql = (
+        f"SELECT id_order, folio FROM sql_telintec_mod_admin.purchase_orders WHERE {regexp_clauses}"
+    )
     val = like_patterns
     flag, e, out = execute_sql(sql, tuple(val), 2, data_token)
+    return flag, e, out
+
+
+def get_item_with_po_folio(folio: str, id_item_sm: int, data_token):
+    sql = """
+    SELECT 
+        poi.id_item, 
+        poi.purchase_id, 
+        poi.quantity, 
+        poi.unit_price, 
+        poi.description, 
+        poi.duration_services, 
+        poi.extra_info,
+        po.supplier_id,
+        sa.name AS supplier_name
+    FROM sql_telintec_mod_admin.purchase_orders po
+    INNER JOIN sql_telintec_mod_admin.purchase_order_items poi
+        ON poi.purchase_id = po.id_order
+    LEFT JOIN sql_telintec.suppliers_amc sa
+        ON sa.id_supplier = po.supplier_id
+    WHERE po.folio = %s
+      AND JSON_EXTRACT(poi.extra_info, '$.id_item_sm') = %s
+    LIMIT 1
+    """
+
+    val = (folio, id_item_sm)
+    flag, e, out = execute_sql(sql, val, 1, data_token)
     return flag, e, out

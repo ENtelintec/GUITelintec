@@ -5,10 +5,8 @@ __date__ = "$ 26/nov/2024  at 14:35 $"
 from reportlab.lib.units import mm
 
 from static.constants import file_codebar
-from templates.controllers.product.p_and_s_controller import (
-    get_all_products_db_old,
-    get_all_movements_db_detail,
-)
+from templates.controllers.product.products_controller import get_all_products_db_old
+from templates.controllers.product.movements_controller import get_all_movements_db_detail
 
 coldata_inventory = [
     {"text": "ID Producto", "stretch": False, "width": 80},

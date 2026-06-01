@@ -723,6 +723,23 @@ item_sm_inventory_put_model = api.model(
     },
 )
 
+items_bulk_entry_model = api.model(
+    "SMItemBulkEntry",
+    {
+        "id_sm": fields.Integer(
+            required=True, description="The id of the sm to update"
+        ),
+        "items": fields.List(fields.Nested(items_model_sm)),
+    },
+)
+
+items_bulk_put_model = api.model(
+    "SMItemsBulkPut",
+    {
+        "updates": fields.List(fields.Nested(items_bulk_entry_model)),
+    },
+)
+
 
 class ItemsFormSMPost(Form):
     id = IntegerField(
@@ -1224,3 +1241,14 @@ class ItemApproveSMForm(Form):
             )
         ],
     )
+
+
+class SmItemBulkEntryForm(Form):
+    id_sm = IntegerField(
+        "id_sm", validators=[InputRequired(message="Invalid id_sm or 0 not acepted")]
+    )
+    items = FieldList(FormField(ItemsFormSMPUT, "items"))
+
+
+class ItemsBulkSmPutForm(Form):
+    updates = FieldList(FormField(SmItemBulkEntryForm, "updates"))

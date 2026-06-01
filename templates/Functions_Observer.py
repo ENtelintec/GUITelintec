@@ -25,9 +25,13 @@ from templates.controllers.chatbot.chatbot_controller import (
 
 openai.api_key = secrets["OPENAI_API_KEY_1"]
 session = requests.Session()
+# pyrefly: ignore [bad-assignment]
 session.headers = SESSION_HEADERS
+# pyrefly: ignore [bad-argument-type]
 session.cookies.set("__Secure-1PSID", secrets["PSID"])
+# pyrefly: ignore [bad-argument-type]
 session.cookies.set("__Secure-1PSIDTS", secrets["PSIDTS"])
+# pyrefly: ignore [bad-argument-type]
 session.cookies.set("__Secure-1PSIDCC", secrets["PSIDCC"])
 bard = Bard(token=secrets["PSID"], session=session)
 

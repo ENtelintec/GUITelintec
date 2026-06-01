@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from numpy import iterable
 __author__ = "Edisson Naula"
 __date__ = "$ 22/jul./2024  at 15:34 $"
 
@@ -77,6 +78,8 @@ def update_payroll_employees(data_token):
     flag, error, result = execute_sql(sql, None, 5)
     if not flag:
         return flag, error, []
+    if not (isinstance(result, tuple) or isinstance(result, list)):
+        return False, "bad type in db"
     data_out = []
     for employee in result:
         emp_id = employee[0]

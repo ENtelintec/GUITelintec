@@ -40,6 +40,7 @@ def calculate_results_quizzes(dict_quizz: dict, tipo_q: int):
                             values = group["values"]
                             if q in items:
                                 res = values[answers[q - lower_limit][1]]
+                                # pyrefly: ignore [unsupported-operation]
                                 dict_results["detail"][str(q)] = res
                                 c_final += res
                                 break
@@ -56,6 +57,7 @@ def calculate_results_quizzes(dict_quizz: dict, tipo_q: int):
                     for dim_dic in dom_dic["dimensiones"]:
                         dim_name = dim_dic["dimension"]
                         items = dim_dic["item"]
+                        # pyrefly: ignore [missing-attribute]
                         for q, val in dict_results["detail"].items():
                             if int(q) in items:
                                 dict_results["c_dom"][dom_name] += val
@@ -74,6 +76,7 @@ def calculate_results_quizzes(dict_quizz: dict, tipo_q: int):
                             values = group["values"]
                             if q in items:
                                 res = values[answers[q - lower_limit][1]]
+                                # pyrefly: ignore [unsupported-operation]
                                 dict_results["detail"][str(q)] = res
                                 c_final += res
                                 break
@@ -91,6 +94,7 @@ def calculate_results_quizzes(dict_quizz: dict, tipo_q: int):
                         dim_name = dim_dic["dimension"]
                         items = dim_dic["item"]
                         dict_results["c_dim"][dim_name] = 0
+                        # pyrefly: ignore [missing-attribute]
                         for q, val in dict_results["detail"].items():
                             if int(q) in items:
                                 # print("calculate: ", q, items)

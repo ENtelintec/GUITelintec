@@ -8,10 +8,13 @@ import json
 import zipfile
 from datetime import datetime
 
+import boto3
 import pandas as pd
 import pytz
+from botocore.exceptions import ClientError, NoCredentialsError
 
 from static.constants import (
+    secrets,
     patterns_files_fichaje,
     cache_file_emp_fichaje,
     format_date_fichaje_file,
@@ -77,6 +80,7 @@ from templates.misc.Functions_Files import (
 from templates.misc.Functions_Files_RH import check_fichajes_files_in_directory
 
 import os
+import tempfile
 
 
 class ClockFichajeHours:
@@ -446,13 +450,13 @@ def get_data_name_fichaje(
 
 
 def get_fichaje_data(data: dict):
-    files = data.get("files")
-    clock_h = ClockFichajeHours(data.get("time_in"))
-    clock_m = ClockFichajeMinutes(data.get("time_in"))
-    clock_h_out = ClockFichajeHours(data.get("time_out"))
-    clock_m_out = ClockFichajeMinutes(data.get("time_out"))
-    grace_in = GraceMinutes(data.get("grace_init"))
-    grace_out = GraceMinutes(data.get("grace_end"))
+    files = data.get("files", [])
+    clock_h = ClockFichajeHours(data.get("time_in",""))
+    clock_m = ClockFichajeMinutes(data.get("time_in", ""))
+    clock_h_out = ClockFichajeHours(data.get("time_out", ""))
+    clock_m_out = ClockFichajeMinutes(data.get("time_out", ""))
+    grace_in = GraceMinutes(data.get("grace_init", ""))
+    grace_out = GraceMinutes(data.get("grace_end", ""))
     clocks = [{"entrada": [clock_m, clock_h]}, {"salida": [clock_m_out, clock_h_out]}]
     data_files = []
     name_list = []
@@ -470,6 +474,8 @@ def get_fichaje_data(data: dict):
         flag, data_file = get_data_file(filepath_fichaje_temp, file["report"])
         if not flag:
             return 400, data_file
+        if not(isinstance(data_file, list) or isinstance(data_file, tuple)):
+            return 400, "Error al procesar el archivo"
         data_files.append(data_file) if flag else data_files.append([])
         name_list.extend(data_file["names"]) if "names" in data_file.keys() else None
         if file["report"].lower() == "fichaje":
@@ -583,18 +589,30 @@ def update_data_docs_nomina(data_token, patterns=None, use_index=False):
 
 
 def download_nomina_docs(data, data_token):
-    settings = json.load(open(filepath_settings, "r"))
-    url_shrpt = settings["gui"]["RRHH"]["url_shrpt"]
-    folder_rrhh = settings["gui"]["RRHH"]["folder_rrhh"]
-    download_path_pdf, code1 = download_files_site(url_shrpt + folder_rrhh, data["pdf"])
-    download_path_xml, code2 = download_files_site(url_shrpt + folder_rrhh, data["xml"])
+    """Descarga el pdf y xml de nomina desde el bucket S3 de RH (data['pdf'] y
+    data['xml'] son keys S3, ej. payroll/<year>/<month>/<emp_id>/<filename>) y
+    los empaqueta en un zip. Migrado desde SharePoint."""
+    bucket_name = secrets.get("S3_RH_BUCKET")
+    s3_client = boto3.client("s3")
+    tmp_dir = tempfile.mkdtemp()
+    downloaded = []
+    for key in [data.get("pdf"), data.get("xml")]:
+        if not key:
+            continue
+        local_path = os.path.join(tmp_dir, os.path.basename(key))
+        try:
+            s3_client.download_file(
+                Bucket=str(bucket_name), Key=key, Filename=local_path
+            )
+            downloaded.append(local_path)
+        except (NoCredentialsError, ClientError, FileNotFoundError) as e:
+            print(f"Error al descargar nomina desde S3 (key {key}): {e}")
+            continue
+    if len(downloaded) == 0:
+        return file_temp_zip, 400
     with zipfile.ZipFile(file_temp_zip, "w") as zipf:
-        if code1 == 200:
-            name_file = os.path.basename(download_path_pdf)
-            zipf.write(download_path_pdf, arcname=name_file)
-        if code2 == 200:
-            name_file = os.path.basename(download_path_xml)
-            zipf.write(download_path_xml, arcname=name_file)
+        for path in downloaded:
+            zipf.write(path, arcname=os.path.basename(path))
     code = 200 if os.path.exists(file_temp_zip) else 400
     return file_temp_zip, code
 
@@ -930,23 +948,64 @@ def download_fichaje_file(data):
     return download_path, code
 
 
-def update_files_payroll(data, data_token):
-    quincena = data["quincena"]
-    quincena = quincena if quincena != "" else None
-    patterns = [data["year"], data["month"], quincena]
-    from templates.daemons.Files_handling import UpdaterSharepointNomina
-
-    thread_update = UpdaterSharepointNomina(patterns, data_token)
-    thread_update.start()
-    flags_daemons = json.load(open(filepath_daemons, "r"))
-    flags_daemons["update_files_nomina"] = True
-    with open(filepath_daemons, "w") as f:
-        json.dump(flags_daemons, f)
-    # json.dump(flags_daemons, open(filepath_daemons, "w"))
-    return (
-        200,
-        f"Proceso de actualizacion iniciado y puede llegar a tardar minutos. Patrones tomados en cuenta {patterns}",
+def create_payroll_file_attachment_api(data, data_token):
+    """Sube un archivo de nomina (pdf o xml) al bucket S3 de RH bajo
+    payroll/<year>/<month>/<emp_id>/<filename> y registra la ruta en el
+    indice files_data del empleado (files_data[year][month][key][pdf|xml])."""
+    filename = data["filename"]
+    filepath_down = data["filepath"]
+    key = data["key"]
+    # year/month normalizados: month a dos digitos 01-12
+    try:
+        emp_id = int(data["emp_id"])
+        year = str(int(data["year"]))
+        month = f"{int(data['month']):02d}"
+    except (ValueError, TypeError) as e:
+        return {"data": None, "msg": "year, month o emp_id invalidos", "error": str(e)}, 400
+    # reconocer el tipo de archivo: solo pdf o xml
+    file_extension = filename.split(".")[-1].lower()
+    valid_extension = ["pdf", "xml"]
+    if file_extension not in valid_extension:
+        return {"data": None, "msg": "Formato de archivo no valido (solo pdf o xml)"}, 400
+    # subir a S3: payroll/<year>/<month>/<emp_id>/<filename>
+    path_aws = f"payroll/{year}/{month}/{emp_id}/{filename}"
+    s3_client = boto3.client("s3")
+    bucket_name = secrets.get("S3_RH_BUCKET")
+    try:
+        s3_client.upload_file(
+            Filename=filepath_down, Bucket=str(bucket_name), Key=path_aws
+        )
+    except FileNotFoundError:
+        return {"data": None, "msg": "Local file not found"}, 400
+    except NoCredentialsError:
+        return {"data": None, "msg": "AWS credentials not found"}, 400
+    except ClientError as e:
+        error_code = e.response["Error"]["Code"]
+        if error_code == "NoSuchBucket":
+            return {"data": None, "msg": f"Bucket does not exist: {bucket_name}"}, 400
+        elif error_code == "AccessDenied":
+            return {"data": None, "msg": f"Access denied to bucket: {bucket_name}"}, 400
+        else:
+            return {"data": None, "msg": f"AWS error: {str(e)}"}, 400
+    # registrar la ruta en el indice del empleado, agrupando pdf y xml por 'key'
+    flag, error, result = get_payrolls(emp_id, data_token)
+    has_record = flag and isinstance(result, (list, tuple)) and len(result) > 0 and result[0] is not None  # pyrefly: ignore
+    files_data = json.loads(result[0][1]) if has_record else {}  # pyrefly: ignore
+    files_data.setdefault(year, {}).setdefault(month, {}).setdefault(key, {})
+    files_data[year][month][key][file_extension] = path_aws
+    flag, error, rows = update_payroll(files_data, emp_id, data_token)
+    if not flag:
+        return {
+            "data": path_aws,
+            "msg": "Archivo subido a S3 pero error al actualizar el indice",
+            "error": str(error),
+        }, 400
+    msg = (
+        f"Archivo de nomina {filename} ({file_extension}) subido para el empleado "
+        f"{emp_id} en {year}/{month} (key {key})"
     )
+    write_log_file(log_file_rh, msg, data_token)
+    return {"data": path_aws, "msg": msg}, 201
 
 
 def create_mail_payroll(data):
@@ -1035,10 +1094,10 @@ def fetch_employees_without_records(data_token):
     return 200, {"data": out, "msg": "ok"}
 
 
-def fetch_medicals(data_token):
+def fetch_medicals(data_token)-> tuple[dict, int]:
     flag, e, result = get_all_examenes(data_token)
     if not (isinstance(result, list) or isinstance(result, tuple)):
-        return 400, {"data": [], "msg": "No hay  registros"}
+        return {"data": [], "msg": "No hay  registros"}, 400
     out = {"data": None}
     if not flag:
         out = {"data": []}
@@ -1132,6 +1191,8 @@ def fetch_medical_employee(id_emp, data_token):
     flag, e, result = get_all_examenes(data_token)
     out = {"exist": False, "data": None}
     if not flag:
+        return out, 400
+    if not (isinstance(result, list) or isinstance(result, tuple)):
         return out, 400
     for row in result:
         id_exam, nombre, sangre, status, aptitud, fechas, apt_actual, emp_id = row

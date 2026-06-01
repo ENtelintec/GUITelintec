@@ -74,7 +74,7 @@ def get_files_openai(department: str) -> list:
                     files_open_ai[i]["status"] = "uploaded"
                 else:
                     files_open_ai[i]["status"] = "pending"
-                print(file["name"])
+
                 break
     return files_open_ai
 
