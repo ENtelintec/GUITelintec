@@ -741,6 +741,7 @@ def fetch_heads_main(data_token):
                 "contracts": extra_info.get("contracts", []),
                 "contracts_temp": extra_info.get("contracts_temp", []),
                 "other_leaders": extra_info.get("other_leaders", []),
+                "area": extra_info.get("area", 0),
             }
         )
     return {"data": data_out, "msg": "Ok"}, 200
@@ -766,6 +767,7 @@ def fetch_heads(id_dep: int, data_token):
                 "contracts": extra_info.get("contracts", []),
                 "contracts_temp": extra_info.get("contracts_temp", []),
                 "other_leaders": extra_info.get("other_leaders", []),
+                "area": extra_info.get("area", 0),
             }
         )
     return {"data": data_out, "msg": "Ok"}, 200
@@ -783,8 +785,12 @@ def insert_head_from_api(data, data_token):
         extra_info["contracts"] = []
     if "contracts_temp" not in extra_info:
         extra_info["contracts_temp"] = []
+    if "area" not in extra_info:
+        extra_info["area"] = 0
+    # employee es FK a employees.employee_id; 0/None significa puesto vacante -> NULL
+    employee = data["employee"] if data["employee"] else None
     flag, error, result = insert_head_DB(
-        data["name"], data["department"], data["employee"], extra_info, data_token
+        data["name"], data["department"], employee, extra_info, data_token
     )
     if not flag:
         return {"data": None, "msg": str(error)}, 400
@@ -813,8 +819,12 @@ def update_head_from_api(data, data_token):
         extra_info["contracts"] = []
     if "contracts_temp" not in extra_info:
         extra_info["contracts_temp"] = []
+    if "area" not in extra_info:
+        extra_info["area"] = 0
+    # employee es FK a employees.employee_id; 0/None significa puesto vacante -> NULL
+    employee = data["employee"] if data["employee"] else None
     flag, error, result = update_head_DB(
-        data["id"], data["department"], data["employee"], extra_info, data_token
+        data["id"], data["name"], data["department"], employee, extra_info, data_token
     )
     if not flag:
         return {"data": None, "msg": str(error)}, 400

@@ -229,7 +229,11 @@ def check_if_gerente_admin(id_employee: int, data_token):
 
 
 def insert_head_DB(
-    position_name: str, department: int, employee: int, extra_info: dict, data_token
+    position_name: str,
+    department: int,
+    employee: int | None,
+    extra_info: dict,
+    data_token,
 ):
     sql = (
         "INSERT INTO sql_telintec.heads (name, department, employee, extra_info) "
@@ -241,15 +245,20 @@ def insert_head_DB(
 
 
 def update_head_DB(
-    position_id: int, department: int, employee: int, extra_info: dict, data_token
+    position_id: int,
+    position_name: str,
+    department: int,
+    employee: int | None,
+    extra_info: dict,
+    data_token,
 ):
     sql = (
         "UPDATE sql_telintec.heads "
-        "SET department = %s, employee = %s, extra_info = %s "
+        "SET name = %s, department = %s, employee = %s, extra_info = %s "
         "WHERE position_id = %s"
     )
-    val = (department, employee, json.dumps(extra_info), position_id)
-    flag, e, out = execute_sql(sql, val, 4, data_token)
+    val = (position_name, department, employee, json.dumps(extra_info), position_id)
+    flag, e, out = execute_sql(sql, val, 3, data_token)
     return flag, e, out
 
 
