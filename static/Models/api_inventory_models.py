@@ -4,17 +4,17 @@ __date__ = "$ 03/may./2024  at 17:04 $"
 
 from flask_restx import fields
 from werkzeug.datastructures import FileStorage
-from wtforms.fields.datetime import DateTimeField
-from wtforms.fields.list import FieldList
-
-from static.Models.api_models import date_filter, datetime_filter
-from static.constants import api
-from wtforms.fields.form import FormField
-from wtforms.fields.numeric import FloatField
-from wtforms.fields.simple import StringField, BooleanField
-from wtforms.form import Form
 from wtforms import IntegerField, validators
+from wtforms.fields.datetime import DateTimeField
+from wtforms.fields.form import FormField
+from wtforms.fields.list import FieldList
+from wtforms.fields.numeric import FloatField
+from wtforms.fields.simple import BooleanField, StringField
+from wtforms.form import Form
 from wtforms.validators import InputRequired, NumberRange
+
+from static.constants import api
+from static.Models.api_models import date_filter, datetime_filter
 
 code_model = api.model(
     "CodeAMC",

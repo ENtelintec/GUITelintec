@@ -9,8 +9,8 @@ from wtforms.fields.simple import StringField
 from wtforms.form import Form
 from wtforms.validators import InputRequired
 
-from static.Models.api_models import validate_json
 from static.constants import api
+from static.Models.api_models import validate_json
 
 # Multipart parser: payroll file uploaded straight to the S3 RH bucket under
 # payroll/<year>/<month>/<emp_id>/<filename>. Replaces the old SharePoint scan model.

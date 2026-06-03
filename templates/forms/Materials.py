@@ -7,10 +7,10 @@ import textwrap
 from reportlab.pdfgen import canvas
 
 from templates.forms.PDFGenerator import (
-    a4_y,
     a4_x,
-    create_header_materials,
+    a4_y,
     create_footer_sign,
+    create_header_materials,
     create_header_telintec,
     create_info_materials_request,
 )

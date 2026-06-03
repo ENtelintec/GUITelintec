@@ -8,21 +8,21 @@ import time
 import openai
 from openai import OpenAI
 
-from static.constants import secrets, department_tools_openAI
+from static.constants import department_tools_openAI, secrets
 from templates.Functions_tools_openAI import (
-    getProductCategories,
-    getProductsAlmacen,
+    getActiveEmployees,
+    getCostumer,
+    getEmployeeInfo,
     getHighStockProducts,
     getLowStockProducts,
-    getCostumer,
-    getSupplier,
-    getProductMovement,
-    getSupplyInventory,
     getNoStockProducts,
-    getTotalFichajeEmployee,
-    getActiveEmployees,
-    getEmployeeInfo,
+    getProductCategories,
+    getProductMovement,
+    getProductsAlmacen,
+    getSupplier,
+    getSupplyInventory,
     getToolsForDepartment,
+    getTotalFichajeEmployee,
 )
 
 client = OpenAI(api_key=secrets.get("OPENAI_API_KEY_AV"))

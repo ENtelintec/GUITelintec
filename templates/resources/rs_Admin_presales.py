@@ -1,10 +1,4 @@
 # -*- coding: utf-8 -*-
-from templates.resources.midleware.Functions_midleware_admin import get_contractsWithItems
-from templates.resources.midleware.MD_Admin_Collections import fetch_products_contracts
-
-__author__ = "Edisson Naula"
-__date__ = "$ 20/jun./2024  at 15:03 $"
-
 import os
 import tempfile
 
@@ -13,47 +7,52 @@ from flask_restx import Namespace, Resource
 from werkzeug.utils import secure_filename
 
 from static.Models.api_contracts_models import (
-    quotation_model_insert,
-    quotation_model_update,
-    quotation_model_delete,
+    ContractDeleteForm,
+    ContractInsertForm,
+    ContractSettingsForm,
+    ContractUpdateForm,
+    QuotationDeleteForm,
+    QuotationInsertForm,
+    QuotationUpdateForm,
     answer_contract_model,
+    contract_model_delete,
     contract_model_insert,
     contract_model_update,
-    contract_model_delete,
-    QuotationInsertForm,
-    QuotationDeleteForm,
-    ContractUpdateForm,
-    ContractDeleteForm,
-    QuotationUpdateForm,
-    ContractInsertForm,
-    expected_files_quotation,
-    expected_files_contract,
     contract_settings_model,
-    ContractSettingsForm,
+    expected_files_contract,
     expected_files_contract_comparison,
+    expected_files_quotation,
+    quotation_model_delete,
+    quotation_model_insert,
+    quotation_model_update,
 )
 from static.Models.api_fichajes_models import expected_files
 from static.Models.api_models import expected_headers_per
 from templates.resources.methods.Functions_Aux_Login import token_verification_procedure
 from templates.resources.midleware.Functions_midleware_admin import (
-    get_quotations,
-    get_contracts,
-    get_folio_from_contract_ternium,
-    folio_from_department,
-    products_quotation_from_file,
-    products_contract_from_file,
-    modify_pattern_phrase_contract_pdf,
     compare_file_and_quotation,
     create_contract_from_api,
-    items_quotation_from_file,
-    get_contracts_abreviations,
-    items_contract_from_file,
-    update_contract_from_api,
     create_quotation_from_api,
-    update_quoation_from_api,
-    delete_quotation_from_api,
     delete_contract_from_api,
+    delete_quotation_from_api,
+    folio_from_department,
+    get_contracts,
+    get_contracts_abreviations,
+    get_contractsWithItems,
+    get_folio_from_contract_ternium,
+    get_quotations,
+    items_contract_from_file,
+    items_quotation_from_file,
+    modify_pattern_phrase_contract_pdf,
+    products_contract_from_file,
+    products_quotation_from_file,
+    update_contract_from_api,
+    update_quoation_from_api,
 )
+from templates.resources.midleware.MD_Admin_Collections import fetch_products_contracts
+
+__author__ = "Edisson Naula"
+__date__ = "$ 20/jun./2024  at 15:03 $"
 
 ns = Namespace("GUI/api/v1/admin/presales")
 

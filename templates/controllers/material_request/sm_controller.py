@@ -414,7 +414,7 @@ def update_items_sm(items: list, sm_id: int, data_token):
                     "data": item,
                     "action": action,
                     "id": item.get("id"),
-                    "error": str(error),
+                    "error": error,
                 }
             )
 

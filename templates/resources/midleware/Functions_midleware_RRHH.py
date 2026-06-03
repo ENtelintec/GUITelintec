@@ -5,6 +5,8 @@ __author__ = "Edisson Naula"
 __date__ = "$ 28/jun./2024  at 16:28 $"
 
 import json
+import os
+import tempfile
 import zipfile
 from datetime import datetime
 
@@ -14,40 +16,34 @@ import pytz
 from botocore.exceptions import ClientError, NoCredentialsError
 
 from static.constants import (
-    secrets,
-    patterns_files_fichaje,
     cache_file_emp_fichaje,
-    format_date_fichaje_file,
-    index_file_nominas,
-    timezone_software,
-    quizzes_temp_pdf,
-    filepath_daemons,
-    filepath_settings,
-    file_temp_zip,
-    format_timestamps,
-    conversion_quizzes_path,
-    filepath_recommendations,
-    format_date,
-    filepath_fichaje_temp,
     cache_file_resume_fichaje_path,
+    conversion_quizzes_path,
+    file_temp_zip,
+    filepath_daemons,
+    filepath_fichaje_temp,
+    filepath_recommendations,
+    filepath_settings,
+    format_date,
+    format_date_fichaje_file,
+    format_timestamps,
+    index_file_nominas,
     log_file_rh,
+    patterns_files_fichaje,
+    quizzes_temp_pdf,
+    secrets,
+    timezone_software,
 )
-from templates.Functions_Sharepoint import (
-    get_files_site,
-    download_files_site,
-    create_mail_draft_with_attachment,
-)
-from templates.Functions_Utils import create_notification_permission
 from templates.controllers.employees.em_controller import (
-    get_employees_without_records,
     get_all_examenes,
+    get_employees_without_records,
     insert_new_exam_med,
     update_aptitud_renovacion,
 )
 from templates.controllers.employees.employees_controller import (
     new_employee,
-    update_employee,
     terminate_employee_db,
+    update_employee,
 )
 from templates.controllers.employees.vacations_controller import (
     insert_vacation,
@@ -62,25 +58,28 @@ from templates.controllers.payroll.payroll_controller import (
     update_payroll,
     update_payroll_employees,
 )
+from templates.Functions_Sharepoint import (
+    create_mail_draft_with_attachment,
+    download_files_site,
+    get_files_site,
+)
+from templates.Functions_Utils import create_notification_permission
 from templates.misc.Functions_AuxFiles import (
+    get_data_xml_file_nomina,
     get_events_op_date,
     get_pairs_nomina_docs,
-    get_data_xml_file_nomina,
 )
 from templates.misc.Functions_Files import (
-    extract_fichajes_file,
     check_names_employees_in_cache,
+    extract_fichajes_file,
+    get_fichajes_resume_cache,
+    get_info_bitacora,
     get_info_f_file_name,
     get_info_t_file_name,
-    get_info_bitacora,
     unify_data_employee,
-    get_fichajes_resume_cache,
     write_log_file,
 )
 from templates.misc.Functions_Files_RH import check_fichajes_files_in_directory
-
-import os
-import tempfile
 
 
 class ClockFichajeHours:

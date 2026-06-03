@@ -1,58 +1,52 @@
 # -*- coding: utf-8 -*-
-from templates.resources.midleware.Functions_midleware_admin import (
-    update_extra_info_supplier,
-)
-from static.Models.api_clients_suppliers_models import SupplierEInfoUpdateForm
-from static.Models.api_clients_suppliers_models import update_extra_info_model
-from templates.resources.midleware.Functions_midleware_admin import (
-    items_supplier_from_file,
-)
-import tempfile
 import os
-from werkzeug.utils import secure_filename
-from static.Models.api_fichajes_models import expected_files
-from templates.resources.midleware.Functions_midleware_admin import (
-    get_items_supplier_name,
-)
+import tempfile
 
 from flask import request
 from flask_restx import Namespace, Resource
+from werkzeug.utils import secure_filename
 
 from static.Models.api_clients_suppliers_models import (
-    client_model,
     ClientDeleteForm,
     ClientInsertForm,
     ClientUpdateForm,
+    SupplierDeleteForm,
+    SupplierEInfoUpdateForm,
+    SupplierInsertForm,
+    SupplierUpdateForm,
+    client_model,
     supplier_delete_model,
     supplier_model,
-    SupplierDeleteForm,
-    SupplierUpdateForm,
-    SupplierInsertForm,
+    update_extra_info_model,
 )
 from static.Models.api_employee_models import (
-    head_insert_model,
+    HeadDeleteForm,
     HeadInputForm,
-    head_update_model,
     HeadUpdateForm,
     head_delete_model,
-    HeadDeleteForm,
+    head_insert_model,
+    head_update_model,
 )
+from static.Models.api_fichajes_models import expected_files
 from static.Models.api_models import expected_headers_per
 from templates.resources.methods.Functions_Aux_Login import token_verification_procedure
 from templates.resources.midleware.Functions_midleware_admin import (
-    get_all_clients_data,
-    insert_customer,
     delete_customer,
-    update_customer,
-    get_all_suppliers_data,
-    update_supplier,
-    insert_supplier,
+    delete_head_from_api,
     delete_supplier,
     fetch_heads,
-    insert_head_from_api,
-    update_head_from_api,
-    delete_head_from_api,
     fetch_heads_main,
+    get_all_clients_data,
+    get_all_suppliers_data,
+    get_items_supplier_name,
+    insert_customer,
+    insert_head_from_api,
+    insert_supplier,
+    items_supplier_from_file,
+    update_customer,
+    update_extra_info_supplier,
+    update_head_from_api,
+    update_supplier,
 )
 
 __author__ = "Edisson Naula"

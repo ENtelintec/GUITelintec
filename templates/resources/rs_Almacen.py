@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-__author__ = "Edisson Naula"
-__date__ = "$ 03/may./2024  at 15:22 $"
 
 import os
 
@@ -9,68 +7,71 @@ from flask_restx import Namespace, Resource
 from werkzeug.utils import secure_filename
 
 from static.Models.api_inventory_models import (
-    product_insert_model,
-    product_delete_model,
-    expected_files_almacen,
+    FileBarcodeForm,
+    FileBarcodeMultipleForm,
+    FileMovementsForm,
+    MovementsListPostForm,
     ProductDeleteForm,
     ProductPostForm,
     ProductPutForm,
-    FileMovementsForm,
-    file_movements_request_model,
-    products_list_post_model,
     ProductsListPostForm,
-    movements_list_post_model,
-    MovementsListPostForm,
-    file_barcode_request_model,
-    FileBarcodeForm,
-    file_barcode_multiple_request_model,
-    FileBarcodeMultipleForm,
-    product_model_update,
-    reservation_post_model,
-    ReservationPostForm,
-    reservation_put_model,
-    ReservationPutForm,
-    reservation_delete_model,
     ReservationDeleteForm,
+    ReservationPostForm,
+    ReservationPutForm,
+    expected_files_almacen,
+    file_barcode_multiple_request_model,
+    file_barcode_request_model,
+    file_movements_request_model,
+    movements_list_post_model,
+    product_delete_model,
+    product_insert_model,
+    product_model_update,
+    products_list_post_model,
+    reservation_delete_model,
+    reservation_post_model,
+    reservation_put_model,
 )
 from static.Models.api_models import expected_headers_per
 from static.Models.api_movements_models import (
-    movement_insert_model,
-    movement_delete_model,
-    MovementInsertForm,
     MovementDeleteForm,
-    movement_update_model,
+    MovementInsertForm,
     MovementUpdateForm,
+    movement_delete_model,
+    movement_insert_model,
+    movement_update_model,
 )
 from templates.resources.methods.Functions_Aux_Login import token_verification_procedure
 from templates.resources.midleware.Functions_midleware_almacen import (
-    get_all_movements,
-    insert_movement,
-    update_movement,
-    get_all_products_DB,
-    insert_product_db,
-    update_product_amc,
-    get_categories_db,
-    get_suppliers_db,
-    upload_product_db_from_file,
+    create_file_inventory_excel,
     create_file_inventory_pdf,
     create_file_movements_amc,
-    insert_and_update_multiple_products_from_api,
-    insert_multiple_movements_from_api,
     create_pdf_barcode,
     create_pdf_barcode_multiple,
-    create_file_inventory_excel,
-    update_brand_procedure,
-    get_new_code_products,
+    create_reservation_from_api,
     delete_movement_amc,
+    delete_product_from_api,
+    delete_reservation_from_api,
+    get_all_movements,
+    get_all_products_DB,
+    get_categories_db,
     get_epp_db,
     get_epp_movements,
-    delete_product_from_api,
-    create_reservation_from_api,
-    update_reservation_from_api,
-    delete_reservation_from_api,
+    get_new_code_products,
     get_reservations_db,
+    get_suppliers_db,
+    insert_and_update_multiple_products_from_api,
+    insert_movement,
+    insert_multiple_movements_from_api,
+    insert_product_db,
+    update_brand_procedure,
+    update_movement,
+    update_product_amc,
+    update_reservation_from_api,
+    upload_product_db_from_file,
 )
+
+__author__ = "Edisson Naula"
+__date__ = "$ 03/may./2024  at 15:22 $"
 
 ns = Namespace("GUI/api/v1/almacen")
 
@@ -80,9 +81,7 @@ class GetMovements(Resource):
     # @ns.marshal_with(movements_output_model)
     @ns.expect(expected_headers_per)
     def get(self, type_m):
-        flag, data_token, msg = token_verification_procedure(
-            request, department="almacen"
-        )
+        flag, data_token, msg = token_verification_procedure(request, department="almacen")
         if not flag:
             return {
                 "data": [],
@@ -97,9 +96,7 @@ class GetMovements(Resource):
 class MovementDB(Resource):
     @ns.expect(expected_headers_per, movement_insert_model)
     def post(self):
-        flag, data_token, msg = token_verification_procedure(
-            request, department=["almacen", "epp"]
-        )
+        flag, data_token, msg = token_verification_procedure(request, department=["almacen", "epp"])
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
@@ -115,9 +112,7 @@ class MovementDB(Resource):
 
     @ns.expect(expected_headers_per, movement_update_model)
     def put(self):
-        flag, data_token, msg = token_verification_procedure(
-            request, department=["almacen", "epp"]
-        )
+        flag, data_token, msg = token_verification_procedure(request, department=["almacen", "epp"])
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
@@ -133,9 +128,7 @@ class MovementDB(Resource):
 
     @ns.expect(expected_headers_per, movement_delete_model)
     def delete(self):
-        flag, data_token, msg = token_verification_procedure(
-            request, department="almacen"
-        )
+        flag, data_token, msg = token_verification_procedure(request, department="almacen")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
@@ -154,9 +147,7 @@ class MovementDB(Resource):
 class MultipleMovementDB(Resource):
     @ns.expect(expected_headers_per, movements_list_post_model)
     def post(self):
-        flag, data_token, msg = token_verification_procedure(
-            request, department="almacen"
-        )
+        flag, data_token, msg = token_verification_procedure(request, department="almacen")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
@@ -176,9 +167,7 @@ class FetchProducts(Resource):
     # @ns.marshal_with(products_output_model)
     @ns.expect(expected_headers_per)
     def get(self, type_p):
-        flag, data_token, msg = token_verification_procedure(
-            request, department="almacen"
-        )
+        flag, data_token, msg = token_verification_procedure(request, department="almacen")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data, code = get_all_products_DB(type_p, data_token)
@@ -189,9 +178,7 @@ class FetchProducts(Resource):
 class ProductActions(Resource):
     @ns.expect(expected_headers_per, product_insert_model)
     def post(self):
-        flag, data_token, msg = token_verification_procedure(
-            request, department="almacen"
-        )
+        flag, data_token, msg = token_verification_procedure(request, department="almacen")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
@@ -216,9 +203,7 @@ class ProductActions(Resource):
 
     @ns.expect(expected_headers_per, product_model_update)
     def put(self):
-        flag, data_token, msg = token_verification_procedure(
-            request, department="almacen"
-        )
+        flag, data_token, msg = token_verification_procedure(request, department="almacen")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
@@ -243,9 +228,7 @@ class ProductActions(Resource):
 
     @ns.expect(expected_headers_per, product_delete_model)
     def delete(self):
-        flag, data_token, msg = token_verification_procedure(
-            request, department="almacen"
-        )
+        flag, data_token, msg = token_verification_procedure(request, department="almacen")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
@@ -264,9 +247,7 @@ class ProductActions(Resource):
 class InventoryMultipleProducts(Resource):
     @ns.expect(expected_headers_per, products_list_post_model)
     def post(self):
-        flag, data_token, msg = token_verification_procedure(
-            request, department="almacen"
-        )
+        flag, data_token, msg = token_verification_procedure(request, department="almacen")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
@@ -283,9 +264,7 @@ class InventoryCategories(Resource):
     # @ns.marshal_with(categories_output_model)
     @ns.expect(expected_headers_per)
     def get(self):
-        flag, data_token, msg = token_verification_procedure(
-            request, department="almacen"
-        )
+        flag, data_token, msg = token_verification_procedure(request, department="almacen")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         code, data = get_categories_db(data_token)
@@ -297,9 +276,7 @@ class InventorySuppliers(Resource):
     # @ns.marshal_with(suppliers_output_model)
     @ns.expect(expected_headers_per)
     def get(self):
-        flag, data_token, msg = token_verification_procedure(
-            request, department="almacen"
-        )
+        flag, data_token, msg = token_verification_procedure(request, department="almacen")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         code, data = get_suppliers_db(data_token)
@@ -310,9 +287,7 @@ class InventorySuppliers(Resource):
 class GenerateCode(Resource):
     @ns.expect(expected_headers_per)
     def get(self):
-        flag, data_token, msg = token_verification_procedure(
-            request, department="almacen"
-        )
+        flag, data_token, msg = token_verification_procedure(request, department="almacen")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data_out, code = get_new_code_products(data_token)
@@ -323,9 +298,7 @@ class GenerateCode(Resource):
 class UploadInventoryeFile(Resource):
     @ns.expect(expected_headers_per, expected_files_almacen)
     def post(self):
-        flag, data_token, msg = token_verification_procedure(
-            request, department="almacen"
-        )
+        flag, data_token, msg = token_verification_procedure(request, department="almacen")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         if "file" not in request.files:
@@ -353,9 +326,7 @@ class UploadInventoryeFile(Resource):
 class UploadInventoryeFileTool(Resource):
     @ns.expect(expected_headers_per, expected_files_almacen)
     def post(self):
-        flag, data_token, msg = token_verification_procedure(
-            request, department="almacen"
-        )
+        flag, data_token, msg = token_verification_procedure(request, department="almacen")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         if "file" not in request.files:
@@ -383,9 +354,7 @@ class UploadInventoryeFileTool(Resource):
 class UploadInventoryeFileInternal(Resource):
     @ns.expect(expected_headers_per, expected_files_almacen)
     def post(self):
-        flag, data_token, msg = token_verification_procedure(
-            request, department="almacen"
-        )
+        flag, data_token, msg = token_verification_procedure(request, department="almacen")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         if "file" not in request.files:
@@ -415,9 +384,7 @@ class UploadInventoryeFileInternal(Resource):
 class DownloadInventoryFilePDF(Resource):
     @ns.expect(expected_headers_per)
     def get(self):
-        flag, data_token, msg = token_verification_procedure(
-            request, department="almacen"
-        )
+        flag, data_token, msg = token_verification_procedure(request, department="almacen")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         filepath, code = create_file_inventory_pdf(data_token)
@@ -430,9 +397,7 @@ class DownloadInventoryFilePDF(Resource):
 class DownloadInventoryFileExcel(Resource):
     @ns.expect(expected_headers_per)
     def get(self):
-        flag, data_token, msg = token_verification_procedure(
-            request, department="almacen"
-        )
+        flag, data_token, msg = token_verification_procedure(request, department="almacen")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         filepath, code = create_file_inventory_excel(data_token)
@@ -445,9 +410,7 @@ class DownloadInventoryFileExcel(Resource):
 class DownloadMovementsFilePDF(Resource):
     @ns.expect(expected_headers_per, file_movements_request_model)
     def post(self):
-        flag, data_token, msg = token_verification_procedure(
-            request, department="almacen"
-        )
+        flag, data_token, msg = token_verification_procedure(request, department="almacen")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
@@ -465,9 +428,7 @@ class DownloadMovementsFilePDF(Resource):
 class DownloadMovementsFileExcel(Resource):
     @ns.expect(expected_headers_per, file_movements_request_model)
     def post(self):
-        flag, data_token, msg = token_verification_procedure(
-            request, department="almacen"
-        )
+        flag, data_token, msg = token_verification_procedure(request, department="almacen")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
@@ -485,9 +446,7 @@ class DownloadMovementsFileExcel(Resource):
 class DownloadBarcodeFile(Resource):
     @ns.expect(expected_headers_per, file_barcode_request_model)
     def post(self):
-        flag, data_token, msg = token_verification_procedure(
-            request, department="almacen"
-        )
+        flag, data_token, msg = token_verification_procedure(request, department="almacen")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
@@ -507,9 +466,7 @@ class DownloadBarcodeFile(Resource):
 class DownloadMultipleBarcodeFile(Resource):
     @ns.expect(expected_headers_per, file_barcode_multiple_request_model)
     def post(self):
-        flag, data_token, msg = token_verification_procedure(
-            request, department="almacen"
-        )
+        flag, data_token, msg = token_verification_procedure(request, department="almacen")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
@@ -578,9 +535,7 @@ class DownloadEppMovementsFileExcel(Resource):
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
-        filepath, code = create_file_movements_amc(
-            data, data_token, type_file="excel", epp=1
-        )
+        filepath, code = create_file_movements_amc(data, data_token, type_file="excel", epp=1)
         if code != 200 or filepath is None:
             return {"data": filepath, "msg": "Error at creating file"}, 400
         return send_file(filepath, as_attachment=True)

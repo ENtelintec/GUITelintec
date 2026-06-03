@@ -3,16 +3,14 @@
 __author__ = "Edisson Naula"
 __date__ = "$ 27/ene/2025  at 16:17 $"
 
+from flask_restx import fields
+from wtforms import FieldList, FormField, validators
+from wtforms.fields.numeric import IntegerField
+from wtforms.fields.simple import EmailField, StringField
 from wtforms.form import Form
 from wtforms.validators import InputRequired
-from wtforms import validators
 
 from static.constants import api
-from flask_restx import fields
-from wtforms.fields.numeric import IntegerField
-from wtforms.fields.simple import StringField, EmailField
-
-from wtforms import FieldList, FormField
 
 # "id_customer, " # "name, " # "email, " # "phone, " # "rfc, " # "address "
 client_model = api.model(

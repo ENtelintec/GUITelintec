@@ -7,10 +7,10 @@ import textwrap
 from reportlab.pdfgen import canvas
 
 from templates.forms.PDFGenerator import (
-    create_header_telintec,
     create_datos_personales,
-    display_result,
+    create_header_telintec,
     display_recommendations,
+    display_result,
     draw_option,
 )
 

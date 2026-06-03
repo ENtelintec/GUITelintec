@@ -1,27 +1,25 @@
 # -*- coding: utf-8 -*-
-from email.policy import default
 
 __author__ = "Edisson Naula"
 __date__ = "$ 14/nov/2024  at 16:15 $"
 
-from wtforms.fields.numeric import IntegerField
-
-from static.Models.api_models import datetime_filter
-from static.constants import api
 from flask_restx import fields
-from wtforms.fields.datetime import DateTimeField
-from wtforms.validators import InputRequired, number_range
 from wtforms import (
+    BooleanField,
+    FloatField,
     FormField,
     StringField,
     URLField,
-    FloatField,
     validators,
-    BooleanField,
 )
+from wtforms.fields.datetime import DateTimeField
 from wtforms.fields.list import FieldList
+from wtforms.fields.numeric import IntegerField
 from wtforms.form import Form
+from wtforms.validators import InputRequired, number_range
 
+from static.constants import api
+from static.Models.api_models import datetime_filter
 
 purchase_metadata_model = api.model(
     "PurchaseMetadata",

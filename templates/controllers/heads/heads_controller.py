@@ -4,7 +4,6 @@ __date__ = "$ 01/may./2024  at 19:25 $"
 
 import json
 
-
 from templates.database.connection import execute_sql
 
 

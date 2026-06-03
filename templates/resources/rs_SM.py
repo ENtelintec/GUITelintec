@@ -1,73 +1,74 @@
 # -*- coding: utf-8 -*-
 
 import os
-from templates.resources.midleware.MD_SM import create_sm_attachment_api
 import tempfile
+
+from flask import request, send_file
+from flask_restx import Namespace, Resource
 from werkzeug.utils import secure_filename
-from static.Models.api_sgi_models import expected_files_attachment
-from static.Models.api_sm_models import item_approve_model
-from templates.resources.midleware.MD_SM import update_sm_item_approve
-from flask import send_file, request
-from flask_restx import Resource, Namespace
 
 from static.Models.api_models import expected_headers_per
+from static.Models.api_sgi_models import expected_files_attachment
 from static.Models.api_sm_models import (
-    client_emp_sm_response_model,
-    sm_post_model,
-    delete_request_sm_model,
-    sm_put_model,
-    table_sm_model,
-    new_cliente_model,
-    new_product_model,
-    request_sm_plot_data_model,
-    employees_answer_model,
-    request_sm_dispatch_model,
+    ItemApproveSMForm,
+    ItemsBulkSmPutForm,
+    ItemSMInventoryPutForm,
+    ItemSmPutForm,
+    ItemStateSMForm,
+    NewClienteForm,
+    NewProductForm,
+    RequestSMDispatchForm,
+    SMDeleteForm,
+    SMInfoControlTablePutForm,
     SMPostForm,
     SMPutForm,
-    SMDeleteForm,
-    NewClienteForm,
-    RequestSMDispatchForm,
-    NewProductForm,
-    control_table_sm_put_model,
-    SMInfoControlTablePutForm,
-    item_sm_put_model,
-    ItemSmPutForm,
-    item_sm_inventory_put_model,
-    ItemSMInventoryPutForm,
-    ItemStateSMForm,
-    item_state_model,
-    ItemApproveSMForm,
     SMUrgentPostForm,
-    sm_urgent_post_model,
+    client_emp_sm_response_model,
+    control_table_sm_put_model,
+    delete_request_sm_model,
+    employees_answer_model,
+    item_approve_model,
+    item_sm_inventory_put_model,
+    item_sm_put_model,
+    item_state_model,
     items_bulk_put_model,
-    ItemsBulkSmPutForm,
+    new_cliente_model,
+    new_product_model,
+    request_sm_dispatch_model,
+    request_sm_plot_data_model,
+    sm_post_model,
+    sm_put_model,
+    sm_urgent_post_model,
+    table_sm_model,
 )
-from templates.Functions_AuxPlots import get_data_sm_per_range
 from templates.controllers.customer.customers_controller import get_sm_clients
 from templates.controllers.employees.employees_controller import get_sm_employees
+from templates.Functions_AuxPlots import get_data_sm_per_range
 from templates.resources.methods.Functions_Aux_Login import token_verification_procedure
 from templates.resources.midleware.MD_SM import (
-    get_products_sm,
-    get_all_sm,
-    dispatch_sm,
-    get_employees_almacen,
     cancel_sm,
-    dowload_file_sm,
     create_customer,
     create_product,
-    update_sm_from_control_table,
-    get_all_sm_control_table,
-    fetch_all_sm_with_permissions,
+    create_sm_attachment_api,
     create_sm_from_api,
-    update_sm_from_api,
-    update_items_sm_from_api,
-    get_sm_folios_from_api,
-    delete_sm_from_api,
-    get_sm_items_from_api,
-    update_sm_item_state_and_inventory,
-    update_sm_item_state,
     create_urgent_sm_from_api,
+    delete_sm_from_api,
+    dispatch_sm,
+    dowload_file_sm,
+    fetch_all_sm_with_permissions,
+    get_all_sm,
+    get_all_sm_control_table,
+    get_employees_almacen,
+    get_products_sm,
+    get_sm_folios_from_api,
+    get_sm_items_from_api,
     update_items_bulk_sm_from_api,
+    update_items_sm_from_api,
+    update_sm_from_api,
+    update_sm_from_control_table,
+    update_sm_item_approve,
+    update_sm_item_state,
+    update_sm_item_state_and_inventory,
 )
 
 __author__ = "Edisson Naula"
@@ -121,9 +122,7 @@ class Products(Resource):
 class FetchAllSm(Resource):
     @ns.expect(expected_headers_per)
     def get(self):
-        flag, data_token, msg = token_verification_procedure(
-            request, department=["sm", "almacen"]
-        )
+        flag, data_token, msg = token_verification_procedure(request, department=["sm", "almacen"])
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data_out, code = get_all_sm(-1, data_token, 0, -1)
@@ -134,9 +133,7 @@ class FetchAllSm(Resource):
 class AllSmPerPermission(Resource):
     @ns.expect(expected_headers_per)
     def get(self):
-        flag, data_token, msg = token_verification_procedure(
-            request, department=["sm", "almacen"]
-        )
+        flag, data_token, msg = token_verification_procedure(request, department=["sm", "almacen"])
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data_out, code = fetch_all_sm_with_permissions(data_token)
@@ -265,7 +262,8 @@ class Product(Resource):
             data["udm"],
             data["stock"],
             data["category"],
-            data["supplier"], data_token,
+            data["supplier"],
+            data_token,
         )
         return response, code
 
@@ -301,9 +299,7 @@ class AlmacenEmployees(Resource):
 class DispatchSM(Resource):
     @ns.expect(expected_headers_per, request_sm_dispatch_model)
     def post(self):
-        flag, data_token, msg = token_verification_procedure(
-            request, department=["almacen"]
-        )
+        flag, data_token, msg = token_verification_procedure(request, department=["almacen"])
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
@@ -401,9 +397,7 @@ class SmItemsActions(Resource):
 class FetchSMFolios(Resource):
     @ns.expect(expected_headers_per)
     def get(self):
-        flag, data_token, msg = token_verification_procedure(
-            request, department=["sm", "almacen"]
-        )
+        flag, data_token, msg = token_verification_procedure(request, department=["sm", "almacen"])
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data_out, code = get_sm_folios_from_api(data_token)
@@ -414,9 +408,7 @@ class FetchSMFolios(Resource):
 class FetchSMItemsByState(Resource):
     @ns.expect(expected_headers_per)
     def get(self, state):
-        flag, data_token, msg = token_verification_procedure(
-            request, department=["sm", "almacen"]
-        )
+        flag, data_token, msg = token_verification_procedure(request, department=["sm", "almacen"])
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data_out, code = get_sm_items_from_api({"state": state}, data_token)
@@ -443,9 +435,7 @@ class UpdateItemInventoryID(Resource):
 class UpdateItemSMState(Resource):
     @ns.expect(expected_headers_per, item_state_model)
     def post(self):
-        flag, data_token, msg = token_verification_procedure(
-            request, department=["sm", "almacen"]
-        )
+        flag, data_token, msg = token_verification_procedure(request, department=["sm", "almacen"])
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         validator = ItemStateSMForm.from_json(ns.payload)  # pyrefly: ignore
@@ -477,9 +467,7 @@ class SmItemsBulkActions(Resource):
 class UpdateItemSMApprove(Resource):
     @ns.expect(expected_headers_per, item_approve_model)
     def post(self):
-        flag, data_token, msg = token_verification_procedure(
-            request, department=["sm", "almacen"]
-        )
+        flag, data_token, msg = token_verification_procedure(request, department=["sm", "almacen"])
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         validator = ItemApproveSMForm.from_json(ns.payload)  # pyrefly: ignore

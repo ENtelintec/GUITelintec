@@ -1,76 +1,75 @@
 # -*- coding: utf-8 -*-
-from templates.controllers.contracts.contracts_controller import get_contracts_with_items
-from templates.controllers.supplier.suppliers_controller import (
-    update_extra_info_supplier_db,
-)
-from templates.controllers.heads.heads_controller import check_if_gerente_admin
-from templates.controllers.heads.heads_controller import check_if_auxiliar
-from templates.controllers.supplier.suppliers_controller import delete_item_amc
-from datetime import datetime
-from templates.controllers.supplier.suppliers_controller import get_items_supplier_by_id
 import json
+from datetime import datetime
+
 import pandas as pd
 
-from templates.controllers.supplier.suppliers_controller import update_item_amc
-from templates.controllers.supplier.suppliers_controller import create_item_amc
 from static.constants import (
-    filepath_settings,
-    log_file_admin,
     dict_deps,
+    filepath_settings,
     format_timestamps,
+    log_file_admin,
 )
-from templates.Functions_Utils import create_notification_permission
 from templates.controllers.contracts.contracts_controller import (
-    get_contract,
     create_contract,
-    get_contracts_abreviations_db,
-    update_contract,
-    get_contract_by_client,
-    get_contracts_by_ids,
     delete_contract,
+    get_contract,
+    get_contract_by_client,
+    get_contracts_abreviations_db,
+    get_contracts_by_ids,
+    get_contracts_with_items,
+    update_contract,
 )
 from templates.controllers.contracts.quotations_controller import (
-    get_quotation,
-    create_quotation,
-    create_items_quotation,
-    delete_quotation,
-    update_quotation,
     create_item_quotation,
-    delete_item_quotation,
-    update_item_quotation,
-    delete_quotation_items,
+    create_items_quotation,
+    create_quotation,
     delete_contract_from_item_quotation,
+    delete_item_quotation,
+    delete_quotation,
+    delete_quotation_items,
+    get_quotation,
+    update_item_quotation,
+    update_quotation,
 )
 from templates.controllers.customer.customers_controller import (
-    get_all_customers_db,
     create_customer_db,
-    update_customer_db,
     delete_customer_db,
+    get_all_customers_db,
+    update_customer_db,
 )
 from templates.controllers.heads.heads_controller import (
-    get_heads_db,
-    insert_head_DB,
-    update_head_DB,
-    delete_head_DB,
-    get_heads_list_db,
+    check_if_auxiliar,
     check_if_gerente,
+    check_if_gerente_admin,
     check_if_head_not_auxiliar,
     check_if_leader,
+    delete_head_DB,
+    get_heads_db,
+    get_heads_list_db,
+    insert_head_DB,
+    update_head_DB,
 )
 from templates.controllers.material_request.sm_controller import get_folios_by_pattern
 from templates.controllers.supplier.suppliers_controller import (
+    create_item_amc,
     create_supplier_amc,
-    update_supplier_amc,
+    delete_item_amc,
     delete_supplier_amc,
     get_all_suppliers_amc,
+    get_items_supplier_by_id,
+    update_extra_info_supplier_db,
+    update_item_amc,
+    update_supplier_amc,
 )
+from templates.Functions_Utils import create_notification_permission
 from templates.misc.Functions_Files import write_log_file
 from templates.resources.methods.Functions_Aux_Admin import (
-    read_file_tenium_contract,
-    read_exel_products_quotation,
     compare_file_quotation,
     read_exel_products_bidding,
     read_exel_products_partidas,
+    read_exel_products_quotation,
+    read_file_tenium_contract,
 )
 
 __author__ = "Edisson Naula"
@@ -79,7 +78,9 @@ __date__ = "$ 20/jun./2024  at 15:23 $"
 
 def get_quotations(id_quotation: int | None = None):
     try:
-        id_quotation = id_quotation if id_quotation is not None and int(id_quotation) != -1 else None
+        id_quotation = (
+            id_quotation if id_quotation is not None and int(id_quotation) != -1 else None
+        )
     except ValueError:
         return {"data": None, "msg": "Id invalido"}, 400
     flag, error, result = get_quotation(id_quotation)
@@ -87,7 +88,9 @@ def get_quotations(id_quotation: int | None = None):
         return {"data": None, "msg": str(error)}, 400
     if id_quotation is not None:
         id_q, metadata, products, creation, timestamps = result
-        creation = creation.strftime(format_timestamps) if not isinstance(creation, str) else creation
+        creation = (
+            creation.strftime(format_timestamps) if not isinstance(creation, str) else creation
+        )
         data_out = {
             "id": id_q,
             "metadata": json.loads(metadata),
@@ -100,7 +103,9 @@ def get_quotations(id_quotation: int | None = None):
         data_out = []
         for item in result:
             id_q, metadata, products, creation, timestamps = item
-            creation = creation.strftime(format_timestamps) if not isinstance(creation, str) else creation
+            creation = (
+                creation.strftime(format_timestamps) if not isinstance(creation, str) else creation
+            )
             data_out.append(
                 {
                     "id": id_q,
@@ -196,17 +201,32 @@ def get_contractsWithItems(data_token):
         }, 400
     data_out = []
     for item in result:
-        (id_c, metadata, creation, quotation_id, timestamps, code, client_id, emission, abbreviation, items) = item
+        (
+            id_c,
+            metadata,
+            creation,
+            quotation_id,
+            timestamps,
+            code,
+            client_id,
+            emission,
+            abbreviation,
+            items,
+        ) = item
         metadata = validate_metadata(json.loads(metadata))
         metadata["contract_number"] = code
         metadata["client_id"] = client_id
-        metadata["emission"] = emission.strftime(format_timestamps) if not isinstance(emission, str) else emission
+        metadata["emission"] = (
+            emission.strftime(format_timestamps) if not isinstance(emission, str) else emission
+        )
         metadata["abbreviation"] = abbreviation
         data_out.append(
             {
                 "id": id_c,
                 "metadata": metadata,
-                "creation": creation.strftime(format_timestamps) if not isinstance(creation, str) else creation,
+                "creation": creation.strftime(format_timestamps)
+                if not isinstance(creation, str)
+                else creation,
                 "quotation_id": quotation_id,
                 "timestamps": json.loads(timestamps),
                 "items": json.loads(items),
@@ -322,7 +342,11 @@ def folio_from_department(data_token):
     abbs_list, code = get_iddentifiers(data_token, ["administrator"], from_where="create_folio")
     if code != 200:
         return abbs_list, code
-    folio_list = [f"SM-{abbreviation.upper()}" for abbreviation in abbs_list if isinstance(abbs_list, (str, list))]
+    folio_list = [
+        f"SM-{abbreviation.upper()}"
+        for abbreviation in abbs_list
+        if isinstance(abbs_list, (str, list))
+    ]
     folios_out = []
     for folio in folio_list:
         flag, error, folios = get_folios_by_pattern(folio, data_token)
@@ -387,63 +411,6 @@ def compare_file_and_quotation(data: dict):
     products_contract = read_file_tenium_contract(data["path"], data["pattern"], data["phrase"])
     data_out, code = compare_file_quotation(data_quotation, products_contract)
     return data_out, code
-
-
-def get_data_dict_purchases(data):
-    limit = (data.get("limit_min"), data.get("limit_max"))
-    flag, error, result = get_purchases_admin_db(limit)
-    if not flag:
-        return {"data": [], "msg": str(error)}, 400
-    data_out = []
-    for item in result:
-        data_out.append(
-            {
-                "id": item[0],
-                "metadata": json.loads(item[1]),
-                "creation": item[2],
-                "timestamps": json.loads(item[3]),
-            }
-        )
-    return {"data": data_out, "msg": "Ok"}, 200
-
-
-def get_data_table_purchases(data):
-    limit = (data.get("limit_min"), data.get("limit_max"))
-    flag, error, result = get_purchases_admin_db(limit)
-    if not flag:
-        return {"data": [], "msg": str(error)}, 400
-    data_out = []
-    for item in result:
-        metadata = json.loads(item[1])
-        timestamps = json.loads(item[3])
-        data_out.append(
-            [
-                item[0],
-                metadata.get("name", ""),
-                metadata.get("quantity", ""),
-                metadata.get("supplier", ""),
-                metadata.get("link", ""),
-                metadata.get("comments", ""),
-                metadata.get("date_required", ""),
-                item[2],
-                timestamps.get("complete", ""),
-                timestamps.get("update", ""),
-            ]
-        )
-    columns = [
-        "ID",
-        "Nombre",
-        "Cantidad",
-        "Proveedor",
-        "Link",
-        "Comentarios",
-        "Fecha requerida",
-        "Creacion",
-        "Completado",
-        "Actualizado",
-    ]
-
-    return {"data": data_out, "columns": columns, "msg": "Ok"}, 200
 
 
 def get_all_clients_data(data_token):
@@ -549,8 +516,12 @@ def get_items_supplier_name(id_supplier: str, data_token):
                 "item_name": item[1],
                 "unit_price": float(item[2]),
                 "part_number": item[3],
-                "created_at": item[4].strftime(format_timestamps) if isinstance(item[4], datetime) else str(item[4]),
-                "updated_at": item[5].strftime(format_timestamps) if isinstance(item[5], datetime) else str(item[5]),
+                "created_at": item[4].strftime(format_timestamps)
+                if isinstance(item[4], datetime)
+                else str(item[4]),
+                "updated_at": item[5].strftime(format_timestamps)
+                if isinstance(item[5], datetime)
+                else str(item[5]),
                 "currency": item[6],
                 "id_inventory": item[7],
             }
@@ -720,7 +691,9 @@ def delete_supplier(data, data_token):
 
 
 def update_extra_info_supplier(data, data_token):
-    flag, error, result = update_extra_info_supplier_db(data.get("id"), data.get("brands"), data_token)
+    flag, error, result = update_extra_info_supplier_db(
+        data.get("id"), data.get("brands"), data_token
+    )
     if not flag:
         return {"data": None, "msg": str(error)}, 400
     msg = f"Informacion extra actualizada para el proveedor con ID-{data.get('id')} por el empleado {data_token.get('name')}"
@@ -799,14 +772,20 @@ def fetch_heads(id_dep: int, data_token):
 
 
 def insert_head_from_api(data, data_token):
-    extra_info = json.loads(data["extra_info"]) if isinstance(data["extra_info"], str) else data["extra_info"]
+    extra_info = (
+        json.loads(data["extra_info"])
+        if isinstance(data["extra_info"], str)
+        else data["extra_info"]
+    )
     if "other_leaders" not in extra_info:
         extra_info["other_leaders"] = []
     if "contracts" not in extra_info:
         extra_info["contracts"] = []
     if "contracts_temp" not in extra_info:
         extra_info["contracts_temp"] = []
-    flag, error, result = insert_head_DB(data["name"], data["department"], data["employee"], extra_info, data_token)
+    flag, error, result = insert_head_DB(
+        data["name"], data["department"], data["employee"], extra_info, data_token
+    )
     if not flag:
         return {"data": None, "msg": str(error)}, 400
     msg = f"Encargado creado con ID-{result} por el empleado {data_token.get('name')}"
@@ -823,14 +802,20 @@ def insert_head_from_api(data, data_token):
 
 
 def update_head_from_api(data, data_token):
-    extra_info = json.loads(data["extra_info"]) if isinstance(data["extra_info"], str) else data["extra_info"]
+    extra_info = (
+        json.loads(data["extra_info"])
+        if isinstance(data["extra_info"], str)
+        else data["extra_info"]
+    )
     if "other_leaders" not in extra_info:
         extra_info["other_leaders"] = []
     if "contracts" not in extra_info:
         extra_info["contracts"] = []
     if "contracts_temp" not in extra_info:
         extra_info["contracts_temp"] = []
-    flag, error, result = update_head_DB(data["id"], data["department"], data["employee"], extra_info, data_token)
+    flag, error, result = update_head_DB(
+        data["id"], data["department"], data["employee"], extra_info, data_token
+    )
     if not flag:
         return {"data": None, "msg": str(error)}, 400
     msg = f"Encargado actualizado con ID-{data['id']} por el empleado {data_token.get('name')}"
@@ -945,7 +930,9 @@ def create_items_from_api(products, id_quotation, data_token, id_contract=None):
                 "revision": product.get("revision", 0),
                 "price_unit": product.get("price_unit", 0.0),
                 "description": description if len(description) <= 1024 else description[:1024],
-                "description_small": description_small if len(description_small) <= 255 else description_small[:255],
+                "description_small": description_small
+                if len(description_small) <= 255
+                else description_small[:255],
                 "id_inventory": product.get("id", None),
             }
         )
@@ -958,7 +945,9 @@ def create_quotation_from_api(data, data_token):
     if not flag:
         return {"data": None, "msg": str(error)}, 400
     msg = f"Cotizacion creada con ID-{id_quotation} por el empleado {data_token.get('name')}"
-    flag_list, error_list, result_list = create_items_from_api(data["products"], id_quotation, data_token=data_token)
+    flag_list, error_list, result_list = create_items_from_api(
+        data["products"], id_quotation, data_token=data_token
+    )
     if flag_list.count(True) == len(flag_list):
         msg += "\nItems de cotizacion creados correctamente"
     elif flag_list.count(False) == len(flag_list):
@@ -970,7 +959,9 @@ def create_quotation_from_api(data, data_token):
         }, 400
     else:
         msg += "\nError al crear ciertos items de la cotización"
-    create_notification_permission(msg, data_token, ["administracion"], "Cotizacion Creada", data_token.get("emp_id"), 0)
+    create_notification_permission(
+        msg, data_token, ["administracion"], "Cotizacion Creada", data_token.get("emp_id"), 0
+    )
     write_log_file(log_file_admin, msg, data_token)
     return {"data": id_quotation, "msg": "Ok"}, 201
 
@@ -997,7 +988,9 @@ def update_items_quotation_from_api(products, id_quotation, id_contract, dict_pr
                     "revision": new_product.get("revision", 0),
                     "price_unit": new_product.get("price_unit", 0.0),
                     "description": description if len(description) <= 1024 else description[:1024],
-                    "description_small": description_small if len(description_small) <= 255 else description_small[:255],
+                    "description_small": description_small
+                    if len(description_small) <= 255
+                    else description_small[:255],
                     "id_inventory": new_product.get("id", None),
                 },
                 data_token,
@@ -1015,8 +1008,12 @@ def update_items_quotation_from_api(products, id_quotation, id_contract, dict_pr
                 old_product["quantity"] = new_product.get("quantity", 0.0)
                 old_product["revision"] = new_product.get("revision", 0)
                 old_product["price_unit"] = new_product.get("price_unit", 0.0)
-                old_product["description"] = description if len(description) <= 1024 else description[:1024]
-                old_product["description_small"] = description_small if len(description_small) <= 255 else description_small[:255]
+                old_product["description"] = (
+                    description if len(description) <= 1024 else description[:1024]
+                )
+                old_product["description_small"] = (
+                    description_small if len(description_small) <= 255 else description_small[:255]
+                )
                 old_product["id_inventory"] = new_product.get("id", None)
                 flag, error, result = update_item_quotation(id_item, old_product, data_token)
         flag_list.append(flag)
@@ -1037,7 +1034,9 @@ def update_quoation_from_api(data, data_token):
     dict_products = {item["id"]: item for item in old_products}
     products = data["products"]
     contract_id = result[5]
-    flag_list, error_list, result_list = update_items_quotation_from_api(products, data["id"], contract_id, dict_products, data_token)
+    flag_list, error_list, result_list = update_items_quotation_from_api(
+        products, data["id"], contract_id, dict_products, data_token
+    )
     if flag_list.count(True) == len(flag_list):
         msg += "\nItems de cotizacion actualizados correctamente"
     elif flag_list.count(False) == len(flag_list):
@@ -1048,7 +1047,9 @@ def update_quoation_from_api(data, data_token):
         }, 400
     else:
         msg += "\nError al actualizar ciertos items de la cotización"
-    create_notification_permission(msg, data_token, ["administracion"], "Cotizacion Actualizada", data_token.get("emp_id"), 0)
+    create_notification_permission(
+        msg, data_token, ["administracion"], "Cotizacion Actualizada", data_token.get("emp_id"), 0
+    )
     write_log_file(log_file_admin, msg, data_token)
     return {"data": result_list, "error": error_list, "msg": msg}, 200
 
@@ -1061,7 +1062,9 @@ def delete_quotation_from_api(data, data_token):
     if not flag:
         return {"data": "Quoation unable to be deleted", "msg": str(error)}, 400
     msg = f"Cotizacion eliminada con ID-{data['id']} por el empleado {data_token.get('name')}"
-    create_notification_permission(msg, data_token, ["administracion"], "Cotizacion Eliminada", data_token.get("emp_id"), 0)
+    create_notification_permission(
+        msg, data_token, ["administracion"], "Cotizacion Eliminada", data_token.get("emp_id"), 0
+    )
     write_log_file(log_file_admin, msg, data_token)
     return {"data": result, "msg": "Ok"}, 200
 
@@ -1074,7 +1077,9 @@ def create_contract_from_api(data, data_token):
     abbreviation = data["metadata"].pop("abbreviation", "")
     msg = ""
     if data.get("quotation_id", 0) == 0:
-        flag, error, id_quotation = create_quotation(data["metadata"], status=2, data_token=data_token)
+        flag, error, id_quotation = create_quotation(
+            data["metadata"], status=2, data_token=data_token
+        )
         if not flag:
             return {"data": None, "msg": str(error)}, 400
         msg += f"Cotizacion creada con ID-{id_quotation} por el empleado {data_token.get('name')}"
@@ -1104,7 +1109,9 @@ def create_contract_from_api(data, data_token):
             "error": result,
             "msg": str(error),
         }, 400
-    flag_list, error_list, result_list = create_items_from_api(data["products"], id_quotation, id_contract)
+    flag_list, error_list, result_list = create_items_from_api(
+        data["products"], id_quotation, id_contract
+    )
     if flag_list.count(True) == len(flag_list):
         msg += "\nItems de cotizacion creados correctamente"
     elif flag_list.count(False) == len(flag_list):
@@ -1118,7 +1125,9 @@ def create_contract_from_api(data, data_token):
     else:
         msg += "\nError al crear ciertos items de la cotización"
     msg += f"Contrato creado con ID-{id_contract} por el empleado {data_token.get('name')}"
-    create_notification_permission(msg, data_token, ["administracion"], "Contrato Creado", data_token.get("emp_id"), 0)
+    create_notification_permission(
+        msg, data_token, ["administracion"], "Contrato Creado", data_token.get("emp_id"), 0
+    )
     write_log_file(log_file_admin, msg, data_token)
     return {"data": result_list, "msg": "Ok"}, 201
 
@@ -1131,7 +1140,8 @@ def update_contract_from_api(data, data_token):
         if not flag:
             return {
                 "data": None,
-                "msg": "No se pudo crear una cotizacion para relacionar con el contrato" + str(error),
+                "msg": "No se pudo crear una cotizacion para relacionar con el contrato"
+                + str(error),
             }, 400
         id_quotation = result if isinstance(result, int) and result > 0 else 0
         if id_quotation == 0:
@@ -1140,7 +1150,9 @@ def update_contract_from_api(data, data_token):
                 "msg": "No se pudo obtener el id correcto de una cotizacion para relacionar con el contrato",
             }, 400
         msg += f"Se creo una cotizacion con ID-{id_quotation} para relacionar con el contrato por el empleado {data_token.get('name')}"
-        flag_list, error_list, result_list = create_items_from_api(data["products"], id_quotation, data["id"])
+        flag_list, error_list, result_list = create_items_from_api(
+            data["products"], id_quotation, data["id"]
+        )
 
     else:
         id_quotation = data["quotation_id"]
@@ -1152,7 +1164,9 @@ def update_contract_from_api(data, data_token):
         dict_products = {item["id"]: item for item in old_products}
         products = data["products"]
         contract_id = result[5]
-        flag_list, error_list, result_list = update_items_quotation_from_api(products, data["id"], contract_id, dict_products, data_token)
+        flag_list, error_list, result_list = update_items_quotation_from_api(
+            products, data["id"], contract_id, dict_products, data_token
+        )
     if flag_list.count(True) == len(flag_list):
         msg += "\nItems de cotizacion creados/actualizados correctamente"
     elif flag_list.count(False) == len(flag_list):
@@ -1164,7 +1178,12 @@ def update_contract_from_api(data, data_token):
             "msg": str(result_q) + " " + str(result_c) if not flag else "Cotización no creada",
         }, 400
     else:
-        msg += "\nError al crear o actualizar ciertos items de la cotización" + f"items con error: {len(error_list)}" + "\n" + f"items correctos: {len(result_list)}"
+        msg += (
+            "\nError al crear o actualizar ciertos items de la cotización"
+            + f"items con error: {len(error_list)}"
+            + "\n"
+            + f"items correctos: {len(result_list)}"
+        )
     contract_number = data["metadata"].pop("contract_number", "error cnumber")
     client_id = data["metadata"].pop("client_id", 50)
     emission = data["metadata"].pop("emission", "error edate")
@@ -1183,7 +1202,9 @@ def update_contract_from_api(data, data_token):
     if not flag:
         return {"data": None, "msg": str(error)}, 400
     msg += f"Contrato actualizado con ID-{data['id']} por el empleado {data_token.get('name')}"
-    create_notification_permission(msg, data_token, ["administracion"], "Contrato Actualizado", data_token.get("emp_id"), 0)
+    create_notification_permission(
+        msg, data_token, ["administracion"], "Contrato Actualizado", data_token.get("emp_id"), 0
+    )
     write_log_file(log_file_admin, msg, data_token)
     return {"data": result, "error": error_list, "msg": result_list}, 200
 
@@ -1196,6 +1217,8 @@ def delete_contract_from_api(data, data_token):
     if not flag:
         return {"data": None, "msg": str(error)}, 400
     msg = f"Contrato eliminado con ID-{data['id']} por el empleado {data_token.get('name')}"
-    create_notification_permission(msg, data_token, ["administracion"], "Contrato Eliminado", data_token.get("emp_id"), 0)
+    create_notification_permission(
+        msg, data_token, ["administracion"], "Contrato Eliminado", data_token.get("emp_id"), 0
+    )
     write_log_file(log_file_admin, msg, data_token)
     return {"data": result, "msg": "Ok"}, 200

@@ -10,14 +10,12 @@ import ttkbootstrap as ttk
 
 from static.constants import (
     conversion_quizzes_path,
+    filepath_recommendations,
     format_timestamps,
 )
-from static.constants import filepath_recommendations
 from templates.controllers.notifications.Notifications_controller import (
     insert_notification,
 )
-
-
 
 
 def calculate_results_quizzes(dict_quizz: dict, tipo_q: int):

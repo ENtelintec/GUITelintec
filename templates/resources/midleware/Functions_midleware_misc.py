@@ -10,18 +10,18 @@ import pytz
 
 from static.constants import (
     filepath_settings,
+    format_date,
     format_timestamps,
     timezone_software,
-    format_date,
 )
-from templates.Functions_openAI import get_response_assistant, get_files_list_openai
 from templates.controllers.employees.vacations_controller import get_vacations_data
 from templates.controllers.material_request.sm_controller import get_pending_sm_db
 from templates.controllers.misc.tasks_controller import get_task_by_id_emp
 from templates.controllers.notifications.Notifications_controller import (
-    get_notifications_by_user,
     get_notifications_by_permission,
+    get_notifications_by_user,
 )
+from templates.Functions_openAI import get_files_list_openai, get_response_assistant
 
 
 def get_all_notification_db_user_status(id_emp, status, data_token):

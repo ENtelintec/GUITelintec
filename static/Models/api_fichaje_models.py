@@ -3,17 +3,16 @@ __author__ = "Edisson Naula"
 __date__ = "$ 28/ago/2024  at 10:38 $"
 
 from flask_restx import fields
+from wtforms import IntegerField, StringField
 from wtforms.fields.datetime import DateField
 from wtforms.fields.form import FormField
 from wtforms.fields.list import FieldList
 from wtforms.fields.numeric import FloatField
-
-from wtforms.validators import InputRequired
 from wtforms.form import Form
-from wtforms import IntegerField, StringField
+from wtforms.validators import InputRequired
 
-from static.Models.api_models import date_filter, datetime_filter
 from static.constants import api
+from static.Models.api_models import date_filter, datetime_filter
 
 fichaje_request_model = api.model(
     "FichajeRequest",

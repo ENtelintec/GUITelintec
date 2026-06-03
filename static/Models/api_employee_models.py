@@ -10,8 +10,8 @@ from wtforms.fields.list import FieldList
 from wtforms.form import Form
 from wtforms.validators import InputRequired
 
-from static.Models.api_models import date_filter, datetime_filter
 from static.constants import api
+from static.Models.api_models import date_filter, datetime_filter
 
 employee_model = api.model(
     "Employee",

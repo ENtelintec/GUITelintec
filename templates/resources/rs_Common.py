@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-__author__ = "Edisson Naula"
-__date__ = "$ 20/sept/2024  at 17:06 $"
 
 from flask import request, send_file
 from flask_restx import Namespace, Resource
@@ -10,13 +8,16 @@ from static.Models.api_models import (
 )
 from static.Models.api_payroll_models import RequestFileForm, request_file_model
 from templates.resources.methods.Functions_Aux_Login import token_verification_procedure
-from templates.resources.midleware.Functions_midleware_RRHH import (
-    get_files_list_nomina,
-    download_nomina_docs,
-)
 from templates.resources.midleware.Functions_midleware_misc import (
     get_all_vacations_data_date,
 )
+from templates.resources.midleware.Functions_midleware_RRHH import (
+    download_nomina_docs,
+    get_files_list_nomina,
+)
+
+__author__ = "Edisson Naula"
+__date__ = "$ 20/sept/2024  at 17:06 $"
 
 ns = Namespace("GUI/api/v1/common")
 

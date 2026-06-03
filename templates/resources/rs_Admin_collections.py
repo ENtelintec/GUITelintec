@@ -1,102 +1,82 @@
 # -*- coding: utf-8 -*-
 
 
-from templates.resources.midleware.MD_Purchases import get_items_with_fast_order
-from static.Models.api_purchases_models import (
-    ReportActivityCreateControlTableForm,
-    ReportActivityUpdateControlTableForm,
-    basic_control_table_report_model,
-    basic_control_table_report_update_model,
-)
-from templates.resources.midleware.MD_Purchases import fetch_po_item_sm_item_id
-from templates.resources.midleware.MD_Admin_Collections import (
-    download_report_activity_attachment_api,
-)
-from static.Models.api_purchases_models import ReportActivityDownloadAttForm
-from static.Models.api_purchases_models import report_activity_download_att_model
-from templates.resources.midleware.MD_Admin_Collections import (
-    create_activity_report_attachment_api,
-)
 import os
 import tempfile
-from werkzeug.utils import secure_filename
-from static.Models.api_sgi_models import expected_files_attachment
-from templates.resources.midleware.MD_Admin_Collections import get_quotations_from_api
-from templates.resources.midleware.MD_Admin_Collections import (
-    delete_quotation_activity_from_api,
-)
-from templates.resources.midleware.MD_Admin_Collections import (
-    update_quotation_activity_from_api,
-)
-from templates.resources.midleware.MD_Admin_Collections import (
-    create_quotation_activity_from_api,
-)
-from static.Models.api_purchases_models import ReportActivityDeleteForm
-from static.Models.api_purchases_models import report_activity_delete_model
-from templates.resources.midleware.MD_Admin_Collections import (
-    delete_remission_from_api,
-)
-from static.Models.api_purchases_models import ReportActivityUpdateForm
-from static.Models.api_purchases_models import remission_activity_update_model
-from templates.resources.midleware.MD_Admin_Collections import (
-    update_remission_from_api,
-    update_remission_control_table_from_api,
-)
-from static.Models.api_purchases_models import ReportActivityCreateForm
-from static.Models.api_purchases_models import remission_activity_create_model
-from templates.resources.midleware.MD_Admin_Collections import (
-    create_remission_from_api,
-)
-from templates.resources.midleware.MD_Admin_Collections import (
-    get_remission_from_api,
-)
-from static.Models.api_purchases_models import (
-    QuotationActivityCreateForm,
-    QuotationActivityDeleteForm,
-    QuotationActivityUpdateForm,
-    QuotationActivityStatusUpdateForm,
-    quotation_activity_create_model,
-    quotation_activity_update_model,
-    quotation_activity_delete_model,
-    quoatation_activity_status_update_model,
-)
-from static.Models.api_purchases_models import po_app_delete_model
+
 from flask import request, send_file
 from flask_restx import Namespace, Resource
+from werkzeug.utils import secure_filename
 
 from static.Models.api_models import expected_headers_per
 from static.Models.api_purchases_models import (
-    pos_application_post_model,
+    POAppDeleteForm,
     POsApplicationPostForm,
-    pos_application_put_model,
     POsApplicationPutForm,
     PurchaseOrderDeleteForm,
-    purchase_order_update_status_model,
-    PurchaseOrderUpdateStatusForm,
-    purchase_order_post_model,
     PurchaseOrderPostForm,
-    purchase_order_put_model,
     PurchaseOrderPutForm,
+    PurchaseOrderUpdateStatusForm,
+    QuotationActivityCreateForm,
+    QuotationActivityDeleteForm,
+    QuotationActivityStatusUpdateForm,
+    QuotationActivityUpdateForm,
+    ReportActivityCreateControlTableForm,
+    ReportActivityCreateForm,
+    ReportActivityDeleteForm,
+    ReportActivityDownloadAttForm,
+    ReportActivityUpdateControlTableForm,
+    ReportActivityUpdateForm,
+    basic_control_table_report_model,
+    basic_control_table_report_update_model,
+    po_app_delete_model,
+    pos_application_post_model,
+    pos_application_put_model,
     purchase_order_delete_model,
-    POAppDeleteForm,
+    purchase_order_post_model,
+    purchase_order_put_model,
+    purchase_order_update_status_model,
+    quoatation_activity_status_update_model,
+    quotation_activity_create_model,
+    quotation_activity_delete_model,
+    quotation_activity_update_model,
+    remission_activity_create_model,
+    remission_activity_update_model,
+    report_activity_delete_model,
+    report_activity_download_att_model,
 )
+from static.Models.api_sgi_models import expected_files_attachment
 from templates.resources.methods.Functions_Aux_Login import token_verification_procedure
-
+from templates.resources.midleware.MD_Admin_Collections import (
+    create_activity_report_attachment_api,
+    create_quotation_activity_from_api,
+    create_remission_from_api,
+    delete_quotation_activity_from_api,
+    delete_remission_from_api,
+    download_report_activity_attachment_api,
+    get_quotations_from_api,
+    get_remission_from_api,
+    update_quotation_activity_from_api,
+    update_remission_control_table_from_api,
+    update_remission_from_api,
+)
 from templates.resources.midleware.MD_Purchases import (
-    fetch_purchase_orders,
-    create_purchaser_order_api,
-    update_purchase_order_api,
+    cancel_po_application_api,
     cancel_purchase_order_api,
     change_state_order_api,
-    create_po_application_api,
-    update_po_application_api,
-    cancel_po_application_api,
     change_state_po_application_api,
-    fetch_pos_applications,
+    create_po_application_api,
+    create_purchaser_order_api,
     dowload_file_purchase,
-    fetch_pos_applications_to_approve,
-    generate_folios_po,
     download_file_purchase_item_approved,
+    fetch_po_item_sm_item_id,
+    fetch_pos_applications,
+    fetch_pos_applications_to_approve,
+    fetch_purchase_orders,
+    generate_folios_po,
+    get_items_with_fast_order,
+    update_po_application_api,
+    update_purchase_order_api,
 )
 
 __author__ = "Edisson Naula"

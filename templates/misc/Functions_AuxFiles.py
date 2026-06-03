@@ -5,6 +5,7 @@ __date__ = "$ 22/ene./2024  at 16:09 $"
 import json
 import os
 import re
+import xml.etree.ElementTree as ET
 from datetime import datetime
 
 import pandas as pd
@@ -12,33 +13,31 @@ import pytz
 
 from static.constants import (
     cache_file_resume_fichaje_path,
-    status_dic,
-    quizz_out_path,
     format_timestamps,
+    quizz_out_path,
+    status_dic,
     timezone_software,
 )
-from templates.misc.Functions_Files import (
-    get_fichajes_resume_cache,
-    update_fichajes_resume_cache,
-)
 from templates.controllers.employees.employees_controller import (
-    get_name_employee,
     get_contract_employes,
     get_id_employee,
+    get_name_employee,
     test_id_employee,
 )
 from templates.controllers.fichajes.fichajes_controller import (
-    get_fichaje_DB,
-    update_fichaje_DB,
-    insert_new_fichaje_DB,
     create_new_emp_fichaje,
+    get_fichaje_DB,
+    insert_new_fichaje_DB,
+    update_fichaje_DB,
 )
 from templates.controllers.material_request.sm_controller import get_sm_entries
 from templates.controllers.product.products_controller import (
     get_products_w_reservations,
 )
-
-import xml.etree.ElementTree as ET
+from templates.misc.Functions_Files import (
+    get_fichajes_resume_cache,
+    update_fichajes_resume_cache,
+)
 
 
 def get_data_employees(status="ACTIVO"):

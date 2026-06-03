@@ -2,13 +2,14 @@
 __author__ = "Edisson Naula"
 __date__ = "$ 23/jul./2024  at 5:50 $"
 
+from reportlab.pdfgen import canvas
+
 from templates.forms.PDFGenerator import (
     create_datos_personales,
+    create_header_telintec,
     display_recommendations,
     display_result,
-    create_header_telintec,
 )
-from reportlab.pdfgen import canvas
 
 
 def QuizzSalidaPDF(

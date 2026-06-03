@@ -2,9 +2,9 @@
 __author__ = "Edisson Naula"
 __date__ = "$ 01/may./2024  at 19:33 $"
 
-from templates.database.connection import execute_sql
-
 import json
+
+from templates.database.connection import execute_sql
 
 
 def get_v_orders(data_token, limit=(0, 100)):

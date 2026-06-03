@@ -1,47 +1,47 @@
 # -*- coding: utf-8 -*-
-from templates.controllers.vouchers.vouchers_controller import (
-    update_voucher_vehicle_status,
-)
-from static.constants import log_file_sgi_chv
-from templates.misc.Functions_Files import write_log_file
-from templates.Functions_Utils import create_notification_permission_notGUI
-from static.constants import format_date
-from botocore.exceptions import ClientError, NoCredentialsError
-from static.constants import secrets
-
-__author__ = "Edisson Naula"
-__date__ = "$ 06/jun/2025  at 14:54 $"
-
 import json
 from datetime import datetime, timedelta
 
 import boto3
 import pytz
+from botocore.exceptions import ClientError, NoCredentialsError
 
-from static.constants import timezone_software, format_timestamps
+from static.constants import (
+    format_date,
+    format_timestamps,
+    log_file_sgi_chv,
+    secrets,
+    timezone_software,
+)
 from templates.controllers.vouchers.vouchers_controller import (
     create_voucher_general,
-    create_voucher_tools,
-    create_voucher_safety,
-    update_voucher_tools,
-    update_voucher_safety,
     create_voucher_item,
-    update_voucher_item,
-    get_vouchers_tools_with_items_date,
-    get_vouchers_safety_with_items,
-    update_history_voucher,
-    update_state_tools_voucher,
-    update_state_safety_voucher,
-    delete_voucher_item,
-    get_vouchers_vehicle_with_items,
+    create_voucher_safety,
+    create_voucher_tools,
     create_voucher_vehicle,
-    update_voucher_vehicle,
     delete_items_voucher,
+    delete_voucher_item,
     delete_voucher_tools,
-    update_voucher_general_from_delete,
     delete_voucher_vehicle,
+    get_vouchers_safety_with_items,
+    get_vouchers_tools_with_items_date,
+    get_vouchers_vehicle_with_items,
+    update_history_voucher,
+    update_state_safety_voucher,
+    update_state_tools_voucher,
+    update_voucher_general_from_delete,
+    update_voucher_item,
+    update_voucher_safety,
+    update_voucher_tools,
+    update_voucher_vehicle,
     update_voucher_vehicle_files,
+    update_voucher_vehicle_status,
 )
+from templates.Functions_Utils import create_notification_permission_notGUI
+from templates.misc.Functions_Files import write_log_file
+
+__author__ = "Edisson Naula"
+__date__ = "$ 06/jun/2025  at 14:54 $"
 
 
 def create_voucher_tools_api(data, data_token):

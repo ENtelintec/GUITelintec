@@ -3,9 +3,10 @@ __author__ = "Edisson Naula"
 __date__ = "$ 02/nov./2023  at 17:32 $"
 
 
+from pathlib import Path
+
 from dotenv import dotenv_values
 from flask_restx import Api
-from pathlib import Path
 
 environment = "dev"
 secrets = dotenv_values(".env") if environment != "prod" else dotenv_values("../.env")

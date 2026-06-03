@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-from numpy import iterable
 __author__ = "Edisson Naula"
 __date__ = "$ 22/jul./2024  at 15:34 $"
 

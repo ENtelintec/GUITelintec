@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-__author__ = "Edisson Naula"
-__date__ = "$ 12/jul./2024  at 15:16 $"
 
 import csv
 import json
@@ -10,32 +8,34 @@ import pandas as pd
 import pytz
 
 from static.constants import (
-    format_date,
-    log_file_bitacora_path,
     delta_bitacora_edit,
     filepath_bitacora_download,
+    format_date,
     format_timestamps,
+    log_file_bitacora_path,
     timezone_software,
 )
-from templates.Functions_Utils import create_notification_permission
 from templates.controllers.employees.bitacora_rh_controller import (
+    delete_bitacora_rh_db,
     get_all_bitacora_rh_db,
+    get_bitacora_rh_db_by_date,
     insert_bitacora_rh_db,
     update_bitacora_rh_db,
-    delete_bitacora_rh_db,
-    get_bitacora_rh_db_by_date,
 )
 from templates.controllers.fichajes.fichajes_controller import get_all_fichajes_op
+from templates.Functions_Utils import create_notification_permission
 from templates.misc.Functions_AuxFiles import (
+    erase_value_bitacora,
+    get_events_op_date,
     split_commment,
     unify_comment_dict,
-    get_events_op_date,
     update_bitacora,
     update_bitacora_value,
-    erase_value_bitacora,
 )
 from templates.misc.Functions_Files import write_log_file
 
+__author__ = "Edisson Naula"
+__date__ = "$ 12/jul./2024  at 15:16 $"
 
 def check_date_difference(date_modify, delta):
     flag = True

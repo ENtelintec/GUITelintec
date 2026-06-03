@@ -6,8 +6,8 @@ import json
 
 import numpy as np
 
-from templates.Functions_AuxPlots import get_data_movements_type, get_data_sm_per_range
 from templates.controllers.fichajes.fichajes_controller import get_fichaje_DB
+from templates.Functions_AuxPlots import get_data_movements_type, get_data_sm_per_range
 from templates.misc.Functions_Files import get_cumulative_data_fichajes_dict
 
 

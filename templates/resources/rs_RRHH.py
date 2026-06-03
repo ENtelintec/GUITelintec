@@ -1,71 +1,59 @@
+# -*- coding: utf-8 -*-
 import os
 import tempfile
 
-from flask import send_file, request
-
-# -*- coding: utf-8 -*-
-__author__ = "Edisson Naula"
-__date__ = "$ 02/nov./2023  at 17:29 $"
-
+from flask import request, send_file
 from flask_restx import Namespace, Resource
 from werkzeug.utils import secure_filename
 
-from static.Models.api_employee_models import (
-    employee_model_insert,
-    employee_model_update,
-    employee_model_delete,
-    employees_examenes_model,
-    employee_exam_model_insert,
-    employee_exam_model_delete,
-    employee_exam_model_update,
-    employees_vacations_model,
-    employee_vacation_model_insert,
-    employee_vacation_model_delete,
-    EmployeeInsertForm,
-    EmployeeUpdateForm,
-    EmployeeDeleteForm,
-    EmployeeMedInsertForm,
-    EmployeeMedUpdateForm,
-    EmployeeMedDeleteForm,
-    EmployeeVacInsertForm,
-    DeleteVacationForm,
-    employee_model_terminate,
-    EmployeeTerminateForm,
-)
-from static.Models.api_fichajes_models import (
-    answer_files_fichajes_model,
-    request_data_fichaje_files_model,
-    answer_fichajes_model,
-    expected_files,
-    DataFichajesFileForm,
-)
-from static.Models.api_models import (
-    employees_resume_model,
-    expected_headers_per,
-    RequestFileReportQuizzForm,
-    request_file_report_quizz_model,
-)
-from static.Models.api_payroll_models import (
-    update_files_parser,
-    create_mail_model,
-    CreateMailForm,
-    UpdateDataPayrollForm,
-    update_data_payroll_model,
-)
 from static.constants import (
     path_contract_files,
 )
-from templates.resources.methods.Functions_Aux_Login import token_verification_procedure
-from templates.resources.midleware.Functions_DB_midleware import (
-    get_info_employees_with_status,
-    get_info_employee_id,
-    get_all_vacations,
-    get_vacations_employee,
-    create_csv_file_employees,
+from static.Models.api_employee_models import (
+    DeleteVacationForm,
+    EmployeeDeleteForm,
+    EmployeeInsertForm,
+    EmployeeMedDeleteForm,
+    EmployeeMedInsertForm,
+    EmployeeMedUpdateForm,
+    EmployeeTerminateForm,
+    EmployeeUpdateForm,
+    EmployeeVacInsertForm,
+    employee_exam_model_delete,
+    employee_exam_model_insert,
+    employee_exam_model_update,
+    employee_model_delete,
+    employee_model_insert,
+    employee_model_terminate,
+    employee_model_update,
+    employee_vacation_model_delete,
+    employee_vacation_model_insert,
+    employees_examenes_model,
+    employees_vacations_model,
+)
+from static.Models.api_fichajes_models import (
+    DataFichajesFileForm,
+    answer_fichajes_model,
+    answer_files_fichajes_model,
+    expected_files,
+    request_data_fichaje_files_model,
+)
+from static.Models.api_models import (
+    RequestFileReportQuizzForm,
+    employees_resume_model,
+    expected_headers_per,
+    request_file_report_quizz_model,
+)
+from static.Models.api_payroll_models import (
+    CreateMailForm,
+    UpdateDataPayrollForm,
+    create_mail_model,
+    update_data_payroll_model,
+    update_files_parser,
 )
 from templates.controllers.employees.em_controller import (
-    get_all_examenes,
     delete_exam_med,
+    get_all_examenes,
 )
 from templates.controllers.employees.employees_controller import (
     delete_employee,
@@ -74,29 +62,40 @@ from templates.controllers.employees.vacations_controller import (
     delete_vacation,
     get_vacations_data,
 )
-from templates.resources.midleware.Functions_midleware_RRHH import (
-    get_files_fichaje,
-    get_fichaje_data,
-    insert_new_vacation,
-    update_vacation,
-    get_all_quizzes,
-    generate_pdf_from_json,
-    create_payroll_file_attachment_api,
-    create_mail_payroll,
-    update_payroll_list_employees,
-    update_data_employee,
-    get_files_list_nomina_RH,
-    fetch_employees_without_records,
-    fetch_medicals,
-    fetch_medical_employee,
-    create_new_employee_db,
-    update_employee_db,
-    insert_medical_db,
-    update_medical_db,
-    fetch_fichajes_all_employees,
-    fetch_fichaje_employee,
-    terminate_employee_from_api,
+from templates.resources.methods.Functions_Aux_Login import token_verification_procedure
+from templates.resources.midleware.Functions_DB_midleware import (
+    create_csv_file_employees,
+    get_all_vacations,
+    get_info_employee_id,
+    get_info_employees_with_status,
+    get_vacations_employee,
 )
+from templates.resources.midleware.Functions_midleware_RRHH import (
+    create_mail_payroll,
+    create_new_employee_db,
+    create_payroll_file_attachment_api,
+    fetch_employees_without_records,
+    fetch_fichaje_employee,
+    fetch_fichajes_all_employees,
+    fetch_medical_employee,
+    fetch_medicals,
+    generate_pdf_from_json,
+    get_all_quizzes,
+    get_fichaje_data,
+    get_files_fichaje,
+    get_files_list_nomina_RH,
+    insert_medical_db,
+    insert_new_vacation,
+    terminate_employee_from_api,
+    update_data_employee,
+    update_employee_db,
+    update_medical_db,
+    update_payroll_list_employees,
+    update_vacation,
+)
+
+__author__ = "Edisson Naula"
+__date__ = "$ 02/nov./2023  at 17:29 $"
 
 ns = Namespace("GUI/api/v1/rrhh")
 
