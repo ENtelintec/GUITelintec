@@ -330,15 +330,20 @@ def update_items_sm(items: list, sm_id: int, data_token):
             id_inventory = item.get("id_inventory", 0)
             if id_inventory in ids_list:
                 continue
-            extra_info = item.get("extra_info", {})
-            is_tool = item.get("is_tool", 0)
+            extra_info = item.get("extra_info") or {}
+            # url/is_tool pueden venir en primer nivel (flujo de edicion, donde
+            # extract_extra_info_sm_item los sube desde extra_info) o solo dentro
+            # de extra_info (flujo de dispatch_sm, que pasa los items crudos de
+            # get_sm_by_id). El fallback a extra_info evita pisar el valor real
+            # con "" / 0 cuando la clave de primer nivel no existe.
+            is_tool = item.get("is_tool", extra_info.get("is_tool", 0))
             extra_info["is_tool"] = is_tool if is_tool is not None else 0
             approve_required = extra_info.get("approve_required", 0)
             if approve_required is None:
                 extra_info["approve_required"] = 1 if is_tool == 1 else 0
             else:
                 extra_info["approve_required"] = approve_required
-            extra_info["url"] = item.get("url", "")
+            extra_info["url"] = item.get("url", extra_info.get("url", ""))
             if item.get("id", 0) != 0:
                 ids_list.append(id_inventory)
                 sql = (
@@ -590,7 +595,6 @@ def update_sm_db(data, data_token):
         "history = %s, comment = %s, extra_info = %s "
         "WHERE sm_id = %s"
     )
-    print(history, comment, extra_info)
     val = (
         data["info"]["folio"],
         data["info"]["contract"],

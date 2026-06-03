@@ -134,7 +134,6 @@ def create_header_telintec(
     img = img if img is not None else image_logo
     # header
     # bottom line
-    print(start_box_x, position_header_y + height_box - pady, page_x - start_box_x, position_header_y + height_box - pady)
     master.line(
         start_box_x,
         position_header_y + height_box - pady,
