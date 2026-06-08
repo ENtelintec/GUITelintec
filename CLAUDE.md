@@ -6,6 +6,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Internal Telintec back-office REST API — Flask + flask-restx — exposing endpoints under `/GUI/api/v1/<area>` for RRHH (HR), SM (material requests), Almacén (inventory), SGI, Bitácora, Dashboards, Admin/Presales, Admin/Collections, Common, Misc, and Login/UserSystem. The Flask app is consumed by separate desktop GUI clients (the repo's name is historical; this project is the API, not a GUI). MySQL is the backing store; JWT bearer tokens carry user permissions.
 
+## Change docs
+
+Per-change design notes live in [`Docs/`](Docs/) (Spanish, one `.md` per change, relative `../` links into the code). When you make a non-trivial change — new/altered endpoint, cross-layer refactor, schema/contract change — add a short doc there following the existing style ([`heads_crud_fields_sync.md`](Docs/heads_crud_fields_sync.md) is a good template: the 4 layers touched, what changed, and an "Al modificar" section). Current docs:
+
+- [`po_folio_generation_from_contract_code.md`](Docs/po_folio_generation_from_contract_code.md) — PO folio generation now reads the contract `code` column (last 4 digits) instead of `metadata.contract_number`; max+1-per-pattern consecutive logic; `get_purchase_orders` (no-items listing).
+- [`heads_crud_fields_sync.md`](Docs/heads_crud_fields_sync.md) — `/head` CRUD aligned with its `fetch` (editable `name`, vacant `employee` as `NULL`, `area` wired end-to-end).
+- [`purchase_list_pdf.md`](Docs/purchase_list_pdf.md) — purchase list PDF generation.
+- [`sm_items_extra_info_url_fix.md`](Docs/sm_items_extra_info_url_fix.md) — SM items `extra_info` URL fix.
+- [`payroll_s3_upload.md`](Docs/payroll_s3_upload.md) — payroll S3 upload.
+
 ## Run / lint
 
 - **Run dev server**: `python wsgi.py` — binds 127.0.0.1:5000 with `debug=True`. `app.py` is the Flask app factory; `wsgi.py` is the entry point.
