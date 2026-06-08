@@ -967,12 +967,12 @@ def generate_folios_po(reference, data_token):
             abbs_area.append(item[0])
             dict_abbs[item[0].lower()] = {"initial": item[0].split("-")[0]}
         elif item[4] == 1:
-            extra_info = json.loads(item[2])
-            contract_number = extra_info.get("contract_number", "")
-            if contract_number == "":
+            contract_code = item[5] if item[5] is not None else ""
+            if contract_code == "":
                 continue
-            abbs_area.append(contract_number[-4:])
-            dict_abbs[contract_number[-4:].lower()] = {"initial": item[3]}
+            code = contract_code[-4:]
+            abbs_area.append(code)
+            dict_abbs[code.lower()] = {"initial": item[3]}
 
     # abbs_area = [item[0] for item in result_abb if item[0] != "" and item[4] == 0]
     reference_parts = reference.lower().split("-")
@@ -994,48 +994,33 @@ def generate_folios_po(reference, data_token):
             "data": result,
             "error": "Error at retrieving data from db",
         }, 400
-    folios_out = []
+    def extract_count(folio_value, pattern):
+        remainder = folio_value.lower().replace(pattern.lower(), "").split("-")
+        for number in remainder:
+            try:
+                return int(number)
+            except (ValueError, TypeError):
+                continue
+        return 0
+
+    count_normal = 0
+    count_maestro = 0
+    count_cotfc = 0
     for po_order in result:
         id_order, folio = po_order
-        count = 0
-        if folio_normal.lower() in folio.lower():
-            folio_temp = folio.lower().replace(folio_normal.lower(), "").split("-")
-            for number in folio_temp:
-                try:
-                    count = int(number)
-                    break
-                except Exception as e:
-                    print("error when parsing count:", str(e))
-                    continue
-            folios_out.append(f"{folio_normal}-{count + 1:03d}".upper())
-        elif folio_maestro.lower() in folio.lower():
-            folio_temp = folio.lower().replace(folio_maestro.lower(), "").split("-")
-            for number in folio_temp:
-                try:
-                    count = int(number)
-                    break
-                except Exception as e:
-                    print("error when parsing count:", str(e))
-                    continue
-            folios_out.append(
-                f"{folio_maestro}-{count + 1:03d}-{dict_abbs[reference_parts[-2]].get('initial', '')}{reference_parts[-1]}".upper()
-            )
-        else:
-            folio_temp = folio.lower().replace(folio_cotfc.lower(), "").split("-")
-            for number in folio_temp:
-                try:
-                    count = int(number)
-                    break
-                except Exception as e:
-                    print("error when parsing count:", str(e))
-                    continue
-            folios_out.append(f"{folio_cotfc}-{count + 1:03d}".upper())
-    if len(folios_out) == 0:
-        folios_out = [
-            f"{folio_normal}".upper(),
-            f"{folio_maestro}-{dict_abbs[reference_parts[-2]].get('initial', '')}{reference_parts[-1]}".upper(),
-            f"{folio_cotfc}".upper(),
-        ]
+        folio_lower = folio.lower()
+        if folio_cotfc.lower() in folio_lower:
+            count_cotfc = max(count_cotfc, extract_count(folio, folio_cotfc))
+        elif folio_normal.lower() in folio_lower:
+            count_normal = max(count_normal, extract_count(folio, folio_normal))
+        elif folio_maestro.lower() in folio_lower:
+            count_maestro = max(count_maestro, extract_count(folio, folio_maestro))
+    initial = dict_abbs.get(reference_parts[-2], {}).get("initial", "")
+    folios_out = [
+        f"{folio_normal}-{count_normal + 1:03d}".upper(),
+        f"{folio_maestro}-{count_maestro + 1:03d}-{initial}{reference_parts[-1]}".upper(),
+        f"{folio_cotfc}-{count_cotfc + 1:03d}".upper(),
+    ]
     return {"data": folios_out, "error": None}, 200
 
 
