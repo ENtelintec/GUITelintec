@@ -978,8 +978,9 @@ def generate_folios_po(reference, data_token):
     reference_parts = reference.lower().split("-")
     if len(reference_parts) <= 2:
         return {"data": [], "error": "Bad reference"}, 400
+    print(reference_parts, abbs_area)
     if reference_parts[1].upper() not in abbs_area and reference_parts[1].lower() not in abbs_area:
-        return {"data": [], "error": "Bad reference, not in patterns"}, 400
+        return {"data": [], "error": "Bad reference, not in patterns or contract not in db"}, 400
     folio_normal = "OC-GC" + "-".join(reference_parts[-2:])
     folio_maestro = "OCM-GC" + f"{reference_parts[-2]}"
     folio_cotfc = "OC-GCCOTFC" + f"-{'-'.join(reference_parts[-2:])}"
