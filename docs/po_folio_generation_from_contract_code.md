@@ -83,6 +83,15 @@ sin `GROUP BY` — para consumidores que necesitan las cabeceras de orden sin el
 costo de agregar items. El cálculo del consecutivo **no** lo usa: sigue con
 `get_folios_po_from_pattern`, que ya devuelve solo `(id_order, folio)` filtrado.
 
+## Consistencia en `contracts_controller.py`
+
+Para evitar divergencias entre `code` y `metadata->'$.contract_number'`, las demás
+búsquedas por últimos 4 dígitos del controlador también se alinearon a `code`:
+
+- `get_items_contract_string` → `WHERE RIGHT(c.code, 4) = %s` (se conserva el
+  `OR JSON_EXTRACT(c.metadata, '$.abbreviation_sm') = %s`).
+- `get_contract_and_items_from_number` → `WHERE RIGHT(c.code, 4) = %s`.
+
 ## Al modificar
 
 - El código del contrato sale de la columna **`code`** (no de `metadata`). Si se

@@ -910,6 +910,7 @@ def get_contracts_abreviations(data_token):
     data_out = []
     for item in result:
         metadata = json.loads(item[2])
+        metadata["contract_number"] = item[5]
         data_out.append(
             {
                 "abreviation": item[0],
