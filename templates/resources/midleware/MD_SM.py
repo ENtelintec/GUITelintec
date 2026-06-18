@@ -713,7 +713,7 @@ def cancel_sm(data, data_token):
             data_token,
             ["sm"],
             "SM Cancelada",
-            data["info"]["emp_id"],
+            data_token["emp_id"],
             emp_id_creation,
         )
         write_log_file(log_file_sm_path, msg, data_token)
