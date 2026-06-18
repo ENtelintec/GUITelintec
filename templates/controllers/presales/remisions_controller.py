@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import json
+
 from templates.database.connection import execute_sql
 
 __author__ = "Edisson Naula"

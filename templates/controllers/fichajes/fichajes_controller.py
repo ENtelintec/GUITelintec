@@ -4,8 +4,8 @@ __date__ = "$ 01/may./2024  at 18:20 $"
 
 import json
 
-from templates.database.connection import execute_sql
 from templates.controllers.employees.employees_controller import get_employee_id_name
+from templates.database.connection import execute_sql
 
 
 def update_fichaje_DB(

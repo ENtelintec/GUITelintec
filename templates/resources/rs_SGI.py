@@ -1,66 +1,65 @@
 # -*- coding: utf-8 -*-
-from templates.resources.midleware.MD_SGI_Vouchers import create_voucher_tools_attachment_api
-from templates.resources.midleware.MD_SGI_Vouchers import create_voucher_epp_attachment_api
-from static.Models.api_sgi_models import VehicleVoucherDownloadAttachmentForm
-from static.Models.api_sgi_models import vehicle_voucher_download_att_model
-from flask import send_file
-from templates.resources.midleware.MD_SGI import download_voucher_vehicle_attachment_api
-from static.Models.api_sgi_models import expected_files_attachment
-import tempfile
 import os
+import tempfile
 
+from flask import request, send_file
+from flask_restx import Namespace, Resource
 from werkzeug.utils import secure_filename
+
+from static.Models.api_models import expected_headers_per
+from static.Models.api_sgi_models import (
+    VehicleVoucherDownloadAttachmentForm,
+    VoucherSafetyFormDelete,
+    VoucherSafetyFormPost,
+    VoucherSafetyFormPut,
+    VoucherSafetyStatusFormPut,
+    VoucherToolsFormDelete,
+    VoucherToolsFormPost,
+    VoucherToolsFormPut,
+    VoucherToolsStatusFormPut,
+    VoucherVehicleDeleteForm,
+    VoucherVehiclePostForm,
+    VoucherVehiclePutForm,
+    expected_files_attachment,
+    vehicle_voucher_delete_model,
+    vehicle_voucher_download_att_model,
+    voucher_safety_delete_model,
+    voucher_safety_post_model,
+    voucher_safety_put_model,
+    voucher_safety_status_put_model,
+    voucher_tools_delete_model,
+    voucher_tools_post_model,
+    voucher_tools_put_model,
+    voucher_tools_status_put_model,
+    voucher_vehicle_post_model,
+    voucher_vehicle_put_model,
+)
+from templates.resources.methods.Functions_Aux_Login import token_verification_procedure
+from templates.resources.midleware.MD_SGI import (
+    create_voucher_safety_api,
+    create_voucher_tools_api,
+    create_voucher_vehicle_api,
+    create_voucher_vehicle_attachment_api,
+    delete_voucher_safety_api,
+    delete_voucher_tools_api,
+    delete_voucher_vehicle_api,
+    download_voucher_vehicle_attachment_api,
+    get_vouchers_safety_api,
+    get_vouchers_tools_api,
+    get_vouchers_vehicle_api,
+    update_status_safety,
+    update_status_tools,
+    update_voucher_safety_api,
+    update_voucher_tools_api,
+    update_voucher_vehicle_api,
+)
+from templates.resources.midleware.MD_SGI_Vouchers import (
+    create_voucher_epp_attachment_api,
+    create_voucher_tools_attachment_api,
+)
 
 __author__ = "Edisson Naula"
 __date__ = "$ 06/jun/2025  at 14:51 $"
-
-
-from flask import request
-from flask_restx import Namespace, Resource
-
-from templates.resources.methods.Functions_Aux_Login import token_verification_procedure
-from static.Models.api_models import expected_headers_per
-from static.Models.api_sgi_models import (
-    VoucherToolsFormPost,
-    VoucherSafetyFormPost,
-    voucher_tools_post_model,
-    voucher_safety_post_model,
-    VoucherToolsFormPut,
-    VoucherSafetyFormPut,
-    voucher_tools_put_model,
-    voucher_tools_status_put_model,
-    VoucherToolsStatusFormPut,
-    voucher_safety_status_put_model,
-    VoucherSafetyStatusFormPut,
-    voucher_safety_put_model,
-    voucher_vehicle_post_model,
-    voucher_vehicle_put_model,
-    VoucherVehiclePostForm,
-    VoucherVehiclePutForm,
-    voucher_tools_delete_model,
-    VoucherToolsFormDelete,
-    VoucherSafetyFormDelete,
-    voucher_safety_delete_model,
-    VoucherVehicleDeleteForm,
-    vehicle_voucher_delete_model,
-)
-from templates.resources.midleware.MD_SGI import (
-    create_voucher_tools_api,
-    create_voucher_safety_api,
-    create_voucher_vehicle_attachment_api,
-    update_voucher_tools_api,
-    update_voucher_safety_api,
-    get_vouchers_tools_api,
-    get_vouchers_safety_api,
-    update_status_tools,
-    update_status_safety,
-    get_vouchers_vehicle_api,
-    create_voucher_vehicle_api,
-    update_voucher_vehicle_api,
-    delete_voucher_tools_api,
-    delete_voucher_safety_api,
-    delete_voucher_vehicle_api,
-)
 
 ns = Namespace("GUI/api/v1/sgi", description="SGI")
 

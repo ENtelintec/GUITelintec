@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
-__author__ = "Edisson Naula"
-__date__ = "$ 01/may./2024  at 20:16 $"
 
 import json
 
 from templates.database.connection import execute_sql
+
+__author__ = "Edisson Naula"
+__date__ = "$ 01/may./2024  at 20:16 $"
 
 
 def insert_vacation(emp_id: int, seniority: dict, data_token):

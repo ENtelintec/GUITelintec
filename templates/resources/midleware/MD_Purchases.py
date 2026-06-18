@@ -1,62 +1,55 @@
 # -*- coding: utf-8 -*-
-from templates.controllers.order.orders_controller import get_item_with_po_folio
-from templates.controllers.order.orders_controller import get_all_item_sm_with_supplier_fast_order
-from templates.controllers.order.orders_controller import (
-    get_all_item_purchase_order_with_id_item_sm,
-)
-from templates.controllers.order.orders_controller import delete_po_application
-from templates.controllers.order.orders_controller import (
-    insert_purchase_order_item_from_applications,
-)
-from templates.controllers.order.orders_controller import delete_purchase_order
-from typing import Iterable
+import json
 import os
 import tempfile
 from datetime import datetime
+from typing import Iterable
 
 import pytz
 
 from static.constants import (
-    timezone_software,
     format_timestamps,
     log_file_po,
+    timezone_software,
 )
-from templates.Functions_Utils import create_notification_permission_notGUI
 from templates.controllers.contracts.contracts_controller import (
     get_contracts_abreviations_db,
 )
 from templates.controllers.heads.heads_controller import check_if_gerente
 from templates.controllers.material_request.sm_controller import (
-    get_sm_by_id,
     get_sm_by_folio,
+    get_sm_by_id,
     get_sm_entries,
 )
 from templates.controllers.order.orders_controller import (
+    cancel_po_application,
+    cancel_purchase_order,
+    delete_po_application,
+    delete_purchase_order,
+    get_all_item_purchase_order_with_id_item_sm,
+    get_all_item_sm_with_supplier_fast_order,
+    get_folios_po_from_pattern,
+    get_item_with_po_folio,
+    get_pos_application_with_items,
+    get_pos_application_with_items_to_approve,
+    get_purchase_order_with_items_by_id,
+    get_purchase_orders_with_items,
+    insert_po_application,
     insert_purchase_order,
     insert_purchase_order_item,
-    update_purchase_order,
-    update_po_application_item,
-    cancel_purchase_order,
-    get_purchase_orders_with_items,
-    update_purchase_order_status,
-    get_pos_application_with_items,
-    insert_po_application,
-    update_po_item,
+    insert_purchase_order_item_from_applications,
     update_po_application,
-    cancel_po_application,
+    update_po_application_item,
     update_po_application_status,
-    get_purchase_order_with_items_by_id,
-    get_pos_application_with_items_to_approve,
-    get_folios_po_from_pattern,
+    update_po_item,
+    update_purchase_order,
+    update_purchase_order_status,
 )
 from templates.forms.PurchaseForms import FilePoPDF
 from templates.forms.StorageMovSM import FilePurchaseList
+from templates.Functions_Utils import create_notification_permission_notGUI
 from templates.misc.Functions_Files import write_log_file
-
-import json
-
 from templates.resources.midleware.MD_SM import update_sm_from_control_table
-
 
 __author__ = "Edisson Naula"
 __date__ = "$ 02/jun/2025  at 11:09 $"
@@ -974,19 +967,20 @@ def generate_folios_po(reference, data_token):
             abbs_area.append(item[0])
             dict_abbs[item[0].lower()] = {"initial": item[0].split("-")[0]}
         elif item[4] == 1:
-            extra_info = json.loads(item[2])
-            contract_number = extra_info.get("contract_number", "")
-            if contract_number == "":
+            contract_code = item[5] if item[5] is not None else ""
+            if contract_code == "":
                 continue
-            abbs_area.append(contract_number[-4:])
-            dict_abbs[contract_number[-4:].lower()] = {"initial": item[3]}
+            code = contract_code[-4:]
+            abbs_area.append(code)
+            dict_abbs[code.lower()] = {"initial": item[3]}
 
     # abbs_area = [item[0] for item in result_abb if item[0] != "" and item[4] == 0]
     reference_parts = reference.lower().split("-")
     if len(reference_parts) <= 2:
         return {"data": [], "error": "Bad reference"}, 400
+    print(reference_parts, abbs_area)
     if reference_parts[1].upper() not in abbs_area and reference_parts[1].lower() not in abbs_area:
-        return {"data": [], "error": "Bad reference, not in patterns"}, 400
+        return {"data": [], "error": "Bad reference, not in patterns or contract not in db"}, 400
     folio_normal = "OC-GC" + "-".join(reference_parts[-2:])
     folio_maestro = "OCM-GC" + f"{reference_parts[-2]}"
     folio_cotfc = "OC-GCCOTFC" + f"-{'-'.join(reference_parts[-2:])}"
@@ -1000,48 +994,33 @@ def generate_folios_po(reference, data_token):
             "data": result,
             "error": "Error at retrieving data from db",
         }, 400
-    folios_out = []
+    def extract_count(folio_value, pattern):
+        remainder = folio_value.lower().replace(pattern.lower(), "").split("-")
+        for number in remainder:
+            try:
+                return int(number)
+            except (ValueError, TypeError):
+                continue
+        return 0
+
+    count_normal = 0
+    count_maestro = 0
+    count_cotfc = 0
     for po_order in result:
         id_order, folio = po_order
-        count = 0
-        if folio_normal.lower() in folio.lower():
-            folio_temp = folio.lower().replace(folio_normal.lower(), "").split("-")
-            for number in folio_temp:
-                try:
-                    count = int(number)
-                    break
-                except Exception as e:
-                    print("error when parsing count:", str(e))
-                    continue
-            folios_out.append(f"{folio_normal}-{count + 1:03d}".upper())
-        elif folio_maestro.lower() in folio.lower():
-            folio_temp = folio.lower().replace(folio_maestro.lower(), "").split("-")
-            for number in folio_temp:
-                try:
-                    count = int(number)
-                    break
-                except Exception as e:
-                    print("error when parsing count:", str(e))
-                    continue
-            folios_out.append(
-                f"{folio_maestro}-{count + 1:03d}-{dict_abbs[reference_parts[-2]].get('initial', '')}{reference_parts[-1]}".upper()
-            )
-        else:
-            folio_temp = folio.lower().replace(folio_cotfc.lower(), "").split("-")
-            for number in folio_temp:
-                try:
-                    count = int(number)
-                    break
-                except Exception as e:
-                    print("error when parsing count:", str(e))
-                    continue
-            folios_out.append(f"{folio_cotfc}-{count + 1:03d}".upper())
-    if len(folios_out) == 0:
-        folios_out = [
-            f"{folio_normal}".upper(),
-            f"{folio_maestro}-{dict_abbs[reference_parts[-2]].get('initial', '')}{reference_parts[-1]}".upper(),
-            f"{folio_cotfc}".upper(),
-        ]
+        folio_lower = folio.lower()
+        if folio_cotfc.lower() in folio_lower:
+            count_cotfc = max(count_cotfc, extract_count(folio, folio_cotfc))
+        elif folio_normal.lower() in folio_lower:
+            count_normal = max(count_normal, extract_count(folio, folio_normal))
+        elif folio_maestro.lower() in folio_lower:
+            count_maestro = max(count_maestro, extract_count(folio, folio_maestro))
+    initial = dict_abbs.get(reference_parts[-2], {}).get("initial", "")
+    folios_out = [
+        f"{folio_normal}-{count_normal + 1:03d}".upper(),
+        f"{folio_maestro}-{count_maestro + 1:03d}-{initial}{reference_parts[-1]}".upper(),
+        f"{folio_cotfc}-{count_cotfc + 1:03d}".upper(),
+    ]
     return {"data": folios_out, "error": None}, 200
 
 

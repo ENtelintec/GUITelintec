@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
-from templates.controllers.product.products_controller import get_products_stock_from_ids
+from templates.controllers.product.products_controller import (
+    get_products_stock_from_ids,
+)
 
 __author__ = "Edisson Naula"
 __date__ = "$ 03/may./2024  at 15:31 $"
@@ -11,54 +13,53 @@ import pandas as pd
 import pytz
 
 from static.constants import (
-    format_timestamps,
-    filepath_inventory_form,
-    filepath_inventory_form_movements_pdf,
-    format_date,
     file_codebar,
-    timezone_software,
-    format_timestamps_tz,
-    log_file_almacen,
+    filepath_inventory_form,
     filepath_inventory_form_excel,
     filepath_inventory_form_movements_excel,
+    filepath_inventory_form_movements_pdf,
+    format_date,
+    format_timestamps,
+    format_timestamps_tz,
     log_file_admin,
-)
-from templates.Functions_Utils import create_notification_permission_notGUI
-from templates.controllers.product.products_controller import (
-    get_stock_db,
-    update_stock_db,
-    get_all_products_db_tool_internal,
-    create_product_db,
-    update_product_db,
-    get_all_categories_db,
-    create_product_db_admin,
-    get_skus,
-    insert_multiple_row_products_amc,
-    update_stock_db_sku,
-    get_all_products_db_old,
-    update_multiple_row_products_amc,
-    update_stock_db_ids,
-    get_product_barcode_data,
-    get_last_sku,
-    get_all_epp_inventory,
-    delete_product_db,
+    log_file_almacen,
+    timezone_software,
 )
 from templates.controllers.product.movements_controller import (
-    create_movement_db_amc,
     create_in_movement_db,
-    update_movement_db,
-    insert_multiple_row_movements_amc,
-    get_all_movements_db_detail,
-    get_movements_type_db_all,
+    create_movement_db_amc,
     delete_movement_db,
+    get_all_movements_db_detail,
     get_epp_movements_db,
     get_epp_movements_db_detail,
+    get_movements_type_db_all,
+    insert_multiple_row_movements_amc,
+    update_movement_db,
+)
+from templates.controllers.product.products_controller import (
+    create_product_db,
+    create_product_db_admin,
+    delete_product_db,
+    get_all_categories_db,
+    get_all_epp_inventory,
+    get_all_products_db_old,
+    get_all_products_db_tool_internal,
+    get_last_sku,
+    get_product_barcode_data,
+    get_skus,
+    get_stock_db,
+    insert_multiple_row_products_amc,
+    update_multiple_row_products_amc,
+    update_product_db,
+    update_stock_db,
+    update_stock_db_ids,
+    update_stock_db_sku,
 )
 from templates.controllers.product.reservations_controller import (
-    insert_reservation_db,
-    update_reservation_db,
     delete_reservation_db,
     get_all_reservations,
+    insert_reservation_db,
+    update_reservation_db,
     update_reservation_with_smID_db,
 )
 from templates.controllers.supplier.suppliers_controller import (
@@ -66,14 +67,15 @@ from templates.controllers.supplier.suppliers_controller import (
     update_brands_supplier,
 )
 from templates.forms.BarCodeGenerator import (
-    create_one_code,
     create_multiple_barcodes_products,
+    create_one_code,
 )
 from templates.forms.StorageMovSM import InventoryStoragePDF
+from templates.Functions_Utils import create_notification_permission_notGUI
 from templates.misc.Functions_Files import write_log_file
 from templates.resources.methods.Aux_Inventory import (
-    generate_default_configuration_barcodes,
     create_excel_file,
+    generate_default_configuration_barcodes,
 )
 from templates.resources.midleware.MD_SM import update_sm_item_state_and_inventory
 

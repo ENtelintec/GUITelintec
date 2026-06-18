@@ -1,21 +1,19 @@
 # -*- coding: utf-8 -*-
-from static.Models.api_models import id_filter_default
 __author__ = "Edisson Naula"
 __date__ = "$ 20/jun./2024  at 15:08 $"
 
-from werkzeug.datastructures import FileStorage
-from wtforms.form import Form
-from wtforms.validators import InputRequired
-
-from static.Models.api_models import date_filter, datetime_filter
-from static.constants import api
 from flask_restx import fields
+from werkzeug.datastructures import FileStorage
+from wtforms import FormField
 from wtforms.fields.datetime import DateField
 from wtforms.fields.list import FieldList
 from wtforms.fields.numeric import FloatField, IntegerField
-from wtforms.fields.simple import StringField, EmailField
+from wtforms.fields.simple import EmailField, StringField
+from wtforms.form import Form
+from wtforms.validators import InputRequired
 
-from wtforms import FormField, validators
+from static.constants import api
+from static.Models.api_models import date_filter, datetime_filter
 
 metadata_quotation_model = api.model(
     "MetadataQuotation",

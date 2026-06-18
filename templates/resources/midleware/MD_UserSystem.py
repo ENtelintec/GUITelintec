@@ -1,31 +1,28 @@
 # -*- coding: utf-8 -*-
 import json
+from datetime import date, datetime
 
 import jwt
 import pytz
 
 from static.constants import (
+    filepath_permission,
     format_date,
     format_timestamps,
-    timezone_software,
-    secrets,
-    filepath_permission,
     log_file_users,
+    secrets,
+    timezone_software,
 )
-from datetime import date, datetime
-
-from templates.Functions_Utils import create_notification_permission
 from templates.controllers.employees.us_controller import (
-    update_biocredentials_DB,
     create_user_system_with_token,
+    fetch_employess_user_data,
+    update_biocredentials_DB,
 )
-from templates.controllers.employees.us_controller import fetch_employess_user_data
+from templates.Functions_Utils import create_notification_permission
+from templates.misc.Functions_Files import write_log_file
 
 __author__ = "Edisson Naula"
 __date__ = "$ 09/12/2025 at 11:04 $"
-
-from templates.misc.Functions_Files import write_log_file
-
 
 def read_permissions_file(path: str = filepath_permission):
     """

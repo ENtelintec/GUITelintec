@@ -2,10 +2,11 @@
 __author__ = "Edisson Naula"
 __date__ = "$ 23/sept/2024  at 14:21 $"
 
+import json
+
 import jwt
 
 from static.constants import secrets
-import json
 
 
 def unpack_token(token: str) -> dict:

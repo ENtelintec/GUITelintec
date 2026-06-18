@@ -1,56 +1,57 @@
 # -*- coding: utf-8 -*-
-__author__ = "Edisson Naula"
-__date__ = "$ 02/abr./2024  at 9:53 $"
 
-from flask import send_file, request
-from flask_restx import Resource, Namespace
+from flask import request, send_file
+from flask_restx import Namespace, Resource
 
 from static.Models.api_fichaje_models import (
-    fichaje_request_model,
-    fichaje_add_update_request_model,
-    fichaje_delete_request_model,
-    bitacora_dowmload_report_model,
-    FichajeRequestFormr,
-    FichajeAddUpdateRequestForm,
-    FichajeDeleteRequestForm,
+    BitacoraDeleteRHForm,
     BitacoraDownloadReportForm,
-    FichajeRequestMultipleEvents_model,
-    FichajeRequestMultipleEvents,
-    FichajeRequestExtras_model,
-    FichajeRequestExtras,
-    FichajeAproveExtras_model,
-    FichajeAproveExtras,
-    bitacora_insert_rh_model,
-    bitacora_update_rh_model,
-    bitacora_delete_rh_model,
+    BitacoraFetchByDateForm,
     BitacoraInsertRHForm,
     BitacoraUpdateRHForm,
-    BitacoraDeleteRHForm,
+    FichajeAddUpdateRequestForm,
+    FichajeAproveExtras,
+    FichajeAproveExtras_model,
+    FichajeDeleteRequestForm,
+    FichajeRequestExtras,
+    FichajeRequestExtras_model,
+    FichajeRequestFormr,
+    FichajeRequestMultipleEvents,
+    FichajeRequestMultipleEvents_model,
+    bitacora_delete_rh_model,
+    bitacora_dowmload_report_model,
     bitacora_fetch_by_date_model,
-    BitacoraFetchByDateForm,
+    bitacora_insert_rh_model,
+    bitacora_update_rh_model,
+    fichaje_add_update_request_model,
+    fichaje_delete_request_model,
+    fichaje_request_model,
 )
 from static.Models.api_models import expected_headers_per
 from static.Models.api_sm_models import client_emp_sm_response_model
 from templates.controllers.employees.employees_controller import (
-    get_employees_op_names,
     get_contracts_operaciones,
+    get_employees_op_names,
 )
 from templates.resources.methods.Functions_Aux_Login import token_verification_procedure
 from templates.resources.midleware.MD_Bitacora import (
-    get_events_extra,
-    get_events_bitacora,
-    create_event_bitacora_from_api,
-    update_event_bitacora_from_api,
-    delete_event_bitacora_from_api,
-    get_file_report_bitacora,
-    create_multiple_event_bitacora_from_api,
     aprove_event_bitacora_from_api,
-    fetch_all_bitacora_rh,
+    create_event_bitacora_from_api,
     create_event_bitacora_rh_from_api,
-    update_event_bitacora_rh_from_api,
+    create_multiple_event_bitacora_from_api,
+    delete_event_bitacora_from_api,
     delete_event_bitacora_rh_from_api,
+    fetch_all_bitacora_rh,
     fetch_bitacora_rh_from_api_by_date,
+    get_events_bitacora,
+    get_events_extra,
+    get_file_report_bitacora,
+    update_event_bitacora_from_api,
+    update_event_bitacora_rh_from_api,
 )
+
+__author__ = "Edisson Naula"
+__date__ = "$ 02/abr./2024  at 9:53 $"
 
 ns = Namespace("GUI/api/v1/bitacora")
 

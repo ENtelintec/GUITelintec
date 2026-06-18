@@ -3,6 +3,7 @@ __author__ = 'Edisson Naula'
 __date__ = '$ 05/jun./2024  at 16:37 $'
 
 import pickle
+
 import numpy as np
 from keras.src.saving import load_model
 

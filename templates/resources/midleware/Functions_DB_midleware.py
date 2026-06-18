@@ -5,10 +5,9 @@ __date__ = "$ 01/abr./2024  at 11:38 $"
 import json
 
 from static.constants import format_date, quizzes_dir_path
-from templates.Functions_Utils import create_notification_permission_notGUI
 from templates.controllers.employees.employees_controller import (
-    get_all_data_employees,
     get_all_data_employee,
+    get_all_data_employees,
 )
 from templates.controllers.employees.vacations_controller import (
     get_vacations_data,
@@ -16,9 +15,10 @@ from templates.controllers.employees.vacations_controller import (
 )
 from templates.controllers.misc.tasks_controller import (
     create_task,
-    update_task,
     delete_task,
+    update_task,
 )
+from templates.Functions_Utils import create_notification_permission_notGUI
 
 
 def get_info_employees_with_status(status: str):

@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-__author__ = "Edisson Naula"
-__date__ = "$ 18/sept/2024  at 17:15 $"
 
 from datetime import datetime
 
@@ -8,25 +6,28 @@ import pytz
 from flask import request
 from flask_restx import Namespace, Resource
 
+from static.constants import (
+    format_date,
+    timezone_software,
+)
 from static.Models.api_dashboards_models import (
-    movements_charts_model,
+    FichajeEmpForm,
     MovementsChartsForm,
     fichaje_emp_model,
-    FichajeEmpForm,
+    movements_charts_model,
 )
 from static.Models.api_models import expected_headers_per
-from static.constants import (
-    timezone_software,
-    format_date,
-)
-from templates.Functions_Utils import read_flag_daemons, update_flag_daemons
 from templates.daemons.NotificationsSearch import NotificationsSearch
+from templates.Functions_Utils import read_flag_daemons, update_flag_daemons
 from templates.resources.methods.Functions_Aux_Login import token_verification_procedure
 from templates.resources.midleware.Functions_midleware_dashboard import (
+    get_data_chart_fichaje_emp,
     get_data_chart_movements,
     get_data_chart_sm,
-    get_data_chart_fichaje_emp,
 )
+
+__author__ = "Edisson Naula"
+__date__ = "$ 18/sept/2024  at 17:15 $"
 
 ns = Namespace("GUI/api/v1/dashboard")
 

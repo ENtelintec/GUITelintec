@@ -6,19 +6,19 @@ import json
 from datetime import datetime
 
 import pandas as pd
+from flask_restx import fields
+from wtforms import FormField, IntegerField, StringField, validators
+from wtforms.fields.datetime import DateField, DateTimeField
+from wtforms.fields.list import FieldList
+from wtforms.form import Form
+from wtforms.validators import InputRequired, ValidationError
 
 from static.constants import (
     api,
-    format_timestamps,
     format_date,
     format_date_fichaje_file,
+    format_timestamps,
 )
-from flask_restx import fields
-from wtforms.fields.datetime import DateTimeField, DateField
-from wtforms.validators import InputRequired, ValidationError
-from wtforms import FormField, IntegerField, StringField, validators
-from wtforms.fields.list import FieldList
-from wtforms.form import Form
 
 permission_model = api.model(
     "Permission",

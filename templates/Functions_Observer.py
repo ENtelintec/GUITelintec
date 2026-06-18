@@ -18,9 +18,9 @@ from bardapi.constants import SESSION_HEADERS
 from static.constants import secrets
 from templates.controllers.chatbot.chatbot_controller import (
     get_isAlive,
-    update_isAlive,
     get_only_context,
     set_finish_chat,
+    update_isAlive,
 )
 
 openai.api_key = secrets["OPENAI_API_KEY_1"]

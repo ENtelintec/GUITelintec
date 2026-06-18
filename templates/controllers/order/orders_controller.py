@@ -2,9 +2,9 @@
 __author__ = "Edisson Naula"
 __date__ = "$ 01/may./2024  at 19:33 $"
 
-from templates.database.connection import execute_sql
-
 import json
+
+from templates.database.connection import execute_sql
 
 
 def get_v_orders(data_token, limit=(0, 100)):
@@ -81,6 +81,28 @@ def get_purchase_orders_with_items(status: int | None, created_by: int | None, d
         "AND (po.status != 4) "
         "AND (po.created_by = %s OR %s IS NULL) "
         "GROUP BY po.id_order"
+    )
+    val = (status, status, created_by, created_by)
+    flag, e, my_result = execute_sql(sql, val, 2, data_token)
+    return flag, e, my_result
+
+
+def get_purchase_orders(status: int | None, created_by: int | None, data_token):
+    sql = (
+        "SELECT "
+        "po.id_order, "
+        "po.timestamp, "
+        "po.status, "
+        "po.created_by, "
+        "po.supplier_id, "
+        "po.folio, "
+        "po.history, "
+        "po.extra_info, "
+        "po.time_delivery "
+        "FROM sql_telintec_mod_admin.purchase_orders AS po "
+        "WHERE (po.status = %s OR %s IS NULL) "
+        "AND (po.status != 4) "
+        "AND (po.created_by = %s OR %s IS NULL)"
     )
     val = (status, status, created_by, created_by)
     flag, e, my_result = execute_sql(sql, val, 2, data_token)

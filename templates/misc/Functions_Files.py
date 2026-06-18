@@ -17,22 +17,22 @@ import pandas as pd
 import pytz
 
 from static.constants import (
-    secrets,
-    cache_oct_file_temp_path,
     cache_oct_fichaje_path,
-    quizzes_RRHH,
+    cache_oct_file_temp_path,
     conversion_quizzes_path,
     format_date,
-    timezone_software,
     format_timestamps,
+    quizzes_RRHH,
+    secrets,
+    timezone_software,
 )
-from templates.Functions_Text import clean_accents, compare_employee_name
 from templates.controllers.employees.employees_controller import get_employee_id_name
 from templates.controllers.fichajes.fichajes_controller import (
-    update_fichaje_DB,
-    insert_new_fichaje_DB,
     get_all_fichajes,
+    insert_new_fichaje_DB,
+    update_fichaje_DB,
 )
+from templates.Functions_Text import clean_accents, compare_employee_name
 
 
 def check_only_read_conflict(name: str) -> bool:

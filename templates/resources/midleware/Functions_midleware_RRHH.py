@@ -5,6 +5,8 @@ __author__ = "Edisson Naula"
 __date__ = "$ 28/jun./2024  at 16:28 $"
 
 import json
+import os
+import tempfile
 import zipfile
 from datetime import datetime
 
@@ -14,40 +16,34 @@ import pytz
 from botocore.exceptions import ClientError, NoCredentialsError
 
 from static.constants import (
-    secrets,
-    patterns_files_fichaje,
     cache_file_emp_fichaje,
-    format_date_fichaje_file,
-    index_file_nominas,
-    timezone_software,
-    quizzes_temp_pdf,
-    filepath_daemons,
-    filepath_settings,
-    file_temp_zip,
-    format_timestamps,
-    conversion_quizzes_path,
-    filepath_recommendations,
-    format_date,
-    filepath_fichaje_temp,
     cache_file_resume_fichaje_path,
+    conversion_quizzes_path,
+    file_temp_zip,
+    filepath_daemons,
+    filepath_fichaje_temp,
+    filepath_recommendations,
+    filepath_settings,
+    format_date,
+    format_date_fichaje_file,
+    format_timestamps,
+    index_file_nominas,
     log_file_rh,
+    patterns_files_fichaje,
+    quizzes_temp_pdf,
+    secrets,
+    timezone_software,
 )
-from templates.Functions_Sharepoint import (
-    get_files_site,
-    download_files_site,
-    create_mail_draft_with_attachment,
-)
-from templates.Functions_Utils import create_notification_permission
 from templates.controllers.employees.em_controller import (
-    get_employees_without_records,
     get_all_examenes,
+    get_employees_without_records,
     insert_new_exam_med,
     update_aptitud_renovacion,
 )
 from templates.controllers.employees.employees_controller import (
     new_employee,
-    update_employee,
     terminate_employee_db,
+    update_employee,
 )
 from templates.controllers.employees.vacations_controller import (
     insert_vacation,
@@ -62,25 +58,28 @@ from templates.controllers.payroll.payroll_controller import (
     update_payroll,
     update_payroll_employees,
 )
+from templates.Functions_Sharepoint import (
+    create_mail_draft_with_attachment,
+    download_files_site,
+    get_files_site,
+)
+from templates.Functions_Utils import create_notification_permission
 from templates.misc.Functions_AuxFiles import (
+    get_data_xml_file_nomina,
     get_events_op_date,
     get_pairs_nomina_docs,
-    get_data_xml_file_nomina,
 )
 from templates.misc.Functions_Files import (
-    extract_fichajes_file,
     check_names_employees_in_cache,
+    extract_fichajes_file,
+    get_fichajes_resume_cache,
+    get_info_bitacora,
     get_info_f_file_name,
     get_info_t_file_name,
-    get_info_bitacora,
     unify_data_employee,
-    get_fichajes_resume_cache,
     write_log_file,
 )
 from templates.misc.Functions_Files_RH import check_fichajes_files_in_directory
-
-import os
-import tempfile
 
 
 class ClockFichajeHours:
@@ -171,9 +170,7 @@ def terminate_employee_from_api(data, data_token):
     timestamp = datetime.now(pytz.utc).astimezone(time_zone)
     date = timestamp.strftime(format_timestamps)
     departure = {"date": date, "reason": data["reason"]}
-    flag, error, result = terminate_employee_db(
-        data["id"], json.dumps(departure), data_token
-    )
+    flag, error, result = terminate_employee_db(data["id"], json.dumps(departure), data_token)
     if not flag:
         return {
             "data": str(result),
@@ -277,9 +274,7 @@ def get_data_file(filename: str, type_f: str):
                 for i, col in enumerate(dff.columns.tolist()):
                     coldata.append({"text": col, "stretch": True})
                 names_list = dff["name"].unique().tolist()
-                names_and_ids = check_names_employees_in_cache(
-                    names_list, cache_file_emp_fichaje
-                )
+                names_and_ids = check_names_employees_in_cache(names_list, cache_file_emp_fichaje)
                 for name in names_and_ids.keys():
                     name_db = names_and_ids[name]["name_db"]
                     id_db = names_and_ids[name]["id"]
@@ -298,9 +293,7 @@ def get_data_file(filename: str, type_f: str):
             for i, col in enumerate(dft.columns.tolist()):
                 coldata.append({"text": col, "stretch": True})
             names_list = dft["name"].unique().tolist()
-            names_and_ids = check_names_employees_in_cache(
-                names_list, cache_file_emp_fichaje
-            )
+            names_and_ids = check_names_employees_in_cache(names_list, cache_file_emp_fichaje)
             for name in names_and_ids.keys():
                 name_db = names_and_ids[name]["name_db"]
                 id_db = names_and_ids[name]["id"]
@@ -325,9 +318,7 @@ def get_bitacora_data(date_file):
     return True, {"df": dfb, "columns": columns}
 
 
-def get_data_name_fichaje(
-    name: str, dff, dfb, clocks, window_time_in, window_time_out, dft=None
-):
+def get_data_name_fichaje(name: str, dff, dfb, clocks, window_time_in, window_time_out, dft=None):
     df_name = dff[dff["name"] == name]
     id_emp = df_name["ID"].values[0]
     date_max = dff["Fecha"].max()  # most recent date
@@ -351,9 +342,7 @@ def get_data_name_fichaje(
     )
     time_zone = pytz.timezone(timezone_software)
     date = datetime.now(pytz.utc).astimezone(time_zone)
-    date_example = (
-        pd.to_datetime(worked_days_f[0][0]) if len(worked_days_f) > 0 else date
-    )
+    date_example = pd.to_datetime(worked_days_f[0][0]) if len(worked_days_f) > 0 else date
     # ------------file ternium-----------
     (
         worked_days_t,
@@ -451,7 +440,7 @@ def get_data_name_fichaje(
 
 def get_fichaje_data(data: dict):
     files = data.get("files", [])
-    clock_h = ClockFichajeHours(data.get("time_in",""))
+    clock_h = ClockFichajeHours(data.get("time_in", ""))
     clock_m = ClockFichajeMinutes(data.get("time_in", ""))
     clock_h_out = ClockFichajeHours(data.get("time_out", ""))
     clock_m_out = ClockFichajeMinutes(data.get("time_out", ""))
@@ -474,7 +463,7 @@ def get_fichaje_data(data: dict):
         flag, data_file = get_data_file(filepath_fichaje_temp, file["report"])
         if not flag:
             return 400, data_file
-        if not(isinstance(data_file, list) or isinstance(data_file, tuple)):
+        if not (isinstance(data_file, list) or isinstance(data_file, tuple)):
             return 400, "Error al procesar el archivo"
         data_files.append(data_file) if flag else data_files.append([])
         name_list.extend(data_file["names"]) if "names" in data_file.keys() else None
@@ -497,9 +486,7 @@ def upload_nomina_doc(data):
     return 200, None
 
 
-def update_files_data_nominas(
-    key: str, paths_pdf_xml: dict, data_xml: dict, data_token
-):
+def update_files_data_nominas(key: str, paths_pdf_xml: dict, data_xml: dict, data_token):
     flag, error, result = get_payrolls(data_xml["emp_id"], data_token)
     data_emp = {} if not flag or len(result) == 0 else json.loads(result[1])
     try:
@@ -550,30 +537,22 @@ def update_data_docs_nomina(data_token, patterns=None, use_index=False):
         if folder_patterns[1].lower() in v["xml"].lower():
             if flag_quincena:
                 if folder_patterns[2].lower() in v["xml"].lower():
-                    download_path, code = download_files_site(
-                        url_shrpt + folder_rrhh, v["xml"]
-                    )
+                    download_path, code = download_files_site(url_shrpt + folder_rrhh, v["xml"])
                 else:
                     print(f"Not pass the filter {folder_patterns}", v["xml"])
                     continue
             else:
-                download_path, code = download_files_site(
-                    url_shrpt + folder_rrhh, v["xml"]
-                )
+                download_path, code = download_files_site(url_shrpt + folder_rrhh, v["xml"])
         else:
             print(f"Not pass the filter {folder_patterns}", v["xml"])
             continue
         if code != 200:
-            results.append(
-                (False, f"Error al descargar el archivo XML: {download_path}", None)
-            )
+            results.append((False, f"Error al descargar el archivo XML: {download_path}", None))
             continue
         data_file = get_data_xml_file_nomina(download_path)
         if data_file["emp_id"] is None:
             print(f"No se encontro el empleado con datos {data_file['emp_name']}")
-            results.append(
-                (False, f"No se encontro el empleado: {data_file['emp_name']}", None)
-            )
+            results.append((False, f"No se encontro el empleado: {data_file['emp_name']}", None))
             continue
         data_emps[data_file["emp_id"]], flag = update_files_data_nominas(
             k, v, data_file, data_token
@@ -601,9 +580,7 @@ def download_nomina_docs(data, data_token):
             continue
         local_path = os.path.join(tmp_dir, os.path.basename(key))
         try:
-            s3_client.download_file(
-                Bucket=str(bucket_name), Key=key, Filename=local_path
-            )
+            s3_client.download_file(Bucket=str(bucket_name), Key=key, Filename=local_path)
             downloaded.append(local_path)
         except (NoCredentialsError, ClientError, FileNotFoundError) as e:
             print(f"Error al descargar nomina desde S3 (key {key}): {e}")
@@ -674,9 +651,7 @@ def insert_medical_db(data, data_token):
 
 
 def update_medical_db(data, data_token):
-    apt_actual = (
-        data["info"]["aptitudes"][-1] if len(data["info"]["aptitudes"]) > 0 else 0
-    )
+    apt_actual = data["info"]["aptitudes"][-1] if len(data["info"]["aptitudes"]) > 0 else 0
     allergies = data["info"]["allergies"]
     observations = data["info"]["observations"]
     extra_info = {"allergies": allergies, "observations": observations}
@@ -704,9 +679,7 @@ def insert_new_vacation(data, data_token):
         }
     if not len(seniority_dict) > 0:
         return False, "No hay informacion que insertar", None
-    flag, error, result = insert_vacation(
-        data["emp_id"], seniority_dict, data_token=data_token
-    )
+    flag, error, result = insert_vacation(data["emp_id"], seniority_dict, data_token=data_token)
     return flag, error, result
 
 
@@ -721,16 +694,12 @@ def update_vacation(data, data_token):
         }
     if not len(seniority_dict) > 0:
         return False, "No hay informacion que actualizar o corrupcion de info.", None
-    flag, error, result = update_registry_vac(
-        data["emp_id"], seniority_dict, data_token
-    )
+    flag, error, result = update_registry_vac(data["emp_id"], seniority_dict, data_token)
     return flag, error, result
 
 
 def get_all_quizzes(data_token):
-    flag, error, tasks = get_all_tasks_by_status(
-        status=-1, title="quizz", data_token=data_token
-    )
+    flag, error, tasks = get_all_tasks_by_status(status=-1, title="quizz", data_token=data_token)
     if not flag:
         return False, error, []
     data_out = []
@@ -750,9 +719,7 @@ def get_all_quizzes(data_token):
 
 def recommendations_results_quizzes(dict_results: dict, tipo_q: int):
     # Asumiendo que tienes la ruta correcta en filepath_recommendations
-    dict_conversions_recomen = json.load(
-        open(filepath_recommendations, encoding="utf-8")
-    )
+    dict_conversions_recomen = json.load(open(filepath_recommendations, encoding="utf-8"))
     dict_recommendations = {
         "c_final_r": "",
         "c_dom_r": "",
@@ -787,9 +754,7 @@ def recommendations_results_quizzes(dict_results: dict, tipo_q: int):
             max_cat_score = k
     # Acceder a las recomendaciones de categoría
     if max_cat_score in dict_conversions_recomen["c_cat_r"]:
-        dict_recommendations["c_cat_r"] = dict_conversions_recomen["c_cat_r"][
-            max_cat_score
-        ]
+        dict_recommendations["c_cat_r"] = dict_conversions_recomen["c_cat_r"][max_cat_score]
     else:
         dict_recommendations["c_cat_r"] = [
             "No hay recomendaciones específicas para esta categoría."
@@ -888,18 +853,14 @@ def generate_pdf_from_json(data, data_token):
 
     generator = dict_typer_quizz_generator[tipo_op]
     data_raw = (
-        json.loads(data["data_raw"])
-        if isinstance(data["data_raw"], str)
-        else data["data_raw"]
+        json.loads(data["data_raw"]) if isinstance(data["data_raw"], str) else data["data_raw"]
     )
     if "results" not in data_raw.keys():
         dict_results = calculate_results_quizzes(data_raw, tipo_op)
         data_raw["results"] = dict_results
         is_update = False
     if "recommendations" not in data_raw.keys():
-        dict_recomendations = recommendations_results_quizzes(
-            data_raw["results"], tipo_op
-        )
+        dict_recomendations = recommendations_results_quizzes(data_raw["results"], tipo_op)
         data_raw["recommendations"] = dict_recomendations
         is_update = False
     if not is_update:
@@ -932,9 +893,7 @@ def get_files_fichaje_shrpt():
     url_shrpt = settings["gui"]["RRHH"]["url_shrpt"]
     folder_rrhh = settings["gui"]["RRHH"]["folder_rrhh"]
     folder_fichaje = settings["gui"]["RRHH"]["folder_checador"]
-    code, files_fichaje = get_files_site(
-        url_shrpt + folder_rrhh, folder_url=folder_fichaje
-    )
+    code, files_fichaje = get_files_site(url_shrpt + folder_rrhh, folder_url=folder_fichaje)
     return code, files_fichaje
 
 
@@ -972,9 +931,7 @@ def create_payroll_file_attachment_api(data, data_token):
     s3_client = boto3.client("s3")
     bucket_name = secrets.get("S3_RH_BUCKET")
     try:
-        s3_client.upload_file(
-            Filename=filepath_down, Bucket=str(bucket_name), Key=path_aws
-        )
+        s3_client.upload_file(Filename=filepath_down, Bucket=str(bucket_name), Key=path_aws)
     except FileNotFoundError:
         return {"data": None, "msg": "Local file not found"}, 400
     except NoCredentialsError:
@@ -989,7 +946,9 @@ def create_payroll_file_attachment_api(data, data_token):
             return {"data": None, "msg": f"AWS error: {str(e)}"}, 400
     # registrar la ruta en el indice del empleado, agrupando pdf y xml por 'key'
     flag, error, result = get_payrolls(emp_id, data_token)
-    has_record = flag and isinstance(result, (list, tuple)) and len(result) > 0 and result[0] is not None  # pyrefly: ignore
+    has_record = (
+        flag and isinstance(result, (list, tuple)) and len(result) > 0 and result[0] is not None
+    )
     files_data = json.loads(result[0][1]) if has_record else {}  # pyrefly: ignore
     files_data.setdefault(year, {}).setdefault(month, {}).setdefault(key, {})
     files_data[year][month][key][file_extension] = path_aws
@@ -998,7 +957,7 @@ def create_payroll_file_attachment_api(data, data_token):
         return {
             "data": path_aws,
             "msg": "Archivo subido a S3 pero error al actualizar el indice",
-            "error": str(error),
+            "error": error,
         }, 400
     msg = (
         f"Archivo de nomina {filename} ({file_extension}) subido para el empleado "
@@ -1057,9 +1016,7 @@ def update_data_employee(data, data_token):
     data_dict = json.loads(data["data_dict"])
     flag, error, result = update_payroll(data_dict, data["id"], data_token)
     return (
-        (200, {"data": result, "msg": "ok"})
-        if flag
-        else (400, {"data": None, "msg": str(error)})
+        (200, {"data": result, "msg": "ok"}) if flag else (400, {"data": None, "msg": str(error)})
     )
 
 
@@ -1094,7 +1051,7 @@ def fetch_employees_without_records(data_token):
     return 200, {"data": out, "msg": "ok"}
 
 
-def fetch_medicals(data_token)-> tuple[dict, int]:
+def fetch_medicals(data_token) -> tuple[dict, int]:
     flag, e, result = get_all_examenes(data_token)
     if not (isinstance(result, list) or isinstance(result, tuple)):
         return {"data": [], "msg": "No hay  registros"}, 400
@@ -1159,7 +1116,7 @@ def fetch_medicals(data_token)-> tuple[dict, int]:
             delta = datetime.now() - last_date
             limite = limits[apt_actual]
             if limite is None:
-                continue 
+                continue
 
             if delta > limite:
                 # Mensaje crítico

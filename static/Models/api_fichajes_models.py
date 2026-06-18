@@ -4,16 +4,15 @@ __date__ = "$ 28/jun./2024  at 16:23 $"
 
 from flask_restx import fields
 from werkzeug.datastructures import FileStorage
+from wtforms import FieldList, FormField
 from wtforms.fields.datetime import DateField
 from wtforms.fields.numeric import IntegerField
-from wtforms.fields.simple import StringField, EmailField
+from wtforms.fields.simple import EmailField, StringField
 from wtforms.form import Form
 from wtforms.validators import InputRequired
 
-from static.Models.api_models import date_filter, date_filter_fichaje
 from static.constants import api
-
-from wtforms import FormField, FieldList
+from static.Models.api_models import date_filter, date_filter_fichaje
 
 file_model = api.model(
     "FileFichaje",

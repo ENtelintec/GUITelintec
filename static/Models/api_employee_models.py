@@ -10,8 +10,8 @@ from wtforms.fields.list import FieldList
 from wtforms.form import Form
 from wtforms.validators import InputRequired
 
-from static.Models.api_models import date_filter, datetime_filter
 from static.constants import api
+from static.Models.api_models import date_filter, datetime_filter
 
 employee_model = api.model(
     "Employee",
@@ -286,6 +286,9 @@ extra_info_heads_model = api.model(
         "contracts_temp": fields.List(
             fields.Integer(required=True, description="The contract temp id")
         ),
+        "area": fields.Integer(
+            required=False, description="The area id (areas.id), 0 = sin area", example=0
+        ),
     },
 )
 
@@ -311,6 +314,7 @@ head_update_model = api.model(
     "HeadInfoUpdate",
     {
         "id": fields.Integer(required=True, description="The head position id"),
+        "name": fields.String(required=True, description="The position name"),
         "department": fields.Integer(
             required=True, description="The department id", example=1
         ),
@@ -475,6 +479,7 @@ class ExtraInfoHeadsForm(Form):
     contracts_temp = FieldList(
         IntegerField(validators=[]), "contracts_temp", default=[]
     )
+    area = IntegerField("area", validators=[], default=0)
 
 
 class HeadInputForm(Form):
@@ -489,8 +494,9 @@ class HeadUpdateForm(Form):
         "id",
         validators=[InputRequired(message="id is required or value 0 not accepted")],
     )
+    name = StringField("name", validators=[InputRequired()])
     department = IntegerField("department", validators=[InputRequired()])
-    employee = IntegerField("employee", validators=[InputRequired()])
+    employee = IntegerField("employee", validators=[], default=0)
     extra_info = FormField(ExtraInfoHeadsForm, "extra_info")
 
 

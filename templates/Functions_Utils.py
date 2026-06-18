@@ -3,6 +3,7 @@ __author__ = "Edisson Naula"
 __date__ = "$ 16/jul./2024  at 15:50 $"
 
 import json
+import os
 import re
 from datetime import datetime
 
@@ -10,17 +11,15 @@ import jwt
 import pytz
 
 from static.constants import (
+    file_size_pages,
+    filepath_daemons,
     format_timestamps,
     secrets,
-    file_size_pages,
     timezone_software,
-    filepath_daemons,
 )
 from templates.controllers.notifications.Notifications_controller import (
     insert_notification,
 )
-
-import os
 
 
 def create_notification_permission(

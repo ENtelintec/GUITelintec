@@ -2,17 +2,16 @@
 __author__ = "Edisson Naula"
 __date__ = "$ 06/jun/2025  at 14:54 $"
 
+from flask_restx import fields
 from werkzeug.datastructures import FileStorage
+from wtforms import FieldList, FloatField, IntegerField, StringField, validators
 from wtforms.fields.datetime import DateTimeField
 from wtforms.fields.form import FormField
-
-from static.Models.api_models import datetime_filter
-from static.constants import api
-from flask_restx import fields
-from wtforms.validators import InputRequired
-from wtforms import StringField, FloatField, IntegerField, FieldList, validators
 from wtforms.form import Form
+from wtforms.validators import InputRequired
 
+from static.constants import api
+from static.Models.api_models import datetime_filter
 
 expected_files_attachment = api.parser()
 expected_files_attachment.add_argument(

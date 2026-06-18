@@ -1,37 +1,21 @@
-from botocore.exceptions import ClientError
-from botocore.exceptions import NoCredentialsError
-from static.constants import secrets
-import boto3
-from templates.Functions_Utils import create_notification_permission_notGUI
-from templates.controllers.material_request.sm_controller import (
-    update_extra_info_sm_item_db,
-)
-from templates.controllers.material_request.sm_controller import (
-    get_sm_from_item,
-    update_state_sm_item_db,
-)
-from templates.controllers.material_request.sm_controller import get_folios_by_pattern
-
-__author__ = "Edisson Naula"
-__date__ = "$ 18/dic/2024  at 12:10 $"
-
-
 import json
 import math
 import os
 import tempfile
 from datetime import datetime
 
+import boto3
 import pandas as pd
 import pytz
+from botocore.exceptions import ClientError, NoCredentialsError
 
 from static.constants import (
     format_date,
     format_timestamps,
     log_file_sm_path,
+    secrets,
     timezone_software,
 )
-
 from templates.controllers.contracts.contracts_controller import (
     get_contract_by_client,
     get_contracts_by_ids,
@@ -42,30 +26,34 @@ from templates.controllers.contracts.quotations_controller import (
     update_quotation_item_partida_from_sm,
 )
 from templates.controllers.customer.customers_controller import create_customer_db
+from templates.controllers.employees.employees_controller import get_emp_contract
 from templates.controllers.heads.heads_controller import (
     check_if_auxiliar_with_contract,
     check_if_leader,
 )
-from templates.controllers.employees.employees_controller import get_emp_contract
-
 from templates.controllers.material_request.sm_controller import (
+    create_items_sm_db,
+    delete_item_from_sm_id,
+    delete_sm_db,
+    get_folios_by_pattern,
     get_info_names_by_sm_id,
     get_sm_by_id,
     get_sm_entries,
+    get_sm_folios_db,
+    get_sm_from_item,
+    get_sm_items_state,
     insert_sm_db,
+    insert_urgent_sm_db,
+    update_extra_info_sm_item_db,
     update_history_extra_info_sm_by_id,
     update_history_sm_from_cancel,
-    create_items_sm_db,
+    update_history_status_sm,
+    update_inventory_state_sm_item_db,
     update_items_sm,
     update_sm_db,
-    update_history_status_sm,
-    get_sm_folios_db,
-    delete_sm_db,
-    delete_item_from_sm_id,
-    get_sm_items_state,
-    update_inventory_state_sm_item_db,
-    insert_urgent_sm_db,
+    update_state_sm_item_db,
 )
+from templates.controllers.product.movements_controller import create_movement_db_amc
 from templates.controllers.product.products_controller import (
     create_product_db,
     create_product_db_admin,
@@ -73,12 +61,19 @@ from templates.controllers.product.products_controller import (
     get_products_w_reservations,
     update_stock_db,
 )
-from templates.controllers.product.movements_controller import create_movement_db_amc
-from templates.controllers.product.reservations_controller import complete_reservation_db
+from templates.controllers.product.reservations_controller import (
+    complete_reservation_db,
+)
 from templates.forms.StorageMovSM import FileSmPDF
-from templates.Functions_Utils import create_notification_permission
+from templates.Functions_Utils import (
+    create_notification_permission,
+    create_notification_permission_notGUI,
+)
 from templates.misc.Functions_Files import write_log_file
 from templates.resources.midleware.Functions_midleware_admin import get_iddentifiers
+
+__author__ = "Edisson Naula"
+__date__ = "$ 18/dic/2024  at 12:10 $"
 
 
 def get_products_sm(contract: str, data_token) -> tuple[dict, int]:
@@ -224,9 +219,7 @@ def get_all_sm(limit, data_token, page=0, emp_id=-1, with_items=True):
             else result[i][8]
         )
         if admin_not_date is not None:
-            kpi_warehouse = (
-                "CUMPLE" if (admin_not_date - date_creation).days <= 2 else "NO CUMPLE"
-            )
+            kpi_warehouse = "CUMPLE" if (admin_not_date - date_creation).days <= 2 else "NO CUMPLE"
         else:
             kpi_warehouse = ""
         # operation kpi
@@ -238,15 +231,11 @@ def get_all_sm(limit, data_token, page=0, emp_id=-1, with_items=True):
         op_not_date = extra_info.get("operations_notification_date", "")
         op_not_date = (
             pd.to_datetime(op_not_date)
-            if op_not_date != ""
-            and isinstance(op_not_date, str)
-            and op_not_date is not None
+            if op_not_date != "" and isinstance(op_not_date, str) and op_not_date is not None
             else None
         )
         if op_not_date is not None:
-            kpi_operations = (
-                "CUMPLE" if (critical_date - critical_date).days >= 1 else "NO CUMPLE"
-            )
+            kpi_operations = "CUMPLE" if (critical_date - critical_date).days >= 1 else "NO CUMPLE"
         else:
             kpi_operations = ""
         # process items from the sm
@@ -294,15 +283,11 @@ def get_all_sm(limit, data_token, page=0, emp_id=-1, with_items=True):
             "warehouse_comments": extra_info.get("warehouse_comments", ""),
             "admin_reviewed": extra_info.get("admin_reviewed", 0),
             "admin_status": extra_info.get("admin_status", 1),
-            "warehouse_notification_date": extra_info.get(
-                "warehouse_notification_date", ""
-            ),
+            "warehouse_notification_date": extra_info.get("warehouse_notification_date", ""),
             # "purchasing_kpi": extra_info.get("purchasing_kpi", 0),
             "admin_comments": extra_info.get("admin_comments", ""),
             "general_request_status": extra_info.get("general_request_status", 1),
-            "operations_notification_date": extra_info.get(
-                "operations_notification_date", ""
-            ),
+            "operations_notification_date": extra_info.get("operations_notification_date", ""),
             "operations_kpi": kpi_operations,
             "requesting_user_state": extra_info.get("requesting_user_state", ""),
             "date_closing": extra_info.get("date_closing", ""),
@@ -322,9 +307,7 @@ def get_iddentifiers_creation_contracts(data_token):
     contracts = []
     dict_tabs = {}
     if any(
-        word in item.lower().split(".")[-1]
-        for word in ["administrator"]
-        for item in permissions
+        word in item.lower().split(".")[-1] for word in ["administrator"] for item in permissions
     ):
         flag, error, contracts = get_contract_by_client(40, data_token)
     else:
@@ -362,9 +345,7 @@ def get_iddentifiers_ternium(data_token):
     contracts = []
     dict_tabs = {}
     last_part_perm = [item.lower().split(".")[-1] for item in permissions]
-    if any(
-        perm in word for perm in last_part_perm for word in ["administrator", "almacen"]
-    ):
+    if any(perm in word for perm in last_part_perm for word in ["administrator", "almacen"]):
         flag, error, contracts = get_contract_by_client(40, data_token)
     else:
         for check_func in (check_if_leader, check_if_auxiliar_with_contract):
@@ -436,16 +417,12 @@ def fetch_all_sm_with_permissions(data_token):
     data_sm, code = get_all_sm(-1, data_token, 0, -1)
     if code != 200:
         return {"data": [], "msg": data_sm}, 400
-    data_out = clasify_sm(
-        iddentifiers + abbs_list_departments, data_sm, data_token, dict_tabs
-    )
+    data_out = clasify_sm(iddentifiers + abbs_list_departments, data_sm, data_token, dict_tabs)
     return {"data": data_out}, 200
 
 
 def get_all_sm_control_table(data_token):
-    iddentifiers_contracts, dict_tabs_contracts, code = get_iddentifiers_ternium(
-        data_token
-    )
+    iddentifiers_contracts, dict_tabs_contracts, code = get_iddentifiers_ternium(data_token)
     if code != 200 or isinstance(iddentifiers_contracts, dict):
         iddentifiers_contracts = []
     abbs_list_departments, code = get_iddentifiers(data_token, ["administrator"])
@@ -524,8 +501,7 @@ def dispatch_sm(data, data_token):
     time_zone = pytz.timezone(timezone_software)
     date_now = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
     dict_products_sm = {
-        item["id"]: {**item, "dispatched": item.get("dispatched", 0)}
-        for item in products_sm
+        item["id"]: {**item, "dispatched": item.get("dispatched", 0)} for item in products_sm
     }
     msg_items = []
     operations_done = flag_semidespachado
@@ -535,9 +511,7 @@ def dispatch_sm(data, data_token):
         old_item = item_to_update.copy()
         # si el item no existe
         if item_to_update is None:
-            msg_items.append(
-                f"Producto {item_n['id']}-{item_n['name']} no encontrado en la sm"
-            )
+            msg_items.append(f"Producto {item_n['id']}-{item_n['name']} no encontrado en la sm")
             updated_products.append(old_item)
             continue
         # si no hay cantidad para despachar
@@ -597,9 +571,7 @@ def dispatch_sm(data, data_token):
             f"---Stock actualizado para el item {item_to_update['id_inventory']}: {str(res_stock)}"
         )
         # -- actualizar el estado de la reservación
-        flag, error, res_res = complete_reservation_db(
-            item_to_update["reservation_id"], data_token
-        )
+        flag, error, res_res = complete_reservation_db(item_to_update["reservation_id"], data_token)
         msg_items.append(
             f"x---Error al tratar de completar la reservación {item_to_update['id']}: {error}"
         ) if not flag else msg_items.append(
@@ -613,10 +585,7 @@ def dispatch_sm(data, data_token):
         # insertar al inicio de los comentarios
         item_to_update["comment"] = f"{item_n['comment']}\n{item_to_update['comment']}"
         new_comment_item = item_n["comment"]
-        if (
-            new_comment_item.strip() != ""
-            and new_comment_item not in comments_items_updated
-        ):
+        if new_comment_item.strip() != "" and new_comment_item not in comments_items_updated:
             comments_items_updated.append(eliminate_signaling_comment(new_comment_item))
         # agregar los comandos
         item_to_update["comment"] += (
@@ -624,9 +593,7 @@ def dispatch_sm(data, data_token):
             if item_to_update["dispatched"] >= item_to_update["quantity"]
             else " ;(Semidespachado) "
         )
-        comment_history += (
-            f"Despachado: {item_to_update['quantity']}->{item_to_update['id']}\n"
-        )
+        comment_history += f"Despachado: {item_to_update['quantity']}->{item_to_update['id']}\n"
         # --- agregar el item para que se actualize en los datos de la sm
         updated_products.append(item_to_update)
         if (
@@ -641,9 +608,7 @@ def dispatch_sm(data, data_token):
             updated_products.append(v)
     if not operations_done:
         return 400, {"msg": msg_items, "error": "No operations done"}
-    comment_history += (
-        "SM Despachada" if not flag_semidespachado else "SM Semidespachada"
-    )
+    comment_history += "SM Despachada" if not flag_semidespachado else "SM Semidespachada"
     # agregar el comentario a los comentarios generales de las sm
     if len(comments_items_updated) > 0:
         comment_general.append(
@@ -697,9 +662,7 @@ def dispatch_sm(data, data_token):
     flag, error, result_his = update_history_status_sm(
         data["id"], history_sm, new_status, extra_info_sm, comment_general, data_token
     )
-    msg_items.append(
-        f"Historial actualizado: {str(result_his)}"
-    ) if flag else msg_items.append(
+    msg_items.append(f"Historial actualizado: {str(result_his)}") if flag else msg_items.append(
         f"Error al actualizar el historial de la sm: {error}"
     )
     msg = (
@@ -858,9 +821,7 @@ def dowload_file_sm(sm_id: int, data_token, type_file="pdf"):
 
 
 def create_customer(name, email, phone, rfc, address, data_token):
-    flag, error, result = create_customer_db(
-        name, email, phone, rfc, address, data_token
-    )
+    flag, error, result = create_customer_db(name, email, phone, rfc, address, data_token)
     if flag:
         return {"msg": "ok", "data": result}, 201
     else:
@@ -903,9 +864,7 @@ def create_product(
     return {"msg": "ok", "data": result}, 201
 
 
-def update_sm_from_control_table(
-    data, data_token, sm_data=None
-) -> tuple[int, dict[str, str]]:
+def update_sm_from_control_table(data, data_token, sm_data=None) -> tuple[int, dict[str, str]]:
     if sm_data is None:
         flag, error, result = get_sm_by_id(data["id"], data_token)
     else:
@@ -920,7 +879,9 @@ def update_sm_from_control_table(
     date_now = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
     extra_info = json.loads(result[14]) if result[14] else {}
 
-    comment_history = f"Actualización de datos desde la tabla de control por el empleado {data_token.get('name')}"
+    comment_history = (
+        f"Actualización de datos desde la tabla de control por el empleado {data_token.get('name')}"
+    )
     comments = []
     for k, value in data["info"].items():
         if k == "comment":
@@ -1057,9 +1018,7 @@ def create_sm_from_api(data, data_token):
         f"empleado con id: {data_token.get('name')}, "
         f"comentario: {data['info']['comment']}"
     )
-    errors_items, result_ids_items = create_items_sm_db(
-        data["items"], sm_result, data_token
-    )
+    errors_items, result_ids_items = create_items_sm_db(data["items"], sm_result, data_token)
     if len(result_ids_items) > 0:
         msg += f"\nItems creados: {result_ids_items}"
     if len(errors_items) > 0:
@@ -1125,9 +1084,7 @@ def create_urgent_sm_from_api(data, data_token):
         f"fecha limite: {data['info']['critical_date']}, "
         f"empleado con id: {data_token.get('name')}. "
     )
-    errors_items, result_ids_items = create_items_sm_db(
-        data["items"], result, data_token
-    )
+    errors_items, result_ids_items = create_items_sm_db(data["items"], result, data_token)
     if len(result_ids_items) > 0:
         msg += f"\nItems creados: {result_ids_items}"
     if len(errors_items) > 0:
@@ -1238,9 +1195,7 @@ def delete_sm_from_api(data, data_token):
     msg = f"Items eliminados <{result}> de la sm con id: {data['id']}\n"
     flag, error, result = delete_sm_db(data["id"], data_token)
     if flag:
-        msg += (
-            f"SM #{data['id']} eliminada, empleado con id: {data_token.get('emp_id')}"
-        )
+        msg += f"SM #{data['id']} eliminada, empleado con id: {data_token.get('emp_id')}"
         create_notification_permission(
             msg,
             data_token,
@@ -1430,9 +1385,7 @@ def update_items_sm_from_api(data, data_token):
     msg_parts = []
 
     if results:
-        msg_parts.append(
-            f"{len(results)} item(s) actualizado(s) por empleado {emp_id}."
-        )
+        msg_parts.append(f"{len(results)} item(s) actualizado(s) por empleado {emp_id}.")
     if errors:
         msg_parts.append(f"{len(errors)} error(es) durante la actualización.")
 

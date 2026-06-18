@@ -2,9 +2,9 @@
 __author__ = "Edisson Naula"
 __date__ = "$ 28/jun./2024  at 17:07 $"
 
-from static.constants import cache_file_nominas
-
 import json
+
+from static.constants import cache_file_nominas
 
 
 def write_file_cache_nominas(data: dict):

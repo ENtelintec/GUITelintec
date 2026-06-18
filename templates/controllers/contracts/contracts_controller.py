@@ -140,19 +140,20 @@ def get_contracts_abreviations_db(data_token):
         "id, "
         "metadata, "
         "abbreviation, "
-        "1 "
+        "1, "
+        "code "
         "FROM sql_telintec_mod_admin.contracts "
         "UNION SELECT "
         "   abbreviation, "
         "   department_id, "
         "   JSON_OBJECT( 'name', name, 'location', location ),   "
-        "   '', 0 "
+        "   '', 0, '' "
         "   FROM sql_telintec.departments "
         "UNION SELECT "
         "   abbreviation, "
         "   id, "
         "   JSON_OBJECT( 'name', name, 'department', id_department),"
-        "   '', 0 "
+        "   '', 0, '' "
         "   FROM sql_telintec.areas "
     )
     flag, error, result = execute_sql(sql, None, 5, data_token)
@@ -175,7 +176,7 @@ def get_items_contract_string(key: str, data_token) -> tuple[bool, str, int | li
         "FROM sql_telintec_mod_admin.contracts c "
         "LEFT JOIN sql_telintec_mod_admin.quotations q ON q.id = c.quotation_id "
         "LEFT JOIN sql_telintec_mod_admin.quotation_items qi ON qi.contract_id = c.id "
-        "WHERE RIGHT(JSON_UNQUOTE(JSON_EXTRACT(c.metadata, '$.contract_number')), 4) = %s "
+        "WHERE RIGHT(c.code, 4) = %s "
         "OR JSON_EXTRACT(c.metadata, '$.abbreviation_sm') = %s"
     )
     val = (key, key)
@@ -201,7 +202,7 @@ def get_contract_and_items_from_number(lastdigits: str, data_token):
         "FROM sql_telintec_mod_admin.contracts c "
         "LEFT JOIN sql_telintec_mod_admin.quotations q ON q.id = c.quotation_id "
         "LEFT JOIN sql_telintec_mod_admin.quotation_items qi ON qi.contract_id = c.id "
-        "WHERE RIGHT(JSON_UNQUOTE(JSON_EXTRACT(c.metadata, '$.contract_number')), 4) = %s"
+        "WHERE RIGHT(c.code, 4) = %s"
     )
     val = (lastdigits,)
     flag, error, result = execute_sql(sql, val, 2, data_token)

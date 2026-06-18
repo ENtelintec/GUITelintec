@@ -1,44 +1,40 @@
-from templates.controllers.presales.remisions_controller import get_quotation_activity_items
-from templates.controllers.presales.remisions_controller import (
-    update_report_activity_files,
-)
-import boto3
 import json
-import pytz
 from datetime import datetime
-from static.constants import secrets
-from botocore.exceptions import ClientError
-from botocore.exceptions import NoCredentialsError
-from static.constants import log_file_admin_collecions
-from templates.Functions_Utils import create_notification_permission_notGUI
-from templates.controllers.presales.remisions_controller import update_activity_report
-from templates.controllers.presales.remisions_controller import (
-    get_remission_by_id,
-)
-from templates.controllers.presales.remisions_controller import delete_remission_db
-from templates.controllers.presales.remisions_controller import (
-    update_items_quotation_w_remission,
-)
-from templates.controllers.presales.remisions_controller import insert_remission
-from templates.controllers.presales.remisions_controller import (
-    delete_quotation_activity,
-    delete_quotation_activity_item,
-    get_quotation_activity_by_id,
-    insert_quotation_activity_item,
-    update_quotation_activity,
-    update_quotation_activity_item,
-)
-from templates.controllers.presales.remisions_controller import (
-    insert_quotation_activity,
+
+import boto3
+import pytz
+from botocore.exceptions import ClientError, NoCredentialsError
+
+from static.constants import (
+    format_timestamps,
+    log_file_admin_collecions,
+    secrets,
+    timezone_software,
 )
 from templates.controllers.contracts.contracts_controller import (
     get_contract_and_items_from_number,
 )
-from templates.resources.midleware.MD_SM import get_iddentifiers_creation_contracts
-
-from static.constants import timezone_software, format_timestamps
-from templates.Functions_Utils import create_notification_permission
+from templates.controllers.presales.remisions_controller import (
+    delete_quotation_activity,
+    delete_quotation_activity_item,
+    delete_remission_db,
+    get_quotation_activity_by_id,
+    get_quotation_activity_items,
+    get_remission_by_id,
+    insert_quotation_activity,
+    insert_quotation_activity_item,
+    insert_remission,
+    update_activity_report,
+    update_quotation_activity,
+    update_quotation_activity_item,
+    update_report_activity_files,
+)
+from templates.Functions_Utils import (
+    create_notification_permission,
+    create_notification_permission_notGUI,
+)
 from templates.misc.Functions_Files import write_log_file
+from templates.resources.midleware.MD_SM import get_iddentifiers_creation_contracts
 
 __author__ = "Edisson Naula"
 __date__ = "$ 27/oct/2025  at 20:37 $"

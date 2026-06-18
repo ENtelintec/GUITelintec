@@ -1,30 +1,28 @@
 # -*- coding: utf-8 -*-
-__author__ = "Edisson Naula"
-__date__ = "$ 08/may./2024  at 10:00 $"
 
 import json
 
-from flask import send_file, request
+from flask import request, send_file
 from flask_restx import Namespace, Resource
 
+from static.constants import filepath_settings, quizzes_RRHH
 from static.Models.api_models import (
+    NotificationInsertForm,
+    NotificationUpdateForm,
+    RequestAVResponseForm,
+    TaskDeleteForm,
+    TaskInsertForm,
+    TaskUpdateForm,
+    expected_headers_per,
     notification_insert_model,
     notification_request_model,
     request_av_response_model,
     response_av_model,
     response_files_av_model,
-    NotificationInsertForm,
-    RequestAVResponseForm,
-    task_insert_model,
-    TaskInsertForm,
-    task_update_model,
-    TaskUpdateForm,
     task_delete_model,
-    TaskDeleteForm,
-    expected_headers_per,
-    NotificationUpdateForm,
+    task_insert_model,
+    task_update_model,
 )
-from static.constants import filepath_settings, quizzes_RRHH
 from templates.controllers.notifications.Notifications_controller import (
     insert_notification,
     update_status_notification,
@@ -32,17 +30,20 @@ from templates.controllers.notifications.Notifications_controller import (
 from templates.resources.methods.Functions_Aux_Login import token_verification_procedure
 from templates.resources.midleware.Functions_DB_midleware import (
     create_task_from_api,
-    update_task_from_api,
     delete_task_from_api,
+    update_task_from_api,
 )
 from templates.resources.midleware.Functions_midleware_misc import (
-    get_all_notification_db_user_status,
-    get_response_AV,
-    get_files_openai,
-    get_all_notification_db_permission,
-    get_task_by_id_employee,
     get_all_dashboard_data,
+    get_all_notification_db_permission,
+    get_all_notification_db_user_status,
+    get_files_openai,
+    get_response_AV,
+    get_task_by_id_employee,
 )
+
+__author__ = "Edisson Naula"
+__date__ = "$ 08/may./2024  at 10:00 $"
 
 ns = Namespace("GUI/api/v1/misc")
 

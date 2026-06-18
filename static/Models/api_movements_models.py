@@ -3,14 +3,14 @@ __author__ = "Edisson Naula"
 __date__ = "$ 03/may./2024  at 15:33 $"
 
 from flask_restx import fields
-
-from static.constants import api
+from wtforms import IntegerField
 from wtforms.fields.form import FormField
 from wtforms.fields.numeric import FloatField
 from wtforms.fields.simple import StringField
 from wtforms.form import Form
-from wtforms import IntegerField
 from wtforms.validators import InputRequired
+
+from static.constants import api
 
 movement_model = api.model(
     "MovementAMC",

@@ -1,13 +1,21 @@
 # -*- coding: utf-8 -*-
-from static.Models.api_login_models import put_biocredentials_model, post_user_model, PostUserModelForm
-from static.Models.api_models import expected_headers_per
-from static.Models.api_login_models import BiocredentialsPutModelForm
-from templates.resources.midleware.MD_UserSystem import update_biocredentials_from_api, create_employee_user_from_api, \
-    fetch_permissions_from_api
-from templates.resources.midleware.MD_UserSystem import fectchUsersDBApi
-from templates.resources.methods.Functions_Aux_Login import token_verification_procedure
-from flask_restx import Namespace, Resource
 from flask import request
+from flask_restx import Namespace, Resource
+
+from static.Models.api_login_models import (
+    BiocredentialsPutModelForm,
+    PostUserModelForm,
+    post_user_model,
+    put_biocredentials_model,
+)
+from static.Models.api_models import expected_headers_per
+from templates.resources.methods.Functions_Aux_Login import token_verification_procedure
+from templates.resources.midleware.MD_UserSystem import (
+    create_employee_user_from_api,
+    fectchUsersDBApi,
+    fetch_permissions_from_api,
+    update_biocredentials_from_api,
+)
 
 __author__ = "Edisson Naula"
 __date__ = "$ 16/ene./2024  at 18:49 $"

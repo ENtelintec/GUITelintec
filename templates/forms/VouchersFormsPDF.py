@@ -9,7 +9,6 @@ from reportlab.pdfgen import canvas
 from static.constants import filepath_v_pdf
 from templates.forms.PDFGenerator import a4_x, a4_y, create_header_telintec
 
-
 dict_types = {
     "0": {"label": "Vale de EPP", "value": 5},
     "1": {"label": "Vale de Equipo y Herramienta", "value": 6},

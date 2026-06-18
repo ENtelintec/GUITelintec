@@ -1,23 +1,23 @@
 # -*- coding: utf-8 -*-
-from static.Models.api_models import datetime_filter
 from wtforms.fields.datetime import DateTimeField
+
+from static.Models.api_models import datetime_filter
 
 __author__ = "Edisson Naula"
 __date__ = "$ 10/may./2024  at 16:31 $"
 
 
 from flask_restx import fields
+from wtforms import FormField, IntegerField, validators
 from wtforms.fields.datetime import DateField
 from wtforms.fields.list import FieldList
 from wtforms.fields.numeric import FloatField
-from wtforms.fields.simple import StringField, URLField, EmailField
-
-from static.Models.api_models import date_filter
-from static.constants import api
+from wtforms.fields.simple import EmailField, StringField
 from wtforms.form import Form
-from wtforms import validators, IntegerField, FormField
-
 from wtforms.validators import InputRequired
+
+from static.constants import api
+from static.Models.api_models import date_filter
 
 client_emp_sm_response_model = api.model(
     "EmployeeSMResponse",

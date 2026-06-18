@@ -5,23 +5,23 @@ __date__ = "$ 20/mar./2024  at 15:24 $"
 import json
 
 from static.constants import tools_AV_avaliable
-from templates.misc.Functions_Files import get_cumulative_data_fichajes_dict
 from templates.controllers.customer.customers_controller import get_costumers_amc
 from templates.controllers.employees.employees_controller import (
-    get_employees_w_status,
     get_employee_info,
+    get_employees_w_status,
 )
 from templates.controllers.fichajes.fichajes_controller import get_fichaje_emp_AV
+from templates.controllers.product.movements_controller import get_product_movement_amc
 from templates.controllers.product.products_controller import (
-    get_product_categories,
-    get_products_almacen,
     get_high_stock_products,
     get_low_stock_products,
     get_no_stock_products,
+    get_product_categories,
+    get_products_almacen,
     get_supply_inv_amc,
 )
-from templates.controllers.product.movements_controller import get_product_movement_amc
 from templates.controllers.supplier.suppliers_controller import get_supplier_amc
+from templates.misc.Functions_Files import get_cumulative_data_fichajes_dict
 
 
 def getToolsForDepartment(**kwargs):

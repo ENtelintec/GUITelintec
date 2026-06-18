@@ -6,20 +6,26 @@ from io import BytesIO
 
 import fitz
 from PIL import Image
-from reportlab.graphics.barcode import code128
-from reportlab.graphics.barcode import code93
-from reportlab.graphics.barcode import code39, usps, usps4s, ecc200datamatrix
-from reportlab.graphics.barcode import eanbc, qr
+from reportlab.graphics import renderPDF
+from reportlab.graphics.barcode import (
+    code39,
+    code93,
+    code128,
+    eanbc,
+    ecc200datamatrix,
+    qr,
+    usps,
+    usps4s,
+)
 from reportlab.graphics.shapes import Drawing
 from reportlab.lib.units import mm
 from reportlab.lib.utils import ImageReader
 from reportlab.pdfgen import canvas
-from reportlab.graphics import renderPDF
 from reportlab.platypus import Flowable
 
 from static.constants import file_codebar
-from templates.Functions_Utils import get_page_size
 from templates.forms.PDFGenerator import wrap_text
+from templates.Functions_Utils import get_page_size
 
 data_company = {"name": "Telintec", "department": "Almacen"}
 
