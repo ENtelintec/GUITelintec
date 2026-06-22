@@ -1091,7 +1091,11 @@ def download_report_activity_attachment_api(data, data_token):
 def fetch_products_contracts(data_token):
     iddentifiers, dict_tabs, code = get_iddentifiers_creation_contracts(data_token)
     if not iddentifiers:
-        return {"data": [], "msg": code}, 400
+        return {
+            "data": [],
+            "msg": "No se pudieron obtener los contratos con productos",
+            "error": code,
+        }, 400
     data_out = []
     for iddentifier in iddentifiers:
         flag, error, result = get_contract_and_items_from_number(iddentifier, data_token)
@@ -1122,4 +1126,4 @@ def fetch_products_contracts(data_token):
                 "items": items,
             }
         )
-    return {"data": data_out, "msg": "Ok"}, 200
+    return {"data": data_out, "msg": None, "error": None}, 200

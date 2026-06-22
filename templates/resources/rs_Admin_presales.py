@@ -14,7 +14,6 @@ from static.Models.api_contracts_models import (
     QuotationDeleteForm,
     QuotationInsertForm,
     QuotationUpdateForm,
-    answer_contract_model,
     contract_model_delete,
     contract_model_insert,
     contract_model_update,
@@ -22,7 +21,6 @@ from static.Models.api_contracts_models import (
     expected_files_contract,
     expected_files_contract_comparison,
     expected_files_quotation,
-    quotation_model_delete,
     quotation_model_insert,
     quotation_model_update,
 )
@@ -79,7 +77,7 @@ class QuotationAction(Resource):
         # noinspection PyUnresolvedReferences
         validator = QuotationInsertForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"data": validator.errors, "msg": "Error at structure"}, 400
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
         data = validator.data
         data_out, code = create_quotation_from_api(data, data_token)
         return data_out, code
@@ -92,12 +90,11 @@ class QuotationAction(Resource):
         # noinspection PyUnresolvedReferences
         validator = QuotationUpdateForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"data": validator.errors, "msg": "Error at structure"}, 400
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
         data = validator.data
         data_out, code = update_quoation_from_api(data, data_token)
         return data_out, code
 
-    @ns.marshal_with(quotation_model_delete)
     @ns.expect(expected_headers_per)
     def delete(self):
         flag, data_token, msg = token_verification_procedure(request, department="administracion")
@@ -106,7 +103,7 @@ class QuotationAction(Resource):
         # noinspection PyUnresolvedReferences
         validator = QuotationDeleteForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"data": validator.errors, "msg": "Error at structure"}, 400
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
         data = validator.data
         data_out, code = delete_quotation_from_api(data, data_token)
         return data_out, code
@@ -136,7 +133,6 @@ class QuotationProductsUpload(Resource):
 
 @ns.route("/contract/<string:id_c>")
 class Contracts(Resource):
-    @ns.marshal_with(answer_contract_model)
     @ns.expect(expected_headers_per)
     def get(self, id_c):
         flag, data_token, msg = token_verification_procedure(request, department="administracion")
@@ -167,7 +163,7 @@ class ContractAction(Resource):
         # noinspection PyUnresolvedReferences
         validator = ContractInsertForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"data": validator.errors, "msg": "Error at structure"}, 400
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
         data = validator.data
         data_out, code = create_contract_from_api(data, data_token)
         return data_out, code
@@ -180,7 +176,7 @@ class ContractAction(Resource):
         # noinspection PyUnresolvedReferences
         validator = ContractUpdateForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"data": validator.errors, "msg": "Error at structure"}, 400
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
         data = validator.data
         data_out, code = update_contract_from_api(data, data_token)
         return data_out, code
@@ -193,7 +189,7 @@ class ContractAction(Resource):
         # noinspection PyUnresolvedReferences
         validator = ContractDeleteForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"data": validator.errors, "msg": "Error at structure"}, 400
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
         data = validator.data
         data_out, code = delete_contract_from_api(data, data_token)
         return data_out, code

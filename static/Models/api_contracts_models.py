@@ -238,6 +238,7 @@ metadata_contract_model = api.model(
             required=False, description="The invoiced balance"
         ),
         "observaciones": fields.String(required=False, description="The observations"),
+        "exiros": fields.String(required=False, description="The exiros number")
     },
 )
 
@@ -466,6 +467,7 @@ class MetadataContractForm(Form):
     saldo_hes = StringField("saldo_hes", validators=[], default="")
     saldo_facturado = StringField("saldo_facturado", validators=[], default="")
     observaciones = StringField("observaciones", validators=[], default="")
+    exiros = StringField("exiros", validators=[], default="")
 
 
 class ContractInsertForm(Form):
