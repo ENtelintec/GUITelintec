@@ -117,18 +117,16 @@ class QuotationProductsUpload(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         if "file" not in request.files:
-            return {"data": "No se detecto un archivo"}, 400
+            return {"data": None, "msg": "No se detectó un archivo", "error": "No file in request"}, 400
         file = request.files["file"]
         if file and file.filename:
             filename = secure_filename(file.filename)
             filepath_download = os.path.join(tempfile.mkdtemp(), filename)
             file.save(filepath_download)
-            data, code = products_quotation_from_file(filepath_download)
-            if code != 200:
-                return {"data": data, "msg": "Error at file structure"}, 400
-            return {"data": data, "msg": f"Ok with filaname: {filename}"}, 200
+            data_out, code = products_quotation_from_file(filepath_download)
+            return data_out, code
         else:
-            return {"msg": "No se subio el archivo"}, 400
+            return {"data": None, "msg": "No se subió el archivo", "error": None}, 400
 
 
 @ns.route("/contract/<string:id_c>")
@@ -202,22 +200,17 @@ class ContractProductsUpload(Resource):
         flag, data_token, msg = token_verification_procedure(request, department="administracion")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        # noinspection PyUnresolvedReferences
         if "file" not in request.files:
-            return {"data": "No se detecto un archivo"}, 400
+            return {"data": None, "msg": "No se detectó un archivo", "error": "No file in request"}, 400
         file = request.files["file"]
         if file and file.filename:
             filename = secure_filename(file.filename)
             filepath_download = os.path.join(tempfile.mkdtemp(), filename)
             file.save(filepath_download)
-            data = {"path": filepath_download}
-            data, code = products_contract_from_file(data)
-            code = 200
-            if code != 200:
-                return {"data": data, "msg": "Error at file structure"}, 400
-            return {"data": data, "msg": f"Ok with filaname: {filename}"}, 200
+            data_out, code = products_contract_from_file({"path": filepath_download})
+            return data_out, code
         else:
-            return {"msg": "No se subio el archivo"}, 400
+            return {"data": None, "msg": "No se subió el archivo", "error": None}, 400
 
 
 @ns.route("/contract/settings")
@@ -230,12 +223,12 @@ class ContractSettings(Resource):
         # noinspection PyUnresolvedReferences
         validator = ContractSettingsForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"data": validator.errors, "msg": "Error at structure"}, 400
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
         data = validator.data
         flag, error = modify_pattern_phrase_contract_pdf(data)
         if not flag:
-            return {"data": None, "msg": str(error)}, 400
-        return {"msg": "Ok"}, 200
+            return {"data": None, "msg": "No se pudo actualizar la configuración", "error": error}, 400
+        return {"data": None, "msg": "Configuración actualizada correctamente", "error": None}, 200
 
 
 @ns.route("/compare")
@@ -246,31 +239,25 @@ class CompareContractQuotation(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         if "file" not in request.files:
-            return {"data": "No se detecto un archivo"}, 400
+            return {"data": None, "msg": "No se detectó un archivo", "error": "No file in request"}, 400
         file = request.files["file"]
-        #  get argument id_quotation
         data: dict[str, int | str | None] = {}
         id_quotation = request.form.get("id_quotation")
         try:
             data["id_quotation"] = int(id_quotation) if id_quotation else None
         except ValueError:
-            return {"data": None, "msg": "Error at structure of id_quotation"}, 400
+            return {"data": None, "msg": "id_quotation no es un número válido", "error": None}, 400
         if data["id_quotation"] is None:
-            return {
-                "data": None,
-                "msg": "Error at structure of id_quotation None value",
-            }, 400
+            return {"data": None, "msg": "id_quotation es requerido", "error": None}, 400
         if file and file.filename:
             filename = secure_filename(file.filename)
             filepath_download = os.path.join(tempfile.mkdtemp(), filename)
             file.save(filepath_download)
             data["path"] = filepath_download
             data_out, code = compare_file_and_quotation(data)
-            if code != 200:
-                return {"data": data_out, "msg": "Error at file structure"}, 400
-            return {"data": data_out, "msg": f"Ok with filaname: {filename}"}, 200
+            return data_out, code
         else:
-            return {"msg": "No se subio el archivo"}, 400
+            return {"data": None, "msg": "No se subió el archivo", "error": None}, 400
 
 
 @ns.route("/folio/ternium")
@@ -303,17 +290,16 @@ class ItemsQuotationFileUpload(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         if "file" not in request.files:
-            return {"data": "No se detecto un archivo"}, 400
+            return {"data": None, "msg": "No se detectó un archivo", "error": "No file in request"}, 400
         file = request.files["file"]
         if file and file.filename:
             filename = secure_filename(file.filename)
             filepath_download = os.path.join(tempfile.mkdtemp(), filename)
             file.save(filepath_download)
-            data = {"path": filepath_download}
-            data_out, code = items_quotation_from_file(data)
+            data_out, code = items_quotation_from_file({"path": filepath_download})
             return data_out, code
         else:
-            return {"msg": "No se subio el archivo"}, 400
+            return {"data": None, "msg": "No se subió el archivo", "error": None}, 400
 
 
 @ns.route("/contract/items/file")
@@ -324,17 +310,16 @@ class ItemsContractFileUpload(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         if "file" not in request.files:
-            return {"data": "No se detecto un archivo"}, 400
+            return {"data": None, "msg": "No se detectó un archivo", "error": "No file in request"}, 400
         file = request.files["file"]
         if file and file.filename:
             filename = secure_filename(file.filename)
             filepath_download = os.path.join(tempfile.mkdtemp(), filename)
             file.save(filepath_download)
-            data = {"path": filepath_download}
-            data_out, code = items_contract_from_file(data, data_token)
+            data_out, code = items_contract_from_file({"path": filepath_download}, data_token)
             return data_out, code
         else:
-            return {"msg": "No se subio el archivo"}, 400
+            return {"data": None, "msg": "No se subió el archivo", "error": None}, 400
 
 
 @ns.route("/contracts/abreviations")

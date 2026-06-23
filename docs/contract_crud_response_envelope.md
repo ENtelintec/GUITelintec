@@ -126,7 +126,34 @@ uno nuevo con este patrón, agrégalo aquí.
 | `/admin/presales/folio/cotfc` | GET | `folio_from_department` | ✅ Hecho | 2026-06-22 |
 | `/admin/presales/contracts/abreviations` | GET | `get_contracts_abreviations` | ✅ Hecho | 2026-06-22 |
 | `/admin/presales/products/contracts` | GET | `fetch_products_contracts` | ✅ Hecho | 2026-06-22 |
-| `/admin/presales/contract/settings` | POST | `modify_pattern_phrase_contract_pdf` | ⬜ Pendiente | — |
+| `/admin/presales/contract/settings` | POST | `modify_pattern_phrase_contract_pdf` | ✅ Hecho | 2026-06-23 |
+| `/admin/presales/quotation/products/upload` | POST | `products_quotation_from_file` | ✅ Hecho | 2026-06-23 |
+| `/admin/presales/contract/review/products/upload` | POST | `products_contract_from_file` | ✅ Hecho | 2026-06-23 |
+| `/admin/presales/quotation/items/file` | POST | `items_quotation_from_file` | ✅ Hecho | 2026-06-23 |
+| `/admin/presales/contract/items/file` | POST | `items_contract_from_file` | ✅ Hecho | 2026-06-23 |
+| `/admin/presales/compare` | POST | `compare_file_and_quotation` | ✅ Hecho | 2026-06-23 |
+| `/rrhh/employee` | POST · PUT · DELETE | `create_new_employee_db / update_employee_db` | ⬜ Pendiente | — |
+| `/rrhh/employee/terminate` | DELETE | `terminate_employee_from_api` | ⬜ Pendiente | — |
+| `/rrhh/employees/info/<status>` | GET | `get_info_employees_with_status` | ⬜ Pendiente | — |
+| `/rrhh/employee/info/<id_emp>` | GET | `get_info_employee_id` | ⬜ Pendiente | — |
+| `/rrhh/employee/medical/<id_emp>` | GET | `fetch_medical_employee` | ⬜ Pendiente | — |
+| `/rrhh/employees/medical/all` | GET | `fetch_medicals` (quitar `marshal_with`) | ⬜ Pendiente | — |
+| `/rrhh/medical/employes/less` | GET | `fetch_employees_without_records` | ⬜ Pendiente | — |
+| `/rrhh/employee/medical` | POST · PUT · DELETE | `insert_medical_db / update_medical_db` | ⬜ Pendiente | — |
+| `/rrhh/employees/vacations/all` | GET | `get_all_vacations` (quitar `marshal_with`) | ⬜ Pendiente | — |
+| `/rrhh/employee/vacations/<id_emp>` | GET | `get_vacations_employee` | ⬜ Pendiente | — |
+| `/rrhh/employee/vacation` | POST · PUT · DELETE | `insert_new_vacation / update_vacation` | ⬜ Pendiente | — |
+| `/rrhh/quizzes` | GET | `get_all_quizzes` | ⬜ Pendiente | — |
+| `/rrhh/employees/fichaje/all` | GET | `fetch_fichajes_all_employees` (quitar `marshal_with`) | ⬜ Pendiente | — |
+| `/rrhh/employee/fichaje/<id_emp>` | GET | `fetch_fichaje_employee` | ⬜ Pendiente | — |
+| `/rrhh/payroll/files/update` | POST | `create_payroll_file_attachment_api` | ⬜ Pendiente | — |
+| `/rrhh/payroll/mail` | POST | `create_mail_payroll` | ⬜ Pendiente | — |
+| `/rrhh/payroll/files/list/<emp_id>` | GET | `get_files_list_nomina_RH` (clave `data_raw` → `data`) | ⬜ Pendiente | — |
+| `/rrhh/payroll/data/update` | PUT | `update_data_employee` | ⬜ Pendiente | — |
+| `/rrhh/payroll/update/employees` | GET | `update_payroll_list_employees` | ⬜ Pendiente | — |
+| `/rrhh/fichajes/files` | GET | `get_files_fichaje` (quitar `marshal_with`) | ⬜ Pendiente | — |
+| `/rrhh/fichajes/data/fromfiles` | POST | `get_fichaje_data` (`msg` con lista → `error`; quitar `marshal_with`) | ⬜ Pendiente | — |
+| `/rrhh/upload/fichaje/file` | POST | — (códigos 401 erróneos → 400) | ⬜ Pendiente | — |
 
 ## Patrón reutilizable (para aplicar a otros endpoints)
 
@@ -225,6 +252,5 @@ fallen; el front detecta el problema con `error != null`.
   lista cruda de items.
 - El `/quotation` quedó alineado junto con `/contract`. Si tocas uno, mantén el
   otro consistente.
-- Pendiente fuera de este cambio: el `POST /contract/settings` sigue con el
-  patrón viejo (`{"data": validator.errors, "msg": "Error at structure"}`) — no
-  estaba en el alcance del CRUD.
+- Todos los endpoints de `admin/presales` están alineados al envelope, incluyendo
+  los de carga de archivo y `/contract/settings`.

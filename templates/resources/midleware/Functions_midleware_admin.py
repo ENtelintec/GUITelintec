@@ -393,7 +393,7 @@ def folio_from_department(data_token):
 
 def products_quotation_from_file(path: str):
     products = read_exel_products_quotation(path)
-    return {"data": products, "msg": "Ok"}, 200
+    return {"data": products, "msg": "Productos cargados correctamente", "error": None}, 200
 
 
 def products_contract_from_file(data: dict):
@@ -410,7 +410,7 @@ def products_contract_from_file(data: dict):
         data["phrase"] = settings.get("phrase_pdf_contract_default")
         data["pattern"] = settings.get("pattern_pdf_contract_default")
         products = read_file_tenium_contract(data["path"], data["pattern"], data["phrase"])
-    return {"data": products, "msg": "Ok"}, 200
+    return {"data": products, "msg": "Productos cargados correctamente", "error": None}, 200
 
 
 def modify_pattern_phrase_contract_pdf(data: dict):
@@ -434,6 +434,8 @@ def compare_file_and_quotation(data: dict):
         data["phrase"] = settings.get("phrase_pdf_contract_default")
         data["pattern"] = settings.get("pattern_pdf_contract_default")
     flag, error, data_quotation = get_quotation(data["id_quotation"])
+    if not flag:
+        return {"data": None, "msg": "No se encontró la cotización", "error": str(error)}, 400
     products_contract = read_file_tenium_contract(data["path"], data["pattern"], data["phrase"])
     data_out, code = compare_file_quotation(data_quotation, products_contract)
     return data_out, code
@@ -887,15 +889,23 @@ def delete_head_from_api(data, data_token):
 def items_quotation_from_file(data):
     products = read_exel_products_bidding(data["path"])
     if products is None:
-        return {"data": None, "msg": "Error at file structure"}, 400
-    return {"data": products, "msg": "Ok"}, 200
+        return {
+            "data": None,
+            "msg": "Error al procesar el archivo",
+            "error": "El archivo no contiene productos válidos",
+        }, 400
+    return {"data": products, "msg": "Items cargados correctamente", "error": None}, 200
 
 
 def items_contract_from_file(data, data_token):
     products = read_exel_products_partidas(data["path"], data_token)
     if products is None:
-        return {"data": None, "msg": "Error at file structure"}, 400
-    return {"data": products, "msg": "Ok"}, 200
+        return {
+            "data": None,
+            "msg": "Error al procesar el archivo",
+            "error": "El archivo no contiene partidas válidas",
+        }, 400
+    return {"data": products, "msg": "Items cargados correctamente", "error": None}, 200
 
 
 def items_supplier_from_file(data):
@@ -958,8 +968,8 @@ def create_items_from_api(products, id_quotation, data_token, id_contract=None):
     for product in products:
         description = product.get("description", "")
         description_small = product.get("description_small", "")
-        id_inventory = product.get("id", None)
-        id_inventory = id_inventory if id_inventory and id_inventory>0 else None
+        id_inventory = product.get("id_inventory", None)
+        id_inventory = id_inventory if id_inventory and id_inventory > 0 else None
         products_list.append(
             {
                 "quotation_id": id_quotation,
@@ -1236,12 +1246,13 @@ def update_contract_from_api(data, data_token):
         new_quotation_created = True
         msg += f"Se creo una cotizacion con ID-{id_quotation} para relacionar con el contrato por el empleado {data_token.get('name')}"
         flag_list, error_list, result_list = create_items_from_api(
-            data["products"], id_quotation, data["id"]
+            data["products"], id_quotation, data_token, data["id"]
         )
-
     else:
         id_quotation = data["quotation_id"]
-        flag, error, result = get_quotation(data["id"])
+        flag, error, result = get_quotation(
+            id_quotation=data["quotation_id"], data_token=data_token
+        )
         if not flag:
             return {
                 "data": None,
@@ -1253,7 +1264,7 @@ def update_contract_from_api(data, data_token):
         products = data["products"]
         contract_id = result[5]
         flag_list, error_list, result_list = update_items_quotation_from_api(
-            products, data["id"], contract_id, dict_products, data_token
+            products, data["id_quotation"], contract_id, dict_products, data_token
         )
     if flag_list.count(True) == len(flag_list):
         msg += "\nItems de cotizacion creados/actualizados correctamente"
@@ -1287,7 +1298,7 @@ def update_contract_from_api(data, data_token):
         timestamps=data["timestamps"],
         quotation_id=id_quotation,
         abbreviation=abbreviaton,
-        data_token=data_token
+        data_token=data_token,
     )
     if not flag:
         return {
