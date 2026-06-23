@@ -155,6 +155,16 @@ uno nuevo con este patrón, agrégalo aquí.
 | `/rrhh/fichajes/data/fromfiles` | POST | `get_fichaje_data` (marshal_with eliminado; timestamps serializados) | ✅ Hecho | 2026-06-23 |
 | `/rrhh/upload/fichaje/file` | POST | — (códigos 401 → 400 corregidos) | ✅ Hecho | 2026-06-23 |
 
+## Bugs datetime GET /rrhh (2026-06-23)
+
+Tres bugs de serialización detectados en los GET de RRHH:
+
+| Función | Archivo | Bug | Fix |
+|---|---|---|---|
+| `get_info_employee_id` | `Functions_DB_midleware.py` | `admission.strftime()` y `birthday.strftime()` sin guardia de `None` → `AttributeError` | Guard `if field is None or isinstance(field, str) else field.strftime(...)` |
+| `get_vacations_employee` | `Functions_DB_midleware.py` | `result[3].strftime()` (date_admission) sin guardia de `None` | Mismo patrón |
+| `fetch_medical_employee` | `Functions_midleware_RRHH.py` | Desempaqueta 8 campos; `get_all_examenes` devuelve 9 (`extra_info` añadido a la query) → `ValueError` | Añadir `_extra` al unpack |
+
 ## Patrón reutilizable (para aplicar a otros endpoints)
 
 Esta es la receta para alinear **cualquier** endpoint de escritura al mismo

@@ -160,7 +160,9 @@ def get_info_employee_id(id_emp: int, data_token):
         "modality": modality,
         "email": email,
         "contract": contract,
-        "admission": admission.strftime(format_date),
+        "admission": admission
+        if admission is None or isinstance(admission, str)
+        else admission.strftime(format_date),
         "rfc": rfc,
         "curp": curp,
         "nss": nss,
@@ -169,7 +171,9 @@ def get_info_employee_id(id_emp: int, data_token):
         "status": status,
         "departure": departure,
         "exam_id": examen,
-        "birthday": birthday.strftime(format_date),
+        "birthday": birthday
+        if birthday is None or isinstance(birthday, str)
+        else birthday.strftime(format_date),
         "legajo": legajo,
         "dep_id": dep_id,
     }
@@ -196,7 +200,9 @@ def get_vacations_employee(emp_id: int, data_token):
     out = {
         "emp_id": result[0],
         "name": result[1].upper() + " " + result[2].upper(),
-        "date_admission": result[3].strftime(format_date),
+        "date_admission": result[3]
+        if result[3] is None or isinstance(result[3], str)
+        else result[3].strftime(format_date),
         "seniority": seniority,
     }
     return out, 200

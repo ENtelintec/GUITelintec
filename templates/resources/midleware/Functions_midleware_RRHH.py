@@ -1150,7 +1150,7 @@ def fetch_medical_employee(id_emp, data_token):
     if not flag or not (isinstance(result, list) or isinstance(result, tuple)):
         return {"data": None, "msg": "No se pudo obtener el registro médico", "error": None}, 400
     for row in result:
-        id_exam, nombre, sangre, status, aptitud, fechas, apt_actual, emp_id = row
+        id_exam, nombre, sangre, status, aptitud, fechas, apt_actual, emp_id, _extra = row
         if str(emp_id) == id_emp:
             return {
                 "data": {
