@@ -1217,8 +1217,8 @@ def create_contract_from_api(data, data_token):
 def update_contract_from_api(data, data_token):
     msg = ""
     error_items = None
+    new_quotation_created = False
     if data.get("quotation_id", 0) == 0 and len(data.get("products", [])) > 0:
-        id_contract = data["id"]
         flag, error, result = create_quotation(data["metadata"], status=1, data_token=data_token)
         if not flag:
             return {
@@ -1233,6 +1233,7 @@ def update_contract_from_api(data, data_token):
                 "msg": "No se pudo obtener el id de la cotización para relacionar con el contrato",
                 "error": str(result),
             }, 400
+        new_quotation_created = True
         msg += f"Se creo una cotizacion con ID-{id_quotation} para relacionar con el contrato por el empleado {data_token.get('name')}"
         flag_list, error_list, result_list = create_items_from_api(
             data["products"], id_quotation, data["id"]
@@ -1240,7 +1241,6 @@ def update_contract_from_api(data, data_token):
 
     else:
         id_quotation = data["quotation_id"]
-        id_contract = data["id"]
         flag, error, result = get_quotation(data["id"])
         if not flag:
             return {
@@ -1258,11 +1258,11 @@ def update_contract_from_api(data, data_token):
     if flag_list.count(True) == len(flag_list):
         msg += "\nItems de cotizacion creados/actualizados correctamente"
     elif flag_list.count(False) == len(flag_list):
-        delete_quotation(id_quotation, data_token)
-        delete_contract(id_contract, data_token)
+        if new_quotation_created:
+            delete_quotation(id_quotation, data_token)
         return {
             "data": None,
-            "msg": "No se pudo crear/actualizar ningún item; contrato y cotización revertidos",
+            "msg": "No se pudo crear/actualizar ningún item de la cotización",
             "error": error_list,
         }, 400
     else:
