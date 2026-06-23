@@ -131,9 +131,9 @@ def create_new_employee_db(data, data_token):
         data["info"]["id_leader"],
     )
     if flag:
-        return {"data": str(result)}, 201
+        return {"data": {"id_employee": result}, "msg": f"Empleado creado correctamente (ID {result})", "error": None}, 201
     else:
-        return {"error": str(error)}, 400
+        return {"data": None, "msg": "No se pudo crear el empleado", "error": error}, 400
 
 
 def update_employee_db(data, data_token):
@@ -160,9 +160,9 @@ def update_employee_db(data, data_token):
         data["info"]["id_leader"],
     )
     if flag:
-        return {"data": str(result)}, 200
+        return {"data": {"id_employee": result}, "msg": f"Empleado actualizado correctamente (ID {result})", "error": None}, 200
     else:
-        return {"error": str(error)}, 400
+        return {"data": None, "msg": "No se pudo actualizar el empleado", "error": error}, 400
 
 
 def terminate_employee_from_api(data, data_token):
@@ -173,9 +173,9 @@ def terminate_employee_from_api(data, data_token):
     flag, error, result = terminate_employee_db(data["id"], json.dumps(departure), data_token)
     if not flag:
         return {
-            "data": str(result),
-            "error": str(error),
-            "msg": "Error al dar de baja",
+            "data": None,
+            "msg": "No se pudo dar de baja al empleado",
+            "error": error,
         }, 400
     msg = (
         f"Empleado con id: {data['id']} dado de baja por {data['reason']}. "
@@ -185,7 +185,7 @@ def terminate_employee_from_api(data, data_token):
     create_notification_permission(
         msg, data_token, ["rrhh"], "Empleado dato de baja", data_token.get("emp_id"), 0
     )
-    return {"data": str(result), "msg": msg}, 200
+    return {"data": {"id_employee": data["id"]}, "msg": f"Empleado dado de baja correctamente (ID {data['id']})", "error": None}, 200
 
 
 def get_files_fichaje(data_token):
@@ -201,7 +201,7 @@ def fetch_fichajes_all_employees(data_token):
         cache_file_resume_fichaje_path, is_hard_update=True
     )
     if not flag:
-        return {"msg": "Error al obtener fichajes", "data": []}, 400
+        return {"data": [], "msg": "No se pudieron obtener los fichajes", "error": None}, 400
     out_aux = []
     for item in fichajes_resume:
         out_aux.append(
@@ -224,8 +224,7 @@ def fetch_fichajes_all_employees(data_token):
                 "pasiva_details": item[15],
             }
         )
-    out = {"data": out_aux, "msg": "Ok"}
-    return out, 200
+    return {"data": out_aux, "msg": None, "error": None}, 200
 
 
 def fetch_fichaje_employee(id_emp):
@@ -233,32 +232,32 @@ def fetch_fichaje_employee(id_emp):
         cache_file_resume_fichaje_path, is_hard_update=True
     )
     if not flag:
-        return {"msg": "Error al obtener fichajes", "data": None}, 400
-    out = {}
-    code = 400
+        return {"data": None, "msg": "No se pudieron obtener los fichajes", "error": None}, 400
     for item in fichajes_resume:
         if str(item[0]) == id_emp:
-            out = {
-                "id": item[0],
-                "name": item[1],
-                "contract": item[2],
-                "absences": item[3],
-                "late": item[4],
-                "total_late": item[5],
-                "extra": item[6],
-                "total_h_extra": item[7],
-                "primes": item[8],
-                "absences_details": item[9],
-                "late_details": item[10],
-                "extra_details": item[11],
-                "primes_details": item[12],
-                "normals_details": item[13],
-                "earlies_details": item[14],
-                "pasiva_details": item[15],
-            }
-            code = 200
-            break
-    return out, code
+            return {
+                "data": {
+                    "id": item[0],
+                    "name": item[1],
+                    "contract": item[2],
+                    "absences": item[3],
+                    "late": item[4],
+                    "total_late": item[5],
+                    "extra": item[6],
+                    "total_h_extra": item[7],
+                    "primes": item[8],
+                    "absences_details": item[9],
+                    "late_details": item[10],
+                    "extra_details": item[11],
+                    "primes_details": item[12],
+                    "normals_details": item[13],
+                    "earlies_details": item[14],
+                    "pasiva_details": item[15],
+                },
+                "msg": None,
+                "error": None,
+            }, 200
+    return {"data": None, "msg": "No se encontró el fichaje del empleado", "error": None}, 400
 
 
 def get_data_file(filename: str, type_f: str):
@@ -396,32 +395,39 @@ def get_data_name_fichaje(name: str, dff, dfb, clocks, window_time_in, window_ti
         [days_early_dic_f, days_early_t, early_bit],
         [None, None, pasive_bit],
     )
+    def _fmt_ts(k):
+        if isinstance(k, str):
+            return k
+        if isinstance(k, datetime):
+            return k.strftime(format_timestamps)
+        return str(k)
+
     list_normal_data = [
-        {"timestamp": k, "value": v[0], "comment": v[1], "timestamps_extra": v[2]}
+        {"timestamp": _fmt_ts(k), "value": v[0], "comment": v[1], "timestamps_extra": v[2]}
         for k, v in normal_data_emp.items()
     ]
     list_absence_data = [
-        {"timestamp": k, "value": v[0], "comment": v[1], "timestamps_extra": v[2]}
+        {"timestamp": _fmt_ts(k), "value": v[0], "comment": v[1], "timestamps_extra": v[2]}
         for k, v in absence_data_emp.items()
     ]
     list_primer_data = [
-        {"timestamp": k, "value": v[0], "comment": v[1], "timestamps_extra": v[2]}
+        {"timestamp": _fmt_ts(k), "value": v[0], "comment": v[1], "timestamps_extra": v[2]}
         for k, v in prime_data_emp.items()
     ]
     list_late_data = [
-        {"timestamp": k, "value": v[0], "comment": v[1], "timestamps_extra": v[2]}
+        {"timestamp": _fmt_ts(k), "value": v[0], "comment": v[1], "timestamps_extra": v[2]}
         for k, v in late_data_emp.items()
     ]
     list_extra_data = [
-        {"timestamp": k, "value": v[0], "comment": v[1], "timestamps_extra": v[2]}
+        {"timestamp": _fmt_ts(k), "value": v[0], "comment": v[1], "timestamps_extra": v[2]}
         for k, v in extra_data_emp.items()
     ]
     list_early_data = [
-        {"timestamp": k, "value": v[0], "comment": v[1], "timestamps_extra": v[2]}
+        {"timestamp": _fmt_ts(k), "value": v[0], "comment": v[1], "timestamps_extra": v[2]}
         for k, v in early_data_emp.items()
     ]
     list_pasive_data = [
-        {"timestamp": k, "value": v[0], "comment": v[1], "timestamps_extra": v[2]}
+        {"timestamp": _fmt_ts(k), "value": v[0], "comment": v[1], "timestamps_extra": v[2]}
         for k, v in pasive_data_emp.items()
     ]
     return {
@@ -459,12 +465,12 @@ def get_fichaje_data(data: dict):
             }
         )
         if code != 200:
-            return code, path
+            return {"data": None, "msg": "No se pudo descargar el archivo de fichaje", "error": str(path)}, 400
         flag, data_file = get_data_file(filepath_fichaje_temp, file["report"])
         if not flag:
-            return 400, data_file
+            return {"data": None, "msg": "Error al leer el archivo de fichaje", "error": str(data_file)}, 400
         if not (isinstance(data_file, list) or isinstance(data_file, tuple)):
-            return 400, "Error al procesar el archivo"
+            return {"data": None, "msg": "Error al procesar el archivo de fichaje", "error": None}, 400
         data_files.append(data_file) if flag else data_files.append([])
         name_list.extend(data_file["names"]) if "names" in data_file.keys() else None
         if file["report"].lower() == "fichaje":
@@ -478,7 +484,7 @@ def get_fichaje_data(data: dict):
             name, dff, data_bitacora["df"], clocks, grace_in, grace_out, dft=None
         )
         data_out.append(data_emp)
-    return 200, data_out
+    return {"data": data_out, "msg": None, "error": None}, 200
 
 
 def upload_nomina_doc(data):
@@ -645,9 +651,9 @@ def insert_medical_db(data, data_token):
         data_token,
     )
     if flag:
-        return {"data": str(result)}, 201
+        return {"data": {"id_exam": result}, "msg": f"Registro médico creado correctamente (ID {result})", "error": None}, 201
     else:
-        return {"error": str(error)}, 400
+        return {"data": None, "msg": "No se pudo crear el registro médico", "error": error}, 400
 
 
 def update_medical_db(data, data_token):
@@ -664,9 +670,9 @@ def update_medical_db(data, data_token):
         data_token=data_token,
     )
     if flag:
-        return {"data": str(result)}, 200
+        return {"data": {"id_exam": result}, "msg": f"Registro médico actualizado correctamente (ID {result})", "error": None}, 200
     else:
-        return {"error": str(error)}, 400
+        return {"data": None, "msg": "No se pudo actualizar el registro médico", "error": error}, 400
 
 
 def insert_new_vacation(data, data_token):
@@ -925,7 +931,7 @@ def create_payroll_file_attachment_api(data, data_token):
     file_extension = filename.split(".")[-1].lower()
     valid_extension = ["pdf", "xml"]
     if file_extension not in valid_extension:
-        return {"data": None, "msg": "Formato de archivo no valido (solo pdf o xml)"}, 400
+        return {"data": None, "msg": "Formato de archivo no válido (solo pdf o xml)", "error": None}, 400
     # subir a S3: payroll/<year>/<month>/<emp_id>/<filename>
     path_aws = f"payroll/{year}/{month}/{emp_id}/{filename}"
     s3_client = boto3.client("s3")
@@ -964,7 +970,7 @@ def create_payroll_file_attachment_api(data, data_token):
         f"{emp_id} en {year}/{month} (key {key})"
     )
     write_log_file(log_file_rh, msg, data_token)
-    return {"data": path_aws, "msg": msg}, 201
+    return {"data": path_aws, "msg": msg, "error": None}, 201
 
 
 def create_mail_payroll(data):
@@ -1015,18 +1021,18 @@ def update_payroll_list_employees(data_token):
 def update_data_employee(data, data_token):
     data_dict = json.loads(data["data_dict"])
     flag, error, result = update_payroll(data_dict, data["id"], data_token)
-    return (
-        (200, {"data": result, "msg": "ok"}) if flag else (400, {"data": None, "msg": str(error)})
-    )
+    if flag:
+        return 200, {"data": result, "msg": "Datos de nómina actualizados correctamente", "error": None}
+    return 400, {"data": None, "msg": "No se pudieron actualizar los datos de nómina", "error": error}
 
 
 def fetch_employees_without_records(data_token):
     # name, l_name, status, birthday, date_admission, employee_id
     flag, error, result = get_employees_without_records(data_token)
     if not flag:
-        return 400, {"data": None, "msg": str(error)}
+        return 400, {"data": None, "msg": "No se pudieron obtener los empleados sin registros", "error": error}
     if not (isinstance(result, list) or isinstance(result, tuple)):
-        return 400, {"data": [], "msg": "No hay empleados sin registros"}
+        return 400, {"data": [], "msg": "No hay empleados sin registros", "error": None}
     out = []
     for item in result:
         birthday = (
@@ -1048,18 +1054,15 @@ def fetch_employees_without_records(data_token):
                 "emp_id": item[5],
             }
         )
-    return 200, {"data": out, "msg": "ok"}
+    return 200, {"data": out, "msg": None, "error": None}
 
 
 def fetch_medicals(data_token) -> tuple[dict, int]:
     flag, e, result = get_all_examenes(data_token)
     if not (isinstance(result, list) or isinstance(result, tuple)):
-        return {"data": [], "msg": "No hay  registros"}, 400
-    out = {"data": None}
+        return {"data": [], "msg": "No hay registros médicos", "error": None}, 400
     if not flag:
-        out = {"data": []}
-        code = 400
-        return out, code
+        return {"data": [], "msg": "No se pudieron obtener los registros médicos", "error": None}, 400
 
     data_out = []
     messages = []
@@ -1139,31 +1142,29 @@ def fetch_medicals(data_token) -> tuple[dict, int]:
                 f"[CRÍTICO] El empleado {nombre} (ID {id_exam}) está marcado como NO APTO."
             )
 
-    out["data"] = data_out
-    out["messages"] = messages
-    return out, 200
+    return {"data": data_out, "msg": None, "error": messages if messages else None}, 200
 
 
 def fetch_medical_employee(id_emp, data_token):
     flag, e, result = get_all_examenes(data_token)
-    out = {"exist": False, "data": None}
-    if not flag:
-        return out, 400
-    if not (isinstance(result, list) or isinstance(result, tuple)):
-        return out, 400
+    if not flag or not (isinstance(result, list) or isinstance(result, tuple)):
+        return {"data": None, "msg": "No se pudo obtener el registro médico", "error": None}, 400
     for row in result:
         id_exam, nombre, sangre, status, aptitud, fechas, apt_actual, emp_id = row
         if str(emp_id) == id_emp:
-            out = {
-                "exist": True,
-                "id_exam": id_exam,
-                "name": nombre,
-                "blood": sangre,
-                "status": status,
-                "aptitudes": aptitud,
-                "dates": fechas,
-                "apt_last": apt_actual,
-                "emp_id": emp_id,
-            }
-            break
-    return out, 200
+            return {
+                "data": {
+                    "exist": True,
+                    "id_exam": id_exam,
+                    "name": nombre,
+                    "blood": sangre,
+                    "status": status,
+                    "aptitudes": aptitud,
+                    "dates": fechas,
+                    "apt_last": apt_actual,
+                    "emp_id": emp_id,
+                },
+                "msg": None,
+                "error": None,
+            }, 200
+    return {"data": {"exist": False}, "msg": None, "error": None}, 200

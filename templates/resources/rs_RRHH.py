@@ -28,19 +28,14 @@ from static.Models.api_employee_models import (
     employee_model_update,
     employee_vacation_model_delete,
     employee_vacation_model_insert,
-    employees_examenes_model,
-    employees_vacations_model,
 )
 from static.Models.api_fichajes_models import (
     DataFichajesFileForm,
-    answer_fichajes_model,
-    answer_files_fichajes_model,
     expected_files,
     request_data_fichaje_files_model,
 )
 from static.Models.api_models import (
     RequestFileReportQuizzForm,
-    employees_resume_model,
     expected_headers_per,
     request_file_report_quizz_model,
 )
@@ -110,7 +105,7 @@ class Employee(Resource):
         # noinspection PyUnresolvedReferences
         validator = EmployeeInsertForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"errors": validator.errors}, 400
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
         data = validator.data
         data_out, code = create_new_employee_db(data, data_token)
         return data_out, code
@@ -123,7 +118,7 @@ class Employee(Resource):
         # noinspection PyUnresolvedReferences
         validator = EmployeeUpdateForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"errors": validator.errors}, 400
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
         data = validator.data
         data_out, code = update_employee_db(data, data_token)
         return data_out, code
@@ -136,13 +131,13 @@ class Employee(Resource):
         # noinspection PyUnresolvedReferences
         validator = EmployeeDeleteForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"errors": validator.errors}, 400
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
         data = validator.data
         flag, error, result = delete_employee(data["id"], data_token)
         if flag:
-            return {"data": str(result)}, 200
+            return {"data": {"id_employee": result}, "msg": f"Empleado eliminado correctamente (ID {result})", "error": None}, 200
         else:
-            return {"error": str(error)}, 400
+            return {"data": None, "msg": "No se pudo eliminar el empleado", "error": error}, 400
 
 
 @ns.route("/employee/info/<string:id_emp>")
@@ -153,7 +148,9 @@ class EmployeeGet(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data_out, code = get_info_employee_id(id_emp, data_token)
-        return data_out, code
+        if code != 200:
+            return {"data": None, "msg": "No se encontró el empleado", "error": str(data_out)}, code
+        return {"data": data_out, "msg": None, "error": None}, code
 
 
 @ns.route("/employee/terminate")
@@ -166,10 +163,10 @@ class EmployeeTerminate(Resource):
         # noinspection PyUnresolvedReferences
         validator = EmployeeTerminateForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"errors": validator.errors}, 400
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
         data = validator.data
-        data, code = terminate_employee_from_api(data, data_token)
-        return data, code
+        data_out, code = terminate_employee_from_api(data, data_token)
+        return data_out, code
 
 
 @ns.route("/employees/info/<string:status>")
@@ -182,7 +179,9 @@ class EmployeesInfo(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data_out, code = get_info_employees_with_status(status)
-        return {"data": data_out}, code
+        if code != 200:
+            return {"data": [], "msg": "No se encontraron empleados", "error": None}, code
+        return {"data": data_out, "msg": None, "error": None}, code
 
 
 @ns.route("/employee/medical/<string:id_emp>")
@@ -198,7 +197,6 @@ class EMResumeEmployees(Resource):
 
 @ns.route("/employees/medical/all")
 class EMResumeAll(Resource):  # noqa: F811
-    @ns.marshal_with(employees_examenes_model)
     @ns.expect(expected_headers_per)
     def get(self):
         flag, data_token, msg = token_verification_procedure(request, department="rrhh")
@@ -229,7 +227,7 @@ class EMRegistry(Resource):
         # noinspection PyUnresolvedReferences
         validator = EmployeeMedInsertForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"errors": validator.errors}, 400
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
         data = validator.data
         data_out, code = insert_medical_db(data, data_token)
         return data_out, code
@@ -242,7 +240,7 @@ class EMRegistry(Resource):
         # noinspection PyUnresolvedReferences
         validator = EmployeeMedUpdateForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"errors": validator.errors}, 400
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
         data = validator.data
         data_out, code = update_medical_db(data, data_token)
         return data_out, code
@@ -255,18 +253,17 @@ class EMRegistry(Resource):
         # noinspection PyUnresolvedReferences
         validator = EmployeeMedDeleteForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"errors": validator.errors}, 400
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
         data = validator.data
         flag, error, result = delete_exam_med(data["id"], data_token)
         if flag:
-            return {"data": str(result)}, 200
+            return {"data": {"id_exam": result}, "msg": f"Registro médico eliminado correctamente (ID {result})", "error": None}, 200
         else:
-            return {"error": error}, 400
+            return {"data": None, "msg": "No se pudo eliminar el registro médico", "error": str(error)}, 400
 
 
 @ns.route("/employees/vacations/all")
 class VacationsAll(Resource):
-    @ns.marshal_with(employees_vacations_model)
     @ns.expect(expected_headers_per)
     def get(self):
         flag, data_token, msg = token_verification_procedure(request, department="rrhh")
@@ -274,9 +271,9 @@ class VacationsAll(Resource):
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data, code = get_all_vacations(data_token)
         if code == 200:
-            return {"data": data, "msg": "ok"}, code
+            return {"data": data, "msg": None, "error": None}, code
         else:
-            return {"data": None, "msg": str(data)}, code
+            return {"data": [], "msg": "No se pudieron obtener las vacaciones", "error": None}, code
 
 
 @ns.route("/employee/vacations/<string:id_emp>")
@@ -288,9 +285,9 @@ class VacationsEmployeesID(Resource):
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data, code = get_vacations_employee(id_emp, data_token)
         if code == 200:
-            return data, code
+            return {"data": data, "msg": None, "error": None}, code
         else:
-            return data, code
+            return {"data": None, "msg": "No se encontraron vacaciones para el empleado", "error": None}, code
 
 
 @ns.route("/employee/vacation")
@@ -303,13 +300,13 @@ class VacationRegistry(Resource):
         # noinspection PyUnresolvedReferences
         validator = EmployeeVacInsertForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"errors": validator.errors}, 400
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
         data = validator.data
         flag, error, result = insert_new_vacation(data, data_token)
         if flag:
-            return {"data": str(result)}, 201
+            return {"data": {"id_vacation": result}, "msg": f"Vacaciones registradas correctamente (ID {result})", "error": None}, 201
         else:
-            return {"error": error}, 400
+            return {"data": None, "msg": "No se pudieron registrar las vacaciones", "error": error}, 400
 
     @ns.expect(expected_headers_per, employee_vacation_model_insert)
     def put(self):
@@ -319,13 +316,13 @@ class VacationRegistry(Resource):
         # noinspection PyUnresolvedReferences
         validator = EmployeeVacInsertForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"errors": validator.errors}, 400
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
         data = validator.data
         flag, error, result = update_vacation(data, data_token)
         if flag:
-            return {"data": str(result)}, 200
+            return {"data": {"id_vacation": result}, "msg": f"Vacaciones actualizadas correctamente (ID {result})", "error": None}, 200
         else:
-            return {"error": error}, 400
+            return {"data": None, "msg": "No se pudieron actualizar las vacaciones", "error": error}, 400
 
     @ns.expect(expected_headers_per, employee_vacation_model_delete)
     def delete(self):
@@ -335,13 +332,13 @@ class VacationRegistry(Resource):
         # noinspection PyUnresolvedReferences
         validator = DeleteVacationForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"errors": validator.errors}, 400
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
         data = validator.data
         flag, error, result = delete_vacation(data["emp_id"], data_token)
         if flag:
-            return {"data": str(result)}, 200
+            return {"data": {"id_vacation": result}, "msg": f"Vacaciones eliminadas correctamente (ID {result})", "error": None}, 200
         else:
-            return {"error": error}, 400
+            return {"data": None, "msg": "No se pudieron eliminar las vacaciones", "error": error}, 400
 
 
 @ns.route("/quizzes")
@@ -353,20 +350,19 @@ class TaskQuizzes(Resource):
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         flag, error, data_out = get_all_quizzes(data_token)
         if flag:
-            return {"data": data_out, "msg": "ok"}, 200
+            return {"data": data_out, "msg": None, "error": None}, 200
         else:
-            return {"data": [], "msg": "Error"}, 400
+            return {"data": [], "msg": "No se pudieron obtener los quizzes", "error": error}, 400
 
 
 @ns.route("/employees/fichaje/all")
 class EmployeesResume(Resource):
-    @ns.marshal_with(employees_resume_model)
     @ns.expect(expected_headers_per)
     def get(self):
         flag, data_token, msg = token_verification_procedure(request, department="rrhh")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        out, code = fetch_fichajes_all_employees( data_token)
+        out, code = fetch_fichajes_all_employees(data_token)
         return out, code
 
 
@@ -389,7 +385,7 @@ class FilesPayroll(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         if "file" not in request.files:
-            return {"data": None, "msg": "No se detecto un archivo"}, 400
+            return {"data": None, "msg": "No se detectó un archivo", "error": None}, 400
         file = request.files["file"]
         year = request.form.get("year")
         month = request.form.get("month")
@@ -399,9 +395,10 @@ class FilesPayroll(Resource):
             return {
                 "data": None,
                 "msg": "Faltan campos requeridos: year, month, emp_id, key",
+                "error": None,
             }, 400
         if not (file and file.filename):
-            return {"data": None, "msg": "No se subio el archivo"}, 400
+            return {"data": None, "msg": "No se subió el archivo", "error": None}, 400
         filename = secure_filename(file.filename)
         filepath_download = os.path.join(tempfile.mkdtemp(), filename)
         file.save(filepath_download)
@@ -429,10 +426,10 @@ class CreateMailPayroll(Resource):
         # noinspection PyUnresolvedReferences
         validator = CreateMailForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"errors": validator.errors}, 400
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
         data = validator.data
-        code, msg = create_mail_payroll(data)
-        return {"data": None, "msg": str(msg)}, code
+        code, msg_out = create_mail_payroll(data)
+        return {"data": None, "msg": str(msg_out), "error": None}, code
 
 
 @ns.route("/payroll/files/list/<int:emp_id>")
@@ -444,8 +441,8 @@ class DownloadFilesPayroll(Resource):
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         code, dicts_data = get_files_list_nomina_RH(emp_id, data_token)
         if code != 200:
-            return {"data_raw": None, "msg": "No files"}, code
-        return {"data_raw": dicts_data, "msg": "ok"}, code
+            return {"data": None, "msg": "No se encontraron archivos de nómina", "error": None}, code
+        return {"data": dicts_data, "msg": None, "error": None}, code
 
 
 @ns.route("/payroll/data/update")
@@ -458,7 +455,7 @@ class UpdatePayroll(Resource):
         # noinspection PyUnresolvedReferences
         validator = UpdateDataPayrollForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"errors": validator.errors}, 400
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
         data = validator.data
         code, data_out = update_data_employee(data, data_token)
         return data_out, code
@@ -471,29 +468,27 @@ class UpdateEmployees(Resource):
         flag, data_token, msg = token_verification_procedure(request, department="rrhh")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        code, msg = update_payroll_list_employees( data_token)
-        return {"data": None, "msg": msg}, code
+        code, msg_out = update_payroll_list_employees(data_token)
+        return {"data": None, "msg": msg_out, "error": None}, code
 
 
 @ns.route("/fichajes/files")
 class FilesFichaje(Resource):
-    @ns.marshal_with(answer_files_fichajes_model)
     @ns.expect(expected_headers_per)
     def get(self):
         flag, data_token, msg = token_verification_procedure(request, department="rrhh")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        flag, files = get_files_fichaje( data_token)
+        flag, files = get_files_fichaje(data_token)
         if flag:
-            return {"data": files, "msg": "ok"}, 200
+            return {"data": files, "msg": None, "error": None}, 200
         else:
-            return {"data": None, "msg": "No files"}, 400
+            return {"data": [], "msg": "No se pudieron obtener los archivos de fichaje", "error": None}, 400
 
 
 @ns.route("/fichajes/data/fromfiles")
 class DataFichajeFiles(Resource):
     @ns.expect(expected_headers_per, request_data_fichaje_files_model)
-    @ns.marshal_with(answer_fichajes_model)
     def post(self):
         flag, data_token, msg = token_verification_procedure(request, department="rrhh")
         if not flag:
@@ -501,13 +496,10 @@ class DataFichajeFiles(Resource):
         # noinspection PyUnresolvedReferences
         validator = DataFichajesFileForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"data": None, "msg": validator.errors}, 400
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
         data = validator.data
-        code, out = get_fichaje_data(data)
-        if code == 400:
-            return {"data": None, "msg": out}, code
-        else:
-            return {"data": out, "msg": "ok"}, code
+        data_out, code = get_fichaje_data(data)
+        return data_out, code
 
 
 @ns.route("/upload/fichaje/file")
@@ -518,14 +510,14 @@ class UploadFicahjeFile(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         if "file" not in request.files:
-            return {"data": "No se detecto un archivo"}, 401
+            return {"data": None, "msg": "No se detectó un archivo", "error": None}, 400
         file = request.files["file"]
         if file and file.filename:
             filename = secure_filename(file.filename)
             file.save(os.path.join(path_contract_files, filename))
-            return {"data": "Archivo subido correctamente"}, 200
+            return {"data": {"filename": filename}, "msg": "Archivo subido correctamente", "error": None}, 200
         else:
-            return {"data": "No se subio el archivo"}, 401
+            return {"data": None, "msg": "No se subió el archivo", "error": None}, 400
 
 
 @ns.route("/download/employees/<string:status>")
@@ -548,7 +540,7 @@ class DownloadFileMedical(Resource):
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         flag, e, result = get_all_examenes(data_token)
         if not (isinstance(result, list) or isinstance(result, tuple)):
-            return {"data": None, "msg": "Error al obtener los datos del empleado"}, 400
+            return {"data": None, "msg": "Error al obtener los datos del empleado", "error": None}, 400
         filepath = "files/medical.csv"
         with open(filepath, "w") as file:
             file.write(
@@ -576,7 +568,7 @@ class DownloadFileVacations(Resource):
         flag, error, data = get_vacations_data(data_token)
         filepath = "files/vacations.csv"
         if not (isinstance(data, list) or isinstance(data, tuple)):
-            return {"data": None, "msg": "Error al obtener los datos del empleado"}, 400
+            return {"data": None, "msg": "Error al obtener los datos del empleado", "error": None}, 400
         with open(filepath, "w") as file:
             file.write("emp_id, Nombre, Apellido, fecha_inicio, body\n")
             for item in data:
@@ -598,10 +590,10 @@ class DownloadFileQuizzReport(Resource):
         # noinspection PyUnresolvedReferences
         validator = RequestFileReportQuizzForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"error": validator.errors}, 400
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
         data = validator.data
         code, data_out = generate_pdf_from_json(data, data_token)
         if code == 400:
-            return {"data": None, "msg": data_out}, code
+            return {"data": None, "msg": data_out, "error": None}, code
         else:
             return send_file(data_out, as_attachment=True)

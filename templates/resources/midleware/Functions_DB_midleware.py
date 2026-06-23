@@ -225,7 +225,9 @@ def get_all_vacations(data_token):
             {
                 "emp_id": item[0],
                 "name": item[1].upper() + " " + item[2].upper(),
-                "date_admission": item[3],
+                "date_admission": item[3]
+                if isinstance(item[3], str) or item[3] is None
+                else item[3].strftime(format_date),
                 "seniority": seniority,
             }
         )
