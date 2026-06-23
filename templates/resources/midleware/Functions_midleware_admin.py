@@ -958,6 +958,8 @@ def create_items_from_api(products, id_quotation, data_token, id_contract=None):
     for product in products:
         description = product.get("description", "")
         description_small = product.get("description_small", "")
+        id_inventory = product.get("id", None)
+        id_inventory = id_inventory if id_inventory and id_inventory>0 else None
         products_list.append(
             {
                 "quotation_id": id_quotation,
@@ -974,7 +976,7 @@ def create_items_from_api(products, id_quotation, data_token, id_contract=None):
                 "description_small": description_small
                 if len(description_small) <= 255
                 else description_small[:255],
-                "id_inventory": product.get("id", None),
+                "id_inventory": id_inventory,
             }
         )
     flag_list, error_list, result_list = create_items_quotation(products_list, data_token)
