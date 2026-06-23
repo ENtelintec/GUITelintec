@@ -1284,9 +1284,10 @@ def update_contract_from_api(data, data_token):
         contract_number,
         client_id,
         emission,
-        data["timestamps"],
-        id_quotation,
-        abbreviaton,
+        timestamps=data["timestamps"],
+        quotation_id=id_quotation,
+        abbreviation=abbreviaton,
+        data_token=data_token
     )
     if not flag:
         return {
