@@ -198,7 +198,6 @@ def get_contracts(id_contract=None, data_token=None):
                 "timestamps": json.loads(timestamps),
             }
         )
-    print(data_out)
     return {"data": data_out, "msg": None, "error": None}, 200
 
 
