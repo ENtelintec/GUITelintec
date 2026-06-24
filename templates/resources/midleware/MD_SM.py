@@ -83,19 +83,28 @@ def get_products_sm(contract: str, data_token) -> tuple[dict, int]:
         items_contract = []
     ids_in_contract = {}
     if isinstance(items_contract, int):
-        return {"data": {"contract": [], "normal": []}, "error": "Not valid items"}, 400
+        return {
+            "data": {"contract": [], "normal": []},
+            "msg": "Items del contrato no válidos",
+            "error": "Not valid items",
+        }, 400
     for item in items_contract:
         if item[4] is None:
             continue
         ids_in_contract[item[4]] = item[3]
     flag, error, result_p = get_products_w_reservations(data_token)
     if not flag:
-        return {"data": {"contract": [], "normal": []}}, 400
+        return {
+            "data": {"contract": [], "normal": []},
+            "msg": "No se pudieron obtener los productos",
+            "error": error,
+        }, 400
     items_normal = []
     items_partida = []
     if isinstance(result_p, int):
         return {
             "data": {"contract": [], "normal": []},
+            "msg": "Productos con reservación no válidos",
             "error": "Not valid items with reservation",
         }, 400
     for product in result_p:
@@ -134,7 +143,11 @@ def get_products_sm(contract: str, data_token) -> tuple[dict, int]:
                     "sku_fabricante": sku_fabricante,
                 }
             )
-    data_out = {"data": {"contract": items_partida, "normal": items_normal}}
+    data_out = {
+        "data": {"contract": items_partida, "normal": items_normal},
+        "msg": None,
+        "error": None,
+    }
     return data_out, 200
 
 
@@ -188,7 +201,7 @@ def get_all_sm(limit, data_token, page=0, emp_id=-1, with_items=True):
     limit = limit if limit > 0 else 10
     page = page if page >= 0 else 0
     if len(result) <= 0:
-        return {"data": [], "page": 0, "pages": 0}, 200
+        return {"data": [], "page": 0, "pages": 0, "msg": None, "error": None}, 200
     pages = math.floor(len(result) / limit)
     if page > pages:
         return None, 204
@@ -298,7 +311,7 @@ def get_all_sm(limit, data_token, page=0, emp_id=-1, with_items=True):
         #     for k, v in extra_info.items():
         #         dict_sm[k] = v
         sm_list.append(dict_sm)
-    data_out = {"data": sm_list, "page": page, "pages": pages + 1}
+    data_out = {"data": sm_list, "page": page, "pages": pages + 1, "msg": None, "error": None}
     return data_out, 200
 
 
@@ -416,9 +429,9 @@ def fetch_all_sm_with_permissions(data_token):
         abbs_list_departments = []
     data_sm, code = get_all_sm(-1, data_token, 0, -1)
     if code != 200:
-        return {"data": [], "msg": data_sm}, 400
+        return {"data": {}, "msg": "No se pudieron obtener las SM", "error": str(data_sm)}, 400
     data_out = clasify_sm(iddentifiers + abbs_list_departments, data_sm, data_token, dict_tabs)
-    return {"data": data_out}, 200
+    return {"data": data_out, "msg": None, "error": None}, 200
 
 
 def get_all_sm_control_table(data_token):
@@ -432,14 +445,14 @@ def get_all_sm_control_table(data_token):
         dict_tabs_contracts[f"sm-{abb.lower()}-"] = abb
     data_sm, code = get_all_sm(-1, data_token, 0, -1, with_items=False)
     if code != 200:
-        return {"data": [], "msg": data_sm}, 400
+        return {"data": {}, "msg": "No se pudieron obtener las SM", "error": str(data_sm)}, 400
     data_out = clasify_sm(
         iddentifiers_contracts + abbs_list_departments,
         data_sm,
         data_token,
         dict_tabs_contracts,
     )
-    return {"data": data_out}, 200
+    return {"data": data_out, "msg": None, "error": None}, 200
 
 
 def update_data_dicts(products: list, products_sm):
@@ -475,10 +488,13 @@ def eliminate_signaling_comment(comment: str):
 
 def dispatch_sm(data, data_token):
     if len(data["items"]) <= 0:
-        return 400, ["No item to update in sm"]
+        return 400, {
+            "msg": "No hay items para despachar en la SM",
+            "error": "No item to update in sm",
+        }
     flag, error, result = get_sm_by_id(data["id"], data_token)
     if not flag or len(result) <= 0:
-        return 400, ["SM not foud"]
+        return 400, {"msg": "SM no encontrada", "error": "SM not found"}
     id_user = result[6]
     products_sm = json.loads(result[10])
     history_sm = json.loads(result[12])
@@ -494,7 +510,7 @@ def dispatch_sm(data, data_token):
     updated_products = []
     flag, error, result = get_products_stock_from_ids(ids_inventory_sm_list, data_token)
     if not flag:
-        return 400, {"msg": f"Error at retrieving stock: {error}"}
+        return 400, {"msg": "No se pudo obtener el stock de los productos", "error": error}
     flag_semidespachado = False
     stocks = {item[0]: item[1] for item in result}
     comment_history = ""
@@ -607,7 +623,7 @@ def dispatch_sm(data, data_token):
         if k not in ids_to_update:
             updated_products.append(v)
     if not operations_done:
-        return 400, {"msg": msg_items, "error": "No operations done"}
+        return 400, {"msg": "No se realizaron operaciones de despacho", "error": msg_items}
     comment_history += "SM Despachada" if not flag_semidespachado else "SM Semidespachada"
     # agregar el comentario a los comentarios generales de las sm
     if len(comments_items_updated) > 0:
@@ -682,7 +698,7 @@ def dispatch_sm(data, data_token):
 def cancel_sm(data, data_token):
     flag, error, result = get_sm_by_id(data["id"], data_token)
     if not flag or len(result) <= 0:
-        return 400, ["sm not foud"]
+        return {"data": None, "msg": "SM no encontrada", "error": "SM not found"}, 400
     history_sm = json.loads(result[12])
     comments_general = json.loads(result[13])
     emp_id_creation = result[6]
@@ -717,9 +733,13 @@ def cancel_sm(data, data_token):
             emp_id_creation,
         )
         write_log_file(log_file_sm_path, msg, data_token)
-        return 200, {"msg": "ok"}
+        return {
+            "data": {"id_sm": data["id"]},
+            "msg": f"SM cancelada correctamente (ID {data['id']})",
+            "error": None,
+        }, 200
     else:
-        return 400, {"msg": error}
+        return {"data": None, "msg": "No se pudo cancelar la SM", "error": error}, 400
 
 
 def get_employees_almacen(data_token):
@@ -823,9 +843,13 @@ def dowload_file_sm(sm_id: int, data_token, type_file="pdf"):
 def create_customer(name, email, phone, rfc, address, data_token):
     flag, error, result = create_customer_db(name, email, phone, rfc, address, data_token)
     if flag:
-        return {"msg": "ok", "data": result}, 201
+        return {
+            "data": {"id_customer": result},
+            "msg": f"Cliente creado correctamente (ID {result})",
+            "error": None,
+        }, 201
     else:
-        return {"msg": error}, 400
+        return {"data": None, "msg": "No se pudo crear el cliente", "error": error}, 400
 
 
 def create_product(
@@ -860,17 +884,21 @@ def create_product(
             sku, name, udm, stock, id_category, data_token, codes
         )
     if not flag:
-        return {"msg": error}, 400
-    return {"msg": "ok", "data": result}, 201
+        return {"data": None, "msg": "No se pudo crear el producto", "error": error}, 400
+    return {
+        "data": {"id_product": result},
+        "msg": f"Producto creado correctamente (ID {result})",
+        "error": None,
+    }, 201
 
 
-def update_sm_from_control_table(data, data_token, sm_data=None) -> tuple[int, dict[str, str]]:
+def update_sm_from_control_table(data, data_token, sm_data=None) -> tuple[int, dict]:
     if sm_data is None:
         flag, error, result = get_sm_by_id(data["id"], data_token)
     else:
         flag, error, result = True, None, sm_data
     if not flag or len(result) <= 0:
-        return 400, {"msg": "sm not foud"}
+        return 400, {"data": None, "msg": "SM no encontrada", "error": "sm not found"}
     history_sm_json = result[12]
     history_sm_json = history_sm_json if history_sm_json else "[]"
     history_sm = json.loads(history_sm_json)
@@ -911,9 +939,13 @@ def update_sm_from_control_table(data, data_token, sm_data=None) -> tuple[int, d
             emp_id_creation,
         )
         write_log_file(log_file_sm_path, msg + "-->" + comment_history)
-        return 200, {"msg": "ok"}
+        return 200, {
+            "data": {"id_sm": data["id"]},
+            "msg": f"SM actualizada correctamente (ID {data['id']})",
+            "error": None,
+        }
     else:
-        return 400, {"msg": error}
+        return 400, {"data": None, "msg": "No se pudo actualizar la SM", "error": error}
 
 
 def check_item_sm_for_init_vals(items: list):
@@ -976,8 +1008,8 @@ def check_for_partidas_updates(products: list, contract_id: int, data_token):
 def create_sm_from_api(data, data_token):
     if len(data["items"]) == 0:
         return {
-            "msg": "error no sufficient items",
-            "data": data["items"],
+            "data": None,
+            "msg": "No hay items suficientes para crear la SM",
             "error": "No items detected",
         }, 400
 
@@ -993,25 +1025,25 @@ def create_sm_from_api(data, data_token):
                 break
             elif new_number > old_number + 3:
                 return {
-                    "msg": "error at creating sm",
-                    "data": [],
+                    "data": None,
+                    "msg": "Folio consecutivo no permitido",
                     "error": "Folio consecutivo no permitido",
                 }, 400
     except Exception as e:
         print("error parse folio: ", str(e))
         return {
-            "msg": "error at creating sm and extracting folios",
-            "data": [],
-            "error": "Folio consecutivo no permitido",
+            "data": None,
+            "msg": "No se pudo extraer el folio para crear la SM",
+            "error": str(e),
         }, 400
     # start creating sm
     extra_info = check_item_sm_for_init_vals(data["items"])
     flag, error, sm_result = insert_sm_db(data, data_token, extra_info)
     if not flag:
         print("error insert sm: ", error)
-        return {"msg": "error at updating db"}, 400
+        return {"data": None, "msg": "No se pudo crear la SM", "error": error}, 400
     if sm_result is None:
-        return {"msg": "error at creating sm"}, 400
+        return {"data": None, "msg": "No se pudo crear la SM", "error": "sm_result is None"}, 400
     msg = (
         f"Nueva SM creada #{sm_result}, folio: {data['info']['folio']}, "
         f"fecha limite: {data['info']['critical_date']}, "
@@ -1039,14 +1071,26 @@ def create_sm_from_api(data, data_token):
         0,
     )
     write_log_file(log_file_sm_path, msg, data_token)
-    return {"msg": "ok", "data": msg, "error": error}, 201
+    # detalle largo -> log/notificacion; respuesta lleva data estructurado y error conciso
+    error_list = [
+        f"Item '{it.get('name')}' (inv {it.get('id_inventory')}) no se creó" for it in errors_items
+    ] + [f"Partida: {e}" for e in errors]
+    msg_out = f"SM creada correctamente (ID {sm_result})"
+    if error_list:
+        msg_out += f". {len(error_list)} elemento(s) no se pudieron crear."
+    return {
+        "data": {"id_sm": sm_result},
+        "msg": msg_out,
+        "error": error_list if error_list else None,
+        "id_sm": sm_result,
+    }, 201
 
 
 def create_urgent_sm_from_api(data, data_token):
     if len(data["items"]) == 0:
         return {
-            "msg": "error no sufficient items",
-            "data": data["items"],
+            "data": None,
+            "msg": "No hay items suficientes para crear la SM",
             "error": "No items detected",
         }, 400
     folio_new_sm = data["info"]["folio"]
@@ -1061,24 +1105,24 @@ def create_urgent_sm_from_api(data, data_token):
                 break
             elif new_number > old_number + 3:
                 return {
-                    "msg": "error at creating sm",
-                    "data": [],
+                    "data": None,
+                    "msg": "Folio consecutivo no permitido",
                     "error": "Folio consecutivo no permitido",
                 }, 400
     except Exception as e:
         print("error at parsing folios: ", str(e))
         return {
-            "msg": "error at creating sm and extracting folios",
-            "data": [],
-            "error": "Folio consecutivo no permitido",
+            "data": None,
+            "msg": "No se pudo extraer el folio para crear la SM",
+            "error": str(e),
         }, 400
     extra_info = check_item_sm_for_init_vals(data["items"])
     flag, error, result = insert_urgent_sm_db(data, data_token, extra_info)
     if not flag:
         print("error inser urgent sm: ", error)
-        return {"msg": "error at creating db"}, 400
+        return {"data": None, "msg": "No se pudo crear la SM", "error": error}, 400
     if result is None:
-        return {"msg": "error at creating sm"}, 400
+        return {"data": None, "msg": "No se pudo crear la SM", "error": "result is None"}, 400
     msg = (
         f"Nueva SM creada #{result}, folio: {data['info']['folio']}, "
         f"fecha limite: {data['info']['critical_date']}, "
@@ -1105,7 +1149,19 @@ def create_urgent_sm_from_api(data, data_token):
         0,
     )
     write_log_file(log_file_sm_path, msg, data_token)
-    return {"msg": "ok", "data": msg, "error": error}, 201
+    # detalle largo -> log/notificacion; respuesta lleva data estructurado y error conciso
+    error_list = [
+        f"Item '{it.get('name')}' (inv {it.get('id_inventory')}) no se creó" for it in errors_items
+    ] + [f"Partida: {e}" for e in errors]
+    msg_out = f"SM urgente creada correctamente (ID {result})"
+    if error_list:
+        msg_out += f". {len(error_list)} elemento(s) no se pudieron crear."
+    return {
+        "data": {"id_sm": result},
+        "msg": msg_out,
+        "error": error_list if error_list else None,
+        "id_sm": result,
+    }, 201
 
 
 def check_if_items_sm_correct_for_update(items_in):
@@ -1140,16 +1196,16 @@ def update_sm_from_api(data, data_token):
     date_now = pd.to_datetime(datetime.now().strftime(format_date))
     if (date_sm - date_now).days > 1:
         return {
-            "msg": "error at date",
-            "data": [date_sm.strftime(format_date)],
+            "data": None,
+            "msg": "El tiempo permitido para modificación no debe ser mayor a 24 horas",
             "error": "El tiempo permitido para modificacion no deber ser mayor a 24 horas",
         }, 400
     # check parse items
     flag, items_out, error = check_if_items_sm_correct_for_update(data.get("items", []))
     if not flag:
         return {
-            "msg": "error at items",
-            "data": items_out,
+            "data": None,
+            "msg": "Error en los items de la SM",
             "error": error,
         }, 400
     # update metada sm
@@ -1183,15 +1239,31 @@ def update_sm_from_api(data, data_token):
             0,
         )
         write_log_file(log_file_sm_path, msg, data_token)
-        return {"msg": "ok", "data": msg, "error": error}, 200
+        # detalle largo -> log/notificacion; respuesta lleva data estructurado y error conciso
+        error_list = [f"Item {e.get('id')}: {e.get('error')}" for e in errors] + [
+            f"Partida: {e}" for e in errors_p
+        ]
+        msg_out = f"SM actualizada correctamente (ID {data['id']})"
+        if error_list:
+            msg_out += f". {len(error_list)} elemento(s) no se pudieron actualizar."
+        return {
+            "data": {"id_sm": data["id"]},
+            "msg": msg_out,
+            "error": error_list if error_list else None,
+            "id_sm": data["id"],
+        }, 200
     else:
-        return {"msg": "error at updating db", "data": "", "error": error}, 400
+        return {"data": None, "msg": "No se pudo actualizar la SM", "error": error}, 400
 
 
 def delete_sm_from_api(data, data_token):
     flag, error, result = delete_item_from_sm_id(data["id"], data_token)
     if not flag:
-        return {"msg": "error at deleting items of sm in db"}, 400
+        return {
+            "data": None,
+            "msg": "No se pudieron eliminar los items de la SM",
+            "error": error,
+        }, 400
     msg = f"Items eliminados <{result}> de la sm con id: {data['id']}\n"
     flag, error, result = delete_sm_db(data["id"], data_token)
     if flag:
@@ -1204,16 +1276,21 @@ def delete_sm_from_api(data, data_token):
             sender_id=data.get("id_emp"),
         )
         write_log_file(log_file_sm_path, msg, data_token)
-        return {"msg": "ok", "data": error}, 200
+        return {
+            "data": {"id_sm": data["id"]},
+            "msg": f"SM eliminada correctamente (ID {data['id']})",
+            "error": None,
+            "id_sm": data["id"],
+        }, 200
     else:
         print("error create notification", error)
-        return {"msg": "error at updating db"}, 400
+        return {"data": None, "msg": "No se pudo eliminar la SM", "error": error}, 400
 
 
 def get_sm_folios_from_api(data_token):
     flag, error, result = get_sm_folios_db(data_token)
     if not flag:
-        return {"msg": "error at getting sm folios"}, 400
+        return {"data": [], "msg": "No se pudieron obtener los folios de SM", "error": error}, 400
     folios = []
     for item in result:
         folios.append(
@@ -1222,14 +1299,14 @@ def get_sm_folios_from_api(data_token):
                 "folio": item[1],
             }
         )
-    return {"msg": "ok", "data": folios}, 200
+    return {"msg": None, "data": folios, "error": None}, 200
 
 
 def get_sm_items_from_api(data, data_token):
     # id_sm, mr.folio , name
     flag, error, result = get_sm_items_state(data.get("state", 0), data_token)
     if not flag:
-        return {"msg": "error at getting sm items"}, 400
+        return {"data": [], "msg": "No se pudieron obtener los items de SM", "error": error}, 400
     items = []
     for item in result:
         items.append(
@@ -1240,7 +1317,7 @@ def get_sm_items_from_api(data, data_token):
                 "name": item[3],
             }
         )
-    return {"msg": "ok", "data": items}, 200
+    return {"msg": None, "data": items, "error": None}, 200
 
 
 def update_sm_item_state_and_inventory(data, data_token):
@@ -1248,7 +1325,11 @@ def update_sm_item_state_and_inventory(data, data_token):
         data.get("state", 0), data.get("id_inventory"), data.get("id_item"), data_token
     )
     if not flag:
-        return {"msg": "error at updating sm item state"}, 400
+        return {
+            "data": None,
+            "msg": "No se pudo actualizar el estado del item",
+            "error": error,
+        }, 400
     msg = f"Item con id {data.get('id_item')} actualizado a estado {data.get('state')} con id de inventario {data.get('id_inventory')}"
     create_notification_permission(
         msg,
@@ -1259,18 +1340,22 @@ def update_sm_item_state_and_inventory(data, data_token):
         0,
     )
     write_log_file(log_file_sm_path, msg, data_token)
-    return {"msg": "ok", "data": result}, 200
+    return {
+        "msg": f"Item actualizado correctamente (ID {data.get('id_item')})",
+        "data": result,
+        "error": None,
+    }, 200
 
 
 def update_sm_item_state(data, data_token):
     flag, error, sm_data = get_sm_from_item(data.get("id_item"), data_token)
     if not flag:
-        return {"msg": "error at getting sm data", "error": error, "data": sm_data}, 400
+        return {"data": None, "msg": "No se pudo obtener la SM", "error": error}, 400
     state = data.get("state")
     if state <= 0:
-        return {"msg": "error at updating sm item state, invalid state"}, 400
+        return {"data": None, "msg": "Estado inválido para el item", "error": "invalid state"}, 400
     if not (isinstance(sm_data, list) or isinstance(sm_data, tuple)):
-        return {"msg": "error at updating sm item state, invalid sm data"}, 400
+        return {"data": None, "msg": "Datos de SM inválidos", "error": "invalid sm data"}, 400
     time_zone = pytz.timezone(timezone_software)
     date_now = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
     history_sm = json.loads(sm_data[12])
@@ -1287,7 +1372,11 @@ def update_sm_item_state(data, data_token):
         state, data.get("id_item"), history_sm, sm_data[0], data_token
     )
     if not flag:
-        return {"msg": f"error at updating sm item state: {state}"}, 400
+        return {
+            "data": None,
+            "msg": "No se pudo actualizar el estado del item",
+            "error": error,
+        }, 400
     create_notification_permission(
         msg,
         data_token,
@@ -1297,18 +1386,26 @@ def update_sm_item_state(data, data_token):
         0,
     )
     write_log_file(log_file_sm_path, msg, data_token)
-    return {"msg": "ok", "data": result}, 200
+    return {
+        "msg": f"Item actualizado correctamente (ID {data.get('id_item')})",
+        "data": result,
+        "error": None,
+    }, 200
 
 
 def update_sm_item_approve(data, data_token):
     flag, error, sm_data = get_sm_from_item(data.get("id_item"), data_token)
     if not flag:
-        return {"msg": "error at getting sm data", "error": error, "data": sm_data}, 400
+        return {"data": None, "msg": "No se pudo obtener la SM", "error": error}, 400
     approve_required = data.get("approve_required", 0)
     if approve_required not in [0, 1]:
-        return {"msg": "error at updating sm item approve"}, 400
+        return {
+            "data": None,
+            "msg": "Valor de aprobación inválido",
+            "error": "invalid approve_required",
+        }, 400
     if not (isinstance(sm_data, list) or isinstance(sm_data, tuple)):
-        return {"msg": "error at updating sm item approve, invalid sm data"}, 400
+        return {"data": None, "msg": "Datos de SM inválidos", "error": "invalid sm data"}, 400
     extra_info_item = {}
 
     items_sm = json.loads(sm_data[10])
@@ -1333,7 +1430,11 @@ def update_sm_item_approve(data, data_token):
         extra_info_item, data.get("id_item"), history_sm, sm_data[0], data_token
     )
     if not flag:
-        return {"msg": f"error at updating sm item approve: {approve_required}"}, 400
+        return {
+            "data": None,
+            "msg": "No se pudo actualizar la aprobación del item",
+            "error": error,
+        }, 400
     create_notification_permission(
         msg,
         data_token,
@@ -1343,7 +1444,11 @@ def update_sm_item_approve(data, data_token):
         0,
     )
     write_log_file(log_file_sm_path, msg, data_token)
-    return {"msg": "ok", "data": result}, 200
+    return {
+        "msg": f"Item actualizado correctamente (ID {data.get('id_item')})",
+        "data": result,
+        "error": None,
+    }, 200
 
 
 def update_items_sm_from_api(data, data_token):
@@ -1361,7 +1466,7 @@ def update_items_sm_from_api(data, data_token):
     """
     flag, result, sm_data = get_sm_by_id(data["id_sm"], data_token)
     if not flag:
-        return {"msg": "error at getting sm data"}, 400
+        return {"data": None, "msg": "No se pudo obtener la SM", "error": result}, 400
 
     timezone = pytz.timezone(timezone_software)
     date_now = datetime.now(pytz.utc).astimezone(timezone).strftime(format_timestamps)
@@ -1375,7 +1480,7 @@ def update_items_sm_from_api(data, data_token):
         extra_info = json.loads(sm_data[14])
         comments_sm = json.loads(sm_data[13])
     except Exception as e:
-        return {"msg": f"error at parsing sm data: {str(e)}", "data": []}, 400
+        return {"data": None, "msg": "No se pudo procesar la SM", "error": str(e)}, 400
 
     # Actualizar items
     errors, results = update_items_sm(data["items"], data["id_sm"], data_token)
@@ -1432,9 +1537,25 @@ def update_items_sm_from_api(data, data_token):
         data["id_sm"], extra_info, history_sm, comments_sm, data_token
     )
     if not flag:
-        return {"msg": f"error at updating sm history: {error}"}, 400
+        return {
+            "data": None,
+            "msg": "No se pudo actualizar el historial de la SM",
+            "error": error,
+        }, 400
 
-    return {"msg": "ok", "data": msg, "error": errors}, code
+    msg_out = (
+        "Items actualizados correctamente"
+        if code == 200
+        else "Algunos items no se pudieron actualizar"
+    )
+    # detalle largo -> log/notificacion; respuesta lleva data estructurado y error conciso
+    error_list = [f"Item {e.get('id')}: {e.get('error')}" for e in errors]
+    return {
+        "data": {"id_sm": data["id_sm"]},
+        "msg": msg_out,
+        "error": error_list if error_list else None,
+        "id_sm": data["id_sm"],
+    }, code
 
 
 def update_items_bulk_sm_from_api(data, data_token):
@@ -1447,16 +1568,20 @@ def update_items_bulk_sm_from_api(data, data_token):
         else:
             errors.append({"id_sm": entry["id_sm"], "error": data_out})
     if errors and not results:
-        return {"msg": "error", "data": results, "errors": errors}, 400
+        return {"msg": "No se pudo actualizar ningún item", "data": results, "error": errors}, 400
     if errors:
-        return {"msg": "partial", "data": results, "errors": errors}, 207
-    return {"msg": "ok", "data": results, "errors": []}, 200
+        return {
+            "msg": "Algunos items no se pudieron actualizar",
+            "data": results,
+            "error": errors,
+        }, 207
+    return {"msg": "Todos los items actualizados", "data": results, "error": None}, 200
 
 
 def create_sm_attachment_api(data, data_token):
     filename = data["filename"]
     if "firma" not in filename.lower():
-        return {"data": None, "msg": "Nombre de archivo incorrecto"}, 400
+        return {"data": None, "msg": "Nombre de archivo incorrecto", "error": "filename"}, 400
     id_report_name = filename.split("-")[0]
     try:
         if int(id_report_name) != int(data["id_sm"]) and int(data["id_sm"]) <= 0:
@@ -1464,6 +1589,7 @@ def create_sm_attachment_api(data, data_token):
                 {
                     "data": None,
                     "msg": "El nombre del archivo no corresponde al voucher",
+                    "error": "id mismatch",
                 },
                 400,
             )
@@ -1483,13 +1609,13 @@ def create_sm_attachment_api(data, data_token):
     if not flag:
         return {
             "data": None,
-            "msg": "Error at getting sm by id",
+            "msg": "No se pudo obtener la SM",
             "error": error,
         }, 400
     if not isinstance(result, list):
         return {
             "data": None,
-            "msg": "Error at getting sm by id: result is not a list",
+            "msg": "No se pudo obtener la SM: resultado no es una lista",
             "error": str(result),
         }, 400
     sm_data = []
@@ -1500,7 +1626,7 @@ def create_sm_attachment_api(data, data_token):
     if len(sm_data) <= 0:
         return {
             "data": None,
-            "msg": "Error at getting sm by id: sm not found",
+            "msg": "No se pudo obtener la SM: SM no encontrada",
             "error": str(sm_data),
         }, 400
     date_sm = sm_data[8]
@@ -1511,7 +1637,7 @@ def create_sm_attachment_api(data, data_token):
     valid_extension = ["pdf", "jpg", "jpeg", "png", "zip", "webp"]
     if file_extension not in valid_extension:
         return (
-            {"data": None, "msg": "Formato de archivo no valido"},
+            {"data": None, "msg": "Formato de archivo no valido", "error": file_extension},
             400,
         )
     # create name sm/year/month/day/filename
@@ -1524,22 +1650,38 @@ def create_sm_attachment_api(data, data_token):
         status = 5
         msg += " y estado actualizado a (firmado)"
     else:
-        return {"data": None, "msg": "Nombre de archivo incorrecto"}, 400
+        return {"data": None, "msg": "Nombre de archivo incorrecto", "error": "filename"}, 400
 
     try:
         s3_client.upload_file(Filename=filepath_down, Bucket=str(bucket_name), Key=path_aws)
     except FileNotFoundError:
-        return {"data": None, "msg": "Local file not found"}, 400
+        return {
+            "data": None,
+            "msg": "Archivo local no encontrado",
+            "error": "Local file not found",
+        }, 400
     except NoCredentialsError:
-        return {"data": None, "msg": "AWS credentials not found"}, 400
+        return {
+            "data": None,
+            "msg": "No se encontraron credenciales de AWS",
+            "error": "AWS credentials not found",
+        }, 400
     except ClientError as e:
         error_code = e.response["Error"]["Code"]
         if error_code == "NoSuchBucket":
-            return {"data": None, "msg": f"Bucket does not exist: {bucket_name}"}, 400
+            return {
+                "data": None,
+                "msg": "El bucket no existe",
+                "error": f"Bucket does not exist: {bucket_name}",
+            }, 400
         elif error_code == "AccessDenied":
-            return {"data": None, "msg": f"Access denied to bucket: {bucket_name}"}, 400
+            return {
+                "data": None,
+                "msg": "Acceso denegado al bucket",
+                "error": f"Access denied to bucket: {bucket_name}",
+            }, 400
         else:
-            return {"data": None, "msg": f"AWS error: {str(e)}"}, 400
+            return {"data": None, "msg": "Error de AWS", "error": str(e)}, 400
 
     history.append(
         {
@@ -1565,7 +1707,7 @@ def create_sm_attachment_api(data, data_token):
     if not flag:
         return {
             "data": None,
-            "msg": "Error at updating history sm but file uploaded",
+            "msg": "El archivo se subió pero no se pudo actualizar el historial de la SM",
             "error": error,
         }, 400
     user_created_sm = sm_data[6]
@@ -1577,4 +1719,4 @@ def create_sm_attachment_api(data, data_token):
         user_created_sm,
     )
     write_log_file(log_file_sm_path, msg, data_token)
-    return {"data": path_aws, "msg": msg}, 201
+    return {"data": path_aws, "msg": msg, "error": None}, 201

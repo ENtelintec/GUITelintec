@@ -89,7 +89,7 @@ def get_quotations(id_quotation: int | None = None):
         return {
             "data": [],
             "msg": "No se pudieron obtener las cotizaciones",
-            "error": str(error),
+            "error": error,
         }, 400
     if id_quotation is not None:
         id_q, metadata, products, creation, timestamps = result
@@ -164,7 +164,7 @@ def get_contracts(id_contract=None, data_token=None):
         return {
             "data": [],
             "msg": "No se pudieron obtener los contratos",
-            "error": str(error),
+            "error": error,
         }, 400
     result = [result] if id_contract is not None else result
     data_out = []
@@ -207,7 +207,7 @@ def get_contractsWithItems(data_token):
         return {
             "data": [],
             "msg": "No se pudieron obtener los contratos con items",
-            "error": str(error),
+            "error": error,
         }, 400
     data_out = []
     for item in result:
@@ -435,7 +435,7 @@ def compare_file_and_quotation(data: dict):
         data["pattern"] = settings.get("pattern_pdf_contract_default")
     flag, error, data_quotation = get_quotation(data["id_quotation"])
     if not flag:
-        return {"data": None, "msg": "No se encontró la cotización", "error": str(error)}, 400
+        return {"data": None, "msg": "No se encontró la cotización", "error": error}, 400
     products_contract = read_file_tenium_contract(data["path"], data["pattern"], data["phrase"])
     data_out, code = compare_file_quotation(data_quotation, products_contract)
     return data_out, code
@@ -547,7 +547,11 @@ def get_items_supplier_name(id_supplier: str, data_token):
         id_s = None
     flag, error, results = get_items_supplier_by_id(id_s, data_token)
     if not flag:
-        return {"data": [], "msg": "No se pudieron obtener los items del proveedor", "error": error}, 400
+        return {
+            "data": [],
+            "msg": "No se pudieron obtener los items del proveedor",
+            "error": error,
+        }, 400
     data_out = []
     for item in results:
         data_out.append(
@@ -735,7 +739,11 @@ def update_extra_info_supplier(data, data_token):
         data.get("id"), data.get("brands"), data_token
     )
     if not flag:
-        return {"data": None, "msg": "No se pudo actualizar la información extra del proveedor", "error": error}, 400
+        return {
+            "data": None,
+            "msg": "No se pudo actualizar la información extra del proveedor",
+            "error": error,
+        }, 400
     msg = f"Informacion extra actualizada para el proveedor con ID-{data.get('id')} por el empleado {data_token.get('name')}"
     create_notification_permission(
         msg,
@@ -759,7 +767,11 @@ def fetch_heads_main(data_token):
     permissions_last = [item.lower().split(".")[-1] for item in permissions.values()]
     flag, error, result = check_if_gerente(data_token.get("emp_id"), data_token)
     if len(result) == 0 and "administrator" not in permissions_last:
-        return {"data": [], "msg": "No se encontraron encargados para el usuario", "error": error if error else None}, 400
+        return {
+            "data": [],
+            "msg": "No se encontraron encargados para el usuario",
+            "error": error if error else None,
+        }, 400
     dep_ids_list = [dep_id]
     for k, v in dict_deps.items():
         if "administrator" in permissions_last:
@@ -963,7 +975,11 @@ def items_supplier_from_file(data):
         }
         products.append(product)
     if len(products) == 0:
-        return {"data": None, "msg": "Estructura del archivo inválida", "error": "El archivo no contiene items válidos"}, 400
+        return {
+            "data": None,
+            "msg": "Estructura del archivo inválida",
+            "error": "El archivo no contiene items válidos",
+        }, 400
     return {"data": products, "msg": "Items cargados correctamente", "error": None}, 200
 
 
@@ -1122,7 +1138,7 @@ def update_quoation_from_api(data, data_token):
         return {
             "data": None,
             "msg": "No se encontró la cotización a actualizar",
-            "error": str(error),
+            "error": error,
         }, 400
     old_products = json.loads(result[2])
     dict_products = {item["id"]: item for item in old_products}
@@ -1285,7 +1301,7 @@ def update_contract_from_api(data, data_token):
             return {
                 "data": None,
                 "msg": "No se encontró la cotización del contrato a actualizar",
-                "error": str(error),
+                "error": error,
             }, 400
         old_products = json.loads(result[2])
         dict_products = {item["id"]: item for item in old_products}

@@ -51,7 +51,7 @@ def create_voucher_tools_api(data, data_token):
         data["type"], timestamp, data_token.get("emp_id"), data["contract"], data_token
     )
     if not flag:
-        return {"data": None, "msg": "No se pudo crear el voucher general", "error": str(error)}, 400
+        return {"data": None, "msg": "No se pudo crear el voucher general", "error": error}, 400
     flag, error, v_tools_id = create_voucher_tools(
         lastrowid,
         data["position"],
@@ -62,7 +62,11 @@ def create_voucher_tools_api(data, data_token):
         data_token,
     )
     if not flag:
-        return {"data": None, "msg": "No se pudo crear el voucher de herramientas", "error": str(error)}, 400
+        return {
+            "data": None,
+            "msg": "No se pudo crear el voucher de herramientas",
+            "error": error,
+        }, 400
     history = [
         {
             "id_voucher": v_tools_id,
@@ -74,7 +78,11 @@ def create_voucher_tools_api(data, data_token):
     ]
     flag, error, rows_updated = update_history_voucher(history, lastrowid, data_token)
     if not flag:
-        return {"data": None, "msg": "No se pudo actualizar el historial del voucher", "error": str(error)}, 400
+        return {
+            "data": None,
+            "msg": "No se pudo actualizar el historial del voucher",
+            "error": error,
+        }, 400
     errors = []
     for item in data["items"]:
         flag, error, p_id = create_voucher_item(
@@ -87,16 +95,24 @@ def create_voucher_tools_api(data, data_token):
             item["observations"],
         )
         if not flag:
-            errors.append({"id_inventory": item["id_inventory"], "error": str(error)})
+            errors.append({"id_inventory": item["id_inventory"], "error": error})
     if data["items"] and len(errors) == len(data["items"]):
         delete_items_voucher(lastrowid, data_token)
         delete_voucher_tools(lastrowid, data_token)
         update_voucher_general_from_delete(lastrowid, [], data_token)
-        return {"data": None, "msg": "No se pudo crear ningún item del voucher; operación revertida", "error": errors}, 400
+        return {
+            "data": None,
+            "msg": "No se pudo crear ningún item del voucher; operación revertida",
+            "error": errors,
+        }, 400
     msg_out = f"Voucher de herramientas creado correctamente (ID {lastrowid})"
     if errors:
         msg_out += f". {len(errors)} items no se pudieron crear."
-    return {"data": {"id_voucher": lastrowid}, "msg": msg_out, "error": errors if errors else None}, 201
+    return {
+        "data": {"id_voucher": lastrowid},
+        "msg": msg_out,
+        "error": errors if errors else None,
+    }, 201
 
 
 def update_voucher_tools_api(data, data_token):
@@ -125,12 +141,20 @@ def update_voucher_tools_api(data, data_token):
         data["storage_state"],
     )
     if not flag:
-        return {"data": None, "msg": "No se pudo actualizar el voucher de herramientas", "error": str(error)}, 400
+        return {
+            "data": None,
+            "msg": "No se pudo actualizar el voucher de herramientas",
+            "error": error,
+        }, 400
     flag, error, rows_updated = update_history_voucher(
         history, data["id_voucher_general"], data_token
     )
     if not flag:
-        return {"data": None, "msg": "No se pudo actualizar el historial del voucher", "error": str(error)}, 400
+        return {
+            "data": None,
+            "msg": "No se pudo actualizar el historial del voucher",
+            "error": error,
+        }, 400
     errors = []
     for item in data["items"]:
         if item["is_erased"] == 1:
@@ -156,7 +180,7 @@ def update_voucher_tools_api(data, data_token):
                 item["observations"],
             )
         if not flag:
-            errors.append({"id_item": item["id_item"], "error": str(error)})
+            errors.append({"id_item": item["id_item"], "error": error})
     id_ = data["id_voucher_general"]
     msg_out = f"Voucher de herramientas actualizado correctamente (ID {id_})"
     if errors:
@@ -167,10 +191,18 @@ def update_voucher_tools_api(data, data_token):
 def delete_voucher_tools_api(data, data_token):
     flag, error, rows_updated = delete_items_voucher(data["id"], data_token)
     if not flag:
-        return {"data": None, "msg": "No se pudieron eliminar los items del voucher", "error": str(error)}, 400
+        return {
+            "data": None,
+            "msg": "No se pudieron eliminar los items del voucher",
+            "error": error,
+        }, 400
     flag, error, rows_updated = delete_voucher_tools(data["id"], data_token)
     if not flag:
-        return {"data": None, "msg": "No se pudo eliminar el voucher de herramientas", "error": str(error)}, 400
+        return {
+            "data": None,
+            "msg": "No se pudo eliminar el voucher de herramientas",
+            "error": error,
+        }, 400
     history = data["history"]
     time_zone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
@@ -185,7 +217,11 @@ def delete_voucher_tools_api(data, data_token):
     )
     flag, error, result = update_voucher_general_from_delete(data["id"], history, data_token)
     if not flag:
-        return {"data": None, "msg": "No se pudo actualizar el voucher general", "error": str(error)}, 400
+        return {
+            "data": None,
+            "msg": "No se pudo actualizar el voucher general",
+            "error": error,
+        }, 400
     return {
         "data": {"id_voucher": data["id"]},
         "msg": f"Voucher de herramientas eliminado correctamente (ID {data['id']})",
@@ -200,7 +236,7 @@ def create_voucher_safety_api(data, data_token):
         data["type"], timestamp, data_token.get("emp_id"), data["contract"], data_token
     )
     if not flag:
-        return {"data": None, "msg": "No se pudo crear el voucher general", "error": str(error)}, 400
+        return {"data": None, "msg": "No se pudo crear el voucher general", "error": error}, 400
     flag, error, lastrowid_safety = create_voucher_safety(
         lastrowid,
         data["motive"],
@@ -210,7 +246,11 @@ def create_voucher_safety_api(data, data_token):
         data_token,
     )
     if not flag:
-        return {"data": None, "msg": "No se pudo crear el voucher de seguridad", "error": str(error)}, 400
+        return {
+            "data": None,
+            "msg": "No se pudo crear el voucher de seguridad",
+            "error": error,
+        }, 400
     history = [
         {
             "id_voucher": lastrowid_safety,
@@ -222,7 +262,11 @@ def create_voucher_safety_api(data, data_token):
     ]
     flag, error, rows_updated = update_history_voucher(history, lastrowid, data_token)
     if not flag:
-        return {"data": None, "msg": "No se pudo actualizar el historial del voucher", "error": str(error)}, 400
+        return {
+            "data": None,
+            "msg": "No se pudo actualizar el historial del voucher",
+            "error": error,
+        }, 400
     errors = []
     for item in data["items"]:
         flag, error, lastrowid_item = create_voucher_item(
@@ -235,16 +279,24 @@ def create_voucher_safety_api(data, data_token):
             item["observations"],
         )
         if not flag:
-            errors.append({"id_item": lastrowid_item, "error": str(error)})
+            errors.append({"id_item": lastrowid_item, "error": error})
     if data["items"] and len(errors) == len(data["items"]):
         delete_items_voucher(lastrowid, data_token)
         delete_voucher_tools(lastrowid, data_token)
         update_voucher_general_from_delete(lastrowid, [], data_token)
-        return {"data": None, "msg": "No se pudo crear ningún item del voucher; operación revertida", "error": errors}, 400
+        return {
+            "data": None,
+            "msg": "No se pudo crear ningún item del voucher; operación revertida",
+            "error": errors,
+        }, 400
     msg_out = f"Voucher de seguridad creado correctamente (ID {lastrowid})"
     if errors:
         msg_out += f". {len(errors)} items no se pudieron crear."
-    return {"data": {"id_voucher": lastrowid}, "msg": msg_out, "error": errors if errors else None}, 201
+    return {
+        "data": {"id_voucher": lastrowid},
+        "msg": msg_out,
+        "error": errors if errors else None,
+    }, 201
 
 
 def update_voucher_safety_api(data, data_token):
@@ -271,12 +323,20 @@ def update_voucher_safety_api(data, data_token):
         data["motive"],
     )
     if not flag:
-        return {"data": None, "msg": "No se pudo actualizar el voucher de seguridad", "error": str(error)}, 400
+        return {
+            "data": None,
+            "msg": "No se pudo actualizar el voucher de seguridad",
+            "error": error,
+        }, 400
     flag, error, rows_updated = update_history_voucher(
         history, data["id_voucher_general"], data_token
     )
     if not flag:
-        return {"data": None, "msg": "No se pudo actualizar el historial del voucher", "error": str(error)}, 400
+        return {
+            "data": None,
+            "msg": "No se pudo actualizar el historial del voucher",
+            "error": error,
+        }, 400
     errors = []
     for item in data["items"]:
         if item["is_erased"] == 1:
@@ -302,7 +362,7 @@ def update_voucher_safety_api(data, data_token):
                 item["observations"],
             )
         if not flag:
-            errors.append({"id_inventory": item["id_inventory"], "error": str(error)})
+            errors.append({"id_inventory": item["id_inventory"], "error": error})
     id_ = data["id_voucher_general"]
     msg_out = f"Voucher de seguridad actualizado correctamente (ID {id_})"
     if errors:
@@ -313,10 +373,18 @@ def update_voucher_safety_api(data, data_token):
 def delete_voucher_safety_api(data, data_token):
     flag, error, rows_updated = delete_items_voucher(data["id"], data_token)
     if not flag:
-        return {"data": None, "msg": "No se pudieron eliminar los items del voucher", "error": str(error)}, 400
+        return {
+            "data": None,
+            "msg": "No se pudieron eliminar los items del voucher",
+            "error": error,
+        }, 400
     flag, error, rows_updated = delete_voucher_tools(data["id"], data_token)
     if not flag:
-        return {"data": None, "msg": "No se pudo eliminar el voucher de seguridad", "error": str(error)}, 400
+        return {
+            "data": None,
+            "msg": "No se pudo eliminar el voucher de seguridad",
+            "error": error,
+        }, 400
     history = data["history"]
     time_zone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
@@ -331,7 +399,11 @@ def delete_voucher_safety_api(data, data_token):
     )
     flag, error, result = update_voucher_general_from_delete(data["id"], history, data_token)
     if not flag:
-        return {"data": None, "msg": "No se pudo actualizar el voucher general", "error": str(error)}, 400
+        return {
+            "data": None,
+            "msg": "No se pudo actualizar el voucher general",
+            "error": error,
+        }, 400
     return {
         "data": {"id_voucher": data["id"]},
         "msg": f"Voucher de seguridad eliminado correctamente (ID {data['id']})",
@@ -344,9 +416,17 @@ def get_vouchers_tools_api(data, data_token):
         data["date"], data_token, data_token.get("emp_id")
     )
     if not flag:
-        return {"data": None, "msg": "No se pudieron obtener los vouchers de herramientas", "error": str(error)}, 400
+        return {
+            "data": None,
+            "msg": "No se pudieron obtener los vouchers de herramientas",
+            "error": error,
+        }, 400
     if not (isinstance(result, list) or isinstance(result, tuple)):
-        return {"data": None, "msg": "Error al obtener vouchers: resultado inesperado", "error": str(result)}, 400
+        return {
+            "data": None,
+            "msg": "Error al obtener vouchers: resultado inesperado",
+            "error": str(result),
+        }, 400
     data_out = []
     for item in result:
         data_out.append(
@@ -379,9 +459,17 @@ def get_vouchers_safety_api(data, data_token):
         data["date"], data_token=data_token, user=data_token.get("emp_id")
     )
     if not flag:
-        return {"data": None, "msg": "No se pudieron obtener los vouchers de seguridad", "error": str(error)}, 400
+        return {
+            "data": None,
+            "msg": "No se pudieron obtener los vouchers de seguridad",
+            "error": error,
+        }, 400
     if not (isinstance(result, list) or isinstance(result, tuple)):
-        return {"data": None, "msg": "Error al obtener vouchers: resultado inesperado", "error": str(result)}, 400
+        return {
+            "data": None,
+            "msg": "Error al obtener vouchers: resultado inesperado",
+            "error": str(result),
+        }, 400
     data_out = []
     for item in result:
         data_out.append(
@@ -430,10 +518,18 @@ def update_status_tools(data, data_token):
         data_token,
     )
     if not flag:
-        return {"data": None, "msg": "No se pudo actualizar el estado del voucher de herramientas", "error": str(error)}, 400
+        return {
+            "data": None,
+            "msg": "No se pudo actualizar el estado del voucher de herramientas",
+            "error": error,
+        }, 400
     flag, error, rows_updated = update_history_voucher(history, data["id_voucher"], data_token)
     if not flag:
-        return {"data": None, "msg": "No se pudo actualizar el historial del voucher", "error": str(error)}, 400
+        return {
+            "data": None,
+            "msg": "No se pudo actualizar el historial del voucher",
+            "error": error,
+        }, 400
     return {
         "data": {"id_voucher": data["id_voucher"]},
         "msg": f"Estado del voucher de herramientas actualizado correctamente (ID {data['id_voucher']})",
@@ -463,10 +559,18 @@ def update_status_safety(data, data_token):
         data_token,
     )
     if not flag:
-        return {"data": None, "msg": "No se pudo actualizar el estado del voucher de seguridad", "error": str(error)}, 400
+        return {
+            "data": None,
+            "msg": "No se pudo actualizar el estado del voucher de seguridad",
+            "error": error,
+        }, 400
     flag, error, rows_updated = update_history_voucher(history, data["id_voucher"], data_token)
     if not flag:
-        return {"data": None, "msg": "No se pudo actualizar el historial del voucher", "error": str(error)}, 400
+        return {
+            "data": None,
+            "msg": "No se pudo actualizar el historial del voucher",
+            "error": error,
+        }, 400
     return {
         "data": {"id_voucher": data["id_voucher"]},
         "msg": f"Estado del voucher de seguridad actualizado correctamente (ID {data['id_voucher']})",
@@ -479,9 +583,17 @@ def get_vouchers_vehicle_api(data, data_token):
         data["date"], data_token, data_token.get("emp_id")
     )
     if not flag:
-        return {"data": None, "msg": "No se pudieron obtener los vouchers vehiculares", "error": str(error)}, 400
+        return {
+            "data": None,
+            "msg": "No se pudieron obtener los vouchers vehiculares",
+            "error": error,
+        }, 400
     if not (isinstance(result, list) or isinstance(result, tuple)):
-        return {"data": None, "msg": "Error al obtener vouchers vehiculares: resultado inesperado", "error": str(result)}, 400
+        return {
+            "data": None,
+            "msg": "Error al obtener vouchers vehiculares: resultado inesperado",
+            "error": str(result),
+        }, 400
     data_out = []
     for item in result:
         extra_info = json.loads(item[20])
@@ -527,11 +639,15 @@ def create_voucher_vehicle_api(data, data_token):
         data["type"], timestamp, data_token.get("emp_id"), data["contract"], data_token
     )
     if not flag:
-        return {"data": None, "msg": "No se pudo crear el voucher general", "error": str(error)}, 400
+        return {"data": None, "msg": "No se pudo crear el voucher general", "error": error}, 400
     try:
         accessories = json.dumps(data["accessories"])
     except Exception as e:
-        return {"data": None, "msg": "Error al procesar los datos de accesorios", "error": str(e)}, 400
+        return {
+            "data": None,
+            "msg": "Error al procesar los datos de accesorios",
+            "error": str(e),
+        }, 400
 
     flag, error, lastrowid_vehicle = create_voucher_vehicle(
         lastrowid,
@@ -551,7 +667,7 @@ def create_voucher_vehicle_api(data, data_token):
         data.get("observations"),
     )
     if not flag:
-        return {"data": None, "msg": "No se pudo crear el voucher vehicular", "error": str(error)}, 400
+        return {"data": None, "msg": "No se pudo crear el voucher vehicular", "error": error}, 400
 
     history = [
         {
@@ -564,7 +680,11 @@ def create_voucher_vehicle_api(data, data_token):
     ]
     flag, error, rows_updated = update_history_voucher(history, lastrowid, data_token)
     if not flag:
-        return {"data": None, "msg": "No se pudo actualizar el historial del voucher", "error": str(error)}, 400
+        return {
+            "data": None,
+            "msg": "No se pudo actualizar el historial del voucher",
+            "error": error,
+        }, 400
 
     errors = []
     for item in data["items"]:
@@ -578,18 +698,26 @@ def create_voucher_vehicle_api(data, data_token):
             item.get("observations"),
         )
         if not flag:
-            errors.append({"id_item": lastrowid_item, "error": str(error)})
+            errors.append({"id_item": lastrowid_item, "error": error})
 
     if data["items"] and len(errors) == len(data["items"]):
         delete_items_voucher(lastrowid, data_token)
         delete_voucher_vehicle(lastrowid, data_token)
         update_voucher_general_from_delete(lastrowid, json.dumps([]), data_token)
-        return {"data": None, "msg": "No se pudo crear ningún item del voucher vehicular; operación revertida", "error": errors}, 400
+        return {
+            "data": None,
+            "msg": "No se pudo crear ningún item del voucher vehicular; operación revertida",
+            "error": errors,
+        }, 400
 
     msg_out = f"Voucher vehicular creado correctamente (ID {lastrowid})"
     if errors:
         msg_out += f". {len(errors)} items no se pudieron crear."
-    return {"data": {"id_voucher": lastrowid}, "msg": msg_out, "error": errors if errors else None}, 201
+    return {
+        "data": {"id_voucher": lastrowid},
+        "msg": msg_out,
+        "error": errors if errors else None,
+    }, 201
 
 
 def update_voucher_vehicle_api(data, data_token):
@@ -609,7 +737,11 @@ def update_voucher_vehicle_api(data, data_token):
     try:
         accessories = json.dumps(data["accessories"])
     except Exception as e:
-        return {"data": None, "msg": "Error al procesar los datos de accesorios", "error": str(e)}, 400
+        return {
+            "data": None,
+            "msg": "Error al procesar los datos de accesorios",
+            "error": str(e),
+        }, 400
     flag, error, rows_changed = update_voucher_vehicle(
         data["id_voucher_general"],
         data["brand"],
@@ -629,13 +761,21 @@ def update_voucher_vehicle_api(data, data_token):
         data.get("status"),
     )
     if not flag:
-        return {"data": None, "msg": "No se pudo actualizar el voucher vehicular", "error": str(error)}, 400
+        return {
+            "data": None,
+            "msg": "No se pudo actualizar el voucher vehicular",
+            "error": error,
+        }, 400
 
     flag, error, rows_updated = update_history_voucher(
         history, data["id_voucher_general"], data_token
     )
     if not flag:
-        return {"data": None, "msg": "No se pudo actualizar el historial del voucher", "error": str(error)}, 400
+        return {
+            "data": None,
+            "msg": "No se pudo actualizar el historial del voucher",
+            "error": error,
+        }, 400
 
     errors = []
     for item in data["items"]:
@@ -662,7 +802,7 @@ def update_voucher_vehicle_api(data, data_token):
                 item["observations"],
             )
         if not flag:
-            errors.append({"id_inventory": item["id_inventory"], "error": str(error)})
+            errors.append({"id_inventory": item["id_inventory"], "error": error})
 
     id_ = data["id_voucher_general"]
     msg_out = f"Voucher vehicular actualizado correctamente (ID {id_})"
@@ -679,21 +819,37 @@ def delete_voucher_vehicle_api(data, data_token):
         time_older, data_token, id_voucher=data["id"]
     )
     if not flag:
-        return {"data": None, "msg": "No se pudo obtener el voucher vehicular", "error": str(error)}, 400
+        return {"data": None, "msg": "No se pudo obtener el voucher vehicular", "error": error}, 400
     if not (isinstance(voucher_data, list) or isinstance(voucher_data, tuple)):
-        return {"data": None, "msg": "Error al obtener el voucher vehicular: resultado inesperado", "error": str(voucher_data)}, 400
+        return {
+            "data": None,
+            "msg": "Error al obtener el voucher vehicular: resultado inesperado",
+            "error": str(voucher_data),
+        }, 400
     status = voucher_data[0][21]
     if status == 0:
         flag, error, result = delete_voucher_item(data["id"], data_token)
         if not flag:
-            return {"data": None, "msg": "No se pudo eliminar el voucher vehicular", "error": str(error)}, 400
+            return {
+                "data": None,
+                "msg": "No se pudo eliminar el voucher vehicular",
+                "error": error,
+            }, 400
         flag, error, result = delete_voucher_vehicle(data["id"], data_token)
         if not flag:
-            return {"data": None, "msg": "No se pudo eliminar el voucher vehicular", "error": str(error)}, 400
+            return {
+                "data": None,
+                "msg": "No se pudo eliminar el voucher vehicular",
+                "error": error,
+            }, 400
     else:
         flag, error, result = update_voucher_vehicle_status(3, data["id"], data_token)
         if not flag:
-            return {"data": None, "msg": "No se pudo cancelar el voucher vehicular", "error": str(error)}, 400
+            return {
+                "data": None,
+                "msg": "No se pudo cancelar el voucher vehicular",
+                "error": error,
+            }, 400
 
     time_zone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
@@ -705,7 +861,9 @@ def delete_voucher_vehicle_api(data, data_token):
             "type": 2,
             "timestamp": timestamp,
             "user": data_token.get("emp_id"),
-            "comment": "Voucher vehicular eliminado" if status == 0 else "Voucher vehicular cancelado",
+            "comment": "Voucher vehicular eliminado"
+            if status == 0
+            else "Voucher vehicular cancelado",
         }
     )
 
@@ -713,14 +871,22 @@ def delete_voucher_vehicle_api(data, data_token):
         data["id"], json.dumps(history), data_token
     )
     if not flag:
-        return {"data": None, "msg": "No se pudo actualizar el voucher vehicular", "error": str(error)}, 400
+        return {
+            "data": None,
+            "msg": "No se pudo actualizar el voucher vehicular",
+            "error": error,
+        }, 400
     accion = "eliminado" if status == 0 else "cancelado"
     msg = (
         f"Voucher vehicular {accion} correctamente (ID {data['id']}) "
         f"por el empleado {data_token.get('name')}"
     )
     create_notification_permission_notGUI(
-        msg, data_token, ["administracion", "operaciones", "sgi"], data_token.get("emp_id"), 0,
+        msg,
+        data_token,
+        ["administracion", "operaciones", "sgi"],
+        data_token.get("emp_id"),
+        0,
     )
     write_log_file(log_file_sgi_chv, msg, data_token)
     return {
@@ -736,9 +902,17 @@ def create_voucher_vehicle_attachment_api(data, data_token):
     id_voucher_name = filename.split("-")[0]
     try:
         if int(id_voucher_name) != int(data["id_voucher"]) and int(data["id_voucher"]) <= 0:
-            return {"data": None, "msg": "El nombre del archivo no corresponde al voucher", "error": None}, 400
+            return {
+                "data": None,
+                "msg": "El nombre del archivo no corresponde al voucher",
+                "error": None,
+            }, 400
     except Exception as e:
-        return {"data": None, "msg": "Error al procesar el nombre del archivo", "error": str(e)}, 400
+        return {
+            "data": None,
+            "msg": "Error al procesar el nombre del archivo",
+            "error": str(e),
+        }, 400
     time_zone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone)
     timestamp_year_ago = timestamp - timedelta(days=365)
@@ -746,16 +920,28 @@ def create_voucher_vehicle_attachment_api(data, data_token):
         timestamp_year_ago.strftime(format_date), data_token, data_token.get("emp_id")
     )
     if not flag:
-        return {"data": None, "msg": "No se pudo obtener el checklist vehicular", "error": str(error)}, 400
+        return {
+            "data": None,
+            "msg": "No se pudo obtener el checklist vehicular",
+            "error": error,
+        }, 400
     if not isinstance(result, list):
-        return {"data": None, "msg": "Error al obtener el checklist vehicular: resultado inesperado", "error": str(result)}, 400
+        return {
+            "data": None,
+            "msg": "Error al obtener el checklist vehicular: resultado inesperado",
+            "error": str(result),
+        }, 400
     voucher_data = []
     for item in result:
         if int(item[0]) == int(data["id_voucher"]):
             voucher_data = item
             break
     if len(voucher_data) <= 0:
-        return {"data": None, "msg": "Voucher vehicular no encontrado", "error": str(voucher_data)}, 400
+        return {
+            "data": None,
+            "msg": "Voucher vehicular no encontrado",
+            "error": str(voucher_data),
+        }, 400
     date_voucher = voucher_data[2]
     history = json.loads(voucher_data[19])
     filepath_down = data["filepath"]
@@ -777,7 +963,11 @@ def create_voucher_vehicle_attachment_api(data, data_token):
         if error_code == "NoSuchBucket":
             return {"data": None, "msg": f"Bucket no existe: {bucket_name}", "error": str(e)}, 400
         elif error_code == "AccessDenied":
-            return {"data": None, "msg": f"Acceso denegado al bucket: {bucket_name}", "error": str(e)}, 400
+            return {
+                "data": None,
+                "msg": f"Acceso denegado al bucket: {bucket_name}",
+                "error": str(e),
+            }, 400
         else:
             return {"data": None, "msg": f"Error AWS: {str(e)}", "error": str(e)}, 400
     msg = f"Archivo adjunto agregado: {filename} al voucher {data['id_voucher']} por el empleado {data_token.get('name')}"
@@ -805,9 +995,17 @@ def create_voucher_vehicle_attachment_api(data, data_token):
         data["id_voucher"], history, extra_info, status, data_token
     )
     if not flag:
-        return {"data": None, "msg": "Error al actualizar el historial del voucher (archivo ya subido)", "error": str(error)}, 400
+        return {
+            "data": None,
+            "msg": "Error al actualizar el historial del voucher (archivo ya subido)",
+            "error": error,
+        }, 400
     create_notification_permission_notGUI(
-        msg, data_token, ["administracion", "operaciones", "sgi"], data_token.get("emp_id"), 0,
+        msg,
+        data_token,
+        ["administracion", "operaciones", "sgi"],
+        data_token.get("emp_id"),
+        0,
     )
     write_log_file(log_file_sgi_chv, msg, data_token)
     return {"data": path_aws, "msg": msg, "error": None}, 201
@@ -821,16 +1019,28 @@ def download_voucher_vehicle_attachment_api(data, data_token):
         timestamp_year_ago.strftime(format_date), data_token, data_token.get("emp_id")
     )
     if not flag:
-        return {"data": None, "msg": "No se pudo obtener el checklist vehicular", "error": str(error)}, 400
+        return {
+            "data": None,
+            "msg": "No se pudo obtener el checklist vehicular",
+            "error": error,
+        }, 400
     if not isinstance(result, list):
-        return {"data": None, "msg": "Error al obtener el checklist vehicular: resultado inesperado", "error": str(result)}, 400
+        return {
+            "data": None,
+            "msg": "Error al obtener el checklist vehicular: resultado inesperado",
+            "error": str(result),
+        }, 400
     voucher_data = []
     for item in result:
         if item[0] == data["id_voucher"]:
             voucher_data = item
             break
     if len(voucher_data) <= 0:
-        return {"data": None, "msg": f"Voucher vehicular no encontrado (ID {data['id_voucher']})", "error": str(voucher_data)}, 400
+        return {
+            "data": None,
+            "msg": f"Voucher vehicular no encontrado (ID {data['id_voucher']})",
+            "error": str(voucher_data),
+        }, 400
     extra_info = json.loads(voucher_data[20])
     files = extra_info.get("files", [])
     name_file = data["filename"]
@@ -856,9 +1066,21 @@ def download_voucher_vehicle_attachment_api(data, data_token):
         if error_code == "NoSuchBucket":
             return {"data": None, "msg": f"Bucket no existe: {bucket_name}", "error": str(e)}, 400
         elif error_code == "AccessDenied":
-            return {"data": None, "msg": f"Acceso denegado al bucket: {bucket_name}", "error": str(e)}, 400
+            return {
+                "data": None,
+                "msg": f"Acceso denegado al bucket: {bucket_name}",
+                "error": str(e),
+            }, 400
         elif error_code == "NoSuchKey":
-            return {"data": None, "msg": f"Archivo no encontrado en S3: {path_aws}", "error": str(e)}, 400
+            return {
+                "data": None,
+                "msg": f"Archivo no encontrado en S3: {path_aws}",
+                "error": str(e),
+            }, 400
         else:
-            return {"data": None, "msg": f"Error al descargar archivo: {str(e)}", "error": str(e)}, 400
+            return {
+                "data": None,
+                "msg": f"Error al descargar archivo: {str(e)}",
+                "error": str(e),
+            }, 400
     return {"path": data["filepath"]}, 200

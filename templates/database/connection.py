@@ -73,7 +73,7 @@ def execute_sql(
                 out = []
     except Exception as e:
         if "Duplicate entry" not in str(e):
-            print("Error at executing sql: ", str(e), str(sql))
+            print("Error at executing sql: ", str(e), sql)
         out = []
         flag = False
         exception = str(e)

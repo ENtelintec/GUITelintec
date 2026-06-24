@@ -105,7 +105,11 @@ class Employee(Resource):
         # noinspection PyUnresolvedReferences
         validator = EmployeeInsertForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
+            return {
+                "data": None,
+                "msg": "Estructura de datos inválida",
+                "error": validator.errors,
+            }, 400
         data = validator.data
         data_out, code = create_new_employee_db(data, data_token)
         return data_out, code
@@ -118,7 +122,11 @@ class Employee(Resource):
         # noinspection PyUnresolvedReferences
         validator = EmployeeUpdateForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
+            return {
+                "data": None,
+                "msg": "Estructura de datos inválida",
+                "error": validator.errors,
+            }, 400
         data = validator.data
         data_out, code = update_employee_db(data, data_token)
         return data_out, code
@@ -131,11 +139,19 @@ class Employee(Resource):
         # noinspection PyUnresolvedReferences
         validator = EmployeeDeleteForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
+            return {
+                "data": None,
+                "msg": "Estructura de datos inválida",
+                "error": validator.errors,
+            }, 400
         data = validator.data
         flag, error, result = delete_employee(data["id"], data_token)
         if flag:
-            return {"data": {"id_employee": result}, "msg": f"Empleado eliminado correctamente (ID {result})", "error": None}, 200
+            return {
+                "data": {"id_employee": result},
+                "msg": f"Empleado eliminado correctamente (ID {result})",
+                "error": None,
+            }, 200
         else:
             return {"data": None, "msg": "No se pudo eliminar el empleado", "error": error}, 400
 
@@ -163,7 +179,11 @@ class EmployeeTerminate(Resource):
         # noinspection PyUnresolvedReferences
         validator = EmployeeTerminateForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
+            return {
+                "data": None,
+                "msg": "Estructura de datos inválida",
+                "error": validator.errors,
+            }, 400
         data = validator.data
         data_out, code = terminate_employee_from_api(data, data_token)
         return data_out, code
@@ -227,7 +247,11 @@ class EMRegistry(Resource):
         # noinspection PyUnresolvedReferences
         validator = EmployeeMedInsertForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
+            return {
+                "data": None,
+                "msg": "Estructura de datos inválida",
+                "error": validator.errors,
+            }, 400
         data = validator.data
         data_out, code = insert_medical_db(data, data_token)
         return data_out, code
@@ -240,7 +264,11 @@ class EMRegistry(Resource):
         # noinspection PyUnresolvedReferences
         validator = EmployeeMedUpdateForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
+            return {
+                "data": None,
+                "msg": "Estructura de datos inválida",
+                "error": validator.errors,
+            }, 400
         data = validator.data
         data_out, code = update_medical_db(data, data_token)
         return data_out, code
@@ -253,13 +281,25 @@ class EMRegistry(Resource):
         # noinspection PyUnresolvedReferences
         validator = EmployeeMedDeleteForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
+            return {
+                "data": None,
+                "msg": "Estructura de datos inválida",
+                "error": validator.errors,
+            }, 400
         data = validator.data
         flag, error, result = delete_exam_med(data["id"], data_token)
         if flag:
-            return {"data": {"id_exam": result}, "msg": f"Registro médico eliminado correctamente (ID {result})", "error": None}, 200
+            return {
+                "data": {"id_exam": result},
+                "msg": f"Registro médico eliminado correctamente (ID {result})",
+                "error": None,
+            }, 200
         else:
-            return {"data": None, "msg": "No se pudo eliminar el registro médico", "error": str(error)}, 400
+            return {
+                "data": None,
+                "msg": "No se pudo eliminar el registro médico",
+                "error": error,
+            }, 400
 
 
 @ns.route("/employees/vacations/all")
@@ -287,7 +327,11 @@ class VacationsEmployeesID(Resource):
         if code == 200:
             return {"data": data, "msg": None, "error": None}, code
         else:
-            return {"data": None, "msg": "No se encontraron vacaciones para el empleado", "error": None}, code
+            return {
+                "data": None,
+                "msg": "No se encontraron vacaciones para el empleado",
+                "error": None,
+            }, code
 
 
 @ns.route("/employee/vacation")
@@ -300,13 +344,25 @@ class VacationRegistry(Resource):
         # noinspection PyUnresolvedReferences
         validator = EmployeeVacInsertForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
+            return {
+                "data": None,
+                "msg": "Estructura de datos inválida",
+                "error": validator.errors,
+            }, 400
         data = validator.data
         flag, error, result = insert_new_vacation(data, data_token)
         if flag:
-            return {"data": {"id_vacation": result}, "msg": f"Vacaciones registradas correctamente (ID {result})", "error": None}, 201
+            return {
+                "data": {"id_vacation": result},
+                "msg": f"Vacaciones registradas correctamente (ID {result})",
+                "error": None,
+            }, 201
         else:
-            return {"data": None, "msg": "No se pudieron registrar las vacaciones", "error": error}, 400
+            return {
+                "data": None,
+                "msg": "No se pudieron registrar las vacaciones",
+                "error": error,
+            }, 400
 
     @ns.expect(expected_headers_per, employee_vacation_model_insert)
     def put(self):
@@ -316,13 +372,25 @@ class VacationRegistry(Resource):
         # noinspection PyUnresolvedReferences
         validator = EmployeeVacInsertForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
+            return {
+                "data": None,
+                "msg": "Estructura de datos inválida",
+                "error": validator.errors,
+            }, 400
         data = validator.data
         flag, error, result = update_vacation(data, data_token)
         if flag:
-            return {"data": {"id_vacation": result}, "msg": f"Vacaciones actualizadas correctamente (ID {result})", "error": None}, 200
+            return {
+                "data": {"id_vacation": result},
+                "msg": f"Vacaciones actualizadas correctamente (ID {result})",
+                "error": None,
+            }, 200
         else:
-            return {"data": None, "msg": "No se pudieron actualizar las vacaciones", "error": error}, 400
+            return {
+                "data": None,
+                "msg": "No se pudieron actualizar las vacaciones",
+                "error": error,
+            }, 400
 
     @ns.expect(expected_headers_per, employee_vacation_model_delete)
     def delete(self):
@@ -332,13 +400,25 @@ class VacationRegistry(Resource):
         # noinspection PyUnresolvedReferences
         validator = DeleteVacationForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
+            return {
+                "data": None,
+                "msg": "Estructura de datos inválida",
+                "error": validator.errors,
+            }, 400
         data = validator.data
         flag, error, result = delete_vacation(data["emp_id"], data_token)
         if flag:
-            return {"data": {"id_vacation": result}, "msg": f"Vacaciones eliminadas correctamente (ID {result})", "error": None}, 200
+            return {
+                "data": {"id_vacation": result},
+                "msg": f"Vacaciones eliminadas correctamente (ID {result})",
+                "error": None,
+            }, 200
         else:
-            return {"data": None, "msg": "No se pudieron eliminar las vacaciones", "error": error}, 400
+            return {
+                "data": None,
+                "msg": "No se pudieron eliminar las vacaciones",
+                "error": error,
+            }, 400
 
 
 @ns.route("/quizzes")
@@ -426,7 +506,11 @@ class CreateMailPayroll(Resource):
         # noinspection PyUnresolvedReferences
         validator = CreateMailForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
+            return {
+                "data": None,
+                "msg": "Estructura de datos inválida",
+                "error": validator.errors,
+            }, 400
         data = validator.data
         code, msg_out = create_mail_payroll(data)
         return {"data": None, "msg": str(msg_out), "error": None}, code
@@ -441,7 +525,11 @@ class DownloadFilesPayroll(Resource):
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         code, dicts_data = get_files_list_nomina_RH(emp_id, data_token)
         if code != 200:
-            return {"data": None, "msg": "No se encontraron archivos de nómina", "error": None}, code
+            return {
+                "data": None,
+                "msg": "No se encontraron archivos de nómina",
+                "error": None,
+            }, code
         return {"data": dicts_data, "msg": None, "error": None}, code
 
 
@@ -455,7 +543,11 @@ class UpdatePayroll(Resource):
         # noinspection PyUnresolvedReferences
         validator = UpdateDataPayrollForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
+            return {
+                "data": None,
+                "msg": "Estructura de datos inválida",
+                "error": validator.errors,
+            }, 400
         data = validator.data
         code, data_out = update_data_employee(data, data_token)
         return data_out, code
@@ -483,7 +575,11 @@ class FilesFichaje(Resource):
         if flag:
             return {"data": files, "msg": None, "error": None}, 200
         else:
-            return {"data": [], "msg": "No se pudieron obtener los archivos de fichaje", "error": None}, 400
+            return {
+                "data": [],
+                "msg": "No se pudieron obtener los archivos de fichaje",
+                "error": None,
+            }, 400
 
 
 @ns.route("/fichajes/data/fromfiles")
@@ -496,7 +592,11 @@ class DataFichajeFiles(Resource):
         # noinspection PyUnresolvedReferences
         validator = DataFichajesFileForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
+            return {
+                "data": None,
+                "msg": "Estructura de datos inválida",
+                "error": validator.errors,
+            }, 400
         data = validator.data
         data_out, code = get_fichaje_data(data)
         return data_out, code
@@ -515,7 +615,11 @@ class UploadFicahjeFile(Resource):
         if file and file.filename:
             filename = secure_filename(file.filename)
             file.save(os.path.join(path_contract_files, filename))
-            return {"data": {"filename": filename}, "msg": "Archivo subido correctamente", "error": None}, 200
+            return {
+                "data": {"filename": filename},
+                "msg": "Archivo subido correctamente",
+                "error": None,
+            }, 200
         else:
             return {"data": None, "msg": "No se subió el archivo", "error": None}, 400
 
@@ -540,16 +644,16 @@ class DownloadFileMedical(Resource):
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         flag, e, result = get_all_examenes(data_token)
         if not (isinstance(result, list) or isinstance(result, tuple)):
-            return {"data": None, "msg": "Error al obtener los datos del empleado", "error": None}, 400
+            return {
+                "data": None,
+                "msg": "Error al obtener los datos del empleado",
+                "error": None,
+            }, 400
         filepath = "files/medical.csv"
         with open(filepath, "w") as file:
-            file.write(
-                "id_exam,nombre,sangre,estatus,aptitudes,fechas,apt_actual,emp_id\n"
-            )
+            file.write("id_exam,nombre,sangre,estatus,aptitudes,fechas,apt_actual,emp_id\n")
             for item in result:
-                id_exam, nombre, sangre, status, aptitud, fechas, apt_actual, emp_id = (
-                    item
-                )
+                id_exam, nombre, sangre, status, aptitud, fechas, apt_actual, emp_id = item
                 fechas = fechas.replace(",", ";")
                 aptitud = aptitud.replace(",", ";")
                 file.write(
@@ -568,15 +672,17 @@ class DownloadFileVacations(Resource):
         flag, error, data = get_vacations_data(data_token)
         filepath = "files/vacations.csv"
         if not (isinstance(data, list) or isinstance(data, tuple)):
-            return {"data": None, "msg": "Error al obtener los datos del empleado", "error": None}, 400
+            return {
+                "data": None,
+                "msg": "Error al obtener los datos del empleado",
+                "error": None,
+            }, 400
         with open(filepath, "w") as file:
             file.write("emp_id, Nombre, Apellido, fecha_inicio, body\n")
             for item in data:
                 emp_id, name, l_name, date_admission, seniority = item
                 seniority = seniority.replace(",", ";")
-                file.write(
-                    f"{emp_id}, {name}, {l_name}, {date_admission}, {seniority}\n"
-                )
+                file.write(f"{emp_id}, {name}, {l_name}, {date_admission}, {seniority}\n")
         return send_file(filepath, as_attachment=True)
 
 
@@ -590,7 +696,11 @@ class DownloadFileQuizzReport(Resource):
         # noinspection PyUnresolvedReferences
         validator = RequestFileReportQuizzForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
+            return {
+                "data": None,
+                "msg": "Estructura de datos inválida",
+                "error": validator.errors,
+            }, 400
         data = validator.data
         code, data_out = generate_pdf_from_json(data, data_token)
         if code == 400:

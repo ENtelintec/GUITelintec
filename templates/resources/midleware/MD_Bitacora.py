@@ -37,16 +37,13 @@ from templates.misc.Functions_Files import write_log_file
 __author__ = "Edisson Naula"
 __date__ = "$ 12/jul./2024  at 15:16 $"
 
+
 def check_date_difference(date_modify, delta):
     flag = True
     time_zone = pytz.timezone(timezone_software)
     date_now = datetime.now(pytz.utc).astimezone(time_zone)
-    date_modify = (
-        pd.to_datetime(date_modify) if isinstance(date_modify, str) else date_modify
-    )
-    date_modify = (
-        date_modify.date() if isinstance(date_modify, datetime) else date_modify
-    )
+    date_modify = pd.to_datetime(date_modify) if isinstance(date_modify, str) else date_modify
+    date_modify = date_modify.date() if isinstance(date_modify, datetime) else date_modify
     # week of the month
     week_modify = date_modify.isocalendar()[1]
     date_now = date_now.date()
@@ -104,9 +101,7 @@ def get_events_from_extraordinary_sources(hour_in: str, hour_out: str, data: dic
             hours_late = hours_late.total_seconds() / 3600.0
             # print(f"event: late, date: {data['date']}, value: {int(hours_late)} hours {int(hours_late % 1 * 60)} minutes, comment: {data['comment']}")
             events.append("atraso")
-            data_events.append(
-                [data["date"], hours_late, data["comment"], data["contract"]]
-            )
+            data_events.append([data["date"], hours_late, data["comment"], data["contract"]])
         elif tmp_hour_in < normal_hour_in:
             hours_early = normal_hour_in - tmp_hour_in
             hours_early = hours_early.total_seconds() / 3600.0
@@ -149,9 +144,7 @@ def get_events_from_extraordinary_sources(hour_in: str, hour_out: str, data: dic
             early_hours = early_hours.total_seconds() / 3600.0
             # print(f"event: early, date: {data['date']}, value: {int(-early_hours)} hours {int(-early_hours % 1 * 60)} minutes, comment: {data['comment']}")
             events.append("early")
-            data_events.append(
-                [data["date"], early_hours, data["comment"], data["contract"]]
-            )
+            data_events.append([data["date"], early_hours, data["comment"], data["contract"]])
     events_final = []
     data_events_final = []
     for event, data_event in zip(events, data_events):
@@ -166,9 +159,7 @@ def get_events_from_extraordinary_sources(hour_in: str, hour_out: str, data: dic
 
 def get_extras_last_month(extras_dict: dict, date=None):
     time_zone = pytz.timezone(timezone_software)
-    date_today = (
-        datetime.now(pytz.utc).astimezone(time_zone).date() if date is None else date
-    )
+    date_today = datetime.now(pytz.utc).astimezone(time_zone).date() if date is None else date
     year = date_today.year
     month = date_today.month - 1
     day = date_today.day
@@ -188,9 +179,7 @@ def get_extras_last_month(extras_dict: dict, date=None):
             try:
                 for day_key in extras_dict[str(year)][str(month + 1)].keys():
                     if int(day_key) <= day:
-                        events.append(
-                            extras_dict[str(year)][str(month + 1)][str(day_key)]
-                        )
+                        events.append(extras_dict[str(year)][str(month + 1)][str(day_key)])
             except KeyError:
                 # print("error ", month + 1)
                 pass
@@ -283,7 +272,8 @@ def create_event_bitacora_from_api(data, data_token):
             f"Evento: {data['event']}, Valor: {data['value']}, Comentario: {data['comment']}"
         )
         create_notification_permission(
-            msg, data_token,
+            msg,
+            data_token,
             ["bitacora", "operaciones"],
             "Nuevo evento bitacora",
             data["id_leader"],
@@ -313,7 +303,8 @@ def update_event_bitacora_from_api(data, data_token):
             f"Evento: {data['event']}, Valor: {data['value']}, Comentario: {data['comment']}"
         )
         create_notification_permission(
-            msg, data_token,
+            msg,
+            data_token,
             ["bitacora", "operaciones"],
             "Evento bitacora actualizado",
             data["id_leader"],
@@ -341,7 +332,8 @@ def delete_event_bitacora_from_api(data, data_token):
             f"Evento: {data['event']}"
         )
         create_notification_permission(
-            msg, data_token,
+            msg,
+            data_token,
             ["bitacora", "operaciones"],
             "Evento bitacora eliminado",
             data["id_leader"],
@@ -396,14 +388,12 @@ def create_multiple_event_bitacora_from_api(data, data_token):
                 event["hour_in"], event["hour_out"], event
             )
             for index, item in enumerate(data_events):
-                flag, error, result = update_bitacora(
-                    event["id_emp"], event_e[index], item
-                )
+                flag, error, result = update_bitacora(event["id_emp"], event_e[index], item)
                 if flag:
                     events_added.append(
-                        f"id_emp: {event['id_emp']}, {event_e[index]}_{item[1]}, flag: {flag}, error: {str(error)}, result: {result}"
+                        f"id_emp: {event['id_emp']}, {event_e[index]}_{item[1]}, flag: {flag}, error: {error}, result: {result}"
                     )
-                    msg += f"\nid_emp: {event['id_emp']}, {event_e[index]}_{item[1]}, flag: {flag}, error: {str(error)}, result: {result}"
+                    msg += f"\nid_emp: {event['id_emp']}, {event_e[index]}_{item[1]}, flag: {flag}, error: {error}, result: {result}"
         else:
             flag, error, result = update_bitacora(
                 event["id_emp"],
@@ -416,11 +406,12 @@ def create_multiple_event_bitacora_from_api(data, data_token):
                 ),
             )
             events_added.append(
-                f"id_emp: {event['id_emp']}, {event['event']}_{event['value']}, flag: {flag}, error: {str(error)}, result: {result}"
+                f"id_emp: {event['id_emp']}, {event['event']}_{event['value']}, flag: {flag}, error: {error}, result: {result}"
             )
-            msg += f"\nid_emp: {event['id_emp']}, {event['event']}_{event['value']}, flag: {flag}, error: {str(error)}, result: {result}"
+            msg += f"\nid_emp: {event['id_emp']}, {event['event']}_{event['value']}, flag: {flag}, error: {error}, result: {result}"
     create_notification_permission(
-        msg, data_token,
+        msg,
+        data_token,
         ["bitacora", "operaciones"],
         "Nuevo evento bitacora",
         data["id_leader"],
@@ -440,7 +431,8 @@ def aprove_event_bitacora_from_api(data, data_token):
     if flag:
         msg = f"Evento extra aprovado: {data['id_emp']}, {data['date']}, {data['value']}, {data['comment']}"
         create_notification_permission(
-            msg, data_token,
+            msg,
+            data_token,
             ["bitacora", "operaciones"],
             "Evento extra aprovado bitacora",
             data["id_leader"],
@@ -456,8 +448,8 @@ def aprove_event_bitacora_from_api(data, data_token):
 
 
 def fetch_all_bitacora_rh(data_token):
-    flag, error, result = get_all_bitacora_rh_db( data_token)
-    if not(isinstance(result, list) or isinstance(result, tuple)):
+    flag, error, result = get_all_bitacora_rh_db(data_token)
+    if not (isinstance(result, list) or isinstance(result, tuple)):
         return {"data": [result], "msg": "error"}, 400
     dict_emps = {}
     # id_event, emp_id, event, timestamp, extra_info, name, l_name, contrato
@@ -496,7 +488,7 @@ def fetch_all_bitacora_rh(data_token):
     if flag:
         return {"data": out_data, "msg": "ok"}, 200
     else:
-        return {"data": [], "msg": str(error)}, 400
+        return {"data": [], "msg": error}, 400
 
 
 def create_event_bitacora_rh_from_api(data, data_token):
@@ -510,7 +502,8 @@ def create_event_bitacora_rh_from_api(data, data_token):
     if flag:
         msg = f"Evento de bitacora registrado por RH: {data['emp_id']}, {data['timestamp']}, {data['type']}, {data['value']}"
         create_notification_permission(
-            msg, data_token,
+            msg,
+            data_token,
             ["RH"],
             "Evento de bitacora registrado",
             data_token.get("emp_id", 0),
@@ -537,7 +530,8 @@ def update_event_bitacora_rh_from_api(data, data_token):
     if flag:
         msg = f"Evento de bitacora actualizado por RH: {data['emp_id']}, {data['timestamp']}, {data['type']}, {data['value']}"
         create_notification_permission(
-            msg, data_token,
+            msg,
+            data_token,
             ["RH"],
             "Evento de bitacora actualizado",
             data_token.get("emp_id", 0),
@@ -559,7 +553,8 @@ def delete_event_bitacora_rh_from_api(data, data_token):
     if flag:
         msg = f"Evento de bitacora eliminado por RH: {data['id']}"
         create_notification_permission(
-            msg, data_token,
+            msg,
+            data_token,
             ["RH"],
             "Evento de bitacora eliminado",
             data_token.get("emp_id", 0),
@@ -614,4 +609,4 @@ def fetch_bitacora_rh_from_api_by_date(data):
     if flag:
         return {"data": out_data, "msg": "ok"}, 200
     else:
-        return {"data": [], "msg": str(error)}, 400
+        return {"data": [], "msg": error}, 400
