@@ -191,6 +191,32 @@ uno nuevo con este patrón, agrégalo aquí.
 | `/dashboard/inventory/sm/<range>/<type>` | GET | `get_data_chart_sm` (passthrough) | ✅ Hecho | 2026-06-23 |
 | `/dashboard/fichaje/emp` | POST | `get_data_chart_fichaje_emp` (passthrough) | ✅ Hecho | 2026-06-23 |
 | `/dashboard/notifications/medicals` | GET | — (solo resource; `data: null, error: null` en todos los estados) | ✅ Hecho | 2026-06-23 |
+| `/UserSystem/usernames-<status>` | GET | `fectchUsersDBApi` (bug `{data: []}` → `{"data": None}`; `error: ""` → `None`) | ✅ Hecho | 2026-06-24 |
+| `/UserSystem/update-biocredentials` | POST | `update_biocredentials_from_api` (`error: ""` → `None`; `data: [result]` → `None`) | ✅ Hecho | 2026-06-24 |
+| `/UserSystem/user` | POST | `create_employee_user_from_api` (`data: [id]` → `{"id_user": id}`; `error: ""` → `None`) | ✅ Hecho | 2026-06-24 |
+| `/UserSystem/permissions` | GET | `fetch_permissions_from_api` (`error: ""` → `None`) | ✅ Hecho | 2026-06-24 |
+| `/misc/notifications/employee/<id>&<status>` | GET | `get_all_notification_db_user_status` (orden normalizado; `@marshal_with` removido) | ✅ Hecho | 2026-06-24 |
+| `/misc/notifications/all/<status>` | GET | `get_all_notification_db_permission` (orden normalizado; `@marshal_with` removido) | ✅ Hecho | 2026-06-24 |
+| `/misc/notification` | POST · PUT | `create_notification_from_api` / `update_notification_status_from_api` (Functions_midleware_misc.py; arquitectura alineada) | ✅ Hecho | 2026-06-24 |
+| `/misc/download/gui/settings` | GET | — (try/except mantenido; mensaje y shape de error corregidos) | ✅ Hecho | 2026-06-24 |
+| `/misc/AV/response` | POST | — (solo error branches; éxito `{answer, files, id}` intacto; `@marshal_with` removido) | ✅ Hecho | 2026-06-24 |
+| `/misc/AV/files/<department>` | GET | — (solo error branches; éxito `{files}` intacto; `@marshal_with` removido) | ✅ Hecho | 2026-06-24 |
+| `/misc/task/quizz` | POST · PUT · DELETE | `create/update/delete_task_from_api` (`msg: "Ok"` en error corregido; `data` y `error` alineados) | ✅ Hecho | 2026-06-24 |
+| `/misc/task/<emp_id>` | GET | `get_task_by_id_employee` (passthrough; shapes de error unificados) | ✅ Hecho | 2026-06-24 |
+| `/misc/download/quizz/<type_q>` | GET | — (try/except; `error: null` en éxito; shape de error corregido) | ✅ Hecho | 2026-06-24 |
+| `/misc/dashboard` | GET | `get_all_dashboard_data` (passthrough; shapes de error unificados) | ✅ Hecho | 2026-06-24 |
+| `/sgi/voucher/tools` | POST · PUT · DELETE | `create/update/delete_voucher_tools_api` (éxito parcial items; rollback total; `errors`→`error`; español) | ✅ Hecho | 2026-06-24 |
+| `/sgi/voucher/toolsState` | PUT | `update_status_tools` (structured `data`; español) | ✅ Hecho | 2026-06-24 |
+| `/sgi/voucher/safety` | POST · PUT · DELETE | `create/update/delete_voucher_safety_api` (éxito parcial items; rollback total; español) | ✅ Hecho | 2026-06-24 |
+| `/sgi/voucher/safetyState` | PUT | `update_status_safety` (structured `data`; español) | ✅ Hecho | 2026-06-24 |
+| `/sgi/voucher/tools/<date>` | GET | `get_vouchers_tools_api` (`msg: null, error: null` en éxito; español en errores) | ✅ Hecho | 2026-06-24 |
+| `/sgi/voucher/safety/<date>` | GET | `get_vouchers_safety_api` (`msg: null, error: null` en éxito; español en errores) | ✅ Hecho | 2026-06-24 |
+| `/sgi/voucher/vehicle/<date>` | GET | `get_vouchers_vehicle_api` (`msg: null, error: null` en éxito; español en errores) | ✅ Hecho | 2026-06-24 |
+| `/sgi/voucher/vehicle` | POST · PUT · DELETE | `create/update/delete_voucher_vehicle_api` (éxito parcial items; rollback total; structured `data`; español) | ✅ Hecho | 2026-06-24 |
+| `/sgi/voucher/vehicle/attachment-<id>` | POST | `create_voucher_vehicle_attachment_api` (passthrough; `error` en todas las ramas S3; español) | ✅ Hecho | 2026-06-24 |
+| `/sgi/voucher/vehicle/attachment/download` | POST | `download_voucher_vehicle_attachment_api` (success=`send_file` intacto; error branches con `error` y español) | ✅ Hecho | 2026-06-24 |
+| `/sgi/voucher/epp/attachment-<id>` | POST | `create_voucher_epp_attachment_api` (passthrough; `error` en todas las ramas; español) | ✅ Hecho | 2026-06-24 |
+| `/sgi/voucher/tools/attachment-<id>` | POST | `create_voucher_tools_attachment_api` (passthrough; `error` en todas las ramas; español) | ✅ Hecho | 2026-06-24 |
 
 ## Bugs datetime GET /rrhh (2026-06-23)
 

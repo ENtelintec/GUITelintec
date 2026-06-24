@@ -75,7 +75,7 @@ class VoucherToolsActions(Resource):
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         validator = VoucherToolsFormPost.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"data": validator.errors, "msg": "Error at structure"}, 400
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
         data = validator.data
         data_out, code = create_voucher_tools_api(data, data_token)
         return data_out, code
@@ -89,7 +89,7 @@ class VoucherToolsActions(Resource):
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         validator = VoucherToolsFormPut.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"data": validator.errors, "msg": "Error at structure"}, 400
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
         data = validator.data
         data_out, code = update_voucher_tools_api(data, data_token)
         return data_out, code
@@ -103,7 +103,7 @@ class VoucherToolsActions(Resource):
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         validator = VoucherToolsFormDelete.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"data": validator.errors, "msg": "Error at structure"}, 400
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
         data = validator.data
         data_out, code = delete_voucher_tools_api(data, data_token)
         return data_out, code
@@ -120,7 +120,7 @@ class VoucherToolsState(Resource):
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         validator = VoucherToolsStatusFormPut.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"data": validator.errors, "msg": "Error at structure"}, 400
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
         data = validator.data
         data_out, code = update_status_tools(data, data_token)
         return data_out, code
@@ -137,7 +137,7 @@ class VoucerSafetyActions(Resource):
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         validator = VoucherSafetyFormPost.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"data": validator.errors, "msg": "Error at structure"}, 400
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
         data = validator.data
         data_out, code = create_voucher_safety_api(data, data_token)
         return data_out, code
@@ -151,7 +151,7 @@ class VoucerSafetyActions(Resource):
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         validator = VoucherSafetyFormPut.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"data": validator.errors, "msg": "Error at structure"}, 400
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
         data = validator.data
         data_out, code = update_voucher_safety_api(data, data_token)
         return data_out, code
@@ -165,7 +165,7 @@ class VoucerSafetyActions(Resource):
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         validator = VoucherSafetyFormDelete.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"data": validator.errors, "msg": "Error at structure"}, 400
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
         data = validator.data
         data_out, code = delete_voucher_safety_api(data, data_token)
         return data_out, code
@@ -212,7 +212,7 @@ class VoucherSafetyState(Resource):
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         validator = VoucherSafetyStatusFormPut.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"data": validator.errors, "msg": "Error at structure"}, 400
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
         data = validator.data
         data_out, code = update_status_safety(data, data_token)
         return data_out, code
@@ -244,7 +244,7 @@ class VoucerVehicleActions(Resource):
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         validator = VoucherVehiclePostForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"data": validator.errors, "msg": "Error at structure"}, 400
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
         data = validator.data
         data_out, code = create_voucher_vehicle_api(data, data_token)
         return data_out, code
@@ -258,7 +258,7 @@ class VoucerVehicleActions(Resource):
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         validator = VoucherVehiclePutForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"data": validator.errors, "msg": "Error at structure"}, 400
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
         data = validator.data
         data_out, code = update_voucher_vehicle_api(data, data_token)
         return data_out, code
@@ -272,7 +272,7 @@ class VoucerVehicleActions(Resource):
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         validator = VoucherVehicleDeleteForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"data": validator.errors, "msg": "Error at structure"}, 400
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
         data = validator.data
         data_out, code = delete_voucher_vehicle_api(data, data_token)
         return data_out, code
@@ -288,7 +288,7 @@ class UploadVehicleVoucherAttachment(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         if "file" not in request.files:
-            return {"data": "No se detecto un archivo"}, 400
+            return {"data": None, "msg": "No se detectó un archivo", "error": None}, 400
         file = request.files["file"]
         if file and file.filename:
             filename = secure_filename(file.filename)
@@ -302,11 +302,9 @@ class UploadVehicleVoucherAttachment(Resource):
                 },
                 data_token,
             )
-            if code != 201:
-                return {"data": data_out, "msg": "Error at file structure"}, 400
-            return {"data": data_out, "msg": f"Ok with filaname: {filename}"}, 201
+            return data_out, code
         else:
-            return {"msg": "No se subio el archivo"}, 400
+            return {"data": None, "msg": "No se subió el archivo", "error": None}, 400
 
 
 @ns.route("/voucher/vehicle/attachment/download")
@@ -322,7 +320,7 @@ class DownloadVehicleVoucherAttachment(Resource):
             ns.payload
         )
         if not validator.validate():
-            return {"data": validator.errors, "msg": "Error at structure"}, 400
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
         data = validator.data
         filename = data["filename"].split("/")[-1]
         temp_filepath = os.path.join(tempfile.mkdtemp(), filename)
@@ -331,7 +329,7 @@ class DownloadVehicleVoucherAttachment(Resource):
         if isinstance(data_out.get("path"), str):
             return send_file(data_out["path"], as_attachment=True)
         else:
-            return {"data": data_out, "msg": "Error at file structure"}, 400
+            return {"data": None, "msg": "Error al descargar el archivo", "error": str(data_out)}, 400
 
 
 @ns.route("/voucher/epp/attachment-<string:id_voucher>")
@@ -344,7 +342,7 @@ class UploadEppVoucherAttachment(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         if "file" not in request.files:
-            return {"data": "No se detecto un archivo"}, 400
+            return {"data": None, "msg": "No se detectó un archivo", "error": None}, 400
         file = request.files["file"]
         if file and file.filename:
             filename = secure_filename(file.filename)
@@ -358,11 +356,9 @@ class UploadEppVoucherAttachment(Resource):
                 },
                 data_token,
             )
-            if code != 201:
-                return {"data": data_out, "msg": "Error at file structure"}, 400
-            return {"data": data_out, "msg": f"Ok with filaname: {filename}"}, 201
+            return data_out, code
         else:
-            return {"msg": "No se subio el archivo"}, 400
+            return {"data": None, "msg": "No se subió el archivo", "error": None}, 400
 
 @ns.route("/voucher/tools/attachment-<string:id_voucher>")
 class UploadToolsVoucherAttachment(Resource):
@@ -374,7 +370,7 @@ class UploadToolsVoucherAttachment(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         if "file" not in request.files:
-            return {"data": "No se detecto un archivo"}, 400
+            return {"data": None, "msg": "No se detectó un archivo", "error": None}, 400
         file = request.files["file"]
         if file and file.filename:
             filename = secure_filename(file.filename)
@@ -388,8 +384,6 @@ class UploadToolsVoucherAttachment(Resource):
                 },
                 data_token,
             )
-            if code != 201:
-                return {"data": data_out, "msg": "Error at file structure"}, 400
-            return {"data": data_out, "msg": f"Ok with filaname: {filename}"}, 201
+            return data_out, code
         else:
-            return {"msg": "No se subio el archivo"}, 400
+            return {"data": None, "msg": "No se subió el archivo", "error": None}, 400

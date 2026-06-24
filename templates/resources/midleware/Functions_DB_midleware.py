@@ -267,10 +267,10 @@ def create_task_from_api(data, data_token):
             data["emp_origin"],
             data["emp_destiny"],
         )
-        return {"msg": f"Ok-->{msg}"}, 201
+        return {"data": {"id_task": result}, "msg": f"Tarea creada correctamente (ID {result})", "error": None}, 201
     else:
         print(error)
-        return {"msg": "Ok", "data": str(error)}, 400
+        return {"data": None, "msg": "No se pudo crear la tarea", "error": error}, 400
 
 
 def update_task_from_api(data, data_token):
@@ -291,9 +291,9 @@ def update_task_from_api(data, data_token):
             data["body"]["emp_origin"],
             data["body"]["emp_destiny"],
         )
-        return {"msg": f"Ok-->{msg}"}, 200
+        return {"data": {"id_task": data["id"]}, "msg": f"Tarea actualizada correctamente (ID {data['id']})", "error": None}, 200
     else:
-        return {"msg": "Fail", "data": str(error)}, 400
+        return {"data": None, "msg": "No se pudo actualizar la tarea", "error": error}, 400
 
 
 def delete_task_from_api(data, data_token):
@@ -307,6 +307,6 @@ def delete_task_from_api(data, data_token):
             data_token.get("emp_id"),
             0,
         )
-        return {"msg": f"Ok-->{msg}"}, 200
+        return {"data": {"id_task": data["id"]}, "msg": f"Tarea eliminada correctamente (ID {data['id']})", "error": None}, 200
     else:
-        return {"msg": "Fail", "data": str(error)}, 400
+        return {"data": None, "msg": "No se pudo eliminar la tarea", "error": error}, 400

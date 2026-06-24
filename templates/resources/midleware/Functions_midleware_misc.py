@@ -20,38 +20,56 @@ from templates.controllers.misc.tasks_controller import get_task_by_id_emp
 from templates.controllers.notifications.Notifications_controller import (
     get_notifications_by_permission,
     get_notifications_by_user,
+    insert_notification,
+    update_status_notification,
 )
 from templates.Functions_openAI import get_files_list_openai, get_response_assistant
 
 
+def create_notification_from_api(data, data_token):
+    flag, error, result = insert_notification(data["info"], data_token)
+    if not flag:
+        return {"data": None, "msg": "No se pudo crear la notificación", "error": error}, 400
+    return {"data": {"id_notification": result}, "msg": f"Notificación creada correctamente (ID {result})", "error": None}, 201
+
+
+def update_notification_status_from_api(data, data_token):
+    flag, error, result = update_status_notification(data["id"], data["info"]["status"], data_token)
+    if not flag:
+        return {"data": None, "msg": "No se pudo actualizar la notificación", "error": error}, 400
+    return {"data": None, "msg": "Notificación actualizada correctamente", "error": None}, 200
+
+
 def get_all_notification_db_user_status(id_emp, status, data_token):
-    code = 200
     flag, error, result = get_notifications_by_user(id_emp, data_token, status)
+    if not flag:
+        return {"data": None, "msg": "Error al obtener notificaciones", "error": error}, 400
     if not (isinstance(result, list) or isinstance(result, tuple)):
-        return [f"no notifications {result}"], 400
+        return {"data": None, "msg": "Formato de datos inválido", "error": f"no notifications {result}"}, 400
     data_out = []
     for item in result:
         body = json.loads(item[2])
         body["id"] = item[1]
         data_out.append(body)
-    return code if flag else 400, data_out if flag else error
+    return {"data": data_out, "msg": None, "error": None}, 200
 
 
 def get_all_notification_db_permission(status, data_token):
-    code = 200
     permissions = data_token.get("permissions", {})
     terms_list = [item.split(".")[-1].lower() for item in permissions.values()]
     flag, error, result = get_notifications_by_permission(
         terms_list, data_token, data_token.get("emp_id", "%"), status
     )
+    if not flag:
+        return {"data": None, "msg": "Error al obtener notificaciones", "error": error}, 400
     if not (isinstance(result, list) or isinstance(result, tuple)):
-        return [f"no notifications: {result}"], 400
+        return {"data": None, "msg": "Formato de datos inválido", "error": f"no notifications: {result}"}, 400
     data_out = []
     for item in result:
         body = json.loads(item[2])
         body["id"] = item[1]
         data_out.append(body)
-    return code if flag else 400, data_out if flag else error
+    return {"data": data_out, "msg": None, "error": None}, 200
 
 
 def get_files_openai(department: str) -> list:
@@ -99,24 +117,23 @@ def get_response_AV(
 
 def get_task_by_id_employee(id_emp: int, data_token):
     flag, error, result = get_task_by_id_emp(id_emp, data_token)
-    if flag:
-        if not (isinstance(result, list) or isinstance(result, tuple)):
-            return [f"no tasks {result}"], 400
-        data_out = []
-        for item in result:
-            data_out.append(
-                {
-                    "id": item[0],
-                    "body": json.loads(item[1]),
-                    "data_raw": json.loads(item[2]),
-                    "timestamp": item[3].strftime(format_timestamps)
-                    if isinstance(item[3], datetime)
-                    else item[3],
-                }
-            )
-        return data_out, 200
-    else:
-        return [str(error) + str(result)], 400
+    if not flag:
+        return {"data": None, "msg": "Error al obtener las tareas", "error": error}, 400
+    if not (isinstance(result, list) or isinstance(result, tuple)):
+        return {"data": None, "msg": "Formato de datos inválido", "error": f"no tasks {result}"}, 400
+    data_out = []
+    for item in result:
+        data_out.append(
+            {
+                "id": item[0],
+                "body": json.loads(item[1]),
+                "data_raw": json.loads(item[2]),
+                "timestamp": item[3].strftime(format_timestamps)
+                if isinstance(item[3], datetime)
+                else item[3],
+            }
+        )
+    return {"data": data_out, "msg": None, "error": None}, 200
 
 
 def get_all_vacations_data_date(data_token):
@@ -182,11 +199,11 @@ def get_all_dashboard_data(data_token):
     flag, error, result = get_notifications_by_permission(
         terms_list, data_token, data_token.get("emp_id", "%")
     )
-    if not (isinstance(result, list) or isinstance(result, tuple)):
-        return [f"no notifications: {result}"], 400
-    data_out = {}
     if not flag:
-        return error, 400
+        return {"data": None, "msg": "Error al obtener notificaciones del dashboard", "error": error}, 400
+    if not (isinstance(result, list) or isinstance(result, tuple)):
+        return {"data": None, "msg": "Formato de datos inválido", "error": f"no notifications: {result}"}, 400
+    data_out = {}
     out_not = []
     for item in result:
         body = json.loads(item[2])
@@ -198,9 +215,9 @@ def get_all_dashboard_data(data_token):
     if "almacen" in terms_list:
         flag, error, result = get_pending_sm_db(data_token)
         if not flag:
-            return error, 400
+            return {"data": None, "msg": "Error al obtener solicitudes de material pendientes", "error": error}, 400
         if not (isinstance(result, list) or isinstance(result, tuple)):
-            return [f"no sm pending: {result}"], 400
+            return {"data": None, "msg": "Formato de datos inválido", "error": f"no sm pending: {result}"}, 400
         for item in result:
             out_sm.append(
                 {
@@ -226,4 +243,4 @@ def get_all_dashboard_data(data_token):
                 }
             )
         data_out["sm"] = out_sm
-    return data_out, 200
+    return {"data": data_out, "msg": None, "error": None}, 200

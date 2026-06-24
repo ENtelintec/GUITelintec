@@ -38,24 +38,16 @@ def fetch_permissions_from_api():
     try:
         permissions = read_permissions_file()
     except Exception as e:
-        return {
-            "data": [],
-            "error": str(e),
-            "msg": "Error al obtener los permisos",
-        }, 400
-    return {
-        "data": permissions,
-        "error": "",
-        "msg": "Permisos obtenidos correctamente",
-    }, 200
+        return {"data": None, "msg": "Error al obtener los permisos", "error": str(e)}, 400
+    return {"data": permissions, "msg": None, "error": None}, 200
 
 
 def fectchUsersDBApi(data, data_token):
     flag, error, result = fetch_employess_user_data(status=data["status"], data_token=data_token)
     if not flag:
-        return {data: [], "error": str(error), "msg": "Error al obtener los usuarios"}, 400
+        return {"data": None, "msg": "Error al obtener los usuarios", "error": error}, 400
     if not isinstance(result, list):
-        return {"error": "Error al obtener los usuarios"}, 400
+        return {"data": None, "msg": "Error al obtener los usuarios", "error": "Formato de datos inválido"}, 400
     out = []
     for item in result:
         out.append(
@@ -73,7 +65,7 @@ def fectchUsersDBApi(data, data_token):
                 "biocredentials": item[9],
             }
         )
-    return {"data": out, "error": "", "msg": "Usuarios obtenidos correctamente"}, 200
+    return {"data": out, "msg": None, "error": None}, 200
 
 
 def update_biocredentials_from_api(data, data_token):
@@ -81,16 +73,8 @@ def update_biocredentials_from_api(data, data_token):
         data["biocredentials"], data["emp_id"], data["user"], data_token
     )
     if not flag:
-        return {
-            "data": [result],
-            "error": error,
-            "msg": "Error al actualizar los datos",
-        }, 400
-    return {
-        "data": [result],
-        "error": "",
-        "msg": "Datos actualizados correctamente",
-    }, 200
+        return {"data": None, "msg": "Error al actualizar las credenciales biométricas", "error": error}, 400
+    return {"data": None, "msg": "Credenciales biométricas actualizadas correctamente", "error": None}, 200
 
 
 def create_employee_user_from_api(data, data_token):
@@ -119,11 +103,7 @@ def create_employee_user_from_api(data, data_token):
     )
 
     if not flag:
-        return {
-            "data": [id_user],
-            "error": error,
-            "msg": "Error al crear el usuario",
-        }, 400
+        return {"data": None, "msg": "Error al crear el usuario", "error": error}, 400
     msg = f"Usuario creado con ID-{id_user} por el empleado {data_token.get('name')}"
     create_notification_permission(
         msg, data_token,
@@ -133,8 +113,4 @@ def create_employee_user_from_api(data, data_token):
         0,
     )
     write_log_file(log_file_users, msg, data_token)
-    return {
-        "data": [id_user],
-        "error": "",
-        "msg": "Usuario creado correctamente",
-    }, 201
+    return {"data": {"id_user": id_user}, "msg": f"Usuario creado correctamente (ID {id_user})", "error": None}, 201

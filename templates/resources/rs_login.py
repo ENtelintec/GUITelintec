@@ -49,7 +49,7 @@ class BiocredentialUpdate(Resource):
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         validator = BiocredentialsPutModelForm.from_json(ns.payload)    # pyrefly: ignore
         if not validator.validate():
-            return {"errors": validator.errors}, 400
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
         data = validator.data
         data_out, code = update_biocredentials_from_api(data, data_token)
         return data_out, code
@@ -64,7 +64,7 @@ class UsersAction(Resource):
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         validator = PostUserModelForm.from_json(ns.payload)     # pyrefly: ignore
         if not validator.validate():
-            return {"errors": validator.errors}, 400
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
         data = validator.data
         data_out, code = create_employee_user_from_api(data, data_token)
         return data_out, code
