@@ -160,7 +160,9 @@ def get_info_employee_id(id_emp: int, data_token):
         "modality": modality,
         "email": email,
         "contract": contract,
-        "admission": admission.strftime(format_date),
+        "admission": admission
+        if admission is None or isinstance(admission, str)
+        else admission.strftime(format_date),
         "rfc": rfc,
         "curp": curp,
         "nss": nss,
@@ -169,7 +171,9 @@ def get_info_employee_id(id_emp: int, data_token):
         "status": status,
         "departure": departure,
         "exam_id": examen,
-        "birthday": birthday.strftime(format_date),
+        "birthday": birthday
+        if birthday is None or isinstance(birthday, str)
+        else birthday.strftime(format_date),
         "legajo": legajo,
         "dep_id": dep_id,
     }
@@ -196,7 +200,9 @@ def get_vacations_employee(emp_id: int, data_token):
     out = {
         "emp_id": result[0],
         "name": result[1].upper() + " " + result[2].upper(),
-        "date_admission": result[3].strftime(format_date),
+        "date_admission": result[3]
+        if result[3] is None or isinstance(result[3], str)
+        else result[3].strftime(format_date),
         "seniority": seniority,
     }
     return out, 200
@@ -225,7 +231,9 @@ def get_all_vacations(data_token):
             {
                 "emp_id": item[0],
                 "name": item[1].upper() + " " + item[2].upper(),
-                "date_admission": item[3],
+                "date_admission": item[3]
+                if isinstance(item[3], str) or item[3] is None
+                else item[3].strftime(format_date),
                 "seniority": seniority,
             }
         )
@@ -259,10 +267,10 @@ def create_task_from_api(data, data_token):
             data["emp_origin"],
             data["emp_destiny"],
         )
-        return {"msg": f"Ok-->{msg}"}, 201
+        return {"data": {"id_task": result}, "msg": f"Tarea creada correctamente (ID {result})", "error": None}, 201
     else:
         print(error)
-        return {"msg": "Ok", "data": str(error)}, 400
+        return {"data": None, "msg": "No se pudo crear la tarea", "error": error}, 400
 
 
 def update_task_from_api(data, data_token):
@@ -283,9 +291,9 @@ def update_task_from_api(data, data_token):
             data["body"]["emp_origin"],
             data["body"]["emp_destiny"],
         )
-        return {"msg": f"Ok-->{msg}"}, 200
+        return {"data": {"id_task": data["id"]}, "msg": f"Tarea actualizada correctamente (ID {data['id']})", "error": None}, 200
     else:
-        return {"msg": "Fail", "data": str(error)}, 400
+        return {"data": None, "msg": "No se pudo actualizar la tarea", "error": error}, 400
 
 
 def delete_task_from_api(data, data_token):
@@ -299,6 +307,6 @@ def delete_task_from_api(data, data_token):
             data_token.get("emp_id"),
             0,
         )
-        return {"msg": f"Ok-->{msg}"}, 200
+        return {"data": {"id_task": data["id"]}, "msg": f"Tarea eliminada correctamente (ID {data['id']})", "error": None}, 200
     else:
-        return {"msg": "Fail", "data": str(error)}, 400
+        return {"data": None, "msg": "No se pudo eliminar la tarea", "error": error}, 400

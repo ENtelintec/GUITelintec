@@ -67,22 +67,38 @@ columns_movements_widgets_lector = [
 def generate_default_configuration_barcodes(**kwargs):
     temp = kwargs.get("title_offset", "0, 0")
     title_offset_t = temp.split(",") if isinstance(temp, str) else temp
-    title_offset = (float(title_offset_t[0]), float(title_offset_t[1])) if len(title_offset_t) == 2 else (0, 0)
+    title_offset = (
+        (float(title_offset_t[0]), float(title_offset_t[1])) if len(title_offset_t) == 2 else (0, 0)
+    )
     temp = kwargs.get("code_offset", "0, 0")
     code_offset_t = temp.split(",") if isinstance(temp, str) else temp
-    code_offset = (float(code_offset_t[0]), float(code_offset_t[1])) if len(code_offset_t) == 2 else (0, 0)
+    code_offset = (
+        (float(code_offset_t[0]), float(code_offset_t[1])) if len(code_offset_t) == 2 else (0, 0)
+    )
     temp = kwargs.get("sku_offset", "0, 0")
     sku_offset_t = temp.split(", ") if isinstance(temp, str) else temp
-    sku_offset = (float(sku_offset_t[0]), float(sku_offset_t[1])) if len(sku_offset_t) == 2 else (0, 0)
+    sku_offset = (
+        (float(sku_offset_t[0]), float(sku_offset_t[1])) if len(sku_offset_t) == 2 else (0, 0)
+    )
     temp = kwargs.get("name_offset", "0, 0")
     name_offset_t = temp.split(", ") if isinstance(temp, str) else temp
-    name_offset = (float(name_offset_t[0]), float(name_offset_t[1])) if len(name_offset_t) == 2 else (0, 0)
+    name_offset = (
+        (float(name_offset_t[0]), float(name_offset_t[1])) if len(name_offset_t) == 2 else (0, 0)
+    )
     temp = kwargs.get("codebar_size", "0.4, 20")
     codebar_size_t = temp.split(",") if isinstance(temp, str) else temp
-    codebar_size = (float(codebar_size_t[0]), float(codebar_size_t[1])) if len(codebar_size_t) == 2 else (0.4, 20)
+    codebar_size = (
+        (float(codebar_size_t[0]), float(codebar_size_t[1]))
+        if len(codebar_size_t) == 2
+        else (0.4, 20)
+    )
     temp = kwargs.get("codebar_offset", "0, -7")
     codebar_offset_t = temp.split(", ") if isinstance(temp, str) else temp
-    codebar_offset = (float(codebar_offset_t[0]), float(codebar_offset_t[1])) if len(codebar_offset_t) == 2 else (0, -7)
+    codebar_offset = (
+        (float(codebar_offset_t[0]), float(codebar_offset_t[1]))
+        if len(codebar_offset_t) == 2
+        else (0, -7)
+    )
     name_width = int(kwargs.get("name_limit", 20))
     kw = {
         "title": kwargs.get("title", "Titulo de prueba"),
@@ -181,7 +197,7 @@ def divide_movements(movements_data):
 def fetch_all_movements(data_token):
     flag, error, movements = get_all_movements_db_detail(data_token)
     if not flag:
-        print("Error al obtener los movimientos:", str(error))
+        print("Error al obtener los movimientos:", error)
         return []
     return movements
 

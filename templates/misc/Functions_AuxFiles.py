@@ -816,7 +816,7 @@ def get_data_xml_file_nomina(path_file: str):
     """
     data = {}
     tree = ET.parse(path_file, parser=ET.XMLParser(encoding="utf-8"))
-    pattern = "\{.*\}"
+    pattern = r"\{.*\}"
     data = {}
     for child in tree.iter():
         match = re.search(pattern, child.tag)

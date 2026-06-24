@@ -23,10 +23,8 @@ from static.Models.api_sm_models import (
     SMPostForm,
     SMPutForm,
     SMUrgentPostForm,
-    client_emp_sm_response_model,
     control_table_sm_put_model,
     delete_request_sm_model,
-    employees_answer_model,
     item_approve_model,
     item_sm_inventory_put_model,
     item_sm_put_model,
@@ -35,11 +33,9 @@ from static.Models.api_sm_models import (
     new_cliente_model,
     new_product_model,
     request_sm_dispatch_model,
-    request_sm_plot_data_model,
     sm_post_model,
     sm_put_model,
     sm_urgent_post_model,
-    table_sm_model,
 )
 from templates.controllers.customer.customers_controller import get_sm_clients
 from templates.controllers.employees.employees_controller import get_sm_employees
@@ -79,7 +75,6 @@ ns = Namespace("GUI/api/v1/sm")
 
 @ns.route("/employees")
 class Employees(Resource):
-    @ns.marshal_with(client_emp_sm_response_model)
     @ns.expect(expected_headers_per)
     def get(self):
         flag, data_token, msg = token_verification_procedure(request, department="sm")
@@ -87,14 +82,17 @@ class Employees(Resource):
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         flag, error, result = get_sm_employees()
         if flag:
-            return {"data": result, "comment": error}, 200
+            return {"data": result, "msg": None, "error": None}, 200
         else:
-            return {"data": result, "comment": error}, 400
+            return {
+                "data": [],
+                "msg": "No se pudieron obtener los empleados",
+                "error": error,
+            }, 400
 
 
 @ns.route("/clients")
 class Clients(Resource):
-    @ns.marshal_with(client_emp_sm_response_model)
     @ns.expect(expected_headers_per)
     def get(self):
         flag, data_token, msg = token_verification_procedure(request, department="sm")
@@ -102,9 +100,13 @@ class Clients(Resource):
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         flag, error, result = get_sm_clients(data_token)
         if flag:
-            return {"data": result, "comment": error}, 200
+            return {"data": result, "msg": None, "error": None}, 200
         else:
-            return {"data": result, "comment": error}, 400
+            return {
+                "data": [],
+                "msg": "No se pudieron obtener los clientes",
+                "error": error,
+            }, 400
 
 
 @ns.route("/products/<string:contract>")
@@ -143,7 +145,6 @@ class AllSmPerPermission(Resource):
 @ns.route("/employee")
 class AllSmEmployee(Resource):
     @ns.expect(expected_headers_per)
-    @ns.marshal_with(table_sm_model)
     def get(self):
         flag, data_token, msg = token_verification_procedure(request, department="sm")
         if not flag:
@@ -162,7 +163,11 @@ class ActionsSM(Resource):
         # noinspection PyUnresolvedReferences
         validator = SMPostForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"error": validator.errors}, 400
+            return {
+                "data": None,
+                "msg": "Estructura de datos inválida",
+                "error": validator.errors,
+            }, 400
         data = validator.data
         data_out, code = create_sm_from_api(data, data_token)
         return data_out, code
@@ -175,7 +180,11 @@ class ActionsSM(Resource):
         # noinspection PyUnresolvedReferences
         validator = SMDeleteForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"error": validator.errors}, 400
+            return {
+                "data": None,
+                "msg": "Estructura de datos inválida",
+                "error": validator.errors,
+            }, 400
         data = validator.data
         data_out, code = delete_sm_from_api(data, data_token)
         return data_out, code
@@ -188,7 +197,11 @@ class ActionsSM(Resource):
         # noinspection PyUnresolvedReferences
         validator = SMPutForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"error": validator.errors}, 400
+            return {
+                "data": None,
+                "msg": "Estructura de datos inválida",
+                "error": validator.errors,
+            }, 400
         data = validator.data
         data_out, code = update_sm_from_api(data, data_token)
         return data_out, code
@@ -204,10 +217,14 @@ class ActionsUrgentSM(Resource):
         # noinspection PyUnresolvedReferences
         validator = SMUrgentPostForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"error": validator.errors}, 400
+            return {
+                "data": None,
+                "msg": "Estructura de datos inválida",
+                "error": validator.errors,
+            }, 400
         data = validator.data
         data_out, code = create_urgent_sm_from_api(data, data_token)
-        return data, code
+        return data_out, code
 
 
 @ns.route("/cancel")
@@ -220,7 +237,11 @@ class CancelSM(Resource):
         # noinspection PyUnresolvedReferences
         validator = SMDeleteForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"error": validator.errors}, 400
+            return {
+                "data": None,
+                "msg": "Estructura de datos inválida",
+                "error": validator.errors,
+            }, 400
         data = validator.data
         data_out, code = cancel_sm(data, data_token)
         return data_out, code
@@ -236,7 +257,11 @@ class Client(Resource):
         # noinspection PyUnresolvedReferences
         validator = NewClienteForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"error": validator.errors}, 400
+            return {
+                "data": None,
+                "msg": "Estructura de datos inválida",
+                "error": validator.errors,
+            }, 400
         data = validator.data
         result, code = create_customer(
             data["name"], data["email"], data["phone"], data["rfc"], data["address"], data_token
@@ -254,7 +279,11 @@ class Product(Resource):
         # noinspection PyUnresolvedReferences
         validator = NewProductForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"error": validator.errors}, 400
+            return {
+                "data": None,
+                "msg": "Estructura de datos inválida",
+                "error": validator.errors,
+            }, 400
         data = validator.data
         response, code = create_product(
             data["sku"],
@@ -270,19 +299,17 @@ class Product(Resource):
 
 @ns.route("/plot/<string:typerange>")
 class PlotSMData(Resource):
-    @ns.marshal_with(request_sm_plot_data_model)
     @ns.expect(expected_headers_per)
     def get(self, typerange):
         flag, data_token, msg = token_verification_procedure(request, department="sm")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data_out = get_data_sm_per_range(typerange, "normal", data_token)
-        return {"data": data_out, "type": "normal plot lines"}, 200
+        return {"data": data_out, "type": "normal plot lines", "error": None}, 200
 
 
 @ns.route("/almacen/employees")
 class AlmacenEmployees(Resource):
-    @ns.marshal_with(employees_answer_model)
     @ns.expect(expected_headers_per)
     def get(self):
         flag, data_token, msg = token_verification_procedure(request, department="sm")
@@ -290,9 +317,13 @@ class AlmacenEmployees(Resource):
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data_out, code = get_employees_almacen(data_token)
         if code == 200:
-            return {"data": data_out, "msg": "ok"}, code
+            return {"data": data_out, "msg": "Empleados de almacén obtenidos", "error": None}, code
         else:
-            return {"data": [], "msg": "error"}, code
+            return {
+                "data": [],
+                "msg": "No se pudieron obtener los empleados de almacén",
+                "error": "error",
+            }, code
 
 
 @ns.route("/manage/dispatch")
@@ -305,13 +336,25 @@ class DispatchSM(Resource):
         # noinspection PyUnresolvedReferences
         validator = RequestSMDispatchForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"error": validator.errors}, 400
+            return {
+                "data": None,
+                "msg": "Estructura de datos inválida",
+                "error": validator.errors,
+            }, 400
         data = validator.data
         code, data_out = dispatch_sm(data, data_token)
         if code == 200:
-            return {"msg": "ok", "data": data_out}, code
+            return {"msg": "SM despachada correctamente", "data": data_out, "error": None}, code
         else:
-            return {"msg": "error at dispaching", "data": data_out}, code
+            return {
+                "data": None,
+                "msg": data_out.get("msg", "No se pudo despachar la SM")
+                if isinstance(data_out, dict)
+                else "No se pudo despachar la SM",
+                "error": data_out.get("error", data_out)
+                if isinstance(data_out, dict)
+                else data_out,
+            }, code
 
 
 @ns.route("/download/pdf/<int:sm_id>")
@@ -329,7 +372,11 @@ class DownloadPDFSM(Resource):
                 download_name=data.replace("\\", "/").split("/")[-1],
             )
         else:
-            return {"msg": "error at downloading"}, code
+            return {
+                "data": None,
+                "msg": "No se pudo descargar el archivo",
+                "error": "download error",
+            }, code
 
 
 @ns.route("/download/excel/<int:sm_id>")
@@ -347,7 +394,11 @@ class DownloadExcelSM(Resource):
                 download_name=data.replace("\\", "/").split("/")[-1],
             )
         else:
-            return {"msg": "error at downloading"}, code
+            return {
+                "data": None,
+                "msg": "No se pudo descargar el archivo",
+                "error": "download error",
+            }, code
 
 
 @ns.route("/control/table")
@@ -359,7 +410,11 @@ class ControlTableSM(Resource):
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         validator = SMInfoControlTablePutForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"error": validator.errors}, 400
+            return {
+                "data": None,
+                "msg": "Estructura de datos inválida",
+                "error": validator.errors,
+            }, 400
         data = validator.data
         code, data_out = update_sm_from_control_table(data, data_token)
         return data_out, code
@@ -387,7 +442,11 @@ class SmItemsActions(Resource):
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         validator = ItemSmPutForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"error": validator.errors}, 400
+            return {
+                "data": None,
+                "msg": "Estructura de datos inválida",
+                "error": validator.errors,
+            }, 400
         data = validator.data
         data_out, code = update_items_sm_from_api(data, data_token)
         return data_out, code
@@ -424,7 +483,11 @@ class UpdateItemInventoryID(Resource):
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         validator = ItemSMInventoryPutForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"error": validator.errors}, 400
+            return {
+                "data": None,
+                "msg": "Estructura de datos inválida",
+                "error": validator.errors,
+            }, 400
         data = validator.data
         data["state"] = 1
         data_out, code = update_sm_item_state_and_inventory(data, data_token)
@@ -440,7 +503,11 @@ class UpdateItemSMState(Resource):
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         validator = ItemStateSMForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"error": validator.errors}, 400
+            return {
+                "data": None,
+                "msg": "Estructura de datos inválida",
+                "error": validator.errors,
+            }, 400
         data = validator.data
         data_out, code = update_sm_item_state(data, data_token)
         return data_out, code
@@ -457,7 +524,11 @@ class SmItemsBulkActions(Resource):
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         validator = ItemsBulkSmPutForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"error": validator.errors}, 400
+            return {
+                "data": None,
+                "msg": "Estructura de datos inválida",
+                "error": validator.errors,
+            }, 400
         data = validator.data
         data_out, code = update_items_bulk_sm_from_api(data, data_token)
         return data_out, code
@@ -472,7 +543,11 @@ class UpdateItemSMApprove(Resource):
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         validator = ItemApproveSMForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"error": validator.errors}, 400
+            return {
+                "data": None,
+                "msg": "Estructura de datos inválida",
+                "error": validator.errors,
+            }, 400
         data = validator.data
         data_out, code = update_sm_item_approve(data, data_token)
         return data_out, code
@@ -488,7 +563,7 @@ class UploadSMAttachment(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         if "file" not in request.files:
-            return {"data": "No se detecto un archivo"}, 400
+            return {"data": None, "msg": "No se detectó un archivo", "error": "no file"}, 400
         file = request.files["file"]
         if file and file.filename:
             filename = secure_filename(file.filename)
@@ -503,7 +578,21 @@ class UploadSMAttachment(Resource):
                 data_token,
             )
             if code != 201:
-                return {"data": data_out, "msg": "Error at file structure"}, 400
-            return {"data": data_out, "msg": f"Ok with filaname: {filename}"}, 201
+                return {
+                    "data": None,
+                    "msg": data_out.get("msg", "Error en la estructura del archivo")
+                    if isinstance(data_out, dict)
+                    else "Error en la estructura del archivo",
+                    "error": data_out.get("error", data_out)
+                    if isinstance(data_out, dict)
+                    else data_out,
+                }, 400
+            return {
+                "data": data_out.get("data") if isinstance(data_out, dict) else data_out,
+                "msg": data_out.get("msg", f"Archivo adjuntado: {filename}")
+                if isinstance(data_out, dict)
+                else f"Archivo adjuntado: {filename}",
+                "error": None,
+            }, 201
         else:
-            return {"msg": "No se subio el archivo"}, 400
+            return {"data": None, "msg": "No se subió el archivo", "error": "no file"}, 400

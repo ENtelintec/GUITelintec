@@ -21,7 +21,7 @@ def get_data_chart_movements(data, data_token):
     elif type_m == "Salida":
         types = ["Salida"]
     else:
-        return ["Error type invalid"], 400
+        return {"data": None, "msg": "Tipo de movimiento inválido", "error": "type_m debe ser 'all', 'Entrada' o 'Salida'"}, 400
     data_out_full = {}
     for t in types:
         data_chart = get_data_movements_type(
@@ -32,7 +32,7 @@ def get_data_chart_movements(data, data_token):
         x_tags = [k for k, v in data_dict.items()]
         data_chart["data"] = {"values": values, "x_tags": x_tags}
         data_out_full[t] = data_chart
-    return data_out_full, 200
+    return {"data": data_out_full, "msg": None, "error": None}, 200
 
 
 def validate_range(range_g: str):
@@ -53,9 +53,9 @@ def validate_type_chart(type_chart: str):
 
 def get_data_chart_sm(data, data_token):
     if not validate_range(data["range"]):
-        return {"message": "Error range invalid"}, 400
+        return {"data": None, "msg": "Rango inválido", "error": f"range debe ser 'day', 'month' o 'year'"}, 400
     if not validate_type_chart(data["type_chart"]):
-        return {"message": "Error type chart invalid or not supported yet"}, 400
+        return {"data": None, "msg": "Tipo de gráfica no soportado", "error": f"type_chart '{data['type_chart']}' no está soportado aún"}, 400
     data_chart = get_data_sm_per_range(data["range"], data["type_chart"], data_token)
     data_out = []
     val_y = np.array(data_chart["val_y"])
@@ -73,17 +73,17 @@ def get_data_chart_sm(data, data_token):
     del data_chart["val_y"]
     del data_chart["legend"]
     del data_chart["line_style"]
-    return data_chart, 200
+    return {"data": data_chart, "msg": None, "error": None}, 200
 
 
 def get_data_chart_fichaje_emp(data):
     flag, error, result = get_fichaje_DB(data["emp_id"])
     if not flag:
-        return {"message": str(error)}, 400
+        return {"data": None, "msg": "Error al obtener fichaje", "error": error}, 400
     if len(result) <= 0:
-        return {"message": "No data found"}, 400
+        return {"data": None, "msg": "No se encontraron datos de fichaje", "error": None}, 400
     if not (isinstance(result, list) or isinstance(result, tuple)):
-        return {"message": f"Error data format {result}"}, 400
+        return {"data": None, "msg": "Formato de datos inválido", "error": f"Formato inesperado: {result}"}, 400
     data_fichaje = [result] if data["emp_id"] != -1 else result
     data_out = []
     for emp in data_fichaje:
@@ -173,4 +173,4 @@ def get_data_chart_fichaje_emp(data):
             },
         }
         data_out.append({"emp_id": emp_id, "data": data_out_dict, "contract": contract})
-    return data_out, 200
+    return {"data": data_out, "msg": None, "error": None}, 200

@@ -10,11 +10,13 @@ Internal Telintec back-office REST API — Flask + flask-restx — exposing endp
 
 Per-change design notes live in [`Docs/`](Docs/) (Spanish, one `.md` per change, relative `../` links into the code). When you make a non-trivial change — new/altered endpoint, cross-layer refactor, schema/contract change — add a short doc there following the existing style ([`heads_crud_fields_sync.md`](Docs/heads_crud_fields_sync.md) is a good template: the 4 layers touched, what changed, and an "Al modificar" section). Current docs:
 
+- [`contract_crud_response_envelope.md`](Docs/contract_crud_response_envelope.md) — `/contract` and `/quotation` CRUD aligned to a fixed `{data, msg, error}` response envelope (Spanish, concise `msg` with ID, `error` always present); fixes set-literal/nested-data/inverted-rollback bugs and removes a misapplied `marshal_with`.
 - [`po_folio_generation_from_contract_code.md`](Docs/po_folio_generation_from_contract_code.md) — PO folio generation now reads the contract `code` column (last 4 digits) instead of `metadata.contract_number`; max+1-per-pattern consecutive logic; `get_purchase_orders` (no-items listing).
 - [`heads_crud_fields_sync.md`](Docs/heads_crud_fields_sync.md) — `/head` CRUD aligned with its `fetch` (editable `name`, vacant `employee` as `NULL`, `area` wired end-to-end).
 - [`purchase_list_pdf.md`](Docs/purchase_list_pdf.md) — purchase list PDF generation.
 - [`sm_items_extra_info_url_fix.md`](Docs/sm_items_extra_info_url_fix.md) — SM items `extra_info` URL fix.
 - [`payroll_s3_upload.md`](Docs/payroll_s3_upload.md) — payroll S3 upload.
+- [`sm_response_envelope.md`](Docs/sm_response_envelope.md) — los 24 endpoints de `/sm` alineados al envelope `{data, msg, error}`; 4 `marshal_with` removidos; bugs corregidos (`/add/urgent` `return data`, `/cancel` tupla invertida, `msg:"ok"` en 400 de `/item`); `msg` español-con-ID y `data` estructurado a `{"id_*": N}` en escrituras (detalle largo solo a log/notificación; fallos parciales a `error` como lista); único pendiente abierto: bug KPI `(critical_date - critical_date)` (a futuro KPIs configurables).
 
 ## Run / lint
 
@@ -68,6 +70,8 @@ Every DB call goes through [templates/database/connection.py](templates/database
 There is also `execute_sql_multiple(sql, values_list, type_sql, data_token)` that iterates `values_list` column-major (transposes inside the function) — read it before calling, the indexing is unusual.
 
 Both accept an optional `data_token`; if `data_token["is_tester"]` is true, they redirect to the test DB host (`HOST_DB_TEST` etc.). This is how the "tester" permission swaps databases at runtime.
+
+**`error` is already a `str`** (the second tuple element). When you put it in a response envelope's `error` field, write `"error": error` — **not** `str(error)`, which pyrefly flags as `Unnecessary str() call`. Reserve `str(...)` for things that genuinely aren't strings: `Exception` objects caught in `except` blocks (`str(e)`), and the union-typed `result` (whose shape varies by `type_sql`). Same rule for f-strings — `f"...{error}"`, not `f"...{str(error)}"`.
 
 ## Auth pattern — every endpoint starts the same way
 

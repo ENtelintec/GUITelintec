@@ -40,17 +40,14 @@ class MovementenInventoryChart(Resource):
             request, department="almacen"
         )
         if not flag:
-            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 400
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
         validator = MovementsChartsForm.from_json(ns.payload) # pyrefly: ignore
         if not validator.validate():
-            return {"errors": validator.errors}, 400
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
         data = validator.data
-        data_chart, code = get_data_chart_movements(data, data_token)
-        if code == 200:
-            return data_chart, 200
-        else:
-            return {"message": f"Error al obtener los datos {data_chart}"}, 400
+        data_out, code = get_data_chart_movements(data, data_token)
+        return data_out, code
 
 
 @ns.route("/inventory/sm/<string:range_g>/<string:type_chart>")
@@ -63,11 +60,8 @@ class SMChart(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data = {"range": range_g, "type_chart": type_chart}
-        data_chart, code = get_data_chart_sm(data, data_token)
-        if code == 200:
-            return data_chart, 200
-        else:
-            return {"message": f"Error al obtener los datos {data_chart}"}, 400
+        data_out, code = get_data_chart_sm(data, data_token)
+        return data_out, code
 
 
 @ns.route("/fichaje/emp")
@@ -80,13 +74,10 @@ class FichajeEmpChart(Resource):
         # noinspection PyUnresolvedReferences
         validator = FichajeEmpForm.from_json(ns.payload) # pyrefly: ignore
         if not validator.validate():
-            return {"errors": validator.errors}, 400
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
         data = validator.data
-        data_chart, code = get_data_chart_fichaje_emp(data)
-        if code == 200:
-            return data_chart, 200
-        else:
-            return {"message": f"Error al obtener los datos {data_chart}"}, 400
+        data_out, code = get_data_chart_fichaje_emp(data)
+        return data_out, code
 
 
 @ns.route("/notifications/medicals")
@@ -98,7 +89,7 @@ class NotificationsMedicals(Resource):
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         flags_daemons = read_flag_daemons()
         if not flags_daemons.get("flag_medical", False):
-            return {"msg": "Se esta ya realizando la busqueda de notificaciones"}, 200
+            return {"data": None, "msg": "Se está ya realizando la búsqueda de notificaciones", "error": None}, 200
         time_zone = pytz.timezone(timezone_software)
         timestamp = datetime.now(pytz.utc).astimezone(time_zone)
         last_date = flags_daemons.get("last_date_medicals", None)
@@ -111,8 +102,6 @@ class NotificationsMedicals(Resource):
             update_flag_daemons(
                 last_date_medicals=timestamp.strftime(format_date), flag_medical=False
             )
-            return {"msg": "Buscando notificaciones medicas"}, 201
+            return {"data": None, "msg": "Buscando notificaciones médicas", "error": None}, 201
         else:
-            return {
-                "msg": "No hay notificaciones medicas o ya se realizo la busqueda hoy"
-            }, 200
+            return {"data": None, "msg": "No hay notificaciones médicas o ya se realizó la búsqueda hoy", "error": None}, 200

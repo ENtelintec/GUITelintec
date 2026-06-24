@@ -181,7 +181,7 @@ def get_employee_id_name(name: str, data_token) -> tuple[None, str] | tuple[int,
     if not isinstance(out, tuple):
         return None, "Not data found or error"
     if e is not None or len(out) == 0:
-        return None, str(e)
+        return None, e
     else:
         return out[0], f"{out[1].title()} {out[2].title()}"
 

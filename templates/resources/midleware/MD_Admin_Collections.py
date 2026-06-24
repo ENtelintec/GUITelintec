@@ -106,21 +106,24 @@ def create_quotation_activity_from_api(data, data_token):
         flag_list.append(flag)
         errors.append(error)
         results.append(id_item)
+    error_items = None
     if flag_list.count(True) == len(flag_list):
-        msg += "Items de actividad de cotización creada correctamente"
+        pass
     elif flag_list.count(False) == len(flag_list):
         flag, error, result = delete_quotation_activity(id_quotation)  # pyrefly: ignore
-        msg += "Error al crear ítems de actividad de cotización. Actividad eliminada."
         return {
-            "data": results,
-            "error": errors + [error],
-            "msg": msg,
+            "data": None,
+            "msg": "No se pudo crear ningún ítem; actividad de cotización eliminada",
+            "error": errors + ([error] if not flag else []),
         }, 400
     else:
-        msg += "Error al crear ciertos ítems de la actividad de cotización"
-    create_notification_permission(msg, data_token, ["administracion"], "Remisión Creada", user, 0)
-    write_log_file(log_file_admin_collecions, msg, data_token)
-    return {"data": results, "msg": "Ok"}, 201
+        error_items = [e for f, e in zip(flag_list, errors) if not f]
+    msg_out = f"Actividad de cotización creada correctamente (ID {id_quotation})"
+    if error_items:
+        msg_out += f". {len(error_items)} ítems no se pudieron crear."
+    create_notification_permission(msg_out, data_token, ["administracion"], "Actividad de cotización creada", user, 0)
+    write_log_file(log_file_admin_collecions, msg_out, data_token)
+    return {"data": {"id_quotation": id_quotation}, "msg": msg_out, "error": error_items}, 201
 
 
 def update_quotation_activity_from_api(data, data_token):
@@ -171,7 +174,7 @@ def update_quotation_activity_from_api(data, data_token):
                         "comment": "Creación de ítem de actividad de cotización.",
                     }
                 ]
-                flag, error, id_item = insert_quotation_activity_item(
+                flag, error, _id_item = insert_quotation_activity_item(
                     quotation_id=data["id"],  # pyrefly: ignore
                     report_id=new_item.get("report_id", None),
                     description=new_item["description"],
@@ -182,7 +185,6 @@ def update_quotation_activity_from_api(data, data_token):
                     item_c_id=new_item.get("client_id", None),
                     data_token=data_token,
                 )
-                result = id_item
             else:
                 if new_item.get("is_erased", 0) != 0:
                     flag, error, result = delete_quotation_activity_item(item_id, data_token)
@@ -221,17 +223,17 @@ def update_quotation_activity_from_api(data, data_token):
             flags.append(flag)
             errors.append(error)
             results.append(item_id)
+    error_items = None
     if flags.count(True) == len(flags):
-        msg += "Items de actividad de cotización actualizados correctamente: " + str(results)
+        pass
     elif flags.count(False) == len(flags):
-        msg += "Error al actualizar ítems de actividad de cotización. Reversión de cambios."
         return {
-            "data": results,
+            "data": None,
+            "msg": "No se pudo actualizar ningún ítem de la actividad de cotización",
             "error": errors,
-            "msg": msg,
         }, 400
     else:
-        msg += "Error al actualizar ciertos ítems de la actividad de cotización"
+        error_items = [e for f, e in zip(flags, errors) if not f]
     history.append(
         {
             timestamp: timestamp,
@@ -264,11 +266,14 @@ def update_quotation_activity_from_api(data, data_token):
             "msg": "Error al actualizar registro de cotización de actividad, pero item/s actualizados",
             "error": error,
         }, 400
+    msg_out = f"Actividad de cotización actualizada correctamente (ID {data['id']})"
+    if error_items:
+        msg_out += f". {len(error_items)} ítems no se pudieron actualizar."
     create_notification_permission(
-        msg, data_token, ["administracion"], "Cotización de actividad actualizada", user, 0
+        msg_out, data_token, ["administracion"], "Cotización de actividad actualizada", user, 0
     )
-    write_log_file(log_file_admin_collecions, msg, data_token)
-    return {"data": result, "msg": "Ok", "error": None}, 200
+    write_log_file(log_file_admin_collecions, msg_out, data_token)
+    return {"data": {"id_quotation": data["id"]}, "msg": msg_out, "error": error_items}, 200
 
 
 def get_quotations_from_api(id_quotation: int | None, data_token):
@@ -276,11 +281,12 @@ def get_quotations_from_api(id_quotation: int | None, data_token):
         id_quotation = None
     flag, e, out = get_quotation_activity_by_id(id_quotation, data_token)
     if not flag:
-        return {"data": None, "msg": str(e)}, 400
+        return {"data": None, "msg": "Error al obtener actividades de cotización", "error": e}, 400
     if not (isinstance(out, list) or isinstance(out, tuple)):
         return {
-            "data": None,
-            "msg": "No se encontraron actividades de cotización validas",
+            "data": [],
+            "msg": "No se encontraron actividades de cotización válidas",
+            "error": None,
         }, 400
     # if len(out)<=0:
     #     return {"data": out, "msg": "No se encontraron actividades de cotización"}, 200
@@ -310,7 +316,7 @@ def get_quotations_from_api(id_quotation: int | None, data_token):
                 "items": json.loads(item[15]) if item[15] else [],
             }
         )
-    return {"data": data_out, "msg": "Ok"}, 200
+    return {"data": data_out, "msg": None, "error": None}, 200
 
 
 def delete_quotation_activity_from_api(data, data_token):
@@ -344,15 +350,14 @@ def delete_quotation_activity_from_api(data, data_token):
         errors.append(error)
         results.append(result)
     if flags.count(True) == len(flags):
-        msg += "Ítems de actividad de cotización eliminados correctamente"
+        pass
     elif flags.count(False) == len(flags):
         return {
-            "data": results,
+            "data": None,
             "error": errors,
             "msg": "Error al eliminar ítems de actividad de cotización",
         }, 400
-    else:
-        msg += "Error al eliminar ciertos ítems de la actividad de cotización"
+    # partial: continue — main entity still gets deleted
 
     # Delete quotation activity:
     flag, error, result = delete_quotation_activity(id_quotation, data_token)
@@ -362,12 +367,12 @@ def delete_quotation_activity_from_api(data, data_token):
             "msg": "Error al eliminar registro de cotización de actividad",
             "error": error,
         }, 400
-    msg += f"Actividad de cotización eliminada correctamente con id: {id_quotation}"
+    msg = f"Actividad de cotización eliminada correctamente (ID {id_quotation})"
     create_notification_permission(
         msg, data_token, ["administracion"], "Cotización de actividad eliminada", user, 0
     )
     write_log_file(log_file_admin_collecions, msg, data_token)
-    return {"data": result, "msg": "Ok"}, 200
+    return {"data": {"id_quotation": id_quotation}, "msg": msg, "error": None}, 200
 
 
 def create_extra_info_remision(data: dict):
@@ -433,8 +438,9 @@ def create_remission_control_table_from_api(data, data_token):
     create_notification_permission(
         msg, data_token, ["administracion"], "Item de tabla de control creado", user, 0
     )
-    write_log_file(log_file_admin_collecions, msg, data_token)
-    return {"data": id_remission, "msg": "Ok"}, 201
+    msg_out = f"Ítem de tabla de control creado correctamente (ID {id_remission})"
+    write_log_file(log_file_admin_collecions, msg_out, data_token)
+    return {"data": {"id_remission": id_remission}, "msg": msg_out, "error": None}, 201
 
 
 def create_remission_from_api(data, data_token):
@@ -567,31 +573,26 @@ def create_remission_from_api(data, data_token):
             errors.append(error)
             results.append(id_item)
 
+    error_items = None
     if flag_list.count(True) == len(flag_list):
-        msg = "Remision de actividad creado correctamente con id: " + str(id_remission)
-        if quotation_id is not None:
-            msg += " y items de cotización actualizados correctamente"
-        else:
-            msg += " y items de cotización creados correctamente"
+        pass
     elif flag_list.count(False) == len(flag_list):
         flag, error, result = delete_remission_db(id_remission, data_token)
-        msg = "Error al crear items de cotización. Reporte eliminado."
         return {
-            "data": results,
-            "error": errors + [error],
-            "msg": msg,
+            "data": None,
+            "msg": "No se pudo crear ningún ítem; remisión eliminada",
+            "error": errors + ([error] if not flag else []),
         }, 400
     else:
-        msg = "Reporte de actividad creado con id: " + str(id_remission)
-        if quotation_id is not None:
-            msg += ", pero error al actualizar ciertos items de cotización"
-        else:
-            msg += ", pero error al crear ciertos items de cotización"
+        error_items = [e for f, e in zip(flag_list, errors) if not f]
+    msg_out = f"Remisión creada correctamente (ID {id_remission})"
+    if error_items:
+        msg_out += f". {len(error_items)} ítems no se pudieron crear."
     create_notification_permission(
-        msg, data_token, ["administracion"], "Remision de actividad creado", user, 0
+        msg_out, data_token, ["administracion"], "Remisión de actividad creada", user, 0
     )
-    write_log_file(log_file_admin_collecions, msg, data_token)
-    return {"data": results + [id_remission], "msg": "Ok"}, 201
+    write_log_file(log_file_admin_collecions, msg_out, data_token)
+    return {"data": {"id_remission": id_remission}, "msg": msg_out, "error": error_items}, 201
 
 
 def get_remission_from_api(id_report: int | None, data_token):
@@ -599,11 +600,12 @@ def get_remission_from_api(id_report: int | None, data_token):
         id_report = None
     flag, error, result = get_remission_by_id(id_report, data_token)
     if not flag:
-        return {"data": None, "msg": error}, 400
+        return {"data": None, "msg": "Error al obtener remisiones", "error": error}, 400
     if not (isinstance(result, list) or isinstance(result, tuple)):
         return {
-            "data": None,
-            "msg": "No se encontraron reportes de actividad validos",
+            "data": [],
+            "msg": "No se encontraron remisiones válidas",
+            "error": None,
         }, 400
     if isinstance(result, tuple):
         result = [result]
@@ -648,14 +650,13 @@ def get_remission_from_api(id_report: int | None, data_token):
                 "user_id": extra_info.get("user_id", ""),
             }
         )
-    return {"data": data_out, "msg": "Ok"}, 200
+    return {"data": data_out, "msg": None, "error": None}, 200
 
 
 def update_remission_from_api(data, data_token):
     timezone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(timezone).strftime(format_timestamps)
     user = data_token.get("emp_id", "desconocido")
-    msg = ""
 
     # Retrieve report activity registry:
     flag, error, result_ra = get_remission_by_id(data["metadata"]["id"], data_token)
@@ -715,7 +716,6 @@ def update_remission_from_api(data, data_token):
             "msg": "Error al actualizar registro de remision  de actividad",
             "error": error,
         }, 400
-    msg = "Remision de actividad actualizado correctamente con id: " + str(data["metadata"]["id"])
     items_report = json.loads(result_ra[16]) if result_ra[16] else []
     dict_items = {int(item["qa_item_id"]): item for item in items_report}
     # Update items:
@@ -771,17 +771,22 @@ def update_remission_from_api(data, data_token):
         flag_list.append(flag)
         errors.append(error)
         results.append(result)
+    error_items = None
     if flag_list.count(True) == len(flag_list):
-        msg += " y items de de remision actualizados correctamente"
+        pass
     elif flag_list.count(False) == len(flag_list):
-        msg += " pero error al actualizar ciertos items de remision"
+        error_items = [e for f, e in zip(flag_list, errors) if not f]
     else:
-        msg += " pero error al actualizar ciertos items de remision"
+        error_items = [e for f, e in zip(flag_list, errors) if not f]
+    id_remission = data["metadata"]["id"]
+    msg_out = f"Remisión actualizada correctamente (ID {id_remission})"
+    if error_items:
+        msg_out += f". {len(error_items)} ítems no se pudieron actualizar."
     create_notification_permission(
-        msg, data_token, ["administracion"], "Remision de actividad actualizado", user, 0
+        msg_out, data_token, ["administracion"], "Remisión de actividad actualizada", user, 0
     )
-    write_log_file(log_file_admin_collecions, msg, data_token)
-    return {"data": result, "msg": "Ok", "error": None}, 200
+    write_log_file(log_file_admin_collecions, msg_out, data_token)
+    return {"data": {"id_remission": id_remission}, "msg": msg_out, "error": error_items}, 200
 
 
 def update_remission_control_table_from_api(data, data_token):
@@ -849,18 +854,17 @@ def update_remission_control_table_from_api(data, data_token):
             "msg": "Error al actualizar tabla de control de remision de actividad",
             "error": error,
         }, 400
-    msg = "Tabla de control de remision actualizada correctamente con id: " + str(data["metadata"]["id"])
+    msg_out = f"Tabla de control de remisión actualizada correctamente (ID {data['metadata']['id']})"
     create_notification_permission(
-        msg, data_token, ["administracion"], "Tabla de control actualizada", user, 0
+        msg_out, data_token, ["administracion"], "Tabla de control actualizada", user, 0
     )
-    write_log_file(log_file_admin_collecions, msg, data_token)
-    return {"data": result, "msg": "Ok", "error": None}, 200
+    write_log_file(log_file_admin_collecions, msg_out, data_token)
+    return {"data": {"id_remission": data["metadata"]["id"]}, "msg": msg_out, "error": None}, 200
 
 
 def delete_remission_from_api(data, data_token):
     id_remission = data["id"]
     user = data_token.get("emp_id", 0)
-    msg = ""
 
     # Retrieve report activity registry:
     flag, error, result_ra = get_remission_by_id(id_remission, data_token)
@@ -888,15 +892,14 @@ def delete_remission_from_api(data, data_token):
         errors.append(error)
         results.append(result)
     if flags.count(True) == len(flags):
-        msg += "Ítems de reporte de actividad eliminados correctamente"
+        pass
     elif flags.count(False) == len(flags):
         return {
-            "data": results,
+            "data": None,
             "error": errors,
             "msg": "Error al eliminar ítems de reporte de actividad",
         }, 400
-    else:
-        msg += "Error al eliminar ciertos ítems del reporte de actividad"
+    # partial: continue — main entity still gets deleted
 
     # Delete report activity:
     flag, error, result = delete_remission_db(id_remission, data_token)
@@ -906,12 +909,12 @@ def delete_remission_from_api(data, data_token):
             "msg": "Error al eliminar registro de reporte de actividad",
             "error": error,
         }, 400
-    msg += f"Reporte de actividad eliminado correctamente con id: {id_remission}"
+    msg_out = f"Reporte de actividad eliminado correctamente (ID {id_remission})"
     create_notification_permission(
-        msg, data_token, ["administracion"], "Reporte de actividad eliminado", user, 0
+        msg_out, data_token, ["administracion"], "Reporte de actividad eliminado", user, 0
     )
-    write_log_file(log_file_admin_collecions, msg, data_token)
-    return {"data": result, "msg": "Ok"}, 200
+    write_log_file(log_file_admin_collecions, msg_out, data_token)
+    return {"data": {"id_remission": id_remission}, "msg": msg_out, "error": None}, 200
 
 
 def create_activity_report_attachment_api(data, data_token):
@@ -919,36 +922,30 @@ def create_activity_report_attachment_api(data, data_token):
     id_report_name = filename.split("-")[0]
     try:
         if int(id_report_name) != int(data["id_report"]) and int(data["id_report"]) <= 0:
-            return (
-                {
-                    "data": None,
-                    "msg": "El nombre del archivo no corresponde al voucher",
-                },
-                400,
-            )
-    except Exception as e:
-        return (
-            {
+            return {
                 "data": None,
-                "msg": "Error al procesar el nombre del archivo",
-                "error": str(e),
-            },
-            400,
-        )
+                "msg": "El nombre del archivo no corresponde al voucher",
+                "error": None,
+            }, 400
+    except Exception as e:
+        return {
+            "data": None,
+            "msg": "Error al procesar el nombre del archivo",
+            "error": str(e),
+        }, 400
     time_zone = pytz.timezone(timezone_software)
-    # timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone)
     flag, error, result = get_remission_by_id(data["id_report"], data_token)
     if not flag:
         return {
             "data": None,
-            "msg": "Error at getting report by id",
+            "msg": "Error al obtener el reporte por ID",
             "error": error,
         }, 400
     if not isinstance(result, list):
         return {
             "data": None,
-            "msg": "Error at getting report activity by id: result is not a list",
+            "msg": "Error al obtener el reporte de actividad",
             "error": str(result),
         }, 400
     report_data = []
@@ -959,21 +956,20 @@ def create_activity_report_attachment_api(data, data_token):
     if len(report_data) <= 0:
         return {
             "data": None,
-            "msg": "Error at getting report activity by id: voucher not found",
-            "error": str(report_data),
+            "msg": f"Reporte no encontrado (ID {data['id_report']})",
+            "error": None,
         }, 400
     date_report = report_data[1]
     history = json.loads(report_data[15])
-    # reconocer el tipo de archivo [pdf, image, zip]
     filepath_down = data["filepath"]
     file_extension = filepath_down.split(".")[-1].lower()
     valid_extension = ["pdf", "jpg", "jpeg", "png", "zip", "webp"]
     if file_extension not in valid_extension:
-        return (
-            {"data": None, "msg": "Formato de archivo no valido"},
-            400,
-        )
-    # create name vouchers_vehicles/year/month/day/filename
+        return {
+            "data": None,
+            "msg": "Formato de archivo no válido",
+            "error": None,
+        }, 400
     path_aws = f"reportActivity/{date_report.strftime('%Y/%m/%d/')}{data['filename']}"
     s3_client = boto3.client("s3")
     bucket_name = secrets.get("S3_ADMIN_BUCKET")
@@ -981,54 +977,53 @@ def create_activity_report_attachment_api(data, data_token):
     try:
         s3_client.upload_file(Filename=filepath_down, Bucket=str(bucket_name), Key=path_aws)
     except FileNotFoundError:
-        return {"data": None, "msg": "Local file not found"}, 400
+        return {"data": None, "msg": "Archivo local no encontrado", "error": None}, 400
     except NoCredentialsError:
-        return {"data": None, "msg": "AWS credentials not found"}, 400
+        return {"data": None, "msg": "Credenciales AWS no configuradas", "error": None}, 400
     except ClientError as e:
         error_code = e.response["Error"]["Code"]
         if error_code == "NoSuchBucket":
-            return {"data": None, "msg": f"Bucket does not exist: {bucket_name}"}, 400
+            return {"data": None, "msg": f"Bucket no existe: {bucket_name}", "error": str(e)}, 400
         elif error_code == "AccessDenied":
-            return {"data": None, "msg": f"Access denied to bucket: {bucket_name}"}, 400
+            return {"data": None, "msg": f"Acceso denegado al bucket: {bucket_name}", "error": str(e)}, 400
         else:
-            return {"data": None, "msg": f"AWS error: {str(e)}"}, 400
-    msg = f"Archivo adjunto agregado: {filename} al voucher {data['id_report']} por el empleado {data_token.get('name')}"
+            return {"data": None, "msg": "Error al subir archivo a S3", "error": str(e)}, 400
+    log_msg = f"Archivo adjunto agregado: {filename} al voucher {data['id_report']} por el empleado {data_token.get('name')}"
     status = report_data[14]
-    if "firma-realizado" in filename.lower():  # if is sign file change status to 1
+    if "firma-realizado" in filename.lower():
         status = 1
-        msg += " y estado actualizado a (firmado)"
-    if "firma-recibido" in filename.lower():  # if is sign file change status to 1
+        log_msg += " y estado actualizado a (firmado)"
+    if "firma-recibido" in filename.lower():
         status = 2
-        msg += " y estado actualizado a (aprobado)"
+        log_msg += " y estado actualizado a (aprobado)"
     history.append(
         {
             "timestamp": timestamp.strftime(format_timestamps),
             "user": data_token.get("emp_id"),
             "action": "Adjuntar archivo",
-            "comment": msg,
+            "comment": log_msg,
         }
     )
     files = json.loads(report_data[17])
-    files.append(
-        {
-            "filename": data["filename"],
-            "path": path_aws,
-        }
-    )
+    files.append({"filename": data["filename"], "path": path_aws})
     flag, error, rows_updated = update_report_activity_files(
         data["id_report"], history, status, files, data_token
     )
     if not flag:
         return {
             "data": None,
-            "msg": "Error at updating history report but file uploaded",
+            "msg": "Error al actualizar el historial del reporte (archivo subido)",
             "error": error,
         }, 400
     create_notification_permission_notGUI(
-        msg, data_token, ["administracion", "operaciones", "sgi"], data_token.get("emp_id"), 0
+        log_msg, data_token, ["administracion", "operaciones", "sgi"], data_token.get("emp_id"), 0
     )
-    write_log_file(log_file_admin_collecions, msg, data_token)
-    return {"data": path_aws, "msg": msg}, 201
+    write_log_file(log_file_admin_collecions, log_msg, data_token)
+    return {
+        "data": {"path": path_aws},
+        "msg": f"Archivo adjuntado correctamente al reporte (ID {data['id_voucher']})",
+        "error": None,
+    }, 201
 
 
 def download_report_activity_attachment_api(data, data_token):
@@ -1053,8 +1048,8 @@ def download_report_activity_attachment_api(data, data_token):
     if len(report_data) <= 0:
         return {
             "data": None,
-            "msg": f"Error at getting report activity by id: {data['id_voucher']} not in db",
-            "error": str(report_data),
+            "msg": f"Reporte no encontrado (ID {data['id_voucher']})",
+            "error": None,
         }, 400
     files = json.loads(report_data[17]) if report_data[17] else []
     name_file = data["filename"]
@@ -1066,32 +1061,36 @@ def download_report_activity_attachment_api(data, data_token):
             path_aws = file["path"]
             break
     if not flag_found:
-        return {"data": None, "msg": "File not found in voucher"}, 400
+        return {"data": None, "msg": "Archivo no encontrado en el reporte", "error": None}, 400
     s3_client = boto3.client("s3")
     bucket_name = secrets.get("S3_ADMIN_BUCKET")
     try:
         s3_client.download_file(Bucket=str(bucket_name), Key=path_aws, Filename=data["filepath"])
     except FileNotFoundError:
-        return {"data": None, "msg": "Local file not found"}, 400
+        return {"data": None, "msg": "Archivo local no encontrado", "error": None}, 400
     except NoCredentialsError:
-        return {"data": None, "msg": "AWS credentials not found"}, 400
+        return {"data": None, "msg": "Credenciales AWS no configuradas", "error": None}, 400
     except ClientError as e:
         error_code = e.response["Error"]["Code"]
         if error_code == "NoSuchBucket":
-            return {"data": None, "msg": f"Bucket does not exist: {bucket_name}"}, 400
+            return {"data": None, "msg": f"Bucket no existe: {bucket_name}", "error": str(e)}, 400
         elif error_code == "AccessDenied":
-            return {"data": None, "msg": f"Access denied to bucket: {bucket_name}"}, 400
+            return {"data": None, "msg": f"Acceso denegado al bucket: {bucket_name}", "error": str(e)}, 400
         elif error_code == "NoSuchKey":
-            return {"data": None, "msg": f"File not found: {path_aws}"}, 400
+            return {"data": None, "msg": f"Archivo no encontrado en S3: {path_aws}", "error": str(e)}, 400
         else:
-            return {"data": None, "msg": f"Error downloading file: {str(e)}"}, 400
-    return {"path": data["filepath"]}, 200
+            return {"data": None, "msg": "Error al descargar archivo de S3", "error": str(e)}, 400
+    return {"data": {"path": data["filepath"]}, "msg": None, "error": None}, 200
 
 
 def fetch_products_contracts(data_token):
     iddentifiers, dict_tabs, code = get_iddentifiers_creation_contracts(data_token)
     if not iddentifiers:
-        return {"data": [], "msg": code}, 400
+        return {
+            "data": [],
+            "msg": "No se pudieron obtener los contratos con productos",
+            "error": code,
+        }, 400
     data_out = []
     for iddentifier in iddentifiers:
         flag, error, result = get_contract_and_items_from_number(iddentifier, data_token)
@@ -1122,4 +1121,4 @@ def fetch_products_contracts(data_token):
                 "items": items,
             }
         )
-    return {"data": data_out, "msg": "Ok"}, 200
+    return {"data": data_out, "msg": None, "error": None}, 200
