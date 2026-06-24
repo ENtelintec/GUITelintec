@@ -31,9 +31,17 @@ def create_voucher_epp_attachment_api(data, data_token):
     id_voucher_name = filename.split("-")[0]
     try:
         if int(id_voucher_name) != int(data["id_voucher"]) and int(data["id_voucher"]) <= 0:
-            return {"data": None, "msg": "El nombre del archivo no corresponde al voucher", "error": None}, 400
+            return {
+                "data": None,
+                "msg": "El nombre del archivo no corresponde al voucher",
+                "error": None,
+            }, 400
     except Exception as e:
-        return {"data": None, "msg": "Error al procesar el nombre del archivo", "error": str(e)}, 400
+        return {
+            "data": None,
+            "msg": "Error al procesar el nombre del archivo",
+            "error": str(e),
+        }, 400
     time_zone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone)
     timestamp_year_ago = timestamp - timedelta(days=365)
@@ -41,9 +49,13 @@ def create_voucher_epp_attachment_api(data, data_token):
         timestamp_year_ago.strftime(format_date), data_token, data_token.get("emp_id")
     )
     if not flag:
-        return {"data": None, "msg": "No se pudo obtener el voucher EPP", "error": str(error)}, 400
+        return {"data": None, "msg": "No se pudo obtener el voucher EPP", "error": error}, 400
     if not isinstance(result, list):
-        return {"data": None, "msg": "Error al obtener el voucher EPP: resultado inesperado", "error": str(result)}, 400
+        return {
+            "data": None,
+            "msg": "Error al obtener el voucher EPP: resultado inesperado",
+            "error": str(result),
+        }, 400
     voucher_data = []
     for item in result:
         if int(item[0]) == int(data["id_voucher"]):
@@ -72,7 +84,11 @@ def create_voucher_epp_attachment_api(data, data_token):
         if error_code == "NoSuchBucket":
             return {"data": None, "msg": f"Bucket no existe: {bucket_name}", "error": str(e)}, 400
         elif error_code == "AccessDenied":
-            return {"data": None, "msg": f"Acceso denegado al bucket: {bucket_name}", "error": str(e)}, 400
+            return {
+                "data": None,
+                "msg": f"Acceso denegado al bucket: {bucket_name}",
+                "error": str(e),
+            }, 400
         else:
             return {"data": None, "msg": f"Error AWS: {str(e)}", "error": str(e)}, 400
     msg = f"Archivo adjunto agregado: {filename} al voucher {data['id_voucher']} por el empleado {data_token.get('name')}"
@@ -103,7 +119,11 @@ def create_voucher_epp_attachment_api(data, data_token):
         data["id_voucher"], history, extra_info, status, data_token
     )
     if not flag:
-        return {"data": None, "msg": "Error al actualizar el historial del voucher (archivo ya subido)", "error": str(error)}, 400
+        return {
+            "data": None,
+            "msg": "Error al actualizar el historial del voucher (archivo ya subido)",
+            "error": error,
+        }, 400
     create_notification_permission_notGUI(
         msg, data_token, ["administracion", "operaciones", "sgi"], data_token.get("emp_id"), 0
     )
@@ -117,9 +137,17 @@ def create_voucher_tools_attachment_api(data, data_token):
     id_voucher_name = filename.split("-")[0]
     try:
         if int(id_voucher_name) != int(data["id_voucher"]) and int(data["id_voucher"]) <= 0:
-            return {"data": None, "msg": "El nombre del archivo no corresponde al voucher", "error": None}, 400
+            return {
+                "data": None,
+                "msg": "El nombre del archivo no corresponde al voucher",
+                "error": None,
+            }, 400
     except Exception as e:
-        return {"data": None, "msg": "Error al procesar el nombre del archivo", "error": str(e)}, 400
+        return {
+            "data": None,
+            "msg": "Error al procesar el nombre del archivo",
+            "error": str(e),
+        }, 400
     time_zone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone)
     timestamp_year_ago = timestamp - timedelta(days=365)
@@ -127,16 +155,28 @@ def create_voucher_tools_attachment_api(data, data_token):
         timestamp_year_ago.strftime(format_date), data_token, data_token.get("emp_id")
     )
     if not flag:
-        return {"data": None, "msg": "No se pudo obtener el voucher de herramientas", "error": str(error)}, 400
+        return {
+            "data": None,
+            "msg": "No se pudo obtener el voucher de herramientas",
+            "error": error,
+        }, 400
     if not isinstance(result, list):
-        return {"data": None, "msg": "Error al obtener el voucher de herramientas: resultado inesperado", "error": str(result)}, 400
+        return {
+            "data": None,
+            "msg": "Error al obtener el voucher de herramientas: resultado inesperado",
+            "error": str(result),
+        }, 400
     voucher_data = []
     for item in result:
         if int(item[0]) == int(data["id_voucher"]):
             voucher_data = item
             break
     if len(voucher_data) <= 0:
-        return {"data": None, "msg": "Voucher de herramientas no encontrado", "error": str(voucher_data)}, 400
+        return {
+            "data": None,
+            "msg": "Voucher de herramientas no encontrado",
+            "error": str(voucher_data),
+        }, 400
     date_voucher = voucher_data[2]
     history = json.loads(voucher_data[15])
     filepath_down = data["filepath"]
@@ -158,7 +198,11 @@ def create_voucher_tools_attachment_api(data, data_token):
         if error_code == "NoSuchBucket":
             return {"data": None, "msg": f"Bucket no existe: {bucket_name}", "error": str(e)}, 400
         elif error_code == "AccessDenied":
-            return {"data": None, "msg": f"Acceso denegado al bucket: {bucket_name}", "error": str(e)}, 400
+            return {
+                "data": None,
+                "msg": f"Acceso denegado al bucket: {bucket_name}",
+                "error": str(e),
+            }, 400
         else:
             return {"data": None, "msg": f"Error AWS: {str(e)}", "error": str(e)}, 400
     msg = f"Archivo adjunto agregado: {filename} al voucher {data['id_voucher']} por el empleado {data_token.get('name')}"
@@ -189,7 +233,11 @@ def create_voucher_tools_attachment_api(data, data_token):
         data["id_voucher"], history, extra_info, status, data_token
     )
     if not flag:
-        return {"data": None, "msg": "Error al actualizar el historial del voucher (archivo ya subido)", "error": str(error)}, 400
+        return {
+            "data": None,
+            "msg": "Error al actualizar el historial del voucher (archivo ya subido)",
+            "error": error,
+        }, 400
     create_notification_permission_notGUI(
         msg, data_token, ["administracion", "operaciones", "sgi"], data_token.get("emp_id"), 0
     )

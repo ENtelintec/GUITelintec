@@ -63,7 +63,6 @@ from templates.resources.midleware.Functions_midleware_almacen import (
     insert_movement,
     insert_multiple_movements_from_api,
     insert_product_db,
-    update_brand_procedure,
     update_movement,
     update_product_amc,
     update_reservation_from_api,
@@ -75,10 +74,14 @@ __date__ = "$ 03/may./2024  at 15:22 $"
 
 ns = Namespace("GUI/api/v1/almacen")
 
+# Envelope de respuesta unificado: {data, msg, error}. Ver
+# docs/almacen_response_envelope.md y docs/sm_response_envelope.md.
+def _invalid_structure(errors):
+    return {"data": None, "msg": "Estructura de datos invalida", "error": errors}, 400
+
 
 @ns.route("/movements/<string:type_m>")
 class GetMovements(Resource):
-    # @ns.marshal_with(movements_output_model)
     @ns.expect(expected_headers_per)
     def get(self, type_m):
         flag, data_token, msg = token_verification_procedure(request, department="almacen")
@@ -87,8 +90,7 @@ class GetMovements(Resource):
                 "data": [],
                 "error": msg if msg != "" else "No autorizado. Token invalido",
             }, 401
-        data, code = get_all_movements(type_m, data_token)
-        data_out = {"data": data, "msg": "Ok" if code == 200 else "Error"}
+        data_out, code = get_all_movements(type_m, data_token)
         return data_out, code
 
 
@@ -102,13 +104,10 @@ class MovementDB(Resource):
         # noinspection PyUnresolvedReferences
         validator = MovementInsertForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"data": validator.errors, "msg": "Error at structure"}, 400
+            return _invalid_structure(validator.errors)
         data = validator.data
-        flag, result = insert_movement(data, data_token)
-        return {
-            "data": str(result),
-            "msg": "Ok" if flag else "Error",
-        }, 201 if flag else 400
+        data_out, code = insert_movement(data, data_token)
+        return data_out, code
 
     @ns.expect(expected_headers_per, movement_update_model)
     def put(self):
@@ -118,13 +117,10 @@ class MovementDB(Resource):
         # noinspection PyUnresolvedReferences
         validator = MovementUpdateForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"data": validator.errors, "msg": "Error at structure"}, 400
+            return _invalid_structure(validator.errors)
         data = validator.data
-        flag, result = update_movement(data, data_token)
-        return {
-            "data": str(result),
-            "msg": "Ok" if flag else "Error",
-        }, 200 if flag else 400
+        data_out, code = update_movement(data, data_token)
+        return data_out, code
 
     @ns.expect(expected_headers_per, movement_delete_model)
     def delete(self):
@@ -134,13 +130,10 @@ class MovementDB(Resource):
         # noinspection PyUnresolvedReferences
         validator = MovementDeleteForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"data": validator.errors, "msg": "Error at structure"}, 400
+            return _invalid_structure(validator.errors)
         data = validator.data
-        flag, result = delete_movement_amc(data, data_token)
-        return {
-            "data": str(result),
-            "msg": "Ok" if flag else result,
-        }, 200 if flag else 400
+        data_out, code = delete_movement_amc(data, data_token)
+        return data_out, code
 
 
 @ns.route("/multiple/movements")
@@ -153,25 +146,21 @@ class MultipleMovementDB(Resource):
         # noinspection PyUnresolvedReferences
         validator = MovementsListPostForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"data": validator.errors, "msg": "Error at structure"}, 400
+            return _invalid_structure(validator.errors)
         data = validator.data
-        flag, result = insert_multiple_movements_from_api(data, data_token)
-        return {
-            "data": result,
-            "msg": "Ok" if flag else "Error",
-        }, 201 if flag else 400
+        data_out, code = insert_multiple_movements_from_api(data, data_token)
+        return data_out, code
 
 
 @ns.route("/inventory/products/<string:type_p>")
 class FetchProducts(Resource):
-    # @ns.marshal_with(products_output_model)
     @ns.expect(expected_headers_per)
     def get(self, type_p):
         flag, data_token, msg = token_verification_procedure(request, department="almacen")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        data, code = get_all_products_DB(type_p, data_token)
-        return {"data": data, "msg": "Ok" if code == 200 else "Error"}, code
+        data_out, code = get_all_products_DB(type_p, data_token)
+        return data_out, code
 
 
 @ns.route("/inventory/product")
@@ -184,22 +173,10 @@ class ProductActions(Resource):
         # noinspection PyUnresolvedReferences
         validator = ProductPostForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"data": validator.errors, "msg": "Error at structure"}, 400
+            return _invalid_structure(validator.errors)
         data = validator.data
-        flag, data_out = insert_product_db(data, data_token)
-        msg_list, _providers_dict_amc, brands_dict = "", None, None
-        if flag:
-            (
-                msg_list,
-                _providers_dict_amc,
-                brands_dict,
-                code,
-            ) = update_brand_procedure(data, data_token)
-            msg_list = "" if code == 201 else msg_list
-        return {
-            "data": {"id": data_out},
-            "msg": "Ok" + " \n" + msg_list if flag else "Error" + " \n" + msg_list,
-        }, 201 if flag else 400
+        data_out, code = insert_product_db(data, data_token)
+        return data_out, code
 
     @ns.expect(expected_headers_per, product_model_update)
     def put(self):
@@ -209,22 +186,10 @@ class ProductActions(Resource):
         # noinspection PyUnresolvedReferences
         validator = ProductPutForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"data": validator.errors, "msg": "Error at structure"}, 400
+            return _invalid_structure(validator.errors)
         data = validator.data
-        flag, data_out = update_product_amc(data, data_token)
-        msg_list, _providers_dict_amc, brands_dict = "", None, None
-        if flag:
-            (
-                msg_list,
-                _providers_dict_amc,
-                brands_dict,
-                code,
-            ) = update_brand_procedure(data, data_token)
-            msg_list = "" if code == 201 else msg_list
-        return {
-            "data": str(data_out),
-            "msg": "Ok" + " \n" + msg_list if flag else "Error \n" + msg_list,
-        }, 200 if flag else 400
+        data_out, code = update_product_amc(data, data_token)
+        return data_out, code
 
     @ns.expect(expected_headers_per, product_delete_model)
     def delete(self):
@@ -234,13 +199,10 @@ class ProductActions(Resource):
         # noinspection PyUnresolvedReferences
         validator = ProductDeleteForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"data": validator.errors, "msg": "Error at structure"}, 400
+            return _invalid_structure(validator.errors)
         data = validator.data
-        flag, data_out = delete_product_from_api(data, data_token)
-        return {
-            "data": str(data_out),
-            "msg": "Ok" if flag else "Error",
-        }, 200 if flag else 400
+        data_out, code = delete_product_from_api(data, data_token)
+        return data_out, code
 
 
 @ns.route("/inventory/multiple/products")
@@ -253,34 +215,32 @@ class InventoryMultipleProducts(Resource):
         # noinspection PyUnresolvedReferences
         validator = ProductsListPostForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"data": validator.errors, "msg": "Error at structure"}, 400
+            return _invalid_structure(validator.errors)
         data = validator.data
-        data_out = insert_and_update_multiple_products_from_api(data, data_token)
-        return {"data": data_out, "msg": "Ok"}, 200
+        data_out, code = insert_and_update_multiple_products_from_api(data, data_token)
+        return data_out, code
 
 
 @ns.route("/inventory/categories/all")
 class InventoryCategories(Resource):
-    # @ns.marshal_with(categories_output_model)
     @ns.expect(expected_headers_per)
     def get(self):
         flag, data_token, msg = token_verification_procedure(request, department="almacen")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        code, data = get_categories_db(data_token)
-        return {"data": data, "msg": "Ok" if code == 200 else "Error"}, code
+        data_out, code = get_categories_db(data_token)
+        return data_out, code
 
 
 @ns.route("/inventory/suppliers/allSuppliers")
 class InventorySuppliers(Resource):
-    # @ns.marshal_with(suppliers_output_model)
     @ns.expect(expected_headers_per)
     def get(self):
         flag, data_token, msg = token_verification_procedure(request, department="almacen")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        code, data = get_suppliers_db(data_token)
-        return {"data": data, "msg": "Ok" if code == 200 else "Error"}, code
+        data_out, code = get_suppliers_db(data_token)
+        return data_out, code
 
 
 @ns.route("/codes/generate")
@@ -291,7 +251,29 @@ class GenerateCode(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data_out, code = get_new_code_products(data_token)
-        return {"data": data_out, "msg": "Ok" if code == 200 else "Error"}, code
+        return data_out, code
+
+
+def _save_and_upload_inventory_file(data_token, **upload_kwargs):
+    """Shared handler for the 3 inventory file-upload endpoints. Validates the
+    incoming xlsx, persists it, and passes it to the midleware (which returns the
+    {data, msg, error} envelope)."""
+    if "file" not in request.files:
+        return {"data": None, "msg": "No se detecto un archivo", "error": "No se detecto un archivo"}, 400
+    file = request.files["file"]
+    if not (file and file.filename):
+        return {"data": None, "msg": "No se subio el archivo", "error": "No se subio el archivo"}, 400
+    filename = secure_filename(file.filename)
+    if not filename.lower().endswith(".xlsx"):
+        return {"data": None, "msg": "No se detecto un archivo xlsx valido", "error": "Formato de archivo invalido"}, 400
+    new_name = "inventario.xlsx"
+    file.save(os.path.join("files", new_name))
+    try:
+        data_out, code = upload_product_db_from_file(os.path.join("files", new_name), token_data=data_token, **upload_kwargs)
+        return data_out, code
+    except Exception as e:
+        print(e)
+        return {"data": None, "msg": "Error en la estructura del archivo", "error": str(e)}, 400
 
 
 @ns.route("/file/upload/regular")
@@ -301,25 +283,7 @@ class UploadInventoryeFile(Resource):
         flag, data_token, msg = token_verification_procedure(request, department="almacen")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        if "file" not in request.files:
-            return {"data": "No se detecto un archivo"}, 400
-        file = request.files["file"]
-        if file and file.filename:
-            filename = secure_filename(file.filename)
-            if not filename.lower().endswith(".xlsx"):
-                return {"data": "No se detecto un archivo xlsx valido"}, 400
-            new_name = "inventario.xlsx"
-            file.save(os.path.join("files", new_name))
-            try:
-                data_out = upload_product_db_from_file(
-                    os.path.join("files", new_name), token_data=data_token
-                )
-                return {"data": data_out, "msg": f"Ok with filaname: {new_name}"}, 200
-            except Exception as e:
-                print(e)
-                return {"data": str(e), "msg": "Error at file structure"}, 400
-        else:
-            return {"msg": "No se subio el archivo"}, 400
+        return _save_and_upload_inventory_file(data_token)
 
 
 @ns.route("/file/upload/tool")
@@ -329,25 +293,7 @@ class UploadInventoryeFileTool(Resource):
         flag, data_token, msg = token_verification_procedure(request, department="almacen")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        if "file" not in request.files:
-            return {"data": "No se detecto un archivo"}, 400
-        file = request.files["file"]
-        if file and file.filename:
-            filename = secure_filename(file.filename)
-            if not filename.lower().endswith(".xlsx"):
-                return {"data": "No se detecto un archivo xlsx valido"}, 400
-            new_name = "inventario.xlsx"
-            file.save(os.path.join("files", new_name))
-            try:
-                data_out = upload_product_db_from_file(
-                    os.path.join("files", new_name), is_tool=True, token_data=data_token
-                )
-                return {"data": data_out, "msg": f"Ok with filaname: {new_name}"}, 200
-            except Exception as e:
-                print(e)
-                return {"data": str(e), "msg": "Error at file structure"}, 400
-        else:
-            return {"msg": "No se subio el archivo"}, 400
+        return _save_and_upload_inventory_file(data_token, is_tool=True)
 
 
 @ns.route("/file/upload/internal")
@@ -357,27 +303,7 @@ class UploadInventoryeFileInternal(Resource):
         flag, data_token, msg = token_verification_procedure(request, department="almacen")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        if "file" not in request.files:
-            return {"data": "No se detecto un archivo"}, 400
-        file = request.files["file"]
-        if file and file.filename:
-            filename = secure_filename(file.filename)
-            if not filename.lower().endswith(".xlsx"):
-                return {"data": "No se detecto un archivo xlsx valido"}, 400
-            new_name = "inventario.xlsx"
-            file.save(os.path.join("files", new_name))
-            try:
-                data_out = upload_product_db_from_file(
-                    os.path.join("files", new_name),
-                    is_internal=1,
-                    token_data=data_token,
-                )
-                return {"data": data_out, "msg": f"Ok with filaname: {new_name}"}, 200
-            except Exception as e:
-                print(e)
-                return {"data": str(e), "msg": "Error at file structure"}, 400
-        else:
-            return {"msg": "No se subio el archivo"}, 400
+        return _save_and_upload_inventory_file(data_token, is_internal=1)
 
 
 @ns.route("/file/download/products/pdf")
@@ -389,7 +315,7 @@ class DownloadInventoryFilePDF(Resource):
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         filepath, code = create_file_inventory_pdf(data_token)
         if code != 200 or filepath is None:
-            return {"data": filepath, "msg": "Error at creating file"}, 400
+            return {"data": None, "msg": "No se pudo generar el archivo", "error": filepath}, 400
         return send_file(filepath, as_attachment=True)
 
 
@@ -402,7 +328,7 @@ class DownloadInventoryFileExcel(Resource):
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         filepath, code = create_file_inventory_excel(data_token)
         if code != 200 or filepath is None:
-            return {"data": filepath, "msg": "Error at creating file"}, 400
+            return {"data": None, "msg": "No se pudo generar el archivo", "error": filepath}, 400
         return send_file(filepath, as_attachment=True)
 
 
@@ -416,11 +342,11 @@ class DownloadMovementsFilePDF(Resource):
         # noinspection PyUnresolvedReferences
         validator = FileMovementsForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"data": validator.errors, "msg": "Error at structure"}, 400
+            return _invalid_structure(validator.errors)
         data = validator.data
         filepath, code = create_file_movements_amc(data, data_token)
         if code != 200 or filepath is None:
-            return {"data": filepath, "msg": "Error at creating file"}, 400
+            return {"data": None, "msg": "No se pudo generar el archivo", "error": filepath}, 400
         return send_file(filepath, as_attachment=True)
 
 
@@ -434,11 +360,11 @@ class DownloadMovementsFileExcel(Resource):
         # noinspection PyUnresolvedReferences
         validator = FileMovementsForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"data": validator.errors, "msg": "Error at structure"}, 400
+            return _invalid_structure(validator.errors)
         data = validator.data
         filepath, code = create_file_movements_amc(data, data_token, type_file="excel")
         if code != 200 or filepath is None:
-            return {"data": filepath, "msg": "Error at creating file"}, 400
+            return {"data": None, "msg": "No se pudo generar el archivo", "error": filepath}, 400
         return send_file(filepath, as_attachment=True)
 
 
@@ -452,14 +378,12 @@ class DownloadBarcodeFile(Resource):
         # noinspection PyUnresolvedReferences
         validator = FileBarcodeForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"data": validator.errors, "msg": "Error at structure"}, 400
+            return _invalid_structure(validator.errors)
         data = validator.data
         filepath, code = create_pdf_barcode(data, data_token)
-        return (
-            send_file(str(filepath), as_attachment=True)
-            if code == 200
-            else ({"data": filepath, "msg": "Error at creating file"}, 400)
-        )
+        if code != 200:
+            return {"data": None, "msg": "No se pudo generar el archivo", "error": filepath}, 400
+        return send_file(str(filepath), as_attachment=True)
 
 
 @ns.route("/file/download/barcode/multiple")
@@ -472,14 +396,12 @@ class DownloadMultipleBarcodeFile(Resource):
         # noinspection PyUnresolvedReferences
         validator = FileBarcodeMultipleForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"data": validator.errors, "msg": "Error at structure"}, 400
+            return _invalid_structure(validator.errors)
         data = validator.data
         filepath, code = create_pdf_barcode_multiple(data)
-        return (
-            send_file(filepath, as_attachment=True)
-            if code == 200
-            else ({"data": filepath, "msg": "Error at creating file"}, 400)
-        )
+        if code != 200:
+            return {"data": None, "msg": "No se pudo generar el archivo", "error": filepath}, 400
+        return send_file(filepath, as_attachment=True)
 
 
 @ns.route("/inventory/epp")
@@ -489,8 +411,8 @@ class InventoryEpp(Resource):
         flag, data_token, msg = token_verification_procedure(request, department="epp")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        data, code = get_epp_db(data_token)
-        return {"data": data, "msg": "Ok" if code == 200 else "Error"}, code
+        data_out, code = get_epp_db(data_token)
+        return data_out, code
 
 
 @ns.route("/movements/epp/<string:type_m>")
@@ -500,8 +422,7 @@ class GetMovementsEpp(Resource):
         flag, data_token, msg = token_verification_procedure(request, department="epp")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        data, code = get_epp_movements(type_m, data_token)
-        data_out = {"data": data, "msg": "Ok" if code == 200 else "Error"}
+        data_out, code = get_epp_movements(type_m, data_token)
         return data_out, code
 
 
@@ -515,11 +436,11 @@ class DownloadEppMovementsFilePDF(Resource):
         # noinspection PyUnresolvedReferences
         validator = FileMovementsForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"data": validator.errors, "msg": "Error at structure"}, 400
+            return _invalid_structure(validator.errors)
         data = validator.data
         filepath, code = create_file_movements_amc(data, data_token, epp=1)
         if code != 200 or filepath is None:
-            return {"data": filepath, "msg": "Error at creating file"}, 400
+            return {"data": None, "msg": "No se pudo generar el archivo", "error": filepath}, 400
         return send_file(filepath, as_attachment=True)
 
 
@@ -533,11 +454,11 @@ class DownloadEppMovementsFileExcel(Resource):
         # noinspection PyUnresolvedReferences
         validator = FileMovementsForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"data": validator.errors, "msg": "Error at structure"}, 400
+            return _invalid_structure(validator.errors)
         data = validator.data
         filepath, code = create_file_movements_amc(data, data_token, type_file="excel", epp=1)
         if code != 200 or filepath is None:
-            return {"data": filepath, "msg": "Error at creating file"}, 400
+            return {"data": None, "msg": "No se pudo generar el archivo", "error": filepath}, 400
         return send_file(filepath, as_attachment=True)
 
 
@@ -550,10 +471,9 @@ class ReservationActions(Resource):
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-
         validator = ReservationPostForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"data": validator.errors, "msg": "Error at structure"}, 400
+            return _invalid_structure(validator.errors)
         data = validator.data
         data_out, code = create_reservation_from_api(data, data_token)
         return data_out, code
@@ -567,7 +487,7 @@ class ReservationActions(Resource):
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         validator = ReservationPutForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"data": validator.errors, "msg": "Error at structure"}, 400
+            return _invalid_structure(validator.errors)
         data = validator.data
         data_out, code = update_reservation_from_api(data, data_token)
         return data_out, code
@@ -581,7 +501,7 @@ class ReservationActions(Resource):
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         validator = ReservationDeleteForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"data": validator.errors, "msg": "Error at structure"}, 400
+            return _invalid_structure(validator.errors)
         data = validator.data
         data_out, code = delete_reservation_from_api(data, data_token)
         return data_out, code
@@ -596,5 +516,5 @@ class GetReservations(Resource):
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        data, code = get_reservations_db(data_token)
-        return data, code
+        data_out, code = get_reservations_db(data_token)
+        return data_out, code

@@ -217,6 +217,26 @@ uno nuevo con este patrón, agrégalo aquí.
 | `/sgi/voucher/vehicle/attachment/download` | POST | `download_voucher_vehicle_attachment_api` (success=`send_file` intacto; error branches con `error` y español) | ✅ Hecho | 2026-06-24 |
 | `/sgi/voucher/epp/attachment-<id>` | POST | `create_voucher_epp_attachment_api` (passthrough; `error` en todas las ramas; español) | ✅ Hecho | 2026-06-24 |
 | `/sgi/voucher/tools/attachment-<id>` | POST | `create_voucher_tools_attachment_api` (passthrough; `error` en todas las ramas; español) | ✅ Hecho | 2026-06-24 |
+| `/sm/employees` · `/sm/clients` | GET | `get_sm_employees` / `get_sm_clients` (marshal removido; `comment` eliminado; éxito `{data, msg: None, error: None}`) | ✅ Hecho | 2026-06-24 |
+| `/sm/products/<contract>` · `/sm/all` · `/sm/permission` · `/sm/employee` · `/sm/control/table/all` | GET | `get_products_sm` / `get_all_sm` / `fetch_all_sm_with_permissions` / `get_all_sm_control_table` (marshals removidos; `msg/error: None` en éxito) | ✅ Hecho | 2026-06-24 |
+| `/sm/add` | POST·PUT·DELETE | `create/update/delete_sm_from_api` (errores español; éxito `data: {"id_sm": N}` + `msg` español-con-ID; `error`=lista concisa en parcial) | ✅ Hecho | 2026-06-24 |
+| `/sm/add/urgent` | POST | `create_urgent_sm_from_api` (**bug `return data` corregido**; éxito `data: {"id_sm": N}`) | ✅ Hecho | 2026-06-24 |
+| `/sm/cancel` | POST | `cancel_sm` (**tupla invertida/rota corregida** a orden estándar + envelope) | ✅ Hecho | 2026-06-24 |
+| `/sm/newclient` · `/sm/newproduct` | POST | `create_customer` / `create_product` (éxito `data: {"id_customer"/"id_product": N}`; error español) | ✅ Hecho | 2026-06-24 |
+| `/sm/plot/<typerange>` · `/sm/almacen/employees` | GET | marshals removidos; éxito + `error: None`; error español | ✅ Hecho | 2026-06-24 |
+| `/sm/manage/dispatch` · `/sm/control/table` | POST·PUT | `dispatch_sm` / `update_sm_from_control_table` (firma `(code, data_out)` intacta; dict normalizado) | ✅ Hecho | 2026-06-24 |
+| `/sm/download/pdf/<id>` · `/sm/download/excel/<id>` | GET | `dowload_file_sm` (éxito `send_file` intacto; error con envelope español) | ✅ Hecho | 2026-06-24 |
+| `/sm/item` | PUT | `update_items_sm_from_api` (**fix `msg:"ok"` en 400**; éxito `data: {"id_sm": N}`; `error`=lista concisa) | ✅ Hecho | 2026-06-24 |
+| `/sm/folioSmAll` · `/sm/items/state-<state>` | GET | `get_sm_folios_from_api` / `get_sm_items_from_api` (error `data: []`; éxito + `error: None`) | ✅ Hecho | 2026-06-24 |
+| `/sm/item/inventory` · `/sm/item/stateUpdate` · `/sm/item/approveRequired` | PUT·POST | `update_sm_item_state_and_inventory` / `update_sm_item_state` / `update_sm_item_approve` (errores español; éxito + `error: None`) | ✅ Hecho | 2026-06-24 |
+| `/sm/items/bulk` | PUT | `update_items_bulk_sm_from_api` (`msg` español; clave `errors` eliminada, solo `error`) | ✅ Hecho | 2026-06-24 |
+| `/sm/attachment-<id_sm>` | POST | `create_sm_attachment_api` (errores español + `error`; **éxito aplanado** `data`=path + `msg` español) | ✅ Hecho | 2026-06-24 |
+| `/almacen/*` (todos) | GET·POST·PUT·DELETE | `Functions_midleware_almacen.py` (envelope convergido al midleware; tuplas invertidas `get_categories_db`/`get_suppliers_db` corregidas; escritura `data: {"id_*": N}`; masivos errores→`error`; bugs KeyError/TypeError corregidos) | ✅ Hecho | 2026-06-24 |
+
+> Detalle completo de SM (incl. Pendientes y bugs anotados) en
+> [`sm_response_envelope.md`](sm_response_envelope.md).
+> Detalle completo de Almacén en
+> [`almacen_response_envelope.md`](almacen_response_envelope.md).
 
 ## Bugs datetime GET /rrhh (2026-06-23)
 
@@ -239,7 +259,7 @@ estilo. Copia las plantillas y ajusta nombres.
 |---|---|---|
 | `data` | objeto con IDs estructurados (`{"id_<entidad>": …}`) | `null` |
 | `msg` | texto corto, español, con ID: `"<Entidad> <acción> correctamente (ID N)"` | texto corto que describe la causa |
-| `error` | `null` (o lista de errores si hubo éxito parcial) | detalle técnico (`str(error)` o lista) |
+| `error` | `null` (o lista de errores si hubo éxito parcial) | detalle técnico (`error` o lista) |
 
 Códigos: `201` create, `200` update/delete, `400` validación y negocio/DB.
 El `401` de token se deja como está (patrón global del proyecto).
@@ -275,7 +295,7 @@ def <accion>_<entidad>_from_api(data, data_token):
         return {
             "data": None,
             "msg": "No se pudo <accion> <entidad>",   # causa, corta, español
-            "error": str(error),                      # detalle técnico
+            "error": error,                      # detalle técnico
         }, 400
     # auditoría: detalle largo SOLO al log y la notificación, nunca al msg de salida
     msg = f"<Entidad> <accion> con ID-{result} por el empleado {data_token.get('name')}"
@@ -287,6 +307,12 @@ def <accion>_<entidad>_from_api(data, data_token):
         "error": None,
     }, 201  # 200 para update/delete
 ```
+
+> **No envuelvas `error` en `str()`.** El `error` de `execute_sql` ya es `str`, así
+> que `"error": str(error)` dispara el warning `Unnecessary str() call` de pyrefly —
+> usa `"error": error` directo (y `f"...{error}"` en f-strings). Reserva `str(...)`
+> para lo que de verdad no es `str`: el `Exception` de un `except` (`str(e)`) y el
+> `result` union-typado.
 
 ### Patrón de éxito parcial (operaciones con lista de sub-items)
 

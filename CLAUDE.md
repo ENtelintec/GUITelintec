@@ -16,6 +16,7 @@ Per-change design notes live in [`Docs/`](Docs/) (Spanish, one `.md` per change,
 - [`purchase_list_pdf.md`](Docs/purchase_list_pdf.md) — purchase list PDF generation.
 - [`sm_items_extra_info_url_fix.md`](Docs/sm_items_extra_info_url_fix.md) — SM items `extra_info` URL fix.
 - [`payroll_s3_upload.md`](Docs/payroll_s3_upload.md) — payroll S3 upload.
+- [`sm_response_envelope.md`](Docs/sm_response_envelope.md) — los 24 endpoints de `/sm` alineados al envelope `{data, msg, error}`; 4 `marshal_with` removidos; bugs corregidos (`/add/urgent` `return data`, `/cancel` tupla invertida, `msg:"ok"` en 400 de `/item`); `msg` español-con-ID y `data` estructurado a `{"id_*": N}` en escrituras (detalle largo solo a log/notificación; fallos parciales a `error` como lista); único pendiente abierto: bug KPI `(critical_date - critical_date)` (a futuro KPIs configurables).
 
 ## Run / lint
 
@@ -69,6 +70,8 @@ Every DB call goes through [templates/database/connection.py](templates/database
 There is also `execute_sql_multiple(sql, values_list, type_sql, data_token)` that iterates `values_list` column-major (transposes inside the function) — read it before calling, the indexing is unusual.
 
 Both accept an optional `data_token`; if `data_token["is_tester"]` is true, they redirect to the test DB host (`HOST_DB_TEST` etc.). This is how the "tester" permission swaps databases at runtime.
+
+**`error` is already a `str`** (the second tuple element). When you put it in a response envelope's `error` field, write `"error": error` — **not** `str(error)`, which pyrefly flags as `Unnecessary str() call`. Reserve `str(...)` for things that genuinely aren't strings: `Exception` objects caught in `except` blocks (`str(e)`), and the union-typed `result` (whose shape varies by `type_sql`). Same rule for f-strings — `f"...{error}"`, not `f"...{str(error)}"`.
 
 ## Auth pattern — every endpoint starts the same way
 

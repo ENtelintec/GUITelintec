@@ -234,7 +234,7 @@ def create_purchaser_order_api(data, data_token):
         data_token,
     )
     if not flag:
-        return {"data": None, "msg": "No se pudo crear la orden de compra", "error": str(error)}, 400
+        return {"data": None, "msg": "No se pudo crear la orden de compra", "error": error}, 400
     if not isinstance(id_order, int) or id_order <= 0:
         return {
             "data": None,
@@ -278,9 +278,9 @@ def create_purchaser_order_api(data, data_token):
             )
         if not flag:
             msg_moves.append(
-                f"x-Error al actualizar item de orden de compra -{item['description']}-{str(error)}"
+                f"x-Error al actualizar item de orden de compra -{item['description']}-{error}"
                 if update_item
-                else f"x-Error al crear item de orden de compra -{item['description']}-{str(error)}"
+                else f"x-Error al crear item de orden de compra -{item['description']}-{error}"
             )
             flag_error = True
             n_errors += 1
@@ -328,7 +328,11 @@ def create_purchaser_order_api(data, data_token):
             "msg": f"Orden de compra creada (ID {id_order}). Algunos ítems no se pudieron crear.",
             "error": "\n".join(msg_moves),
         }, 400
-    return {"data": {"id_order": id_order}, "msg": f"Orden de compra creada correctamente (ID {id_order})", "error": None}, 201
+    return {
+        "data": {"id_order": id_order},
+        "msg": f"Orden de compra creada correctamente (ID {id_order})",
+        "error": None,
+    }, 201
 
 
 def update_purchase_order_api(data, data_token):
@@ -364,7 +368,11 @@ def update_purchase_order_api(data, data_token):
         data_token,
     )
     if not flag:
-        return {"data": None, "msg": "No se pudo actualizar la orden de compra", "error": error}, 400
+        return {
+            "data": None,
+            "msg": "No se pudo actualizar la orden de compra",
+            "error": error,
+        }, 400
     msg = f"Orden de compra actualizada con ID-{data['id']}"
     msg_items: list[str] = []
     flag_error = False
@@ -398,9 +406,9 @@ def update_purchase_order_api(data, data_token):
             )
         if not flag:
             msg_items.append(
-                f"x-Error al actualizar item de orden de compra -{item['description']}-{str(error)}"
+                f"x-Error al actualizar item de orden de compra -{item['description']}-{error}"
                 if update_item
-                else f"x-Error al crear item de orden de compra -{item['description']}-{str(error)}"
+                else f"x-Error al crear item de orden de compra -{item['description']}-{error}"
             )
             flag_error = True
         else:
@@ -420,7 +428,11 @@ def update_purchase_order_api(data, data_token):
             "msg": f"Orden de compra actualizada (ID {data['id']}). Algunos ítems no se pudieron actualizar.",
             "error": "\n".join(msg_items),
         }, 400
-    return {"data": {"id_order": data["id"]}, "msg": f"Orden de compra actualizada correctamente (ID {data['id']})", "error": None}, 200
+    return {
+        "data": {"id_order": data["id"]},
+        "msg": f"Orden de compra actualizada correctamente (ID {data['id']})",
+        "error": None,
+    }, 200
 
 
 def cancel_purchase_order_api(data, data_token):
@@ -470,7 +482,11 @@ def change_state_order_api(data, data_token):
         data_token,
     )
     if not flag:
-        return {"data": None, "msg": "No se pudo cambiar el estado de la orden de compra", "error": error}, 400
+        return {
+            "data": None,
+            "msg": "No se pudo cambiar el estado de la orden de compra",
+            "error": error,
+        }, 400
     msg = f"Estado de orden de compra actualizado (ID {data['id']}) a {data['status']}"
     create_notification_permission_notGUI(
         msg,
@@ -488,7 +504,11 @@ def fetch_pos_applications_to_approve(data_token):
     # permissions_last = [item.lower().split(".")[-1] for item in permissions.values()]
     flag, error, result = get_pos_application_with_items_to_approve(data_token)
     if not flag:
-        return {"data": [], "msg": "Error al obtener solicitudes de OC para aprobar", "error": error}, 400
+        return {
+            "data": [],
+            "msg": "Error al obtener solicitudes de OC para aprobar",
+            "error": error,
+        }, 400
     data_out = []
     if not isinstance(result, Iterable):
         return {
@@ -688,7 +708,7 @@ def create_po_application_api(data, data_token):
             tool_detected = True
         if not flag:
             msg_moves.append(
-                f"x-Error al crear item de orden de compra -{item['description']}-{str(error)}"
+                f"x-Error al crear item de orden de compra -{item['description']}-{error}"
             )
             flag_error = True
             count_errors += 1
@@ -709,7 +729,11 @@ def create_po_application_api(data, data_token):
         msg += "\n" + "Se detectó que se solicita una herramienta, esta requerirá aprobación."
         flag, error, result = update_po_application_status(id_po_app, history, 0, 0, data_token)
         if not flag:
-            return {"data": None, "msg": "Error al actualizar estado de solicitud de OC", "error": error}, 400
+            return {
+                "data": None,
+                "msg": "Error al actualizar estado de solicitud de OC",
+                "error": error,
+            }, 400
     if update_sm_control_table:
         code, data_out = update_sm_from_control_table(
             data={
@@ -742,7 +766,11 @@ def create_po_application_api(data, data_token):
             "msg": f"Solicitud de OC creada (ID {id_po_app}). Algunos ítems no se pudieron crear.",
             "error": "\n".join(msg_moves),
         }, 400
-    return {"data": {"id_po_app": id_po_app}, "msg": f"Solicitud de OC creada correctamente (ID {id_po_app})", "error": None}, 201
+    return {
+        "data": {"id_po_app": id_po_app},
+        "msg": f"Solicitud de OC creada correctamente (ID {id_po_app})",
+        "error": None,
+    }, 201
 
 
 def update_po_application_api(data, data_token):
@@ -767,7 +795,11 @@ def update_po_application_api(data, data_token):
         data_token,
     )
     if not flag:
-        return {"data": None, "msg": "No se pudo actualizar la solicitud de OC", "error": error}, 400
+        return {
+            "data": None,
+            "msg": "No se pudo actualizar la solicitud de OC",
+            "error": error,
+        }, 400
     msg = f"Solicitud de Orden de compra actualizada con ID-{data['id']}"
     msg_items: list[str] = []
     flag_error = False
@@ -795,7 +827,7 @@ def update_po_application_api(data, data_token):
             )
         if not flag:
             msg_items.append(
-                f"x-Error al actualizar item de solicitud de orden de compra -{item['description']}-{str(error)}"
+                f"x-Error al actualizar item de solicitud de orden de compra -{item['description']}-{error}"
             )
             flag_error = True
         else:
@@ -813,7 +845,11 @@ def update_po_application_api(data, data_token):
             "msg": f"Solicitud de OC actualizada (ID {data['id']}). Algunos ítems no se pudieron actualizar.",
             "error": "\n".join(msg_items),
         }, 400
-    return {"data": {"id_po_app": data["id"]}, "msg": f"Solicitud de OC actualizada correctamente (ID {data['id']})", "error": None}, 200
+    return {
+        "data": {"id_po_app": data["id"]},
+        "msg": f"Solicitud de OC actualizada correctamente (ID {data['id']})",
+        "error": None,
+    }, 200
 
 
 def cancel_po_application_api(data, data_token):
@@ -865,7 +901,11 @@ def change_state_po_application_api(data, data_token):
         data["id"], history, data["status"], data["approved"], data_token
     )
     if not flag:
-        return {"data": None, "msg": "No se pudo cambiar el estado de la solicitud de OC", "error": error}, 400
+        return {
+            "data": None,
+            "msg": "No se pudo cambiar el estado de la solicitud de OC",
+            "error": error,
+        }, 400
     msg = f"Estado de solicitud de OC actualizado (ID {data['id']}) a {data['status']}"
     create_notification_permission_notGUI(
         msg,
@@ -908,9 +948,17 @@ def create_metadata_for_pdf_po(extra_info: dict):
 def dowload_file_purchase(order_id: int, data_token):
     flag, error, result = get_purchase_order_with_items_by_id(order_id, data_token)
     if not isinstance(result, list):
-        return {"data": None, "msg": "Error al obtener la orden de compra", "error": str(result)}, 400
+        return {
+            "data": None,
+            "msg": "Error al obtener la orden de compra",
+            "error": str(result),
+        }, 400
     if not flag or len(result) == 0:
-        return {"data": None, "msg": f"Orden de compra no encontrada (ID {order_id})", "error": error}, 400
+        return {
+            "data": None,
+            "msg": f"Orden de compra no encontrada (ID {order_id})",
+            "error": error,
+        }, 400
     date = result[0]
     download_path = os.path.join(
         tempfile.mkdtemp(), os.path.basename(f"oc_{result[5]}_{date.date()}.pdf")
@@ -953,7 +1001,11 @@ def dowload_file_purchase(order_id: int, data_token):
         },
     )
     if not flag:
-        return {"data": None, "msg": "Error al generar el PDF de la orden de compra", "error": None}, 400
+        return {
+            "data": None,
+            "msg": "Error al generar el PDF de la orden de compra",
+            "error": None,
+        }, 400
     return download_path, 200
 
 
@@ -979,7 +1031,11 @@ def generate_folios_po(reference, data_token):
         return {"data": [], "msg": "Referencia no válida: formato incorrecto", "error": None}, 400
     print(reference_parts, abbs_area)
     if reference_parts[1].upper() not in abbs_area and reference_parts[1].lower() not in abbs_area:
-        return {"data": [], "msg": "Referencia no válida: patrón no encontrado o contrato no en DB", "error": None}, 400
+        return {
+            "data": [],
+            "msg": "Referencia no válida: patrón no encontrado o contrato no en DB",
+            "error": None,
+        }, 400
     folio_normal = "OC-GC" + "-".join(reference_parts[-2:])
     folio_maestro = "OCM-GC" + f"{reference_parts[-2]}"
     folio_cotfc = "OC-GCCOTFC" + f"-{'-'.join(reference_parts[-2:])}"
@@ -994,6 +1050,7 @@ def generate_folios_po(reference, data_token):
             "msg": "Error al obtener folios: respuesta inesperada de la DB",
             "error": None,
         }, 400
+
     def extract_count(folio_value, pattern):
         remainder = folio_value.lower().replace(pattern.lower(), "").split("-")
         for number in remainder:
@@ -1037,12 +1094,15 @@ def group_item_by_supplier_and_inventory(items: list):
             inventories[id_inventory] = {
                 "items": [item],
                 "total_qty": item.get("quantity_c", item["quantity"]),
-                "total_amount": float(item.get("price_unit", 0)) * float(item.get("quantity_c", item["quantity"])),
+                "total_amount": float(item.get("price_unit", 0))
+                * float(item.get("quantity_c", item["quantity"])),
             }
         else:
             inventories[id_inventory]["items"].append(item)
             inventories[id_inventory]["total_qty"] += item.get("quantity_c", item["quantity"])
-            inventories[id_inventory]["total_amount"] += float(item.get("price_unit", 0)) * float(item.get("quantity_c", item["quantity"]))
+            inventories[id_inventory]["total_amount"] += float(item.get("price_unit", 0)) * float(
+                item.get("quantity_c", item["quantity"])
+            )
     return dict_out
 
 
@@ -1068,8 +1128,8 @@ def download_file_purchase_item_approved(data_token):
                             delivery["folio"], item["id"], data_token
                         )
                         try:
-                            if not(isinstance(items_po, Iterable)):
-                                price_unit=0.0
+                            if not (isinstance(items_po, Iterable)):
+                                price_unit = 0.0
                                 supplier_id = 0
                                 supplier_name = "None"
                             else:
@@ -1080,7 +1140,7 @@ def download_file_purchase_item_approved(data_token):
                             price_unit = 0.0
                             supplier_id = 0
                             supplier_name = "None"
-                            
+
                         items_with_approved.append(
                             {
                                 "id_item": item["id"],
@@ -1119,7 +1179,11 @@ def get_items_with_fast_order(data_token):
     if not flag:
         return {"data": [], "msg": "Error al obtener ítems con fast order", "error": error}, 400
     if not (isinstance(result, Iterable)):
-        return {"data": [], "msg": "Error al obtener ítems con fast order: respuesta inesperada de la DB", "error": None}, 400
+        return {
+            "data": [],
+            "msg": "Error al obtener ítems con fast order: respuesta inesperada de la DB",
+            "error": None,
+        }, 400
     data_out = []
     for item in result:
         data_out.append(
