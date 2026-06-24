@@ -81,7 +81,7 @@ class ClientDB(Resource):
         # noinspection PyUnresolvedReferences
         validator = ClientInsertForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"data": validator.errors, "msg": "Error at structure"}, 400
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
         data = validator.data
         data, code = insert_customer(data, data_token)
         return data, code
@@ -96,7 +96,7 @@ class ClientDB(Resource):
         # noinspection PyUnresolvedReferences
         validator = ClientUpdateForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"data": validator.errors, "msg": "Error at structure"}, 400
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
         data = validator.data
         data, code = update_customer(data, data_token)
         return data, code
@@ -111,7 +111,7 @@ class ClientDB(Resource):
         # noinspection PyUnresolvedReferences
         validator = ClientDeleteForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"data": validator.errors, "msg": "Error at structure"}, 400
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
         data = validator.data
         data, code = delete_customer(data, data_token)
         return data, code
@@ -155,7 +155,7 @@ class SupplierActions(Resource):
         # noinspection PyUnresolvedReferences
         validator = SupplierInsertForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"data": validator.errors, "msg": "Error at structure"}, 400
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
         data = validator.data
         data, code = insert_supplier(data, data_token)
         return data, code
@@ -170,7 +170,7 @@ class SupplierActions(Resource):
         # noinspection PyUnresolvedReferences
         validator = SupplierUpdateForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"data": validator.errors, "msg": "Error at structure"}, 400
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
         data = validator.data
         data, code = update_supplier(data, data_token)
         return data, code
@@ -185,7 +185,7 @@ class SupplierActions(Resource):
         # noinspection PyUnresolvedReferences
         validator = SupplierDeleteForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"data": validator.errors, "msg": "Error at structure"}, 400
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
         data = validator.data
         data, code = delete_supplier(data, data_token)
         return data, code
@@ -203,7 +203,7 @@ class UpdateEISupplier(Resource):
         # noinspection PyUnresolvedReferences
         validator = SupplierEInfoUpdateForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"data": validator.errors, "msg": "Error at structure"}, 400
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
         data = validator.data
         data, code = update_extra_info_supplier(data, data_token)
         return data, code
@@ -262,7 +262,7 @@ class HeadDB(Resource):
         # noinspection PyUnresolvedReferences
         validator = HeadInputForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"data": validator.errors, "msg": "Error at structure"}, 400
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
         data = validator.data
         data_out, code = insert_head_from_api(data, data_token)
         return data_out, code
@@ -277,7 +277,7 @@ class HeadDB(Resource):
         # noinspection PyUnresolvedReferences
         validator = HeadUpdateForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"data": validator.errors, "msg": "Error at structure"}, 400
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
         data = validator.data
         data_out, code = update_head_from_api(data, data_token)
         return data_out, code
@@ -292,7 +292,7 @@ class HeadDB(Resource):
         # noinspection PyUnresolvedReferences
         validator = HeadDeleteForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"data": validator.errors, "msg": "Error at structure"}, 400
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
         data = validator.data
         data_out, code = delete_head_from_api(data, data_token)
         return data_out, code

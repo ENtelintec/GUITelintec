@@ -154,6 +154,43 @@ uno nuevo con este patrón, agrégalo aquí.
 | `/rrhh/fichajes/files` | GET | `get_files_fichaje` (marshal_with eliminado) | ✅ Hecho | 2026-06-23 |
 | `/rrhh/fichajes/data/fromfiles` | POST | `get_fichaje_data` (marshal_with eliminado; timestamps serializados) | ✅ Hecho | 2026-06-23 |
 | `/rrhh/upload/fichaje/file` | POST | — (códigos 401 → 400 corregidos) | ✅ Hecho | 2026-06-23 |
+| `/admin/db/clients/allClients` | GET | `get_all_clients_data` | ✅ Hecho | 2026-06-23 |
+| `/admin/db/client` | POST · PUT · DELETE | `insert/update/delete_customer` | ✅ Hecho | 2026-06-23 |
+| `/admin/db/suppliers/allSuppliers` | GET | `get_all_suppliers_data` | ✅ Hecho | 2026-06-23 |
+| `/admin/db/suppliers/items-<id>` | GET | `get_items_supplier_name` | ✅ Hecho | 2026-06-23 |
+| `/admin/db/supplier` | POST · PUT · DELETE | `insert/update/delete_supplier` | ✅ Hecho | 2026-06-23 |
+| `/admin/db/extraInfoSupplier` | POST | `update_extra_info_supplier` | ✅ Hecho | 2026-06-23 |
+| `/admin/db/heads` | GET | `fetch_heads_main` | ✅ Hecho | 2026-06-23 |
+| `/admin/db/heads/<id_d>` | GET | `fetch_heads` | ✅ Hecho | 2026-06-23 |
+| `/admin/db/head` | POST · PUT · DELETE | `insert/update/delete_head_from_api` | ✅ Hecho | 2026-06-23 |
+| `/admin/db/suppliers/items/file` | POST | `items_supplier_from_file` | ✅ Hecho | 2026-06-23 |
+| `/admin/collections/orders/<status>` | GET | `fetch_purchase_orders` | ✅ Hecho | 2026-06-23 |
+| `/admin/collections/application/orders/<status>` | GET | `fetch_pos_applications` | ✅ Hecho | 2026-06-23 |
+| `/admin/collections/application/orderstoApprove` | GET | `fetch_pos_applications_to_approve` | ✅ Hecho | 2026-06-23 |
+| `/admin/collections/application/order` | POST · PUT · DELETE | `create/update/cancel_po_application_api` | ✅ Hecho | 2026-06-23 |
+| `/admin/collections/order` | POST · PUT · DELETE | `create/update/cancel_purchase_order_api` | ✅ Hecho | 2026-06-23 |
+| `/admin/collections/order/status` | PUT | `change_state_order_api` | ✅ Hecho | 2026-06-23 |
+| `/admin/collections/application/order/status` | PUT | `change_state_po_application_api` | ✅ Hecho | 2026-06-23 |
+| `/admin/collections/POItemsFoDelivery` | GET | `fetch_po_item_sm_item_id` | ✅ Hecho | 2026-06-23 |
+| `/admin/collections/APOItemsFastOrder` | GET | `get_items_with_fast_order` | ✅ Hecho | 2026-06-23 |
+| `/admin/collections/purchase/folio/<folio>` | GET | `generate_folios_po` | ✅ Hecho | 2026-06-23 |
+| `/admin/collections/activity/quotation` | POST · PUT · DELETE | `create/update/delete_quotation_activity_from_api` | ✅ Hecho | 2026-06-23 |
+| `/admin/collections/activity/quotations-<id>` | GET | `get_quotations_from_api` | ✅ Hecho | 2026-06-23 |
+| `/admin/collections/activity/ChangeStatus` | PUT | `update_quotation_activity_from_api` | ✅ Hecho | 2026-06-23 |
+| `/admin/collections/remission` | POST · PUT · DELETE | `create/update/delete_remission_from_api` | ✅ Hecho | 2026-06-23 |
+| `/admin/collections/remissionControlTable` | POST · PUT | `create/update_remission_control_table_from_api` | ✅ Hecho | 2026-06-23 |
+| `/admin/collections/remission-<id>` | GET | `get_remission_from_api` | ✅ Hecho | 2026-06-23 |
+| `/admin/collections/remission/attachment-<id>` | POST | `create_activity_report_attachment_api` (passthrough) | ✅ Hecho | 2026-06-23 |
+| `/admin/collections/voucher/vehicle/attachment/download` | POST | `download_report_activity_attachment_api` (error branches) | ✅ Hecho | 2026-06-23 |
+| `/admin/collections/purchase/download/pdf/<id>` | GET | `dowload_file_purchase` (error branches) | ✅ Hecho | 2026-06-23 |
+| `/admin/collections/purchase/download/pdfItemsPurchaseStorage` | GET | `download_file_purchase_item_approved` (error branches) | ✅ Hecho | 2026-06-23 |
+| `/common/payroll/employee/<emp_id>` | GET | `get_files_list_nomina` (orden normalizado; error check añadido) | ✅ Hecho | 2026-06-23 |
+| `/common/payroll/employee/file` | POST | `download_nomina_docs` (error branches; passthrough en resource) | ✅ Hecho | 2026-06-23 |
+| `/common/vacations/events` | GET | `get_all_vacations_data_date` (shapes de error unificados) | ✅ Hecho | 2026-06-23 |
+| `/dashboard/inventory/movements` | POST | `get_data_chart_movements` (bug 400→401 en token; passthrough) | ✅ Hecho | 2026-06-23 |
+| `/dashboard/inventory/sm/<range>/<type>` | GET | `get_data_chart_sm` (passthrough) | ✅ Hecho | 2026-06-23 |
+| `/dashboard/fichaje/emp` | POST | `get_data_chart_fichaje_emp` (passthrough) | ✅ Hecho | 2026-06-23 |
+| `/dashboard/notifications/medicals` | GET | — (solo resource; `data: null, error: null` en todos los estados) | ✅ Hecho | 2026-06-23 |
 
 ## Bugs datetime GET /rrhh (2026-06-23)
 

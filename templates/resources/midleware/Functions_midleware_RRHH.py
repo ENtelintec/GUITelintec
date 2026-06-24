@@ -592,12 +592,13 @@ def download_nomina_docs(data, data_token):
             print(f"Error al descargar nomina desde S3 (key {key}): {e}")
             continue
     if len(downloaded) == 0:
-        return file_temp_zip, 400
+        return {"data": None, "msg": "No se pudieron descargar los archivos de nómina", "error": "Ningún archivo descargado desde S3"}, 400
     with zipfile.ZipFile(file_temp_zip, "w") as zipf:
         for path in downloaded:
             zipf.write(path, arcname=os.path.basename(path))
-    code = 200 if os.path.exists(file_temp_zip) else 400
-    return file_temp_zip, code
+    if not os.path.exists(file_temp_zip):
+        return {"data": None, "msg": "Error al generar el archivo ZIP de nómina", "error": "El archivo ZIP no fue creado"}, 400
+    return file_temp_zip, 200
 
 
 def get_files_list_nomina_RH(emp_id, data_token):
@@ -613,6 +614,8 @@ def get_files_list_nomina_RH(emp_id, data_token):
 
 def get_files_list_nomina(emp_id, data_token):
     flag, error, result = get_payrolls(emp_id, data_token)
+    if not flag:
+        return {"data": None, "msg": "Error al obtener nóminas", "error": error}, 400
     files = []
     dicts_data = []
     for item in result:
@@ -632,7 +635,7 @@ def get_files_list_nomina(emp_id, data_token):
                         }
                     )
         dicts_data.append({"id": emp_id, "name": name, "data": dict_data})
-    return 200, files
+    return {"data": files, "msg": None, "error": None}, 200
 
 
 def insert_medical_db(data, data_token):

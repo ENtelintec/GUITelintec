@@ -136,7 +136,7 @@ class APOsOperations(Resource):
         # noinspection PyUnresolvedReferences
         validator = POsApplicationPostForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"data": validator.errors, "msg": "Error at structure"}, 400
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
         data = validator.data
         data_out, code = create_po_application_api(data, data_token)
         return data_out, code
@@ -151,7 +151,7 @@ class APOsOperations(Resource):
         # noinspection PyUnresolvedReferences
         validator = POsApplicationPutForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"data": validator.errors, "msg": "Error at structure"}, 400
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
         data = validator.data
         data_out, code = update_po_application_api(data, data_token)
         return data_out, code
@@ -166,7 +166,7 @@ class APOsOperations(Resource):
         # noinspection PyUnresolvedReferences
         validator = POAppDeleteForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"data": validator.errors, "msg": "Error at structure"}, 400
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
         data = validator.data
         data_out, code = cancel_po_application_api(data, data_token)
         return data_out, code
@@ -184,27 +184,27 @@ class POsOperations(Resource):
         # noinspection PyUnresolvedReferences
         validator = PurchaseOrderPostForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"data": validator.errors, "msg": "Error at structure"}, 400
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
         data = validator.data
         data_out, code = create_purchaser_order_api(data, data_token)
         return data_out, code
 
     @ns.expect(expected_headers_per, purchase_order_put_model)
     def put(self):
-        flag, error, result = token_verification_procedure(
+        flag, data_token, msg = token_verification_procedure(
             request, department=["orders", "administracion"]
         )
         if not flag:
             return {
-                "error": error if error != "" else "No autorizado. Token invalido"
+                "error": msg if msg != "" else "No autorizado. Token invalido"
             }, 401
 
         # noinspection PyUnresolvedReferences
         validator = PurchaseOrderPutForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"data": validator.errors, "msg": "Error at structure"}, 400
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
         data = validator.data
-        data_out, code = update_purchase_order_api(data, error)
+        data_out, code = update_purchase_order_api(data, data_token)
         return data_out, code
 
     @ns.expect(expected_headers_per, purchase_order_delete_model)
@@ -217,7 +217,7 @@ class POsOperations(Resource):
         # noinspection PyUnresolvedReferences
         validator = PurchaseOrderDeleteForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"data": validator.errors, "msg": "Error at structure"}, 400
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
         data = validator.data
         data_out, code = cancel_purchase_order_api(data, data_token)
         return data_out, code
@@ -285,8 +285,7 @@ class DownloadPDFPurchase(Resource):
         data, code = dowload_file_purchase(po_id, data_token)
         if code == 200:
             return send_file(data, as_attachment=True)  # pyrefly: ignore
-        else:
-            return {"msg": "error at downloading"}, code
+        return data, code
 
 
 @ns.route("/purchase/download/pdfItemsPurchaseStorage")
@@ -301,8 +300,7 @@ class DownloadPDFPurchaseItemsStorage(Resource):
         data, code = download_file_purchase_item_approved(data_token)
         if code == 200:
             return send_file(data["data"], as_attachment=True)  # pyrefly: ignore
-        else:
-            return {"msg": "error at downloading"}, code
+        return data, code
 
 
 @ns.route("/purchase/folio/<string:folio>")
@@ -329,7 +327,7 @@ class ActivityQuotatioAction(Resource):
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         validator = QuotationActivityCreateForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"data": validator.errors, "msg": "Error at structure"}, 400
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
         data = validator.data
         data_out, code = create_quotation_activity_from_api(data, data_token)
         return data_out, code
@@ -343,7 +341,7 @@ class ActivityQuotatioAction(Resource):
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         validator = QuotationActivityUpdateForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"data": validator.errors, "msg": "Error at structure"}, 400
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
         data = validator.data
         data_out, code = update_quotation_activity_from_api(data, data_token)
         return data_out, code
@@ -357,7 +355,7 @@ class ActivityQuotatioAction(Resource):
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         validator = QuotationActivityDeleteForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"data": validator.errors, "msg": "Error at structure"}, 400
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
         data = validator.data
         data_out, code = delete_quotation_activity_from_api(data, data_token)
         return data_out, code
@@ -411,7 +409,7 @@ class ActivityRemissionAction(Resource):
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         validator = ReportActivityCreateForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"data": validator.errors, "msg": "Error at structure"}, 400
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
         data = validator.data
         data_out, code = create_remission_from_api(data, data_token)
         return data_out, code
@@ -425,7 +423,7 @@ class ActivityRemissionAction(Resource):
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         validator = ReportActivityUpdateForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"data": validator.errors, "msg": "Error at structure"}, 400
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
         data = validator.data
         data_out, code = update_remission_from_api(data, data_token)
         return data_out, code
@@ -439,7 +437,7 @@ class ActivityRemissionAction(Resource):
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         validator = ReportActivityDeleteForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"data": validator.errors, "msg": "Error at structure"}, 400
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
         data = validator.data
         data_out, code = delete_remission_from_api(data, data_token)
         return data_out, code
@@ -456,7 +454,7 @@ class ActivityRemissionTableAction(Resource):
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         validator = ReportActivityCreateControlTableForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"data": validator.errors, "msg": "Error at structure"}, 400
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
         data = validator.data
         data_out, code = create_remission_from_api(data, data_token)
         return data_out, code
@@ -470,7 +468,7 @@ class ActivityRemissionTableAction(Resource):
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         validator = ReportActivityUpdateControlTableForm.from_json(ns.payload)  # pyrefly: ignore
         if not validator.validate():
-            return {"data": validator.errors, "msg": "Error at structure"}, 400
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
         data = validator.data
         data_out, code = update_remission_control_table_from_api(data, data_token)
         return data_out, code
@@ -520,9 +518,7 @@ class UploadActivityReportAttachment(Resource):
                 },
                 data_token,
             )
-            if code != 201:
-                return {"data": data_out, "msg": "Error at file structure"}, 400
-            return {"data": data_out, "msg": f"Ok with filaname: {filename}"}, 201
+            return data_out, code
         else:
             return {"msg": "No se subio el archivo"}, 400
 
@@ -540,16 +536,17 @@ class DownloadVehicleVoucherAttachment(Resource):
             ns.payload
         )
         if not validator.validate():
-            return {"data": validator.errors, "msg": "Error at structure"}, 400
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
         data = validator.data
         filename = data["filename"].split("/")[-1]
         temp_filepath = os.path.join(tempfile.mkdtemp(), filename)
         data["filepath"] = temp_filepath
         data_out, code = download_report_activity_attachment_api(data, data_token)
-        if isinstance(data_out.get("path"), str):
-            return send_file(data_out["path"], as_attachment=True)
-        else:
-            return {"data": data_out, "msg": "Error at file structure"}, 400
+        path = data_out.get("data", {})
+        path = path.get("path") if isinstance(path, dict) else None
+        if isinstance(path, str):
+            return send_file(path, as_attachment=True)
+        return data_out, code
 
 
 @ns.route("/APOItemsFastOrder")

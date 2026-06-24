@@ -31,10 +31,8 @@ class ListFilesPayroll(Resource):
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        code, data_out = get_files_list_nomina(emp_id, data_token)
-        if code != 200:
-            return {"data": None, "msg": "No files"}, code
-        return {"data": data_out, "msg": "ok"}, code
+        data_out, code = get_files_list_nomina(emp_id, data_token)
+        return data_out, code
 
 
 @ns.route("/payroll/employee/file")
@@ -44,17 +42,17 @@ class DownloadFilesPayroll(Resource):
         # noinspection PyUnresolvedReferences
         validator = RequestFileForm.from_json(ns.payload) # pyrefly: ignore
         if not validator.validate():
-            return {"error": validator.errors}, 400
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
         data = validator.data
         flag, data_token, msg = token_verification_procedure(
             request, emp_id=data["emp_id"], department="rrhh"
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        filepath, code = download_nomina_docs(data, data_token)
+        data_out, code = download_nomina_docs(data, data_token)
         if code != 200:
-            return {"data": None, "msg": "No files"}, code
-        return send_file(filepath, as_attachment=True)
+            return data_out, code
+        return send_file(data_out, as_attachment=True) # pyrefly: ignore
 
 
 @ns.route("/vacations/events")
@@ -65,7 +63,5 @@ class VacationsEvents(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
 
-        data, code = get_all_vacations_data_date(data_token)
-        if code != 200:
-            return {"data": None, "msg": f"No files: {str(data)}"}, code
-        return {"data": data, "msg": "ok"}, code
+        data_out, code = get_all_vacations_data_date(data_token)
+        return data_out, code

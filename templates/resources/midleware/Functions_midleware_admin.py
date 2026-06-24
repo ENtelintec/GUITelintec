@@ -445,7 +445,7 @@ def get_all_clients_data(data_token):
     flag, error, data = get_all_customers_db(data_token)
 
     if not flag:
-        return {"data": [], "msg": error}, 400
+        return {"data": [], "msg": "No se pudieron obtener los clientes", "error": error}, 400
     data_out = []
     for item in data:
         data_out.append(
@@ -458,7 +458,7 @@ def get_all_clients_data(data_token):
                 "address": item[5],
             }
         )
-    return {"data": data_out, "msg": "Ok"}, 200
+    return {"data": data_out, "msg": None, "error": None}, 200
 
 
 def insert_customer(data, data_token):
@@ -471,8 +471,12 @@ def insert_customer(data, data_token):
         data_token,
     )
     if not flag:
-        return {"data": None, "msg": error}, 400
-    return {"data": result, "msg": "Ok"}, 201
+        return {"data": None, "msg": "No se pudo crear el cliente", "error": error}, 400
+    return {
+        "data": {"id_customer": result},
+        "msg": f"Cliente creado correctamente (ID {result})",
+        "error": None,
+    }, 201
 
 
 def update_customer(data, data_token):
@@ -486,21 +490,29 @@ def update_customer(data, data_token):
         data_token,
     )
     if not flag:
-        return {"data": None, "msg": error}, 400
-    return {"data": result, "msg": "Ok"}, 200
+        return {"data": None, "msg": "No se pudo actualizar el cliente", "error": error}, 400
+    return {
+        "data": {"id_customer": data.get("id")},
+        "msg": f"Cliente actualizado correctamente (ID {data.get('id')})",
+        "error": None,
+    }, 200
 
 
 def delete_customer(data, data_token):
     flag, error, result = delete_customer_db(data.get("id"), data_token)
     if not flag:
-        return {"data": None, "msg": error}, 400
-    return {"data": result, "msg": "Ok"}, 200
+        return {"data": None, "msg": "No se pudo eliminar el cliente", "error": error}, 400
+    return {
+        "data": {"id_customer": data.get("id")},
+        "msg": f"Cliente eliminado correctamente (ID {data.get('id')})",
+        "error": None,
+    }, 200
 
 
 def get_all_suppliers_data(data_token):
     flag, error, data = get_all_suppliers_amc(data_token)
     if not flag:
-        return {"data": [], "msg": error}, 400
+        return {"data": [], "msg": "No se pudieron obtener los proveedores", "error": error}, 400
     data_out = []
     for item in data:
         extra_info = json.loads(item[8])
@@ -524,7 +536,7 @@ def get_all_suppliers_data(data_token):
                 "items": json.loads(item[9]),
             }
         )
-    return {"data": data_out, "msg": "Ok"}, 200
+    return {"data": data_out, "msg": None, "error": None}, 200
 
 
 def get_items_supplier_name(id_supplier: str, data_token):
@@ -535,7 +547,7 @@ def get_items_supplier_name(id_supplier: str, data_token):
         id_s = None
     flag, error, results = get_items_supplier_by_id(id_s, data_token)
     if not flag:
-        return {"data": [], "msg": error}, 400
+        return {"data": [], "msg": "No se pudieron obtener los items del proveedor", "error": error}, 400
     data_out = []
     for item in results:
         data_out.append(
@@ -554,7 +566,7 @@ def get_items_supplier_name(id_supplier: str, data_token):
                 "id_inventory": item[7],
             }
         )
-    return {"data": data_out, "msg": "Ok"}, 200
+    return {"data": data_out, "msg": None, "error": None}, 200
 
 
 def insert_supplier(data, data_token):
@@ -571,8 +583,7 @@ def insert_supplier(data, data_token):
         data_token,
     )
     if not flag:
-        return {"data": None, "msg": error}, 400
-    # create items
+        return {"data": None, "msg": "No se pudo crear el proveedor", "error": error}, 400
     items = data.get("items", [])
     errors_i = []
     for item in items:
@@ -591,36 +602,32 @@ def insert_supplier(data, data_token):
         if not flag:
             errors_i.append(error)
 
-    if len(errors_i) > 0:
-        if len(errors_i) == len(items):
-            flag, error, result = delete_supplier_amc(id_supplier, data_token)
-            if flag:
-                msg = "supplier not created because items where not created"
-                return {"data": None, "msg": msg, "error": errors_i}, 400
-        else:
-            msg = f"Supplier created with id {id_supplier} but some items failed to create: {len(errors_i)}"
-            create_notification_permission(
-                msg,
-                data_token,
-                ["administracion", "almacen"],
-                "Error Proveedor Creado",
-                data_token.get("emp_id"),
-                0,
-            )
-            write_log_file(log_file_admin, msg, data_token)
-        return {"data": None, "msg": msg, "error": errors_i}, 422
-    else:
-        msg = f"Proveedor creado con ID-{id_supplier} por el empleado {data_token.get('name')}"
-        create_notification_permission(
-            msg,
-            data_token,
-            ["administracion", "almacen"],
-            "Proveedor Creado",
-            data_token.get("emp_id"),
-            0,
-        )
-        write_log_file(log_file_admin, msg, data_token)
-        return {"data": id_supplier, "msg": "Ok"}, 201
+    if len(items) > 0 and len(errors_i) == len(items):
+        delete_supplier_amc(id_supplier, data_token)
+        return {
+            "data": None,
+            "msg": "No se pudo crear ningún item; proveedor revertido",
+            "error": errors_i,
+        }, 400
+
+    msg = f"Proveedor creado con ID-{id_supplier} por el empleado {data_token.get('name')}"
+    create_notification_permission(
+        msg,
+        data_token,
+        ["administracion", "almacen"],
+        "Proveedor Creado",
+        data_token.get("emp_id"),
+        0,
+    )
+    write_log_file(log_file_admin, msg, data_token)
+    msg_out = f"Proveedor creado correctamente (ID {id_supplier})"
+    if errors_i:
+        msg_out += f". {len(errors_i)} items no se pudieron crear."
+    return {
+        "data": {"id_supplier": id_supplier},
+        "msg": msg_out,
+        "error": errors_i if errors_i else None,
+    }, 201
 
 
 def update_supplier(data, data_token):
@@ -637,8 +644,7 @@ def update_supplier(data, data_token):
         data_token,
     )
     if not flag:
-        return {"data": None, "msg": error}, 400
-    # update items
+        return {"data": None, "msg": "No se pudo actualizar el proveedor", "error": error}, 400
     errors_i = []
     items = data.get("items", [])
     for item in items:
@@ -676,35 +682,37 @@ def update_supplier(data, data_token):
         )
         if not flag:
             errors_i.append(error)
-    msg = ""
-    if len(errors_i) > 0:
-        if len(errors_i) == len(items):
-            flag, error, result = delete_supplier_amc(item.get("id_supplier"), data_token)
-            if flag:
-                msg = "supplier not updated because items where not updated"
-                return {"data": None, "msg": msg, "error": errors_i}, 400
-            else:
-                return {"data": None, "msg": msg, "error": errors_i}, 422
-        else:
-            msg = f"Supplier created with id {item.get('id_supplier')} but some items failed to create: {len(errors_i)}"
-            create_notification_permission(
-                msg,
-                data_token,
-                ["administracion", "almacen"],
-                "Error Proveedor Creado",
-                data_token.get("emp_id"),
-                0,
-            )
-            write_log_file(log_file_admin, msg, data_token)
-            return {"data": None, "msg": msg, "error": errors_i}, 422
-
-    return {"data": result, "msg": "Ok"}, 200
+    id_supplier = data.get("id")
+    if len(items) > 0 and len(errors_i) == len(items):
+        return {
+            "data": None,
+            "msg": "No se pudo actualizar ningún item del proveedor",
+            "error": errors_i,
+        }, 400
+    msg = f"Proveedor actualizado con ID-{id_supplier} por el empleado {data_token.get('name')}"
+    create_notification_permission(
+        msg,
+        data_token,
+        ["administracion", "almacen"],
+        "Proveedor Actualizado",
+        data_token.get("emp_id"),
+        0,
+    )
+    write_log_file(log_file_admin, msg, data_token)
+    msg_out = f"Proveedor actualizado correctamente (ID {id_supplier})"
+    if errors_i:
+        msg_out += f". {len(errors_i)} items no se pudieron actualizar."
+    return {
+        "data": {"id_supplier": id_supplier},
+        "msg": msg_out,
+        "error": errors_i if errors_i else None,
+    }, 200
 
 
 def delete_supplier(data, data_token):
     flag, error, result = delete_supplier_amc(data.get("id"), data_token)
     if not flag:
-        return {"data": None, "msg": error}, 400
+        return {"data": None, "msg": "No se pudo eliminar el proveedor", "error": error}, 400
     msg = f"Proveedor eliminado con ID-{data.get('id')} por el empleado {data_token.get('name')}"
     create_notification_permission(
         msg,
@@ -715,7 +723,11 @@ def delete_supplier(data, data_token):
         0,
     )
     write_log_file(log_file_admin, msg, data_token)
-    return {"data": result, "msg": "Ok"}, 200
+    return {
+        "data": {"id_supplier": data.get("id")},
+        "msg": f"Proveedor eliminado correctamente (ID {data.get('id')})",
+        "error": None,
+    }, 200
 
 
 def update_extra_info_supplier(data, data_token):
@@ -723,7 +735,7 @@ def update_extra_info_supplier(data, data_token):
         data.get("id"), data.get("brands"), data_token
     )
     if not flag:
-        return {"data": None, "msg": error}, 400
+        return {"data": None, "msg": "No se pudo actualizar la información extra del proveedor", "error": error}, 400
     msg = f"Informacion extra actualizada para el proveedor con ID-{data.get('id')} por el empleado {data_token.get('name')}"
     create_notification_permission(
         msg,
@@ -734,7 +746,11 @@ def update_extra_info_supplier(data, data_token):
         0,
     )
     write_log_file(log_file_admin, msg, data_token)
-    return {"data": result, "msg": "Ok"}, 200
+    return {
+        "data": {"id_supplier": data.get("id")},
+        "msg": f"Información extra del proveedor actualizada correctamente (ID {data.get('id')})",
+        "error": None,
+    }, 200
 
 
 def fetch_heads_main(data_token):
@@ -743,7 +759,7 @@ def fetch_heads_main(data_token):
     permissions_last = [item.lower().split(".")[-1] for item in permissions.values()]
     flag, error, result = check_if_gerente(data_token.get("emp_id"), data_token)
     if len(result) == 0 and "administrator" not in permissions_last:
-        return {"data": [], "msg": error}, 400
+        return {"data": [], "msg": "No se encontraron encargados para el usuario", "error": error if error else None}, 400
     dep_ids_list = [dep_id]
     for k, v in dict_deps.items():
         if "administrator" in permissions_last:
@@ -753,7 +769,7 @@ def fetch_heads_main(data_token):
             dep_ids_list.append(v)
     flag, error, result = get_heads_list_db(dep_ids_list, data_token)
     if not flag:
-        return {"data": [], "msg": error}, 400
+        return {"data": [], "msg": "No se pudieron obtener los encargados", "error": error}, 400
     data_out = []
     for item in result:
         extra_info = json.loads(item[7])
@@ -772,14 +788,14 @@ def fetch_heads_main(data_token):
                 "area": extra_info.get("area", 0),
             }
         )
-    return {"data": data_out, "msg": "Ok"}, 200
+    return {"data": data_out, "msg": None, "error": None}, 200
 
 
 def fetch_heads(id_dep: int, data_token):
     id_department: int | None = int(id_dep) if id_dep >= 0 else None
     flag, error, result = get_heads_db(data_token, id_department)
     if not flag:
-        return {"data": [], "msg": error}, 400
+        return {"data": [], "msg": "No se pudieron obtener los encargados", "error": error}, 400
     data_out = []
     for item in result:
         extra_info = json.loads(item[7])
@@ -798,7 +814,7 @@ def fetch_heads(id_dep: int, data_token):
                 "area": extra_info.get("area", 0),
             }
         )
-    return {"data": data_out, "msg": "Ok"}, 200
+    return {"data": data_out, "msg": None, "error": None}, 200
 
 
 def insert_head_from_api(data, data_token):
@@ -821,7 +837,7 @@ def insert_head_from_api(data, data_token):
         data["name"], data["department"], employee, extra_info, data_token
     )
     if not flag:
-        return {"data": None, "msg": error}, 400
+        return {"data": None, "msg": "No se pudo crear el encargado", "error": error}, 400
     msg = f"Encargado creado con ID-{result} por el empleado {data_token.get('name')}"
     create_notification_permission(
         msg,
@@ -832,7 +848,11 @@ def insert_head_from_api(data, data_token):
         0,
     )
     write_log_file(log_file_admin, msg, data_token)
-    return {"data": result, "msg": "Ok"}, 201
+    return {
+        "data": {"id_head": result},
+        "msg": f"Encargado creado correctamente (ID {result})",
+        "error": None,
+    }, 201
 
 
 def update_head_from_api(data, data_token):
@@ -855,7 +875,7 @@ def update_head_from_api(data, data_token):
         data["id"], data["name"], data["department"], employee, extra_info, data_token
     )
     if not flag:
-        return {"data": None, "msg": error}, 400
+        return {"data": None, "msg": "No se pudo actualizar el encargado", "error": error}, 400
     msg = f"Encargado actualizado con ID-{data['id']} por el empleado {data_token.get('name')}"
     create_notification_permission(
         msg,
@@ -866,13 +886,17 @@ def update_head_from_api(data, data_token):
         0,
     )
     write_log_file(log_file_admin, msg, data_token)
-    return {"data": result, "msg": "Ok"}, 200
+    return {
+        "data": {"id_head": data["id"]},
+        "msg": f"Encargado actualizado correctamente (ID {data['id']})",
+        "error": None,
+    }, 200
 
 
 def delete_head_from_api(data, data_token):
     flag, error, result = delete_head_DB(data["id"], data_token)
     if not flag:
-        return {"data": None, "msg": error}, 400
+        return {"data": None, "msg": "No se pudo eliminar el encargado", "error": error}, 400
     msg = f"Encargado eliminado con ID-{data['id']} por el empleado {data_token.get('name')}"
     create_notification_permission(
         msg,
@@ -883,7 +907,11 @@ def delete_head_from_api(data, data_token):
         0,
     )
     write_log_file(log_file_admin, msg, data_token)
-    return {"data": result, "msg": "Ok"}, 200
+    return {
+        "data": {"id_head": data["id"]},
+        "msg": f"Encargado eliminado correctamente (ID {data['id']})",
+        "error": None,
+    }, 200
 
 
 def items_quotation_from_file(data):
@@ -935,8 +963,8 @@ def items_supplier_from_file(data):
         }
         products.append(product)
     if len(products) == 0:
-        return {"data": None, "msg": "Error at file structure"}, 400
-    return {"data": products, "msg": "Ok"}, 200
+        return {"data": None, "msg": "Estructura del archivo inválida", "error": "El archivo no contiene items válidos"}, 400
+    return {"data": products, "msg": "Items cargados correctamente", "error": None}, 200
 
 
 def get_contracts_abreviations(data_token):

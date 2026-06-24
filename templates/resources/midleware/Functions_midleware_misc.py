@@ -122,9 +122,9 @@ def get_task_by_id_employee(id_emp: int, data_token):
 def get_all_vacations_data_date(data_token):
     flag, error, result = get_vacations_data(data_token)
     if not flag:
-        return error, 400
+        return {"data": None, "msg": "Error al obtener vacaciones", "error": error}, 400
     if not (isinstance(result, list) or isinstance(result, tuple)):
-        return [f"no vacations {result}"], 400
+        return {"data": None, "msg": "Formato de datos inválido", "error": f"no vacations {result}"}, 400
     time_zone = pytz.timezone(timezone_software)
     date_today = datetime.now(pytz.utc).astimezone(time_zone)
     date_today.replace(day=1)
@@ -172,7 +172,7 @@ def get_all_vacations_data_date(data_token):
                     }
                 )
 
-    return out, 200
+    return {"data": out, "msg": None, "error": None}, 200
 
 
 def get_all_dashboard_data(data_token):
