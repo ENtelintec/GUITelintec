@@ -40,6 +40,167 @@ __author__ = "Edisson Naula"
 __date__ = "$ 27/oct/2025  at 20:37 $"
 
 
+def _coerce_extra_info(value) -> dict:
+    """extra_info del item puede venir como dict (anidado en JSON_OBJECT) o como str (fetchall)."""
+    if not value:
+        return {}
+    if isinstance(value, dict):
+        return value
+    try:
+        parsed = json.loads(value)
+        return parsed if isinstance(parsed, dict) else {}
+    except (ValueError, TypeError):
+        return {}
+
+
+def _flatten_items_unit_price_quotation(items: list) -> list:
+    """Expone unit_price_quotation (sugerido de la cotizacion) plano en cada item del GET."""
+    for it in items:
+        extra_info_item = _coerce_extra_info(it.get("extra_info"))
+        it["unit_price_quotation"] = extra_info_item.get("unit_price_quotation", 0)
+    return items
+
+
+# --- Historial resumido de cambios de la remision ---------------------------------
+# Subconjunto curado de campos a vigilar; el front mapea cada field a su etiqueta.
+_HISTORY_META_FIELDS = [
+    "date", "folio", "client_id", "plant", "area", "location",
+    "general_description", "comments", "status",
+    "pedido", "pedido_exiros", "remision", "remito",
+    "date_report", "date_sign", "date_delivery",
+]
+_HISTORY_ITEM_FIELDS = ["description", "udm", "quantity", "unit_price", "unit_price_quotation"]
+_HISTORY_NUMERIC_FIELDS = {"quantity", "unit_price", "unit_price_quotation", "client_id", "status"}
+
+
+def _normalize_history_value(field, value):
+    """Normaliza un valor para comparar/almacenar en el diff (numericos a float, fechas a str)."""
+    if value is None or value == "":
+        return None
+    if hasattr(value, "strftime"):  # date / datetime
+        return value.strftime(format_timestamps)
+    if field in _HISTORY_NUMERIC_FIELDS:
+        try:
+            return float(value)
+        except (ValueError, TypeError):
+            return str(value).strip()
+    return str(value).strip()
+
+
+def _diff_history_fields(old: dict, new: dict, fields: list) -> list:
+    """Devuelve [{field, before, after}] para los campos curados que cambiaron."""
+    changes = []
+    for field in fields:
+        before = _normalize_history_value(field, old.get(field))
+        after = _normalize_history_value(field, new.get(field))
+        if before != after:
+            changes.append({"field": field, "before": before, "after": after})
+    return changes
+
+
+def _remission_meta_from_row(result_ra, extra_info: dict) -> dict:
+    """Arma el dict de metadata curada a partir de la fila de activity_reports."""
+    return {
+        "date": result_ra[1],
+        "folio": result_ra[2],
+        "client_id": result_ra[3],
+        "plant": result_ra[8],
+        "area": result_ra[9],
+        "location": result_ra[10],
+        "general_description": result_ra[11],
+        "comments": result_ra[12],
+        "status": result_ra[14],
+        "pedido": extra_info.get("pedido", ""),
+        "pedido_exiros": extra_info.get("pedido_exiros", ""),
+        "remision": extra_info.get("remision", ""),
+        "remito": extra_info.get("remito", ""),
+        "date_report": extra_info.get("date_report", ""),
+        "date_sign": extra_info.get("date_sign", ""),
+        "date_delivery": extra_info.get("date_delivery", ""),
+    }
+
+
+def _remission_meta_from_payload(metadata: dict, new_extra_info: dict, area=None, status=None) -> dict:
+    """Arma el dict de metadata curada con los valores que se van a escribir.
+
+    `area`/`status` permiten forzar el valor conservado (p. ej. tabla de control)
+    para que no marquen un cambio espurio.
+    """
+    return {
+        "date": metadata.get("date"),
+        "folio": metadata.get("folio"),
+        "client_id": metadata.get("client_id"),
+        "plant": metadata.get("plant"),
+        "area": area if area is not None else metadata.get("area"),
+        "location": metadata.get("location"),
+        "general_description": metadata.get("general_description"),
+        "comments": metadata.get("comments"),
+        "status": status if status is not None else metadata.get("status"),
+        "pedido": new_extra_info.get("pedido", ""),
+        "pedido_exiros": new_extra_info.get("pedido_exiros", ""),
+        "remision": new_extra_info.get("remision", ""),
+        "remito": new_extra_info.get("remito", ""),
+        "date_report": new_extra_info.get("date_report", ""),
+        "date_sign": new_extra_info.get("date_sign", ""),
+        "date_delivery": new_extra_info.get("date_delivery", ""),
+    }
+
+
+def _diff_remission_items(old_items_map: dict, payload_items: list) -> list:
+    """Resume altas/bajas/cambios de items: [{qa_item_id, description, action, fields:[...]}]."""
+    items_changes = []
+    for item in payload_items:
+        item_id = item.get("id")
+        if item_id is not None and item_id > 0:
+            old_item = old_items_map.get(item_id, {})
+            if item.get("is_erased") == 1:
+                items_changes.append({
+                    "qa_item_id": item_id,
+                    "description": old_item.get("description", item.get("description", "")),
+                    "action": "removed",
+                    "fields": [],
+                })
+                continue
+            old_suggested = _coerce_extra_info(old_item.get("extra_info")).get(
+                "unit_price_quotation", 0
+            )
+            old_cmp = {
+                "description": old_item.get("description"),
+                "udm": old_item.get("udm"),
+                "quantity": old_item.get("quantity"),
+                "unit_price": old_item.get("unit_price"),
+                "unit_price_quotation": old_suggested,
+            }
+            new_cmp = {
+                "description": item.get("description"),
+                "udm": item.get("udm"),
+                "quantity": item.get("quantity"),
+                "unit_price": item.get("unit_price"),
+                # el sugerido se preserva (la remision no lo envia): no debe marcar cambio
+                "unit_price_quotation": old_suggested,
+            }
+            field_changes = _diff_history_fields(old_cmp, new_cmp, _HISTORY_ITEM_FIELDS)
+            if field_changes:
+                items_changes.append({
+                    "qa_item_id": item_id,
+                    "description": item.get("description", old_item.get("description", "")),
+                    "action": "updated",
+                    "fields": field_changes,
+                })
+        else:
+            items_changes.append({
+                "qa_item_id": None,
+                "description": item.get("description", ""),
+                "action": "added",
+                "fields": [
+                    {"field": f, "before": None, "after": _normalize_history_value(f, item.get(f))}
+                    for f in _HISTORY_ITEM_FIELDS
+                    if f != "unit_price_quotation"
+                ],
+            })
+    return items_changes
+
+
 def create_quotation_activity_from_api(data, data_token):
     # create quotation activity registry:
     time_zone = pytz.timezone(timezone_software)
@@ -48,7 +209,7 @@ def create_quotation_activity_from_api(data, data_token):
     user = data_token.get("emp_id")
     history_qa = [
         {
-            timestamp: timestamp,
+            "timestamp": timestamp,
             "user": user,
             "action": "Creacion",
             "comment": "Creación de actividad de cotización.",
@@ -85,7 +246,7 @@ def create_quotation_activity_from_api(data, data_token):
     results = []
     history_item = [
         {
-            timestamp: timestamp,
+            "timestamp": timestamp,
             "user": user,
             "action": "Creacion",
             "comment": "Creación de ítem de actividad de cotización.",
@@ -101,6 +262,7 @@ def create_quotation_activity_from_api(data, data_token):
             unit_price=item["unit_price"],
             history=history_item,
             item_c_id=item.get("item_contract_id", None),
+            extra_info={"unit_price_quotation": item["unit_price"]},
             data_token=data_token,
         )
         flag_list.append(flag)
@@ -168,7 +330,7 @@ def update_quotation_activity_from_api(data, data_token):
                 # create new item
                 history_item = [
                     {
-                        timestamp: timestamp,
+                        "timestamp": timestamp,
                         "user": user,
                         "action": "Creacion",
                         "comment": "Creación de ítem de actividad de cotización.",
@@ -183,6 +345,7 @@ def update_quotation_activity_from_api(data, data_token):
                     unit_price=new_item["unit_price"],
                     history=history_item,
                     item_c_id=new_item.get("client_id", None),
+                    extra_info={"unit_price_quotation": new_item["unit_price"]},
                     data_token=data_token,
                 )
             else:
@@ -202,12 +365,22 @@ def update_quotation_activity_from_api(data, data_token):
                     else:
                         history_item.append(
                             {
-                                timestamp: timestamp,
+                                "timestamp": timestamp,
                                 "user": user,
                                 "action": "Actualización",
                                 "comment": "Actualización de ítem de actividad de cotización.",
                             }
                         )
+                        # El sugerido de la cotizacion siempre se actualiza en extra_info.
+                        existing_item = dict_items[item_id]
+                        extra_info_item = _coerce_extra_info(existing_item.get("extra_info"))
+                        extra_info_item["unit_price_quotation"] = new_item["unit_price"]
+                        # Si el item ya tiene remision (report_id), se protege el unit_price real;
+                        # si no, unit_price = sugerido.
+                        if existing_item.get("report_id"):
+                            unit_price_to_write = existing_item.get("unit_price", new_item["unit_price"])
+                        else:
+                            unit_price_to_write = new_item["unit_price"]
                         flag, error, result = update_quotation_activity_item(
                             qa_item_id=item_id,
                             quotation_id=data["id"],
@@ -216,8 +389,9 @@ def update_quotation_activity_from_api(data, data_token):
                             description=new_item["description"],
                             udm=new_item["udm"],
                             quantity=new_item["quantity"],
-                            unit_price=new_item["unit_price"],
+                            unit_price=unit_price_to_write,
                             history=history_item,
+                            extra_info=extra_info_item,
                             data_token=data_token,
                         )
             flags.append(flag)
@@ -236,7 +410,7 @@ def update_quotation_activity_from_api(data, data_token):
         error_items = [e for f, e in zip(flags, errors) if not f]
     history.append(
         {
-            timestamp: timestamp,
+            "timestamp": timestamp,
             "user": user,
             "action": "Actualización",
             "comment": "Actualización de actividad de cotización\n" + msg,
@@ -313,7 +487,9 @@ def get_quotations_from_api(id_quotation: int | None, data_token):
                 "comments": item[12],
                 "status": item[13],
                 "history": json.loads(item[14]) if item[14] else [],
-                "items": json.loads(item[15]) if item[15] else [],
+                "items": _flatten_items_unit_price_quotation(
+                    json.loads(item[15]) if item[15] else []
+                ),
             }
         )
     return {"data": data_out, "msg": None, "error": None}, 200
@@ -399,7 +575,7 @@ def create_remission_control_table_from_api(data, data_token):
     user = data_token.get("emp_id", "desconocido")
     history_report = [
         {
-            timestamp: timestamp,
+            "timestamp": timestamp,
             "user": user,
             "action": "Creación",
             "comment": "Creación de remision de actividad.",
@@ -449,7 +625,7 @@ def create_remission_from_api(data, data_token):
     user = data_token.get("emp_id", "desconocido")
     history_report = [
         {
-            timestamp: timestamp,
+            "timestamp": timestamp,
             "user": user,
             "action": "Creación",
             "comment": "Creación de remision de actividad.",
@@ -518,6 +694,7 @@ def create_remission_from_api(data, data_token):
                 "item_c_id": item[7],
                 "report_id": item[8],
                 "quotation_id": item[9],
+                "extra_info": item[10],
             }
             for item in quotation_items
         }
@@ -528,11 +705,16 @@ def create_remission_from_api(data, data_token):
             history_item = dict_quotation_items[qa_item_id].get("history", [])
             history_item.append(
                 {
-                    timestamp: timestamp,
+                    "timestamp": timestamp,
                     "user": user,
                     "action": "Update from Remision",
                     "comment": "Se actualizo el item desde remision",
                 }
+            )
+            # Preserva el sugerido (unit_price_quotation) que ya viene de la cotizacion;
+            # unit_price pasa a ser el precio real de la remision.
+            extra_info_item = _coerce_extra_info(
+                dict_quotation_items[qa_item_id].get("extra_info")
             )
             flag, error, result = update_quotation_activity_item(
                 qa_item_id,
@@ -545,6 +727,7 @@ def create_remission_from_api(data, data_token):
                 remision_item["unit_price"],
                 history_item,
                 data_token,
+                extra_info=extra_info_item,
             )
             flag_list.append(flag)
             errors.append(error)
@@ -552,7 +735,7 @@ def create_remission_from_api(data, data_token):
         else:
             history_item = [
                 {
-                    timestamp: timestamp,
+                    "timestamp": timestamp,
                     "user": user,
                     "action": "Creacion",
                     "comment": "Creación de ítem de actividad de cotización.",
@@ -567,6 +750,7 @@ def create_remission_from_api(data, data_token):
                 unit_price=remision_item["unit_price"],
                 history=history_item,
                 item_c_id=remision_item.get("item_contract_id", None),
+                extra_info={"unit_price_quotation": 0},
                 data_token=data_token,
             )
             flag_list.append(flag)
@@ -633,7 +817,9 @@ def get_remission_from_api(id_report: int | None, data_token):
                 "quotation_id": item[13],
                 "status": item[14],
                 "history": json.loads(item[15]) if item[15] else [],
-                "items": json.loads(item[16]) if item[16] else [],
+                "items": _flatten_items_unit_price_quotation(
+                    json.loads(item[16]) if item[16] else []
+                ),
                 "files": json.loads(item[17]) if item[17] else [],
                 "contract_id": item[18],
                 "pedido": extra_info.get("pedido", ""),
@@ -675,21 +861,31 @@ def update_remission_from_api(data, data_token):
 
     history = result_ra[15]
     history = json.loads(history) if history else []
+    quotation_id = data["metadata"].get("quotation_id", None)
+    # Update report activity:
+    extra_info = create_extra_info_remision(data)
+
+    # Historial resumido de cambios (metadata + items) contra el estado previo.
+    old_extra_info = _coerce_extra_info(result_ra[19])
+    old_items_map = {
+        int(it["qa_item_id"]): it
+        for it in (json.loads(result_ra[16]) if result_ra[16] else [])
+    }
+    meta_changes = _diff_history_fields(
+        _remission_meta_from_row(result_ra, old_extra_info),
+        _remission_meta_from_payload(data["metadata"], extra_info),
+        _HISTORY_META_FIELDS,
+    )
+    items_changes = _diff_remission_items(old_items_map, data["items"])
     history.append(
         {
-            timestamp: timestamp,
+            "timestamp": timestamp,
             "user": user,
             "action": "Actualización",
             "comment": "Actualización de remision de actividad.",
+            "changes": {"metadata": meta_changes, "items": items_changes},
         }
     )
-    quotation_id = data["metadata"].get("quotation_id", None)
-    # Update report activity:
-    # extra_info = {
-    #     "project": data["metadata"]["project"],
-    #     "project_description": data["metadata"]["project_description"],
-    # }
-    extra_info = create_extra_info_remision(data)
 
     flag, error, result = update_activity_report(
         report_id=data["metadata"]["id"],
@@ -716,8 +912,7 @@ def update_remission_from_api(data, data_token):
             "msg": "Error al actualizar registro de remision  de actividad",
             "error": error,
         }, 400
-    items_report = json.loads(result_ra[16]) if result_ra[16] else []
-    dict_items = {int(item["qa_item_id"]): item for item in items_report}
+    dict_items = old_items_map
     # Update items:
     flag_list = []
     errors = []
@@ -730,12 +925,14 @@ def update_remission_from_api(data, data_token):
                 history_item = dict_items[item["id"]]["history"]
                 history_item.append(
                     {
-                        timestamp: timestamp,
+                        "timestamp": timestamp,
                         "user": user,
                         "action": "Actualización",
                         "comment": "Actualización de ítem de reporte de actividad.",
                     }
                 )
+                # Conserva el sugerido (unit_price_quotation); unit_price = real de la remision.
+                extra_info_item = _coerce_extra_info(dict_items[item["id"]].get("extra_info"))
                 flag, error, result = update_quotation_activity_item(
                     item["id"],
                     quotation_id,
@@ -747,11 +944,12 @@ def update_remission_from_api(data, data_token):
                     item["unit_price"],
                     history_item,
                     data_token,
+                    extra_info=extra_info_item,
                 )
         else:
             history_item = [
                 {
-                    timestamp: timestamp,
+                    "timestamp": timestamp,
                     "user": user,
                     "action": "Creación",
                     "comment": "Creación de ítem de reporte de actividad.",
@@ -766,6 +964,7 @@ def update_remission_from_api(data, data_token):
                 unit_price=item["unit_price"],
                 history=history_item,
                 item_c_id=item.get("item_contract_id", None),
+                extra_info={"unit_price_quotation": 0},
                 data_token=data_token,
             )
         flag_list.append(flag)
@@ -813,18 +1012,29 @@ def update_remission_control_table_from_api(data, data_token):
 
     history = result_ra[15]
     history = json.loads(history) if history else []
+
+    old_extra_info = _coerce_extra_info(result_ra[19])
+    existing_extra_info = dict(old_extra_info)
+    existing_extra_info.update(create_extra_info_remision(data))
+
+    # Historial resumido de cambios (solo metadata; la tabla de control no maneja items).
+    # area/status se conservan del registro previo, por eso no deben marcar cambio.
+    meta_changes = _diff_history_fields(
+        _remission_meta_from_row(result_ra, old_extra_info),
+        _remission_meta_from_payload(
+            data["metadata"], existing_extra_info, area=area, status=status
+        ),
+        _HISTORY_META_FIELDS,
+    )
     history.append(
         {
-            timestamp: timestamp,
+            "timestamp": timestamp,
             "user": user,
             "action": "Actualización",
             "comment": "Actualización de tabla de control de remision.",
+            "changes": {"metadata": meta_changes, "items": []},
         }
     )
-
-    existing_extra_info = result_ra[19]
-    existing_extra_info = json.loads(existing_extra_info) if existing_extra_info else {}
-    existing_extra_info.update(create_extra_info_remision(data))
 
     quotation_id = data["metadata"].get("quotation_id", None)
     quotation_id = quotation_id if quotation_id and quotation_id > 0 else None

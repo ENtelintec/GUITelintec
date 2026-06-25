@@ -230,8 +230,13 @@ def insert_quotation_activity_item(
     history: list,
     data_token,
     item_c_id: int | None,
+    extra_info: dict | None = None,
 ):
-    sql = "INSERT INTO sql_telintec_mod_admin.quotation_activity_items (quotation_id, report_id, item_c_id, description, udm, quantity, unit_price, history) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
+    # unit_price = precio real (sugerido durante la cotizacion, real tras la remision);
+    # el precio sugerido de la cotizacion se conserva en extra_info["unit_price_quotation"].
+    if extra_info is None:
+        extra_info = {}
+    sql = "INSERT INTO sql_telintec_mod_admin.quotation_activity_items (quotation_id, report_id, item_c_id, description, udm, quantity, unit_price, history, extra_info) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)"
     val = (
         quotation_id,
         report_id,
@@ -241,6 +246,7 @@ def insert_quotation_activity_item(
         quantity,
         unit_price,
         json.dumps(history),
+        json.dumps(extra_info),
     )
     flag, e, out = execute_sql(sql, val, 4, data_token)
     return flag, e, out
@@ -257,8 +263,13 @@ def update_quotation_activity_item(
     unit_price: float,
     history: list,
     data_token,
+    extra_info: dict | None = None,
 ):
-    sql = "UPDATE sql_telintec_mod_admin.quotation_activity_items SET description=%s, udm=%s, quantity=%s, unit_price=%s, history=%s, item_c_id=%s, report_id=%s , quotation_id=%s WHERE qa_item_id=%s"
+    # El llamador decide el unit_price a escribir (protege el real cuando ya hay remision)
+    # y entrega el extra_info ya resuelto (con unit_price_quotation preservado).
+    if extra_info is None:
+        extra_info = {}
+    sql = "UPDATE sql_telintec_mod_admin.quotation_activity_items SET description=%s, udm=%s, quantity=%s, unit_price=%s, history=%s, item_c_id=%s, report_id=%s , quotation_id=%s, extra_info=%s WHERE qa_item_id=%s"
     val = (
         description,
         udm,
@@ -268,6 +279,7 @@ def update_quotation_activity_item(
         item_c_id,
         report_id,
         quotation_id,
+        json.dumps(extra_info),
         qa_item_id,
     )
     flag, e, out = execute_sql(sql, val, 3, data_token)
@@ -283,17 +295,18 @@ def delete_quotation_activity_item(qa_item_id: int, data_token):
 
 def get_quotation_activity_items(quotation_id, data_token):
     sql = """
-    SELECT qa_item_id, 
-    description, 
-    udm, 
-    quantity, 
-    unit_price, 
-    line_total, 
-    history, 
-    item_c_id, 
-    report_id, 
-    quotation_id 
-    FROM sql_telintec_mod_admin.quotation_activity_items 
+    SELECT qa_item_id,
+    description,
+    udm,
+    quantity,
+    unit_price,
+    line_total,
+    history,
+    item_c_id,
+    report_id,
+    quotation_id,
+    extra_info
+    FROM sql_telintec_mod_admin.quotation_activity_items
     WHERE quotation_id = %s
     """
     val = (quotation_id,)
@@ -330,7 +343,8 @@ def get_quotation_activity_by_id(id_quotation, data_token):
         " 'quantity', qai.quantity, "
         " 'unit_price', qai.unit_price, "
         " 'line_total', qai.line_total, "
-        " 'history', qai.history "
+        " 'history', qai.history, "
+        " 'extra_info', qai.extra_info "
         ")) AS items "
         "FROM sql_telintec_mod_admin.quotations_activities AS qa "
         "LEFT JOIN sql_telintec_mod_admin.quotation_activity_items AS qai ON qa.qa_id = qai.quotation_id "
@@ -338,7 +352,11 @@ def get_quotation_activity_by_id(id_quotation, data_token):
         "GROUP BY qa.qa_id"
     )
     val = (id_quotation, id_quotation)
-    flag, e, out = execute_sql(sql, val, 1, data_token) if id_quotation is not None else execute_sql(sql, val, 2, data_token)
+    flag, e, out = (
+        execute_sql(sql, val, 1, data_token)
+        if id_quotation is not None
+        else execute_sql(sql, val, 2, data_token)
+    )
     return flag, e, out
 
 
@@ -375,7 +393,8 @@ def get_remission_by_id(id_report: int | None, data_token):
                     'quantity', qai.quantity,
                     'unit_price', qai.unit_price,
                     'line_total', qai.line_total,
-                    'history', qai.history
+                    'history', qai.history,
+                    'extra_info', qai.extra_info
                     )
                     ELSE NULL
                 END
@@ -393,7 +412,9 @@ def get_remission_by_id(id_report: int | None, data_token):
         GROUP BY ar.id"""
 
     val = (id_report, id_report)
-    flag, e, out = execute_sql(sql, val, 1) if id_report is not None else execute_sql(sql, val, 2, data_token)
+    flag, e, out = (
+        execute_sql(sql, val, 1) if id_report is not None else execute_sql(sql, val, 2, data_token)
+    )
     return flag, e, out
 
 
