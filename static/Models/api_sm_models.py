@@ -48,12 +48,13 @@ deliveries_item_model = api.model(
         "timestamp": fields.String(required=True, description="The product date"),
         "comment": fields.String(required=True, description="The product comment"),
         "state": fields.Integer(required=True, description="The product state"),
-        "folio": fields.String(
-            required=True, description="The order folio which is related"
-        ),
+        "folio": fields.String(required=True, description="The order folio which is related"),
         "color": fields.String(required=True, description="The cell color"),
         "id_order": fields.Integer(
             required=False, description="The order id which is related if avaliable"
+        ),
+        "folio_supplier": fields.String(
+            required=True, description="The order folio which is related to supplier"
         ),
     },
 )
@@ -75,12 +76,8 @@ items_model_sm = api.model(
         ),
         "sku": fields.String(required=False, description="The product sku"),
         "partida": fields.String(required=False, description="The product partida"),
-        "dispatched": fields.Float(
-            required=False, description="The product dispatched"
-        ),
-        "is_erased": fields.Integer(
-            required=False, description="The product is erased", example=0
-        ),
+        "dispatched": fields.Float(required=False, description="The product dispatched"),
+        "is_erased": fields.Integer(required=False, description="The product is erased", example=0),
         "state": fields.Integer(
             required=True, description="The product state for dispatch", example=0
         ),
@@ -91,9 +88,7 @@ items_model_sm = api.model(
         "state_delivery": fields.String(
             required=True, description="The product state delivery", example="N/A"
         ),
-        "is_tool": fields.Integer(
-            required=False, description="The product is a tool", example=0
-        ),
+        "is_tool": fields.Integer(required=False, description="The product is a tool", example=0),
         "approve_required": fields.Integer(
             required=False,
             description="Indicates if approval is required for this item (0: No, 1: Yes)",
@@ -116,9 +111,7 @@ history_model_sm = api.model(
     {
         "date": fields.String(required=True, description="The product id"),
         "user": fields.Integer(required=True, description="The product name"),
-        "event": fields.String(
-            required=True, description="The product unit of measure"
-        ),
+        "event": fields.String(required=True, description="The product unit of measure"),
     },
 )
 
@@ -161,12 +154,8 @@ employees_answer_model = api.model(
 products_request_model = api.model(
     "ProductSearch",
     {
-        "limit": fields.Integer(
-            required=True, description="The results limit", example=10
-        ),
-        "page": fields.Integer(
-            required=True, description="The output page default: 1", example=0
-        ),
+        "limit": fields.Integer(required=True, description="The results limit", example=10),
+        "page": fields.Integer(required=True, description="The output page default: 1", example=0),
     },
 )
 
@@ -175,9 +164,7 @@ comment_sm_model = api.model(
     "CommentSM",
     {
         "text": fields.String(required=True, description="The comment text"),
-        "user": fields.String(
-            required=True, description="The user who made the comment"
-        ),
+        "user": fields.String(required=True, description="The user who made the comment"),
         "timestamp": fields.String(
             required=True,
             description="The timestamp of the comment",
@@ -190,39 +177,23 @@ comment_sm_model = api.model(
 sm_info_model_post = api.model(
     "MaterialRequest",
     {
-        "id": fields.Integer(
-            required=True, description="The id <ignored on add event>"
-        ),
+        "id": fields.Integer(required=True, description="The id <ignored on add event>"),
         "folio": fields.String(required=True, description="The folio"),
         "contract": fields.String(required=True, description="The contract"),
-        "contract_id": fields.Integer(
-            required=True, description="The contract id", example=1
-        ),
+        "contract_id": fields.Integer(required=True, description="The contract id", example=1),
         "facility": fields.String(required=True, description="The facility"),
-        "contract_contact": fields.String(
-            required=True, description="The contract contact"
-        ),
-        "client_id": fields.Integer(
-            required=True, description="The client id", example=1
-        ),
+        "contract_contact": fields.String(required=True, description="The contract contact"),
+        "client_id": fields.Integer(required=True, description="The client id", example=1),
         "location": fields.String(required=True, description="The location"),
-        "order_quotation": fields.String(
-            required=True, description="The order or quotation"
-        ),
-        "emp_id": fields.Integer(
-            required=True, description="The employee id", example=1
-        ),
-        "date": fields.String(
-            required=True, description="The date", example="2024-06-29"
-        ),
+        "order_quotation": fields.String(required=True, description="The order or quotation"),
+        "emp_id": fields.Integer(required=True, description="The employee id", example=1),
+        "date": fields.String(required=True, description="The date", example="2024-06-29"),
         "critical_date": fields.String(
             required=True, description="The critical date", example="2024-07-15"
         ),
         "status": fields.Integer(required=True, description="The status of the sm"),
         "comment": fields.List(fields.Nested(comment_sm_model), required=False),
-        "destination": fields.String(
-            required=True, description="The destination area in telintec"
-        ),
+        "destination": fields.String(required=True, description="The destination area in telintec"),
         "activity_description": fields.String(
             required=True, description="The activity description"
         ),
@@ -239,37 +210,23 @@ sm_info_model_post_urgent = api.model(
     {
         "folio": fields.String(required=True, description="The folio"),
         "contract": fields.String(required=True, description="The contract"),
-        "contract_id": fields.Integer(
-            required=True, description="The contract id", example=1
-        ),
-        "client_id": fields.Integer(
-            required=True, description="The client id", example=1
-        ),
-        "emp_id": fields.Integer(
-            required=True, description="The employee id", example=1
-        ),
-        "date": fields.String(
-            required=True, description="The date", example="2024-06-29"
-        ),
+        "contract_id": fields.Integer(required=True, description="The contract id", example=1),
+        "client_id": fields.Integer(required=True, description="The client id", example=1),
+        "emp_id": fields.Integer(required=True, description="The employee id", example=1),
+        "date": fields.String(required=True, description="The date", example="2024-06-29"),
         "critical_date": fields.String(
             required=True, description="The critical date", example="2024-07-15"
         ),
         "status": fields.Integer(required=True, description="The status of the sm"),
         "facility": fields.String(required=True, description="The facility"),
         "location": fields.String(required=True, description="The location"),
-        "order_quotation": fields.String(
-            required=True, description="The order or quotation"
-        ),
-        "contract_contact": fields.String(
-            required=True, description="The contract contact"
-        ),
+        "order_quotation": fields.String(required=True, description="The order or quotation"),
+        "contract_contact": fields.String(required=True, description="The contract contact"),
         "project": fields.String(required=True, description="The project"),
         "activity_description": fields.String(
             required=True, description="The activity description"
         ),
-        "destination": fields.String(
-            required=True, description="The destination area in telintec"
-        ),
+        "destination": fields.String(required=True, description="The destination area in telintec"),
         "comment": fields.List(fields.Nested(comment_sm_model), required=False),
     },
 )
@@ -278,40 +235,24 @@ sm_info_model_post_urgent = api.model(
 sm_model_put = api.model(
     "MaterialRequest",
     {
-        "id": fields.Integer(
-            required=True, description="The id <ignored on add event>"
-        ),
+        "id": fields.Integer(required=True, description="The id <ignored on add event>"),
         "folio": fields.String(required=True, description="The folio"),
         "contract": fields.String(required=True, description="The contract"),
-        "contract_id": fields.Integer(
-            required=True, description="The contract id", example=1
-        ),
+        "contract_id": fields.Integer(required=True, description="The contract id", example=1),
         "facility": fields.String(required=True, description="The facility"),
-        "contract_contact": fields.String(
-            required=True, description="The contract contact"
-        ),
-        "client_id": fields.Integer(
-            required=True, description="The client id", example=1
-        ),
+        "contract_contact": fields.String(required=True, description="The contract contact"),
+        "client_id": fields.Integer(required=True, description="The client id", example=1),
         "location": fields.String(required=True, description="The location"),
-        "order_quotation": fields.String(
-            required=True, description="The order or quotation"
-        ),
-        "emp_id": fields.Integer(
-            required=True, description="The employee id", example=1
-        ),
-        "date": fields.String(
-            required=True, description="The date", example="2024-06-29"
-        ),
+        "order_quotation": fields.String(required=True, description="The order or quotation"),
+        "emp_id": fields.Integer(required=True, description="The employee id", example=1),
+        "date": fields.String(required=True, description="The date", example="2024-06-29"),
         "critical_date": fields.String(
             required=True, description="The critical date", example="2024-07-15"
         ),
         "status": fields.Integer(required=True, description="The status of the sm"),
         "history": fields.List(fields.Nested(history_model_sm)),
         "comment": fields.List(fields.Nested(comment_sm_model), required=False),
-        "destination": fields.String(
-            required=True, description="The destination area in telintec"
-        ),
+        "destination": fields.String(required=True, description="The destination area in telintec"),
         "date_closing": fields.String(
             required=False,
             description="The date of closing the sm",
@@ -328,37 +269,23 @@ sm_model_put = api.model(
 sm_model_out = api.model(
     "MaterialRequestTable",
     {
-        "id": fields.Integer(
-            required=True, description="The id <ignored on add event>"
-        ),
+        "id": fields.Integer(required=True, description="The id <ignored on add event>"),
         "folio": fields.String(required=True, description="The folio"),
         "contract": fields.String(required=True, description="The contract"),
         "facility": fields.String(required=True, description="The facility"),
-        "contract_contact": fields.String(
-            required=True, description="The contract contact"
-        ),
-        "client_id": fields.Integer(
-            required=True, description="The client id", example=1
-        ),
+        "contract_contact": fields.String(required=True, description="The contract contact"),
+        "client_id": fields.Integer(required=True, description="The client id", example=1),
         "location": fields.String(required=True, description="The location"),
-        "order_quotation": fields.String(
-            required=True, description="The order or quotation"
-        ),
-        "emp_id": fields.Integer(
-            required=True, description="The employee id", example=1
-        ),
-        "date": fields.String(
-            required=True, description="The date", example="2024-06-29"
-        ),
+        "order_quotation": fields.String(required=True, description="The order or quotation"),
+        "emp_id": fields.Integer(required=True, description="The employee id", example=1),
+        "date": fields.String(required=True, description="The date", example="2024-06-29"),
         "critical_date": fields.String(
             required=True, description="The critical date", example="2024-07-15"
         ),
         "status": fields.Integer(required=True, description="The status of the sm"),
         "history": fields.List(fields.Nested(history_model_sm)),
         "comment": fields.List(fields.Nested(comment_sm_model), required=False),
-        "destination": fields.String(
-            required=True, description="The destination area in telintec"
-        ),
+        "destination": fields.String(required=True, description="The destination area in telintec"),
         "items": fields.List(fields.Nested(items_model_sm), required=False),
         # New fields added
         "urgent": fields.Integer(required=False, description="Urgent", example=0),
@@ -390,9 +317,7 @@ sm_model_out = api.model(
             description="Key performance indicator (cumple: 0, no cumple:1)",
             example="",
         ),
-        "warehouse_comments": fields.String(
-            required=False, description="Warehouse comments"
-        ),
+        "warehouse_comments": fields.String(required=False, description="Warehouse comments"),
         "admin_reviewed": fields.Integer(
             required=False, description="Reviewed by administration", example=0
         ),
@@ -406,9 +331,7 @@ sm_model_out = api.model(
             description="Date of notification to warehouse",
             example="2024-06-29 12:00:00",
         ),
-        "admin_comments": fields.String(
-            required=False, description="Administration comments"
-        ),
+        "admin_comments": fields.String(required=False, description="Administration comments"),
         "general_request_status": fields.String(
             required=False,
             description="General request status (disponible en almacén: 1, "
@@ -466,9 +389,7 @@ control_table_sm_model = api.model(
             description="Key performance indicator (cumple: 0, no cumple:1)",
             example=0,
         ),
-        "warehouse_comments": fields.String(
-            required=False, description="Warehouse comments"
-        ),
+        "warehouse_comments": fields.String(required=False, description="Warehouse comments"),
         "admin_reviewed": fields.Integer(
             required=False, description="Reviewed by administration", example=0
         ),
@@ -487,9 +408,7 @@ control_table_sm_model = api.model(
             description="Key performance indicator (cumple=0, no cumple=1)",
             example=0,
         ),
-        "admin_comments": fields.String(
-            required=False, description="Administration comments"
-        ),
+        "admin_comments": fields.String(required=False, description="Administration comments"),
         "general_request_status": fields.String(
             required=False,
             description="General request status (disponible en almacén: 1, "
@@ -544,15 +463,9 @@ table_sm_model = api.model(
 table_request_model = api.model(
     "TableRequest",
     {
-        "limit": fields.Integer(
-            required=True, description="The results limit", example=10
-        ),
-        "page": fields.Integer(
-            required=True, description="The output page default: 1", example=0
-        ),
-        "emp_id": fields.Integer(
-            required=True, description="The employee id", example=-1
-        ),
+        "limit": fields.Integer(required=True, description="The results limit", example=10),
+        "page": fields.Integer(required=True, description="The output page default: 1", example=0),
+        "emp_id": fields.Integer(required=True, description="The employee id", example=-1),
     },
 )
 
@@ -628,9 +541,7 @@ data_sm_plots = api.model(
     {
         "data": fields.Raw(required=False, description="The data"),
         "val_x": fields.List(fields.String, required=False, description="The x values"),
-        "val_y": fields.List(
-            fields.List(fields.Float, required=False, description="The y values")
-        ),
+        "val_y": fields.List(fields.List(fields.Float, required=False, description="The y values")),
         "title": fields.String(required=True, description="The title"),
         "ylabel": fields.String(required=True, description="The y label"),
         "legend": fields.List(fields.String, required=True, description="The legend"),
@@ -649,9 +560,7 @@ request_sm_plot_data_model = api.model(
 request_sm_dispatch_model = api.model(
     "RequestSMDispatch",
     {
-        "id": fields.Integer(
-            required=True, description="The id of the material request"
-        ),
+        "id": fields.Integer(required=True, description="The id of the material request"),
         "items": fields.List(fields.Nested(items_dispatch_model_sm), required=False),
     },
 )
@@ -679,18 +588,14 @@ item_sm_put_model = api.model(
     "SMItemPut",
     {
         "items": fields.List(fields.Nested(items_model_sm)),
-        "id_sm": fields.Integer(
-            required=True, description="The id of the sm to update"
-        ),
+        "id_sm": fields.Integer(required=True, description="The id of the sm to update"),
     },
 )
 
 item_state_model = api.model(
     "SMItemStatus",
     {
-        "id_item": fields.Integer(
-            required=True, description="The id of the item sm to update"
-        ),
+        "id_item": fields.Integer(required=True, description="The id of the item sm to update"),
         "state": fields.Integer(
             required=True,
             description="The new state of the item in sm. 0: new; 1: normal; 2: canceled; 3: complete.",
@@ -701,9 +606,7 @@ item_state_model = api.model(
 item_approve_model = api.model(
     "SMItemApproveRequired",
     {
-        "id_item": fields.Integer(
-            required=True, description="The id of the item sm to update"
-        ),
+        "id_item": fields.Integer(required=True, description="The id of the item sm to update"),
         "approve_required": fields.Integer(
             required=True,
             description="Indicates if approval is required for this item (0: No, 1: Yes)",
@@ -714,9 +617,7 @@ item_approve_model = api.model(
 item_sm_inventory_put_model = api.model(
     "SMItemInventoryPut",
     {
-        "id_item": fields.Integer(
-            required=True, description="The id of the item sm to update"
-        ),
+        "id_item": fields.Integer(required=True, description="The id of the item sm to update"),
         "id_inventory": fields.Integer(
             required=True, description="The id of the inventory to update"
         ),
@@ -726,9 +627,7 @@ item_sm_inventory_put_model = api.model(
 items_bulk_entry_model = api.model(
     "SMItemBulkEntry",
     {
-        "id_sm": fields.Integer(
-            required=True, description="The id of the sm to update"
-        ),
+        "id_sm": fields.Integer(required=True, description="The id of the sm to update"),
         "items": fields.List(fields.Nested(items_model_sm)),
     },
 )
@@ -744,9 +643,7 @@ items_bulk_put_model = api.model(
 class ItemsFormSMPost(Form):
     id = IntegerField(
         "id",
-        validators=[
-            validators.number_range(min=-10, message="Invalid id in inventory")
-        ],
+        validators=[validators.number_range(min=-10, message="Invalid id in inventory")],
         default=-1,
     )
     name = StringField("name", validators=[InputRequired()])
@@ -779,6 +676,7 @@ class DeliveriesForm(Form):
     timestamp = DateField("timestamp", validators=[], filters=[date_filter])
     color = StringField("color", validators=[], default="#ffffff")
     id_order = IntegerField("id_order", validators=[], default=None)
+    folio_supplier = StringField("folio_supplier", validators=[], default="")
 
 
 class ItemsFormSMPUT(Form):
@@ -834,9 +732,7 @@ class ProductRequestForm(Form):
     page = IntegerField(
         "page",
         validators=[
-            validators.number_range(
-                min=0, message="Invalid page value o missing 'page' field"
-            )
+            validators.number_range(min=0, message="Invalid page value o missing 'page' field")
         ],
     )
 
@@ -886,17 +782,13 @@ class SMInfoPostForm(Form):
         "status", validators=[validators.number_range(min=0, message="Invalid id")]
     )
     comment = FieldList(FormField(CommentSmForm, "comment"), validators=[], default=[])
-    activity_description = StringField(
-        "activity_description", validators=[], default=""
-    )
+    activity_description = StringField("activity_description", validators=[], default="")
     destination = StringField("destination", validators=[InputRequired()])
     history = FieldList(FormField(HistoryFormSM, "history"))
     project = StringField("project", validators=[], default="")
     urgent = IntegerField("urgent", validators=[], default=0)
     date_closing = DateField("date_closing", validators=[], filters=[date_filter])
-    general_request_status = IntegerField(
-        "general_request_status", validators=[], default=1
-    )
+    general_request_status = IntegerField("general_request_status", validators=[], default=1)
 
     # --- Campos faltantes de la tabla de control (todos OPCIONALES) ---
     # request_date = DateField("request_date", validators=[], filters=[date_filter])
@@ -905,19 +797,13 @@ class SMInfoPostForm(Form):
     # Si prefieres alinear critical_date a DateField (Opción B), agrega este y migra poco a poco:
     # critical_date_dt = DateField("critical_date", validators=[Optional()], filters=[date_filter])
 
-    requesting_user_status = IntegerField(
-        "requesting_user_status", validators=[], default=0
-    )
-    requesting_user_state = StringField(
-        "requesting_user_state", validators=[], default=""
-    )
+    requesting_user_status = IntegerField("requesting_user_status", validators=[], default=0)
+    requesting_user_state = StringField("requesting_user_state", validators=[], default="")
 
     warehouse_reviewed = IntegerField("warehouse_reviewed", validators=[], default=0)
     warehouse_status = IntegerField("warehouse_status", validators=[], default=1)
 
-    admin_notification_date = StringField(
-        "admin_notification_date", validators=[], default=""
-    )
+    admin_notification_date = StringField("admin_notification_date", validators=[], default="")
     kpi_warehouse = IntegerField("kpi_warehouse", validators=[], default=0)
     warehouse_comments = StringField("warehouse_comments", validators=[], default="")
 
@@ -971,17 +857,13 @@ class SMInfoForm(Form):
         "status", validators=[validators.number_range(min=0, message="Invalid id")]
     )
     comment = FieldList(FormField(CommentSmForm, "comment"), validators=[], default=[])
-    activity_description = StringField(
-        "activity_description", validators=[], default=""
-    )
+    activity_description = StringField("activity_description", validators=[], default="")
     destination = StringField("destination", validators=[InputRequired()])
     history = FieldList(FormField(HistoryFormSM, "history"))
     project = StringField("project", validators=[], default="")
     urgent = IntegerField("urgent", validators=[], default=0)
     date_closing = DateField("date_closing", validators=[], filters=[date_filter])
-    general_request_status = IntegerField(
-        "general_request_status", validators=[], default=1
-    )
+    general_request_status = IntegerField("general_request_status", validators=[], default=1)
 
     # --- Campos faltantes de la tabla de control (todos OPCIONALES) ---
     # request_date = DateField("request_date", validators=[], filters=[date_filter])
@@ -990,19 +872,13 @@ class SMInfoForm(Form):
     # Si prefieres alinear critical_date a DateField (Opción B), agrega este y migra poco a poco:
     # critical_date_dt = DateField("critical_date", validators=[Optional()], filters=[date_filter])
 
-    requesting_user_status = IntegerField(
-        "requesting_user_status", validators=[], default=0
-    )
-    requesting_user_state = StringField(
-        "requesting_user_state", validators=[], default=""
-    )
+    requesting_user_status = IntegerField("requesting_user_status", validators=[], default=0)
+    requesting_user_state = StringField("requesting_user_state", validators=[], default="")
 
     warehouse_reviewed = IntegerField("warehouse_reviewed", validators=[], default=0)
     warehouse_status = IntegerField("warehouse_status", validators=[], default=1)
 
-    admin_notification_date = StringField(
-        "admin_notification_date", validators=[], default=""
-    )
+    admin_notification_date = StringField("admin_notification_date", validators=[], default="")
     kpi_warehouse = IntegerField("kpi_warehouse", validators=[], default=0)
     warehouse_comments = StringField("warehouse_comments", validators=[], default="")
 
@@ -1082,9 +958,7 @@ class SMUrgentInfoForm(Form):
         "status", validators=[validators.number_range(min=0, message="Invalid id")]
     )
     comment = FieldList(FormField(CommentSmForm, "comment"), validators=[], default=[])
-    activity_description = StringField(
-        "activity_description", validators=[], default=""
-    )
+    activity_description = StringField("activity_description", validators=[], default="")
     destination = StringField("destination", validators=[InputRequired()])
     facility = StringField("facility", validators=[InputRequired()])
     location = StringField("location", validators=[InputRequired()])
@@ -1100,20 +974,12 @@ class SMInfoControlTableForm(Form):
     # request_date = DateField("request_date", validators=[], filters=[date_filter])
     date = DateField("date", validators=[], filters=[date_filter])
     critical_date = DateField("critical_date", validators=[], filters=[date_filter])
-    activity_description = StringField(
-        "activity_description", validators=[], default=""
-    )
-    requesting_user_status = IntegerField(
-        "requesting_user_status", validators=[], default=0
-    )
-    requesting_user_state = StringField(
-        "requesting_user_state", validators=[], default=""
-    )
+    activity_description = StringField("activity_description", validators=[], default="")
+    requesting_user_status = IntegerField("requesting_user_status", validators=[], default=0)
+    requesting_user_state = StringField("requesting_user_state", validators=[], default="")
     warehouse_reviewed = IntegerField("warehouse_reviewed", validators=[], default=0)
     warehouse_status = IntegerField("warehouse_status", validators=[], default=1)
-    admin_notification_date = StringField(
-        "admin_notification_date", validators=[], filters=[]
-    )
+    admin_notification_date = StringField("admin_notification_date", validators=[], filters=[])
     kpi_warehouse = IntegerField("kpi_warehouse", validators=[], default=0)
     warehouse_comments = StringField("warehouse_comments", validators=[], default="")
     admin_reviewed = IntegerField("admin_reviewed", validators=[], default=0)
@@ -1146,9 +1012,7 @@ class TableRequestForm(Form):
     page = IntegerField(
         "page",
         validators=[
-            validators.number_range(
-                min=0, message="Invalid page value o missing 'page' field"
-            )
+            validators.number_range(min=0, message="Invalid page value o missing 'page' field")
         ],
     )
     emp_id = IntegerField(
@@ -1169,15 +1033,11 @@ class SMUrgentPostForm(Form):
 class SMPutForm(Form):
     info = FormField(SMInfoForm, "info")
     items = FieldList(FormField(ItemsFormSMPUT, "items"))
-    id = IntegerField(
-        "id", validators=[validators.number_range(min=0, message="Invalid id")]
-    )
+    id = IntegerField("id", validators=[validators.number_range(min=0, message="Invalid id")])
 
 
 class SMDeleteForm(Form):
-    id = IntegerField(
-        "id", validators=[InputRequired(message="Invalid id or 0 not acepted")]
-    )
+    id = IntegerField("id", validators=[InputRequired(message="Invalid id or 0 not acepted")])
     comment = StringField("comment", validators=[], default="")
 
 
@@ -1199,17 +1059,13 @@ class NewProductForm(Form):
 
 
 class RequestSMDispatchForm(Form):
-    id = IntegerField(
-        "id", validators=[InputRequired(message="Invalid id or 0 not acepted")]
-    )
+    id = IntegerField("id", validators=[InputRequired(message="Invalid id or 0 not acepted")])
     items = FieldList(FormField(ItemsFormSMDispartch, "items"))
 
 
 class ItemSmPutForm(Form):
     items = FieldList(FormField(ItemsFormSMPUT, "items"))
-    id_sm = IntegerField(
-        "id_sm", validators=[InputRequired(message="Invalid id or 0 not acepted")]
-    )
+    id_sm = IntegerField("id_sm", validators=[InputRequired(message="Invalid id or 0 not acepted")])
 
 
 class ItemSMInventoryPutForm(Form):
@@ -1236,9 +1092,7 @@ class ItemApproveSMForm(Form):
     approve_required = IntegerField(
         "approve_required",
         validators=[
-            validators.number_range(
-                min=0, max=1, message="Invalid value for approve_required"
-            )
+            validators.number_range(min=0, max=1, message="Invalid value for approve_required")
         ],
     )
 
