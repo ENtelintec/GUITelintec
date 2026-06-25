@@ -16,6 +16,7 @@ Per-change design notes live in [`Docs/`](Docs/) (Spanish, one `.md` per change,
 - [`purchase_list_pdf.md`](Docs/purchase_list_pdf.md) — purchase list PDF generation.
 - [`sm_items_extra_info_url_fix.md`](Docs/sm_items_extra_info_url_fix.md) — SM items `extra_info` URL fix.
 - [`payroll_s3_upload.md`](Docs/payroll_s3_upload.md) — payroll S3 upload.
+- [`po_sm_deliveries_tracking.md`](Docs/po_sm_deliveries_tracking.md) — al crear/actualizar una OC se rastrean los cambios hacia los `deliveries` de los items de SM vinculados (vía `id_item_sm`): mapea `folio`/`folio_supplier` (sobrescriben) y `time_delivery` (segmento marcado `[Entrega estimada: …]` en `comment`), match por `delivery.id_order`, crea el delivery si no existe; registra en el `history` de la SM; no fatal (la OC sigue 200/201, detalle a `msg`/log/notificación). Helper `sync_sm_deliveries_from_po` + controllers `get_sm_item_deliveries_db`/`update_deliveries_sm_item_db`.
 - [`sm_response_envelope.md`](Docs/sm_response_envelope.md) — los 24 endpoints de `/sm` alineados al envelope `{data, msg, error}`; 4 `marshal_with` removidos; bugs corregidos (`/add/urgent` `return data`, `/cancel` tupla invertida, `msg:"ok"` en 400 de `/item`); `msg` español-con-ID y `data` estructurado a `{"id_*": N}` en escrituras (detalle largo solo a log/notificación; fallos parciales a `error` como lista); único pendiente abierto: bug KPI `(critical_date - critical_date)` (a futuro KPIs configurables).
 
 ## Run / lint

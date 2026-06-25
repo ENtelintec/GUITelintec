@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import json
 import os
+import re
 import tempfile
 from datetime import datetime
 from typing import Iterable
@@ -20,6 +21,8 @@ from templates.controllers.material_request.sm_controller import (
     get_sm_by_folio,
     get_sm_by_id,
     get_sm_entries,
+    get_sm_item_deliveries_db,
+    update_deliveries_sm_item_db,
 )
 from templates.controllers.order.orders_controller import (
     cancel_po_application,
@@ -301,6 +304,17 @@ def create_purchaser_order_api(data, data_token):
             "error": "\n".join(msg_moves),
         }, 400
     msg += "\n" + "\n".join(msg_moves)
+    sync_msgs = sync_sm_deliveries_from_po(
+        id_order,
+        data["folio"],
+        data.get("folio_supplier", ""),
+        data["time_delivery"],
+        data["items"],
+        data_token,
+        timestamp,
+    )
+    if sync_msgs:
+        msg += "\n" + "\n".join(sync_msgs)
     if update_sm_control_table:
         code, data_out = update_sm_from_control_table(
             {
@@ -333,6 +347,102 @@ def create_purchaser_order_api(data, data_token):
         "msg": f"Orden de compra creada correctamente (ID {id_order})",
         "error": None,
     }, 201
+
+
+DELIVERY_COMMENT_PREFIX = "Entrega estimada"
+_delivery_comment_pattern = re.compile(r"\s*\[" + DELIVERY_COMMENT_PREFIX + r":[^\]]*\]")
+
+
+def _upsert_delivery_comment(comment, time_delivery) -> str:
+    """Reemplaza (o agrega) el segmento marcado de entrega estimada en el comment,
+    conservando el resto del texto. Idempotente entre actualizaciones de la OC."""
+    base = _delivery_comment_pattern.sub("", str(comment) if comment else "").strip()
+    time_delivery = "" if time_delivery is None else str(time_delivery)
+    segment = f"[{DELIVERY_COMMENT_PREFIX}: {time_delivery}]"
+    return f"{base} {segment}".strip() if base else segment
+
+
+def sync_sm_deliveries_from_po(
+    po_id, folio, folio_supplier, time_delivery, items, data_token, timestamp
+):
+    """Rastrea cambios de la OC hacia los deliveries de los items de SM.
+
+    Para cada item de la OC con un id_item_sm valido, busca el delivery cuyo
+    id_order coincida con la OC (o crea uno nuevo) y mapea folio, folio_supplier
+    y time_delivery (al comment). Tambien registra el cambio en el history de la
+    SM. Devuelve una lista de mensajes (en español) para anexar a la respuesta/log.
+    No es fatal: los errores se reportan como mensajes, no detienen el flujo.
+    """
+    msgs: list[str] = []
+    for item in items:
+        id_item_sm = item.get("id_item_sm", 0)
+        try:
+            id_item_sm = int(id_item_sm) if id_item_sm is not None else 0
+        except (TypeError, ValueError):
+            id_item_sm = 0
+        if id_item_sm <= 0:
+            continue
+        flag, error, result = get_sm_item_deliveries_db(id_item_sm, data_token)
+        if not flag or not (isinstance(result, (list, tuple))) or len(result) < 4:
+            msgs.append(
+                f"x-No se pudo rastrear el item de SM {id_item_sm} (OC {folio}): {error}"
+            )
+            continue
+        _id_item, id_sm, deliveries_raw, history_raw = result[0], result[1], result[2], result[3]
+        try:
+            deliveries = json.loads(deliveries_raw) if deliveries_raw else []
+            deliveries = deliveries if isinstance(deliveries, list) else []
+            history_sm = json.loads(history_raw) if history_raw else []
+            history_sm = history_sm if isinstance(history_sm, list) else []
+        except (TypeError, ValueError) as e:
+            msgs.append(
+                f"x-Datos de SM invalidos para el item {id_item_sm} (OC {folio}): {e}"
+            )
+            continue
+        delivery = next(
+            (d for d in deliveries if isinstance(d, dict) and d.get("id_order") == po_id),
+            None,
+        )
+        created = False
+        if delivery is None:
+            delivery = {
+                "quantity": item.get("quantity", 0),
+                "timestamp": timestamp,
+                "comment": "",
+                "state": 0,
+                "folio": "",
+                "color": "#ffffff",
+                "id_order": po_id,
+                "folio_supplier": "",
+            }
+            deliveries.append(delivery)
+            created = True
+        delivery["id_order"] = po_id
+        delivery["folio"] = folio
+        delivery["folio_supplier"] = folio_supplier
+        delivery["comment"] = _upsert_delivery_comment(delivery.get("comment", ""), time_delivery)
+        comment_history = (
+            f"OC {folio} (ID {po_id}): se {'creó' if created else 'actualizó'} la entrega "
+            f"del item de SM {id_item_sm} (folio_supplier: {folio_supplier}, entrega: {time_delivery})."
+        )
+        history_sm.append(
+            {
+                "user": data_token.get("emp_id"),
+                "event": "Rastreo de entrega por OC",
+                "date": timestamp,
+                "comment": comment_history,
+            }
+        )
+        flag, error, _ = update_deliveries_sm_item_db(
+            deliveries, id_item_sm, history_sm, id_sm, data_token
+        )
+        if not flag:
+            msgs.append(
+                f"x-Error al actualizar la entrega del item de SM {id_item_sm} (OC {folio}): {error}"
+            )
+        else:
+            msgs.append(comment_history)
+    return msgs
 
 
 def update_purchase_order_api(data, data_token):
@@ -418,6 +528,17 @@ def update_purchase_order_api(data, data_token):
                 else f"Item de orden de compra creado con ID-{result}-{item['description']}"
             )
     msg += "\n" + "\n".join(msg_items)
+    sync_msgs = sync_sm_deliveries_from_po(
+        data["id"],
+        data["folio"],
+        data.get("folio_supplier", ""),
+        data["time_delivery"],
+        data["items"],
+        data_token,
+        timestamp,
+    )
+    if sync_msgs:
+        msg += "\n" + "\n".join(sync_msgs)
     create_notification_permission_notGUI(
         msg, data_token, ["orders"], "Orden de compra creada", data_token.get("emp_id")
     )

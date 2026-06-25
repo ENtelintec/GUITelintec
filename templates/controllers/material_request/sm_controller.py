@@ -888,3 +888,44 @@ def update_extra_info_sm_item_db(extra_info: dict, id_item, history: dict, sm_id
     val = (json.dumps(history), sm_id)
     flag, error, result = execute_sql(sql, val, 3, data_token)
     return flag, error, result
+
+
+def get_sm_item_deliveries_db(id_item, data_token):
+    """
+    Recupera, para un id_item de sm_items, su id_sm, sus deliveries y el history
+    de la SM a la que pertenece. Pensado para el rastreo de cambios desde una OC.
+    Devuelve result como tupla (id_item, id_sm, deliveries, history).
+    """
+    sql = (
+        "SELECT smi.id_item, smi.id_sm, smi.deliveries, mr.history "
+        "FROM sql_telintec.sm_items AS smi "
+        "INNER JOIN sql_telintec.materials_request AS mr ON mr.sm_id = smi.id_sm "
+        "WHERE smi.id_item = %s"
+    )
+    val = (id_item,)
+    flag, error, result = execute_sql(sql, val, 1, data_token)
+    return flag, error, result
+
+
+def update_deliveries_sm_item_db(deliveries: list, id_item, history: list, sm_id, data_token):
+    """
+    Actualiza únicamente la columna deliveries de un sm_item y registra el cambio
+    en el history de su SM. Mismo patrón que update_extra_info_sm_item_db.
+    """
+    sql = """
+          UPDATE sql_telintec.sm_items
+          SET deliveries = %s
+          WHERE id_item = %s
+          """
+    val = (json.dumps(deliveries), id_item)
+    flag, error, result = execute_sql(sql, val, 3, data_token)
+    if not flag:
+        return False, error, result
+    sql = """
+          UPDATE sql_telintec.materials_request
+          SET history = %s
+          WHERE sm_id = %s
+          """
+    val = (json.dumps(history), sm_id)
+    flag, error, result = execute_sql(sql, val, 3, data_token)
+    return flag, error, result
