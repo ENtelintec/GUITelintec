@@ -1068,13 +1068,13 @@ def create_metadata_for_pdf_po(extra_info: dict):
 
 def dowload_file_purchase(order_id: int, data_token):
     flag, error, result = get_purchase_order_with_items_by_id(order_id, data_token)
-    if not isinstance(result, list):
+    if not flag:
         return {
             "data": None,
             "msg": "Error al obtener la orden de compra",
-            "error": str(result),
+            "error": error,
         }, 400
-    if not flag or len(result) == 0:
+    if not isinstance(result, tuple) or len(result) == 0:
         return {
             "data": None,
             "msg": f"Orden de compra no encontrada (ID {order_id})",
@@ -1085,20 +1085,24 @@ def dowload_file_purchase(order_id: int, data_token):
         tempfile.mkdtemp(), os.path.basename(f"oc_{result[5]}_{date.date()}.pdf")
     )
     products = []
-    items = json.loads(result[8])
+    items = json.loads(result[8]) or []
     total_amount = 0.0
+    # El LEFT JOIN + JSON_ARRAYAGG produce un placeholder de puros NULL cuando la OC no tiene items
+    items = [item for item in items if item.get("id") is not None]
     for index, item in enumerate(items):
-        extra_info_item = item["extra_info"]
-        subtotal = item["quantity"] * item["unit_price"]
+        extra_info_item = item["extra_info"] or {}
+        quantity = item["quantity"] or 0
+        unit_price = item["unit_price"] or 0
+        subtotal = quantity * unit_price
         products.append(
             [
                 index + 1,
                 item["description"],
-                extra_info_item["n_parte"],
+                extra_info_item.get("n_parte"),
                 item["duration_services"],
                 "NA",
-                item["quantity"],
-                item["unit_price"],
+                quantity,
+                unit_price,
                 subtotal,
             ]
         )
