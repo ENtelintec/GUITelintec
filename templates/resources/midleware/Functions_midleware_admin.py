@@ -1076,6 +1076,8 @@ def update_items_quotation_from_api(products, id_quotation, id_contract, dict_pr
         description = new_product.get("description", "")
         description_small = new_product.get("description_small", "")
         id_item = new_product.get("id", 0)
+        id_inventory = new_product.get("id_inventory", None)
+        id_inventory = id_inventory if id_inventory and id_inventory > 0 else None
         if id_item == 0:
             flag, error, result = create_item_quotation(
                 {
@@ -1093,7 +1095,7 @@ def update_items_quotation_from_api(products, id_quotation, id_contract, dict_pr
                     "description_small": description_small
                     if len(description_small) <= 255
                     else description_small[:255],
-                    "id_inventory": new_product.get("id", None),
+                    "id_inventory": id_inventory,
                 },
                 data_token,
             )
@@ -1116,7 +1118,7 @@ def update_items_quotation_from_api(products, id_quotation, id_contract, dict_pr
                 old_product["description_small"] = (
                     description_small if len(description_small) <= 255 else description_small[:255]
                 )
-                old_product["id_inventory"] = new_product.get("id", None)
+                old_product["id_inventory"] = id_inventory
                 flag, error, result = update_item_quotation(id_item, old_product, data_token)
         flag_list.append(flag)
         error_list.append(error)
@@ -1295,7 +1297,6 @@ def update_contract_from_api(data, data_token):
         )
     else:
         flag, error, result = get_quotation(id_quotation=id_quotation, data_token=data_token)
-        print(id_quotation, result)
         if not flag:
             return {
                 "data": None,
