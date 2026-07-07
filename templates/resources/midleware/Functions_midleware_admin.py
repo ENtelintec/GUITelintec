@@ -1294,9 +1294,8 @@ def update_contract_from_api(data, data_token):
             data["products"], id_quotation, data_token, data["id"]
         )
     else:
-        flag, error, result = get_quotation(
-            id_quotation=id_quotation, data_token=data_token
-        )
+        flag, error, result = get_quotation(id_quotation=id_quotation, data_token=data_token)
+        print(id_quotation, result)
         if not flag:
             return {
                 "data": None,

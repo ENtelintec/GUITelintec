@@ -222,7 +222,7 @@ def get_quotation(data_token, id_quotation: int | None = None):
         )
         val = ()
 
-    flag, error, result = execute_sql(sql, val, 5, data_token)
+    flag, error, result = execute_sql(sql, val, 2, data_token)
     if not flag:
         return False, error, []
     if not isinstance(result, list):
