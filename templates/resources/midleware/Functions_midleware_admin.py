@@ -1272,7 +1272,8 @@ def update_contract_from_api(data, data_token):
     msg = ""
     error_items = None
     new_quotation_created = False
-    if data.get("quotation_id", 0) == 0 and len(data.get("products", [])) > 0:
+    id_quotation = data.get("quotation_id", 0)
+    if not id_quotation:
         flag, error, result = create_quotation(data["metadata"], status=1, data_token=data_token)
         if not flag:
             return {
@@ -1293,9 +1294,8 @@ def update_contract_from_api(data, data_token):
             data["products"], id_quotation, data_token, data["id"]
         )
     else:
-        id_quotation = data["quotation_id"]
         flag, error, result = get_quotation(
-            id_quotation=data["quotation_id"], data_token=data_token
+            id_quotation=id_quotation, data_token=data_token
         )
         if not flag:
             return {
@@ -1303,14 +1303,16 @@ def update_contract_from_api(data, data_token):
                 "msg": "No se encontró la cotización del contrato a actualizar",
                 "error": error,
             }, 400
-        old_products = json.loads(result[2])
+        old_products = json.loads(result[0][2])
         dict_products = {item["id"]: item for item in old_products}
         products = data["products"]
-        contract_id = result[5]
+        contract_id = data["id"]
         flag_list, error_list, result_list = update_items_quotation_from_api(
-            products, data["id_quotation"], contract_id, dict_products, data_token
+            products, id_quotation, contract_id, dict_products, data_token
         )
-    if flag_list.count(True) == len(flag_list):
+    if new_quotation_created and len(data.get("products", [])) == 0:
+        msg += "\nCotización creada sin items para relacionar con el contrato"
+    elif flag_list.count(True) == len(flag_list):
         msg += "\nItems de cotizacion creados/actualizados correctamente"
     elif flag_list.count(False) == len(flag_list):
         if new_quotation_created:
