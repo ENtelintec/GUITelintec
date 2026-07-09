@@ -394,7 +394,8 @@ def get_remission_by_id(id_report: int | None, data_token):
                     'unit_price', qai.unit_price,
                     'line_total', qai.line_total,
                     'history', qai.history,
-                    'extra_info', qai.extra_info
+                    'extra_info', qai.extra_info,
+                    'partida', qi.partida
                     )
                     ELSE NULL
                 END
@@ -402,12 +403,13 @@ def get_remission_by_id(id_report: int | None, data_token):
                 JSON_ARRAY()
             ),
             '$[0]'
-            ) AS items, 
-        ar.files, 
-        ar.contract_id, 
-        ar.extra_info 
-        FROM sql_telintec_mod_admin.activity_reports AS ar 
-        LEFT JOIN sql_telintec_mod_admin.quotation_activity_items AS qai ON ar.id = qai.report_id 
+            ) AS items,
+        ar.files,
+        ar.contract_id,
+        ar.extra_info
+        FROM sql_telintec_mod_admin.activity_reports AS ar
+        LEFT JOIN sql_telintec_mod_admin.quotation_activity_items AS qai ON ar.id = qai.report_id
+        LEFT JOIN sql_telintec_mod_admin.quotation_items AS qi ON qi.id = qai.item_c_id
         WHERE( ar.id = %s  OR %s IS NULL)
         GROUP BY ar.id"""
 

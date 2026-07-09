@@ -92,7 +92,7 @@ def get_contract(data_token, id_contract=None):
     sql = "SELECT id, metadata, creation, quotation_id, timestamps, code, client_id, emission, abbreviation FROM sql_telintec_mod_admin.contracts WHERE id = %s"
     val = (id_contract,)
     flag, error, result = execute_sql(sql, val, 1, data_token)
-    if not isinstance(result, tuple) or not isinstance(result, list):
+    if not (isinstance(result, tuple) or isinstance(result, list)):
         return False, error, []
     if len(result) == 0:
         return False, "Contract not found", []

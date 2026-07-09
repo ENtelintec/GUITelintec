@@ -1,4 +1,6 @@
 import json
+import os
+import tempfile
 from datetime import datetime
 
 import boto3
@@ -12,6 +14,7 @@ from static.constants import (
     timezone_software,
 )
 from templates.controllers.contracts.contracts_controller import (
+    get_contract,
     get_contract_and_items_from_number,
 )
 from templates.controllers.presales.remisions_controller import (
@@ -29,6 +32,7 @@ from templates.controllers.presales.remisions_controller import (
     update_quotation_activity_item,
     update_report_activity_files,
 )
+from templates.forms.RemissionForms import FileRemissionPDF
 from templates.Functions_Utils import (
     create_notification_permission,
     create_notification_permission_notGUI,
@@ -61,16 +65,142 @@ def _flatten_items_unit_price_quotation(items: list) -> list:
     return items
 
 
+# --- Llaves de extra_info por modulo -----------------------------------------------
+# Cada endpoint escribe SOLO su set de llaves (payload_key -> llave canonica en
+# extra_info). En los PUT ademas solo se escriben las llaves presentes en el JSON
+# crudo, para que un modulo nunca pise lo que no mando (ver _extra_info_updates).
+_REMISSION_EXTRA_KEY_MAP = {
+    "pedido": "pedido",
+    "pedido_exiros": "pedido_exiros",
+    "activity": "activity",
+    "remision": "remision",
+    "remito": "remito",
+    "date_delivery": "date_delivery",
+    "user": "user",
+    "user_id": "user_id",
+    "project": "project",
+    "project_description": "project_description",
+    "request_date": "request_date",
+    "infra_responsible": "infra_responsible",
+    "remission_sent_date": "remission_sent_date",
+}
+_CONTROL_EXTRA_KEY_MAP = {
+    "pedido": "pedido",
+    "activity": "activity",
+    "remision": "remision",
+    "remito": "remito",
+    "user": "user",
+    "user_id": "user_id",
+    "totalSinIva": "total_sin_iva",
+    "statusReport": "status_report",
+    "date_report": "date_report",
+    "date_sign": "date_sign",
+    "date_office": "date_office",
+    "received_date": "received_date",
+    "status_rep_admi": "status_rep_admi",
+    "remission_sent_date": "remission_sent_date",
+    "remission_sent_by": "remission_sent_by",
+    "remission_total": "remission_total",
+}
+_BALANCE_EXTRA_KEY_MAP = {
+    "pedido": "pedido",
+    "remision": "remision",
+    "remito": "remito",
+    "remitos": "remitos",
+    "request_date": "request_date",
+    "infra_responsible": "infra_responsible",
+    "remission_status": "remission_status",
+    "remission_sent_date": "remission_sent_date",
+    "remission_send_time": "remission_send_time",
+    "remission_upload_date": "remission_upload_date",
+    "remission_upload_time": "remission_upload_time",
+    "hes_status": "hes_status",
+    "hes_number": "hes_number",
+    "hes_release_date": "hes_release_date",
+    "hes_balance": "hes_balance",
+    "projection_balance": "projection_balance",
+    "committed_balance": "committed_balance",
+    "invoiced_balance": "invoiced_balance",
+    "observations": "observations",
+    "month_period": "month_period",
+    "requester_coordinator": "requester_coordinator",
+    "coordinator": "coordinator",
+    "ceco_fap": "ceco_fap",
+    "sgd_number": "sgd_number",
+    "sgd_upload_date": "sgd_upload_date",
+    "sgd_upload_time": "sgd_upload_time",
+    "general_status": "general_status",
+    "ot": "ot",
+    "ticket_number": "ticket_number",
+    "quotation_number": "quotation_number",
+    "quotation_amount": "quotation_amount",
+    "activity_end_date": "activity_end_date",
+}
+
+
+def _extra_info_updates(metadata: dict, raw_metadata: dict | None, key_map: dict) -> dict:
+    """Llaves canonicas a escribir en extra_info para un modulo.
+
+    Con raw_metadata (PUT) solo se incluyen llaves presentes en el JSON crudo:
+    lo no enviado no se toca y enviar "" vacia el campo a proposito.
+    Sin raw_metadata (POST) se escriben todas las llaves del modulo.
+    """
+    updates = {}
+    for payload_key, canonical_key in key_map.items():
+        if raw_metadata is not None and payload_key not in raw_metadata:
+            continue
+        updates[canonical_key] = metadata.get(payload_key)
+    return updates
+
+
 # --- Historial resumido de cambios de la remision ---------------------------------
 # Subconjunto curado de campos a vigilar; el front mapea cada field a su etiqueta.
-_HISTORY_META_FIELDS = [
+_HISTORY_BASE_FIELDS = [
     "date", "folio", "client_id", "plant", "area", "location",
     "general_description", "comments", "status",
-    "pedido", "pedido_exiros", "remision", "remito",
-    "date_report", "date_sign", "date_delivery",
 ]
+# Campos vigilados que viven en extra_info (canonicos, todos los modulos).
+_HISTORY_EXTRA_FIELDS = [
+    "pedido", "pedido_exiros", "remision", "remito", "remitos",
+    "date_report", "date_sign", "date_delivery", "date_office",
+    "received_date", "request_date", "infra_responsible",
+    "total_sin_iva", "status_report", "status_rep_admi",
+    "remission_sent_date", "remission_sent_by", "remission_total",
+    "remission_status", "remission_send_time",
+    "remission_upload_date", "remission_upload_time",
+    "hes_status", "hes_number", "hes_release_date", "hes_balance",
+    "projection_balance", "committed_balance", "invoiced_balance",
+    "observations", "month_period", "requester_coordinator", "coordinator",
+    "ceco_fap", "sgd_number", "sgd_upload_date", "sgd_upload_time",
+    "general_status", "ot", "ticket_number",
+    "quotation_number", "quotation_amount", "activity_end_date",
+]
+_HISTORY_META_FIELDS = _HISTORY_BASE_FIELDS + _HISTORY_EXTRA_FIELDS
 _HISTORY_ITEM_FIELDS = ["description", "udm", "quantity", "unit_price", "unit_price_quotation"]
-_HISTORY_NUMERIC_FIELDS = {"quantity", "unit_price", "unit_price_quotation", "client_id", "status"}
+_HISTORY_NUMERIC_FIELDS = {
+    "quantity", "unit_price", "unit_price_quotation", "client_id", "status",
+    "total_sin_iva", "status_report", "status_rep_admi", "remission_total",
+    "remission_status", "hes_status", "general_status", "hes_balance",
+    "projection_balance", "committed_balance", "invoiced_balance", "quotation_amount",
+}
+
+# Campos de extra_info que el GET de remisiones expone aplanados (ademas de los
+# historicos que ya se exponian uno a uno). Un solo GET sirve a los modulos de
+# remisiones, control de reportes y control de saldos.
+_GET_EXTRA_STRING_FIELDS = [
+    "date_office", "received_date", "request_date", "infra_responsible",
+    "remitos", "remission_sent_date", "remission_sent_by", "remission_send_time",
+    "remission_upload_date", "remission_upload_time",
+    "hes_number", "hes_release_date", "observations", "month_period",
+    "requester_coordinator", "coordinator", "ceco_fap",
+    "sgd_number", "sgd_upload_date", "sgd_upload_time",
+    "ot", "ticket_number", "quotation_number", "activity_end_date",
+]
+_GET_EXTRA_NUMERIC_FIELDS = [
+    "total_sin_iva", "status_report", "status_rep_admi", "remission_total",
+    "remission_status", "hes_status", "general_status", "hes_balance",
+    "projection_balance", "committed_balance", "invoiced_balance", "quotation_amount",
+]
 
 
 def _normalize_history_value(field, value):
@@ -100,7 +230,7 @@ def _diff_history_fields(old: dict, new: dict, fields: list) -> list:
 
 def _remission_meta_from_row(result_ra, extra_info: dict) -> dict:
     """Arma el dict de metadata curada a partir de la fila de activity_reports."""
-    return {
+    meta = {
         "date": result_ra[1],
         "folio": result_ra[2],
         "client_id": result_ra[3],
@@ -110,23 +240,19 @@ def _remission_meta_from_row(result_ra, extra_info: dict) -> dict:
         "general_description": result_ra[11],
         "comments": result_ra[12],
         "status": result_ra[14],
-        "pedido": extra_info.get("pedido", ""),
-        "pedido_exiros": extra_info.get("pedido_exiros", ""),
-        "remision": extra_info.get("remision", ""),
-        "remito": extra_info.get("remito", ""),
-        "date_report": extra_info.get("date_report", ""),
-        "date_sign": extra_info.get("date_sign", ""),
-        "date_delivery": extra_info.get("date_delivery", ""),
     }
+    meta.update({field: extra_info.get(field, "") for field in _HISTORY_EXTRA_FIELDS})
+    return meta
 
 
 def _remission_meta_from_payload(metadata: dict, new_extra_info: dict, area=None, status=None) -> dict:
     """Arma el dict de metadata curada con los valores que se van a escribir.
 
     `area`/`status` permiten forzar el valor conservado (p. ej. tabla de control)
-    para que no marquen un cambio espurio.
+    para que no marquen un cambio espurio. `new_extra_info` debe ser el extra_info
+    ya mergeado, para que las llaves no enviadas conserven su valor previo.
     """
-    return {
+    meta = {
         "date": metadata.get("date"),
         "folio": metadata.get("folio"),
         "client_id": metadata.get("client_id"),
@@ -136,14 +262,9 @@ def _remission_meta_from_payload(metadata: dict, new_extra_info: dict, area=None
         "general_description": metadata.get("general_description"),
         "comments": metadata.get("comments"),
         "status": status if status is not None else metadata.get("status"),
-        "pedido": new_extra_info.get("pedido", ""),
-        "pedido_exiros": new_extra_info.get("pedido_exiros", ""),
-        "remision": new_extra_info.get("remision", ""),
-        "remito": new_extra_info.get("remito", ""),
-        "date_report": new_extra_info.get("date_report", ""),
-        "date_sign": new_extra_info.get("date_sign", ""),
-        "date_delivery": new_extra_info.get("date_delivery", ""),
     }
+    meta.update({field: new_extra_info.get(field, "") for field in _HISTORY_EXTRA_FIELDS})
+    return meta
 
 
 def _diff_remission_items(old_items_map: dict, payload_items: list) -> list:
@@ -551,24 +672,6 @@ def delete_quotation_activity_from_api(data, data_token):
     return {"data": {"id_quotation": id_quotation}, "msg": msg, "error": None}, 200
 
 
-def create_extra_info_remision(data: dict):
-    extra_info = {}
-    extra_info["pedido"] = data["metadata"].get("pedido", "")
-    extra_info["pedido_exiros"] = data["metadata"].get("pedido_exiros", "")
-    extra_info["activity"] = data["metadata"].get("activity")
-    extra_info["remision"] = data["metadata"].get("remision", "")
-    extra_info["remito"] = data["metadata"].get("remito", "")
-    extra_info["date_report"] = data["metadata"].get("date_report", "")
-    extra_info["date_sign"] = data["metadata"].get("date_sign", "")
-    extra_info["date_delivery"] = data["metadata"].get("date_delivery", "")
-    extra_info["user"] = data["metadata"].get("user", "")
-    extra_info["project"] = (data["metadata"].get("project", ""),)
-    extra_info["project_description"] = data["metadata"].get("project_description")
-    extra_info["user_id"] = data["metadata"].get("user_id")
-
-    return extra_info
-
-
 def create_remission_control_table_from_api(data, data_token):
     timezone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(timezone).strftime(format_timestamps)
@@ -582,7 +685,8 @@ def create_remission_control_table_from_api(data, data_token):
         }
     ]
     quotation_id = data["metadata"].get("quotation_id", None)
-    extra_info = create_extra_info_remision(data)
+    quotation_id = quotation_id if quotation_id and quotation_id > 0 else None
+    extra_info = _extra_info_updates(data["metadata"], None, _CONTROL_EXTRA_KEY_MAP)
     flag, error, id_remission = insert_remission(
         date=data["metadata"]["date"],
         folio=data["metadata"]["folio"],
@@ -592,7 +696,7 @@ def create_remission_control_table_from_api(data, data_token):
         location=data["metadata"].get("location"),
         general_description=data["metadata"].get("general_description"),
         comments=data["metadata"].get("comments"),
-        quotation_id=quotation_id if quotation_id or quotation_id > 0 else None,
+        quotation_id=quotation_id,
         history=history_report,
         contract_id=data["metadata"].get("contract_id", None),
         pedido=data["metadata"].get("pedido", ""),
@@ -633,7 +737,7 @@ def create_remission_from_api(data, data_token):
     ]
     quotation_id = data["metadata"].get("quotation_id", 0)
     quotation_id = quotation_id if quotation_id and quotation_id > 0 else None
-    extra_info = create_extra_info_remision(data)
+    extra_info = _extra_info_updates(data["metadata"], None, _REMISSION_EXTRA_KEY_MAP)
     flag, error, id_remission = insert_remission(
         date=data["metadata"]["date"],
         folio=data["metadata"]["folio"],
@@ -795,7 +899,11 @@ def get_remission_from_api(id_report: int | None, data_token):
         result = [result]
     data_out = []
     for item in result:
-        extra_info = json.loads(item[19])
+        extra_info = _coerce_extra_info(item[19])
+        # Registros previos guardaron project como tupla -> lista JSON; se normaliza.
+        project = extra_info.get("project", "")
+        if isinstance(project, (list, tuple)):
+            project = project[0] if project else ""
 
         data_out.append(
             {
@@ -830,16 +938,18 @@ def get_remission_from_api(id_report: int | None, data_token):
                 "date_report": extra_info.get("date_report", ""),
                 "date_sign": extra_info.get("date_sign", ""),
                 "date_delivery": extra_info.get("date_delivery", ""),
-                "project": extra_info.get("project", ""),
+                "project": project,
                 "project_description": extra_info.get("project_description", ""),
                 "user": extra_info.get("user", ""),
                 "user_id": extra_info.get("user_id", ""),
+                **{f: extra_info.get(f, "") for f in _GET_EXTRA_STRING_FIELDS},
+                **{f: extra_info.get(f) for f in _GET_EXTRA_NUMERIC_FIELDS},
             }
         )
     return {"data": data_out, "msg": None, "error": None}, 200
 
 
-def update_remission_from_api(data, data_token):
+def update_remission_from_api(data, data_token, raw_metadata=None):
     timezone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(timezone).strftime(format_timestamps)
     user = data_token.get("emp_id", "desconocido")
@@ -862,11 +972,16 @@ def update_remission_from_api(data, data_token):
     history = result_ra[15]
     history = json.loads(history) if history else []
     quotation_id = data["metadata"].get("quotation_id", None)
-    # Update report activity:
-    extra_info = create_extra_info_remision(data)
+    # Update report activity: merge sobre el extra_info previo — solo las llaves
+    # del modulo REMISIONES presentes en el JSON crudo; las de otros modulos
+    # (control de reportes, saldos) se preservan.
+    old_extra_info = _coerce_extra_info(result_ra[19])
+    extra_info = dict(old_extra_info)
+    extra_info.update(
+        _extra_info_updates(data["metadata"], raw_metadata, _REMISSION_EXTRA_KEY_MAP)
+    )
 
     # Historial resumido de cambios (metadata + items) contra el estado previo.
-    old_extra_info = _coerce_extra_info(result_ra[19])
     old_items_map = {
         int(it["qa_item_id"]): it
         for it in (json.loads(result_ra[16]) if result_ra[16] else [])
@@ -897,12 +1012,12 @@ def update_remission_from_api(data, data_token):
         location=data["metadata"]["location"],
         general_description=data["metadata"]["general_description"],
         comments=data["metadata"]["comments"],
-        quotation_id=quotation_id if quotation_id or quotation_id > 0 else None,
+        quotation_id=quotation_id if quotation_id and quotation_id > 0 else None,
         history=history,
         status=data["metadata"]["status"],
         contract_id=data["metadata"].get("contract_id", None),
-        pedido=data["metadata"].get("pedido", ""),
-        pedido_exiros=data["metadata"].get("pedido_exiros", ""),
+        pedido=extra_info.get("pedido", ""),
+        pedido_exiros=extra_info.get("pedido_exiros", ""),
         data_token=data_token,
         extra_info=extra_info,
     )
@@ -988,7 +1103,7 @@ def update_remission_from_api(data, data_token):
     return {"data": {"id_remission": id_remission}, "msg": msg_out, "error": error_items}, 200
 
 
-def update_remission_control_table_from_api(data, data_token):
+def update_remission_control_table_from_api(data, data_token, raw_metadata=None):
     timezone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(timezone).strftime(format_timestamps)
     user = data_token.get("emp_id", "desconocido")
@@ -1015,7 +1130,9 @@ def update_remission_control_table_from_api(data, data_token):
 
     old_extra_info = _coerce_extra_info(result_ra[19])
     existing_extra_info = dict(old_extra_info)
-    existing_extra_info.update(create_extra_info_remision(data))
+    existing_extra_info.update(
+        _extra_info_updates(data["metadata"], raw_metadata, _CONTROL_EXTRA_KEY_MAP)
+    )
 
     # Historial resumido de cambios (solo metadata; la tabla de control no maneja items).
     # area/status se conservan del registro previo, por eso no deben marcar cambio.
@@ -1072,6 +1189,97 @@ def update_remission_control_table_from_api(data, data_token):
     return {"data": {"id_remission": data["metadata"]["id"]}, "msg": msg_out, "error": None}, 200
 
 
+def update_remission_balance_from_api(data, data_token, raw_metadata=None):
+    """Control de saldos: mergea sus llaves en extra_info de la remisión.
+
+    Solo escribe las llaves de _BALANCE_EXTRA_KEY_MAP presentes en el JSON crudo;
+    no toca columnas base (date, folio, client_id, ...), que se conservan de la fila.
+    """
+    timezone = pytz.timezone(timezone_software)
+    timestamp = datetime.now(pytz.utc).astimezone(timezone).strftime(format_timestamps)
+    user = data_token.get("emp_id", "desconocido")
+    id_remission = data["metadata"]["id"]
+
+    flag, error, result_ra = get_remission_by_id(id_remission, data_token)
+    if not (isinstance(result_ra, list) or isinstance(result_ra, tuple)):
+        return {
+            "data": None,
+            "msg": "Error al obtener registro de reporte de actividad",
+            "error": "valor devuelto por la db no esperado",
+        }, 400
+    if not flag:
+        return {
+            "data": None,
+            "msg": "Error al obtener registro de reporte de actividad",
+            "error": error,
+        }, 400
+    if len(result_ra) <= 0 or result_ra[0] is None:
+        return {
+            "data": None,
+            "msg": f"No se encontró la remisión (ID {id_remission})",
+            "error": "remisión no encontrada",
+        }, 400
+
+    history = result_ra[15]
+    history = json.loads(history) if history else []
+
+    old_extra_info = _coerce_extra_info(result_ra[19])
+    merged_extra_info = dict(old_extra_info)
+    merged_extra_info.update(
+        _extra_info_updates(data["metadata"], raw_metadata, _BALANCE_EXTRA_KEY_MAP)
+    )
+
+    # Historial resumido: los campos base salen de la fila (no cambian aqui),
+    # solo los de extra_info pueden marcar diferencia.
+    old_meta = _remission_meta_from_row(result_ra, old_extra_info)
+    new_meta = dict(old_meta)
+    new_meta.update(
+        {field: merged_extra_info.get(field, "") for field in _HISTORY_EXTRA_FIELDS}
+    )
+    meta_changes = _diff_history_fields(old_meta, new_meta, _HISTORY_META_FIELDS)
+    history.append(
+        {
+            "timestamp": timestamp,
+            "user": user,
+            "action": "Actualización",
+            "comment": "Actualización de control de saldos.",
+            "changes": {"metadata": meta_changes, "items": []},
+        }
+    )
+
+    flag, error, result = update_activity_report(
+        report_id=id_remission,
+        date=result_ra[1],
+        folio=result_ra[2],
+        client_id=result_ra[3],
+        plant=result_ra[8],
+        area=result_ra[9],
+        location=result_ra[10],
+        general_description=result_ra[11],
+        comments=result_ra[12],
+        quotation_id=result_ra[13],
+        history=history,
+        status=result_ra[14],
+        contract_id=result_ra[18],
+        pedido=merged_extra_info.get("pedido", ""),
+        pedido_exiros=merged_extra_info.get("pedido_exiros", ""),
+        data_token=data_token,
+        extra_info=merged_extra_info,
+    )
+    if not flag:
+        return {
+            "data": None,
+            "msg": "Error al actualizar control de saldos de la remisión",
+            "error": error,
+        }, 400
+    msg_out = f"Control de saldos actualizado correctamente (ID {id_remission})"
+    create_notification_permission(
+        msg_out, data_token, ["administracion"], "Control de saldos actualizado", user, 0
+    )
+    write_log_file(log_file_admin_collecions, msg_out, data_token)
+    return {"data": {"id_remission": id_remission}, "msg": msg_out, "error": None}, 200
+
+
 def delete_remission_from_api(data, data_token):
     id_remission = data["id"]
     user = data_token.get("emp_id", 0)
@@ -1125,6 +1333,89 @@ def delete_remission_from_api(data, data_token):
     )
     write_log_file(log_file_admin_collecions, msg_out, data_token)
     return {"data": {"id_remission": id_remission}, "msg": msg_out, "error": None}, 200
+
+
+def download_file_remission(id_report: int, iva_rate: float, data_token):
+    flag, error, result = get_remission_by_id(id_report, data_token)
+    if not flag:
+        return {
+            "data": None,
+            "msg": "Error al obtener la remisión",
+            "error": error,
+        }, 400
+    if not isinstance(result, tuple) or len(result) == 0:
+        return {
+            "data": None,
+            "msg": f"Remisión no encontrada (ID {id_report})",
+            "error": None,
+        }, 400
+
+    date = result[1]
+    folio = result[2]
+    contract_id = result[18]
+    extra_info = _coerce_extra_info(result[19])
+    project = extra_info.get("project", "")
+    if isinstance(project, (list, tuple)):
+        project = project[0] if project else ""
+
+    contract_marco = ""
+    if contract_id:
+        flag_c, error_c, result_c = get_contract(data_token, contract_id)
+        if flag_c and isinstance(result_c, tuple) and len(result_c) > 5:
+            contract_marco = result_c[5] or ""
+
+    items_raw = json.loads(result[16]) if result[16] else []
+    items_raw = [item for item in items_raw if item.get("qa_item_id") is not None]
+    items = []
+    subtotal = 0.0
+    for item in items_raw:
+        unit_price = float(item.get("unit_price") or 0)
+        quantity = float(item.get("quantity") or 0)
+        line_total = item.get("line_total")
+        line_total = float(line_total) if line_total is not None else unit_price * quantity
+        items.append(
+            {
+                "pos": item.get("partida") or "",
+                "description": item.get("description") or "",
+                "udm": item.get("udm") or "",
+                "quantity": quantity,
+                "unit_price": unit_price,
+                "line_total": line_total,
+            }
+        )
+        subtotal += line_total
+
+    iva = subtotal * iva_rate
+    total = subtotal + iva
+
+    download_path = os.path.join(
+        tempfile.mkdtemp(), os.path.basename(f"remision_{folio}_{id_report}.pdf")
+    )
+    flag_pdf = FileRemissionPDF(
+        {
+            "filename_out": download_path,
+            "folio": folio,
+            "date": date.strftime(format_timestamps) if not isinstance(date, str) else date,
+            "project": project,
+            "project_description": extra_info.get("project_description", ""),
+            "contract_marco": contract_marco,
+            "pedido": extra_info.get("pedido", ""),
+            "pedido_exiros": extra_info.get("pedido_exiros", ""),
+            "remito": extra_info.get("remito", ""),
+            "items": items,
+            "subtotal": subtotal,
+            "iva_rate": iva_rate,
+            "iva": iva,
+            "total": total,
+        }
+    )
+    if not flag_pdf:
+        return {
+            "data": None,
+            "msg": "Error al generar el PDF de la remisión",
+            "error": None,
+        }, 400
+    return download_path, 200
 
 
 def create_activity_report_attachment_api(data, data_token):

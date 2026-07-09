@@ -21,14 +21,13 @@ from static.Models.api_purchases_models import (
     QuotationActivityDeleteForm,
     QuotationActivityStatusUpdateForm,
     QuotationActivityUpdateForm,
+    RemissionBalanceUpdateForm,
     ReportActivityCreateControlTableForm,
     ReportActivityCreateForm,
     ReportActivityDeleteForm,
     ReportActivityDownloadAttForm,
     ReportActivityUpdateControlTableForm,
     ReportActivityUpdateForm,
-    basic_control_table_report_model,
-    basic_control_table_report_update_model,
     po_app_delete_model,
     pos_application_post_model,
     pos_application_put_model,
@@ -40,8 +39,11 @@ from static.Models.api_purchases_models import (
     quotation_activity_create_model,
     quotation_activity_delete_model,
     quotation_activity_update_model,
+    remission_activity_create_control_table_model,
     remission_activity_create_model,
+    remission_activity_update_control_table_model,
     remission_activity_update_model,
+    remission_balance_update_model,
     report_activity_delete_model,
     report_activity_download_att_model,
 )
@@ -50,13 +52,16 @@ from templates.resources.methods.Functions_Aux_Login import token_verification_p
 from templates.resources.midleware.MD_Admin_Collections import (
     create_activity_report_attachment_api,
     create_quotation_activity_from_api,
+    create_remission_control_table_from_api,
     create_remission_from_api,
     delete_quotation_activity_from_api,
     delete_remission_from_api,
+    download_file_remission,
     download_report_activity_attachment_api,
     get_quotations_from_api,
     get_remission_from_api,
     update_quotation_activity_from_api,
+    update_remission_balance_from_api,
     update_remission_control_table_from_api,
     update_remission_from_api,
 )
@@ -425,7 +430,8 @@ class ActivityRemissionAction(Resource):
         if not validator.validate():
             return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
         data = validator.data
-        data_out, code = update_remission_from_api(data, data_token)
+        raw_metadata = ns.payload.get("metadata") or {}
+        data_out, code = update_remission_from_api(data, data_token, raw_metadata)
         return data_out, code
 
     @ns.expect(expected_headers_per, report_activity_delete_model)
@@ -445,7 +451,7 @@ class ActivityRemissionAction(Resource):
 
 @ns.route("/remissionControlTable")
 class ActivityRemissionTableAction(Resource):
-    @ns.expect(expected_headers_per, basic_control_table_report_model)
+    @ns.expect(expected_headers_per, remission_activity_create_control_table_model)
     def post(self):
         flag, data_token, msg = token_verification_procedure(
             request, department=["administracion", "purchases"]
@@ -456,10 +462,10 @@ class ActivityRemissionTableAction(Resource):
         if not validator.validate():
             return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
         data = validator.data
-        data_out, code = create_remission_from_api(data, data_token)
+        data_out, code = create_remission_control_table_from_api(data, data_token)
         return data_out, code
 
-    @ns.expect(expected_headers_per, basic_control_table_report_update_model)
+    @ns.expect(expected_headers_per, remission_activity_update_control_table_model)
     def put(self):
         flag, data_token, msg = token_verification_procedure(
             request, department=["administracion", "purchases"]
@@ -470,7 +476,26 @@ class ActivityRemissionTableAction(Resource):
         if not validator.validate():
             return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
         data = validator.data
-        data_out, code = update_remission_control_table_from_api(data, data_token)
+        raw_metadata = ns.payload.get("metadata") or {}
+        data_out, code = update_remission_control_table_from_api(data, data_token, raw_metadata)
+        return data_out, code
+
+
+@ns.route("/remissionBalance")
+class ActivityRemissionBalanceAction(Resource):
+    @ns.expect(expected_headers_per, remission_balance_update_model)
+    def put(self):
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["administracion", "purchases"]
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        validator = RemissionBalanceUpdateForm.from_json(ns.payload)  # pyrefly: ignore
+        if not validator.validate():
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
+        data = validator.data
+        raw_metadata = ns.payload.get("metadata") or {}
+        data_out, code = update_remission_balance_from_api(data, data_token, raw_metadata)
         return data_out, code
 
 
@@ -492,6 +517,22 @@ class FetchActivitieReportById(Resource):
             id_report = None
         data_out, code = get_remission_from_api(id_report, data_token)
         return data_out, code
+
+
+@ns.route("/remission/download/pdf/<int:id_report>")
+class DownloadPDFRemission(Resource):
+    @ns.expect(expected_headers_per)
+    def get(self, id_report):
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["administracion", "purchases"]
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        iva_rate = request.args.get("iva_rate", default=0.16, type=float)
+        data, code = download_file_remission(id_report, iva_rate, data_token)
+        if code == 200:
+            return send_file(data, as_attachment=True)  # pyrefly: ignore
+        return data, code
 
 
 @ns.route("/remission/attachment-<string:id_report>")
