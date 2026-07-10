@@ -1620,23 +1620,15 @@ def create_sm_attachment_api(data, data_token):
             "msg": "No se pudo obtener la SM",
             "error": error,
         }, 400
-    if not isinstance(result, list):
+    # get_sm_by_id devuelve una sola fila (tupla); antes se iteraba como lista
+    # de SMs y el endpoint fallaba siempre con "resultado no es una lista"
+    if len(result) == 0 or result[0] is None or int(result[0]) != int(data["id_sm"]):
         return {
             "data": None,
-            "msg": "No se pudo obtener la SM: resultado no es una lista",
-            "error": str(result),
+            "msg": f"No se pudo obtener la SM: SM con id {data['id_sm']} no encontrada",
+            "error": "SM no encontrada",
         }, 400
-    sm_data = []
-    for item in result:
-        if int(item[0]) == int(data["id_sm"]):
-            sm_data = item
-            break
-    if len(sm_data) <= 0:
-        return {
-            "data": None,
-            "msg": "No se pudo obtener la SM: SM no encontrada",
-            "error": str(sm_data),
-        }, 400
+    sm_data = result
     date_sm = sm_data[8]
     history = json.loads(sm_data[12])
     # reconocer el tipo de archivo [pdf, image, zip]
@@ -1699,13 +1691,17 @@ def create_sm_attachment_api(data, data_token):
             "comment": msg,
         }
     )
-    extra_info = json.loads(sm_data[14])
-    comments = json.loads(sm_data[13])
+    extra_info = json.loads(sm_data[14]) if sm_data[14] else {}
+    comments = json.loads(sm_data[13]) if sm_data[13] else []
     files = extra_info.get("files", [])
+    # timestamp y title alimentan la tabla de entregas/firmas del PDF de la SM:
+    # title lleva el número de entrega ("Entrega N") y timestamp la fecha
     files.append(
         {
             "filename": data["filename"],
             "path": path_aws,
+            "timestamp": timestamp.strftime(format_timestamps),
+            "title": data.get("title") or f"Entrega {len(files) + 1}",
         }
     )
     extra_info["files"] = files

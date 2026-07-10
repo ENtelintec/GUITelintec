@@ -18,6 +18,23 @@ from wtforms.validators import InputRequired
 
 from static.constants import api
 from static.Models.api_models import date_filter
+from werkzeug.datastructures import FileStorage
+
+# multipart del attachment de SM (firma de entrega): file + title opcional
+expected_files_attachment_sm = api.parser()
+expected_files_attachment_sm.add_argument(
+    "file",
+    type=FileStorage,
+    location="files",
+    required=True,
+)
+expected_files_attachment_sm.add_argument(
+    "title",
+    type=str,
+    location="form",
+    required=False,
+    help="Título de la entrega (ej. 'Entrega 2'); si falta se genera 'Entrega N'",
+)
 
 client_emp_sm_response_model = api.model(
     "EmployeeSMResponse",

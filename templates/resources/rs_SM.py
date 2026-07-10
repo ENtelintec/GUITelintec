@@ -8,8 +8,8 @@ from flask_restx import Namespace, Resource
 from werkzeug.utils import secure_filename
 
 from static.Models.api_models import expected_headers_per
-from static.Models.api_sgi_models import expected_files_attachment
 from static.Models.api_sm_models import (
+    expected_files_attachment_sm,
     ItemApproveSMForm,
     ItemsBulkSmPutForm,
     ItemSMInventoryPutForm,
@@ -549,7 +549,7 @@ class UpdateItemSMApprove(Resource):
 
 @ns.route("/attachment-<string:id_sm>")
 class UploadSMAttachment(Resource):
-    @ns.expect(expected_headers_per, expected_files_attachment)
+    @ns.expect(expected_headers_per, expected_files_attachment_sm)
     def post(self, id_sm):
         flag, data_token, msg = token_verification_procedure(
             request, department=["administracion", "operaciones"]
@@ -568,6 +568,7 @@ class UploadSMAttachment(Resource):
                     "filepath": filepath_download,
                     "filename": filename,
                     "id_sm": id_sm,
+                    "title": request.form.get("title", ""),
                 },
                 data_token,
             )

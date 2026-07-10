@@ -91,10 +91,10 @@ Los helpers viejos (`print_metadata`, `print_headers_table_inventory`,
 
 ## Pendiente
 
-- **Firmas/entregas pre-llenadas desde los attachments**: hoy cada attachment
-  de `extra_info["files"]` solo aporta el conteo de filas en blanco
-  (`{filename, path}`). Cuando el attachment cargue la info de la entrega
-  (fecha, quién entrega/recibe), `create_sm_attachment_api` debe guardarla en
-  el mismo objeto del file y `print_deliveries_sign_table_sm` recibir la lista
-  de files (no el conteo) para pre-llenar la fecha de cada fila — las firmas
-  siempre quedan en blanco (se firman en papel).
+- **Firmas/entregas pre-llenadas desde los attachments**: los attachments ya
+  guardan `timestamp` y `title` por entrega
+  (ver [`sm_attachment_delivery_title.md`](sm_attachment_delivery_title.md));
+  falta que `print_deliveries_sign_table_sm` reciba la lista de files (no el
+  conteo) y pre-llene la columna "Fecha de Entrega" con `timestamp` y el
+  número/título con `title` — las firmas siempre quedan en blanco (se firman
+  en papel).
