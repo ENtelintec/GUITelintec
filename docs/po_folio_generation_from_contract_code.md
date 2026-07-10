@@ -56,11 +56,16 @@ existentes vía `get_folios_po_from_pattern` (LIKE `%patrón%`):
 | Folio | Patrón | Salida (`SM-0701-194`) |
 |---|---|---|
 | normal | `OC-GC` + `0701-194` | `OC-GC0701-194-001` |
-| maestro | `OCM-GC` + `0701` | `OCM-GC0701-001-<initial>194` |
+| maestro | `OCM-GC` + `0701` | `OCM-GC0701-001-194` |
 | cotfc | `OC-GCCOTFC-` + `0701-194` | `OC-GCCOTFC-0701-194-001` |
 
-`<initial>` es `dict_abbs[reference_parts[-2]]["initial"]`, que para un contrato es
-su columna `abbreviation`.
+El folio maestro termina en el consecutivo de la SM (`reference_parts[-1]`), **sin
+abreviación**. Antes se intercalaba la `abbreviation` del contrato (o el primer
+segmento de la abreviación del área) — p. ej. `OCM-GC0701-001-RFID194` — lo que
+producía folios inconsistentes según el origen del patrón; se eliminó junto con el
+`dict_abbs` que la resolvía. Los folios históricos con abreviación **no se migran**:
+`extract_count` toma el primer entero después del patrón, así que ambos formatos
+conviven en el cálculo del consecutivo.
 
 ### Cálculo del consecutivo (corregido)
 

@@ -1137,18 +1137,14 @@ def dowload_file_purchase(order_id: int, data_token):
 def generate_folios_po(reference, data_token):
     flag, error, result_abb = get_contracts_abreviations_db(data_token)
     abbs_area = []
-    dict_abbs = {}
     for item in result_abb:
         if item[0] != "" and item[4] == 0:
             abbs_area.append(item[0])
-            dict_abbs[item[0].lower()] = {"initial": item[0].split("-")[0]}
         elif item[4] == 1:
             contract_code = item[5] if item[5] is not None else ""
             if contract_code == "":
                 continue
-            code = contract_code[-4:]
-            abbs_area.append(code)
-            dict_abbs[code.lower()] = {"initial": item[3]}
+            abbs_area.append(contract_code[-4:])
 
     # abbs_area = [item[0] for item in result_abb if item[0] != "" and item[4] == 0]
     reference_parts = reference.lower().split("-")
@@ -1197,10 +1193,9 @@ def generate_folios_po(reference, data_token):
             count_normal = max(count_normal, extract_count(folio, folio_normal))
         elif folio_maestro.lower() in folio_lower:
             count_maestro = max(count_maestro, extract_count(folio, folio_maestro))
-    initial = dict_abbs.get(reference_parts[-2], {}).get("initial", "")
     folios_out = [
         f"{folio_normal}-{count_normal + 1:03d}".upper(),
-        f"{folio_maestro}-{count_maestro + 1:03d}-{initial}{reference_parts[-1]}".upper(),
+        f"{folio_maestro}-{count_maestro + 1:03d}-{reference_parts[-1]}".upper(),
         f"{folio_cotfc}-{count_cotfc + 1:03d}".upper(),
     ]
     return {"data": folios_out, "msg": None, "error": None}, 200
