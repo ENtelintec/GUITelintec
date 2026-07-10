@@ -937,3 +937,27 @@ def update_deliveries_sm_item_db(deliveries: list, id_item, history: list, sm_id
     val = (json.dumps(history), sm_id)
     flag, error, result = execute_sql(sql, val, 3, data_token)
     return flag, error, result
+
+
+def get_sm_items_deliveries_for_match_db(id_items: list, data_token):
+    """
+    Recupera los sm_items con su SM (folio, status) para el match OC<->SM del
+    endpoint de conciliacion: todos los items con deliveries no vacios (vinculo
+    primario por id_order) mas los id_item indicados (fallback por id_item_sm de
+    los items de la OC). Devuelve filas
+    (id_item, id_sm, folio_sm, status_sm, name, quantity, dispatched, deliveries).
+    """
+    sql = (
+        "SELECT smi.id_item, smi.id_sm, mr.folio, mr.status, smi.name, "
+        "smi.quantity, smi.dispatched, smi.deliveries "
+        "FROM sql_telintec.sm_items AS smi "
+        "INNER JOIN sql_telintec.materials_request AS mr ON mr.sm_id = smi.id_sm "
+        "WHERE (smi.deliveries IS NOT NULL AND JSON_LENGTH(smi.deliveries) > 0) "
+    )
+    val = []
+    if id_items:
+        placeholders = ", ".join(["%s"] * len(id_items))
+        sql += f"OR smi.id_item IN ({placeholders})"
+        val.extend(id_items)
+    flag, error, result = execute_sql(sql, tuple(val) if val else None, 2, data_token)
+    return flag, error, result

@@ -80,6 +80,7 @@ from templates.resources.midleware.MD_Purchases import (
     fetch_purchase_orders,
     generate_folios_po,
     get_items_with_fast_order,
+    match_po_movements_and_sms,
     update_po_application_api,
     update_purchase_order_api,
 )
@@ -318,6 +319,33 @@ class FolioPO(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data_out, code = generate_folios_po(folio, data_token)
+        return data_out, code
+
+
+@ns.route("/purchase/movements/match")
+class PurchaseMovementsMatch(Resource):
+    @ns.expect(expected_headers_per)
+    @ns.doc(
+        params={
+            "status": "Filtra por status de la OC (entero); canceladas (4) siempre se excluyen",
+            "date_from": "Fecha inicial YYYY-MM-DD sobre el timestamp de la OC",
+            "date_to": "Fecha final YYYY-MM-DD sobre el timestamp de la OC",
+            "folio": "Limita el match a la OC cuyo folio o folio_supplier coincida",
+        }
+    )
+    def get(self):
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["administracion", "purchases"]
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        params = {
+            "status": request.args.get("status"),
+            "date_from": request.args.get("date_from"),
+            "date_to": request.args.get("date_to"),
+            "folio": request.args.get("folio"),
+        }
+        data_out, code = match_po_movements_and_sms(params, data_token)
         return data_out, code
 
 

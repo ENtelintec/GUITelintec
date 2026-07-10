@@ -9,6 +9,7 @@ from typing import Iterable
 import pytz
 
 from static.constants import (
+    format_date,
     format_timestamps,
     log_file_po,
     timezone_software,
@@ -22,6 +23,7 @@ from templates.controllers.material_request.sm_controller import (
     get_sm_by_id,
     get_sm_entries,
     get_sm_item_deliveries_db,
+    get_sm_items_deliveries_for_match_db,
     update_deliveries_sm_item_db,
 )
 from templates.controllers.order.orders_controller import (
@@ -48,6 +50,7 @@ from templates.controllers.order.orders_controller import (
     update_purchase_order,
     update_purchase_order_status,
 )
+from templates.controllers.product.movements_controller import get_ins_db_detail
 from templates.forms.PurchaseForms import FilePoPDF
 from templates.forms.StorageMovSM import FilePurchaseList
 from templates.Functions_Utils import create_notification_permission_notGUI
@@ -1324,3 +1327,299 @@ def get_items_with_fast_order(data_token):
             }
         )
     return {"data": data_out, "msg": None, "error": None}, 200
+
+
+def _normalize_folio_match(value) -> str:
+    """Normaliza folios/references para el match: sin espacios extremos y en mayusculas."""
+    return str(value).strip().upper() if value else ""
+
+
+def _safe_number(value):
+    try:
+        return float(value) if value is not None else 0
+    except (TypeError, ValueError):
+        return 0
+
+
+def match_po_movements_and_sms(params, data_token):
+    """Concilia las OCs con los movimientos de entrada de almacen y sus SMs.
+
+    Match OC<->movimiento: el reference del movimiento (extra_info.$.reference,
+    guardado en mayusculas) contra folio y folio_supplier de la OC; primero
+    exacto (case-insensitive, con trim) y, solo para movimientos que no pegaron
+    exacto con ninguna OC, fallback contains (folio dentro del reference)
+    marcado como match_type 'parcial'. Un movimiento puede aparecer bajo todas
+    las OCs con las que pega. SMs relacionadas: primario por deliveries
+    (id_order == id de la OC), fallback por extra_info.id_item_sm de los items
+    de la OC. Ver Docs/po_movements_inbound_match.md.
+    """
+    params = params if isinstance(params, dict) else {}
+    status = None
+    status_raw = params.get("status")
+    if status_raw not in (None, ""):
+        try:
+            status = int(status_raw)
+        except (TypeError, ValueError):
+            return {
+                "data": [],
+                "msg": "Parametro status invalido",
+                "error": "status debe ser un entero",
+            }, 400
+    date_from = None
+    date_to = None
+    for key in ("date_from", "date_to"):
+        raw = params.get(key)
+        if raw in (None, ""):
+            continue
+        try:
+            parsed = datetime.strptime(str(raw), format_date).date()
+        except ValueError:
+            return {
+                "data": [],
+                "msg": f"Parametro {key} invalido",
+                "error": f"{key} debe tener formato {format_date}",
+            }, 400
+        if key == "date_from":
+            date_from = parsed
+        else:
+            date_to = parsed
+    folio_filter = _normalize_folio_match(params.get("folio"))
+    # misma visibilidad que fetch_purchase_orders: no admin ni gerente -> solo sus OCs
+    permissions = data_token.get("permissions")
+    permissions_last = [item.lower().split(".")[-1] for item in permissions.values()]
+    if "administrator" in permissions_last:
+        emp_id = None
+    else:
+        flag, error, result = check_if_gerente(data_token.get("emp_id"), data_token)
+        emp_id = data_token.get("emp_id") if not flag and len(result) <= 0 else None
+    flag, error, result = get_purchase_orders_with_items(status, emp_id, data_token)
+    if not flag:
+        return {"data": [], "msg": "Error al obtener órdenes de compra", "error": error}, 400
+    if not isinstance(result, Iterable):
+        return {
+            "data": [],
+            "msg": "Error al obtener órdenes de compra: respuesta inesperada de la DB",
+            "error": None,
+        }, 400
+    # pos: tuplas (id_order, base_out, folio_norm, folio_supplier_norm, ids_item_sm)
+    pos = []
+    ids_item_sm_all = set()
+    for row in result:
+        (
+            id_order,
+            timestamp,
+            status_po,
+            created_by,
+            supplier,
+            folio,
+            history,
+            extra_info,
+            products,
+            time_delivery,
+        ) = row
+        if date_from or date_to:
+            ts = timestamp
+            if isinstance(ts, str):
+                try:
+                    ts = datetime.strptime(ts, format_timestamps)
+                except ValueError:
+                    ts = None
+            # timestamp no parseable -> la OC se incluye (no se filtra a ciegas)
+            if ts is not None:
+                if date_from and ts.date() < date_from:
+                    continue
+                if date_to and ts.date() > date_to:
+                    continue
+        extra_info = json.loads(extra_info) if extra_info else {}
+        folio_supplier = extra_info.get("folio_supplier", "")
+        folio_norm = _normalize_folio_match(folio)
+        folio_supplier_norm = _normalize_folio_match(folio_supplier)
+        if folio_filter and folio_filter not in (folio_norm, folio_supplier_norm):
+            continue
+        products = json.loads(products) if products else []
+        products, _total = map_products_po(products)
+        ids_item_sm = []
+        for item in products:
+            id_item_sm = item.get("id_item_sm")
+            try:
+                id_item_sm = int(id_item_sm) if id_item_sm is not None else 0
+            except (TypeError, ValueError):
+                id_item_sm = 0
+            if id_item_sm > 0:
+                ids_item_sm.append(id_item_sm)
+                ids_item_sm_all.add(id_item_sm)
+        base_out = {
+            "id": id_order,
+            "folio": folio,
+            "folio_supplier": folio_supplier,
+            "status": status_po,
+            "supplier": supplier,
+            "created_by": created_by,
+            "timestamp": timestamp.strftime(format_timestamps)
+            if not isinstance(timestamp, str)
+            else timestamp,
+            "time_delivery": time_delivery,
+        }
+        pos.append((id_order, base_out, folio_norm, folio_supplier_norm, ids_item_sm))
+    if not pos:
+        return {
+            "data": [],
+            "msg": "Se conciliaron 0 ordenes de compra: 0 con entradas y 0 sin entradas",
+            "error": None,
+        }, 200
+    # movimientos de entrada con reference
+    flag, error, result = get_ins_db_detail(data_token)
+    if not flag:
+        return {"data": [], "msg": "Error al obtener movimientos de entrada", "error": error}, 400
+    movements = []  # tuplas (ref_norm, movimiento mapeado a dict de salida)
+    for row in result:  # pyrefly: ignore
+        reference_raw = row[11]
+        try:
+            reference = json.loads(reference_raw) if reference_raw else ""
+        except (TypeError, ValueError):
+            reference = str(reference_raw)
+        ref_norm = _normalize_folio_match(reference)
+        if not ref_norm:
+            continue
+        movement_date = row[5]
+        movements.append(
+            (
+                ref_norm,
+                {
+                    "id_movement": row[0],
+                    "id_product": row[1],
+                    "sku": row[2],
+                    "quantity": _safe_number(row[4]),
+                    "movement_date": movement_date.strftime(format_timestamps)
+                    if movement_date is not None and not isinstance(movement_date, str)
+                    else movement_date,
+                    "sm_id": row[6],
+                    "product_name": row[7],
+                    "udm": row[8],
+                    "reference": reference,
+                },
+            )
+        )
+    by_folio = {}
+    by_folio_supplier = {}
+    for id_po, _base, folio_norm, folio_supplier_norm, _ids in pos:
+        if folio_norm:
+            by_folio.setdefault(folio_norm, []).append(id_po)
+        if folio_supplier_norm:
+            by_folio_supplier.setdefault(folio_supplier_norm, []).append(id_po)
+    movements_by_po = {}
+    for ref_norm, mov_data in movements:
+        exact_matches = []
+        seen_ids = set()
+        for id_po in by_folio.get(ref_norm, []):
+            exact_matches.append((id_po, "folio"))
+            seen_ids.add(id_po)
+        for id_po in by_folio_supplier.get(ref_norm, []):
+            if id_po not in seen_ids:
+                exact_matches.append((id_po, "folio_supplier"))
+        if exact_matches:
+            for id_po, matched_by in exact_matches:
+                movements_by_po.setdefault(id_po, []).append(
+                    {**mov_data, "matched_by": matched_by, "match_type": "exacto"}
+                )
+            continue
+        for id_po, _base, folio_norm, folio_supplier_norm, _ids in pos:
+            if folio_norm and folio_norm in ref_norm:
+                movements_by_po.setdefault(id_po, []).append(
+                    {**mov_data, "matched_by": "folio", "match_type": "parcial"}
+                )
+            elif folio_supplier_norm and folio_supplier_norm in ref_norm:
+                movements_by_po.setdefault(id_po, []).append(
+                    {**mov_data, "matched_by": "folio_supplier", "match_type": "parcial"}
+                )
+    # SMs relacionadas: por deliveries (primario) y por id_item_sm (fallback)
+    flag, error, result = get_sm_items_deliveries_for_match_db(
+        sorted(ids_item_sm_all), data_token
+    )
+    if not flag:
+        return {
+            "data": [],
+            "msg": "Error al obtener los items de SM para el match",
+            "error": error,
+        }, 400
+    deliveries_by_po = {}
+    items_by_id = {}
+    for row in result:  # pyrefly: ignore
+        id_item, id_sm, folio_sm, status_sm, name, quantity, dispatched, deliveries_raw = row
+        try:
+            deliveries = json.loads(deliveries_raw) if deliveries_raw else []
+        except (TypeError, ValueError):
+            deliveries = []
+        deliveries = deliveries if isinstance(deliveries, list) else []
+        item_info = {
+            "id_item": id_item,
+            "id_sm": id_sm,
+            "folio_sm": folio_sm,
+            "status_sm": status_sm,
+            "description": name,
+            "quantity": _safe_number(quantity),
+            "dispatched": _safe_number(dispatched),
+        }
+        items_by_id[id_item] = item_info
+        for delivery in deliveries:
+            if not isinstance(delivery, dict):
+                continue
+            id_order_dv = delivery.get("id_order")
+            try:
+                id_order_dv = int(id_order_dv) if id_order_dv is not None else 0
+            except (TypeError, ValueError):
+                id_order_dv = 0
+            if id_order_dv > 0:
+                deliveries_by_po.setdefault(id_order_dv, []).append((item_info, delivery))
+    data_out = []
+    for id_po, base_out, _folio_norm, _folio_supplier_norm, ids_item_sm in sorted(
+        pos, key=lambda p: p[0], reverse=True
+    ):
+        entries = deliveries_by_po.get(id_po, [])
+        link = "deliveries"
+        if not entries:
+            link = "id_item_sm"
+            entries = [
+                (items_by_id[id_item], None)
+                for id_item in ids_item_sm
+                if id_item in items_by_id
+            ]
+        sms_meta = {}
+        sms_items = {}
+        for item_info, delivery in entries:
+            id_sm = item_info["id_sm"]
+            sms_meta.setdefault(
+                id_sm,
+                {
+                    "id_sm": id_sm,
+                    "folio": item_info["folio_sm"],
+                    "status": item_info["status_sm"],
+                    "link": link,
+                },
+            )
+            sms_items.setdefault(id_sm, []).append(
+                {
+                    "id_item": item_info["id_item"],
+                    "description": item_info["description"],
+                    "quantity": item_info["quantity"],
+                    "dispatched": item_info["dispatched"],
+                    "delivery": delivery,
+                }
+            )
+        po_movements = movements_by_po.get(id_po, [])
+        data_out.append(
+            {
+                **base_out,
+                "reception_status": "con_entradas" if po_movements else "sin_entradas",
+                "movements": po_movements,
+                "sms": [
+                    {**sms_meta[id_sm], "items": sms_items[id_sm]} for id_sm in sms_meta
+                ],
+            }
+        )
+    n_con = sum(1 for po in data_out if po["reception_status"] == "con_entradas")
+    msg = (
+        f"Se conciliaron {len(data_out)} ordenes de compra: "
+        f"{n_con} con entradas y {len(data_out) - n_con} sin entradas"
+    )
+    return {"data": data_out, "msg": msg, "error": None}, 200
