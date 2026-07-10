@@ -212,7 +212,10 @@ def get_sm_by_id(sm_id: int, data_token):
         "   FROM sql_telintec.product_reservations"
         "   WHERE status = 0 "
         "   GROUP BY id_product) rAll ON smi.id_inventory = rAll.id_product "
-        "WHERE mr.sm_id = %s"
+        "WHERE mr.sm_id = %s "
+        # Sin GROUP BY, JSON_ARRAYAGG agrega sobre cero filas y devuelve una
+        # fila llena de NULLs para un sm_id inexistente; con él, no hay filas.
+        "GROUP BY mr.sm_id"
     )
     val = (sm_id,)
     flag, error, result = execute_sql(sql, val, 1, data_token)
@@ -273,10 +276,15 @@ def get_sm_by_folio(folio: str, data_token):
         "   FROM sql_telintec.product_reservations"
         "   WHERE status = 0 "
         "   GROUP BY id_product) rAll ON smi.id_inventory = rAll.id_product "
-        "WHERE mr.folio = %s"
+        "WHERE mr.folio = %s "
+        # Sin GROUP BY, JSON_ARRAYAGG agrega sobre cero filas y devuelve una
+        # fila llena de NULLs para un folio inexistente; con él, no hay filas.
+        "GROUP BY mr.sm_id"
     )
     val = (folio,)
     flag, error, result = execute_sql(sql, val, 1, data_token)
+    if not isinstance(result, tuple):
+        return False, "No SM entries found or error in query", []
     return flag, error, result
 
 

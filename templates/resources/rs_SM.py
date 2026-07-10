@@ -366,17 +366,14 @@ class DownloadPDFSM(Resource):
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data, code = dowload_file_sm(sm_id, data_token)
         if code == 200:
+            # con code 200 data siempre es la ruta (str) del archivo generado
             return send_file(
-                data,
+                data,  # pyrefly: ignore
                 as_attachment=True,
-                download_name=data.replace("\\", "/").split("/")[-1],
+                download_name=data.replace("\\", "/").split("/")[-1],  # pyrefly: ignore
             )
         else:
-            return {
-                "data": None,
-                "msg": "No se pudo descargar el archivo",
-                "error": "download error",
-            }, code
+            return data, code
 
 
 @ns.route("/download/excel/<int:sm_id>")
@@ -388,17 +385,14 @@ class DownloadExcelSM(Resource):
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data, code = dowload_file_sm(sm_id, data_token, type_file="excel")
         if code == 200:
+            # con code 200 data siempre es la ruta (str) del archivo generado
             return send_file(
-                data,
+                data,  # pyrefly: ignore
                 as_attachment=True,
-                download_name=data.replace("\\", "/").split("/")[-1],
+                download_name=data.replace("\\", "/").split("/")[-1],  # pyrefly: ignore
             )
         else:
-            return {
-                "data": None,
-                "msg": "No se pudo descargar el archivo",
-                "error": "download error",
-            }, code
+            return data, code
 
 
 @ns.route("/control/table")

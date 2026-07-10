@@ -753,8 +753,12 @@ def get_employees_almacen(data_token):
 
 def dowload_file_sm(sm_id: int, data_token, type_file="pdf"):
     flag, error, result = get_sm_by_id(sm_id, data_token)
-    if not flag or len(result) == 0:
-        return "None", 400
+    if not flag or len(result) == 0 or result[0] is None:
+        return {
+            "data": None,
+            "msg": f"SM con id {sm_id} no encontrada",
+            "error": error or "SM no encontrada",
+        }, 404
     folio = result[1]
     contract = result[2]
     facility = result[3]
@@ -762,17 +766,20 @@ def dowload_file_sm(sm_id: int, data_token, type_file="pdf"):
     # client_id = result[5]
     # emp_id = result[6]
     order_quotation = result[7]
-    date = pd.to_datetime(result[8])
-    critical_date = pd.to_datetime(result[9])
+    date = pd.to_datetime(result[8], errors="coerce") if result[8] else None
+    critical_date = pd.to_datetime(result[9], errors="coerce") if result[9] else None
     items = json.loads(result[10]) if isinstance(result[10], str) else result[10]
     # status = result[11]
     # history = json.loads(result[12])
+    # comment/observations (result[13]) no se imprime en el documento
     try:
-        observations = json.loads(result[13])
+        extra_info = json.loads(result[14]) if result[14] else {}
     except Exception as e:
-        print("erro download", str(e))
-        observations = [result[13]]
-    # extra_info = json.loads(result[14])
+        print("erro download extra_info", str(e))
+        extra_info = {}
+    files_sm = extra_info.get("files", []) if isinstance(extra_info, dict) else []
+    # una fila de entrega/firma por attachment de la SM, mínimo 1
+    delivery_rows = max(1, len(files_sm))
     basename = f"sm_{folio}"
     download_path = (
         os.path.join(tempfile.mkdtemp(), os.path.basename(basename + ".pdf"))
@@ -787,13 +794,16 @@ def dowload_file_sm(sm_id: int, data_token, type_file="pdf"):
     else:
         customer_name = "None"
         emp_name = "None"
-    counter = 1
-    for item in items:
-        name = item["name"] if "name" in item.keys() else "None"
-        quantity = item["quantity"] if "quantity" in item.keys() else "None"
-        comment = item["comment"] if "comment" in item.keys() else "None"
-        udm = item["udm"] if "udm" in item.keys() else "None"
-        stock = item["dispached"] if "dispached" in item.keys() else "None"
+    if items is None:
+        items = []
+    # Una SM sin items produce [{'id': None, ...}] por el LEFT JOIN + JSON_ARRAYAGG.
+    items = [item for item in items if isinstance(item, dict) and item.get("id") is not None]
+    for counter, item in enumerate(items, start=1):
+        name = item.get("name") or "None"
+        quantity = item.get("quantity") or 0
+        comment = item.get("comment") or ""
+        udm = item.get("udm") or "None"
+        dispatched = item.get("dispatched") or 0
         if "(despachado)" in comment.lower():
             status = "Despachado"
         elif "(pedido)" in comment.lower():
@@ -802,7 +812,7 @@ def dowload_file_sm(sm_id: int, data_token, type_file="pdf"):
             status = "Nuevo-Pedido"
         else:
             status = "pendiente"
-        products.append((counter, name, quantity, udm, stock, status))
+        products.append((counter, name, quantity, udm, dispatched, status))
 
     if type_file == "pdf":
         flag = FileSmPDF(
@@ -810,7 +820,9 @@ def dowload_file_sm(sm_id: int, data_token, type_file="pdf"):
                 "filename_out": download_path,
                 "products": products,
                 "metadata": {
-                    "Fecha de Solicitud": date.strftime(format_date),
+                    "Fecha de Solicitud": date.strftime(format_date)
+                    if isinstance(date, datetime) and not pd.isnull(date)
+                    else "",
                     "Folio": folio,
                     "Contrato": contract,
                     "Usuario Solicitante": customer_name,
@@ -819,20 +831,24 @@ def dowload_file_sm(sm_id: int, data_token, type_file="pdf"):
                     "Planta": facility,
                     "Área Dirigida Telintec": location,
                     "Área / Ubicación": location,
-                    "Fecha Crítica de Entrega": critical_date.strftime(format_date),
+                    "Fecha Crítica de Entrega": critical_date.strftime(format_date)
+                    if isinstance(critical_date, datetime) and not pd.isnull(critical_date)
+                    else "",
                 },
-                "observations": observations,
-                "date_complete_delivery": "2023-06-01",
-                "date_first_delivery": "2023-06-01",
+                "delivery_rows": delivery_rows,
             },
         )
         if not flag:
             print("error at generating pdf", download_path)
-            return "None", 400
+            return {
+                "data": None,
+                "msg": f"No se pudo generar el PDF de la SM con id {sm_id}",
+                "error": "Error al generar el PDF",
+            }, 400
     else:
         lista_de_items = products
         # Definir los nombres de las columnas
-        columnas = ["No.", "Nombre", "Cantidad", "Unidad de Medida", "Stock", "Estatus"]
+        columnas = ["No.", "Nombre", "Cantidad", "Unidad de Medida", "C. Suministrado", "Estatus"]
         # Convertir la lista en un DataFrame
         df = pd.DataFrame(lista_de_items, columns=columnas)
         # Guardar el DataFrame en un archivo Excel
