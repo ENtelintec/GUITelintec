@@ -82,6 +82,16 @@ contra la BD de dev (`get_contract(data_token, 4)` ahora sí devuelve el contrat
 - Si se agrega un campo nuevo a la metadata impresa, añadirlo a `metadata_rows`
   dentro de `draw_header_and_metadata()` en `RemissionForms.py` y resolver su
   origen en `download_file_remission`.
-- Pendiente a futuro (fuera de este alcance): anexar al PDF final el reporte de
-  materiales (formato Ternium) y las fotos ya subidas en `ar.files`, si se pide
-  como un solo documento combinado.
+
+## Pendiente
+
+- **Adjuntar los `files` de la remisión al PDF generado**: `ar.files` (columna
+  ya existente, ver `get_remission_from_api`) trae los adjuntos subidos a S3
+  (fotos/evidencia, ver `download_report_activity_attachment_api`). Hoy el PDF
+  de descarga **no los incluye** — quedan fuera del documento generado. A
+  futuro: descargarlos de S3 y fusionarlos (merge de PDF/imágenes) al PDF de
+  `FileRemissionPDF` antes de devolver `download_path`, o exponerlos aparte y
+  que el front los anexe.
+- Anexar también el reporte de materiales (formato Ternium, distinto al de
+  `ar.files`) si se pide como un solo documento combinado — no hay datos hoy en
+  el modelo para generarlo, ver `Docs/tareas_admin_windows.md`.
