@@ -184,57 +184,83 @@ def calculate_last_y(item, y_limit, font_size, y_position, type_form="Movements"
     return False
 
 
+# Columnas de InventoryStoragePDF (página horizontal, ancho útil = a4_y - 2 * margen).
+# El orden sigue el tuple que arma el midleware de almacén (Functions_midleware_almacen).
+_INV_COLS = {
+    "Movements": [
+        ("Codigo", 70),
+        ("Fecha", 65),
+        ("Descripción", 220),
+        ("UDM", 38),
+        ("Proveedor", 90),
+        ("Movimiento", 90),
+        ("SM", 70),
+        ("Referencia", 78),
+        ("Ubicacion", 70.89),
+    ],
+    "Materials": [
+        ("Codigo", 90),
+        ("Proveedor", 110),
+        ("Descripción", 280),
+        ("UDM", 40),
+        ("Stock Min.", 70),
+        ("Stock", 60),
+        ("Ubicacion", 141.89),
+    ],
+}
+
+
 def InventoryStoragePDF(dict_data: dict, type_form="Movements"):
     """
-    :param type_form:
-    :param dict_data:
-    :return:
+    Reporte de almacén en cuadrícula (encabezados celestes): registro de
+    entradas/salidas (``Movements``, 9 columnas) o de materiales
+    (``Materials``, 7 columnas). Página horizontal. Estructura esperada::
+
+        {"filename_out": str, "products": [tuple por fila, orden = _INV_COLS]}
+
+    Multipágina: header Telintec + fila de encabezados en cada página.
     """
     file_name = "files/inventory_storage.pdf" if dict_data["filename_out"] is None else dict_data["filename_out"]
     pdf = canvas.Canvas(file_name, pagesize=(a4_y, a4_x))
-    pdf.setTitle("Inventario: Registro de Entradas y Salidas") if type_form == "Movements" else pdf.setTitle("Inventario: Registro de Materiales")
-    products = dict_data["products"]
-    create_header_telintec(
-        pdf,
-        title=["Inventario", "Registro de Entradas y Salidas", "Almacen-Nogalar"] if type_form == "Movements" else ["Inventario", "Registro de Materiales", "Almacen-Nogalar"],
-        page_x=a4_y,
-        iso_form=2,
-        orientation="Horizontal",
-        title_font=14,
+    title = (
+        "Inventario: Registro de Entradas y Salidas"
+        if type_form == "Movements"
+        else "Inventario: Registro de Materiales"
     )
-    pages = 1
-    # ----------------------------------------header table of products-----------------------------------------------
-    print_headers_table_inventory(pdf, type_form=type_form)
-    # ---------------------------------------------products---------------------------------------------------------
-    headers = list(dict_wrappers_headers[type_form].keys())
+    pdf.setTitle(title)
+    products = dict_data["products"]
+    cols = _INV_COLS[type_form]
     font_size = 8
-    pdf.setFont("Courier", font_size)
-    y_init = 480
-    last_y = y_init
-    limit_y = 10
-    for index_products, item in enumerate(products):
-        x_position = 20
-        y_init = last_y
-        if calculate_last_y(item, limit_y, font_size, y_init, type_form=type_form):
-            print_footer_page_count(pdf, pages)
-            pdf.showPage()
-            pages += 1
-            print_headers_table_inventory(pdf, y_init=535, type_form=type_form)
-            y_init = 510
-            last_y = y_init
-            pdf.setFont("Courier", font_size)
-        for index, key in enumerate(item):
-            value = textwrap.wrap(
-                str(key),
-                width=dict_wrappers_headers[type_form][headers[index]][font_size],
-            )
-            y_position = y_init - font_size * 1.5
-            for letter in value:
-                pdf.drawString(x_position, y_position, letter)
-                y_position -= font_size
-                last_y = y_position if y_position < last_y else last_y
-            x_position += font_size * dict_wrappers_headers[type_form][headers[index]][font_size] * 0.8
-    print_footer_page_count(pdf, pages)
+    limit_y = 40
+    pages = 1
+
+    def draw_page_header():
+        create_header_telintec(
+            pdf,
+            title=["Inventario", "Registro de Entradas y Salidas", "Almacen-Nogalar"]
+            if type_form == "Movements"
+            else ["Inventario", "Registro de Materiales", "Almacen-Nogalar"],
+            page_x=a4_y,
+            iso_form=2,
+            orientation="Horizontal",
+            title_font=14,
+        )
+
+    def new_page():
+        nonlocal pages
+        print_footer_page_count(pdf, pages, right_text=title, x_max=a4_y)
+        pdf.showPage()
+        pages += 1
+        draw_page_header()
+        return print_grid_header_row(pdf, cols, 500.0, font_size)
+
+    draw_page_header()
+    y = print_grid_header_row(pdf, cols, 500.0, font_size)
+    for item in products:
+        if y - grid_row_height(cols, item, font_size) < limit_y:
+            y = new_page()
+        y = print_grid_row(pdf, cols, item, y, font_size)
+    print_footer_page_count(pdf, pages, right_text=title, x_max=a4_y)
     pdf.save()
     return True
 
@@ -287,14 +313,19 @@ def ReturnMaterials(dict_data: dict):
     return True
 
 
-# ------------------------- PDF de SM en cuadrícula (solo FileSmPDF) -------------------------
-# Helpers exclusivos del PDF de SOLICITUD DE MATERIAL; los otros PDFs de este
-# módulo (InventoryStoragePDF, ReturnMaterials) siguen usando los helpers de
-# texto suelto de arriba. Estilo de celdas tomado de RemissionForms.py.
+# ------------------------- PDFs en cuadrícula (diseño celeste) -------------------------
+# Helpers genéricos `_grid_*`/`print_grid_*` compartidos por FileSmPDF e
+# InventoryStoragePDF; ReturnMaterials sigue usando los helpers de texto suelto
+# de arriba. Estilo de celdas tomado de RemissionForms.py; formato documentado
+# en la skill .claude/skills/pdf-design/.
 
-_SM_CELESTE = (0.74, 0.84, 0.93)  # #BDD7EE, fondo de labels/encabezados
-_SM_MARGIN = 25.0
-_SM_GRID_WIDTH = a4_x - 2 * _SM_MARGIN
+_GRID_CELESTE = (0.74, 0.84, 0.93)  # #BDD7EE, fondo de labels/encabezados
+_GRID_MARGIN = 25.0
+
+# alias históricos del bloque SM
+_SM_CELESTE = _GRID_CELESTE
+_SM_MARGIN = _GRID_MARGIN
+_SM_GRID_WIDTH = a4_x - 2 * _GRID_MARGIN
 
 # (encabezado, ancho en pt); los anchos suman _SM_GRID_WIDTH.
 # El orden sigue el tuple de products: (no, nombre, cantidad, udm, suministrado, estatus)
@@ -314,15 +345,15 @@ _SM_DELIVERY_COLS = [
 ]
 
 
-def _sm_wrap_cell(value, width_pt, font_size):
+def _grid_wrap_cell(value, width_pt, font_size):
     chars = max(1, int((width_pt - 8) / (font_size * 0.6)))
-    return textwrap.wrap(str(value), width=chars) or [""]
+    return textwrap.wrap("" if value is None else str(value), width=chars) or [""]
 
 
-def _sm_draw_cell(pdf, x, y_top, w, h, lines, font_size, bold=False, fill=False):
+def _grid_draw_cell(pdf, x, y_top, w, h, lines, font_size, bold=False, fill=False):
     pdf.setLineWidth(0.6)
     if fill:
-        pdf.setFillColorRGB(*_SM_CELESTE)
+        pdf.setFillColorRGB(*_GRID_CELESTE)
         pdf.rect(x, y_top - h, w, h, fill=1, stroke=1)
         pdf.setFillColorRGB(0, 0, 0)
     else:
@@ -332,6 +363,36 @@ def _sm_draw_cell(pdf, x, y_top, w, h, lines, font_size, bold=False, fill=False)
     for line in lines:
         pdf.drawString(x + 4, text_y, line)
         text_y -= font_size * 1.25
+
+
+def print_grid_header_row(pdf, cols, y_init, font_size=8, margin=_GRID_MARGIN):
+    """Fila de encabezados de tabla: una celda celeste bold por columna."""
+    h = font_size * 1.25 + 6
+    x = margin
+    for name, w in cols:
+        _grid_draw_cell(pdf, x, y_init, w, h, [name], font_size, bold=True, fill=True)
+        x += w
+    return y_init - h
+
+
+def grid_row_height(cols, item, font_size=8):
+    return (
+        max(len(_grid_wrap_cell(value, w, font_size)) for value, (_, w) in zip(item, cols))
+        * font_size
+        * 1.25
+        + 6
+    )
+
+
+def print_grid_row(pdf, cols, item, y_init, font_size=8, margin=_GRID_MARGIN):
+    """Fila de datos: celdas alineadas por posición con `cols`; crece con el wrap."""
+    cells = [_grid_wrap_cell(value, w, font_size) for value, (_, w) in zip(item, cols)]
+    h = max(len(lines) for lines in cells) * font_size * 1.25 + 6
+    x = margin
+    for lines, (_, w) in zip(cells, cols):
+        _grid_draw_cell(pdf, x, y_init, w, h, lines, font_size)
+        x += w
+    return y_init - h
 
 
 def print_metadata_grid_sm(pdf, metadata, y_init, font_size=8):
@@ -349,52 +410,18 @@ def print_metadata_grid_sm(pdf, metadata, y_init, font_size=8):
         pair_cells = []
         max_lines = 1
         for label, value in entries[i : i + 2]:
-            label_lines = _sm_wrap_cell(label, label_w, font_size)
-            value_lines = _sm_wrap_cell("" if value is None else value, value_w, font_size)
+            label_lines = _grid_wrap_cell(label, label_w, font_size)
+            value_lines = _grid_wrap_cell(value, value_w, font_size)
             pair_cells.append((label_lines, value_lines))
             max_lines = max(max_lines, len(label_lines), len(value_lines))
         h = max_lines * font_size * 1.25 + 6
         x = _SM_MARGIN
         for label_lines, value_lines in pair_cells:
-            _sm_draw_cell(pdf, x, y, label_w, h, label_lines, font_size, bold=True, fill=True)
-            _sm_draw_cell(pdf, x + label_w, y, value_w, h, value_lines, font_size)
+            _grid_draw_cell(pdf, x, y, label_w, h, label_lines, font_size, bold=True, fill=True)
+            _grid_draw_cell(pdf, x + label_w, y, value_w, h, value_lines, font_size)
             x += pair_w
         y -= h
     return y
-
-
-def print_items_grid_headers_sm(pdf, y_init, font_size=8):
-    h = font_size * 1.25 + 6
-    x = _SM_MARGIN
-    for name, w in _SM_ITEM_COLS:
-        _sm_draw_cell(pdf, x, y_init, w, h, [name], font_size, bold=True, fill=True)
-        x += w
-    return y_init - h
-
-
-def _sm_item_row(pdf, item, y_init, font_size=8):
-    cells = [
-        _sm_wrap_cell(value, w, font_size)
-        for value, (_, w) in zip(item, _SM_ITEM_COLS)
-    ]
-    h = max(len(lines) for lines in cells) * font_size * 1.25 + 6
-    x = _SM_MARGIN
-    for lines, (_, w) in zip(cells, _SM_ITEM_COLS):
-        _sm_draw_cell(pdf, x, y_init, w, h, lines, font_size)
-        x += w
-    return y_init - h
-
-
-def _sm_item_row_height(item, font_size=8):
-    return (
-        max(
-            len(_sm_wrap_cell(value, w, font_size))
-            for value, (_, w) in zip(item, _SM_ITEM_COLS)
-        )
-        * font_size
-        * 1.25
-        + 6
-    )
 
 
 def print_deliveries_sign_table_sm(pdf, y_init, rows=1, font_size=8):
@@ -403,23 +430,19 @@ def print_deliveries_sign_table_sm(pdf, y_init, rows=1, font_size=8):
     blanco por entrega esperada y al final el campo "Fecha de Entrega Completa".
     """
     head_h = font_size * 1.25 + 6
-    x = _SM_MARGIN
-    for name, w in _SM_DELIVERY_COLS:
-        _sm_draw_cell(pdf, x, y_init, w, head_h, [name], font_size, bold=True, fill=True)
-        x += w
-    y = y_init - head_h
+    y = print_grid_header_row(pdf, _SM_DELIVERY_COLS, y_init, font_size)
     row_h = 26.0
     for n in range(1, rows + 1):
         x = _SM_MARGIN
         for (_, w), lines in zip(_SM_DELIVERY_COLS, ([str(n)], [""], [""], [""])):
-            _sm_draw_cell(pdf, x, y, w, row_h, lines, font_size)
+            _grid_draw_cell(pdf, x, y, w, row_h, lines, font_size)
             x += w
         y -= row_h
     y -= 8
     label_w = 145.0
     value_w = 150.0
-    _sm_draw_cell(pdf, _SM_MARGIN, y, label_w, head_h, ["Fecha de Entrega Completa"], font_size, bold=True, fill=True)
-    _sm_draw_cell(pdf, _SM_MARGIN + label_w, y, value_w, head_h, [""], font_size)
+    _grid_draw_cell(pdf, _SM_MARGIN, y, label_w, head_h, ["Fecha de Entrega Completa"], font_size, bold=True, fill=True)
+    _grid_draw_cell(pdf, _SM_MARGIN + label_w, y, value_w, head_h, [""], font_size)
     return y - head_h
 
 
@@ -473,7 +496,7 @@ def FileSmPDF(dict_data: dict):
         draw_page_header()
         y = 740.0
         if with_columns:
-            y = print_items_grid_headers_sm(pdf, y, font_size)
+            y = print_grid_header_row(pdf, _SM_ITEM_COLS, y, font_size)
         return y
 
     draw_page_header()
@@ -481,11 +504,11 @@ def FileSmPDF(dict_data: dict):
     y = print_metadata_grid_sm(pdf, dict_data["metadata"], y_init=740, font_size=font_size)
     y -= 10
     # ----------------------------------------Items en cuadrícula-------------------------------------------------
-    y = print_items_grid_headers_sm(pdf, y, font_size)
+    y = print_grid_header_row(pdf, _SM_ITEM_COLS, y, font_size)
     for item in products:
-        if y - _sm_item_row_height(item, font_size) < limit_y:
+        if y - grid_row_height(_SM_ITEM_COLS, item, font_size) < limit_y:
             y = new_page(with_columns=True)
-        y = _sm_item_row(pdf, item, y, font_size)
+        y = print_grid_row(pdf, _SM_ITEM_COLS, item, y, font_size)
     # ----------------------------------------Entregas / firmas---------------------------------------------------
     y -= 14
     if y - sm_deliveries_block_height(delivery_rows, font_size) < limit_y:
