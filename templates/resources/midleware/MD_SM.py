@@ -305,7 +305,7 @@ def get_all_sm(limit, data_token, page=0, emp_id=-1, with_items=True):
             "requesting_user_state": extra_info.get("requesting_user_state", ""),
             "date_closing": extra_info.get("date_closing", ""),
             "approve_required": approve_required,
-            "files": extra_info.get("files")
+            "files": extra_info.get("files", [])
         }
 
         # if isinstance(extra_info, dict):
@@ -1597,7 +1597,7 @@ def create_sm_attachment_api(data, data_token):
             return (
                 {
                     "data": None,
-                    "msg": "El nombre del archivo no corresponde al voucher",
+                    "msg": "El nombre del archivo no corresponde al sm",
                     "error": "id mismatch",
                 },
                 400,
