@@ -166,7 +166,7 @@ recientes primero):
 | `id_product` / `sku` / `product_name` / `udm` | int / string | producto del movimiento |
 | `quantity` | float | cantidad que entró en **ese** movimiento |
 | `movement_date` | string | `YYYY-MM-DD HH:MM:SS` |
-| `sm_id` | **string** | tal cual está en la tabla de movimientos (texto libre que captura almacén); puede ser `"0"`, vacío o no corresponder a las `sms` de abajo — no usarlo como FK |
+| `sm_id` | **string** | se envía **crudo**, tal cual lo capturó almacén. Históricamente empezó siendo el id numérico de la SM pero mutó a referencia libre: a veces es el id (`"61"`), a veces el folio/referencia de la SM (`"SM-0701-194"`), a veces una referencia extra de una factura de la SM. Puede ser `"0"` o vacío. **No usarlo como FK** ni asumirle formato; para el vínculo confiable OC↔SM usar `sms[]` — este campo es informativo/para cruce manual |
 | `reference` | string | el reference original tal como lo capturó almacén (sin normalizar) |
 | `matched_by` | string | `"folio"` \| `"folio_supplier"` — contra qué campo de la OC pegó |
 | `match_type` | string | `"exacto"` \| `"parcial"` (parcial = el folio aparece *dentro* del reference; conviene distinguirlo visualmente, p.ej. badge amarillo) |

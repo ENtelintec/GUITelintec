@@ -552,7 +552,7 @@ class UploadSMAttachment(Resource):
     @ns.expect(expected_headers_per, expected_files_attachment_sm)
     def post(self, id_sm):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["administracion", "operaciones"]
+            request, department=["administracion", "operaciones", "Almacen"]
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
