@@ -752,6 +752,72 @@ def get_employees_almacen(data_token):
     return data_out, 200
 
 
+def _downscale_signature_image(local_path, max_width=600):
+    """Reduce la resolución de una firma grande para no engordar el PDF (la
+    imagen se muestra chica pero reportlab la incrusta a su resolución de
+    origen). Devuelve la misma ruta (reescrita in-place o intacta). No fatal:
+    ante cualquier error devuelve la imagen original."""
+    try:
+        from PIL import Image
+
+        with Image.open(local_path) as img:
+            if img.width <= max_width:
+                return local_path
+            ratio = max_width / float(img.width)
+            new_size = (max_width, max(1, int(img.height * ratio)))
+            img.resize(new_size, Image.Resampling.LANCZOS).save(local_path)
+        return local_path
+    except Exception as e:
+        print("erro downscale sm signature", str(e))
+        return local_path
+
+
+def _build_sm_delivery_files(files_sm, data_token):
+    """
+    Arma las filas de la tabla de entregas/firmas del PDF de la SM a partir de
+    los attachments (``extra_info["files"]``): pre-llena No./fecha/título y
+    descarga de S3 la firma de quien recibe para incrustarla. No fatal por
+    archivo: si el attachment no es una imagen dibujable (pdf/zip) o falla la
+    descarga, la fila queda con ``image_path=None`` (celda en blanco para firmar
+    a mano). Siempre devuelve al menos una fila.
+    """
+    drawable = {"jpg", "jpeg", "png", "webp"}
+    bucket_name = secrets.get("S3_ADMIN_BUCKET")
+    tmp_dir = tempfile.mkdtemp()
+    s3_client = None
+    delivery_files = []
+    for idx, f in enumerate(files_sm[:20], start=1):
+        if not isinstance(f, dict):
+            continue
+        timestamp = f.get("timestamp") or ""
+        date_str = timestamp.split(" ")[0] if timestamp else ""
+        title = f.get("title") or f"Entrega {idx}"
+        path_aws = f.get("path")
+        filename = f.get("filename") or ""
+        ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
+        image_path = None
+        if path_aws and ext in drawable:
+            try:
+                if s3_client is None:
+                    s3_client = boto3.client("s3")
+                local_path = os.path.join(tmp_dir, f"sign_{idx}_{os.path.basename(path_aws)}")
+                s3_client.download_file(Bucket=str(bucket_name), Key=path_aws, Filename=local_path)
+                image_path = _downscale_signature_image(local_path)
+            except Exception as e:
+                write_log_file(
+                    log_file_sm_path,
+                    f"No se pudo cargar la firma '{filename}' para el PDF de la SM: {str(e)}",
+                    data_token,
+                )
+                image_path = None
+        delivery_files.append(
+            {"no": idx, "date": date_str, "title": title, "image_path": image_path}
+        )
+    if not delivery_files:
+        delivery_files = [{"no": 1, "date": "", "title": "", "image_path": None}]
+    return delivery_files
+
+
 def dowload_file_sm(sm_id: int, data_token, type_file="pdf"):
     flag, error, result = get_sm_by_id(sm_id, data_token)
     if not flag or len(result) == 0 or result[0] is None:
@@ -779,8 +845,9 @@ def dowload_file_sm(sm_id: int, data_token, type_file="pdf"):
         print("erro download extra_info", str(e))
         extra_info = {}
     files_sm = extra_info.get("files", []) if isinstance(extra_info, dict) else []
-    # una fila de entrega/firma por attachment de la SM, mínimo 1
-    delivery_rows = max(1, len(files_sm))
+    # una fila de entrega por attachment; descarga la firma de quien recibe de
+    # S3 para incrustarla y pre-llena fecha/título (no fatal por archivo)
+    delivery_files = _build_sm_delivery_files(files_sm, data_token) if type_file == "pdf" else []
     basename = f"sm_{folio}"
     download_path = (
         os.path.join(tempfile.mkdtemp(), os.path.basename(basename + ".pdf"))
@@ -836,7 +903,7 @@ def dowload_file_sm(sm_id: int, data_token, type_file="pdf"):
                     if isinstance(critical_date, datetime) and not pd.isnull(critical_date)
                     else "",
                 },
-                "delivery_rows": delivery_rows,
+                "delivery_files": delivery_files,
             },
         )
         if not flag:

@@ -4,6 +4,7 @@ __date__ = "$ 23/jul./2024  at 6:05 $"
 
 import textwrap
 
+from reportlab.lib.utils import ImageReader
 from reportlab.pdfgen import canvas
 
 from static.constants import filepath_sm_pdf
@@ -424,31 +425,102 @@ def print_metadata_grid_sm(pdf, metadata, y_init, font_size=8):
     return y
 
 
-def print_deliveries_sign_table_sm(pdf, y_init, rows=1, font_size=8):
+# Alto de fila de entrega: 26pt cuando solo lleva texto, ~60pt cuando incrusta
+# la firma (imagen), para que la firma sea legible como comprobante.
+_SM_PLAIN_ROW_H = 26.0
+_SM_SIGN_ROW_H = 60.0
+# tope de ancho para las firmas incrustadas (px); el pre-redimensionado real
+# (para no engordar el PDF) lo hace la capa midleware antes de pasar la ruta.
+_SM_SIGN_MAX_W = 600
+
+
+def _sm_delivery_row_height(entry, font_size=8):
+    """Alto de una fila de entrega: el mayor entre el texto (fecha+título con
+    wrap) y el espacio de la firma cuando la fila trae imagen dibujable."""
+    date_w = _SM_DELIVERY_COLS[1][1]
+    lines = 0
+    if entry.get("date"):
+        lines += len(_grid_wrap_cell(entry["date"], date_w, font_size))
+    if entry.get("title"):
+        lines += len(_grid_wrap_cell(entry["title"], date_w, font_size))
+    text_h = max(1, lines) * font_size * 1.25 + 6
+    img_h = _SM_SIGN_ROW_H if entry.get("image_path") else 0.0
+    return max(_SM_PLAIN_ROW_H, text_h, img_h)
+
+
+def _sm_draw_signature_image(pdf, img_path, cell_x, cell_y_top, cell_w, cell_h, pad=3.0):
+    """Dibuja la firma dentro de la celda preservando aspect ratio y centrada.
+    No fatal: si la imagen no se puede leer, deja la celda vacía (firma a mano)."""
+    try:
+        reader = ImageReader(img_path)
+        iw, ih = reader.getSize()
+        if not iw or not ih or iw <= 0 or ih <= 0:
+            return
+        max_w = cell_w - 2 * pad
+        max_h = cell_h - 2 * pad
+        scale = min(max_w / iw, max_h / ih)
+        draw_w = iw * scale
+        draw_h = ih * scale
+        img_x = cell_x + (cell_w - draw_w) / 2
+        img_y = (cell_y_top - cell_h) + (cell_h - draw_h) / 2
+        # mask="auto" respeta la transparencia (PNG de firma sobre fondo)
+        pdf.drawImage(reader, img_x, img_y, width=draw_w, height=draw_h, mask="auto")
+    except Exception as e:
+        print("erro sm signature image", str(e))
+
+
+def _sm_draw_delivery_row(pdf, y_top, entry, row_h, font_size=8):
+    """Una fila de la tabla de entregas: No. | Fecha+Título | (firma entrega en
+    blanco) | firma de quien recibe (imagen si existe)."""
+    date_lines = []
+    if entry.get("date"):
+        date_lines += _grid_wrap_cell(entry["date"], _SM_DELIVERY_COLS[1][1], font_size)
+    if entry.get("title"):
+        date_lines += _grid_wrap_cell(entry["title"], _SM_DELIVERY_COLS[1][1], font_size)
+    if not date_lines:
+        date_lines = [""]
+    cells = ([str(entry.get("no", ""))], date_lines, [""], [""])
+    x = _SM_MARGIN
+    for (_, w), lines in zip(_SM_DELIVERY_COLS, cells):
+        _grid_draw_cell(pdf, x, y_top, w, row_h, lines, font_size)
+        x += w
+    # firma de quien recibe: última columna, imagen sobre la celda ya dibujada
+    img_path = entry.get("image_path")
+    if img_path:
+        recibe_x = _SM_MARGIN + sum(w for _, w in _SM_DELIVERY_COLS[:3])
+        recibe_w = _SM_DELIVERY_COLS[3][1]
+        _sm_draw_signature_image(pdf, img_path, recibe_x, y_top, recibe_w, row_h)
+
+
+def print_deliveries_sign_table_sm(pdf, y_init, delivery_files, font_size=8, new_page_cb=None, limit_y=40):
     """
-    Tabla de entregas para llenar a mano: encabezados en celeste, una fila en
-    blanco por entrega esperada y al final el campo "Fecha de Entrega Completa".
+    Tabla de entregas: encabezados en celeste y una fila por entrega
+    (``delivery_files``). Cada fila pre-llena No./Fecha+Título; la firma de quien
+    recibe se incrusta como imagen cuando el attachment es un raster dibujable
+    (si no, la celda queda en blanco para firmar a mano). Al final el campo
+    "Fecha de Entrega Completa". Con muchas entregas la tabla pagina por fila
+    (``new_page_cb``) repitiendo el encabezado de columnas.
+
+    ``delivery_files``: [{"no": int, "date": str, "title": str,
+    "image_path": str|None}, ...] (mínimo 1).
     """
     head_h = font_size * 1.25 + 6
     y = print_grid_header_row(pdf, _SM_DELIVERY_COLS, y_init, font_size)
-    row_h = 26.0
-    for n in range(1, rows + 1):
-        x = _SM_MARGIN
-        for (_, w), lines in zip(_SM_DELIVERY_COLS, ([str(n)], [""], [""], [""])):
-            _grid_draw_cell(pdf, x, y, w, row_h, lines, font_size)
-            x += w
+    for entry in delivery_files:
+        row_h = _sm_delivery_row_height(entry, font_size)
+        if y - row_h < limit_y and new_page_cb is not None:
+            y = new_page_cb()
+            y = print_grid_header_row(pdf, _SM_DELIVERY_COLS, y, font_size)
+        _sm_draw_delivery_row(pdf, y, entry, row_h, font_size)
         y -= row_h
     y -= 8
     label_w = 145.0
     value_w = 150.0
+    if y - head_h < limit_y and new_page_cb is not None:
+        y = new_page_cb()
     _grid_draw_cell(pdf, _SM_MARGIN, y, label_w, head_h, ["Fecha de Entrega Completa"], font_size, bold=True, fill=True)
     _grid_draw_cell(pdf, _SM_MARGIN + label_w, y, value_w, head_h, [""], font_size)
     return y - head_h
-
-
-def sm_deliveries_block_height(rows, font_size=8):
-    head_h = font_size * 1.25 + 6
-    return head_h + rows * 26.0 + 8 + head_h
 
 
 def FileSmPDF(dict_data: dict):
@@ -461,19 +533,26 @@ def FileSmPDF(dict_data: dict):
             "filename_out": str,
             "metadata": {label: valor, ...},
             "products": [(no, nombre, cantidad, udm, suministrado, estatus), ...],
-            "delivery_rows": int,   # filas en blanco de la tabla de entregas (>= 1)
+            "delivery_files": [                    # una entrega por attachment (>= 1)
+                {"no": int, "date": str, "title": str, "image_path": str|None}, ...
+            ],
         }
 
-    Multipágina: el header Telintec y los encabezados de columna se repiten en
-    cada página; la metadata solo va en la página 1.
+    Cada entrega pre-llena No./Fecha+Título y, si el attachment es una imagen
+    dibujable, incrusta la firma de quien recibe (``image_path``); si no, la
+    celda queda en blanco para firmar a mano. Multipágina: el header Telintec y
+    los encabezados de columna se repiten en cada página; la metadata solo va en
+    la página 1; la tabla de entregas pagina por fila.
     """
     file_name = filepath_sm_pdf if dict_data["filename_out"] is None else dict_data["filename_out"]
     pdf = canvas.Canvas(file_name, pagesize=(a4_x, a4_y))
     pdf.setTitle("SOLICITUD DE MATERIAL")
     products = dict_data["products"]
     folio = dict_data.get("metadata", {}).get("Folio", "")
-    # cap a 20: más filas que eso no caben en una página completa
-    delivery_rows = min(20, max(1, int(dict_data.get("delivery_rows", 1) or 1)))
+    # cap a 20: más entregas que esas no valen la pena en el documento
+    delivery_files = list(dict_data.get("delivery_files") or [])[:20]
+    if not delivery_files:
+        delivery_files = [{"no": 1, "date": "", "title": "", "image_path": None}]
     font_size = 8
     limit_y = 40
     pages = 1
@@ -511,9 +590,18 @@ def FileSmPDF(dict_data: dict):
         y = print_grid_row(pdf, _SM_ITEM_COLS, item, y, font_size)
     # ----------------------------------------Entregas / firmas---------------------------------------------------
     y -= 14
-    if y - sm_deliveries_block_height(delivery_rows, font_size) < limit_y:
+    head_h = font_size * 1.25 + 6
+    first_h = _sm_delivery_row_height(delivery_files[0], font_size)
+    if y - (head_h + first_h) < limit_y:
         y = new_page(with_columns=False)
-    print_deliveries_sign_table_sm(pdf, y, rows=delivery_rows, font_size=font_size)
+    print_deliveries_sign_table_sm(
+        pdf,
+        y,
+        delivery_files,
+        font_size=font_size,
+        new_page_cb=lambda: new_page(with_columns=False),
+        limit_y=limit_y,
+    )
     print_footer_page_count(pdf, pages, right_text=f"Folio: {folio}", x_max=a4_x)
     pdf.save()
     return True

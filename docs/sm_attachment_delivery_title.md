@@ -88,6 +88,7 @@ llegó a subir un archivo. Ahora usa la tupla directa con guard de
   parser `expected_files_attachment_sm`, leerlos en `rs_SM` con
   `request.form.get(...)` y anexarlos al objeto en `create_sm_attachment_api` —
   es un form multipart, **no** JSON (no hay WTForms aquí).
-- Pendiente (siguiente paso): `print_deliveries_sign_table_sm` debe recibir la
-  lista de `files` (no el conteo) y pre-llenar la columna "Fecha de Entrega"
-  con `timestamp` y el `No.`/título con `title`; las firmas siempre en blanco.
+- Hecho: `print_deliveries_sign_table_sm` ya recibe la lista de `files`,
+  pre-llena "Fecha de Entrega" con `timestamp`/`title` **e incrusta la firma de
+  quien recibe** (imagen bajada de S3) en la celda correspondiente
+  (ver [`sm_pdf_delivery_signatures.md`](sm_pdf_delivery_signatures.md)).

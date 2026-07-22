@@ -89,12 +89,11 @@ Los helpers viejos (`print_metadata`, `print_headers_table_inventory`,
 - `_SM_MARGIN` es `25.0` (float) a propósito — con `25` (int) pyrefly marca
   `bad-assignment` en los `x += w` acumulativos.
 
-## Pendiente
+## Hecho (era pendiente)
 
-- **Firmas/entregas pre-llenadas desde los attachments**: los attachments ya
-  guardan `timestamp` y `title` por entrega
-  (ver [`sm_attachment_delivery_title.md`](sm_attachment_delivery_title.md));
-  falta que `print_deliveries_sign_table_sm` reciba la lista de files (no el
-  conteo) y pre-llene la columna "Fecha de Entrega" con `timestamp` y el
-  número/título con `title` — las firmas siempre quedan en blanco (se firman
-  en papel).
+- **Firmas/entregas pre-llenadas desde los attachments**:
+  `print_deliveries_sign_table_sm` ya recibe la lista de files, pre-llena
+  "Fecha de Entrega" con `timestamp`/`title` **e incrusta la firma de quien
+  recibe** (imagen bajada de S3) en su celda; la firma de quien entrega queda en
+  blanco. Detalle en
+  [`sm_pdf_delivery_signatures.md`](sm_pdf_delivery_signatures.md).
