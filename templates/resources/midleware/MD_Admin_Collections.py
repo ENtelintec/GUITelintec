@@ -32,7 +32,7 @@ from templates.controllers.presales.remisions_controller import (
     update_quotation_activity_item,
     update_report_activity_files,
 )
-from templates.forms.RemissionForms import FileRemissionPDF
+from templates.forms.RemissionForms import FileRemissionPDF, FileRemissionPhotosPDF
 from templates.Functions_Utils import (
     create_notification_permission,
     create_notification_permission_notGUI,
@@ -1335,7 +1335,7 @@ def delete_remission_from_api(data, data_token):
     return {"data": {"id_remission": id_remission}, "msg": msg_out, "error": None}, 200
 
 
-def download_file_remission(id_report: int, iva_rate: float, data_token):
+def download_file_remission(id_report: int, iva_rate: float, data_token, full: bool = False):
     flag, error, result = get_remission_by_id(id_report, data_token)
     if not flag:
         return {
@@ -1343,12 +1343,12 @@ def download_file_remission(id_report: int, iva_rate: float, data_token):
             "msg": "Error al obtener la remisión",
             "error": error,
         }, 400
-    if not isinstance(result, tuple) or len(result) == 0:
+    if not isinstance(result, tuple) or len(result) == 0 or result[0] is None:
         return {
             "data": None,
             "msg": f"Remisión no encontrada (ID {id_report})",
             "error": None,
-        }, 400
+        }, 404
 
     date = result[1]
     folio = result[2]
@@ -1387,6 +1387,16 @@ def download_file_remission(id_report: int, iva_rate: float, data_token):
 
     iva = subtotal * iva_rate
     total = subtotal + iva
+    date_str = date.strftime(format_timestamps) if not isinstance(date, str) else date
+
+    # Anexos: solo cuando ?full=1. Se bajan de S3 las firmas (para incrustar en
+    # la pág. 1), los anexos (a concatenar) y las fotos (para la hoja generada).
+    # No fatal por archivo (ver _build_remission_attachments).
+    sign_paths: dict[str, str | None] = {"realizado": None, "recibido": None}
+    attachments: dict[str, list] = {"anexo": [], "photo": []}
+    if full:
+        files_raw = json.loads(result[17]) if result[17] else []
+        sign_paths, attachments = _build_remission_attachments(files_raw, data_token)
 
     download_path = os.path.join(
         tempfile.mkdtemp(), os.path.basename(f"remision_{folio}_{id_report}.pdf")
@@ -1395,7 +1405,7 @@ def download_file_remission(id_report: int, iva_rate: float, data_token):
         {
             "filename_out": download_path,
             "folio": folio,
-            "date": date.strftime(format_timestamps) if not isinstance(date, str) else date,
+            "date": date_str,
             "project": project,
             "project_description": extra_info.get("project_description", ""),
             "contract_marco": contract_marco,
@@ -1407,6 +1417,8 @@ def download_file_remission(id_report: int, iva_rate: float, data_token):
             "iva_rate": iva_rate,
             "iva": iva,
             "total": total,
+            "sign_realizado_path": sign_paths["realizado"],
+            "sign_recibido_path": sign_paths["recibido"],
         }
     )
     if not flag_pdf:
@@ -1415,53 +1427,212 @@ def download_file_remission(id_report: int, iva_rate: float, data_token):
             "msg": "Error al generar el PDF de la remisión",
             "error": None,
         }, 400
-    return download_path, 200
+    if not full:
+        return download_path, 200
+
+    # Documento combinado: Remisión -> anexos -> fotos.
+    photos_meta = {
+        "date": date_str,
+        "pedido": extra_info.get("pedido", ""),
+        "remito": extra_info.get("remito", ""),
+        "plant": result[8] or "",
+        "area": result[9] or "",
+        "location": result[10] or "",
+        "folio": "",  # el folio de la hoja de fotos viene por-foto; sin fallback
+    }
+    combined_path = _assemble_remission_full_pdf(
+        download_path, attachments, photos_meta, data_token
+    )
+    return combined_path, 200
+
+
+def _build_remission_attachments(files_raw, data_token):
+    """
+    Descarga de S3 los anexos categorizados de una remisión a un directorio
+    temporal, para armar el PDF combinado. No fatal por archivo: si la descarga
+    falla, se omite + log. Los ``otro`` se excluyen del reporte.
+
+    :return: ``(sign_paths, attachments)`` donde
+        ``sign_paths = {"realizado": local|None, "recibido": local|None}`` y
+        ``attachments = {"anexo": [{"path", "filename"}...],
+        "photo": [{"path", "folio"}...]}``.
+    """
+    sign_paths: dict[str, str | None] = {"realizado": None, "recibido": None}
+    attachments: dict[str, list] = {"anexo": [], "photo": []}
+    if not files_raw:
+        return sign_paths, attachments
+    bucket_name = secrets.get("S3_ADMIN_BUCKET")
+    tmp_dir = tempfile.mkdtemp()
+    s3_client = None
+    for idx, f in enumerate(files_raw, start=1):
+        if not isinstance(f, dict):
+            continue
+        category = _classify_remission_file(f)
+        if category == "otro":
+            continue
+        path_aws = f.get("path")
+        filename = f.get("filename") or ""
+        if not path_aws:
+            continue
+        local_path = os.path.join(tmp_dir, f"att_{idx}_{os.path.basename(path_aws)}")
+        try:
+            if s3_client is None:
+                s3_client = boto3.client("s3")
+            s3_client.download_file(Bucket=str(bucket_name), Key=path_aws, Filename=local_path)
+        except Exception as e:
+            write_log_file(
+                log_file_admin_collecions,
+                f"No se pudo descargar el anexo '{filename}' de la remisión: {str(e)}",
+                data_token,
+            )
+            continue
+        if category == "firma":
+            if "firma-recibido" in filename.lower():
+                sign_paths["recibido"] = local_path
+            else:
+                sign_paths["realizado"] = local_path
+        elif category == "anexo":
+            attachments["anexo"].append({"path": local_path, "filename": filename})
+        elif category == "photo":
+            attachments["photo"].append({"path": local_path, "folio": (f.get("folio") or "").strip()})
+    return sign_paths, attachments
+
+
+def _assemble_remission_full_pdf(remision_path, attachments, photos_meta, data_token):
+    """
+    Fusiona en un solo PDF (PyMuPDF/fitz): la remisión (pág. 1, con firmas ya
+    incrustadas) + los anexos (PDFs tal cual; imágenes ajustadas a una página
+    A4) + la(s) hoja(s) de fotos generadas. No fatal por anexo: si un archivo no
+    se puede insertar (zip, corrupto, etc.) se omite + log. Si la fusión falla
+    por completo, devuelve la remisión original (mejor un documento parcial que
+    ninguno).
+    """
+    import fitz
+
+    tmp_dir = tempfile.mkdtemp()
+    out_path = os.path.join(tmp_dir, "full_" + os.path.basename(remision_path))
+
+    # Hoja(s) de fotos (si hay fotos)
+    photos = attachments.get("photo", [])
+    photos_pdf_path = None
+    if photos:
+        photos_pdf_path = os.path.join(tmp_dir, "remision_photos.pdf")
+        try:
+            FileRemissionPhotosPDF({**photos_meta, "filename_out": photos_pdf_path, "photos": photos})
+        except Exception as e:
+            write_log_file(
+                log_file_admin_collecions,
+                f"No se pudo generar la hoja de fotos de la remisión: {str(e)}",
+                data_token,
+            )
+            photos_pdf_path = None
+
+    drawable_ext = {"jpg", "jpeg", "png", "webp"}
+    try:
+        doc = fitz.open()
+        with fitz.open(remision_path) as base:
+            doc.insert_pdf(base)
+        for anexo in attachments.get("anexo", []):
+            apath = anexo["path"]
+            ext = apath.rsplit(".", 1)[-1].lower() if "." in apath else ""
+            try:
+                if ext == "pdf":
+                    with fitz.open(apath) as adoc:
+                        doc.insert_pdf(adoc)
+                elif ext in drawable_ext:
+                    rect = fitz.paper_rect("a4")
+                    page = doc.new_page(width=rect.width, height=rect.height)
+                    img_rect = fitz.Rect(rect.x0 + 20, rect.y0 + 20, rect.x1 - 20, rect.y1 - 20)
+                    page.insert_image(img_rect, filename=apath, keep_proportion=True)
+                else:
+                    write_log_file(
+                        log_file_admin_collecions,
+                        f"Anexo '{anexo.get('filename')}' no es PDF ni imagen; se omite del PDF combinado",
+                        data_token,
+                    )
+            except Exception as e:
+                write_log_file(
+                    log_file_admin_collecions,
+                    f"No se pudo insertar el anexo '{anexo.get('filename')}' al PDF combinado: {str(e)}",
+                    data_token,
+                )
+        if photos_pdf_path:
+            with fitz.open(photos_pdf_path) as pdoc:
+                doc.insert_pdf(pdoc)
+        doc.save(out_path)
+        doc.close()
+        return out_path
+    except Exception as e:
+        write_log_file(
+            log_file_admin_collecions,
+            f"Error al fusionar el PDF combinado de la remisión: {str(e)}",
+            data_token,
+        )
+        return remision_path
+
+
+# Categorias validas de un anexo de la remision (ver Docs/remission_combined_pdf.md).
+_REMISSION_FILE_CATEGORIES = {"photo", "anexo", "firma", "otro"}
+# Extensiones raster que el PDF puede dibujar (fotos y firmas).
+_REMISSION_DRAWABLE_EXT = {"jpg", "jpeg", "png", "webp"}
+
+
+def _classify_remission_file(file_obj: dict) -> str:
+    """
+    Categoria efectiva de un archivo de ``activity_reports.files``. Usa la
+    categoria explicita si es valida; para archivos viejos sin el campo la
+    infiere del nombre/extension: ``firma-*`` -> firma, pdf/zip -> anexo,
+    imagen -> photo, cualquier otra cosa -> otro.
+    """
+    category = (file_obj.get("category") or "").strip().lower()
+    if category in _REMISSION_FILE_CATEGORIES:
+        return category
+    filename = (file_obj.get("filename") or "").lower()
+    if "firma-realizado" in filename or "firma-recibido" in filename or filename.startswith("firma"):
+        return "firma"
+    ext = filename.rsplit(".", 1)[-1] if "." in filename else ""
+    if ext in ("pdf", "zip"):
+        return "anexo"
+    if ext in _REMISSION_DRAWABLE_EXT:
+        return "photo"
+    return "otro"
 
 
 def create_activity_report_attachment_api(data, data_token):
     filename = data["filename"]
-    id_report_name = filename.split("-")[0]
     try:
-        if int(id_report_name) != int(data["id_report"]) and int(data["id_report"]) <= 0:
-            return {
-                "data": None,
-                "msg": "El nombre del archivo no corresponde al voucher",
-                "error": None,
-            }, 400
-    except Exception as e:
+        id_report = int(data["id_report"])
+    except (KeyError, TypeError, ValueError) as e:
         return {
             "data": None,
-            "msg": "Error al procesar el nombre del archivo",
+            "msg": "ID de reporte inválido",
             "error": str(e),
+        }, 400
+    if id_report <= 0:
+        return {
+            "data": None,
+            "msg": "ID de reporte inválido",
+            "error": None,
         }, 400
     time_zone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone)
-    flag, error, result = get_remission_by_id(data["id_report"], data_token)
+    # get_remission_by_id con un id concreto usa fetchone -> una sola tupla
+    flag, error, result = get_remission_by_id(id_report, data_token)
     if not flag:
         return {
             "data": None,
             "msg": "Error al obtener el reporte por ID",
             "error": error,
         }, 400
-    if not isinstance(result, list):
+    if not isinstance(result, (tuple, list)) or len(result) == 0 or result[0] is None:
         return {
             "data": None,
-            "msg": "Error al obtener el reporte de actividad",
-            "error": str(result),
-        }, 400
-    report_data = []
-    for item in result:
-        if int(item[0]) == int(data["id_report"]):
-            report_data = item
-            break
-    if len(report_data) <= 0:
-        return {
-            "data": None,
-            "msg": f"Reporte no encontrado (ID {data['id_report']})",
+            "msg": f"Reporte no encontrado (ID {id_report})",
             "error": None,
-        }, 400
+        }, 404
+    report_data = result
     date_report = report_data[1]
-    history = json.loads(report_data[15])
+    history = json.loads(report_data[15]) if report_data[15] else []
     filepath_down = data["filepath"]
     file_extension = filepath_down.split(".")[-1].lower()
     valid_extension = ["pdf", "jpg", "jpeg", "png", "zip", "webp"]
@@ -1489,7 +1660,11 @@ def create_activity_report_attachment_api(data, data_token):
             return {"data": None, "msg": f"Acceso denegado al bucket: {bucket_name}", "error": str(e)}, 400
         else:
             return {"data": None, "msg": "Error al subir archivo a S3", "error": str(e)}, 400
-    log_msg = f"Archivo adjunto agregado: {filename} al voucher {data['id_report']} por el empleado {data_token.get('name')}"
+    category = _classify_remission_file({"category": data.get("category"), "filename": filename})
+    log_msg = (
+        f"Archivo adjunto agregado ({category}): {filename} al reporte {id_report} "
+        f"por el empleado {data_token.get('name')}"
+    )
     status = report_data[14]
     if "firma-realizado" in filename.lower():
         status = 1
@@ -1505,10 +1680,20 @@ def create_activity_report_attachment_api(data, data_token):
             "comment": log_msg,
         }
     )
-    files = json.loads(report_data[17])
-    files.append({"filename": data["filename"], "path": path_aws})
+    files = json.loads(report_data[17]) if report_data[17] else []
+    files.append(
+        {
+            "filename": data["filename"],
+            "path": path_aws,
+            "category": category,
+            "folio": (data.get("folio") or "").strip(),
+            "title": (data.get("title") or "").strip(),
+            "timestamp": timestamp.strftime(format_timestamps),
+        }
+    )
+    # OJO: update_report_activity_files espera (id, history, files, status)
     flag, error, rows_updated = update_report_activity_files(
-        data["id_report"], history, status, files, data_token
+        id_report, history, files, status, data_token
     )
     if not flag:
         return {
@@ -1521,37 +1706,32 @@ def create_activity_report_attachment_api(data, data_token):
     )
     write_log_file(log_file_admin_collecions, log_msg, data_token)
     return {
-        "data": {"path": path_aws},
-        "msg": f"Archivo adjuntado correctamente al reporte (ID {data['id_voucher']})",
+        "data": {"path": path_aws, "category": category},
+        "msg": f"Archivo adjuntado correctamente al reporte (ID {id_report})",
         "error": None,
     }, 201
 
 
 def download_report_activity_attachment_api(data, data_token):
-    flag, error, result = get_remission_by_id(data["id_report"], data_token)
+    try:
+        id_report = int(data["id_report"])
+    except (KeyError, TypeError, ValueError) as e:
+        return {"data": None, "msg": "ID de reporte inválido", "error": str(e)}, 400
+    # get_remission_by_id con un id concreto usa fetchone -> una sola tupla
+    flag, error, result = get_remission_by_id(id_report, data_token)
     if not flag:
         return {
             "data": None,
-            "msg": "Error at getting checklist vehicular by id",
+            "msg": "Error al obtener el reporte por ID",
             "error": error,
         }, 400
-    if not isinstance(result, list):
+    if not isinstance(result, (tuple, list)) or len(result) == 0 or result[0] is None:
         return {
             "data": None,
-            "msg": "Error at getting checklist vehicular by id: result is not a list",
-            "error": str(result),
-        }, 400
-    report_data = []
-    for item in result:
-        if item[0] == data["id_voucher"]:
-            report_data = item
-            break
-    if len(report_data) <= 0:
-        return {
-            "data": None,
-            "msg": f"Reporte no encontrado (ID {data['id_voucher']})",
+            "msg": f"Reporte no encontrado (ID {id_report})",
             "error": None,
-        }, 400
+        }, 404
+    report_data = result
     files = json.loads(report_data[17]) if report_data[17] else []
     name_file = data["filename"]
     flag_found = False

@@ -4,6 +4,7 @@ __author__ = "Edisson Naula"
 __date__ = "$ 14/nov/2024  at 16:15 $"
 
 from flask_restx import fields
+from werkzeug.datastructures import FileStorage
 from wtforms import (
     BooleanField,
     FloatField,
@@ -860,6 +861,41 @@ report_activity_download_att_model = api.model(
         "id_report": fields.Integer(required=True, description="ID del reporte"),
         "filename": fields.String(required=True, description="Nombre del archivo a descargar"),
     },
+)
+
+# Parser multipart para subir un anexo de la remision. Propio de la remision
+# (no reutilizar el generico expected_files_attachment de SGI): agrega los
+# campos de clasificacion que consume el PDF combinado (ver
+# Docs/remission_combined_pdf.md). `category` decide como se usa el archivo en
+# el reporte; `folio` (C-numbers) alimenta el encabezado de la pagina de fotos.
+expected_files_attachment_remission = api.parser()
+expected_files_attachment_remission.add_argument(
+    "file",
+    type=FileStorage,
+    location="files",
+    required=True,
+    help="Archivo a adjuntar (pdf/jpg/jpeg/png/webp/zip)",
+)
+expected_files_attachment_remission.add_argument(
+    "category",
+    type=str,
+    location="form",
+    required=False,
+    help="Clasificacion del anexo: photo | anexo | firma | otro",
+)
+expected_files_attachment_remission.add_argument(
+    "folio",
+    type=str,
+    location="form",
+    required=False,
+    help="Folio del reporte de materiales (C-numbers), para el encabezado de la pagina de fotos",
+)
+expected_files_attachment_remission.add_argument(
+    "title",
+    type=str,
+    location="form",
+    required=False,
+    help="Titulo/etiqueta opcional del anexo",
 )
 
 remission_model_insert = api.model(

@@ -28,6 +28,7 @@ from static.Models.api_purchases_models import (
     ReportActivityDownloadAttForm,
     ReportActivityUpdateControlTableForm,
     ReportActivityUpdateForm,
+    expected_files_attachment_remission,
     po_app_delete_model,
     pos_application_post_model,
     pos_application_put_model,
@@ -47,7 +48,6 @@ from static.Models.api_purchases_models import (
     report_activity_delete_model,
     report_activity_download_att_model,
 )
-from static.Models.api_sgi_models import expected_files_attachment
 from templates.resources.methods.Functions_Aux_Login import token_verification_procedure
 from templates.resources.midleware.MD_Admin_Collections import (
     create_activity_report_attachment_api,
@@ -557,7 +557,11 @@ class DownloadPDFRemission(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         iva_rate = request.args.get("iva_rate", default=0.16, type=float)
-        data, code = download_file_remission(id_report, iva_rate, data_token)
+        # ?full=1 -> documento combinado (Remision + anexos + fotos); por defecto
+        # solo la pagina de la remision (comportamiento historico). Ver
+        # Docs/remission_combined_pdf.md.
+        full = request.args.get("full", default="0").strip().lower() in ("1", "true", "yes")
+        data, code = download_file_remission(id_report, iva_rate, data_token, full=full)
         if code == 200:
             return send_file(data, as_attachment=True)  # pyrefly: ignore
         return data, code
@@ -565,7 +569,7 @@ class DownloadPDFRemission(Resource):
 
 @ns.route("/remission/attachment-<string:id_report>")
 class UploadActivityReportAttachment(Resource):
-    @ns.expect(expected_headers_per, expected_files_attachment)
+    @ns.expect(expected_headers_per, expected_files_attachment_remission)
     def post(self, id_report):
         flag, data_token, msg = token_verification_procedure(
             request, department=["administracion", "operaciones"]
@@ -583,7 +587,10 @@ class UploadActivityReportAttachment(Resource):
                 {
                     "filepath": filepath_download,
                     "filename": filename,
-                    "id_voucher": id_report,
+                    "id_report": id_report,
+                    "category": request.form.get("category", ""),
+                    "folio": request.form.get("folio", ""),
+                    "title": request.form.get("title", ""),
                 },
                 data_token,
             )
