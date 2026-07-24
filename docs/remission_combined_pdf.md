@@ -131,6 +131,47 @@ en `files`); tres bugs encadenados:
 
 ## Para el front
 
+### Contrato mínimo (auth, content-types, ejemplos)
+
+**Base:** `/GUI/api/v1/admin/collections/...`
+
+**Auth (¡ojo!):** todos los endpoints requieren el header `Authorization` con el
+**token JWT crudo** — **NO** `Bearer <token>`. El back hace
+`jwt.decode(request.headers["Authorization"], ...)` sin quitar prefijo
+([`Functions_Aux_Login.py`](../templates/resources/methods/Functions_Aux_Login.py)),
+así que mandar `Bearer ...` responde `401`.
+
+**Subir un anexo** — `POST /remission/attachment-<id_report>`,
+`multipart/form-data`, **un archivo por request** (para N fotos → N requests):
+
+```
+Authorization: <jwt>                 # crudo, sin "Bearer "
+Content-Type: multipart/form-data
+  file      = <binario>              # requerido (pdf/jpg/jpeg/png/webp/zip)
+  category  = photo|anexo|firma|otro
+  folio     = C1037                  # solo para photo
+  title     = ...                    # opcional
+```
+
+- `201` → `{"data": {"path": "reportActivity/2025/06/05/459-foto1.jpg", "category": "photo"}, "msg": "Archivo adjuntado correctamente al reporte (ID 459)", "error": null}`
+- error → `{"data": null, "msg": "<motivo>", "error": "<detalle|null>"}` con `400`
+  (validación), `404` (remisión no existe) o `401` (sin/mal token).
+
+**Descargar** — `GET /remission/download/pdf/<id_report>?full=1&iva_rate=0.16`.
+`full` acepta `1`/`true`/`yes`; ausente = solo la remisión. **La respuesta es
+binaria _o_ JSON según el resultado:** éxito → `200` con el **PDF**
+(`application/pdf`, `Content-Disposition: attachment`); error → `4xx` con el
+envelope JSON. El front debe ramificar por status y leer un **blob** (no
+`.json()`) en el caso `200`:
+
+```js
+const r = await fetch(`${BASE}/remission/download/pdf/${id}?full=1`, {
+  headers: { Authorization: token },   // token crudo, sin "Bearer "
+});
+if (!r.ok) { const { msg } = await r.json(); throw new Error(msg); }
+const blob = await r.blob();           // application/pdf -> descargar/abrir
+```
+
 ### Subir anexos
 
 Un `POST` multipart por archivo. Ejemplos (pseudo):
