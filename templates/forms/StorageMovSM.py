@@ -345,16 +345,53 @@ _SM_DELIVERY_COLS = [
     ("Firma de Quien Recibe", 197.27),
 ]
 
+# Semáforo de surtido de los items de la SM (pasteles tipo Excel, misma familia
+# de tintes que el celeste: el texto negro Courier sigue siendo legible encima).
+_SM_VERDE = (0.78, 0.94, 0.81)  # #C6EFCE  surtido completo
+_SM_AMARILLO = (1.00, 0.92, 0.61)  # #FFEB9C  surtido parcial
+_SM_ROJO = (1.00, 0.78, 0.81)  # #FFC7CE  sin surtir
+
+
+def _sm_num(value):
+    """Los valores vienen del JSON de la SM: un string colado tumbaría el PDF."""
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _sm_item_fills(item):
+    """
+    Colores de relleno de una fila de items, por posición de columna:
+    completo -> verde en toda la fila; parcial -> amarillo solo en "No.";
+    nada surtido -> rojo solo en "No.". Sin cantidad pedida (dato incompleto)
+    no se pinta nada.
+    """
+    quantity = _sm_num(item[2] if len(item) > 2 else None)
+    dispatched = _sm_num(item[4] if len(item) > 4 else None)
+    if quantity is None or dispatched is None or quantity <= 0:
+        return None
+    if dispatched >= quantity:
+        return [_SM_VERDE] * len(_SM_ITEM_COLS)
+    color = _SM_AMARILLO if dispatched > 0 else _SM_ROJO
+    return [color] + [None] * (len(_SM_ITEM_COLS) - 1)
+
 
 def _grid_wrap_cell(value, width_pt, font_size):
     chars = max(1, int((width_pt - 8) / (font_size * 0.6)))
     return textwrap.wrap("" if value is None else str(value), width=chars) or [""]
 
 
-def _grid_draw_cell(pdf, x, y_top, w, h, lines, font_size, bold=False, fill=False):
+def _grid_draw_cell(pdf, x, y_top, w, h, lines, font_size, bold=False, fill=False, fill_color=None):
+    """
+    `fill=True` pinta la celda de celeste (labels/encabezados). `fill_color` es un
+    RGB explícito y tiene precedencia — se usa para el semáforo de surtido de la
+    SM. Siempre se restaura el negro para el texto.
+    """
     pdf.setLineWidth(0.6)
-    if fill:
-        pdf.setFillColorRGB(*_GRID_CELESTE)
+    color = fill_color if fill_color is not None else (_GRID_CELESTE if fill else None)
+    if color is not None:
+        pdf.setFillColorRGB(*color)
         pdf.rect(x, y_top - h, w, h, fill=1, stroke=1)
         pdf.setFillColorRGB(0, 0, 0)
     else:
@@ -385,13 +422,20 @@ def grid_row_height(cols, item, font_size=8):
     )
 
 
-def print_grid_row(pdf, cols, item, y_init, font_size=8, margin=_GRID_MARGIN):
-    """Fila de datos: celdas alineadas por posición con `cols`; crece con el wrap."""
+def print_grid_row(pdf, cols, item, y_init, font_size=8, margin=_GRID_MARGIN, cell_fills=None):
+    """
+    Fila de datos: celdas alineadas por posición con `cols`; crece con el wrap.
+
+    `cell_fills` es una lista opcional alineada a `cols` con el color de relleno
+    de cada celda (`None` = sin relleno). Omitirla deja el comportamiento previo
+    (todas las celdas en blanco).
+    """
     cells = [_grid_wrap_cell(value, w, font_size) for value, (_, w) in zip(item, cols)]
     h = max(len(lines) for lines in cells) * font_size * 1.25 + 6
+    fills = list(cell_fills or []) + [None] * len(cols)
     x = margin
-    for lines, (_, w) in zip(cells, cols):
-        _grid_draw_cell(pdf, x, y_init, w, h, lines, font_size)
+    for i, (lines, (_, w)) in enumerate(zip(cells, cols)):
+        _grid_draw_cell(pdf, x, y_init, w, h, lines, font_size, fill_color=fills[i])
         x += w
     return y_init - h
 
@@ -587,7 +631,9 @@ def FileSmPDF(dict_data: dict):
     for item in products:
         if y - grid_row_height(_SM_ITEM_COLS, item, font_size) < limit_y:
             y = new_page(with_columns=True)
-        y = print_grid_row(pdf, _SM_ITEM_COLS, item, y, font_size)
+        y = print_grid_row(
+            pdf, _SM_ITEM_COLS, item, y, font_size, cell_fills=_sm_item_fills(item)
+        )
     # ----------------------------------------Entregas / firmas---------------------------------------------------
     y -= 14
     head_h = font_size * 1.25 + 6

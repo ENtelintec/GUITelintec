@@ -874,6 +874,13 @@ def dowload_file_sm(sm_id: int, data_token, type_file="pdf"):
         dispatched = item.get("dispatched") or 0
         if "(despachado)" in comment.lower():
             status = "Despachado"
+        # "(Semidespachado)" no contiene "(despachado)" como substring (la "i" de
+        # "semi" se interpone), así que sin esta rama un despacho parcial caía
+        # hasta el else e imprimía "pendiente". Va después de "(Despachado)"
+        # porque el comment acumula marcadores: si el item terminó completo,
+        # ambos están presentes y gana el completo.
+        elif "(semidespachado)" in comment.lower():
+            status = "Semidespachado"
         elif "(pedido)" in comment.lower():
             status = "Pedido"
         elif "(nuevo)" in comment.lower():
