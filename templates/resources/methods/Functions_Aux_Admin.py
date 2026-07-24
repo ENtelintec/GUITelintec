@@ -185,56 +185,127 @@ def read_exel_products_bidding(path: str):
 
 
 def read_exel_products_partidas(path: str, data_token):
-    df = pd.read_excel(path, header=20).fillna("")
+    """
+    Lee las partidas de un Excel (plantilla de partidas de contrato o de
+    remision) y las agrupa por subtitulo.
+
+    Devuelve una tupla ``(groups, diagnostics)``:
+      - ``groups``: lista de ``{"group_title", "items": [...]}`` o ``None`` si el
+        archivo no se pudo leer (Excel invalido / sin la fila de encabezado).
+      - ``diagnostics``: dict con detalle para reportar errores al front y al log
+        (error de lectura, columnas encontradas, columnas mapeadas, conteo de
+        filas totales / partidas / subtitulos / ignoradas).
+    """
+    diagnostics: dict = {
+        "read_error": None,
+        "columns_found": [],
+        "columns_mapped": {},
+        "rows_total": 0,
+        "items_parsed": 0,
+        "subtitles": 0,
+        "rows_skipped": 0,
+    }
+    try:
+        df = pd.read_excel(path, header=20).fillna("")
+    except Exception as e:
+        diagnostics["read_error"] = str(e)
+        return None, diagnostics
+
+    # Resolucion tolerante de columnas: soporta la plantilla de partidas de
+    # contrato (PARTIDA/UDM/PRECIO UNITARIO/DESCRIPCION LARGA...) y la de
+    # remision (POS./UM/PRECIO UNIT./DESCRIPCION). Se compara por nombre
+    # normalizado (strip + upper) contra listas de alias.
+    col_lookup = {str(c).strip().upper(): c for c in df.columns}  # pyrefly: ignore
+
+    def resolve(*aliases):
+        for alias in aliases:
+            if alias in col_lookup:
+                return col_lookup[alias]
+        return None
+
+    col_partida = resolve("PARTIDA", "POS.", "POS", "POSICION", "POSICIÓN")
+    col_desc = resolve(
+        "DESCRIPCIÓN LARGA", "DESCRIPCION LARGA", "DESCRIPCIÓN", "DESCRIPCION"
+    )
+    col_desc_small = resolve("DESCRIPCIÓN CORTA", "DESCRIPCION CORTA")
+    col_precio = resolve("PRECIO UNITARIO", "PRECIO UNIT.", "PRECIO UNIT", "PRECIO")
+    col_cantidad = resolve("CANTIDAD", "CANT.", "CANT")
+    col_udm = resolve("UDM", "UM", "U.M.", "UNIDAD")
+    # SKU / numero de parte real: solo la columna UDM de la plantilla de
+    # partidas lo trae; en la de remision "UM" es unidad de medida (SRV), no un
+    # SKU, asi que no se dispara el lookup a BD.
+    col_sku = resolve("UDM", "NRO. PARTE", "NRO PARTE", "N. PARTE", "NO. PARTE")
+
+    diagnostics["columns_found"] = [str(c) for c in df.columns]  # pyrefly: ignore
+    diagnostics["columns_mapped"] = {
+        "partida": col_partida,
+        "description": col_desc,
+        "description_small": col_desc_small,
+        "price_unit": col_precio,
+        "quantity": col_cantidad,
+        "udm": col_udm,
+        "sku": col_sku,
+    }
+
+    def cell(item, col, default=""):
+        return item.get(col, default) if col is not None else default
+
     data_excel = df.to_dict("records")
+    diagnostics["rows_total"] = len(data_excel)
     groups = []
-    current_group = {"group_title": "General", "items": []}
+    current_title = "General"
+    current_items = []
 
     for index, item in enumerate(data_excel):
-        udm = item.get("UDM", "")
-        partida = item.get("PARTIDA", index)
-        # Detectar subtítulo
-        if udm == "" and item.get("PRECIO UNITARIO", "") == "":
-            print("nre", item.get("DESCRIPCIÓN LARGA", ""))
+        udm = cell(item, col_udm, "")
+        precio = cell(item, col_precio, "")
+        description = cell(item, col_desc, "")
+        partida = cell(item, col_partida, index)
+        # Detectar subtitulo: sin unidad y sin precio pero con texto de grupo.
+        if udm == "" and precio == "" and str(description).strip() != "":
+            diagnostics["subtitles"] += 1
             # Cerrar grupo anterior si tiene items
-            if current_group["items"]:
-                groups.append(current_group)
-            # Crear nuevo grupo
-            current_group = {
-                "group_title": item.get("DESCRIPCIÓN LARGA", ""),
-                "items": []
-            }
+            if current_items:
+                groups.append({"group_title": current_title, "items": current_items})
+            # Iniciar nuevo grupo
+            current_title = description
+            current_items = []
             continue
 
         try:
             partida = int(partida)
-            id_p = None
-            if udm != "":
-                flag, error, result = get_product_by_sku_manufacture(udm, data_token)
-                if flag and len(result) > 0:
-                    id_p = result[0]
-
-            product = {
-                "partida": partida,
-                "quantity": item.get("CANTIDAD", 1),
-                "udm": item.get("UDM"),
-                "price_unit": item.get("PRECIO UNITARIO", 0.0),
-                "type_p": item.get("TIPO", ""),
-                "marca": item.get("MARCA", ""),
-                "n_parte": udm,
-                "description": item.get("DESCRIPCIÓN LARGA", ""),
-                "description_small": item.get("DESCRIPCIÓN CORTA", ""),
-                "id": id_p,
-                "comment": "",
-            }
-            current_group["items"].append(product)
-        except Exception:
+        except (ValueError, TypeError):
+            # Filas de pie de pagina / vacias (SUBTOTAL, IVA, TOTAL, firmas...)
+            diagnostics["rows_skipped"] += 1
             continue
 
+        sku = str(cell(item, col_sku, "")).strip()
+        id_p = None
+        if sku != "":
+            flag, error, result = get_product_by_sku_manufacture(sku, data_token)
+            if flag and len(result) > 0:
+                id_p = result[0]
+
+        product = {
+            "partida": partida,
+            "quantity": cell(item, col_cantidad, 1),
+            "udm": udm,
+            "price_unit": cell(item, col_precio, 0.0),
+            "type_p": cell(item, resolve("TIPO"), ""),
+            "marca": cell(item, resolve("MARCA"), ""),
+            "n_parte": sku,
+            "description": description,
+            "description_small": cell(item, col_desc_small, ""),
+            "id": id_p,
+            "comment": "",
+        }
+        current_items.append(product)
+
     # Agregar último grupo
-    if current_group["items"]:
-        groups.append(current_group)
-    return groups
+    if current_items:
+        groups.append({"group_title": current_title, "items": current_items})
+    diagnostics["items_parsed"] = sum(len(g["items"]) for g in groups)
+    return groups, diagnostics
 
 # def read_exel_products_partidas(path: str):
 #     # skiprow from 1 to 21 in 21 the headers

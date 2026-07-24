@@ -938,14 +938,49 @@ def items_quotation_from_file(data):
 
 
 def items_contract_from_file(data, data_token):
-    products = read_exel_products_partidas(data["path"], data_token)
+    products, diag = read_exel_products_partidas(data["path"], data_token)
+    # 1) El archivo no se pudo leer (no es .xlsx, corrupto, sin la fila 21, etc.)
     if products is None:
-        return {
-            "data": None,
-            "msg": "Error al procesar el archivo",
-            "error": "El archivo no contiene partidas válidas",
-        }, 400
-    return {"data": products, "msg": "Items cargados correctamente", "error": None}, 200
+        error = (
+            "No se pudo leer el archivo Excel. Debe ser .xlsx con la tabla de "
+            "partidas iniciando en la fila 21 (encabezados). Detalle: "
+            f"{diag.get('read_error')}"
+        )
+        write_log_file(log_file_admin, f"items_contract_from_file: {error}", data_token)
+        return {"data": None, "msg": "No se pudo leer el archivo Excel", "error": error}, 400
+    # 2) Plantilla no reconocida: sin columna de descripcion NI de precio no se
+    # puede armar ninguna partida (evita generar items basura con datos vacios).
+    mapped = diag.get("columns_mapped", {})
+    if mapped.get("description") is None and mapped.get("price_unit") is None:
+        cols = ", ".join(diag.get("columns_found", [])) or "(ninguna)"
+        error = (
+            "Plantilla no reconocida: no se encontró columna de descripción "
+            "(DESCRIPCIÓN / DESCRIPCION) ni de precio (PRECIO UNITARIO / "
+            f"PRECIO UNIT.). Columnas encontradas: [{cols}]. "
+            "Verifica que la tabla de partidas inicie en la fila 21."
+        )
+        write_log_file(log_file_admin, f"items_contract_from_file: {error}", data_token)
+        return {"data": None, "msg": "Plantilla de Excel no reconocida", "error": error}, 400
+    # 3) Se leyo pero no se detecto ninguna partida (columnas incompletas / sin filas)
+    if diag.get("items_parsed", 0) == 0:
+        cols = ", ".join(diag.get("columns_found", [])) or "(ninguna)"
+        error = (
+            "No se detectó ninguna partida en el archivo. "
+            f"Columnas encontradas: [{cols}]. "
+            f"Filas leídas: {diag.get('rows_total', 0)}, "
+            f"subtítulos: {diag.get('subtitles', 0)}, "
+            f"filas ignoradas: {diag.get('rows_skipped', 0)}. "
+            "Se requiere una columna de posición (PARTIDA / POS.), una de "
+            "descripción (DESCRIPCIÓN / DESCRIPCION) y una de precio "
+            "(PRECIO UNITARIO / PRECIO UNIT.)."
+        )
+        write_log_file(log_file_admin, f"items_contract_from_file: {error}", data_token)
+        return {"data": None, "msg": "El archivo no contiene partidas válidas", "error": error}, 400
+    # 4) Exito: se detallan conteos en el msg
+    msg = f"{diag['items_parsed']} partidas cargadas en {len(products)} grupo(s)"
+    if diag.get("rows_skipped"):
+        msg += f" ({diag['rows_skipped']} filas ignoradas)"
+    return {"data": products, "msg": msg, "error": None}, 200
 
 
 def items_supplier_from_file(data):
