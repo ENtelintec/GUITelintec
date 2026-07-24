@@ -48,6 +48,16 @@ from static.Models.api_purchases_models import (
     report_activity_delete_model,
     report_activity_download_att_model,
 )
+from static.Models.api_purchase_management_models import (
+    PurchaseManagementCancelForm,
+    PurchaseManagementDeleteForm,
+    PurchaseManagementPostForm,
+    PurchaseManagementPutForm,
+    purchase_management_cancel_model,
+    purchase_management_delete_model,
+    purchase_management_post_model,
+    purchase_management_put_model,
+)
 from templates.resources.methods.Functions_Aux_Login import token_verification_procedure
 from templates.resources.midleware.MD_Admin_Collections import (
     create_activity_report_attachment_api,
@@ -83,6 +93,15 @@ from templates.resources.midleware.MD_Purchases import (
     match_po_movements_and_sms,
     update_po_application_api,
     update_purchase_order_api,
+)
+from templates.resources.midleware.MD_PurchaseManagement import (
+    cancel_purchase_management_api,
+    create_purchase_management_api,
+    delete_purchase_management_api,
+    fetch_purchase_management,
+    get_purchase_management_catalogs,
+    get_purchase_management_detail_api,
+    update_purchase_management_api,
 )
 
 __author__ = "Edisson Naula"
@@ -597,6 +616,133 @@ class UploadActivityReportAttachment(Resource):
             return data_out, code
         else:
             return {"msg": "No se subio el archivo"}, 400
+
+
+# =====================================================================
+# Gestión de Compras (FO-COM-01 R3) — ver Docs/gestion_de_compras.md
+# =====================================================================
+@ns.route("/purchaseManagement")
+class PurchaseManagementOps(Resource):
+    @ns.doc(
+        params={
+            "status": "Filtra por estatus (entero 0..4)",
+            "classification": "Filtra por clasificación (entero 0..6)",
+            "client_id": "Filtra por cliente (id_customer)",
+            "date_from": "request_date >= YYYY-MM-DD",
+            "date_to": "request_date <= YYYY-MM-DD",
+            "is_active": "1=activos (default), 0=cancelados",
+            "all": "1 -> incluye activos y cancelados (ignora is_active)",
+        }
+    )
+    @ns.expect(expected_headers_per)
+    def get(self):
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["administracion", "purchases"]
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        params = {
+            "status": request.args.get("status"),
+            "classification": request.args.get("classification"),
+            "client_id": request.args.get("client_id"),
+            "date_from": request.args.get("date_from"),
+            "date_to": request.args.get("date_to"),
+            "is_active": request.args.get("is_active"),
+            "all": request.args.get("all"),
+        }
+        data_out, code = fetch_purchase_management(params, data_token)
+        return data_out, code
+
+    @ns.expect(expected_headers_per, purchase_management_post_model)
+    def post(self):
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["administracion", "purchases"]
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        # noinspection PyUnresolvedReferences
+        validator = PurchaseManagementPostForm.from_json(ns.payload)  # pyrefly: ignore
+        if not validator.validate():
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
+        data = validator.data
+        data_out, code = create_purchase_management_api(data, data_token)
+        return data_out, code
+
+    @ns.expect(expected_headers_per, purchase_management_put_model)
+    def put(self):
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["administracion", "purchases"]
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        # noinspection PyUnresolvedReferences
+        validator = PurchaseManagementPutForm.from_json(ns.payload)  # pyrefly: ignore
+        if not validator.validate():
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
+        data = validator.data
+        # raw_payload -> el midleware solo sobreescribe lo enviado (update parcial).
+        raw_payload = ns.payload or {}
+        data_out, code = update_purchase_management_api(data, data_token, raw_payload)
+        return data_out, code
+
+    @ns.expect(expected_headers_per, purchase_management_delete_model)
+    def delete(self):
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["administracion", "purchases"]
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        # noinspection PyUnresolvedReferences
+        validator = PurchaseManagementDeleteForm.from_json(ns.payload)  # pyrefly: ignore
+        if not validator.validate():
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
+        data = validator.data
+        data_out, code = delete_purchase_management_api(data, data_token)
+        return data_out, code
+
+
+@ns.route("/purchaseManagement/cancel")
+class PurchaseManagementCancel(Resource):
+    @ns.expect(expected_headers_per, purchase_management_cancel_model)
+    def put(self):
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["administracion", "purchases"]
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        # noinspection PyUnresolvedReferences
+        validator = PurchaseManagementCancelForm.from_json(ns.payload)  # pyrefly: ignore
+        if not validator.validate():
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
+        data = validator.data
+        data_out, code = cancel_purchase_management_api(data, data_token)
+        return data_out, code
+
+
+@ns.route("/purchaseManagement/catalogs")
+class PurchaseManagementCatalogs(Resource):
+    @ns.expect(expected_headers_per)
+    def get(self):
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["administracion", "purchases"]
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        data_out, code = get_purchase_management_catalogs()
+        return data_out, code
+
+
+@ns.route("/purchaseManagement/<int:id_pm>")
+class PurchaseManagementDetail(Resource):
+    @ns.expect(expected_headers_per)
+    def get(self, id_pm):
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["administracion", "purchases"]
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        data_out, code = get_purchase_management_detail_api(id_pm, data_token)
+        return data_out, code
 
 
 @ns.route("/voucher/vehicle/attachment/download")
