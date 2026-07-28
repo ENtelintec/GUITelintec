@@ -804,7 +804,7 @@ def create_remission_from_api(data, data_token):
         }
 
     for remision_item in data["items"]:
-        qa_item_id = remision_item.get("id", 0)
+        qa_item_id = remision_item.get("qa_item_id", 0)
         if qa_item_id in dict_quotation_items.keys():
             history_item = dict_quotation_items[qa_item_id].get("history", [])
             history_item.append(
@@ -1033,11 +1033,11 @@ def update_remission_from_api(data, data_token, raw_metadata=None):
     errors = []
     results = []
     for item in data["items"]:
-        if item["id"] is not None and item["id"] > 0:
+        if item["qa_item_id"] is not None and item["qa_item_id"] > 0:
             if item["is_erased"] == 1:
-                flag, error, result = delete_quotation_activity_item(item["id"], data_token)
+                flag, error, result = delete_quotation_activity_item(item["qa_item_id"], data_token)
             else:
-                history_item = dict_items[item["id"]]["history"]
+                history_item = dict_items[item["qa_item_id"]]["history"]
                 history_item.append(
                     {
                         "timestamp": timestamp,
@@ -1047,9 +1047,9 @@ def update_remission_from_api(data, data_token, raw_metadata=None):
                     }
                 )
                 # Conserva el sugerido (unit_price_quotation); unit_price = real de la remision.
-                extra_info_item = _coerce_extra_info(dict_items[item["id"]].get("extra_info"))
+                extra_info_item = _coerce_extra_info(dict_items[item["qa_item_id"]].get("extra_info"))
                 flag, error, result = update_quotation_activity_item(
-                    item["id"],
+                    item["qa_item_id"],
                     quotation_id,
                     data["metadata"]["id"],
                     item.get("item_contract_id", None),

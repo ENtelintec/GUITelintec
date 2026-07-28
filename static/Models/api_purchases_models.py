@@ -319,7 +319,7 @@ quotation_activity_insert_item_model = api.model(
 quotation_activity_item_upsert_model = api.model(
     "QuotationActivityItemUpsert",
     {
-        "id": fields.Integer(
+        "qa_item_id": fields.Integer(
             required=False,
             description=(
                 "ID del ítem. Si se omite o es <= 0, se creará un nuevo ítem.Si es > 0, se actualizará el ítem existente."
@@ -1263,7 +1263,7 @@ class QuotationInsertItemForm(Form):
 
 
 class QuotationUpsertItemForm(Form):
-    id = IntegerField("id", validators=[number_range(min=-1, message="Invalid id")], default=-1)
+    qa_item_id = IntegerField("qa_item_id", validators=[number_range(min=-1, message="Invalid id")], default=-1)
     report_id = IntegerField("report_id", [], default=0)
     description = StringField("description", [InputRequired()])
     udm = StringField("udm", [InputRequired()])
