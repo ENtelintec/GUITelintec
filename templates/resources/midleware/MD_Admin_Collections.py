@@ -804,7 +804,7 @@ def create_remission_from_api(data, data_token):
         }
 
     for remision_item in data["items"]:
-        qa_item_id = remision_item["id"]
+        qa_item_id = remision_item.get("id", 0)
         if qa_item_id in dict_quotation_items.keys():
             history_item = dict_quotation_items[qa_item_id].get("history", [])
             history_item.append(

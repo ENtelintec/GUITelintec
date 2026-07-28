@@ -79,6 +79,7 @@ from templates.resources.midleware.Functions_midleware_RRHH import (
     get_fichaje_data,
     get_files_fichaje,
     get_files_list_nomina_RH,
+    get_quizz_evaluation,
     insert_medical_db,
     insert_new_vacation,
     terminate_employee_from_api,
@@ -433,6 +434,17 @@ class TaskQuizzes(Resource):
             return {"data": data_out, "msg": None, "error": None}, 200
         else:
             return {"data": [], "msg": "No se pudieron obtener los quizzes", "error": error}, 400
+
+
+@ns.route("/quizz/<int:id_task>/evaluation")
+class QuizzEvaluation(Resource):
+    @ns.expect(expected_headers_per)
+    def get(self, id_task):
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        out, code = get_quizz_evaluation(id_task, data_token)
+        return out, code
 
 
 @ns.route("/employees/fichaje/all")

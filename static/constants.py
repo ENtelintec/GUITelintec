@@ -60,6 +60,7 @@ quizzes_RRHH = {
     },
 }
 conversion_quizzes_path = "files/conversions_quizzes.json"
+rubrics_dir_path = "files/rubrics/"
 filepath_recommendations = "files/recommendations.json"
 quizz_out_path = "files/quizz_out/"
 log_file_bitacora_path = "files/logs/bitacora"
