@@ -105,17 +105,19 @@ def create_item_quotation(item: dict, data_token):
         item["description_small"],
         item["id_inventory"],
     )
-    flag, error, out = execute_sql(sql, val, 3, data_token)
+    flag, error, out = execute_sql(sql, val, 4, data_token)
     return flag, error, out
 
 
-def update_item_quotation(id_item, item: dict, data_token):
+def update_item_quotation(id_item, quotation_id, item: dict, data_token):
+    """Actualiza un item. El AND quotation_id evita reescribir el item de otra
+    cotizacion si llega un qa_item_id ajeno; out es el rowcount (0 = no aplicado)."""
     sql = (
         "UPDATE sql_telintec_mod_admin.quotation_items "
         "SET partida = %s, udm = %s, brand = %s, type_p = %s, n_part = %s, quantity = %s, "
         "revision = %s, price_unit = %s, description = %s, description_small = %s, "
         "id_inventory = %s "
-        "WHERE id = %s"
+        "WHERE id = %s AND quotation_id = %s"
     )
     val = (
         item["partida"],
@@ -130,14 +132,18 @@ def update_item_quotation(id_item, item: dict, data_token):
         item["description_small"],
         item["id_inventory"],
         id_item,
+        quotation_id,
     )
     flag, error, out = execute_sql(sql, val, 3, data_token)
     return flag, error, out
 
 
-def delete_item_quotation(id_item, data_token):
-    sql = "DELETE FROM sql_telintec_mod_admin.quotation_items WHERE id = %s"
-    val = (id_item,)
+def delete_item_quotation(id_item, quotation_id, data_token):
+    sql = (
+        "DELETE FROM sql_telintec_mod_admin.quotation_items "
+        "WHERE id = %s AND quotation_id = %s"
+    )
+    val = (id_item, quotation_id)
     flag, error, out = execute_sql(sql, val, 3, data_token)
     return flag, error, out
 
@@ -168,13 +174,19 @@ def delete_quotation(id_quotation, data_token):
 
 
 def get_quotation(data_token, id_quotation: int | None = None):
+    """Cotizacion(es) con sus items en la columna products (indice 2).
+
+    El orden de las llaves del JSON_OBJECT es load-bearing: compare_file_quotation
+    arma un DataFrame con estos registros y compara por posicion contra un vector de
+    12 elementos, asi que no agregues ni reordenes llaves aqui.
+    """
     if id_quotation is not None:
         sql = (
             "SELECT "
             "q.id AS quotation_id, "
             "q.metadata, "
             "JSON_ARRAYAGG(JSON_OBJECT( "
-            "  'id', qi.id, "
+            "  'qa_item_id', qi.id, "
             "  'partida', qi.partida, "
             "  'udm', qi.udm, "
             "  'brand', qi.brand, "
@@ -201,7 +213,7 @@ def get_quotation(data_token, id_quotation: int | None = None):
             "q.id AS quotation_id, "
             "q.metadata, "
             "JSON_ARRAYAGG(JSON_OBJECT( "
-            "  'id', qi.id, "
+            "  'qa_item_id', qi.id, "
             "  'partida', qi.partida, "
             "  'udm', qi.udm, "
             "  'brand', qi.brand, "

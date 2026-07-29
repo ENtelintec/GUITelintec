@@ -63,7 +63,7 @@ class Quotations(Resource):
         flag, data_token, msg = token_verification_procedure(request, department="administracion")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        data, code = get_quotations(id_q)
+        data, code = get_quotations(data_token, id_q)
         return data, code
 
 
@@ -254,7 +254,7 @@ class CompareContractQuotation(Resource):
             filepath_download = os.path.join(tempfile.mkdtemp(), filename)
             file.save(filepath_download)
             data["path"] = filepath_download
-            data_out, code = compare_file_and_quotation(data)
+            data_out, code = compare_file_and_quotation(data, data_token)
             return data_out, code
         else:
             return {"data": None, "msg": "No se subió el archivo", "error": None}, 400

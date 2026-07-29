@@ -100,6 +100,16 @@ def get_contract(data_token, id_contract=None):
         return True, None, result
 
 
+def get_contract_id_by_quotation(id_quotation, data_token):
+    """Id del contrato ligado a una cotizacion, o None si ninguno la referencia."""
+    sql = "SELECT id FROM sql_telintec_mod_admin.contracts WHERE quotation_id = %s LIMIT 1"
+    val = (id_quotation,)
+    flag, error, result = execute_sql(sql, val, 1, data_token)
+    if not flag or not isinstance(result, tuple) or len(result) == 0:
+        return False, error, None
+    return True, None, result[0]
+
+
 def get_contract_from_abb(contract_abb: str, data_token):
     sql = "SELECT id, metadata, creation, quotation_id, timestamps FROM sql_telintec_mod_admin.contracts WHERE metadata->'$.abbreviation_sm' = %s"
     val = (contract_abb.upper(),)
@@ -222,13 +232,18 @@ def get_contracts_with_items(data_token):
         "c.emission, "
         "c.abbreviation, "
         "JSON_ARRAYAGG(JSON_OBJECT("
-        "   'item_id', qi.id, "
+        "   'qa_item_id', qi.id, "
         "   'partida', qi.partida, "
         "   'id_inventory', qi.id_inventory, "
         "   'description', qi.description, "
+        "   'description_small', qi.description_small, "
         "   'udm', qi.udm, "
         "   'quantity', qi.quantity, "
-        "   'unit_price', qi.price_unit "
+        "   'unit_price', qi.price_unit, "
+        "   'brand', qi.brand, "
+        "   'n_part', qi.n_part, "
+        "   'type_p', qi.type_p, "
+        "   'revision', qi.revision "
         ")) AS items "
         "FROM sql_telintec_mod_admin.contracts c "
         "LEFT JOIN sql_telintec_mod_admin.quotation_items qi ON qi.quotation_id = c.quotation_id "
