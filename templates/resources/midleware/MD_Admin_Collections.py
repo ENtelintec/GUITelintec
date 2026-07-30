@@ -1037,7 +1037,10 @@ def update_remission_from_api(data, data_token, raw_metadata=None):
             if item["is_erased"] == 1:
                 flag, error, result = delete_quotation_activity_item(item["qa_item_id"], data_token)
             else:
-                history_item = dict_items[item["qa_item_id"]]["history"]
+                # Un id que no pertenece a esta remision (estado viejo del front) no
+                # debe tumbar el request: se trata como item sin historial previo.
+                old_item = dict_items.get(item["qa_item_id"]) or {}
+                history_item = old_item.get("history") or []
                 history_item.append(
                     {
                         "timestamp": timestamp,
@@ -1047,7 +1050,7 @@ def update_remission_from_api(data, data_token, raw_metadata=None):
                     }
                 )
                 # Conserva el sugerido (unit_price_quotation); unit_price = real de la remision.
-                extra_info_item = _coerce_extra_info(dict_items[item["qa_item_id"]].get("extra_info"))
+                extra_info_item = _coerce_extra_info(old_item.get("extra_info"))
                 flag, error, result = update_quotation_activity_item(
                     item["qa_item_id"],
                     quotation_id,

@@ -379,11 +379,11 @@ def get_remission_by_id(id_report: int | None, data_token):
         ar.quotation_id, 
         ar.status, 
         ar.history, 
-        JSON_REMOVE(
-            COALESCE(
-                JSON_ARRAYAGG(
-                CASE 
-                    WHEN qai.qa_item_id IS NOT NULL THEN JSON_OBJECT(
+        IF(
+            COUNT(qai.qa_item_id) = 0,
+            JSON_ARRAY(),
+            JSON_ARRAYAGG(
+                JSON_OBJECT(
                     'qa_item_id', qai.qa_item_id,
                     'quotation_id', qai.quotation_id,
                     'report_id', qai.report_id,
@@ -396,13 +396,8 @@ def get_remission_by_id(id_report: int | None, data_token):
                     'history', qai.history,
                     'extra_info', qai.extra_info,
                     'partida', qi.partida
-                    )
-                    ELSE NULL
-                END
-                ),
-                JSON_ARRAY()
-            ),
-            '$[0]'
+                )
+            )
             ) AS items,
         ar.files,
         ar.contract_id,
@@ -415,7 +410,9 @@ def get_remission_by_id(id_report: int | None, data_token):
 
     val = (id_report, id_report)
     flag, e, out = (
-        execute_sql(sql, val, 1) if id_report is not None else execute_sql(sql, val, 2, data_token)
+        execute_sql(sql, val, 1, data_token)
+        if id_report is not None
+        else execute_sql(sql, val, 2, data_token)
     )
     return flag, e, out
 
