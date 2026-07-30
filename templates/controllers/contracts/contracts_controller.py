@@ -176,13 +176,16 @@ def get_contracts_abreviations_db(data_token):
 
 
 def get_items_contract_string(key: str, data_token) -> tuple[bool, str, int | list]:
+    # section_index va al FINAL (indice 5): get_products_sm (unico consumidor) indexa
+    # por posicion (item[3]=partida, item[4]=id_inventory).
     sql = (
         "SELECT "
         "c.id AS contract_id, "
         "q.id AS quotation_id, "
         "qi.id AS item_id, "
         "qi.partida, "
-        "qi.id_inventory "
+        "qi.id_inventory, "
+        "qi.section_index "
         "FROM sql_telintec_mod_admin.contracts c "
         "LEFT JOIN sql_telintec_mod_admin.quotations q ON q.id = c.quotation_id "
         "LEFT JOIN sql_telintec_mod_admin.quotation_items qi ON qi.contract_id = c.id "
@@ -243,7 +246,10 @@ def get_contracts_with_items(data_token):
         "   'brand', qi.brand, "
         "   'n_part', qi.n_part, "
         "   'type_p', qi.type_p, "
-        "   'revision', qi.revision "
+        "   'revision', qi.revision, "
+        "   'section_index', qi.section_index, "
+        "   'section_title', COALESCE(qi.extra_info->>'$.section_title', 'General'), "
+        "   'section_type', COALESCE(qi.extra_info->>'$.section_type', 'general') "
         ")) AS items "
         "FROM sql_telintec_mod_admin.contracts c "
         "LEFT JOIN sql_telintec_mod_admin.quotation_items qi ON qi.quotation_id = c.quotation_id "

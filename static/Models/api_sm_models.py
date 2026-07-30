@@ -93,6 +93,11 @@ items_model_sm = api.model(
         ),
         "sku": fields.String(required=False, description="The product sku"),
         "partida": fields.String(required=False, description="The product partida"),
+        "section_index": fields.Integer(
+            required=False,
+            description="Indice de seccion del item de contrato al que apunta la partida (default 0)",
+            example=0,
+        ),
         "dispatched": fields.Float(required=False, description="The product dispatched"),
         "is_erased": fields.Integer(required=False, description="The product is erased", example=0),
         "state": fields.Integer(
@@ -676,6 +681,7 @@ class ItemsFormSMPost(Form):
     url = StringField("url", validators=[], default="")
     sku = StringField("sku", validators=[], default="")
     partida = IntegerField("partida", validators=[], default=0)
+    section_index = IntegerField("section_index", validators=[], default=0)
     state = IntegerField("state", validators=[], default=1)
     is_erased = IntegerField("is_erased", validators=[], default=0)
     is_tool = IntegerField("is_tool", validators=[], default=0)
@@ -720,6 +726,7 @@ class ItemsFormSMPUT(Form):
     url = StringField("url", validators=[], default="")
     sku = StringField("sku", validators=[], default="")
     partida = StringField("partida", validators=[], default="")
+    section_index = IntegerField("section_index", validators=[], default=0)
     is_erased = IntegerField("is_erased", validators=[], default=0)
     state = IntegerField("state", validators=[], default=1)
     dispatched = IntegerField("dispatched", validators=[], default=0)

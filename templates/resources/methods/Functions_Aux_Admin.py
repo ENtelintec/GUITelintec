@@ -184,17 +184,52 @@ def read_exel_products_bidding(path: str):
     return products
 
 
+def _is_int_like(value) -> bool:
+    """True si value se puede convertir a int (POS./PARTIDA numerica)."""
+    try:
+        int(value)
+        return True
+    except (ValueError, TypeError):
+        return False
+
+
+def _find_partidas_header_row(raw, max_scan: int = 40):
+    """Ubica la fila de encabezados de la tabla de partidas.
+
+    La posicion NO es fija entre plantillas (CCTV la trae en la fila 20, CERRAMIENTOS
+    en la 18), asi que se busca la primera fila cuyas celdas contengan un token de
+    posicion (POS/PARTIDA) + descripcion (DESCRIP*) + precio (PRECIO*). Devuelve el
+    indice de la fila o None si no la encuentra.
+    """
+    limit = min(len(raw), max_scan)
+    for i in range(limit):
+        cells = [str(v).strip().upper() for v in raw.iloc[i].tolist()]
+        has_pos = any(c in ("POS.", "POS", "PARTIDA") or c.startswith("PARTIDA") for c in cells)
+        has_desc = any(c.startswith("DESCRIP") for c in cells)
+        has_price = any(c.startswith("PRECIO") for c in cells)
+        if has_pos and has_desc and has_price:
+            return i
+    return None
+
+
 def read_exel_products_partidas(path: str, data_token):
     """
     Lee las partidas de un Excel (plantilla de partidas de contrato o de
-    remision) y las agrupa por subtitulo.
+    remision) y las agrupa por seccion.
+
+    Una "seccion" es un bloque de items bajo un titulo (p.ej. "REFACCIONES DE
+    SIST. CERRAMIENTOS"); el titulo puede venir en la columna DESCRIPCION o en la
+    columna POS./PARTIDA (fila sin precio ni unidad). La POS. reinicia por seccion,
+    asi que ``partida`` se conserva por seccion y cada item/seccion lleva un
+    ``section_index`` 0-based que es la llave real que distingue partidas repetidas.
 
     Devuelve una tupla ``(groups, diagnostics)``:
-      - ``groups``: lista de ``{"group_title", "items": [...]}`` o ``None`` si el
-        archivo no se pudo leer (Excel invalido / sin la fila de encabezado).
+      - ``groups``: lista de ``{"section_index", "section_title", "section_type",
+        "group_title", "items": [...]}`` o ``None`` si el archivo no se pudo leer
+        (Excel invalido / sin la fila de encabezado).
       - ``diagnostics``: dict con detalle para reportar errores al front y al log
-        (error de lectura, columnas encontradas, columnas mapeadas, conteo de
-        filas totales / partidas / subtitulos / ignoradas).
+        (error de lectura, columnas encontradas/mapeadas, conteo de filas totales
+        / partidas / secciones / ignoradas).
     """
     diagnostics: dict = {
         "read_error": None,
@@ -202,14 +237,27 @@ def read_exel_products_partidas(path: str, data_token):
         "columns_mapped": {},
         "rows_total": 0,
         "items_parsed": 0,
-        "subtitles": 0,
+        "sections": 0,
         "rows_skipped": 0,
     }
     try:
-        df = pd.read_excel(path, header=20).fillna("")
+        raw = pd.read_excel(path, header=None)
     except Exception as e:
         diagnostics["read_error"] = str(e)
         return None, diagnostics
+
+    header_idx = _find_partidas_header_row(raw)
+    if header_idx is None:
+        diagnostics["read_error"] = (
+            "No se encontró la fila de encabezados de partidas "
+            "(se buscó POS./PARTIDA + DESCRIPCIÓN + PRECIO en las primeras filas)."
+        )
+        return None, diagnostics
+
+    # Construir el DataFrame usando la fila detectada como encabezado.
+    df = raw.iloc[header_idx + 1:].reset_index(drop=True)
+    df.columns = raw.iloc[header_idx].tolist()
+    df = df.fillna("")
 
     # Resolucion tolerante de columnas: soporta la plantilla de partidas de
     # contrato (PARTIDA/UDM/PRECIO UNITARIO/DESCRIPCION LARGA...) y la de
@@ -250,9 +298,21 @@ def read_exel_products_partidas(path: str, data_token):
     def cell(item, col, default=""):
         return item.get(col, default) if col is not None else default
 
+    def make_group(idx, title, items):
+        # section_type siempre "general": el parser no infiere planta/reajuste;
+        # el front/humano reclasifica.
+        return {
+            "section_index": idx,
+            "section_title": title,
+            "section_type": "general",
+            "group_title": title,  # alias de compatibilidad
+            "items": items,
+        }
+
     data_excel = df.to_dict("records")
     diagnostics["rows_total"] = len(data_excel)
     groups = []
+    current_index = 0
     current_title = "General"
     current_items = []
 
@@ -261,15 +321,22 @@ def read_exel_products_partidas(path: str, data_token):
         precio = cell(item, col_precio, "")
         description = cell(item, col_desc, "")
         partida = cell(item, col_partida, index)
-        # Detectar subtitulo: sin unidad y sin precio pero con texto de grupo.
-        if udm == "" and precio == "" and str(description).strip() != "":
-            diagnostics["subtitles"] += 1
-            # Cerrar grupo anterior si tiene items
+        partida_txt = str(partida).strip()
+        desc_txt = str(description).strip()
+        # Detectar titulo de seccion: fila sin precio ni unidad, con partida NO
+        # numerica y texto en DESCRIPCION o en POS. (el titulo puede estar en
+        # cualquiera de las dos columnas segun la plantilla).
+        if precio == "" and udm == "" and not _is_int_like(partida) and (desc_txt or partida_txt):
+            diagnostics["sections"] += 1
+            title = desc_txt or partida_txt
             if current_items:
-                groups.append({"group_title": current_title, "items": current_items})
-            # Iniciar nuevo grupo
-            current_title = description
-            current_items = []
+                # Cerrar la seccion en curso y avanzar el indice.
+                groups.append(make_group(current_index, current_title, current_items))
+                current_index += 1
+                current_items = []
+            # Si la seccion en curso aun no tiene items, este titulo solo la nombra
+            # (p.ej. el primer titulo del archivo renombra la seccion 0 "General").
+            current_title = title
             continue
 
         try:
@@ -288,6 +355,12 @@ def read_exel_products_partidas(path: str, data_token):
 
         product = {
             "partida": partida,
+            "section_index": current_index,
+            # section_title/section_type se denormalizan en cada item para que el
+            # front pueda re-enviarlos tal cual al crear el contrato (mismo shape
+            # que expone get_quotation). section_type siempre "general".
+            "section_title": current_title,
+            "section_type": "general",
             "quantity": cell(item, col_cantidad, 1),
             "udm": udm,
             "price_unit": cell(item, col_precio, 0.0),
@@ -301,9 +374,9 @@ def read_exel_products_partidas(path: str, data_token):
         }
         current_items.append(product)
 
-    # Agregar último grupo
+    # Agregar última sección
     if current_items:
-        groups.append({"group_title": current_title, "items": current_items})
+        groups.append(make_group(current_index, current_title, current_items))
     diagnostics["items_parsed"] = sum(len(g["items"]) for g in groups)
     return groups, diagnostics
 

@@ -953,12 +953,12 @@ def items_quotation_from_file(data):
 
 def items_contract_from_file(data, data_token):
     products, diag = read_exel_products_partidas(data["path"], data_token)
-    # 1) El archivo no se pudo leer (no es .xlsx, corrupto, sin la fila 21, etc.)
+    # 1) El archivo no se pudo leer (no es .xlsx, corrupto, sin fila de encabezados, etc.)
     if products is None:
         error = (
-            "No se pudo leer el archivo Excel. Debe ser .xlsx con la tabla de "
-            "partidas iniciando en la fila 21 (encabezados). Detalle: "
-            f"{diag.get('read_error')}"
+            "No se pudo leer el archivo Excel. Debe ser .xlsx con una tabla de "
+            "partidas cuyos encabezados incluyan POS./PARTIDA + DESCRIPCIÓN + "
+            f"PRECIO. Detalle: {diag.get('read_error')}"
         )
         write_log_file(log_file_admin, f"items_contract_from_file: {error}", data_token)
         return {"data": None, "msg": "No se pudo leer el archivo Excel", "error": error}, 400
@@ -971,7 +971,7 @@ def items_contract_from_file(data, data_token):
             "Plantilla no reconocida: no se encontró columna de descripción "
             "(DESCRIPCIÓN / DESCRIPCION) ni de precio (PRECIO UNITARIO / "
             f"PRECIO UNIT.). Columnas encontradas: [{cols}]. "
-            "Verifica que la tabla de partidas inicie en la fila 21."
+            "Verifica que el archivo tenga la tabla de partidas esperada."
         )
         write_log_file(log_file_admin, f"items_contract_from_file: {error}", data_token)
         return {"data": None, "msg": "Plantilla de Excel no reconocida", "error": error}, 400
@@ -982,7 +982,7 @@ def items_contract_from_file(data, data_token):
             "No se detectó ninguna partida en el archivo. "
             f"Columnas encontradas: [{cols}]. "
             f"Filas leídas: {diag.get('rows_total', 0)}, "
-            f"subtítulos: {diag.get('subtitles', 0)}, "
+            f"secciones: {diag.get('sections', 0)}, "
             f"filas ignoradas: {diag.get('rows_skipped', 0)}. "
             "Se requiere una columna de posición (PARTIDA / POS.), una de "
             "descripción (DESCRIPCIÓN / DESCRIPCION) y una de precio "
@@ -991,7 +991,7 @@ def items_contract_from_file(data, data_token):
         write_log_file(log_file_admin, f"items_contract_from_file: {error}", data_token)
         return {"data": None, "msg": "El archivo no contiene partidas válidas", "error": error}, 400
     # 4) Exito: se detallan conteos en el msg
-    msg = f"{diag['items_parsed']} partidas cargadas en {len(products)} grupo(s)"
+    msg = f"{diag['items_parsed']} partidas cargadas en {len(products)} sección(es)"
     if diag.get("rows_skipped"):
         msg += f" ({diag['rows_skipped']} filas ignoradas)"
     return {"data": products, "msg": msg, "error": None}, 200
@@ -1078,12 +1078,21 @@ def _num_item_field(value, default):
 
 
 def _item_quotation_values(product: dict) -> dict:
-    """Columnas de quotation_items a partir de un item del payload."""
+    """Columnas de quotation_items a partir de un item del payload.
+
+    section_index es el discriminador entero (0 por defecto) que hace unica la
+    llave (contract_id, section_index, partida) cuando la POS. reinicia por
+    seccion. section_title/section_type viajan en extra_info (JSON). El front
+    debe re-enviar section_title/section_type que recibio del GET: como todo el
+    resto de campos del item, esto es un overwrite completo (omitirlos los
+    reescribe al default "General"/"general").
+    """
     description = product.get("description") or ""
     description_small = product.get("description_small") or ""
     id_inventory = _num_item_field(product.get("id_inventory"), 0)
     return {
         "partida": _num_item_field(product.get("partida"), 0),
+        "section_index": _num_item_field(product.get("section_index"), 0),
         "udm": product.get("udm") or "PZA",
         "brand": product.get("marca") or "",
         "type_p": product.get("type_p") or "",
@@ -1094,6 +1103,10 @@ def _item_quotation_values(product: dict) -> dict:
         "description": description[:1024],
         "description_small": description_small[:255],
         "id_inventory": id_inventory if id_inventory > 0 else None,
+        "extra_info": {
+            "section_title": product.get("section_title") or "General",
+            "section_type": product.get("section_type") or "general",
+        },
     }
 
 

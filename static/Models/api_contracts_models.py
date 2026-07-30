@@ -71,6 +71,22 @@ products_quotation_model = api.model(
         "comment": fields.String(
             required=False, description="Ignorado: no se persiste en quotation_items"
         ),
+        "section_index": fields.Integer(
+            required=False,
+            description=(
+                "Indice 0-based de la seccion; discrimina partidas repetidas "
+                "cuando el Excel trae varias secciones. Default 0."
+            ),
+            example=0,
+        ),
+        "section_title": fields.String(
+            required=False,
+            description="Titulo de la seccion (extra_info). Default 'General'.",
+        ),
+        "section_type": fields.String(
+            required=False,
+            description="Tipo de seccion: general | planta | reajuste. Default 'general'.",
+        ),
         "qa_item_id": fields.Integer(
             required=False,
             description="The product id in the database (quotation_items.id)",
@@ -108,6 +124,25 @@ products_quotation_put_model = api.model(
         ),
         "comment": fields.String(
             required=False, description="Ignorado: no se persiste en quotation_items"
+        ),
+        "section_index": fields.Integer(
+            required=False,
+            description=(
+                "Indice 0-based de la seccion; discrimina partidas repetidas "
+                "cuando el Excel trae varias secciones. Default 0."
+            ),
+            example=0,
+        ),
+        "section_title": fields.String(
+            required=False,
+            description=(
+                "Titulo de la seccion (extra_info). El front debe re-enviar el "
+                "valor recibido del GET; omitirlo lo reescribe a 'General'."
+            ),
+        ),
+        "section_type": fields.String(
+            required=False,
+            description="Tipo de seccion: general | planta | reajuste. Default 'general'.",
         ),
         "qa_item_id": fields.Integer(
             required=False,
@@ -374,6 +409,9 @@ class MetadataQuotationForm(Form):
 
 class ProductsPostQuotationForm(Form):
     partida = IntegerField("partida", validators=[InputRequired()])
+    section_index = IntegerField("section_index", validators=[], default=0)
+    section_title = StringField("section_title", validators=[], default="General")
+    section_type = StringField("section_type", validators=[], default="general")
     revision = IntegerField("revision", validators=[], default=0)
     type_p = StringField("type_p", validators=[])
     marca = StringField("marca", validators=[])
@@ -393,6 +431,9 @@ class ProductsPutQuotationForm(Form):
     # con _resolve_item_id en vez de comparar contra 0.
     qa_item_id = IntegerField("qa_item_id", validators=[], default=0)
     partida = IntegerField("partida", validators=[InputRequired()])
+    section_index = IntegerField("section_index", validators=[], default=0)
+    section_title = StringField("section_title", validators=[], default="General")
+    section_type = StringField("section_type", validators=[], default="general")
     revision = IntegerField("revision", validators=[], default=0)
     type_p = StringField("type_p", validators=[])
     marca = StringField("marca", validators=[])

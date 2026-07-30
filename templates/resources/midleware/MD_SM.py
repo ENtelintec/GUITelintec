@@ -81,7 +81,10 @@ def get_products_sm(contract: str, data_token) -> tuple[dict, int]:
         flag, error, items_contract = get_items_contract_string(contract, data_token)
     else:
         items_contract = []
-    ids_in_contract = {}
+    # id_inventory -> lista de (partida, section_index). Un mismo producto puede
+    # estar en varias secciones/partidas del contrato; se guardan todas (antes se
+    # sobrescribia y ganaba la ultima) para emitir una fila por par.
+    ids_in_contract: dict = {}
     if isinstance(items_contract, int):
         return {
             "data": {"contract": [], "normal": []},
@@ -91,7 +94,7 @@ def get_products_sm(contract: str, data_token) -> tuple[dict, int]:
     for item in items_contract:
         if item[4] is None:
             continue
-        ids_in_contract[item[4]] = item[3]
+        ids_in_contract.setdefault(item[4], []).append((item[3], item[5]))
     flag, error, result_p = get_products_w_reservations(data_token)
     if not flag:
         return {
@@ -116,19 +119,23 @@ def get_products_sm(contract: str, data_token) -> tuple[dict, int]:
                 sku_fabricante = code.get("value")
                 break
         if product[0] in ids_in_contract.keys():
-            items_partida.append(
-                {
-                    "id": product[0],
-                    "name": product[1],
-                    "udm": product[2],
-                    "stock": product[3],
-                    "partida": ids_in_contract[product[0]],
-                    "reserved": product[4],
-                    "available_stock": product[5],
-                    "sku": sku,
-                    "sku_fabricante": sku_fabricante,
-                }
-            )
+            # Una fila por (partida, section_index): el mismo producto puede servir a
+            # varias partidas/secciones del contrato y el front las elige por separado.
+            for partida, section_index in ids_in_contract[product[0]]:
+                items_partida.append(
+                    {
+                        "id": product[0],
+                        "name": product[1],
+                        "udm": product[2],
+                        "stock": product[3],
+                        "partida": partida,
+                        "section_index": section_index,
+                        "reserved": product[4],
+                        "available_stock": product[5],
+                        "sku": sku,
+                        "sku_fabricante": sku_fabricante,
+                    }
+                )
         else:
             items_normal.append(
                 {
@@ -1070,26 +1077,42 @@ def check_for_partidas_updates(products: list, contract_id: int, data_token):
     if contract_id is None or contract_id == 0:
         return flags, errors, results
     flag, error, old_items = get_items_quotation_from_cotract(contract_id, data_token)
-    # dict partida->id_inventory
     old_items = old_items if old_items is not None else []
-    dict_partidas = {item[1]: item[2] for item in old_items}
+
+    def _safe_int(value):
+        try:
+            return int(value)
+        except (TypeError, ValueError):
+            return None
+
+    # La POS. reinicia por seccion, asi que la llave es (section_index, partida),
+    # no partida sola. item[1]=partida, item[2]=id_inventory, item[4]=section_index.
+    # Se normaliza a int para que el path PUT (partida como string) matchee las
+    # llaves int de la BD y no dispare UPDATEs redundantes.
+    dict_partidas = {}
+    for row in old_items:
+        partida_db = _safe_int(row[1])
+        if partida_db is None:
+            continue
+        dict_partidas[(_safe_int(row[4]) or 0, partida_db)] = row[2]
+
     for item in products:
-        partida = item.get("partida", None)
-        if partida is None:
+        partida = _safe_int(item.get("partida"))
+        if partida is None or partida == 0:
             continue
-        if partida == "" or partida == 0:
-            continue
-        id_inventory_old = dict_partidas.get(partida, None)
+        section_index = _safe_int(item.get("section_index", 0)) or 0
+        key = (section_index, partida)
+        id_inventory_old = dict_partidas.get(key, None)
         id_inventory_new = item.get("id", None)
         if id_inventory_new is None:
             continue
         if id_inventory_old != id_inventory_new:
             flag, error, result = update_quotation_item_partida_from_sm(
-                contract_id, partida, id_inventory_new, data_token
+                contract_id, section_index, partida, id_inventory_new, data_token
             )
             if not flag:
                 return [False], [error], [result]
-            dict_partidas[partida] = id_inventory_new
+            dict_partidas[key] = id_inventory_new
             flags.append(flag)
             errors.append(error)
             results.append(result)
