@@ -144,10 +144,13 @@ def get_all_vacations_data_date(data_token):
         return {"data": None, "msg": "Formato de datos inválido", "error": f"no vacations {result}"}, 400
     time_zone = pytz.timezone(timezone_software)
     date_today = datetime.now(pytz.utc).astimezone(time_zone)
-    date_today.replace(day=1)
+    # primer dia del mes anterior (day=1 primero: un 31 no existe en el mes previo)
     month_retrieve = date_today.month - 1
+    year_retrieve = date_today.year if month_retrieve > 0 else date_today.year - 1
     month_retrieve = month_retrieve if month_retrieve > 0 else 12
-    date_today = date_today.replace(month=month_retrieve)
+    date_today = date_today.replace(
+        year=year_retrieve, month=month_retrieve, day=1
+    )
     out = []
     for item in result:
         seniority_raw = json.loads(item[4])
