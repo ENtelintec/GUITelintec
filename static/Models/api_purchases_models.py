@@ -863,6 +863,34 @@ report_activity_download_att_model = api.model(
     },
 )
 
+# Body del DELETE de un anexo de la remision (ver
+# Docs/remission_attachment_delete.md). El id del reporte va en la URL.
+report_activity_delete_att_model = api.model(
+    "ReportActivityDeleteAttachment",
+    {
+        "filename": fields.String(
+            required=True,
+            description="Nombre del archivo a eliminar (tal como viene en files[].filename)",
+            example="evidencia-1.jpg",
+        ),
+        "reason": fields.String(
+            required=False,
+            description="Motivo del borrado; se guarda en el history del reporte",
+            example="foto repetida",
+        ),
+        "force": fields.Boolean(
+            required=False,
+            default=False,
+            description=(
+                "Fuerza el borrado de un archivo cuya categoria 'firma' fue INFERIDA del nombre "
+                "(p.ej. firmado_cliente.pdf). Las firmas reales (category 'firma' guardada o nombre "
+                "con firma-realizado/firma-recibido) no se pueden borrar ni con force"
+            ),
+            example=False,
+        ),
+    },
+)
+
 # Parser multipart para subir un anexo de la remision. Propio de la remision
 # (no reutilizar el generico expected_files_attachment de SGI): agrega los
 # campos de clasificacion que consume el PDF combinado (ver
@@ -1438,3 +1466,10 @@ class ReportActivityDeleteForm(Form):
 class ReportActivityDownloadAttForm(Form):
     id_report = IntegerField("id_report", [InputRequired()])
     filename = StringField("filename", [InputRequired()])
+
+
+class ReportActivityDeleteAttForm(Form):
+    # id_report viaja en la URL, no en el body
+    filename = StringField("filename", [InputRequired()])
+    reason = StringField("reason", [], default="")
+    force = BooleanField("force", [], default=False)

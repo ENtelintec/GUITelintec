@@ -25,15 +25,23 @@ la descarga los baja de S3 y los fusiona con la remisión.
 | `folio` | ❌ | Folio del reporte de materiales (los C-numbers, p. ej. `C1037`). Solo relevante para `photo`; alimenta el encabezado de la hoja de fotos. |
 | `title` | ❌ | Etiqueta opcional del anexo (se guarda, aún no se imprime). |
 
-Cada archivo se sube a S3 (`reportActivity/YYYY/MM/DD/<filename>`) y se agrega a
-`files` como:
+Cada archivo se sube a S3 (`reportActivity/YYYY/MM/DD/<id_report>/<filename>`) y
+se agrega a `files` como:
 
 ```json
-{"filename": "459-foto1.jpg", "path": "reportActivity/2025/06/05/459-foto1.jpg",
+{"filename": "459-foto1.jpg", "path": "reportActivity/2025/06/05/459/459-foto1.jpg",
  "category": "photo", "folio": "C1037", "title": "", "timestamp": "2025-06-05 12:00:00"}
 ```
 
-Respuesta `201`: `{"data": {"path": "<key S3>", "category": "photo"}, "msg": "...", "error": null}`.
+Respuesta `201`: `{"data": {"path": "<key S3>", "category": "photo", "replaced": false}, "msg": "...", "error": null}`.
+
+> El `<id_report>` en la llave y el `replaced` son posteriores a este documento:
+> antes la llave era `reportActivity/YYYY/MM/DD/<filename>` y dos remisiones de
+> la misma fecha con un archivo del mismo nombre compartían objeto. Re-subir el
+> mismo nombre ahora **reemplaza** la entrada en `files` en vez de duplicarla, y
+> hay un `DELETE` para quitar anexos — ver
+> [`remission_attachment_delete.md`](remission_attachment_delete.md). Los
+> archivos viejos conservan su `path` y siguen funcionando.
 
 ### Descargar el PDF (combinado o simple)
 

@@ -24,6 +24,7 @@ from static.Models.api_purchases_models import (
     RemissionBalanceUpdateForm,
     ReportActivityCreateControlTableForm,
     ReportActivityCreateForm,
+    ReportActivityDeleteAttForm,
     ReportActivityDeleteForm,
     ReportActivityDownloadAttForm,
     ReportActivityUpdateControlTableForm,
@@ -45,6 +46,7 @@ from static.Models.api_purchases_models import (
     remission_activity_update_control_table_model,
     remission_activity_update_model,
     remission_balance_update_model,
+    report_activity_delete_att_model,
     report_activity_delete_model,
     report_activity_download_att_model,
 )
@@ -64,6 +66,7 @@ from templates.resources.midleware.MD_Admin_Collections import (
     create_quotation_activity_from_api,
     create_remission_control_table_from_api,
     create_remission_from_api,
+    delete_activity_report_attachment_api,
     delete_quotation_activity_from_api,
     delete_remission_from_api,
     download_file_remission,
@@ -616,6 +619,25 @@ class UploadActivityReportAttachment(Resource):
             return data_out, code
         else:
             return {"msg": "No se subio el archivo"}, 400
+
+    @ns.expect(expected_headers_per, report_activity_delete_att_model)
+    def delete(self, id_report):
+        # Elimina un anexo del reporte; ver Docs/remission_attachment_delete.md
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["administracion", "operaciones"]
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        validator = ReportActivityDeleteAttForm.from_json(ns.payload)  # pyrefly: ignore
+        if not validator.validate():
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
+        data = validator.data
+        data["id_report"] = id_report
+        # `force` desde el payload crudo: el BooleanField de WTForms convierte la
+        # cadena "false" en True (bool("false")) y esto es un guard de borrado.
+        data["force"] = (ns.payload or {}).get("force")
+        data_out, code = delete_activity_report_attachment_api(data, data_token)
+        return data_out, code
 
 
 # =====================================================================

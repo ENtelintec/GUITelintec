@@ -5,7 +5,7 @@ from datetime import datetime
 
 import boto3
 import pytz
-from botocore.exceptions import ClientError, NoCredentialsError
+from botocore.exceptions import BotoCoreError, ClientError, NoCredentialsError
 
 from static.constants import (
     format_timestamps,
@@ -1601,41 +1601,71 @@ def _classify_remission_file(file_obj: dict) -> str:
     return "otro"
 
 
-def create_activity_report_attachment_api(data, data_token):
-    filename = data["filename"]
+def _load_remission_for_files(id_report, data_token):
+    """
+    Carga una remision para operar sobre sus anexos. Devuelve la tupla
+    ``(payload_error, code, id_report, report_data, files, history)``: si
+    ``payload_error`` no es ``None`` el llamador debe devolver
+    ``(payload_error, code)`` tal cual y el resto viene vacio.
+
+    Centraliza el parseo posicional de ``get_remission_by_id`` (``[1]`` fecha,
+    ``[14]`` status, ``[15]`` history, ``[17]`` files) y la validacion de
+    existencia, que estaban duplicados en el alta/descarga/borrado de anexos
+    (ver Docs/remission_attachment_delete.md).
+    """
     try:
-        id_report = int(data["id_report"])
+        id_report = int(id_report)
     except (KeyError, TypeError, ValueError) as e:
-        return {
-            "data": None,
-            "msg": "ID de reporte inválido",
-            "error": str(e),
-        }, 400
+        return {"data": None, "msg": "ID de reporte inválido", "error": str(e)}, 400, 0, None, [], []
     if id_report <= 0:
-        return {
-            "data": None,
-            "msg": "ID de reporte inválido",
-            "error": None,
-        }, 400
-    time_zone = pytz.timezone(timezone_software)
-    timestamp = datetime.now(pytz.utc).astimezone(time_zone)
+        return {"data": None, "msg": "ID de reporte inválido", "error": None}, 400, 0, None, [], []
     # get_remission_by_id con un id concreto usa fetchone -> una sola tupla
     flag, error, result = get_remission_by_id(id_report, data_token)
     if not flag:
-        return {
-            "data": None,
-            "msg": "Error al obtener el reporte por ID",
-            "error": error,
-        }, 400
+        return (
+            {"data": None, "msg": "Error al obtener el reporte por ID", "error": error},
+            400,
+            id_report,
+            None,
+            [],
+            [],
+        )
     if not isinstance(result, (tuple, list)) or len(result) == 0 or result[0] is None:
-        return {
-            "data": None,
-            "msg": f"Reporte no encontrado (ID {id_report})",
-            "error": None,
-        }, 404
-    report_data = result
-    date_report = report_data[1]
-    history = json.loads(report_data[15]) if report_data[15] else []
+        return (
+            {"data": None, "msg": f"Reporte no encontrado (ID {id_report})", "error": None},
+            404,
+            id_report,
+            None,
+            [],
+            [],
+        )
+    history = json.loads(result[15]) if result[15] else []
+    files = json.loads(result[17]) if result[17] else []
+    return None, 200, id_report, result, files, history
+
+
+def _remission_attachment_key(date_report, id_report, filename):
+    """
+    Llave S3 de un anexo: ``reportActivity/<fecha del reporte>/<id>/<archivo>``.
+    El ``id_report`` en la ruta es lo que evita que dos remisiones de la misma
+    fecha con un archivo del mismo nombre compartan objeto (antes se pisaban al
+    subir y el borrado fisico de una le habria borrado el archivo a la otra).
+    Las llaves viejas (sin el id) siguen siendo validas: cada archivo guarda su
+    propio ``path``.
+    """
+    return f"reportActivity/{date_report.strftime('%Y/%m/%d/')}{id_report}/{filename}"
+
+
+def create_activity_report_attachment_api(data, data_token):
+    filename = data["filename"]
+    payload_error, code, id_report, report_data, files, history = _load_remission_for_files(
+        data.get("id_report"), data_token
+    )
+    if payload_error is not None:
+        return payload_error, code
+    time_zone = pytz.timezone(timezone_software)
+    timestamp = datetime.now(pytz.utc).astimezone(time_zone)
+    date_report = report_data[1]  # pyrefly: ignore
     filepath_down = data["filepath"]
     file_extension = filepath_down.split(".")[-1].lower()
     valid_extension = ["pdf", "jpg", "jpeg", "png", "zip", "webp"]
@@ -1645,7 +1675,7 @@ def create_activity_report_attachment_api(data, data_token):
             "msg": "Formato de archivo no válido",
             "error": None,
         }, 400
-    path_aws = f"reportActivity/{date_report.strftime('%Y/%m/%d/')}{data['filename']}"
+    path_aws = _remission_attachment_key(date_report, id_report, filename)
     s3_client = boto3.client("s3")
     bucket_name = secrets.get("S3_ADMIN_BUCKET")
 
@@ -1668,13 +1698,22 @@ def create_activity_report_attachment_api(data, data_token):
         f"Archivo adjunto agregado ({category}): {filename} al reporte {id_report} "
         f"por el empleado {data_token.get('name')}"
     )
-    status = report_data[14]
+    status = report_data[14]  # pyrefly: ignore
     if "firma-realizado" in filename.lower():
         status = 1
         log_msg += " y estado actualizado a (firmado)"
     if "firma-recibido" in filename.lower():
         status = 2
         log_msg += " y estado actualizado a (aprobado)"
+    # Re-subir el mismo archivo reemplaza su entrada en vez de duplicarla: en S3
+    # ya se sobreescribio el objeto (misma llave), asi que dos entradas
+    # apuntarian al mismo archivo. Es ademas la unica forma de corregir una
+    # firma equivocada, porque las firmas no se pueden borrar (ver
+    # Docs/remission_attachment_delete.md).
+    replaced = any(file.get("path") == path_aws for file in files)
+    if replaced:
+        files = [file for file in files if file.get("path") != path_aws]
+        log_msg += " (reemplaza el archivo previo con el mismo nombre)"
     history.append(
         {
             "timestamp": timestamp.strftime(format_timestamps),
@@ -1683,10 +1722,9 @@ def create_activity_report_attachment_api(data, data_token):
             "comment": log_msg,
         }
     )
-    files = json.loads(report_data[17]) if report_data[17] else []
     files.append(
         {
-            "filename": data["filename"],
+            "filename": filename,
             "path": path_aws,
             "category": category,
             "folio": (data.get("folio") or "").strip(),
@@ -1709,40 +1747,25 @@ def create_activity_report_attachment_api(data, data_token):
     )
     write_log_file(log_file_admin_collecions, log_msg, data_token)
     return {
-        "data": {"path": path_aws, "category": category},
+        "data": {"path": path_aws, "category": category, "replaced": replaced},
         "msg": f"Archivo adjuntado correctamente al reporte (ID {id_report})",
         "error": None,
     }, 201
 
 
 def download_report_activity_attachment_api(data, data_token):
-    try:
-        id_report = int(data["id_report"])
-    except (KeyError, TypeError, ValueError) as e:
-        return {"data": None, "msg": "ID de reporte inválido", "error": str(e)}, 400
-    # get_remission_by_id con un id concreto usa fetchone -> una sola tupla
-    flag, error, result = get_remission_by_id(id_report, data_token)
-    if not flag:
-        return {
-            "data": None,
-            "msg": "Error al obtener el reporte por ID",
-            "error": error,
-        }, 400
-    if not isinstance(result, (tuple, list)) or len(result) == 0 or result[0] is None:
-        return {
-            "data": None,
-            "msg": f"Reporte no encontrado (ID {id_report})",
-            "error": None,
-        }, 404
-    report_data = result
-    files = json.loads(report_data[17]) if report_data[17] else []
+    payload_error, code, id_report, report_data, files, history = _load_remission_for_files(
+        data.get("id_report"), data_token
+    )
+    if payload_error is not None:
+        return payload_error, code
     name_file = data["filename"]
     flag_found = False
     path_aws = ""
     for file in files:
-        if file["filename"] == name_file:
+        if file.get("filename") == name_file:
             flag_found = True
-            path_aws = file["path"]
+            path_aws = file.get("path") or ""
             break
     if not flag_found:
         return {"data": None, "msg": "Archivo no encontrado en el reporte", "error": None}, 400
@@ -1765,6 +1788,175 @@ def download_report_activity_attachment_api(data, data_token):
         else:
             return {"data": None, "msg": "Error al descargar archivo de S3", "error": str(e)}, 400
     return {"data": {"path": data["filepath"]}, "msg": None, "error": None}, 200
+
+
+# Marcadores de nombre que mueven activity_reports.status al subir el archivo
+# (ver create_activity_report_attachment_api). Un archivo con estos marcadores
+# es una firma real: borrarlo dejaria el reporte en firmado/aprobado sin firma
+# que lo respalde, asi que no se permite ni con force.
+_REMISSION_SIGN_MARKERS = ("firma-realizado", "firma-recibido")
+
+
+def _is_protected_signature(file_obj: dict) -> bool:
+    """
+    ``True`` si el archivo es una firma que no se puede borrar: trae la
+    categoria ``firma`` guardada explicitamente, o su nombre contiene los
+    marcadores que mueven el estatus del reporte. Una categoria ``firma``
+    meramente INFERIDA por la heuristica del nombre (``firmado_cliente.pdf``
+    cae en ``startswith('firma')``) no protege: ese falso positivo se vence con
+    ``force`` (ver Docs/remission_attachment_delete.md).
+    """
+    if (file_obj.get("category") or "").strip().lower() == "firma":
+        return True
+    filename = (file_obj.get("filename") or "").lower()
+    return any(marker in filename for marker in _REMISSION_SIGN_MARKERS)
+
+
+def _remission_key_belongs_to_report(path_aws: str, id_report: int) -> bool:
+    """
+    ``True`` solo para las llaves del formato nuevo
+    ``reportActivity/<Y>/<m>/<d>/<id_report>/<archivo>``. Las llaves heredadas
+    (sin el id) pueden estar compartidas con otra remision de la misma fecha
+    que subio un archivo con el mismo nombre, asi que esas nunca se borran de
+    S3: el anexo solo se desvincula del reporte.
+    """
+    parts = (path_aws or "").split("/")
+    return len(parts) >= 6 and parts[0] == "reportActivity" and parts[4] == str(id_report)
+
+
+def delete_activity_report_attachment_api(data, data_token):
+    """
+    Elimina un anexo de la remision: lo quita de ``activity_reports.files`` y
+    despues borra el objeto de S3 (best-effort, y solo si la llave le pertenece
+    a este reporte). Las firmas no se eliminan. El estatus del reporte nunca se
+    toca. Ver Docs/remission_attachment_delete.md.
+    """
+    payload_error, code, id_report, report_data, files, history = _load_remission_for_files(
+        data.get("id_report"), data_token
+    )
+    if payload_error is not None:
+        return payload_error, code
+    name_file = data["filename"]
+    matched = [
+        file for file in files if isinstance(file, dict) and file.get("filename") == name_file
+    ]
+    if len(matched) == 0:
+        return {"data": None, "msg": "Archivo no encontrado en el reporte", "error": None}, 400
+    # `force` llega crudo del payload (ver rs_Admin_collections): un BooleanField
+    # de WTForms convertiria la cadena "false" en True y esto es un guard de
+    # borrado.
+    force_raw = data.get("force")
+    if isinstance(force_raw, str):
+        force = force_raw.strip().lower() in ("1", "true", "yes", "si")
+    else:
+        force = bool(force_raw)
+    target = matched[0]
+    category = _classify_remission_file(target)
+    if category == "firma":
+        if _is_protected_signature(target):
+            return {
+                "data": None,
+                "msg": (
+                    "No se pueden eliminar firmas del reporte. Para corregirla, vuelve a subir "
+                    "el archivo con el mismo nombre y reemplazara a la anterior"
+                ),
+                "error": None,
+            }, 400
+        if not force:
+            return {
+                "data": None,
+                "msg": (
+                    f"El archivo '{name_file}' se clasifica como firma por su nombre. "
+                    "Envia force=true si aun asi quieres eliminarlo"
+                ),
+                "error": None,
+            }, 400
+    # Se van todas las entradas con ese nombre: si el archivo se subio dos veces
+    # comparten llave S3 y apuntan al mismo objeto.
+    remaining = [
+        file
+        for file in files
+        if not (isinstance(file, dict) and file.get("filename") == name_file)
+    ]
+    paths = []
+    for file in matched:
+        path_file = file.get("path") or ""
+        if path_file and path_file not in paths:
+            paths.append(path_file)
+    reason = (data.get("reason") or "").strip()
+    log_msg = (
+        f"Anexo eliminado ({category}): {name_file} del reporte {id_report} "
+        f"por el empleado {data_token.get('name')}"
+    )
+    if reason:
+        log_msg += f". Motivo: {reason}"
+    if force and category == "firma":
+        log_msg += " (force: categoria firma inferida del nombre)"
+    history.append(
+        {
+            "timestamp": datetime.now(pytz.utc)
+            .astimezone(pytz.timezone(timezone_software))
+            .strftime(format_timestamps),
+            "user": data_token.get("emp_id"),
+            "action": "Eliminar archivo",
+            "comment": log_msg,
+        }
+    )
+    # Primero la BD (fuente de verdad) y luego S3: al reves, un fallo del UPDATE
+    # dejaria una entrada apuntando a una llave inexistente.
+    # OJO: update_report_activity_files espera (id, history, files, status)
+    status = report_data[14]  # pyrefly: ignore
+    flag, error, rows_updated = update_report_activity_files(
+        id_report, history, remaining, status, data_token
+    )
+    if not flag:
+        return {
+            "data": None,
+            "msg": "Error al eliminar el anexo del reporte",
+            "error": error,
+        }, 400
+    s3_deleted = False
+    s3_detail = "Sin llave en S3 que eliminar"
+    error_out = None
+    deletable = [path_file for path_file in paths if _remission_key_belongs_to_report(path_file, id_report)]
+    if len(deletable) < len(paths):
+        s3_detail = "Llave heredada (sin id de reporte): el objeto se conserva en S3"
+    if len(deletable) > 0:
+        s3_client = boto3.client("s3")
+        bucket_name = secrets.get("S3_ADMIN_BUCKET")
+        try:
+            for path_file in deletable:
+                s3_client.delete_object(Bucket=str(bucket_name), Key=path_file)
+            s3_deleted = True
+            s3_detail = "Objeto eliminado de S3"
+        except (ClientError, NoCredentialsError, BotoCoreError) as e:
+            # No fatal: el anexo ya se desvinculo del reporte, solo queda un
+            # objeto huerfano en el bucket.
+            error_out = str(e)
+            s3_detail = "El anexo se elimino del reporte pero no se pudo borrar el objeto de S3"
+            write_log_file(
+                log_file_admin_collecions,
+                f"Error al borrar de S3 {deletable} del reporte {id_report}: {e}",
+                data_token,
+            )
+    create_notification_permission_notGUI(
+        log_msg, data_token, ["administracion", "operaciones", "sgi"], data_token.get("emp_id"), 0
+    )
+    write_log_file(log_file_admin_collecions, log_msg, data_token)
+    return {
+        "data": {
+            "id_report": id_report,
+            "filename": name_file,
+            "path": paths[0] if len(paths) > 0 else "",
+            "category": category,
+            "removed": len(matched),
+            "s3_deleted": s3_deleted,
+            "s3_detail": s3_detail,
+            "files": remaining,
+        },
+        "msg": f"Anexo '{name_file}' eliminado del reporte (ID {id_report})",
+        "error": error_out,
+    }, 200
 
 
 def fetch_products_contracts(data_token):
