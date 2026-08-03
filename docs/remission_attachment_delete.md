@@ -44,6 +44,14 @@ La categoría se resuelve con `_classify_remission_file`, la misma función que
 decide qué incrusta el PDF combinado: lo que el PDF trata como firma es
 exactamente lo que no se puede borrar.
 
+> **El `force` es solo para archivos heredados.** El `POST` guarda la categoría
+> **efectiva** en el objeto, así que un archivo subido hoy como
+> `firmado_cliente.pdf` **sin** `category` explícita queda con
+> `category: "firma"` grabada → protegido, y ni con `force` se borra. El front
+> debe mandar `category` en el alta (`anexo`, `photo`…) siempre que el nombre
+> pueda empezar con "firma". El `force` existe para las entradas viejas, las que
+> no traen `category` en `files`.
+
 ## Orden de operaciones (MySQL primero, S3 después)
 
 No hay transacción que abarque los dos, así que:
