@@ -1,201 +1,61 @@
 {
     "0": {
-        "question": "¿Cuánto tiempo llevas trabajando en la empresa?*",
-        "subquestions": [],
-        "options": [
-            "Menos de 6 meses",
-            "6 meses a 1 año",
-            "1 a 2 años",
-            "De 2 años en adelante"
-        ],
-        "answer": "",
-        "type": 2
-    },
-    "1": {
-        "question": "Relaciones Interpersonales*",
+        "question": "Encuesta de Clima Laboral",
         "subquestions": [
-            "La empresa fomenta una relación sana entre sus empleados",
-            "Las relaciones interpersonales son cordiales y abiertas entre los miembros del equipo",
-            "Soy aceptado por mi grupo de trabajo",
-            "El grupo de trabajo valora mis aportaciones",
-            "La empresa fomenta que las relaciones entre unidades de negocios sea buena"
+            "Consideras que tu jefe inmediato comunica de manera clara los objetivos y metas del trabajo",
+            "Sientes que tus logros y esfuerzos son reconocidos adecuadamente por tus supervisores",
+            "¿Consideras que la comunicación interna contribuye a un mejor trabajo en equipo?",
+            "Consideras que tus compañeros de trabajo te brindan apoyo cuando lo necesitas",
+            "Consideras que la empresa proporciona suficientes oportunidades para su crecimiento profesional",
+            "Consideras que las condiciones físicas de tu lugar de trabajo (temperatura, calor, humedad, iluminación, circulación del aire, higiene o ruido) cumplen con lo establecido",
+            "Consideras que la carga de trabajo que tienes es razonable y manejable",
+            "Considera que tiene un conocimiento claro de las funciones y responsabilidades de su puesto",
+            "Te sientes parte importante del equipo de trabajo",
+            "Tu jefe inmediato fomenta un ambiente de trabajo positivo y motivador",
+            "Te sientes motivado a dar lo mejor de ti en tu trabajo diario",
+            "¿En general te sientes libre para expresar abiertamente tus opiniones de manera respetuosa?",
+            "Te sientes cómodo(a) trabajando en equipo con tus compañeros",
+            "Te sientes motivado para aprender y desarrollar nuevas habilidades para tu puesto de trabajo",
+            "Sientes que tienes los recursos y herramientas necesarios para desempeñar tu trabajo de manera eficiente",
+            "Sientes que cuentas con los suficientes recursos y apoyo para cumplir con tus responsabilidades laborales",
+            "Comprendes cómo tu trabajo contribuye a los objetivos generales de la empresa",
+            "Recomendarías Telintec a tus amistades o conocidos para laborar",
+            "Crees que tu jefe inmediato toma decisiones justas y transparentes",
+            "Consideras que tu trabajo tiene un propósito y un significado para ti",
+            "¿Sientes que puedes comunicarte abierta y efectivamente con tus superiores?",
+            "Consideras que existe un ambiente de respeto mutuo entre tú y tus compañeros",
+            "La capacitación que he recibido ha sido relevante para mi puesto y para las necesidades de la empresa",
+            "De manera general, sientes que la empresa respeta tus derechos laborales",
+            "La jornada laboral me permite descansar lo suficiente para mantener un buen rendimiento",
+            "Recibes retroalimentación periódica que te ayuda a mejorar tu desempeño",
+            "Sientes que tu trabajo contribuye al éxito general de la organización",
+            "Consideras que tu jefe inmediato está abierto a recibir retroalimentación (opiniones, sugerencias de mejora, etc.)",
+            "La empresa fomenta un ambiente que impulsa tu crecimiento profesional",
+            "¿Las difusiones que se realizan de manera general son reforzadas por los jefes inmediatos?",
+            "Crees que tus compañeros valoran y reconocen tu trabajo",
+            "Sientes que se te ha apoyado para aplicar los conocimientos y habilidades adquiridos en tus capacitaciones",
+            "Consideras que el ambiente laboral es amigable y colaborativo",
+            "¿Con qué frecuencia sientes que tienes que trabajar bajo presión debido a la carga laboral?",
+            "Tienes confianza en tus capacidades para tomar decisiones relacionadas con tu puesto",
+            "Percibes que la empresa se preocupa por tu bienestar y desarrollo profesional",
+            "Sientes que tu jefe inmediato apoya tu crecimiento y bienestar en la empresa",
+            "La Dirección se involucra en el valor y reconocimiento del desempeño de sus colaboradores",
+            "¿La comunicación interna de la empresa es adecuada a nivel general?",
+            "Sientes que puedes confiar en tus colegas para compartir ideas y/o preocupaciones",
+            "Mi puesto me ofrece posibilidades de utilizar mi experiencia, conocimientos y capacidades para desenvolverme mejor",
+            "Sientes que la empresa te ofrece un ambiente laboral sano",
+            "Siempre que lo he necesitado, la empresa me ha ofrecido oportunidades y/o alternativas para conciliar mi vida laboral con la vida familiar",
+            "El trabajo que desempeño diariamente se ajusta a las funciones que me corresponden acorde a mi puesto",
+            "En la empresa se fomenta la participación de los empleados en la adopción de decisiones o propuestas de mejora"50
         ],
         "options": [
             "Totalmente de acuerdo",
             "De acuerdo",
-            "Desacuerdo",
+            "Neutral",
+            "En desacuerdo",
             "Totalmente en desacuerdo"
         ],
         "answer": "",
         "type": 3
-    },
-    "2": {
-        "question": "Estilo de Dirección*",
-        "subquestions": [
-            "Mi jefe me trata con respeto",
-            "Estoy satisfecho con la calidad de supervisión que recibo de mi jefe directo",
-            "Mi jefe inmediato sabe cómo comunicar y trasmitir sus ideas",
-            "Mi jefe directo fomenta el trabajo en equipo",
-            "Los directores de la empresa se preocupan por los empleados",
-            "Mi jefe inmediato me da retroalimentación clara y de forma frecuente",
-            "Puedo expresar un punto de vista distinto al de mis superiores sin que se enojen",
-            "Mi jefe me comunica efectivamente las políticas y formas de trabajo de mi área",
-            "Considero que mi jefe es flexible y justo ante las peticiones o apoyos que solicito"
-        ],
-        "options": [
-            "Totalmente de acuerdo",
-            "De acuerdo",
-            "Desacuerdo",
-            "Totalmente en desacuerdo"
-        ],
-        "answer": "",
-        "type": 3
-    } ,
-    "3": {
-        "question": "Sentido de pertenencia*",
-        "subquestions": [
-            "Si recibiera una oferta de trabajo similar en responsabilidades y salario a la que tengo en esta empresa preferiría no aceptarla",
-            "En los últimos 6 meses he buscado algún otro trabajo",
-            "Recomendaría a conocidos trabajar en esta empresa",
-            "Estoy motivado para dar lo mejor de mí en mi trabajo",
-            "El trabajo en esta empresa es una buena referencia en mi currículum"
-        ],
-        "options": [
-            "Totalmente de acuerdo",
-            "De acuerdo",
-            "Desacuerdo",
-            "Totalmente en desacuerdo"
-        ],
-        "answer": "",
-        "type": 3
-    },
-    "4": {
-        "question": "Balance de trabajo - vida personal*",
-        "subquestions": [
-            "La carga de trabajo es razonable y me permite entregar a tiempo mis pendientes",
-            "El trabajo que realizo me hace sentir pleno profesionalmente",
-            "Mi trabajo afecta mi relación con familiares y amigos",
-            "Estoy contento con el balance entre mi vida profesional y personal",
-            "Estoy satisfecho con la labor que realiza mi área"
-        ],
-        "options": [
-            "Totalmente de acuerdo",
-            "De acuerdo",
-            "Desacuerdo",
-            "Totalmente en desacuerdo"
-        ],
-        "answer": "",
-        "type": 3
-    },
-    "5": {
-        "question": "Compensaciones*",
-        "subquestions": [
-            "Estoy satisfecho con las prestaciones que la empresa me da",
-            "Recibo reconocimiento por los trabajos bien hechos",
-            "El salario y las bonificaciones son adecuados con relación a la labor que realizo",
-            "Dentro de la Dirección se reconoce la trayectoria del personal de mi área para ser promovidos"
-        ],
-        "options": [
-            "Totalmente de acuerdo",
-            "De acuerdo",
-            "Desacuerdo",
-            "Totalmente en desacuerdo"
-        ],
-        "answer": "",
-        "type": 3
-    },
-    "6": {
-        "question": "Disponibilidad de recursos*",
-        "subquestions": [
-            "Tengo todo el material necesario para hacer correctamente mi trabajo",
-            "El ambiente físico de mi sitio de trabajo es adecuado",
-            "Mi área de trabajo se encuentra limpia y ordenada",
-            "El equipo de cómputo o de trabajo, así como las herramientas asignadas me permite realizar con efectividad mi trabajo"
-        ],
-        "options": [
-            "Totalmente de acuerdo",
-            "De acuerdo",
-            "Desacuerdo",
-            "Totalmente en desacuerdo"
-        ],
-        "answer": "",
-        "type": 3
-    },
-    "7": {
-        "question": "Estabilidad*",
-        "subquestions": [
-            "Estoy satisfecho con la estabilidad de mi trabajo",
-            "La permanencia en mi cargo depende de mi buen desempeño",
-            "La empresa despide al personal sin tomar en cuenta el desempeño"
-        ],
-        "options": [
-            "Totalmente de acuerdo",
-            "De acuerdo",
-            "Desacuerdo",
-            "Totalmente en desacuerdo"
-        ],
-        "answer": "",
-        "type": 3
-    },
-    "8": {
-        "question": "Claridad y coherencia del liderazgo*",
-        "subquestions": [
-            "Están definidas claramente las funciones de mi puesto y los límites de mis responsabilidades",
-            "Mis habilidades son las correctas para el trabajo que desempeño",
-            "Conozco los objetivos de la empresa y estos son claros",
-            "Tengo bien definidos los objetivos de mi área",
-            "Conozco bien cómo la empresa está logrando sus metas",
-            "Algunas tareas a diario asignadas tienen poca relación con las metas",
-            "Los directivos dan a conocer los logros de la empresa"
-        ],
-        "options": [
-            "Totalmente de acuerdo",
-            "De acuerdo",
-            "Desacuerdo",
-            "Totalmente en desacuerdo"
-        ],
-        "answer": "",
-        "type": 3
-    },
-    "9": {
-        "question": "Claridad y coherencia del liderazgo*",
-        "subquestions": [
-            "La empresa da el entrenamiento necesario para mejorar profesionalmente",
-            "Los cursos que he recibido me han servido para mi desempeño dentro de la empresa",
-            "Mi jefe conoce mis áreas de oportunidad y me ayuda a mejorarlas",
-            "La capacitación que me brindó la empresa para desarrollar mis funciones fue suficiente"
-        ],
-        "options": [
-            "Totalmente de acuerdo",
-            "De acuerdo",
-            "Desacuerdo",
-            "Totalmente en desacuerdo"
-        ],
-        "answer": "",
-        "type": 3
-    },
-    "10": {
-        "question": "Comunicación interna*",
-        "subquestions": [
-            "Estoy satisfecho con la comunicación interna que hay en la empresa",
-            "La empresa sostiene reuniones frecuentes en las cuales se comunican los resultados y las iniciativas",
-            "Suelo recibir órdenes contradictorias de diferentes personas"
-        ],
-        "options": [
-            "Totalmente de acuerdo",
-            "De acuerdo",
-            "Desacuerdo",
-            "Totalmente en desacuerdo"
-        ],
-        "answer": "",
-        "type": 3
-    },
-    "11": {
-        "question": "Opiniones personales acerca de su trabajo *",
-        "subquestions": [],
-        "options": [],
-        "answer": "",
-        "type": 5
     }
-    
 }

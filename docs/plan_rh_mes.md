@@ -92,6 +92,8 @@ Si al **fin de S3** el núcleo no está sólido: **congela Clima y Eva 360** —
 | **Bugs pre-existentes del back compiten por tus horas** — la comprobación destapará cosas ya conocidas: PUT `/employee/vacation` reusa el form de insert (`KeyError` latente en `prima`), `create_mail_payroll` sigue en SharePoint aunque nómina migró a S3, CSVs con rutas relativas hardcodeadas | Solo se arregla lo que el front destape o lo crítico; el resto a backlog. No abrir yaks |
 | **Test DB sin datos** → comprobación humo | Seed en S0 (bloqueante) |
 
+> **Seguimiento vivo:** el estado actual de tareas front/back está en [`pendientes.md`](pendientes.md) (tracker general de todas las áreas, sección RH / Encuestas).
+
 ## Entregables del mes
 
 - Hoja de comprobación cerrada + bugs corregidos.

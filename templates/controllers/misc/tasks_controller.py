@@ -90,6 +90,19 @@ def get_all_tasks_by_status(
     return flag, error, result
 
 
+def get_tasks_by_eva360_group(evaluation_id, data_token):
+    """Trae todas las tasks (control + evaluadores) de un proceso eva 360,
+    ligadas por metadata.evaluation_id."""
+    sql = (
+        "SELECT id, body, data_raw, timestamp "
+        "FROM sql_telintec.tasks_gui "
+        "WHERE body->>'$.metadata.evaluation_id' = %s "
+    )
+    vals = (evaluation_id,)
+    flag, error, result = execute_sql(sql, vals, 2, data_token)
+    return flag, error, result
+
+
 def get_task_by_id_emp(id_emp, data_token):
     sql = (
         "SELECT id, body, data_raw, timestamp "

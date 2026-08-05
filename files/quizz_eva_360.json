@@ -148,21 +148,6 @@
         "type": 2
     },
     "12": {
-        "question": " Respecto a Manejo de su Equipo de Trabajo",
-        "subquestions": [
-            "Manejo de su Equipo de Trabajo *"
-        ],
-        "options": [
-            "5 | El buen manejo de su equipo origina siempre en resultados exitosos",
-            "4 | Maneja y cuida su equipo de trabajo obteniendo con frecuencia buenos resultados",
-            "3 | Cuida y maneja adecuadamente las herramientas de trabajo",
-            "2 | Difícilmente tiene buen manejo de su equipo de trabajo",
-            "1 | No sabe manejar el equipo de trabajo"
-        ],
-        "answer": "",
-        "type": 2
-    },
-    "13": {
         "question": " Respecto a Comunicación",
         "subquestions": [
             "Comunicación *"

@@ -35,7 +35,9 @@ from static.Models.api_fichajes_models import (
     request_data_fichaje_files_model,
 )
 from static.Models.api_models import (
+    Eva360CreateForm,
     RequestFileReportQuizzForm,
+    eva360_create_model,
     expected_headers_per,
     request_file_report_quizz_model,
 )
@@ -88,6 +90,12 @@ from templates.resources.midleware.Functions_midleware_RRHH import (
     update_medical_db,
     update_payroll_list_employees,
     update_vacation,
+)
+from templates.resources.midleware.MD_Eva360 import (
+    complete_eva360_process,
+    create_eva360_process,
+    get_eva360_process,
+    get_eva360_result,
 )
 
 __author__ = "Edisson Naula"
@@ -444,6 +452,58 @@ class QuizzEvaluation(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         out, code = get_quizz_evaluation(id_task, data_token)
+        return out, code
+
+
+@ns.route("/eva360")
+class Eva360Create(Resource):
+    @ns.expect(expected_headers_per, eva360_create_model)
+    def post(self):
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        # noinspection PyUnresolvedReferences
+        validator = Eva360CreateForm.from_json(ns.payload)  # pyrefly: ignore
+        if not validator.validate():
+            return {
+                "data": None,
+                "msg": "Estructura de datos inválida",
+                "error": validator.errors,
+            }, 400
+        out, code = create_eva360_process(validator.data, data_token)
+        return out, code
+
+
+@ns.route("/eva360/<string:evaluation_id>")
+class Eva360Detail(Resource):
+    @ns.expect(expected_headers_per)
+    def get(self, evaluation_id):
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        out, code = get_eva360_process(evaluation_id, data_token)
+        return out, code
+
+
+@ns.route("/eva360/<string:evaluation_id>/result")
+class Eva360Result(Resource):
+    @ns.expect(expected_headers_per)
+    def get(self, evaluation_id):
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        out, code = get_eva360_result(evaluation_id, data_token)
+        return out, code
+
+
+@ns.route("/eva360/<string:evaluation_id>/complete")
+class Eva360Complete(Resource):
+    @ns.expect(expected_headers_per)
+    def put(self, evaluation_id):
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        out, code = complete_eva360_process(evaluation_id, data_token)
         return out, code
 
 
