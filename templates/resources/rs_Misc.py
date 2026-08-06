@@ -1,11 +1,9 @@
 # -*- coding: utf-8 -*-
 
-import json
-
 from flask import request, send_file
 from flask_restx import Namespace, Resource
 
-from static.constants import filepath_settings, quizzes_RRHH
+from static.constants import filepath_settings
 from static.Models.api_models import (
     NotificationInsertForm,
     NotificationUpdateForm,
@@ -26,6 +24,7 @@ from templates.resources.midleware.Functions_DB_midleware import (
     delete_task_from_api,
     update_task_from_api,
 )
+from templates.resources.midleware.MD_QuizzModels import get_quizz_template_api
 from templates.resources.midleware.Functions_midleware_misc import (
     create_notification_from_api,
     get_all_dashboard_data,
@@ -223,16 +222,13 @@ class TaskGui(Resource):
 class DownloadFileQuizz(Resource):
     @ns.expect(expected_headers_per)
     def get(self, type_q):
+        """Template del cuestionario desde la BD (quizz_models); misma ruta y
+        shape de siempre, el front de captura no se entera del cambio."""
         flag, data_token, msg = token_verification_procedure(request, department="rrhh")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        try:
-            quizz = quizzes_RRHH[str(type_q)]
-            with open(quizz["path"], "r", encoding="utf-8") as file:
-                json_data = json.load(file)
-            return {"data": json_data, "msg": None, "error": None}, 200
-        except Exception as e:
-            return {"data": None, "msg": "Error al obtener el cuestionario", "error": str(e)}, 400
+        data_out, code = get_quizz_template_api(type_q, data_token)
+        return data_out, code
 
 
 @ns.route("/dashboard")

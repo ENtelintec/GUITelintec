@@ -192,7 +192,7 @@ def get_eva360_process(evaluation_id, data_token):
     err, code, control, raters = _load_process(evaluation_id, data_token)
     if err is not None:
         return err, code
-    rubric = load_rubric(EVA360_TYPE)
+    rubric = load_rubric(EVA360_TYPE, data_token)
     rubric_items = _rubric_items(rubric) if rubric else set()
     raters_out = []
     for r in raters:
@@ -221,7 +221,7 @@ def get_eva360_result(evaluation_id, data_token):
     err, code, control, raters = _load_process(evaluation_id, data_token)
     if err is not None:
         return err, code
-    rubric = load_rubric(EVA360_TYPE)
+    rubric = load_rubric(EVA360_TYPE, data_token)
     if rubric is None:
         return {
             "data": None,

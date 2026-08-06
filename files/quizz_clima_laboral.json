@@ -1,6 +1,6 @@
 {
     "0": {
-        "question": "Encuesta de Clima Laboral",
+        "question": "Esta encuesta es totalmente confidencial, por lo que te pedimos que leas cuidadosamente, antes de responder los items, tienes que tomar en cuenta lo siguiente: \n1.  Recordemos que TODOS somos parte del CLIMA ORGANIZACIONAL \n2. No puedes dejar ninguna pregunta sin responder, ya que no te dejará continuar a la siguiente. \n3. Se parcial y honesto al momento de responder. \n4. Si tienes alguna duda, favor de acercarse con RRHH para resolverla. \n5. Tomate tu tiempo para responder la encuesta.",
         "subquestions": [
             "Consideras que tu jefe inmediato comunica de manera clara los objetivos y metas del trabajo",
             "Sientes que tus logros y esfuerzos son reconocidos adecuadamente por tus supervisores",
@@ -46,7 +46,7 @@
             "Sientes que la empresa te ofrece un ambiente laboral sano",
             "Siempre que lo he necesitado, la empresa me ha ofrecido oportunidades y/o alternativas para conciliar mi vida laboral con la vida familiar",
             "El trabajo que desempeño diariamente se ajusta a las funciones que me corresponden acorde a mi puesto",
-            "En la empresa se fomenta la participación de los empleados en la adopción de decisiones o propuestas de mejora"50
+            "En la empresa se fomenta la participación de los empleados en la adopción de decisiones o propuestas de mejora"
         ],
         "options": [
             "Totalmente de acuerdo",

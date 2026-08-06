@@ -98,7 +98,7 @@ Sin body. Idempotente. `200 → { "data": {"evaluation_id":"…","status_eval":"
 Sin framework de tests (gitignored): validado offline con el motor real y el midleware con controller monkeypatcheado — escalado (45→100/36→80/27→60), general 3-de-4 = 80.0, `by_role`/`distribution` exactos, validaciones del create (rol inválido/duplicado/sin emp_id), linking sobrevive el `TaskUpdateForm` del PUT, rutas registradas, pyrefly limpio en las 4 capas.
 
 ## Pendientes
-- **Clima laboral (tipo 3)** — rúbrica en revisión (documento con RH); el motor ya la soporta por config.
+- ~~**Clima laboral (tipo 3)**~~ — hecho: rúbrica % positivo + agregado organizacional en [`clima_laboral_rubrica.md`](clima_laboral_rubrica.md).
 - **Salida (tipo 0)** — rúbrica cualitativa (`mode:"qualitative"`).
 - **PDF de eva 360** — `Eva360.py` sigue imprimiendo el cuestionario individual; falta un reporte del proceso agregado (radar/tabla comparativa, skill `pdf-design`).
 - El fix de la Q12 duplicada asume corte duro; si apareciera una task eva 360 vieja con 14 preguntas, su `data_raw` tendría la Comunicación en la llave 13 (la rúbrica la leería en 12) — no hay tasks así en dev/prod.

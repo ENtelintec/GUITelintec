@@ -4,7 +4,10 @@ __date__ = "$ 01/abr./2024  at 11:38 $"
 
 import json
 
-from static.constants import format_date, quizzes_dir_path
+from static.constants import format_date
+from templates.controllers.rrhh.quizz_models_controller import (
+    get_quizz_model_template_db,
+)
 from templates.controllers.employees.employees_controller import (
     get_all_data_employee,
     get_all_data_employees,
@@ -242,13 +245,31 @@ def get_all_vacations(data_token):
 
 
 def create_task_from_api(data, data_token):
-    quizzes_dir = json.load(open(quizzes_dir_path, encoding="utf-8"))
-    dict_quizz = json.load(
-        open(
-            quizzes_dir[str(data["metadata"]["type_quizz"])]["path"],
-            encoding="utf-8",
-        )
-    )
+    # Template y status desde la BD (quizz_models). Solo un modelo ACTIVO (1)
+    # recibe encuestas: borrador no esta listo y archivada ya no se aplica.
+    type_quizz = data["metadata"].get("type_quizz")
+    flag, error, row = get_quizz_model_template_db(type_quizz, data_token)
+    if not flag:
+        return {"data": None, "msg": "Error al consultar el modelo de encuesta", "error": error}, 400
+    if not row:
+        return {
+            "data": None,
+            "msg": f"No existe el modelo de encuesta {type_quizz}",
+            "error": None,
+        }, 400
+    status_model = row[2]  # pyrefly: ignore
+    if int(status_model or 0) != 1:
+        return {
+            "data": None,
+            "msg": (
+                f"El modelo de encuesta {type_quizz} no está activo: "
+                "no se pueden crear encuestas de este tipo"
+            ),
+            "error": None,
+        }, 400
+    dict_quizz = row[1]  # pyrefly: ignore
+    if isinstance(dict_quizz, str):
+        dict_quizz = json.loads(dict_quizz)
     flag, error, result = create_task(
         data["title"],
         data["emp_destiny"],

@@ -22,7 +22,6 @@ from static.constants import (
     conversion_quizzes_path,
     format_date,
     format_timestamps,
-    quizzes_RRHH,
     secrets,
     timezone_software,
 )
@@ -1978,61 +1977,6 @@ def get_data_encuesta(file_path: str):
         df = pd.read_csv(file_path)
     data = df.to_dict("records")
     return data, df
-
-
-def extract_data_encuesta(data: list, type_q=2):
-    data_out = []
-    path_quizz = quizzes_RRHH[str(type_q)]["path"]
-    dict_quizz_list = []
-    metadata_list = []
-    starts_withnumbers_pattern = "\d+\."
-    for record_dict in data:
-        metadata = {}
-        dict_quizz = json.load(open(path_quizz, encoding="utf-8"))
-        for key in record_dict.keys():
-            if "[Puntuación]" in key or "[Comentarios]" in key:
-                continue
-            match = re.findall(starts_withnumbers_pattern, key)
-            if not match:
-                metadata[key] = record_dict[key]
-            else:
-                number = int(match[0].replace(".", ""))
-                for k, v in dict_quizz.items():
-                    items_list = v["items"]
-                    if isinstance(items_list, str):
-                        continue
-                    elif isinstance(items_list, list):
-                        range_items = range(items_list[0], items_list[1] + 1)
-                        answers = v["answer"] if isinstance(v["answer"], list) else [[i, 0] for i in range(len(list(range_items)))]
-                        if number not in range_items:
-                            continue
-                        options = v["options"]
-                        options = [op.title() for op in options]
-                        value = record_dict[key]
-                        if value.lower() in options or value.upper() in options or value.title() in options or value in options:
-                            index = range_items.index(number)
-                            index_val = options.index(value.title())
-                            answers[index] = [index, index_val]
-                        else:
-                            index = range_items.index(number)
-                            answers[index] = [index, 0]
-                        dict_quizz[k]["answer"] = answers
-                        break
-        # for k, v in dict_quizz.items():
-        #     items = v["items"]
-        #     if isinstance(items, str):
-        #         continue
-        #     elif isinstance(items, list):
-        #         range_items = range(items[0], items[1] + 1)
-        #         answers = (
-        #             v["answer"]
-        #             if isinstance(v["answer"], list)
-        #             else [[i, 0] for i in range(len(list(range_items)))]
-        #         )
-        #         v["answer"] = answers
-        dict_quizz_list.append(dict_quizz)
-        metadata_list.append(metadata)
-    return dict_quizz_list, metadata_list
 
 
 class Norm35Formatter:

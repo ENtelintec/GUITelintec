@@ -41,6 +41,14 @@ from static.Models.api_models import (
     expected_headers_per,
     request_file_report_quizz_model,
 )
+from static.Models.api_quizz_models_models import (
+    QuizzModelPostForm,
+    QuizzModelPutForm,
+    QuizzModelStatusForm,
+    quizz_model_post_model,
+    quizz_model_put_model,
+    quizz_model_status_model,
+)
 from static.Models.api_payroll_models import (
     CreateMailForm,
     UpdateDataPayrollForm,
@@ -82,6 +90,7 @@ from templates.resources.midleware.Functions_midleware_RRHH import (
     get_files_fichaje,
     get_files_list_nomina_RH,
     get_quizz_evaluation,
+    get_quizz_group_evaluation,
     insert_medical_db,
     insert_new_vacation,
     terminate_employee_from_api,
@@ -96,6 +105,15 @@ from templates.resources.midleware.MD_Eva360 import (
     create_eva360_process,
     get_eva360_process,
     get_eva360_result,
+)
+from templates.resources.midleware.MD_QuizzModels import (
+    create_quizz_model_api,
+    delete_quizz_model_api,
+    fetch_quizz_models,
+    get_quizz_model_detail_api,
+    get_quizz_models_catalogs_api,
+    update_quizz_model_api,
+    update_quizz_model_status_api,
 )
 
 __author__ = "Edisson Naula"
@@ -453,6 +471,118 @@ class QuizzEvaluation(Resource):
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         out, code = get_quizz_evaluation(id_task, data_token)
         return out, code
+
+
+@ns.route("/quizzes/summary/<int:type_q>")
+class QuizzesSummary(Resource):
+    @ns.expect(expected_headers_per)
+    def get(self, type_q):
+        """Resultado organizacional agregado de las encuestas de un tipo
+        (conteo agrupado); filtros opcionales `date_from`/`date_to`
+        (YYYY-MM-DD, inclusivos) sobre la fecha del task."""
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        out, code = get_quizz_group_evaluation(
+            type_q,
+            data_token,
+            date_from=request.args.get("date_from"),
+            date_to=request.args.get("date_to"),
+        )
+        return out, code
+
+
+@ns.route("/quizz/models")
+class QuizzModels(Resource):
+    @ns.doc(
+        params={
+            "status": "Filtra por status (0=borrador 1=activa 2=archivada)",
+            "all": "1 -> todos los status (ignora el default de solo activas)",
+        }
+    )
+    @ns.expect(expected_headers_per)
+    def get(self):
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        params = {
+            "status": request.args.get("status"),
+            "all": request.args.get("all"),
+        }
+        data_out, code = fetch_quizz_models(params, data_token)
+        return data_out, code
+
+    @ns.expect(expected_headers_per, quizz_model_post_model)
+    def post(self):
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        # noinspection PyUnresolvedReferences
+        validator = QuizzModelPostForm.from_json(ns.payload)  # pyrefly: ignore
+        if not validator.validate():
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
+        data = validator.data
+        data_out, code = create_quizz_model_api(data, ns.payload, data_token)
+        return data_out, code
+
+
+@ns.route("/quizz/models/catalogs")
+class QuizzModelsCatalogs(Resource):
+    @ns.expect(expected_headers_per)
+    def get(self):
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        data_out, code = get_quizz_models_catalogs_api()
+        return data_out, code
+
+
+@ns.route("/quizz/models/<int:type_q>")
+class QuizzModelDetail(Resource):
+    @ns.expect(expected_headers_per)
+    def get(self, type_q):
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        data_out, code = get_quizz_model_detail_api(type_q, data_token)
+        return data_out, code
+
+    @ns.expect(expected_headers_per, quizz_model_put_model)
+    def put(self, type_q):
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        # noinspection PyUnresolvedReferences
+        validator = QuizzModelPutForm.from_json(ns.payload)  # pyrefly: ignore
+        if not validator.validate():
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
+        data = validator.data
+        data_out, code = update_quizz_model_api(type_q, data, ns.payload, data_token)
+        return data_out, code
+
+    @ns.expect(expected_headers_per)
+    def delete(self, type_q):
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        data_out, code = delete_quizz_model_api(type_q, data_token)
+        return data_out, code
+
+
+@ns.route("/quizz/models/<int:type_q>/status")
+class QuizzModelStatus(Resource):
+    @ns.expect(expected_headers_per, quizz_model_status_model)
+    def put(self, type_q):
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        # noinspection PyUnresolvedReferences
+        validator = QuizzModelStatusForm.from_json(ns.payload)  # pyrefly: ignore
+        if not validator.validate():
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
+        data = validator.data
+        data_out, code = update_quizz_model_status_api(type_q, data, data_token)
+        return data_out, code
 
 
 @ns.route("/eva360")

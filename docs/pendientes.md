@@ -4,11 +4,10 @@
 
 ## RH / Encuestas
 
-*Contexto: motor config-driven + Norma 035 ✅ ([`encuestas_refactor.md`](encuestas_refactor.md)) y eva 360 ✅ verificado contra BD dev ([`eva360_evaluation.md`](eva360_evaluation.md)). Plan del mes en [`plan_rh_mes.md`](plan_rh_mes.md).*
+*Contexto: motor config-driven + Norma 035 ✅ ([`encuestas_refactor.md`](encuestas_refactor.md)), eva 360 ✅ verificado contra BD dev ([`eva360_evaluation.md`](eva360_evaluation.md)), clima laboral ✅ (rúbrica % positivo + agregado organizacional, [`clima_laboral_rubrica.md`](clima_laboral_rubrica.md)) y CRUD de modelos de encuesta ✅ (template+rúbrica en BD, esquema nuevo `sql_telintec_mod_rrhh`, [`quizz_models_crud.md`](quizz_models_crud.md)). Plan del mes en [`plan_rh_mes.md`](plan_rh_mes.md).*
 
-**Bloqueado (dependencia externa):**
-
-- [ ] **[back] Clima laboral (tipo 3)** — esperando el documento de rúbrica (en revisión con RH). Al llegar: `files/rubrics/3.json` + validación; el motor ya lo soporta. → [`encuestas_refactor.md`](encuestas_refactor.md)
+- [x] ~~**[back] Clima laboral (tipo 3)**~~ — hecho (2026-08-05): RH entregó criterio + cuestionario nuevo (45 preguntas); `files/rubrics/3.json`, motor con % positivo/neutral excluido/ítem 34 invertido, y endpoint nuevo `GET /rrhh/quizzes/summary/<type_q>` (tabla organizacional). Incluye fix del template JSON inválido que rompía `GET /misc/download/quizz/3`. → [`clima_laboral_rubrica.md`](clima_laboral_rubrica.md)
+- [x] ~~**[back] CRUD de modelos de encuesta**~~ — hecho (2026-08-05): crear/editar/publicar/archivar/borrar encuestas por API (`/rrhh/quizz/models`), tabla `quizz_models` en esquema nuevo `sql_telintec_mod_rrhh` (seed 0–4; Norma 035 `protected`), ciclo de vida con candado de template, `validate_rubric`+dry-run, PDF genérico de resumen para tipos sin generador. Verificado contra BD dev. → [`quizz_models_crud.md`](quizz_models_crud.md)
 
 **Backend:**
 
@@ -20,13 +19,17 @@
 - [ ] **[back] PDF del agregado eva 360** (radar/tabla comparativa del proceso). → [`eva360_evaluation.md`](eva360_evaluation.md)
 - [ ] **[back] Borrar código muerto deprecado** (`calculate_results_quizzes` / `recommendations_results_quizzes`, sin callers). → [`encuestas_refactor.md`](encuestas_refactor.md)
 - [ ] **[back] Bugs pre-existentes de RRHH** (triar según lo que destape la comprobación): `PUT /employee/vacation` reusa el form de insert (`KeyError` latente en `prima`); `create_mail_payroll` sigue en SharePoint aunque nómina migró a S3 (→ [`payroll_s3_upload.md`](payroll_s3_upload.md)); CSVs de medical/vacations con rutas relativas hardcodeadas. → [`plan_rh_mes.md`](plan_rh_mes.md) (Riesgos)
+- [ ] **[back] PDFs dedicados por encuesta** según pida RH (el genérico ya cubre el resumen de cualquier tipo) + editor amigable de rúbricas si RH crea encuestas seguido. → [`quizz_models_crud.md`](quizz_models_crud.md)
+- [ ] **[back] Correr `quizz_models.sql` + seed en test/prod** al promover (dev ya está; recordar el `GRANT` del esquema nuevo al usuario de la app). → [`quizz_models_crud.md`](quizz_models_crud.md)
 
 **Front:**
 
 - [ ] **[front] Comprobación de los ~38 endpoints** (32 RRHH + encuestas en `misc`) contra `HOST_DB_TEST`; entregable = hoja compartida. → [`plan_rh_mes.md`](plan_rh_mes.md)
 - [ ] **[front] UI de asignación** de encuestas (refactor menor sobre el CRUD existente). → [`encuestas_refactor.md`](encuestas_refactor.md)
 - [ ] **[front] UI de captura de respuestas** — Norma 035 (shape por secciones) y eva 360 (per-question `{"4":{"answer":idx}}`; **conservar `metadata` intacta al re-mandar el `body` en el PUT** — trae el linking). → [`encuestas_refactor.md`](encuestas_refactor.md) · [`eva360_evaluation.md`](eva360_evaluation.md)
-- [ ] **[front] UI de resultados** — componente recursivo sobre `breakdown` (`GET /quizz/<id>/evaluation`; ramificar por `data` null; `level`/`actions` opcionales por nodo). → [`encuestas_refactor.md`](encuestas_refactor.md)
+- [ ] **[front] UI de resultados** — componente recursivo sobre `breakdown` (`GET /quizz/<id>/evaluation`; ramificar por `data` null; `level`/`actions` opcionales por nodo; en clima `score` puede ser `null` = sin datos). → [`encuestas_refactor.md`](encuestas_refactor.md)
+- [ ] **[front] Tabla organizacional de clima** — pintar `GET /quizzes/summary/3` (9 categorías + total, color por `level.key`, filtro anual con `date_from`/`date_to`). → [`clima_laboral_rubrica.md`](clima_laboral_rubrica.md)
+- [ ] **[front] Pantalla de administración de modelos de encuesta** — listado `?all=1`, crear/editar (template y rúbrica JSON), publicar/archivar, mostrar `warnings` y los 400 de candado; el picker de "crear encuesta" pasa a `GET /rrhh/quizz/models` (adiós tipos hardcodeados). → [`quizz_models_crud.md`](quizz_models_crud.md)
 - [ ] **[front] UI de eva 360** — crear proceso, seguimiento (`answered` por rol), radar/comparativa (**rol ausente en `by_perspective`/`by_role` = pendiente**, cruzar contra `expected_roles`), botón completar. → [`eva360_evaluation.md`](eva360_evaluation.md)
 
 ## SM (solicitudes de material)

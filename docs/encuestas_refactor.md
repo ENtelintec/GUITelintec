@@ -1,6 +1,8 @@
 # Refactor de encuestas — motor de evaluación config-driven
 
-> Primer incremento del refactor de encuestas (ver [`plan_rh_mes.md`](../Docs/plan_rh_mes.md)). Se reemplaza el scoring/interpretación hardcodeado por tipo con un **motor config-driven** que aplica una **rúbrica en datos** (`files/rubrics/<tipo>.json`). El tipo de encuesta deja de vivir en el código. Solo Norma 035 (tipos 1 y 2) está migrado; clima laboral (3) y eva 360 (4) quedan pendientes de su rúbrica (documento en revisión); salida (0) es cualitativa.
+> Primer incremento del refactor de encuestas (ver [`plan_rh_mes.md`](../Docs/plan_rh_mes.md)). Se reemplaza el scoring/interpretación hardcodeado por tipo con un **motor config-driven** que aplica una **rúbrica en datos**. El tipo de encuesta deja de vivir en el código. Migrados: Norma 035 (1 y 2), eva 360 (4, [`eva360_evaluation.md`](eva360_evaluation.md)) y clima laboral (3, [`clima_laboral_rubrica.md`](clima_laboral_rubrica.md)); salida (0) es cualitativa y sigue pendiente.
+>
+> **Actualización 2026-08-05**: template y rúbrica ya **no viven en archivos** — migraron a la BD (`sql_telintec_mod_rrhh.quizz_models`) con CRUD completo en `/rrhh/quizz/models` (crear/editar/publicar/archivar encuestas por API, ciclo de vida y validaciones). Ver [`quizz_models_crud.md`](quizz_models_crud.md). Los `files/rubrics/<tipo>.json` de este doc quedaron como fuente del seed; el esquema de la rúbrica descrito abajo sigue vigente tal cual.
 
 ## El problema de fondo que se corrige
 
@@ -40,7 +42,7 @@ El scoring viejo (`calculate_results_quizzes`) calculaba **sumas numéricas** pe
   "levels": { "muy_alto": {"label":"Muy alto","actions":[...]}, "nulo": {"label":"Nulo","actions":[...]} }
 }
 ```
-Una banda `[key, low, high]` aplica si `(low is None or score >= low) and (high is None or score < high)`. **Ajustar una rúbrica = editar este JSON**, sin tocar código ni redeploy.
+Una banda `[key, low, high]` aplica si `(low is None or score >= low) and (high is None or score < high)`. **Ajustar una rúbrica = editar este JSON**, sin tocar código ni redeploy — desde 2026-08-05 vía `PUT /rrhh/quizz/models/<type_q>` (la rúbrica vive en BD y el guardado valida estructura + dry-run; [`quizz_models_crud.md`](quizz_models_crud.md)).
 
 ---
 
@@ -69,8 +71,8 @@ Evalúa una encuesta por su id **on-read** (determinista desde `data_raw` + rúb
 // 200 OK — evaluación calculada
 { "data": { /* shape uniforme, ver abajo */ }, "msg": null, "error": null }
 
-// 200 OK — tipo aún sin rúbrica (clima/eva360 pendientes, o salida)
-{ "data": null, "msg": "No hay rubrica para el tipo de encuesta 3 (pendiente de migracion)", "error": null }
+// 200 OK — tipo aún sin rúbrica (hoy solo salida, tipo 0)
+{ "data": null, "msg": "No hay rubrica para el tipo de encuesta 0 (pendiente de migracion)", "error": null }
 
 // 404 — id no existe
 { "data": null, "msg": "Encuesta 999 no encontrada", "error": null }
@@ -117,7 +119,7 @@ Modo cualitativo (salida): `{ "type": 0, "mode": "qualitative", "qualitative": [
 ---
 
 ## Pendientes
-- **Rúbricas de clima laboral (3) y eva 360 (4)** — documento en revisión. El motor ya las soporta por config; eva 360 probablemente requiera `agg:"avg"` + múltiples evaluadores (a confirmar con la rúbrica).
+- ~~**Rúbricas de clima laboral (3) y eva 360 (4)**~~ — hechas: eva 360 en [`eva360_evaluation.md`](eva360_evaluation.md); clima (% positivo, agregado organizacional `GET /quizzes/summary/<type_q>`, ítem invertido y neutral excluido) en [`clima_laboral_rubrica.md`](clima_laboral_rubrica.md).
 - **Rúbrica de salida (0)** — `mode:"qualitative"`, captura + reporte sin score.
 - **Normalizar el shape de respuestas** (`data_raw`) — hoy heterogéneo (`answer` a veces `""`, `0`, `[label,idx]`); `flatten_responses` es el puente. Fijar el contrato de la UI de captura lo simplifica.
 - **Rediseño del PDF** para leer `evaluation` directo y quitar el shim `_legacy_shape_from_evaluation` (aplicar skill `pdf-design`).
