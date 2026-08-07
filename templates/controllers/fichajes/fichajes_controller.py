@@ -21,7 +21,7 @@ def update_fichaje_DB(
 ):
     early = early if early is not None else {}
     pasiva = pasiva if pasiva is not None else {}
-    sql = "UPDATE sql_telintec.fichajes SET absences = %s, lates = %s, extras = %s, primes = %s, normal = %s, early = %s, pasiva = %s WHERE emp_id = %s"
+    sql = "UPDATE sql_telintec_mod_rrhh.fichajes SET absences = %s, lates = %s, extras = %s, primes = %s, normal = %s, early = %s, pasiva = %s WHERE emp_id = %s"
     val = (
         json.dumps(absences),
         json.dumps(lates),
@@ -37,7 +37,7 @@ def update_fichaje_DB(
 
 
 def create_new_emp_fichaje(emp_id: int, contract: str):
-    sql = "INSERT INTO sql_telintec.fichajes (emp_id, contract) VALUES (%s, %s)"
+    sql = "INSERT INTO sql_telintec_mod_rrhh.fichajes (emp_id, contract) VALUES (%s, %s)"
     val = (emp_id, contract)
     flag, error, result = execute_sql(sql, val, 4)
     return flag, error, result
@@ -56,7 +56,7 @@ def insert_new_fichaje_DB(
 ):
     early = early if early is not None else {}
     pasiva = pasiva if pasiva is not None else {}
-    sql = "INSERT INTO sql_telintec.fichajes (emp_id, contract, absences, lates, extras, primes, normal, early, pasiva) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)"
+    sql = "INSERT INTO sql_telintec_mod_rrhh.fichajes (emp_id, contract, absences, lates, extras, primes, normal, early, pasiva) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)"
     val = (
         emp_id,
         contract,
@@ -75,11 +75,11 @@ def insert_new_fichaje_DB(
 def get_fichaje_DB(emp_id: int | str):
     if emp_id == -1:
         emp_id = "%"
-        sql = "SELECT ficha_id, emp_id, contract, absences, lates, extras, primes, normal, early, pasiva FROM sql_telintec.fichajes WHERE emp_id like %s"
+        sql = "SELECT ficha_id, emp_id, contract, absences, lates, extras, primes, normal, early, pasiva FROM sql_telintec_mod_rrhh.fichajes WHERE emp_id like %s"
         val = (emp_id,)
         flag, error, result = execute_sql(sql, val, 2)
     else:
-        sql = "SELECT ficha_id, emp_id, contract, absences, lates, extras, primes, normal, early, pasiva FROM sql_telintec.fichajes WHERE emp_id = %s"
+        sql = "SELECT ficha_id, emp_id, contract, absences, lates, extras, primes, normal, early, pasiva FROM sql_telintec_mod_rrhh.fichajes WHERE emp_id = %s"
         val = (emp_id,)
         flag, error, result = execute_sql(sql, val, 1)
     return flag, error, result
@@ -90,18 +90,18 @@ def get_all_fichajes():
         "SELECT "
         "sql_telintec.employees.name, "
         "sql_telintec.employees.l_name, "
-        "sql_telintec.fichajes.ficha_id, "
-        "sql_telintec.fichajes.emp_id, "
-        "sql_telintec.fichajes.contract, "
-        "sql_telintec.fichajes.absences, "
-        "sql_telintec.fichajes.lates, "
-        "sql_telintec.fichajes.extras, "
-        "sql_telintec.fichajes.primes, "
-        "sql_telintec.fichajes.normal, "
-        "sql_telintec.fichajes.early,"
-        "sql_telintec.fichajes.pasiva "
-        "FROM sql_telintec.fichajes "
-        "INNER JOIN sql_telintec.employees ON (sql_telintec.fichajes.emp_id = sql_telintec.employees.employee_id)"
+        "sql_telintec_mod_rrhh.fichajes.ficha_id, "
+        "sql_telintec_mod_rrhh.fichajes.emp_id, "
+        "sql_telintec_mod_rrhh.fichajes.contract, "
+        "sql_telintec_mod_rrhh.fichajes.absences, "
+        "sql_telintec_mod_rrhh.fichajes.lates, "
+        "sql_telintec_mod_rrhh.fichajes.extras, "
+        "sql_telintec_mod_rrhh.fichajes.primes, "
+        "sql_telintec_mod_rrhh.fichajes.normal, "
+        "sql_telintec_mod_rrhh.fichajes.early,"
+        "sql_telintec_mod_rrhh.fichajes.pasiva "
+        "FROM sql_telintec_mod_rrhh.fichajes "
+        "INNER JOIN sql_telintec.employees ON (sql_telintec_mod_rrhh.fichajes.emp_id = sql_telintec.employees.employee_id)"
     )
     flag, error, result = execute_sql(sql, type_sql=2)
     return flag, error, result
@@ -112,19 +112,19 @@ def get_all_fichajes_op():
         "SELECT "
         "upper(sql_telintec.employees.name), "
         "upper(sql_telintec.employees.l_name), "
-        "sql_telintec.fichajes.ficha_id, "
-        "sql_telintec.fichajes.emp_id, "
-        "sql_telintec.fichajes.contract, "
+        "sql_telintec_mod_rrhh.fichajes.ficha_id, "
+        "sql_telintec_mod_rrhh.fichajes.emp_id, "
+        "sql_telintec_mod_rrhh.fichajes.contract, "
         "sql_telintec.employees.department_id, "
-        "sql_telintec.fichajes.absences, "
-        "sql_telintec.fichajes.lates, "
-        "sql_telintec.fichajes.extras, "
-        "sql_telintec.fichajes.primes, "
-        "sql_telintec.fichajes.normal, "
-        "sql_telintec.fichajes.early,"
-        "sql_telintec.fichajes.pasiva "
-        "FROM sql_telintec.fichajes "
-        "INNER JOIN sql_telintec.employees ON (sql_telintec.fichajes.emp_id = sql_telintec.employees.employee_id)"
+        "sql_telintec_mod_rrhh.fichajes.absences, "
+        "sql_telintec_mod_rrhh.fichajes.lates, "
+        "sql_telintec_mod_rrhh.fichajes.extras, "
+        "sql_telintec_mod_rrhh.fichajes.primes, "
+        "sql_telintec_mod_rrhh.fichajes.normal, "
+        "sql_telintec_mod_rrhh.fichajes.early,"
+        "sql_telintec_mod_rrhh.fichajes.pasiva "
+        "FROM sql_telintec_mod_rrhh.fichajes "
+        "INNER JOIN sql_telintec.employees ON (sql_telintec_mod_rrhh.fichajes.emp_id = sql_telintec.employees.employee_id)"
         "WHERE department_id = 2 AND status='activo' "
     )
     flag, error, result = execute_sql(sql, type_sql=2)
@@ -141,7 +141,7 @@ def get_fichaje_emp_AV(name: str, id_e: int | None):
         "extras_value[h]",
         "primes",
     )
-    sql = "SELECT emp_id, absences, lates, extras, primes FROM sql_telintec.fichajes WHERE emp_id = %s"
+    sql = "SELECT emp_id, absences, lates, extras, primes FROM sql_telintec_mod_rrhh.fichajes WHERE emp_id = %s"
     if id_e is None:
         id_e, name_db = get_employee_id_name(name, data_token=None)
         if id_e is None:

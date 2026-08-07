@@ -11,7 +11,7 @@ def get_payrolls(employee_id, data_token):
     if employee_id <= 0:
         sql = (
             "SELECT id, files_data, sql_telintec.employees.name, sql_telintec.employees.l_name "
-            "FROM sql_telintec.payroll "
+            "FROM sql_telintec_mod_rrhh.payroll "
             "LEFT JOIN sql_telintec.employees ON employees.employee_id = payroll.id "
             "WHERE sql_telintec.employees.status = 'activo' "
             "ORDER BY sql_telintec.employees.name, sql_telintec.employees.l_name "
@@ -21,7 +21,7 @@ def get_payrolls(employee_id, data_token):
     else:
         sql = (
             "SELECT id, files_data, sql_telintec.employees.name, sql_telintec.employees.l_name "
-            "FROM sql_telintec.payroll "
+            "FROM sql_telintec_mod_rrhh.payroll "
             "LEFT JOIN sql_telintec.employees ON employees.employee_id = payroll.id "
             "WHERE id = %s"
         )
@@ -31,21 +31,21 @@ def get_payrolls(employee_id, data_token):
 
 
 def create_payroll(data, emp_id, data_token):
-    sql = "INSERT INTO sql_telintec.payroll (id, files_data) VALUES (%s, %s)"
+    sql = "INSERT INTO sql_telintec_mod_rrhh.payroll (id, files_data) VALUES (%s, %s)"
     vals = (emp_id, data)
     flag, error, result = execute_sql(sql, vals, 4, data_token)
     return flag, error, result
 
 
 def update_payroll(data: dict, emp_id, data_token):
-    sql = "UPDATE sql_telintec.payroll SET files_data = %s WHERE id = %s"
+    sql = "UPDATE sql_telintec_mod_rrhh.payroll SET files_data = %s WHERE id = %s"
     vals = (json.dumps(data), emp_id)
     flag, error, result = execute_sql(sql, vals, 3, data_token)
     return flag, error, result
 
 
 def delete_payroll(emp_id, data_token):
-    sql = "DELETE FROM sql_telintec.payroll WHERE id = %s"
+    sql = "DELETE FROM sql_telintec_mod_rrhh.payroll WHERE id = %s"
     vals = (emp_id,)
     flag, error, result = execute_sql(sql, vals, 3, data_token)
     return flag, error, result
@@ -56,14 +56,14 @@ def get_payrolls_with_info(employee_id, data_token):
         sql = (
             "SELECT "
             "id, UPPER(name), UPPER(l_name), files_data "
-            "FROM sql_telintec.payroll "
+            "FROM sql_telintec_mod_rrhh.payroll "
             "INNER JOIN sql_telintec.employees ON employees.employee_id = payroll.id"
         )
         flag, error, result = execute_sql(sql, None, 5, data_token)
     else:
         sql = (
             "SELECT id, UPPER(name), UPPER(l_name), files_data "
-            "FROM sql_telintec.payroll "
+            "FROM sql_telintec_mod_rrhh.payroll "
             "INNER JOIN sql_telintec.employees ON employees.employee_id = payroll.id "
             "WHERE id = %s"
         )
@@ -82,7 +82,7 @@ def update_payroll_employees(data_token):
     data_out = []
     for employee in result:
         emp_id = employee[0]
-        sql = "INSERT INTO sql_telintec.payroll (id) VALUES (%s)"
+        sql = "INSERT INTO sql_telintec_mod_rrhh.payroll (id) VALUES (%s)"
         vals = (emp_id,)
         flag, error, result = execute_sql(sql, vals, 4, data_token)
         data_out.append([flag, error, emp_id])
