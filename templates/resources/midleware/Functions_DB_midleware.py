@@ -92,7 +92,7 @@ def get_info_employees_with_status(status: str):
 def create_csv_file_employees(status: str):
     flag, error, result = get_all_data_employees(status)
     if not (isinstance(result, list) or isinstance(result, tuple)):
-        return {"error": "No se encontraron empleados"}, 400
+        return {"data": None, "msg": "No se encontraron empleados", "error": error}, 400
     result = result if flag else []
     # create file
     filepath = "files/emp.csv"
@@ -122,6 +122,8 @@ def create_csv_file_employees(status: str):
                 birthday,
                 legajo,
                 extra_info,
+                department_id,
+                usernames,
             ) = item
             file.write(
                 f"{id_emp},{name},{phone},{department},{modality},{email},{contract},{admission},{rfc},{curp},{nss},{emergency_contact},{position},{status},{departure},{examen},{birthday},{legajo}\n"

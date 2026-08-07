@@ -36,10 +36,10 @@ El back tiene ~2.5× las horas del front → **el back produce contratos + backe
 
 ### Semana 0 — Arranque (solo back, 2-3 días)
 
-- [ ] **Sembrar `HOST_DB_TEST`**: empleado(s) con examen médico + vacaciones + una encuesta asignada de **cada** tipo (0-4). Sin esto, los GET devuelven vacío y la comprobación es humo.
-- [ ] Alta del **token/usuario `is_tester`** para el tercero.
-- [ ] Crear la **hoja de comprobación** (columnas: endpoint · método · request enviado · status recibido · esperado · ✅/❌ · nota).
-- [ ] **Diseño del motor config-driven**: formato de la config de rúbrica (cómo un tipo declara puntuación e interpretación). Timebox estricto — arrancar de Norma 035 concreto y generalizar; no sobre-diseñar.
+- [x] **Sembrar `HOST_DB_TEST`**: empleado(s) con examen médico + vacaciones + una encuesta asignada de **cada** tipo (0-4). Sin esto, los GET devuelven vacío y la comprobación es humo.
+- [x] Alta del **token/usuario `is_tester`** para el tercero.
+- [x] Crear la **hoja de comprobación** (columnas: endpoint · método · request enviado · status recibido · esperado · ✅/❌ · nota).
+- [x] **Diseño del motor config-driven**: formato de la config de rúbrica (cómo un tipo declara puntuación e interpretación). Timebox estricto — arrancar de Norma 035 concreto y generalizar; no sobre-diseñar.
 
 ### Semana 1 — Comprobación (front) ‖ Motor + contratos (back)
 
@@ -50,6 +50,8 @@ El back tiene ~2.5× las horas del front → **el back produce contratos + backe
 | | Triar y empezar a cerrar los bugs que el front reporta |
 
 **Checkpoint fin S1:** hoja llena. *Primera señal de throughput. Si aquí se cae, es alerta temprana.*
+
+> ✅ **Cumplido (2026-08-07)**: hoja llena y cerrada; destapó 3 bugs reales (descargas CSV de RRHH, → [`rrhh_download_csv_unpack_fix.md`](rrhh_download_csv_unpack_fix.md)) con diagnóstico correcto, corregidos el mismo día y re-probados sin más hallazgos. Señal de throughput del tercero: positiva.
 
 ### Semana 2 — Pivote a encuestas
 

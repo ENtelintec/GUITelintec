@@ -447,7 +447,6 @@ class VacationRegistry(Resource):
                 "error": error,
             }, 400
 
-
 @ns.route("/quizzes")
 class TaskQuizzes(Resource):
     @ns.expect(expected_headers_per)
@@ -833,8 +832,10 @@ class DownloadFileEMPs(Resource):
         flag, data_token, msg = token_verification_procedure(request, department="rrhh")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        filepath = create_csv_file_employees(status)
-        return send_file(str(filepath), as_attachment=True)
+        result = create_csv_file_employees(status)
+        if isinstance(result, tuple):
+            return result
+        return send_file(str(result), as_attachment=True)
 
 
 @ns.route("/download/employees/medical")
@@ -855,9 +856,9 @@ class DownloadFileMedical(Resource):
         with open(filepath, "w") as file:
             file.write("id_exam,nombre,sangre,estatus,aptitudes,fechas,apt_actual,emp_id\n")
             for item in result:
-                id_exam, nombre, sangre, status, aptitud, fechas, apt_actual, emp_id = item
-                fechas = fechas.replace(",", ";")
-                aptitud = aptitud.replace(",", ";")
+                id_exam, nombre, sangre, status, aptitud, fechas, apt_actual, emp_id, _extra = item
+                fechas = (fechas or "").replace(",", ";")
+                aptitud = (aptitud or "").replace(",", ";")
                 file.write(
                     f"{id_exam},{nombre},{sangre},{status},{aptitud},{fechas},{apt_actual},{emp_id}\n"
                 )
@@ -882,8 +883,8 @@ class DownloadFileVacations(Resource):
         with open(filepath, "w") as file:
             file.write("emp_id, Nombre, Apellido, fecha_inicio, body\n")
             for item in data:
-                emp_id, name, l_name, date_admission, seniority = item
-                seniority = seniority.replace(",", ";")
+                emp_id, name, l_name, date_admission, seniority, _renovacion = item
+                seniority = (seniority or "").replace(",", ";")
                 file.write(f"{emp_id}, {name}, {l_name}, {date_admission}, {seniority}\n")
         return send_file(filepath, as_attachment=True)
 

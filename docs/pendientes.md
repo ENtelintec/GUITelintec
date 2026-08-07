@@ -1,6 +1,6 @@
 # Pendientes — backend y front (todas las áreas)
 
-> Tracker general: solo listado con estado y link al doc que tiene la documentación completa. Cada ítem marca **[back]** / **[front]** (o ambos). Actualizado: 2026-08-05.
+> Tracker general: solo listado con estado y link al doc que tiene la documentación completa. Cada ítem marca **[back]** / **[front]** (o ambos). Actualizado: 2026-08-07.
 
 ## RH / Encuestas
 
@@ -8,23 +8,24 @@
 
 - [x] ~~**[back] Clima laboral (tipo 3)**~~ — hecho (2026-08-05): RH entregó criterio + cuestionario nuevo (45 preguntas); `files/rubrics/3.json`, motor con % positivo/neutral excluido/ítem 34 invertido, y endpoint nuevo `GET /rrhh/quizzes/summary/<type_q>` (tabla organizacional). Incluye fix del template JSON inválido que rompía `GET /misc/download/quizz/3`. → [`clima_laboral_rubrica.md`](clima_laboral_rubrica.md)
 - [x] ~~**[back] CRUD de modelos de encuesta**~~ — hecho (2026-08-05): crear/editar/publicar/archivar/borrar encuestas por API (`/rrhh/quizz/models`), tabla `quizz_models` en esquema nuevo `sql_telintec_mod_rrhh` (seed 0–4; Norma 035 `protected`), ciclo de vida con candado de template, `validate_rubric`+dry-run, PDF genérico de resumen para tipos sin generador. Verificado contra BD dev. → [`quizz_models_crud.md`](quizz_models_crud.md)
+- [x] ~~**[back] Bugs S1 de la comprobación: descargas CSV (employees/medical/vacations)**~~ — hecho (2026-08-07): los 3 GET de descarga tronaban con 500 por desempaquetados desalineados con sus SELECT compartidos; unpacks alineados (CSV byte-idéntico) + guards de NULL + tupla de error → envelope 400. Verificado contra BD dev. → [`rrhh_download_csv_unpack_fix.md`](rrhh_download_csv_unpack_fix.md)
+- [x] ~~**[front] Comprobación de los ~38 endpoints**~~ — hecho (2026-08-07): hoja compartida llena y cerrada; destapó 3 bugs (descargas CSV → [`rrhh_download_csv_unpack_fix.md`](rrhh_download_csv_unpack_fix.md)) y la re-prueba tras el fix salió sin más errores. **Checkpoint S1 del tercero cumplido.** → [`plan_rh_mes.md`](plan_rh_mes.md)
+- [x] ~~**[back] Seed de `HOST_DB_TEST` + token `is_tester` + hoja de comprobación**~~ — cerrado con la comprobación (2026-08-07): la S1 corrió completa contra la BD de test con el token del tercero y la hoja quedó llena. → [`plan_rh_mes.md`](plan_rh_mes.md)
 
 **Backend:**
 
 - [ ] **[back] Encuesta de salida (tipo 0)** — rúbrica cualitativa (`mode:"qualitative"`, captura + reporte sin score; chica). → [`encuestas_refactor.md`](encuestas_refactor.md)
-- [ ] **[back] Seed de `HOST_DB_TEST` + token `is_tester`** para el tercero (S0 del plan) + crear la hoja de comprobación. → [`plan_rh_mes.md`](plan_rh_mes.md)
 - [ ] **[back] Consolidar namespaces** de encuestas (`misc` + `rrhh` en uno). → [`encuestas_refactor.md`](encuestas_refactor.md)
 - [ ] **[back+front] Normalizar el shape de respuestas** de captura (eliminaría el adapter `flatten_responses`; coordinar con la UI de captura). → [`encuestas_refactor.md`](encuestas_refactor.md)
 - [ ] **[back] Rediseño del PDF de Norma 035** para leer `evaluation` directo (quita el shim `_legacy_shape_from_evaluation`; skill `pdf-design`). → [`encuestas_refactor.md`](encuestas_refactor.md)
 - [ ] **[back] PDF del agregado eva 360** (radar/tabla comparativa del proceso). → [`eva360_evaluation.md`](eva360_evaluation.md)
 - [ ] **[back] Borrar código muerto deprecado** (`calculate_results_quizzes` / `recommendations_results_quizzes`, sin callers). → [`encuestas_refactor.md`](encuestas_refactor.md)
-- [ ] **[back] Bugs pre-existentes de RRHH** (triar según lo que destape la comprobación): `PUT /employee/vacation` reusa el form de insert (`KeyError` latente en `prima`); `create_mail_payroll` sigue en SharePoint aunque nómina migró a S3 (→ [`payroll_s3_upload.md`](payroll_s3_upload.md)); CSVs de medical/vacations con rutas relativas hardcodeadas. → [`plan_rh_mes.md`](plan_rh_mes.md) (Riesgos)
+- [ ] **[back] Bugs pre-existentes de RRHH** (triar según lo que destape la comprobación): `PUT /employee/vacation` reusa el form de insert (`KeyError` latente en `prima`); `create_mail_payroll` sigue en SharePoint aunque nómina migró a S3 (→ [`payroll_s3_upload.md`](payroll_s3_upload.md)); CSVs de descarga con rutas relativas hardcodeadas, **sin quoting** (comas/saltos de línea en valores parten filas — caso real en dev) y sin apellido en employees (`l_name` no se escribe). → [`plan_rh_mes.md`](plan_rh_mes.md) (Riesgos) · [`rrhh_download_csv_unpack_fix.md`](rrhh_download_csv_unpack_fix.md)
 - [ ] **[back] PDFs dedicados por encuesta** según pida RH (el genérico ya cubre el resumen de cualquier tipo) + editor amigable de rúbricas si RH crea encuestas seguido. → [`quizz_models_crud.md`](quizz_models_crud.md)
 - [ ] **[back] Correr `quizz_models.sql` + seed en test/prod** al promover (dev ya está; recordar el `GRANT` del esquema nuevo al usuario de la app). → [`quizz_models_crud.md`](quizz_models_crud.md)
 
 **Front:**
 
-- [ ] **[front] Comprobación de los ~38 endpoints** (32 RRHH + encuestas en `misc`) contra `HOST_DB_TEST`; entregable = hoja compartida. → [`plan_rh_mes.md`](plan_rh_mes.md)
 - [ ] **[front] UI de asignación** de encuestas (refactor menor sobre el CRUD existente). → [`encuestas_refactor.md`](encuestas_refactor.md)
 - [ ] **[front] UI de captura de respuestas** — Norma 035 (shape por secciones) y eva 360 (per-question `{"4":{"answer":idx}}`; **conservar `metadata` intacta al re-mandar el `body` en el PUT** — trae el linking). → [`encuestas_refactor.md`](encuestas_refactor.md) · [`eva360_evaluation.md`](eva360_evaluation.md)
 - [ ] **[front] UI de resultados** — componente recursivo sobre `breakdown` (`GET /quizz/<id>/evaluation`; ramificar por `data` null; `level`/`actions` opcionales por nodo; en clima `score` puede ser `null` = sin datos). → [`encuestas_refactor.md`](encuestas_refactor.md)
