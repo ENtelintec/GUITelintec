@@ -8,23 +8,11 @@ from static.Models.api_models import (
     NotificationInsertForm,
     NotificationUpdateForm,
     RequestAVResponseForm,
-    TaskDeleteForm,
-    TaskInsertForm,
-    TaskUpdateForm,
     expected_headers_per,
     notification_insert_model,
     request_av_response_model,
-    task_delete_model,
-    task_insert_model,
-    task_update_model,
 )
 from templates.resources.methods.Functions_Aux_Login import token_verification_procedure
-from templates.resources.midleware.Functions_DB_midleware import (
-    create_task_from_api,
-    delete_task_from_api,
-    update_task_from_api,
-)
-from templates.resources.midleware.MD_QuizzModels import get_quizz_template_api
 from templates.resources.midleware.Functions_midleware_misc import (
     create_notification_from_api,
     get_all_dashboard_data,
@@ -32,7 +20,6 @@ from templates.resources.midleware.Functions_midleware_misc import (
     get_all_notification_db_user_status,
     get_files_openai,
     get_response_AV,
-    get_task_by_id_employee,
     update_notification_status_from_api,
 )
 
@@ -161,74 +148,6 @@ class FilesAV(Resource):
             return {"files": files}, 200
         except Exception as e:
             return {"data": None, "msg": "Error al obtener archivos del asistente virtual", "error": str(e)}, 400
-
-
-@ns.route("/task/quizz")
-class Task(Resource):
-    @ns.expect(expected_headers_per, task_insert_model)
-    def post(self):
-        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
-        if not flag:
-            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        # noinspection PyUnresolvedReferences
-        validator = TaskInsertForm.from_json(ns.payload)  # pyrefly:ignore
-        if not validator.validate():
-            return {"errors": validator.errors}, 400
-        data = validator.data
-        response, code = create_task_from_api(data, data_token)
-        return response, code
-
-    @ns.expect(expected_headers_per, task_update_model)
-    def put(self):
-        flag, data_token, msg = token_verification_procedure(
-            request, department=["rrhh", "common"]
-        )
-        if not flag:
-            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        # noinspection PyUnresolvedReferences
-        validator = TaskUpdateForm.from_json(ns.payload)  # pyrefly:ignore
-        if not validator.validate():
-            return {"errors": validator.errors}, 400
-        data = validator.data
-        reponse, code = update_task_from_api(data, data_token)
-        return reponse, code
-
-    @ns.expect(expected_headers_per, task_delete_model)
-    def delete(self):
-        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
-        if not flag:
-            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        # noinspection PyUnresolvedReferences
-        validator = TaskDeleteForm.from_json(ns.payload)  # pyrefly:ignore
-        if not validator.validate():
-            return {"errors": validator.errors}, 400
-        data = validator.data
-        response, code = delete_task_from_api(data, data_token)
-        return response, code
-
-
-@ns.route("/task/<int:emp_id>")
-class TaskGui(Resource):
-    @ns.expect(expected_headers_per)
-    def get(self, emp_id):
-        flag, data_token, msg = token_verification_procedure(request, emp_id=emp_id)
-        if not flag:
-            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        data_out, code = get_task_by_id_employee(emp_id, data_token)
-        return data_out, code
-
-
-@ns.route("/download/quizz/<int:type_q>")
-class DownloadFileQuizz(Resource):
-    @ns.expect(expected_headers_per)
-    def get(self, type_q):
-        """Template del cuestionario desde la BD (quizz_models); misma ruta y
-        shape de siempre, el front de captura no se entera del cambio."""
-        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
-        if not flag:
-            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        data_out, code = get_quizz_template_api(type_q, data_token)
-        return data_out, code
 
 
 @ns.route("/dashboard")

@@ -15,7 +15,10 @@
 **Backend:**
 
 - [ ] **[back] Encuesta de salida (tipo 0)** — rúbrica cualitativa (`mode:"qualitative"`, captura + reporte sin score; chica). → [`encuestas_refactor.md`](encuestas_refactor.md)
-- [ ] **[back] Consolidar namespaces** de encuestas (`misc` + `rrhh` en uno). → [`encuestas_refactor.md`](encuestas_refactor.md)
+- [x] ~~**[back] Consolidar namespaces** de encuestas (`misc` + `rrhh` en uno)~~ — hecho (2026-08-07) en el lote S2 con la migración Fase 1: los 3 recursos de `misc` (`/task/quizz`, `/task/<emp_id>`, `/download/quizz/<type_q>`) ahora en `rrhh`, **corte duro** (viejas → 404), shapes/permisos idénticos; smoke completo verde vs dev. **El front debe cambiar el prefijo `misc`→`rrhh` en esas 3 rutas.** → [`consolidacion_namespaces_encuestas.md`](consolidacion_namespaces_encuestas.md)
+- [x] ~~**[back] Migración de esquema — Fase 1 (encuestas)**~~ — hecho (2026-08-07): DDL corrido en las 3 BDs (`tasks_gui` → `sql_telintec_mod_rrhh.quizz_tasks` + vista puente, conteos verificados), 7 literales + docstrings actualizados. → [`migracion_esquemas_rrhh.md`](migracion_esquemas_rrhh.md)
+- [ ] **[back] DROP de las vistas puente `tasks_gui`** en las 3 BDs (Paso 3 de `scripts_db_handle/migracion_quizz_tasks.sql`) — **solo cuando prod ya corra el código del lote S2**; mientras, la vista mantiene vivo el código viejo. → [`migracion_esquemas_rrhh.md`](migracion_esquemas_rrhh.md)
+- [ ] **[back] Migración de esquema — Fase 2 (post-mes)**: las 5 tablas RRHH-privadas (`examenes_med`, `fichajes`, `bitacora_rh`, `vacations`, `payroll`) + catálogo `aptitude` a `mod_rrhh` en **un solo lote** con el runbook probado en Fase 1; `employees`/`departments`/`users_system` quedan como núcleo compartido en `sql_telintec`. → [`migracion_esquemas_rrhh.md`](migracion_esquemas_rrhh.md)
 - [ ] **[back+front] Normalizar el shape de respuestas** de captura (eliminaría el adapter `flatten_responses`; coordinar con la UI de captura). → [`encuestas_refactor.md`](encuestas_refactor.md)
 - [ ] **[back] Rediseño del PDF de Norma 035** para leer `evaluation` directo (quita el shim `_legacy_shape_from_evaluation`; skill `pdf-design`). → [`encuestas_refactor.md`](encuestas_refactor.md)
 - [ ] **[back] PDF del agregado eva 360** (radar/tabla comparativa del proceso). → [`eva360_evaluation.md`](eva360_evaluation.md)

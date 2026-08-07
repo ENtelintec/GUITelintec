@@ -1,5 +1,7 @@
 # Eva 360 — proceso multi-evaluador sobre `tasks_gui`
 
+> **Actualización 2026-08-07**: la tabla `tasks_gui` ahora es `sql_telintec_mod_rrhh.quizz_tasks` y las rutas `/misc/task/*` y `/misc/download/quizz/*` se movieron a `/rrhh/...` en corte duro — los shapes de este doc siguen válidos, solo cambia el prefijo. Ver [`consolidacion_namespaces_encuestas.md`](consolidacion_namespaces_encuestas.md) y [`migracion_esquemas_rrhh.md`](migracion_esquemas_rrhh.md).
+
 > Segundo incremento del refactor de encuestas (ver [`encuestas_refactor.md`](../Docs/encuestas_refactor.md)). Eva 360 rompe el modelo "una task = una encuesta = una persona": es **una evaluación de una persona compuesta por N cuestionarios idénticos (2-4) que llenan evaluadores distintos** (self | superior | peer | subordinate), más una **task de control** para RH. Todo sobre `tasks_gui` (sin esquema nuevo), ligado por `metadata.evaluation_id` (UUID generado por el back). Puramente numérico: 9 competencias × 1-5 = 45 máx → escalado a 100; **sin niveles/semáforo** (a diferencia de Norma 035).
 
 ## Modelo

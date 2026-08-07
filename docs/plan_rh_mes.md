@@ -58,10 +58,12 @@ El back tiene ~2.5× las horas del front → **el back produce contratos + backe
 | Front | Back |
 |---|---|
 | Integrar **≥1 UI** (empezar por asignación o captura, las de menor riesgo) contra los contratos | Terminar motor + **Norma 035 end-to-end** (scoring + interpretación + PDF) |
-| | **Consolidar los dos namespaces** (`misc` + `rrhh`) de encuestas en uno |
+| | **Consolidar los dos namespaces** (`misc` + `rrhh`) de encuestas en uno + **migración de esquema Fase 1** en el mismo lote (`tasks_gui` → `mod_rrhh.quizz_tasks`, vista puente; → [`migracion_esquemas_rrhh.md`](migracion_esquemas_rrhh.md)) |
 | | Cerrar bugs de la hoja; entregar contratos finales |
 
 **Checkpoint fin S2:** ≥1 UI integrada.
+
+> ✅ **Back de S2 cumplido (2026-08-07)**: consolidación de namespaces + migración de esquema Fase 1 ejecutadas en un lote (DDL en las 3 BDs, corte duro `misc`→`rrhh`, smoke verde). El front debe actualizar el prefijo de 3 rutas → [`consolidacion_namespaces_encuestas.md`](consolidacion_namespaces_encuestas.md).
 
 ### Semana 3 — Núcleo funcional
 

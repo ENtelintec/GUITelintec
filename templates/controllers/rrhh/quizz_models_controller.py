@@ -138,14 +138,14 @@ def delete_quizz_model(type_q, data_token):
 
 
 def count_tasks_by_type_quizz(type_q, data_token):
-    """(total, contestadas) de tasks_gui que referencian el tipo via
+    """(total, contestadas) de quizz_tasks que referencian el tipo via
     body.metadata.type_quizz. Contestada = data_raw con al menos una llave
     (create_task inicializa data_raw = {}). type_sql=1 -> fetchone."""
     sql = (
         "SELECT COUNT(*), "
         "COALESCE(SUM(CASE WHEN data_raw IS NOT NULL "
         "AND JSON_LENGTH(data_raw) > 0 THEN 1 ELSE 0 END), 0) "
-        "FROM sql_telintec.tasks_gui "
+        "FROM sql_telintec_mod_rrhh.quizz_tasks "
         "WHERE CAST(body->>'$.metadata.type_quizz' AS SIGNED) = %s "
         "AND body->>'$.metadata.type_quizz' IS NOT NULL"
     )
