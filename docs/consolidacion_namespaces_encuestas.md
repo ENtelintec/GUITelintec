@@ -21,7 +21,7 @@ Verificado contra BD dev: ciclo completo POST→GET→PUT→DELETE por las rutas
 |---|---|---|---|
 | `/misc/task/quizz` | `/rrhh/task/quizz` | `POST` (asignar) · `PUT` (capturar) · `DELETE` | `rrhh` (PUT también `common`) |
 | `/misc/task/<emp_id>` | `/rrhh/task/<emp_id>` | `GET` (tasks del empleado) | auto-acceso: el `emp_id` del token puede ver las suyas |
-| `/misc/download/quizz/<type_q>` | `/rrhh/download/quizz/<type_q>` | `GET` (template del cuestionario) | `rrhh` |
+| `/misc/download/quizz/<type_q>` | `/rrhh/download/quizz/<type_q>` | `GET` (template del cuestionario) | `rrhh` **y `common`** (2026-08-10: el empleado que contesta necesita el template para renderizar la captura; antes solo `rrhh` bloqueaba el flujo de captura con token de empleado) |
 
 Shapes de referencia (sin cambios):
 

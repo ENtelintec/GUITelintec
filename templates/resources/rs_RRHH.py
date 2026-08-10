@@ -520,8 +520,12 @@ class DownloadFileQuizz(Resource):
     @ns.expect(expected_headers_per)
     def get(self, type_q):
         """Template del cuestionario desde la BD (quizz_models); mismo shape
-        que la ruta historica de misc, solo cambia el namespace."""
-        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
+        que la ruta historica de misc, solo cambia el namespace. Permiso
+        common ademas de rrhh: el empleado que contesta necesita el template
+        para renderizar la captura (el PUT /task/quizz ya acepta common)."""
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["rrhh", "common"]
+        )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data_out, code = get_quizz_template_api(type_q, data_token)
