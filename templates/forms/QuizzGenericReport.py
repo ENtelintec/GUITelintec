@@ -6,22 +6,23 @@ Renderiza el shape uniforme `evaluation` ({total, breakdown recursivo} o
 {qualitative}) para CUALQUIER tipo de encuesta — es el fallback de
 `generate_pdf_from_json` cuando el tipo no tiene generador dedicado en
 `dict_typer_quizz_generator` (modelos nuevos creados via /rrhh/quizz/models).
-Formato de la casa (skill pdf-design): cuadricula celeste, Courier, header
-Telintec en cada pagina.
+Formato de la casa (skill pdf-design): cuadricula celeste, tipografia
+Helvetica, header Telintec en cada pagina.
 """
 
 __author__ = "Edisson Naula"
 __date__ = "$ 05/ago./2026  at 12:00 $"
 
-import textwrap
-
 from reportlab.pdfgen import canvas
 
 from templates.forms.PDFGenerator import (
+    FONT_BOLD,
+    FONT_REGULAR,
     a4_x,
     a4_y,
     create_header_telintec,
     print_footer_page_count,
+    wrap_text_width,
 )
 
 _QZ_CELESTE = (0.74, 0.84, 0.93)  # #BDD7EE
@@ -32,8 +33,7 @@ _QZ_TOP_Y = 740.0
 
 
 def _qz_wrap(value, width_pt, font_size):
-    chars = max(1, int((width_pt - 8) / (font_size * 0.6)))
-    return textwrap.wrap(str(value if value is not None else ""), width=chars) or [""]
+    return wrap_text_width(value, width_pt - 8, font_size)
 
 
 def _qz_draw_cell(pdf, x, y_top, w, h, lines, font_size, bold=False, fill=False):
@@ -44,7 +44,7 @@ def _qz_draw_cell(pdf, x, y_top, w, h, lines, font_size, bold=False, fill=False)
         pdf.setFillColorRGB(0, 0, 0)
     else:
         pdf.rect(x, y_top - h, w, h, fill=0, stroke=1)
-    pdf.setFont("Courier-Bold" if bold else "Courier", font_size)
+    pdf.setFont(FONT_BOLD if bold else FONT_REGULAR, font_size)
     text_y = y_top - font_size - 3
     for line in lines:
         pdf.drawString(x + 4, text_y, line)

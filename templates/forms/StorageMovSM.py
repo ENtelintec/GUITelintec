@@ -5,10 +5,18 @@ __date__ = "$ 23/jul./2024  at 6:05 $"
 import textwrap
 
 from reportlab.lib.utils import ImageReader
+from reportlab.pdfbase.pdfmetrics import stringWidth
 from reportlab.pdfgen import canvas
 
 from static.constants import filepath_sm_pdf
-from templates.forms.PDFGenerator import a4_x, a4_y, create_header_telintec
+from templates.forms.PDFGenerator import (
+    FONT_BOLD,
+    FONT_REGULAR,
+    a4_x,
+    a4_y,
+    create_header_telintec,
+    wrap_text_width,
+)
 
 dict_wrappers_headers = {
     "Movements": {
@@ -50,7 +58,7 @@ def print_headers_table_inventory(pdf, font_size=10, y_init=500, type_form="Move
     :param font_size:
     :return:
     """
-    pdf.setFont("Courier-Bold", font_size)
+    pdf.setFont(FONT_BOLD, font_size)
     x_position = 20
     headers = list(dict_wrappers_headers[type_form].keys())
     for header_key in headers:
@@ -73,10 +81,10 @@ def print_footer_page_count(pdf, page, font_size=6, right_text="", x_max=a4_x):
     :param font_size:
     :return:
     """
-    pdf.setFont("Courier", font_size)
+    pdf.setFont(FONT_REGULAR, font_size)
     pdf.drawString(5, 5, f"Página {page}")
     if right_text != "":
-        pdf.drawString(x_max - len(right_text) * font_size * 0.7, 5, right_text)
+        pdf.drawRightString(x_max - 5, 5, right_text)
 
 
 def print_metadata(pdf, metadata, font_size=10, y_init=480, columns=2):
@@ -88,7 +96,7 @@ def print_metadata(pdf, metadata, font_size=10, y_init=480, columns=2):
     :param columns:
     :return:
     """
-    pdf.setFont("Courier", font_size)
+    pdf.setFont(FONT_REGULAR, font_size)
     y_position = y_init
     x_position = 20
     separation = a4_x / columns
@@ -100,19 +108,19 @@ def print_metadata(pdf, metadata, font_size=10, y_init=480, columns=2):
             x_position = 20
         # pdf.drawString(x_position, y_position, f"{key}: {metadata[key]}")
         # Configurar la fuente en negrita para el key
-        pdf.setFont("Courier-Bold", font_size)
+        pdf.setFont(FONT_BOLD, font_size)
         pdf.drawString(x_position, y_position, f"{key}: ")
 
         # Restaurar la fuente normal para el valor
-        pdf.setFont("Courier", font_size)
-        pdf.drawString(x_position + len(key) * font_size * 0.7, y_position, f"{metadata[key]}")
+        pdf.setFont(FONT_REGULAR, font_size)
+        pdf.drawString(x_position + stringWidth(f"{key}: ", FONT_BOLD, font_size), y_position, f"{metadata[key]}")
         x_position += separation
         count += 1
     return y_position - font_size * 2.5
 
 
 def print_products_list(pdf, products, headers, font_size=8, y_last_headers=500.0, pages=1):
-    pdf.setFont("Courier", font_size)
+    pdf.setFont(FONT_REGULAR, font_size)
     y_init = y_last_headers
     last_y = y_init
     limit_y = 10
@@ -126,7 +134,7 @@ def print_products_list(pdf, products, headers, font_size=8, y_last_headers=500.
             print_headers_table_inventory(pdf, y_init=535, type_form="SM")
             y_init = 510
             last_y = y_init
-            pdf.setFont("Courier", font_size)
+            pdf.setFont(FONT_REGULAR, font_size)
         for index, key in enumerate(item):
             value = textwrap.wrap(
                 str(key),
@@ -159,7 +167,7 @@ def print_footer_signing(pdf, font_size=10, y_position=50.0, margin_bottom=75.0,
         pages += 1
     else:
         y_position = margin_bottom
-    pdf.setFont("Courier-Bold", font_size)
+    pdf.setFont(FONT_BOLD, font_size)
     x_start = 20
     # Imprimir etiquetas con líneas en blanco para rellenar
     labels = [
@@ -282,7 +290,7 @@ def ReturnMaterials(dict_data: dict):
     # ---------------------------------------------products---------------------------------------------------------
     headers = list(dict_wrappers_headers["Materials"].keys())
     font_size = 8
-    pdf.setFont("Courier", font_size)
+    pdf.setFont(FONT_REGULAR, font_size)
     y_init = 480
     last_y = y_init
     limit_y = 10
@@ -295,7 +303,7 @@ def ReturnMaterials(dict_data: dict):
             print_headers_table_inventory(pdf, y_init=535, type_form="Materials")
             y_init = 510
             last_y = y_init
-            pdf.setFont("Courier", font_size)
+            pdf.setFont(FONT_REGULAR, font_size)
         for index, key in enumerate(item):
             value = textwrap.wrap(
                 str(key),
@@ -346,7 +354,7 @@ _SM_DELIVERY_COLS = [
 ]
 
 # Semáforo de surtido de los items de la SM (pasteles tipo Excel, misma familia
-# de tintes que el celeste: el texto negro Courier sigue siendo legible encima).
+# de tintes que el celeste: el texto negro sigue siendo legible encima).
 _SM_VERDE = (0.78, 0.94, 0.81)  # #C6EFCE  surtido completo
 _SM_AMARILLO = (1.00, 0.92, 0.61)  # #FFEB9C  surtido parcial
 _SM_ROJO = (1.00, 0.78, 0.81)  # #FFC7CE  sin surtir
@@ -378,8 +386,7 @@ def _sm_item_fills(item):
 
 
 def _grid_wrap_cell(value, width_pt, font_size):
-    chars = max(1, int((width_pt - 8) / (font_size * 0.6)))
-    return textwrap.wrap("" if value is None else str(value), width=chars) or [""]
+    return wrap_text_width(value, width_pt - 8, font_size)
 
 
 def _grid_draw_cell(pdf, x, y_top, w, h, lines, font_size, bold=False, fill=False, fill_color=None):
@@ -396,7 +403,7 @@ def _grid_draw_cell(pdf, x, y_top, w, h, lines, font_size, bold=False, fill=Fals
         pdf.setFillColorRGB(0, 0, 0)
     else:
         pdf.rect(x, y_top - h, w, h, fill=0, stroke=1)
-    pdf.setFont("Courier-Bold" if bold else "Courier", font_size)
+    pdf.setFont(FONT_BOLD if bold else FONT_REGULAR, font_size)
     text_y = y_top - font_size - 3
     for line in lines:
         pdf.drawString(x + 4, text_y, line)
@@ -745,7 +752,7 @@ def FilePurchaseList(dict_data: dict, path):
 
     def print_column_headers(y):
         """Fila de encabezados de columna (una vez por proveedor)."""
-        pdf.setFont("Courier-Bold", font_size - 1)
+        pdf.setFont(FONT_BOLD, font_size - 1)
         pdf.drawString(_PL_X_DESC, y, "Descripcion")
         pdf.drawRightString(_PL_X_CANT, y, "Cant")
         pdf.drawRightString(_PL_X_PUNIT, y, "P. Unit")
@@ -770,7 +777,7 @@ def FilePurchaseList(dict_data: dict, path):
         pdf.setFillColorRGB(0.15, 0.35, 0.6)
         pdf.rect(20, last_y - 4, a4_y - 40, font_size + 8, fill=1, stroke=0)
         pdf.setFillColorRGB(1, 1, 1)
-        pdf.setFont("Courier-Bold", font_size + 1)
+        pdf.setFont(FONT_BOLD, font_size + 1)
         pdf.drawString(25, last_y, f"Proveedor: {supplier_name}  (ID: {supplier_id})")
         pdf.setFillColorRGB(0, 0, 0)
         last_y -= font_size * 2.2
@@ -787,14 +794,14 @@ def FilePurchaseList(dict_data: dict, path):
             last_y = check_page_break(last_y)
 
             # --- Encabezado de inventario ---
-            pdf.setFont("Courier-Bold", font_size)
+            pdf.setFont(FONT_BOLD, font_size)
             pdf.drawString(30, last_y, f"Inventario: {id_inventory}")
             pdf.drawString(220, last_y, f"Cant. total: {total_qty}")
             pdf.drawString(360, last_y, f"Monto total: ${total_amount:,.2f}")
             last_y -= font_size * 1.8
 
             # --- Items del inventario ---
-            pdf.setFont("Courier", font_size - 1)
+            pdf.setFont(FONT_REGULAR, font_size - 1)
             for item in items:
                 last_y = check_page_break(last_y)
                 price_unit = float(item.get("price_unit", 0))
@@ -816,7 +823,7 @@ def FilePurchaseList(dict_data: dict, path):
 
         # --- Subtotal por proveedor (negrita, alineado a la derecha) ---
         last_y = check_page_break(last_y)
-        pdf.setFont("Courier-Bold", font_size)
+        pdf.setFont(FONT_BOLD, font_size)
         pdf.drawRightString(_PL_X_TOTAL, last_y, f"Subtotal proveedor: ${supplier_subtotal:,.2f}")
         last_y -= font_size * 2.0
         grand_total += supplier_subtotal
@@ -826,7 +833,7 @@ def FilePurchaseList(dict_data: dict, path):
     pdf.setFillColorRGB(0.10, 0.25, 0.50)
     pdf.rect(20, last_y - 5, a4_y - 40, font_size + 10, fill=1, stroke=0)
     pdf.setFillColorRGB(1, 1, 1)
-    pdf.setFont("Courier-Bold", font_size + 2)
+    pdf.setFont(FONT_BOLD, font_size + 2)
     pdf.drawString(25, last_y, "GRAN TOTAL")
     pdf.drawRightString(_PL_X_TOTAL, last_y, f"${grand_total:,.2f}")
     pdf.setFillColorRGB(0, 0, 0)

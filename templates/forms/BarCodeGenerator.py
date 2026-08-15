@@ -264,7 +264,7 @@ def create_BarCodeFormat(code, sku, name, filepath, type_code, pagesize="default
     )
     name_list = wrap_text(name.upper(), pagesize[0] - 10 * mm).split("\n")
     font_name = 9
-    c.setFont("Courier-Bold", font_name)
+    c.setFont("Helvetica-Bold", font_name)
     for i, line in enumerate(name_list):
         c.drawString(5 * mm, pagesize[1] - 30 - i * font_name, line)
     c.setFont("Helvetica", 6)
@@ -344,7 +344,7 @@ def create_one_code(**kwargs):
     )
     # -------------------------------------create name-------------------------------------
     name_list = wrap_text(name.upper(), name_width).split("\n")
-    c.setFont("Courier-Bold", font_name)
+    c.setFont("Helvetica-Bold", font_name)
     name_offset = kwargs.get("name_offset", (0 * mm, 0 * mm))
     for i, line in enumerate(name_list):
         c.drawString(
@@ -460,7 +460,7 @@ def create_multiple_barcodes_products(code_list, sku_list, name_list, **kwargs):
         )
         # -------------------------------------create name-------------------------------------
         namelist = wrap_text(name.upper(), name_width).split("\n")
-        c.setFont("Courier-Bold", font_name)
+        c.setFont("Helvetica-Bold", font_name)
         for i, line in enumerate(namelist):
             c.drawString(5 * mm, pagesize[1] - 30 - i * font_name, line)
         # -------------------------------------create sku-------------------------------------
@@ -521,7 +521,7 @@ def create_multiple_barcodes(
         )
         name_list = wrap_text(name.upper(), pagesize[0] - 10 * mm).split("\n")
         font_name = 9
-        c.setFont("Courier-Bold", font_name)
+        c.setFont("Helvetica-Bold", font_name)
         for i, line in enumerate(name_list):
             c.drawString(5 * mm, pagesize[1] - 30 - i * font_name, line)
         c.setFont("Helvetica", 6)
@@ -572,7 +572,7 @@ def create_two_code_one_page_multiple(
         name_list_aux = wrap_text(name.upper(), 25)
         name_list_aux = name_list_aux.split("\n")
         font_name = 8
-        c.setFont("Courier-Bold", font_name)
+        c.setFont("Helvetica-Bold", font_name)
         for i, line in enumerate(name_list_aux[0:2]):
             c.drawString(
                 2 * mm,

@@ -17,9 +17,12 @@ Diseño documentado en [Docs/sm_pdf_grid_redesign.md](../../../Docs/sm_pdf_grid_
   `rect`/`drawString`/`drawRightString` a coordenadas absolutas.
 - Página vertical: `pagesize=(a4_x, a4_y)` con `a4_x=595.27`, `a4_y=841.89`
   importados de `templates/forms/PDFGenerator.py`.
-- Fuente **Courier** (valores) y **Courier-Bold** (labels/encabezados). Es
-  monospace: el ancho de un carácter es `font_size * 0.6` pt — eso hace fiable
-  el wrapping con `textwrap`.
+- Fuente **Helvetica** (valores) y **Helvetica-Bold** (labels/encabezados),
+  vía las constantes `FONT_REGULAR` / `FONT_BOLD` de `PDFGenerator.py` — nunca
+  hardcodear el nombre de la fuente. Es proporcional: el wrapping y cualquier
+  posición derivada del texto se calculan con el ancho real
+  (`wrap_text_width(...)` / `pdfmetrics.stringWidth`), **no** con conteo de
+  caracteres (`len(texto) * factor` era de la era Courier y desborda celdas).
 - Margen lateral `25.0` pt (**float, no int** — con int pyrefly marca
   `bad-assignment` en los `x += w` acumulativos). Ancho útil:
   `a4_x - 2 * margen`.
@@ -37,9 +40,11 @@ Todo campo/columna va en **cuadrícula**: un `rect` por celda. Los nombres de
 campos y encabezados de columna van resaltados en **celeste**:
 
 ```python
+from templates.forms.PDFGenerator import FONT_BOLD, FONT_REGULAR, wrap_text_width
+
 _CELESTE = (0.74, 0.84, 0.93)  # #BDD7EE
 
-def _draw_cell(pdf, x, y_top, w, h, lines, font_size, bold=False, fill=False):
+def _draw_cell(pdf, x, y_top, w, h, lines, font_size, bold=False, fill=False, align="left"):
     pdf.setLineWidth(0.6)
     if fill:  # celda celeste (labels/encabezados)
         pdf.setFillColorRGB(*_CELESTE)
@@ -47,17 +52,23 @@ def _draw_cell(pdf, x, y_top, w, h, lines, font_size, bold=False, fill=False):
         pdf.setFillColorRGB(0, 0, 0)   # SIEMPRE restaurar a negro
     else:
         pdf.rect(x, y_top - h, w, h, fill=0, stroke=1)
-    pdf.setFont("Courier-Bold" if bold else "Courier", font_size)
+    pdf.setFont(FONT_BOLD if bold else FONT_REGULAR, font_size)
     text_y = y_top - font_size - 3
     for line in lines:
-        pdf.drawString(x + 4, text_y, line)
+        if align == "right":
+            pdf.drawRightString(x + w - 4, text_y, line)
+        else:
+            pdf.drawString(x + 4, text_y, line)
         text_y -= font_size * 1.25
 ```
 
 - Labels/encabezados: `bold=True, fill=True` (celeste + negro bold). Nunca
   texto blanco sobre celeste (no contrasta).
-- Wrapping por celda: `textwrap.wrap(str(v), width=max(1, int((w - 8) / (font_size * 0.6))))
-  or [""]` — 8 pt de padding horizontal (4 por lado).
+- Wrapping por celda: `wrap_text_width(v, w - 8, font_size)` (de
+  `PDFGenerator.py`; mide con stringWidth) — 8 pt de padding horizontal
+  (4 por lado). Para labels en bold, pasar `font=FONT_BOLD`.
+- Columnas numéricas (cantidades, dinero): `align="right"` en header y celdas
+  (ver la tabla de items de `RemissionForms.py`).
 - Interlineado `font_size * 1.25`; alto de fila
   `max_lineas * font_size * 1.25 + 6`. La fila crece con el wrap — **nunca**
   dejar que un valor largo desborde la celda o la página.

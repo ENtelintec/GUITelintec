@@ -1,6 +1,6 @@
 # Pendientes — backend y front (todas las áreas)
 
-> Tracker general: solo listado con estado y link al doc que tiene la documentación completa. Cada ítem marca **[back]** / **[front]** (o ambos). Actualizado: 2026-08-07.
+> Tracker general: solo listado con estado y link al doc que tiene la documentación completa. Cada ítem marca **[back]** / **[front]** (o ambos). Actualizado: 2026-08-15.
 
 ## RH / Encuestas
 
@@ -51,14 +51,27 @@
 - [ ] **[front] Mandar `category` en el `POST` de anexos** — sin ella, una firma subida sin categoría explícita queda protegida solo por heurística de nombre. → [`remission_attachment_delete.md`](remission_attachment_delete.md)
 - [ ] **[front+back] Borrado de anexos en lote** — solo si el front agrega selección múltiple. → [`remission_attachment_delete.md`](remission_attachment_delete.md)
 
+## SGI (vouchers)
+
+- [ ] **[back] Variante combinada `?full=1` del PDF del checklist vehicular** (checklist + anexos + evidencia fotográfica, como remisiones). → [`checklist_vehicular_pdf.md`](checklist_vehicular_pdf.md)
+- [ ] **[back] Doble-codificación de `accessories`** en el alta del voucher vehicular (`json.dumps` en midleware y otro en el controller); el lector ya lo tolera, falta corregir el alta y normalizar datos. → [`checklist_vehicular_pdf.md`](checklist_vehicular_pdf.md)
+
 ## CDA (Control de Activos — vehículos)
 
 *Contexto: backend completo del FO-CDA-02 R3 ✅ verificado contra BD dev — [`control_vehiculos_cda.md`](control_vehiculos_cda.md).*
+
+- [ ] **[back+front] Captura de archivo de foto del vehículo** en su expediente de CDA (pedido al acordar el PDF del checklist: las siluetas del FO-CDA-03 son genéricas; la idea es adjuntar fotos reales). → [`checklist_vehicular_pdf.md`](checklist_vehicular_pdf.md)
 
 - [ ] **[front] Pantallas del módulo**: las 6 vistas (`/view/*`) + CRUD de vehículos/pólizas/servicios/llantas/multas/compras. → [`control_vehiculos_cda.md`](control_vehiculos_cda.md)
 - [x] ~~**[back] Import inicial desde el Excel real**~~ — hecho en dev (2026-08-05) con `scripts_db_handle/import_vehiculos_excel.py` (idempotente, `--dry`); 16 vehículos + 16 pólizas. Falta correrlo en prod cuando el módulo salga. → [`control_vehiculos_cda.md`](control_vehiculos_cda.md)
 - [ ] **[back] Recordatorios programados** (vencimiento de póliza / mantenimiento próximo / refrendo) — hoy solo se notifica alta/baja de vehículo. → [`control_vehiculos_cda.md`](control_vehiculos_cda.md)
 - [ ] **[back] Otros activos** bajo el namespace `/cda` (el siguiente tipo de activo que defina el negocio). → [`control_vehiculos_cda.md`](control_vehiculos_cda.md)
+
+## PDFs (transversal)
+
+*Contexto: tipografía Helvetica en todos los PDFs + tabla de items de la Remisión en cuadrícula ✅ — [`pdf_tipografia_helvetica_y_cuadricula_remision.md`](pdf_tipografia_helvetica_y_cuadricula_remision.md).*
+
+- [ ] **[back] Migrar los PDFs legacy de texto suelto a cuadrícula** (PO, vale EPP/herramienta, cotización, devolución de materiales) — hoy solo cambiaron de fuente. → [`pdf_tipografia_helvetica_y_cuadricula_remision.md`](pdf_tipografia_helvetica_y_cuadricula_remision.md)
 
 ## Compras / PO
 
