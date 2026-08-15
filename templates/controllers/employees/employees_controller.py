@@ -377,7 +377,7 @@ def get_all_data_employees(status: str):
     FROM sql_telintec.employees e
     LEFT JOIN sql_telintec.departments d
         ON e.department_id = d.department_id
-    LEFT JOIN sql_telintec.examenes_med em
+    LEFT JOIN sql_telintec_mod_rrhh.examenes_med em
         ON e.employee_id = em.empleado_id
     LEFT JOIN sql_telintec.users_system u
         ON e.employee_id = u.emp_id
@@ -413,15 +413,15 @@ def get_all_data_employee(id_employee: int, data_token):
         "employees.puesto, "
         "employees.status, "
         "employees.departure, "
-        "sql_telintec.examenes_med.examen_id, "
+        "sql_telintec_mod_rrhh.examenes_med.examen_id, "
         "employees.birthday, "
         "employees.legajo, "
         "employees.department_id "
         "FROM sql_telintec.employees "
         "LEFT JOIN sql_telintec.departments "
         "ON sql_telintec.employees.department_id = sql_telintec.departments.department_id "
-        "LEFT JOIN sql_telintec.examenes_med "
-        "ON (sql_telintec.employees.employee_id = sql_telintec.examenes_med.empleado_id)"
+        "LEFT JOIN sql_telintec_mod_rrhh.examenes_med "
+        "ON (sql_telintec.employees.employee_id = sql_telintec_mod_rrhh.examenes_med.empleado_id)"
         "WHERE employee_id = %s"
     )
     val = (id_employee,)

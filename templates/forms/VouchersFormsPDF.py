@@ -4,10 +4,17 @@ __date__ = "$ 26/ago/2025  at 15:30 $"
 
 import textwrap
 
+from reportlab.pdfbase.pdfmetrics import stringWidth
 from reportlab.pdfgen import canvas
 
 from static.constants import filepath_v_pdf
-from templates.forms.PDFGenerator import a4_x, a4_y, create_header_telintec
+from templates.forms.PDFGenerator import (
+    FONT_BOLD,
+    FONT_REGULAR,
+    a4_x,
+    a4_y,
+    create_header_telintec,
+)
 
 dict_types = {
     "0": {"label": "Vale de EPP", "value": 5},
@@ -66,7 +73,7 @@ def print_metadata(pdf, metadata, font_size=10, y_init=480, columns=2):
     :param columns:
     :return:
     """
-    pdf.setFont("Courier", font_size)
+    pdf.setFont(FONT_REGULAR, font_size)
     y_position = y_init
     x_position = 20
     separation = a4_x / columns
@@ -78,13 +85,13 @@ def print_metadata(pdf, metadata, font_size=10, y_init=480, columns=2):
             x_position = 20
         # pdf.drawString(x_position, y_position, f"{key}: {metadata[key]}")
         # Configurar la fuente en negrita para el key
-        pdf.setFont("Courier-Bold", font_size)
+        pdf.setFont(FONT_BOLD, font_size)
         pdf.drawString(x_position, y_position, f"{key}: ")
 
         # Restaurar la fuente normal para el valor
-        pdf.setFont("Courier", font_size)
+        pdf.setFont(FONT_REGULAR, font_size)
         pdf.drawString(
-            x_position + len(key) * font_size * 0.7, y_position, f"{metadata[key]}"
+            x_position + stringWidth(f"{key}: ", FONT_BOLD, font_size), y_position, f"{metadata[key]}"
         )
         x_position += separation
         count += 1
@@ -99,7 +106,7 @@ def print_headers_table_inventory(pdf, font_size=10, y_init=500, type_form="vouc
     :param font_size:
     :return:
     """
-    pdf.setFont("Courier-Bold", font_size)
+    pdf.setFont(FONT_BOLD, font_size)
     x_position = 20
     headers = list(dict_wrappers_headers[type_form].keys())
     for header_key in headers:
@@ -120,7 +127,7 @@ def print_headers_table_inventory(pdf, font_size=10, y_init=500, type_form="vouc
 def print_products_list(
     pdf, products, headers, font_size=8, y_last_headers=500.0, pages=1
 ):
-    pdf.setFont("Courier", font_size)
+    pdf.setFont(FONT_REGULAR, font_size)
     y_init = y_last_headers
     last_y = y_init
     limit_y = 10
@@ -134,7 +141,7 @@ def print_products_list(
             print_headers_table_inventory(pdf, y_init=535, type_form="voucher")
             y_init = 510
             last_y = y_init
-            pdf.setFont("Courier", font_size)
+            pdf.setFont(FONT_REGULAR, font_size)
         for index, key in enumerate(item):
             value = textwrap.wrap(
                 str(key),
@@ -162,10 +169,10 @@ def print_footer_page_count(pdf, page, font_size=6, right_text="", x_max=a4_x):
     :param font_size:
     :return:
     """
-    pdf.setFont("Courier", font_size)
+    pdf.setFont(FONT_REGULAR, font_size)
     pdf.drawString(5, 5, f"Página {page}")
     if right_text != "":
-        pdf.drawString(x_max - len(right_text) * font_size * 0.7, 5, right_text)
+        pdf.drawRightString(x_max - 5, 5, right_text)
 
 
 def print_footer_signing(
@@ -198,7 +205,7 @@ def print_footer_signing(
         pages += 1
     else:
         y_position = margin_bottom
-    pdf.setFont("Courier-Bold", font_size)
+    pdf.setFont(FONT_BOLD, font_size)
     x_start = 20
     # Imprimir etiquetas con líneas en blanco para rellenar
     labels = dict_signings_voucher.get(type_voucher, {}).get("labels", [])
@@ -212,7 +219,7 @@ def print_footer_signing(
         )
         print(dict_signings_voucher.get(type_voucher, {}).get("keys", [""])[i])
         pdf.drawString(
-            x_start + len(labels[i]) * font_size * 0.7, y_position, current_name
+            x_start + stringWidth(labels[i], FONT_BOLD, font_size) + 5, y_position, current_name
         )
         y_position -= font_size * 2.5
     return y_position - font_size * 2.5, pages

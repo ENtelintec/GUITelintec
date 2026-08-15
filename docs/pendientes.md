@@ -1,6 +1,6 @@
 # Pendientes — backend y front (todas las áreas)
 
-> Tracker general: solo listado con estado y link al doc que tiene la documentación completa. Cada ítem marca **[back]** / **[front]** (o ambos). Actualizado: 2026-08-07.
+> Tracker general: solo listado con estado y link al doc que tiene la documentación completa. Cada ítem marca **[back]** / **[front]** (o ambos). Actualizado: 2026-08-15.
 
 ## RH / Encuestas
 
@@ -15,14 +15,18 @@
 **Backend:**
 
 - [ ] **[back] Encuesta de salida (tipo 0)** — rúbrica cualitativa (`mode:"qualitative"`, captura + reporte sin score; chica). → [`encuestas_refactor.md`](encuestas_refactor.md)
-- [ ] **[back] Consolidar namespaces** de encuestas (`misc` + `rrhh` en uno). → [`encuestas_refactor.md`](encuestas_refactor.md)
+- [x] ~~**[back] Consolidar namespaces** de encuestas (`misc` + `rrhh` en uno)~~ — hecho (2026-08-07) en el lote S2 con la migración Fase 1: los 3 recursos de `misc` (`/task/quizz`, `/task/<emp_id>`, `/download/quizz/<type_q>`) ahora en `rrhh`, **corte duro** (viejas → 404), shapes/permisos idénticos; smoke completo verde vs dev. **El front debe cambiar el prefijo `misc`→`rrhh` en esas 3 rutas.** → [`consolidacion_namespaces_encuestas.md`](consolidacion_namespaces_encuestas.md)
+- [x] ~~**[back] Migración de esquema — Fase 1 (encuestas)**~~ — hecho (2026-08-07): DDL corrido en las 3 BDs (`tasks_gui` → `sql_telintec_mod_rrhh.quizz_tasks` + vista puente, conteos verificados), 7 literales + docstrings actualizados. → [`migracion_esquemas_rrhh.md`](migracion_esquemas_rrhh.md)
+- [ ] **[back] DROP de las 7 vistas puente** en las 3 BDs (`tasks_gui`, Paso 3 de `scripts_db_handle/migracion_quizz_tasks.sql`, + las 6 de Fase 2, bloque diferido de `migracion_fase2_rrhh.sql`) — **solo cuando prod ya corra el código del tren S2+Fase2** (un solo deploy, decidido 2026-08-07); mientras, las vistas mantienen vivo el código viejo. → [`migracion_esquemas_rrhh.md`](migracion_esquemas_rrhh.md)
+- [x] ~~**[back] Migración de esquema — Fase 2 (adelantada)**~~ — hecho (2026-08-07, mismo día que se adelantó por grill): las 5 tablas RRHH-privadas + `aptitude` a `mod_rrhh` en un lote; DDL corrido por el usuario en las 3 BDs (verificado: conteos vista=tabla, FKs cross-schema a `employees` intactas), barrido de los 89 reemplazos en 6 controllers, grep-cero, `pyrefly` sin errores nuevos, smoke verde vs dev (lecturas + ciclo de escritura en `bitacora_rh`). Mismo tren de deploy que S2. → [`migracion_esquemas_rrhh.md`](migracion_esquemas_rrhh.md)
+- [ ] **[back+front] Regresión Fase 2 + deploy del tren S2+Fase2**: el tester re-corre las secciones afectadas de la hoja (médicos/fichajes/bitácora/vacaciones/nómina) vs test **antes del deploy de prod**; tras la gracia post-deploy, el `DROP` diferido de las 7 vistas (ítem de arriba). El seed de `quizz_models` en prod ya quedó hecho por adelantado (2026-08-07). → [`migracion_esquemas_rrhh.md`](migracion_esquemas_rrhh.md)
 - [ ] **[back+front] Normalizar el shape de respuestas** de captura (eliminaría el adapter `flatten_responses`; coordinar con la UI de captura). → [`encuestas_refactor.md`](encuestas_refactor.md)
 - [ ] **[back] Rediseño del PDF de Norma 035** para leer `evaluation` directo (quita el shim `_legacy_shape_from_evaluation`; skill `pdf-design`). → [`encuestas_refactor.md`](encuestas_refactor.md)
 - [ ] **[back] PDF del agregado eva 360** (radar/tabla comparativa del proceso). → [`eva360_evaluation.md`](eva360_evaluation.md)
 - [ ] **[back] Borrar código muerto deprecado** (`calculate_results_quizzes` / `recommendations_results_quizzes`, sin callers). → [`encuestas_refactor.md`](encuestas_refactor.md)
 - [ ] **[back] Bugs pre-existentes de RRHH** (triar según lo que destape la comprobación): `PUT /employee/vacation` reusa el form de insert (`KeyError` latente en `prima`); `create_mail_payroll` sigue en SharePoint aunque nómina migró a S3 (→ [`payroll_s3_upload.md`](payroll_s3_upload.md)); CSVs de descarga con rutas relativas hardcodeadas, **sin quoting** (comas/saltos de línea en valores parten filas — caso real en dev) y sin apellido en employees (`l_name` no se escribe). → [`plan_rh_mes.md`](plan_rh_mes.md) (Riesgos) · [`rrhh_download_csv_unpack_fix.md`](rrhh_download_csv_unpack_fix.md)
 - [ ] **[back] PDFs dedicados por encuesta** según pida RH (el genérico ya cubre el resumen de cualquier tipo) + editor amigable de rúbricas si RH crea encuestas seguido. → [`quizz_models_crud.md`](quizz_models_crud.md)
-- [ ] **[back] Correr `quizz_models.sql` + seed en test/prod** al promover (dev ya está; recordar el `GRANT` del esquema nuevo al usuario de la app). → [`quizz_models_crud.md`](quizz_models_crud.md)
+- [x] ~~**[back] Seed de `quizz_models` en test/prod**~~ — hecho (2026-08-07): test con `--test` (flag nuevo; el primer intento corrió sin el flag y pegó contra dev, donde el seed idempotente salió todo SKIP) y prod adelantado al deploy (inócuo: el código viejo de prod no lee la tabla). Verificado en ambas: 5 modelos ACTIVA, Norma 035 `protected`; test desbloquea encuestas con `is_tester`. El `GRANT` del recordatorio resultó innecesario: el usuario de app en test/prod tiene privilegios globales (verificado con `SHOW GRANTS`). → [`quizz_models_crud.md`](quizz_models_crud.md)
 
 **Front:**
 
@@ -47,14 +51,27 @@
 - [ ] **[front] Mandar `category` en el `POST` de anexos** — sin ella, una firma subida sin categoría explícita queda protegida solo por heurística de nombre. → [`remission_attachment_delete.md`](remission_attachment_delete.md)
 - [ ] **[front+back] Borrado de anexos en lote** — solo si el front agrega selección múltiple. → [`remission_attachment_delete.md`](remission_attachment_delete.md)
 
+## SGI (vouchers)
+
+- [ ] **[back] Variante combinada `?full=1` del PDF del checklist vehicular** (checklist + anexos + evidencia fotográfica, como remisiones). → [`checklist_vehicular_pdf.md`](checklist_vehicular_pdf.md)
+- [ ] **[back] Doble-codificación de `accessories`** en el alta del voucher vehicular (`json.dumps` en midleware y otro en el controller); el lector ya lo tolera, falta corregir el alta y normalizar datos. → [`checklist_vehicular_pdf.md`](checklist_vehicular_pdf.md)
+
 ## CDA (Control de Activos — vehículos)
 
 *Contexto: backend completo del FO-CDA-02 R3 ✅ verificado contra BD dev — [`control_vehiculos_cda.md`](control_vehiculos_cda.md).*
+
+- [ ] **[back+front] Captura de archivo de foto del vehículo** en su expediente de CDA (pedido al acordar el PDF del checklist: las siluetas del FO-CDA-03 son genéricas; la idea es adjuntar fotos reales). → [`checklist_vehicular_pdf.md`](checklist_vehicular_pdf.md)
 
 - [ ] **[front] Pantallas del módulo**: las 6 vistas (`/view/*`) + CRUD de vehículos/pólizas/servicios/llantas/multas/compras. → [`control_vehiculos_cda.md`](control_vehiculos_cda.md)
 - [x] ~~**[back] Import inicial desde el Excel real**~~ — hecho en dev (2026-08-05) con `scripts_db_handle/import_vehiculos_excel.py` (idempotente, `--dry`); 16 vehículos + 16 pólizas. Falta correrlo en prod cuando el módulo salga. → [`control_vehiculos_cda.md`](control_vehiculos_cda.md)
 - [ ] **[back] Recordatorios programados** (vencimiento de póliza / mantenimiento próximo / refrendo) — hoy solo se notifica alta/baja de vehículo. → [`control_vehiculos_cda.md`](control_vehiculos_cda.md)
 - [ ] **[back] Otros activos** bajo el namespace `/cda` (el siguiente tipo de activo que defina el negocio). → [`control_vehiculos_cda.md`](control_vehiculos_cda.md)
+
+## PDFs (transversal)
+
+*Contexto: tipografía Helvetica en todos los PDFs + tabla de items de la Remisión en cuadrícula ✅ — [`pdf_tipografia_helvetica_y_cuadricula_remision.md`](pdf_tipografia_helvetica_y_cuadricula_remision.md).*
+
+- [ ] **[back] Migrar los PDFs legacy de texto suelto a cuadrícula** (PO, vale EPP/herramienta, cotización, devolución de materiales) — hoy solo cambiaron de fuente. → [`pdf_tipografia_helvetica_y_cuadricula_remision.md`](pdf_tipografia_helvetica_y_cuadricula_remision.md)
 
 ## Compras / PO
 

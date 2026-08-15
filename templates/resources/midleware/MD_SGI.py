@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 import json
+import os
+import tempfile
 from datetime import datetime, timedelta
 
 import boto3
@@ -23,6 +25,7 @@ from templates.controllers.vouchers.vouchers_controller import (
     delete_voucher_item,
     delete_voucher_tools,
     delete_voucher_vehicle,
+    get_voucher_vehicle_by_id,
     get_vouchers_safety_with_items,
     get_vouchers_tools_with_items_date,
     get_vouchers_vehicle_with_items,
@@ -37,6 +40,7 @@ from templates.controllers.vouchers.vouchers_controller import (
     update_voucher_vehicle_files,
     update_voucher_vehicle_status,
 )
+from templates.forms.VehicleChecklistPDF import FileVehicleChecklistPDF
 from templates.Functions_Utils import create_notification_permission_notGUI
 from templates.misc.Functions_Files import write_log_file
 
@@ -1084,3 +1088,169 @@ def download_voucher_vehicle_attachment_api(data, data_token):
                 "error": str(e),
             }, 400
     return {"path": data["filepath"]}, 200
+
+
+def _chv_json_field(value, default):
+    """Campo JSON del voucher vehicular: `accessories` llega doble-codificado
+    (un string JSON que contiene otro string JSON, así lo persiste el alta) y
+    `extra_info` simple — decodifica hasta dos veces y valida el tipo final."""
+    result = value
+    for _ in range(2):
+        if not isinstance(result, str):
+            break
+        try:
+            result = json.loads(result)
+        except (ValueError, TypeError):
+            return default
+    return result if isinstance(result, type(default)) else default
+
+
+def _chv_downscale_signature_image(local_path, max_width=600):
+    """Reduce la resolución de una firma grande para no engordar el PDF.
+    Devuelve la misma ruta (reescrita in-place o intacta); no fatal."""
+    try:
+        from PIL import Image
+
+        with Image.open(local_path) as img:
+            if img.width <= max_width:
+                return local_path
+            ratio = max_width / float(img.width)
+            new_size = (max_width, max(1, int(img.height * ratio)))
+            img.resize(new_size, Image.Resampling.LANCZOS).save(local_path)
+        return local_path
+    except Exception as e:
+        print("erro downscale chv signature", str(e))
+        return local_path
+
+
+def _chv_signature_from_files(files, marker, tmp_dir, data_token):
+    """
+    Busca en los attachments del voucher (``extra_info["files"]``) el último
+    cuyo nombre contiene ``marker`` (``firma-aprobado`` / ``firma-recibido``,
+    el mismo criterio con el que el alta mueve el status) y lo descarga de S3
+    para incrustarlo en el PDF. No fatal: sin match, attachment no dibujable
+    (pdf/zip) o falla de S3 -> None (el recuadro queda para firma a mano).
+    """
+    drawable = {"jpg", "jpeg", "png", "webp"}
+    chosen = None
+    for file in files:
+        if not isinstance(file, dict):
+            continue
+        filename = str(file.get("filename") or "")
+        ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
+        if marker in filename.lower() and ext in drawable and file.get("path"):
+            chosen = file  # el último gana: una re-subida corrige la firma
+    if chosen is None:
+        return None
+    try:
+        s3_client = boto3.client("s3")
+        local_path = os.path.join(
+            tmp_dir, f"{marker}_{os.path.basename(chosen['path'])}"
+        )
+        s3_client.download_file(
+            Bucket=str(secrets.get("S3_CH_BUCKET")),
+            Key=chosen["path"],
+            Filename=local_path,
+        )
+        return _chv_downscale_signature_image(local_path)
+    except Exception as e:
+        write_log_file(
+            log_file_sgi_chv,
+            f"No se pudo cargar la firma '{marker}' para el PDF del checklist: {str(e)}",
+            data_token,
+        )
+        return None
+
+
+def download_voucher_vehicle_pdf_api(id_voucher, data_token):
+    """
+    Genera el PDF del CHECK LIST VEHICULAR (FO-CDA-03 R3) de un voucher
+    vehicular y devuelve la ruta local para `send_file`. Sin ventana de fecha:
+    cualquier voucher existente es descargable. Las firmas se incrustan desde
+    S3 cuando existen (no fatal si faltan o fallan).
+    """
+    flag, error, result = get_voucher_vehicle_by_id(id_voucher, data_token)
+    if not flag:
+        return {
+            "data": None,
+            "msg": "No se pudo obtener el checklist vehicular",
+            "error": error,
+        }, 400
+    if not isinstance(result, tuple) or len(result) == 0:
+        return {
+            "data": None,
+            "msg": f"Checklist vehicular no encontrado (ID {id_voucher})",
+            "error": None,
+        }, 404
+
+    def si_no(value):
+        try:
+            value = int(value)
+        except (TypeError, ValueError):
+            return None
+        return value if value in (0, 1) else None
+
+    date_voucher = result[1]
+    fecha = (
+        date_voucher.strftime("%d/%m/%Y")
+        if hasattr(date_voucher, "strftime")
+        else str(date_voucher or "")
+    )
+    accessories = _chv_json_field(result[14], [])
+    extra_info = _chv_json_field(result[17], {})
+    files = extra_info.get("files", []) if isinstance(extra_info, dict) else []
+    if not isinstance(files, list):
+        files = []
+    try:
+        vehicle_type = int(result[15])
+    except (TypeError, ValueError):
+        vehicle_type = None
+    tmp_dir = tempfile.mkdtemp()
+    dict_data = {
+        "filename_out": os.path.join(tmp_dir, f"checklist_vehicular_{id_voucher}.pdf"),
+        "id_voucher": id_voucher,
+        "fecha_elaboracion": fecha,
+        "marca": result[5],
+        "modelo": result[6],
+        "color": result[7],
+        "anio": result[8],
+        "placas": result[9],
+        "kilometraje": result[10],
+        "tarjeta_circulacion": si_no(result[11]),
+        "poliza_seguro": si_no(result[12]),
+        "comprobante_refrendo": si_no(result[13]),
+        "accessories": accessories,
+        "vehicle_type": vehicle_type,
+        "observations": result[16],
+        "realizado": {
+            "name": result[19] or "",
+            "signature_path": _chv_signature_from_files(
+                files, "firma-aprobado", tmp_dir, data_token
+            ),
+        },
+        "recibido": {
+            "name": result[20] or "",
+            "signature_path": _chv_signature_from_files(
+                files, "firma-recibido", tmp_dir, data_token
+            ),
+        },
+    }
+    try:
+        FileVehicleChecklistPDF(dict_data)
+    except Exception as e:
+        write_log_file(
+            log_file_sgi_chv,
+            f"Error al generar el PDF del checklist vehicular {id_voucher}: {str(e)}",
+            data_token,
+        )
+        return {
+            "data": None,
+            "msg": "Error al generar el PDF del checklist vehicular",
+            "error": str(e),
+        }, 500
+    write_log_file(
+        log_file_sgi_chv,
+        f"PDF del checklist vehicular {id_voucher} generado por el empleado {data_token.get('name')}",
+        data_token,
+    )
+    return dict_data["filename_out"], 200

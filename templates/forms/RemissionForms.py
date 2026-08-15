@@ -2,18 +2,20 @@
 __author__ = "Edisson Naula"
 __date__ = "$ 08/jul/2026  at 17:30 $"
 
-import textwrap
-
 from reportlab.lib.utils import ImageReader
+from reportlab.pdfbase.pdfmetrics import stringWidth
 from reportlab.pdfgen import canvas
 
 from static.constants import filepath_remission_pdf
 from templates.forms.PDFGenerator import (
+    FONT_BOLD,
+    FONT_REGULAR,
     a4_x,
     a4_y,
     create_footer_sign,
     create_header_telintec,
     print_footer_page_count,
+    wrap_text_width,
 )
 
 # Celeste institucional para labels/encabezados (ver skill pdf-design).
@@ -35,13 +37,21 @@ _COMPANY_INFO_LINES = [
     "Representante Legal: Omar Ugarte",
 ]
 
-# Anclas de columna de la tabla de items (página vertical, ancho = a4_x).
-_RM_X_POS = 45
-_RM_X_DESC = 70
-_RM_X_CANT = 360
-_RM_X_UM = 395
-_RM_X_PUNIT = 480
-_RM_X_TOTAL = 565
+# Recuadro de metadata de la página 1 (a la derecha del bloque de la empresa).
+_RM_META_X = 330.0
+_RM_META_W = a4_x - _RM_META_X - _RM_MARGIN
+
+# Columnas de la tabla de items: (encabezado, ancho pt, alineación). Los anchos
+# suman el ancho útil (a4_x - 2 * _RM_MARGIN); DESCRIPCIÓN absorbe el resto.
+# El orden sigue las llaves del dict de cada item (ver FileRemissionPDF).
+_RM_ITEM_COLS = [
+    ("POS.", 32.0, "left"),
+    ("DESCRIPCIÓN", 258.27, "left"),
+    ("CANT.", 50.0, "right"),
+    ("UM", 40.0, "left"),
+    ("PRECIO UNIT.", 80.0, "right"),
+    ("TOTAL", 85.0, "right"),
+]
 
 
 def _draw_metadata_box(pdf, rows, x, y_top, width, font_size=9):
@@ -62,10 +72,10 @@ def _draw_metadata_box(pdf, rows, x, y_top, width, font_size=9):
         box_h = row_h * len(lines)
         pdf.rect(x, y - box_h, width, box_h, fill=0, stroke=1)
         label_y = y - font_size - 2
-        pdf.setFont("Courier-Bold", font_size)
+        pdf.setFont(FONT_BOLD, font_size)
         pdf.drawString(x + 5, label_y, f"{label}:")
-        pdf.setFont("Courier", font_size)
-        pdf.drawString(x + 5 + (len(label) + 1) * font_size * 0.6 + 4, label_y, str(lines[0]))
+        pdf.setFont(FONT_REGULAR, font_size)
+        pdf.drawString(x + 5 + stringWidth(f"{label}:", FONT_BOLD, font_size) + 5, label_y, str(lines[0]))
         line_y = label_y - row_h
         for extra in lines[1:]:
             pdf.drawString(x + 5, line_y, str(extra))
@@ -151,7 +161,7 @@ def FileRemissionPDF(dict_data: dict):
             orientation="vertical",
             offset_title=(0, 0),
         )
-        pdf.setFont("Courier", 8)
+        pdf.setFont(FONT_REGULAR, 8)
         text_y = 700.0
         for line in _COMPANY_INFO_LINES:
             pdf.drawString(30, text_y, line)
@@ -164,7 +174,7 @@ def FileRemissionPDF(dict_data: dict):
                 "Proyecto",
                 [
                     dict_data.get("project", ""),
-                    *textwrap.wrap(dict_data.get("project_description", "") or "", width=38),
+                    *wrap_text_width(dict_data.get("project_description", "") or "", _RM_META_W - 10, font_size),
                 ],
             ),
             ("No. Contrato Marco", dict_data.get("contract_marco", "")),
@@ -172,70 +182,75 @@ def FileRemissionPDF(dict_data: dict):
             ("No. Pedido", dict_data.get("pedido", "")),
             ("Remito", dict_data.get("remito", "")),
         ]
-        y_after_metadata = _draw_metadata_box(pdf, metadata_rows, 330, 700, a4_x - 330 - 25)
+        y_after_metadata = _draw_metadata_box(pdf, metadata_rows, _RM_META_X, 700, _RM_META_W)
         return min(text_y, y_after_metadata) - 20
 
     def print_column_headers(y):
-        pdf.setFillColorRGB(0.10, 0.45, 0.75)
-        pdf.rect(25, y - 4, a4_x - 50, font_size + 6, fill=1, stroke=0)
-        pdf.setFillColorRGB(1, 1, 1)
-        pdf.setFont("Courier-Bold", font_size - 1)
-        pdf.drawString(_RM_X_POS, y, "POS.")
-        pdf.drawString(_RM_X_DESC, y, "DESCRIPCION")
-        pdf.drawRightString(_RM_X_CANT, y, "CANT.")
-        pdf.drawString(_RM_X_UM, y, "UM")
-        pdf.drawRightString(_RM_X_PUNIT, y, "PRECIO UNIT.")
-        pdf.drawRightString(_RM_X_TOTAL, y, "TOTAL")
-        pdf.setFillColorRGB(0, 0, 0)
-        return y - font_size * 1.8
+        """Fila de encabezados de la tabla de items: celdas celestes (cuadrícula)."""
+        h = (font_size - 1) * 1.25 + 6
+        x = _RM_MARGIN
+        for name, w, align in _RM_ITEM_COLS:
+            _rm_draw_cell(pdf, x, y, w, h, [name], font_size - 1, bold=True, fill=True, align=align)
+            x += w
+        return y - h
 
-    def check_page_break(y, with_columns=False):
+    def check_page_break(y, needed=0.0, with_columns=False):
         nonlocal pages
-        if y < limit_y:
+        if y - needed < limit_y:
             print_footer_page_count(pdf, pages, right_text=f"Folio: {dict_data.get('folio', '')}", x_max=a4_x)
             pdf.showPage()
             pages += 1
             y = draw_header_and_metadata()
             if with_columns:
                 y = print_column_headers(y)
-                pdf.setFont("Courier", font_size - 1)
             return y
         return y
 
     last_y = draw_header_and_metadata()
     last_y = print_column_headers(last_y)
 
-    pdf.setFont("Courier", font_size - 1)
     items = dict_data.get("items", [])
     for item in items:
-        last_y = check_page_break(last_y, with_columns=True)
-        description_lines = textwrap.wrap(str(item.get("description", "")), width=42)
         quantity = item.get("quantity", 0) or 0
         unit_price = item.get("unit_price", 0) or 0
         line_total = item.get("line_total", 0) or 0
-        row_y = last_y
-        pdf.drawString(_RM_X_POS, row_y, str(item.get("pos", "") or ""))
-        pdf.drawString(_RM_X_UM, row_y, str(item.get("udm", "") or ""))
-        pdf.drawRightString(_RM_X_CANT, row_y, f"{quantity:g}")
-        pdf.drawRightString(_RM_X_PUNIT, row_y, f"${unit_price:,.2f}")
-        pdf.drawRightString(_RM_X_TOTAL, row_y, f"${line_total:,.2f}")
-        for line in description_lines or [""]:
-            pdf.drawString(_RM_X_DESC, last_y, line)
-            last_y -= font_size * 1.3
-        last_y -= font_size * 0.4
-        pdf.setLineWidth(0.3)
-        pdf.line(25, last_y + font_size * 0.9, a4_x - 25, last_y + font_size * 0.9)
+        cells = [
+            [str(item.get("pos", "") or "")],
+            wrap_text_width(item.get("description", ""), _RM_ITEM_COLS[1][1] - 8, font_size - 1),
+            [f"{quantity:g}"],
+            [str(item.get("udm", "") or "")],
+            [f"${unit_price:,.2f}"],
+            [f"${line_total:,.2f}"],
+        ]
+        row_h = max(len(lines) for lines in cells) * (font_size - 1) * 1.25 + 6
+        last_y = check_page_break(last_y, needed=row_h, with_columns=True)
+        x = _RM_MARGIN
+        for (_, w, align), lines in zip(_RM_ITEM_COLS, cells):
+            _rm_draw_cell(pdf, x, last_y, w, row_h, lines, font_size - 1, align=align)
+            x += w
+        last_y -= row_h
 
-    last_y = check_page_break(last_y - font_size)
-    pdf.setFont("Courier-Bold", font_size)
-    pdf.drawString(_RM_X_DESC, last_y, f"TOTAL POS. {len(items)}")
-    pdf.drawRightString(_RM_X_TOTAL, last_y, f"SUBTOTAL ${dict_data.get('subtotal', 0.0):,.2f}")
-    last_y -= font_size * 1.6
+    # Totales como continuación de la cuadrícula: label celeste sobre la columna
+    # PRECIO UNIT. y monto sobre la columna TOTAL; el conteo de partidas a la izquierda.
+    totals_x = _RM_MARGIN + sum(w for _, w, _ in _RM_ITEM_COLS[:4])
+    totals_h = font_size * 1.25 + 6
     iva_rate = dict_data.get("iva_rate", 0.16)
-    pdf.drawRightString(_RM_X_TOTAL, last_y, f"IVA ({iva_rate:.0%}) ${dict_data.get('iva', 0.0):,.2f}")
-    last_y -= font_size * 1.6
-    pdf.drawRightString(_RM_X_TOTAL, last_y, f"TOTAL ${dict_data.get('total', 0.0):,.2f}")
-    last_y -= font_size * 5
+    totals_rows = [
+        ("SUBTOTAL", dict_data.get("subtotal", 0.0)),
+        (f"IVA ({iva_rate:.0%})", dict_data.get("iva", 0.0)),
+        ("TOTAL", dict_data.get("total", 0.0)),
+    ]
+    last_y = check_page_break(last_y, needed=3 * totals_h)
+    pdf.setFont(FONT_BOLD, font_size)
+    pdf.drawString(_RM_MARGIN, last_y - font_size - 3, f"TOTAL POS. {len(items)}")
+    for label, amount in totals_rows:
+        _rm_draw_cell(pdf, totals_x, last_y, _RM_ITEM_COLS[4][1], totals_h, [label], font_size, bold=True, fill=True)
+        _rm_draw_cell(
+            pdf, totals_x + _RM_ITEM_COLS[4][1], last_y, _RM_ITEM_COLS[5][1], totals_h,
+            [f"${amount:,.2f}"], font_size, align="right",
+        )
+        last_y -= totals_h
+    last_y -= font_size * 4
 
     # Firmas: si el midleware bajó de S3 una firma (category=firma) se incrusta
     # arriba de la línea; si no, la línea queda para firmar a mano.
@@ -257,9 +272,10 @@ def FileRemissionPDF(dict_data: dict):
     return True
 
 
-def _rm_draw_cell(pdf, x, y_top, w, h, lines, font_size, bold=False, fill=False):
+def _rm_draw_cell(pdf, x, y_top, w, h, lines, font_size, bold=False, fill=False, align="left"):
     """Celda de cuadrícula estilo casa (ver skill pdf-design): recuadro, texto
-    con padding y (opcional) relleno celeste para labels/encabezados."""
+    con padding y (opcional) relleno celeste para labels/encabezados.
+    ``align="right"`` alinea el texto al borde derecho (columnas numéricas)."""
     pdf.setLineWidth(0.6)
     if fill:
         pdf.setFillColorRGB(*_RM_CELESTE)
@@ -267,10 +283,13 @@ def _rm_draw_cell(pdf, x, y_top, w, h, lines, font_size, bold=False, fill=False)
         pdf.setFillColorRGB(0, 0, 0)  # SIEMPRE restaurar a negro
     else:
         pdf.rect(x, y_top - h, w, h, fill=0, stroke=1)
-    pdf.setFont("Courier-Bold" if bold else "Courier", font_size)
+    pdf.setFont(FONT_BOLD if bold else FONT_REGULAR, font_size)
     text_y = y_top - font_size - 3
     for line in lines:
-        pdf.drawString(x + 4, text_y, line)
+        if align == "right":
+            pdf.drawRightString(x + w - 4, text_y, line)
+        else:
+            pdf.drawString(x + 4, text_y, line)
         text_y -= font_size * 1.25
 
 
@@ -291,10 +310,8 @@ def _rm_draw_photo_metadata(pdf, rows, y_top, usable_w, font_size):
         for pi, (label, value) in enumerate(pairs):
             if str(label) == "" and str(value) == "":
                 continue
-            lw_chars = max(1, int((label_w - 8) / (font_size * 0.6)))
-            vw_chars = max(1, int((value_w - 8) / (font_size * 0.6)))
-            l_lines = textwrap.wrap(str(label), width=lw_chars) or [""]
-            v_lines = textwrap.wrap(str(value), width=vw_chars) or [""]
+            l_lines = wrap_text_width(label, label_w - 8, font_size, font=FONT_BOLD)
+            v_lines = wrap_text_width(value, value_w - 8, font_size)
             wrapped[pi] = (l_lines, v_lines)
             max_lines = max(max_lines, len(l_lines), len(v_lines))
         row_h = max_lines * font_size * 1.25 + 6

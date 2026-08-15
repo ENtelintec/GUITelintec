@@ -4,9 +4,10 @@ Midleware del proceso Eva 360.
 
 Un proceso eva 360 = 1 task de CONTROL (asignada a RH, guarda expected_roles y
 status_eval) + N tasks de EVALUADOR (una por rol: self|superior|peer|subordinate),
-todas sobre `tasks_gui` y ligadas por `metadata.evaluation_id` (UUID generado
+todas sobre `sql_telintec_mod_rrhh.quizz_tasks` y ligadas por
+`metadata.evaluation_id` (UUID generado
 aqui). Cada evaluador llena su task por el CRUD de encuestas existente
-(`PUT /misc/task/quizz`); la agregacion del resultado vive en
+(`PUT /rrhh/task/quizz`); la agregacion del resultado vive en
 `quizz_eval_engine.evaluate_eva360`.
 
 Una perspectiva cuenta como respondida solo cuando TODAS las competencias de la
@@ -49,7 +50,7 @@ def _is_answered(data_raw, rubric_items):
 
 
 def _parse_rows(result):
-    """Filas de tasks_gui -> (control | None, raters[]). Cada entrada trae
+    """Filas de quizz_tasks -> (control | None, raters[]). Cada entrada trae
     id, body, data_raw y metadata ya parseados."""
     control = None
     raters = []

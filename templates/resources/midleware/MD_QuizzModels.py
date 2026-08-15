@@ -7,7 +7,7 @@ quizz_eval_engine). Ver Docs/quizz_models_crud.md.
 
 Ciclo de vida (status): 0 BORRADOR (todo editable, no contestable) ->
 1 ACTIVA (contestable; template BLOQUEADO: las respuestas guardadas en
-tasks_gui son indices contra el template vivo — no hay snapshot — y editarlo
+quizz_tasks son indices contra el template vivo — no hay snapshot — y editarlo
 las corrompe en silencio) -> 2 ARCHIVADA (oculta, historial sigue evaluable,
 reactivable). La rubrica y el nombre siguen editables en 1/2: re-evaluar el
 historial con una rubrica corregida es deseable (la evaluacion es on-read).
@@ -604,8 +604,8 @@ def get_quizz_models_catalogs_api():
 
 
 def get_quizz_template_api(type_q, data_token):
-    """Template para la captura (compat de GET /misc/download/quizz/<type_q>:
-    mismo shape de respuesta que cuando leia el archivo). Sirve cualquier
+    """Template para la captura (GET /rrhh/download/quizz/<type_q>, antes en
+    misc; mismo shape de respuesta que cuando leia el archivo). Sirve cualquier
     status: la disponibilidad para contestar la controla create_task."""
     flag, error, row = get_quizz_model_template_db(type_q, data_token)
     if not flag:

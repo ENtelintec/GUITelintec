@@ -25,7 +25,7 @@ def create_task(task_title, emp_destiny, emp_origin, task_date, metadata, dict_q
     }
     data_raw = {}
     sql = (
-        "INSERT INTO sql_telintec.tasks_gui (body, timestamp, data_raw) "
+        "INSERT INTO sql_telintec_mod_rrhh.quizz_tasks (body, timestamp, data_raw) "
         "VALUES (%s, %s, %s)"
     )
     val = (json.dumps(body), timestamp, json.dumps(data_raw))
@@ -44,7 +44,7 @@ def update_task(id_task, body: dict, data_token, status=None, metadata=None, dat
     changes.append({"action": "update", "timestamp": timestamp})
     data_raw = data_raw if data_raw is not None else {}
     sql = (
-        "UPDATE sql_telintec.tasks_gui "
+        "UPDATE sql_telintec_mod_rrhh.quizz_tasks "
         "SET body = %s, "
         "timestamp = %s, "
         "data_raw = %s "
@@ -56,7 +56,7 @@ def update_task(id_task, body: dict, data_token, status=None, metadata=None, dat
 
 
 def delete_task(id_task, data_token):
-    sql = "DELETE FROM sql_telintec.tasks_gui " "WHERE id = %s"
+    sql = "DELETE FROM sql_telintec_mod_rrhh.quizz_tasks " "WHERE id = %s"
     val = (id_task,)
     flag, error, out = execute_sql(sql, val, 3, data_token)
     return flag, error, out
@@ -69,7 +69,7 @@ def get_all_tasks_by_status(
         status = "%"
     sql = (
         "SELECT id, body, data_raw, timestamp "
-        "FROM sql_telintec.tasks_gui "
+        "FROM sql_telintec_mod_rrhh.quizz_tasks "
         "WHERE body->'$.status' LIKE %s "
     )
     vals = (status,)
@@ -95,7 +95,7 @@ def get_tasks_by_eva360_group(evaluation_id, data_token):
     ligadas por metadata.evaluation_id."""
     sql = (
         "SELECT id, body, data_raw, timestamp "
-        "FROM sql_telintec.tasks_gui "
+        "FROM sql_telintec_mod_rrhh.quizz_tasks "
         "WHERE body->>'$.metadata.evaluation_id' = %s "
     )
     vals = (evaluation_id,)
@@ -106,7 +106,7 @@ def get_tasks_by_eva360_group(evaluation_id, data_token):
 def get_task_by_id_emp(id_emp, data_token):
     sql = (
         "SELECT id, body, data_raw, timestamp "
-        "FROM sql_telintec.tasks_gui "
+        "FROM sql_telintec_mod_rrhh.quizz_tasks "
         "WHERE body->'$.emp_destiny' = %s "
     )
     vals = (id_emp,)

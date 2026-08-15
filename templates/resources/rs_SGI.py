@@ -44,6 +44,7 @@ from templates.resources.midleware.MD_SGI import (
     delete_voucher_tools_api,
     delete_voucher_vehicle_api,
     download_voucher_vehicle_attachment_api,
+    download_voucher_vehicle_pdf_api,
     get_vouchers_safety_api,
     get_vouchers_tools_api,
     get_vouchers_vehicle_api,
@@ -330,6 +331,22 @@ class DownloadVehicleVoucherAttachment(Resource):
             return send_file(data_out["path"], as_attachment=True)
         else:
             return {"data": None, "msg": "Error al descargar el archivo", "error": str(data_out)}, 400
+
+
+@ns.route("/voucher/vehicle/download/pdf/<int:id_voucher>")
+class DownloadVehicleChecklistPDF(Resource):
+    @ns.expect(expected_headers_per)
+    def get(self, id_voucher):
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["sgi", "voucher"]
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        # 200 -> blob del PDF (FO-CDA-03 R3); 4xx/5xx -> envelope {data, msg, error}
+        data_out, code = download_voucher_vehicle_pdf_api(id_voucher, data_token)
+        if code == 200:
+            return send_file(data_out, as_attachment=True)  # pyrefly: ignore
+        return data_out, code
 
 
 @ns.route("/voucher/epp/attachment-<string:id_voucher>")

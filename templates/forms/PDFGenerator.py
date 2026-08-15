@@ -5,6 +5,7 @@ __date__ = "$ 14/feb./2024  at 15:54 $"
 import json
 import textwrap
 
+from reportlab.pdfbase.pdfmetrics import stringWidth
 from reportlab.pdfgen import canvas
 
 from static.constants import filepath_settings
@@ -12,6 +13,48 @@ from static.constants import filepath_settings
 a4_x = 595.27
 a4_y = 841.89
 image_logo = "img/logo_docs.png"
+
+# Tipografía de la casa: sans-serif contemporánea. Antes era Courier
+# (monospace); como Helvetica es proporcional, el wrapping y las posiciones
+# derivadas del texto se calculan con el ancho real (stringWidth /
+# wrap_text_width), no con conteo de caracteres.
+FONT_REGULAR = "Helvetica"
+FONT_BOLD = "Helvetica-Bold"
+
+
+def wrap_text_width(value, width_pt, font_size, font=FONT_REGULAR):
+    """
+    Word-wrap por ancho real en puntos (``pdfmetrics.stringWidth``), apto para
+    fuentes proporcionales. Una palabra sola más ancha que ``width_pt`` se
+    parte por caracteres. Devuelve siempre al menos una línea (puede ser "").
+    """
+    text = "" if value is None else str(value)
+    if width_pt <= 0:
+        return [text]
+    lines = []
+    for raw_line in text.splitlines() or [""]:
+        words = raw_line.split()
+        if not words:
+            lines.append("")
+            continue
+        current = ""
+        for word in words:
+            candidate = f"{current} {word}" if current else word
+            if stringWidth(candidate, font, font_size) <= width_pt:
+                current = candidate
+                continue
+            if current:
+                lines.append(current)
+            piece = ""
+            for char in word:
+                if piece and stringWidth(piece + char, font, font_size) > width_pt:
+                    lines.append(piece)
+                    piece = char
+                else:
+                    piece += char
+            current = piece
+        lines.append(current)
+    return lines or [""]
 
 
 def create_datos_personales(
@@ -27,7 +70,7 @@ def create_datos_personales(
     dim_y,
 ):
     pady = 0
-    master.setFont("Courier-Bold", 10)
+    master.setFont(FONT_BOLD, 10)
     master.drawString(dim_x + 10, dim_y - 25 - pady, "Nombre y firma del empleado:")
     master.drawString(dim_x + 10, dim_y - 40 - pady, "Puesto:")
     master.drawString(dim_x + 10, dim_y - 55 - pady, "Terminal:")
@@ -35,7 +78,7 @@ def create_datos_personales(
     master.drawString(dim_x + 10, dim_y - 85 - pady, "Fecha de fin:")
     master.drawString(dim_x + 10, dim_y - 100 - pady, "De entrevista:")
     master.drawString(dim_x + 10, dim_y - 115 - pady, "Nombre y firma del entrevistador:")
-    master.setFont("Courier", 10)
+    master.setFont(FONT_REGULAR, 10)
     master.drawString(dim_x + 180, dim_y - 25 - pady, emp)
     master.drawString(dim_x + 60, dim_y - 40 - pady, puesto)
     master.drawString(dim_x + 70, dim_y - 55 - pady, term)
@@ -54,10 +97,10 @@ def print_footer_page_count(pdf, page, font_size=6, right_text="", x_max=a4_x):
     :param font_size:
     :return:
     """
-    pdf.setFont("Courier", font_size)
+    pdf.setFont(FONT_REGULAR, font_size)
     pdf.drawString(5, 5, f"Página {page}")
     if right_text != "":
-        pdf.drawString(x_max - len(right_text) * font_size * 0.7, 5, right_text)
+        pdf.drawRightString(x_max - 5, 5, right_text)
 
 
 def display_result(master: canvas.Canvas, dict_quizz, dim_x, dim_y):
@@ -187,7 +230,7 @@ def create_header_telintec(
     )
     if isinstance(title, str):
         title = title.upper()
-        master.setFont("Courier-Bold", title_height)
+        master.setFont(FONT_BOLD, title_height)
         master.drawCentredString(
             page_x / 2 + offset_title[0],
             position_header_y + height_logo / 2 - title_height / 2 + offset_title[1],
@@ -200,10 +243,10 @@ def create_header_telintec(
         y_title = (position_header_y + height_logo / 2 + ((nlines - 1) * title_height) / 2) + offset_title[1]
         # pyrefly: ignore [bad-argument-type]
         for index, line in enumerate(title):
-            master.setFont("Courier-Bold", title_height - 2 * index)
+            master.setFont(FONT_BOLD, title_height - 2 * index)
             master.drawCentredString(x_title, y_title, line)
             y_title -= title_height
-    master.setFont("Courier", codes_h_height)
+    master.setFont(FONT_REGULAR, codes_h_height)
     settings = json.load(open(filepath_settings, "r"))
     dict_codes_forms = settings["formats"]["dict_codes_forms"]
     master.drawString(
@@ -307,7 +350,7 @@ def create_header_materials(
     )
     if isinstance(title, str):
         title = title.upper()
-        master.setFont("Courier-Bold", title_height)
+        master.setFont(FONT_BOLD, title_height)
         master.drawCentredString(
             page_x / 2,
             position_header_y + height_logo / 2 - title_height / 2,
@@ -320,10 +363,10 @@ def create_header_materials(
         y_title = position_header_y + height_logo / 2 + ((nlines - 1) * title_height) / 2
         # pyrefly: ignore [bad-argument-type]
         for index, line in enumerate(title):
-            master.setFont("Courier-Bold", title_height - 2 * index)
+            master.setFont(FONT_BOLD, title_height - 2 * index)
             master.drawCentredString(x_title, y_title, line)
             y_title -= title_height
-    master.setFont("Courier", codes_h_height)
+    master.setFont(FONT_REGULAR, codes_h_height)
     settings = json.load(open(filepath_settings, "r"))
     dict_codes_forms = settings["formats"]["dict_codes_forms"]
     master.drawString(
@@ -332,7 +375,7 @@ def create_header_materials(
         f"Codigo: {dict_codes_forms[str(type_form)]}",
     )
     dict_dates = settings["formats"]["dates_emision"]
-    master.setFont("Courier", 8)
+    master.setFont(FONT_REGULAR, 8)
     master.drawString(
         page_x - codes_width - padx * 1.2,
         position_header_y,
@@ -341,14 +384,14 @@ def create_header_materials(
     # --------------------------------datos quien devuelve------------------------------------
     font_size = 10
     position_header_y -= font_size * 1.5
-    master.setFont("Courier-Bold", font_size)
+    master.setFont(FONT_BOLD, font_size)
     master.drawString(
         position_header_x,
         position_header_y - 10,
         "Datos del empleado que realiza la devolución",
     )
     position_header_y -= font_size * 2.5
-    master.setFont("Courier", font_size)
+    master.setFont(FONT_REGULAR, font_size)
     master.drawString(position_header_x, position_header_y, f"Nombre:  {info_dict['emp_name']}")
     master.drawString(
         position_header_x,
@@ -362,10 +405,10 @@ def create_header_materials(
         f"Lugar:  {info_dict['lugar']}",
     )
     position_header_y -= font_size * 3.5
-    master.setFont("Courier-Bold", font_size)
+    master.setFont(FONT_BOLD, font_size)
     master.drawString(position_header_x, position_header_y, "Datos del quien recibe la devolucion")
     position_header_y -= font_size * 2.5
-    master.setFont("Courier", font_size)
+    master.setFont(FONT_REGULAR, font_size)
     master.drawString(
         position_header_x,
         position_header_y,
@@ -402,16 +445,16 @@ def create_info_materials_request(
         column = 0 if index < nrows else 1
         position_header_y = y_init if index % nrows == 0 else position_header_y
         index_y = index % nrows
-        master.setFont("Courier-Bold", font_size)
+        master.setFont(FONT_BOLD, font_size)
         master.drawString(
             position_header_x + (page_x / 2 - 20) * column,
             position_header_y,
             f"{key.upper()}:",
         )
 
-        master.setFont("Courier", font_size)
+        master.setFont(FONT_REGULAR, font_size)
         master.drawString(
-            position_header_x + len(key) * font_size * 0.7 + (page_x / 2 - 20) * column,
+            position_header_x + stringWidth(f"{key.upper()}:", FONT_BOLD, font_size) + 5 + (page_x / 2 - 20) * column,
             position_header_y,
             f"{info_dict[key]}",
         )
@@ -432,11 +475,11 @@ def draw_option(x, y, k, options, answers, pdf):
 
 
 def create_footer_sign(pdf, position_x, position_y, text="Firma"):
-    pdf.setFont("Courier", 10)
+    pdf.setFont(FONT_REGULAR, 10)
     pdf.drawString(position_x, position_y, text)
     pdf.line(
         position_x - 20,
         position_y + 15,
-        position_x + len(text) * 10 * 0.65 + 20,
+        position_x + stringWidth(text, FONT_REGULAR, 10) + 20,
         position_y + 15,
     )
