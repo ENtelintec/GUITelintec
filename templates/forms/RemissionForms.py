@@ -326,12 +326,22 @@ def _rm_draw_photo_metadata(pdf, rows, y_top, usable_w, font_size):
     return y
 
 
-def _rm_draw_photo_cell(pdf, img_path, x, y_top, w, h, pad=6.0):
+def _rm_draw_photo_cell(pdf, img_path, x, y_top, w, h, pad=6.0, title="", font_size=8):
     """
     Dibuja el recuadro de una foto y la imagen ajustada dentro preservando
-    aspect ratio, centrada. No fatal: si la imagen no se puede leer, deja el
-    recuadro vacío.
+    aspect ratio, centrada. Con ``title`` no vacío agrega una franja de caption
+    (cuadrícula) bajo la foto, máx. 2 líneas; sin title la celda queda como
+    siempre. No fatal: si la imagen no se puede leer, deja el recuadro vacío.
     """
+    title = (title or "").strip()
+    if title:
+        cap_lines = wrap_text_width(title, w - 12, font_size)
+        if len(cap_lines) > 2:
+            cap_lines = cap_lines[:2]
+            cap_lines[1] = cap_lines[1][:-2] + "…"
+        cap_h = len(cap_lines) * font_size * 1.25 + 6
+        _rm_draw_cell(pdf, x + 2, y_top - h + 2 + cap_h, w - 4, cap_h, cap_lines, font_size)
+        h = h - cap_h - 2
     pdf.setLineWidth(0.6)
     pdf.rect(x + 2, y_top - h + 2, w - 4, h - 4, fill=0, stroke=1)
     try:
@@ -369,7 +379,8 @@ def FileRemissionPhotosPDF(dict_data: dict):
             "location": str,
             "folio": str,                 # folio general (fallback)
             "photos": [
-                {"path": str, "folio": str},   # rutas locales ya descargadas
+                # rutas locales ya descargadas; title opcional -> caption bajo la foto
+                {"path": str, "folio": str, "title": str},
                 ...
             ],
         }
@@ -420,7 +431,16 @@ def FileRemissionPhotosPDF(dict_data: dict):
             c = idx % cols
             cell_x = _RM_MARGIN + c * col_w
             cell_top = y_grid_top - r * row_h
-            _rm_draw_photo_cell(pdf, p.get("path"), cell_x, cell_top, col_w, row_h)
+            _rm_draw_photo_cell(
+                pdf,
+                p.get("path"),
+                cell_x,
+                cell_top,
+                col_w,
+                row_h,
+                title=p.get("title") or "",
+                font_size=8,
+            )
         print_footer_page_count(pdf, page_idx, right_text=f"Folio: {folio_txt}", x_max=a4_x)
         if page_idx < total_pages:
             pdf.showPage()

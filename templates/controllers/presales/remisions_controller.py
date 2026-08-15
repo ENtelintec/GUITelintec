@@ -97,6 +97,19 @@ def update_quotation_activity(
     return flag, e, out
 
 
+def update_quotation_activity_status(qa_id: int, status: int, history: list, data_token):
+    # Cambio de estatus puntual: solo status + history, sin reenviar la fila
+    # entera (evita pisar columnas con datos viejos del cliente).
+    sql = (
+        "UPDATE sql_telintec_mod_admin.quotations_activities "
+        "SET status=%s, history=%s "
+        "WHERE qa_id=%s"
+    )
+    val = (status, json.dumps(history), qa_id)
+    flag, e, out = execute_sql(sql, val, 3, data_token)
+    return flag, e, out
+
+
 def delete_quotation_activity(qa_id: int, data_token):
     sql = "DELETE FROM sql_telintec_mod_admin.quotations_activities WHERE qa_id=%s"
     val = (qa_id,)
@@ -255,7 +268,7 @@ def insert_quotation_activity_item(
 def update_quotation_activity_item(
     qa_item_id: int,
     quotation_id: int | None,
-    report_id: int,
+    report_id: int | None,
     item_c_id: int | None,
     description: str,
     udm: str,
@@ -332,6 +345,10 @@ def get_quotation_activity_by_id(id_quotation, data_token):
         "qa.comments, "
         "qa.status, "
         "qa.history, "
+        # JSON_ARRAYAGG con LEFT JOIN sin items da [null] (si agrega el NULL,
+        # a diferencia de casi todos los agregados); decidir por conteo evita
+        # el TypeError rio arriba. Mismo patron que get_remission_by_id.
+        "IF(COUNT(qai.qa_item_id) = 0, JSON_ARRAY(), "
         "JSON_ARRAYAGG("
         "JSON_OBJECT("
         " 'qa_item_id', qai.qa_item_id, "
@@ -345,7 +362,7 @@ def get_quotation_activity_by_id(id_quotation, data_token):
         " 'line_total', qai.line_total, "
         " 'history', qai.history, "
         " 'extra_info', qai.extra_info "
-        ")) AS items "
+        "))) AS items "
         "FROM sql_telintec_mod_admin.quotations_activities AS qa "
         "LEFT JOIN sql_telintec_mod_admin.quotation_activity_items AS qai ON qa.qa_id = qai.quotation_id "
         "WHERE( qa.qa_id = %s  OR %s IS NULL)"
@@ -360,7 +377,16 @@ def get_quotation_activity_by_id(id_quotation, data_token):
     return flag, e, out
 
 
-def get_remission_by_id(id_report: int | None, data_token):
+def get_remission_by_id(
+    id_report: int | None,
+    data_token,
+    date_from: str | None = None,
+    date_to: str | None = None,
+    month_period: str | None = None,
+    general_status: int | None = None,
+):
+    # Filtros opcionales (param-or-NULL): sin filtros la query es identica a la
+    # historica, asi los demas call sites no cambian de comportamiento.
     sql = """
     SELECT 
         ar.id, 
@@ -406,9 +432,19 @@ def get_remission_by_id(id_report: int | None, data_token):
         LEFT JOIN sql_telintec_mod_admin.quotation_activity_items AS qai ON ar.id = qai.report_id
         LEFT JOIN sql_telintec_mod_admin.quotation_items AS qi ON qi.id = qai.item_c_id
         WHERE( ar.id = %s  OR %s IS NULL)
+        AND (DATE(ar.date) >= %s OR %s IS NULL)
+        AND (DATE(ar.date) <= %s OR %s IS NULL)
+        AND (JSON_UNQUOTE(JSON_EXTRACT(ar.extra_info, '$.month_period')) = %s OR %s IS NULL)
+        AND (CAST(JSON_UNQUOTE(JSON_EXTRACT(ar.extra_info, '$.general_status')) AS SIGNED) = %s OR %s IS NULL)
         GROUP BY ar.id"""
 
-    val = (id_report, id_report)
+    val = (
+        id_report, id_report,
+        date_from, date_from,
+        date_to, date_to,
+        month_period, month_period,
+        general_status, general_status,
+    )
     flag, e, out = (
         execute_sql(sql, val, 1, data_token)
         if id_report is not None

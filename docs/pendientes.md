@@ -44,12 +44,14 @@
 
 ## Remisiones (admin/collections)
 
-- [ ] **[back] Bug latente `[null]`**: `get_quotation_activity_by_id` tiene el mismo `JSON_ARRAYAGG` sin proteger que ya se arregló en remisiones → `TypeError`/500 en `update_quotation_activity_from_api` con cotización de actividad sin items. → [`remission_items_json_remove_fix.md`](remission_items_json_remove_fix.md)
-- [ ] **[back] PDF combinado**: pre-llenar el `title` del anexo en el documento (se guarda pero no se imprime). → [`remission_combined_pdf.md`](remission_combined_pdf.md)
+- [x] ~~**[back] Bug latente `[null]`** en `get_quotation_activity_by_id`~~ — hecho (2026-08-15): `IF(COUNT...)` aplicado, y de paso toda la actividad de cotización quedó sana: el `PUT` era **append-only** (leía `id`/`client_id` en vez de `qa_item_id`/`item_contract_id` del form → siempre creaba, nunca actualizaba/borraba), `PUT /activity/ChangeStatus` era 500 siempre (`KeyError`), FK de `item_c_id` con el default 0, rollback del POST roto, QA sin items ahora actualizable/borrable, 404s. Verificado ciclo completo vs BD dev (22 checks). → [`quotation_activity_upsert_null_fix.md`](quotation_activity_upsert_null_fix.md)
+- [x] ~~**[back] PDF combinado**: pre-llenar el `title` del anexo~~ — hecho (2026-08-15): solo en páginas generadas — caption bajo cada foto (máx. 2 líneas) y banner celeste en la página A4 del anexo-imagen; anexos PDF intactos; sin `title`, todo queda como antes. → [`remission_combined_pdf.md`](remission_combined_pdf.md)
+- [ ] **[front] Mandar `qa_item_id` e `item_contract_id`** (no `id`/`client_id`) en los items del `PUT /activity/quotation` — con `id` los items se duplican en cada guardado; el PUT sigue sin devolver los `qa_item_id` creados (re-`GET`). → [`quotation_activity_upsert_null_fix.md`](quotation_activity_upsert_null_fix.md)
 - [ ] **[back] Reporte de materiales formato Ternium generado** (hoy solo se concatena el escaneo subido como `anexo`; falta modelo de datos — el doc referencia `tareas_admin_windows.md`, que no existe en `Docs/`). → [`remission_combined_pdf.md`](remission_combined_pdf.md)
 - [ ] **[front+back] Firma de "quien entrega"** en la remisión (hoy `firma-realizado`/`firma-recibido` cubren autorización 1 y 2). → [`remission_combined_pdf.md`](remission_combined_pdf.md)
 - [ ] **[front] Mandar `category` en el `POST` de anexos** — sin ella, una firma subida sin categoría explícita queda protegida solo por heurística de nombre. → [`remission_attachment_delete.md`](remission_attachment_delete.md)
 - [ ] **[front+back] Borrado de anexos en lote** — solo si el front agrega selección múltiple. → [`remission_attachment_delete.md`](remission_attachment_delete.md)
+- [ ] **[front] Pantalla de control de saldos** — consumir `GET /remission-0?include_items=0` + filtros (`date_from`/`date_to`/`month_period`/`general_status`) y mandar los 4 campos nuevos del `PUT /remissionBalance` (`ot_ticket`, `centro_costos`, `responsable_centro_costos`, `personal_infra`). → [`remission_balance_get_filters_campos_nuevos.md`](remission_balance_get_filters_campos_nuevos.md)
 
 ## SGI (vouchers)
 

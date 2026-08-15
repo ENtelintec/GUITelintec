@@ -833,6 +833,10 @@ remission_balance_metadata_model = api.model(
         "quotation_number": fields.String(required=False, description="No. de cotización (texto libre)", example="COT-2026-110"),
         "quotation_amount": fields.Float(required=False, description="Monto de cotización", example=15200.50),
         "activity_end_date": fields.String(required=False, description="Fecha fin de actividad", example="2026-03-25"),
+        "ot_ticket": fields.String(required=False, description="OT / Ticket (campo propio, independiente de ot y ticket_number)", example="OT-3321/TK-8871"),
+        "centro_costos": fields.String(required=False, description="Centro de costos (independiente de ceco_fap)", example="CC-4451"),
+        "responsable_centro_costos": fields.String(required=False, description="Responsable del centro de costos", example="María Pérez"),
+        "personal_infra": fields.String(required=False, description="Personal infra (independiente de infra_responsible)", example="Juan García"),
     },
 )
 
@@ -1452,6 +1456,10 @@ class MetadataRemissionBalanceForm(Form):
     quotation_number = StringField("quotation_number", [], default="")
     quotation_amount = FloatField("quotation_amount", [], default=None)
     activity_end_date = StringField("activity_end_date", [], default="")
+    ot_ticket = StringField("ot_ticket", [], default="")
+    centro_costos = StringField("centro_costos", [], default="")
+    responsable_centro_costos = StringField("responsable_centro_costos", [], default="")
+    personal_infra = StringField("personal_infra", [], default="")
 
 
 class RemissionBalanceUpdateForm(Form):

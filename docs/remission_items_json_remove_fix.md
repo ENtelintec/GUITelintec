@@ -150,13 +150,12 @@ faltar una partida.
 - `'$[0]'` **ya no aparece en ninguna consulta del repo**. Si vuelve a hacer
   falta limpiar la fila fantasma de un `LEFT JOIN`, usar el patrón
   `IF(COUNT(fk) = 0, JSON_ARRAY(), JSON_ARRAYAGG(...))`, no recortar por índice.
-- **Pendiente / mismo patrón sin arreglar**: `get_quotation_activity_by_id`
-  (mismo controller, ~línea 335) usa `JSON_ARRAYAGG` **sin** protección, así que
-  una cotización de actividad sin items devuelve `[null]`. En
-  `update_quotation_activity_from_api` el guard `if len(items) <= 0` no lo
-  atrapa (largo 1) y el `int(item["qa_item_id"])` de la línea siguiente truena
-  con `TypeError` → `500`. No se tocó aquí por estar fuera del reporte; aplica el
-  mismo `IF(COUNT(...))`.
+- ~~**Pendiente / mismo patrón sin arreglar**: `get_quotation_activity_by_id`
+  usa `JSON_ARRAYAGG` **sin** protección~~ — hecho (2026-08-15): mismo
+  `IF(COUNT(...))` aplicado, y de paso se destaparon/corrigieron más bugs de la
+  misma función (el PUT de la QA era append-only, ChangeStatus 500 siempre, FK
+  de `item_c_id`, rollback del POST). Ver
+  [`quotation_activity_upsert_null_fix.md`](quotation_activity_upsert_null_fix.md).
 - Riesgo latente **del lado del front** (anotado por ellos, sin cambio en
   backend): el agrupador fusiona dos líneas de remisión que compartan número de
   `partida`, y `partida` viene de `quotation_items.partida`, que se repite entre

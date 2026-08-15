@@ -74,6 +74,7 @@ from templates.resources.midleware.MD_Admin_Collections import (
     get_quotations_from_api,
     get_remission_from_api,
     update_quotation_activity_from_api,
+    update_quotation_activity_status_from_api,
     update_remission_balance_from_api,
     update_remission_control_table_from_api,
     update_remission_from_api,
@@ -449,7 +450,7 @@ class ChangeStatusActivity(Resource):
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
-        data_out, code = update_quotation_activity_from_api(data, data_token)
+        data_out, code = update_quotation_activity_status_from_api(data, data_token)
         return data_out, code
 
 
@@ -551,6 +552,15 @@ class ActivityRemissionBalanceAction(Resource):
 
 @ns.route("/remission-<string:id_report>")
 class FetchActivitieReportById(Resource):
+    @ns.doc(
+        params={
+            "include_items": "0/false/no -> omite la llave items de cada remisión (default 1); history y files siempre vienen",
+            "date_from": "Fecha inicial YYYY-MM-DD sobre la fecha de actividad (date), inclusivo",
+            "date_to": "Fecha final YYYY-MM-DD sobre la fecha de actividad (date), inclusivo",
+            "month_period": "Igualdad exacta contra extra_info.month_period (control de saldos)",
+            "general_status": "Entero; igualdad contra extra_info.general_status (control de saldos)",
+        }
+    )
     @ns.expect(expected_headers_per)
     def get(self, id_report):
         flag, data_token, msg = token_verification_procedure(
@@ -565,7 +575,20 @@ class FetchActivitieReportById(Resource):
         except Exception as e:
             print(f"retrieviong all {e}")
             id_report = None
-        data_out, code = get_remission_from_api(id_report, data_token)
+        include_items = request.args.get("include_items", default="1").strip().lower() not in (
+            "0",
+            "false",
+            "no",
+        )
+        data_out, code = get_remission_from_api(
+            id_report,
+            data_token,
+            include_items=include_items,
+            date_from=request.args.get("date_from") or None,
+            date_to=request.args.get("date_to") or None,
+            month_period=request.args.get("month_period") or None,
+            general_status=request.args.get("general_status", type=int),
+        )
         return data_out, code
 
 

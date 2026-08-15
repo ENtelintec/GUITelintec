@@ -30,6 +30,7 @@ from templates.controllers.presales.remisions_controller import (
     update_activity_report,
     update_quotation_activity,
     update_quotation_activity_item,
+    update_quotation_activity_status,
     update_report_activity_files,
 )
 from templates.forms.RemissionForms import FileRemissionPDF, FileRemissionPhotosPDF
@@ -135,6 +136,12 @@ _BALANCE_EXTRA_KEY_MAP = {
     "quotation_number": "quotation_number",
     "quotation_amount": "quotation_amount",
     "activity_end_date": "activity_end_date",
+    # Campos propios (no alias): ot_ticket se guarda aparte de ot/ticket_number,
+    # centro_costos aparte de ceco_fap y personal_infra aparte de infra_responsible.
+    "ot_ticket": "ot_ticket",
+    "centro_costos": "centro_costos",
+    "responsable_centro_costos": "responsable_centro_costos",
+    "personal_infra": "personal_infra",
 }
 
 
@@ -174,6 +181,7 @@ _HISTORY_EXTRA_FIELDS = [
     "ceco_fap", "sgd_number", "sgd_upload_date", "sgd_upload_time",
     "general_status", "ot", "ticket_number",
     "quotation_number", "quotation_amount", "activity_end_date",
+    "ot_ticket", "centro_costos", "responsable_centro_costos", "personal_infra",
 ]
 _HISTORY_META_FIELDS = _HISTORY_BASE_FIELDS + _HISTORY_EXTRA_FIELDS
 _HISTORY_ITEM_FIELDS = ["description", "udm", "quantity", "unit_price", "unit_price_quotation"]
@@ -195,6 +203,7 @@ _GET_EXTRA_STRING_FIELDS = [
     "requester_coordinator", "coordinator", "ceco_fap",
     "sgd_number", "sgd_upload_date", "sgd_upload_time",
     "ot", "ticket_number", "quotation_number", "activity_end_date",
+    "ot_ticket", "centro_costos", "responsable_centro_costos", "personal_infra",
 ]
 _GET_EXTRA_NUMERIC_FIELDS = [
     "total_sin_iva", "status_report", "status_rep_admi", "remission_total",
@@ -376,13 +385,15 @@ def create_quotation_activity_from_api(data, data_token):
     for item in data["items"]:
         flag, error, id_item = insert_quotation_activity_item(
             quotation_id=id_quotation,  # pyrefly: ignore
-            report_id=item.get("report_id", None),
+            # 0 (default del form) -> NULL: item_c_id tiene FK a quotation_items
+            # (0 revienta el INSERT) y un report_id 0 no enlaza nada.
+            report_id=item.get("report_id") or None,
             description=item["description"],
             udm=item["udm"],
             quantity=item["quantity"],
             unit_price=item["unit_price"],
             history=history_item,
-            item_c_id=item.get("item_contract_id", None),
+            item_c_id=item.get("item_contract_id") or None,
             extra_info={"unit_price_quotation": item["unit_price"]},
             data_token=data_token,
         )
@@ -393,7 +404,7 @@ def create_quotation_activity_from_api(data, data_token):
     if flag_list.count(True) == len(flag_list):
         pass
     elif flag_list.count(False) == len(flag_list):
-        flag, error, result = delete_quotation_activity(id_quotation)  # pyrefly: ignore
+        flag, error, result = delete_quotation_activity(id_quotation, data_token)  # pyrefly: ignore
         return {
             "data": None,
             "msg": "No se pudo crear ningún ítem; actividad de cotización eliminada",
@@ -418,6 +429,12 @@ def update_quotation_activity_from_api(data, data_token):
             "msg": "Error al obtener registro de cotización de actividad",
             "error": error,
         }, 400
+    if not result_qa:
+        return {
+            "data": None,
+            "msg": f"Cotización de actividad no encontrada (ID {data['id']})",
+            "error": None,
+        }, 404
     # get history
     history = json.loads(result_qa[14]) if result_qa[14] else []  # pyrefly: ignore
     if len(history) <= 0:
@@ -426,13 +443,9 @@ def update_quotation_activity_from_api(data, data_token):
             "msg": "Error al obtener historial de la cotización",
             "error": error,
         }, 400
+    # Una QA puede quedar sin items (is_erased sobre todos); el update debe
+    # proceder igual para poder re-agregarlos.
     items = json.loads(result_qa[15]) if result_qa[15] else []  # pyrefly: ignore
-    if len(items) <= 0:
-        return {
-            "data": None,
-            "msg": "Error al obtener ítems de la cotización",
-            "error": error,
-        }, 400
     time_zone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
     user = data_token.get("emp_id")
@@ -446,7 +459,9 @@ def update_quotation_activity_from_api(data, data_token):
     else:
         dict_items = {int(item["qa_item_id"]): item for item in items}
         for new_item in items_to_update:
-            item_id = new_item.get("id", 0)
+            # La llave validada del form (QuotationUpsertItemForm) es qa_item_id
+            # (default -1); ausente/-1/0 -> crear. "or 0" cubre un None de JSON.
+            item_id = new_item.get("qa_item_id") or 0
             if item_id <= 0:
                 # create new item
                 history_item = [
@@ -459,24 +474,33 @@ def update_quotation_activity_from_api(data, data_token):
                 ]
                 flag, error, _id_item = insert_quotation_activity_item(
                     quotation_id=data["id"],  # pyrefly: ignore
-                    report_id=new_item.get("report_id", None),
+                    # 0/ausente -> NULL (FK en item_c_id; report_id 0 no enlaza)
+                    report_id=new_item.get("report_id") or None,
                     description=new_item["description"],
                     udm=new_item["udm"],
                     quantity=new_item["quantity"],
                     unit_price=new_item["unit_price"],
                     history=history_item,
-                    item_c_id=new_item.get("client_id", None),
+                    item_c_id=new_item.get("item_contract_id") or None,
                     extra_info={"unit_price_quotation": new_item["unit_price"]},
                     data_token=data_token,
                 )
             else:
-                if new_item.get("is_erased", 0) != 0:
+                # Guard de pertenencia: un qa_item_id ajeno a esta QA es error
+                # por-item, nunca toca (ni borra) filas de otra cotizacion.
+                existing_item = dict_items.get(item_id)
+                if existing_item is None:
+                    flag, error, result = (
+                        False,
+                        f"El ítem {item_id} no pertenece a la cotización {data['id']}",
+                        None,
+                    )
+                elif new_item.get("is_erased"):
+                    # Truthiness a proposito: None (JSON null) y False no borran.
                     flag, error, result = delete_quotation_activity_item(item_id, data_token)
                 else:
                     # update old item
-                    history_item = (
-                        dict_items[item_id]["history"] if dict_items[item_id]["history"] else []
-                    )
+                    history_item = existing_item.get("history") or []
                     if len(history_item) <= 0:
                         flag, error, result = (
                             False,
@@ -493,7 +517,6 @@ def update_quotation_activity_from_api(data, data_token):
                             }
                         )
                         # El sugerido de la cotizacion siempre se actualiza en extra_info.
-                        existing_item = dict_items[item_id]
                         extra_info_item = _coerce_extra_info(existing_item.get("extra_info"))
                         extra_info_item["unit_price_quotation"] = new_item["unit_price"]
                         # Si el item ya tiene remision (report_id), se protege el unit_price real;
@@ -505,8 +528,11 @@ def update_quotation_activity_from_api(data, data_token):
                         flag, error, result = update_quotation_activity_item(
                             qa_item_id=item_id,
                             quotation_id=data["id"],
-                            report_id=new_item.get("report_id", None),
-                            item_c_id=new_item.get("client_id", None),
+                            # Enlaces remision/partida: el payload manda solo si
+                            # trae valor; 0/ausente conserva el de la BD (el PUT
+                            # de cotizacion no es el camino para desenlazar).
+                            report_id=new_item.get("report_id") or existing_item.get("report_id") or None,
+                            item_c_id=new_item.get("item_contract_id") or existing_item.get("item_c_id") or None,
                             description=new_item["description"],
                             udm=new_item["udm"],
                             quantity=new_item["quantity"],
@@ -571,6 +597,52 @@ def update_quotation_activity_from_api(data, data_token):
     return {"data": {"id_quotation": data["id"]}, "msg": msg_out, "error": error_items}, 200
 
 
+def update_quotation_activity_status_from_api(data, data_token):
+    # PUT /activity/ChangeStatus: solo id + status. Antes reusaba
+    # update_quotation_activity_from_api, que exige el payload completo del PUT
+    # (items, folio, fechas...) -> KeyError 500 siempre.
+    flag, error, result_qa = get_quotation_activity_by_id(data["id"], data_token)
+    if not flag:
+        return {
+            "data": None,
+            "msg": "Error al obtener registro de cotización de actividad",
+            "error": error,
+        }, 400
+    if not result_qa:
+        return {
+            "data": None,
+            "msg": f"Cotización de actividad no encontrada (ID {data['id']})",
+            "error": None,
+        }, 404
+    time_zone = pytz.timezone(timezone_software)
+    timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
+    user = data_token.get("emp_id")
+    history = json.loads(result_qa[14]) if result_qa[14] else []  # pyrefly: ignore
+    history.append(
+        {
+            "timestamp": timestamp,
+            "user": user,
+            "action": "Actualización",
+            "comment": f"Cambio de estatus de la actividad de cotización a {data['status']}.",
+        }
+    )
+    flag, error, result = update_quotation_activity_status(
+        qa_id=data["id"], status=data["status"], history=history, data_token=data_token
+    )
+    if not flag:
+        return {
+            "data": None,
+            "msg": "Error al actualizar el estatus de la actividad de cotización",
+            "error": error,
+        }, 400
+    msg_out = f"Estatus de la actividad de cotización actualizado correctamente (ID {data['id']})"
+    create_notification_permission(
+        msg_out, data_token, ["administracion"], "Cotización de actividad actualizada", user, 0
+    )
+    write_log_file(log_file_admin_collecions, msg_out, data_token)
+    return {"data": {"id_quotation": data["id"]}, "msg": msg_out, "error": None}, 200
+
+
 def get_quotations_from_api(id_quotation: int | None, data_token):
     if id_quotation is not None and id_quotation <= 0:
         id_quotation = None
@@ -629,15 +701,15 @@ def delete_quotation_activity_from_api(data, data_token):
             "msg": "Error al obtener registro de cotización de actividad",
             "error": error,
         }, 400
-
-    # Delete items:
-    items = json.loads(result_qa[15]) if result_qa[15] else []  # pyrefly: ignore
-    if len(items) <= 0:
+    if not result_qa:
         return {
             "data": None,
-            "msg": "Error al obtener ítems de la cotización",
-            "error": error,
-        }, 400
+            "msg": f"Cotización de actividad no encontrada (ID {id_quotation})",
+            "error": None,
+        }, 404
+
+    # Delete items (una QA sin items es valida: se borra directo el registro):
+    items = json.loads(result_qa[15]) if result_qa[15] else []  # pyrefly: ignore
     flags = []
     errors = []
     results = []
@@ -883,10 +955,25 @@ def create_remission_from_api(data, data_token):
     return {"data": {"id_remission": id_remission}, "msg": msg_out, "error": error_items}, 201
 
 
-def get_remission_from_api(id_report: int | None, data_token):
+def get_remission_from_api(
+    id_report: int | None,
+    data_token,
+    include_items: bool = True,
+    date_from: str | None = None,
+    date_to: str | None = None,
+    month_period: str | None = None,
+    general_status: int | None = None,
+):
     if id_report is not None and id_report <= 0:
         id_report = None
-    flag, error, result = get_remission_by_id(id_report, data_token)
+    flag, error, result = get_remission_by_id(
+        id_report,
+        data_token,
+        date_from=date_from,
+        date_to=date_to,
+        month_period=month_period,
+        general_status=general_status,
+    )
     if not flag:
         return {"data": None, "msg": "Error al obtener remisiones", "error": error}, 400
     if not (isinstance(result, list) or isinstance(result, tuple)):
@@ -905,8 +992,7 @@ def get_remission_from_api(id_report: int | None, data_token):
         if isinstance(project, (list, tuple)):
             project = project[0] if project else ""
 
-        data_out.append(
-            {
+        row = {
                 "id": item[0],
                 "date": item[1].strftime(format_timestamps)
                 if not isinstance(item[1], str)
@@ -925,9 +1011,6 @@ def get_remission_from_api(id_report: int | None, data_token):
                 "quotation_id": item[13],
                 "status": item[14],
                 "history": json.loads(item[15]) if item[15] else [],
-                "items": _flatten_items_unit_price_quotation(
-                    json.loads(item[16]) if item[16] else []
-                ),
                 "files": json.loads(item[17]) if item[17] else [],
                 "contract_id": item[18],
                 "pedido": extra_info.get("pedido", ""),
@@ -945,7 +1028,13 @@ def get_remission_from_api(id_report: int | None, data_token):
                 **{f: extra_info.get(f, "") for f in _GET_EXTRA_STRING_FIELDS},
                 **{f: extra_info.get(f) for f in _GET_EXTRA_NUMERIC_FIELDS},
             }
-        )
+        # Con include_items=0 la llave items no viene (listados ligeros, p.ej.
+        # control de saldos); con items se mantiene el shape historico.
+        if include_items:
+            row["items"] = _flatten_items_unit_price_quotation(
+                json.loads(item[16]) if item[16] else []
+            )
+        data_out.append(row)
     return {"data": data_out, "msg": None, "error": None}, 200
 
 
@@ -1495,9 +1584,21 @@ def _build_remission_attachments(files_raw, data_token):
             else:
                 sign_paths["realizado"] = local_path
         elif category == "anexo":
-            attachments["anexo"].append({"path": local_path, "filename": filename})
+            attachments["anexo"].append(
+                {
+                    "path": local_path,
+                    "filename": filename,
+                    "title": (f.get("title") or "").strip(),
+                }
+            )
         elif category == "photo":
-            attachments["photo"].append({"path": local_path, "folio": (f.get("folio") or "").strip()})
+            attachments["photo"].append(
+                {
+                    "path": local_path,
+                    "folio": (f.get("folio") or "").strip(),
+                    "title": (f.get("title") or "").strip(),
+                }
+            )
     return sign_paths, attachments
 
 
@@ -1545,7 +1646,23 @@ def _assemble_remission_full_pdf(remision_path, attachments, photos_meta, data_t
                 elif ext in drawable_ext:
                     rect = fitz.paper_rect("a4")
                     page = doc.new_page(width=rect.width, height=rect.height)
-                    img_rect = fitz.Rect(rect.x0 + 20, rect.y0 + 20, rect.x1 - 20, rect.y1 - 20)
+                    img_top = rect.y0 + 20
+                    # Title del anexo como banner estilo casa (celeste + negro
+                    # bold) SOLO en esta pagina generada; los anexos PDF se
+                    # concatenan tal cual, sin pisarles contenido.
+                    title = (anexo.get("title") or "").strip()
+                    if title:
+                        banner = fitz.Rect(rect.x0 + 20, img_top, rect.x1 - 20, img_top + 26)
+                        page.draw_rect(banner, color=(0, 0, 0), fill=(0.74, 0.84, 0.93), width=0.6)
+                        page.insert_textbox(
+                            fitz.Rect(banner.x0 + 4, banner.y0 + 3, banner.x1 - 4, banner.y1 - 3),
+                            title,
+                            fontsize=9,
+                            fontname="hebo",
+                            color=(0, 0, 0),
+                        )
+                        img_top = banner.y1 + 6
+                    img_rect = fitz.Rect(rect.x0 + 20, img_top, rect.x1 - 20, rect.y1 - 20)
                     page.insert_image(img_rect, filename=apath, keep_proportion=True)
                 else:
                     write_log_file(

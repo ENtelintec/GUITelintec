@@ -23,7 +23,7 @@ la descarga los baja de S3 y los fusiona con la remisión.
 | `file` | ✅ | El archivo. Extensiones válidas: `pdf, jpg, jpeg, png, webp, zip`. |
 | `category` | ❌ | `photo` \| `anexo` \| `firma` \| `otro`. Si no se manda, se infiere del nombre/extensión (ver [Categorías](#categorías)). |
 | `folio` | ❌ | Folio del reporte de materiales (los C-numbers, p. ej. `C1037`). Solo relevante para `photo`; alimenta el encabezado de la hoja de fotos. |
-| `title` | ❌ | Etiqueta opcional del anexo (se guarda, aún no se imprime). |
+| `title` | ❌ | Etiqueta opcional del anexo. **Se imprime en las páginas generadas** del combinado: caption bajo la foto (hoja de EVIDENCIA, máx. 2 líneas con elipsis) y banner superior en la página A4 de un anexo-imagen. Los anexos **PDF** se concatenan tal cual (nunca se les pisa contenido ni se agregan separadoras); sin `title` la celda/página queda como siempre. |
 
 Cada archivo se sube a S3 (`reportActivity/YYYY/MM/DD/<id_report>/<filename>`) y
 se agrega a `files` como:
@@ -95,6 +95,10 @@ queda en blanco para firmar a mano.
 - Cada hoja de fotos es autocontenida: repite header Telintec + metadata. El
   campo **Folio** de esa hoja lista los folios **distintos de las fotos de esa
   página** (`C1037 – C2342`), no un folio global.
+- El `title` de cada archivo se imprime **solo en páginas generadas**: caption
+  en franja de cuadrícula bajo la foto (`_rm_draw_photo_cell`, máx. 2 líneas)
+  y banner celeste estilo casa arriba de la imagen en la página A4 de un
+  anexo-imagen (`_assemble_remission_full_pdf`). Los anexos PDF van intactos.
 - Metadata de la hoja de fotos: `Fecha`=`ar.date`, `Pedido`/`Remito` de
   `extra_info`, `Planta`/`Área`/`Lugar` de las columnas base `ar.plant/area/location`.
 
@@ -241,8 +245,9 @@ form.append("category", "firma");
 
 ## Pendiente
 
-- Pre-llenar el `title` del anexo en el documento (hoy se guarda pero no se
-  imprime).
+- ~~Pre-llenar el `title` del anexo en el documento~~ — hecho (2026-08-15):
+  caption bajo la foto y banner en la página del anexo-imagen (solo páginas
+  generadas; anexos PDF intactos).
 - Reporte de materiales formato Ternium **generado** (hoy solo se concatena el
   escaneo subido como `anexo`); no hay datos en el modelo para generarlo, ver
   `Docs/tareas_admin_windows.md`.

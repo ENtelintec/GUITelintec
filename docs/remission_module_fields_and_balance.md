@@ -52,7 +52,7 @@ Llave del payload → llave canónica en `extra_info` (el GET la expone aplanada
 | Total sin IVA (`totalSinIva / totalsiniva`) | `totalSinIva` | `total_sin_iva` | number |
 | Estatus de reporte (`statusReport`) | `statusReport` | `status_report` | integer |
 | Monto remisión / Proyección saldo (`remission_amount / projection_balance`) | `projection_balance` | `projection_balance` | un solo campo; `remission_amount` no existe |
-| OT / Número de tickets (`ot_ticket_number`) | — | — | **no se guarda**: es columna combinada de display; el front la arma con `ot` + `ticket_number` |
+| OT / Número de tickets (`ot_ticket_number`) | — | — | **no se guarda**: es columna combinada de display; el front la arma con `ot` + `ticket_number`. **Nota (2026-08-15)**: el `ot_ticket` de la tabla consolidada sí se guarda como campo propio — ver [`remission_balance_get_filters_campos_nuevos.md`](remission_balance_get_filters_campos_nuevos.md) |
 | OT | `ot` | `ot` | separado de tickets |
 | Número de tickets | `ticket_number` | `ticket_number` | separado de OT |
 | Solicitante / Coordinador | `requester_coordinator` | `requester_coordinator` | campo aparte de `coordinator` |
