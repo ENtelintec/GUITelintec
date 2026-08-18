@@ -68,9 +68,28 @@ products_quotation_model = api.model(
         "price_unit": fields.Float(
             required=True, description="The quotation price unit"
         ),
-        "comment": fields.String(required=False, description="The product comment"),
-        "id": fields.Integer(
-            required=False, description="The product id in the database"
+        "comment": fields.String(
+            required=False, description="Ignorado: no se persiste en quotation_items"
+        ),
+        "section_index": fields.Integer(
+            required=False,
+            description=(
+                "Indice 0-based de la seccion; discrimina partidas repetidas "
+                "cuando el Excel trae varias secciones. Default 0."
+            ),
+            example=0,
+        ),
+        "section_title": fields.String(
+            required=False,
+            description="Titulo de la seccion (extra_info). Default 'General'.",
+        ),
+        "section_type": fields.String(
+            required=False,
+            description="Tipo de seccion: general | planta | reajuste. Default 'general'.",
+        ),
+        "qa_item_id": fields.Integer(
+            required=False,
+            description="The product id in the database (quotation_items.id)",
         ),
         "id_inventory": fields.Integer(
             required=False, description="The product id in the database"
@@ -103,12 +122,40 @@ products_quotation_put_model = api.model(
         "price_unit": fields.Float(
             required=True, description="The quotation price unit"
         ),
-        "comment": fields.String(required=False, description="The product comment"),
-        "id": fields.Integer(
-            required=False, description="The product id in the database", example=0
+        "comment": fields.String(
+            required=False, description="Ignorado: no se persiste en quotation_items"
+        ),
+        "section_index": fields.Integer(
+            required=False,
+            description=(
+                "Indice 0-based de la seccion; discrimina partidas repetidas "
+                "cuando el Excel trae varias secciones. Default 0."
+            ),
+            example=0,
+        ),
+        "section_title": fields.String(
+            required=False,
+            description=(
+                "Titulo de la seccion (extra_info). El front debe re-enviar el "
+                "valor recibido del GET; omitirlo lo reescribe a 'General'."
+            ),
+        ),
+        "section_type": fields.String(
+            required=False,
+            description="Tipo de seccion: general | planta | reajuste. Default 'general'.",
+        ),
+        "qa_item_id": fields.Integer(
+            required=False,
+            description=(
+                "The product id in the database (quotation_items.id). "
+                "null / 0 / ausente => el item se crea"
+            ),
+            example=0,
         ),
         "is_erased": fields.Integer(
-            required=False, description="The product needs to be erased", example=0
+            required=False,
+            description="1 borra el item; cualquier otro valor lo actualiza",
+            example=0,
         ),
     },
 )
@@ -362,6 +409,9 @@ class MetadataQuotationForm(Form):
 
 class ProductsPostQuotationForm(Form):
     partida = IntegerField("partida", validators=[InputRequired()])
+    section_index = IntegerField("section_index", validators=[], default=0)
+    section_title = StringField("section_title", validators=[], default="General")
+    section_type = StringField("section_type", validators=[], default="general")
     revision = IntegerField("revision", validators=[], default=0)
     type_p = StringField("type_p", validators=[])
     marca = StringField("marca", validators=[])
@@ -376,13 +426,14 @@ class ProductsPostQuotationForm(Form):
 
 
 class ProductsPutQuotationForm(Form):
-    id = IntegerField(
-        "id", validators=[], default=0
-    )
-    # id = IntegerField(
-    #     "id", validators=[validators.number_range(min=-1, message="Invalid id")], default=0
-    # )
+    # null / 0 / ausente => el item se crea. Ojo: wtforms_json convierte un null de
+    # JSON en None sin aplicar el default, asi que el midleware normaliza el valor
+    # con _resolve_item_id en vez de comparar contra 0.
+    qa_item_id = IntegerField("qa_item_id", validators=[], default=0)
     partida = IntegerField("partida", validators=[InputRequired()])
+    section_index = IntegerField("section_index", validators=[], default=0)
+    section_title = StringField("section_title", validators=[], default="General")
+    section_type = StringField("section_type", validators=[], default="general")
     revision = IntegerField("revision", validators=[], default=0)
     type_p = StringField("type_p", validators=[])
     marca = StringField("marca", validators=[])

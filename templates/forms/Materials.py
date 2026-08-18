@@ -7,6 +7,8 @@ import textwrap
 from reportlab.pdfgen import canvas
 
 from templates.forms.PDFGenerator import (
+    FONT_BOLD,
+    FONT_REGULAR,
     a4_x,
     a4_y,
     create_footer_sign,
@@ -44,7 +46,7 @@ def print_headers_table_inventory(
     :param font_size:
     :return:
     """
-    pdf.setFont("Courier-Bold", font_size)
+    pdf.setFont(FONT_BOLD, font_size)
     x_position = 20
     headers = list(dict_wrappers_headers[type_form].keys())
     for header_key in headers:
@@ -68,7 +70,7 @@ def print_footer_page_count(pdf, page, font_size=6):
     :param font_size:
     :return:
     """
-    pdf.setFont("Courier", font_size)
+    pdf.setFont(FONT_REGULAR, font_size)
     pdf.drawString(5, 5, f"Página {page}")
 
 
@@ -120,7 +122,7 @@ def ReturnMaterialsForm(dict_data: dict, type_form="ReturnMaterials"):
     # ---------------------------------------------products---------------------------------------------------------
     headers = list(dict_wrappers_headers[type_form].keys())
     font_size = 8
-    pdf.setFont("Courier", font_size)
+    pdf.setFont(FONT_REGULAR, font_size)
     y_init = 620
     last_y = y_init
     for index_products, item in enumerate(products):
@@ -133,7 +135,7 @@ def ReturnMaterialsForm(dict_data: dict, type_form="ReturnMaterials"):
             print_headers_table_inventory(pdf, y_init=780, type_form=type_form)
             y_init = 765
             last_y = y_init
-            pdf.setFont("Courier", font_size)
+            pdf.setFont(FONT_REGULAR, font_size)
         for index, key in enumerate(item):
             value = textwrap.wrap(
                 str(key),
@@ -151,10 +153,10 @@ def ReturnMaterialsForm(dict_data: dict, type_form="ReturnMaterials"):
             )
     # --------------------------------------------------observaciones---------------------------------------------------------
     font_size = 10
-    pdf.setFont("Courier-Bold", font_size)
+    pdf.setFont(FONT_BOLD, font_size)
     y_init = last_y - font_size * 1.5
     pdf.drawString(20, y_init, "Observaciones:")
-    pdf.setFont("Courier", font_size)
+    pdf.setFont(FONT_REGULAR, font_size)
     y_init = y_init - font_size * 1.5
     item = (dict_data["observations"],)
     if calculate_last_y(
@@ -219,7 +221,7 @@ def MaterialsRequest(dict_data: dict, type_form="MaterialsRequest"):
     headers = list(dict_wrappers_headers[type_form].keys())
     print(headers, type_form)
     font_size = 8
-    pdf.setFont("Courier", font_size)
+    pdf.setFont(FONT_REGULAR, font_size)
     y_init = 640
     last_y = y_init
     for index_products, item in enumerate(products):
@@ -232,7 +234,7 @@ def MaterialsRequest(dict_data: dict, type_form="MaterialsRequest"):
             print_headers_table_inventory(pdf, y_init=780, type_form=type_form)
             y_init = 765
             last_y = y_init
-            pdf.setFont("Courier", font_size)
+            pdf.setFont(FONT_REGULAR, font_size)
         for index, key in enumerate(item):
             value = textwrap.wrap(
                 str(key),
@@ -253,16 +255,16 @@ def MaterialsRequest(dict_data: dict, type_form="MaterialsRequest"):
         pdf.showPage()
         print_footer_page_count(pdf, pages)
         y_init = 780
-    pdf.setFont("Courier-Bold", font_size)
+    pdf.setFont(FONT_BOLD, font_size)
     y_init = last_y - font_size * 1.5
     pdf.drawString(20, y_init, "Fecha de primera entrega:")
-    pdf.setFont("Courier", font_size)
+    pdf.setFont(FONT_REGULAR, font_size)
     y_init = y_init - font_size * 1.4
     pdf.drawString(20, y_init, dict_data["date_first_delivery"])
-    pdf.setFont("Courier-Bold", font_size)
+    pdf.setFont(FONT_BOLD, font_size)
     y_init = y_init - font_size * 1.5
     pdf.drawString(20, y_init, "Fecha de entrega completa:")
-    pdf.setFont("Courier", font_size)
+    pdf.setFont(FONT_REGULAR, font_size)
     y_init = y_init - font_size * 1.4
     pdf.drawString(20, y_init, dict_data["date_complete_delivery"])
     y_init -= font_size

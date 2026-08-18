@@ -1,0 +1,187 @@
+{
+  "type": 3,
+  "name": "Clima organizacional (percepcion positiva %)",
+  "mode": "scored",
+  "scoring": {
+    "answer_kind": "option_index",
+    "item_maps": [
+      {
+        "items": [
+          1, 2, 3, 4, 5, 6, 7, 8, 9,
+          10, 11, 12, 13, 14, 15, 16, 17, 18,
+          19, 20, 21, 22, 23, 24, 25, 26, 27,
+          28, 29, 30, 31, 32, 33, 35, 36,
+          37, 38, 39, 40, 41, 42, 43, 44, 45
+        ],
+        "values": [100, 100, null, 0, 0],
+        "na_value": null
+      },
+      {
+        "items": [34],
+        "values": [0, 0, null, 100, 100],
+        "na_value": null
+      }
+    ]
+  },
+  "total_agg": "avg_breakdown",
+  "bands_total": [
+    ["necesita_mejora", null, 80],
+    ["adecuado", 80, 85],
+    ["bueno", 85, 90.01],
+    ["excelente", 90.01, null]
+  ],
+  "tree": [
+    {
+      "id": "c1",
+      "kind": "categoria",
+      "label": "Liderazgo",
+      "agg": "avg",
+      "items": [1, 10, 19, 28, 37],
+      "bands": [
+        ["necesita_mejora", null, 80],
+        ["adecuado", 80, 85],
+        ["bueno", 85, 90.01],
+        ["excelente", 90.01, null]
+      ]
+    },
+    {
+      "id": "c2",
+      "kind": "categoria",
+      "label": "Reconocimiento / Motivación",
+      "agg": "avg",
+      "items": [2, 11, 20, 29, 38],
+      "bands": [
+        ["necesita_mejora", null, 80],
+        ["adecuado", 80, 85],
+        ["bueno", 85, 90.01],
+        ["excelente", 90.01, null]
+      ]
+    },
+    {
+      "id": "c3",
+      "kind": "categoria",
+      "label": "Comunicación interna",
+      "agg": "avg",
+      "items": [3, 12, 21, 30, 39],
+      "bands": [
+        ["necesita_mejora", null, 80],
+        ["adecuado", 80, 85],
+        ["bueno", 85, 90.01],
+        ["excelente", 90.01, null]
+      ]
+    },
+    {
+      "id": "c4",
+      "kind": "categoria",
+      "label": "Relación con compañeros",
+      "agg": "avg",
+      "items": [4, 13, 22, 31, 40],
+      "bands": [
+        ["necesita_mejora", null, 80],
+        ["adecuado", 80, 85],
+        ["bueno", 85, 90.01],
+        ["excelente", 90.01, null]
+      ]
+    },
+    {
+      "id": "c5",
+      "kind": "categoria",
+      "label": "Capacitación / Desarrollo profesional",
+      "agg": "avg",
+      "items": [5, 14, 23, 32, 41],
+      "bands": [
+        ["necesita_mejora", null, 80],
+        ["adecuado", 80, 85],
+        ["bueno", 85, 90.01],
+        ["excelente", 90.01, null]
+      ]
+    },
+    {
+      "id": "c6",
+      "kind": "categoria",
+      "label": "Condiciones laborales - Seguridad",
+      "agg": "avg",
+      "items": [6, 15, 24, 33, 42],
+      "bands": [
+        ["necesita_mejora", null, 80],
+        ["adecuado", 80, 85],
+        ["bueno", 85, 90.01],
+        ["excelente", 90.01, null]
+      ]
+    },
+    {
+      "id": "c7",
+      "kind": "categoria",
+      "label": "Jornada - Carga laboral",
+      "agg": "avg",
+      "items": [7, 16, 25, 34, 43],
+      "bands": [
+        ["necesita_mejora", null, 80],
+        ["adecuado", 80, 85],
+        ["bueno", 85, 90.01],
+        ["excelente", 90.01, null]
+      ]
+    },
+    {
+      "id": "c8",
+      "kind": "categoria",
+      "label": "Conocimiento del puesto",
+      "agg": "avg",
+      "items": [8, 17, 26, 35, 44],
+      "bands": [
+        ["necesita_mejora", null, 80],
+        ["adecuado", 80, 85],
+        ["bueno", 85, 90.01],
+        ["excelente", 90.01, null]
+      ]
+    },
+    {
+      "id": "c9",
+      "kind": "categoria",
+      "label": "Sentido de pertenencia - Cultura",
+      "agg": "avg",
+      "items": [9, 18, 27, 36, 45],
+      "bands": [
+        ["necesita_mejora", null, 80],
+        ["adecuado", 80, 85],
+        ["bueno", 85, 90.01],
+        ["excelente", 90.01, null]
+      ]
+    }
+  ],
+  "levels": {
+    "excelente": {
+      "label": "Excelente",
+      "action_summary": "Resultado arriba del 90%: percepcion muy positiva del clima organizacional.",
+      "actions": [
+        "Mantener las practicas actuales y monitorear que se sostengan en el tiempo.",
+        "Compartir las practicas de las categorias mejor evaluadas con el resto de la organizacion."
+      ]
+    },
+    "bueno": {
+      "label": "Bueno",
+      "action_summary": "Resultado del 85% al 90%: percepcion favorable con oportunidades puntuales.",
+      "actions": [
+        "Mantener y reforzar las practicas actuales.",
+        "Revisar las categorias con menor porcentaje para detectar oportunidades puntuales de mejora."
+      ]
+    },
+    "adecuado": {
+      "label": "Adecuado",
+      "action_summary": "Resultado del 80% al 84%: percepcion aceptable con areas de oportunidad claras.",
+      "actions": [
+        "Revisar las categorias por debajo del 85% y definir acciones puntuales de mejora.",
+        "Dar seguimiento periodico para confirmar que la percepcion no se deteriore."
+      ]
+    },
+    "necesita_mejora": {
+      "label": "Necesita mejora",
+      "action_summary": "Resultado menor al 80%: presencia significativa de respuestas en desacuerdo; hay areas que requieren intervencion.",
+      "actions": [
+        "Priorizar un plan de accion sobre las categorias por debajo del 80%.",
+        "Analizar las preguntas con mayor porcentaje de desacuerdo (ver detail) para ubicar el problema concreto.",
+        "Dar seguimiento con mediciones intermedias antes de la siguiente aplicacion anual."
+      ]
+    }
+  }
+}

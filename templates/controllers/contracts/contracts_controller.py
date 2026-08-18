@@ -92,12 +92,22 @@ def get_contract(data_token, id_contract=None):
     sql = "SELECT id, metadata, creation, quotation_id, timestamps, code, client_id, emission, abbreviation FROM sql_telintec_mod_admin.contracts WHERE id = %s"
     val = (id_contract,)
     flag, error, result = execute_sql(sql, val, 1, data_token)
-    if not isinstance(result, tuple) or not isinstance(result, list):
+    if not (isinstance(result, tuple) or isinstance(result, list)):
         return False, error, []
     if len(result) == 0:
         return False, "Contract not found", []
     else:
         return True, None, result
+
+
+def get_contract_id_by_quotation(id_quotation, data_token):
+    """Id del contrato ligado a una cotizacion, o None si ninguno la referencia."""
+    sql = "SELECT id FROM sql_telintec_mod_admin.contracts WHERE quotation_id = %s LIMIT 1"
+    val = (id_quotation,)
+    flag, error, result = execute_sql(sql, val, 1, data_token)
+    if not flag or not isinstance(result, tuple) or len(result) == 0:
+        return False, error, None
+    return True, None, result[0]
 
 
 def get_contract_from_abb(contract_abb: str, data_token):
@@ -166,13 +176,16 @@ def get_contracts_abreviations_db(data_token):
 
 
 def get_items_contract_string(key: str, data_token) -> tuple[bool, str, int | list]:
+    # section_index va al FINAL (indice 5): get_products_sm (unico consumidor) indexa
+    # por posicion (item[3]=partida, item[4]=id_inventory).
     sql = (
         "SELECT "
         "c.id AS contract_id, "
         "q.id AS quotation_id, "
         "qi.id AS item_id, "
         "qi.partida, "
-        "qi.id_inventory "
+        "qi.id_inventory, "
+        "qi.section_index "
         "FROM sql_telintec_mod_admin.contracts c "
         "LEFT JOIN sql_telintec_mod_admin.quotations q ON q.id = c.quotation_id "
         "LEFT JOIN sql_telintec_mod_admin.quotation_items qi ON qi.contract_id = c.id "
@@ -222,13 +235,21 @@ def get_contracts_with_items(data_token):
         "c.emission, "
         "c.abbreviation, "
         "JSON_ARRAYAGG(JSON_OBJECT("
-        "   'item_id', qi.id, "
+        "   'qa_item_id', qi.id, "
         "   'partida', qi.partida, "
         "   'id_inventory', qi.id_inventory, "
         "   'description', qi.description, "
+        "   'description_small', qi.description_small, "
         "   'udm', qi.udm, "
         "   'quantity', qi.quantity, "
-        "   'unit_price', qi.price_unit "
+        "   'unit_price', qi.price_unit, "
+        "   'brand', qi.brand, "
+        "   'n_part', qi.n_part, "
+        "   'type_p', qi.type_p, "
+        "   'revision', qi.revision, "
+        "   'section_index', qi.section_index, "
+        "   'section_title', COALESCE(qi.extra_info->>'$.section_title', 'General'), "
+        "   'section_type', COALESCE(qi.extra_info->>'$.section_type', 'general') "
         ")) AS items "
         "FROM sql_telintec_mod_admin.contracts c "
         "LEFT JOIN sql_telintec_mod_admin.quotation_items qi ON qi.quotation_id = c.quotation_id "

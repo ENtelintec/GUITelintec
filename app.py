@@ -8,6 +8,7 @@ from templates.resources.rs_Admin_DB import ns as ns_admin_db
 from templates.resources.rs_Admin_presales import ns as ns_admin_presales
 from templates.resources.rs_Almacen import ns as ns_almacen
 from templates.resources.rs_Bitacora import ns as ns_bitacora
+from templates.resources.rs_CDA import ns as ns_cda
 from templates.resources.rs_Common import ns as ns_common
 from templates.resources.rs_Dashboards import ns as ns_dashboard
 from templates.resources.rs_login import ns as ns_login
@@ -44,6 +45,7 @@ api.add_namespace(ns_dashboard)
 api.add_namespace(ns_common)
 api.add_namespace(ns_admin_collections)
 api.add_namespace(ns_sgi)
+api.add_namespace(ns_cda)
 api.add_namespace(ns_login)
 
 

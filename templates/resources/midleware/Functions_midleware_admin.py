@@ -16,6 +16,7 @@ from templates.controllers.contracts.contracts_controller import (
     delete_contract,
     get_contract,
     get_contract_by_client,
+    get_contract_id_by_quotation,
     get_contracts_abreviations_db,
     get_contracts_by_ids,
     get_contracts_with_items,
@@ -77,14 +78,17 @@ __author__ = "Edisson Naula"
 __date__ = "$ 20/jun./2024  at 15:23 $"
 
 
-def get_quotations(id_quotation: int | None = None):
+def get_quotations(data_token, id_quotation: int | None = None):
     try:
         id_quotation = (
             id_quotation if id_quotation is not None and int(id_quotation) != -1 else None
         )
     except ValueError:
         return {"data": [], "msg": "Id de cotización inválido", "error": str(id_quotation)}, 400
-    flag, error, result = get_quotation(id_quotation)
+    # get_quotation(data_token, id_quotation): por nombre, no posicional. Pasarle el id
+    # como data_token dejaba id_quotation en None, devolvia TODAS las cotizaciones (el
+    # desempaque de 5 variables tronaba) y perdia el cambio de BD del permiso tester.
+    flag, error, result = get_quotation(data_token=data_token, id_quotation=id_quotation)
     if not flag:
         return {
             "data": [],
@@ -92,7 +96,13 @@ def get_quotations(id_quotation: int | None = None):
             "error": error,
         }, 400
     if id_quotation is not None:
-        id_q, metadata, products, creation, timestamps = result
+        if len(result) == 0:
+            return {
+                "data": [],
+                "msg": f"No se encontró la cotización (ID {id_quotation})",
+                "error": "Quotation not found",
+            }, 404
+        id_q, metadata, products, creation, timestamps = result[0]
         creation = (
             creation.strftime(format_timestamps) if not isinstance(creation, str) else creation
         )
@@ -426,18 +436,22 @@ def modify_pattern_phrase_contract_pdf(data: dict):
     return True, "None"
 
 
-def compare_file_and_quotation(data: dict):
+def compare_file_and_quotation(data: dict, data_token=None):
     settings = json.loads(filepath_settings)
     data["phrase"] = settings.get("phrase_pdf_contract")
     data["pattern"] = settings.get("pattern_pdf_contract")
     if data["phrase"] is None or data["pattern"] is None:
         data["phrase"] = settings.get("phrase_pdf_contract_default")
         data["pattern"] = settings.get("pattern_pdf_contract_default")
-    flag, error, data_quotation = get_quotation(data["id_quotation"])
-    if not flag:
+    # get_quotation(data_token, id_quotation): por nombre. El id en el slot de data_token
+    # devolvia todas las cotizaciones y la comparacion corria contra la fila equivocada.
+    flag, error, data_quotation = get_quotation(
+        data_token=data_token, id_quotation=data["id_quotation"]
+    )
+    if not flag or len(data_quotation) == 0:
         return {"data": None, "msg": "No se encontró la cotización", "error": error}, 400
     products_contract = read_file_tenium_contract(data["path"], data["pattern"], data["phrase"])
-    data_out, code = compare_file_quotation(data_quotation, products_contract)
+    data_out, code = compare_file_quotation(data_quotation[0], products_contract)
     return data_out, code
 
 
@@ -938,14 +952,49 @@ def items_quotation_from_file(data):
 
 
 def items_contract_from_file(data, data_token):
-    products = read_exel_products_partidas(data["path"], data_token)
+    products, diag = read_exel_products_partidas(data["path"], data_token)
+    # 1) El archivo no se pudo leer (no es .xlsx, corrupto, sin fila de encabezados, etc.)
     if products is None:
-        return {
-            "data": None,
-            "msg": "Error al procesar el archivo",
-            "error": "El archivo no contiene partidas válidas",
-        }, 400
-    return {"data": products, "msg": "Items cargados correctamente", "error": None}, 200
+        error = (
+            "No se pudo leer el archivo Excel. Debe ser .xlsx con una tabla de "
+            "partidas cuyos encabezados incluyan POS./PARTIDA + DESCRIPCIÓN + "
+            f"PRECIO. Detalle: {diag.get('read_error')}"
+        )
+        write_log_file(log_file_admin, f"items_contract_from_file: {error}", data_token)
+        return {"data": None, "msg": "No se pudo leer el archivo Excel", "error": error}, 400
+    # 2) Plantilla no reconocida: sin columna de descripcion NI de precio no se
+    # puede armar ninguna partida (evita generar items basura con datos vacios).
+    mapped = diag.get("columns_mapped", {})
+    if mapped.get("description") is None and mapped.get("price_unit") is None:
+        cols = ", ".join(diag.get("columns_found", [])) or "(ninguna)"
+        error = (
+            "Plantilla no reconocida: no se encontró columna de descripción "
+            "(DESCRIPCIÓN / DESCRIPCION) ni de precio (PRECIO UNITARIO / "
+            f"PRECIO UNIT.). Columnas encontradas: [{cols}]. "
+            "Verifica que el archivo tenga la tabla de partidas esperada."
+        )
+        write_log_file(log_file_admin, f"items_contract_from_file: {error}", data_token)
+        return {"data": None, "msg": "Plantilla de Excel no reconocida", "error": error}, 400
+    # 3) Se leyo pero no se detecto ninguna partida (columnas incompletas / sin filas)
+    if diag.get("items_parsed", 0) == 0:
+        cols = ", ".join(diag.get("columns_found", [])) or "(ninguna)"
+        error = (
+            "No se detectó ninguna partida en el archivo. "
+            f"Columnas encontradas: [{cols}]. "
+            f"Filas leídas: {diag.get('rows_total', 0)}, "
+            f"secciones: {diag.get('sections', 0)}, "
+            f"filas ignoradas: {diag.get('rows_skipped', 0)}. "
+            "Se requiere una columna de posición (PARTIDA / POS.), una de "
+            "descripción (DESCRIPCIÓN / DESCRIPCION) y una de precio "
+            "(PRECIO UNITARIO / PRECIO UNIT.)."
+        )
+        write_log_file(log_file_admin, f"items_contract_from_file: {error}", data_token)
+        return {"data": None, "msg": "El archivo no contiene partidas válidas", "error": error}, 400
+    # 4) Exito: se detallan conteos en el msg
+    msg = f"{diag['items_parsed']} partidas cargadas en {len(products)} sección(es)"
+    if diag.get("rows_skipped"):
+        msg += f" ({diag['rows_skipped']} filas ignoradas)"
+    return {"data": products, "msg": msg, "error": None}, 200
 
 
 def items_supplier_from_file(data):
@@ -1007,32 +1056,69 @@ def get_contracts_abreviations(data_token):
     return {"data": data_out, "msg": None, "error": None}, 200
 
 
+def _resolve_positive_int(value) -> int:
+    """Entero positivo o 0. None, "", basura y negativos caen a 0.
+
+    Hace falta porque wtforms_json convierte un null de JSON en None SIN aplicar el
+    default del campo, asi que comparar contra 0 no basta (None == 0 es False).
+    """
+    try:
+        number = int(value)  # pyrefly: ignore
+    except (TypeError, ValueError):
+        return 0
+    return number if number > 0 else 0
+
+
+def _num_item_field(value, default):
+    """Numerico del payload; None / vacio / no numerico -> default (nunca NULL)."""
+    try:
+        return type(default)(value)
+    except (TypeError, ValueError):
+        return default
+
+
+def _item_quotation_values(product: dict) -> dict:
+    """Columnas de quotation_items a partir de un item del payload.
+
+    section_index es el discriminador entero (0 por defecto) que hace unica la
+    llave (contract_id, section_index, partida) cuando la POS. reinicia por
+    seccion. section_title/section_type viajan en extra_info (JSON). El front
+    debe re-enviar section_title/section_type que recibio del GET: como todo el
+    resto de campos del item, esto es un overwrite completo (omitirlos los
+    reescribe al default "General"/"general").
+    """
+    description = product.get("description") or ""
+    description_small = product.get("description_small") or ""
+    id_inventory = _num_item_field(product.get("id_inventory"), 0)
+    return {
+        "partida": _num_item_field(product.get("partida"), 0),
+        "section_index": _num_item_field(product.get("section_index"), 0),
+        "udm": product.get("udm") or "PZA",
+        "brand": product.get("marca") or "",
+        "type_p": product.get("type_p") or "",
+        "n_part": product.get("n_parte") or "",
+        "quantity": _num_item_field(product.get("quantity"), 0),
+        "revision": _num_item_field(product.get("revision"), 0),
+        "price_unit": _num_item_field(product.get("price_unit"), 0.0),
+        "description": description[:1024],
+        "description_small": description_small[:255],
+        "id_inventory": id_inventory if id_inventory > 0 else None,
+        "extra_info": {
+            "section_title": product.get("section_title") or "General",
+            "section_type": product.get("section_type") or "general",
+        },
+    }
+
+
 def create_items_from_api(products, id_quotation, data_token, id_contract=None):
-    products_list = []
-    for product in products:
-        description = product.get("description", "")
-        description_small = product.get("description_small", "")
-        id_inventory = product.get("id_inventory", None)
-        id_inventory = id_inventory if id_inventory and id_inventory > 0 else None
-        products_list.append(
-            {
-                "quotation_id": id_quotation,
-                "contract_id": id_contract,
-                "partida": product.get("partida", None),
-                "udm": product.get("udm", "PZA"),
-                "brand": product.get("marca", ""),
-                "type_p": product.get("type_p", ""),
-                "n_part": product.get("n_parte", ""),
-                "quantity": product.get("quantity", 0.0),
-                "revision": product.get("revision", 0),
-                "price_unit": product.get("price_unit", 0.0),
-                "description": description if len(description) <= 1024 else description[:1024],
-                "description_small": description_small
-                if len(description_small) <= 255
-                else description_small[:255],
-                "id_inventory": id_inventory,
-            }
-        )
+    products_list = [
+        {
+            "quotation_id": id_quotation,
+            "contract_id": id_contract,
+            **_item_quotation_values(product),
+        }
+        for product in products
+    ]
     flag_list, error_list, result_list = create_items_quotation(products_list, data_token)
     return flag_list, error_list, result_list
 
@@ -1068,60 +1154,93 @@ def create_quotation_from_api(data, data_token):
     return {"data": {"id_quotation": id_quotation}, "msg": msg_out, "error": error_items}, 201
 
 
+def _dict_products_from_quotation(row) -> dict:
+    """Items actuales de la cotizacion indexados por qa_item_id.
+
+    La fila viene de get_quotation (columna products, indice 2). Una cotizacion sin
+    items devuelve [{"qa_item_id": null, ...}] por el LEFT JOIN + JSON_ARRAYAGG, asi
+    que esas entradas se filtran para no dejar una llave None en el dict.
+    """
+    old_products = json.loads(row[2]) if row[2] else []
+    return {
+        int(item["qa_item_id"]): item for item in old_products if item.get("qa_item_id")
+    }
+
+
 def update_items_quotation_from_api(products, id_quotation, id_contract, dict_products, data_token):
-    flag_list = []
-    error_list = []
-    result_list = []
+    """Upsert de los items de una cotizacion. Mismo contrato que los items de remision:
+
+    - qa_item_id null / 0 / ausente  -> se crea
+    - qa_item_id que no pertenece a esa cotizacion -> se crea (id viejo o borrado por
+      otro usuario no debe tumbar el guardado); queda en el log
+    - is_erased == 1 -> se borra (comparacion por igualdad: null/0 nunca borra)
+    - un item que no viene en la lista no se toca
+
+    La pertenencia se valida contra dict_products antes de tocar la BD, que es lo que
+    evita el UPDATE ... WHERE id = <ajeno o inexistente> que antes respondia 200 sin
+    escribir nada. El rowcount solo se revisa en el DELETE: en un UPDATE de MySQL
+    rowcount son las filas *cambiadas*, asi que guardar un item sin editarlo da 0 y
+    tomarlo como fallo seria una falsa alarma.
+    """
+    flag_list: list = []
+    error_list: list = []
+    result_list: list = []
+    counts = {"created": 0, "updated": 0, "deleted": 0, "recreated": 0}
     for new_product in products:
-        description = new_product.get("description", "")
-        description_small = new_product.get("description_small", "")
-        id_item = new_product.get("id", 0)
-        if id_item == 0:
-            flag, error, result = create_item_quotation(
-                {
-                    "quotation_id": id_quotation,
-                    "contract_id": id_contract,
-                    "partida": new_product.get("partida", None),
-                    "udm": new_product.get("udm", "PZA"),
-                    "brand": new_product.get("marca", ""),
-                    "type_p": new_product.get("type_p", ""),
-                    "n_part": new_product.get("n_parte", ""),
-                    "quantity": new_product.get("quantity", 0.0),
-                    "revision": new_product.get("revision", 0),
-                    "price_unit": new_product.get("price_unit", 0.0),
-                    "description": description if len(description) <= 1024 else description[:1024],
-                    "description_small": description_small
-                    if len(description_small) <= 255
-                    else description_small[:255],
-                    "id_inventory": new_product.get("id", None),
-                },
+        id_item = _resolve_positive_int(new_product.get("qa_item_id"))
+        is_erased = new_product.get("is_erased") == 1
+        if is_erased and id_item == 0:
+            # Fila que el front dio de baja sin haberse guardado nunca: no hay nada que
+            # borrar y crearla seria justo lo contrario de lo que pidio el usuario.
+            flag_list.append(True)
+            error_list.append(None)
+            result_list.append(0)
+            continue
+        values = _item_quotation_values(new_product)
+        if id_item > 0 and id_item not in dict_products:
+            write_log_file(
+                log_file_admin,
+                f"Item {id_item} no pertenece a la cotizacion {id_quotation}; se crea de nuevo",
                 data_token,
             )
+            counts["recreated"] += 1
+            id_item = 0
+        if id_item == 0:
+            flag, error, result = create_item_quotation(
+                {"quotation_id": id_quotation, "contract_id": id_contract, **values},
+                data_token,
+            )
+            if flag:
+                counts["created"] += 1
+        elif is_erased:
+            flag, error, result = delete_item_quotation(id_item, id_quotation, data_token)
+            if flag and result == 0:
+                flag = False
+                error = f"El item {id_item} no se elimino (0 filas afectadas)"
+            elif flag:
+                counts["deleted"] += 1
         else:
-            if new_product.get("is_erased", 0) != 0:
-                flag, error, result = delete_item_quotation(id_item, data_token)
-            else:
-                old_product = dict_products.get(id_item, {})
-                old_product["partida"] = new_product.get("partida", None)
-                old_product["udm"] = new_product.get("udm", "PZA")
-                old_product["brand"] = new_product.get("marca", "")
-                old_product["type_p"] = new_product.get("type_p", "")
-                old_product["n_part"] = new_product.get("n_parte", "")
-                old_product["quantity"] = new_product.get("quantity", 0.0)
-                old_product["revision"] = new_product.get("revision", 0)
-                old_product["price_unit"] = new_product.get("price_unit", 0.0)
-                old_product["description"] = (
-                    description if len(description) <= 1024 else description[:1024]
-                )
-                old_product["description_small"] = (
-                    description_small if len(description_small) <= 255 else description_small[:255]
-                )
-                old_product["id_inventory"] = new_product.get("id", None)
-                flag, error, result = update_item_quotation(id_item, old_product, data_token)
+            flag, error, result = update_item_quotation(
+                id_item, id_quotation, values, data_token
+            )
+            if flag:
+                counts["updated"] += 1
         flag_list.append(flag)
         error_list.append(error)
         result_list.append(result)
-    return flag_list, error_list, result_list
+    return flag_list, error_list, result_list, counts
+
+
+def _msg_items_counts(counts: dict) -> str:
+    """Resumen para el msg: "1 creado, 99 actualizados, 0 eliminados"."""
+    resumen = (
+        f"{counts['created']} creado(s), "
+        f"{counts['updated']} actualizado(s), "
+        f"{counts['deleted']} eliminado(s)"
+    )
+    if counts["recreated"] > 0:
+        resumen += f", {counts['recreated']} con id ajeno recreado(s)"
+    return resumen
 
 
 def update_quoation_from_api(data, data_token):
@@ -1133,23 +1252,25 @@ def update_quoation_from_api(data, data_token):
             "error": error,
         }, 400
     msg = f"Cotizacion actualizada con ID-{data['id']} por el empleado {data_token.get('name')}"
-    flag, error, result = get_quotation(data["id"])
-    if not flag:
+    # get_quotation(data_token, id_quotation): por nombre, no posicional. Pasarle el id
+    # como data_token dejaba id_quotation en None y devolvia TODAS las cotizaciones.
+    flag, error, result = get_quotation(data_token=data_token, id_quotation=data["id"])
+    if not flag or len(result) == 0:
         return {
             "data": None,
             "msg": "No se encontró la cotización a actualizar",
             "error": error,
         }, 400
-    old_products = json.loads(result[2])
-    dict_products = {item["id"]: item for item in old_products}
+    dict_products = _dict_products_from_quotation(result[0])
     products = data["products"]
-    contract_id = result[5]
+    # quotations no tiene contract_id; el enlace vive en contracts.quotation_id.
+    _, _, contract_id = get_contract_id_by_quotation(data["id"], data_token)
     error_items = None
-    flag_list, error_list, result_list = update_items_quotation_from_api(
+    flag_list, error_list, result_list, counts = update_items_quotation_from_api(
         products, data["id"], contract_id, dict_products, data_token
     )
     if flag_list.count(True) == len(flag_list):
-        msg += "\nItems de cotizacion actualizados correctamente"
+        msg += f"\nItems de cotizacion actualizados correctamente: {_msg_items_counts(counts)}"
     elif flag_list.count(False) == len(flag_list):
         return {
             "data": None,
@@ -1163,7 +1284,10 @@ def update_quoation_from_api(data, data_token):
         msg, data_token, ["administracion"], "Cotizacion Actualizada", data_token.get("emp_id"), 0
     )
     write_log_file(log_file_admin, msg, data_token)
-    msg_out = f"Cotización actualizada correctamente (ID {data['id']})"
+    msg_out = (
+        f"Cotización actualizada correctamente (ID {data['id']}). "
+        f"Items: {_msg_items_counts(counts)}"
+    )
     if error_items is not None:
         msg_out += f". {len(error_items)} items no se pudieron actualizar."
     return {"data": {"id_quotation": data["id"]}, "msg": msg_out, "error": error_items}, 200
@@ -1237,8 +1361,11 @@ def create_contract_from_api(data, data_token):
             "error": error,
         }, 400
     error_items = None
+    # create_items_from_api(products, id_quotation, data_token, id_contract): con
+    # id_contract en el slot de data_token los items nacian con contract_id NULL, lo que
+    # rompia el enlace SM <-> partida del contrato (WHERE contract_id = %s).
     flag_list, error_list, result_list = create_items_from_api(
-        data["products"], id_quotation, id_contract
+        data["products"], id_quotation, data_token, id_contract
     )
     if flag_list.count(True) == len(flag_list):
         msg += "\nItems de cotizacion creados correctamente"
@@ -1272,7 +1399,28 @@ def update_contract_from_api(data, data_token):
     msg = ""
     error_items = None
     new_quotation_created = False
-    if data.get("quotation_id", 0) == 0 and len(data.get("products", [])) > 0:
+    counts = {"created": 0, "updated": 0, "deleted": 0, "recreated": 0}
+    # La cotizacion ligada sale de la BD, no del payload: omitir quotation_id creaba una
+    # cotizacion nueva y reapuntaba el contrato, dejando los items previos huerfanos
+    # (get_contracts_with_items une por quotation_id, asi que desaparecian de la vista).
+    # El payload solo puede repuntar a otra cotizacion mandando un id > 0.
+    flag, error, contract = get_contract(data_token, data["id"])
+    if not flag or len(contract) == 0:
+        return {
+            "data": None,
+            "msg": f"No se encontró el contrato a actualizar (ID {data['id']})",
+            "error": error,
+        }, 404
+    id_quotation_db = _resolve_positive_int(contract[3])
+    id_quotation = _resolve_positive_int(data.get("quotation_id"))
+    if id_quotation > 0 and id_quotation != id_quotation_db:
+        write_log_file(
+            log_file_admin,
+            f"Contrato {data['id']}: cotizacion repuntada de {id_quotation_db} a {id_quotation}",
+            data_token,
+        )
+    id_quotation = id_quotation or id_quotation_db
+    if id_quotation == 0:
         flag, error, result = create_quotation(data["metadata"], status=1, data_token=data_token)
         if not flag:
             return {
@@ -1292,26 +1440,25 @@ def update_contract_from_api(data, data_token):
         flag_list, error_list, result_list = create_items_from_api(
             data["products"], id_quotation, data_token, data["id"]
         )
+        counts["created"] = flag_list.count(True)
     else:
-        id_quotation = data["quotation_id"]
-        flag, error, result = get_quotation(
-            id_quotation=data["quotation_id"], data_token=data_token
-        )
-        if not flag:
+        flag, error, result = get_quotation(id_quotation=id_quotation, data_token=data_token)
+        if not flag or len(result) == 0:
             return {
                 "data": None,
                 "msg": "No se encontró la cotización del contrato a actualizar",
                 "error": error,
             }, 400
-        old_products = json.loads(result[2])
-        dict_products = {item["id"]: item for item in old_products}
+        dict_products = _dict_products_from_quotation(result[0])
         products = data["products"]
-        contract_id = result[5]
-        flag_list, error_list, result_list = update_items_quotation_from_api(
-            products, data["id_quotation"], contract_id, dict_products, data_token
+        contract_id = data["id"]
+        flag_list, error_list, result_list, counts = update_items_quotation_from_api(
+            products, id_quotation, contract_id, dict_products, data_token
         )
-    if flag_list.count(True) == len(flag_list):
-        msg += "\nItems de cotizacion creados/actualizados correctamente"
+    if new_quotation_created and len(data.get("products", [])) == 0:
+        msg += "\nCotización creada sin items para relacionar con el contrato"
+    elif flag_list.count(True) == len(flag_list):
+        msg += f"\nItems de cotizacion creados/actualizados correctamente: {_msg_items_counts(counts)}"
     elif flag_list.count(False) == len(flag_list):
         if new_quotation_created:
             delete_quotation(id_quotation, data_token)
@@ -1321,13 +1468,13 @@ def update_contract_from_api(data, data_token):
             "error": error_list,
         }, 400
     else:
+        error_items = [e for f, e in zip(flag_list, error_list) if not f]
         msg += (
             "\nError al crear o actualizar ciertos items de la cotización"
-            + f"items con error: {len(error_list)}"
+            + f": items con error: {len(error_items)}"
             + "\n"
-            + f"items correctos: {len(result_list)}"
+            + f"items correctos: {len(flag_list) - len(error_items)}"
         )
-        error_items = [e for f, e in zip(flag_list, error_list) if not f]
     contract_number = data["metadata"].pop("contract_number", "error cnumber")
     client_id = data["metadata"].pop("client_id", 50)
     emission = data["metadata"].pop("emission", "error edate")
@@ -1355,7 +1502,10 @@ def update_contract_from_api(data, data_token):
         msg, data_token, ["administracion"], "Contrato Actualizado", data_token.get("emp_id"), 0
     )
     write_log_file(log_file_admin, msg, data_token)
-    msg_out = f"Contrato actualizado correctamente (ID {data['id']})"
+    msg_out = (
+        f"Contrato actualizado correctamente (ID {data['id']}). "
+        f"Items: {_msg_items_counts(counts)}"
+    )
     if error_items is not None:
         msg_out += f". {len(error_items)} items no se pudieron crear/actualizar."
     return {

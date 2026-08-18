@@ -7,6 +7,7 @@ __date__ = "$ 28/jun./2024  at 16:28 $"
 import json
 import os
 import tempfile
+import uuid
 import zipfile
 from datetime import datetime
 
@@ -30,7 +31,7 @@ from static.constants import (
     index_file_nominas,
     log_file_rh,
     patterns_files_fichaje,
-    quizzes_temp_pdf,
+    quizz_out_path,
     secrets,
     timezone_software,
 )
@@ -51,6 +52,7 @@ from templates.controllers.employees.vacations_controller import (
 )
 from templates.controllers.misc.tasks_controller import (
     get_all_tasks_by_status,
+    get_task_by_id_emp,
     update_task,
 )
 from templates.controllers.payroll.payroll_controller import (
@@ -726,6 +728,140 @@ def get_all_quizzes(data_token):
     return True, "", data_out
 
 
+def get_task_by_id_employee(id_emp: int, data_token):
+    flag, error, result = get_task_by_id_emp(id_emp, data_token)
+    if not flag:
+        return {"data": None, "msg": "Error al obtener las tareas", "error": error}, 400
+    if not (isinstance(result, list) or isinstance(result, tuple)):
+        return {"data": None, "msg": "Formato de datos inválido", "error": f"no tasks {result}"}, 400
+    data_out = []
+    for item in result:
+        data_out.append(
+            {
+                "id": item[0],
+                "body": json.loads(item[1]),
+                "data_raw": json.loads(item[2]),
+                "timestamp": item[3].strftime(format_timestamps)
+                if isinstance(item[3], datetime)
+                else item[3],
+            }
+        )
+    return {"data": data_out, "msg": None, "error": None}, 200
+
+
+def get_quizz_evaluation(id_task, data_token):
+    """Evalua una encuesta por su id (task) con el motor config-driven y
+    devuelve el resultado uniforme. Determinista desde `data_raw` + rubrica
+    (siempre fresco); no persiste ni genera PDF. Devuelve (envelope, code).
+    """
+    from templates.resources.midleware.quizz_eval_engine import evaluate_task
+
+    flag, error, result = get_all_tasks_by_status(
+        status=-1, data_token=data_token, id_task=id_task, title=None
+    )
+    if not flag:
+        return {"data": None, "msg": "No se pudo obtener la encuesta", "error": error}, 400
+    rows = result if isinstance(result, list) else []
+    if not rows:
+        return {"data": None, "msg": f"Encuesta {id_task} no encontrada", "error": None}, 404
+    row = rows[0]
+    body = json.loads(row[1]) if isinstance(row[1], str) else row[1]
+    data_raw = json.loads(row[2]) if isinstance(row[2], str) else row[2]
+    tipo_q = (body or {}).get("metadata", {}).get("type_quizz")
+    if tipo_q is None:
+        return {
+            "data": None,
+            "msg": f"La tarea {id_task} no es una encuesta (sin type_quizz)",
+            "error": None,
+        }, 400
+    evaluation = evaluate_task(data_raw, tipo_q, data_token)
+    if evaluation is None:
+        return {
+            "data": None,
+            "msg": f"No hay rubrica para el tipo de encuesta {tipo_q} (pendiente de migracion)",
+            "error": None,
+        }, 200
+    return {"data": evaluation, "msg": None, "error": None}, 200
+
+
+def get_quizz_group_evaluation(type_q, data_token, date_from=None, date_to=None):
+    """Resultado organizacional de una encuesta: agrega TODAS las encuestas
+    contestadas del tipo por conteo agrupado (motor `evaluate_group`), con
+    filtro opcional por fecha del task (`YYYY-MM-DD`, ambos limites
+    inclusivos). En clima (3) esto es la tabla de % por categoria + total.
+    Determinista y on-read (no persiste). Devuelve (envelope, code).
+    """
+    from templates.resources.midleware.quizz_eval_engine import (
+        evaluate_group,
+        load_rubric,
+    )
+
+    rubric = load_rubric(type_q, data_token)
+    if rubric is None:
+        return {
+            "data": None,
+            "msg": f"No hay rubrica para el tipo de encuesta {type_q} (pendiente de migracion)",
+            "error": None,
+        }, 200
+    if rubric.get("mode") == "qualitative":
+        return {
+            "data": None,
+            "msg": f"La encuesta tipo {type_q} es cualitativa: no tiene agregado numerico",
+            "error": None,
+        }, 200
+
+    limits = {}
+    for name, raw in (("date_from", date_from), ("date_to", date_to)):
+        if raw in (None, ""):
+            limits[name] = None
+            continue
+        try:
+            limits[name] = datetime.strptime(raw, "%Y-%m-%d").date()
+        except (TypeError, ValueError):
+            return {
+                "data": None,
+                "msg": f"Fecha invalida en {name} (formato YYYY-MM-DD): {raw}",
+                "error": None,
+            }, 400
+    dt_from, dt_to = limits["date_from"], limits["date_to"]
+
+    flag, error, tasks = get_all_tasks_by_status(status=-1, title="quizz", data_token=data_token)
+    if not flag:
+        return {"data": None, "msg": "No se pudieron obtener las encuestas", "error": error}, 400
+
+    data_raws = []
+    for row in tasks if isinstance(tasks, list) else []:
+        try:
+            body = json.loads(row[1]) if isinstance(row[1], str) else row[1]
+            tipo_row = int((body or {}).get("metadata", {}).get("type_quizz"))
+        except (TypeError, ValueError):
+            continue
+        if tipo_row != int(type_q):
+            continue
+        if dt_from or dt_to:
+            ts = row[3]
+            if isinstance(ts, str):
+                try:
+                    ts = datetime.strptime(ts, format_timestamps)
+                except ValueError:
+                    continue
+            if not isinstance(ts, datetime):
+                continue
+            if (dt_from and ts.date() < dt_from) or (dt_to and ts.date() > dt_to):
+                continue
+        data_raws.append(row[2])
+
+    evaluation = evaluate_group(data_raws, rubric)
+    msg = None
+    if evaluation is not None and evaluation.get("respondents") == 0:
+        msg = f"Sin encuestas contestadas del tipo {type_q} en el rango solicitado"
+    return {"data": evaluation, "msg": msg, "error": None}, 200
+
+
+# DEPRECADO: `recommendations_results_quizzes` y `calculate_results_quizzes`
+# fueron reemplazadas por el motor config-driven en
+# `templates/resources/midleware/quizz_eval_engine.py`. Ya no se llaman desde
+# ningun lado (grep confirma). Removibles en un follow-up de limpieza.
 def recommendations_results_quizzes(dict_results: dict, tipo_q: int):
     # Asumiendo que tienes la ruta correcta en filepath_recommendations
     dict_conversions_recomen = json.load(open(filepath_recommendations, encoding="utf-8"))
@@ -852,32 +988,113 @@ def calculate_results_quizzes(dict_quizz: dict, tipo_q: int):
     return dict_results
 
 
+def _legacy_shape_from_evaluation(evaluation):
+    """Deriva el shape viejo (results/recommendations) desde el resultado
+    uniforme del motor, para que el generador de PDF actual siga leyendo
+    `results`/`recommendations` sin tocar el layout de reportlab. Shim de
+    transicion: se elimina cuando el PDF se redisene para leer `evaluation`.
+    """
+    total = evaluation.get("total", {})
+    c_dom, c_cat = {}, {}
+    cat_actions = []
+    for cat in evaluation.get("breakdown", []):
+        c_cat[cat.get("label")] = cat.get("score")
+        if cat.get("actions") and not cat_actions:
+            cat_actions = cat["actions"]
+        for dom in cat.get("children", []):
+            c_dom[dom.get("label")] = dom.get("score")
+    results = {"c_final": total.get("score"), "c_dom": c_dom, "c_cat": c_cat}
+    recommendations = {
+        "c_final_r": total.get("actions", []),
+        "c_dom_r": "",
+        "c_cat_r": cat_actions,
+    }
+    return results, recommendations
+
+
 def generate_pdf_from_json(data, data_token):
     from static.FramesClasses import dict_typer_quizz_generator
+    from templates.resources.midleware.quizz_eval_engine import evaluate_task
 
     json_dict = data["body"]
-    file_out = quizzes_temp_pdf
     tipo_op = json_dict["metadata"]["type_quizz"]
-    is_update = True
+    # Sin generador dedicado (modelos nuevos creados por API) se usa el PDF
+    # generico de resumen mas abajo — necesita la evaluacion, no el generador.
+    generator = dict_typer_quizz_generator.get(tipo_op)
 
-    generator = dict_typer_quizz_generator[tipo_op]
     data_raw = (
         json.loads(data["data_raw"]) if isinstance(data["data_raw"], str) else data["data_raw"]
     )
-    if "results" not in data_raw.keys():
-        dict_results = calculate_results_quizzes(data_raw, tipo_op)
-        data_raw["results"] = dict_results
-        is_update = False
-    if "recommendations" not in data_raw.keys():
-        dict_recomendations = recommendations_results_quizzes(data_raw["results"], tipo_op)
-        data_raw["recommendations"] = dict_recomendations
-        is_update = False
-    if not is_update:
-        flag, error, result = update_task(
-            data["id"], data["body"], data_raw=data_raw, data_token=data_token
-        )
-        if not flag:
-            print("Error al actualizar el task", error, result)
+
+    # Evaluacion via el motor config-driven (fuente de verdad, shape uniforme).
+    evaluation = evaluate_task(data_raw, tipo_op, data_token)
+    if evaluation is not None and evaluation.get("mode") == "scored":
+        data_raw["evaluation"] = evaluation
+        results, recommendations = _legacy_shape_from_evaluation(evaluation)
+        data_raw["results"] = results
+        data_raw["recommendations"] = recommendations
+        # Persistir solo con un id valido (evita pisar la fila 0 por el default del form).
+        if data.get("id"):
+            flag, error, _ = update_task(
+                data["id"], data["body"], data_raw=data_raw, data_token=data_token
+            )
+            if not flag:
+                write_log_file(
+                    log_file_rh, f"No se pudo actualizar el task de quizz: {error}", data_token
+                )
+    else:
+        # Tipo aun sin rubrica (o cualitativo): expone la evaluacion si existe y
+        # deja defaults seguros para no romper el generador de PDF.
+        if evaluation is not None:
+            data_raw["evaluation"] = evaluation
+        data_raw.setdefault("results", {"c_final": 0, "c_dom": {}, "c_cat": {}})
+        data_raw.setdefault("recommendations", {"c_final_r": [], "c_dom_r": "", "c_cat_r": []})
+
+    # Archivo temporal unico por request (evita el clobber del temp compartido).
+    file_out = os.path.join(quizz_out_path, f"quiz_report_{uuid.uuid4().hex}.pdf")
+
+    if generator is None:
+        # Fallback: PDF generico de resumen (renderiza el shape uniforme del
+        # motor; sirve para cualquier modelo creado via /rrhh/quizz/models).
+        if evaluation is None:
+            return 400, (
+                f"No hay generador de PDF ni rubrica para el tipo de encuesta {tipo_op}"
+            )
+        try:
+            from templates.controllers.rrhh.quizz_models_controller import (
+                get_quizz_model_template_db,
+            )
+            from templates.forms.QuizzGenericReport import create_generic_quizz_report
+
+            flag_model, _, model_row = get_quizz_model_template_db(tipo_op, data_token)
+            model_name = (
+                model_row[0]  # pyrefly: ignore
+                if flag_model and model_row
+                else f"Tipo {tipo_op}"
+            )
+            metadata = json_dict.get("metadata", {})
+            create_generic_quizz_report(
+                {
+                    "path_file": file_out,
+                    "title": model_name,
+                    "folio": f"Encuesta {data.get('id') or 's/n'} / tipo {tipo_op}",
+                    "metadata": {
+                        "Empleado": metadata.get("name_emp"),
+                        "Puesto": metadata.get("position"),
+                        "Fecha": metadata.get("date"),
+                        "Entrevistador": metadata.get("interviewer"),
+                        "Modelo": f"{model_name} (tipo {tipo_op})",
+                    },
+                    "evaluation": evaluation,
+                }
+            )
+            return 201, file_out
+        except Exception as e:
+            write_log_file(
+                log_file_rh, f"Error al generar el pdf generico de quizz: {e}", data_token
+            )
+            return 400, "Error al generar el pdf"
+
     try:
         generator(
             data_raw,
@@ -893,7 +1110,7 @@ def generate_pdf_from_json(data, data_token):
         )
         return 201, file_out
     except Exception as e:
-        print("Error al generar el pdf", e)
+        write_log_file(log_file_rh, f"Error al generar el pdf de quizz: {e}", data_token)
         return 400, "Error al generar el pdf"
 
 

@@ -81,7 +81,10 @@ def get_products_sm(contract: str, data_token) -> tuple[dict, int]:
         flag, error, items_contract = get_items_contract_string(contract, data_token)
     else:
         items_contract = []
-    ids_in_contract = {}
+    # id_inventory -> lista de (partida, section_index). Un mismo producto puede
+    # estar en varias secciones/partidas del contrato; se guardan todas (antes se
+    # sobrescribia y ganaba la ultima) para emitir una fila por par.
+    ids_in_contract: dict = {}
     if isinstance(items_contract, int):
         return {
             "data": {"contract": [], "normal": []},
@@ -91,7 +94,7 @@ def get_products_sm(contract: str, data_token) -> tuple[dict, int]:
     for item in items_contract:
         if item[4] is None:
             continue
-        ids_in_contract[item[4]] = item[3]
+        ids_in_contract.setdefault(item[4], []).append((item[3], item[5]))
     flag, error, result_p = get_products_w_reservations(data_token)
     if not flag:
         return {
@@ -116,19 +119,23 @@ def get_products_sm(contract: str, data_token) -> tuple[dict, int]:
                 sku_fabricante = code.get("value")
                 break
         if product[0] in ids_in_contract.keys():
-            items_partida.append(
-                {
-                    "id": product[0],
-                    "name": product[1],
-                    "udm": product[2],
-                    "stock": product[3],
-                    "partida": ids_in_contract[product[0]],
-                    "reserved": product[4],
-                    "available_stock": product[5],
-                    "sku": sku,
-                    "sku_fabricante": sku_fabricante,
-                }
-            )
+            # Una fila por (partida, section_index): el mismo producto puede servir a
+            # varias partidas/secciones del contrato y el front las elige por separado.
+            for partida, section_index in ids_in_contract[product[0]]:
+                items_partida.append(
+                    {
+                        "id": product[0],
+                        "name": product[1],
+                        "udm": product[2],
+                        "stock": product[3],
+                        "partida": partida,
+                        "section_index": section_index,
+                        "reserved": product[4],
+                        "available_stock": product[5],
+                        "sku": sku,
+                        "sku_fabricante": sku_fabricante,
+                    }
+                )
         else:
             items_normal.append(
                 {
@@ -305,6 +312,7 @@ def get_all_sm(limit, data_token, page=0, emp_id=-1, with_items=True):
             "requesting_user_state": extra_info.get("requesting_user_state", ""),
             "date_closing": extra_info.get("date_closing", ""),
             "approve_required": approve_required,
+            "files": extra_info.get("files", [])
         }
 
         # if isinstance(extra_info, dict):
@@ -751,10 +759,80 @@ def get_employees_almacen(data_token):
     return data_out, 200
 
 
+def _downscale_signature_image(local_path, max_width=600):
+    """Reduce la resolución de una firma grande para no engordar el PDF (la
+    imagen se muestra chica pero reportlab la incrusta a su resolución de
+    origen). Devuelve la misma ruta (reescrita in-place o intacta). No fatal:
+    ante cualquier error devuelve la imagen original."""
+    try:
+        from PIL import Image
+
+        with Image.open(local_path) as img:
+            if img.width <= max_width:
+                return local_path
+            ratio = max_width / float(img.width)
+            new_size = (max_width, max(1, int(img.height * ratio)))
+            img.resize(new_size, Image.Resampling.LANCZOS).save(local_path)
+        return local_path
+    except Exception as e:
+        print("erro downscale sm signature", str(e))
+        return local_path
+
+
+def _build_sm_delivery_files(files_sm, data_token):
+    """
+    Arma las filas de la tabla de entregas/firmas del PDF de la SM a partir de
+    los attachments (``extra_info["files"]``): pre-llena No./fecha/título y
+    descarga de S3 la firma de quien recibe para incrustarla. No fatal por
+    archivo: si el attachment no es una imagen dibujable (pdf/zip) o falla la
+    descarga, la fila queda con ``image_path=None`` (celda en blanco para firmar
+    a mano). Siempre devuelve al menos una fila.
+    """
+    drawable = {"jpg", "jpeg", "png", "webp"}
+    bucket_name = secrets.get("S3_ADMIN_BUCKET")
+    tmp_dir = tempfile.mkdtemp()
+    s3_client = None
+    delivery_files = []
+    for idx, f in enumerate(files_sm[:20], start=1):
+        if not isinstance(f, dict):
+            continue
+        timestamp = f.get("timestamp") or ""
+        date_str = timestamp.split(" ")[0] if timestamp else ""
+        title = f.get("title") or f"Entrega {idx}"
+        path_aws = f.get("path")
+        filename = f.get("filename") or ""
+        ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
+        image_path = None
+        if path_aws and ext in drawable:
+            try:
+                if s3_client is None:
+                    s3_client = boto3.client("s3")
+                local_path = os.path.join(tmp_dir, f"sign_{idx}_{os.path.basename(path_aws)}")
+                s3_client.download_file(Bucket=str(bucket_name), Key=path_aws, Filename=local_path)
+                image_path = _downscale_signature_image(local_path)
+            except Exception as e:
+                write_log_file(
+                    log_file_sm_path,
+                    f"No se pudo cargar la firma '{filename}' para el PDF de la SM: {str(e)}",
+                    data_token,
+                )
+                image_path = None
+        delivery_files.append(
+            {"no": idx, "date": date_str, "title": title, "image_path": image_path}
+        )
+    if not delivery_files:
+        delivery_files = [{"no": 1, "date": "", "title": "", "image_path": None}]
+    return delivery_files
+
+
 def dowload_file_sm(sm_id: int, data_token, type_file="pdf"):
     flag, error, result = get_sm_by_id(sm_id, data_token)
-    if not flag or len(result) == 0:
-        return "None", 400
+    if not flag or len(result) == 0 or result[0] is None:
+        return {
+            "data": None,
+            "msg": f"SM con id {sm_id} no encontrada",
+            "error": error or "SM no encontrada",
+        }, 404
     folio = result[1]
     contract = result[2]
     facility = result[3]
@@ -762,17 +840,21 @@ def dowload_file_sm(sm_id: int, data_token, type_file="pdf"):
     # client_id = result[5]
     # emp_id = result[6]
     order_quotation = result[7]
-    date = pd.to_datetime(result[8])
-    critical_date = pd.to_datetime(result[9])
+    date = pd.to_datetime(result[8], errors="coerce") if result[8] else None
+    critical_date = pd.to_datetime(result[9], errors="coerce") if result[9] else None
     items = json.loads(result[10]) if isinstance(result[10], str) else result[10]
     # status = result[11]
     # history = json.loads(result[12])
+    # comment/observations (result[13]) no se imprime en el documento
     try:
-        observations = json.loads(result[13])
+        extra_info = json.loads(result[14]) if result[14] else {}
     except Exception as e:
-        print("erro download", str(e))
-        observations = [result[13]]
-    # extra_info = json.loads(result[14])
+        print("erro download extra_info", str(e))
+        extra_info = {}
+    files_sm = extra_info.get("files", []) if isinstance(extra_info, dict) else []
+    # una fila de entrega por attachment; descarga la firma de quien recibe de
+    # S3 para incrustarla y pre-llena fecha/título (no fatal por archivo)
+    delivery_files = _build_sm_delivery_files(files_sm, data_token) if type_file == "pdf" else []
     basename = f"sm_{folio}"
     download_path = (
         os.path.join(tempfile.mkdtemp(), os.path.basename(basename + ".pdf"))
@@ -787,22 +869,32 @@ def dowload_file_sm(sm_id: int, data_token, type_file="pdf"):
     else:
         customer_name = "None"
         emp_name = "None"
-    counter = 1
-    for item in items:
-        name = item["name"] if "name" in item.keys() else "None"
-        quantity = item["quantity"] if "quantity" in item.keys() else "None"
-        comment = item["comment"] if "comment" in item.keys() else "None"
-        udm = item["udm"] if "udm" in item.keys() else "None"
-        stock = item["dispached"] if "dispached" in item.keys() else "None"
+    if items is None:
+        items = []
+    # Una SM sin items produce [{'id': None, ...}] por el LEFT JOIN + JSON_ARRAYAGG.
+    items = [item for item in items if isinstance(item, dict) and item.get("id") is not None]
+    for counter, item in enumerate(items, start=1):
+        name = item.get("name") or "None"
+        quantity = item.get("quantity") or 0
+        comment = item.get("comment") or ""
+        udm = item.get("udm") or "None"
+        dispatched = item.get("dispatched") or 0
         if "(despachado)" in comment.lower():
             status = "Despachado"
+        # "(Semidespachado)" no contiene "(despachado)" como substring (la "i" de
+        # "semi" se interpone), así que sin esta rama un despacho parcial caía
+        # hasta el else e imprimía "pendiente". Va después de "(Despachado)"
+        # porque el comment acumula marcadores: si el item terminó completo,
+        # ambos están presentes y gana el completo.
+        elif "(semidespachado)" in comment.lower():
+            status = "Semidespachado"
         elif "(pedido)" in comment.lower():
             status = "Pedido"
         elif "(nuevo)" in comment.lower():
             status = "Nuevo-Pedido"
         else:
             status = "pendiente"
-        products.append((counter, name, quantity, udm, stock, status))
+        products.append((counter, name, quantity, udm, dispatched, status))
 
     if type_file == "pdf":
         flag = FileSmPDF(
@@ -810,7 +902,9 @@ def dowload_file_sm(sm_id: int, data_token, type_file="pdf"):
                 "filename_out": download_path,
                 "products": products,
                 "metadata": {
-                    "Fecha de Solicitud": date.strftime(format_date),
+                    "Fecha de Solicitud": date.strftime(format_date)
+                    if isinstance(date, datetime) and not pd.isnull(date)
+                    else "",
                     "Folio": folio,
                     "Contrato": contract,
                     "Usuario Solicitante": customer_name,
@@ -819,20 +913,24 @@ def dowload_file_sm(sm_id: int, data_token, type_file="pdf"):
                     "Planta": facility,
                     "Área Dirigida Telintec": location,
                     "Área / Ubicación": location,
-                    "Fecha Crítica de Entrega": critical_date.strftime(format_date),
+                    "Fecha Crítica de Entrega": critical_date.strftime(format_date)
+                    if isinstance(critical_date, datetime) and not pd.isnull(critical_date)
+                    else "",
                 },
-                "observations": observations,
-                "date_complete_delivery": "2023-06-01",
-                "date_first_delivery": "2023-06-01",
+                "delivery_files": delivery_files,
             },
         )
         if not flag:
             print("error at generating pdf", download_path)
-            return "None", 400
+            return {
+                "data": None,
+                "msg": f"No se pudo generar el PDF de la SM con id {sm_id}",
+                "error": "Error al generar el PDF",
+            }, 400
     else:
         lista_de_items = products
         # Definir los nombres de las columnas
-        columnas = ["No.", "Nombre", "Cantidad", "Unidad de Medida", "Stock", "Estatus"]
+        columnas = ["No.", "Nombre", "Cantidad", "Unidad de Medida", "C. Suministrado", "Estatus"]
         # Convertir la lista en un DataFrame
         df = pd.DataFrame(lista_de_items, columns=columnas)
         # Guardar el DataFrame en un archivo Excel
@@ -979,26 +1077,42 @@ def check_for_partidas_updates(products: list, contract_id: int, data_token):
     if contract_id is None or contract_id == 0:
         return flags, errors, results
     flag, error, old_items = get_items_quotation_from_cotract(contract_id, data_token)
-    # dict partida->id_inventory
     old_items = old_items if old_items is not None else []
-    dict_partidas = {item[1]: item[2] for item in old_items}
+
+    def _safe_int(value):
+        try:
+            return int(value)
+        except (TypeError, ValueError):
+            return None
+
+    # La POS. reinicia por seccion, asi que la llave es (section_index, partida),
+    # no partida sola. item[1]=partida, item[2]=id_inventory, item[4]=section_index.
+    # Se normaliza a int para que el path PUT (partida como string) matchee las
+    # llaves int de la BD y no dispare UPDATEs redundantes.
+    dict_partidas = {}
+    for row in old_items:
+        partida_db = _safe_int(row[1])
+        if partida_db is None:
+            continue
+        dict_partidas[(_safe_int(row[4]) or 0, partida_db)] = row[2]
+
     for item in products:
-        partida = item.get("partida", None)
-        if partida is None:
+        partida = _safe_int(item.get("partida"))
+        if partida is None or partida == 0:
             continue
-        if partida == "" or partida == 0:
-            continue
-        id_inventory_old = dict_partidas.get(partida, None)
+        section_index = _safe_int(item.get("section_index", 0)) or 0
+        key = (section_index, partida)
+        id_inventory_old = dict_partidas.get(key, None)
         id_inventory_new = item.get("id", None)
         if id_inventory_new is None:
             continue
         if id_inventory_old != id_inventory_new:
             flag, error, result = update_quotation_item_partida_from_sm(
-                contract_id, partida, id_inventory_new, data_token
+                contract_id, section_index, partida, id_inventory_new, data_token
             )
             if not flag:
                 return [False], [error], [result]
-            dict_partidas[partida] = id_inventory_new
+            dict_partidas[key] = id_inventory_new
             flags.append(flag)
             errors.append(error)
             results.append(result)
@@ -1173,14 +1287,6 @@ def check_if_items_sm_correct_for_update(items_in):
         if item.get("quantity", 0) < 0:
             all_ok = False
             error = f"Item con id {item['id']} no tiene cantidad adecuada"
-
-        # if item.get("id", 0) <= 0:
-        #     if item.get("id_inventory", 0) <= 0:
-        #         all_ok = False
-        #         error = (
-        #             f"Item con id {item['id']} no tiene id de inventario para crearlo"
-        #         )
-
         if item.get("id_inventory", 0) <= 0:
             if item.get("id", 0) > 0:
                 all_ok = False
@@ -1588,7 +1694,7 @@ def create_sm_attachment_api(data, data_token):
             return (
                 {
                     "data": None,
-                    "msg": "El nombre del archivo no corresponde al voucher",
+                    "msg": "El nombre del archivo no corresponde al sm",
                     "error": "id mismatch",
                 },
                 400,
@@ -1612,23 +1718,15 @@ def create_sm_attachment_api(data, data_token):
             "msg": "No se pudo obtener la SM",
             "error": error,
         }, 400
-    if not isinstance(result, list):
+    # get_sm_by_id devuelve una sola fila (tupla); antes se iteraba como lista
+    # de SMs y el endpoint fallaba siempre con "resultado no es una lista"
+    if len(result) == 0 or result[0] is None or int(result[0]) != int(data["id_sm"]):
         return {
             "data": None,
-            "msg": "No se pudo obtener la SM: resultado no es una lista",
-            "error": str(result),
+            "msg": f"No se pudo obtener la SM: SM con id {data['id_sm']} no encontrada",
+            "error": "SM no encontrada",
         }, 400
-    sm_data = []
-    for item in result:
-        if int(item[0]) == int(data["id_sm"]):
-            sm_data = item
-            break
-    if len(sm_data) <= 0:
-        return {
-            "data": None,
-            "msg": "No se pudo obtener la SM: SM no encontrada",
-            "error": str(sm_data),
-        }, 400
+    sm_data = result
     date_sm = sm_data[8]
     history = json.loads(sm_data[12])
     # reconocer el tipo de archivo [pdf, image, zip]
@@ -1691,13 +1789,17 @@ def create_sm_attachment_api(data, data_token):
             "comment": msg,
         }
     )
-    extra_info = json.loads(sm_data[14])
-    comments = json.loads(sm_data[13])
+    extra_info = json.loads(sm_data[14]) if sm_data[14] else {}
+    comments = json.loads(sm_data[13]) if sm_data[13] else []
     files = extra_info.get("files", [])
+    # timestamp y title alimentan la tabla de entregas/firmas del PDF de la SM:
+    # title lleva el número de entrega ("Entrega N") y timestamp la fecha
     files.append(
         {
             "filename": data["filename"],
             "path": path_aws,
+            "timestamp": timestamp.strftime(format_timestamps),
+            "title": data.get("title") or f"Entrega {len(files) + 1}",
         }
     )
     extra_info["files"] = files

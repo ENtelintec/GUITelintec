@@ -8,8 +8,8 @@ from flask_restx import Namespace, Resource
 from werkzeug.utils import secure_filename
 
 from static.Models.api_models import expected_headers_per
-from static.Models.api_sgi_models import expected_files_attachment
 from static.Models.api_sm_models import (
+    expected_files_attachment_sm,
     ItemApproveSMForm,
     ItemsBulkSmPutForm,
     ItemSMInventoryPutForm,
@@ -366,17 +366,14 @@ class DownloadPDFSM(Resource):
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data, code = dowload_file_sm(sm_id, data_token)
         if code == 200:
+            # con code 200 data siempre es la ruta (str) del archivo generado
             return send_file(
-                data,
+                data,  # pyrefly: ignore
                 as_attachment=True,
-                download_name=data.replace("\\", "/").split("/")[-1],
+                download_name=data.replace("\\", "/").split("/")[-1],  # pyrefly: ignore
             )
         else:
-            return {
-                "data": None,
-                "msg": "No se pudo descargar el archivo",
-                "error": "download error",
-            }, code
+            return data, code
 
 
 @ns.route("/download/excel/<int:sm_id>")
@@ -388,17 +385,14 @@ class DownloadExcelSM(Resource):
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data, code = dowload_file_sm(sm_id, data_token, type_file="excel")
         if code == 200:
+            # con code 200 data siempre es la ruta (str) del archivo generado
             return send_file(
-                data,
+                data,  # pyrefly: ignore
                 as_attachment=True,
-                download_name=data.replace("\\", "/").split("/")[-1],
+                download_name=data.replace("\\", "/").split("/")[-1],  # pyrefly: ignore
             )
         else:
-            return {
-                "data": None,
-                "msg": "No se pudo descargar el archivo",
-                "error": "download error",
-            }, code
+            return data, code
 
 
 @ns.route("/control/table")
@@ -555,10 +549,10 @@ class UpdateItemSMApprove(Resource):
 
 @ns.route("/attachment-<string:id_sm>")
 class UploadSMAttachment(Resource):
-    @ns.expect(expected_headers_per, expected_files_attachment)
+    @ns.expect(expected_headers_per, expected_files_attachment_sm)
     def post(self, id_sm):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["administracion", "operaciones"]
+            request, department=["administracion", "operaciones", "Almacen"]
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -574,6 +568,7 @@ class UploadSMAttachment(Resource):
                     "filepath": filepath_download,
                     "filename": filename,
                     "id_sm": id_sm,
+                    "title": request.form.get("title", ""),
                 },
                 data_token,
             )

@@ -1,0 +1,1025 @@
+{
+  "type": 2,
+  "name": "Norma 035 (>50) v2",
+  "mode": "scored",
+  "scoring": {
+    "answer_kind": "option_index",
+    "item_maps": [
+      {
+        "items": [
+          1,
+          4,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          30,
+          31,
+          32,
+          33,
+          34,
+          35,
+          36,
+          37,
+          38,
+          39,
+          40,
+          41,
+          42,
+          43,
+          44,
+          45,
+          46,
+          47,
+          48,
+          49,
+          50,
+          51,
+          52,
+          53,
+          55,
+          56,
+          57
+        ],
+        "values": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "na_value": 0
+      },
+      {
+        "items": [
+          2,
+          3,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          29,
+          54,
+          58,
+          59,
+          60,
+          61,
+          62,
+          63,
+          64,
+          65,
+          66,
+          67,
+          68,
+          69,
+          70,
+          71,
+          72
+        ],
+        "values": [
+          4,
+          3,
+          2,
+          1,
+          0
+        ],
+        "na_value": 0
+      }
+    ]
+  },
+  "bands_total": [
+    [
+      "nulo",
+      null,
+      50
+    ],
+    [
+      "bajo",
+      50,
+      75
+    ],
+    [
+      "medio",
+      75,
+      99
+    ],
+    [
+      "alto",
+      99,
+      140
+    ],
+    [
+      "muy_alto",
+      140,
+      null
+    ]
+  ],
+  "tree": [
+    {
+      "id": "c0",
+      "kind": "categoria",
+      "label": "Ambiente de trabajo",
+      "agg": "sum",
+      "bands": [
+        [
+          "nulo",
+          null,
+          5
+        ],
+        [
+          "bajo",
+          5,
+          9
+        ],
+        [
+          "medio",
+          9,
+          11
+        ],
+        [
+          "alto",
+          11,
+          14
+        ],
+        [
+          "muy_alto",
+          14,
+          null
+        ]
+      ],
+      "children": [
+        {
+          "id": "c0_d0",
+          "kind": "dominio",
+          "label": "Condiciones en el ambiente de trabajo",
+          "agg": "sum",
+          "bands": [
+            [
+              "nulo",
+              null,
+              5
+            ],
+            [
+              "bajo",
+              5,
+              9
+            ],
+            [
+              "medio",
+              9,
+              11
+            ],
+            [
+              "alto",
+              11,
+              14
+            ],
+            [
+              "muy_alto",
+              14,
+              null
+            ]
+          ],
+          "children": [
+            {
+              "id": "c0_d0_m0",
+              "kind": "dimension",
+              "label": "Condiciones peligrosas e inseguras",
+              "agg": "sum",
+              "items": [
+                1,
+                3
+              ]
+            },
+            {
+              "id": "c0_d0_m1",
+              "kind": "dimension",
+              "label": "Condiciones deficientes e insalubres",
+              "agg": "sum",
+              "items": [
+                2,
+                4
+              ]
+            },
+            {
+              "id": "c0_d0_m2",
+              "kind": "dimension",
+              "label": "Trabajos peligrosos",
+              "agg": "sum",
+              "items": [
+                5
+              ]
+            }
+          ]
+        }
+      ],
+      "actions": [
+        "Formar e informar: Involucrar y hacer participe a los colaboradores en la seguridad laboral",
+        "Revisar y trabajar de forma continua en la mejora de las condiciones de la seguridad y salud en el trabajo, hacer revisiones periódicamente para saber si las implementaciones se hacen de forma correcta, planes de prevención de accidentes actualizados acorde a la demanda de cada puesto y/o área.",
+        "Contar con un proveedor de medicina laboral, para la realización de exámenes médicos a sus colaboradores para garantizar condiciones de salud optima y dar su debido seguimiento (al menos 1 vez al año).",
+        "Mantener en buen estado los elementos de seguridad de los colaboradores, estableciendo una rutina de mantenimiento frecuente para cualquier elemento o herramienta que sea utilizado en el puesto de trabajo, para reducir riesgos de accidentes laborales debido al mal estado de los implementos.",
+        "Revisión del Plan de Prevención de Riesgos Laborales, para hacer las correcciones o actualizaciones según las necesidades que surjan y adoptar las nuevas medidas."
+      ]
+    },
+    {
+      "id": "c1",
+      "kind": "categoria",
+      "label": "Factores propios de la actividad",
+      "agg": "sum",
+      "bands": [
+        [
+          "nulo",
+          null,
+          15
+        ],
+        [
+          "bajo",
+          15,
+          30
+        ],
+        [
+          "medio",
+          30,
+          45
+        ],
+        [
+          "alto",
+          45,
+          60
+        ],
+        [
+          "muy_alto",
+          60,
+          null
+        ]
+      ],
+      "children": [
+        {
+          "id": "c1_d0",
+          "kind": "dominio",
+          "label": "Carga de trabajo",
+          "agg": "sum",
+          "bands": [
+            [
+              "nulo",
+              null,
+              15
+            ],
+            [
+              "bajo",
+              15,
+              21
+            ],
+            [
+              "medio",
+              21,
+              27
+            ],
+            [
+              "alto",
+              27,
+              37
+            ],
+            [
+              "muy_alto",
+              37,
+              null
+            ]
+          ],
+          "children": [
+            {
+              "id": "c1_d0_m0",
+              "kind": "dimension",
+              "label": "Cargas cuantitativas",
+              "agg": "sum",
+              "items": [
+                6,
+                12
+              ]
+            },
+            {
+              "id": "c1_d0_m1",
+              "kind": "dimension",
+              "label": "Ritmos de trabajo acelerado",
+              "agg": "sum",
+              "items": [
+                7,
+                8
+              ]
+            },
+            {
+              "id": "c1_d0_m2",
+              "kind": "dimension",
+              "label": "Carga mental",
+              "agg": "sum",
+              "items": [
+                9,
+                10,
+                11
+              ]
+            },
+            {
+              "id": "c1_d0_m3",
+              "kind": "dimension",
+              "label": "Cargas psicológicas emocionales",
+              "agg": "sum",
+              "items": [
+                65,
+                66,
+                67,
+                68
+              ]
+            },
+            {
+              "id": "c1_d0_m4",
+              "kind": "dimension",
+              "label": "Cargas de alta responsabilidad",
+              "agg": "sum",
+              "items": [
+                13,
+                14
+              ]
+            },
+            {
+              "id": "c1_d0_m5",
+              "kind": "dimension",
+              "label": "Cargas contradictorias o inconsistentes",
+              "agg": "sum",
+              "items": [
+                15,
+                16
+              ]
+            }
+          ]
+        },
+        {
+          "id": "c1_d1",
+          "kind": "dominio",
+          "label": "Falta de control sobre el trabajo",
+          "agg": "sum",
+          "bands": [
+            [
+              "nulo",
+              null,
+              11
+            ],
+            [
+              "bajo",
+              11,
+              16
+            ],
+            [
+              "medio",
+              16,
+              21
+            ],
+            [
+              "alto",
+              21,
+              25
+            ],
+            [
+              "muy_alto",
+              25,
+              null
+            ]
+          ],
+          "children": [
+            {
+              "id": "c1_d1_m0",
+              "kind": "dimension",
+              "label": "Falta de control y autonomía sobre el trabajo",
+              "agg": "sum",
+              "items": [
+                25,
+                26,
+                27,
+                28
+              ]
+            },
+            {
+              "id": "c1_d1_m1",
+              "kind": "dimension",
+              "label": "Limitada o nula posibilidad de desarrollo",
+              "agg": "sum",
+              "items": [
+                23,
+                24
+              ]
+            },
+            {
+              "id": "c1_d1_m2",
+              "kind": "dimension",
+              "label": "Insuficiente participación y manejo del cambio",
+              "agg": "sum",
+              "items": [
+                29,
+                30
+              ]
+            },
+            {
+              "id": "c1_d1_m3",
+              "kind": "dimension",
+              "label": "Limitada o inexistente capacitación",
+              "agg": "sum",
+              "items": [
+                35,
+                36
+              ]
+            }
+          ]
+        }
+      ],
+      "actions": [
+        "Definir objetivos y metas de la empresa, para identificar que tareas y proyectos son cruciales para el éxito organizacional",
+        "Identificar tareas y proyectos, enumerando las tareas y proyectos se puede realizar a nivel departamental, áreas o equipos específicos.",
+        "Clasificar las tareas y proyectos, acorde a su importancia y urgencia para los objetivos y metas definidos anteriormente. (crear una matriz de priorización)",
+        "Recopilar datos de tiempo, solicitar a los colaboradores que registren el tiempo que dedican a cada tarea y proyecto (se puede utilizar herramientas de seguimiento, bitácoras, etc)",
+        "Analizar los datos de tiempo, para saber el promedio que se le dedica a cada tarea o proyecto y se podrá tener una visión clara de la carga real de trabajo.",
+        "Evaluar la capacidad de los recursos, comparar los datos de carga de trabajo con la capacidad de los recursos disponibles, para saber cuanto trabajo pueden manejar los colaboradores o equipos en un período de tiempo determinado.",
+        "Identificar desbalances en la carga de trabajo, esto implica que algunos colaboradores o equipos puedan estar sobrecargados, mientras que otros tienen una carga ligera.",
+        "Evaluar eficiencia en la realización de tareas y proyectos, si se esta cumpliendo en tiempo y forma.",
+        "Establecer prioridades, basándose en los objetivos y metas organizacionales, esto puede ser en apoyo con RRHH, para hacer una mejor proporción de las tareas acorde a la importancia y urgencia, ayudando a evitar la carga y garantizar que se cumplan con los plazos y objetivos clave.",
+        "Implementar cambios, si se encuentran desbalances significativos o ineficiencias, trabajar en la redistribución de tareas, con asignación de recursos adicionales cuando sea necesario y la optimización de procesos. La carga de trabajo es cambiante de acuerdo al crecimiento de la organización por lo que se debe dar un seguimiento continuo.",
+        "Aplica las 4 buenas prácticas a la hora de gestionar las cargas de trabajo: a) Promover la flexibilidad Laboral b) Promover la capacitación y desarrollo c) Comunicación abierta y apoyo emocional. d) Procura un buen ambiente de trabajo.",
+        "Desarrollar los perfiles de puestos de manera que quede plasmado sus actividades, responsabilidades, plan de crecimiento, líneas de comunicación y sobre todo hasta donde tiene autonomía sobre su puesto para la toma de decisiones y solución de problemas."
+      ]
+    },
+    {
+      "id": "c2",
+      "kind": "categoria",
+      "label": "Organización del tiempo de trabajo",
+      "agg": "sum",
+      "bands": [
+        [
+          "nulo",
+          null,
+          5
+        ],
+        [
+          "bajo",
+          5,
+          7
+        ],
+        [
+          "medio",
+          7,
+          10
+        ],
+        [
+          "alto",
+          10,
+          13
+        ],
+        [
+          "muy_alto",
+          13,
+          null
+        ]
+      ],
+      "children": [
+        {
+          "id": "c2_d0",
+          "kind": "dominio",
+          "label": "Jornada de trabajo",
+          "agg": "sum",
+          "bands": [
+            [
+              "nulo",
+              null,
+              1
+            ],
+            [
+              "bajo",
+              1,
+              2
+            ],
+            [
+              "medio",
+              2,
+              4
+            ],
+            [
+              "alto",
+              4,
+              6
+            ],
+            [
+              "muy_alto",
+              6,
+              null
+            ]
+          ],
+          "children": [
+            {
+              "id": "c2_d0_m0",
+              "kind": "dimension",
+              "label": "Jornadas de trabajo extensas",
+              "agg": "sum",
+              "items": [
+                17,
+                18
+              ]
+            }
+          ]
+        },
+        {
+          "id": "c2_d1",
+          "kind": "dominio",
+          "label": "Interferencia en la relación trabajo-familia",
+          "agg": "sum",
+          "bands": [
+            [
+              "nulo",
+              null,
+              4
+            ],
+            [
+              "bajo",
+              4,
+              6
+            ],
+            [
+              "medio",
+              6,
+              8
+            ],
+            [
+              "alto",
+              8,
+              10
+            ],
+            [
+              "muy_alto",
+              10,
+              null
+            ]
+          ],
+          "children": [
+            {
+              "id": "c2_d1_m0",
+              "kind": "dimension",
+              "label": "Influencia del trabajo fuera del centro laboral",
+              "agg": "sum",
+              "items": [
+                19,
+                20
+              ]
+            },
+            {
+              "id": "c2_d1_m1",
+              "kind": "dimension",
+              "label": "Influencia de las responsabilidades familiares",
+              "agg": "sum",
+              "items": [
+                21,
+                22
+              ]
+            }
+          ]
+        }
+      ],
+      "actions": [
+        "Identificar si la carga laboral es física (dolor muscular, inmobiliario inadecuado) se tendría que configurar el espacio de trabajo para promover la comodidad y disminuir la carga física.",
+        "Identificar si la carga laboral es mental donde las tareas demandan principalmente un esfuerzo mental a los colaboradores como análisis, toma de decisiones, resolución de problemas, gestión de la información compleja, no poder pasar más tiempo con su familia.",
+        "Recomendaciones para mejor gestión de su tiempo: a) Apostar a los puestos que puedan realizar teletrabajo. b) Enlistar todas tus tareas para comenzar tu jornada laboral consciente de los pendientes para saber cuanto tiempo dedicaras a cada una de ellas. c) Delegar cuando sea necesario d) Trabajar en los hábitos saludables, como realizar pausas activas cada 30 o 60 minutos para descansar la vista, estirarse, relajarse, darle un respiro a tu mente, etc. e) Aplica la regla de los 2 minutos, si una tarea requiere de menos de 2 minutos para completarse, debemos hacerla en ese momento (confirmar una reunión, asignar una tarea a otro compañero, descargar un documento, enviar un correo, etc) f) Planifícate con antelación, si es un proyecto grande, puedes utilizar un calendario que te ayude a planificar cada día, teniendo flexibilidad y dejar unos días extras para posibles imprevistos o tareas urgentes. g) Organiza tu espacio de trabajo, para evitar distracciones, solo puedes dedicar 10 min al día para acomodar tu espacio de trabajo. h) Conocer tus límites y horas más productivas (observar como rindes a distintas horas, evaluar los factores que provocan cansancio y estrés) i) Asigna un tiempo a cada tarea: Mas o menos ya sabes cuanto te toma cada actividad o tarea, por lo que puedes llevar una mejor planificación para cumplir con los objetivos.",
+        "Realizar todo esto ayudará a reducir los tiempos muertos, poder salir en tiempo y forma para poder pasar más tiempo con su familia, y no generar más tiempo del horario regular al menos que sea por una actividad o situación urgente de manera muy puntual para evitar desgastes físicos y mentales."
+      ]
+    },
+    {
+      "id": "c3",
+      "kind": "categoria",
+      "label": "Liderazgo y relaciones en el trabajo",
+      "agg": "sum",
+      "bands": [
+        [
+          "nulo",
+          null,
+          14
+        ],
+        [
+          "bajo",
+          14,
+          29
+        ],
+        [
+          "medio",
+          29,
+          42
+        ],
+        [
+          "alto",
+          42,
+          58
+        ],
+        [
+          "muy_alto",
+          58,
+          null
+        ]
+      ],
+      "children": [
+        {
+          "id": "c3_d0",
+          "kind": "dominio",
+          "label": "Liderazgo",
+          "agg": "sum",
+          "bands": [
+            [
+              "nulo",
+              null,
+              9
+            ],
+            [
+              "bajo",
+              9,
+              12
+            ],
+            [
+              "medio",
+              12,
+              16
+            ],
+            [
+              "alto",
+              16,
+              20
+            ],
+            [
+              "muy_alto",
+              20,
+              null
+            ]
+          ],
+          "children": [
+            {
+              "id": "c3_d0_m0",
+              "kind": "dimension",
+              "label": "Escasa claridad de funciones",
+              "agg": "sum",
+              "items": [
+                31,
+                32,
+                33,
+                34
+              ]
+            },
+            {
+              "id": "c3_d0_m1",
+              "kind": "dimension",
+              "label": "Características del liderazgo",
+              "agg": "sum",
+              "items": [
+                37,
+                38,
+                39,
+                40,
+                41
+              ]
+            }
+          ]
+        },
+        {
+          "id": "c3_d1",
+          "kind": "dominio",
+          "label": "Relaciones en el trabajo",
+          "agg": "sum",
+          "bands": [
+            [
+              "nulo",
+              null,
+              10
+            ],
+            [
+              "bajo",
+              10,
+              13
+            ],
+            [
+              "medio",
+              13,
+              17
+            ],
+            [
+              "alto",
+              17,
+              21
+            ],
+            [
+              "muy_alto",
+              21,
+              null
+            ]
+          ],
+          "children": [
+            {
+              "id": "c3_d1_m0",
+              "kind": "dimension",
+              "label": "Relaciones sociales en el trabajo",
+              "agg": "sum",
+              "items": [
+                42,
+                43,
+                44,
+                45,
+                46
+              ]
+            },
+            {
+              "id": "c3_d1_m1",
+              "kind": "dimension",
+              "label": "Deficiente relación con los colaboradores que supervisa",
+              "agg": "sum",
+              "items": [
+                69,
+                70,
+                71,
+                72
+              ]
+            }
+          ]
+        },
+        {
+          "id": "c3_d2",
+          "kind": "dominio",
+          "label": "Violencia",
+          "agg": "sum",
+          "bands": [
+            [
+              "nulo",
+              null,
+              7
+            ],
+            [
+              "bajo",
+              7,
+              10
+            ],
+            [
+              "medio",
+              10,
+              13
+            ],
+            [
+              "alto",
+              13,
+              16
+            ],
+            [
+              "muy_alto",
+              16,
+              null
+            ]
+          ],
+          "children": [
+            {
+              "id": "c3_d2_m0",
+              "kind": "dimension",
+              "label": "Violencia laboral",
+              "agg": "sum",
+              "items": [
+                57,
+                58,
+                59,
+                60,
+                61,
+                62,
+                63,
+                64
+              ]
+            }
+          ]
+        }
+      ],
+      "actions": [
+        "Verificar que la difusión de roles de puestos se haya realizado correctamente y que los colaboradores no tengan dudas sobre lo que deben o no realizar en cuanto sus funciones y responsabilidades.",
+        "Capacitar a los puestos que tienen personal a su cargo para desarrollar más las habilidades de liderazgo.",
+        "Realizar evaluaciones a los líderes o jefes inmediatos para saber que están realizando sus funciones correctamente y ver si hay áreas de oportunidad.",
+        "Dar seguimiento a los casos que hayan salido con violencia alta, para detectar a tiempo en caso de que realmente se estén presentando y tomar las medidas pertinentes.",
+        "Recomendaciones para mejorar el liderazgo y relaciones laborales: a) Dar retroalimentación constructiva b) Aumentar la comunicación con controles regulares c) Proporcionar formación y oportunidades para mejorar las competencias d) Crear una cultura que promueva la transparencia. e) Permitir la flexibilidad y potenciar la toma de decisiones independientes. f) Recompensas y reconocimiento para los colaboradores. g) Analizar el rendimiento y el crecimiento para introducir mejoras."
+      ]
+    },
+    {
+      "id": "c4",
+      "kind": "categoria",
+      "label": "Entorno organizacional",
+      "agg": "sum",
+      "bands": [
+        [
+          "nulo",
+          null,
+          10
+        ],
+        [
+          "bajo",
+          10,
+          14
+        ],
+        [
+          "medio",
+          14,
+          18
+        ],
+        [
+          "alto",
+          18,
+          23
+        ],
+        [
+          "muy_alto",
+          23,
+          null
+        ]
+      ],
+      "children": [
+        {
+          "id": "c4_d0",
+          "kind": "dominio",
+          "label": "Reconocimiento del desempeño",
+          "agg": "sum",
+          "bands": [
+            [
+              "nulo",
+              null,
+              6
+            ],
+            [
+              "bajo",
+              6,
+              10
+            ],
+            [
+              "medio",
+              10,
+              14
+            ],
+            [
+              "alto",
+              14,
+              18
+            ],
+            [
+              "muy_alto",
+              18,
+              null
+            ]
+          ],
+          "children": [
+            {
+              "id": "c4_d0_m0",
+              "kind": "dimension",
+              "label": "Escasa o nula retroalimentación del desempeño",
+              "agg": "sum",
+              "items": [
+                47,
+                48
+              ]
+            },
+            {
+              "id": "c4_d0_m1",
+              "kind": "dimension",
+              "label": "Escaso o nulo reconocimiento y compensación",
+              "agg": "sum",
+              "items": [
+                49,
+                50,
+                51,
+                52
+              ]
+            }
+          ]
+        },
+        {
+          "id": "c4_d1",
+          "kind": "dominio",
+          "label": "Insuficiente sentido de pertenencia e, inestabilidad",
+          "agg": "sum",
+          "bands": [
+            [
+              "nulo",
+              null,
+              4
+            ],
+            [
+              "bajo",
+              4,
+              6
+            ],
+            [
+              "medio",
+              6,
+              8
+            ],
+            [
+              "alto",
+              8,
+              10
+            ],
+            [
+              "muy_alto",
+              10,
+              null
+            ]
+          ],
+          "children": [
+            {
+              "id": "c4_d1_m0",
+              "kind": "dimension",
+              "label": "Limitado sentido de pertenencia",
+              "agg": "sum",
+              "items": [
+                55,
+                56
+              ]
+            },
+            {
+              "id": "c4_d1_m1",
+              "kind": "dimension",
+              "label": "Inestabilidad laboral",
+              "agg": "sum",
+              "items": [
+                53,
+                54
+              ]
+            }
+          ]
+        }
+      ],
+      "actions": [
+        "Mejorar la retroalimentación con los colaboradores siendo precisos con el “que” y “por qué”",
+        "Dar la oportunidad de dar su opinión al colaborador antes de tomar cualquier decisión.",
+        "Los errores se señalan en privado siempre con respeto, para no disminuir la confianza en el colaborador.",
+        "Si harás un reconocimiento o felicitación a un colaborador que sea publico.",
+        "Crear una matriz de comunicación interna para que todos los colaboradores sepan con quién y como dirigirse ante ciertas situaciones para no triangular información.",
+        "Realizar reuniones periódicas para ver pendientes y avances de actividades ya sea por área, departamento o equipo de trabajo.",
+        "Contar con un buzón de transparencia para recibir nuevas ideas, sugerencias, mejoras, etc.",
+        "Desarrollar un plan de carrera, donde se brinden oportunidades de crecimiento laboral que le brinden estabilidad a sus colaboradores.",
+        "Realizar actividades recreativas y sociales donde se fomente la cultura, los valores, la comunicación y convivencia entre los colaboradores."
+      ]
+    }
+  ],
+  "levels": {
+    "muy_alto": {
+      "label": "Muy alto",
+      "action_summary": "Se requiere realizar el análisis de cada categoría y dominio para establecer las acciones de intervención apropiadas, mediante un Programa de intervención que deberá incluir evaluaciones específicas, y contemplar campañas de sensibilización, revisar la política de prevención de riesgos psicosociales y programas para la prevención de los factores de riesgo psicosocial, la promoción de un entorno organizacional favorable y la prevención de la violencia laboral, así como reforzar su aplicación y difusión.",
+      "actions": [
+        "Realizar análisis de cada categoría y dominio para establecer las acciones de intervención apropiadas, mediante un programa de intervención donde incluya evaluaciones específicas.",
+        "Campañas de sensibilización.",
+        "Revisión de la política de prevención de riesgos psicosociales y programas de prevención.",
+        "Promover un entorno organizacional favorable y la prevención de violencia laborar.",
+        "Reforzar su aplicación y difusión."
+      ]
+    },
+    "alto": {
+      "label": "Alto",
+      "action_summary": "Se requiere realizar un análisis de cada categoría y dominio, de manera que se puedan determinar las acciones de intervención apropiadas a través de un Programa de intervención, que podrá incluir una evaluación específica y deberá incluir una campaña de sensibilización, revisar la política de prevención de riesgos psicosociales y programas para la prevención de los factores de riesgo psicosocial, la promoción de un entorno organizacional favorable y la prevención de la violencia laboral, así como reforzar su aplicación y difusión.",
+      "actions": [
+        "Realizar análisis de cada categoría y dominio para establecer las acciones de intervención apropiadas, mediante un programa de intervención donde incluya evaluaciones específicas.",
+        "Campañas de sensibilización.",
+        "Revisión de la política de prevención de riesgos psicosociales y programas de prevención.",
+        "Promover un entorno organizacional favorable y la prevención de violencia laborar.",
+        "Reforzar su aplicación y difusión."
+      ]
+    },
+    "medio": {
+      "label": "Medio",
+      "action_summary": "Se requiere revisar la política de prevención de riesgos psicosociales y programas para la prevención de los factores de riesgo psicosocial, la promoción de un entorno organizacional favorable y la prevención de la violencia laboral, así como reforzar su aplicación y difusión, mediante un Programa de intervención.",
+      "actions": [
+        "Revisión de la política de prevención de riesgos psicosociales y programas de prevención.",
+        "Promover un entorno organizacional favorable y la prevención de violencia laborar.",
+        "Reforzar su aplicación y difusión, mediante un programa de intervención."
+      ]
+    },
+    "bajo": {
+      "label": "Bajo",
+      "action_summary": "Es necesario una mayor difusión de la política de prevención de riesgos psicosociales y programas para: la prevención de los factores de riesgo psicosocial, la promoción de un entorno organizacional favorable y la prevención de la violencia laboral.",
+      "actions": [
+        "Es necesario realizar mayor difusión de la política de prevención de riesgos psicosociales y programas de prevención.",
+        "Mayor promoción de un entorno organizacional favorable y la prevención de la violencia laboral."
+      ]
+    },
+    "nulo": {
+      "label": "Nulo",
+      "action_summary": "El riesgo resulta despreciable por lo que no se requiere medidas adicionales.",
+      "actions": [
+        "No se requiere tomar medidas adicionales."
+      ]
+    }
+  }
+}

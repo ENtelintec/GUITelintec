@@ -302,6 +302,60 @@ metadata_task_model = api.model(
         "type_quizz": fields.Integer(
             required=False, description="The type of the quizz", example=1
         ),
+        "evaluation_id": fields.String(
+            required=False,
+            description="Eva 360: id del proceso que liga control y evaluadores",
+        ),
+        "eva360_role": fields.String(
+            required=False,
+            description="Eva 360: rol del evaluador (self|superior|peer|subordinate)",
+        ),
+        "eva360_kind": fields.String(
+            required=False,
+            description="Eva 360: 'control' para la task del proceso (RH)",
+        ),
+        "status_eval": fields.String(
+            required=False, description="Eva 360 control: open|complete"
+        ),
+        "expected_roles": fields.List(
+            fields.String, required=False, description="Eva 360 control: roles asignados"
+        ),
+    },
+)
+
+eva360_rater_model = api.model(
+    "Eva360Rater",
+    {
+        "role": fields.String(
+            required=True,
+            description="Rol del evaluador: self|superior|peer|subordinate",
+            example="superior",
+        ),
+        "emp_id": fields.Integer(
+            required=False,
+            description="ID del empleado evaluador (para self se toma el evaluado)",
+            example=25,
+        ),
+    },
+)
+
+eva360_create_model = api.model(
+    "Eva360Create",
+    {
+        "evaluated_emp": fields.Integer(
+            required=True, description="ID del empleado evaluado", example=101
+        ),
+        "evaluated_name": fields.String(
+            required=False, description="Nombre del evaluado (para notificaciones)"
+        ),
+        "date_limit": fields.String(
+            required=False, description="Fecha limite", example="2026-08-31"
+        ),
+        "raters": fields.List(
+            fields.Nested(eva360_rater_model),
+            required=True,
+            description="Evaluadores asignados (2 a 4, uno por rol)",
+        ),
     },
 )
 
@@ -463,6 +517,13 @@ class MetadataTasksForm(Form):
     pos_evaluator = StringField("pos_evaluator", validators=[])
     evaluated_emp_id = IntegerField("evaluated_emp_id", validators=[])
     type_quizz = IntegerField("type_quizz", validators=[])
+    # --- eva 360: linking del proceso (declarados aqui para que el PUT de
+    # tasks no los borre de metadata al validar) ---
+    evaluation_id = StringField("evaluation_id", validators=[])
+    eva360_role = StringField("eva360_role", validators=[])
+    eva360_kind = StringField("eva360_kind", validators=[])
+    status_eval = StringField("status_eval", validators=[])
+    expected_roles = FieldList(StringField(), validators=[], default=[])
 
 
 class TaskInsertForm(Form):
@@ -549,3 +610,17 @@ class RequestFileReportQuizzForm(Form):
     body = FormField(BodyTaskForm)
     data_raw = StringField("data_raw", validators=[validate_json])
     id = IntegerField("id", validators=[InputRequired()], default=0)
+
+
+class Eva360RaterForm(Form):
+    role = StringField("role", validators=[InputRequired()])
+    emp_id = IntegerField("emp_id", validators=[])
+
+
+class Eva360CreateForm(Form):
+    evaluated_emp = IntegerField("evaluated_emp", validators=[InputRequired()])
+    evaluated_name = StringField("evaluated_name", validators=[])
+    date_limit = DateField(
+        "date_limit", validators=[validators.optional()], filters=[date_filter]
+    )
+    raters = FieldList(FormField(Eva360RaterForm), validators=[], default=[])

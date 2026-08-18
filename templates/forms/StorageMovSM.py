@@ -4,10 +4,19 @@ __date__ = "$ 23/jul./2024  at 6:05 $"
 
 import textwrap
 
+from reportlab.lib.utils import ImageReader
+from reportlab.pdfbase.pdfmetrics import stringWidth
 from reportlab.pdfgen import canvas
 
 from static.constants import filepath_sm_pdf
-from templates.forms.PDFGenerator import a4_x, a4_y, create_header_telintec
+from templates.forms.PDFGenerator import (
+    FONT_BOLD,
+    FONT_REGULAR,
+    a4_x,
+    a4_y,
+    create_header_telintec,
+    wrap_text_width,
+)
 
 dict_wrappers_headers = {
     "Movements": {
@@ -49,7 +58,7 @@ def print_headers_table_inventory(pdf, font_size=10, y_init=500, type_form="Move
     :param font_size:
     :return:
     """
-    pdf.setFont("Courier-Bold", font_size)
+    pdf.setFont(FONT_BOLD, font_size)
     x_position = 20
     headers = list(dict_wrappers_headers[type_form].keys())
     for header_key in headers:
@@ -72,10 +81,10 @@ def print_footer_page_count(pdf, page, font_size=6, right_text="", x_max=a4_x):
     :param font_size:
     :return:
     """
-    pdf.setFont("Courier", font_size)
+    pdf.setFont(FONT_REGULAR, font_size)
     pdf.drawString(5, 5, f"Página {page}")
     if right_text != "":
-        pdf.drawString(x_max - len(right_text) * font_size * 0.7, 5, right_text)
+        pdf.drawRightString(x_max - 5, 5, right_text)
 
 
 def print_metadata(pdf, metadata, font_size=10, y_init=480, columns=2):
@@ -87,7 +96,7 @@ def print_metadata(pdf, metadata, font_size=10, y_init=480, columns=2):
     :param columns:
     :return:
     """
-    pdf.setFont("Courier", font_size)
+    pdf.setFont(FONT_REGULAR, font_size)
     y_position = y_init
     x_position = 20
     separation = a4_x / columns
@@ -99,19 +108,19 @@ def print_metadata(pdf, metadata, font_size=10, y_init=480, columns=2):
             x_position = 20
         # pdf.drawString(x_position, y_position, f"{key}: {metadata[key]}")
         # Configurar la fuente en negrita para el key
-        pdf.setFont("Courier-Bold", font_size)
+        pdf.setFont(FONT_BOLD, font_size)
         pdf.drawString(x_position, y_position, f"{key}: ")
 
         # Restaurar la fuente normal para el valor
-        pdf.setFont("Courier", font_size)
-        pdf.drawString(x_position + len(key) * font_size * 0.7, y_position, f"{metadata[key]}")
+        pdf.setFont(FONT_REGULAR, font_size)
+        pdf.drawString(x_position + stringWidth(f"{key}: ", FONT_BOLD, font_size), y_position, f"{metadata[key]}")
         x_position += separation
         count += 1
     return y_position - font_size * 2.5
 
 
 def print_products_list(pdf, products, headers, font_size=8, y_last_headers=500.0, pages=1):
-    pdf.setFont("Courier", font_size)
+    pdf.setFont(FONT_REGULAR, font_size)
     y_init = y_last_headers
     last_y = y_init
     limit_y = 10
@@ -125,7 +134,7 @@ def print_products_list(pdf, products, headers, font_size=8, y_last_headers=500.
             print_headers_table_inventory(pdf, y_init=535, type_form="SM")
             y_init = 510
             last_y = y_init
-            pdf.setFont("Courier", font_size)
+            pdf.setFont(FONT_REGULAR, font_size)
         for index, key in enumerate(item):
             value = textwrap.wrap(
                 str(key),
@@ -158,7 +167,7 @@ def print_footer_signing(pdf, font_size=10, y_position=50.0, margin_bottom=75.0,
         pages += 1
     else:
         y_position = margin_bottom
-    pdf.setFont("Courier-Bold", font_size)
+    pdf.setFont(FONT_BOLD, font_size)
     x_start = 20
     # Imprimir etiquetas con líneas en blanco para rellenar
     labels = [
@@ -184,57 +193,83 @@ def calculate_last_y(item, y_limit, font_size, y_position, type_form="Movements"
     return False
 
 
+# Columnas de InventoryStoragePDF (página horizontal, ancho útil = a4_y - 2 * margen).
+# El orden sigue el tuple que arma el midleware de almacén (Functions_midleware_almacen).
+_INV_COLS = {
+    "Movements": [
+        ("Codigo", 70),
+        ("Fecha", 65),
+        ("Descripción", 220),
+        ("UDM", 38),
+        ("Proveedor", 90),
+        ("Movimiento", 90),
+        ("SM", 70),
+        ("Referencia", 78),
+        ("Ubicacion", 70.89),
+    ],
+    "Materials": [
+        ("Codigo", 90),
+        ("Proveedor", 110),
+        ("Descripción", 280),
+        ("UDM", 40),
+        ("Stock Min.", 70),
+        ("Stock", 60),
+        ("Ubicacion", 141.89),
+    ],
+}
+
+
 def InventoryStoragePDF(dict_data: dict, type_form="Movements"):
     """
-    :param type_form:
-    :param dict_data:
-    :return:
+    Reporte de almacén en cuadrícula (encabezados celestes): registro de
+    entradas/salidas (``Movements``, 9 columnas) o de materiales
+    (``Materials``, 7 columnas). Página horizontal. Estructura esperada::
+
+        {"filename_out": str, "products": [tuple por fila, orden = _INV_COLS]}
+
+    Multipágina: header Telintec + fila de encabezados en cada página.
     """
     file_name = "files/inventory_storage.pdf" if dict_data["filename_out"] is None else dict_data["filename_out"]
     pdf = canvas.Canvas(file_name, pagesize=(a4_y, a4_x))
-    pdf.setTitle("Inventario: Registro de Entradas y Salidas") if type_form == "Movements" else pdf.setTitle("Inventario: Registro de Materiales")
-    products = dict_data["products"]
-    create_header_telintec(
-        pdf,
-        title=["Inventario", "Registro de Entradas y Salidas", "Almacen-Nogalar"] if type_form == "Movements" else ["Inventario", "Registro de Materiales", "Almacen-Nogalar"],
-        page_x=a4_y,
-        iso_form=2,
-        orientation="Horizontal",
-        title_font=14,
+    title = (
+        "Inventario: Registro de Entradas y Salidas"
+        if type_form == "Movements"
+        else "Inventario: Registro de Materiales"
     )
-    pages = 1
-    # ----------------------------------------header table of products-----------------------------------------------
-    print_headers_table_inventory(pdf, type_form=type_form)
-    # ---------------------------------------------products---------------------------------------------------------
-    headers = list(dict_wrappers_headers[type_form].keys())
+    pdf.setTitle(title)
+    products = dict_data["products"]
+    cols = _INV_COLS[type_form]
     font_size = 8
-    pdf.setFont("Courier", font_size)
-    y_init = 480
-    last_y = y_init
-    limit_y = 10
-    for index_products, item in enumerate(products):
-        x_position = 20
-        y_init = last_y
-        if calculate_last_y(item, limit_y, font_size, y_init, type_form=type_form):
-            print_footer_page_count(pdf, pages)
-            pdf.showPage()
-            pages += 1
-            print_headers_table_inventory(pdf, y_init=535, type_form=type_form)
-            y_init = 510
-            last_y = y_init
-            pdf.setFont("Courier", font_size)
-        for index, key in enumerate(item):
-            value = textwrap.wrap(
-                str(key),
-                width=dict_wrappers_headers[type_form][headers[index]][font_size],
-            )
-            y_position = y_init - font_size * 1.5
-            for letter in value:
-                pdf.drawString(x_position, y_position, letter)
-                y_position -= font_size
-                last_y = y_position if y_position < last_y else last_y
-            x_position += font_size * dict_wrappers_headers[type_form][headers[index]][font_size] * 0.8
-    print_footer_page_count(pdf, pages)
+    limit_y = 40
+    pages = 1
+
+    def draw_page_header():
+        create_header_telintec(
+            pdf,
+            title=["Inventario", "Registro de Entradas y Salidas", "Almacen-Nogalar"]
+            if type_form == "Movements"
+            else ["Inventario", "Registro de Materiales", "Almacen-Nogalar"],
+            page_x=a4_y,
+            iso_form=2,
+            orientation="Horizontal",
+            title_font=14,
+        )
+
+    def new_page():
+        nonlocal pages
+        print_footer_page_count(pdf, pages, right_text=title, x_max=a4_y)
+        pdf.showPage()
+        pages += 1
+        draw_page_header()
+        return print_grid_header_row(pdf, cols, 500.0, font_size)
+
+    draw_page_header()
+    y = print_grid_header_row(pdf, cols, 500.0, font_size)
+    for item in products:
+        if y - grid_row_height(cols, item, font_size) < limit_y:
+            y = new_page()
+        y = print_grid_row(pdf, cols, item, y, font_size)
+    print_footer_page_count(pdf, pages, right_text=title, x_max=a4_y)
     pdf.save()
     return True
 
@@ -255,7 +290,7 @@ def ReturnMaterials(dict_data: dict):
     # ---------------------------------------------products---------------------------------------------------------
     headers = list(dict_wrappers_headers["Materials"].keys())
     font_size = 8
-    pdf.setFont("Courier", font_size)
+    pdf.setFont(FONT_REGULAR, font_size)
     y_init = 480
     last_y = y_init
     limit_y = 10
@@ -268,7 +303,7 @@ def ReturnMaterials(dict_data: dict):
             print_headers_table_inventory(pdf, y_init=535, type_form="Materials")
             y_init = 510
             last_y = y_init
-            pdf.setFont("Courier", font_size)
+            pdf.setFont(FONT_REGULAR, font_size)
         for index, key in enumerate(item):
             value = textwrap.wrap(
                 str(key),
@@ -287,37 +322,340 @@ def ReturnMaterials(dict_data: dict):
     return True
 
 
+# ------------------------- PDFs en cuadrícula (diseño celeste) -------------------------
+# Helpers genéricos `_grid_*`/`print_grid_*` compartidos por FileSmPDF e
+# InventoryStoragePDF; ReturnMaterials sigue usando los helpers de texto suelto
+# de arriba. Estilo de celdas tomado de RemissionForms.py; formato documentado
+# en la skill .claude/skills/pdf-design/.
+
+_GRID_CELESTE = (0.74, 0.84, 0.93)  # #BDD7EE, fondo de labels/encabezados
+_GRID_MARGIN = 25.0
+
+# alias históricos del bloque SM
+_SM_CELESTE = _GRID_CELESTE
+_SM_MARGIN = _GRID_MARGIN
+_SM_GRID_WIDTH = a4_x - 2 * _GRID_MARGIN
+
+# (encabezado, ancho en pt); los anchos suman _SM_GRID_WIDTH.
+# El orden sigue el tuple de products: (no, nombre, cantidad, udm, suministrado, estatus)
+_SM_ITEM_COLS = [
+    ("No.", 32),
+    ("Descripción", 225),
+    ("Cantidad", 62),
+    ("UDM", 38),
+    ("C. Suministrado", 100),
+    ("Estatus", 88.27),
+]
+_SM_DELIVERY_COLS = [
+    ("No.", 32),
+    ("Fecha de Entrega", 120),
+    ("Firma de Quien Entrega", 196),
+    ("Firma de Quien Recibe", 197.27),
+]
+
+# Semáforo de surtido de los items de la SM (pasteles tipo Excel, misma familia
+# de tintes que el celeste: el texto negro sigue siendo legible encima).
+_SM_VERDE = (0.78, 0.94, 0.81)  # #C6EFCE  surtido completo
+_SM_AMARILLO = (1.00, 0.92, 0.61)  # #FFEB9C  surtido parcial
+_SM_ROJO = (1.00, 0.78, 0.81)  # #FFC7CE  sin surtir
+
+
+def _sm_num(value):
+    """Los valores vienen del JSON de la SM: un string colado tumbaría el PDF."""
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _sm_item_fills(item):
+    """
+    Colores de relleno de una fila de items, por posición de columna:
+    completo -> verde en toda la fila; parcial -> amarillo solo en "No.";
+    nada surtido -> rojo solo en "No.". Sin cantidad pedida (dato incompleto)
+    no se pinta nada.
+    """
+    quantity = _sm_num(item[2] if len(item) > 2 else None)
+    dispatched = _sm_num(item[4] if len(item) > 4 else None)
+    if quantity is None or dispatched is None or quantity <= 0:
+        return None
+    if dispatched >= quantity:
+        return [_SM_VERDE] * len(_SM_ITEM_COLS)
+    color = _SM_AMARILLO if dispatched > 0 else _SM_ROJO
+    return [color] + [None] * (len(_SM_ITEM_COLS) - 1)
+
+
+def _grid_wrap_cell(value, width_pt, font_size):
+    return wrap_text_width(value, width_pt - 8, font_size)
+
+
+def _grid_draw_cell(pdf, x, y_top, w, h, lines, font_size, bold=False, fill=False, fill_color=None):
+    """
+    `fill=True` pinta la celda de celeste (labels/encabezados). `fill_color` es un
+    RGB explícito y tiene precedencia — se usa para el semáforo de surtido de la
+    SM. Siempre se restaura el negro para el texto.
+    """
+    pdf.setLineWidth(0.6)
+    color = fill_color if fill_color is not None else (_GRID_CELESTE if fill else None)
+    if color is not None:
+        pdf.setFillColorRGB(*color)
+        pdf.rect(x, y_top - h, w, h, fill=1, stroke=1)
+        pdf.setFillColorRGB(0, 0, 0)
+    else:
+        pdf.rect(x, y_top - h, w, h, fill=0, stroke=1)
+    pdf.setFont(FONT_BOLD if bold else FONT_REGULAR, font_size)
+    text_y = y_top - font_size - 3
+    for line in lines:
+        pdf.drawString(x + 4, text_y, line)
+        text_y -= font_size * 1.25
+
+
+def print_grid_header_row(pdf, cols, y_init, font_size=8, margin=_GRID_MARGIN):
+    """Fila de encabezados de tabla: una celda celeste bold por columna."""
+    h = font_size * 1.25 + 6
+    x = margin
+    for name, w in cols:
+        _grid_draw_cell(pdf, x, y_init, w, h, [name], font_size, bold=True, fill=True)
+        x += w
+    return y_init - h
+
+
+def grid_row_height(cols, item, font_size=8):
+    return (
+        max(len(_grid_wrap_cell(value, w, font_size)) for value, (_, w) in zip(item, cols))
+        * font_size
+        * 1.25
+        + 6
+    )
+
+
+def print_grid_row(pdf, cols, item, y_init, font_size=8, margin=_GRID_MARGIN, cell_fills=None):
+    """
+    Fila de datos: celdas alineadas por posición con `cols`; crece con el wrap.
+
+    `cell_fills` es una lista opcional alineada a `cols` con el color de relleno
+    de cada celda (`None` = sin relleno). Omitirla deja el comportamiento previo
+    (todas las celdas en blanco).
+    """
+    cells = [_grid_wrap_cell(value, w, font_size) for value, (_, w) in zip(item, cols)]
+    h = max(len(lines) for lines in cells) * font_size * 1.25 + 6
+    fills = list(cell_fills or []) + [None] * len(cols)
+    x = margin
+    for i, (lines, (_, w)) in enumerate(zip(cells, cols)):
+        _grid_draw_cell(pdf, x, y_init, w, h, lines, font_size, fill_color=fills[i])
+        x += w
+    return y_init - h
+
+
+def print_metadata_grid_sm(pdf, metadata, y_init, font_size=8):
+    """
+    Cuadrícula de metadata: 2 pares label|valor por fila. La celda del label va
+    en celeste con bold; el valor hace wrap dentro de su celda y la fila crece
+    en alto (no hay desbordes de valores largos).
+    """
+    pair_w = _SM_GRID_WIDTH / 2
+    label_w = 118.0
+    value_w = pair_w - label_w
+    entries = list(metadata.items())
+    y = y_init
+    for i in range(0, len(entries), 2):
+        pair_cells = []
+        max_lines = 1
+        for label, value in entries[i : i + 2]:
+            label_lines = _grid_wrap_cell(label, label_w, font_size)
+            value_lines = _grid_wrap_cell(value, value_w, font_size)
+            pair_cells.append((label_lines, value_lines))
+            max_lines = max(max_lines, len(label_lines), len(value_lines))
+        h = max_lines * font_size * 1.25 + 6
+        x = _SM_MARGIN
+        for label_lines, value_lines in pair_cells:
+            _grid_draw_cell(pdf, x, y, label_w, h, label_lines, font_size, bold=True, fill=True)
+            _grid_draw_cell(pdf, x + label_w, y, value_w, h, value_lines, font_size)
+            x += pair_w
+        y -= h
+    return y
+
+
+# Alto de fila de entrega: 26pt cuando solo lleva texto, ~60pt cuando incrusta
+# la firma (imagen), para que la firma sea legible como comprobante.
+_SM_PLAIN_ROW_H = 26.0
+_SM_SIGN_ROW_H = 60.0
+# tope de ancho para las firmas incrustadas (px); el pre-redimensionado real
+# (para no engordar el PDF) lo hace la capa midleware antes de pasar la ruta.
+_SM_SIGN_MAX_W = 600
+
+
+def _sm_delivery_row_height(entry, font_size=8):
+    """Alto de una fila de entrega: el mayor entre el texto (fecha+título con
+    wrap) y el espacio de la firma cuando la fila trae imagen dibujable."""
+    date_w = _SM_DELIVERY_COLS[1][1]
+    lines = 0
+    if entry.get("date"):
+        lines += len(_grid_wrap_cell(entry["date"], date_w, font_size))
+    if entry.get("title"):
+        lines += len(_grid_wrap_cell(entry["title"], date_w, font_size))
+    text_h = max(1, lines) * font_size * 1.25 + 6
+    img_h = _SM_SIGN_ROW_H if entry.get("image_path") else 0.0
+    return max(_SM_PLAIN_ROW_H, text_h, img_h)
+
+
+def _sm_draw_signature_image(pdf, img_path, cell_x, cell_y_top, cell_w, cell_h, pad=3.0):
+    """Dibuja la firma dentro de la celda preservando aspect ratio y centrada.
+    No fatal: si la imagen no se puede leer, deja la celda vacía (firma a mano)."""
+    try:
+        reader = ImageReader(img_path)
+        iw, ih = reader.getSize()
+        if not iw or not ih or iw <= 0 or ih <= 0:
+            return
+        max_w = cell_w - 2 * pad
+        max_h = cell_h - 2 * pad
+        scale = min(max_w / iw, max_h / ih)
+        draw_w = iw * scale
+        draw_h = ih * scale
+        img_x = cell_x + (cell_w - draw_w) / 2
+        img_y = (cell_y_top - cell_h) + (cell_h - draw_h) / 2
+        # mask="auto" respeta la transparencia (PNG de firma sobre fondo)
+        pdf.drawImage(reader, img_x, img_y, width=draw_w, height=draw_h, mask="auto")
+    except Exception as e:
+        print("erro sm signature image", str(e))
+
+
+def _sm_draw_delivery_row(pdf, y_top, entry, row_h, font_size=8):
+    """Una fila de la tabla de entregas: No. | Fecha+Título | (firma entrega en
+    blanco) | firma de quien recibe (imagen si existe)."""
+    date_lines = []
+    if entry.get("date"):
+        date_lines += _grid_wrap_cell(entry["date"], _SM_DELIVERY_COLS[1][1], font_size)
+    if entry.get("title"):
+        date_lines += _grid_wrap_cell(entry["title"], _SM_DELIVERY_COLS[1][1], font_size)
+    if not date_lines:
+        date_lines = [""]
+    cells = ([str(entry.get("no", ""))], date_lines, [""], [""])
+    x = _SM_MARGIN
+    for (_, w), lines in zip(_SM_DELIVERY_COLS, cells):
+        _grid_draw_cell(pdf, x, y_top, w, row_h, lines, font_size)
+        x += w
+    # firma de quien recibe: última columna, imagen sobre la celda ya dibujada
+    img_path = entry.get("image_path")
+    if img_path:
+        recibe_x = _SM_MARGIN + sum(w for _, w in _SM_DELIVERY_COLS[:3])
+        recibe_w = _SM_DELIVERY_COLS[3][1]
+        _sm_draw_signature_image(pdf, img_path, recibe_x, y_top, recibe_w, row_h)
+
+
+def print_deliveries_sign_table_sm(pdf, y_init, delivery_files, font_size=8, new_page_cb=None, limit_y=40):
+    """
+    Tabla de entregas: encabezados en celeste y una fila por entrega
+    (``delivery_files``). Cada fila pre-llena No./Fecha+Título; la firma de quien
+    recibe se incrusta como imagen cuando el attachment es un raster dibujable
+    (si no, la celda queda en blanco para firmar a mano). Al final el campo
+    "Fecha de Entrega Completa". Con muchas entregas la tabla pagina por fila
+    (``new_page_cb``) repitiendo el encabezado de columnas.
+
+    ``delivery_files``: [{"no": int, "date": str, "title": str,
+    "image_path": str|None}, ...] (mínimo 1).
+    """
+    head_h = font_size * 1.25 + 6
+    y = print_grid_header_row(pdf, _SM_DELIVERY_COLS, y_init, font_size)
+    for entry in delivery_files:
+        row_h = _sm_delivery_row_height(entry, font_size)
+        if y - row_h < limit_y and new_page_cb is not None:
+            y = new_page_cb()
+            y = print_grid_header_row(pdf, _SM_DELIVERY_COLS, y, font_size)
+        _sm_draw_delivery_row(pdf, y, entry, row_h, font_size)
+        y -= row_h
+    y -= 8
+    label_w = 145.0
+    value_w = 150.0
+    if y - head_h < limit_y and new_page_cb is not None:
+        y = new_page_cb()
+    _grid_draw_cell(pdf, _SM_MARGIN, y, label_w, head_h, ["Fecha de Entrega Completa"], font_size, bold=True, fill=True)
+    _grid_draw_cell(pdf, _SM_MARGIN + label_w, y, value_w, head_h, [""], font_size)
+    return y - head_h
+
+
 def FileSmPDF(dict_data: dict):
     """
-    :param dict_data:
-    :return:
+    Genera el PDF de una SOLICITUD DE MATERIAL con metadata e items en
+    cuadrícula (labels/encabezados con fondo celeste) y al final la tabla de
+    entregas/firmas. Estructura esperada de ``dict_data``::
+
+        {
+            "filename_out": str,
+            "metadata": {label: valor, ...},
+            "products": [(no, nombre, cantidad, udm, suministrado, estatus), ...],
+            "delivery_files": [                    # una entrega por attachment (>= 1)
+                {"no": int, "date": str, "title": str, "image_path": str|None}, ...
+            ],
+        }
+
+    Cada entrega pre-llena No./Fecha+Título y, si el attachment es una imagen
+    dibujable, incrusta la firma de quien recibe (``image_path``); si no, la
+    celda queda en blanco para firmar a mano. Multipágina: el header Telintec y
+    los encabezados de columna se repiten en cada página; la metadata solo va en
+    la página 1; la tabla de entregas pagina por fila.
     """
     file_name = filepath_sm_pdf if dict_data["filename_out"] is None else dict_data["filename_out"]
-    x_max = a4_x
-    y_max = a4_y
-    pdf = canvas.Canvas(file_name, pagesize=(x_max, y_max))
+    pdf = canvas.Canvas(file_name, pagesize=(a4_x, a4_y))
     pdf.setTitle("SOLICITUD DE MATERIAL")
     products = dict_data["products"]
     folio = dict_data.get("metadata", {}).get("Folio", "")
-    create_header_telintec(
-        pdf,
-        title="SOLICITUD DE MATERIAL",
-        page_x=x_max,
-        iso_form=4,
-        orientation="vertical",
-        offset_title=(-18, 0),
-    )
-    pages = 1
-    # ----------------------------------------Metadata---------------------------------------------------------------
-    y_last_metada = print_metadata(pdf, dict_data["metadata"], y_init=740)
-    # ----------------------------------------header table of products-----------------------------------------------
-    y_last_headers = print_headers_table_inventory(pdf, type_form="SM", y_init=y_last_metada)
-    # ---------------------------------------------products---------------------------------------------------------
-    headers = list(dict_wrappers_headers["SM"].keys())
+    # cap a 20: más entregas que esas no valen la pena en el documento
+    delivery_files = list(dict_data.get("delivery_files") or [])[:20]
+    if not delivery_files:
+        delivery_files = [{"no": 1, "date": "", "title": "", "image_path": None}]
     font_size = 8
-    y_last_products, pages = print_products_list(pdf, products, headers, font_size, y_last_headers, pages)
-    y_last_signs, pages = print_footer_signing(pdf, font_size, y_last_products, pages=pages, y_max=y_max)
-    print_footer_page_count(pdf, pages, right_text=f"Folio: {folio}", x_max=x_max)
+    limit_y = 40
+    pages = 1
+
+    def draw_page_header():
+        create_header_telintec(
+            pdf,
+            title="SOLICITUD DE MATERIAL",
+            page_x=a4_x,
+            iso_form=4,
+            orientation="vertical",
+            offset_title=(-18, 0),
+        )
+
+    def new_page(with_columns):
+        nonlocal pages
+        print_footer_page_count(pdf, pages, right_text=f"Folio: {folio}", x_max=a4_x)
+        pdf.showPage()
+        pages += 1
+        draw_page_header()
+        y = 740.0
+        if with_columns:
+            y = print_grid_header_row(pdf, _SM_ITEM_COLS, y, font_size)
+        return y
+
+    draw_page_header()
+    # ----------------------------------------Metadata en cuadrícula----------------------------------------------
+    y = print_metadata_grid_sm(pdf, dict_data["metadata"], y_init=740, font_size=font_size)
+    y -= 10
+    # ----------------------------------------Items en cuadrícula-------------------------------------------------
+    y = print_grid_header_row(pdf, _SM_ITEM_COLS, y, font_size)
+    for item in products:
+        if y - grid_row_height(_SM_ITEM_COLS, item, font_size) < limit_y:
+            y = new_page(with_columns=True)
+        y = print_grid_row(
+            pdf, _SM_ITEM_COLS, item, y, font_size, cell_fills=_sm_item_fills(item)
+        )
+    # ----------------------------------------Entregas / firmas---------------------------------------------------
+    y -= 14
+    head_h = font_size * 1.25 + 6
+    first_h = _sm_delivery_row_height(delivery_files[0], font_size)
+    if y - (head_h + first_h) < limit_y:
+        y = new_page(with_columns=False)
+    print_deliveries_sign_table_sm(
+        pdf,
+        y,
+        delivery_files,
+        font_size=font_size,
+        new_page_cb=lambda: new_page(with_columns=False),
+        limit_y=limit_y,
+    )
+    print_footer_page_count(pdf, pages, right_text=f"Folio: {folio}", x_max=a4_x)
     pdf.save()
     return True
 
@@ -414,7 +752,7 @@ def FilePurchaseList(dict_data: dict, path):
 
     def print_column_headers(y):
         """Fila de encabezados de columna (una vez por proveedor)."""
-        pdf.setFont("Courier-Bold", font_size - 1)
+        pdf.setFont(FONT_BOLD, font_size - 1)
         pdf.drawString(_PL_X_DESC, y, "Descripcion")
         pdf.drawRightString(_PL_X_CANT, y, "Cant")
         pdf.drawRightString(_PL_X_PUNIT, y, "P. Unit")
@@ -439,7 +777,7 @@ def FilePurchaseList(dict_data: dict, path):
         pdf.setFillColorRGB(0.15, 0.35, 0.6)
         pdf.rect(20, last_y - 4, a4_y - 40, font_size + 8, fill=1, stroke=0)
         pdf.setFillColorRGB(1, 1, 1)
-        pdf.setFont("Courier-Bold", font_size + 1)
+        pdf.setFont(FONT_BOLD, font_size + 1)
         pdf.drawString(25, last_y, f"Proveedor: {supplier_name}  (ID: {supplier_id})")
         pdf.setFillColorRGB(0, 0, 0)
         last_y -= font_size * 2.2
@@ -456,14 +794,14 @@ def FilePurchaseList(dict_data: dict, path):
             last_y = check_page_break(last_y)
 
             # --- Encabezado de inventario ---
-            pdf.setFont("Courier-Bold", font_size)
+            pdf.setFont(FONT_BOLD, font_size)
             pdf.drawString(30, last_y, f"Inventario: {id_inventory}")
             pdf.drawString(220, last_y, f"Cant. total: {total_qty}")
             pdf.drawString(360, last_y, f"Monto total: ${total_amount:,.2f}")
             last_y -= font_size * 1.8
 
             # --- Items del inventario ---
-            pdf.setFont("Courier", font_size - 1)
+            pdf.setFont(FONT_REGULAR, font_size - 1)
             for item in items:
                 last_y = check_page_break(last_y)
                 price_unit = float(item.get("price_unit", 0))
@@ -485,7 +823,7 @@ def FilePurchaseList(dict_data: dict, path):
 
         # --- Subtotal por proveedor (negrita, alineado a la derecha) ---
         last_y = check_page_break(last_y)
-        pdf.setFont("Courier-Bold", font_size)
+        pdf.setFont(FONT_BOLD, font_size)
         pdf.drawRightString(_PL_X_TOTAL, last_y, f"Subtotal proveedor: ${supplier_subtotal:,.2f}")
         last_y -= font_size * 2.0
         grand_total += supplier_subtotal
@@ -495,7 +833,7 @@ def FilePurchaseList(dict_data: dict, path):
     pdf.setFillColorRGB(0.10, 0.25, 0.50)
     pdf.rect(20, last_y - 5, a4_y - 40, font_size + 10, fill=1, stroke=0)
     pdf.setFillColorRGB(1, 1, 1)
-    pdf.setFont("Courier-Bold", font_size + 2)
+    pdf.setFont(FONT_BOLD, font_size + 2)
     pdf.drawString(25, last_y, "GRAN TOTAL")
     pdf.drawRightString(_PL_X_TOTAL, last_y, f"${grand_total:,.2f}")
     pdf.setFillColorRGB(0, 0, 0)

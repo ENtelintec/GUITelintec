@@ -21,14 +21,15 @@ from static.Models.api_purchases_models import (
     QuotationActivityDeleteForm,
     QuotationActivityStatusUpdateForm,
     QuotationActivityUpdateForm,
+    RemissionBalanceUpdateForm,
     ReportActivityCreateControlTableForm,
     ReportActivityCreateForm,
+    ReportActivityDeleteAttForm,
     ReportActivityDeleteForm,
     ReportActivityDownloadAttForm,
     ReportActivityUpdateControlTableForm,
     ReportActivityUpdateForm,
-    basic_control_table_report_model,
-    basic_control_table_report_update_model,
+    expected_files_attachment_remission,
     po_app_delete_model,
     pos_application_post_model,
     pos_application_put_model,
@@ -40,23 +41,41 @@ from static.Models.api_purchases_models import (
     quotation_activity_create_model,
     quotation_activity_delete_model,
     quotation_activity_update_model,
+    remission_activity_create_control_table_model,
     remission_activity_create_model,
+    remission_activity_update_control_table_model,
     remission_activity_update_model,
+    remission_balance_update_model,
+    report_activity_delete_att_model,
     report_activity_delete_model,
     report_activity_download_att_model,
 )
-from static.Models.api_sgi_models import expected_files_attachment
+from static.Models.api_purchase_management_models import (
+    PurchaseManagementCancelForm,
+    PurchaseManagementDeleteForm,
+    PurchaseManagementPostForm,
+    PurchaseManagementPutForm,
+    purchase_management_cancel_model,
+    purchase_management_delete_model,
+    purchase_management_post_model,
+    purchase_management_put_model,
+)
 from templates.resources.methods.Functions_Aux_Login import token_verification_procedure
 from templates.resources.midleware.MD_Admin_Collections import (
     create_activity_report_attachment_api,
     create_quotation_activity_from_api,
+    create_remission_control_table_from_api,
     create_remission_from_api,
+    delete_activity_report_attachment_api,
     delete_quotation_activity_from_api,
     delete_remission_from_api,
+    download_file_remission,
     download_report_activity_attachment_api,
     get_quotations_from_api,
     get_remission_from_api,
     update_quotation_activity_from_api,
+    update_quotation_activity_status_from_api,
+    update_remission_balance_from_api,
     update_remission_control_table_from_api,
     update_remission_from_api,
 )
@@ -75,8 +94,18 @@ from templates.resources.midleware.MD_Purchases import (
     fetch_purchase_orders,
     generate_folios_po,
     get_items_with_fast_order,
+    match_po_movements_and_sms,
     update_po_application_api,
     update_purchase_order_api,
+)
+from templates.resources.midleware.MD_PurchaseManagement import (
+    cancel_purchase_management_api,
+    create_purchase_management_api,
+    delete_purchase_management_api,
+    fetch_purchase_management,
+    get_purchase_management_catalogs,
+    get_purchase_management_detail_api,
+    update_purchase_management_api,
 )
 
 __author__ = "Edisson Naula"
@@ -316,6 +345,33 @@ class FolioPO(Resource):
         return data_out, code
 
 
+@ns.route("/purchase/movements/match")
+class PurchaseMovementsMatch(Resource):
+    @ns.expect(expected_headers_per)
+    @ns.doc(
+        params={
+            "status": "Filtra por status de la OC (entero); canceladas (4) siempre se excluyen",
+            "date_from": "Fecha inicial YYYY-MM-DD sobre el timestamp de la OC",
+            "date_to": "Fecha final YYYY-MM-DD sobre el timestamp de la OC",
+            "folio": "Limita el match a la OC cuyo folio o folio_supplier coincida",
+        }
+    )
+    def get(self):
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["administracion", "purchases"]
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        params = {
+            "status": request.args.get("status"),
+            "date_from": request.args.get("date_from"),
+            "date_to": request.args.get("date_to"),
+            "folio": request.args.get("folio"),
+        }
+        data_out, code = match_po_movements_and_sms(params, data_token)
+        return data_out, code
+
+
 @ns.route("/activity/quotation")
 class ActivityQuotatioAction(Resource):
     @ns.expect(expected_headers_per, quotation_activity_create_model)
@@ -394,7 +450,7 @@ class ChangeStatusActivity(Resource):
         if not validator.validate():
             return {"data": validator.errors, "msg": "Error at structure"}, 400
         data = validator.data
-        data_out, code = update_quotation_activity_from_api(data, data_token)
+        data_out, code = update_quotation_activity_status_from_api(data, data_token)
         return data_out, code
 
 
@@ -425,7 +481,8 @@ class ActivityRemissionAction(Resource):
         if not validator.validate():
             return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
         data = validator.data
-        data_out, code = update_remission_from_api(data, data_token)
+        raw_metadata = ns.payload.get("metadata") or {}
+        data_out, code = update_remission_from_api(data, data_token, raw_metadata)
         return data_out, code
 
     @ns.expect(expected_headers_per, report_activity_delete_model)
@@ -445,7 +502,7 @@ class ActivityRemissionAction(Resource):
 
 @ns.route("/remissionControlTable")
 class ActivityRemissionTableAction(Resource):
-    @ns.expect(expected_headers_per, basic_control_table_report_model)
+    @ns.expect(expected_headers_per, remission_activity_create_control_table_model)
     def post(self):
         flag, data_token, msg = token_verification_procedure(
             request, department=["administracion", "purchases"]
@@ -456,10 +513,10 @@ class ActivityRemissionTableAction(Resource):
         if not validator.validate():
             return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
         data = validator.data
-        data_out, code = create_remission_from_api(data, data_token)
+        data_out, code = create_remission_control_table_from_api(data, data_token)
         return data_out, code
 
-    @ns.expect(expected_headers_per, basic_control_table_report_update_model)
+    @ns.expect(expected_headers_per, remission_activity_update_control_table_model)
     def put(self):
         flag, data_token, msg = token_verification_procedure(
             request, department=["administracion", "purchases"]
@@ -470,12 +527,40 @@ class ActivityRemissionTableAction(Resource):
         if not validator.validate():
             return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
         data = validator.data
-        data_out, code = update_remission_control_table_from_api(data, data_token)
+        raw_metadata = ns.payload.get("metadata") or {}
+        data_out, code = update_remission_control_table_from_api(data, data_token, raw_metadata)
+        return data_out, code
+
+
+@ns.route("/remissionBalance")
+class ActivityRemissionBalanceAction(Resource):
+    @ns.expect(expected_headers_per, remission_balance_update_model)
+    def put(self):
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["administracion", "purchases"]
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        validator = RemissionBalanceUpdateForm.from_json(ns.payload)  # pyrefly: ignore
+        if not validator.validate():
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
+        data = validator.data
+        raw_metadata = ns.payload.get("metadata") or {}
+        data_out, code = update_remission_balance_from_api(data, data_token, raw_metadata)
         return data_out, code
 
 
 @ns.route("/remission-<string:id_report>")
 class FetchActivitieReportById(Resource):
+    @ns.doc(
+        params={
+            "include_items": "0/false/no -> omite la llave items de cada remisión (default 1); history y files siempre vienen",
+            "date_from": "Fecha inicial YYYY-MM-DD sobre la fecha de actividad (date), inclusivo",
+            "date_to": "Fecha final YYYY-MM-DD sobre la fecha de actividad (date), inclusivo",
+            "month_period": "Igualdad exacta contra extra_info.month_period (control de saldos)",
+            "general_status": "Entero; igualdad contra extra_info.general_status (control de saldos)",
+        }
+    )
     @ns.expect(expected_headers_per)
     def get(self, id_report):
         flag, data_token, msg = token_verification_procedure(
@@ -490,13 +575,46 @@ class FetchActivitieReportById(Resource):
         except Exception as e:
             print(f"retrieviong all {e}")
             id_report = None
-        data_out, code = get_remission_from_api(id_report, data_token)
+        include_items = request.args.get("include_items", default="1").strip().lower() not in (
+            "0",
+            "false",
+            "no",
+        )
+        data_out, code = get_remission_from_api(
+            id_report,
+            data_token,
+            include_items=include_items,
+            date_from=request.args.get("date_from") or None,
+            date_to=request.args.get("date_to") or None,
+            month_period=request.args.get("month_period") or None,
+            general_status=request.args.get("general_status", type=int),
+        )
         return data_out, code
+
+
+@ns.route("/remission/download/pdf/<int:id_report>")
+class DownloadPDFRemission(Resource):
+    @ns.expect(expected_headers_per)
+    def get(self, id_report):
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["administracion", "purchases"]
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        iva_rate = request.args.get("iva_rate", default=0.16, type=float)
+        # ?full=1 -> documento combinado (Remision + anexos + fotos); por defecto
+        # solo la pagina de la remision (comportamiento historico). Ver
+        # Docs/remission_combined_pdf.md.
+        full = request.args.get("full", default="0").strip().lower() in ("1", "true", "yes")
+        data, code = download_file_remission(id_report, iva_rate, data_token, full=full)
+        if code == 200:
+            return send_file(data, as_attachment=True)  # pyrefly: ignore
+        return data, code
 
 
 @ns.route("/remission/attachment-<string:id_report>")
 class UploadActivityReportAttachment(Resource):
-    @ns.expect(expected_headers_per, expected_files_attachment)
+    @ns.expect(expected_headers_per, expected_files_attachment_remission)
     def post(self, id_report):
         flag, data_token, msg = token_verification_procedure(
             request, department=["administracion", "operaciones"]
@@ -514,13 +632,162 @@ class UploadActivityReportAttachment(Resource):
                 {
                     "filepath": filepath_download,
                     "filename": filename,
-                    "id_voucher": id_report,
+                    "id_report": id_report,
+                    "category": request.form.get("category", ""),
+                    "folio": request.form.get("folio", ""),
+                    "title": request.form.get("title", ""),
                 },
                 data_token,
             )
             return data_out, code
         else:
             return {"msg": "No se subio el archivo"}, 400
+
+    @ns.expect(expected_headers_per, report_activity_delete_att_model)
+    def delete(self, id_report):
+        # Elimina un anexo del reporte; ver Docs/remission_attachment_delete.md
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["administracion", "operaciones"]
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        validator = ReportActivityDeleteAttForm.from_json(ns.payload)  # pyrefly: ignore
+        if not validator.validate():
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
+        data = validator.data
+        data["id_report"] = id_report
+        # `force` desde el payload crudo: el BooleanField de WTForms convierte la
+        # cadena "false" en True (bool("false")) y esto es un guard de borrado.
+        data["force"] = (ns.payload or {}).get("force")
+        data_out, code = delete_activity_report_attachment_api(data, data_token)
+        return data_out, code
+
+
+# =====================================================================
+# Gestión de Compras (FO-COM-01 R3) — ver Docs/gestion_de_compras.md
+# =====================================================================
+@ns.route("/purchaseManagement")
+class PurchaseManagementOps(Resource):
+    @ns.doc(
+        params={
+            "status": "Filtra por estatus (entero 0..4)",
+            "classification": "Filtra por clasificación (entero 0..6)",
+            "client_id": "Filtra por cliente (id_customer)",
+            "date_from": "request_date >= YYYY-MM-DD",
+            "date_to": "request_date <= YYYY-MM-DD",
+            "is_active": "1=activos (default), 0=cancelados",
+            "all": "1 -> incluye activos y cancelados (ignora is_active)",
+        }
+    )
+    @ns.expect(expected_headers_per)
+    def get(self):
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["administracion", "purchases"]
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        params = {
+            "status": request.args.get("status"),
+            "classification": request.args.get("classification"),
+            "client_id": request.args.get("client_id"),
+            "date_from": request.args.get("date_from"),
+            "date_to": request.args.get("date_to"),
+            "is_active": request.args.get("is_active"),
+            "all": request.args.get("all"),
+        }
+        data_out, code = fetch_purchase_management(params, data_token)
+        return data_out, code
+
+    @ns.expect(expected_headers_per, purchase_management_post_model)
+    def post(self):
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["administracion", "purchases"]
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        # noinspection PyUnresolvedReferences
+        validator = PurchaseManagementPostForm.from_json(ns.payload)  # pyrefly: ignore
+        if not validator.validate():
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
+        data = validator.data
+        data_out, code = create_purchase_management_api(data, data_token)
+        return data_out, code
+
+    @ns.expect(expected_headers_per, purchase_management_put_model)
+    def put(self):
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["administracion", "purchases"]
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        # noinspection PyUnresolvedReferences
+        validator = PurchaseManagementPutForm.from_json(ns.payload)  # pyrefly: ignore
+        if not validator.validate():
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
+        data = validator.data
+        # raw_payload -> el midleware solo sobreescribe lo enviado (update parcial).
+        raw_payload = ns.payload or {}
+        data_out, code = update_purchase_management_api(data, data_token, raw_payload)
+        return data_out, code
+
+    @ns.expect(expected_headers_per, purchase_management_delete_model)
+    def delete(self):
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["administracion", "purchases"]
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        # noinspection PyUnresolvedReferences
+        validator = PurchaseManagementDeleteForm.from_json(ns.payload)  # pyrefly: ignore
+        if not validator.validate():
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
+        data = validator.data
+        data_out, code = delete_purchase_management_api(data, data_token)
+        return data_out, code
+
+
+@ns.route("/purchaseManagement/cancel")
+class PurchaseManagementCancel(Resource):
+    @ns.expect(expected_headers_per, purchase_management_cancel_model)
+    def put(self):
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["administracion", "purchases"]
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        # noinspection PyUnresolvedReferences
+        validator = PurchaseManagementCancelForm.from_json(ns.payload)  # pyrefly: ignore
+        if not validator.validate():
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
+        data = validator.data
+        data_out, code = cancel_purchase_management_api(data, data_token)
+        return data_out, code
+
+
+@ns.route("/purchaseManagement/catalogs")
+class PurchaseManagementCatalogs(Resource):
+    @ns.expect(expected_headers_per)
+    def get(self):
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["administracion", "purchases"]
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        data_out, code = get_purchase_management_catalogs()
+        return data_out, code
+
+
+@ns.route("/purchaseManagement/<int:id_pm>")
+class PurchaseManagementDetail(Resource):
+    @ns.expect(expected_headers_per)
+    def get(self, id_pm):
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["administracion", "purchases"]
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        data_out, code = get_purchase_management_detail_api(id_pm, data_token)
+        return data_out, code
 
 
 @ns.route("/voucher/vehicle/attachment/download")

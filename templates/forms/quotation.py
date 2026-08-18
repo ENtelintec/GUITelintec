@@ -4,9 +4,16 @@ __date__ = "$ 22/oct/2024  at 16:32 $"
 
 import textwrap
 
+from reportlab.pdfbase.pdfmetrics import stringWidth
 from reportlab.pdfgen import canvas
 
-from templates.forms.PDFGenerator import a4_x, a4_y, create_header_telintec
+from templates.forms.PDFGenerator import (
+    FONT_BOLD,
+    FONT_REGULAR,
+    a4_x,
+    a4_y,
+    create_header_telintec,
+)
 
 dict_wrappers_headers_quotation = {
     "Movements": {
@@ -41,7 +48,7 @@ def print_headers_table_quotation(pdf, font_size=10, y_init=500, type_form="Move
     :param font_size:
     :return:
     """
-    pdf.setFont("Courier-Bold", font_size)
+    pdf.setFont(FONT_BOLD, font_size)
     x_position = 20
     headers = list(dict_wrappers_headers_quotation[type_form].keys())
     for header_key in headers:
@@ -64,122 +71,122 @@ def print_headers_table_quotation(pdf, font_size=10, y_init=500, type_form="Move
 def print_info_quotation(master, info_dict, font_size=10, y_init=500):
     position_y = y_init - font_size * 1.5
     position_x = 170
-    master.setFont("Courier-Bold", font_size)
+    master.setFont(FONT_BOLD, font_size)
     master.drawString(position_x, position_y, "Fecha: ")
-    master.setFont("Courier", font_size)
+    master.setFont(FONT_REGULAR, font_size)
     master.drawString(
-        position_x + len("Fecha: ") * font_size * 0.7,
+        position_x + stringWidth("Fecha: ", FONT_BOLD, font_size),
         position_y,
         f"{info_dict['date']}",
     )
     position_y -= font_size * 1.5
-    master.setFont("Courier-Bold", font_size)
+    master.setFont(FONT_BOLD, font_size)
     master.drawString(position_x, position_y, "Cliente: ")
-    master.setFont("Courier", font_size)
+    master.setFont(FONT_REGULAR, font_size)
     master.drawString(
-        position_x + len("Cotizacion: ") * font_size * 0.7,
+        position_x + stringWidth("Cliente: ", FONT_BOLD, font_size),
         position_y,
         f"{info_dict['id_quotation']}",
     )
     position_y -= font_size * 1.5
     position_x = 20
     # nombre de la compañia, nombre de contacto, telefono, correo Telintec
-    master.setFont("Courier-Bold", font_size)
+    master.setFont(FONT_BOLD, font_size)
     master.drawString(position_x, position_y, "Compañia: ")
-    master.setFont("Courier", font_size)
+    master.setFont(FONT_REGULAR, font_size)
     master.drawString(
-        position_x + len("Compañia: ") * font_size * 0.7,
+        position_x + stringWidth("Compañia: ", FONT_BOLD, font_size),
         position_y,
         "Telintec S.A. DE C.V.",
     )
     position_y -= font_size * 1.5
-    master.setFont("Courier-Bold", font_size)
+    master.setFont(FONT_BOLD, font_size)
     master.drawString(position_x, position_y, "Contacto: ")
-    master.setFont("Courier", font_size)
+    master.setFont(FONT_REGULAR, font_size)
     master.drawString(
-        position_x + len("Contacto: ") * font_size * 0.7,
+        position_x + stringWidth("Contacto: ", FONT_BOLD, font_size),
         position_y,
         f"{info_dict['contact']}",
     )
     position_y -= font_size * 1.5
-    master.setFont("Courier-Bold", font_size)
+    master.setFont(FONT_BOLD, font_size)
     master.drawString(position_x, position_y, "Correo: ")
-    master.setFont("Courier", font_size)
+    master.setFont(FONT_REGULAR, font_size)
     master.drawString(
-        position_x + len("Correo: ") * font_size * 0.7,
+        position_x + stringWidth("Correo: ", FONT_BOLD, font_size),
         position_y,
         f"{info_dict['email_contact']}",
     )
     position_y -= font_size * 1.5
-    master.setFont("Courier-Bold", font_size)
+    master.setFont(FONT_BOLD, font_size)
     master.drawString(position_x, position_y, "Telefono: ")
-    master.setFont("Courier", font_size)
+    master.setFont(FONT_REGULAR, font_size)
     master.drawString(
-        position_x + len("Telefono: ") * font_size * 0.7,
+        position_x + stringWidth("Telefono: ", FONT_BOLD, font_size),
         position_y,
         f"{info_dict['phone_contact']}",
     )
     #  info usuario: compañia, nombre de usuario, telefono, email, planta, area, ubicacion
     position_y -= font_size * 3.5
-    master.setFont("Courier-Bold", font_size)
+    master.setFont(FONT_BOLD, font_size)
     master.drawString(position_x, position_y, "Compañia Usuario: ")
-    master.setFont("Courier", font_size)
+    master.setFont(FONT_REGULAR, font_size)
     master.drawString(
-        position_x + len("Compañia Usuario: ") * font_size * 0.7,
+        position_x + stringWidth("Compañia Usuario: ", FONT_BOLD, font_size),
         position_y,
         f"{info_dict['user_company']}",
     )
     position_y -= font_size * 1.5
-    master.setFont("Courier-Bold", font_size)
+    master.setFont(FONT_BOLD, font_size)
     master.drawString(position_x, position_y, "Usuario: ")
-    master.setFont("Courier", font_size)
+    master.setFont(FONT_REGULAR, font_size)
     master.drawString(
-        position_x + len("Usuario: ") * font_size * 0.7,
+        position_x + stringWidth("Usuario: ", FONT_BOLD, font_size),
         position_y,
         f"{info_dict['user']}",
     )
     position_y -= font_size * 1.5
-    master.setFont("Courier-Bold", font_size)
+    master.setFont(FONT_BOLD, font_size)
     master.drawString(position_x, position_y, "Telefono: ")
-    master.setFont("Courier", font_size)
+    master.setFont(FONT_REGULAR, font_size)
     master.drawString(
-        position_x + len("Telefono: ") * font_size * 0.7,
+        position_x + stringWidth("Telefono: ", FONT_BOLD, font_size),
         position_y,
         f"{info_dict['user_phone']}",
     )
     position_y -= font_size * 1.5
-    master.setFont("Courier-Bold", font_size)
+    master.setFont(FONT_BOLD, font_size)
     master.drawString(position_x, position_y, "Email: ")
-    master.setFont("Courier", font_size)
+    master.setFont(FONT_REGULAR, font_size)
     master.drawString(
-        position_x + len("Email: ") * font_size * 0.7,
+        position_x + stringWidth("Email: ", FONT_BOLD, font_size),
         position_y,
         f"{info_dict['user_email']}",
     )
     position_y -= font_size * 1.5
-    master.setFont("Courier-Bold", font_size)
+    master.setFont(FONT_BOLD, font_size)
     master.drawString(position_x, position_y, "Planta: ")
-    master.setFont("Courier", font_size)
+    master.setFont(FONT_REGULAR, font_size)
     master.drawString(
-        position_x + len("Planta: ") * font_size * 0.7,
+        position_x + stringWidth("Planta: ", FONT_BOLD, font_size),
         position_y,
         f"{info_dict['plant']}",
     )
     position_y -= font_size * 1.5
-    master.setFont("Courier-Bold", font_size)
+    master.setFont(FONT_BOLD, font_size)
     master.drawString(position_x, position_y, "Area: ")
-    master.setFont("Courier", font_size)
+    master.setFont(FONT_REGULAR, font_size)
     master.drawString(
-        position_x + len("Area: ") * font_size * 0.7,
+        position_x + stringWidth("Area: ", FONT_BOLD, font_size),
         position_y,
         f"{info_dict['area']}",
     )
     position_y -= font_size * 1.5
-    master.setFont("Courier-Bold", font_size)
+    master.setFont(FONT_BOLD, font_size)
     master.drawString(position_x, position_y, "Ubicacion: ")
-    master.setFont("Courier", font_size)
+    master.setFont(FONT_REGULAR, font_size)
     master.drawString(
-        position_x + len("Ubicacion: ") * font_size * 0.7,
+        position_x + stringWidth("Ubicacion: ", FONT_BOLD, font_size),
         position_y,
         f"{info_dict['location']}",
     )
@@ -193,7 +200,7 @@ def print_footer_page_count(pdf, page, font_size=6):
     :param font_size:
     :return:
     """
-    pdf.setFont("Courier", font_size)
+    pdf.setFont(FONT_REGULAR, font_size)
     pdf.drawString(5, 5, f"Página {page}")
 
 
@@ -248,7 +255,7 @@ def QuotationForm(dict_data: dict, type_form="Movements"):
     # ---------------------------------------------products---------------------------------------------------------
     headers = list(dict_wrappers_headers_quotation[type_form].keys())
     font_size = 8
-    pdf.setFont("Courier", font_size)
+    pdf.setFont(FONT_REGULAR, font_size)
     y_init = 280
     last_y = y_init
     limit_y = 10
@@ -261,7 +268,7 @@ def QuotationForm(dict_data: dict, type_form="Movements"):
             print_headers_table_quotation(pdf, y_init=535, type_form=type_form)
             y_init = 510
             last_y = y_init
-            pdf.setFont("Courier", font_size)
+            pdf.setFont(FONT_REGULAR, font_size)
         for index, key in enumerate(item):
             value = textwrap.wrap(
                 str(key),

@@ -212,7 +212,10 @@ def get_sm_by_id(sm_id: int, data_token):
         "   FROM sql_telintec.product_reservations"
         "   WHERE status = 0 "
         "   GROUP BY id_product) rAll ON smi.id_inventory = rAll.id_product "
-        "WHERE mr.sm_id = %s"
+        "WHERE mr.sm_id = %s "
+        # Sin GROUP BY, JSON_ARRAYAGG agrega sobre cero filas y devuelve una
+        # fila llena de NULLs para un sm_id inexistente; con él, no hay filas.
+        "GROUP BY mr.sm_id"
     )
     val = (sm_id,)
     flag, error, result = execute_sql(sql, val, 1, data_token)
@@ -273,10 +276,15 @@ def get_sm_by_folio(folio: str, data_token):
         "   FROM sql_telintec.product_reservations"
         "   WHERE status = 0 "
         "   GROUP BY id_product) rAll ON smi.id_inventory = rAll.id_product "
-        "WHERE mr.folio = %s"
+        "WHERE mr.folio = %s "
+        # Sin GROUP BY, JSON_ARRAYAGG agrega sobre cero filas y devuelve una
+        # fila llena de NULLs para un folio inexistente; con él, no hay filas.
+        "GROUP BY mr.sm_id"
     )
     val = (folio,)
     flag, error, result = execute_sql(sql, val, 1, data_token)
+    if not isinstance(result, tuple):
+        return False, "No SM entries found or error in query", []
     return flag, error, result
 
 
@@ -887,4 +895,69 @@ def update_extra_info_sm_item_db(extra_info: dict, id_item, history: dict, sm_id
           """
     val = (json.dumps(history), sm_id)
     flag, error, result = execute_sql(sql, val, 3, data_token)
+    return flag, error, result
+
+
+def get_sm_item_deliveries_db(id_item, data_token):
+    """
+    Recupera, para un id_item de sm_items, su id_sm, sus deliveries y el history
+    de la SM a la que pertenece. Pensado para el rastreo de cambios desde una OC.
+    Devuelve result como tupla (id_item, id_sm, deliveries, history).
+    """
+    sql = (
+        "SELECT smi.id_item, smi.id_sm, smi.deliveries, mr.history "
+        "FROM sql_telintec.sm_items AS smi "
+        "INNER JOIN sql_telintec.materials_request AS mr ON mr.sm_id = smi.id_sm "
+        "WHERE smi.id_item = %s"
+    )
+    val = (id_item,)
+    flag, error, result = execute_sql(sql, val, 1, data_token)
+    return flag, error, result
+
+
+def update_deliveries_sm_item_db(deliveries: list, id_item, history: list, sm_id, data_token):
+    """
+    Actualiza únicamente la columna deliveries de un sm_item y registra el cambio
+    en el history de su SM. Mismo patrón que update_extra_info_sm_item_db.
+    """
+    sql = """
+          UPDATE sql_telintec.sm_items
+          SET deliveries = %s
+          WHERE id_item = %s
+          """
+    val = (json.dumps(deliveries), id_item)
+    flag, error, result = execute_sql(sql, val, 3, data_token)
+    if not flag:
+        return False, error, result
+    sql = """
+          UPDATE sql_telintec.materials_request
+          SET history = %s
+          WHERE sm_id = %s
+          """
+    val = (json.dumps(history), sm_id)
+    flag, error, result = execute_sql(sql, val, 3, data_token)
+    return flag, error, result
+
+
+def get_sm_items_deliveries_for_match_db(id_items: list, data_token):
+    """
+    Recupera los sm_items con su SM (folio, status) para el match OC<->SM del
+    endpoint de conciliacion: todos los items con deliveries no vacios (vinculo
+    primario por id_order) mas los id_item indicados (fallback por id_item_sm de
+    los items de la OC). Devuelve filas
+    (id_item, id_sm, folio_sm, status_sm, name, quantity, dispatched, deliveries).
+    """
+    sql = (
+        "SELECT smi.id_item, smi.id_sm, mr.folio, mr.status, smi.name, "
+        "smi.quantity, smi.dispatched, smi.deliveries "
+        "FROM sql_telintec.sm_items AS smi "
+        "INNER JOIN sql_telintec.materials_request AS mr ON mr.sm_id = smi.id_sm "
+        "WHERE (smi.deliveries IS NOT NULL AND JSON_LENGTH(smi.deliveries) > 0) "
+    )
+    val = []
+    if id_items:
+        placeholders = ", ".join(["%s"] * len(id_items))
+        sql += f"OR smi.id_item IN ({placeholders})"
+        val.extend(id_items)
+    flag, error, result = execute_sql(sql, tuple(val) if val else None, 2, data_token)
     return flag, error, result

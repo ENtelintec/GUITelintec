@@ -29,10 +29,12 @@ def create_items_quotation(items: list, data_token):
     error_list = []
     flag_list = []
     for item in items:
+        extra_info = item.get("extra_info")
         val = (
             item["quotation_id"],
             item["contract_id"],
             item["partida"],
+            item.get("section_index", 0),
             item["udm"],
             item["brand"],
             item["type_p"],
@@ -42,14 +44,15 @@ def create_items_quotation(items: list, data_token):
             item["price_unit"],
             item["description"],
             item["description_small"],
+            json.dumps(extra_info) if extra_info else None,
             item["id_inventory"],
         )
         sql = (
             "INSERT INTO sql_telintec_mod_admin.quotation_items "
-            "(quotation_id, contract_id, partida, udm, brand, type_p, n_part, "
-            "quantity, revision, price_unit, description, description_small, "
-            "id_inventory) "
-            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+            "(quotation_id, contract_id, partida, section_index, udm, brand, type_p, "
+            "n_part, quantity, revision, price_unit, description, description_small, "
+            "extra_info, id_inventory) "
+            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
         )
         flag, error, lastrowid = execute_sql(sql, val, 4, data_token)
         flag_list.append(flag)
@@ -83,17 +86,19 @@ def update_quotation(id_quotation, metadata: dict, data_token, timestamps=None):
 
 
 def create_item_quotation(item: dict, data_token):
+    extra_info = item.get("extra_info")
     sql = (
         "INSERT INTO sql_telintec_mod_admin.quotation_items "
-        "(quotation_id, contract_id, partida, udm, brand, type_p, n_part, "
-        "quantity, revision, price_unit, description, description_small, "
-        "id_inventory) "
-        "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+        "(quotation_id, contract_id, partida, section_index, udm, brand, type_p, "
+        "n_part, quantity, revision, price_unit, description, description_small, "
+        "extra_info, id_inventory) "
+        "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
     )
     val = (
         item["quotation_id"],
         item["contract_id"],
         item["partida"],
+        item.get("section_index", 0),
         item["udm"],
         item["brand"],
         item["type_p"],
@@ -103,22 +108,27 @@ def create_item_quotation(item: dict, data_token):
         item["price_unit"],
         item["description"],
         item["description_small"],
+        json.dumps(extra_info) if extra_info else None,
         item["id_inventory"],
     )
-    flag, error, out = execute_sql(sql, val, 3, data_token)
+    flag, error, out = execute_sql(sql, val, 4, data_token)
     return flag, error, out
 
 
-def update_item_quotation(id_item, item: dict, data_token):
+def update_item_quotation(id_item, quotation_id, item: dict, data_token):
+    """Actualiza un item. El AND quotation_id evita reescribir el item de otra
+    cotizacion si llega un qa_item_id ajeno; out es el rowcount (0 = no aplicado)."""
+    extra_info = item.get("extra_info")
     sql = (
         "UPDATE sql_telintec_mod_admin.quotation_items "
-        "SET partida = %s, udm = %s, brand = %s, type_p = %s, n_part = %s, quantity = %s, "
-        "revision = %s, price_unit = %s, description = %s, description_small = %s, "
-        "id_inventory = %s "
-        "WHERE id = %s"
+        "SET partida = %s, section_index = %s, udm = %s, brand = %s, type_p = %s, "
+        "n_part = %s, quantity = %s, revision = %s, price_unit = %s, description = %s, "
+        "description_small = %s, extra_info = %s, id_inventory = %s "
+        "WHERE id = %s AND quotation_id = %s"
     )
     val = (
         item["partida"],
+        item.get("section_index", 0),
         item["udm"],
         item["brand"],
         item["type_p"],
@@ -128,16 +138,21 @@ def update_item_quotation(id_item, item: dict, data_token):
         item["price_unit"],
         item["description"],
         item["description_small"],
+        json.dumps(extra_info) if extra_info else None,
         item["id_inventory"],
         id_item,
+        quotation_id,
     )
     flag, error, out = execute_sql(sql, val, 3, data_token)
     return flag, error, out
 
 
-def delete_item_quotation(id_item, data_token):
-    sql = "DELETE FROM sql_telintec_mod_admin.quotation_items WHERE id = %s"
-    val = (id_item,)
+def delete_item_quotation(id_item, quotation_id, data_token):
+    sql = (
+        "DELETE FROM sql_telintec_mod_admin.quotation_items "
+        "WHERE id = %s AND quotation_id = %s"
+    )
+    val = (id_item, quotation_id)
     flag, error, out = execute_sql(sql, val, 3, data_token)
     return flag, error, out
 
@@ -168,13 +183,22 @@ def delete_quotation(id_quotation, data_token):
 
 
 def get_quotation(data_token, id_quotation: int | None = None):
+    """Cotizacion(es) con sus items en la columna products (indice 2).
+
+    El orden de las PRIMERAS 12 llaves del JSON_OBJECT es load-bearing:
+    compare_file_quotation arma un DataFrame con estos registros y compara por
+    posicion contra un vector de 12 elementos (indices 0..11), asi que no
+    reordenes ni insertes llaves entre 'qa_item_id' y 'id_inventory'. Las 3
+    llaves de seccion (section_index/section_title/section_type) van al FINAL
+    (indices 12..14): el compare solo lee 0..11, asi que son inertes para el.
+    """
     if id_quotation is not None:
         sql = (
             "SELECT "
             "q.id AS quotation_id, "
             "q.metadata, "
             "JSON_ARRAYAGG(JSON_OBJECT( "
-            "  'id', qi.id, "
+            "  'qa_item_id', qi.id, "
             "  'partida', qi.partida, "
             "  'udm', qi.udm, "
             "  'brand', qi.brand, "
@@ -185,7 +209,10 @@ def get_quotation(data_token, id_quotation: int | None = None):
             "  'price_unit', ROUND(qi.price_unit, 2), "
             "  'description', qi.description, "
             "  'description_small', qi.description_small, "
-            "  'id_inventory', qi.id_inventory "
+            "  'id_inventory', qi.id_inventory, "
+            "  'section_index', qi.section_index, "
+            "  'section_title', COALESCE(qi.extra_info->>'$.section_title', 'General'), "
+            "  'section_type', COALESCE(qi.extra_info->>'$.section_type', 'general') "
             ")) AS products, "
             "q.creation, "
             "q.timestamps "
@@ -201,7 +228,7 @@ def get_quotation(data_token, id_quotation: int | None = None):
             "q.id AS quotation_id, "
             "q.metadata, "
             "JSON_ARRAYAGG(JSON_OBJECT( "
-            "  'id', qi.id, "
+            "  'qa_item_id', qi.id, "
             "  'partida', qi.partida, "
             "  'udm', qi.udm, "
             "  'brand', qi.brand, "
@@ -212,7 +239,10 @@ def get_quotation(data_token, id_quotation: int | None = None):
             "  'price_unit', qi.price_unit, "
             "  'description', qi.description, "
             "  'description_small', qi.description_small, "
-            "  'id_inventory', qi.id_inventory "
+            "  'id_inventory', qi.id_inventory, "
+            "  'section_index', qi.section_index, "
+            "  'section_title', COALESCE(qi.extra_info->>'$.section_title', 'General'), "
+            "  'section_type', COALESCE(qi.extra_info->>'$.section_type', 'general') "
             ")) AS products, "
             "q.creation, "
             "q.timestamps "
@@ -222,7 +252,7 @@ def get_quotation(data_token, id_quotation: int | None = None):
         )
         val = ()
 
-    flag, error, result = execute_sql(sql, val, 5, data_token)
+    flag, error, result = execute_sql(sql, val, 2, data_token)
     if not flag:
         return False, error, []
     if not isinstance(result, list):
@@ -266,8 +296,11 @@ def get_quotation_data_display(data_token, id_quotation=None):
 
 
 def get_items_quotation_from_cotract(contract_id, data_token):
+    # section_index va al FINAL (indice 4): check_for_partidas_updates indexa por
+    # posicion (item[1]=partida, item[2]=id_inventory), asi que agregarlo al final
+    # no mueve esos indices.
     sql = (
-        "SELECT id, partida, id_inventory, quotation_id "
+        "SELECT id, partida, id_inventory, quotation_id, section_index "
         "FROM sql_telintec_mod_admin.quotation_items "
         "WHERE contract_id = %s"
     )
@@ -282,13 +315,15 @@ def get_items_quotation_from_cotract(contract_id, data_token):
 
 
 def update_quotation_item_partida_from_sm(
-    contract_id, partida, id_inventory, data_token
+    contract_id, section_index, partida, id_inventory, data_token
 ):
+    # section_index en el WHERE evita pegar en varias filas cuando la POS. reinicia
+    # por seccion (partida repetida en el mismo contrato).
     sql = (
         "UPDATE sql_telintec_mod_admin.quotation_items "
         "SET id_inventory = %s "
-        "WHERE contract_id = %s AND partida = %s"
+        "WHERE contract_id = %s AND section_index = %s AND partida = %s"
     )
-    val = (id_inventory, contract_id, partida)
+    val = (id_inventory, contract_id, section_index, partida)
     flag, error, out = execute_sql(sql, val, 3, data_token)
     return flag, error, out

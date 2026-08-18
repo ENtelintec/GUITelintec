@@ -4,6 +4,7 @@ __author__ = "Edisson Naula"
 __date__ = "$ 14/nov/2024  at 16:15 $"
 
 from flask_restx import fields
+from werkzeug.datastructures import FileStorage
 from wtforms import (
     BooleanField,
     FloatField,
@@ -318,7 +319,7 @@ quotation_activity_insert_item_model = api.model(
 quotation_activity_item_upsert_model = api.model(
     "QuotationActivityItemUpsert",
     {
-        "id": fields.Integer(
+        "qa_item_id": fields.Integer(
             required=False,
             description=(
                 "ID del ítem. Si se omite o es <= 0, se creará un nuevo ítem.Si es > 0, se actualizará el ítem existente."
@@ -613,6 +614,66 @@ basic_control_table_report_model = api.model(
             description="Número de remito de la remision",
             example="2",
         ),
+        "area": fields.String(
+            required=False,
+            description="Área dentro de la planta",
+            example="Producción",
+        ),
+        "pedido": fields.String(
+            required=False,
+            description="Número de pedido interno",
+            example="PED-2026-00456",
+        ),
+        "totalSinIva": fields.Float(
+            required=False,
+            description="Total sin IVA (se guarda como total_sin_iva en extra_info)",
+            example=15200.50,
+        ),
+        "statusReport": fields.Integer(
+            required=False,
+            description="Estatus del reporte como entero (se guarda como status_report)",
+            example=1,
+        ),
+        "date_report": fields.String(
+            required=False,
+            description="Fecha de elaboración del reporte",
+            example="2026-03-15",
+        ),
+        "date_sign": fields.String(
+            required=False,
+            description="Fecha de entrega a firma",
+            example="2026-03-16",
+        ),
+        "date_office": fields.String(
+            required=False,
+            description="Fecha de envío del reporte a oficina",
+            example="2026-03-17",
+        ),
+        "received_date": fields.String(
+            required=False,
+            description="Fecha de recibido",
+            example="2026-03-18",
+        ),
+        "status_rep_admi": fields.Integer(
+            required=False,
+            description="Estatus del reporte en administración (entero)",
+            example=0,
+        ),
+        "remission_sent_date": fields.String(
+            required=False,
+            description="Fecha de envío de remisión",
+            example="2026-03-19",
+        ),
+        "remission_sent_by": fields.String(
+            required=False,
+            description="Responsable de envío de remisión",
+            example="Juan Pérez",
+        ),
+        "remission_total": fields.Float(
+            required=False,
+            description="Total de la remisión",
+            example=17632.58,
+        ),
     },
 )
 
@@ -628,7 +689,7 @@ basic_control_table_report_update_model = api.inherit(
     },
 )
 
-basic_metadata_activity_model = api.model(
+basic_metadata_activity_model = api.inherit(
     "BasicActivityMetadaModel",
     basic_control_table_report_model,
     {
@@ -646,6 +707,21 @@ basic_metadata_activity_model = api.model(
             required=False,
             description="Número de pedido interno",
             example="PED-2026-00456",
+        ),
+        "date_delivery": fields.String(
+            required=False,
+            description="Fecha de entrega",
+            example="2026-03-20",
+        ),
+        "request_date": fields.String(
+            required=False,
+            description="Fecha de solicitud",
+            example="2026-03-10",
+        ),
+        "infra_responsible": fields.String(
+            required=False,
+            description="Responsable de infraestructura",
+            example="Carlos Ruiz",
         ),
     },
 )
@@ -667,6 +743,13 @@ remission_activity_create_control_table_model = api.model(
     "RemissionActivityCreateControlTable",
     {
         "metadata": fields.Nested(basic_metadata_activity_model),
+    },
+)
+
+remission_activity_update_control_table_model = api.model(
+    "RemissionActivityUpdateControlTable",
+    {
+        "metadata": fields.Nested(basic_control_table_report_update_model),
     },
 )
 
@@ -710,6 +793,61 @@ remission_activity_update_model = api.model(
 )
 
 
+remission_balance_metadata_model = api.model(
+    "RemissionBalanceMetadata",
+    {
+        "id": fields.Integer(
+            required=True,
+            description="ID de la remisión (activity_reports) a la que se agregan los datos de saldos",
+            example=1012,
+        ),
+        "pedido": fields.String(required=False, description="Número de pedido", example="PED-2026-00456"),
+        "remision": fields.String(required=False, description="Número de remisión", example="501"),
+        "remito": fields.String(required=False, description="Número de remito", example="2"),
+        "remitos": fields.String(required=False, description="Remitos", example="2"),
+        "request_date": fields.String(required=False, description="Fecha de solicitud", example="2026-03-10"),
+        "infra_responsible": fields.String(required=False, description="Responsable de infra", example="Carlos Ruiz"),
+        "remission_status": fields.Integer(required=False, description="Estatus de remisión (entero)", example=1),
+        "remission_sent_date": fields.String(required=False, description="Fecha de remitos enviados", example="2026-03-19"),
+        "remission_send_time": fields.String(required=False, description="Tiempo de envío de remisión", example="3 días"),
+        "remission_upload_date": fields.String(required=False, description="Fecha de carga de remisión", example="2026-03-20"),
+        "remission_upload_time": fields.String(required=False, description="Tiempo de carga de remisión", example="2 días"),
+        "hes_status": fields.Integer(required=False, description="Estatus HES (entero)", example=0),
+        "hes_number": fields.String(required=False, description="No. HES", example="HES-778812"),
+        "hes_release_date": fields.String(required=False, description="Fecha de liberación HES", example="2026-04-01"),
+        "hes_balance": fields.Float(required=False, description="Saldo HES (por aprobar Ternium)", example=15200.50),
+        "projection_balance": fields.Float(required=False, description="Monto remisión / proyección de saldo", example=15200.50),
+        "committed_balance": fields.Float(required=False, description="Saldo comprometido", example=8200.00),
+        "invoiced_balance": fields.Float(required=False, description="Saldo facturado", example=7000.50),
+        "observations": fields.String(required=False, description="Observaciones", example="Pendiente de aprobación"),
+        "month_period": fields.String(required=False, description="Mes / periodo", example="2026-03"),
+        "requester_coordinator": fields.String(required=False, description="Solicitante / coordinador", example="Ana López"),
+        "coordinator": fields.String(required=False, description="Coordinador", example="Luis Torres"),
+        "ceco_fap": fields.String(required=False, description="CECO / FAP", example="CC-4451"),
+        "sgd_number": fields.String(required=False, description="Número SGD", example="SGD-2026-091"),
+        "sgd_upload_date": fields.String(required=False, description="Fecha de carga SGD", example="2026-03-22"),
+        "sgd_upload_time": fields.String(required=False, description="Tiempo de carga SGD", example="1 día"),
+        "general_status": fields.Integer(required=False, description="Estatus general (entero)", example=2),
+        "ot": fields.String(required=False, description="OT", example="OT-3321"),
+        "ticket_number": fields.String(required=False, description="Número de tickets", example="TK-8871"),
+        "quotation_number": fields.String(required=False, description="No. de cotización (texto libre)", example="COT-2026-110"),
+        "quotation_amount": fields.Float(required=False, description="Monto de cotización", example=15200.50),
+        "activity_end_date": fields.String(required=False, description="Fecha fin de actividad", example="2026-03-25"),
+        "ot_ticket": fields.String(required=False, description="OT / Ticket (campo propio, independiente de ot y ticket_number)", example="OT-3321/TK-8871"),
+        "centro_costos": fields.String(required=False, description="Centro de costos (independiente de ceco_fap)", example="CC-4451"),
+        "responsable_centro_costos": fields.String(required=False, description="Responsable del centro de costos", example="María Pérez"),
+        "personal_infra": fields.String(required=False, description="Personal infra (independiente de infra_responsible)", example="Juan García"),
+    },
+)
+
+remission_balance_update_model = api.model(
+    "RemissionBalanceUpdate",
+    {
+        "metadata": fields.Nested(remission_balance_metadata_model),
+    },
+)
+
+
 report_activity_delete_model = api.model(
     "ReportActivityDelete",
     {
@@ -727,6 +865,69 @@ report_activity_download_att_model = api.model(
         "id_report": fields.Integer(required=True, description="ID del reporte"),
         "filename": fields.String(required=True, description="Nombre del archivo a descargar"),
     },
+)
+
+# Body del DELETE de un anexo de la remision (ver
+# Docs/remission_attachment_delete.md). El id del reporte va en la URL.
+report_activity_delete_att_model = api.model(
+    "ReportActivityDeleteAttachment",
+    {
+        "filename": fields.String(
+            required=True,
+            description="Nombre del archivo a eliminar (tal como viene en files[].filename)",
+            example="evidencia-1.jpg",
+        ),
+        "reason": fields.String(
+            required=False,
+            description="Motivo del borrado; se guarda en el history del reporte",
+            example="foto repetida",
+        ),
+        "force": fields.Boolean(
+            required=False,
+            default=False,
+            description=(
+                "Fuerza el borrado de un archivo cuya categoria 'firma' fue INFERIDA del nombre "
+                "(p.ej. firmado_cliente.pdf). Las firmas reales (category 'firma' guardada o nombre "
+                "con firma-realizado/firma-recibido) no se pueden borrar ni con force"
+            ),
+            example=False,
+        ),
+    },
+)
+
+# Parser multipart para subir un anexo de la remision. Propio de la remision
+# (no reutilizar el generico expected_files_attachment de SGI): agrega los
+# campos de clasificacion que consume el PDF combinado (ver
+# Docs/remission_combined_pdf.md). `category` decide como se usa el archivo en
+# el reporte; `folio` (C-numbers) alimenta el encabezado de la pagina de fotos.
+expected_files_attachment_remission = api.parser()
+expected_files_attachment_remission.add_argument(
+    "file",
+    type=FileStorage,
+    location="files",
+    required=True,
+    help="Archivo a adjuntar (pdf/jpg/jpeg/png/webp/zip)",
+)
+expected_files_attachment_remission.add_argument(
+    "category",
+    type=str,
+    location="form",
+    required=False,
+    help="Clasificacion del anexo: photo | anexo | firma | otro",
+)
+expected_files_attachment_remission.add_argument(
+    "folio",
+    type=str,
+    location="form",
+    required=False,
+    help="Folio del reporte de materiales (C-numbers), para el encabezado de la pagina de fotos",
+)
+expected_files_attachment_remission.add_argument(
+    "title",
+    type=str,
+    location="form",
+    required=False,
+    help="Titulo/etiqueta opcional del anexo",
 )
 
 remission_model_insert = api.model(
@@ -1094,7 +1295,7 @@ class QuotationInsertItemForm(Form):
 
 
 class QuotationUpsertItemForm(Form):
-    id = IntegerField("id", validators=[number_range(min=-1, message="Invalid id")], default=-1)
+    qa_item_id = IntegerField("qa_item_id", validators=[number_range(min=-1, message="Invalid id")], default=-1)
     report_id = IntegerField("report_id", [], default=0)
     description = StringField("description", [InputRequired()])
     udm = StringField("udm", [InputRequired()])
@@ -1164,6 +1365,20 @@ class MetadataControlTableRemissionForm(Form):
     remito = StringField("remito", [], default="")
     user = StringField("user", [], default="")
     user_id = IntegerField("user_id", [number_range(min=-1, message="Invalid id")], default=0)
+    # Campos del módulo Control de Reportes (bloques operaciones/administración).
+    # Opcionales: el back no exige ninguno, el front decide cuándo pedirlos.
+    area = StringField("area", [], default="")
+    pedido = StringField("pedido", [], default="")
+    totalSinIva = FloatField("totalSinIva", [], default=None)
+    statusReport = IntegerField("statusReport", [], default=None)
+    date_report = StringField("date_report", [], default="")
+    date_sign = StringField("date_sign", [], default="")
+    date_office = StringField("date_office", [], default="")
+    received_date = StringField("received_date", [], default="")
+    status_rep_admi = IntegerField("status_rep_admi", [], default=None)
+    remission_sent_date = StringField("remission_sent_date", [], default="")
+    remission_sent_by = StringField("remission_sent_by", [], default="")
+    remission_total = FloatField("remission_total", [], default=None)
 
 
 class MetadataControlTableRemissionUpdateForm(MetadataControlTableRemissionForm):
@@ -1178,6 +1393,10 @@ class MetadataActivityReportForm(MetadataControlTableRemissionForm):
     pedido = StringField("pedido", [], default="")
     pedido_exiros = StringField("pedido_exiros", [], default="")
     area = StringField("area", [InputRequired()])
+    # Campos del módulo REMISIONES (opcionales).
+    date_delivery = StringField("date_delivery", [], default="")
+    request_date = StringField("request_date", [], default="")
+    infra_responsible = StringField("infra_responsible", [], default="")
 
 
 class ReportActivityCreateForm(Form):
@@ -1201,6 +1420,52 @@ class ReportActivityUpdateForm(Form):
     items = FieldList(FormField(QuotationUpsertItemForm), "items", validators=[], default=[])
 
 
+class MetadataRemissionBalanceForm(Form):
+    # Módulo CONTROL SALDOS: solo id obligatorio; el resto es opcional y se
+    # mergea en extra_info de la remisión (solo llaves presentes en el JSON).
+    id = IntegerField("id", [InputRequired()])
+    pedido = StringField("pedido", [], default="")
+    remision = StringField("remision", [], default="")
+    remito = StringField("remito", [], default="")
+    remitos = StringField("remitos", [], default="")
+    request_date = StringField("request_date", [], default="")
+    infra_responsible = StringField("infra_responsible", [], default="")
+    remission_status = IntegerField("remission_status", [], default=None)
+    remission_sent_date = StringField("remission_sent_date", [], default="")
+    remission_send_time = StringField("remission_send_time", [], default="")
+    remission_upload_date = StringField("remission_upload_date", [], default="")
+    remission_upload_time = StringField("remission_upload_time", [], default="")
+    hes_status = IntegerField("hes_status", [], default=None)
+    hes_number = StringField("hes_number", [], default="")
+    hes_release_date = StringField("hes_release_date", [], default="")
+    hes_balance = FloatField("hes_balance", [], default=None)
+    projection_balance = FloatField("projection_balance", [], default=None)
+    committed_balance = FloatField("committed_balance", [], default=None)
+    invoiced_balance = FloatField("invoiced_balance", [], default=None)
+    observations = StringField("observations", [], default="")
+    month_period = StringField("month_period", [], default="")
+    requester_coordinator = StringField("requester_coordinator", [], default="")
+    coordinator = StringField("coordinator", [], default="")
+    ceco_fap = StringField("ceco_fap", [], default="")
+    sgd_number = StringField("sgd_number", [], default="")
+    sgd_upload_date = StringField("sgd_upload_date", [], default="")
+    sgd_upload_time = StringField("sgd_upload_time", [], default="")
+    general_status = IntegerField("general_status", [], default=None)
+    ot = StringField("ot", [], default="")
+    ticket_number = StringField("ticket_number", [], default="")
+    quotation_number = StringField("quotation_number", [], default="")
+    quotation_amount = FloatField("quotation_amount", [], default=None)
+    activity_end_date = StringField("activity_end_date", [], default="")
+    ot_ticket = StringField("ot_ticket", [], default="")
+    centro_costos = StringField("centro_costos", [], default="")
+    responsable_centro_costos = StringField("responsable_centro_costos", [], default="")
+    personal_infra = StringField("personal_infra", [], default="")
+
+
+class RemissionBalanceUpdateForm(Form):
+    metadata = FormField(MetadataRemissionBalanceForm, "metadata")
+
+
 class ReportActivityDeleteForm(Form):
     id = IntegerField("id", [InputRequired()])
     status = IntegerField("status", [number_range(min=-1, message="Invalid status")], default=-1)
@@ -1209,3 +1474,10 @@ class ReportActivityDeleteForm(Form):
 class ReportActivityDownloadAttForm(Form):
     id_report = IntegerField("id_report", [InputRequired()])
     filename = StringField("filename", [InputRequired()])
+
+
+class ReportActivityDeleteAttForm(Form):
+    # id_report viaja en la URL, no en el body
+    filename = StringField("filename", [InputRequired()])
+    reason = StringField("reason", [], default="")
+    force = BooleanField("force", [], default=False)

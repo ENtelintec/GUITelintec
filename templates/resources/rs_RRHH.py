@@ -35,9 +35,25 @@ from static.Models.api_fichajes_models import (
     request_data_fichaje_files_model,
 )
 from static.Models.api_models import (
+    Eva360CreateForm,
     RequestFileReportQuizzForm,
+    TaskDeleteForm,
+    TaskInsertForm,
+    TaskUpdateForm,
+    eva360_create_model,
     expected_headers_per,
     request_file_report_quizz_model,
+    task_delete_model,
+    task_insert_model,
+    task_update_model,
+)
+from static.Models.api_quizz_models_models import (
+    QuizzModelPostForm,
+    QuizzModelPutForm,
+    QuizzModelStatusForm,
+    quizz_model_post_model,
+    quizz_model_put_model,
+    quizz_model_status_model,
 )
 from static.Models.api_payroll_models import (
     CreateMailForm,
@@ -60,10 +76,13 @@ from templates.controllers.employees.vacations_controller import (
 from templates.resources.methods.Functions_Aux_Login import token_verification_procedure
 from templates.resources.midleware.Functions_DB_midleware import (
     create_csv_file_employees,
+    create_task_from_api,
+    delete_task_from_api,
     get_all_vacations,
     get_info_employee_id,
     get_info_employees_with_status,
     get_vacations_employee,
+    update_task_from_api,
 )
 from templates.resources.midleware.Functions_midleware_RRHH import (
     create_mail_payroll,
@@ -77,8 +96,11 @@ from templates.resources.midleware.Functions_midleware_RRHH import (
     generate_pdf_from_json,
     get_all_quizzes,
     get_fichaje_data,
+    get_task_by_id_employee,
     get_files_fichaje,
     get_files_list_nomina_RH,
+    get_quizz_evaluation,
+    get_quizz_group_evaluation,
     insert_medical_db,
     insert_new_vacation,
     terminate_employee_from_api,
@@ -87,6 +109,22 @@ from templates.resources.midleware.Functions_midleware_RRHH import (
     update_medical_db,
     update_payroll_list_employees,
     update_vacation,
+)
+from templates.resources.midleware.MD_Eva360 import (
+    complete_eva360_process,
+    create_eva360_process,
+    get_eva360_process,
+    get_eva360_result,
+)
+from templates.resources.midleware.MD_QuizzModels import (
+    create_quizz_model_api,
+    delete_quizz_model_api,
+    fetch_quizz_models,
+    get_quizz_model_detail_api,
+    get_quizz_models_catalogs_api,
+    get_quizz_template_api,
+    update_quizz_model_api,
+    update_quizz_model_status_api,
 )
 
 __author__ = "Edisson Naula"
@@ -420,6 +458,79 @@ class VacationRegistry(Resource):
                 "error": error,
             }, 400
 
+@ns.route("/task/quizz")
+class TaskQuizz(Resource):
+    @ns.expect(expected_headers_per, task_insert_model)
+    def post(self):
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        # noinspection PyUnresolvedReferences
+        validator = TaskInsertForm.from_json(ns.payload)  # pyrefly:ignore
+        if not validator.validate():
+            return {"errors": validator.errors}, 400
+        data = validator.data
+        response, code = create_task_from_api(data, data_token)
+        return response, code
+
+    @ns.expect(expected_headers_per, task_update_model)
+    def put(self):
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["rrhh", "common"]
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        # noinspection PyUnresolvedReferences
+        validator = TaskUpdateForm.from_json(ns.payload)  # pyrefly:ignore
+        if not validator.validate():
+            return {"errors": validator.errors}, 400
+        data = validator.data
+        reponse, code = update_task_from_api(data, data_token)
+        return reponse, code
+
+    @ns.expect(expected_headers_per, task_delete_model)
+    def delete(self):
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        # noinspection PyUnresolvedReferences
+        validator = TaskDeleteForm.from_json(ns.payload)  # pyrefly:ignore
+        if not validator.validate():
+            return {"errors": validator.errors}, 400
+        data = validator.data
+        response, code = delete_task_from_api(data, data_token)
+        return response, code
+
+
+@ns.route("/task/<int:emp_id>")
+class TasksByEmployee(Resource):
+    @ns.expect(expected_headers_per)
+    def get(self, emp_id):
+        """Tasks (encuestas asignadas) de un empleado; auth de auto-acceso:
+        el propio empleado puede consultar las suyas."""
+        flag, data_token, msg = token_verification_procedure(request, emp_id=emp_id)
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        data_out, code = get_task_by_id_employee(emp_id, data_token)
+        return data_out, code
+
+
+@ns.route("/download/quizz/<int:type_q>")
+class DownloadFileQuizz(Resource):
+    @ns.expect(expected_headers_per)
+    def get(self, type_q):
+        """Template del cuestionario desde la BD (quizz_models); mismo shape
+        que la ruta historica de misc, solo cambia el namespace. Permiso
+        common ademas de rrhh: el empleado que contesta necesita el template
+        para renderizar la captura (el PUT /task/quizz ya acepta common)."""
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["rrhh", "common"]
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        data_out, code = get_quizz_template_api(type_q, data_token)
+        return data_out, code
+
 
 @ns.route("/quizzes")
 class TaskQuizzes(Resource):
@@ -433,6 +544,181 @@ class TaskQuizzes(Resource):
             return {"data": data_out, "msg": None, "error": None}, 200
         else:
             return {"data": [], "msg": "No se pudieron obtener los quizzes", "error": error}, 400
+
+
+@ns.route("/quizz/<int:id_task>/evaluation")
+class QuizzEvaluation(Resource):
+    @ns.expect(expected_headers_per)
+    def get(self, id_task):
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        out, code = get_quizz_evaluation(id_task, data_token)
+        return out, code
+
+
+@ns.route("/quizzes/summary/<int:type_q>")
+class QuizzesSummary(Resource):
+    @ns.expect(expected_headers_per)
+    def get(self, type_q):
+        """Resultado organizacional agregado de las encuestas de un tipo
+        (conteo agrupado); filtros opcionales `date_from`/`date_to`
+        (YYYY-MM-DD, inclusivos) sobre la fecha del task."""
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        out, code = get_quizz_group_evaluation(
+            type_q,
+            data_token,
+            date_from=request.args.get("date_from"),
+            date_to=request.args.get("date_to"),
+        )
+        return out, code
+
+
+@ns.route("/quizz/models")
+class QuizzModels(Resource):
+    @ns.doc(
+        params={
+            "status": "Filtra por status (0=borrador 1=activa 2=archivada)",
+            "all": "1 -> todos los status (ignora el default de solo activas)",
+        }
+    )
+    @ns.expect(expected_headers_per)
+    def get(self):
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        params = {
+            "status": request.args.get("status"),
+            "all": request.args.get("all"),
+        }
+        data_out, code = fetch_quizz_models(params, data_token)
+        return data_out, code
+
+    @ns.expect(expected_headers_per, quizz_model_post_model)
+    def post(self):
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        # noinspection PyUnresolvedReferences
+        validator = QuizzModelPostForm.from_json(ns.payload)  # pyrefly: ignore
+        if not validator.validate():
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
+        data = validator.data
+        data_out, code = create_quizz_model_api(data, ns.payload, data_token)
+        return data_out, code
+
+
+@ns.route("/quizz/models/catalogs")
+class QuizzModelsCatalogs(Resource):
+    @ns.expect(expected_headers_per)
+    def get(self):
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        data_out, code = get_quizz_models_catalogs_api()
+        return data_out, code
+
+
+@ns.route("/quizz/models/<int:type_q>")
+class QuizzModelDetail(Resource):
+    @ns.expect(expected_headers_per)
+    def get(self, type_q):
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        data_out, code = get_quizz_model_detail_api(type_q, data_token)
+        return data_out, code
+
+    @ns.expect(expected_headers_per, quizz_model_put_model)
+    def put(self, type_q):
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        # noinspection PyUnresolvedReferences
+        validator = QuizzModelPutForm.from_json(ns.payload)  # pyrefly: ignore
+        if not validator.validate():
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
+        data = validator.data
+        data_out, code = update_quizz_model_api(type_q, data, ns.payload, data_token)
+        return data_out, code
+
+    @ns.expect(expected_headers_per)
+    def delete(self, type_q):
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        data_out, code = delete_quizz_model_api(type_q, data_token)
+        return data_out, code
+
+
+@ns.route("/quizz/models/<int:type_q>/status")
+class QuizzModelStatus(Resource):
+    @ns.expect(expected_headers_per, quizz_model_status_model)
+    def put(self, type_q):
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        # noinspection PyUnresolvedReferences
+        validator = QuizzModelStatusForm.from_json(ns.payload)  # pyrefly: ignore
+        if not validator.validate():
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
+        data = validator.data
+        data_out, code = update_quizz_model_status_api(type_q, data, data_token)
+        return data_out, code
+
+
+@ns.route("/eva360")
+class Eva360Create(Resource):
+    @ns.expect(expected_headers_per, eva360_create_model)
+    def post(self):
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        # noinspection PyUnresolvedReferences
+        validator = Eva360CreateForm.from_json(ns.payload)  # pyrefly: ignore
+        if not validator.validate():
+            return {
+                "data": None,
+                "msg": "Estructura de datos inválida",
+                "error": validator.errors,
+            }, 400
+        out, code = create_eva360_process(validator.data, data_token)
+        return out, code
+
+
+@ns.route("/eva360/<string:evaluation_id>")
+class Eva360Detail(Resource):
+    @ns.expect(expected_headers_per)
+    def get(self, evaluation_id):
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        out, code = get_eva360_process(evaluation_id, data_token)
+        return out, code
+
+
+@ns.route("/eva360/<string:evaluation_id>/result")
+class Eva360Result(Resource):
+    @ns.expect(expected_headers_per)
+    def get(self, evaluation_id):
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        out, code = get_eva360_result(evaluation_id, data_token)
+        return out, code
+
+
+@ns.route("/eva360/<string:evaluation_id>/complete")
+class Eva360Complete(Resource):
+    @ns.expect(expected_headers_per)
+    def put(self, evaluation_id):
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        out, code = complete_eva360_process(evaluation_id, data_token)
+        return out, code
 
 
 @ns.route("/employees/fichaje/all")
@@ -631,8 +917,10 @@ class DownloadFileEMPs(Resource):
         flag, data_token, msg = token_verification_procedure(request, department="rrhh")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        filepath = create_csv_file_employees(status)
-        return send_file(str(filepath), as_attachment=True)
+        result = create_csv_file_employees(status)
+        if isinstance(result, tuple):
+            return result
+        return send_file(str(result), as_attachment=True)
 
 
 @ns.route("/download/employees/medical")
@@ -653,9 +941,9 @@ class DownloadFileMedical(Resource):
         with open(filepath, "w") as file:
             file.write("id_exam,nombre,sangre,estatus,aptitudes,fechas,apt_actual,emp_id\n")
             for item in result:
-                id_exam, nombre, sangre, status, aptitud, fechas, apt_actual, emp_id = item
-                fechas = fechas.replace(",", ";")
-                aptitud = aptitud.replace(",", ";")
+                id_exam, nombre, sangre, status, aptitud, fechas, apt_actual, emp_id, _extra = item
+                fechas = (fechas or "").replace(",", ";")
+                aptitud = (aptitud or "").replace(",", ";")
                 file.write(
                     f"{id_exam},{nombre},{sangre},{status},{aptitud},{fechas},{apt_actual},{emp_id}\n"
                 )
@@ -680,8 +968,8 @@ class DownloadFileVacations(Resource):
         with open(filepath, "w") as file:
             file.write("emp_id, Nombre, Apellido, fecha_inicio, body\n")
             for item in data:
-                emp_id, name, l_name, date_admission, seniority = item
-                seniority = seniority.replace(",", ";")
+                emp_id, name, l_name, date_admission, seniority, _renovacion = item
+                seniority = (seniority or "").replace(",", ";")
                 file.write(f"{emp_id}, {name}, {l_name}, {date_admission}, {seniority}\n")
         return send_file(filepath, as_attachment=True)
 

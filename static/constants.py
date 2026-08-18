@@ -8,7 +8,7 @@ from pathlib import Path
 from dotenv import dotenv_values
 from flask_restx import Api
 
-environment = "dev"
+environment = "prod"
 secrets = dotenv_values(".env") if environment != "prod" else dotenv_values("../.env")
 domain_path = "domain.pem" if environment != "prod" else "../domain.pem"
 api = Api()
@@ -32,33 +32,13 @@ filepath_settings = "files/settings.json"
 filepath_daemons = "files/flags_daemons.json"
 filepath_recomendations = "files/recomendations.json"
 file_size_pages = "files/size_pages.json"
-quizzes_dir_path = "static/quizzes_dir.json"
+# Los templates y rubricas de encuestas viven en la BD
+# (sql_telintec_mod_rrhh.quizz_models, CRUD en /rrhh/quizz/models). Los
+# files/quizz_*.json y files/rubrics/*.json del repo son la fuente del seed
+# (scripts_db_handle/seed_quizz_models.py), no se leen en runtime.
 quizzes_temp_pdf = "files/quizz_out/temp_quiz.pdf"
 files_user = "files/users.json"
 file_codebar = "files/codebar.pdf"
-quizzes_RRHH = {
-    "0": {"name": "Encuesta de Salida", "path": "files/quizz_salida.json", "type": 0},
-    "1": {
-        "name": "Encuesta de Norma_035_50",
-        "path": "files/quizz_norma035_50_v1.json",
-        "type": 1,
-    },
-    "2": {
-        "name": "Encuesta de Norma_035_+50",
-        "path": "files/quizz_norma035_+50_v2.json",
-        "type": 2,
-    },
-    "3": {
-        "name": "Encuesta de clima laboral",
-        "path": "files/quizz_clima_laboral.json",
-        "type": 3,
-    },
-    "4": {
-        "name": "Encuesta eva 360",
-        "path": "files/quizz_eva_360.json",
-        "type": 4,
-    },
-}
 conversion_quizzes_path = "files/conversions_quizzes.json"
 filepath_recommendations = "files/recommendations.json"
 quizz_out_path = "files/quizz_out/"
@@ -73,6 +53,7 @@ log_file_almacen = "files/logs/almacen"
 log_file_po = "files/logs/po"
 log_file_rh = "files/logs/rh"
 log_file_users = "files/logs/users"
+log_file_cda = "files/logs/cda"
 filepath_permission = "static/permissions_models.json"
 path_contract_files = "files/contracts"
 filepath_bitacora_download = "files/quizz_out/temp_bitacora.csv"
@@ -82,6 +63,7 @@ filepath_inventory_form_movements_pdf = "files/movements_temp.pdf"
 filepath_inventory_form_movements_excel = "files/movements_temp.xlsx"
 filepath_sm_pdf = "files/sm_temp.pdf"
 filepath_po_pdf = "files/po_temp.pdf"
+filepath_remission_pdf = "files/remission_temp.pdf"
 filepath_v_pdf = "files/voucher_temp.pdf"
 filepath_fichaje_temp = "files/files_fichaje/fichaje_temp.xlsx"
 filepath_ternium_temp = "files/files_fichaje/ternium_temp.xls"

@@ -21,12 +21,14 @@ def get_data_chart_movements(data, data_token):
     elif type_m == "Salida":
         types = ["Salida"]
     else:
-        return {"data": None, "msg": "Tipo de movimiento inválido", "error": "type_m debe ser 'all', 'Entrada' o 'Salida'"}, 400
+        return {
+            "data": None,
+            "msg": "Tipo de movimiento inválido",
+            "error": "type_m debe ser 'all', 'Entrada' o 'Salida'",
+        }, 400
     data_out_full = {}
     for t in types:
-        data_chart = get_data_movements_type(
-            data["type_m"], data["n_products"], data_token
-        )
+        data_chart = get_data_movements_type(data["type_m"], data["n_products"], data_token)
         data_dict = data_chart.get("data")
         values = [v for k, v in data_dict.items()]
         x_tags = [k for k, v in data_dict.items()]
@@ -53,9 +55,17 @@ def validate_type_chart(type_chart: str):
 
 def get_data_chart_sm(data, data_token):
     if not validate_range(data["range"]):
-        return {"data": None, "msg": "Rango inválido", "error": f"range debe ser 'day', 'month' o 'year'"}, 400
+        return {
+            "data": None,
+            "msg": "Rango inválido",
+            "error": "range debe ser 'day', 'month' o 'year'",
+        }, 400
     if not validate_type_chart(data["type_chart"]):
-        return {"data": None, "msg": "Tipo de gráfica no soportado", "error": f"type_chart '{data['type_chart']}' no está soportado aún"}, 400
+        return {
+            "data": None,
+            "msg": "Tipo de gráfica no soportado",
+            "error": f"type_chart '{data['type_chart']}' no está soportado aún",
+        }, 400
     data_chart = get_data_sm_per_range(data["range"], data["type_chart"], data_token)
     data_out = []
     val_y = np.array(data_chart["val_y"])
@@ -83,7 +93,11 @@ def get_data_chart_fichaje_emp(data):
     if len(result) <= 0:
         return {"data": None, "msg": "No se encontraron datos de fichaje", "error": None}, 400
     if not (isinstance(result, list) or isinstance(result, tuple)):
-        return {"data": None, "msg": "Formato de datos inválido", "error": f"Formato inesperado: {result}"}, 400
+        return {
+            "data": None,
+            "msg": "Formato de datos inválido",
+            "error": f"Formato inesperado: {result}",
+        }, 400
     data_fichaje = [result] if data["emp_id"] != -1 else result
     data_out = []
     for emp in data_fichaje:

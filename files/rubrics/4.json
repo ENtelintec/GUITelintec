@@ -1,0 +1,25 @@
+{
+  "type": 4,
+  "name": "Evaluacion 360 (perspectiva individual)",
+  "mode": "scored",
+  "scoring": {
+    "answer_kind": "option_index",
+    "response_layout": "per_question",
+    "item_maps": [
+      { "items": [4, 5, 6, 7, 8, 9, 10, 11, 12], "values": [5, 4, 3, 2, 1], "na_value": 0 }
+    ]
+  },
+  "scale": { "max": 45, "to": 100 },
+  "tree": [
+    { "id": "q4", "kind": "competency", "label": "Organizacion", "items": [4] },
+    { "id": "q5", "kind": "competency", "label": "Eficiencia en su trabajo", "items": [5] },
+    { "id": "q6", "kind": "competency", "label": "Iniciativa", "items": [6] },
+    { "id": "q7", "kind": "competency", "label": "Conocimientos para realizar el trabajo", "items": [7] },
+    { "id": "q8", "kind": "competency", "label": "Calidad en su trabajo", "items": [8] },
+    { "id": "q9", "kind": "competency", "label": "Eficacia de la capacitacion tomada", "items": [9] },
+    { "id": "q10", "kind": "competency", "label": "Trabajo en Equipo", "items": [10] },
+    { "id": "q11", "kind": "competency", "label": "Manejo de su Equipo de Trabajo", "items": [11] },
+    { "id": "q12", "kind": "competency", "label": "Comunicacion", "items": [12] }
+  ],
+  "levels": {}
+}

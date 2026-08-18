@@ -2,13 +2,15 @@
 __author__ = "Edisson Naula"
 __date__ = "$ 23/jun/2025  at 16:27 $"
 
-import math
 import textwrap
 
+from reportlab.pdfbase.pdfmetrics import stringWidth
 from reportlab.pdfgen import canvas
 
 from static.constants import filepath_po_pdf
 from templates.forms.PDFGenerator import (
+    FONT_BOLD,
+    FONT_REGULAR,
     a4_x,
     a4_y,
     create_header_telintec,
@@ -38,7 +40,7 @@ def print_metadata_po(pdf, metadata, font_size=10, y_init=480, columns=2):
     :param columns:
     :return:
     """
-    pdf.setFont("Courier", font_size)
+    pdf.setFont(FONT_REGULAR, font_size)
     y_position = y_init
     x_position = 20
     separation = a4_x / columns
@@ -51,19 +53,18 @@ def print_metadata_po(pdf, metadata, font_size=10, y_init=480, columns=2):
             x_position = 20
         # pdf.drawString(x_position, y_position, f"{key}: {metadata[key]}")
         # Configurar la fuente en negrita para el key
-        pdf.setFont("Courier-Bold", font_size)
+        pdf.setFont(FONT_BOLD, font_size)
         pdf.drawString(x_position, y_position, f"{key}:")
 
         # Restaurar la fuente normal para el valor
-        pdf.setFont("Courier", font_size)
+        pdf.setFont(FONT_REGULAR, font_size)
         content = textwrap.wrap(
             str(metadata[key]),
             width=width_text_colum,
         )
-        adjustment = 15 / math.sqrt(len(key) + 1)
         for letter in content:
             pdf.drawString(
-                x_position + len(key) * font_size * 0.63 + adjustment,
+                x_position + stringWidth(f"{key}:", FONT_BOLD, font_size) + 5,
                 y_position,
                 f"{letter}",
             )
@@ -84,7 +85,7 @@ def print_headers_table_po(pdf, font_size=10, y_init=500, type_form="PO"):
     :param font_size:
     :return:
     """
-    pdf.setFont("Courier-Bold", font_size)
+    pdf.setFont(FONT_BOLD, font_size)
     x_position = 20
     headers = list(dict_wrappers_headers[type_form].keys())
     for header_key in headers:
@@ -105,7 +106,7 @@ def print_headers_table_po(pdf, font_size=10, y_init=500, type_form="PO"):
 def print_products_list(
     pdf, products, headers, font_size=8, y_last_headers=500.0, pages=1
 ):
-    pdf.setFont("Courier", font_size)
+    pdf.setFont(FONT_REGULAR, font_size)
     y_init = y_last_headers
     last_y = y_init
     limit_y = 10
@@ -119,7 +120,7 @@ def print_products_list(
             print_headers_table_po(pdf, y_init=535, type_form="PO")
             y_init = 510
             last_y = y_init
-            pdf.setFont("Courier", font_size)
+            pdf.setFont(FONT_REGULAR, font_size)
         # draw a line to separe
         pdf.line(20, y_init - 2, a4_x - 20, y_init - 2)
         for index, value_text in enumerate(item):
@@ -150,7 +151,7 @@ def print_total_products(
     iva=0.0,
     total=0.0,
 ):
-    pdf.setFont("Courier-Bold", font_size)
+    pdf.setFont(FONT_BOLD, font_size)
     y_init = y_last_products
     y_position = y_init
     if y_position - 20 < 0:

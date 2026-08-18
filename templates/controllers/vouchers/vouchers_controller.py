@@ -684,6 +684,51 @@ def get_vouchers_vehicle_with_items(start_date, data_token, user=None, id_vouche
     return flag, error, vouchers
 
 
+def get_voucher_vehicle_by_id(id_voucher, data_token):
+    """
+    Obtiene un voucher vehicular (checklist vehicular) por su ID, con los
+    nombres de quien lo realizó (vg.user) y quien lo recibió (vv.received_by)
+    resueltos desde employees. Sin ventana de fecha: el PDF del checklist debe
+    poder descargarse para cualquier voucher existente.
+
+    :param id_voucher: ID del voucher (vouchers_general.id_voucher)
+    :return: (flag, error, tupla) — [] si no existe
+    """
+    sql = (
+        "SELECT "
+        "vv.id_voucher_general, "
+        "vg.date, "
+        "vg.contract, "
+        "vg.user AS realizado_por, "
+        "vv.received_by, "
+        "vv.brand, "
+        "vv.model, "
+        "vv.color, "
+        "vv.year, "
+        "vv.placas, "
+        "vv.kilometraje, "
+        "vv.registration_card, "
+        "vv.insurance, "
+        "vv.referendo, "
+        "vv.accessories, "
+        "vv.type AS vehicle_type, "
+        "vv.observations, "
+        "vv.extra_info, "
+        "vv.status, "
+        "CONCAT(er.name, ' ', er.l_name) AS realizado_name, "
+        "CONCAT(ee.name, ' ', ee.l_name) AS received_name "
+        "FROM sql_telintec_mod_admin.voucher_vehicle AS vv "
+        "JOIN sql_telintec_mod_admin.vouchers_general AS vg "
+        "ON vv.id_voucher_general = vg.id_voucher "
+        "LEFT JOIN sql_telintec.employees AS er ON vg.user = er.employee_id "
+        "LEFT JOIN sql_telintec.employees AS ee ON vv.received_by = ee.employee_id "
+        "WHERE vv.id_voucher_general = %s"
+    )
+    val = (id_voucher,)
+    flag, error, result = execute_sql(sql, val, 1, data_token)
+    return flag, error, result
+
+
 def create_voucher_vehicle(
     id_voucher_general,
     brand,

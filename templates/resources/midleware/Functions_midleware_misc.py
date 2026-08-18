@@ -16,7 +16,6 @@ from static.constants import (
 )
 from templates.controllers.employees.vacations_controller import get_vacations_data
 from templates.controllers.material_request.sm_controller import get_pending_sm_db
-from templates.controllers.misc.tasks_controller import get_task_by_id_emp
 from templates.controllers.notifications.Notifications_controller import (
     get_notifications_by_permission,
     get_notifications_by_user,
@@ -115,27 +114,6 @@ def get_response_AV(
     return files_av, res, id_chat
 
 
-def get_task_by_id_employee(id_emp: int, data_token):
-    flag, error, result = get_task_by_id_emp(id_emp, data_token)
-    if not flag:
-        return {"data": None, "msg": "Error al obtener las tareas", "error": error}, 400
-    if not (isinstance(result, list) or isinstance(result, tuple)):
-        return {"data": None, "msg": "Formato de datos inválido", "error": f"no tasks {result}"}, 400
-    data_out = []
-    for item in result:
-        data_out.append(
-            {
-                "id": item[0],
-                "body": json.loads(item[1]),
-                "data_raw": json.loads(item[2]),
-                "timestamp": item[3].strftime(format_timestamps)
-                if isinstance(item[3], datetime)
-                else item[3],
-            }
-        )
-    return {"data": data_out, "msg": None, "error": None}, 200
-
-
 def get_all_vacations_data_date(data_token):
     flag, error, result = get_vacations_data(data_token)
     if not flag:
@@ -144,10 +122,13 @@ def get_all_vacations_data_date(data_token):
         return {"data": None, "msg": "Formato de datos inválido", "error": f"no vacations {result}"}, 400
     time_zone = pytz.timezone(timezone_software)
     date_today = datetime.now(pytz.utc).astimezone(time_zone)
-    date_today.replace(day=1)
+    # primer dia del mes anterior (day=1 primero: un 31 no existe en el mes previo)
     month_retrieve = date_today.month - 1
+    year_retrieve = date_today.year if month_retrieve > 0 else date_today.year - 1
     month_retrieve = month_retrieve if month_retrieve > 0 else 12
-    date_today = date_today.replace(month=month_retrieve)
+    date_today = date_today.replace(
+        year=year_retrieve, month=month_retrieve, day=1
+    )
     out = []
     for item in result:
         seniority_raw = json.loads(item[4])
