@@ -42,6 +42,14 @@
 - [ ] **[back] Bug KPI** en `get_all_sm`: `(critical_date - critical_date)` siempre da 0. **Deliberadamente no tocar por ahora** — a futuro KPIs configurables por el usuario (agregar/quitar y definir fórmula). → [`sm_response_envelope.md`](sm_response_envelope.md)
 - [ ] **[front+back] Firma de "quien entrega"** en el PDF de SM — hoy siempre en blanco; requiere que el front la capture primero y el back la incruste (mismo mecanismo que la de quien recibe). → [`sm_pdf_delivery_signatures.md`](sm_pdf_delivery_signatures.md)
 
+## Almacén / Multisede
+
+*Contexto: plan acordado (grill 2026-08-15) para una segunda sede que solo genera entradas/salidas + traslados desde el principal — [`almacen_multisede_plan.md`](almacen_multisede_plan.md). Nada implementado aún.*
+
+- [ ] **[back] Multisede v1 — Fases 0–4**: DDL (3 tablas + `id_warehouse` en el kardex + permiso `Sucursal-2`) → candado `id_warehouse IS NULL` en lecturas existentes → namespace `sucursal` → traslados con en-tránsito → exports/dashboard de sede + fix DELETE revierte stock (ambas sedes, **avisar a operación**). → [`almacen_multisede_plan.md`](almacen_multisede_plan.md)
+- [ ] **[back] Plantear a administración los requisitos no-código** (datos de la sede, personal/permisos, procedimiento de discrepancias, inventario inicial, aviso del cambio del DELETE) — sección "Puntos clave" del plan. → [`almacen_multisede_plan.md`](almacen_multisede_plan.md)
+- [ ] **[front] Pantallas multisede**: operación de sede (inventario/movimientos/recepción) + traslados y consolidado en el principal. → [`almacen_multisede_plan.md`](almacen_multisede_plan.md)
+
 ## Remisiones (admin/collections)
 
 - [x] ~~**[back] Bug latente `[null]`** en `get_quotation_activity_by_id`~~ — hecho (2026-08-15): `IF(COUNT...)` aplicado, y de paso toda la actividad de cotización quedó sana: el `PUT` era **append-only** (leía `id`/`client_id` en vez de `qa_item_id`/`item_contract_id` del form → siempre creaba, nunca actualizaba/borraba), `PUT /activity/ChangeStatus` era 500 siempre (`KeyError`), FK de `item_c_id` con el default 0, rollback del POST roto, QA sin items ahora actualizable/borrable, 404s. Verificado ciclo completo vs BD dev (22 checks). → [`quotation_activity_upsert_null_fix.md`](quotation_activity_upsert_null_fix.md)
