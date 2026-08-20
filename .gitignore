@@ -60,3 +60,4 @@ tester*.py
 pyrefly.toml
 Test*.py
 /template/modules/*
+docs/
