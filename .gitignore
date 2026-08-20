@@ -61,3 +61,5 @@ pyrefly.toml
 Test*.py
 /template/modules/*
 docs/
+.claude/
+CLAUDE.MD
