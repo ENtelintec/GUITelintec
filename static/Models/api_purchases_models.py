@@ -594,6 +594,16 @@ basic_control_table_report_model = api.model(
             description="Área dentro de la planta",
             example="Producción",
         ),
+        "general_description": fields.String(
+            required=True,
+            description="Descripción general del reporte",
+            example="Suministro e instalación de soportería",
+        ),
+        "comments": fields.String(
+            required=True,
+            description="Comentarios del reporte",
+            example="Sin observaciones",
+        ),
         "user": fields.String(
             required=True,
             description="Usuario que genera el reporte",
@@ -604,12 +614,12 @@ basic_control_table_report_model = api.model(
             description="ID del usuario de telintec que genera el reporte",
             example=5050,
         ),
-        "remision": fields.Integer(
+        "remision": fields.String(
             required=False,
-            description="remision number",
-            example=501,
+            description="Número de remisión",
+            example="501",
         ),
-        "remito": fields.Integer(
+        "remito": fields.String(
             required=False,
             description="Número de remito de la remision",
             example="2",
