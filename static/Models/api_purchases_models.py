@@ -684,6 +684,16 @@ basic_control_table_report_model = api.model(
             description="Total de la remisión",
             example=17632.58,
         ),
+        "total_sin_iva_admi": fields.Float(
+            required=False,
+            description="Total sin IVA del bloque administración (independiente de totalSinIva)",
+            example=15100.00,
+        ),
+        "remission_sent_date_client": fields.String(
+            required=False,
+            description="Fecha de envío de la remisión al cliente (independiente de remission_sent_date)",
+            example="2026-03-20",
+        ),
     },
 )
 
@@ -1389,6 +1399,10 @@ class MetadataControlTableRemissionForm(Form):
     remission_sent_date = StringField("remission_sent_date", [], default="")
     remission_sent_by = StringField("remission_sent_by", [], default="")
     remission_total = FloatField("remission_total", [], default=None)
+    # Campos propios del bloque administración (no alias: el back no los
+    # sincroniza con totalSinIva ni remission_sent_date).
+    total_sin_iva_admi = FloatField("total_sin_iva_admi", [], default=None)
+    remission_sent_date_client = StringField("remission_sent_date_client", [], default="")
 
 
 class MetadataControlTableRemissionUpdateForm(MetadataControlTableRemissionForm):

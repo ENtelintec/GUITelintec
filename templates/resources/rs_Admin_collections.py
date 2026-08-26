@@ -504,8 +504,10 @@ class ActivityRemissionAction(Resource):
 class ActivityRemissionTableAction(Resource):
     @ns.expect(expected_headers_per, remission_activity_create_control_table_model)
     def post(self):
+        # operaciones: los líderes capturan la remisión por primera vez desde
+        # control table. Ver Docs/control_table_operaciones_y_campos_admin.md.
         flag, data_token, msg = token_verification_procedure(
-            request, department=["administracion", "purchases"]
+            request, department=["administracion", "purchases", "operaciones"]
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -519,7 +521,7 @@ class ActivityRemissionTableAction(Resource):
     @ns.expect(expected_headers_per, remission_activity_update_control_table_model)
     def put(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["administracion", "purchases"]
+            request, department=["administracion", "purchases", "operaciones"]
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -564,7 +566,7 @@ class FetchActivitieReportById(Resource):
     @ns.expect(expected_headers_per)
     def get(self, id_report):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["administracion", "purchases"]
+            request, department=["administracion", "purchases", "operaciones"]
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401

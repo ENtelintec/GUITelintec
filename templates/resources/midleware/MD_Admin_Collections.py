@@ -102,6 +102,12 @@ _CONTROL_EXTRA_KEY_MAP = {
     "remission_sent_date": "remission_sent_date",
     "remission_sent_by": "remission_sent_by",
     "remission_total": "remission_total",
+    # Campos propios del bloque administración (no alias): total_sin_iva_admi se
+    # guarda aparte de total_sin_iva y remission_sent_date_client (envío al
+    # cliente) aparte de remission_sent_date (envío de líderes). El back no
+    # sincroniza los duplicados conceptuales.
+    "total_sin_iva_admi": "total_sin_iva_admi",
+    "remission_sent_date_client": "remission_sent_date_client",
 }
 _BALANCE_EXTRA_KEY_MAP = {
     "pedido": "pedido",
@@ -182,6 +188,7 @@ _HISTORY_EXTRA_FIELDS = [
     "general_status", "ot", "ticket_number",
     "quotation_number", "quotation_amount", "activity_end_date",
     "ot_ticket", "centro_costos", "responsable_centro_costos", "personal_infra",
+    "total_sin_iva_admi", "remission_sent_date_client",
 ]
 _HISTORY_META_FIELDS = _HISTORY_BASE_FIELDS + _HISTORY_EXTRA_FIELDS
 _HISTORY_ITEM_FIELDS = ["description", "udm", "quantity", "unit_price", "unit_price_quotation"]
@@ -190,6 +197,7 @@ _HISTORY_NUMERIC_FIELDS = {
     "total_sin_iva", "status_report", "status_rep_admi", "remission_total",
     "remission_status", "hes_status", "general_status", "hes_balance",
     "projection_balance", "committed_balance", "invoiced_balance", "quotation_amount",
+    "total_sin_iva_admi",
 }
 
 # Campos de extra_info que el GET de remisiones expone aplanados (ademas de los
@@ -204,11 +212,13 @@ _GET_EXTRA_STRING_FIELDS = [
     "sgd_number", "sgd_upload_date", "sgd_upload_time",
     "ot", "ticket_number", "quotation_number", "activity_end_date",
     "ot_ticket", "centro_costos", "responsable_centro_costos", "personal_infra",
+    "remission_sent_date_client",
 ]
 _GET_EXTRA_NUMERIC_FIELDS = [
     "total_sin_iva", "status_report", "status_rep_admi", "remission_total",
     "remission_status", "hes_status", "general_status", "hes_balance",
     "projection_balance", "committed_balance", "invoiced_balance", "quotation_amount",
+    "total_sin_iva_admi",
 ]
 
 
@@ -1385,14 +1395,9 @@ def delete_remission_from_api(data, data_token):
             "error": error,
         }, 400
 
-    # Delete items:
+    # Delete items (una remision sin items — p.ej. creada desde control table —
+    # es valida y se borra igual; el loop vacio no hace nada).
     items = json.loads(result_ra[16]) if result_ra[16] else []  # pyrefly: ignore
-    if len(items) <= 0:
-        return {
-            "data": None,
-            "msg": "Error al obtener ítems del reporte",
-            "error": error,
-        }, 400
     flags = []
     errors = []
     results = []
