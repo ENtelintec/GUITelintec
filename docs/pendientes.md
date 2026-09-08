@@ -1,10 +1,10 @@
 # Pendientes — backend y front (todas las áreas)
 
-> Tracker general: solo listado con estado y link al doc que tiene la documentación completa. Cada ítem marca **[back]** / **[front]** (o ambos). Actualizado: 2026-08-15.
+> Tracker general: solo listado con estado y link al doc que tiene la documentación completa. Cada ítem marca **[back]** / **[front]** (o ambos). Actualizado: 2026-09-07 (arranque del mes 2 → [`plan_mes_2.md`](plan_mes_2.md)).
 
 ## RH / Encuestas
 
-*Contexto: motor config-driven + Norma 035 ✅ ([`encuestas_refactor.md`](encuestas_refactor.md)), eva 360 ✅ verificado contra BD dev ([`eva360_evaluation.md`](eva360_evaluation.md)), clima laboral ✅ (rúbrica % positivo + agregado organizacional, [`clima_laboral_rubrica.md`](clima_laboral_rubrica.md)) y CRUD de modelos de encuesta ✅ (template+rúbrica en BD, esquema nuevo `sql_telintec_mod_rrhh`, [`quizz_models_crud.md`](quizz_models_crud.md)). Plan del mes en [`plan_rh_mes.md`](plan_rh_mes.md).*
+*Contexto: motor config-driven + Norma 035 ✅ ([`encuestas_refactor.md`](encuestas_refactor.md)), eva 360 ✅ verificado contra BD dev ([`eva360_evaluation.md`](eva360_evaluation.md)), clima laboral ✅ (rúbrica % positivo + agregado organizacional, [`clima_laboral_rubrica.md`](clima_laboral_rubrica.md)) y CRUD de modelos de encuesta ✅ (template+rúbrica en BD, esquema nuevo `sql_telintec_mod_rrhh`, [`quizz_models_crud.md`](quizz_models_crud.md)). Mes 1 cerrado ([`plan_rh_mes.md`](plan_rh_mes.md)): las 6 UIs entregadas. Mes 2 = constructor visual de encuestas con versiones → [`plan_mes_2.md`](plan_mes_2.md).*
 
 - [x] ~~**[back] Clima laboral (tipo 3)**~~ — hecho (2026-08-05): RH entregó criterio + cuestionario nuevo (45 preguntas); `files/rubrics/3.json`, motor con % positivo/neutral excluido/ítem 34 invertido, y endpoint nuevo `GET /rrhh/quizzes/summary/<type_q>` (tabla organizacional). Incluye fix del template JSON inválido que rompía `GET /misc/download/quizz/3`. → [`clima_laboral_rubrica.md`](clima_laboral_rubrica.md)
 - [x] ~~**[back] CRUD de modelos de encuesta**~~ — hecho (2026-08-05): crear/editar/publicar/archivar/borrar encuestas por API (`/rrhh/quizz/models`), tabla `quizz_models` en esquema nuevo `sql_telintec_mod_rrhh` (seed 0–4; Norma 035 `protected`), ciclo de vida con candado de template, `validate_rubric`+dry-run, PDF genérico de resumen para tipos sin generador. Verificado contra BD dev. → [`quizz_models_crud.md`](quizz_models_crud.md)
@@ -14,7 +14,8 @@
 
 **Backend:**
 
-- [ ] **[back] Encuesta de salida (tipo 0)** — rúbrica cualitativa (`mode:"qualitative"`, captura + reporte sin score; chica). → [`encuestas_refactor.md`](encuestas_refactor.md)
+- [ ] **[back] Encuesta de salida (tipo 0)** — rúbrica cualitativa (`mode:"qualitative"`, captura + reporte sin score; chica). **Arrastre → S1 del mes 2.** → [`encuestas_refactor.md`](encuestas_refactor.md)
+- [ ] **[back] Constructor de encuestas — back (S1 mes 2)**: candado del template **relajado a `tasks_total = 0`** (cualquier status; con tasks → 400 "clona"), `POST /quizz/models/<id>/clone` (template + rúbrica, borrador, `replaces`), **publicar archiva al origen automáticamente** (`replaced_by`), `PUT /quizz/models/<id>/migrate-tasks` (solo pendientes; contestadas y eva 360 nunca) + `migrate_pending` en `PUT /status`; `replaces`/`replaced_by` en GET. Contrato preliminar en el Anexo B del plan. → [`plan_mes_2.md`](plan_mes_2.md)
 - [x] ~~**[back] Consolidar namespaces** de encuestas (`misc` + `rrhh` en uno)~~ — hecho (2026-08-07) en el lote S2 con la migración Fase 1: los 3 recursos de `misc` (`/task/quizz`, `/task/<emp_id>`, `/download/quizz/<type_q>`) ahora en `rrhh`, **corte duro** (viejas → 404), shapes/permisos idénticos; smoke completo verde vs dev. **El front debe cambiar el prefijo `misc`→`rrhh` en esas 3 rutas.** → [`consolidacion_namespaces_encuestas.md`](consolidacion_namespaces_encuestas.md)
 - [x] ~~**[back] Migración de esquema — Fase 1 (encuestas)**~~ — hecho (2026-08-07): DDL corrido en las 3 BDs (`tasks_gui` → `sql_telintec_mod_rrhh.quizz_tasks` + vista puente, conteos verificados), 7 literales + docstrings actualizados. → [`migracion_esquemas_rrhh.md`](migracion_esquemas_rrhh.md)
 - [ ] **[back] DROP de las 7 vistas puente** en las 3 BDs (`tasks_gui`, Paso 3 de `scripts_db_handle/migracion_quizz_tasks.sql`, + las 6 de Fase 2, bloque diferido de `migracion_fase2_rrhh.sql`) — **solo cuando prod ya corra el código del tren S2+Fase2** (un solo deploy, decidido 2026-08-07); mientras, las vistas mantienen vivo el código viejo. → [`migracion_esquemas_rrhh.md`](migracion_esquemas_rrhh.md)
@@ -30,12 +31,28 @@
 
 **Front:**
 
-- [ ] **[front] UI de asignación** de encuestas (refactor menor sobre el CRUD existente). → [`encuestas_refactor.md`](encuestas_refactor.md)
-- [ ] **[front] UI de captura de respuestas** — Norma 035 (shape por secciones) y eva 360 (per-question `{"4":{"answer":idx}}`; **conservar `metadata` intacta al re-mandar el `body` en el PUT** — trae el linking). → [`encuestas_refactor.md`](encuestas_refactor.md) · [`eva360_evaluation.md`](eva360_evaluation.md)
-- [ ] **[front] UI de resultados** — componente recursivo sobre `breakdown` (`GET /quizz/<id>/evaluation`; ramificar por `data` null; `level`/`actions` opcionales por nodo; en clima `score` puede ser `null` = sin datos). → [`encuestas_refactor.md`](encuestas_refactor.md)
-- [ ] **[front] Tabla organizacional de clima** — pintar `GET /quizzes/summary/3` (9 categorías + total, color por `level.key`, filtro anual con `date_from`/`date_to`). → [`clima_laboral_rubrica.md`](clima_laboral_rubrica.md)
-- [ ] **[front] Pantalla de administración de modelos de encuesta** — listado `?all=1`, crear/editar (template y rúbrica JSON), publicar/archivar, mostrar `warnings` y los 400 de candado; el picker de "crear encuesta" pasa a `GET /rrhh/quizz/models` (adiós tipos hardcodeados). → [`quizz_models_crud.md`](quizz_models_crud.md)
-- [ ] **[front] UI de eva 360** — crear proceso, seguimiento (`answered` por rol), radar/comparativa (**rol ausente en `by_perspective`/`by_role` = pendiente**, cruzar contra `expected_roles`), botón completar. → [`eva360_evaluation.md`](eva360_evaluation.md)
+- [x] ~~**[front] UI de asignación** de encuestas~~ — hecho (cierre del mes 1, confirmado 2026-09-07). → [`encuestas_refactor.md`](encuestas_refactor.md)
+- [x] ~~**[front] UI de captura de respuestas**~~ — hecho (cierre del mes 1, confirmado 2026-09-07): Norma 035 por secciones y eva 360 per-question. → [`encuestas_refactor.md`](encuestas_refactor.md) · [`eva360_evaluation.md`](eva360_evaluation.md)
+- [x] ~~**[front] UI de resultados**~~ — hecho (cierre del mes 1, confirmado 2026-09-07): componente recursivo sobre `breakdown`. → [`encuestas_refactor.md`](encuestas_refactor.md)
+- [x] ~~**[front] Tabla organizacional de clima**~~ — hecho (cierre del mes 1, confirmado 2026-09-07). → [`clima_laboral_rubrica.md`](clima_laboral_rubrica.md)
+- [x] ~~**[front] Pantalla de administración de modelos de encuesta**~~ — hecho (cierre del mes 1, confirmado 2026-09-07) con editor JSON crudo de template y rúbrica; el picker ya lee `GET /rrhh/quizz/models`. → [`quizz_models_crud.md`](quizz_models_crud.md)
+- [x] ~~**[front] UI de eva 360**~~ — hecho (cierre del mes 1, confirmado 2026-09-07). → [`eva360_evaluation.md`](eva360_evaluation.md)
+- [ ] **[front] Constructor visual de encuestas (S2–S3 mes 2)** — sobre la admin de modelos: listado agrupando versiones (`replaces`/`replaced_by`), botón **clonar**, editor visual **solo del template** (agregar/quitar/reordenar preguntas, opciones, widget `1/2/3/5`, subpreguntas, rango `items`), rúbrica en pestaña "Avanzado" (JSON de hoy + `warnings`), publicar con checkbox "migrar pendientes" **desmarcado** por defecto. Sin widgets nuevos. → [`plan_mes_2.md`](plan_mes_2.md)
+
+## RH / Nómina
+
+*Contexto: los archivos ya viven en S3 ([`payroll_s3_upload.md`](payroll_s3_upload.md)); `POST /payroll/mail` sigue en SharePoint + borrador Outlook y está **roto y deprecado**. Prioridad 1 del mes 2 → [`plan_mes_2.md`](plan_mes_2.md) (Anexo A).*
+
+- [ ] **[back] Nómina — back (S1 mes 2)**: `DELETE /payroll/files` (`kind` ∈ `pdf|xml|both`; BD primero, S3 best-effort con `s3_deleted`), **reemplazo** en el `POST` actual (mismo `key`+`kind` con otro nombre → borra el objeto anterior), `POST /payroll/notify` (notificación in-app al empleado, `notified: false` si no tiene usuario, `channels` preparado para correo), quitar el guard muerto `update_files_nomina`. → [`plan_mes_2.md`](plan_mes_2.md)
+- [ ] **[front] Pantallas de nómina (S1–S2 mes 2)**: carga por periodo **simulada** (año/mes/quincena una vez, RH asigna archivo→empleado, el front itera el `POST` un archivo por request), reemplazar, eliminar, notificar; lado empleado (sus recibos + descarga zip + bandeja). → [`plan_mes_2.md`](plan_mes_2.md)
+- [ ] **[back] `POST /payroll/files/extract`** (solo si sobra, S4): lee el XML del CFDI y **sugiere** RFC/número de empleado/periodo/`emp_id`; no sube nada. → [`plan_mes_2.md`](plan_mes_2.md)
+- [ ] **[back] Correo al empleado por AWS SES** (2ª etapa, fuera del mes salvo holgura): mismo `POST /payroll/notify` con `channels: ["app","email"]`, adjuntos desde S3; retira definitivamente `POST /payroll/mail` y `create_mail_draft_with_attachment`. → [`plan_mes_2.md`](plan_mes_2.md)
+- [ ] **[front] Link de WhatsApp** (3ª etapa): `wa.me/<tel>?text=…` armado en el front con el teléfono del empleado; sin endpoint. → [`plan_mes_2.md`](plan_mes_2.md)
+
+## RH / Dashboard
+
+- [ ] **[back] Dashboard RH — endpoints (S3 mes 2)**: `GET /dashboard/rrhh/summary` (plantilla por depto, altas/bajas del mes, médicos por vencer 30/60/90, vacaciones pendientes/próximas, encuestas asignadas vs contestadas, cumpleaños) + `POST /dashboard/rrhh/series` (`metric` ∈ `altas_bajas|faltas|retardos`, `group_by` mes/depto); sin caché; KPI nuevo = `metric` nuevo. Contrato preliminar en el Anexo D del plan. → [`plan_mes_2.md`](plan_mes_2.md)
+- [ ] **[front] Pantalla del dashboard RH (S4 mes 2)**: tiles clicables a la lista filtrada + 2 gráficas. **Primero en recortarse** después de extract/SES. → [`plan_mes_2.md`](plan_mes_2.md)
 
 ## SM (solicitudes de material)
 
@@ -47,8 +64,9 @@
 *Contexto: plan acordado (grill 2026-08-15) para una segunda sede que solo genera entradas/salidas + traslados desde el principal — [`almacen_multisede_plan.md`](almacen_multisede_plan.md). Nada implementado aún.*
 
 - [ ] **[back] Multisede v1 — Fases 0–4**: DDL (3 tablas + `id_warehouse` en el kardex + permiso `Sucursal-2`) → candado `id_warehouse IS NULL` en lecturas existentes → namespace `sucursal` → traslados con en-tránsito → exports/dashboard de sede + fix DELETE revierte stock (ambas sedes, **avisar a operación**). → [`almacen_multisede_plan.md`](almacen_multisede_plan.md)
-- [ ] **[back] Plantear a administración los requisitos no-código** (datos de la sede, personal/permisos, procedimiento de discrepancias, inventario inicial, aviso del cambio del DELETE) — sección "Puntos clave" del plan. → [`almacen_multisede_plan.md`](almacen_multisede_plan.md)
-- [ ] **[front] Pantallas multisede**: operación de sede (inventario/movimientos/recepción) + traslados y consolidado en el principal. → [`almacen_multisede_plan.md`](almacen_multisede_plan.md)
+- [ ] **[back] Plantear a administración los requisitos no-código** — **reunión hecha** (antes del 2026-09-07); **los datos siguen pendientes** (nombre/encargado de la sede, usuarios con `Sucursal-2`, fecha del cambio del DELETE). Mientras: dev/test con placeholders "Sucursal 2"; **prod de multisede fuera del mes 2**. → [`almacen_multisede_plan.md`](almacen_multisede_plan.md) · [`plan_mes_2.md`](plan_mes_2.md)
+- [ ] **[back] Multisede — calendario mes 2**: F0+F1 en S1, F2 (namespace `sucursal`) en S2, F3 (traslados) en S3, F4 solo si sobra; **contrato de cada fase el lunes de su semana**, código después. El fix del DELETE del principal (F4) **no entra** este mes. → [`plan_mes_2.md`](plan_mes_2.md)
+- [ ] **[front] Pantallas multisede — mes 2 (S3–S4)**: **inventario y movimientos de sede** primero (F2), después **recepción de traslados** + formulario mínimo de crear traslado en el principal (F3). Misma app, menú por permiso `Sucursal-<id>`. Fuera del mes: consolidado, catálogo de sedes, cancelar, exports y dashboard de sede. → [`plan_mes_2.md`](plan_mes_2.md) (Anexo C) · [`almacen_multisede_plan.md`](almacen_multisede_plan.md)
 
 ## Remisiones (admin/collections)
 
