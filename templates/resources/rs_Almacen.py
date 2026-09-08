@@ -32,6 +32,12 @@ from static.Models.api_inventory_models import (
     reservation_put_model,
 )
 from static.Models.api_models import expected_headers_per
+from static.Models.api_multisede_models import (
+    WarehousePostForm,
+    WarehousePutForm,
+    warehouse_post_model,
+    warehouse_put_model,
+)
 from static.Models.api_movements_models import (
     MovementDeleteForm,
     MovementInsertForm,
@@ -41,6 +47,14 @@ from static.Models.api_movements_models import (
     movement_update_model,
 )
 from templates.resources.methods.Functions_Aux_Login import token_verification_procedure
+from templates.resources.midleware.MD_Multisede import (
+    create_warehouse_api,
+    fetch_warehouses_api,
+    get_consolidated_inventory_api,
+    get_multisede_catalogs_api,
+    get_warehouse_api,
+    update_warehouse_api,
+)
 from templates.resources.midleware.Functions_midleware_almacen import (
     create_file_inventory_excel,
     create_file_inventory_pdf,
@@ -218,6 +232,99 @@ class InventoryMultipleProducts(Resource):
             return _invalid_structure(validator.errors)
         data = validator.data
         data_out, code = insert_and_update_multiple_products_from_api(data, data_token)
+        return data_out, code
+
+
+# --- Multisede: catálogo de sedes + consolidado (docs/almacen_multisede_f1.md) ---
+@ns.route("/warehouses")
+class Warehouses(Resource):
+    @ns.doc(params={"all": "1 -> incluye sedes dadas de baja (default: solo activas)"})
+    @ns.expect(expected_headers_per)
+    def get(self):
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["administracion", "almacen"]
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        data_out, code = fetch_warehouses_api({"all": request.args.get("all")}, data_token)
+        return data_out, code
+
+
+@ns.route("/warehouses/catalogs")
+class WarehousesCatalogs(Resource):
+    @ns.expect(expected_headers_per)
+    def get(self):
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["administracion", "almacen"]
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        data_out, code = get_multisede_catalogs_api()
+        return data_out, code
+
+
+@ns.route("/warehouse/<int:id_warehouse>")
+class WarehouseDetail(Resource):
+    @ns.expect(expected_headers_per)
+    def get(self, id_warehouse):
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["administracion", "almacen"]
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        data_out, code = get_warehouse_api(id_warehouse, data_token)
+        return data_out, code
+
+
+@ns.route("/warehouse")
+class WarehouseActions(Resource):
+    @ns.expect(expected_headers_per, warehouse_post_model)
+    def post(self):
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["administracion", "almacen"]
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        # noinspection PyUnresolvedReferences
+        validator = WarehousePostForm.from_json(ns.payload)  # pyrefly: ignore
+        if not validator.validate():
+            return _invalid_structure(validator.errors)
+        data_out, code = create_warehouse_api(validator.data, ns.payload, data_token)
+        return data_out, code
+
+    @ns.expect(expected_headers_per, warehouse_put_model)
+    def put(self):
+        flag, data_token, msg = token_verification_procedure(
+            request, department=["administracion", "almacen"]
+        )
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        # noinspection PyUnresolvedReferences
+        validator = WarehousePutForm.from_json(ns.payload)  # pyrefly: ignore
+        if not validator.validate():
+            return _invalid_structure(validator.errors)
+        data_out, code = update_warehouse_api(validator.data, ns.payload, data_token)
+        return data_out, code
+
+
+@ns.route("/inventory/consolidated")
+class InventoryConsolidated(Resource):
+    @ns.doc(
+        params={
+            "search": "Filtra por sku o nombre (LIKE)",
+            "only_multisede": "1 -> solo productos con stock en alguna sede o en tránsito",
+        }
+    )
+    @ns.expect(expected_headers_per)
+    def get(self):
+        flag, data_token, msg = token_verification_procedure(request, department="almacen")
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        params = {
+            "search": request.args.get("search"),
+            "only_multisede": request.args.get("only_multisede"),
+        }
+        data_out, code = get_consolidated_inventory_api(params, data_token)
         return data_out, code
 
 

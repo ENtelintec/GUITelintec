@@ -27,6 +27,8 @@
 
 ## Reglas del ciclo de vida
 
+> **Actualizado 2026-09-07** ([`quizz_models_versionado.md`](quizz_models_versionado.md)): el candado del template ya **no es por status sino por tasks** (`tasks_total = 0` → editable en cualquier status; con tasks → clonar), quitar la rúbrica también exige sin tasks, y existen `POST /clone`, `PUT /migrate-tasks`, `migrate_pending` en `PUT /status` y las columnas `replaces`/`replaced_by`. La tabla de abajo es la regla original; donde choque, manda el doc nuevo.
+
 | Status | ¿Se contesta? | template | rubric / name | DELETE físico |
 |---|---|---|---|---|
 | `0` BORRADOR | **No** (`create_task` → 400) | editable | editables (rubric se puede quitar con `null`) | libre |

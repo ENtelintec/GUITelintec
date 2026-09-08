@@ -48,17 +48,26 @@ from static.Models.api_models import (
     task_update_model,
 )
 from static.Models.api_quizz_models_models import (
+    QuizzModelCloneForm,
+    QuizzModelMigrateForm,
     QuizzModelPostForm,
     QuizzModelPutForm,
     QuizzModelStatusForm,
+    quizz_model_clone_model,
+    quizz_model_migrate_model,
     quizz_model_post_model,
     quizz_model_put_model,
     quizz_model_status_model,
 )
 from static.Models.api_payroll_models import (
     CreateMailForm,
+    DeletePayrollFileForm,
+    NotifyPayrollForm,
     UpdateDataPayrollForm,
     create_mail_model,
+    delete_payroll_file_model,
+    extract_xml_parser,
+    notify_payroll_model,
     update_data_payroll_model,
     update_files_parser,
 )
@@ -88,6 +97,9 @@ from templates.resources.midleware.Functions_midleware_RRHH import (
     create_mail_payroll,
     create_new_employee_db,
     create_payroll_file_attachment_api,
+    delete_payroll_file_api,
+    extract_payroll_xml_api,
+    notify_payroll_file_api,
     fetch_employees_without_records,
     fetch_fichaje_employee,
     fetch_fichajes_all_employees,
@@ -117,12 +129,14 @@ from templates.resources.midleware.MD_Eva360 import (
     get_eva360_result,
 )
 from templates.resources.midleware.MD_QuizzModels import (
+    clone_quizz_model_api,
     create_quizz_model_api,
     delete_quizz_model_api,
     fetch_quizz_models,
     get_quizz_model_detail_api,
     get_quizz_models_catalogs_api,
     get_quizz_template_api,
+    migrate_quizz_tasks_api,
     update_quizz_model_api,
     update_quizz_model_status_api,
 )
@@ -669,6 +683,40 @@ class QuizzModelStatus(Resource):
         return data_out, code
 
 
+@ns.route("/quizz/models/<int:type_q>/clone")
+class QuizzModelClone(Resource):
+    @ns.expect(expected_headers_per, quizz_model_clone_model)
+    def post(self, type_q):
+        """Nueva version del modelo: copia template + rubrica en borrador con
+        replaces = type_q (docs/quizz_models_versionado.md)."""
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        payload = ns.payload if isinstance(ns.payload, dict) else {}
+        # noinspection PyUnresolvedReferences
+        validator = QuizzModelCloneForm.from_json(payload)  # pyrefly: ignore
+        if not validator.validate():
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
+        data_out, code = clone_quizz_model_api(type_q, validator.data, data_token)
+        return data_out, code
+
+
+@ns.route("/quizz/models/<int:type_q>/migrate-tasks")
+class QuizzModelMigrateTasks(Resource):
+    @ns.expect(expected_headers_per, quizz_model_migrate_model)
+    def put(self, type_q):
+        """Reapunta las encuestas PENDIENTES de from_type a esta version (ACTIVA)."""
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        # noinspection PyUnresolvedReferences
+        validator = QuizzModelMigrateForm.from_json(ns.payload)  # pyrefly: ignore
+        if not validator.validate():
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
+        data_out, code = migrate_quizz_tasks_api(type_q, validator.data, ns.payload, data_token)
+        return data_out, code
+
+
 @ns.route("/eva360")
 class Eva360Create(Resource):
     @ns.expect(expected_headers_per, eva360_create_model)
@@ -782,8 +830,80 @@ class FilesPayroll(Resource):
         return data_out, code
 
 
+@ns.route("/payroll/files")
+class PayrollFiles(Resource):
+    @ns.expect(expected_headers_per, delete_payroll_file_model)
+    def delete(self):
+        """Quita el pdf/xml/ambos de un key del indice y borra el objeto de S3
+        best-effort (docs/nomina_gestion_archivos_y_notificacion.md)."""
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        # noinspection PyUnresolvedReferences
+        validator = DeletePayrollFileForm.from_json(ns.payload)  # pyrefly: ignore
+        if not validator.validate():
+            return {
+                "data": None,
+                "msg": "Estructura de datos inválida",
+                "error": validator.errors,
+            }, 400
+        data_out, code = delete_payroll_file_api(validator.data, data_token)
+        return data_out, code
+
+
+@ns.route("/payroll/files/extract")
+class PayrollFilesExtract(Resource):
+    @ns.expect(expected_headers_per, extract_xml_parser)
+    def post(self):
+        """Lee un XML de CFDI de nomina y devuelve RFC/numero de empleado/
+        periodo + emp_id sugerido, para pre-llenar la asignacion en la carga
+        por periodo. Solo sugiere: no sube ni guarda."""
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        if "file" not in request.files:
+            return {"data": None, "msg": "No se detectó un archivo", "error": None}, 400
+        file = request.files["file"]
+        if not (file and file.filename):
+            return {"data": None, "msg": "No se subió el archivo", "error": None}, 400
+        filename = secure_filename(file.filename)
+        filepath_download = os.path.join(tempfile.mkdtemp(), filename)
+        file.save(filepath_download)
+        try:
+            data_out, code = extract_payroll_xml_api(
+                {"filepath": filepath_download, "filename": filename}, data_token
+            )
+        finally:
+            try:
+                os.remove(filepath_download)
+            except OSError:
+                pass
+        return data_out, code
+
+
+@ns.route("/payroll/notify")
+class NotifyPayroll(Resource):
+    @ns.expect(expected_headers_per, notify_payroll_model)
+    def post(self):
+        """Notifica al empleado dentro del sistema que su recibo esta disponible."""
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        # noinspection PyUnresolvedReferences
+        validator = NotifyPayrollForm.from_json(ns.payload)  # pyrefly: ignore
+        if not validator.validate():
+            return {
+                "data": None,
+                "msg": "Estructura de datos inválida",
+                "error": validator.errors,
+            }, 400
+        data_out, code = notify_payroll_file_api(validator.data, data_token)
+        return data_out, code
+
+
 @ns.route("/payroll/mail")
 class CreateMailPayroll(Resource):
+    """DEPRECADO (2026-09-07): borrador Outlook + SharePoint. Ver /payroll/notify."""
     @ns.expect(expected_headers_per, create_mail_model)
     def post(self):
         flag, data_token, msg = token_verification_procedure(request, department="rrhh")

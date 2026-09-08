@@ -10,6 +10,12 @@ import pytz
 from static.constants import format_timestamps, timezone_software
 from templates.database.connection import execute_sql
 
+# Multisede (docs/almacen_multisede_f1.md): product_movements_amc es el kardex
+# UNICO de todas las sedes; id_warehouse NULL = sede principal. TODA lectura de
+# este archivo filtra `id_warehouse IS NULL` (el almacen actual sigue
+# significando "principal"); las lecturas por sede viven en
+# warehouses_controller.py. Una query nueva aqui debe decidir que sede lee.
+
 
 def get_ins_db(data_token):
     sql = (
@@ -23,7 +29,8 @@ def get_ins_db(data_token):
         "sql_telintec.products_amc.name as product_name "
         "FROM sql_telintec.product_movements_amc "
         "JOIN sql_telintec.products_amc ON sql_telintec.product_movements_amc.id_product = sql_telintec.products_amc.id_product "
-        "WHERE sql_telintec.product_movements_amc.movement_type = 'entrada'"
+        "WHERE sql_telintec.product_movements_amc.movement_type = 'entrada' "
+        "AND sql_telintec.product_movements_amc.id_warehouse IS NULL"
     )
     flag, error, my_result = execute_sql(sql, None, 5, data_token)
     return flag, error, my_result
@@ -47,7 +54,8 @@ def get_ins_db_detail(data_token):
         "FROM sql_telintec.product_movements_amc "
         "INNER JOIN sql_telintec.products_amc ON sql_telintec.product_movements_amc.id_product = sql_telintec.products_amc.id_product "
         "LEFT JOIN sql_telintec.suppliers_amc ON sql_telintec.products_amc.id_supplier = sql_telintec.suppliers_amc.id_supplier "
-        "WHERE sql_telintec.product_movements_amc.movement_type = 'entrada' ORDER BY movement_date DESC;"
+        "WHERE sql_telintec.product_movements_amc.movement_type = 'entrada' "
+        "AND sql_telintec.product_movements_amc.id_warehouse IS NULL ORDER BY movement_date DESC;"
     )
     flag, error, my_result = execute_sql(sql, None, 5, data_token)
     return flag, error, my_result
@@ -145,7 +153,8 @@ def get_outs_db(data_token):
         "sql_telintec.products_amc.name as product_name "
         "FROM sql_telintec.product_movements_amc "
         "JOIN sql_telintec.products_amc ON sql_telintec.product_movements_amc.id_product = sql_telintec.products_amc.id_product "
-        "WHERE sql_telintec.product_movements_amc.movement_type = 'salida'"
+        "WHERE sql_telintec.product_movements_amc.movement_type = 'salida' "
+        "AND sql_telintec.product_movements_amc.id_warehouse IS NULL"
     )
     flag, error, result = execute_sql(sql, None, 5, data_token)
     return flag, error, result
@@ -169,7 +178,8 @@ def get_outs_db_detail(data_token):
         "FROM sql_telintec.product_movements_amc "
         "INNER JOIN sql_telintec.products_amc ON sql_telintec.product_movements_amc.id_product = sql_telintec.products_amc.id_product "
         "LEFT JOIN sql_telintec.suppliers_amc ON sql_telintec.products_amc.id_supplier = sql_telintec.suppliers_amc.id_supplier "
-        "WHERE sql_telintec.product_movements_amc.movement_type = 'salida' ORDER BY movement_date DESC;"
+        "WHERE sql_telintec.product_movements_amc.movement_type = 'salida' "
+        "AND sql_telintec.product_movements_amc.id_warehouse IS NULL ORDER BY movement_date DESC;"
     )
     flag, error, result = execute_sql(sql, None, 5, data_token)
     return flag, error, result
@@ -194,7 +204,8 @@ def get_all_movements_db_detail(data_token, type_m="all"):
         "FROM sql_telintec.product_movements_amc "
         "INNER JOIN sql_telintec.products_amc ON sql_telintec.product_movements_amc.id_product = sql_telintec.products_amc.id_product "
         "LEFT JOIN sql_telintec.suppliers_amc ON sql_telintec.products_amc.id_supplier = sql_telintec.suppliers_amc.id_supplier "
-        "WHERE sql_telintec.product_movements_amc.movement_type like %s ORDER BY movement_date DESC;"
+        "WHERE sql_telintec.product_movements_amc.movement_type like %s "
+        "AND sql_telintec.product_movements_amc.id_warehouse IS NULL ORDER BY movement_date DESC;"
     )
     vals = (type_m,)
     flag, error, result = execute_sql(sql, vals, 2, data_token)
@@ -217,7 +228,8 @@ def get_movements_type_db(type_m: str, data_token):
         "FROM sql_telintec.product_movements_amc "
         "INNER JOIN sql_telintec.products_amc ON (sql_telintec.products_amc.id_product = sql_telintec.product_movements_amc.id_product)"
         "INNER JOIN sql_telintec.suppliers_amc ON (sql_telintec.products_amc.id_supplier = sql_telintec.suppliers_amc.id_supplier)"
-        "WHERE movement_type LIKE %s ORDER BY movement_date DESC"
+        "WHERE movement_type LIKE %s AND sql_telintec.product_movements_amc.id_warehouse IS NULL "
+        "ORDER BY movement_date DESC"
     )
     vals = (type_m,)
     flag, error, result = execute_sql(sql, vals, 2, data_token)
@@ -242,7 +254,7 @@ def get_movements_type_db_all(data_token, type_m="all"):
         "FROM sql_telintec.product_movements_amc "
         "LEFT JOIN sql_telintec.products_amc ON (sql_telintec.products_amc.id_product = sql_telintec.product_movements_amc.id_product)"
         "LEFT JOIN sql_telintec.suppliers_amc ON (sql_telintec.products_amc.id_supplier = sql_telintec.suppliers_amc.id_supplier)"
-        "WHERE movement_type LIKE %s "
+        "WHERE movement_type LIKE %s AND sql_telintec.product_movements_amc.id_warehouse IS NULL "
         "ORDER BY movement_date DESC"
     )
     vals = (type_m,)
@@ -271,6 +283,7 @@ def get_epp_movements_db(type_m, data_token):
         "LEFT JOIN sql_telintec.products_amc ON (sql_telintec.products_amc.id_product = sql_telintec.product_movements_amc.id_product)"
         "LEFT JOIN sql_telintec.suppliers_amc ON (sql_telintec.products_amc.id_supplier = sql_telintec.suppliers_amc.id_supplier)"
         "WHERE movement_type LIKE %s AND sql_telintec.products_amc.extra_info->>'$.epp' = 1 "
+        "AND sql_telintec.product_movements_amc.id_warehouse IS NULL "
         "ORDER BY movement_date DESC"
     )
     vals = (type_m,)
@@ -298,6 +311,7 @@ def get_epp_movements_db_detail(type_m, data_token):
         "INNER JOIN sql_telintec.products_amc ON sql_telintec.product_movements_amc.id_product = sql_telintec.products_amc.id_product "
         "LEFT JOIN sql_telintec.suppliers_amc ON sql_telintec.products_amc.id_supplier = sql_telintec.suppliers_amc.id_supplier "
         "WHERE sql_telintec.product_movements_amc.movement_type like %s AND sql_telintec.products_amc.extra_info->>'$.epp' = 1 "
+        "AND sql_telintec.product_movements_amc.id_warehouse IS NULL "
         "ORDER BY movement_date DESC;"
     )
     vals = (type_m,)
@@ -331,12 +345,13 @@ def get_product_movement_amc(type_m: str, id_m: int, id_p: int, date: str, data_
         "SELECT id_movement, id_product, movement_type, quantity, movement_date "
         "FROM sql_telintec.product_movements_amc "
         "WHERE (id_movement = %s OR "
-        "id_product = %s) AND movement_type LIKE %s "
+        "id_product = %s) AND movement_type LIKE %s AND id_warehouse IS NULL "
     )
+    val = (id_m, id_p, type_m)
     if date is not None:
         sql = sql + " AND movement_date = %s"
+        val = val + (date,)  # (2026-09-07) antes mandaba 4 valores para 3 marcadores sin fecha
     sql = sql + " LIMIT 10"
-    val = (id_m, id_p, type_m, date)
     flag, error, result = execute_sql(sql, val, 2, data_token)
     return flag, error, result, columns
 
@@ -349,12 +364,14 @@ def get_movements_type(type_m: str, data_token, limit=10):
         "sql_telintec.products_amc.udm "
         "FROM sql_telintec.product_movements_amc "
         "INNER JOIN sql_telintec.products_amc ON (sql_telintec.products_amc.id_product = sql_telintec.product_movements_amc.id_product) "
-        "WHERE movement_type LIKE %s "
+        "WHERE movement_type LIKE %s AND sql_telintec.product_movements_amc.id_warehouse IS NULL "
         "GROUP BY id_product "
         "ORDER BY total_move "
         "LIMIT %s "
     )
-    val = (type_m, limit, data_token)
+    # (2026-09-07) antes val traia 3 valores para 2 marcadores -> la grafica del
+    # dashboard fallaba siempre; ver Functions_AuxPlots.get_data_movements_type.
+    val = (type_m, int(limit))
     flag, error, result = execute_sql(sql, val, 2, data_token)
     return flag, error, result
 

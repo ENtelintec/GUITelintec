@@ -1196,7 +1196,7 @@ def check_names_employees_in_cache(names: list, filepath: str) -> dict:
     fichajes_emp_dict, flag = get_fichajes_emp_cache(filepath)
     for name in names:
         if name not in fichajes_emp_dict.keys():
-            id_emp, name_db = get_employee_id_name(name)
+            id_emp, name_db = get_employee_id_name(name, None)  # data_token es obligatorio
             if id_emp is not None:
                 fichajes_emp_dict[name] = {
                     "id": id_emp,

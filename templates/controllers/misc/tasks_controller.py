@@ -112,3 +112,42 @@ def get_task_by_id_emp(id_emp, data_token):
     vals = (id_emp,)
     flag, error, result = execute_sql(sql, vals, 2, data_token)
     return flag, error, result
+
+
+def count_tasks_for_migration(type_q, data_token):
+    """Radiografia de las tasks de un tipo antes de migrarlas a otra version:
+    (pendientes migrables, contestadas, pendientes de eva 360). Pendiente =
+    data_raw vacio; eva 360 = metadata.evaluation_id presente (esas llevan
+    el linking del proceso y no se mueven). type_sql=1 -> fetchone."""
+    sql = (
+        "SELECT "
+        "COALESCE(SUM(CASE WHEN (data_raw IS NULL OR JSON_LENGTH(data_raw) = 0) "
+        "AND body->>'$.metadata.evaluation_id' IS NULL THEN 1 ELSE 0 END), 0), "
+        "COALESCE(SUM(CASE WHEN data_raw IS NOT NULL AND JSON_LENGTH(data_raw) > 0 THEN 1 ELSE 0 END), 0), "
+        "COALESCE(SUM(CASE WHEN (data_raw IS NULL OR JSON_LENGTH(data_raw) = 0) "
+        "AND body->>'$.metadata.evaluation_id' IS NOT NULL THEN 1 ELSE 0 END), 0) "
+        "FROM sql_telintec_mod_rrhh.quizz_tasks "
+        "WHERE body->>'$.metadata.type_quizz' IS NOT NULL "
+        "AND CAST(body->>'$.metadata.type_quizz' AS SIGNED) = %s"
+    )
+    vals = (type_q,)
+    flag, error, result = execute_sql(sql, vals, 1, data_token)
+    return flag, error, result
+
+
+def migrate_pending_tasks_type(from_type, to_type, data_token):
+    """Reapunta metadata.type_quizz de las tasks SIN contestar (y sin
+    evaluation_id) de `from_type` hacia `to_type`, dejando rastro en
+    metadata.migrated_from. Las contestadas nunca se tocan: sus respuestas
+    estan mapeadas al template viejo. type_sql=3 -> rowcount (migradas)."""
+    sql = (
+        "UPDATE sql_telintec_mod_rrhh.quizz_tasks "
+        "SET body = JSON_SET(body, '$.metadata.type_quizz', %s, '$.metadata.migrated_from', %s) "
+        "WHERE body->>'$.metadata.type_quizz' IS NOT NULL "
+        "AND CAST(body->>'$.metadata.type_quizz' AS SIGNED) = %s "
+        "AND (data_raw IS NULL OR JSON_LENGTH(data_raw) = 0) "
+        "AND body->>'$.metadata.evaluation_id' IS NULL"
+    )
+    vals = (int(to_type), int(from_type), int(from_type))
+    flag, error, result = execute_sql(sql, vals, 3, data_token)
+    return flag, error, result

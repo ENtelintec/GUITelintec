@@ -3,9 +3,9 @@ __author__ = "Edisson Naula"
 __date__ = "$ 05/ago./2026  at 12:00 $"
 
 from flask_restx import fields
-from wtforms import IntegerField, StringField
+from wtforms import BooleanField, IntegerField, StringField
 from wtforms.form import Form
-from wtforms.validators import InputRequired
+from wtforms.validators import InputRequired, Optional
 
 from static.constants import api
 
@@ -42,11 +42,12 @@ quizz_model_put_model = api.model(
     {
         "name": fields.String(required=False, description="Nuevo nombre"),
         "template": fields.Raw(
-            required=False, description="Solo editable en BORRADOR (status 0)"
+            required=False,
+            description="Editable mientras el tipo no tenga encuestas asignadas (tasks_total = 0); con encuestas -> clonar",
         ),
         "rubric": fields.Raw(
             required=False,
-            description="Editable en cualquier status; null = quitar (solo borrador)",
+            description="Editable en cualquier status; null = quitar (solo sin encuestas asignadas)",
         ),
     },
 )
@@ -58,6 +59,39 @@ quizz_model_status_model = api.model(
             required=True,
             description="0=borrador 1=activa 2=archivada. Transiciones: 0->1, 1->2, 2->1",
             example=1,
+        ),
+        "migrate_pending": fields.Boolean(
+            required=False,
+            default=False,
+            description=(
+                "Solo al publicar (0->1) una versión clonada (replaces): además de archivar "
+                "la versión anterior, reapunta sus encuestas PENDIENTES a esta versión"
+            ),
+        ),
+    },
+)
+
+quizz_model_clone_model = api.model(
+    "QuizzModelClone",
+    {
+        "name": fields.String(
+            required=False,
+            description="Nombre de la versión nueva (default: '<nombre> (v2)', o v3, v4...)",
+            example="Encuesta de clima laboral (v2)",
+        ),
+    },
+)
+
+quizz_model_migrate_model = api.model(
+    "QuizzModelMigrateTasks",
+    {
+        "from_type": fields.Integer(
+            required=True, description="type_q de la versión vieja cuyas encuestas pendientes se mueven", example=3
+        ),
+        "only_pending": fields.Boolean(
+            required=False,
+            default=True,
+            description="v1 solo acepta true: las contestadas y las de eva 360 nunca se migran",
         ),
     },
 )
@@ -73,3 +107,14 @@ class QuizzModelPutForm(Form):
 
 class QuizzModelStatusForm(Form):
     status = IntegerField("status", validators=[InputRequired()])
+    migrate_pending = BooleanField("migrate_pending", validators=[Optional()], default=False)
+
+
+class QuizzModelCloneForm(Form):
+    name = StringField("name", [], default=None)
+
+
+class QuizzModelMigrateForm(Form):
+    from_type = IntegerField("from_type", validators=[InputRequired()])
+    # `only_pending` NO se modela aqui: un BooleanField ausente vale False y
+    # el default debe ser true; el midleware lo lee del payload crudo.

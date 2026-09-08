@@ -17,11 +17,16 @@ __author__ = "Edisson Naula"
 __date__ = "$ 05/ago./2026  at 12:00 $"
 
 import json
+import re
 from datetime import date, datetime
 
 import pytz
 
 from static.constants import format_timestamps, log_file_rh, timezone_software
+from templates.controllers.misc.tasks_controller import (
+    count_tasks_for_migration,
+    migrate_pending_tasks_type,
+)
 from templates.controllers.rrhh.quizz_models_controller import (
     LIST_COLUMNS,
     SELECT_COLUMNS,
@@ -138,6 +143,67 @@ def _append_history(history, user, action, comment):
         {"user": user, "action": action, "date": _now_ts(), "comment": comment}
     )
     return history
+
+
+def _tasks_total(type_q, data_token):
+    """Cuantas tasks (contestadas o no) referencian el tipo. Es el candado
+    real del template: sin snapshot por task, lo que protege el historial
+    es que existan tasks, no el status del modelo. -> (total, error)."""
+    flag, error, counts = count_tasks_by_type_quizz(type_q, data_token)
+    if not flag:
+        return None, error
+    total = int(counts[0] or 0) if counts else 0  # pyrefly: ignore
+    return total, None
+
+
+def _next_version_name(name):
+    """'Encuesta X' -> 'Encuesta X (v2)'; 'Encuesta X (v2)' -> 'Encuesta X (v3)'."""
+    base = (name or "").strip()
+    match = re.search(r"\s*\(v(\d+)\)$", base)
+    if match:
+        return f"{base[: match.start()]} (v{int(match.group(1)) + 1})"
+    return f"{base} (v2)"
+
+
+def _migrate_pending(from_type, to_type, user, data_token):
+    """Mueve las tasks pendientes de `from_type` a `to_type` (ver
+    migrate_pending_tasks_type) y deja rastro en el history de ambos modelos.
+    -> (resumen dict, error | None). Nunca toca contestadas ni eva 360."""
+    flag, error, counts = count_tasks_for_migration(from_type, data_token)
+    if not flag:
+        return None, error
+    pending, answered, pending_eva = (
+        (int(counts[0] or 0), int(counts[1] or 0), int(counts[2] or 0))  # pyrefly: ignore
+        if counts
+        else (0, 0, 0)
+    )
+    migrated = 0
+    if pending > 0:
+        flag, error, rowcount = migrate_pending_tasks_type(from_type, to_type, data_token)
+        if not flag:
+            return None, error
+        migrated = int(rowcount or 0)  # pyrefly: ignore
+    summary = {
+        "from_type": int(from_type),
+        "to_type": int(to_type),
+        "migrated": migrated,
+        "skipped_answered": answered,
+        "skipped_eva360": pending_eva,
+    }
+    comment = (
+        f"Migración de tasks pendientes {from_type}->{to_type}: {migrated} migradas, "
+        f"{answered} contestadas y {pending_eva} de eva 360 conservadas."
+    )
+    for tq in (from_type, to_type):
+        flag, _, row = get_quizz_model_db(tq, data_token)
+        if flag and row:
+            current = _row_to_detail(row)
+            update_quizz_model_fields(
+                tq,
+                {"history": _append_history(current.get("history"), user, "Migración de tasks", comment)},
+                data_token,
+            )
+    return summary, None
 
 
 def _validate_template(template):
@@ -365,8 +431,10 @@ def create_quizz_model_api(data, raw_payload, data_token):
 
 def update_quizz_model_api(type_q, data, raw_payload, data_token):
     """PUT parcial: solo escribe las llaves presentes en el JSON crudo
-    (name/template/rubric). Candados por status: template solo en BORRADOR;
-    rubrica editable siempre pero solo se puede QUITAR (null) en borrador.
+    (name/template/rubric). Candado por TASKS (2026-09-07, antes por status):
+    el template se edita en cualquier status mientras el tipo no tenga tasks
+    (tasks_total == 0); con tasks -> 400 sugiriendo clonar (nueva version).
+    La rubrica es editable siempre; QUITARLA (null) tambien exige sin tasks.
     El status NO se toca aqui (PUT /status)."""
     user = data_token.get("emp_id")
     if "status" in raw_payload:
@@ -383,6 +451,12 @@ def update_quizz_model_api(type_q, data, raw_payload, data_token):
         return {"data": None, "msg": f"No existe el modelo de encuesta {type_q}", "error": "No encontrado"}, 404
     current = _row_to_detail(row)
     status = int(current.get("status") or 0)
+    tasks_total = None
+    removing_rubric = "rubric" in raw_payload and raw_payload.get("rubric") is None
+    if "template" in raw_payload or removing_rubric:
+        tasks_total, error = _tasks_total(type_q, data_token)
+        if tasks_total is None:
+            return {"data": None, "msg": "No se pudo verificar las tasks del tipo", "error": error}, 400
 
     updates = {}
     changed = []
@@ -395,13 +469,14 @@ def update_quizz_model_api(type_q, data, raw_payload, data_token):
         changed.append("name")
 
     if "template" in raw_payload:
-        if status != 0:
+        if tasks_total:
             return {
                 "data": None,
                 "msg": (
-                    f"El template está bloqueado: el modelo {type_q} está en "
-                    f"{QM_STATUS.get(status)} y sus respuestas guardadas mapean contra "
-                    "este template. Para cambiar preguntas crear un modelo nuevo."
+                    f"El template está bloqueado: el modelo {type_q} ({QM_STATUS.get(status)}) "
+                    f"tiene {tasks_total} encuesta(s) asignadas y sus respuestas mapean contra "
+                    "este template. Para cambiar preguntas clona el modelo "
+                    "(POST /rrhh/quizz/models/<id>/clone) y publica la versión nueva."
                 ),
                 "error": None,
             }, 400
@@ -416,12 +491,12 @@ def update_quizz_model_api(type_q, data, raw_payload, data_token):
 
     if "rubric" in raw_payload:
         if raw_payload.get("rubric") is None:
-            if status != 0:
+            if tasks_total:
                 return {
                     "data": None,
                     "msg": (
-                        "No se puede quitar la rúbrica de un modelo publicado: su "
-                        "historial dejaría de ser evaluable. Solo se permite en borrador."
+                        f"No se puede quitar la rúbrica: el modelo {type_q} tiene "
+                        f"{tasks_total} encuesta(s) y su historial dejaría de ser evaluable."
                     ),
                     "error": None,
                 }, 400
@@ -469,9 +544,18 @@ def update_quizz_model_api(type_q, data, raw_payload, data_token):
 
 def update_quizz_model_status_api(type_q, data, data_token):
     """Transiciones del ciclo de vida: 0->1 (publicar; re-valida template),
-    1->2 (archivar), 2->1 (reactivar). Idempotente si ya esta en el status."""
+    1->2 (archivar), 2->1 (reactivar). Idempotente si ya esta en el status.
+
+    Versionado (2026-09-07): al PUBLICAR un modelo con `replaces` cuyo origen
+    esta ACTIVO, el origen se archiva solo (replaced_by = este) para que no
+    convivan dos versiones en el picker; con `migrate_pending: true` ademas
+    se reapuntan las tasks pendientes del origen (ver _migrate_pending).
+    REACTIVAR un modelo con `replaced_by` vigente (ACTIVO) -> 400: primero
+    archivar la version nueva; si esta ya no esta activa, se reactiva y se
+    limpia `replaced_by`."""
     user = data_token.get("emp_id")
     new_status = data.get("status")
+    migrate_pending = bool(data.get("migrate_pending"))
     if new_status not in QM_STATUS:
         return {
             "data": None,
@@ -517,19 +601,191 @@ def update_quizz_model_status_api(type_q, data, data_token):
                 "error": errors,
             }, 400
 
+    # Origen a archivar (solo al publicar una version clonada).
+    origin = None
+    replaces = current.get("replaces")
+    if new_status == 1 and status == 0 and replaces is not None:
+        flag, _, origin_row = get_quizz_model_db(int(replaces), data_token)
+        origin = _row_to_detail(origin_row) if flag and origin_row else None
+
+    updates = {"status": new_status}
+    # Reactivar una version reemplazada: solo si la que la reemplazo ya no
+    # esta activa (evita dos versiones activas de la misma encuesta).
+    if new_status == 1 and status == 2 and current.get("replaced_by") is not None:
+        flag, _, newer_row = get_quizz_model_db(int(current["replaced_by"]), data_token)
+        newer = _row_to_detail(newer_row) if flag and newer_row else None
+        if newer and int(newer.get("status") or 0) == 1:
+            return {
+                "data": None,
+                "msg": (
+                    f"El modelo {type_q} fue reemplazado por la versión {newer['type_q']} "
+                    f"({newer.get('name')}), que sigue ACTIVA. Archívala primero para volver a esta versión."
+                ),
+                "error": None,
+            }, 400
+        updates["replaced_by"] = None
+
     history = _append_history(
         current.get("history"), user, action,
         f"{action} del modelo (status {status}->{new_status}).",
     )
-    flag, error, _ = update_quizz_model_fields(
-        type_q, {"status": new_status, "history": history}, data_token
-    )
+    updates["history"] = history
+    flag, error, _ = update_quizz_model_fields(type_q, updates, data_token)
     if not flag:
         return {"data": None, "msg": "No se pudo cambiar el status", "error": error}, 400
     msg = f"{action} del modelo de encuesta {type_q} ({current.get('name')})"
+
+    data_out = {"type_q": int(type_q), "status": new_status, "archived": None}
+    error_out = None
+    if origin is not None and int(origin.get("status") or 0) == 1:
+        origin_history = _append_history(
+            origin.get("history"), user, "Archivado",
+            f"Archivado automático: reemplazado por la versión {type_q} ({current.get('name')}).",
+        )
+        flag, error, _ = update_quizz_model_fields(
+            int(origin["type_q"]),
+            {"status": 2, "history": origin_history, "replaced_by": int(type_q)},
+            data_token,
+        )
+        if flag:
+            data_out["archived"] = int(origin["type_q"])
+            msg += f"; versión anterior {origin['type_q']} archivada"
+        else:
+            error_out = f"No se pudo archivar la versión anterior {origin['type_q']}: {error}"
+            msg += f"; la versión anterior {origin['type_q']} NO se archivó (ver error)"
+    elif origin is not None:
+        # Origen en borrador/archivado: solo se deja el enlace inverso.
+        update_quizz_model_fields(int(origin["type_q"]), {"replaced_by": int(type_q)}, data_token)
+
+    if migrate_pending:
+        if origin is None:
+            msg += "; migrate_pending ignorado (el modelo no reemplaza a otro)"
+        else:
+            summary, error = _migrate_pending(int(origin["type_q"]), int(type_q), user, data_token)
+            if summary is None:
+                error_out = (error_out + " | " if error_out else "") + f"Migración de tasks fallida: {error}"
+                msg += "; la migración de tasks pendientes falló (ver error)"
+            else:
+                data_out.update(
+                    {k: summary[k] for k in ("migrated", "skipped_answered", "skipped_eva360")}
+                )
+                msg += (
+                    f"; {summary['migrated']} encuesta(s) pendiente(s) migradas "
+                    f"({summary['skipped_answered']} contestadas y {summary['skipped_eva360']} de eva 360 conservadas)"
+                )
     create_notification_permission(msg, data_token, _PERMISSIONS, "Modelos de encuesta", user or 0, 0)
     write_log_file(log_file_rh, msg, data_token)
-    return {"data": {"type_q": int(type_q), "status": new_status}, "msg": msg, "error": None}, 200
+    return {"data": data_out, "msg": msg, "error": error_out}, 200
+
+
+def clone_quizz_model_api(type_q, data, data_token):
+    """POST /quizz/models/<id>/clone: nueva version de un modelo = copia de
+    template + rubrica en BORRADOR con `replaces` = origen. Es el camino para
+    "editar preguntas" cuando el origen ya tiene tasks. Al publicar la copia,
+    el origen se archiva solo (ver update_quizz_model_status_api)."""
+    user = data_token.get("emp_id")
+    flag, error, row = get_quizz_model_db(type_q, data_token)
+    if not flag:
+        return {"data": None, "msg": "Error al consultar el modelo", "error": error}, 400
+    if not row:
+        return {"data": None, "msg": f"No existe el modelo de encuesta {type_q}", "error": "No encontrado"}, 404
+    current = _row_to_detail(row)
+    name = (data.get("name") or "").strip() or _next_version_name(current.get("name"))
+    template = current.get("template") or {}
+    rubric = current.get("rubric")
+    rubric = json.loads(json.dumps(rubric)) if isinstance(rubric, dict) else None
+    warnings = _cross_warnings(template, rubric) if rubric else []
+
+    history = _append_history(
+        [], user, "Clonado",
+        f"Clonado del modelo {type_q} ({current.get('name')}) como nueva versión (borrador).",
+    )
+    new_row = {
+        "name": name,
+        "template": template,
+        "rubric": rubric,
+        "status": 0,
+        "protected": 0,
+        "created_by": user,
+        "timestamp": _now_ts(),
+        "history": history,
+        "replaces": int(type_q),
+    }
+    flag, error, new_type = insert_quizz_model(new_row, data_token)
+    if not flag:
+        return {"data": None, "msg": "No se pudo clonar el modelo de encuesta", "error": error}, 400
+    if rubric is not None:
+        rubric["type"] = new_type
+        update_quizz_model_fields(new_type, {"rubric": rubric}, data_token)
+    update_quizz_model_fields(
+        int(type_q),
+        {"history": _append_history(current.get("history"), user, "Clonado", f"Clonado hacia la versión {new_type} ({name}).")},
+        data_token,
+    )
+    msg = f"Modelo de encuesta {type_q} clonado como {new_type} ({name}) en borrador"
+    write_log_file(log_file_rh, msg, data_token)
+    return {
+        "data": {
+            "type_q": new_type,
+            "replaces": int(type_q),
+            "name": name,
+            "status": 0,
+            "has_rubric": rubric is not None,
+            "warnings": warnings,
+        },
+        "msg": msg,
+        "error": None,
+    }, 201
+
+
+def migrate_quizz_tasks_api(type_q, data, raw_payload, data_token):
+    """PUT /quizz/models/<id>/migrate-tasks: reapunta las tasks PENDIENTES de
+    `from_type` hacia `type_q` (que debe estar ACTIVO). Contestadas y eva 360
+    nunca se mueven. v1 solo acepta only_pending true (ausente/null = true;
+    se lee del payload crudo porque un BooleanField ausente valdria False)."""
+    user = data_token.get("emp_id")
+    from_type = data.get("from_type")
+    only_pending = (raw_payload or {}).get("only_pending", True)
+    if only_pending is False:
+        return {
+            "data": None,
+            "msg": "only_pending debe ser true: las encuestas contestadas no se migran (sus respuestas mapean al template viejo)",
+            "error": None,
+        }, 400
+    try:
+        from_type = int(from_type)  # pyrefly: ignore
+    except (TypeError, ValueError):
+        return {"data": None, "msg": "from_type es obligatorio (entero)", "error": None}, 400
+    if from_type == int(type_q):
+        return {"data": None, "msg": "from_type debe ser distinto del modelo destino", "error": None}, 400
+
+    flag, error, row = get_quizz_model_db(type_q, data_token)
+    if not flag:
+        return {"data": None, "msg": "Error al consultar el modelo", "error": error}, 400
+    if not row:
+        return {"data": None, "msg": f"No existe el modelo de encuesta {type_q}", "error": "No encontrado"}, 404
+    target = _row_to_detail(row)
+    if int(target.get("status") or 0) != 1:
+        return {
+            "data": None,
+            "msg": f"El modelo destino {type_q} no está ACTIVO: publícalo antes de migrar encuestas",
+            "error": None,
+        }, 400
+    flag, error, row = get_quizz_model_db(from_type, data_token)
+    if not flag:
+        return {"data": None, "msg": "Error al consultar el modelo origen", "error": error}, 400
+    if not row:
+        return {"data": None, "msg": f"No existe el modelo de encuesta origen {from_type}", "error": "No encontrado"}, 404
+
+    summary, error = _migrate_pending(from_type, int(type_q), user, data_token)
+    if summary is None:
+        return {"data": None, "msg": "No se pudieron migrar las encuestas", "error": error}, 400
+    msg = (
+        f"{summary['migrated']} encuesta(s) pendiente(s) migradas de {from_type} a {type_q}; "
+        f"{summary['skipped_answered']} contestadas y {summary['skipped_eva360']} de eva 360 conservadas"
+    )
+    write_log_file(log_file_rh, msg, data_token)
+    return {"data": summary, "msg": msg, "error": None}, 200
 
 
 def delete_quizz_model_api(type_q, data_token):
@@ -592,10 +848,14 @@ def get_quizz_models_catalogs_api():
             {"from": a, "to": b, "label": label} for (a, b), label in QM_TRANSITIONS.items()
         ],
         "rules": [
-            "BORRADOR (0): todo editable; no aparece para contestar; borrable.",
-            "ACTIVA (1): contestable; template bloqueado (crear modelo nuevo para "
-            "cambiar preguntas); rubrica y nombre editables.",
-            "ARCHIVADA (2): oculta; su historial sigue evaluable; reactivable.",
+            "BORRADOR (0): no aparece para contestar; borrable.",
+            "ACTIVA (1): contestable. ARCHIVADA (2): oculta; su historial sigue evaluable; reactivable.",
+            "Template: editable en cualquier status mientras el tipo NO tenga encuestas asignadas "
+            "(tasks_total = 0); con encuestas -> clonar (POST /clone) y publicar la version nueva.",
+            "Rubrica y nombre: editables siempre; quitar la rubrica (null) exige sin encuestas.",
+            "Publicar una version clonada (replaces) archiva sola a la version anterior si estaba ACTIVA; "
+            "con migrate_pending=true ademas mueve sus encuestas pendientes (nunca las contestadas ni eva 360).",
+            "Reactivar una version reemplazada exige archivar primero a la version que la reemplazo.",
             "protected=1 (Norma 035): jamas borrable, ni con force.",
             "Borrado fisico solo sin tasks del tipo y sin protected.",
         ],

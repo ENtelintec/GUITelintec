@@ -2,6 +2,22 @@
 
 > Plan de sprint de 4 semanas (**2026-09-07 → 2026-10-02**). Continúa al [`plan_rh_mes.md`](plan_rh_mes.md), que cerró con las 6 UIs de encuestas entregadas. Cuatro tareas, decididas y ordenadas en la sesión de grill del 2026-09-07. Back y front a **tiempo completo** (~160 h cada uno). Cada pieza de back produce su doc en `docs/` con "Contrato mínimo para el front"; este plan solo fija alcance, orden y contratos **preliminares** (anexos al final).
 
+## Estado — actualizado 2026-09-08 (día 2 de S1)
+
+**2026-09-08**: DDL de versiones y de multisede corridos por el usuario en **dev, test y prod**. Constructor verificado en ciclo completo (32 checks). **Multisede F2 adelantada de S2 a S1** y verificada (46 checks): namespace `sucursal` con inventario, stock del principal y movimientos con stock por sede → [`almacen_multisede_f2.md`](almacen_multisede_f2.md). Quedan del arrastre (decisión del usuario, más tarde): `DROP` de vistas y DML de salida en test/prod. **Siguiente para el back**: contrato + código de F3 (traslados). El front ya tiene contrato para **todas** sus pantallas de multisede del mes salvo recepción.
+
+### Estado previo — 2026-09-07 (cierre del día 1 de S1)
+
+**El back cerró en un día lo planeado para toda la S1** y adelantó el `extract` de nómina (era S4) y la F1 de multisede. Hecho y verificado contra dev: salida tipo 0 ([`encuesta_salida_cualitativa.md`](encuesta_salida_cualitativa.md)), nómina completa ([`nomina_gestion_archivos_y_notificacion.md`](nomina_gestion_archivos_y_notificacion.md), 21 checks), constructor ([`quizz_models_versionado.md`](quizz_models_versionado.md), 32 checks tras el DDL), multisede F0+F1 ([`almacen_multisede_f1.md`](almacen_multisede_f1.md), 27 checks). DDL de versiones y de multisede **corridos en dev** por el usuario. Queda del arrastre: `DROP` de las 7 vistas y DML de salida en test/prod (decisión del usuario: más tarde). **Siguiente para el back**: contrato de F2 (namespace `sucursal`) y su código; para el front: las pantallas de nómina contra el Anexo A (el contrato definitivo ya está en su doc).
+
+| Frente | Hecho ✅ | Falta |
+|---|---|---|
+| Arrastre | Salida tipo 0 | `DROP` vistas puente · DML salida en test/prod |
+| Nómina | DELETE, reemplazo, notify, extract, guard fuera, doc | Front (S1–S2) · SES (2ª etapa) |
+| Constructor | Candado por tasks, clone, publicar-archiva, migrate, DDL en las 3 BDs, doc | Front (S2–S3) |
+| Multisede | F0 DDL en las 3 BDs + permiso · F1 candado + catálogo + consolidado · **F2 namespace `sucursal`** (08-sep), docs | F3 (traslados) · Front (S3–S4) |
+| Dashboard RH | — | Back (S3) · Front (S4) |
+
 ## Punto de partida
 
 - **Mes 1 cerrado**: motor config-driven, Norma 035, clima, eva 360, CRUD de modelos y las **6 UIs** (asignación, captura, resultados, tabla de clima, admin de modelos con editor JSON, eva 360) integradas.

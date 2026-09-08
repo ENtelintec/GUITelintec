@@ -180,10 +180,13 @@ def get_employee_id_name(name: str, data_token) -> tuple[None, str] | tuple[int,
     flag, e, out = execute_sql(sql, values, 1, data_token)
     if not isinstance(out, tuple):
         return None, "Not data found or error"
-    if e is not None or len(out) == 0:
+    # execute_sql devuelve el error como str ("None" cuando no hay error):
+    # comparar con `is not None` hacia que esta funcion SIEMPRE devolviera
+    # None (corregido 2026-09-07, lo destapo el extract de nomina).
+    if (e not in (None, "None", "")) or len(out) == 0:
         return None, e
     else:
-        return out[0], f"{out[1].title()} {out[2].title()}"
+        return out[0], f"{str(out[1]).title()} {str(out[2]).title()}"
 
 
 def get_employees_w_status(status: str, quantity: int, date: str, data_token):
@@ -223,6 +226,27 @@ def get_employee_info(id_e: int, data_token):
     return flag, error, result, columns
 
 
+def find_employee_for_payroll(num_empleado, full_name, data_token):
+    """Resuelve el empleado de un CFDI de nomina para SUGERIRLO en la carga
+    por periodo: 1) NumEmpleado numerico == employee_id (exacto);
+    2) nombre del receptor via get_employee_id_name (fulltext, aproximado).
+    -> (emp_id | None, match_by | None, nombre_en_bd | None). Nunca truena."""
+    try:
+        num = int(str(num_empleado).strip()) if num_empleado not in (None, "") else None
+    except (TypeError, ValueError):
+        num = None
+    if num is not None:
+        sql = "SELECT employee_id, name, l_name FROM sql_telintec.employees WHERE employee_id = %s"
+        flag, _, out = execute_sql(sql, (num,), 1, data_token)
+        if flag and isinstance(out, tuple) and len(out) > 0:
+            return int(out[0]), "num_empleado", f"{str(out[1]).title()} {str(out[2]).title()}"
+    if full_name:
+        emp_id, name_db = get_employee_id_name(str(full_name), data_token)
+        if emp_id is not None:
+            return int(emp_id), "nombre", name_db
+    return None, None, None
+
+
 def get_id_employee(name: str) -> None | int:
     """
     Get the id of the employee
@@ -241,7 +265,7 @@ def get_id_employee(name: str) -> None | int:
     flag, e, out = execute_sql(sql, values, 1)
     if not isinstance(out, tuple):
         return None
-    if e is not None or len(out) == 0:
+    if (e not in (None, "None", "")) or len(out) == 0:  # e es str ("None" sin error)
         return None
     else:
         return out[0]

@@ -1,0 +1,6 @@
+{
+  "type": 0,
+  "name": "Encuesta de salida",
+  "mode": "qualitative",
+  "description": "Encuesta de salida: sin puntaje. El motor devuelve pregunta + respuesta resuelta a texto (mode qualitative) para la UI de resultados y el PDF."
+}
