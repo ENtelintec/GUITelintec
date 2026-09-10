@@ -47,6 +47,7 @@ from templates.controllers.employees.employees_controller import (
     update_employee,
 )
 from templates.controllers.employees.us_controller import get_user_by_emp_id
+from templates.resources.methods.Functions_Aux_RH import last_medical_date, medical_due
 from templates.controllers.notifications.Notifications_controller import (
     insert_notification,
 )
@@ -1558,24 +1559,23 @@ def fetch_employees_without_records(data_token):
 
 
 def fetch_medicals(data_token) -> tuple[dict, int]:
+    """Registros médicos de todos los empleados + alertas de vencimiento.
+
+    La periodicidad sale de `medical_due` (Functions_Aux_RH: 12/6/3 meses según
+    `aptitude_actual` 1/2/3, 4 = NO APTO), la misma regla que el dashboard de
+    RH y el daemon de notificaciones. Cada registro trae `alert`, `last_date`,
+    `due_date`, `days_left` y `period_days` ya calculados; `error` conserva la
+    lista de mensajes [CRÍTICO]/[AVISO] solo de empleados ACTIVOS (contrato
+    previo del endpoint)."""
     flag, e, result = get_all_examenes(data_token)
     if not (isinstance(result, list) or isinstance(result, tuple)):
         return {"data": [], "msg": "No hay registros médicos", "error": None}, 400
     if not flag:
         return {"data": [], "msg": "No se pudieron obtener los registros médicos", "error": None}, 400
 
+    today = datetime.now(pytz.utc).astimezone(pytz.timezone(timezone_software)).date()
     data_out = []
     messages = []
-
-    # Definir límites por tipo de aptitud
-    limits = {
-        "APTO 1": timedelta(days=365),  # revisión anual
-        "APTO 2": timedelta(days=180),  # revisión cada 6 meses
-        "APTO 3": timedelta(days=90),  # revisión cada 3 meses
-        "APTO 4": None,  # NO APTO
-    }
-
-    warning_threshold = timedelta(days=30)
 
     for row in result:
         (
@@ -1590,57 +1590,59 @@ def fetch_medicals(data_token) -> tuple[dict, int]:
             extra_info,
         ) = row
 
-        extra_info = json.loads(extra_info)
-        aptitudes = json.loads(aptitud)
-        dates = json.loads(fechas)
+        try:
+            extra_info = json.loads(extra_info) if isinstance(extra_info, str) else (extra_info or {})
+        except (TypeError, ValueError):
+            extra_info = {}
+        try:
+            aptitudes = json.loads(aptitud) if isinstance(aptitud, str) else (aptitud or [])
+        except (TypeError, ValueError):
+            aptitudes = []
+        try:
+            dates = json.loads(fechas) if isinstance(fechas, str) else (fechas or [])
+        except (TypeError, ValueError):
+            dates = []
 
-        # Última fecha registrada
-        last_date = None
-        if dates:
-            last_date = datetime.strptime(max(dates), format_timestamps)
+        last_date = last_medical_date(dates)
+        due = medical_due(apt_actual, last_date, today)
+        status_out = status if status is not None else "INACTIVO"
 
         exam_data = {
             "exist": True,
             "id_exam": id_exam,
             "name": nombre,
             "blood": sangre,
-            "status": status if status is not None else "INACTIVO",
+            "status": status_out,
             "aptitudes": aptitudes,
             "dates": dates,
             "apt_last": apt_actual,
             "emp_id": emp_id,
-            "allergies": extra_info.get("allergies", ""),
+            "allergies": extra_info.get("allergies", extra_info.get("alergies", "")),
             "observations": extra_info.get("observations", ""),
+            "alert": due["alert"],
+            "last_date": last_date.isoformat() if last_date else None,
+            "due_date": due["due_date"].isoformat() if due["due_date"] else None,
+            "days_left": due["days_left"],
+            "period_days": due["period_days"],
         }
         data_out.append(exam_data)
 
-        # Validación de fechas según aptitud
-        if apt_actual in limits and limits[apt_actual] is not None and last_date:
-            delta = datetime.now() - last_date
-            limite = limits[apt_actual]
-            if limite is None:
-                continue
-
-            if delta > limite:
-                # Mensaje crítico
-                messages.append(
-                    f"[CRÍTICO] El empleado {nombre} requiere revisión: "
-                    f"Aptitud {apt_actual}, última fecha {last_date.strftime(format_timestamps)}, "
-                    f"supera el límite de {limite.days} días."
-                )
-            elif limite - delta <= warning_threshold:
-                # Mensaje de aviso
-                remaining = limite - delta
-                messages.append(
-                    f"[AVISO] El empleado {nombre} está próximo a revisión: "
-                    f"Aptitud {apt_actual}, última fecha {last_date.strftime(format_timestamps)}, "
-                    f"faltan {remaining.days} días para el límite de {limite.days} días."
-                )
-
-        elif apt_actual == "APTO 4":
+        if str(status_out).upper() != "ACTIVO":
+            continue
+        if due["alert"] == "vencido":
             messages.append(
-                f"[CRÍTICO] El empleado {nombre} (ID {id_exam}) está marcado como NO APTO."
+                f"[CRÍTICO] El empleado {nombre} requiere revisión: aptitud {apt_actual}, "
+                f"última fecha {exam_data['last_date']}, venció el {exam_data['due_date']} "
+                f"(hace {-due['days_left']} días, límite de {due['period_days']} días)."
             )
+        elif due["alert"] == "por_vencer":
+            messages.append(
+                f"[AVISO] El empleado {nombre} está próximo a revisión: aptitud {apt_actual}, "
+                f"última fecha {exam_data['last_date']}, vence el {exam_data['due_date']} "
+                f"(faltan {due['days_left']} días, límite de {due['period_days']} días)."
+            )
+        elif due["alert"] == "no_apto":
+            messages.append(f"[CRÍTICO] El empleado {nombre} (ID {id_exam}) está marcado como NO APTO.")
 
     return {"data": data_out, "msg": None, "error": messages if messages else None}, 200
 

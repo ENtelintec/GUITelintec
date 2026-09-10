@@ -53,8 +53,12 @@
 
 ## RH / Dashboard
 
-- [ ] **[back] Dashboard RH — endpoints (S3 mes 2)**: `GET /dashboard/rrhh/summary` (plantilla por depto, altas/bajas del mes, médicos por vencer 30/60/90, vacaciones pendientes/próximas, encuestas asignadas vs contestadas, cumpleaños) + `POST /dashboard/rrhh/series` (`metric` ∈ `altas_bajas|faltas|retardos`, `group_by` mes/depto); sin caché; KPI nuevo = `metric` nuevo. Contrato preliminar en el Anexo D del plan. → [`plan_mes_2.md`](plan_mes_2.md)
-- [ ] **[front] Pantalla del dashboard RH (S4 mes 2)**: tiles clicables a la lista filtrada + 2 gráficas. **Primero en recortarse** después de extract/SES. → [`plan_mes_2.md`](plan_mes_2.md)
+- [x] ~~**[back] Dashboard RH — endpoints (S3 mes 2)**~~ ✅ adelantado a S1 (2026-09-10, 98 checks + 10 HTTP): `GET /dashboard/rrhh/summary?month=` + `POST /dashboard/rrhh/series` (`metric` ∈ `altas_bajas|headcount`; **fichajes fuera** por decisión del usuario). → [`dashboard_rrhh.md`](dashboard_rrhh.md)
+- [ ] **[admin/RH] Calidad de datos que ensucia el dashboard**: 11 activos con fecha de baja arrastrada en `departure` (reingresos), inactivos sin fecha de baja, activos sin cumpleaños, y `dates` de vacaciones sin capturar (el tile `next_30_days` llega vacío). El `summary` los lista en `data_quality`. → [`dashboard_rrhh.md`](dashboard_rrhh.md)
+- [x] ~~**[back] `GET /rrhh/employees/medical/all` nunca avisa vencimientos**~~ ✅ (2026-09-10): regla única `medical_due` en `Functions_Aux_RH.py` para endpoint, daemon y dashboard; `error` vuelve a traer los avisos y cada registro gana `alert`/`due_date`/`days_left`. → [`notificaciones_medicas_fix.md`](notificaciones_medicas_fix.md)
+- [ ] **[front] Exámenes médicos**: pintar `alert`/`due_date` y no tratar `error` lista como fallo en `GET /rrhh/employees/medical/all`. → [`notificaciones_medicas_fix.md`](notificaciones_medicas_fix.md)
+- [ ] **[back] Llave doble `alergies`/`allergies` en `examenes_med.extra_info`** (registros viejos con la vieja; el lector tolera ambas): migrar cuando se toque el CRUD de exámenes. → [`notificaciones_medicas_fix.md`](notificaciones_medicas_fix.md)
+- [ ] **[front] Pantalla del dashboard RH (S4 mes 2)**: tiles clicables a la lista filtrada + 2 gráficas de `series`. Contrato listo en [`dashboard_rrhh.md`](dashboard_rrhh.md). **Primero en recortarse** después de extract/SES. → [`plan_mes_2.md`](plan_mes_2.md)
 
 ## SM (solicitudes de material)
 

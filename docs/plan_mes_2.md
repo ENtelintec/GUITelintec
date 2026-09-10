@@ -4,6 +4,8 @@
 
 ## Estado — actualizado 2026-09-10 (S1)
 
+**2026-09-10 (tarde)**: **Dashboard RH adelantado de S3 a S1** y verificado (98 checks + 10 por HTTP): `GET /dashboard/rrhh/summary` + `POST /dashboard/rrhh/series` → [`dashboard_rrhh.md`](dashboard_rrhh.md). **Fichajes fuera** del dashboard por decisión del usuario (`series` queda con `altas_bajas` y `headcount`, `metric` extensible). Con esto **las 4 tareas del mes tienen el back servido con contrato** en la S1. **Siguiente para el back**: soporte a la integración del front (nómina, constructor, sede, dashboard); si sobra, en este orden: correo SES · F4 de multisede · arreglos de calidad de datos que ensucian el dashboard (ver pendientes). Arrastre pendiente (usuario): `DROP` de vistas y DML de salida en test/prod. De paso, corregido el bug por el que los avisos de exámenes médicos vencidos nunca se emitían → [`notificaciones_medicas_fix.md`](notificaciones_medicas_fix.md).
+
 **2026-09-10**: **Multisede F3 (traslados) adelantada de S3 a S1** y verificada (50 checks): crear/cancelar/listar/detalle en el principal y listar/detalle/recibir en la sede, con enviado-vs-recibido y protección de las entradas de traslado → [`almacen_multisede_f3.md`](almacen_multisede_f3.md). Con esto **todo el back de multisede del mes está servido con contrato** (F0–F3); F4 solo si sobra. El front tiene contrato para todas sus pantallas del mes (nómina, constructor, sede: inventario/movimientos/recepción, crear traslado). **Siguiente para el back**: dashboard RH (`summary` + `series`), adelantado de S3; después soporte a integración y, si sobra, `extract`/SES/F4. Arrastre pendiente (usuario): `DROP` de vistas y DML de salida en test/prod.
 
 ### Estado previo — 2026-09-08 (día 2 de S1)
@@ -20,7 +22,7 @@
 | Nómina | DELETE, reemplazo, notify, extract, guard fuera, doc | Front (S1–S2) · SES (2ª etapa) |
 | Constructor | Candado por tasks, clone, publicar-archiva, migrate, DDL en las 3 BDs, doc | Front (S2–S3) |
 | Multisede | F0 DDL en las 3 BDs + permiso · F1 candado + catálogo + consolidado · F2 namespace `sucursal` (08-sep) · **F3 traslados** (10-sep), docs | F4 solo si sobra · Front (S3–S4) |
-| Dashboard RH | — | Back (S3) · Front (S4) |
+| Dashboard RH | **Back hecho en S1** (10-sep): `summary` + `series`, doc con contrato | Front (S4) |
 
 ## Punto de partida
 
@@ -127,7 +129,7 @@ Lo primero que se cae, en orden: **extract de XML y correo SES** → **dashboard
 - [ ] **Nómina**: doc con contrato · `DELETE /payroll/files` · reemplazo en el `POST` · `POST /payroll/notify` · guard muerto fuera · front integrado (RH + empleado) y en test.
 - [ ] **Constructor**: doc con contrato · candado por tasks · clonar · publicar-archiva · migrar pendientes · front con editor visual de template + pestaña avanzada, integrado y en test.
 - [ ] **Multisede**: DDL F0 en dev/test (`almacen_multisede.sql`) · F1 candado + catálogo · F2 namespace `sucursal` · F3 traslados · docs por fase · front con inventario, movimientos y recepción de sede.
-- [ ] **Dashboard RH**: doc con contrato · `summary` + `series` · pantalla.
+- [ ] **Dashboard RH**: ~~doc con contrato · `summary` + `series`~~ ✅ (10-sep) · pantalla.
 - [ ] Si sobra: `extract` de XML · correo SES · F4.
 - [ ] [`pendientes.md`](pendientes.md) actualizado al cierre.
 
@@ -197,3 +199,5 @@ Fuera del mes en front: `/almacen/warehouses` (catálogo), `/almacen/transfer/ca
 | `POST /rrhh/series` | Body `{metric, date_from, date_to, group_by?}` con `metric` ∈ `altas_bajas \| faltas \| retardos` y `group_by` ∈ `month` (default) `\| department`. 200 `data: {labels: [...], series: [{name, values: [...]}]}`. KPI nuevo = `metric` nuevo, mismo shape |
 
 **Gotchas:** sin caché (agregados chicos); los tiles "por vencer" traen ids para que el click lleve a la lista filtrada sin otra llamada.
+
+> **Contrato definitivo (2026-09-10)** en [`dashboard_rrhh.md`](dashboard_rrhh.md): `faltas`/`retardos` se cayeron (fichajes fuera) y entró `headcount`; `medical_expiring` gana `vencidos`/`al_dia`/`no_apto`/`sin_periodo`/`sin_examen`; `vacations` pasa a `employees_with_pending` + `pending_days_total` + `next_30_days` (no hay flujo de aprobación en BD); `data_quality` nuevo.
