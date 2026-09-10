@@ -74,3 +74,33 @@ class SucursalMovementPutForm(Form):
 
 class SucursalMovementDeleteForm(Form):
     id_movement = IntegerField("id_movement", validators=[InputRequired()])
+
+
+# --- Recepción de traslados (F3, lado sede). `items` por ns.payload crudo.
+transfer_receive_item_model = api.model(
+    "TransferReceiveItem",
+    {
+        "id_product": fields.Integer(required=True, example=1),
+        "quantity_received": fields.Float(required=True, description="Lo realmente recibido (>= 0; 0 = no llegó)", example=10),
+        "comment": fields.String(required=False, description="Nota del item (dañado, faltante...)"),
+    },
+)
+
+transfer_receive_model = api.model(
+    "TransferReceive",
+    {
+        "id_transfer": fields.Integer(required=True, example=1),
+        "items": fields.List(
+            fields.Nested(transfer_receive_item_model),
+            required=True,
+            description="Exactamente los productos del traslado (todos, sin extras)",
+        ),
+        "comment": fields.String(required=False, description="Comentario general de la recepción"),
+    },
+)
+
+
+class TransferReceiveForm(Form):
+    id_transfer = IntegerField("id_transfer", validators=[InputRequired()])
+    comment = StringField("comment", validators=[Optional()], default=None)
+    # items: lista cruda validada en receive_transfer_api

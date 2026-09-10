@@ -2,7 +2,11 @@
 
 > Plan de sprint de 4 semanas (**2026-09-07 → 2026-10-02**). Continúa al [`plan_rh_mes.md`](plan_rh_mes.md), que cerró con las 6 UIs de encuestas entregadas. Cuatro tareas, decididas y ordenadas en la sesión de grill del 2026-09-07. Back y front a **tiempo completo** (~160 h cada uno). Cada pieza de back produce su doc en `docs/` con "Contrato mínimo para el front"; este plan solo fija alcance, orden y contratos **preliminares** (anexos al final).
 
-## Estado — actualizado 2026-09-08 (día 2 de S1)
+## Estado — actualizado 2026-09-10 (S1)
+
+**2026-09-10**: **Multisede F3 (traslados) adelantada de S3 a S1** y verificada (50 checks): crear/cancelar/listar/detalle en el principal y listar/detalle/recibir en la sede, con enviado-vs-recibido y protección de las entradas de traslado → [`almacen_multisede_f3.md`](almacen_multisede_f3.md). Con esto **todo el back de multisede del mes está servido con contrato** (F0–F3); F4 solo si sobra. El front tiene contrato para todas sus pantallas del mes (nómina, constructor, sede: inventario/movimientos/recepción, crear traslado). **Siguiente para el back**: dashboard RH (`summary` + `series`), adelantado de S3; después soporte a integración y, si sobra, `extract`/SES/F4. Arrastre pendiente (usuario): `DROP` de vistas y DML de salida en test/prod.
+
+### Estado previo — 2026-09-08 (día 2 de S1)
 
 **2026-09-08**: DDL de versiones y de multisede corridos por el usuario en **dev, test y prod**. Constructor verificado en ciclo completo (32 checks). **Multisede F2 adelantada de S2 a S1** y verificada (46 checks): namespace `sucursal` con inventario, stock del principal y movimientos con stock por sede → [`almacen_multisede_f2.md`](almacen_multisede_f2.md). Quedan del arrastre (decisión del usuario, más tarde): `DROP` de vistas y DML de salida en test/prod. **Siguiente para el back**: contrato + código de F3 (traslados). El front ya tiene contrato para **todas** sus pantallas de multisede del mes salvo recepción.
 
@@ -15,7 +19,7 @@
 | Arrastre | Salida tipo 0 | `DROP` vistas puente · DML salida en test/prod |
 | Nómina | DELETE, reemplazo, notify, extract, guard fuera, doc | Front (S1–S2) · SES (2ª etapa) |
 | Constructor | Candado por tasks, clone, publicar-archiva, migrate, DDL en las 3 BDs, doc | Front (S2–S3) |
-| Multisede | F0 DDL en las 3 BDs + permiso · F1 candado + catálogo + consolidado · **F2 namespace `sucursal`** (08-sep), docs | F3 (traslados) · Front (S3–S4) |
+| Multisede | F0 DDL en las 3 BDs + permiso · F1 candado + catálogo + consolidado · F2 namespace `sucursal` (08-sep) · **F3 traslados** (10-sep), docs | F4 solo si sobra · Front (S3–S4) |
 | Dashboard RH | — | Back (S3) · Front (S4) |
 
 ## Punto de partida

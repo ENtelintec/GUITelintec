@@ -101,4 +101,4 @@ Dev (2026-09-08, 46 checks, datos de la sede 2 borrados al final; stock y kardex
 ## Pendientes
 
 - **[front]** Pantallas de la sede (S3): inventario (`only_with_stock` + buscador, columna del principal) y movimientos (kardex + alta/edición/borrado con `stock_before/after`).
-- **[back]** F3 traslados (crear/cancelar/listar en `/almacen`, listar/recibir en `/sucursal`). F4 exports y dashboard de sede.
+- ~~**[back]** F3 traslados~~ — hecha (2026-09-10) → [`almacen_multisede_f3.md`](almacen_multisede_f3.md). F4 exports y dashboard de sede solo si sobra.

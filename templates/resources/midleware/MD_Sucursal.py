@@ -3,7 +3,8 @@
 Multisede de almacén — orquestación del lado SEDE (namespace GUI/api/v1/sucursal,
 rutas en rs_Sucursal.py). Fase 2 del plan docs/almacen_multisede_plan.md:
 inventario de la sede, stock del principal en solo lectura y movimientos
-libres (entrada/salida) con stock por sede en warehouse_stock_amc.
+libres (entrada/salida) con stock por sede en warehouse_stock_amc. Fase 3:
+traslados hacia la sede (listar, detalle, confirmar recepción).
 
 Reglas:
   * La sede que opera sale del permiso `App.Department.Sucursal-<id>`: si el
@@ -34,17 +35,26 @@ from templates.controllers.product.warehouses_controller import (
     add_warehouse_stock_db,
     delete_warehouse_movement_db,
     get_main_inventory_db,
+    get_transfers_db,
     get_warehouse_db,
     get_warehouse_inventory_db,
     get_warehouse_movement_db,
     get_warehouse_movements_db,
     get_warehouse_stock_db,
     insert_warehouse_movement_db,
+    update_transfer_fields_db,
     update_warehouse_movement_db,
 )
+from templates.Functions_Utils import create_notification_permission
 from templates.misc.Functions_Files import write_log_file
 from templates.resources.midleware.MD_Multisede import (
+    WH_TRANSFER_STATUS,
+    _append_history,
+    _enrich_transfer_items,
     _load_json,
+    _load_transfer,
+    _parse_transfer_filters,
+    _row_to_transfer,
     _row_to_warehouse,
     verify_warehouse_permission,
 )
@@ -526,4 +536,209 @@ def delete_sede_movement_api(data, data_token):
         },
         "msg": msg,
         "error": error_out,
+    }, 200
+
+
+# =============================================================================
+# Traslados: lado SEDE (F3) — listar los que vienen hacia su sede, detalle y
+# confirmar recepción (UNA sola vez, capturando lo realmente recibido).
+# =============================================================================
+def fetch_sede_transfers_api(params, data_token):
+    """GET /sucursal/transfers?status=&date_from=&date_to=&limit=[&id_warehouse=]:
+    traslados cuyo destino es la sede (en tránsito + históricos)."""
+    sede, err, code = _resolve_warehouse(data_token, params.get("id_warehouse"), read_only=True)
+    if sede is None:
+        return err, code
+    filters, err_msg = _parse_transfer_filters(params)
+    if filters is None:
+        return {"data": None, "msg": err_msg, "error": None}, 400
+    filters["id_warehouse_dest"] = sede["id_warehouse"]
+    flag, error, rows = get_transfers_db(filters, data_token)
+    if not flag:
+        return {"data": None, "msg": "Error al consultar los traslados de la sede", "error": error}, 400
+    rows = rows if isinstance(rows, list) else []
+    data_out = [_enrich_transfer_items(_row_to_transfer(r), data_token) for r in rows]
+    pending = sum(1 for t in data_out if t["status"] == 0)
+    return {
+        "data": {"warehouse": {"id_warehouse": sede["id_warehouse"], "name": sede["name"]}, "transfers": data_out},
+        "msg": f"{len(data_out)} traslados ({pending} en tránsito)",
+        "error": None,
+    }, 200
+
+
+def get_sede_transfer_api(id_transfer, data_token):
+    """GET /sucursal/transfer/<id>: detalle; la sede sale del destino del
+    traslado (solo lectura: también supervisores del principal)."""
+    transfer, err, code = _load_transfer(id_transfer, data_token)
+    if transfer is None:
+        return err, code
+    sede, err, code = _resolve_warehouse(data_token, transfer["id_warehouse_dest"], read_only=True)
+    if sede is None:
+        return err, code
+    return {"data": _enrich_transfer_items(transfer, data_token), "msg": None, "error": None}, 200
+
+
+def _parse_received_items(raw_items, expected_ids):
+    """Valida los items recibidos: [{id_product, quantity_received, comment?}]
+    -> ({id_product: {quantity_received, comment}}, error|None). Debe venir
+    exactamente el conjunto de productos del traslado (sin extras ni faltantes)
+    y cantidades >= 0 (0 = no llegó nada de ese item)."""
+    if not isinstance(raw_items, list) or not raw_items:
+        return None, "items debe ser una lista con lo recibido por producto"
+    received = {}
+    for idx, raw in enumerate(raw_items):
+        if not isinstance(raw, dict):
+            return None, f"items[{idx}] debe ser un objeto {{id_product, quantity_received, comment?}}"
+        pid_raw, qty_raw = raw.get("id_product"), raw.get("quantity_received")
+        if pid_raw is None or qty_raw is None:
+            return None, f"items[{idx}]: id_product y quantity_received son obligatorios"
+        try:
+            pid = int(pid_raw)
+            qty = float(qty_raw)
+        except (TypeError, ValueError):
+            return None, f"items[{idx}]: id_product y quantity_received deben ser numéricos"
+        if qty < 0:
+            return None, f"items[{idx}] (producto {pid}): quantity_received no puede ser negativa"
+        if pid in received:
+            return None, f"El producto {pid} viene repetido en items"
+        received[pid] = {"quantity_received": qty, "comment": str(raw.get("comment") or "").strip()}
+    missing = sorted(set(expected_ids) - set(received))
+    extra = sorted(set(received) - set(expected_ids))
+    if missing or extra:
+        parts = []
+        if missing:
+            parts.append(f"faltan los productos {missing} (manda quantity_received 0 si no llegaron)")
+        if extra:
+            parts.append(f"los productos {extra} no son parte del traslado")
+        return None, "; ".join(parts)
+    return received, None
+
+
+def receive_transfer_api(data, raw_payload, data_token):
+    """PUT /sucursal/transfer/receive {id_transfer, items:[{id_product,
+    quantity_received, comment?}], comment?}: confirma la recepción UNA sola
+    vez. Por item con cantidad > 0: ENTRADA en el kardex de la sede
+    (id_warehouse = destino, extra_info {reference: folio, id_transfer}) +
+    suma en warehouse_stock_amc. Cierra en 1 (exacto) o 2 (con diferencias);
+    la diferencia NO se ajusta en ningún lado (la resuelve el principal
+    viendo el traslado). Reversa best-effort si falla a la mitad."""
+    user = data_token.get("emp_id")
+    transfer, err, code = _load_transfer(data.get("id_transfer"), data_token)
+    if transfer is None:
+        return err, code
+    sede, err, code = _resolve_warehouse(data_token, transfer["id_warehouse_dest"])
+    if sede is None:
+        return err, code
+    if transfer["status"] != 0:
+        return {
+            "data": None,
+            "msg": (
+                f"El traslado {transfer['folio']} ya está en {transfer['status_label']}: "
+                "la recepción se confirma una sola vez"
+            ),
+            "error": None,
+        }, 400
+    expected_ids = [int(i.get("id_product")) for i in transfer["items"]]
+    received, err_msg = _parse_received_items(raw_payload.get("items"), expected_ids)
+    if received is None:
+        return {"data": None, "msg": err_msg, "error": None}, 400
+
+    now = _now_ts()
+    id_warehouse = sede["id_warehouse"]
+    done = []  # (id_movement, id_product, qty, stock_sumado)
+    failure = None
+    new_items = []
+    differences = []
+    for item in transfer["items"]:
+        pid = int(item["id_product"])
+        sent = float(item.get("quantity_sent") or 0)
+        got = received[pid]["quantity_received"]
+        new_item = dict(item)
+        new_item["quantity_received"] = got
+        new_item["receive_comment"] = received[pid]["comment"]
+        new_items.append(new_item)
+        if got != sent:
+            differences.append({"id_product": pid, "quantity_sent": sent, "quantity_received": got, "difference": got - sent})
+        if got <= 0:
+            continue
+        extra_info = {
+            "reference": transfer["folio"],
+            "id_transfer": transfer["id_transfer"],
+            "comment": received[pid]["comment"],
+            "user": user,
+        }
+        flag, error, id_movement = insert_warehouse_movement_db(
+            id_warehouse, pid, "entrada", got, now, extra_info, data_token
+        )
+        if not flag:
+            failure = f"entrada del producto {pid}: {error}"
+            break
+        flag, error, _ = add_warehouse_stock_db(id_warehouse, pid, got, data_token)
+        if not flag:
+            done.append((id_movement, pid, got, False))
+            failure = f"stock de la sede para el producto {pid}: {error}"
+            break
+        done.append((id_movement, pid, got, True))
+    if failure:
+        for id_movement, pid, qty, added in done:
+            delete_warehouse_movement_db(id_movement, id_warehouse, data_token)
+            if added:
+                add_warehouse_stock_db(id_warehouse, pid, -qty, data_token)
+        msg = f"La recepción del traslado {transfer['folio']} falló y se revirtió ({failure}); sigue en tránsito"
+        write_log_file(log_file_sucursal, msg, data_token)
+        return {"data": None, "msg": msg, "error": failure}, 400
+
+    new_status = 2 if differences else 1
+    comment = str(data.get("comment") or "").strip()
+    diff_text = (
+        "; ".join(
+            f"producto {d['id_product']}: enviado {d['quantity_sent']:g}, recibido {d['quantity_received']:g}"
+            for d in differences
+        )
+        if differences
+        else "sin diferencias"
+    )
+    history = _append_history(
+        transfer.get("history"), user, "Recepción",
+        f"Recepción confirmada en {sede['name']} ({WH_TRANSFER_STATUS[new_status]}): {diff_text}"
+        + (f". {comment}" if comment else "") + ".",
+    )
+    flag, error, _ = update_transfer_fields_db(
+        transfer["id_transfer"],
+        {"status": new_status, "items": new_items, "history": history, "received_by": user, "received_at": now},
+        data_token,
+    )
+    if not flag:
+        # Las entradas ya están en la sede: no se revierten (el material sí llegó);
+        # el traslado queda en tránsito para reintentar el cierre.
+        for id_movement, pid, qty, added in done:
+            delete_warehouse_movement_db(id_movement, id_warehouse, data_token)
+            if added:
+                add_warehouse_stock_db(id_warehouse, pid, -qty, data_token)
+        msg = f"No se pudo cerrar el traslado {transfer['folio']}; entradas revertidas, sigue en tránsito"
+        write_log_file(log_file_sucursal, msg + f" | {error}", data_token)
+        return {"data": None, "msg": msg, "error": error}, 400
+
+    msg = (
+        f"Traslado {transfer['folio']} recibido en {sede['name']} ({WH_TRANSFER_STATUS[new_status]}): "
+        f"{len(done)} entrada(s), {diff_text} [emp {user}]"
+    )
+    create_notification_permission(
+        f"Traslado {transfer['folio']} recibido en {sede['name']}: {WH_TRANSFER_STATUS[new_status]} ({diff_text}).",
+        data_token, ["almacen"], "Traslados", user or 0, 0,
+    )
+    write_log_file(log_file_sucursal, msg, data_token)
+    return {
+        "data": {
+            "id_transfer": transfer["id_transfer"],
+            "folio": transfer["folio"],
+            "status": new_status,
+            "status_label": WH_TRANSFER_STATUS[new_status],
+            "id_warehouse": id_warehouse,
+            "received_at": now,
+            "movements": [mv[0] for mv in done],
+            "differences": differences,
+        },
+        "msg": msg,
+        "error": None,
     }, 200

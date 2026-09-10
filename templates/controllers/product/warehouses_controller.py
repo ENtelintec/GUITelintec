@@ -334,3 +334,159 @@ def delete_warehouse_movement_db(id_movement, id_warehouse, data_token):
     val = (id_movement, id_warehouse)
     flag, error, result = execute_sql(sql, val, 3, data_token)
     return flag, error, result
+
+
+# =============================================================================
+# Traslados principal -> sede (F3) — warehouse_transfers_amc.
+# =============================================================================
+_TRANSFERS = "sql_telintec.warehouse_transfers_amc"
+
+TRANSFER_COLUMNS = (
+    "id_transfer",
+    "folio",
+    "id_warehouse_origin",
+    "origin_name",
+    "id_warehouse_dest",
+    "dest_name",
+    "status",
+    "items",          # JSON [{id_product, quantity_sent, quantity_received, comment}]
+    "comment",
+    "history",
+    "created_by",
+    "received_by",
+    "created_at",
+    "received_at",
+)
+
+_TRANSFER_SELECT = (
+    "SELECT t.id_transfer, t.folio, t.id_warehouse_origin, wo.name, t.id_warehouse_dest, wd.name, "
+    "t.status, t.items, t.comment, t.history, t.created_by, t.received_by, t.created_at, t.received_at "
+    f"FROM {_TRANSFERS} t "
+    "JOIN sql_telintec.warehouses_amc wo ON wo.id_warehouse = t.id_warehouse_origin "
+    "JOIN sql_telintec.warehouses_amc wd ON wd.id_warehouse = t.id_warehouse_dest "
+)
+
+_TRANSFER_UPDATABLE = ("status", "items", "comment", "history", "received_by", "received_at")
+
+
+def get_next_transfer_folio_db(data_token):
+    """Siguiente consecutivo del folio TRS-####: max del sufijo numérico + 1
+    (patrón max+1, igual que los folios de OC). type_sql=1 -> (max,)."""
+    sql = (
+        "SELECT MAX(CAST(SUBSTRING(folio, 5) AS UNSIGNED)) "
+        f"FROM {_TRANSFERS} WHERE folio REGEXP '^TRS-[0-9]+$'"
+    )
+    flag, error, result = execute_sql(sql, None, 1, data_token)
+    return flag, error, result
+
+
+def insert_transfer_db(data: dict, data_token):
+    """Alta del traslado (status 0 = en tránsito). type_sql=4 -> lastrowid."""
+    sql = (
+        f"INSERT INTO {_TRANSFERS} "
+        "(folio, id_warehouse_origin, id_warehouse_dest, status, items, comment, history, created_by) "
+        "VALUES (%s, %s, %s, 0, %s, %s, %s, %s)"
+    )
+    val = (
+        data.get("folio"),
+        data.get("id_warehouse_origin"),
+        data.get("id_warehouse_dest"),
+        json.dumps(data.get("items") or [], ensure_ascii=False),
+        data.get("comment"),
+        json.dumps(data.get("history") or [], ensure_ascii=False),
+        data.get("created_by"),
+    )
+    flag, error, result = execute_sql(sql, val, 4, data_token)
+    return flag, error, result
+
+
+def get_transfer_db(id_transfer, data_token):
+    """Un traslado por id con nombres de sede. type_sql=1."""
+    sql = _TRANSFER_SELECT + "WHERE t.id_transfer = %s"
+    flag, error, result = execute_sql(sql, (id_transfer,), 1, data_token)
+    return flag, error, result
+
+
+def get_transfers_db(filters: dict, data_token):
+    """Listado con filtros opcionales estilo param-or-NULL: status,
+    id_warehouse_dest, id_warehouse_origin, date_from/date_to (inclusivos
+    sobre DATE(created_at)), limit. Más recientes primero. type_sql=2."""
+    sql = (
+        _TRANSFER_SELECT
+        + "WHERE (%s IS NULL OR t.status = %s) "
+        "AND (%s IS NULL OR t.id_warehouse_dest = %s) "
+        "AND (%s IS NULL OR t.id_warehouse_origin = %s) "
+        "AND (%s IS NULL OR DATE(t.created_at) >= %s) "
+        "AND (%s IS NULL OR DATE(t.created_at) <= %s) "
+        "ORDER BY t.created_at DESC, t.id_transfer DESC "
+        "LIMIT %s"
+    )
+    status = filters.get("status")
+    dest = filters.get("id_warehouse_dest")
+    origin = filters.get("id_warehouse_origin")
+    date_from = filters.get("date_from")
+    date_to = filters.get("date_to")
+    val = (
+        status, status, dest, dest, origin, origin,
+        date_from, date_from, date_to, date_to,
+        int(filters.get("limit") or 200),
+    )
+    flag, error, result = execute_sql(sql, val, 2, data_token)
+    return flag, error, result
+
+
+def delete_transfer_db(id_transfer, data_token):
+    """Borrado físico: SOLO para revertir un alta que falló a medias
+    (nunca desde el API). type_sql=3."""
+    sql = f"DELETE FROM {_TRANSFERS} WHERE id_transfer = %s"
+    flag, error, result = execute_sql(sql, (id_transfer,), 3, data_token)
+    return flag, error, result
+
+
+def update_transfer_fields_db(id_transfer, updates: dict, data_token):
+    """UPDATE parcial (whitelist _TRANSFER_UPDATABLE). type_sql=3 -> rowcount."""
+    cols, vals = [], []
+    for col in _TRANSFER_UPDATABLE:
+        if col not in updates:
+            continue
+        value = updates[col]
+        if isinstance(value, (dict, list)):
+            value = json.dumps(value, ensure_ascii=False)
+        cols.append(f"{col} = %s")
+        vals.append(value)
+    if not cols:
+        return True, "None", 0
+    sql = f"UPDATE {_TRANSFERS} SET {', '.join(cols)} WHERE id_transfer = %s"
+    vals.append(id_transfer)
+    flag, error, result = execute_sql(sql, tuple(vals), 3, data_token)
+    return flag, error, result
+
+
+def get_products_brief_db(ids, data_token):
+    """(id_product, sku, name, udm, stock) de una lista de ids, para
+    enriquecer los items JSON de un traslado. type_sql=2."""
+    ids = [int(i) for i in ids if i is not None]
+    if not ids:
+        return True, "None", []
+    placeholders = ", ".join(["%s"] * len(ids))
+    sql = (
+        "SELECT id_product, sku, name, udm, stock FROM sql_telintec.products_amc "
+        f"WHERE id_product IN ({placeholders})"
+    )
+    flag, error, result = execute_sql(sql, tuple(ids), 2, data_token)
+    return flag, error, result
+
+
+def get_product_stock_and_reserved_db(id_product, data_token):
+    """Stock del principal y cantidad reservada (product_reservations status
+    0) de un producto: lo trasladable es stock - reservado. type_sql=1 ->
+    (name, stock, reserved) o [] si no existe."""
+    sql = (
+        "SELECT p.name, p.stock, IFNULL(SUM(r.quantity), 0) "
+        "FROM sql_telintec.products_amc p "
+        "LEFT JOIN sql_telintec.product_reservations r "
+        "  ON r.id_product = p.id_product AND r.status = 0 "
+        "WHERE p.id_product = %s GROUP BY p.id_product, p.name, p.stock"
+    )
+    flag, error, result = execute_sql(sql, (id_product,), 1, data_token)
+    return flag, error, result
