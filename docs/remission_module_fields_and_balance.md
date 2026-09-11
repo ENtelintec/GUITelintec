@@ -42,6 +42,12 @@ propio set de campos sobre la **misma fila** de `activity_reports`, acumulándol
   En POST se escriben todas las llaves del módulo (no hay nada previo que preservar).
 - `/remissionBalance` **no toca columnas base** (`date`, `folio`, `client_id`, …): las reenvía tal cual
   desde la fila leída; solo el `extra_info` mergeado y el `history` cambian.
+- **`contract_id` se conserva** (2026-09-11): `PUT /remission` y `PUT /remissionControlTable` ya no lo
+  reescriben con el `0` del form cuando la llave no viene (reventaba la FK `activity_contract_id` con
+  1452, reportado por el front el 2026-08-26) ni con `null`; solo un valor `> 0` re-enlaza, y el cambio
+  queda en `history`. Los POST guardan `NULL` en vez de `0`. Importa doblemente porque la **membresía
+  del control de saldos** vive en esa columna ([`control_saldos_cabecera.md`](control_saldos_cabecera.md)).
+  Helper `_resolve_contract_id`.
 
 ## Nombres canónicos (resolución de alias del doc de requerimientos)
 
@@ -51,7 +57,7 @@ Llave del payload → llave canónica en `extra_info` (el GET la expone aplanada
 | --- | --- | --- | --- |
 | Total sin IVA (`totalSinIva / totalsiniva`) | `totalSinIva` | `total_sin_iva` | number |
 | Estatus de reporte (`statusReport`) | `statusReport` | `status_report` | integer |
-| Monto remisión / Proyección saldo (`remission_amount / projection_balance`) | `projection_balance` | `projection_balance` | un solo campo; `remission_amount` no existe |
+| Monto remisión / Proyección saldo (`remission_amount / projection_balance`) | `projection_balance` | `projection_balance` | ~~un solo campo; `remission_amount` no existe~~ **Nota (2026-09-11)**: son **dos** campos. `projection_balance` = proyección de saldo por pedido; `remission_amount` = monto de remisión cerrada (llave propia, ≠ `remission_total` del bloque administración) — ver [`control_saldos_cabecera.md`](control_saldos_cabecera.md) |
 | OT / Número de tickets (`ot_ticket_number`) | — | — | **no se guarda**: es columna combinada de display; el front la arma con `ot` + `ticket_number`. **Nota (2026-08-15)**: el `ot_ticket` de la tabla consolidada sí se guarda como campo propio — ver [`remission_balance_get_filters_campos_nuevos.md`](remission_balance_get_filters_campos_nuevos.md) |
 | OT | `ot` | `ot` | separado de tickets |
 | Número de tickets | `ticket_number` | `ticket_number` | separado de OT |

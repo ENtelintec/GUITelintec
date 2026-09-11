@@ -50,6 +50,16 @@ from static.Models.api_purchases_models import (
     report_activity_delete_model,
     report_activity_download_att_model,
 )
+from static.Models.api_balance_control_models import (
+    BalanceControlCancelForm,
+    BalanceControlFieldsForm,
+    BalanceControlPostForm,
+    BalanceControlPutForm,
+    balance_control_cancel_model,
+    balance_control_fields_model,
+    balance_control_post_model,
+    balance_control_put_model,
+)
 from static.Models.api_purchase_management_models import (
     PurchaseManagementCancelForm,
     PurchaseManagementDeleteForm,
@@ -78,6 +88,15 @@ from templates.resources.midleware.MD_Admin_Collections import (
     update_remission_balance_from_api,
     update_remission_control_table_from_api,
     update_remission_from_api,
+)
+from templates.resources.midleware.MD_BalanceControl import (
+    cancel_balance_control_from_api,
+    create_balance_control_from_api,
+    get_balance_control_catalogs_from_api,
+    get_balance_control_from_api,
+    get_balance_controls_from_api,
+    update_balance_control_fields_from_api,
+    update_balance_control_from_api,
 )
 from templates.resources.midleware.MD_Purchases import (
     cancel_po_application_api,
@@ -662,6 +681,123 @@ class UploadActivityReportAttachment(Resource):
         # cadena "false" en True (bool("false")) y esto es un guard de borrado.
         data["force"] = (ns.payload or {}).get("force")
         data_out, code = delete_activity_report_attachment_api(data, data_token)
+        return data_out, code
+
+
+# =====================================================================
+# Control de saldos (Cobranza) — cabecera por contrato, formatos FO-CXC de
+# SGI (iso_formats), columnas dinámicas y movimientos de saldo.
+# Ver Docs/control_saldos_cabecera.md. Lecturas: administracion/purchases/
+# operaciones; escrituras: solo administracion; catálogo además sgi.
+# =====================================================================
+_BC_READ = ["administracion", "purchases", "operaciones"]
+_BC_WRITE = ["administracion"]
+
+
+@ns.route("/balanceControl")
+class BalanceControlOps(Resource):
+    @ns.doc(
+        params={
+            "contract_id": "Filtra por contrato",
+            "format_id": "Filtra por formato (iso_formats.id)",
+            "is_active": "1=activos (default), 0=cancelados",
+            "all": "1 -> activos y cancelados (ignora is_active)",
+        }
+    )
+    @ns.expect(expected_headers_per)
+    def get(self):
+        flag, data_token, msg = token_verification_procedure(request, department=_BC_READ)
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        params = {
+            "contract_id": request.args.get("contract_id"),
+            "format_id": request.args.get("format_id"),
+            "is_active": request.args.get("is_active"),
+            "all": request.args.get("all"),
+        }
+        data_out, code = get_balance_controls_from_api(params, data_token)
+        return data_out, code
+
+    @ns.expect(expected_headers_per, balance_control_post_model)
+    def post(self):
+        flag, data_token, msg = token_verification_procedure(request, department=_BC_WRITE)
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        # noinspection PyUnresolvedReferences
+        validator = BalanceControlPostForm.from_json(ns.payload)  # pyrefly: ignore
+        if not validator.validate():
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
+        data = validator.data
+        # raw_payload -> los campos propios del formato viven fuera del form.
+        data_out, code = create_balance_control_from_api(data, ns.payload or {}, data_token)
+        return data_out, code
+
+    @ns.expect(expected_headers_per, balance_control_put_model)
+    def put(self):
+        flag, data_token, msg = token_verification_procedure(request, department=_BC_WRITE)
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        # noinspection PyUnresolvedReferences
+        validator = BalanceControlPutForm.from_json(ns.payload)  # pyrefly: ignore
+        if not validator.validate():
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
+        data = validator.data
+        # raw_payload -> update parcial: solo se sobreescribe lo enviado.
+        data_out, code = update_balance_control_from_api(data, ns.payload or {}, data_token)
+        return data_out, code
+
+
+@ns.route("/balanceControl/catalogs")
+class BalanceControlCatalogs(Resource):
+    @ns.expect(expected_headers_per)
+    def get(self):
+        flag, data_token, msg = token_verification_procedure(request, department=_BC_READ + ["sgi"])
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        data_out, code = get_balance_control_catalogs_from_api(data_token)
+        return data_out, code
+
+
+@ns.route("/balanceControl/fields")
+class BalanceControlFields(Resource):
+    @ns.expect(expected_headers_per, balance_control_fields_model)
+    def put(self):
+        flag, data_token, msg = token_verification_procedure(request, department=_BC_WRITE)
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        # noinspection PyUnresolvedReferences
+        validator = BalanceControlFieldsForm.from_json(ns.payload)  # pyrefly: ignore
+        if not validator.validate():
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
+        data = validator.data
+        data_out, code = update_balance_control_fields_from_api(data, data_token)
+        return data_out, code
+
+
+@ns.route("/balanceControl/cancel")
+class BalanceControlCancel(Resource):
+    @ns.expect(expected_headers_per, balance_control_cancel_model)
+    def put(self):
+        flag, data_token, msg = token_verification_procedure(request, department=_BC_WRITE)
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        # noinspection PyUnresolvedReferences
+        validator = BalanceControlCancelForm.from_json(ns.payload)  # pyrefly: ignore
+        if not validator.validate():
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
+        data = validator.data
+        data_out, code = cancel_balance_control_from_api(data, data_token)
+        return data_out, code
+
+
+@ns.route("/balanceControl/<int:id_control>")
+class BalanceControlDetail(Resource):
+    @ns.expect(expected_headers_per)
+    def get(self, id_control):
+        flag, data_token, msg = token_verification_procedure(request, department=_BC_READ)
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        data_out, code = get_balance_control_from_api(id_control, data_token)
         return data_out, code
 
 

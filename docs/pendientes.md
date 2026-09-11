@@ -1,6 +1,6 @@
 # Pendientes — backend y front (todas las áreas)
 
-> Tracker general: solo listado con estado y link al doc que tiene la documentación completa. Cada ítem marca **[back]** / **[front]** (o ambos). Actualizado: 2026-09-10 (mes 2, S1 → [`plan_mes_2.md`](plan_mes_2.md)).
+> Tracker general: solo listado con estado y link al doc que tiene la documentación completa. Cada ítem marca **[back]** / **[front]** (o ambos). Actualizado: 2026-09-11 (mes 2, S1 → [`plan_mes_2.md`](plan_mes_2.md)).
 
 ## RH / Encuestas
 
@@ -87,6 +87,19 @@
 - [ ] **[front] Pantalla de control de saldos** — consumir `GET /remission-0?include_items=0` + filtros (`date_from`/`date_to`/`month_period`/`general_status`) y mandar los 4 campos nuevos del `PUT /remissionBalance` (`ot_ticket`, `centro_costos`, `responsable_centro_costos`, `personal_infra`). → [`remission_balance_get_filters_campos_nuevos.md`](remission_balance_get_filters_campos_nuevos.md)
 - [x] ~~**[back] Solicitud del front en Control de Reportes** (401 de Operaciones + 2 llaves del bloque administración)~~ — hecho (2026-08-26): `operaciones` en `POST`/`PUT /remissionControlTable` y `GET /remission-<id>` (los líderes capturan la remisión primero); campos propios `total_sin_iva_admi` y `remission_sent_date_client` (independientes de `total_sin_iva`/`remission_sent_date`, receta completa con history); de paso el `DELETE /remission` ya no da 400 en remisiones sin items. Verificado vs BD dev (27 checks). → [`control_table_operaciones_y_campos_admin.md`](control_table_operaciones_y_campos_admin.md)
 - [ ] **[front] Apuntar Control de Reportes a las llaves nuevas** — `buildAdministracionControlPayload` escribe `total_sin_iva_admi`/`remission_sent_date_client`, el map del GET las lee, se retiran los avisos de "pendiente de backend"; decidir qué fecha muestra la columna del bloque Administración (`remission_sent_date` vs `remission_sent_date_client`) y re-verificar la carga de la pantalla de líderes con un token puro de Operaciones. → [`control_table_operaciones_y_campos_admin.md`](control_table_operaciones_y_campos_admin.md)
+
+
+**Control de saldos (Cobranza)** — *contexto: entidad nueva `balance_controls` (1 control activo por contrato, membresía por `activity_reports.contract_id`), catálogo de formatos ISO de SGI en BD (`iso_formats`, ids 1..8 = `settings.json`, 9..13 = FO-CXC-07..11 con `config`), columnas dinámicas y movimientos de saldo inmutables; grill 2026-09-11 → [`control_saldos_cabecera.md`](control_saldos_cabecera.md).*
+
+- [x] ~~**[back] `POST /balanceControl` + GETs + PUT parcial + `/fields` + `/cancel` + `/catalogs`**~~ — hecho (2026-09-11): 4 capas nuevas + DDL corrido en dev (con FKs opcionales); movimiento inicial en el POST; `remission_amount` (sección 12 del front) y `custom_fields` en `PUT /remissionBalance` / aplanado en el GET. Verificado vs dev (61 checks HTTP). → [`control_saldos_cabecera.md`](control_saldos_cabecera.md)
+- [x] ~~**[back] `PUT /remission` y `PUT /remissionControlTable` reescribían `contract_id`**~~ — hecho (2026-09-11, destapado al cotejar docs): el `0` del form reventaba la FK (1452, `control-table-contract-id-fk.md` del front, 2026-08-26) y un `null` sacaba la remisión de su control de saldos; ahora se conserva el de la fila salvo valor `> 0`, los POST guardan `NULL`, `contract_id` vigilado en `history`. → [`control_saldos_cabecera.md`](control_saldos_cabecera.md)
+- [ ] **[back] DDL `control_saldos.sql` en test y prod** (usuario; decidir si con el bloque de FKs, como en dev). → [`control_saldos_cabecera.md`](control_saldos_cabecera.md)
+- [ ] **[front] Enganchar la pantalla de alta** (`confirmarCreacion` → `POST /balanceControl`), leer formatos/columnas/campos de cabecera de `GET /balanceControl/catalogs` en vez del catálogo hardcodeado, cruzar filas ↔ control por `contract_id`, renombrar `campos_mutables` → `custom_fields` (`key`/`label`/`value_type`/`comment`, tipos `text|number|date|boolean`) y capturar celdas vía `PUT /remissionBalance` (`custom_fields`). → [`control_saldos_cabecera.md`](control_saldos_cabecera.md)
+- [ ] **[back] CRUD de formatos ISO para SGI** (`iso_formats`: código, revisión, vigencia, `config`, baja suave): el catálogo ya está en BD, faltan endpoints/pantalla de SGI. → [`control_saldos_cabecera.md`](control_saldos_cabecera.md)
+- [ ] **[back] Migrar `iso_form` de `PDFGenerator` a `iso_formats`** y retirar `files/settings.json["formats"]` (ids 1..8 ya idénticos). → [`control_saldos_cabecera.md`](control_saldos_cabecera.md)
+- [ ] **[back] Endpoint de inyección/ajuste de saldo** (`POST /balanceControl/movement`, bloqueo optimista sobre `contracted_amount`, usuario del token) — **espera la maqueta F2 del front** (montos negativos, adjunto, permisos). El PUT de cabecera ya rechaza el monto. → [`control_saldos_cabecera.md`](control_saldos_cabecera.md)
+- [ ] **[front] Limpieza tras el barrido de coherencia**: retirar la pantalla vieja `administracion/control-saldos/ControlSaldos.tsx` (`/dashboard/administracion/control-saldos`, llama a `/logs` inexistente y edita campos legacy de `contracts.metadata`); resumen del contrato con `contracted_amount`/`start_date`/`end_date` del control (hoy Σ partidas + catálogo); conciliar `CONTRACT_CONFIG` de operaciones (campos extra por contrato) con `config.columns` de los formatos. → [`control_saldos_cabecera.md`](control_saldos_cabecera.md)
+- [ ] **[front] F1 discrepancia `total_sin_iva` vs `total_sin_iva_admi`** y **F2 maqueta del historial de inyecciones** (sección 11 del doc del front; sin dependencia del back).
 
 ## SGI (vouchers)
 

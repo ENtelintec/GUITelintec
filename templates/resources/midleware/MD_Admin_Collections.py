@@ -39,6 +39,7 @@ from templates.Functions_Utils import (
     create_notification_permission_notGUI,
 )
 from templates.misc.Functions_Files import write_log_file
+from templates.resources.midleware.MD_BalanceControl import validate_remission_custom_fields
 from templates.resources.midleware.MD_SM import get_iddentifiers_creation_contracts
 
 __author__ = "Edisson Naula"
@@ -126,6 +127,9 @@ _BALANCE_EXTRA_KEY_MAP = {
     "hes_release_date": "hes_release_date",
     "hes_balance": "hes_balance",
     "projection_balance": "projection_balance",
+    # Monto de remisión cerrada (Cobranza): llave propia, no alias de
+    # remission_total (bloque administración de control de reportes).
+    "remission_amount": "remission_amount",
     "committed_balance": "committed_balance",
     "invoiced_balance": "invoiced_balance",
     "observations": "observations",
@@ -169,7 +173,7 @@ def _extra_info_updates(metadata: dict, raw_metadata: dict | None, key_map: dict
 # --- Historial resumido de cambios de la remision ---------------------------------
 # Subconjunto curado de campos a vigilar; el front mapea cada field a su etiqueta.
 _HISTORY_BASE_FIELDS = [
-    "date", "folio", "client_id", "plant", "area", "location",
+    "date", "folio", "client_id", "contract_id", "plant", "area", "location",
     "general_description", "comments", "status",
 ]
 # Campos vigilados que viven en extra_info (canonicos, todos los modulos).
@@ -182,7 +186,7 @@ _HISTORY_EXTRA_FIELDS = [
     "remission_status", "remission_send_time",
     "remission_upload_date", "remission_upload_time",
     "hes_status", "hes_number", "hes_release_date", "hes_balance",
-    "projection_balance", "committed_balance", "invoiced_balance",
+    "projection_balance", "remission_amount", "committed_balance", "invoiced_balance",
     "observations", "month_period", "requester_coordinator", "coordinator",
     "ceco_fap", "sgd_number", "sgd_upload_date", "sgd_upload_time",
     "general_status", "ot", "ticket_number",
@@ -193,11 +197,11 @@ _HISTORY_EXTRA_FIELDS = [
 _HISTORY_META_FIELDS = _HISTORY_BASE_FIELDS + _HISTORY_EXTRA_FIELDS
 _HISTORY_ITEM_FIELDS = ["description", "udm", "quantity", "unit_price", "unit_price_quotation"]
 _HISTORY_NUMERIC_FIELDS = {
-    "quantity", "unit_price", "unit_price_quotation", "client_id", "status",
+    "quantity", "unit_price", "unit_price_quotation", "client_id", "contract_id", "status",
     "total_sin_iva", "status_report", "status_rep_admi", "remission_total",
     "remission_status", "hes_status", "general_status", "hes_balance",
-    "projection_balance", "committed_balance", "invoiced_balance", "quotation_amount",
-    "total_sin_iva_admi",
+    "projection_balance", "remission_amount", "committed_balance", "invoiced_balance",
+    "quotation_amount", "total_sin_iva_admi",
 }
 
 # Campos de extra_info que el GET de remisiones expone aplanados (ademas de los
@@ -217,9 +221,33 @@ _GET_EXTRA_STRING_FIELDS = [
 _GET_EXTRA_NUMERIC_FIELDS = [
     "total_sin_iva", "status_report", "status_rep_admi", "remission_total",
     "remission_status", "hes_status", "general_status", "hes_balance",
-    "projection_balance", "committed_balance", "invoiced_balance", "quotation_amount",
-    "total_sin_iva_admi",
+    "projection_balance", "remission_amount", "committed_balance", "invoiced_balance",
+    "quotation_amount", "total_sin_iva_admi",
 ]
+
+
+def _resolve_contract_id(metadata: dict, raw_metadata: dict | None, current=None):
+    """contract_id a escribir en activity_reports.
+
+    Solo un valor > 0 enlaza (o re-enlaza) la remisión a un contrato; un 0/None/""
+    (el default del form cuando la llave no viene) NUNCA pisa el enlace existente:
+    la FK real `activity_contract_id` reventaba con 0 (error 1452, reportado por
+    el front el 2026-08-26) y la membresía del control de saldos vive en esta
+    columna. No hay ruta para desvincular por estos endpoints (deliberado).
+    """
+    source = raw_metadata if raw_metadata is not None else (metadata or {})
+    value = source.get("contract_id")
+    try:
+        value = int(value) if value not in (None, "") else 0
+    except (ValueError, TypeError):
+        value = 0
+    return value if value > 0 else current
+
+
+def _custom_fields_of(extra_info: dict) -> dict:
+    """Valores de columnas dinámicas guardados en extra_info.custom_fields (dict o {})."""
+    values = extra_info.get("custom_fields") if isinstance(extra_info, dict) else None
+    return values if isinstance(values, dict) else {}
 
 
 def _normalize_history_value(field, value):
@@ -253,6 +281,7 @@ def _remission_meta_from_row(result_ra, extra_info: dict) -> dict:
         "date": result_ra[1],
         "folio": result_ra[2],
         "client_id": result_ra[3],
+        "contract_id": result_ra[18],
         "plant": result_ra[8],
         "area": result_ra[9],
         "location": result_ra[10],
@@ -264,17 +293,21 @@ def _remission_meta_from_row(result_ra, extra_info: dict) -> dict:
     return meta
 
 
-def _remission_meta_from_payload(metadata: dict, new_extra_info: dict, area=None, status=None) -> dict:
+def _remission_meta_from_payload(
+    metadata: dict, new_extra_info: dict, area=None, status=None, contract_id=None
+) -> dict:
     """Arma el dict de metadata curada con los valores que se van a escribir.
 
-    `area`/`status` permiten forzar el valor conservado (p. ej. tabla de control)
-    para que no marquen un cambio espurio. `new_extra_info` debe ser el extra_info
-    ya mergeado, para que las llaves no enviadas conserven su valor previo.
+    `area`/`status`/`contract_id` permiten forzar el valor conservado (p. ej.
+    tabla de control) para que no marquen un cambio espurio. `new_extra_info`
+    debe ser el extra_info ya mergeado, para que las llaves no enviadas
+    conserven su valor previo.
     """
     meta = {
         "date": metadata.get("date"),
         "folio": metadata.get("folio"),
         "client_id": metadata.get("client_id"),
+        "contract_id": contract_id if contract_id is not None else metadata.get("contract_id"),
         "plant": metadata.get("plant"),
         "area": area if area is not None else metadata.get("area"),
         "location": metadata.get("location"),
@@ -780,7 +813,7 @@ def create_remission_control_table_from_api(data, data_token):
         comments=data["metadata"].get("comments"),
         quotation_id=quotation_id,
         history=history_report,
-        contract_id=data["metadata"].get("contract_id", None),
+        contract_id=_resolve_contract_id(data["metadata"], None),
         pedido=data["metadata"].get("pedido", ""),
         pedido_exiros=data["metadata"].get("pedido_exiros", ""),
         extra_info=extra_info,
@@ -831,7 +864,7 @@ def create_remission_from_api(data, data_token):
         comments=data["metadata"].get("comments"),
         quotation_id=quotation_id,
         history=history_report,
-        contract_id=data["metadata"].get("contract_id", None),
+        contract_id=_resolve_contract_id(data["metadata"], None),
         pedido=data["metadata"].get("pedido", ""),
         pedido_exiros=data["metadata"].get("pedido_exiros", ""),
         extra_info=extra_info,
@@ -1037,6 +1070,8 @@ def get_remission_from_api(
                 "user_id": extra_info.get("user_id", ""),
                 **{f: extra_info.get(f, "") for f in _GET_EXTRA_STRING_FIELDS},
                 **{f: extra_info.get(f) for f in _GET_EXTRA_NUMERIC_FIELDS},
+                # Valores de las columnas dinámicas del control de saldos ({key: value}).
+                "custom_fields": _custom_fields_of(extra_info),
             }
         # Con include_items=0 la llave items no viene (listados ligeros, p.ej.
         # control de saldos); con items se mantiene el shape historico.
@@ -1085,9 +1120,10 @@ def update_remission_from_api(data, data_token, raw_metadata=None):
         int(it["qa_item_id"]): it
         for it in (json.loads(result_ra[16]) if result_ra[16] else [])
     }
+    contract_id = _resolve_contract_id(data["metadata"], raw_metadata, result_ra[18])
     meta_changes = _diff_history_fields(
         _remission_meta_from_row(result_ra, old_extra_info),
-        _remission_meta_from_payload(data["metadata"], extra_info),
+        _remission_meta_from_payload(data["metadata"], extra_info, contract_id=contract_id),
         _HISTORY_META_FIELDS,
     )
     items_changes = _diff_remission_items(old_items_map, data["items"])
@@ -1114,7 +1150,7 @@ def update_remission_from_api(data, data_token, raw_metadata=None):
         quotation_id=quotation_id if quotation_id and quotation_id > 0 else None,
         history=history,
         status=data["metadata"]["status"],
-        contract_id=data["metadata"].get("contract_id", None),
+        contract_id=contract_id,
         pedido=extra_info.get("pedido", ""),
         pedido_exiros=extra_info.get("pedido_exiros", ""),
         data_token=data_token,
@@ -1238,10 +1274,11 @@ def update_remission_control_table_from_api(data, data_token, raw_metadata=None)
 
     # Historial resumido de cambios (solo metadata; la tabla de control no maneja items).
     # area/status se conservan del registro previo, por eso no deben marcar cambio.
+    contract_id = _resolve_contract_id(data["metadata"], raw_metadata, result_ra[18])
     meta_changes = _diff_history_fields(
         _remission_meta_from_row(result_ra, old_extra_info),
         _remission_meta_from_payload(
-            data["metadata"], existing_extra_info, area=area, status=status
+            data["metadata"], existing_extra_info, area=area, status=status, contract_id=contract_id
         ),
         _HISTORY_META_FIELDS,
     )
@@ -1271,7 +1308,7 @@ def update_remission_control_table_from_api(data, data_token, raw_metadata=None)
         quotation_id=quotation_id,
         history=history,
         status=status,
-        contract_id=data["metadata"].get("contract_id", None),
+        contract_id=contract_id,
         pedido=existing_extra_info.get("pedido", ""),
         pedido_exiros=existing_extra_info.get("pedido_exiros", ""),
         data_token=data_token,
@@ -1331,6 +1368,31 @@ def update_remission_balance_from_api(data, data_token, raw_metadata=None):
         _extra_info_updates(data["metadata"], raw_metadata, _BALANCE_EXTRA_KEY_MAP)
     )
 
+    # Valores de columnas dinámicas ({key: value}): merge por llave, null borra,
+    # estricto contra las columnas del control de saldos ACTIVO del contrato.
+    custom_changes = []
+    if raw_metadata is not None and "custom_fields" in raw_metadata:
+        cf_errors, cf_values = validate_remission_custom_fields(
+            result_ra[18], raw_metadata.get("custom_fields"), data_token
+        )
+        if cf_errors:
+            return {"data": None, "msg": "Valores de columnas dinámicas inválidos", "error": cf_errors}, 400
+        old_custom = _custom_fields_of(old_extra_info)
+        new_custom = dict(old_custom)
+        for key, value in cf_values.items():
+            if value is None:
+                new_custom.pop(key, None)
+            else:
+                new_custom[key] = value
+        for key in sorted(set(old_custom) | set(new_custom)):
+            if old_custom.get(key) != new_custom.get(key):
+                custom_changes.append({
+                    "field": f"custom_fields.{key}",
+                    "before": old_custom.get(key),
+                    "after": new_custom.get(key),
+                })
+        merged_extra_info["custom_fields"] = new_custom
+
     # Historial resumido: los campos base salen de la fila (no cambian aqui),
     # solo los de extra_info pueden marcar diferencia.
     old_meta = _remission_meta_from_row(result_ra, old_extra_info)
@@ -1338,7 +1400,7 @@ def update_remission_balance_from_api(data, data_token, raw_metadata=None):
     new_meta.update(
         {field: merged_extra_info.get(field, "") for field in _HISTORY_EXTRA_FIELDS}
     )
-    meta_changes = _diff_history_fields(old_meta, new_meta, _HISTORY_META_FIELDS)
+    meta_changes = _diff_history_fields(old_meta, new_meta, _HISTORY_META_FIELDS) + custom_changes
     history.append(
         {
             "timestamp": timestamp,
