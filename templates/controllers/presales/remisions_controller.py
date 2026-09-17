@@ -134,7 +134,10 @@ def insert_remission(
     pedido: str = "",
     pedido_exiros: str = "",
     extra_info=None,
+    balance_control_id: int | None = None,
 ):
+    # balance_control_id: control de saldos al que nace ligada la remision (auto-enlace
+    # cuando su contrato tiene control activo; Docs/control_saldos_sin_contrato.md).
     if extra_info is None:
         extra_info = {}
     if "pedido" not in extra_info.keys():
@@ -144,8 +147,8 @@ def insert_remission(
     sql = (
         "INSERT INTO sql_telintec_mod_admin.activity_reports "
         "(date, folio, client_id, plant, area, location, general_description, comments, quotation_id, "
-        " status, history, contract_id, extra_info) "
-        "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+        " status, history, contract_id, extra_info, balance_control_id) "
+        "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
     )
     val = (
         date,
@@ -161,6 +164,7 @@ def insert_remission(
         json.dumps(history),
         contract_id,
         json.dumps(extra_info),
+        balance_control_id,
     )
     flag, e, out = execute_sql(sql, val, 4, data_token)
     return flag, e, out
@@ -384,9 +388,17 @@ def get_remission_by_id(
     date_to: str | None = None,
     month_period: str | None = None,
     general_status: int | None = None,
+    client_id: int | None = None,
+    balance_control_id: int | None = None,
+    available_for_control: int | None = None,
 ):
     # Filtros opcionales (param-or-NULL): sin filtros la query es identica a la
     # historica, asi los demas call sites no cambian de comportamiento.
+    # Indices 20/21 (append-only, los call sites indexan por posicion):
+    #   20 = ar.balance_control_id (membresia del control de saldos)
+    #   21 = is_active de ese control (NULL si la remision no apunta a ninguno)
+    # available_for_control (cualquier valor no NULL) = remisiones "disponibles":
+    # sin control o apuntando a uno cancelado.
     sql = """
     SELECT 
         ar.id, 
@@ -427,7 +439,10 @@ def get_remission_by_id(
             ) AS items,
         ar.files,
         ar.contract_id,
-        ar.extra_info
+        ar.extra_info,
+        ar.balance_control_id,
+        (SELECT bcx.is_active FROM sql_telintec_mod_admin.balance_controls AS bcx
+            WHERE bcx.id_control = ar.balance_control_id) AS balance_control_active
         FROM sql_telintec_mod_admin.activity_reports AS ar
         LEFT JOIN sql_telintec_mod_admin.quotation_activity_items AS qai ON ar.id = qai.report_id
         LEFT JOIN sql_telintec_mod_admin.quotation_items AS qi ON qi.id = qai.item_c_id
@@ -436,6 +451,11 @@ def get_remission_by_id(
         AND (DATE(ar.date) <= %s OR %s IS NULL)
         AND (JSON_UNQUOTE(JSON_EXTRACT(ar.extra_info, '$.month_period')) = %s OR %s IS NULL)
         AND (CAST(JSON_UNQUOTE(JSON_EXTRACT(ar.extra_info, '$.general_status')) AS SIGNED) = %s OR %s IS NULL)
+        AND (ar.client_id = %s OR %s IS NULL)
+        AND (ar.balance_control_id = %s OR %s IS NULL)
+        AND (%s IS NULL OR ar.balance_control_id IS NULL OR NOT EXISTS (
+            SELECT 1 FROM sql_telintec_mod_admin.balance_controls AS bca
+            WHERE bca.id_control = ar.balance_control_id AND bca.is_active = 1))
         GROUP BY ar.id"""
 
     val = (
@@ -444,6 +464,9 @@ def get_remission_by_id(
         date_to, date_to,
         month_period, month_period,
         general_status, general_status,
+        client_id, client_id,
+        balance_control_id, balance_control_id,
+        available_for_control,
     )
     flag, e, out = (
         execute_sql(sql, val, 1, data_token)

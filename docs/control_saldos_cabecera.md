@@ -4,6 +4,8 @@ Fecha: 2026-09-11 · Origen: pedido del front en `telintec_webapp/docs/backend/p
 
 Hasta hoy el "control de contrato" de Cobranza no existía en el back: los 5 archivos FO-CXC, sus contratos, las columnas de cada formato y las fechas de vigencia vivían hardcodeados en el front (`src/lib/control-saldos-archivos.ts`), y el único endpoint de saldos era `PUT /remissionBalance` (bloque de saldos **por remisión**, [`remission_module_fields_and_balance.md`](remission_module_fields_and_balance.md)). Este cambio crea la entidad, lleva el catálogo de formatos a la BD y cierra de paso la llave `remission_amount` que el front ya mandaba y el back descartaba.
 
+> **Actualización 2026-09-17**: la membresía remisión → control **ya no se deriva de `activity_reports.contract_id`**. Ahora es la columna explícita `activity_reports.balance_control_id`, `contract_id` del control es opcional (controles **sin contrato** con `client_id` + `title`) y hay `PUT /balanceControl/remissions`. Todo lo que este doc dice sobre "membresía por `contract_id`", "cruce por `contract_id`" y "solo `contract_id` y `format_id` obligatorios" queda reemplazado por [`control_saldos_sin_contrato.md`](control_saldos_sin_contrato.md); el resto (formatos, `custom_fields`, movimientos, permisos) sigue vigente.
+
 ## Decisiones (grill 2026-09-11)
 
 | Tema | Decisión |

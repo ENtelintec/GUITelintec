@@ -55,10 +55,12 @@ from static.Models.api_balance_control_models import (
     BalanceControlFieldsForm,
     BalanceControlPostForm,
     BalanceControlPutForm,
+    BalanceControlRemissionsForm,
     balance_control_cancel_model,
     balance_control_fields_model,
     balance_control_post_model,
     balance_control_put_model,
+    balance_control_remissions_model,
 )
 from static.Models.api_purchase_management_models import (
     PurchaseManagementCancelForm,
@@ -97,6 +99,7 @@ from templates.resources.midleware.MD_BalanceControl import (
     get_balance_controls_from_api,
     update_balance_control_fields_from_api,
     update_balance_control_from_api,
+    update_balance_control_remissions_from_api,
 )
 from templates.resources.midleware.MD_Purchases import (
     cancel_po_application_api,
@@ -580,6 +583,9 @@ class FetchActivitieReportById(Resource):
             "date_to": "Fecha final YYYY-MM-DD sobre la fecha de actividad (date), inclusivo",
             "month_period": "Igualdad exacta contra extra_info.month_period (control de saldos)",
             "general_status": "Entero; igualdad contra extra_info.general_status (control de saldos)",
+            "client_id": "Entero; filtra por cliente",
+            "balance_control_id": "Entero; remisiones ligadas a ese control de saldos",
+            "available_for_control": "1/true/yes -> solo remisiones disponibles (sin control o en un control cancelado)",
         }
     )
     @ns.expect(expected_headers_per)
@@ -609,6 +615,10 @@ class FetchActivitieReportById(Resource):
             date_to=request.args.get("date_to") or None,
             month_period=request.args.get("month_period") or None,
             general_status=request.args.get("general_status", type=int),
+            client_id=request.args.get("client_id", type=int),
+            balance_control_id=request.args.get("balance_control_id", type=int),
+            available_for_control=(request.args.get("available_for_control") or "").strip().lower()
+            in ("1", "true", "yes"),
         )
         return data_out, code
 
@@ -699,6 +709,8 @@ class BalanceControlOps(Resource):
     @ns.doc(
         params={
             "contract_id": "Filtra por contrato",
+            "client_id": "Filtra por cliente (customers_amc.id_customer)",
+            "has_contract": "1 = solo controles con contrato, 0 = solo SIN contrato",
             "format_id": "Filtra por formato (iso_formats.id)",
             "is_active": "1=activos (default), 0=cancelados",
             "all": "1 -> activos y cancelados (ignora is_active)",
@@ -711,6 +723,8 @@ class BalanceControlOps(Resource):
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         params = {
             "contract_id": request.args.get("contract_id"),
+            "client_id": request.args.get("client_id"),
+            "has_contract": request.args.get("has_contract"),
             "format_id": request.args.get("format_id"),
             "is_active": request.args.get("is_active"),
             "all": request.args.get("all"),
@@ -771,6 +785,23 @@ class BalanceControlFields(Resource):
             return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
         data = validator.data
         data_out, code = update_balance_control_fields_from_api(data, data_token)
+        return data_out, code
+
+
+@ns.route("/balanceControl/remissions")
+class BalanceControlRemissions(Resource):
+    @ns.expect(expected_headers_per, balance_control_remissions_model)
+    def put(self):
+        # Membresía explícita remisión -> control; ver Docs/control_saldos_sin_contrato.md
+        flag, data_token, msg = token_verification_procedure(request, department=_BC_WRITE)
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        # noinspection PyUnresolvedReferences
+        validator = BalanceControlRemissionsForm.from_json(ns.payload)  # pyrefly: ignore
+        if not validator.validate():
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
+        data = validator.data
+        data_out, code = update_balance_control_remissions_from_api(data, data_token)
         return data_out, code
 
 

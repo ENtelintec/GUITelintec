@@ -2,13 +2,22 @@
 __author__ = "Edisson Naula"
 __date__ = "$ 11/sep./2026  at 12:00 $"
 
-"""Control de saldos (Cobranza): cabecera por contrato con formato FO-CXC del
-catalogo de SGI (iso_formats), columnas dinamicas (custom_fields) y movimientos
-de saldo inmutables. Ver Docs/control_saldos_cabecera.md.
+"""Control de saldos (Cobranza): cabecera (con o sin contrato) con formato FO-CXC
+del catalogo de SGI (iso_formats), columnas dinamicas (custom_fields) y movimientos
+de saldo inmutables. Ver Docs/control_saldos_cabecera.md y
+Docs/control_saldos_sin_contrato.md.
 
 Reglas:
-  * Un control ACTIVO por contrato (validado aqui; un cancelado no bloquea).
-  * Membresia remision -> control = activity_reports.contract_id.
+  * Con contrato: un control ACTIVO por contrato (validado aqui; un cancelado no
+    bloquea). Sin contrato (contract_id NULL): client_id + title obligatorios y
+    sin unicidad. contract_id / client_id / format_id son inmutables.
+  * Membresia remision -> control = activity_reports.balance_control_id (UNICA
+    llave). Reglas de adopcion en _check_adoptable (POST y PUT /remissions):
+    mismo cliente; control con contrato acepta remisiones de ese contrato o sin
+    contrato (se les asigna); control sin contrato solo remisiones sin contrato;
+    una remision en OTRO control activo se rechaza (uno cancelado no cuenta).
+  * Cancelar NO libera remisiones: siguen apuntando al control cancelado y se
+    re-adoptan sin paso previo.
   * Campos propios del formato viven en extra_info del control y se validan
     contra iso_formats.config.header_fields (llave declarada, tipo, opciones).
   * contracted_amount solo se fija en el POST (movimiento inicial); el PUT lo
@@ -37,22 +46,26 @@ from templates.controllers.purchases.balance_control_controller import (
     CONTROL_COLUMNS,
     FORMAT_COLUMNS,
     MOVEMENT_COLUMNS,
-    adopt_remission_to_contract,
+    attach_remission_to_control,
     delete_balance_control,
+    detach_remission_from_control,
     get_active_balance_control_by_contract,
     get_balance_control_by_id,
     get_balance_control_movements,
     get_balance_controls,
+    get_customer_name,
+    get_free_remissions_by_contract,
     get_iso_format_by_id,
     get_iso_formats,
     get_remissions_by_ids,
-    get_remissions_summary_by_contract,
+    get_remissions_summary_by_control,
     insert_balance_control,
     insert_balance_control_movement,
     remove_custom_field_keys_from_remissions,
     set_active_balance_control,
     update_balance_control_custom_fields,
     update_balance_control_header,
+    update_balance_control_history,
 )
 from templates.Functions_Utils import create_notification_permission
 from templates.misc.Functions_Files import write_log_file
@@ -66,9 +79,10 @@ FORMAT_KIND = "balance_control"
 _KEY_RE = re.compile(r"^[a-z][a-z0-9_]{0,49}$")
 _PERIOD_RE = re.compile(r"^\d{4}-(0[1-9]|1[0-2])$")
 
-# Base editable de la cabecera (columnas reales). contract_id / format_id /
-# contracted_amount NO estan: inmutables tras el POST (ver docstring del modulo).
+# Base editable de la cabecera (columnas reales). contract_id / client_id /
+# format_id / contracted_amount NO estan: inmutables tras el POST (ver docstring).
 _BASE_COLS = (
+    "title",
     "month_period",
     "currency",
     "contract_number",
@@ -81,11 +95,14 @@ _BASE_COLS = (
 )
 _DATE_COLS = ("start_date", "end_date")
 # Llaves que el POST acepta en metadata ademas de la base y los campos del formato.
-_POST_ONLY_KEYS = ("contract_id", "format_id", "contracted_amount")
+_POST_ONLY_KEYS = ("contract_id", "client_id", "format_id", "contracted_amount")
 _PUT_ID_KEYS = ("id_control", "id")
 # Llaves reservadas: una columna dinamica no puede usar el nombre de una columna
 # real del control ni de una llave aplanada de la remision.
-_RESERVED_BASE_KEYS = set(CONTROL_COLUMNS) | {"id", "custom_fields", "remissions", "items", "history", "files"}
+_RESERVED_BASE_KEYS = set(CONTROL_COLUMNS) | {
+    "id", "custom_fields", "remissions", "items", "history", "files",
+    "balance_control_id", "balance_control_active",
+}
 
 _PERM_NOTIFY = ["administracion"]
 
@@ -386,6 +403,80 @@ def _resolve_id(data: dict):
     return None
 
 
+# --- Membresia: reglas de adopcion (un solo lugar para POST y PUT /remissions) -----
+def _int_or_none(value):
+    try:
+        return int(value) if value is not None else None
+    except (ValueError, TypeError):
+        return None
+
+
+def _check_adoptable(control_contract_id, control_client_id, id_control, row):
+    """Motivo (str) por el que la remision NO puede entrar al control, o None si
+    puede. `row` = fila REMISSION_LINK_COLUMNS. `id_control` = None en el POST
+    (el control aun no existe)."""
+    _rid, r_contract, _history, r_client, r_control, r_active = row[:6]
+    r_contract = _int_or_none(r_contract)
+    r_client = _int_or_none(r_client)
+    r_control = _int_or_none(r_control)
+    if r_control is not None and r_control != id_control and int(r_active or 0) == 1:
+        return f"pertenece al control activo {r_control}"
+    if r_client != _int_or_none(control_client_id):
+        return f"cliente distinto ({r_client} ≠ {control_client_id})"
+    if control_contract_id:
+        if r_contract not in (None, int(control_contract_id)):
+            return f"pertenece a otro contrato ({r_contract})"
+    elif r_contract is not None:
+        return f"tiene contrato ({r_contract}); un control sin contrato solo acepta remisiones sin contrato"
+    return None
+
+
+def _attach_rows(id_control: int, control_contract_id, label: str, rows, timestamp, user, data_token):
+    """Liga las remisiones al control (history en cada una). No fatal por
+    remision: devuelve (ids ligados, errores)."""
+    attached = []
+    errors = []
+    for row in rows:
+        rid, r_contract, rem_history, _client, r_control = row[:5]
+        if _int_or_none(r_control) == id_control:
+            continue  # ya estaba en este control
+        changes = [{"field": "balance_control_id", "before": r_control, "after": id_control}]
+        if control_contract_id and r_contract is None:
+            changes.append({"field": "contract_id", "before": None, "after": int(control_contract_id)})
+        rem_history = _load_json(rem_history, []) or []
+        rem_history.append({
+            "timestamp": timestamp,
+            "user": user,
+            "action": "Adopción a control de saldos",
+            "comment": f"Ligada al control de saldos {id_control} ({label}).",
+            "changes": {"metadata": changes, "items": []},
+        })
+        flag, error, rowcount = attach_remission_to_control(
+            rid, id_control, int(control_contract_id) if control_contract_id else None, rem_history, data_token
+        )
+        if flag and rowcount:
+            attached.append(rid)
+        else:
+            errors.append(f"remisión {rid} no ligada: {error or 'otro control activo la tomó antes'}")
+    return attached, errors
+
+
+def resolve_balance_control_for_remission(contract_id, client_id, data_token):
+    """Auto-enlace al CREAR una remision: id del control ACTIVO de su contrato, o
+    None (sin contrato, contrato sin control activo, o cliente distinto al del
+    control). Nunca falla: un error de consulta solo deja la remision sin ligar."""
+    contract_id = _int_or_none(contract_id)
+    if not contract_id or contract_id <= 0:
+        return None
+    flag, _error, row = get_active_balance_control_by_contract(contract_id, data_token)
+    if not flag or row is None:
+        return None
+    control_client = _int_or_none(row[CONTROL_COLUMNS.index("client_id")])
+    if control_client is not None and _int_or_none(client_id) != control_client:
+        return None
+    return int(row[0])
+
+
 # --- Catalogos ------------------------------------------------------------------
 def get_balance_control_catalogs_from_api(data_token):
     flag, error, rows = get_iso_formats(data_token, only_active=True)
@@ -420,33 +511,63 @@ def create_balance_control_from_api(data, raw_payload, data_token):
 
     contract_id = int(metadata.get("contract_id") or 0)
     format_id = int(metadata.get("format_id") or 0)
-    if contract_id <= 0 or format_id <= 0:
-        return {"data": None, "msg": "Faltan contract_id y/o format_id", "error": "contract_id y format_id son obligatorios"}, 400
+    client_id_in = int(metadata.get("client_id") or 0)
+    if format_id <= 0:
+        return {"data": None, "msg": "Falta format_id", "error": "format_id es obligatorio"}, 400
 
-    # Contrato
-    flag, error, contract = get_contract(data_token, contract_id)
-    if not flag or not contract:
-        return {"data": None, "msg": f"No existe el contrato (ID {contract_id})", "error": error or "Contrato no encontrado"}, 404
-    contract_code = contract[5]
-    contract_meta = _load_json(contract[1], {})
-    contract_meta = contract_meta if isinstance(contract_meta, dict) else {}
+    # Rama CON contrato: cliente y defaults salen del contrato; 1 activo por contrato.
+    # Rama SIN contrato (contract_id 0/null/ausente): client_id + title obligatorios.
+    contract_code = None
+    contract_meta = {}
+    contract_identifier = None
+    if contract_id > 0:
+        flag, error, contract = get_contract(data_token, contract_id)
+        if not flag or not contract:
+            return {"data": None, "msg": f"No existe el contrato (ID {contract_id})", "error": error or "Contrato no encontrado"}, 404
+        contract_code = contract[5]
+        contract_meta = _load_json(contract[1], {})
+        contract_meta = contract_meta if isinstance(contract_meta, dict) else {}
+        contract_identifier = str(contract_meta.get("identifier") or "").strip() or None
+        client_id = int(contract[6])
+        if client_id_in > 0 and client_id_in != client_id:
+            return {
+                "data": None,
+                "msg": "client_id no coincide con el cliente del contrato",
+                "error": [f"client_id {client_id_in} ≠ cliente del contrato {contract_code} ({client_id})"],
+            }, 400
+    else:
+        contract_id = 0
+        client_id = client_id_in
+        missing = []
+        if client_id <= 0:
+            missing.append("client_id es obligatorio en un control sin contrato")
+        if not str(metadata.get("title") or "").strip():
+            missing.append("title es obligatorio en un control sin contrato")
+        if missing:
+            return {"data": None, "msg": "Faltan datos del control sin contrato", "error": missing}, 400
+    flag, error, client_name = get_customer_name(client_id, data_token)
+    if not flag:
+        return {"data": None, "msg": "Error al consultar el cliente", "error": error}, 400
+    if client_name is None:
+        return {"data": None, "msg": f"No existe el cliente (ID {client_id})", "error": "Cliente no encontrado"}, 404
 
     # Formato de control de saldos
     fmt = _load_balance_format(format_id, data_token)
     header_fields = _header_fields(fmt["config"])
     header_keys = {f["key"] for f in header_fields}
 
-    # Unicidad: un control ACTIVO por contrato
-    flag, error, existing = get_active_balance_control_by_contract(contract_id, data_token)
-    if not flag:
-        return {"data": None, "msg": "Error al consultar controles del contrato", "error": error}, 400
-    if existing is not None:
-        existing_id = existing[0]
-        return {
-            "data": {"id_control": existing_id},
-            "msg": f"El contrato {contract_code} ya tiene un control de saldos activo (ID {existing_id})",
-            "error": "Control duplicado",
-        }, 409
+    # Unicidad: un control ACTIVO por contrato (sin contrato no hay unicidad)
+    if contract_id > 0:
+        flag, error, existing = get_active_balance_control_by_contract(contract_id, data_token)
+        if not flag:
+            return {"data": None, "msg": "Error al consultar controles del contrato", "error": error}, 400
+        if existing is not None:
+            existing_id = existing[0]
+            return {
+                "data": {"id_control": existing_id},
+                "msg": f"El contrato {contract_code} ya tiene un control de saldos activo (ID {existing_id})",
+                "error": "Control duplicado",
+            }, 409
 
     # Llaves desconocidas en metadata -> 400 (nada se descarta en silencio)
     allowed = set(_BASE_COLS) | set(_POST_ONLY_KEYS) | header_keys
@@ -472,39 +593,63 @@ def create_balance_control_from_api(data, raw_payload, data_token):
     if errors:
         return {"data": None, "msg": "Datos del control inválidos", "error": errors}, 400
 
-    if not base.get("contract_number"):
-        base["contract_number"] = contract_code
-    if not base.get("pedido_exiros") and contract_meta.get("exiros"):
-        base["pedido_exiros"] = str(contract_meta["exiros"]).strip() or None
+    if contract_id > 0:
+        if not base.get("title"):
+            base["title"] = contract_identifier or contract_code
+        if not base.get("contract_number"):
+            base["contract_number"] = contract_code
+        if not base.get("pedido_exiros") and contract_meta.get("exiros"):
+            base["pedido_exiros"] = str(contract_meta["exiros"]).strip() or None
+    label = f"contrato {contract_code}" if contract_id > 0 else f"sin contrato, {client_name}: {base.get('title')}"
 
-    # Remisiones: validar y separar huerfanas a adoptar
-    remission_ids = [int(r) for r in (data.get("remissions") or []) if r is not None]
-    to_adopt = []
+    # Remisiones explicitas: TODAS deben ser adoptables o no se crea nada.
+    remission_ids = list(dict.fromkeys(int(r) for r in (data.get("remissions") or []) if r is not None))
+    rows_by_id = {}
     if remission_ids:
         flag, error, rows = get_remissions_by_ids(remission_ids, data_token)
         if not flag:
             return {"data": None, "msg": "Error al consultar las remisiones", "error": error}, 400
         found = {r[0]: r for r in rows}
-        missing = [rid for rid in remission_ids if rid not in found]
-        foreign = [rid for rid in remission_ids if rid in found and found[rid][1] not in (None, contract_id)]
         rem_errors = []
-        if missing:
-            rem_errors.append(f"remisiones inexistentes: {missing}")
-        if foreign:
-            rem_errors.append(f"remisiones de otro contrato: {foreign}")
+        for rid in remission_ids:
+            if rid not in found:
+                rem_errors.append(f"remisión {rid}: no existe")
+                continue
+            reason = _check_adoptable(contract_id, client_id, None, found[rid])
+            if reason:
+                rem_errors.append(f"remisión {rid}: {reason}")
         if rem_errors:
             return {"data": None, "msg": "Remisiones inválidas para este control", "error": rem_errors}, 400
-        to_adopt = [found[rid] for rid in remission_ids if found[rid][1] is None]
+        rows_by_id = {rid: found[rid] for rid in remission_ids}
+
+    # Auto-adopcion (solo con contrato): las remisiones del contrato que esten
+    # libres o en un control cancelado. Las no adoptables (p.ej. otro cliente) se
+    # reportan en `error` sin bloquear el alta.
+    partial_errors = []
+    if contract_id > 0:
+        flag, error, free_rows = get_free_remissions_by_contract(contract_id, data_token)
+        if not flag:
+            partial_errors.append(f"no se pudieron consultar las remisiones del contrato: {error}")
+            free_rows = []
+        for r in free_rows:
+            if r[0] in rows_by_id:
+                continue
+            reason = _check_adoptable(contract_id, client_id, None, r)
+            if reason:
+                partial_errors.append(f"remisión {r[0]} del contrato no adoptada: {reason}")
+            else:
+                rows_by_id[r[0]] = r
 
     history = [{
         "user": user,
         "action": "Creación",
         "date": timestamp,
-        "comment": f"Creación del control de saldos ({fmt['label']}) para el contrato {contract_code}.",
+        "comment": f"Creación del control de saldos ({fmt['label']}): {label}.",
     }]
     row = {
-        "contract_id": contract_id,
+        "contract_id": contract_id if contract_id > 0 else None,
         "format_id": format_id,
+        "client_id": client_id,
         **base,
         "contracted_amount": amount,
         "custom_fields": custom_fields,
@@ -538,25 +683,13 @@ def create_balance_control_from_api(data, raw_payload, data_token):
         write_log_file(log_file_admin_collecions, f"Reversa del control {id_control}: fallo el movimiento inicial ({error})", data_token)
         return {"data": None, "msg": "No se pudo registrar el movimiento inicial; el control no se creó", "error": error}, 400
 
-    # Adopcion de huerfanas (no fatal por remision)
-    adopted = []
-    partial_errors = []
-    for rid, _c, rem_history in to_adopt:
-        rem_history = _load_json(rem_history, []) or []
-        rem_history.append({
-            "timestamp": timestamp,
-            "user": user,
-            "action": "Actualización",
-            "comment": f"Asignada al contrato {contract_code} por el control de saldos {id_control}.",
-            "changes": {"metadata": [{"field": "contract_id", "before": None, "after": contract_id}], "items": []},
-        })
-        flag, error, rowcount = adopt_remission_to_contract(rid, contract_id, rem_history, data_token)
-        if flag and rowcount:
-            adopted.append(rid)
-        else:
-            partial_errors.append(f"remisión {rid} no adoptada: {error or 'ya tenía contrato'}")
+    # Membresia (no fatal por remision)
+    adopted, attach_errors = _attach_rows(
+        id_control, contract_id, label, list(rows_by_id.values()), timestamp, user, data_token
+    )
+    partial_errors.extend(attach_errors)
 
-    msg = f"Control de saldos creado correctamente (ID {id_control}, {fmt['label']}, contrato {contract_code})"
+    msg = f"Control de saldos creado correctamente (ID {id_control}, {fmt['label']}, {label})"
     if adopted:
         msg += f"; remisiones adoptadas: {adopted}"
     create_notification_permission(msg, data_token, _PERM_NOTIFY, "Control de saldos", user or 0, 0)
@@ -586,7 +719,13 @@ def get_balance_controls_from_api(params: dict, data_token):
     else:
         is_active = _to_int_or_none(params.get("is_active"))
         is_active = 1 if is_active is None else is_active
-    flag, error, rows = get_balance_controls(contract_id, format_id, is_active, data_token)
+    client_id = _to_int_or_none(params.get("client_id"))
+    has_contract = _to_int_or_none(params.get("has_contract"))
+    if has_contract is not None:
+        has_contract = 1 if has_contract else 0
+    flag, error, rows = get_balance_controls(
+        contract_id, format_id, is_active, data_token, client_id=client_id, has_contract=has_contract
+    )
     if not flag:
         return {"data": None, "msg": "Error al consultar los controles de saldos", "error": error}, 400
     # header_keys por formato (un solo fetch del catalogo)
@@ -605,7 +744,7 @@ def get_balance_control_from_api(id_control: int, data_token):
     control, fmt = _load_control(id_control, data_token)
     flag, error, mov_rows = get_balance_control_movements(id_control, data_token)
     movements = [_movement_to_dict(r) for r in mov_rows] if flag else []
-    flag_r, error_r, rem_rows = get_remissions_summary_by_contract(control["contract_id"], data_token)
+    flag_r, error_r, rem_rows = get_remissions_summary_by_control(id_control, data_token)
     remissions = [
         {"id": r[0], "folio": r[1], "date": _json_safe(r[2]), "status": r[3]} for r in rem_rows
     ] if flag_r else []
@@ -641,13 +780,17 @@ def update_balance_control_from_api(data, raw_payload, data_token):
     if int(control.get("is_active") or 0) != 1:
         return {"data": None, "msg": f"El control está cancelado (ID {id_control})", "error": "Control inactivo"}, 400
 
-    # Inmutables: monto (solo con movimientos), contrato y formato.
+    # Inmutables: monto (solo con movimientos), contrato, cliente y formato.
     locked = [k for k in _POST_ONLY_KEYS if k in raw_metadata]
     if locked:
         return {
             "data": None,
-            "msg": "contracted_amount, contract_id y format_id no se editan por este PUT",
-            "error": [f"{k} es inmutable (el monto solo cambia con movimientos de saldo)" for k in locked],
+            "msg": "contracted_amount, contract_id, client_id y format_id no se editan por este PUT",
+            "error": [
+                f"{k} es inmutable"
+                + (" (el monto solo cambia con movimientos de saldo)" if k == "contracted_amount" else "")
+                for k in locked
+            ],
         }, 400
 
     header_fields = _header_fields(fmt.get("config"))
@@ -657,6 +800,8 @@ def update_balance_control_from_api(data, raw_payload, data_token):
         return {"data": None, "msg": "metadata trae llaves que el formato no declara", "error": [f"llave desconocida: {k}" for k in unknown]}, 400
 
     errors, base_updates = _validate_base(metadata, raw_metadata, is_put=True)
+    if "title" in base_updates and not base_updates["title"]:
+        errors.append("title no puede quedar vacío")
     errors_extra, extra_updates = _coerce_header_extra(raw_metadata, header_fields)
     errors.extend(errors_extra)
     if errors:
@@ -727,11 +872,11 @@ def update_balance_control_fields_from_api(data, data_token):
         return {"data": None, "msg": "No se pudieron actualizar las columnas dinámicas", "error": error}, 400
 
     # Sweep: los valores de las columnas quitadas se borran de las remisiones
-    # del contrato (si no, resucitan al re-crear una columna con el mismo key).
+    # ligadas al control (si no, resucitan al re-crear una columna con el mismo key).
     swept = 0
     sweep_error = None
     if removed:
-        flag, error, swept = remove_custom_field_keys_from_remissions(control["contract_id"], removed, data_token)
+        flag, error, swept = remove_custom_field_keys_from_remissions(id_control, removed, data_token)
         if not flag:
             sweep_error = f"no se pudieron limpiar los valores de {removed} en las remisiones: {error}"
             write_log_file(log_file_admin_collecions, f"Control {id_control}: {sweep_error}", data_token)
@@ -779,20 +924,119 @@ def cancel_balance_control_from_api(data, data_token):
     return {"data": {"id_control": id_control}, "msg": msg, "error": None}, 200
 
 
+# --- Membresia: PUT /balanceControl/remissions (add / remove) ------------------------
+@_api_guard
+def update_balance_control_remissions_from_api(data, data_token):
+    """Agrega/quita remisiones de un control ACTIVO. Valida TODO antes de
+    escribir (una sola falla -> 400 y no se aplica nada). `add` usa las mismas
+    reglas que remissions[] del POST; una remision en OTRO control activo se
+    rechaza (mover = remove explicito alla primero). `remove` no toca contract_id."""
+    timestamp = _now().strftime(format_timestamps)
+    user = data_token.get("emp_id")
+    id_control = _resolve_id(data)
+    if not id_control:
+        return {"data": None, "msg": "Falta el id del control", "error": "id_control requerido"}, 400
+    add_ids = list(dict.fromkeys(int(r) for r in (data.get("add") or []) if r is not None))
+    remove_ids = list(dict.fromkeys(int(r) for r in (data.get("remove") or []) if r is not None))
+    if not add_ids and not remove_ids:
+        return {"data": None, "msg": "Nada que hacer", "error": ["add y remove vienen vacíos"]}, 400
+    both = [rid for rid in add_ids if rid in remove_ids]
+    if both:
+        return {"data": None, "msg": "Remisiones inválidas para este control", "error": [f"remisión {rid}: viene en add y en remove" for rid in both]}, 400
+
+    control, _fmt = _load_control(id_control, data_token)
+    if int(control.get("is_active") or 0) != 1:
+        return {"data": None, "msg": f"El control está cancelado (ID {id_control})", "error": "Control inactivo"}, 400
+    control_contract = control.get("contract_id")
+    control_client = control.get("client_id")
+    label = control.get("title") or control.get("contract_code") or ""
+
+    flag, error, rows = get_remissions_by_ids(add_ids + remove_ids, data_token)
+    if not flag:
+        return {"data": None, "msg": "Error al consultar las remisiones", "error": error}, 400
+    found = {r[0]: r for r in rows}
+    errors = []
+    for rid in add_ids:
+        if rid not in found:
+            errors.append(f"remisión {rid}: no existe")
+            continue
+        reason = _check_adoptable(control_contract, control_client, id_control, found[rid])
+        if reason:
+            errors.append(f"remisión {rid}: {reason}")
+    for rid in remove_ids:
+        if rid not in found:
+            errors.append(f"remisión {rid}: no existe")
+        elif _int_or_none(found[rid][4]) != id_control:
+            errors.append(f"remisión {rid}: no está en este control")
+    if errors:
+        return {"data": None, "msg": "Remisiones inválidas para este control", "error": errors}, 400
+
+    added, write_errors = _attach_rows(
+        id_control, control_contract, label, [found[rid] for rid in add_ids], timestamp, user, data_token
+    )
+    removed = []
+    for rid in remove_ids:
+        rem_history = _load_json(found[rid][2], []) or []
+        rem_history.append({
+            "timestamp": timestamp,
+            "user": user,
+            "action": "Retiro de control de saldos",
+            "comment": f"Retirada del control de saldos {id_control} ({label}).",
+            "changes": {"metadata": [{"field": "balance_control_id", "before": id_control, "after": None}], "items": []},
+        })
+        flag, error, rowcount = detach_remission_from_control(rid, id_control, rem_history, data_token)
+        if flag and rowcount:
+            removed.append(rid)
+        else:
+            write_errors.append(f"remisión {rid} no retirada: {error or 'ya no estaba en este control'}")
+    if not added and not removed and write_errors:
+        return {"data": None, "msg": "No se pudo aplicar ningún cambio de remisiones", "error": write_errors}, 400
+
+    if added or removed:
+        history = control.get("history") or []
+        history.append({
+            "user": user,
+            "action": "Actualización",
+            "date": timestamp,
+            "comment": "Actualización de las remisiones del control de saldos.",
+            "changes": {"remissions": {"added": added, "removed": removed}},
+        })
+        flag, error, _ = update_balance_control_history(id_control, history, data_token)
+        if not flag:
+            write_errors.append(f"no se pudo registrar el history del control: {error}")
+
+    flag_r, _error_r, rem_rows = get_remissions_summary_by_control(id_control, data_token)
+    msg = f"Remisiones del control actualizadas (ID {id_control}: +{len(added)} / -{len(removed)})"
+    write_log_file(log_file_admin_collecions, msg + (f" | parciales: {write_errors}" if write_errors else ""), data_token)
+    return {
+        "data": {
+            "id_control": id_control,
+            "added": added,
+            "removed": removed,
+            "remissions_count": len(rem_rows) if flag_r else None,
+        },
+        "msg": msg,
+        "error": write_errors or None,
+    }, 200
+
+
 # --- Valores de columnas dinamicas por remision (usado por PUT /remissionBalance) ---
-def validate_remission_custom_fields(contract_id, custom_values, data_token):
+def validate_remission_custom_fields(balance_control_id, custom_values, data_token):
     """Valida el dict {key: value} de una remision contra las columnas del control
-    ACTIVO de su contrato. Devuelve (errores, dict coercionado) donde None = borrar."""
+    al que esta ligada (activity_reports.balance_control_id), que debe estar
+    ACTIVO. Devuelve (errores, dict coercionado) donde None = borrar."""
     if not isinstance(custom_values, dict):
         return ["custom_fields debe ser un objeto {key: value}"], {}
-    if not contract_id:
-        return ["la remisión no tiene contrato: no pertenece a ningún control de saldos"], {}
-    flag, error, row = get_active_balance_control_by_contract(int(contract_id), data_token)
+    if not balance_control_id:
+        return ["la remisión no está en ningún control de saldos"], {}
+    flag, error, row = get_balance_control_by_id(int(balance_control_id), data_token)
     if not flag:
         return [f"error al consultar el control de saldos: {error}"], {}
     if row is None:
-        return [f"el contrato {contract_id} no tiene un control de saldos activo"], {}
+        return [f"no existe el control de saldos {balance_control_id}"], {}
     control = _control_to_dict(row)
+    if int(control.get("is_active") or 0) != 1:
+        return [f"el control {control['id_control']} está cancelado"], {}
     declared = {f["key"]: f for f in control.get("custom_fields") or [] if isinstance(f, dict) and f.get("key")}
     errors = []
     coerced = {}

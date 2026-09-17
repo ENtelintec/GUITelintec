@@ -39,7 +39,10 @@ from templates.Functions_Utils import (
     create_notification_permission_notGUI,
 )
 from templates.misc.Functions_Files import write_log_file
-from templates.resources.midleware.MD_BalanceControl import validate_remission_custom_fields
+from templates.resources.midleware.MD_BalanceControl import (
+    resolve_balance_control_for_remission,
+    validate_remission_custom_fields,
+)
 from templates.resources.midleware.MD_SM import get_iddentifiers_creation_contracts
 
 __author__ = "Edisson Naula"
@@ -242,6 +245,36 @@ def _resolve_contract_id(metadata: dict, raw_metadata: dict | None, current=None
     except (ValueError, TypeError):
         value = 0
     return value if value > 0 else current
+
+
+def _balance_control_lock_error(result_ra, contract_id, metadata: dict):
+    """Una remisión ligada a un control de saldos ACTIVO no cambia de contrato ni
+    de cliente por los PUT de remisión: mover remisiones entre controles es acción
+    explícita de `administracion` (PUT /balanceControl/remissions). Devuelve el
+    envelope 400 o None. result_ra[20] = balance_control_id, [21] = is_active del
+    control (Docs/control_saldos_sin_contrato.md)."""
+    if len(result_ra) <= 21 or result_ra[20] is None or int(result_ra[21] or 0) != 1:
+        return None
+    changed = []
+    if contract_id != result_ra[18]:
+        changed.append(f"contract_id ({result_ra[18]} → {contract_id})")
+    new_client = metadata.get("client_id")
+    try:
+        new_client = int(new_client) if new_client not in (None, "") else None
+    except (ValueError, TypeError):
+        new_client = None
+    if new_client is not None and new_client != result_ra[3]:
+        changed.append(f"client_id ({result_ra[3]} → {new_client})")
+    if not changed:
+        return None
+    return {
+        "data": {"balance_control_id": result_ra[20]},
+        "msg": f"La remisión está en el control de saldos {result_ra[20]}",
+        "error": (
+            f"la remisión está en el control de saldos {result_ra[20]}; quítala con "
+            f"PUT /balanceControl/remissions antes de cambiar {', '.join(changed)}"
+        ),
+    }
 
 
 def _custom_fields_of(extra_info: dict) -> dict:
@@ -802,6 +835,13 @@ def create_remission_control_table_from_api(data, data_token):
     quotation_id = data["metadata"].get("quotation_id", None)
     quotation_id = quotation_id if quotation_id and quotation_id > 0 else None
     extra_info = _extra_info_updates(data["metadata"], None, _CONTROL_EXTRA_KEY_MAP)
+    # Auto-enlace: si el contrato tiene control de saldos activo, la remisión nace ligada.
+    contract_id = _resolve_contract_id(data["metadata"], None)
+    balance_control_id = resolve_balance_control_for_remission(
+        contract_id, data["metadata"]["client_id"], data_token
+    )
+    if balance_control_id:
+        history_report[0]["comment"] += f" Ligada al control de saldos {balance_control_id}."
     flag, error, id_remission = insert_remission(
         date=data["metadata"]["date"],
         folio=data["metadata"]["folio"],
@@ -813,11 +853,12 @@ def create_remission_control_table_from_api(data, data_token):
         comments=data["metadata"].get("comments"),
         quotation_id=quotation_id,
         history=history_report,
-        contract_id=_resolve_contract_id(data["metadata"], None),
+        contract_id=contract_id,
         pedido=data["metadata"].get("pedido", ""),
         pedido_exiros=data["metadata"].get("pedido_exiros", ""),
         extra_info=extra_info,
         data_token=data_token,
+        balance_control_id=balance_control_id,
     )
     if not flag:
         return {
@@ -835,7 +876,11 @@ def create_remission_control_table_from_api(data, data_token):
     )
     msg_out = f"Ítem de tabla de control creado correctamente (ID {id_remission})"
     write_log_file(log_file_admin_collecions, msg_out, data_token)
-    return {"data": {"id_remission": id_remission}, "msg": msg_out, "error": None}, 201
+    return {
+        "data": {"id_remission": id_remission, "balance_control_id": balance_control_id},
+        "msg": msg_out,
+        "error": None,
+    }, 201
 
 
 def create_remission_from_api(data, data_token):
@@ -853,6 +898,13 @@ def create_remission_from_api(data, data_token):
     quotation_id = data["metadata"].get("quotation_id", 0)
     quotation_id = quotation_id if quotation_id and quotation_id > 0 else None
     extra_info = _extra_info_updates(data["metadata"], None, _REMISSION_EXTRA_KEY_MAP)
+    # Auto-enlace: si el contrato tiene control de saldos activo, la remisión nace ligada.
+    contract_id = _resolve_contract_id(data["metadata"], None)
+    balance_control_id = resolve_balance_control_for_remission(
+        contract_id, data["metadata"]["client_id"], data_token
+    )
+    if balance_control_id:
+        history_report[0]["comment"] += f" Ligada al control de saldos {balance_control_id}."
     flag, error, id_remission = insert_remission(
         date=data["metadata"]["date"],
         folio=data["metadata"]["folio"],
@@ -864,11 +916,12 @@ def create_remission_from_api(data, data_token):
         comments=data["metadata"].get("comments"),
         quotation_id=quotation_id,
         history=history_report,
-        contract_id=_resolve_contract_id(data["metadata"], None),
+        contract_id=contract_id,
         pedido=data["metadata"].get("pedido", ""),
         pedido_exiros=data["metadata"].get("pedido_exiros", ""),
         extra_info=extra_info,
         data_token=data_token,
+        balance_control_id=balance_control_id,
     )
     if not flag:
         return {
@@ -995,7 +1048,11 @@ def create_remission_from_api(data, data_token):
         msg_out, data_token, ["administracion"], "Remisión de actividad creada", user, 0
     )
     write_log_file(log_file_admin_collecions, msg_out, data_token)
-    return {"data": {"id_remission": id_remission}, "msg": msg_out, "error": error_items}, 201
+    return {
+        "data": {"id_remission": id_remission, "balance_control_id": balance_control_id},
+        "msg": msg_out,
+        "error": error_items,
+    }, 201
 
 
 def get_remission_from_api(
@@ -1006,6 +1063,9 @@ def get_remission_from_api(
     date_to: str | None = None,
     month_period: str | None = None,
     general_status: int | None = None,
+    client_id: int | None = None,
+    balance_control_id: int | None = None,
+    available_for_control: bool = False,
 ):
     if id_report is not None and id_report <= 0:
         id_report = None
@@ -1016,6 +1076,9 @@ def get_remission_from_api(
         date_to=date_to,
         month_period=month_period,
         general_status=general_status,
+        client_id=client_id,
+        balance_control_id=balance_control_id,
+        available_for_control=1 if available_for_control else None,
     )
     if not flag:
         return {"data": None, "msg": "Error al obtener remisiones", "error": error}, 400
@@ -1056,6 +1119,10 @@ def get_remission_from_api(
                 "history": json.loads(item[15]) if item[15] else [],
                 "files": json.loads(item[17]) if item[17] else [],
                 "contract_id": item[18],
+                # Membresía del control de saldos (única llave) y si ese control sigue
+                # activo: "disponible" = balance_control_id null o balance_control_active false.
+                "balance_control_id": item[20],
+                "balance_control_active": bool(item[21]) if item[21] is not None else None,
                 "pedido": extra_info.get("pedido", ""),
                 "pedido_exiros": extra_info.get("pedido_exiros", ""),
                 "activity": extra_info.get("activity"),
@@ -1121,6 +1188,9 @@ def update_remission_from_api(data, data_token, raw_metadata=None):
         for it in (json.loads(result_ra[16]) if result_ra[16] else [])
     }
     contract_id = _resolve_contract_id(data["metadata"], raw_metadata, result_ra[18])
+    lock_error = _balance_control_lock_error(result_ra, contract_id, data["metadata"])
+    if lock_error:
+        return lock_error, 400
     meta_changes = _diff_history_fields(
         _remission_meta_from_row(result_ra, old_extra_info),
         _remission_meta_from_payload(data["metadata"], extra_info, contract_id=contract_id),
@@ -1275,6 +1345,9 @@ def update_remission_control_table_from_api(data, data_token, raw_metadata=None)
     # Historial resumido de cambios (solo metadata; la tabla de control no maneja items).
     # area/status se conservan del registro previo, por eso no deben marcar cambio.
     contract_id = _resolve_contract_id(data["metadata"], raw_metadata, result_ra[18])
+    lock_error = _balance_control_lock_error(result_ra, contract_id, data["metadata"])
+    if lock_error:
+        return lock_error, 400
     meta_changes = _diff_history_fields(
         _remission_meta_from_row(result_ra, old_extra_info),
         _remission_meta_from_payload(
@@ -1369,11 +1442,12 @@ def update_remission_balance_from_api(data, data_token, raw_metadata=None):
     )
 
     # Valores de columnas dinámicas ({key: value}): merge por llave, null borra,
-    # estricto contra las columnas del control de saldos ACTIVO del contrato.
+    # estricto contra las columnas del control de saldos ACTIVO al que está ligada
+    # la remisión (result_ra[20] = balance_control_id; ya no se deriva del contrato).
     custom_changes = []
     if raw_metadata is not None and "custom_fields" in raw_metadata:
         cf_errors, cf_values = validate_remission_custom_fields(
-            result_ra[18], raw_metadata.get("custom_fields"), data_token
+            result_ra[20], raw_metadata.get("custom_fields"), data_token
         )
         if cf_errors:
             return {"data": None, "msg": "Valores de columnas dinámicas inválidos", "error": cf_errors}, 400
