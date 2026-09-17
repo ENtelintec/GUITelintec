@@ -3,7 +3,7 @@
 El PDF de SOLICITUD DE MATERIAL (`GET /sm/download/pdf/<sm_id>`) pasó de texto
 suelto (labels y columnas por posición fija, sin líneas) a un diseño en
 **cuadrícula** con los nombres de campos y encabezados de columna resaltados en
-**celeste** (`#BDD7EE`, fondo con texto negro Courier-Bold). También corrige el
+**celeste** (`#BDD7EE`, fondo con texto negro en bold — Courier al escribirse, hoy Helvetica). También corrige el
 desborde de valores largos de metadata (p. ej. "Personal Telintec"): ahora el
 valor hace wrap dentro de su celda y la fila crece en alto.
 
@@ -19,8 +19,9 @@ forms  StorageMovSM.py  FileSmPDF       -> reescrito; helpers _sm_* nuevos solo 
 ## Diseño del documento
 
 - **Técnica**: canvas + `pdf.rect()` por celda (estilo `RemissionForms.py`), sin
-  platypus. El wrapping usa `textwrap` con ancho en caracteres derivado del
-  ancho de la celda — fiable porque todo el documento es Courier (monospace).
+  platypus. El wrapping usaba `textwrap` con ancho en caracteres (Courier,
+  monospace); desde [`pdf_tipografia_helvetica_y_cuadricula_remision.md`](pdf_tipografia_helvetica_y_cuadricula_remision.md)
+  la fuente es Helvetica y `_grid_wrap_cell` mide con `wrap_text_width`.
 - **Metadata**: cuadrícula de 4 columnas — 2 pares `label|valor` por fila, los
   10 campos actuales (se conservan "Área Dirigida Telintec" y
   "Área / Ubicación" aunque ambas impriman `location`; decisión explícita del
@@ -63,7 +64,7 @@ attachment podrá cargar más info (fecha, etc.) y pre-llenar la fila.
 ## Helpers nuevos (solo SM)
 
 En [`StorageMovSM.py`](../templates/forms/StorageMovSM.py), prefijo `_sm_`/`*_sm`:
-`_sm_wrap_cell`, `_sm_draw_cell`, `print_metadata_grid_sm`,
+`_grid_wrap_cell`, `_grid_draw_cell` (nacieron como `_sm_*`; se renombraron al volverse genéricos), `print_metadata_grid_sm`,
 `print_items_grid_headers_sm`, `_sm_item_row`, `_sm_item_row_height`,
 `print_deliveries_sign_table_sm`, `sm_deliveries_block_height`; constantes
 `_SM_CELESTE`, `_SM_MARGIN`, `_SM_ITEM_COLS`, `_SM_DELIVERY_COLS` (los anchos de
@@ -97,3 +98,9 @@ Los helpers viejos (`print_metadata`, `print_headers_table_inventory`,
   recibe** (imagen bajada de S3) en su celda; la firma de quien entrega queda en
   blanco. Detalle en
   [`sm_pdf_delivery_signatures.md`](sm_pdf_delivery_signatures.md).
+
+## Notas posteriores
+
+- El formato de diseño de este PDF (canvas + cuadrícula celeste) quedó capturado
+  como skill en [`.claude/skills/pdf-design/`](../.claude/skills/pdf-design/);
+  usarla para cualquier PDF nuevo o cambio de layout.

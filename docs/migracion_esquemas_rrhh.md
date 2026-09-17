@@ -11,7 +11,7 @@
 | **Regla de tasks** | De ahora en adelante, cualquier tabla de tasks se divide **por departamento que asigna**; `quizz_tasks` es la de RRHH |
 | **Corte** | **Vista puente**: `RENAME TABLE` + `CREATE VIEW` con el nombre viejo; el código viejo sigue funcionando y el DDL se desacopla de los deploys. Drop diferido |
 | **Tablas compartidas** | `employees`, `departments`, `users_system` = **núcleo compartido**, se quedan en `sql_telintec`. Moverlas a un hipotético `mod_core` es otra iniciativa, no esta |
-| **Calendario Fase 1** | Viaja **junto con la consolidación de namespaces** `misc`+`rrhh` ([`pendientes.md`](pendientes.md)), en S2 del [`plan_rh_mes.md`](plan_rh_mes.md), como un solo lote |
+| **Calendario Fase 1** | Viaja **junto con la consolidación de namespaces** `misc`+`rrhh` ([`pendientes.md`](pendientes.md)), en S2 del [`plan_rh_mes.md`](planes/archivo/plan_rh_mes.md), como un solo lote |
 | **Fases 2+ (post-mes)** | Las 5 tablas RRHH-privadas en **un solo lote** (un DDL, un barrido, una regresión con la hoja de comprobación). *Actualización 2026-08-07: se adelantó — ver decisiones de la Fase 2 abajo* |
 | **DDL** | Todo DDL se entrega como script en [`scripts_db_handle/`](../scripts_db_handle/) y **lo revisa/ejecuta el usuario**; ningún agente corre DDL |
 

@@ -1,6 +1,6 @@
 # Modelos de encuesta — versionado (clonar, publicar-archiva, migrar pendientes) y candado por tasks
 
-> Pieza 2 del [`plan_mes_2.md`](plan_mes_2.md) (S1, 2026-09-07). Back del **constructor visual de encuestas**: RH necesita "cambiar las preguntas de una encuesta" y "crear una a partir de otra". Sobre el CRUD de [`quizz_models_crud.md`](quizz_models_crud.md) cambian tres cosas: el **candado del template pasa de status a tasks**, aparece el **versionado por clonación** (`replaces`/`replaced_by`, publicar la nueva archiva la vieja) y la **migración de encuestas pendientes** a la versión nueva. **Requiere DDL** ([`scripts_db_handle/quizz_models_versions.sql`](../scripts_db_handle/quizz_models_versions.sql), 2 columnas NULL): sin él, todo `/quizz/models` responde `400` "Unknown column 'replaces'".
+> Pieza 2 del [`plan_mes_2.md`](planes/plan_mes_2.md) (S1, 2026-09-07). Back del **constructor visual de encuestas**: RH necesita "cambiar las preguntas de una encuesta" y "crear una a partir de otra". Sobre el CRUD de [`quizz_models_crud.md`](quizz_models_crud.md) cambian tres cosas: el **candado del template pasa de status a tasks**, aparece el **versionado por clonación** (`replaces`/`replaced_by`, publicar la nueva archiva la vieja) y la **migración de encuestas pendientes** a la versión nueva. **Requiere DDL** ([`scripts_db_handle/quizz_models_versions.sql`](../scripts_db_handle/quizz_models_versions.sql), 2 columnas NULL): sin él, todo `/quizz/models` responde `400` "Unknown column 'replaces'".
 
 ## Qué cambió (4 capas)
 

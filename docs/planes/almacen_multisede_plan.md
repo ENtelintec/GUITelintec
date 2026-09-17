@@ -19,7 +19,7 @@
 | **Visibilidad** | El principal ve el stock de **todas** las sedes (consolidado por producto: principal + por sede + en tránsito). La sede ve **su** stock y además el del principal (solo lectura). Sede↔sede: no (sin transferencias entre sedes en v1) |
 | **Endpoints** | **Namespace nuevo `GUI/api/v1/sucursal`** para el lado sede (patrón CDA: 4 capas nuevas + registro en `app.py`) + **rutas nuevas dentro de `rs_Almacen.py`** para el lado principal (`/transfer*`, `/warehouses`, `/inventory/consolidated`). Los endpoints actuales de `/almacen` no se tocan y siguen significando "sede principal" |
 | **Alcance v1 sede** | Core (movimientos, recepción, inventario, ver principal) + **exports PDF/Excel** de su inventario/movimientos + **dashboard** de sus movimientos. Fuera: reservas, carga Excel, SMs/despacho (→ Pendientes) |
-| **DDL** | Como siempre: script en [`scripts_db_handle/`](../scripts_db_handle/), **lo revisa/ejecuta el usuario** en las 3 BDs; ningún agente corre DDL. No hace falta vista puente: tablas nuevas + columna nueva NULL → el código viejo sigue funcionando, el DDL queda desacoplado del deploy |
+| **DDL** | Como siempre: script en [`scripts_db_handle/`](../../scripts_db_handle/), **lo revisa/ejecuta el usuario** en las 3 BDs; ningún agente corre DDL. No hace falta vista puente: tablas nuevas + columna nueva NULL → el código viejo sigue funcionando, el DDL queda desacoplado del deploy |
 
 ## Modelo de datos (DDL de la Fase 0, esquema `sql_telintec`)
 
@@ -48,7 +48,7 @@ Notas de alcance que se mantienen: el chatbot/tools OpenAI y `available_stock` d
 
 ## Endpoints
 
-**Lado principal — rutas nuevas en [`rs_Almacen.py`](../templates/resources/rs_Almacen.py)** (permiso `almacen`; el CRUD del catálogo, `["administracion", "almacen"]`):
+**Lado principal — rutas nuevas en [`rs_Almacen.py`](../../templates/resources/rs_Almacen.py)** (permiso `almacen`; el CRUD del catálogo, `["administracion", "almacen"]`):
 
 | Ruta | Método | Qué hace |
 |---|---|---|
@@ -78,13 +78,13 @@ Capas nuevas del patrón CDA: `rs_Sucursal.py` + `MD_Sucursal.py` + controller `
 
 ## Fases
 
-1. **Fase 0 — DDL + permiso**: script `scripts_db_handle/almacen_multisede.sql` (3 tablas + ALTER + seed de las 2 sedes) → revisión del usuario → corre en las **3 BDs** (dev/test/prod; `is_tester` comparte test entre versiones, pero columna NULL + tablas nuevas son inocuas para el código viejo). Alta de `App.Department.Sucursal-2` en [`permissions_models.json`](../static/permissions_models.json) — verificando por grep que ningún check existente sea substring de `sucursal-2` ni viceversa.
+1. **Fase 0 — DDL + permiso**: script `scripts_db_handle/almacen_multisede.sql` (3 tablas + ALTER + seed de las 2 sedes) → revisión del usuario → corre en las **3 BDs** (dev/test/prod; `is_tester` comparte test entre versiones, pero columna NULL + tablas nuevas son inocuas para el código viejo). Alta de `App.Department.Sucursal-2` en [`permissions_models.json`](../../static/permissions_models.json) — verificando por grep que ningún check existente sea substring de `sucursal-2` ni viceversa.
 2. **Fase 1 — candado + catálogo**: filtro `id_warehouse IS NULL` en las 5 lecturas existentes del kardex; CRUD de `warehouses_amc`; `GET /inventory/consolidated`.
 3. **Fase 2 — namespace `sucursal`**: movimientos libres (POST/PUT/DELETE con stock por sede), su inventario, ver principal.
 4. **Fase 3 — traslados**: crear/cancelar/listar/detalle (lado `almacen`) + listar/recibir (lado `sucursal`), folio `TRS-####`.
 5. **Fase 4 — extras + de paso**: exports y dashboard de sede (reusando generadores con filtro); **fix del DELETE del principal** (revertir stock) con aviso a operación.
 
-Cada fase: smoke vs BD dev, `pyrefly check`, doc propio con "Contrato mínimo para el front", y actualización de [`pendientes.md`](pendientes.md). El inventario inicial de la sede nueva se captura como entradas libres o un traslado grande (no hay carga Excel de sede en v1).
+Cada fase: smoke vs BD dev, `pyrefly check`, doc propio con "Contrato mínimo para el front", y actualización de [`pendientes.md`](../pendientes.md). El inventario inicial de la sede nueva se captura como entradas libres o un traslado grande (no hay carga Excel de sede en v1).
 
 ## Contrato mínimo para el front (preliminar — el definitivo por fase)
 

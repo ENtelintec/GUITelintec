@@ -1,6 +1,6 @@
 # Nómina — gestión de archivos (reemplazar / eliminar), notificación in-app y extract de XML
 
-> Pieza 1 del [`plan_mes_2.md`](plan_mes_2.md) (S1, 2026-09-07). Completa el flujo de nómina sobre S3 de [`payroll_s3_upload.md`](payroll_s3_upload.md): el front nuevo hace **carga por periodo simulada** (RH asigna archivo→empleado en pantalla e itera el `POST` un archivo por request), y necesitaba **reemplazar**, **eliminar**, **avisar al empleado** dentro del sistema y, opcionalmente, **sugerir** empleado/periodo leyendo el XML del CFDI. `POST /payroll/mail` queda **deprecado**: creaba un borrador en Outlook (Graph) bajando adjuntos de SharePoint, donde ya no viven.
+> Pieza 1 del [`plan_mes_2.md`](planes/plan_mes_2.md) (S1, 2026-09-07). Completa el flujo de nómina sobre S3 de [`payroll_s3_upload.md`](payroll_s3_upload.md): el front nuevo hace **carga por periodo simulada** (RH asigna archivo→empleado en pantalla e itera el `POST` un archivo por request), y necesitaba **reemplazar**, **eliminar**, **avisar al empleado** dentro del sistema y, opcionalmente, **sugerir** empleado/periodo leyendo el XML del CFDI. `POST /payroll/mail` queda **deprecado**: creaba un borrador en Outlook (Graph) bajando adjuntos de SharePoint, donde ya no viven.
 
 ## Qué cambió (4 capas)
 

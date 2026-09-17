@@ -92,3 +92,11 @@ Dos escalados distintos:
   (la paginación por fila lo tolera, pero una fila más alta que la hoja no).
 - Para agregar columnas a la tabla de entregas: editar `_SM_DELIVERY_COLS` (los
   anchos suman `_SM_GRID_WIDTH`) y alinear `_sm_draw_delivery_row` por posición.
+
+## Notas posteriores
+
+- La firma se baja del bucket `S3_ADMIN_BUCKET` (leído de `secrets` en
+  `_build_sm_delivery_files`, [`MD_SM.py`](../templates/resources/midleware/MD_SM.py));
+  la key de S3 es el `file["path"]` del attachment.
+- Pendiente abierto: capturar (front) e incrustar (back) también la **firma de
+  quien entrega**; listado en [`pendientes.md`](pendientes.md).

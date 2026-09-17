@@ -2,7 +2,7 @@
 
 Los tres GET de descarga de CSV del módulo RRHH tronaban con 500
 (`ValueError: too many values to unpack`) — destapados por la comprobación de
-la S1 del plan del mes ([`plan_rh_mes.md`](plan_rh_mes.md)). Corroborados y
+la S1 del plan del mes ([`plan_rh_mes.md`](planes/archivo/plan_rh_mes.md)). Corroborados y
 corregidos el 2026-08-07; la re-prueba del tercero cerró el mismo día **sin más
 hallazgos** (hoja de comprobación cerrada — checkpoint S1 cumplido).
 
@@ -98,4 +98,4 @@ empleados generado end-to-end con el header intacto.
   filas) — evaluar `csv.writer` con `QUOTE_MINIMAL` en los tres.
 - Rutas relativas hardcodeadas (`files/emp.csv`, `files/medical.csv`,
   `files/vacations.csv`) y archivo compartido entre requests concurrentes — ya
-  listado en riesgos de [`plan_rh_mes.md`](plan_rh_mes.md).
+  listado en riesgos de [`plan_rh_mes.md`](planes/archivo/plan_rh_mes.md).

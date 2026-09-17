@@ -1,6 +1,6 @@
 # Campos por módulo en remisiones y endpoint de control de saldos
 
-Implementa los requerimientos de [`campos_remisiones.md`](campos_remisiones.md): cada módulo del front
+Implementa los requerimientos de [`campos_remisiones.md`](../scripts_db_handle/campos_remisiones.md) (archivo local: `scripts_db_handle/` está en `.gitignore`): cada módulo del front
 (REMISIONES, Control de Reportes con sus bloques operaciones/administración, y CONTROL SALDOS) escribe su
 propio set de campos sobre la **misma fila** de `activity_reports`, acumulándolos en la columna JSON
 `extra_info`. Se agrega el endpoint `PUT /remissionBalance` para control de saldos.

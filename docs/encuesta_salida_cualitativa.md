@@ -1,6 +1,6 @@
 # Encuesta de salida (tipo 0) — rúbrica cualitativa y respuestas resueltas a texto
 
-> Arrastre del mes 1 cerrado en S1 del [`plan_mes_2.md`](plan_mes_2.md) (2026-09-07). Era el único tipo del seed sin rúbrica: `GET /quizz/<id>/evaluation` respondía `data: null` ("no hay rúbrica") y la UI de resultados no tenía nada que pintar. El motor ya soportaba `mode: "qualitative"` ([`encuestas_refactor.md`](encuestas_refactor.md)); faltaba **la rúbrica del tipo 0** y que la salida cualitativa fuera legible: el `data_raw` guarda índices (`answer: 1`, `[[0, 1], ...]`), no etiquetas.
+> Arrastre del mes 1 cerrado en S1 del [`plan_mes_2.md`](planes/plan_mes_2.md) (2026-09-07). Era el único tipo del seed sin rúbrica: `GET /quizz/<id>/evaluation` respondía `data: null` ("no hay rúbrica") y la UI de resultados no tenía nada que pintar. El motor ya soportaba `mode: "qualitative"` ([`encuestas_refactor.md`](encuestas_refactor.md)); faltaba **la rúbrica del tipo 0** y que la salida cualitativa fuera legible: el `data_raw` guarda índices (`answer: 1`, `[[0, 1], ...]`), no etiquetas.
 
 ## Qué cambió
 

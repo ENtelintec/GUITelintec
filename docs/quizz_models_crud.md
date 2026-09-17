@@ -129,3 +129,8 @@ Entrada del template: `{ "question": str, "subquestions": [str], "options": [str
 - **[back] PDFs dedicados por encuesta** cuando RH pida un formato específico (el genérico cubre el resumen; el rediseño de Norma 035 sobre `evaluation` sigue pendiente en [`encuestas_refactor.md`](encuestas_refactor.md)).
 - **[back] Editor amigable de rúbricas** (hoy la rúbrica se captura como JSON crudo; si RH la usa seguido, un builder con validación en vivo).
 - **[back] Verificar `GET /quizzes/summary/<type_q>`** con el primer tipo nuevo real que lo necesite (hoy solo garantizado para clima).
+
+## Notas posteriores
+
+- **Alcance**: los modelos nuevos creados por este CRUD son de **respondente único** (una task = una persona); el flujo multi-evaluador queda exclusivo de eva 360 ([`eva360_evaluation.md`](eva360_evaluation.md)).
+- El índice viejo listaba como pendiente "correr DDL + seed en test/prod": cerrado el 2026-08-07 (test con `--test`, prod adelantado al deploy; ver [`pendientes.md`](pendientes.md)).

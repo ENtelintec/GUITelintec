@@ -94,4 +94,4 @@ contra la BD de dev (`get_contract(data_token, 4)` ahora sí devuelve el contrat
   que el front los anexe.
 - Anexar también el reporte de materiales (formato Ternium, distinto al de
   `ar.files`) si se pide como un solo documento combinado — no hay datos hoy en
-  el modelo para generarlo, ver `Docs/tareas_admin_windows.md`.
+  el modelo para generarlo (por definir con administración).

@@ -107,3 +107,7 @@ Sin framework de tests (gitignored): ciclo de vida completo corrido contra la **
 - **Front**: construir las pantallas de las 6 vistas + CRUD (repo del cliente GUI).
 - Recordatorios/notificaciones programadas (vencimiento de póliza, mantenimiento próximo) — hoy solo se notifica alta/baja de vehículo.
 - Otros activos bajo `/cda` (el namespace ya está montado para crecer).
+
+## Notas posteriores
+- Inventario de rutas (dato del índice viejo de `CLAUDE.md`): el namespace expone **16 rutas** en [`rs_CDA.py`](../templates/resources/rs_CDA.py) — `/catalogs`, `/vehicles`, `/vehicle/<id>`, `/vehicle`, `/vehicle/cancel`, `/policy`, `/service`, `/tire`, `/fine`, `/purchase` + las 6 `GET /view/*`.
+- La **baja suave (`cancel`) existe solo para vehículos**; las entidades hijas (pólizas, servicios, llantas, multas, compras) solo tienen `DELETE` físico.

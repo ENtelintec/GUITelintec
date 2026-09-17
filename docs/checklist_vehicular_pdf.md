@@ -14,7 +14,7 @@ este documento usa deliberadamente los **colores del formato oficial**: barras
 azul brillante `#00AFEF` con texto blanco bold (decisión de diseño acordada;
 muestreado del PDF de referencia
 [`scripts_db_handle/FO-CDA-03 R3 Check list vehicular.pdf`](../scripts_db_handle/FO-CDA-03%20R3%20Check%20list%20vehicular.pdf)).
-El resto de la mecánica sí es la del skill `pdf-design` (canvas puro, Courier,
+El resto de la mecánica sí es la del skill `pdf-design` (canvas puro, Helvetica desde [`pdf_tipografia_helvetica_y_cuadricula_remision.md`](pdf_tipografia_helvetica_y_cuadricula_remision.md),
 cuadrícula de `rect`s, wrap por celda, header institucional, pie con folio).
 
 ## Endpoint

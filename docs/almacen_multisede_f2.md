@@ -1,6 +1,6 @@
 # Almacén multisede — Fase 2: namespace `sucursal` (inventario de sede, stock del principal, movimientos libres)
 
-> Fase 2 del [`almacen_multisede_plan.md`](almacen_multisede_plan.md), adelantada de S2 a S1 del [`plan_mes_2.md`](plan_mes_2.md) (2026-09-08). Es lo que el front de la sede consume **primero** según el plan: inventario y movimientos. Sobre la F0/F1 de [`almacen_multisede_f1.md`](almacen_multisede_f1.md): DDL ya corrido en las 3 BDs. Las entradas nacidas de un traslado (F3) ya quedan protegidas desde ahora.
+> Fase 2 del [`almacen_multisede_plan.md`](planes/almacen_multisede_plan.md), adelantada de S2 a S1 del [`plan_mes_2.md`](planes/plan_mes_2.md) (2026-09-08). Es lo que el front de la sede consume **primero** según el plan: inventario y movimientos. Sobre la F0/F1 de [`almacen_multisede_f1.md`](almacen_multisede_f1.md): DDL ya corrido en las 3 BDs. Las entradas nacidas de un traslado (F3) ya quedan protegidas desde ahora.
 
 ## Qué cambió (4 capas nuevas + registro)
 

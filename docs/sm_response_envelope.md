@@ -35,7 +35,7 @@ validación (`*Form`) **no se tocaron**.
 
 ## Marshals eliminados
 
-Se quitaron los 4 `@ns.marshal_with` del archivo porque filtraban claves y
+Se quitaron los 5 `@ns.marshal_with` del archivo porque filtraban claves y
 **ocultaban errores lógicos**. Antes de quitar cada uno se verificó que la consulta
 no expusiera **datetime crudo** (string↔int es aceptable; un datetime sin formatear
 no lo es porque rompe/cambia la serialización JSON):
@@ -169,12 +169,12 @@ Detalles:
 
 - Mantener las **3 claves** `{data, msg, error}` en toda rama nueva (`error: None`
   en éxito).
-- En **éxito** el `msg` ya es español (con ID en escritura, `None` en lectura). El
-  único cambio de éxito que **falta** es sacar el string largo de `data` (ver
-  Pendientes #1); no lo hagas sin coordinar el lockstep del cliente. En **error**:
+- En **éxito** el `msg` es español (con ID en escritura, `None` en lectura) y el
+  `data` de las escrituras ya es la estructura `{"id_sm": N, ...}` (ver sección
+  "`data` estructurado"); el detalle largo va solo a log/notificación. En **error**:
   `data` vacío del tipo del éxito, `msg` corto en español, detalle en `error`.
-- En escritura, exponer el id afectado como `id_sm` (clave hermana). No reusar `data`
-  para el id mientras siga llevando el string de auditoría.
+- En escritura, el id afectado siempre va en `data["id_sm"]`; no volver a meter
+  strings de auditoría en `data`.
 - No re-agregar `@ns.marshal_with` sobre estos métodos: filtra el envelope y oculta
   errores lógicos. Para documentar en swagger, usar un modelo que refleje
   `{data, msg, error}`, no el modelo del request.

@@ -165,7 +165,7 @@ Content-Type: multipart/form-data
   title     = ...                    # opcional
 ```
 
-- `201` → `{"data": {"path": "reportActivity/2025/06/05/459-foto1.jpg", "category": "photo"}, "msg": "Archivo adjuntado correctamente al reporte (ID 459)", "error": null}`
+- `201` → `{"data": {"path": "reportActivity/2025/06/05/459/459-foto1.jpg", "category": "photo", "replaced": false}, "msg": "Archivo adjuntado correctamente al reporte (ID 459)", "error": null}`
 - error → `{"data": null, "msg": "<motivo>", "error": "<detalle|null>"}` con `400`
   (validación), `404` (remisión no existe) o `401` (sin/mal token).
 
@@ -249,7 +249,7 @@ form.append("category", "firma");
   caption bajo la foto y banner en la página del anexo-imagen (solo páginas
   generadas; anexos PDF intactos).
 - Reporte de materiales formato Ternium **generado** (hoy solo se concatena el
-  escaneo subido como `anexo`); no hay datos en el modelo para generarlo, ver
-  `Docs/tareas_admin_windows.md`.
+  escaneo subido como `anexo`); no hay datos en el modelo para generarlo — el
+  modelo está por definir con administración.
 - Incrustar también la firma de "quien entrega" (hoy `firma-realizado` /
   `firma-recibido` cubren autorización 1 y 2).

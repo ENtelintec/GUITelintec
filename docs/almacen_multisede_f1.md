@@ -1,6 +1,6 @@
 # Almacén multisede — Fase 0 (DDL + permiso) y Fase 1 (candado del kardex, catálogo de sedes, consolidado)
 
-> Primeras dos fases del [`almacen_multisede_plan.md`](almacen_multisede_plan.md), S1 del [`plan_mes_2.md`](plan_mes_2.md) (2026-09-07). **F0**: DDL [`scripts_db_handle/almacen_multisede.sql`](../scripts_db_handle/almacen_multisede.sql) (3 tablas + `id_warehouse` en el kardex + seed de 2 sedes; **corrido en dev** por el usuario el mismo día, test/prod pendientes) y permiso `App.Department.Sucursal-2` en [`permissions_models.json`](../static/permissions_models.json). **F1**: candado `id_warehouse IS NULL` en **todas** las lecturas del kardex del principal, CRUD del catálogo de sedes e inventario consolidado por producto. Los endpoints actuales de `/almacen` no cambian de contrato: siguen significando "sede principal".
+> Primeras dos fases del [`almacen_multisede_plan.md`](planes/almacen_multisede_plan.md), S1 del [`plan_mes_2.md`](planes/plan_mes_2.md) (2026-09-07). **F0**: DDL [`scripts_db_handle/almacen_multisede.sql`](../scripts_db_handle/almacen_multisede.sql) (3 tablas + `id_warehouse` en el kardex + seed de 2 sedes; **corrido en dev** por el usuario el mismo día, test/prod corridos el 2026-09-08) y permiso `App.Department.Sucursal-2` en [`permissions_models.json`](../static/permissions_models.json). **F1**: candado `id_warehouse IS NULL` en **todas** las lecturas del kardex del principal, CRUD del catálogo de sedes e inventario consolidado por producto. Los endpoints actuales de `/almacen` no cambian de contrato: siguen significando "sede principal".
 
 ## Qué cambió (4 capas)
 
@@ -92,6 +92,10 @@ Dev (2026-09-07): las 11 lecturas del kardex responden con el filtro (entradas 3
 
 ## Pendientes
 
-- **[back]** DDL en test/prod (F0). F2: namespace `sucursal` (movimientos libres con stock por sede, inventario de sede, ver principal). F3: traslados. F4: exports/dashboard de sede + fix del DELETE del principal (**no entra en el mes 2**).
+- **[back]** ~~DDL en test/prod (F0)~~ hecho 2026-09-08. F2: namespace `sucursal` (movimientos libres con stock por sede, inventario de sede, ver principal). F3: traslados. F4: exports/dashboard de sede + fix del DELETE del principal (**no entra en el mes 2**).
 - **[front]** Consolidado y catálogo de sedes quedan **fuera del mes 2** por decisión del plan (primero inventario/movimientos de sede y recepción); el contrato ya está para cuando entren.
 - **[admin]** Datos reales de la sede 2 (nombre, encargado): capturarlos con `PUT /warehouse` cuando administración los entregue.
+
+## Notas posteriores
+
+- Las 3 tablas que crea el DDL de F0 ([`almacen_multisede.sql`](../scripts_db_handle/almacen_multisede.sql)) son `warehouses_amc` (catálogo de sedes), `warehouse_stock_amc` (stock por sede) y `warehouse_transfers_amc` (traslados, la usa F3); además agrega la columna `product_movements_amc.id_warehouse` (`NULL` = sede principal).

@@ -97,3 +97,7 @@ fila temporal. `pyrefly check` sin errores nuevos en los 4 archivos tocados.
 - `include_items` vive solo en el midleware (la query siempre trae los items agregados); si algún día el
   listado pesa por el `JSON_ARRAYAGG`, la optimización sería otra query sin el join, cuidando que el
   orden de columnas es load-bearing (los call sites indexan por posición, `items` en 16).
+
+## Notas posteriores
+
+- **Pendiente [front]**: pantalla de control de saldos — consumir `GET /remission-0?include_items=0` + filtros y mandar los 4 campos nuevos del `PUT /remissionBalance`. Sigue abierto en [`pendientes.md`](pendientes.md).

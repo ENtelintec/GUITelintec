@@ -47,7 +47,7 @@ Decisiones detrás de la cascada:
 
 Pasteles de formato condicional tipo Excel, misma familia de tintes que el
 celeste `#BDD7EE` de la casa (ver la skill `.claude/skills/pdf-design/`), así que
-el texto negro Courier sigue siendo legible encima:
+el texto negro (hoy Helvetica) sigue siendo legible encima:
 
 ```python
 _SM_VERDE    = (0.78, 0.94, 0.81)  # #C6EFCE  surtido completo

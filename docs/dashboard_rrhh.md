@@ -1,6 +1,6 @@
 # Dashboard de RH — `GET /dashboard/rrhh/summary` + `POST /dashboard/rrhh/series`
 
-> Punto 4 del [`plan_mes_2.md`](plan_mes_2.md) (Anexo D), adelantado de S3 a S1 (2026-09-10). Back completo con contrato; la pantalla del front va en S4. **Fichajes quedan fuera** del dashboard por decisión del usuario (las series `faltas`/`retardos` del anexo se caen; `metric` sigue extensible).
+> Punto 4 del [`plan_mes_2.md`](planes/plan_mes_2.md) (Anexo D), adelantado de S3 a S1 (2026-09-10). Back completo con contrato; la pantalla del front va en S4. **Fichajes quedan fuera** del dashboard por decisión del usuario (las series `faltas`/`retardos` del anexo se caen; `metric` sigue extensible).
 
 ## Qué cambió (4 capas)
 

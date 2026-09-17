@@ -124,3 +124,10 @@ el fix del guard de items vacíos, también contra la fila huérfana real del pr
   no dos endpoints.
 - El `DELETE /remission` ya tolera remisiones sin items; si se agrega otra vía de creación sin items,
   no hace falta tocar nada ahí.
+
+## Notas posteriores
+
+- Pendiente **[front]** (abierto, consolidado en [`pendientes.md`](pendientes.md)): apuntar el
+  payload/map de Control de Reportes a las llaves nuevas (`total_sin_iva_admi`,
+  `remission_sent_date_client`) y decidir qué fecha muestra la columna del bloque Administración
+  (`remission_sent_date` vs `remission_sent_date_client`). Del lado del back no queda nada abierto.

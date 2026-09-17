@@ -56,6 +56,9 @@ Si un key viene vacío o falla la descarga, se omite; si no baja ninguno → 400
 
 - `.env` debe tener `S3_RH_BUCKET` (reiniciar app tras editar `.env`).
 - La clase daemon `UpdaterSharepointNomina` queda sin uso pero no se borró.
-- **Pendiente**: `create_mail_payroll` aún descarga adjuntos desde SharePoint
-  (`download_files_site`); migrarlo a S3 es un cambio aparte. La BD ya guarda
-  el key S3, así que recibirá keys S3 que no existen en SharePoint hasta migrar.
+- ~~**Pendiente**: `create_mail_payroll` aún descarga adjuntos desde SharePoint~~
+  — superseded (2026-09-07): `POST /payroll/mail` queda **deprecado**; lo sustituye
+  `POST /rrhh/payroll/notify` (in-app, correo SES en 2ª etapa). El contrato vigente
+  del `POST /payroll/files/update` (envelope `{data,msg,error}` + reemplazo del
+  objeto anterior) y el `DELETE /payroll/files` están en
+  [`nomina_gestion_archivos_y_notificacion.md`](nomina_gestion_archivos_y_notificacion.md).

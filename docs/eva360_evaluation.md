@@ -2,7 +2,7 @@
 
 > **Actualización 2026-08-07**: la tabla `tasks_gui` ahora es `sql_telintec_mod_rrhh.quizz_tasks` y las rutas `/misc/task/*` y `/misc/download/quizz/*` se movieron a `/rrhh/...` en corte duro — los shapes de este doc siguen válidos, solo cambia el prefijo. Ver [`consolidacion_namespaces_encuestas.md`](consolidacion_namespaces_encuestas.md) y [`migracion_esquemas_rrhh.md`](migracion_esquemas_rrhh.md).
 
-> Segundo incremento del refactor de encuestas (ver [`encuestas_refactor.md`](../Docs/encuestas_refactor.md)). Eva 360 rompe el modelo "una task = una encuesta = una persona": es **una evaluación de una persona compuesta por N cuestionarios idénticos (2-4) que llenan evaluadores distintos** (self | superior | peer | subordinate), más una **task de control** para RH. Todo sobre `tasks_gui` (sin esquema nuevo), ligado por `metadata.evaluation_id` (UUID generado por el back). Puramente numérico: 9 competencias × 1-5 = 45 máx → escalado a 100; **sin niveles/semáforo** (a diferencia de Norma 035).
+> Segundo incremento del refactor de encuestas (ver [`encuestas_refactor.md`](encuestas_refactor.md)). Eva 360 rompe el modelo "una task = una encuesta = una persona": es **una evaluación de una persona compuesta por N cuestionarios idénticos (2-4) que llenan evaluadores distintos** (self | superior | peer | subordinate), más una **task de control** para RH. Todo sobre `tasks_gui` (sin esquema nuevo), ligado por `metadata.evaluation_id` (UUID generado por el back). Puramente numérico: 9 competencias × 1-5 = 45 máx → escalado a 100; **sin niveles/semáforo** (a diferencia de Norma 035).
 
 ## Modelo
 
@@ -101,6 +101,6 @@ Sin framework de tests (gitignored): validado offline con el motor real y el mid
 
 ## Pendientes
 - ~~**Clima laboral (tipo 3)**~~ — hecho: rúbrica % positivo + agregado organizacional en [`clima_laboral_rubrica.md`](clima_laboral_rubrica.md).
-- **Salida (tipo 0)** — rúbrica cualitativa (`mode:"qualitative"`).
+- ~~**Salida (tipo 0)** — rúbrica cualitativa (`mode:"qualitative"`)~~ — hecho en [`encuesta_salida_cualitativa.md`](encuesta_salida_cualitativa.md).
 - **PDF de eva 360** — `Eva360.py` sigue imprimiendo el cuestionario individual; falta un reporte del proceso agregado (radar/tabla comparativa, skill `pdf-design`).
 - El fix de la Q12 duplicada asume corte duro; si apareciera una task eva 360 vieja con 14 preguntas, su `data_raw` tendría la Comunicación en la llave 13 (la rúbrica la leería en 12) — no hay tasks así en dev/prod.
