@@ -105,7 +105,7 @@ Sin framework de tests (gitignored): ciclo de vida completo corrido contra la **
 
 ## Pendientes
 - **Front**: construir las pantallas de las 6 vistas + CRUD (repo del cliente GUI).
-- Recordatorios/notificaciones programadas (vencimiento de póliza, mantenimiento próximo) — hoy solo se notifica alta/baja de vehículo.
+- ~~Recordatorios/notificaciones programadas~~ — hecho (2026-09-17): `GET /cda/alerts` + barrido diario `GET /cda/notifications`, y fotos del expediente (`/cda/vehicle/photo*`) → [`cda_alertas_y_fotos.md`](cda_alertas_y_fotos.md).
 - Otros activos bajo `/cda` (el namespace ya está montado para crecer).
 
 ## Notas posteriores

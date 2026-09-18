@@ -186,30 +186,3 @@ def share_file_nomina_emp(emp_id, url_shrpt, file_url, email_sender):
 def print_progress(range_pos):
     # type: (int) -> None
     print("{0} bytes uploaded".format(range_pos))
-
-
-def create_mail_draft_with_attachment(
-    emp_id, from_mail, subject, body, file_paths, to_recipients=None
-):
-    graph_client, code = connect_graph_client()
-    if code == 400:
-        return None, 400
-    to_recipients = to_recipients if to_recipients is not None else []
-    email_subject = (
-        subject if subject is not None else f"Automatic Subject for {emp_id}"
-    )
-    email_body = body
-    mail = graph_client.users[from_mail].messages.add(
-        email_subject, email_body, to_recipients
-    )
-    for filepath in file_paths:
-        with open(filepath, "rb") as file:
-            content = file.read()
-            mail.add_file_attachment(
-                os.path.basename(filepath),
-                base64_content=base64.b64encode(content).decode("utf-8"),
-            )
-            # mail.add_file_attachment(os.path.basename(filepath), base64_content=base64.b64encode(content).decode("utf-8"),
-            #                          content_type="application/pdf" if ".pdf" in filepath else "application/xml")
-    response = mail.execute_query()
-    return response, 200

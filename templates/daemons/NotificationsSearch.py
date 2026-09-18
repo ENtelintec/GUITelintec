@@ -9,6 +9,7 @@ from templates.Functions_Utils import (
     update_flag_daemons,
 )
 from templates.resources.midleware.Functions_midleware_RRHH import fetch_medicals
+from templates.resources.midleware.MD_CDA import build_cda_alerts, build_cda_notification_lines
 
 
 def build_medical_notifications(items: list) -> list[str]:
@@ -50,6 +51,19 @@ def MedicalNotifications(data_token):
     )
 
 
+def CDANotifications(data_token):
+    """Barrido diario de CDA: una notificacion de sistema a sgi/administracion con
+    una linea por alerta (polizas, pagos, mantenimiento, refrendo, llantas)."""
+    alerts, _errors = build_cda_alerts(data_token)
+    lines = build_cda_notification_lines(alerts)
+    if not lines:
+        return True
+    msg = "Notificaciones de sistema — Control de vehículos\n" + "\n".join(lines)
+    return create_notification_permission_notGUI(
+        msg, data_token, ["sgi", "administracion"], "Notificaciones de sistema", 0, 0
+    )
+
+
 class NotificationsSearch(threading.Thread):
     def __init__(self, data_token, type_n="medical"):
         super().__init__()
@@ -65,6 +79,11 @@ class NotificationsSearch(threading.Thread):
                     # Si la búsqueda truena, la bandera debe volver a True o el
                     # endpoint respondería "ya se está realizando" para siempre.
                     update_flag_daemons(flag_medical=True)
+            case "cda":
+                try:
+                    CDANotifications(self.data_token)
+                finally:
+                    update_flag_daemons(flag_cda=True)
             case "payroll":
                 print("searching for payroll notifications")
             case _:

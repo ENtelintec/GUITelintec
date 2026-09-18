@@ -6,6 +6,7 @@ __date__ = "$ 28/jun./2024  at 16:28 $"
 
 import json
 import os
+import re
 import tempfile
 import uuid
 import zipfile
@@ -42,6 +43,7 @@ from templates.controllers.employees.em_controller import (
 )
 from templates.controllers.employees.employees_controller import (
     find_employee_for_payroll,
+    get_employee_info,
     new_employee,
     terminate_employee_db,
     update_employee,
@@ -66,11 +68,11 @@ from templates.controllers.payroll.payroll_controller import (
     update_payroll_employees,
 )
 from templates.Functions_Sharepoint import (
-    create_mail_draft_with_attachment,
     download_files_site,
     get_files_site,
 )
 from templates.Functions_Utils import create_notification_permission
+from templates.misc.Functions_Mail import is_ses_configured, send_email_ses
 from templates.misc.Functions_AuxFiles import (
     get_data_xml_file_nomina,
     get_events_op_date,
@@ -1331,8 +1333,10 @@ def notify_payroll_file_api(data, data_token):
     receiver_id = emp_id (la ve en GET /misc/notifications/employee/<id>&0 y
     la baja con POST /common/payroll/employee/file). Sin usuario en el
     sistema no hay a quien notificar -> 200 con notified False y motivo.
-    `channels`: v1 solo 'app'; 'email' se acepta y queda reportado como
-    pendiente (2a etapa: correo por SES), sin cambiar el contrato."""
+    `channels`: 'app' (in-app) y 'email' (SES, Docs/nomina_correo_ses.md:
+    correo al employees.email con el pdf/xml adjuntos desde S3). Sin
+    SES_SENDER en .env el correo se reporta en channels_pending; sin email
+    del empleado o con fallo de SES/S3, en channels_failed con motivo."""
     period, err = _normalize_payroll_period(data)
     if period is None:
         return {"data": None, "msg": err, "error": None}, 400
@@ -1395,9 +1399,18 @@ def notify_payroll_file_api(data, data_token):
             sent.append("app")
         else:
             reason = f"El empleado {emp_id} no tiene usuario en el sistema: no puede recibir la notificación"
+    failed = []
+    email_to = None
     if "email" in channels:
-        pending.append("email")  # 2a etapa (SES); hoy solo se reporta
-    notified = "app" in sent
+        if not is_ses_configured():
+            pending.append("email")
+        else:
+            email_to, err_mail = _send_payroll_email(emp_id, key, month, year, entry, message, data_token)
+            if err_mail:
+                failed.append({"channel": "email", "reason": err_mail})
+            else:
+                sent.append("email")
+    notified = bool(sent)
     msg = (
         f"Empleado {emp_id} notificado de la nómina {key} ({month}/{year})"
         if notified
@@ -1406,7 +1419,9 @@ def notify_payroll_file_api(data, data_token):
     if reason:
         msg += f". {reason}"
     if pending:
-        msg += f". Canal(es) pendiente(s) de implementar: {', '.join(pending)}"
+        msg += f". Canal(es) pendiente(s) de configurar: {', '.join(pending)} (falta SES_SENDER en .env)"
+    if failed:
+        msg += ". " + "; ".join(f"{f['channel']}: {f['reason']}" for f in failed)
     write_log_file(log_file_rh, msg, data_token)
     return {
         "data": {
@@ -1419,10 +1434,54 @@ def notify_payroll_file_api(data, data_token):
             "reason": reason,
             "channels_sent": sent,
             "channels_pending": pending,
+            "channels_failed": failed,
+            "email_to": email_to,
         },
         "msg": msg,
         "error": None,
     }, 201
+
+
+def _first_email(raw) -> str | None:
+    """employees.email viene sucio en la BD ('X@GMAIL.COM,', ',', 'a@x; b@y'):
+    primer token con '@', en minusculas; None si no hay ninguno."""
+    for token in re.split(r"[,;\s]+", str(raw or "")):
+        token = token.strip().strip(",;").lower()
+        if "@" in token and "." in token.split("@")[-1]:
+            return token
+    return None
+
+
+def _send_payroll_email(emp_id, key, month, year, entry: dict, message: str, data_token):
+    """Correo SES al empleado con el pdf/xml del recibo adjuntos (leidos de
+    S3_RH_BUCKET). -> (email_to, error | None). Nunca truena."""
+    flag, error, row, _cols = get_employee_info(emp_id, data_token)
+    if not flag:
+        return None, f"no se pudo consultar el empleado ({error})"
+    email_to = _first_email(row[7] if isinstance(row, (list, tuple)) and len(row) > 7 else None)  # pyrefly: ignore
+    if not email_to:
+        return None, f"el empleado {emp_id} no tiene correo registrado"
+    attachments = []
+    s3_client = boto3.client("s3")
+    bucket = str(secrets.get("S3_RH_BUCKET"))
+    for kind in ("pdf", "xml"):
+        s3_key = entry.get(kind)
+        if not s3_key:
+            continue
+        try:
+            obj = s3_client.get_object(Bucket=bucket, Key=s3_key)
+            attachments.append((os.path.basename(s3_key), obj["Body"].read()))
+        except (NoCredentialsError, ClientError, BotoCoreError) as e:
+            return email_to, f"no se pudo leer {kind} de S3 ({s3_key}): {e}"
+    if not attachments:
+        return email_to, "sin archivos que adjuntar"
+    subject = f"Recibo de nómina {key} ({month}/{year}) — Telintec"
+    body = (
+        f"{message}\n\nSe adjuntan los archivos de tu recibo de nómina {key} ({month}/{year}).\n"
+        "Este correo se genera automáticamente desde el sistema de Telintec; no respondas a este mensaje."
+    )
+    ok, error, _message_id = send_email_ses([email_to], subject, body, attachments)
+    return email_to, (None if ok else error)
 
 
 def extract_payroll_xml_api(data, data_token):
@@ -1474,32 +1533,6 @@ def extract_payroll_xml_api(data, data_token):
         + (f" -> empleado sugerido {out['emp_id_sugerido']}" if out["emp_id_sugerido"] else " (sin coincidencia de empleado)")
     )
     return {"data": out, "msg": msg, "error": None}, 200
-
-
-def create_mail_payroll(data):
-    """DEPRECADO (2026-09-07): crea un borrador en Outlook via Graph bajando
-    los adjuntos de SharePoint, donde ya no viven (nomina migro a S3). Lo
-    sustituye notify_payroll_file_api (in-app) y, en 2a etapa, el correo por
-    SES. Se conserva hasta retirar la ruta; el front no debe llamarlo."""
-    destinatarios = data["to"].split(";")
-    asunto = data["subject"]
-    cuerpo = data["body"]
-    _from = data["from_"]
-    settings = json.load(open(filepath_settings, "r"))
-    url_shrpt = settings["gui"]["RRHH"]["url_shrpt"]
-    folder_rrhh = settings["gui"]["RRHH"]["folder_rrhh"]
-    download_path_xml, code = download_files_site(url_shrpt + folder_rrhh, data["xml"])
-    download_path_pdf, code = download_files_site(url_shrpt + folder_rrhh, data["pdf"])
-    temp_files = [download_path_xml, download_path_pdf]
-    response, code = create_mail_draft_with_attachment(
-        data["emp_id"],
-        _from,
-        asunto,
-        cuerpo,
-        temp_files,
-        to_recipients=destinatarios,
-    )
-    return code, response
 
 
 def update_payroll_list_employees(data_token):

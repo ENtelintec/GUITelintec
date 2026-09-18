@@ -2,13 +2,15 @@
 __author__ = "Edisson Naula"
 __date__ = "$ 14/feb./2024  at 15:54 $"
 
-import json
 import textwrap
+import time
 
 from reportlab.pdfbase.pdfmetrics import stringWidth
 from reportlab.pdfgen import canvas
 
-from static.constants import filepath_settings
+from templates.controllers.sgi.iso_formats_controller import get_iso_format_headers
+from templates.misc.Functions_Files import write_log_file
+from static.constants import log_file_sgi_formats
 
 a4_x = 595.27
 a4_y = 841.89
@@ -20,6 +22,44 @@ image_logo = "img/logo_docs.png"
 # wrap_text_width), no con conteo de caracteres.
 FONT_REGULAR = "Helvetica"
 FONT_BOLD = "Helvetica-Bold"
+
+# --- Codigo / vigencia del formato ISO en el encabezado -------------------------
+# Antes venia de files/settings.json["formats"]; desde Docs/iso_formats_crud.md se
+# lee del catalogo sql_telintec_mod_admin.iso_formats (el CRUD de SGI lo edita).
+# Excepcion deliberada a "forms no tocan BD": create_header_* no recibe data_token
+# (12 call sites), asi que se lee sin token (BD del environment) con cache de
+# modulo; el CRUD la invalida al escribir. ISO_FORM_IDS_IN_CODE = ids que los PDFs
+# piden por literal (iso_form=N): no se pueden borrar del catalogo, solo retirar.
+ISO_FORM_IDS_IN_CODE = frozenset({1, 2, 3, 4, 5, 6, 7, 8})
+_ISO_CACHE_TTL = 300  # segundos
+_iso_cache: dict = {"at": 0.0, "rows": {}}
+
+
+def invalidate_iso_formats_cache():
+    _iso_cache["at"] = 0.0
+
+
+def iso_format_header(iso_form) -> tuple[str, str]:
+    """('FO-ALM-01 R1', '2024-06-14') para el id; ('', '') si no existe. Con la BD
+    caida reusa la ultima lectura buena y, si no hay, deja el encabezado en blanco
+    (el PDF sale igual) y lo anota en el log."""
+    now = time.time()
+    if now - _iso_cache["at"] > _ISO_CACHE_TTL:
+        flag, error, rows = get_iso_format_headers()
+        if flag:
+            _iso_cache["rows"] = {
+                int(r[0]): (f"{r[1]} {r[2]}".strip(), r[3].isoformat() if hasattr(r[3], "isoformat") else (str(r[3]) if r[3] else ""))
+                for r in rows
+            }
+            _iso_cache["at"] = now
+        else:
+            write_log_file(log_file_sgi_formats, f"iso_formats no disponible para el encabezado del PDF ({error}); se usa cache")
+            _iso_cache["at"] = now - _ISO_CACHE_TTL + 30  # reintenta en 30 s
+    try:
+        return _iso_cache["rows"].get(int(iso_form), ("", ""))
+    except (ValueError, TypeError):
+        return "", ""
+
 
 
 def wrap_text_width(value, width_pt, font_size, font=FONT_REGULAR):
@@ -247,18 +287,16 @@ def create_header_telintec(
             master.drawCentredString(x_title, y_title, line)
             y_title -= title_height
     master.setFont(FONT_REGULAR, codes_h_height)
-    settings = json.load(open(filepath_settings, "r"))
-    dict_codes_forms = settings["formats"]["dict_codes_forms"]
+    code_label, emission_date = iso_format_header(iso_form)
     master.drawString(
         page_x - codes_width - padx,
         position_header_y + height_logo - codes_h_height,
-        f"Codigo: {dict_codes_forms[str(iso_form)]}",
+        f"Codigo: {code_label}",
     )
-    dict_dates = settings["formats"]["dates_emision"]
     master.drawString(
         page_x - codes_width - padx,
         position_header_y,
-        f"I. Vigencia: {dict_dates[str(iso_form)]}",
+        f"I. Vigencia: {emission_date}",
     )
 
 
@@ -367,19 +405,17 @@ def create_header_materials(
             master.drawCentredString(x_title, y_title, line)
             y_title -= title_height
     master.setFont(FONT_REGULAR, codes_h_height)
-    settings = json.load(open(filepath_settings, "r"))
-    dict_codes_forms = settings["formats"]["dict_codes_forms"]
+    code_label, emission_date = iso_format_header(type_form)
     master.drawString(
         page_x - codes_width - padx,
         position_header_y + height_logo - codes_h_height,
-        f"Codigo: {dict_codes_forms[str(type_form)]}",
+        f"Codigo: {code_label}",
     )
-    dict_dates = settings["formats"]["dates_emision"]
     master.setFont(FONT_REGULAR, 8)
     master.drawString(
         page_x - codes_width - padx * 1.2,
         position_header_y,
-        f"Inicio de Vigencia: {dict_dates[str(type_form)]}",
+        f"Inicio de Vigencia: {emission_date}",
     )
     # --------------------------------datos quien devuelve------------------------------------
     font_size = 10

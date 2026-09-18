@@ -575,3 +575,86 @@ class VehicleVoucherUploadAttachmentForm(Form):
 class VehicleVoucherDownloadAttachmentForm(Form):
     id_voucher = IntegerField("id_voucher", [InputRequired()])
     filename = StringField("filename", [InputRequired()])
+
+
+# =====================================================================
+# Formatos ISO (catálogo de SGI) — Docs/iso_formats_crud.md
+# Ruta base: /GUI/api/v1/sgi/format(s). `config` es un dict libre (WTForms no
+# modela dicts): los forms validan los escalares y el midleware lee `config`
+# del JSON crudo (ns.payload) y lo valida por `kind`.
+# =====================================================================
+iso_format_config_model = api.model(
+    "IsoFormatConfig",
+    {
+        "kind": fields.String(description="Tipo de config; 'balance_control' se valida estructuralmente", example="balance_control"),
+        "columns": fields.List(fields.Raw, description="[{key,label,value_type,source_key?,is_sum?}]"),
+        "header_fields": fields.List(fields.Raw, description="[{key,label,value_type,required?,options?}]"),
+    },
+)
+
+iso_format_post_model = api.model(
+    "IsoFormatPost",
+    {
+        "code": fields.String(required=True, description="Código ISO sin revisión (se guarda en mayúsculas)", example="FO-CXC-12"),
+        "revision": fields.String(required=False, description="Revisión (default R0)", example="R0"),
+        "name": fields.String(required=True, description="Nombre del formato", example="Control Saldo Servicios"),
+        "department": fields.String(required=False, description="rrhh|almacen|presales|sgi|administracion|cda|sm|compras", example="administracion"),
+        "emission_date": fields.String(required=False, description="Inicio de vigencia YYYY-MM-DD", example="2026-09-17"),
+        "config": fields.Nested(iso_format_config_model, required=False, allow_null=True, description="null = formato solo-PDF"),
+    },
+)
+
+iso_format_put_model = api.model(
+    "IsoFormatPut",
+    {
+        "id": fields.Integer(required=True, description="ID del formato", example=9),
+        "code": fields.String(required=False),
+        "revision": fields.String(required=False, description="Nueva revisión: se sube EN LA MISMA FILA (la anterior queda en history)", example="R3"),
+        "name": fields.String(required=False),
+        "department": fields.String(required=False),
+        "emission_date": fields.String(required=False, example="2026-09-17"),
+        "config": fields.Nested(iso_format_config_model, required=False, allow_null=True, description="Reemplaza el config completo; null lo quita (400 si hay controles de saldos)"),
+    },
+)
+
+iso_format_status_model = api.model(
+    "IsoFormatStatus",
+    {
+        "id": fields.Integer(required=True, example=9),
+        "is_active": fields.Integer(required=True, description="0 = retirar (baja suave), 1 = reactivar", example=0),
+        "comment": fields.String(required=False, example="Sustituido por FO-CXC-12"),
+    },
+)
+
+iso_format_delete_model = api.model(
+    "IsoFormatDelete",
+    {"id": fields.Integer(required=True, description="Borrado físico: solo sin controles de saldos y si no está atado a un PDF", example=14)},
+)
+
+
+class IsoFormatPostForm(Form):
+    code = StringField("code", [InputRequired(message="code requerido")])
+    revision = StringField("revision", [], default="R0")
+    name = StringField("name", [InputRequired(message="name requerido")])
+    department = StringField("department", [], default="")
+    emission_date = StringField("emission_date", [], default="")
+
+
+class IsoFormatPutForm(Form):
+    id = IntegerField("id", [InputRequired(message="id requerido")])
+    code = StringField("code", [], default="")
+    revision = StringField("revision", [], default="")
+    name = StringField("name", [], default="")
+    department = StringField("department", [], default="")
+    emission_date = StringField("emission_date", [], default="")
+
+
+class IsoFormatStatusForm(Form):
+    id = IntegerField("id", [InputRequired(message="id requerido")])
+    # Sin InputRequired: WTForms trata 0 como vacío; AnyOf rechaza None con el mismo mensaje.
+    is_active = IntegerField("is_active", [validators.AnyOf([0, 1], message="is_active debe ser 0 o 1")], default=None)
+    comment = StringField("comment", [], default="")
+
+
+class IsoFormatDeleteForm(Form):
+    id = IntegerField("id", [InputRequired(message="id requerido")])

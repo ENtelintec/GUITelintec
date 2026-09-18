@@ -40,33 +40,6 @@ update_files_parser.add_argument(
     help="Identificador de la nomina (agrupa pdf y xml)",
 )
 
-create_mail_model = api.model(
-    "CreateMailModel",
-    {
-        "to": fields.String(
-            required=True, description="The email to send", example="example@gmail.com"
-        ),
-        "subject": fields.String(
-            required=True, description="The subject of the email", example="Subject"
-        ),
-        "body": fields.String(
-            required=True, description="The body of the email", example="Body"
-        ),
-        "emp_id": fields.Integer(
-            required=True, description="The employee id", example=0
-        ),
-        "from_": fields.String(
-            required=True, description="The email from", example="example@gmail.com"
-        ),
-        "xml": fields.String(
-            required=True, description="The xml file", example="xml_url"
-        ),
-        "pdf": fields.String(
-            required=True, description="The pdf file", example="pdf_url"
-        ),
-    },
-)
-
 update_data_payroll_model = api.model(
     "UpdateDataPayroll",
     {
@@ -135,16 +108,6 @@ notify_payroll_model = api.model(
         ),
     },
 )
-
-
-class CreateMailForm(Form):
-    to = StringField("to", validators=[InputRequired()])
-    subject = StringField("subject", validators=[InputRequired()])
-    body = StringField("body", validators=[InputRequired()])
-    emp_id = StringField("emp_id", validators=[InputRequired()])
-    from_ = StringField("from_", validators=[InputRequired()])
-    xml = StringField("xml", validators=[InputRequired()])
-    pdf = StringField("pdf", validators=[InputRequired()])
 
 
 class UpdateDataPayrollForm(Form):

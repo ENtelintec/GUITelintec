@@ -21,7 +21,9 @@ Reglas:
   * Campos propios del formato viven en extra_info del control y se validan
     contra iso_formats.config.header_fields (llave declarada, tipo, opciones).
   * contracted_amount solo se fija en el POST (movimiento inicial); el PUT lo
-    rechaza. Inyecciones/ajustes llegan con su endpoint (pendiente F2).
+    rechaza. Despues solo se mueve con POST /balanceControl/movement (tipo 1
+    INYECCION > 0 o 2 AJUSTE != 0, saldo resultante nunca < 0), con bloqueo
+    optimista sobre el monto leido (409 si otro movimiento gano la carrera).
   * custom_fields: [{key, label, value_type, comment}], orden = orden de columnas;
     key unica y sin chocar con columnas/campos del formato. Los VALORES por
     remision viven en activity_reports.extra_info.custom_fields (PUT /remissionBalance).
@@ -65,6 +67,7 @@ from templates.controllers.purchases.balance_control_controller import (
     set_active_balance_control,
     update_balance_control_custom_fields,
     update_balance_control_header,
+    update_balance_control_amount_optimistic,
     update_balance_control_history,
 )
 from templates.Functions_Utils import create_notification_permission
@@ -922,6 +925,136 @@ def cancel_balance_control_from_api(data, data_token):
     create_notification_permission(msg, data_token, _PERM_NOTIFY, "Control de saldos", user or 0, 0)
     write_log_file(log_file_admin_collecions, msg, data_token)
     return {"data": {"id_control": id_control}, "msg": msg, "error": None}, 200
+
+
+# --- Movimientos de saldo: POST /balanceControl/movement ----------------------------
+def _money(value) -> Decimal:
+    """Decimal a 2 decimales (contracted_amount es DECIMAL(15,2))."""
+    return Decimal(str(value)).quantize(Decimal("0.01"))
+
+
+@_api_guard
+def create_balance_movement_from_api(data, data_token):
+    """Inyeccion (1) o ajuste (2) de saldo sobre un control ACTIVO. Nunca toca
+    movimientos previos: UPDATE optimista del monto de la cabecera + INSERT del
+    movimiento; si el INSERT falla se revierte el monto (best-effort)."""
+    now = _now()
+    timestamp = now.strftime(format_timestamps)
+    user = data_token.get("emp_id")
+    user_name = data_token.get("name")
+    id_control = _resolve_id(data)
+    if not id_control:
+        return {"data": None, "msg": "Falta el id del control", "error": "id_control requerido"}, 400
+    control, _fmt = _load_control(id_control, data_token)
+    if int(control.get("is_active") or 0) == 0:
+        return {"data": None, "msg": f"El control está cancelado (ID {id_control}); no admite movimientos", "error": "Control cancelado"}, 400
+
+    errors = []
+    mov_type = data.get("type")
+    try:
+        mov_type = int(mov_type)
+    except (ValueError, TypeError):
+        mov_type = -1
+    if mov_type not in (1, 2):
+        errors.append("type debe ser 1 (INYECCION) o 2 (AJUSTE)")
+    amount = Decimal("0")
+    if data.get("amount") is None:
+        errors.append("amount requerido")
+    else:
+        try:
+            amount = _money(data.get("amount"))
+        except (ValueError, TypeError, ArithmeticError):
+            errors.append("amount debe ser numérico")
+    if mov_type == 1 and amount <= 0:
+        errors.append("una INYECCION debe tener amount > 0")
+    if mov_type == 2 and amount == 0:
+        errors.append("un AJUSTE debe tener amount distinto de 0 (negativo para restar)")
+    ok, movement_date, err = coerce_value(data.get("movement_date"), "date")
+    if not ok:
+        errors.append(f"movement_date: {err}")
+    movement_date = movement_date or now.strftime("%Y-%m-%d")
+    previous = _money(control.get("contracted_amount") or 0)
+    expected = data.get("expected_balance")
+    if expected is not None and expected != "":
+        try:
+            if _money(expected) != previous:
+                return {
+                    "data": {"id_control": id_control, "current_balance": float(previous)},
+                    "msg": f"El saldo del control cambió (actual {previous}); recarga y vuelve a intentar",
+                    "error": "expected_balance no coincide con el saldo actual",
+                }, 409
+        except (ValueError, TypeError, ArithmeticError):
+            errors.append("expected_balance debe ser numérico")
+    resulting = previous + amount
+    if resulting < 0 and not errors:
+        errors.append(f"el saldo resultante no puede ser negativo (actual {previous}, movimiento {amount})")
+    if errors:
+        return {"data": None, "msg": "Movimiento inválido", "error": errors}, 400
+
+    label = MOVEMENT_TYPES[mov_type]
+    reason = (data.get("reason") or "").strip() or None
+    document = (data.get("document") or "").strip() or None
+    history = control.get("history") or []
+    history.append({
+        "user": user,
+        "action": f"Movimiento de saldo ({label})",
+        "date": timestamp,
+        "comment": f"{previous} -> {resulting} (monto {amount})" + (f"; {reason}" if reason else ""),
+    })
+    # 1) Cabecera con bloqueo optimista (0 filas = carrera perdida o cancelado en medio)
+    flag, error, rows = update_balance_control_amount_optimistic(
+        id_control, str(resulting), str(previous), history, data_token
+    )
+    if not flag:
+        return {"data": None, "msg": "No se pudo actualizar el saldo del control", "error": error}, 400
+    if not rows:
+        return {
+            "data": {"id_control": id_control},
+            "msg": f"El saldo del control cambió mientras se registraba el movimiento (ID {id_control}); recarga y vuelve a intentar",
+            "error": "Conflicto de concurrencia sobre contracted_amount",
+        }, 409
+    # 2) Movimiento (inmutable). Si falla, se regresa el monto.
+    flag, error, id_movement = insert_balance_control_movement({
+        "id_control": id_control,
+        "type": mov_type,
+        "movement_date": movement_date,
+        "amount": str(amount),
+        "previous_balance": str(previous),
+        "resulting_balance": str(resulting),
+        "user_id": user,
+        "user_name": user_name,
+        "reason": reason,
+        "document": document,
+        "timestamp": timestamp,
+        "extra_info": data.get("extra_info") if isinstance(data.get("extra_info"), dict) else {},
+    }, data_token)
+    if not flag:
+        history.pop()
+        flag_r, error_r, _ = update_balance_control_amount_optimistic(
+            id_control, str(previous), str(resulting), history, data_token
+        )
+        detail = error if flag_r else f"{error}; y no se pudo revertir el monto ({error_r})"
+        write_log_file(log_file_admin_collecions, f"Movimiento de saldo fallido en control {id_control}: {detail}", data_token)
+        return {"data": None, "msg": "No se pudo registrar el movimiento; el saldo no cambió", "error": detail}, 400
+
+    msg = f"{label} registrada en el control (ID {id_control}): saldo {previous} -> {resulting} (movimiento ID {id_movement})"
+    create_notification_permission(msg, data_token, _PERM_NOTIFY, "Control de saldos", user or 0, 0)
+    write_log_file(log_file_admin_collecions, msg, data_token)
+    return {
+        "data": {
+            "id_control": id_control,
+            "id_movement": id_movement,
+            "type": mov_type,
+            "type_label": label,
+            "movement_date": movement_date,
+            "amount": float(amount),
+            "previous_balance": float(previous),
+            "resulting_balance": float(resulting),
+            "contracted_amount": float(resulting),
+        },
+        "msg": msg,
+        "error": None,
+    }, 201
 
 
 # --- Membresia: PUT /balanceControl/remissions (add / remove) ------------------------

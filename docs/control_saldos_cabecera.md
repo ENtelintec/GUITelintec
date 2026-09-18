@@ -210,15 +210,14 @@ Se revisó toda la documentación de control de saldos (back: `remission_module_
 - **Columna fija nueva en la tabla de un formato**: `config.columns` (+ `source_key` a una llave que `GET /remission--1` exponga; si no existe, agregarla a `_GET_EXTRA_*_FIELDS` de `MD_Admin_Collections`).
 - **Formato nuevo de saldos**: fila en `iso_formats` con `config.kind = "balance_control"`; el catálogo lo expone solo.
 - **`value_type` nuevo**: `VALUE_TYPES` en midleware **y** modelos + rama en `coerce_value`.
-- **Inyección de saldo (F2)**: `insert_balance_control_movement` con `type` 1/2 + `UPDATE balance_controls SET contracted_amount = %s WHERE id_control = %s AND contracted_amount = %s` (bloqueo optimista: `previous_balance` leído antes; 0 filas → 409 y reintentar). Nunca UPDATE/DELETE sobre movimientos.
-- **`iso_form` de los PDFs**: `PDFGenerator` sigue leyendo `files/settings.json["formats"]`; los ids 1..8 de `iso_formats` son idénticos justo para migrarlo sin re-mapear.
+- **Inyección de saldo (F2)**: hecha en [`control_saldos_movimientos.md`](control_saldos_movimientos.md) (`POST /balanceControl/movement`, `update_balance_control_amount_optimistic`). Nunca UPDATE/DELETE sobre movimientos.
+- **`iso_form` de los PDFs**: desde [`iso_formats_crud.md`](iso_formats_crud.md) `PDFGenerator` lee `iso_formats` (caché 5 min); `settings.json["formats"]` ya no existe.
 
 ## Pendientes
 
 - **[back] DDL en test y prod** (`scripts_db_handle/control_saldos.sql`, con o sin el bloque de FKs según decida el usuario).
 - **[front] Retirar la pantalla vieja** `administracion/control-saldos/ControlSaldos.tsx` (`/dashboard/administracion/control-saldos`, llama a `/logs` inexistente y edita los campos legacy de `contracts.metadata`); usar `contracted_amount`/`start_date`/`end_date` del control en el resumen (en vez de Σ partidas + catálogo); conciliar `CONTRACT_CONFIG` (campos extra por contrato, lado operaciones) con `config.columns` de los formatos.
 - **[front] Enganchar `confirmarCreacion`** al `POST /balanceControl`, leer formatos/columnas de `/catalogs`, cruzar filas por `contract_id`, mandar `custom_fields` (inglés) y pintar/capturar las celdas vía `PUT /remissionBalance`.
-- **[back] CRUD de formatos ISO para SGI** (`iso_formats`: alta/edición de código, revisión, vigencia y `config`; baja suave) — el catálogo ya vive en BD, falta la pantalla/endpoints de SGI.
-- **[back] Migrar `iso_form` de `PDFGenerator` a `iso_formats`** (y retirar `settings.json["formats"]`).
-- **[back] Endpoint de inyección/ajuste de saldo** (`POST /balanceControl/movement`) cuando el front cierre la maqueta F2 (montos negativos, adjunto, quién puede).
+- ~~**[back] CRUD de formatos ISO para SGI**~~ y ~~**migrar `iso_form` de `PDFGenerator` a `iso_formats`**~~ — hechos (2026-09-17): [`iso_formats_crud.md`](iso_formats_crud.md).
+- ~~**[back] Endpoint de inyección/ajuste de saldo**~~ — hecho (2026-09-17) con defaults: [`control_saldos_movimientos.md`](control_saldos_movimientos.md).
 - **[front] Sección 11 (F1 discrepancia de totales, F2 maqueta del historial)**: sin dependencia del back.

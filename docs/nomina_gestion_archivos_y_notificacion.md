@@ -73,7 +73,7 @@ Multipart `file` = XML del CFDI. `200`:
 
 ### Deprecado
 
-`POST /payroll/mail` sigue montado pero **no debe llamarse**: baja de SharePoint (falla) y solo crea un borrador en Outlook. Lo sustituye `/payroll/notify` y, en 2ª etapa, el correo por SES bajo el mismo endpoint (`channels: ["email"]`).
+`POST /payroll/mail` **retirado el 2026-09-17** (responde 404; ver [`nomina_correo_ses.md`](nomina_correo_ses.md)). Hasta entonces seguía montado pero no debía llamarse: baja de SharePoint (falla) y solo crea un borrador en Outlook. Lo sustituye `/payroll/notify` y, en 2ª etapa, el correo por SES bajo el mismo endpoint (`channels: ["email"]`).
 
 ## Verificación
 
@@ -87,5 +87,5 @@ Smoke contra BD dev (2026-09-07) con S3 simulado (sin tocar el bucket) y el índ
 
 ## Pendientes
 
-- **[back]** Correo por SES (2ª etapa): mismo `POST /payroll/notify` con `channels: ["email"]`; retirar `/payroll/mail` y `create_mail_draft_with_attachment`.
+- ~~**[back]** Correo por SES (2ª etapa)~~ — hecho (2026-09-17): [`nomina_correo_ses.md`](nomina_correo_ses.md); `/payroll/mail` y `create_mail_draft_with_attachment` retirados.
 - **[front]** Pantallas de carga por periodo, reemplazar/eliminar, notificar (+ mostrar `notified: false` por empleado) y lado empleado; link de WhatsApp (3ª etapa) armado en el front.

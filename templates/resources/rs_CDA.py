@@ -6,10 +6,19 @@ Vehiculos (FO-CDA-02 R3). Otros activos se agregaran bajo este mismo namespace.
 __author__ = "Edisson Naula"
 __date__ = "$ 05/ago./2026 $"
 
-from flask import request
+import os
+import tempfile
+from datetime import datetime
+
+import pytz
+from flask import request, send_file
+from werkzeug.utils import secure_filename
 from flask_restx import Namespace, Resource
 
 from static.Models.api_cda_models import (
+    CdaVehiclePhotoForm,
+    cda_vehicle_photo_model,
+    expected_files_vehicle_photo,
     CdaFineDeleteForm,
     CdaFinePostForm,
     CdaFinePutForm,
@@ -49,7 +58,14 @@ from static.Models.api_cda_models import (
 )
 from static.Models.api_models import expected_headers_per
 from templates.resources.methods.Functions_Aux_Login import token_verification_procedure
+from static.constants import format_date, timezone_software
+from templates.daemons.NotificationsSearch import NotificationsSearch
+from templates.Functions_Utils import read_flag_daemons, update_flag_daemons
 from templates.resources.midleware.MD_CDA import (
+    delete_vehicle_photo_api,
+    download_vehicle_photo_api,
+    get_cda_alerts_api,
+    upload_vehicle_photo_api,
     cancel_vehicle_api,
     create_fine_api,
     create_policy_api,
@@ -492,4 +508,95 @@ class CdaViewPurchases(Resource):
             "date_to": request.args.get("date_to"),
         }
         data_out, code = fetch_vehicle_purchases_view(params, data_token)
+        return data_out, code
+
+
+# =============================================================================
+# Alertas / recordatorios y fotos — Docs/cda_alertas_y_fotos.md
+# =============================================================================
+@ns.route("/alerts")
+class CdaAlerts(Resource):
+    @ns.doc(params={"days": "Horizonte en días para 'por vencer' (default 30)", "all": "1 -> incluye vehículos dados de baja"})
+    @ns.expect(expected_headers_per)
+    def get(self):
+        data_token, err = _auth()
+        if err:
+            return err
+        params = {"days": request.args.get("days"), "all": request.args.get("all")}
+        data_out, code = get_cda_alerts_api(params, data_token)
+        return data_out, code
+
+
+@ns.route("/notifications")
+class CdaNotifications(Resource):
+    @ns.expect(expected_headers_per)
+    def get(self):
+        """Barrido diario (mismo patrón que /dashboard/notifications/medicals): la
+        primera llamada del día lanza el hilo que crea la notificación de sistema."""
+        data_token, err = _auth()
+        if err:
+            return err
+        flags = read_flag_daemons()
+        if not flags.get("flag_cda", True):
+            return {"data": None, "msg": "Se está ya realizando la búsqueda de alertas de vehículos", "error": None}, 200
+        tz = pytz.timezone(timezone_software)
+        now = datetime.now(pytz.utc).astimezone(tz)
+        last = flags.get("last_date_cda")
+        if last:
+            last = tz.localize(datetime.strptime(last, format_date))
+        if last is None or last.date() < now.date():
+            update_flag_daemons(last_date_cda=now.strftime(format_date), flag_cda=False)
+            NotificationsSearch(data_token, type_n="cda").start()
+            return {"data": None, "msg": "Buscando alertas de vehículos", "error": None}, 201
+        return {"data": None, "msg": "Ya se realizó la búsqueda de alertas de vehículos hoy", "error": None}, 200
+
+
+@ns.route("/vehicle/photo-<int:id_vehicle>")
+class CdaVehiclePhotoUpload(Resource):
+    @ns.expect(expected_headers_per, expected_files_vehicle_photo)
+    def post(self, id_vehicle):
+        data_token, err = _auth()
+        if err:
+            return err
+        if "file" not in request.files:
+            return {"data": None, "msg": "No se detectó un archivo", "error": "file requerido"}, 400
+        file = request.files["file"]
+        if not file or not file.filename:
+            return {"data": None, "msg": "Archivo vacío", "error": "file requerido"}, 400
+        filename = secure_filename(file.filename)
+        filepath = os.path.join(tempfile.mkdtemp(), filename)
+        file.save(filepath)
+        data_out, code = upload_vehicle_photo_api(
+            {"id_vehicle": id_vehicle, "filename": filename, "filepath": filepath, "title": request.form.get("title", "")},
+            data_token,
+        )
+        return data_out, code
+
+
+@ns.route("/vehicle/photo")
+class CdaVehiclePhotoOps(Resource):
+    @ns.doc(params={"id_vehicle": "ID del vehículo", "filename": "filename (o path) de photos[]"})
+    @ns.expect(expected_headers_per)
+    def get(self):
+        """Descarga: binario en 200, envelope JSON en 4xx."""
+        data_token, err = _auth()
+        if err:
+            return err
+        data = {"id_vehicle": request.args.get("id_vehicle"), "filename": request.args.get("filename", "")}
+        envelope, local_path, code = download_vehicle_photo_api(data, data_token)
+        if envelope is not None:
+            return envelope, code
+        local_path = str(local_path)
+        return send_file(local_path, as_attachment=True, download_name=os.path.basename(local_path))
+
+    @ns.expect(expected_headers_per, cda_vehicle_photo_model)
+    def delete(self):
+        data_token, err = _auth()
+        if err:
+            return err
+        # noinspection PyUnresolvedReferences
+        validator = CdaVehiclePhotoForm.from_json(ns.payload)  # pyrefly: ignore
+        if not validator.validate():
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
+        data_out, code = delete_vehicle_photo_api(validator.data, data_token)
         return data_out, code

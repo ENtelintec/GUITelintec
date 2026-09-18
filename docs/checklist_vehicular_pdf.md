@@ -61,8 +61,8 @@ Además: siluetas extraídas del PDF oficial como assets
 [`img/checklist_sedan.png`](../img/checklist_sedan.png) /
 [`img/checklist_pickup.png`](../img/checklist_pickup.png) /
 [`img/checklist_van.png`](../img/checklist_van.png), y el código de formato
-`FO-CDA-03 R3` / vigencia `2025-04-24` agregado como `iso_form=8` en
-`files/settings.json` (`formats.dict_codes_forms` / `formats.dates_emision`).
+`FO-CDA-03 R3` / vigencia `2025-04-24` como `iso_form=8` (hoy fila 8 de
+`iso_formats`, ver [`iso_formats_crud.md`](iso_formats_crud.md); antes `files/settings.json`).
 
 ## Mapeo de campos
 
@@ -118,8 +118,8 @@ Gotchas:
 ## Al modificar
 
 - El catálogo de accesorios (`_CHV_GROUPS`) replica el FO-CDA-03 R3 **posición
-  por posición**; si el formato cambia de revisión, se edita ahí y se actualiza
-  `iso_form=8` en `files/settings.json` (código y vigencia).
+  por posición**; si el formato cambia de revisión, se edita ahí y se sube la
+  revisión del id 8 en el catálogo (`PUT /sgi/format`, [`iso_formats_crud.md`](iso_formats_crud.md)).
 - El azul `#00AFEF` (`_CHV_AZUL`) es exclusivo de este documento — no
   propagarlo a otros PDFs (la casa usa el celeste del skill `pdf-design`).
 - El lookup de accesorios matchea por label normalizado (trim + colapso de

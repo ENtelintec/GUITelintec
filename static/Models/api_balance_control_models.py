@@ -109,6 +109,20 @@ balance_control_cancel_model = api.model(
 )
 
 
+balance_control_movement_model = api.model(
+    "BalanceControlMovement",
+    {
+        "id_control": fields.Integer(required=True, description="ID del control (activo)", example=6),
+        "type": fields.Integer(required=True, description="1 = INYECCION (amount > 0) · 2 = AJUSTE (amount != 0, negativo resta)", example=1),
+        "amount": fields.Float(required=True, description="Monto del movimiento; el saldo resultante nunca puede quedar < 0", example=250000.0),
+        "movement_date": fields.String(required=False, description="Fecha de la transacción YYYY-MM-DD (default hoy)", example="2026-09-17"),
+        "reason": fields.String(required=False, description="Motivo", example="Adenda 2 al contrato"),
+        "document": fields.String(required=False, description="Folio de pedido / adenda de respaldo", example="4500123456"),
+        "expected_balance": fields.Float(required=False, description="Saldo que el front tenía en pantalla; si ya no coincide -> 409 (bloqueo optimista)", example=1250000.0),
+    },
+)
+
+
 # --- WTForms ------------------------------------------------------------------
 class BalanceControlCustomFieldForm(Form):
     key = StringField("key", [InputRequired()])
@@ -168,3 +182,14 @@ class BalanceControlRemissionsForm(Form):
 class BalanceControlCancelForm(Form):
     id_control = IntegerField("id_control", [InputRequired(message="id_control requerido")])
     comment = StringField("comment", [], default="")
+
+
+class BalanceControlMovementForm(Form):
+    id_control = IntegerField("id_control", [InputRequired(message="id_control requerido")])
+    type = IntegerField("type", [InputRequired(message="type requerido"), AnyOf([1, 2], message="type debe ser 1 (INYECCION) o 2 (AJUSTE)")])
+    # Sin InputRequired: trata 0 como vacío; el midleware valida None / 0 con el mensaje correcto.
+    amount = FloatField("amount", [], default=None)
+    movement_date = StringField("movement_date", [], default="")
+    reason = StringField("reason", [], default="")
+    document = StringField("document", [], default="")
+    expected_balance = FloatField("expected_balance", [], default=None)

@@ -60,11 +60,9 @@ from static.Models.api_quizz_models_models import (
     quizz_model_status_model,
 )
 from static.Models.api_payroll_models import (
-    CreateMailForm,
     DeletePayrollFileForm,
     NotifyPayrollForm,
     UpdateDataPayrollForm,
-    create_mail_model,
     delete_payroll_file_model,
     extract_xml_parser,
     notify_payroll_model,
@@ -94,7 +92,6 @@ from templates.resources.midleware.Functions_DB_midleware import (
     update_task_from_api,
 )
 from templates.resources.midleware.Functions_midleware_RRHH import (
-    create_mail_payroll,
     create_new_employee_db,
     create_payroll_file_attachment_api,
     delete_payroll_file_api,
@@ -899,27 +896,6 @@ class NotifyPayroll(Resource):
             }, 400
         data_out, code = notify_payroll_file_api(validator.data, data_token)
         return data_out, code
-
-
-@ns.route("/payroll/mail")
-class CreateMailPayroll(Resource):
-    """DEPRECADO (2026-09-07): borrador Outlook + SharePoint. Ver /payroll/notify."""
-    @ns.expect(expected_headers_per, create_mail_model)
-    def post(self):
-        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
-        if not flag:
-            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        # noinspection PyUnresolvedReferences
-        validator = CreateMailForm.from_json(ns.payload)  # pyrefly: ignore
-        if not validator.validate():
-            return {
-                "data": None,
-                "msg": "Estructura de datos inválida",
-                "error": validator.errors,
-            }, 400
-        data = validator.data
-        code, msg_out = create_mail_payroll(data)
-        return {"data": None, "msg": str(msg_out), "error": None}, code
 
 
 @ns.route("/payroll/files/list/<int:emp_id>")

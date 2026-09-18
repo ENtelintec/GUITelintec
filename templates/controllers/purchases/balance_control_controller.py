@@ -348,6 +348,22 @@ def insert_balance_control_movement(data: dict, data_token):
     return flag, e, out
 
 
+def update_balance_control_amount_optimistic(
+    id_control: int, new_amount, expected_amount, history: list, data_token
+):
+    """Mueve contracted_amount con bloqueo optimista: solo escribe si el monto
+    en BD sigue siendo `expected_amount` (el leido antes de calcular) y el control
+    esta activo. type_sql=3 -> rowcount (0 = otro movimiento gano la carrera o el
+    control se cancelo entre la lectura y la escritura -> 409 en el midleware)."""
+    sql = (
+        f"UPDATE {_TABLE} SET contracted_amount = %s, history = %s "
+        "WHERE id_control = %s AND contracted_amount = %s AND is_active = 1"
+    )
+    val = (new_amount, json.dumps(history, ensure_ascii=False), id_control, expected_amount)
+    flag, e, out = execute_sql(sql, val, 3, data_token)
+    return flag, e, out
+
+
 def get_balance_control_movements(id_control: int, data_token):
     """Movimientos del control, del mas reciente al mas antiguo. type_sql=2."""
     sql = f"{_SELECT_MOV} WHERE id_control = %s ORDER BY id_movement DESC"

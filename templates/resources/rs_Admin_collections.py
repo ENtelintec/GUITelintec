@@ -53,11 +53,13 @@ from static.Models.api_purchases_models import (
 from static.Models.api_balance_control_models import (
     BalanceControlCancelForm,
     BalanceControlFieldsForm,
+    BalanceControlMovementForm,
     BalanceControlPostForm,
     BalanceControlPutForm,
     BalanceControlRemissionsForm,
     balance_control_cancel_model,
     balance_control_fields_model,
+    balance_control_movement_model,
     balance_control_post_model,
     balance_control_put_model,
     balance_control_remissions_model,
@@ -94,6 +96,7 @@ from templates.resources.midleware.MD_Admin_Collections import (
 from templates.resources.midleware.MD_BalanceControl import (
     cancel_balance_control_from_api,
     create_balance_control_from_api,
+    create_balance_movement_from_api,
     get_balance_control_catalogs_from_api,
     get_balance_control_from_api,
     get_balance_controls_from_api,
@@ -818,6 +821,22 @@ class BalanceControlCancel(Resource):
             return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
         data = validator.data
         data_out, code = cancel_balance_control_from_api(data, data_token)
+        return data_out, code
+
+
+@ns.route("/balanceControl/movement")
+class BalanceControlMovement(Resource):
+    @ns.expect(expected_headers_per, balance_control_movement_model)
+    def post(self):
+        flag, data_token, msg = token_verification_procedure(request, department=_BC_WRITE)
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        # noinspection PyUnresolvedReferences
+        validator = BalanceControlMovementForm.from_json(ns.payload)  # pyrefly: ignore
+        if not validator.validate():
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
+        data = validator.data
+        data_out, code = create_balance_movement_from_api(data, data_token)
         return data_out, code
 
 

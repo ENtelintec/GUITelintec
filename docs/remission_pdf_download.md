@@ -40,8 +40,8 @@ generan aquí — son otros documentos/procesos.
 
 Además: `filepath_remission_pdf` nuevo en
 [`static/constants.py`](../static/constants.py), y el código de formato
-`FO-CXC-01 R0` / vigencia `2023-05-11` agregado como `iso_form=7` en
-`files/settings.json` (`formats.dict_codes_forms` / `formats.dates_emision`).
+`FO-CXC-01 R0` / vigencia `2023-05-11` como `iso_form=7` (hoy fila 7 de
+`iso_formats`, ver [`iso_formats_crud.md`](iso_formats_crud.md); antes `files/settings.json`).
 
 ## Mapeo de campos (encabezado)
 
@@ -77,8 +77,8 @@ contra la BD de dev (`get_contract(data_token, 4)` ahora sí devuelve el contrat
 - El bloque de empresa (`_COMPANY_INFO_LINES`) es texto fijo — si cambia el
   domicilio/contacto/representante legal de Telintec, se edita solo ahí.
 - El código de control documental (`FO-CXC-01 R0`) y su vigencia viven en
-  `files/settings.json` bajo `iso_form=7`; si el formato de remisión cambia de
-  revisión, actualizar esa entrada (no hardcodear el string en el PDF).
+  `iso_formats` (id 7, [`iso_formats_crud.md`](iso_formats_crud.md)); si el formato de remisión cambia de
+  revisión, subirla por `PUT /sgi/format` (no hardcodear el string en el PDF).
 - Si se agrega un campo nuevo a la metadata impresa, añadirlo a `metadata_rows`
   dentro de `draw_header_and_metadata()` en `RemissionForms.py` y resolver su
   origen en `download_file_remission`.
