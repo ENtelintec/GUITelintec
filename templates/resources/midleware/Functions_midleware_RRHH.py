@@ -1444,11 +1444,14 @@ def notify_payroll_file_api(data, data_token):
 
 def _first_email(raw) -> str | None:
     """employees.email viene sucio en la BD ('X@GMAIL.COM,', ',', 'a@x; b@y'):
-    primer token con '@', en minusculas; None si no hay ninguno."""
+    primer token con '@'; None si no hay ninguno. Solo se baja a minusculas el
+    DOMINIO: SES compara la parte local tal cual contra las identidades
+    verificadas (en sandbox 'Software@x' != 'software@x' -> MessageRejected)."""
     for token in re.split(r"[,;\s]+", str(raw or "")):
-        token = token.strip().strip(",;").lower()
+        token = token.strip().strip(",;")
         if "@" in token and "." in token.split("@")[-1]:
-            return token
+            local, domain = token.rsplit("@", 1)
+            return f"{local}@{domain.lower()}"
     return None
 
 

@@ -1,6 +1,6 @@
 # Nómina: correo al empleado por AWS SES (canal `email` de `POST /rrhh/payroll/notify`)
 
-Fecha: 2026-09-17 · **Estado: hecho y verificado contra dev con SES y S3 simulados (18/18 checks, `Tests/tester_nomina_ses.py`). Falta configurar SES en `.env` para que el canal deje de reportarse como pendiente.**
+Fecha: 2026-09-17 · **Estado: hecho y verificado contra dev con SES y S3 simulados (18/18 checks, `Tests/tester_nomina_ses.py`). SES levantado el 2026-09-18 (dominio `nominas.telintec.mx` verificado en `us-east-2`, `.env` de dev con `SES_SENDER`/`SES_REGION`, correo real con adjunto entregado a `Software@telintec.com.mx`). En **sandbox**: falta pedir *production access*.**
 
 Segunda etapa de [`nomina_gestion_archivos_y_notificacion.md`](nomina_gestion_archivos_y_notificacion.md): el mismo `POST /payroll/notify` con `channels: ["email"]` ahora **envía el correo** con el pdf/xml del recibo adjuntos (leídos de `S3_RH_BUCKET`). `POST /payroll/mail` (borrador Outlook + SharePoint, deprecado desde 2026-09-07) **queda retirado** junto con `create_mail_payroll`, `CreateMailForm`/`create_mail_model` y `create_mail_draft_with_attachment` de `Functions_Sharepoint.py`.
 
@@ -8,8 +8,8 @@ Segunda etapa de [`nomina_gestion_archivos_y_notificacion.md`](nomina_gestion_ar
 
 | Llave | Obligatoria | Qué es |
 |---|---|---|
-| `SES_SENDER` | sí | remitente, **identidad verificada en SES** (p.ej. `nomina@telintec.com.mx`). Sin ella `is_ses_configured()` es `False` y el canal se reporta en `channels_pending` — el endpoint nunca truena por falta de config |
-| `SES_REGION` | no | región de SES si es distinta a la default de boto (p.ej. `us-east-1`) |
+| `SES_SENDER` | sí | remitente, **identidad verificada en SES**. Valor actual: `nominas@nominas.telintec.mx` (dominio `nominas.telintec.mx` verificado con DKIM; la parte local es libre porque la identidad es el dominio). Sin ella `is_ses_configured()` es `False` y el canal se reporta en `channels_pending` — el endpoint nunca truena por falta de config |
+| `SES_REGION` | no | región de SES si es distinta a la default de boto. Valor actual: `us-east-2` (donde vive la identidad) |
 | `SES_REPLY_TO` | no | `Reply-To` del correo |
 
 Credenciales: las mismas que ya usa S3 (perfil/variables de AWS del servidor). En SES **sandbox** solo se puede enviar a destinatarios verificados: para producción hay que pedir la salida del sandbox en la cuenta AWS. Reiniciar la app tras editar `.env`.
@@ -18,7 +18,7 @@ Credenciales: las mismas que ya usa S3 (perfil/variables de AWS del servidor). E
 
 | Tema | Decisión |
 |---|---|
-| Destinatario | `employees.email` del empleado, **saneado** (`_first_email`): primer token con `@` separando por `,` `;` espacios, en minúsculas. En dev hay correos como `X@GMAIL.COM,` y `,`; el primero se envía a `x@gmail.com`, el segundo cuenta como "sin correo". |
+| Destinatario | `employees.email` del empleado, **saneado** (`_first_email`): primer token con `@` separando por `,` `;` espacios; solo el **dominio** baja a minúsculas, la parte local se conserva tal cual — **SES compara la parte local con mayúsculas contra las identidades verificadas** (comprobado en sandbox: `Software@telintec.com.mx` verificado acepta, `software@…` da `MessageRejected`). En dev hay correos como `X@GMAIL.COM,` y `,`; el primero se envía a `X@gmail.com`, el segundo cuenta como "sin correo". |
 | Adjuntos | `pdf` y `xml` del `key` (los que existan), leídos con `get_object` de `S3_RH_BUCKET`, nombre = base del key. Tope 9 MB en total (SES rechaza raw > 10 MB). |
 | Asunto / cuerpo | `Recibo de nómina <key> (<MM>/<YYYY>) — Telintec`; cuerpo = `message` del body (o el default) + aviso de correo automático. Solo texto plano (el helper acepta `body_html` para después). |
 | Resultado por canal | `channels_sent` (enviado), `channels_pending` (SES sin configurar), **`channels_failed`** nuevo: `[{channel, reason}]` — sin correo, S3 ilegible, SES rechazó (`MessageRejected`: remitente/destinatario no verificados o sandbox), credenciales. `email_to` nuevo: correo usado (o `null`). `notified` = algo se envió (app **o** email). |
@@ -69,6 +69,7 @@ sharepoint  Functions_Sharepoint.py                create_mail_draft_with_attach
 
 ## Pendientes
 
-- **[back] Levantar SES en AWS**: verificar la identidad remitente (correo o dominio con DKIM), pedir *production access* (salir del sandbox), permiso IAM `ses:SendRawEmail` al rol de la API, `SES_SENDER`/`SES_REGION` en `.env` de las 3 BDs, y prueba real a un correo propio. Listado en [`pendientes.md`](pendientes.md).
+- ~~**[back] Levantar SES en AWS**~~ — hecho 2026-09-18 en sandbox: identidad `nominas.telintec.mx` + `Software@telintec.com.mx` verificadas (`us-east-2`), IAM ok (el envío real pasó), `.env` de dev con las 2 llaves. **Queda**: pedir *production access* (hoy solo destinatarios verificados, 200/día) y poner las mismas llaves en `.env` de test/prod. Listado en [`pendientes.md`](pendientes.md).
+- **[admin]** El *custom MAIL FROM domain* quedó como `mail.nominas.telintec.mx.nominas.telintec.mx` (la consola anexa el dominio al nombre que se teclea); funciona (`Success`), pero conviene reconfigurarlo como `mail.nominas.telintec.mx` para que el `Return-Path` salga limpio.
 - **[front]** Mostrar `channels_failed`/`email_to` en la pantalla de nómina; checkbox "enviar por correo".
 - **[back]** Correo también en los recordatorios de CDA y avisos médicos (helper listo, falta decidir destinatarios).
