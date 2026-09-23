@@ -11,6 +11,7 @@ from templates.controllers.rrhh.quizz_models_controller import (
 from templates.controllers.employees.employees_controller import (
     get_all_data_employee,
     get_all_data_employees,
+    get_employees_directory,
 )
 from templates.controllers.employees.vacations_controller import (
     get_vacations_data,
@@ -87,6 +88,54 @@ def get_info_employees_with_status(status: str):
         )
 
     return (data_out, 200) if flag else ([], 400)
+
+
+def get_employees_directory_with_status(status: str, data_token):
+    flag, error, result = get_employees_directory(status, data_token)
+    if not flag or not isinstance(result, (list, tuple)):
+        return {
+            "data": [],
+            "msg": "No se pudieron obtener los empleados",
+            "error": error,
+        }, 400
+    data_out = []
+    for item in result:
+        (
+            id_emp,
+            name,
+            lastname,
+            phone,
+            department,
+            modality,
+            email,
+            contract,
+            position,
+            status_emp,
+            extra_info,
+            dep_id,
+            username,
+        ) = item
+        extra_info = json.loads(extra_info) if extra_info else {}
+        data_out.append(
+            {
+                "id": id_emp,
+                "name": name.strip().upper() if name else name,
+                "lastname": lastname.strip().upper() if lastname else lastname,
+                "phone": phone,
+                "email": email,
+                "dep": department,
+                "dep_id": dep_id,
+                "contract": contract,
+                "position": position,
+                "status": status_emp,
+                "id_leader": extra_info.get("id_leader", 0),
+                "modality": modality,
+                "username": username,
+            }
+        )
+    if len(data_out) == 0:
+        return {"data": [], "msg": "No se encontraron empleados", "error": None}, 200
+    return {"data": data_out, "msg": None, "error": None}, 200
 
 
 def create_csv_file_employees(status: str):

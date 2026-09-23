@@ -418,6 +418,45 @@ def get_all_data_employees(status: str):
     return flag, error, result
 
 
+def get_employees_directory(status: str, data_token):
+    """Directorio de empleados con datos no confidenciales (permiso Common)."""
+    if "all" in status.lower():
+        status = "%"
+    elif "inactivo" in status.lower():
+        status = "inactivo"
+    else:
+        status = "activo"
+    sql = """
+    SELECT
+        e.employee_id,
+        e.name,
+        e.l_name,
+        e.phone_number,
+        d.name AS department_name,
+        e.modality,
+        e.email,
+        e.contrato,
+        e.puesto,
+        e.status,
+        e.extra_info,
+        e.department_id,
+        GROUP_CONCAT(u.usernames) AS usernames
+    FROM sql_telintec.employees e
+    LEFT JOIN sql_telintec.departments d
+        ON e.department_id = d.department_id
+    LEFT JOIN sql_telintec.users_system u
+        ON e.employee_id = u.emp_id
+    WHERE e.status LIKE %s
+    GROUP BY e.employee_id, e.name, e.l_name, e.phone_number, d.name,
+            e.modality, e.email, e.contrato, e.puesto, e.status,
+            e.extra_info, e.department_id
+    ORDER BY e.name, e.l_name;
+    """
+    val = (status,)
+    flag, error, result = execute_sql(sql, val, type_sql=2, data_token=data_token)
+    return flag, error, result
+
+
 def get_all_data_employee(id_employee: int, data_token):
     sql = (
         "SELECT "
