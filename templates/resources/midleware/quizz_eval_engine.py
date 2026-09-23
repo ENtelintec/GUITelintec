@@ -194,16 +194,75 @@ def _eval_node(node, points, levels):
     return out
 
 
+def _resolve_answer_text(section):
+    """Convierte la respuesta cruda de una seccion capturada en texto legible
+    usando las `options`/`subquestions` que la captura embebe en la propia
+    seccion (el data_raw de secciones guarda el template junto a la respuesta).
+
+    Por widget (`type`): 1 multiseleccion -> lista de indices; 2 opcion unica
+    -> indice; 3 matriz -> lista de pares [idx_subpregunta, idx_opcion];
+    5 texto abierto -> string. Devuelve (texto, details) donde `details` solo
+    existe para la matriz: [{subquestion, answer}]. Indices fuera de rango o
+    tipos raros no truenan: se imprime el crudo.
+    """
+    q_type = section.get("type")
+    answer = section.get("answer")
+    options = section.get("options") or []
+    subquestions = section.get("subquestions") or []
+
+    def _label(seq, idx):
+        try:
+            return str(seq[int(idx)])
+        except (TypeError, ValueError, IndexError):
+            return "" if idx is None else str(idx)
+
+    if q_type == 3 and isinstance(answer, list):
+        details = []
+        for pair in answer:
+            if not isinstance(pair, (list, tuple)) or len(pair) < 2:
+                continue
+            details.append(
+                {"subquestion": _label(subquestions, pair[0]), "answer": _label(options, pair[1])}
+            )
+        text = "; ".join(f"{d['subquestion']}: {d['answer']}" for d in details)
+        return text, details
+    if q_type == 1 and isinstance(answer, list):
+        return ", ".join(_label(options, idx) for idx in answer), None
+    if q_type == 2 and answer not in (None, "", []):
+        return _label(options, answer), None
+    if answer is None:
+        return "", None
+    return str(answer), None
+
+
 def _evaluate_qualitative(data_raw, rubric):
+    """Modo cualitativo (salida, tipo 0): sin puntaje. Devuelve la lista de
+    preguntas con la respuesta ya resuelta a texto (`answer`), el crudo
+    (`answer_raw`) y, en matrices, el detalle por subpregunta (`details`),
+    en el orden numerico de las secciones."""
     collected = []
     if isinstance(data_raw, dict):
-        for section in data_raw.values():
-            if not isinstance(section, dict):
-                continue
-            collected.append({
+
+        def _order(kv):
+            try:
+                return (0, int(kv[0]))
+            except (TypeError, ValueError):
+                return (1, 0)
+
+        for key, section in sorted(data_raw.items(), key=_order):
+            if not isinstance(section, dict) or "question" not in section:
+                continue  # llaves auxiliares (evaluation/results) no son preguntas
+            text, details = _resolve_answer_text(section)
+            entry = {
+                "key": key,
                 "question": section.get("question"),
-                "answer": section.get("answer"),
-            })
+                "type": section.get("type"),
+                "answer": text,
+                "answer_raw": section.get("answer"),
+            }
+            if details is not None:
+                entry["details"] = details
+            collected.append(entry)
     return {
         "type": rubric.get("type"),
         "mode": "qualitative",

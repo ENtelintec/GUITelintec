@@ -13,8 +13,10 @@ from static.constants import (
 from static.Models.api_dashboards_models import (
     FichajeEmpForm,
     MovementsChartsForm,
+    RRHHSeriesForm,
     fichaje_emp_model,
     movements_charts_model,
+    rrhh_series_model,
 )
 from static.Models.api_models import expected_headers_per
 from templates.daemons.NotificationsSearch import NotificationsSearch
@@ -24,6 +26,10 @@ from templates.resources.midleware.Functions_midleware_dashboard import (
     get_data_chart_fichaje_emp,
     get_data_chart_movements,
     get_data_chart_sm,
+)
+from templates.resources.midleware.MD_DashboardRRHH import (
+    get_rrhh_series_api,
+    get_rrhh_summary_api,
 )
 
 __author__ = "Edisson Naula"
@@ -105,3 +111,32 @@ class NotificationsMedicals(Resource):
             return {"data": None, "msg": "Buscando notificaciones médicas", "error": None}, 201
         else:
             return {"data": None, "msg": "No hay notificaciones médicas o ya se realizó la búsqueda hoy", "error": None}, 200
+
+
+# --- Dashboard RH (docs/dashboard_rrhh.md) ----------------------------------
+@ns.route("/rrhh/summary")
+class RRHHSummary(Resource):
+    @ns.expect(expected_headers_per)
+    def get(self):
+        """Todos los tiles del dashboard de RH para un mes (?month=YYYY-MM, default el actual)."""
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        data_out, code = get_rrhh_summary_api(request.args.get("month"), data_token)
+        return data_out, code
+
+
+@ns.route("/rrhh/series")
+class RRHHSeries(Resource):
+    @ns.expect(expected_headers_per, rrhh_series_model)
+    def post(self):
+        """Serie de un KPI de RH (metric ∈ altas_bajas | headcount) por mes o por departamento."""
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        # noinspection PyUnresolvedReferences
+        validator = RRHHSeriesForm.from_json(ns.payload)  # pyrefly: ignore
+        if not validator.validate():
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
+        data_out, code = get_rrhh_series_api(validator.data, data_token)
+        return data_out, code

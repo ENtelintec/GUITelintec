@@ -17,12 +17,17 @@ __date__ = "$ 05/ago./2026 $"
 
 import calendar
 import json
-from datetime import date, datetime
+import os
+import tempfile
+from datetime import date, datetime, timedelta
 from decimal import Decimal
+from typing import Any
 
+import boto3
 import pytz
+from botocore.exceptions import BotoCoreError, ClientError, NoCredentialsError
 
-from static.constants import format_timestamps, log_file_cda, timezone_software
+from static.constants import format_timestamps, log_file_cda, secrets, timezone_software
 from templates.controllers.vehicles.vehicles_controller import (
     FINE_COLUMNS,
     POLICY_COLUMNS,
@@ -61,6 +66,7 @@ from templates.controllers.vehicles.vehicles_controller import (
     update_service,
     update_tire,
     update_vehicle,
+    update_vehicle_extra_info,
     update_vehicle_km,
     update_vehicle_purchase,
 )
@@ -208,6 +214,8 @@ def _vehicle_to_dict(row) -> dict:
     data["accessories"] = {k: int(accessories.get(k) or 0) for k in ACCESSORY_KEYS}
     data["refrendo_status"] = _refrendo_status(data.get("refrendo_last_paid"), _today().year)
     data["refrendo_note"] = (data.get("extra_info") or {}).get("refrendo_note")
+    photos = (data.get("extra_info") or {}).get("photos") or []
+    data["photos"] = [p for p in photos if isinstance(p, dict) and p.get("path")]
     return data
 
 
@@ -1233,3 +1241,283 @@ def get_cda_catalogs():
         },
     }
     return {"data": data, "msg": "ok", "error": None}, 200
+
+
+# =============================================================================
+# Alertas y recordatorios (Docs/cda_alertas_y_fotos.md)
+# Todo calculado on-read a partir de las mismas vistas; nada se almacena.
+# =============================================================================
+ALERT_DAYS_AHEAD = 30
+ALERT_KINDS = {
+    "sin_poliza": "Sin póliza vigente",
+    "poliza_vencida": "Póliza vencida",
+    "poliza_por_vencer": "Póliza por vencer",
+    "pago_poliza_vencido": "Pago de póliza vencido",
+    "mantenimiento_pendiente": "Mantenimiento pendiente",
+    "mantenimiento_proximo": "Mantenimiento próximo",
+    "refrendo_vencido": "Refrendo vencido",
+    "refrendo_sin_registro": "Refrendo sin registro",
+    "llanta_vencida": "Llanta vencida (DOT)",
+    "llanta_cambio": "Llanta requiere cambio",
+}
+_SEVERITY_ORDER = {"vencido": 0, "sin_registro": 1, "proximo": 2}
+
+
+def _untyped(value) -> Any:
+    """Las vistas devuelven envelopes con `data` de forma distinta; pyrefly infiere la
+    union y rechaza los accesos. Aqui el shape ya lo garantiza el code == 200."""
+    return value
+
+
+def _alert(vehicle: dict, kind: str, severity: str, message: str, due_date=None, days_left=None, **extra) -> dict:
+    out = {
+        "vehicle_id": vehicle.get("id_vehicle") or vehicle.get("id"),
+        "code": vehicle.get("code"),
+        "plate": vehicle.get("plate"),
+        "kind": kind,
+        "kind_label": ALERT_KINDS.get(kind, kind),
+        "severity": severity,
+        "message": message,
+        "due_date": due_date.isoformat() if isinstance(due_date, date) else due_date,
+        "days_left": days_left,
+    }
+    out.update(extra)
+    return out
+
+
+def build_cda_alerts(data_token, days_ahead: int = ALERT_DAYS_AHEAD, only_active: bool = True):
+    """Lista de alertas por vehiculo (polizas, pagos, mantenimiento, refrendo,
+    llantas) + errores no fatales por vista. Solo vehiculos activos por default."""
+    params = {"is_active": "1"} if only_active else {"all": "1"}
+    today = _today()
+    horizon = today + timedelta(days=days_ahead)
+    alerts: list = []
+    errors: list = []
+
+    out, code = fetch_policies_view(params, data_token)
+    payload = _untyped(out.get("data"))
+    if code != 200:
+        errors.append(f"pólizas: {out.get('error')}")
+    else:
+        for v in payload:
+            pol = v.get("policy")
+            if not pol:
+                alerts.append(_alert(v, "sin_poliza", "sin_registro", f"{v['code']}: sin póliza vigente registrada"))
+                continue
+            end = _to_date(pol.get("date_end"))
+            if end and end < today:
+                alerts.append(_alert(v, "poliza_vencida", "vencido",
+                                     f"{v['code']}: la póliza {pol.get('insurer') or ''} venció el {end.isoformat()} (hace {(today - end).days} días)",
+                                     end, (end - today).days, policy_id=pol.get("id")))
+            elif end and end <= horizon:
+                alerts.append(_alert(v, "poliza_por_vencer", "proximo",
+                                     f"{v['code']}: la póliza {pol.get('insurer') or ''} vence el {end.isoformat()} (faltan {(end - today).days} días)",
+                                     end, (end - today).days, policy_id=pol.get("id")))
+            for slot in pol.get("payments") or []:
+                if slot.get("overdue"):
+                    exp = _to_date(slot.get("expected_date"))
+                    alerts.append(_alert(v, "pago_poliza_vencido", "vencido",
+                                         f"{v['code']}: pago {slot.get('index') or ''} de la póliza vencido desde {slot.get('expected_date')}",
+                                         exp, (exp - today).days if exp else None, policy_id=pol.get("id"), payment=slot.get("index")))
+
+    out, code = fetch_maintenance_view(params, data_token)
+    payload = _untyped(out.get("data"))
+    if code != 200:
+        errors.append(f"mantenimiento: {out.get('error')}")
+    else:
+        for v in payload["vehicles"]:
+            nxt = v.get("next_maintenance") or {}
+            due = _to_date(nxt.get("date"))
+            if v.get("requires_maintenance"):
+                if not v.get("last_maintenance"):
+                    msg = f"{v['code']}: sin mantenimiento registrado"
+                elif nxt.get("km") is not None and int(v.get("current_km") or 0) >= int(nxt.get("km")):
+                    msg = f"{v['code']}: mantenimiento pendiente por kilometraje ({v.get('current_km')} km ≥ {nxt.get('km')} km)"
+                else:
+                    msg = f"{v['code']}: mantenimiento pendiente desde el {nxt.get('date')}"
+                alerts.append(_alert(v, "mantenimiento_pendiente", "vencido", msg, due, v.get("days_remaining"), next_km=nxt.get("km")))
+            elif v.get("days_remaining") is not None and 0 <= v["days_remaining"] <= days_ahead:
+                alerts.append(_alert(v, "mantenimiento_proximo", "proximo",
+                                     f"{v['code']}: mantenimiento programado para el {nxt.get('date')} (faltan {v['days_remaining']} días)",
+                                     due, v["days_remaining"], next_km=nxt.get("km")))
+
+    out, code = fetch_refrendos_view(params, data_token)
+    payload = _untyped(out.get("data"))
+    if code != 200:
+        errors.append(f"refrendos: {out.get('error')}")
+    else:
+        for v in payload["vehicles"]:
+            if v.get("refrendo_status") == "VENCIDO":
+                alerts.append(_alert(v, "refrendo_vencido", "vencido",
+                                     f"{v['code']}: refrendo {today.year} sin pagar (último pago {v.get('refrendo_last_paid')})"))
+            elif v.get("refrendo_status") == "SIN_REGISTRO":
+                alerts.append(_alert(v, "refrendo_sin_registro", "sin_registro", f"{v['code']}: refrendo sin registro de pago"))
+
+    out, code = fetch_tires_view(params, data_token)
+    payload = _untyped(out.get("data"))
+    if code != 200:
+        errors.append(f"llantas: {out.get('error')}")
+    else:
+        for v in payload:
+            for tire in v.get("tires") or []:
+                if not tire.get("id"):
+                    continue
+                if tire.get("expired"):
+                    alerts.append(_alert(v, "llanta_vencida", "vencido",
+                                         f"{v['code']}: llanta {tire.get('position_label')} vencida (DOT {tire.get('dot') or '?'}, vence {tire.get('expiry_date')})",
+                                         _to_date(tire.get("expiry_date")), None, position=tire.get("position")))
+                elif int(tire.get("needs_change") or 0) == 1:
+                    alerts.append(_alert(v, "llanta_cambio", "proximo",
+                                         f"{v['code']}: llanta {tire.get('position_label')} marcada para cambio",
+                                         None, None, position=tire.get("position")))
+
+    alerts.sort(key=lambda a: (_SEVERITY_ORDER.get(a["severity"], 9), a["days_left"] if a["days_left"] is not None else 10**6, a["code"] or ""))
+    return alerts, errors
+
+
+def get_cda_alerts_api(params: dict, data_token):
+    days = _to_int_or_none(params.get("days"))
+    days = days if days is not None and days >= 0 else ALERT_DAYS_AHEAD
+    only_active = str(params.get("all", "")).strip().lower() not in ("1", "true", "yes")
+    alerts, errors = build_cda_alerts(data_token, days, only_active)
+    by_kind: dict = {}
+    by_severity: dict = {}
+    vehicles = set()
+    for a in alerts:
+        by_kind[a["kind"]] = by_kind.get(a["kind"], 0) + 1
+        by_severity[a["severity"]] = by_severity.get(a["severity"], 0) + 1
+        vehicles.add(a["vehicle_id"])
+    return {
+        "data": {
+            "days_ahead": days,
+            "alerts": alerts,
+            "summary": {"total": len(alerts), "vehicles_with_alerts": len(vehicles), "by_kind": by_kind, "by_severity": by_severity},
+            "kinds": ALERT_KINDS,
+        },
+        "msg": f"{len(alerts)} alertas en {len(vehicles)} vehículos",
+        "error": errors or None,
+    }, 200
+
+
+def build_cda_notification_lines(alerts: list) -> list:
+    """Una linea por alerta, para la notificacion de sistema (barrido diario)."""
+    return [f"[{a['kind_label']}] {a['message']}" for a in alerts]
+
+
+# =============================================================================
+# Fotos del vehiculo (expediente): S3_ADMIN_BUCKET, key cda/vehicles/<id>/<filename>,
+# indice en vehicles.extra_info.photos = [{filename, path, title, timestamp, user}]
+# =============================================================================
+PHOTO_EXTENSIONS = ("jpg", "jpeg", "png", "webp")
+PHOTO_MAX = 20
+
+
+def _photo_key(id_vehicle: int, filename: str) -> str:
+    return f"cda/vehicles/{id_vehicle}/{filename}"
+
+
+def _vehicle_photos(vehicle: dict) -> list:
+    photos = (vehicle.get("extra_info") or {}).get("photos") or []
+    return [p for p in photos if isinstance(p, dict) and p.get("path")]
+
+
+def _save_vehicle_photos(vehicle: dict, photos: list, history_entry: dict, data_token):
+    extra_info = dict(vehicle.get("extra_info") or {})
+    extra_info["photos"] = photos
+    history = list(vehicle.get("history") or [])
+    history.append(history_entry)
+    return update_vehicle_extra_info(int(vehicle["id"]), extra_info, history, data_token)
+
+
+def upload_vehicle_photo_api(data: dict, data_token):
+    """POST multipart: sube la foto a S3 y la indexa en extra_info.photos.
+    Mismo nombre -> reemplaza la entrada (y el objeto en S3)."""
+    user = data_token.get("emp_id")
+    timestamp = _now().strftime(format_timestamps)
+    err, vehicle = _require_vehicle(data.get("id_vehicle"), data_token)
+    if err:
+        return err, 404 if "No existe" in err["msg"] else 400
+    filename = data.get("filename") or ""
+    ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
+    if ext not in PHOTO_EXTENSIONS:
+        return {"data": None, "msg": f"Formato no válido ({ext or 'sin extensión'}); se aceptan {', '.join(PHOTO_EXTENSIONS)}", "error": "Extensión inválida"}, 400
+    photos = _vehicle_photos(vehicle)
+    key = _photo_key(int(vehicle["id"]), filename)
+    replaced = any(p.get("path") == key for p in photos)
+    if not replaced and len(photos) >= PHOTO_MAX:
+        return {"data": None, "msg": f"El vehículo ya tiene {PHOTO_MAX} fotos; borra alguna antes de subir otra", "error": "Límite de fotos"}, 400
+    bucket = secrets.get("S3_ADMIN_BUCKET")
+    try:
+        boto3.client("s3").upload_file(Filename=data["filepath"], Bucket=str(bucket), Key=key)
+    except FileNotFoundError:
+        return {"data": None, "msg": "Archivo local no encontrado", "error": None}, 400
+    except NoCredentialsError:
+        return {"data": None, "msg": "Credenciales AWS no configuradas", "error": None}, 400
+    except (ClientError, BotoCoreError) as e:
+        return {"data": None, "msg": "Error al subir la foto a S3", "error": str(e)}, 400
+    entry = {
+        "filename": filename,
+        "path": key,
+        "title": (data.get("title") or "").strip() or f"Foto {len(photos) + (0 if replaced else 1)}",
+        "timestamp": timestamp,
+        "user": user,
+    }
+    photos = [p for p in photos if p.get("path") != key] + [entry]
+    flag, error, _ = _save_vehicle_photos(
+        vehicle, photos,
+        _history_entry(user, "Foto", f"{'Reemplazo de' if replaced else 'Alta de'} foto {filename}"),
+        data_token,
+    )
+    if not flag:
+        return {"data": None, "msg": "La foto se subió a S3 pero no se pudo indexar en el vehículo", "error": error}, 400
+    msg = f"Foto {'reemplazada' if replaced else 'agregada'} al vehículo {vehicle['code']} (ID {vehicle['id']}): {filename}"
+    write_log_file(log_file_cda, msg, data_token)
+    return {"data": {"id_vehicle": vehicle["id"], "photo": entry, "replaced": replaced, "photos": photos}, "msg": msg, "error": None}, 201
+
+
+def download_vehicle_photo_api(data: dict, data_token):
+    """Devuelve (envelope|None, local_path|None, code). Baja el objeto a un temp."""
+    err, vehicle = _require_vehicle(data.get("id_vehicle"), data_token)
+    if err:
+        return err, None, 404 if "No existe" in err["msg"] else 400
+    filename = data.get("filename") or ""
+    photo = next((p for p in _vehicle_photos(vehicle) if p.get("filename") == filename or p.get("path") == filename), None)
+    if not photo:
+        return {"data": None, "msg": f"El vehículo no tiene la foto {filename}", "error": "Foto no encontrada"}, None, 400
+    local = os.path.join(tempfile.mkdtemp(), os.path.basename(photo["path"]))
+    try:
+        boto3.client("s3").download_file(Bucket=str(secrets.get("S3_ADMIN_BUCKET")), Key=photo["path"], Filename=local)
+    except NoCredentialsError:
+        return {"data": None, "msg": "Credenciales AWS no configuradas", "error": None}, None, 400
+    except (ClientError, BotoCoreError) as e:
+        return {"data": None, "msg": "No se pudo descargar la foto de S3", "error": str(e)}, None, 400
+    return None, local, 200
+
+
+def delete_vehicle_photo_api(data: dict, data_token):
+    """Quita la foto del indice (BD primero) y borra el objeto de S3 best-effort."""
+    user = data_token.get("emp_id")
+    err, vehicle = _require_vehicle(data.get("id_vehicle"), data_token)
+    if err:
+        return err, 404 if "No existe" in err["msg"] else 400
+    filename = data.get("filename") or ""
+    photos = _vehicle_photos(vehicle)
+    photo = next((p for p in photos if p.get("filename") == filename or p.get("path") == filename), None)
+    if not photo:
+        return {"data": None, "msg": f"El vehículo no tiene la foto {filename}", "error": "Foto no encontrada"}, 400
+    remaining = [p for p in photos if p is not photo]
+    flag, error, _ = _save_vehicle_photos(
+        vehicle, remaining, _history_entry(user, "Foto", f"Baja de foto {photo.get('filename')}"), data_token
+    )
+    if not flag:
+        return {"data": None, "msg": "No se pudo quitar la foto del vehículo", "error": error}, 400
+    s3_deleted, error_out = False, None
+    try:
+        boto3.client("s3").delete_object(Bucket=str(secrets.get("S3_ADMIN_BUCKET")), Key=photo["path"])
+        s3_deleted = True
+    except (ClientError, NoCredentialsError, BotoCoreError) as e:
+        error_out = f"La foto se quitó del vehículo pero no se pudo borrar de S3: {e}"
+        write_log_file(log_file_cda, f"Error al borrar de S3 {photo['path']}: {e}", data_token)
+    msg = f"Foto {photo.get('filename')} eliminada del vehículo {vehicle['code']} (ID {vehicle['id']})"
+    write_log_file(log_file_cda, msg, data_token)
+    return {"data": {"id_vehicle": vehicle["id"], "s3_deleted": s3_deleted, "photos": remaining}, "msg": msg, "error": error_out}, 200

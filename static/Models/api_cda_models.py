@@ -10,10 +10,12 @@ __author__ = "Edisson Naula"
 __date__ = "$ 05/ago./2026 $"
 
 from flask_restx import fields
+from werkzeug.datastructures import FileStorage
 from wtforms import FloatField, FormField, StringField
 from wtforms.fields.list import FieldList
 from wtforms.fields.numeric import IntegerField
 from wtforms.form import Form
+from wtforms.validators import InputRequired
 
 from static.constants import api
 
@@ -366,3 +368,22 @@ class CdaPurchasePutForm(_CdaPurchaseBaseForm):
 class CdaPurchaseDeleteForm(Form):
     id_purchase = IntegerField("id_purchase", [], default=None)
     id = IntegerField("id", [], default=None)
+
+
+# --- Fotos del vehiculo (Docs/cda_alertas_y_fotos.md) --------------------------
+expected_files_vehicle_photo = api.parser()
+expected_files_vehicle_photo.add_argument("file", type=FileStorage, location="files", required=True, help="Foto (jpg/jpeg/png/webp), una por request")
+expected_files_vehicle_photo.add_argument("title", type=str, location="form", required=False, help="Título opcional (default 'Foto N')")
+
+cda_vehicle_photo_model = api.model(
+    "CdaVehiclePhoto",
+    {
+        "id_vehicle": fields.Integer(required=True, example=3),
+        "filename": fields.String(required=True, description="filename (o path) tal como aparece en photos[]", example="frente.jpg"),
+    },
+)
+
+
+class CdaVehiclePhotoForm(Form):
+    id_vehicle = IntegerField("id_vehicle", [InputRequired(message="id_vehicle requerido")])
+    filename = StringField("filename", [InputRequired(message="filename requerido")])

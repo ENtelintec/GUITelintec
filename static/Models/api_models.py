@@ -320,6 +320,10 @@ metadata_task_model = api.model(
         "expected_roles": fields.List(
             fields.String, required=False, description="Eva 360 control: roles asignados"
         ),
+        "migrated_from": fields.Integer(
+            required=False,
+            description="Versionado: type_q original si la encuesta pendiente fue migrada a una versión nueva",
+        ),
     },
 )
 
@@ -524,6 +528,10 @@ class MetadataTasksForm(Form):
     eva360_kind = StringField("eva360_kind", validators=[])
     status_eval = StringField("status_eval", validators=[])
     expected_roles = FieldList(StringField(), validators=[], default=[])
+    # --- versionado de modelos: type_q original de una task migrada a una
+    # version nueva (PUT /quizz/models/<id>/migrate-tasks); declarado para
+    # que el PUT de tasks no lo borre al validar ---
+    migrated_from = IntegerField("migrated_from", validators=[])
 
 
 class TaskInsertForm(Form):

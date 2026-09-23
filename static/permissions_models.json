@@ -118,5 +118,9 @@
   {
     "name": "App.Department.comprasCreate",
     "description": "the basic permission for create purchase applications"
+  },
+  {
+    "name": "App.Department.Sucursal-2",
+    "description": "operacion de la sede de almacen 2 (namespace sucursal; el id de sede va en el nombre; jamas usar 'almacen'/'administrator' en el nombre)"
   }
 ]

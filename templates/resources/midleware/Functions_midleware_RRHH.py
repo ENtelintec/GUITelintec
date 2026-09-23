@@ -6,6 +6,7 @@ __date__ = "$ 28/jun./2024  at 16:28 $"
 
 import json
 import os
+import re
 import tempfile
 import uuid
 import zipfile
@@ -14,14 +15,13 @@ from datetime import datetime
 import boto3
 import pandas as pd
 import pytz
-from botocore.exceptions import ClientError, NoCredentialsError
+from botocore.exceptions import BotoCoreError, ClientError, NoCredentialsError
 
 from static.constants import (
     cache_file_emp_fichaje,
     cache_file_resume_fichaje_path,
     conversion_quizzes_path,
     file_temp_zip,
-    filepath_daemons,
     filepath_fichaje_temp,
     filepath_recommendations,
     filepath_settings,
@@ -42,9 +42,16 @@ from templates.controllers.employees.em_controller import (
     update_aptitud_renovacion,
 )
 from templates.controllers.employees.employees_controller import (
+    find_employee_for_payroll,
+    get_employee_info,
     new_employee,
     terminate_employee_db,
     update_employee,
+)
+from templates.controllers.employees.us_controller import get_user_by_emp_id
+from templates.resources.methods.Functions_Aux_RH import last_medical_date, medical_due
+from templates.controllers.notifications.Notifications_controller import (
+    insert_notification,
 )
 from templates.controllers.employees.vacations_controller import (
     insert_vacation,
@@ -61,11 +68,11 @@ from templates.controllers.payroll.payroll_controller import (
     update_payroll_employees,
 )
 from templates.Functions_Sharepoint import (
-    create_mail_draft_with_attachment,
     download_files_site,
     get_files_site,
 )
 from templates.Functions_Utils import create_notification_permission
+from templates.misc.Functions_Mail import is_ses_configured, send_email_ses
 from templates.misc.Functions_AuxFiles import (
     get_data_xml_file_nomina,
     get_events_op_date,
@@ -1171,12 +1178,19 @@ def create_payroll_file_attachment_api(data, data_token):
         else:
             return {"data": None, "msg": f"AWS error: {str(e)}"}, 400
     # registrar la ruta en el indice del empleado, agrupando pdf y xml por 'key'
-    flag, error, result = get_payrolls(emp_id, data_token)
-    has_record = (
-        flag and isinstance(result, (list, tuple)) and len(result) > 0 and result[0] is not None
-    )
-    files_data = json.loads(result[0][1]) if has_record else {}  # pyrefly: ignore
+    index, _ = _load_payroll_index(emp_id, data_token)
+    files_data: dict = index if isinstance(index, dict) else {}
     files_data.setdefault(year, {}).setdefault(month, {}).setdefault(key, {})
+    # Reemplazo: el mismo key+kind con otro nombre de archivo deja el objeto
+    # anterior huerfano en S3 -> se borra best-effort (ya subio el nuevo). Con
+    # el mismo nombre, S3 ya lo piso en el upload (misma llave).
+    previous = files_data[year][month][key].get(file_extension)
+    replaced_detail = ""
+    error_out = None
+    if previous and previous != path_aws:
+        deleted, detail, s3_error = _payroll_s3_delete([previous], data_token)
+        replaced_detail = f"; reemplaza a {previous} ({detail})"
+        error_out = s3_error
     files_data[year][month][key][file_extension] = path_aws
     flag, error, rows = update_payroll(files_data, emp_id, data_token)
     if not flag:
@@ -1187,43 +1201,346 @@ def create_payroll_file_attachment_api(data, data_token):
         }, 400
     msg = (
         f"Archivo de nomina {filename} ({file_extension}) subido para el empleado "
-        f"{emp_id} en {year}/{month} (key {key})"
+        f"{emp_id} en {year}/{month} (key {key}){replaced_detail}"
     )
     write_log_file(log_file_rh, msg, data_token)
-    return {"data": path_aws, "msg": msg, "error": None}, 201
+    return {"data": path_aws, "msg": msg, "error": error_out}, 201
 
 
-def create_mail_payroll(data):
-    flags_daemons = json.load(open(filepath_daemons, "r"))
-    if flags_daemons["update_files_nomina"]:
-        msg = "Accion no permitida mientras se actualizan los datos."
-        return 400, msg
-    destinatarios = data["to"].split(";")
-    asunto = data["subject"]
-    cuerpo = data["body"]
-    _from = data["from_"]
-    settings = json.load(open(filepath_settings, "r"))
-    url_shrpt = settings["gui"]["RRHH"]["url_shrpt"]
-    folder_rrhh = settings["gui"]["RRHH"]["folder_rrhh"]
-    download_path_xml, code = download_files_site(url_shrpt + folder_rrhh, data["xml"])
-    download_path_pdf, code = download_files_site(url_shrpt + folder_rrhh, data["pdf"])
-    temp_files = [download_path_xml, download_path_pdf]
-    response, code = create_mail_draft_with_attachment(
-        data["emp_id"],
-        _from,
-        asunto,
-        cuerpo,
-        temp_files,
-        to_recipients=destinatarios,
+def _load_payroll_index(emp_id, data_token):
+    """Indice files_data del empleado. -> (dict | None si no tiene fila en
+    payroll, error). El dict va vacio si la fila existe sin archivos."""
+    flag, error, result = get_payrolls(emp_id, data_token)
+    has_record = (
+        flag and isinstance(result, (list, tuple)) and len(result) > 0 and result[0]
     )
-    return code, response
+    if not has_record:
+        return None, error
+    raw = result[0][1]  # pyrefly: ignore
+    try:
+        files_data = json.loads(raw) if isinstance(raw, str) else (raw or {})
+    except (ValueError, TypeError):
+        files_data = {}
+    return files_data if isinstance(files_data, dict) else {}, None
+
+
+def _payroll_s3_delete(keys, data_token):
+    """Borra objetos del bucket de RH best-effort (nunca fatal: la BD ya
+    quedo consistente). -> (deleted: bool, detail: str, error: str | None)."""
+    keys = [k for k in keys if k]
+    if not keys:
+        return False, "Sin llave en S3 que eliminar", None
+    s3_client = boto3.client("s3")
+    bucket_name = secrets.get("S3_RH_BUCKET")
+    try:
+        for key in keys:
+            s3_client.delete_object(Bucket=str(bucket_name), Key=key)
+        return True, "Objeto eliminado de S3", None
+    except (ClientError, NoCredentialsError, BotoCoreError) as e:
+        write_log_file(log_file_rh, f"Error al borrar de S3 {keys}: {e}", data_token)
+        return False, "No se pudo borrar el objeto de S3 (queda huérfano)", str(e)
+
+
+def _normalize_payroll_period(data):
+    """emp_id/year/month del body -> (emp_id:int, year:str, month:'MM', key:str)
+    o (None, msg) si vienen mal. Misma normalizacion que la subida."""
+    try:
+        emp_id = int(data["emp_id"])
+        year = str(int(data["year"]))
+        month = f"{int(data['month']):02d}"
+    except (ValueError, TypeError, KeyError) as e:
+        return None, f"year, month o emp_id invalidos ({e})"
+    key = str(data.get("key") or "").strip()
+    if not key:
+        return None, "key es obligatorio"
+    return (emp_id, year, month, key), None
+
+
+def delete_payroll_file_api(data, data_token):
+    """DELETE /payroll/files: quita del indice el pdf, el xml o ambos de un
+    `key` y borra el objeto de S3 best-effort (BD primero: si S3 falla el
+    indice ya no apunta al objeto -> 200 con s3_deleted False + motivo en
+    error). El key/mes/anio se limpian si quedan vacios."""
+    period, err = _normalize_payroll_period(data)
+    if period is None:
+        return {"data": None, "msg": err, "error": None}, 400
+    emp_id, year, month, key = period
+    kind = str(data.get("kind") or "both").strip().lower()
+    if kind not in ("pdf", "xml", "both"):
+        return {"data": None, "msg": "kind debe ser pdf, xml o both", "error": None}, 400
+
+    files_data, error = _load_payroll_index(emp_id, data_token)
+    if files_data is None:
+        return {
+            "data": None,
+            "msg": f"El empleado {emp_id} no tiene registro de nómina",
+            "error": error,
+        }, 404
+    entry = files_data.get(year, {}).get(month, {}).get(key)
+    if not isinstance(entry, dict) or not entry:
+        return {
+            "data": None,
+            "msg": f"No existe la nómina {key} de {month}/{year} para el empleado {emp_id}",
+            "error": None,
+        }, 400
+    kinds = ["pdf", "xml"] if kind == "both" else [kind]
+    to_delete = [entry[k] for k in kinds if entry.get(k)]
+    if not to_delete:
+        return {
+            "data": None,
+            "msg": f"La nómina {key} de {month}/{year} no tiene archivo {kind}",
+            "error": None,
+        }, 400
+    for k in kinds:
+        entry.pop(k, None)
+    if not entry:
+        files_data[year][month].pop(key, None)
+    if not files_data[year][month]:
+        files_data[year].pop(month, None)
+    if not files_data[year]:
+        files_data.pop(year, None)
+
+    flag, error, _ = update_payroll(files_data, emp_id, data_token)
+    if not flag:
+        return {"data": None, "msg": "No se pudo actualizar el índice de nómina", "error": error}, 400
+    s3_deleted, detail, s3_error = _payroll_s3_delete(to_delete, data_token)
+    msg = (
+        f"Nómina {key} de {month}/{year} del empleado {emp_id}: "
+        f"{kind} eliminado del índice ({detail})"
+    )
+    write_log_file(log_file_rh, msg, data_token)
+    return {
+        "data": {
+            "emp_id": emp_id,
+            "year": year,
+            "month": month,
+            "key": key,
+            "deleted": to_delete,
+            "s3_deleted": s3_deleted,
+            "files_data": files_data,
+        },
+        "msg": msg,
+        "error": s3_error,
+    }, 200
+
+
+_PAYROLL_NOTIFY_CHANNELS = ("app", "email")
+
+
+def notify_payroll_file_api(data, data_token):
+    """POST /payroll/notify: avisa al empleado dentro del sistema que su
+    recibo (pdf/xml del `key`) ya esta disponible -> notificacion in-app con
+    receiver_id = emp_id (la ve en GET /misc/notifications/employee/<id>&0 y
+    la baja con POST /common/payroll/employee/file). Sin usuario en el
+    sistema no hay a quien notificar -> 200 con notified False y motivo.
+    `channels`: 'app' (in-app) y 'email' (SES, Docs/nomina_correo_ses.md:
+    correo al employees.email con el pdf/xml adjuntos desde S3). Sin
+    SES_SENDER en .env el correo se reporta en channels_pending; sin email
+    del empleado o con fallo de SES/S3, en channels_failed con motivo."""
+    period, err = _normalize_payroll_period(data)
+    if period is None:
+        return {"data": None, "msg": err, "error": None}, 400
+    emp_id, year, month, key = period
+    channels = data.get("channels") or ["app"]
+    channels = [str(c).strip().lower() for c in channels if str(c).strip()]
+    invalid = [c for c in channels if c not in _PAYROLL_NOTIFY_CHANNELS]
+    if invalid or not channels:
+        return {
+            "data": None,
+            "msg": f"channels inválidos: {invalid or channels} (válidos: {', '.join(_PAYROLL_NOTIFY_CHANNELS)})",
+            "error": None,
+        }, 400
+
+    files_data, error = _load_payroll_index(emp_id, data_token)
+    if files_data is None:
+        return {
+            "data": None,
+            "msg": f"El empleado {emp_id} no tiene registro de nómina",
+            "error": error,
+        }, 404
+    entry = files_data.get(year, {}).get(month, {}).get(key)
+    if not isinstance(entry, dict) or not any(entry.get(k) for k in ("pdf", "xml")):
+        return {
+            "data": None,
+            "msg": f"La nómina {key} de {month}/{year} del empleado {emp_id} no tiene archivos que notificar",
+            "error": None,
+        }, 400
+
+    flag, error, user_row = get_user_by_emp_id(emp_id, data_token)
+    if not flag:
+        return {"data": None, "msg": "No se pudo verificar el usuario del empleado", "error": error}, 400
+    has_user = bool(user_row)
+    title = "Recibo de nómina disponible"
+    message = (data.get("message") or "").strip() or (
+        f"Tu recibo de nómina {key} ({month}/{year}) ya está disponible en el sistema."
+    )
+    sent, pending = [], []
+    id_notification = None
+    reason = None
+    if "app" in channels:
+        if has_user:
+            time_zone = pytz.timezone(timezone_software)
+            timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
+            body = {
+                "id": 0,
+                "status": 0,
+                "title": title,
+                "msg": message,
+                "timestamp": timestamp,
+                "sender_id": data_token.get("emp_id", 0),
+                "receiver_id": emp_id,
+                "app": [],
+                "extra_emps": [],
+                "payload": {"kind": "payroll", "year": year, "month": month, "key": key, "files": entry},
+            }
+            flag, error, id_notification = insert_notification(body, data_token)
+            if not flag:
+                return {"data": None, "msg": "No se pudo crear la notificación", "error": error}, 400
+            sent.append("app")
+        else:
+            reason = f"El empleado {emp_id} no tiene usuario en el sistema: no puede recibir la notificación"
+    failed = []
+    email_to = None
+    if "email" in channels:
+        if not is_ses_configured():
+            pending.append("email")
+        else:
+            email_to, err_mail = _send_payroll_email(emp_id, key, month, year, entry, message, data_token)
+            if err_mail:
+                failed.append({"channel": "email", "reason": err_mail})
+            else:
+                sent.append("email")
+    notified = bool(sent)
+    msg = (
+        f"Empleado {emp_id} notificado de la nómina {key} ({month}/{year})"
+        if notified
+        else f"Nómina {key} ({month}/{year}) del empleado {emp_id}: sin notificar"
+    )
+    if reason:
+        msg += f". {reason}"
+    if pending:
+        msg += f". Canal(es) pendiente(s) de configurar: {', '.join(pending)} (falta SES_SENDER en .env)"
+    if failed:
+        msg += ". " + "; ".join(f"{f['channel']}: {f['reason']}" for f in failed)
+    write_log_file(log_file_rh, msg, data_token)
+    return {
+        "data": {
+            "emp_id": emp_id,
+            "year": year,
+            "month": month,
+            "key": key,
+            "notified": notified,
+            "id_notification": id_notification if notified else None,
+            "reason": reason,
+            "channels_sent": sent,
+            "channels_pending": pending,
+            "channels_failed": failed,
+            "email_to": email_to,
+        },
+        "msg": msg,
+        "error": None,
+    }, 201
+
+
+def _first_email(raw) -> str | None:
+    """employees.email viene sucio en la BD ('X@GMAIL.COM,', ',', 'a@x; b@y'):
+    primer token con '@'; None si no hay ninguno. Solo se baja a minusculas el
+    DOMINIO: SES compara la parte local tal cual contra las identidades
+    verificadas (en sandbox 'Software@x' != 'software@x' -> MessageRejected)."""
+    for token in re.split(r"[,;\s]+", str(raw or "")):
+        token = token.strip().strip(",;")
+        if "@" in token and "." in token.split("@")[-1]:
+            local, domain = token.rsplit("@", 1)
+            return f"{local}@{domain.lower()}"
+    return None
+
+
+def _send_payroll_email(emp_id, key, month, year, entry: dict, message: str, data_token):
+    """Correo SES al empleado con el pdf/xml del recibo adjuntos (leidos de
+    S3_RH_BUCKET). -> (email_to, error | None). Nunca truena."""
+    flag, error, row, _cols = get_employee_info(emp_id, data_token)
+    if not flag:
+        return None, f"no se pudo consultar el empleado ({error})"
+    email_to = _first_email(row[7] if isinstance(row, (list, tuple)) and len(row) > 7 else None)  # pyrefly: ignore
+    if not email_to:
+        return None, f"el empleado {emp_id} no tiene correo registrado"
+    attachments = []
+    s3_client = boto3.client("s3")
+    bucket = str(secrets.get("S3_RH_BUCKET"))
+    for kind in ("pdf", "xml"):
+        s3_key = entry.get(kind)
+        if not s3_key:
+            continue
+        try:
+            obj = s3_client.get_object(Bucket=bucket, Key=s3_key)
+            attachments.append((os.path.basename(s3_key), obj["Body"].read()))
+        except (NoCredentialsError, ClientError, BotoCoreError) as e:
+            return email_to, f"no se pudo leer {kind} de S3 ({s3_key}): {e}"
+    if not attachments:
+        return email_to, "sin archivos que adjuntar"
+    subject = f"Recibo de nómina {key} ({month}/{year}) — Telintec"
+    body = (
+        f"{message}\n\nSe adjuntan los archivos de tu recibo de nómina {key} ({month}/{year}).\n"
+        "Este correo se genera automáticamente desde el sistema de Telintec; no respondas a este mensaje."
+    )
+    ok, error, _message_id = send_email_ses([email_to], subject, body, attachments)
+    return email_to, (None if ok else error)
+
+
+def extract_payroll_xml_api(data, data_token):
+    """POST /payroll/files/extract: lee un XML de CFDI de nomina y devuelve
+    los datos para SUGERIR la asignacion archivo->empleado/periodo en la
+    carga por periodo del front (RFC, numero de empleado, nombre, fechas del
+    periodo y un emp_id sugerido por nombre). No sube ni guarda nada."""
+    filename = str(data.get("filename") or "")
+    if not filename.lower().endswith(".xml"):
+        return {"data": None, "msg": "Solo se puede extraer de un archivo xml", "error": None}, 400
+    try:
+        parsed = get_data_xml_file_nomina(data["filepath"])
+    except Exception as e:  # ParseError, KeyError, OSError... el XML no es un CFDI de nomina legible
+        write_log_file(log_file_rh, f"XML de nomina no reconocido ({filename}): {e}", data_token)
+        return {"data": None, "msg": "El XML no se reconoce como CFDI de nómina", "error": str(e)}, 400
+    receptor = parsed.get("receptor") if isinstance(parsed.get("receptor"), dict) else {}
+    nomina = parsed.get("Nomina") if isinstance(parsed.get("Nomina"), dict) else {}
+    fecha_pago = nomina.get("FechaPago") or parsed.get("date_pay")
+    year = month = None
+    if isinstance(fecha_pago, str) and len(fecha_pago) >= 7:
+        try:
+            year, month = int(fecha_pago[0:4]), int(fecha_pago[5:7])
+        except ValueError:
+            year = month = None
+    emp_id, match_by, name_db = find_employee_for_payroll(
+        receptor.get("NumEmpleado"), receptor.get("Nombre"), data_token
+    )
+    out = {
+        "filename": filename,
+        "rfc": receptor.get("Rfc"),
+        "curp": receptor.get("Curp"),
+        "num_empleado": receptor.get("NumEmpleado"),
+        "nombre": receptor.get("Nombre"),
+        "periodo": {
+            "inicio": nomina.get("FechaInicialPago"),
+            "fin": nomina.get("FechaFinalPago"),
+            "pago": fecha_pago,
+            "dias": nomina.get("NumDiasPagados"),
+            "tipo": nomina.get("TipoNomina"),
+        },
+        "year_sugerido": year,
+        "month_sugerido": month,
+        "emp_id_sugerido": emp_id,
+        "match_by": match_by,
+        "nombre_sugerido": name_db,
+    }
+    msg = (
+        f"XML {filename}: {out['nombre'] or 'sin receptor'}"
+        + (f" -> empleado sugerido {out['emp_id_sugerido']}" if out["emp_id_sugerido"] else " (sin coincidencia de empleado)")
+    )
+    return {"data": out, "msg": msg, "error": None}, 200
 
 
 def update_payroll_list_employees(data_token):
-    flags_daemons = json.load(open(filepath_daemons, "r"))
-    if flags_daemons["update_files_nomina"]:
-        msg = "Accion no permitida mientras se actualizan los datos."
-        return 400, msg
+    # (2026-09-07) Sin el guard de flags_daemons["update_files_nomina"]: el
+    # daemon de SharePoint ya no existe y el flag bloqueaba la sincronizacion.
     flag, error, result = update_payroll_employees(data_token)
     msg = "Se han agregado correctamente:\n"
     counter = 0
@@ -1278,24 +1595,23 @@ def fetch_employees_without_records(data_token):
 
 
 def fetch_medicals(data_token) -> tuple[dict, int]:
+    """Registros médicos de todos los empleados + alertas de vencimiento.
+
+    La periodicidad sale de `medical_due` (Functions_Aux_RH: 12/6/3 meses según
+    `aptitude_actual` 1/2/3, 4 = NO APTO), la misma regla que el dashboard de
+    RH y el daemon de notificaciones. Cada registro trae `alert`, `last_date`,
+    `due_date`, `days_left` y `period_days` ya calculados; `error` conserva la
+    lista de mensajes [CRÍTICO]/[AVISO] solo de empleados ACTIVOS (contrato
+    previo del endpoint)."""
     flag, e, result = get_all_examenes(data_token)
     if not (isinstance(result, list) or isinstance(result, tuple)):
         return {"data": [], "msg": "No hay registros médicos", "error": None}, 400
     if not flag:
         return {"data": [], "msg": "No se pudieron obtener los registros médicos", "error": None}, 400
 
+    today = datetime.now(pytz.utc).astimezone(pytz.timezone(timezone_software)).date()
     data_out = []
     messages = []
-
-    # Definir límites por tipo de aptitud
-    limits = {
-        "APTO 1": timedelta(days=365),  # revisión anual
-        "APTO 2": timedelta(days=180),  # revisión cada 6 meses
-        "APTO 3": timedelta(days=90),  # revisión cada 3 meses
-        "APTO 4": None,  # NO APTO
-    }
-
-    warning_threshold = timedelta(days=30)
 
     for row in result:
         (
@@ -1310,57 +1626,59 @@ def fetch_medicals(data_token) -> tuple[dict, int]:
             extra_info,
         ) = row
 
-        extra_info = json.loads(extra_info)
-        aptitudes = json.loads(aptitud)
-        dates = json.loads(fechas)
+        try:
+            extra_info = json.loads(extra_info) if isinstance(extra_info, str) else (extra_info or {})
+        except (TypeError, ValueError):
+            extra_info = {}
+        try:
+            aptitudes = json.loads(aptitud) if isinstance(aptitud, str) else (aptitud or [])
+        except (TypeError, ValueError):
+            aptitudes = []
+        try:
+            dates = json.loads(fechas) if isinstance(fechas, str) else (fechas or [])
+        except (TypeError, ValueError):
+            dates = []
 
-        # Última fecha registrada
-        last_date = None
-        if dates:
-            last_date = datetime.strptime(max(dates), format_timestamps)
+        last_date = last_medical_date(dates)
+        due = medical_due(apt_actual, last_date, today)
+        status_out = status if status is not None else "INACTIVO"
 
         exam_data = {
             "exist": True,
             "id_exam": id_exam,
             "name": nombre,
             "blood": sangre,
-            "status": status if status is not None else "INACTIVO",
+            "status": status_out,
             "aptitudes": aptitudes,
             "dates": dates,
             "apt_last": apt_actual,
             "emp_id": emp_id,
-            "allergies": extra_info.get("allergies", ""),
+            "allergies": extra_info.get("allergies", extra_info.get("alergies", "")),
             "observations": extra_info.get("observations", ""),
+            "alert": due["alert"],
+            "last_date": last_date.isoformat() if last_date else None,
+            "due_date": due["due_date"].isoformat() if due["due_date"] else None,
+            "days_left": due["days_left"],
+            "period_days": due["period_days"],
         }
         data_out.append(exam_data)
 
-        # Validación de fechas según aptitud
-        if apt_actual in limits and limits[apt_actual] is not None and last_date:
-            delta = datetime.now() - last_date
-            limite = limits[apt_actual]
-            if limite is None:
-                continue
-
-            if delta > limite:
-                # Mensaje crítico
-                messages.append(
-                    f"[CRÍTICO] El empleado {nombre} requiere revisión: "
-                    f"Aptitud {apt_actual}, última fecha {last_date.strftime(format_timestamps)}, "
-                    f"supera el límite de {limite.days} días."
-                )
-            elif limite - delta <= warning_threshold:
-                # Mensaje de aviso
-                remaining = limite - delta
-                messages.append(
-                    f"[AVISO] El empleado {nombre} está próximo a revisión: "
-                    f"Aptitud {apt_actual}, última fecha {last_date.strftime(format_timestamps)}, "
-                    f"faltan {remaining.days} días para el límite de {limite.days} días."
-                )
-
-        elif apt_actual == "APTO 4":
+        if str(status_out).upper() != "ACTIVO":
+            continue
+        if due["alert"] == "vencido":
             messages.append(
-                f"[CRÍTICO] El empleado {nombre} (ID {id_exam}) está marcado como NO APTO."
+                f"[CRÍTICO] El empleado {nombre} requiere revisión: aptitud {apt_actual}, "
+                f"última fecha {exam_data['last_date']}, venció el {exam_data['due_date']} "
+                f"(hace {-due['days_left']} días, límite de {due['period_days']} días)."
             )
+        elif due["alert"] == "por_vencer":
+            messages.append(
+                f"[AVISO] El empleado {nombre} está próximo a revisión: aptitud {apt_actual}, "
+                f"última fecha {exam_data['last_date']}, vence el {exam_data['due_date']} "
+                f"(faltan {due['days_left']} días, límite de {due['period_days']} días)."
+            )
+        elif due["alert"] == "no_apto":
+            messages.append(f"[CRÍTICO] El empleado {nombre} (ID {id_exam}) está marcado como NO APTO.")
 
     return {"data": data_out, "msg": None, "error": messages if messages else None}, 200
 

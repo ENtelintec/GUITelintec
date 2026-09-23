@@ -8,6 +8,10 @@ from werkzeug.utils import secure_filename
 
 from static.Models.api_models import expected_headers_per
 from static.Models.api_sgi_models import (
+    IsoFormatDeleteForm,
+    IsoFormatPostForm,
+    IsoFormatPutForm,
+    IsoFormatStatusForm,
     VehicleVoucherDownloadAttachmentForm,
     VoucherSafetyFormDelete,
     VoucherSafetyFormPost,
@@ -21,6 +25,10 @@ from static.Models.api_sgi_models import (
     VoucherVehiclePostForm,
     VoucherVehiclePutForm,
     expected_files_attachment,
+    iso_format_delete_model,
+    iso_format_post_model,
+    iso_format_put_model,
+    iso_format_status_model,
     vehicle_voucher_delete_model,
     vehicle_voucher_download_att_model,
     voucher_safety_delete_model,
@@ -35,6 +43,15 @@ from static.Models.api_sgi_models import (
     voucher_vehicle_put_model,
 )
 from templates.resources.methods.Functions_Aux_Login import token_verification_procedure
+from templates.resources.midleware.MD_IsoFormats import (
+    create_iso_format_from_api,
+    delete_iso_format_from_api,
+    get_iso_format_from_api,
+    get_iso_formats_catalogs_from_api,
+    get_iso_formats_from_api,
+    set_iso_format_status_from_api,
+    update_iso_format_from_api,
+)
 from templates.resources.midleware.MD_SGI import (
     create_voucher_safety_api,
     create_voucher_tools_api,
@@ -404,3 +421,110 @@ class UploadToolsVoucherAttachment(Resource):
             return data_out, code
         else:
             return {"data": None, "msg": "No se subió el archivo", "error": None}, 400
+
+
+
+# =====================================================================
+# Formatos ISO (catálogo de SGI) — ver Docs/iso_formats_crud.md
+# Lecturas: sgi + administracion (el catálogo lo consumen saldos y los PDFs);
+# escrituras: solo sgi (dueño del catálogo).
+# =====================================================================
+_FMT_READ = ["sgi", "administracion"]
+_FMT_WRITE = ["sgi"]
+
+
+@ns.route("/formats")
+class IsoFormatsList(Resource):
+    @ns.doc(params={
+        "all": "1 -> vigentes y retirados (default solo vigentes)",
+        "department": "Filtra por área dueña (rrhh, almacen, presales, sgi, administracion, cda, sm, compras)",
+        "kind": "Filtra por config.kind (p.ej. balance_control)",
+    })
+    @ns.expect(expected_headers_per)
+    def get(self):
+        flag, data_token, msg = token_verification_procedure(request, department=_FMT_READ)
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        params = {
+            "all": request.args.get("all"),
+            "department": request.args.get("department"),
+            "kind": request.args.get("kind"),
+        }
+        data_out, code = get_iso_formats_from_api(params, data_token)
+        return data_out, code
+
+
+@ns.route("/formats/catalogs")
+class IsoFormatsCatalogs(Resource):
+    @ns.expect(expected_headers_per)
+    def get(self):
+        flag, data_token, msg = token_verification_procedure(request, department=_FMT_READ)
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        data_out, code = get_iso_formats_catalogs_from_api(data_token)
+        return data_out, code
+
+
+@ns.route("/format")
+class IsoFormatOps(Resource):
+    @ns.expect(expected_headers_per, iso_format_post_model)
+    def post(self):
+        flag, data_token, msg = token_verification_procedure(request, department=_FMT_WRITE)
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        # noinspection PyUnresolvedReferences
+        validator = IsoFormatPostForm.from_json(ns.payload)  # pyrefly: ignore
+        if not validator.validate():
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
+        data_out, code = create_iso_format_from_api(ns.payload, data_token)
+        return data_out, code
+
+    @ns.expect(expected_headers_per, iso_format_put_model)
+    def put(self):
+        flag, data_token, msg = token_verification_procedure(request, department=_FMT_WRITE)
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        # noinspection PyUnresolvedReferences
+        validator = IsoFormatPutForm.from_json(ns.payload)  # pyrefly: ignore
+        if not validator.validate():
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
+        data_out, code = update_iso_format_from_api(ns.payload, data_token)
+        return data_out, code
+
+    @ns.expect(expected_headers_per, iso_format_delete_model)
+    def delete(self):
+        flag, data_token, msg = token_verification_procedure(request, department=_FMT_WRITE)
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        # noinspection PyUnresolvedReferences
+        validator = IsoFormatDeleteForm.from_json(ns.payload)  # pyrefly: ignore
+        if not validator.validate():
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
+        data_out, code = delete_iso_format_from_api(validator.data, data_token)
+        return data_out, code
+
+
+@ns.route("/format/status")
+class IsoFormatStatus(Resource):
+    @ns.expect(expected_headers_per, iso_format_status_model)
+    def put(self):
+        flag, data_token, msg = token_verification_procedure(request, department=_FMT_WRITE)
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        # noinspection PyUnresolvedReferences
+        validator = IsoFormatStatusForm.from_json(ns.payload)  # pyrefly: ignore
+        if not validator.validate():
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
+        data_out, code = set_iso_format_status_from_api(validator.data, data_token)
+        return data_out, code
+
+
+@ns.route("/format/<int:id_format>")
+class IsoFormatDetail(Resource):
+    @ns.expect(expected_headers_per)
+    def get(self, id_format):
+        flag, data_token, msg = token_verification_procedure(request, department=_FMT_READ)
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        data_out, code = get_iso_format_from_api(id_format, data_token)
+        return data_out, code

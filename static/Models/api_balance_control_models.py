@@ -1,0 +1,195 @@
+# -*- coding: utf-8 -*-
+__author__ = "Edisson Naula"
+__date__ = "$ 11/sep./2026  at 12:00 $"
+
+from flask_restx import fields
+from wtforms import FloatField, FormField, StringField
+from wtforms.fields.list import FieldList
+from wtforms.fields.numeric import IntegerField
+from wtforms.form import Form
+from wtforms.validators import AnyOf, InputRequired
+
+from static.constants import api
+
+# =====================================================================
+# Control de saldos (Cobranza) — cabecera con o sin contrato
+# (Docs/control_saldos_sin_contrato.md: sin contrato -> client_id + title obligatorios)
+# Ruta base: /GUI/api/v1/admin/collections/balanceControl
+# Doble capa: api.model (swagger) + WTForms (validación runtime).
+# Los campos PROPIOS DEL FORMATO (requires_hes, site, quotation_number, ...)
+# NO se declaran aquí: son dinámicos (iso_formats.config.header_fields) y el
+# midleware los lee del JSON crudo de `metadata`, validándolos contra el
+# formato. Una llave que el formato no declare responde 400 (nada se
+# descarta en silencio). Ver Docs/control_saldos_cabecera.md.
+# =====================================================================
+
+VALUE_TYPES = ("text", "number", "date", "boolean")
+
+balance_control_custom_field_model = api.model(
+    "BalanceControlCustomField",
+    {
+        "key": fields.String(required=True, description="Llave snake_case, única en el control y sin chocar con columnas del formato", example="numero_estimacion"),
+        "label": fields.String(required=True, description="Encabezado de la columna", example="Número de estimación"),
+        "value_type": fields.String(required=True, description="text | number | date | boolean", example="number"),
+        "comment": fields.String(required=False, description="Para qué sirve la columna", example="Estimación del contrato"),
+    },
+)
+
+_bc_base_fields = {
+    "title": fields.String(required=False, description="Nombre visible del control. OBLIGATORIO sin contrato; con contrato default = identifier del contrato. No puede vaciarse", example="Cotización COT-2026-0148 / Ticket TK-99120"),
+    "month_period": fields.String(required=False, description="Periodo YYYY-MM (informativo)", example="2026-08"),
+    "currency": fields.String(required=False, description="MXN | USD (default MXN)", example="MXN"),
+    "contract_number": fields.String(required=False, description="Nº de contrato marco (default: contracts.code)", example="6700373484"),
+    "pedido_exiros": fields.String(required=False, description="Pedido EXIROS", example="3716578048"),
+    "start_date": fields.String(required=False, description="Inicio de vigencia YYYY-MM-DD", example="2026-03-09"),
+    "end_date": fields.String(required=False, description="Fin de vigencia YYYY-MM-DD", example="2027-03-08"),
+    "plant": fields.String(required=False, description="Planta", example="San Nico"),
+    "coordinator": fields.String(required=False, description="Coordinador responsable", example="Nombre del coordinador"),
+    "contract_object": fields.String(required=False, description="Objeto del contrato", example="Cableado estructurado y accesorios"),
+}
+
+balance_control_metadata_post_model = api.model(
+    "BalanceControlMetadataPost",
+    {
+        "contract_id": fields.Integer(required=False, description="Contrato (sql_telintec_mod_admin.contracts.id). 0/null/ausente = control SIN contrato (exige client_id + title)", example=9),
+        "client_id": fields.Integer(required=False, description="Cliente (customers_amc.id_customer). OBLIGATORIO sin contrato; con contrato se toma del contrato (si viene y no coincide -> 400)", example=40),
+        "format_id": fields.Integer(required=True, description="Formato FO-CXC (iso_formats.id, ver /balanceControl/catalogs)", example=13),
+        "contracted_amount": fields.Float(required=False, description="Monto contratado inicial (>= 0). Solo aquí; después se mueve con movimientos de saldo", example=1250000.0),
+        **_bc_base_fields,
+    },
+)
+
+balance_control_post_model = api.model(
+    "BalanceControlPost",
+    {
+        "metadata": fields.Nested(balance_control_metadata_post_model, required=True, description="Cabecera. Los campos propios del formato van planos aquí mismo (p.ej. quotation_number, requires_hes)"),
+        "remissions": fields.List(fields.Integer, required=False, description="Ids de remisiones a validar/adoptar (opcional)", example=[341, 342]),
+        "custom_fields": fields.List(fields.Nested(balance_control_custom_field_model), required=False, description="Columnas dinámicas (orden = orden en la tabla)"),
+    },
+)
+
+balance_control_metadata_put_model = api.model(
+    "BalanceControlMetadataPut",
+    {
+        "id_control": fields.Integer(required=True, description="ID del control", example=1),
+        **_bc_base_fields,
+    },
+)
+
+balance_control_put_model = api.model(
+    "BalanceControlPut",
+    {
+        "metadata": fields.Nested(balance_control_metadata_put_model, required=True, description="Update PARCIAL: solo se escribe lo presente; contracted_amount/contract_id/client_id/format_id → 400"),
+    },
+)
+
+balance_control_fields_model = api.model(
+    "BalanceControlFields",
+    {
+        "id_control": fields.Integer(required=True, description="ID del control", example=1),
+        "custom_fields": fields.List(fields.Nested(balance_control_custom_field_model), required=True, description="Lista COMPLETA (reemplaza la anterior; las llaves quitadas se limpian de las remisiones)"),
+    },
+)
+
+balance_control_remissions_model = api.model(
+    "BalanceControlRemissions",
+    {
+        "id_control": fields.Integer(required=True, description="ID del control (activo)", example=6),
+        "add": fields.List(fields.Integer, required=False, description="Remisiones a ligar (mismas reglas que remissions[] del POST; en otro control activo -> 400)", example=[9, 10]),
+        "remove": fields.List(fields.Integer, required=False, description="Remisiones a retirar (deben estar en este control; no toca su contract_id)", example=[7]),
+    },
+)
+
+balance_control_cancel_model = api.model(
+    "BalanceControlCancel",
+    {
+        "id_control": fields.Integer(required=True, description="ID del control a cancelar (suave)", example=1),
+        "comment": fields.String(required=False, description="Motivo", example="Creado por error"),
+    },
+)
+
+
+balance_control_movement_model = api.model(
+    "BalanceControlMovement",
+    {
+        "id_control": fields.Integer(required=True, description="ID del control (activo)", example=6),
+        "type": fields.Integer(required=True, description="1 = INYECCION (amount > 0) · 2 = AJUSTE (amount != 0, negativo resta)", example=1),
+        "amount": fields.Float(required=True, description="Monto del movimiento; el saldo resultante nunca puede quedar < 0", example=250000.0),
+        "movement_date": fields.String(required=False, description="Fecha de la transacción YYYY-MM-DD (default hoy)", example="2026-09-17"),
+        "reason": fields.String(required=False, description="Motivo", example="Adenda 2 al contrato"),
+        "document": fields.String(required=False, description="Folio de pedido / adenda de respaldo", example="4500123456"),
+        "expected_balance": fields.Float(required=False, description="Saldo que el front tenía en pantalla; si ya no coincide -> 409 (bloqueo optimista)", example=1250000.0),
+    },
+)
+
+
+# --- WTForms ------------------------------------------------------------------
+class BalanceControlCustomFieldForm(Form):
+    key = StringField("key", [InputRequired()])
+    label = StringField("label", [InputRequired()])
+    value_type = StringField("value_type", [InputRequired(), AnyOf(VALUE_TYPES, message="value_type fuera de text|number|date|boolean")])
+    comment = StringField("comment", [], default="")
+
+
+class _BalanceControlBaseForm(Form):
+    title = StringField("title", [], default="")
+    month_period = StringField("month_period", [], default="")
+    currency = StringField("currency", [], default="MXN")
+    contract_number = StringField("contract_number", [], default="")
+    pedido_exiros = StringField("pedido_exiros", [], default="")
+    start_date = StringField("start_date", [], default="")
+    end_date = StringField("end_date", [], default="")
+    plant = StringField("plant", [], default="")
+    coordinator = StringField("coordinator", [], default="")
+    contract_object = StringField("contract_object", [], default="")
+
+
+class MetadataBalanceControlPostForm(_BalanceControlBaseForm):
+    # 0 / null / ausente = control SIN contrato (el midleware exige client_id + title).
+    contract_id = IntegerField("contract_id", [], default=0)
+    client_id = IntegerField("client_id", [], default=0)
+    format_id = IntegerField("format_id", [InputRequired(message="format_id requerido")])
+    # null de JSON llega como None (wtforms_json no aplica el default): el midleware lo trata como 0.
+    contracted_amount = FloatField("contracted_amount", [], default=0.0)
+
+
+class BalanceControlPostForm(Form):
+    metadata = FormField(MetadataBalanceControlPostForm, "metadata")
+    remissions = FieldList(IntegerField(validators=[]), "remissions", default=[])
+    custom_fields = FieldList(FormField(BalanceControlCustomFieldForm), "custom_fields", default=[])
+
+
+class MetadataBalanceControlPutForm(_BalanceControlBaseForm):
+    id_control = IntegerField("id_control", [], default=None)
+    id = IntegerField("id", [], default=None)
+
+
+class BalanceControlPutForm(Form):
+    metadata = FormField(MetadataBalanceControlPutForm, "metadata")
+
+
+class BalanceControlFieldsForm(Form):
+    id_control = IntegerField("id_control", [InputRequired(message="id_control requerido")])
+    custom_fields = FieldList(FormField(BalanceControlCustomFieldForm), "custom_fields", default=[])
+
+
+class BalanceControlRemissionsForm(Form):
+    id_control = IntegerField("id_control", [InputRequired(message="id_control requerido")])
+    add = FieldList(IntegerField(validators=[]), "add", default=[])
+    remove = FieldList(IntegerField(validators=[]), "remove", default=[])
+
+
+class BalanceControlCancelForm(Form):
+    id_control = IntegerField("id_control", [InputRequired(message="id_control requerido")])
+    comment = StringField("comment", [], default="")
+
+
+class BalanceControlMovementForm(Form):
+    id_control = IntegerField("id_control", [InputRequired(message="id_control requerido")])
+    type = IntegerField("type", [InputRequired(message="type requerido"), AnyOf([1, 2], message="type debe ser 1 (INYECCION) o 2 (AJUSTE)")])
+    # Sin InputRequired: trata 0 como vacío; el midleware valida None / 0 con el mensaje correcto.
+    amount = FloatField("amount", [], default=None)
+    movement_date = StringField("movement_date", [], default="")
+    reason = StringField("reason", [], default="")
+    document = StringField("document", [], default="")
+    expected_balance = FloatField("expected_balance", [], default=None)

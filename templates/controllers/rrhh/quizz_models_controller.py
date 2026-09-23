@@ -23,6 +23,8 @@ SELECT_COLUMNS = (
     "timestamp",
     "updated_at",
     "history",
+    "replaces",
+    "replaced_by",
 )
 
 # Columnas del listado (sin template/rubric completos: un template pesa
@@ -37,10 +39,12 @@ LIST_COLUMNS = (
     "updated_at",
     "has_rubric",
     "n_entries",
+    "replaces",
+    "replaced_by",
 )
 
 # Columnas que un UPDATE parcial puede tocar (whitelist del SET dinamico).
-_UPDATABLE_COLS = ("name", "template", "rubric", "status", "history")
+_UPDATABLE_COLS = ("name", "template", "rubric", "status", "history", "replaces", "replaced_by")
 
 
 def get_quizz_models_db(status, data_token):
@@ -48,7 +52,7 @@ def get_quizz_models_db(status, data_token):
     type_sql=2 -> fetchall."""
     sql = (
         "SELECT type_q, name, status, protected, created_by, timestamp, "
-        "updated_at, rubric IS NOT NULL, JSON_LENGTH(template) "
+        "updated_at, rubric IS NOT NULL, JSON_LENGTH(template), replaces, replaced_by "
         f"FROM {_TABLE} "
         "WHERE (status = %s OR %s IS NULL) "
         "ORDER BY type_q"
@@ -88,8 +92,8 @@ def insert_quizz_model(data: dict, data_token):
     en 5 tras el seed). type_sql=4 -> lastrowid = type_q asignado."""
     sql = (
         f"INSERT INTO {_TABLE} "
-        "(name, template, rubric, status, protected, created_by, timestamp, history) "
-        "VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
+        "(name, template, rubric, status, protected, created_by, timestamp, history, replaces) "
+        "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)"
     )
     val = (
         data.get("name"),
@@ -102,6 +106,7 @@ def insert_quizz_model(data: dict, data_token):
         data.get("created_by"),
         data.get("timestamp"),
         json.dumps(data.get("history", []), ensure_ascii=False),
+        data.get("replaces"),
     )
     flag, e, out = execute_sql(sql, val, 4, data_token)
     return flag, e, out

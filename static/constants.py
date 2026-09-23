@@ -8,7 +8,7 @@ from pathlib import Path
 from dotenv import dotenv_values
 from flask_restx import Api
 
-environment = "prod"
+environment = "dev"
 secrets = dotenv_values(".env") if environment != "prod" else dotenv_values("../.env")
 domain_path = "domain.pem" if environment != "prod" else "../domain.pem"
 api = Api()
@@ -54,6 +54,8 @@ log_file_po = "files/logs/po"
 log_file_rh = "files/logs/rh"
 log_file_users = "files/logs/users"
 log_file_cda = "files/logs/cda"
+log_file_sucursal = "files/logs/sucursal"
+log_file_sgi_formats = "files/logs/sgi_formats"
 filepath_permission = "static/permissions_models.json"
 path_contract_files = "files/contracts"
 filepath_bitacora_download = "files/quizz_out/temp_bitacora.csv"

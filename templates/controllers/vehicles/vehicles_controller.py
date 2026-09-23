@@ -133,6 +133,12 @@ def update_vehicle_km(id_vehicle: int, km: int, km_date, data_token):
     return execute_sql(sql, (km, km_date, id_vehicle), 3, data_token)
 
 
+def update_vehicle_extra_info(id_vehicle: int, extra_info: dict, history: list, data_token):
+    """Solo extra_info + history (p.ej. fotos del expediente); no toca el resto."""
+    sql = f"UPDATE {_T_VEHICLES} SET extra_info = %s, history = %s WHERE id = %s"
+    return execute_sql(sql, (json.dumps(extra_info, ensure_ascii=False), json.dumps(history), id_vehicle), 3, data_token)
+
+
 def set_active_vehicle(id_vehicle: int, is_active: int, history: list, data_token):
     sql = f"UPDATE {_T_VEHICLES} SET is_active = %s, history = %s WHERE id = %s"
     return execute_sql(sql, (is_active, json.dumps(history), id_vehicle), 3, data_token)

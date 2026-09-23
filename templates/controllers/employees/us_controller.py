@@ -53,3 +53,13 @@ def create_user_system_with_token(
     val = (user, hash_pass, json.dumps(dic_perm), emp_id, token, exp, timestamp_token)
     flag, error, result = execute_sql(sql, val, 4, data_token)
     return flag, error, result
+
+
+def get_user_by_emp_id(emp_id, data_token):
+    """Usuario del sistema ligado a un empleado (para saber si una
+    notificacion in-app le puede llegar). type_sql=1 -> fetchone:
+    (usernames,) o [] si el empleado no tiene usuario."""
+    sql = "SELECT usernames FROM sql_telintec.users_system WHERE emp_id = %s LIMIT 1"
+    val = (emp_id,)
+    flag, error, result = execute_sql(sql, val, 1, data_token)
+    return flag, error, result

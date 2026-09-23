@@ -168,7 +168,7 @@ def get_data_sm_per_range(type_r: str, type_chart: str, data_token):
 
 
 def get_data_movements_type(type_m: str, n_elements: int, data_token):
-    flag, error, results = get_movements_type(type_m, n_elements, data_token)
+    flag, error, results = get_movements_type(type_m, data_token, limit=n_elements)
     if not flag:
         return None
     if not(isinstance(results, list) or isinstance(results, tuple)):

@@ -594,6 +594,16 @@ basic_control_table_report_model = api.model(
             description="Área dentro de la planta",
             example="Producción",
         ),
+        "general_description": fields.String(
+            required=True,
+            description="Descripción general del reporte",
+            example="Suministro e instalación de soportería",
+        ),
+        "comments": fields.String(
+            required=True,
+            description="Comentarios del reporte",
+            example="Sin observaciones",
+        ),
         "user": fields.String(
             required=True,
             description="Usuario que genera el reporte",
@@ -604,12 +614,12 @@ basic_control_table_report_model = api.model(
             description="ID del usuario de telintec que genera el reporte",
             example=5050,
         ),
-        "remision": fields.Integer(
+        "remision": fields.String(
             required=False,
-            description="remision number",
-            example=501,
+            description="Número de remisión",
+            example="501",
         ),
-        "remito": fields.Integer(
+        "remito": fields.String(
             required=False,
             description="Número de remito de la remision",
             example="2",
@@ -673,6 +683,16 @@ basic_control_table_report_model = api.model(
             required=False,
             description="Total de la remisión",
             example=17632.58,
+        ),
+        "total_sin_iva_admi": fields.Float(
+            required=False,
+            description="Total sin IVA del bloque administración (independiente de totalSinIva)",
+            example=15100.00,
+        ),
+        "remission_sent_date_client": fields.String(
+            required=False,
+            description="Fecha de envío de la remisión al cliente (independiente de remission_sent_date)",
+            example="2026-03-20",
         ),
     },
 )
@@ -816,7 +836,12 @@ remission_balance_metadata_model = api.model(
         "hes_number": fields.String(required=False, description="No. HES", example="HES-778812"),
         "hes_release_date": fields.String(required=False, description="Fecha de liberación HES", example="2026-04-01"),
         "hes_balance": fields.Float(required=False, description="Saldo HES (por aprobar Ternium)", example=15200.50),
-        "projection_balance": fields.Float(required=False, description="Monto remisión / proyección de saldo", example=15200.50),
+        "projection_balance": fields.Float(required=False, description="Proyección de saldo por pedido", example=15200.50),
+        "remission_amount": fields.Float(
+            required=False,
+            description="Monto de remisión cerrada (Control de Saldos). Llave propia, independiente de remission_total",
+            example=15200.50,
+        ),
         "committed_balance": fields.Float(required=False, description="Saldo comprometido", example=8200.00),
         "invoiced_balance": fields.Float(required=False, description="Saldo facturado", example=7000.50),
         "observations": fields.String(required=False, description="Observaciones", example="Pendiente de aprobación"),
@@ -837,6 +862,14 @@ remission_balance_metadata_model = api.model(
         "centro_costos": fields.String(required=False, description="Centro de costos (independiente de ceco_fap)", example="CC-4451"),
         "responsable_centro_costos": fields.String(required=False, description="Responsable del centro de costos", example="María Pérez"),
         "personal_infra": fields.String(required=False, description="Personal infra (independiente de infra_responsible)", example="Juan García"),
+        "custom_fields": fields.Raw(
+            required=False,
+            description=(
+                "Valores de las columnas dinámicas del control de saldos del contrato: objeto {key: value}. "
+                "Merge por llave; null borra la llave. Solo llaves declaradas en el control activo (400 si no)"
+            ),
+            example={"numero_estimacion": 12},
+        ),
     },
 )
 
@@ -1379,6 +1412,10 @@ class MetadataControlTableRemissionForm(Form):
     remission_sent_date = StringField("remission_sent_date", [], default="")
     remission_sent_by = StringField("remission_sent_by", [], default="")
     remission_total = FloatField("remission_total", [], default=None)
+    # Campos propios del bloque administración (no alias: el back no los
+    # sincroniza con totalSinIva ni remission_sent_date).
+    total_sin_iva_admi = FloatField("total_sin_iva_admi", [], default=None)
+    remission_sent_date_client = StringField("remission_sent_date_client", [], default="")
 
 
 class MetadataControlTableRemissionUpdateForm(MetadataControlTableRemissionForm):
@@ -1440,6 +1477,8 @@ class MetadataRemissionBalanceForm(Form):
     hes_release_date = StringField("hes_release_date", [], default="")
     hes_balance = FloatField("hes_balance", [], default=None)
     projection_balance = FloatField("projection_balance", [], default=None)
+    # Monto de remisión cerrada (llave propia, no alias de remission_total).
+    remission_amount = FloatField("remission_amount", [], default=None)
     committed_balance = FloatField("committed_balance", [], default=None)
     invoiced_balance = FloatField("invoiced_balance", [], default=None)
     observations = StringField("observations", [], default="")
@@ -1460,6 +1499,8 @@ class MetadataRemissionBalanceForm(Form):
     centro_costos = StringField("centro_costos", [], default="")
     responsable_centro_costos = StringField("responsable_centro_costos", [], default="")
     personal_infra = StringField("personal_infra", [], default="")
+    # custom_fields ({key: value}) NO se declara: WTForms no modela dicts; el
+    # midleware lo lee del JSON crudo y lo valida contra el control de saldos.
 
 
 class RemissionBalanceUpdateForm(Form):
