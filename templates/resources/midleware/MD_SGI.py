@@ -32,6 +32,7 @@ from templates.controllers.vouchers.vouchers_controller import (
     update_history_voucher,
     update_state_safety_voucher,
     update_state_tools_voucher,
+    update_voucher_general_contract,
     update_voucher_general_from_delete,
     update_voucher_item,
     update_voucher_safety,
@@ -510,7 +511,7 @@ def update_status_tools(data, data_token):
             "type": 0,
             "timestamp": timestamp,
             "user": data_token.get("emp_id"),
-            "comment": f"Voucher tools actualizado de estados: "
+            "comment": "Voucher tools actualizado de estados: "
             f"{data['user_state']}-{data['superior_state']}-{data['storage_state']}",
         }
     )
@@ -551,7 +552,7 @@ def update_status_safety(data, data_token):
             "type": 1,
             "timestamp": timestamp,
             "user": data_token.get("emp_id"),
-            "comment": f"Voucher safety actualizado de estados: "
+            "comment": "Voucher safety actualizado de estados: "
             f"{data['user_state']}-{data['epp_state']}-{data['storage_state']}",
         }
     )
@@ -635,12 +636,29 @@ def get_vouchers_vehicle_api(data, data_token):
     return {"data": data_out, "msg": None, "error": None}, 200
 
 
+def _vehicle_contract_or_none(value):
+    """contracts.id del checklist vehicular, o None = sin contrato.
+
+    null, omitido, 0 y negativos -> None: la FK de vouchers_general.contract
+    solo acepta ids reales o NULL.
+    """
+    try:
+        contract = int(value)
+    except (TypeError, ValueError):
+        return None
+    return contract if contract > 0 else None
+
+
 def create_voucher_vehicle_api(data, data_token):
     time_zone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
 
     flag, error, lastrowid = create_voucher_general(
-        data["type"], timestamp, data_token.get("emp_id"), data["contract"], data_token
+        data["type"],
+        timestamp,
+        data_token.get("emp_id"),
+        _vehicle_contract_or_none(data.get("contract")),
+        data_token,
     )
     if not flag:
         return {"data": None, "msg": "No se pudo crear el voucher general", "error": error}, 400
@@ -745,6 +763,16 @@ def update_voucher_vehicle_api(data, data_token):
             "data": None,
             "msg": "Error al procesar los datos de accesorios",
             "error": str(e),
+        }, 400
+    # Antes que el resto: si la FK rechaza el contrato, no queda nada a medias.
+    flag, error, rows_changed = update_voucher_general_contract(
+        data["id_voucher_general"], _vehicle_contract_or_none(data.get("contract")), data_token
+    )
+    if not flag:
+        return {
+            "data": None,
+            "msg": "No se pudo actualizar el contrato del voucher vehicular",
+            "error": error,
         }, 400
     flag, error, rows_changed = update_voucher_vehicle(
         data["id_voucher_general"],
