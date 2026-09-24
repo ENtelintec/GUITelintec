@@ -4,6 +4,8 @@
 
 ## Estado — actualizado 2026-09-10 (S1)
 
+**2026-09-23**: **Arrastre de la migración RH cerrado**: el tren S2+Fase2 corre en prod, el tester re-corrió la regresión de las secciones afectadas y el usuario corrió el `DROP` de las 7 vistas puente en dev/test/prod (verificado: cero vistas viejas, FKs intactas, smoke verde) → [`migracion_esquemas_rrhh.md`](../migracion_esquemas_rrhh.md). Del arrastre solo queda el DML de salida tipo 0 en test/prod.
+
 **2026-09-10 (tarde)**: **Dashboard RH adelantado de S3 a S1** y verificado (98 checks + 10 por HTTP): `GET /dashboard/rrhh/summary` + `POST /dashboard/rrhh/series` → [`dashboard_rrhh.md`](../dashboard_rrhh.md). **Fichajes fuera** del dashboard por decisión del usuario (`series` queda con `altas_bajas` y `headcount`, `metric` extensible). Con esto **las 4 tareas del mes tienen el back servido con contrato** en la S1. **Siguiente para el back**: soporte a la integración del front (nómina, constructor, sede, dashboard); si sobra, en este orden: correo SES · F4 de multisede · arreglos de calidad de datos que ensucian el dashboard (ver pendientes). Arrastre pendiente (usuario): `DROP` de vistas y DML de salida en test/prod. De paso, corregido el bug por el que los avisos de exámenes médicos vencidos nunca se emitían → [`notificaciones_medicas_fix.md`](../notificaciones_medicas_fix.md).
 
 **2026-09-10**: **Multisede F3 (traslados) adelantada de S3 a S1** y verificada (50 checks): crear/cancelar/listar/detalle en el principal y listar/detalle/recibir en la sede, con enviado-vs-recibido y protección de las entradas de traslado → [`almacen_multisede_f3.md`](../almacen_multisede_f3.md). Con esto **todo el back de multisede del mes está servido con contrato** (F0–F3); F4 solo si sobra. El front tiene contrato para todas sus pantallas del mes (nómina, constructor, sede: inventario/movimientos/recepción, crear traslado). **Siguiente para el back**: dashboard RH (`summary` + `series`), adelantado de S3; después soporte a integración y, si sobra, `extract`/SES/F4. Arrastre pendiente (usuario): `DROP` de vistas y DML de salida en test/prod.
@@ -125,7 +127,7 @@ Lo primero que se cae, en orden: **extract de XML y correo SES** → **dashboard
 
 ## Entregables del mes
 
-- [ ] Arrastre del back cerrado: salida tipo 0 + `DROP` de las 7 vistas (o deploy del tren).
+- [ ] Arrastre del back cerrado: salida tipo 0 + ~~`DROP` de las 7 vistas (o deploy del tren)~~ ✅ (23-sep: deploy + regresión del tester + `DROP` en las 3 BDs). Falta el DML de salida en test/prod.
 - [ ] **Nómina**: doc con contrato · `DELETE /payroll/files` · reemplazo en el `POST` · `POST /payroll/notify` · guard muerto fuera · front integrado (RH + empleado) y en test.
 - [ ] **Constructor**: doc con contrato · candado por tasks · clonar · publicar-archiva · migrar pendientes · front con editor visual de template + pestaña avanzada, integrado y en test.
 - [ ] **Multisede**: DDL F0 en dev/test (`almacen_multisede.sql`) · F1 candado + catálogo · F2 namespace `sucursal` · F3 traslados · docs por fase · front con inventario, movimientos y recepción de sede.

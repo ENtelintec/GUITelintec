@@ -95,3 +95,27 @@ Nadie fuera de los controllers de RRHH las toca (verificado por grep). Un DDL (m
 - Si se agrega una tabla RRHH nueva antes de la Fase 2, nace directo en `mod_rrhh` (no engordar la lista de la Fase 2).
 - Al ejecutar la Fase 2: regenerar los conteos de refs con grep (los de la tabla de arriba son del 2026-08-07) y verificar de nuevo FKs/vistas/triggers en `information_schema` antes de escribir el DDL.
 - Al cerrar cada fase (drop de vistas incluido), reflejarlo en [`pendientes.md`](pendientes.md).
+
+## Notas posteriores
+
+- **2026-09-23 — DROP de las vistas puente (Fase 3), parcial.** El usuario corrió el
+  bloque diferido de `migracion_fase2_rrhh.sql`. Verificado en **dev, test y prod**
+  vía `information_schema`: las 6 vistas de Fase 2 (`aptitude`, `examenes_med`,
+  `fichajes`, `bitacora_rh`, `vacations`, `payroll`) ya no existen en `sql_telintec`;
+  las 7 tablas siguen como `BASE TABLE` en `sql_telintec_mod_rrhh` (conteos
+  consistentes entre BDs); FKs intactas (`bitacora_rh`/`examenes_med`/`payroll`/
+  `vacations` → `sql_telintec.employees`, `examenes_med` → `mod_rrhh.aptitude`); cero
+  vistas/rutinas/triggers apuntando a los nombres viejos; grep-cero de
+  `sql_telintec.<tabla vieja>` en `*.py` de la rama y de `origin/master`; smoke de
+  lectura vs dev verde (médicos, vacaciones, encuestas, fichajes, nómina, bitácora RH y
+  `dashboard/rrhh/summary`, 8 endpoints en 200). Quedaba `sql_telintec.tasks_gui`
+  (Fase 1, Paso 3 de `migracion_quizz_tasks.sql`, otro script).
+- **2026-09-23 — `DROP VIEW sql_telintec.tasks_gui` corrido por el usuario en las 3
+  BDs: migración de esquemas de RRHH completa.** Re-verificado: cero vistas viejas en
+  `sql_telintec` en dev/test/prod y smoke de lectura vs dev verde otra vez. La regla
+  "no escribir código contra `tasks_gui`" de *Al modificar* ya es obligatoria: la vista
+  no existe.
+- **2026-09-23 — regresión y deploy cerrados** (confirmado por el usuario): el tester
+  re-corrió las secciones afectadas de la hoja (médicos, fichajes, bitácora RH,
+  vacaciones, nómina) y prod corre el código del tren S2+Fase2. Sin pendientes abiertos
+  en esta iniciativa.
