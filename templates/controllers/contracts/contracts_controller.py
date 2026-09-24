@@ -100,6 +100,37 @@ def get_contract(data_token, id_contract=None):
         return True, None, result
 
 
+def get_contracts_catalog_db(data_token):
+    """Catalogo de contratos de uso general (GET /common/contracts).
+
+    SELECT propio con solo campos no sensibles: nunca lee los saldos ni el resto
+    de la metadata. NULLIF(..., 'null') porque JSON_UNQUOTE de un null JSON
+    devuelve la cadena 'null'.
+    """
+    sql = (
+        "SELECT "
+        "c.id, "
+        "c.code, "
+        "c.abbreviation, "
+        "NULLIF(JSON_UNQUOTE(JSON_EXTRACT(c.metadata, '$.abbreviation_sm')), 'null'), "
+        "NULLIF(JSON_UNQUOTE(JSON_EXTRACT(c.metadata, '$.identifier')), 'null') AS identifier, "
+        "NULLIF(JSON_UNQUOTE(JSON_EXTRACT(c.metadata, '$.planta')), 'null'), "
+        "NULLIF(JSON_UNQUOTE(JSON_EXTRACT(c.metadata, '$.area')), 'null'), "
+        "NULLIF(JSON_UNQUOTE(JSON_EXTRACT(c.metadata, '$.location')), 'null'), "
+        "c.client_id, "
+        "cu.name "
+        "FROM sql_telintec_mod_admin.contracts c "
+        "LEFT JOIN sql_telintec.customers_amc cu ON cu.id_customer = c.client_id "
+        "ORDER BY identifier, c.id"
+    )
+    flag, error, result = execute_sql(sql, None, 2, data_token)
+    if not flag:
+        return False, error, []
+    if not isinstance(result, list):
+        return False, error, []
+    return True, None, result
+
+
 def get_contract_id_by_quotation(id_quotation, data_token):
     """Id del contrato ligado a una cotizacion, o None si ninguno la referencia."""
     sql = "SELECT id FROM sql_telintec_mod_admin.contracts WHERE quotation_id = %s LIMIT 1"

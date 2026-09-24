@@ -237,7 +237,10 @@ voucher_vehicle_post_model = api.model(
         "type": fields.Integer(
             required=True, description="Tipo de voucher (ej. 2: Vehicular)"
         ),
-        "contract": fields.Integer(required=True, description="ID del contrato"),
+        "contract": fields.Integer(
+            required=False,
+            description="ID del contrato (GET /common/contracts); null, 0 u omitido = sin contrato",
+        ),
         "user": fields.Integer(
             required=True, description="ID del usuario que realiza el checklist"
         ),
@@ -280,7 +283,10 @@ voucher_vehicle_put_model = api.model(
         "type": fields.Integer(
             required=True, description="Tipo de voucher (ej. 2: Vehicular)"
         ),
-        "contract": fields.Integer(required=True, description="ID del contrato"),
+        "contract": fields.Integer(
+            required=False,
+            description="ID del contrato (GET /common/contracts); null, 0 u omitido = sin contrato",
+        ),
         "id_voucher_general": fields.Integer(
             required=False, description="ID del voucher general para actualizar"
         ),
@@ -510,7 +516,8 @@ class VoucherVehiclePostForm(Form):
     type = IntegerField(
         "type", [validators.number_range(min=-1, message="Invalid type")]
     )
-    contract = IntegerField("contract", [InputRequired()])
+    # Opcional solo en el checklist vehicular: null/0/omitido = sin contrato (NULL en BD).
+    contract = IntegerField("contract", [validators.Optional()])
     user = IntegerField("user", [InputRequired()])
     received_by = IntegerField("received_by", [InputRequired()])
     brand = StringField("brand", [InputRequired()])
@@ -543,7 +550,8 @@ class VoucherVehiclePutForm(Form):
     type = IntegerField(
         "type", [validators.number_range(min=-1, message="Invalid type")]
     )
-    contract = IntegerField("contract", [InputRequired()])
+    # Opcional solo en el checklist vehicular: null/0/omitido = sin contrato (NULL en BD).
+    contract = IntegerField("contract", [validators.Optional()])
     user = IntegerField("user", [InputRequired()])
     received_by = IntegerField("received_by", [InputRequired()])
     brand = StringField("brand", [InputRequired()])

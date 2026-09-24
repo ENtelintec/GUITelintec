@@ -112,6 +112,9 @@
 
 - [ ] **[back] Variante combinada `?full=1` del PDF del checklist vehicular** (checklist + anexos + evidencia fotográfica, como remisiones). → [`checklist_vehicular_pdf.md`](checklist_vehicular_pdf.md)
 - [ ] **[back] Doble-codificación de `accessories`** en el alta del voucher vehicular (`json.dumps` en midleware y otro en el controller); el lector ya lo tolera, falta corregir el alta y normalizar datos. → [`checklist_vehicular_pdf.md`](checklist_vehicular_pdf.md)
+- [x] ~~**[back] Contrato del checklist vehicular editable y opcional**~~ — hecho (2026-09-23): el `PUT /voucher/vehicle` guarda `contract` (antes lo exigía y lo ignoraba) y `null`/`0`/omitido = sin contrato; catálogo nuevo `GET /common/contracts` para el selector. Verificado vs dev con vouchers desechables. → [`checklist_vehicular_contrato.md`](checklist_vehicular_contrato.md) · [`common_contracts_catalog.md`](common_contracts_catalog.md)
+- [x] ~~**[back] DDL `vouchers_general_contract_nullable.sql`**~~ — corrido en dev, test y prod (2026-09-23); verificado en las 3 BDs: `contract` NULL-able y FK `vouchers_general_ibfk_2` de vuelta. → [`checklist_vehicular_contrato.md`](checklist_vehicular_contrato.md)
+- [ ] **[front] Selector de contrato del checklist vehicular**: lista de `GET /common/contracts` (guardar `id`), opción "Sin contrato" que manda `null`, mandar siempre el valor actual en el `PUT` y pintar `contract: null` como "Sin contrato". → [`checklist_vehicular_contrato.md`](checklist_vehicular_contrato.md)
 
 ## CDA (Control de Activos — vehículos)
 

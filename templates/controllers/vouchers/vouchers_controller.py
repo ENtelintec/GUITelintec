@@ -283,6 +283,24 @@ def update_history_voucher(history: list, id_voucher, data_token):
     return flag, error, rows_changed
 
 
+def update_voucher_general_contract(id_voucher, contract, data_token):
+    """
+    Actualiza el contrato de un voucher en la tabla vouchers_general.
+
+    :param id_voucher: ID del voucher general a actualizar
+    :param contract: ID del contrato (contracts.id) o None = sin contrato
+    :return: Estado de la operación (éxito/error)
+    """
+    sql = (
+        "UPDATE sql_telintec_mod_admin.vouchers_general "
+        "SET contract = %s "
+        "WHERE id_voucher = %s"
+    )
+    val = (contract, id_voucher)
+    flag, error, rows_changed = execute_sql(sql, val, 3, data_token)
+    return flag, error, rows_changed
+
+
 def update_voucher_general_from_delete(id_voucher, history, data_token):
     """
     Actualiza el historial de un voucher en la tabla vouchers_general.

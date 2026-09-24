@@ -19,6 +19,7 @@ from templates.controllers.contracts.contracts_controller import (
     get_contract_id_by_quotation,
     get_contracts_abreviations_db,
     get_contracts_by_ids,
+    get_contracts_catalog_db,
     get_contracts_with_items,
     update_contract,
 )
@@ -206,6 +207,46 @@ def get_contracts(id_contract=None, data_token=None):
                 else creation.strftime(format_timestamps),
                 "quotation_id": quotation_id,
                 "timestamps": json.loads(timestamps),
+            }
+        )
+    return {"data": data_out, "msg": None, "error": None}, 200
+
+
+def get_contracts_catalog(data_token):
+    """Catalogo de contratos para selectores de cualquier area (GET /common/contracts)."""
+    flag, error, result = get_contracts_catalog_db(data_token)
+    if not flag:
+        return {
+            "data": [],
+            "msg": "No se pudo obtener el catálogo de contratos",
+            "error": error,
+        }, 400
+    data_out = []
+    for item in result:
+        (
+            id_c,
+            code,
+            abbreviation,
+            abbreviation_sm,
+            identifier,
+            planta,
+            area,
+            location,
+            client_id,
+            client_name,
+        ) = item
+        data_out.append(
+            {
+                "id": id_c,
+                "code": code,
+                "abbreviation": abbreviation,
+                "abbreviation_sm": abbreviation_sm,
+                "identifier": identifier,
+                "planta": planta,
+                "area": area,
+                "location": location,
+                "client_id": client_id,
+                "client_name": client_name,
             }
         )
     return {"data": data_out, "msg": None, "error": None}, 200

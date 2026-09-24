@@ -14,6 +14,7 @@ Formato de cada línea: `doc — endpoint principal: qué hace · fecha · ⏳ p
 - [`contract_items_qa_item_id_upsert.md`](contract_items_qa_item_id_upsert.md) — `PUT /admin/presales/contract`: items de contrato/cotización con llave `qa_item_id` (corte duro en request y response) y upsert real: crear, actualizar o borrar con guard de pertenencia. · 2026-07-29 · ⏳ el PUT no devuelve los ids creados
 - [`contract_items_file_import_sections.md`](contract_items_file_import_sections.md) — `POST /admin/presales/contract/items/file`: import de partidas desde Excel con parser multi-plantilla, errores detallados y secciones (`section_index`); enlace SM ↔ ítem por `(contract_id, section_index, partida)`. · 2026-07-30
 - [`quotation_activity_upsert_null_fix.md`](quotation_activity_upsert_null_fix.md) — `PUT /admin/collections/activity/quotation`: actividad de cotización con upsert real de items por `qa_item_id`, QA sin items editable/borrable, `PUT /activity/ChangeStatus` funcional y 404 en id inexistente. · 2026-08-15 · ⏳ front debe mandar `qa_item_id`/`item_contract_id`
+- [`common_contracts_catalog.md`](common_contracts_catalog.md) — `GET /common/contracts`: catálogo de contratos de uso general (permiso `Common`) para selectores: id, número, abreviaturas, nombre, planta/área/ubicación y cliente; sin saldos. · 2026-09-23
 
 Ver también: [`quotation_remission_unit_price_split.md`](quotation_remission_unit_price_split.md) · [`remission_items_json_remove_fix.md`](remission_items_json_remove_fix.md) · [`remission_pdf_download.md`](remission_pdf_download.md) (fix de `get_contract` por id) · [`po_folio_generation_from_contract_code.md`](po_folio_generation_from_contract_code.md) · [`control_saldos_cabecera.md`](control_saldos_cabecera.md)
 
@@ -103,8 +104,9 @@ Ver también: [`consolidacion_namespaces_encuestas.md`](consolidacion_namespaces
 - [`checklist_vehicular_pdf.md`](checklist_vehicular_pdf.md) — `GET /sgi/voucher/vehicle/download/pdf/<id_voucher>`: PDF del Check List Vehicular FO-CDA-03 R3 con colores oficiales, 36 accesorios fijos, siluetas por tipo y firmas desde S3. · 2026-08-15 · ⏳ variante `?full=1`; doble-encode de `accessories`
 - [`cda_alertas_y_fotos.md`](cda_alertas_y_fotos.md) — `GET /cda/alerts` · `GET /cda/notifications` · `POST /cda/vehicle/photo-<id>`: alertas de vehículos calculadas on-read (pólizas, pagos, mantenimiento, refrendo, llantas), barrido diario a notificación de sistema y fotos del expediente en S3. · 2026-09-17 · ⏳ tile/galería del front
 - [`iso_formats_crud.md`](iso_formats_crud.md) — `GET·POST·PUT·DELETE /sgi/format(s)`: CRUD del catálogo de formatos ISO (`iso_formats`: código, revisión en la misma fila, vigencia, `config` validado, baja suave) y los PDFs leen `Codigo:`/`I. Vigencia:` de la BD (`settings.json["formats"]` retirado). · 2026-09-17 · ⏳ pantalla SGI; versionar `config`
+- [`checklist_vehicular_contrato.md`](checklist_vehicular_contrato.md) — `POST·PUT /sgi/voucher/vehicle`: `contract` editable en el `PUT` y opcional en el checklist vehicular (`null`/`0` = sin contrato; `vouchers_general.contract` NULL-able). · 2026-09-23 · ⏳ selector del front
 
-Ver también: [`control_saldos_cabecera.md`](control_saldos_cabecera.md) (catálogo `iso_formats` de SGI) · [`remission_combined_pdf.md`](remission_combined_pdf.md) (la fusión que reusaría `?full=1`)
+Ver también: [`common_contracts_catalog.md`](common_contracts_catalog.md) (lista para el selector de contrato del checklist) · [`control_saldos_cabecera.md`](control_saldos_cabecera.md) (catálogo `iso_formats` de SGI) · [`remission_combined_pdf.md`](remission_combined_pdf.md) (la fusión que reusaría `?full=1`)
 
 ## Transversal
 
