@@ -240,15 +240,107 @@ Gotchas (todos previos a este cambio):
   derivada agregada + `ORDER BY`. Hay dos salidas: ordenar en Python (contratos)
   o mover el agregado a una subconsulta en la proyección (proveedores). Si el
   orden es por texto, conviene la subconsulta: Python no replica la collation.
+- **Lo mismo vale para columnas JSON/TEXT de la tabla**: MySQL 8.4 las mete al
+  sort buffer si la consulta las **lee** (en el `SELECT`, el `WHERE` o el
+  `ORDER BY`) y ordena con filesort. Verificado: ordenar `quotations` leyendo
+  `products` (130 KB) truena con buffer de 32 KB. Salidas:
+  - Si la columna **solo** está en el `SELECT`, traerla con una subconsulta por
+    PK en la proyección (`(SELECT t2.col FROM tabla t2 WHERE t2.id = t.id)`):
+    el sort solo carga la llave y el PK.
+  - Si además filtra u ordena (como `body` en notificaciones), la subconsulta
+    no sirve: la columna viaja igual, y una tabla derivada también. Quitar el
+    `ORDER BY` y ordenar en Python.
+
+  Un `ORDER BY` que usa el índice del PK no hace sort y no tiene el riesgo.
 - **No arreglarlo subiendo `sort_buffer_size`** (en el servidor o con
   `SET_VAR`): solo aplaza el error hasta que otro registro crezca, y cada
   consulta gasta más memoria.
 - **Para medir el margen de una consulta**, correrla con
-  `SELECT /*+ SET_VAR(sort_buffer_size = 32768) */ …` (el mínimo). Si pasa, su
-  sort no depende del tamaño del JSON.
+  `SELECT /*+ SET_VAR(sort_buffer_size = 32768) */ …` (el mínimo). Si pasa con
+  un dato que ya pesa **más** de 32 KB (como el contrato 5 de test), ese dato no
+  viaja en el sort. Si los datos son chicos, pasar solo dice que hoy caben; para
+  saber qué viaja, revisar el `EXPLAIN FORMAT=TREE` (un `Sort` **arriba** del
+  `aggregate` ordena el JSON ya agregado). Ojo: rellenar la columna con
+  `CONCAT(col, REPEAT(…))` no sirve para simular crecimiento, porque la
+  expresión se calcula después del sort.
 - `get_contracts_with_items` devuelve las filas ya ordenadas por `creation`
   descendente y el midleware no las reordena. Otro criterio de orden va en ese
   `sorted(...)`, no en el SQL.
 - No agregarle `ORDER BY` a `get_remission_by_id`. Su sort interno (antes de
   agrupar) solo truena si **una** remisión junta ~256 KB entre `history`,
   `files` y `extra_info`; hoy el `history` más grande mide 1.4 KB.
+
+## Notas posteriores
+
+### 2026-09-24: barrido de todo el SQL del repo y notificaciones
+
+Se revisaron las 84 consultas del repo con `ORDER BY`, `GROUP BY` o agregados
+JSON (extraídas del AST de Python). Se cruzaron con el tamaño máximo por fila
+de cada columna JSON/TEXT en dev, test y prod, y las candidatas se probaron con
+`EXPLAIN` y con buffer de 32 KB, todo en solo lectura. Ninguna otra truena hoy:
+
+| Consulta | Qué viaja en el sort | Máx. hoy | Estado |
+| --- | --- | --- | --- |
+| Notificaciones (`get_notifications_by_user` / `_by_permission`) | `body` completo | 14.5 KB (test) | **arreglada** (abajo) |
+| Nómina `get_payrolls` | `files_data` | 1.2 KB | riesgo bajo, sin cambio |
+| Productos (4 listados) | `extra_info` y `brands` del proveedor | 7 KB | riesgo bajo, sin cambio |
+| Traslados, vehículos, gestión de compras | `items` / `history` | < 1 KB | riesgo bajo, sin cambio |
+
+Seguras por estructura:
+
+- Los agregados sin `ORDER BY` (cotizaciones, SM, OC, solicitudes de OC,
+  actividades de cotización, remisiones, vales) ordenan **antes** de agrupar.
+- Chats, reservaciones, controles de saldo y modelos de encuesta ordenan por el
+  índice del PK, sin sort.
+- El consolidado de almacén arma su JSON después del sort.
+- Empleados usa `GROUP_CONCAT`, con tope de 1024 B. El directorio pide 40–48 KB
+  de buffer por la llave del `GROUP BY`, que la fija el esquema y no crece con
+  los datos.
+- El dashboard de RH solo agrega números.
+
+**Notificaciones**
+([`Notifications_controller.py`](../templates/controllers/notifications/Notifications_controller.py)).
+El `WHERE` y el orden salen de `body`, así que ninguna variante en SQL evita
+cargarlo al sort. Se quitó el `ORDER BY body->'$.status', timestamp DESC` y
+`_sort_notifications` ordena en Python:
+
+- `status` ascendente (entero 0/1 en las 3 BDs);
+- `timestamp` descendente;
+- en empates exactos (mismo `status` y mismo segundo), **id descendente**. En SQL
+  ese empate no estaba definido, y MySQL ya devolvía el id más nuevo primero en
+  el 86–92 % de los grupos.
+
+Verificado contra `HEAD` en las 3 BDs, con 150 combinaciones de receptor, área,
+remitente y status: mismas filas y mismo orden por `(status, timestamp)`. El
+plan nuevo no tiene `Sort`.
+
+Contrato para el front: **sin cambios.** Estos tres endpoints devuelven el mismo
+envelope `{data, msg, error}` y la misma lista:
+
+- `GET /GUI/api/v1/misc/notifications/employee/<id_emp>&<status>`
+- `GET /GUI/api/v1/misc/notifications/all/<status>`
+- `GET /GUI/api/v1/misc/dashboard`
+
+Van con el header `Authorization` con el JWT crudo, sin `Bearer`. Lo único que
+cambia es que el orden entre notificaciones del mismo segundo queda fijo: la
+más nueva primero.
+
+**De paso: a dev le faltan columnas de vales.** Le faltan
+`voucher_tools.status` y `voucher_safety.status`, que test y prod sí tienen.
+Por eso en dev los GET de vales de herramientas y seguridad, y adjuntar
+archivos a esos vales, dan `1054 Unknown column`. DDL:
+[`vouchers_tools_safety_status.sql`](../scripts_db_handle/vouchers_tools_safety_status.sql),
+solo para dev.
+
+### 2026-09-24: DDL aplicados
+
+El usuario corrió los dos scripts y se verificó en solo lectura:
+
+- **Test**: `activity_reports.files` quedó idéntica a dev y prod, y
+  `GET /remission--1` responde 200 con `data: []` (test no tiene remisiones).
+- **Dev**: `voucher_tools.status` y `voucher_safety.status` quedaron idénticas
+  a prod, y los GET de vales de herramientas y seguridad ya responden.
+
+Diferencia que queda, sin impacto: en test, `voucher_tools` y `voucher_safety`
+tienen además una columna `files` (JSON, default `'[]'`, vacía) que dev, prod y
+el código no tienen. Por eso en test `status` va después de `files`.
