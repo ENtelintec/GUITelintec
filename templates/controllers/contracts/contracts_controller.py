@@ -284,12 +284,16 @@ def get_contracts_with_items(data_token):
         ")) AS items "
         "FROM sql_telintec_mod_admin.contracts c "
         "LEFT JOIN sql_telintec_mod_admin.quotation_items qi ON qi.quotation_id = c.quotation_id "
-        "GROUP BY c.id "
-        "ORDER BY c.creation DESC"
+        # Sin ORDER BY: ordenar las filas ya agrupadas mete el JSON de items de cada
+        # contrato al sort buffer (256 KB) y un contrato grande truena con 1038
+        # "Out of sort memory". Se ordena abajo, en Python.
+        "GROUP BY c.id"
     )
     flag, error, result = execute_sql(sql, None, 2, data_token)
     if not flag:
         return False, error, []
     if not (isinstance(result, tuple) or isinstance(result, list)):
         return False, error, []
+    # Mismo orden que el antiguo ORDER BY c.creation DESC (creation es NOT NULL).
+    result = sorted(result, key=lambda row: row[2], reverse=True)
     return True, None, result

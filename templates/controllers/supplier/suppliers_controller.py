@@ -102,12 +102,12 @@ def get_all_suppliers_amc(data_token):
         "    s.web_url, "
         "    s.type, "
         "    s.extra_info, "
-        "    COALESCE(items.items_json, JSON_ARRAY()) AS items "
-        "FROM sql_telintec.suppliers_amc s "
-        "LEFT JOIN ( "
-        "    SELECT  "
-        "        i.id_supplier_amc, "
-        "        JSON_ARRAYAGG( "
+        # items en subconsulta correlacionada (no LEFT JOIN a una derivada agrupada):
+        # asi el ORDER BY solo ordena filas de suppliers_amc y el JSON se arma despues.
+        # Ordenar filas que ya traen el JSON agregado lo mete al sort buffer (256 KB)
+        # -> 1038 "Out of sort memory". El ORDER BY se queda en SQL por la collation.
+        "    COALESCE(( "
+        "        SELECT JSON_ARRAYAGG( "
         "            JSON_OBJECT( "
         "                'id_item', i.id, "
         "                'item_name', i.item_name, "
@@ -118,11 +118,11 @@ def get_all_suppliers_amc(data_token):
         "                , 'currency', i.currency "
         "                , 'id_inventory', i.id_inventory "
         "            ) "
-        "        ) AS items_json "
-        "    FROM sql_telintec_mod_admin.items_suppliers_amc i "
-        "    WHERE i.id IS NOT NULL "
-        "    GROUP BY i.id_supplier_amc "
-        ") items ON s.id_supplier = items.id_supplier_amc "
+        "        ) "
+        "        FROM sql_telintec_mod_admin.items_suppliers_amc i "
+        "        WHERE i.id_supplier_amc = s.id_supplier "
+        "    ), JSON_ARRAY()) AS items "
+        "FROM sql_telintec.suppliers_amc s "
         "ORDER BY s.name;"
     )
     flag, error, result = execute_sql(sql, None, 5, data_token)

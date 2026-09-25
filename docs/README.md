@@ -15,6 +15,7 @@ Formato de cada línea: `doc — endpoint principal: qué hace · fecha · ⏳ p
 - [`contract_items_file_import_sections.md`](contract_items_file_import_sections.md) — `POST /admin/presales/contract/items/file`: import de partidas desde Excel con parser multi-plantilla, errores detallados y secciones (`section_index`); enlace SM ↔ ítem por `(contract_id, section_index, partida)`. · 2026-07-30
 - [`quotation_activity_upsert_null_fix.md`](quotation_activity_upsert_null_fix.md) — `PUT /admin/collections/activity/quotation`: actividad de cotización con upsert real de items por `qa_item_id`, QA sin items editable/borrable, `PUT /activity/ChangeStatus` funcional y 404 en id inexistente. · 2026-08-15 · ⏳ front debe mandar `qa_item_id`/`item_contract_id`
 - [`common_contracts_catalog.md`](common_contracts_catalog.md) — `GET /common/contracts`: catálogo de contratos de uso general (permiso `Common`) para selectores: id, número, abreviaturas, nombre, planta/área/ubicación y cliente; sin saldos. · 2026-09-23
+- [`contracts_products_sort_memory_fix.md`](contracts_products_sort_memory_fix.md) — `GET /admin/presales/contracts/products`: contratos grandes ya no dan 1038 "Out of sort memory" (orden en Python, no sobre el JSON agregado); mismo patrón preventivo en proveedores. · 2026-09-24 · ⏳ DDL `activity_reports.files` en test
 
 Ver también: [`quotation_remission_unit_price_split.md`](quotation_remission_unit_price_split.md) · [`remission_items_json_remove_fix.md`](remission_items_json_remove_fix.md) · [`remission_pdf_download.md`](remission_pdf_download.md) (fix de `get_contract` por id) · [`po_folio_generation_from_contract_code.md`](po_folio_generation_from_contract_code.md) · [`control_saldos_cabecera.md`](control_saldos_cabecera.md)
 
@@ -28,7 +29,7 @@ Ver también: [`quotation_remission_unit_price_split.md`](quotation_remission_un
 - [`remission_attachment_delete.md`](remission_attachment_delete.md) — `DELETE /admin/collections/remission/attachment-<id_report>`: quita un anexo de `files` y de S3 (best-effort); las firmas no se borran; el `POST` usa llave S3 con id de reporte y re-subir reemplaza. · 2026-08-03 · ⏳ borrado en lote; front manda `category`
 - [`control_table_operaciones_y_campos_admin.md`](control_table_operaciones_y_campos_admin.md) — `POST·PUT /remissionControlTable`: permiso `operaciones` (también en `GET /remission-<id>`), campos propios `total_sin_iva_admi` y `remission_sent_date_client`; `DELETE /remission` acepta remisiones sin items. · 2026-08-26 · ⏳ [front] apuntar a las llaves nuevas
 
-Ver también: toda la sección **Control de saldos** (mismos endpoints de remisión) · [`quotation_activity_upsert_null_fix.md`](quotation_activity_upsert_null_fix.md) · [`contract_items_qa_item_id_upsert.md`](contract_items_qa_item_id_upsert.md) · [`pdf_tipografia_helvetica_y_cuadricula_remision.md`](pdf_tipografia_helvetica_y_cuadricula_remision.md) · [`sm_pdf_delivery_signatures.md`](sm_pdf_delivery_signatures.md) (mismo patrón de firmas desde S3)
+Ver también: toda la sección **Control de saldos** (mismos endpoints de remisión) · [`quotation_activity_upsert_null_fix.md`](quotation_activity_upsert_null_fix.md) · [`contract_items_qa_item_id_upsert.md`](contract_items_qa_item_id_upsert.md) · [`pdf_tipografia_helvetica_y_cuadricula_remision.md`](pdf_tipografia_helvetica_y_cuadricula_remision.md) · [`sm_pdf_delivery_signatures.md`](sm_pdf_delivery_signatures.md) (mismo patrón de firmas desde S3) · [`contracts_products_sort_memory_fix.md`](contracts_products_sort_memory_fix.md) (columna `files` que faltaba en test)
 
 ## Administración — Control de saldos
 
@@ -70,7 +71,7 @@ Ver también: [`po_sm_deliveries_tracking.md`](po_sm_deliveries_tracking.md) (la
 - [`almacen_multisede_f2.md`](almacen_multisede_f2.md) — `POST·PUT·DELETE /sucursal/movement`: multisede F2 — namespace `sucursal` con inventario de sede, stock del principal en lectura, kardex y movimientos con stock por sede nunca negativo. · 2026-09-08 · ⏳ pantallas front de la sede
 - [`almacen_multisede_f3.md`](almacen_multisede_f3.md) — `POST /almacen/transfer` · `PUT /sucursal/transfer/receive`: multisede F3 — traslados principal → sede en dos pasos con en-tránsito, folio `TRS-####`, cancelación con reversa y recepción única con diferencias. · 2026-09-10 · ⏳ front de recepción; procedimiento de discrepancias
 
-Ver también: [`planes/almacen_multisede_plan.md`](planes/almacen_multisede_plan.md) (plan de la iniciativa) · [`po_movements_inbound_match.md`](po_movements_inbound_match.md) (OC ↔ entradas de almacén) · [`purchase_list_pdf.md`](purchase_list_pdf.md)
+Ver también: [`planes/almacen_multisede_plan.md`](planes/almacen_multisede_plan.md) (plan de la iniciativa) · [`po_movements_inbound_match.md`](po_movements_inbound_match.md) (OC ↔ entradas de almacén) · [`purchase_list_pdf.md`](purchase_list_pdf.md) · [`contracts_products_sort_memory_fix.md`](contracts_products_sort_memory_fix.md) (listado de proveedores sin sort sobre el JSON)
 
 ## RRHH — Encuestas
 
