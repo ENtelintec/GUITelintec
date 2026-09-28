@@ -10,10 +10,16 @@ from wtforms.fields.list import FieldList
 from wtforms.fields.numeric import FloatField, IntegerField
 from wtforms.fields.simple import EmailField, StringField
 from wtforms.form import Form
-from wtforms.validators import InputRequired
+from wtforms.validators import AnyOf, InputRequired
 
 from static.constants import api
 from static.Models.api_models import date_filter, datetime_filter
+
+# Tipo de documento de una cotización (docs/quotation_ocd.md).
+# "ocd" = orden de compra directa: cotización aprobada por el cliente que
+# sirve de base a remisiones y al control de entregas (docs/planes/control_entregas_ocd_plan.md).
+QUOTATION_DOCUMENT_TYPES = ("quotation", "ocd")
+QUOTATION_CURRENCIES = ("MXN", "USD")
 
 metadata_quotation_model = api.model(
     "MetadataQuotation",
@@ -41,8 +47,39 @@ metadata_quotation_model = api.model(
             required=True, description="The quotation client id"
         ),
         "emp_id": fields.Integer(required=True, description="The quotation emp id"),
+        # --- OCD (orden de compra directa) — opcionales, docs/quotation_ocd.md ---
+        "document_type": fields.String(
+            required=False,
+            description="quotation (default) | ocd. Ausente o vacío en un PUT conserva el valor guardado",
+            example="ocd",
+        ),
+        "client_po_number": fields.String(
+            required=False, description="Pedido EXIROS / nº de OC del cliente (texto libre)", example="3716578048"
+        ),
+        "currency": fields.String(required=False, description="MXN (default) | USD", example="MXN"),
+        "delivery_time": fields.String(
+            required=False, description="Tiempo de entrega ofrecido al cliente (texto libre)", example="2 semanas"
+        ),
+        "approved_date": fields.String(
+            required=False, description="Fecha en que el cliente aprobó la cotización (YYYY-MM-DD)", example="2026-09-20"
+        ),
     },
 )
+
+quotation_ocd_model = api.model(
+    "QuotationOcd",
+    {
+        "id_quotation": fields.Integer(required=True, description="Cotización a convertir / actualizar", example=51),
+        "document_type": fields.String(
+            required=False, description="ocd (default) | quotation (revertir; bloqueado con control de entregas activo)", example="ocd"
+        ),
+        "client_po_number": fields.String(required=False, description="Pedido EXIROS / nº de OC del cliente", example="3716578048"),
+        "currency": fields.String(required=False, description="MXN | USD (vacío conserva)", example="MXN"),
+        "delivery_time": fields.String(required=False, description="Tiempo de entrega (vacío conserva)", example="2 semanas"),
+        "approved_date": fields.String(required=False, description="YYYY-MM-DD (vacío conserva)", example="2026-09-20"),
+    },
+)
+
 products_quotation_model = api.model(
     "ProductsQuotationInsert",
     {
@@ -405,6 +442,36 @@ class MetadataQuotationForm(Form):
     emp_id = IntegerField(
         "emp_id", validators=[InputRequired(message="Invalid id or 0 not acepted")]
     )
+    # OCD: todos opcionales. "" = no viene → el midleware conserva lo guardado
+    # (PUT) o aplica el default (POST). approved_date se valida en el midleware.
+    document_type = StringField(
+        "document_type",
+        [AnyOf(("",) + QUOTATION_DOCUMENT_TYPES, message="document_type debe ser quotation u ocd")],
+        default="",
+    )
+    client_po_number = StringField("client_po_number", [], default="")
+    currency = StringField(
+        "currency", [AnyOf(("",) + QUOTATION_CURRENCIES, message="currency debe ser MXN o USD")], default=""
+    )
+    delivery_time = StringField("delivery_time", [], default="")
+    approved_date = StringField("approved_date", [], default="")
+
+
+class QuotationOcdForm(Form):
+    id_quotation = IntegerField(
+        "id_quotation", validators=[InputRequired(message="id_quotation requerido")]
+    )
+    document_type = StringField(
+        "document_type",
+        [AnyOf(QUOTATION_DOCUMENT_TYPES, message="document_type debe ser quotation u ocd")],
+        default="ocd",
+    )
+    client_po_number = StringField("client_po_number", [], default="")
+    currency = StringField(
+        "currency", [AnyOf(("",) + QUOTATION_CURRENCIES, message="currency debe ser MXN o USD")], default=""
+    )
+    delivery_time = StringField("delivery_time", [], default="")
+    approved_date = StringField("approved_date", [], default="")
 
 
 class ProductsPostQuotationForm(Form):

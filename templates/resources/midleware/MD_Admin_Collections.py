@@ -27,6 +27,7 @@ from templates.controllers.presales.remisions_controller import (
     insert_quotation_activity,
     insert_quotation_activity_item,
     insert_remission,
+    set_remission_status,
     update_activity_report,
     update_quotation_activity,
     update_quotation_activity_item,
@@ -42,6 +43,16 @@ from templates.misc.Functions_Files import write_log_file
 from templates.resources.midleware.MD_BalanceControl import (
     resolve_balance_control_for_remission,
     validate_remission_custom_fields,
+)
+from templates.controllers.purchases.delivery_control_controller import (
+    CONTROL_COLUMNS as DELIVERY_CONTROL_COLUMNS,
+    get_delivery_control_by_id,
+)
+from templates.resources.midleware.MD_DeliveryControl import (
+    check_over_delivery,
+    delivery_control_lock_error,
+    refresh_delivery_control_status,
+    resolve_delivery_control_for_remission,
 )
 from templates.resources.midleware.MD_SM import get_iddentifiers_creation_contracts
 
@@ -245,6 +256,74 @@ def _resolve_contract_id(metadata: dict, raw_metadata: dict | None, current=None
     except (ValueError, TypeError):
         value = 0
     return value if value > 0 else current
+
+
+# Remisión cancelada (activity_reports.status = 3): inmutable, no consume saldo
+# ni cuenta como entregada (docs/remission_cancel.md).
+REMISSION_CANCELLED_STATUS = 3
+
+
+def _cancelled_remission_error(result_ra, action: str = "modificar"):
+    """Envelope 400 si la fila (get_remission_by_id) está cancelada; None si no."""
+    if len(result_ra) <= 14 or _int_or_none_status(result_ra[14]) != REMISSION_CANCELLED_STATUS:
+        return None
+    return {
+        "data": {"id_remission": result_ra[0], "status": REMISSION_CANCELLED_STATUS},
+        "msg": f"La remisión {result_ra[0]} está cancelada; no se puede {action}",
+        "error": "remisión cancelada",
+    }
+
+
+def _int_or_none_status(value):
+    try:
+        return int(value) if value is not None else None
+    except (ValueError, TypeError):
+        return None
+
+
+def cancel_remission_from_api(data, data_token):
+    """PUT /remission/cancel: status 3 + history con motivo. Sin reactivación.
+    El saldo consumido del control de saldos y lo entregado del control de
+    entregas se recalculan solos (ambos excluyen status 3)."""
+    timezone = pytz.timezone(timezone_software)
+    timestamp = datetime.now(pytz.utc).astimezone(timezone).strftime(format_timestamps)
+    user = data_token.get("emp_id", "desconocido")
+    id_remission = data["id"]
+    flag, error, result_ra = get_remission_by_id(id_remission, data_token)
+    if not flag:
+        return {"data": None, "msg": "Error al obtener la remisión", "error": error}, 400
+    if not isinstance(result_ra, (list, tuple)) or len(result_ra) == 0 or result_ra[0] is None:
+        return {"data": None, "msg": f"No se encontró la remisión (ID {id_remission})", "error": "remisión no encontrada"}, 404
+    already = _cancelled_remission_error(result_ra, "cancelar de nuevo")
+    if already:
+        return already, 400
+    reason = (data.get("reason") or "").strip()
+    history = json.loads(result_ra[15]) if result_ra[15] else []  # pyrefly: ignore
+    history.append({
+        "timestamp": timestamp,
+        "user": user,
+        "action": "Cancelación",
+        "comment": "Cancelación de remisión." + (f" Motivo: {reason}" if reason else ""),
+        "changes": {"metadata": [{"field": "status", "before": result_ra[14], "after": REMISSION_CANCELLED_STATUS}], "items": []},
+    })
+    flag, error, rows = set_remission_status(id_remission, REMISSION_CANCELLED_STATUS, history, data_token)
+    if not flag:
+        return {"data": None, "msg": "No se pudo cancelar la remisión", "error": error}, 400
+    delivery_control_status = refresh_delivery_control_status(result_ra[22], data_token)
+    msg_out = f"Remisión cancelada (ID {id_remission}, folio {result_ra[2]})" + (f": {reason}" if reason else "")
+    create_notification_permission(msg_out, data_token, ["administracion"], "Remisión cancelada", user, 0)
+    write_log_file(log_file_admin_collecions, msg_out, data_token)
+    return {
+        "data": {
+            "id_remission": id_remission,
+            "status": REMISSION_CANCELLED_STATUS,
+            "balance_control_id": result_ra[20],
+            "delivery_control_id": result_ra[22],
+            "delivery_control_status": delivery_control_status,
+        },
+        "msg": msg_out,
+        "error": None,
+    }, 200
 
 
 def _balance_control_lock_error(result_ra, contract_id, metadata: dict):
@@ -842,6 +921,14 @@ def create_remission_control_table_from_api(data, data_token):
     )
     if balance_control_id:
         history_report[0]["comment"] += f" Ligada al control de saldos {balance_control_id}."
+    # Control de entregas: la tabla de control no trae items, solo el explícito.
+    delivery_control_id, dc_error = resolve_delivery_control_for_remission(
+        data["metadata"].get("delivery_control_id"), data["metadata"]["client_id"], {}, data_token
+    )
+    if dc_error:
+        return {"data": None, "msg": "Control de entregas no válido", "error": [dc_error]}, 400
+    if delivery_control_id:
+        history_report[0]["comment"] += f" Ligada al control de entregas {delivery_control_id}."
     flag, error, id_remission = insert_remission(
         date=data["metadata"]["date"],
         folio=data["metadata"]["folio"],
@@ -859,6 +946,7 @@ def create_remission_control_table_from_api(data, data_token):
         extra_info=extra_info,
         data_token=data_token,
         balance_control_id=balance_control_id,
+        delivery_control_id=delivery_control_id,
     )
     if not flag:
         return {
@@ -877,7 +965,11 @@ def create_remission_control_table_from_api(data, data_token):
     msg_out = f"Ítem de tabla de control creado correctamente (ID {id_remission})"
     write_log_file(log_file_admin_collecions, msg_out, data_token)
     return {
-        "data": {"id_remission": id_remission, "balance_control_id": balance_control_id},
+        "data": {
+            "id_remission": id_remission,
+            "balance_control_id": balance_control_id,
+            "delivery_control_id": delivery_control_id,
+        },
         "msg": msg_out,
         "error": None,
     }, 201
@@ -905,6 +997,18 @@ def create_remission_from_api(data, data_token):
     )
     if balance_control_id:
         history_report[0]["comment"] += f" Ligada al control de saldos {balance_control_id}."
+    # Control de entregas (OCD): sobre-entrega -> 400 antes de escribir nada;
+    # la remisión nace ligada al control explícito o al de sus items.
+    over_errors, controls_by_quotation = check_over_delivery(data["items"], None, None, data_token)
+    if over_errors:
+        return {"data": None, "msg": "La remisión excede lo pedido en la OCD", "error": over_errors}, 400
+    delivery_control_id, dc_error = resolve_delivery_control_for_remission(
+        data["metadata"].get("delivery_control_id"), data["metadata"]["client_id"], controls_by_quotation, data_token
+    )
+    if dc_error:
+        return {"data": None, "msg": "Control de entregas no válido", "error": [dc_error]}, 400
+    if delivery_control_id:
+        history_report[0]["comment"] += f" Ligada al control de entregas {delivery_control_id}."
     flag, error, id_remission = insert_remission(
         date=data["metadata"]["date"],
         folio=data["metadata"]["folio"],
@@ -922,6 +1026,7 @@ def create_remission_from_api(data, data_token):
         extra_info=extra_info,
         data_token=data_token,
         balance_control_id=balance_control_id,
+        delivery_control_id=delivery_control_id,
     )
     if not flag:
         return {
@@ -1021,7 +1126,8 @@ def create_remission_from_api(data, data_token):
                 quantity=remision_item["quantity"],
                 unit_price=remision_item["unit_price"],
                 history=history_item,
-                item_c_id=remision_item.get("item_contract_id", None),
+                # 0 (default del form) -> NULL: item_c_id tiene FK a quotation_items.
+                item_c_id=remision_item.get("item_contract_id") or None,
                 extra_info={"unit_price_quotation": 0},
                 data_token=data_token,
             )
@@ -1048,8 +1154,14 @@ def create_remission_from_api(data, data_token):
         msg_out, data_token, ["administracion"], "Remisión de actividad creada", user, 0
     )
     write_log_file(log_file_admin_collecions, msg_out, data_token)
+    delivery_control_status = refresh_delivery_control_status(delivery_control_id, data_token)
     return {
-        "data": {"id_remission": id_remission, "balance_control_id": balance_control_id},
+        "data": {
+            "id_remission": id_remission,
+            "balance_control_id": balance_control_id,
+            "delivery_control_id": delivery_control_id,
+            "delivery_control_status": delivery_control_status,
+        },
         "msg": msg_out,
         "error": error_items,
     }, 201
@@ -1066,6 +1178,7 @@ def get_remission_from_api(
     client_id: int | None = None,
     balance_control_id: int | None = None,
     available_for_control: bool = False,
+    delivery_control_id: int | None = None,
 ):
     if id_report is not None and id_report <= 0:
         id_report = None
@@ -1079,6 +1192,7 @@ def get_remission_from_api(
         client_id=client_id,
         balance_control_id=balance_control_id,
         available_for_control=1 if available_for_control else None,
+        delivery_control_id=delivery_control_id,
     )
     if not flag:
         return {"data": None, "msg": "Error al obtener remisiones", "error": error}, 400
@@ -1123,6 +1237,9 @@ def get_remission_from_api(
                 # activo: "disponible" = balance_control_id null o balance_control_active false.
                 "balance_control_id": item[20],
                 "balance_control_active": bool(item[21]) if item[21] is not None else None,
+                # Control de entregas (OCD): membresía y si ese control sigue activo (status != 2).
+                "delivery_control_id": item[22],
+                "delivery_control_active": (int(item[23]) != 2) if item[23] is not None else None,
                 "pedido": extra_info.get("pedido", ""),
                 "pedido_exiros": extra_info.get("pedido_exiros", ""),
                 "activity": extra_info.get("activity"),
@@ -1170,6 +1287,15 @@ def update_remission_from_api(data, data_token, raw_metadata=None):
             "error": error,
         }, 400
 
+    cancelled = _cancelled_remission_error(result_ra, "actualizar")
+    if cancelled:
+        return cancelled, 400
+    if _int_or_none_status(data["metadata"].get("status")) == REMISSION_CANCELLED_STATUS:
+        return {
+            "data": None,
+            "msg": "Para cancelar una remisión usa PUT /remission/cancel",
+            "error": "status 3 no se escribe por el PUT",
+        }, 400
     history = result_ra[15]
     history = json.loads(history) if history else []
     quotation_id = data["metadata"].get("quotation_id", None)
@@ -1191,6 +1317,18 @@ def update_remission_from_api(data, data_token, raw_metadata=None):
     lock_error = _balance_control_lock_error(result_ra, contract_id, data["metadata"])
     if lock_error:
         return lock_error, 400
+    # Control de entregas: no cambia de cliente por aquí; sobre-entrega -> 400
+    # (existing = items actuales, para sumar los que el payload no menciona).
+    lock_error = delivery_control_lock_error(
+        result_ra[22], result_ra[23], result_ra[3], data["metadata"].get("client_id")
+    )
+    if lock_error:
+        return lock_error, 400
+    over_errors, _controls = check_over_delivery(
+        data["items"], list(old_items_map.values()), data["metadata"]["id"], data_token
+    )
+    if over_errors:
+        return {"data": None, "msg": "La remisión excede lo pedido en la OCD", "error": over_errors}, 400
     meta_changes = _diff_history_fields(
         _remission_meta_from_row(result_ra, old_extra_info),
         _remission_meta_from_payload(data["metadata"], extra_info, contract_id=contract_id),
@@ -1260,7 +1398,9 @@ def update_remission_from_api(data, data_token, raw_metadata=None):
                     item["qa_item_id"],
                     quotation_id,
                     data["metadata"]["id"],
-                    item.get("item_contract_id", None),
+                    # 0/ausente conserva el enlace a la partida (item_c_id) de la BD:
+                    # el PUT de remisión no es el camino para desenlazar.
+                    item.get("item_contract_id") or old_item.get("item_c_id") or None,
                     item["description"],
                     item["udm"],
                     item["quantity"],
@@ -1308,7 +1448,16 @@ def update_remission_from_api(data, data_token, raw_metadata=None):
         msg_out, data_token, ["administracion"], "Remisión de actividad actualizada", user, 0
     )
     write_log_file(log_file_admin_collecions, msg_out, data_token)
-    return {"data": {"id_remission": id_remission}, "msg": msg_out, "error": error_items}, 200
+    delivery_control_status = refresh_delivery_control_status(result_ra[22], data_token)
+    return {
+        "data": {
+            "id_remission": id_remission,
+            "delivery_control_id": result_ra[22],
+            "delivery_control_status": delivery_control_status,
+        },
+        "msg": msg_out,
+        "error": error_items,
+    }, 200
 
 
 def update_remission_control_table_from_api(data, data_token, raw_metadata=None):
@@ -1330,6 +1479,9 @@ def update_remission_control_table_from_api(data, data_token, raw_metadata=None)
             "error": error,
         }, 400
 
+    cancelled = _cancelled_remission_error(result_ra, "actualizar")
+    if cancelled:
+        return cancelled, 400
     area = result_ra[9]
     status = result_ra[14]
 
@@ -1346,6 +1498,11 @@ def update_remission_control_table_from_api(data, data_token, raw_metadata=None)
     # area/status se conservan del registro previo, por eso no deben marcar cambio.
     contract_id = _resolve_contract_id(data["metadata"], raw_metadata, result_ra[18])
     lock_error = _balance_control_lock_error(result_ra, contract_id, data["metadata"])
+    if lock_error:
+        return lock_error, 400
+    lock_error = delivery_control_lock_error(
+        result_ra[22], result_ra[23], result_ra[3], data["metadata"].get("client_id")
+    )
     if lock_error:
         return lock_error, 400
     meta_changes = _diff_history_fields(
@@ -1431,6 +1588,9 @@ def update_remission_balance_from_api(data, data_token, raw_metadata=None):
             "msg": f"No se encontró la remisión (ID {id_remission})",
             "error": "remisión no encontrada",
         }, 400
+    cancelled = _cancelled_remission_error(result_ra, "capturar saldos")
+    if cancelled:
+        return cancelled, 400
 
     history = result_ra[15]
     history = json.loads(history) if history else []
@@ -1530,6 +1690,11 @@ def delete_remission_from_api(data, data_token):
             "msg": "Error al obtener registro de reporte de actividad",
             "error": error,
         }, 400
+    if isinstance(result_ra, (list, tuple)) and len(result_ra) > 14:
+        # Una cancelada conserva su rastro: no se borra.
+        cancelled = _cancelled_remission_error(result_ra, "eliminar")
+        if cancelled:
+            return cancelled, 400
 
     # Delete items (una remision sin items — p.ej. creada desde control table —
     # es valida y se borra igual; el loop vacio no hace nada).
@@ -1568,7 +1733,10 @@ def delete_remission_from_api(data, data_token):
     return {"data": {"id_remission": id_remission}, "msg": msg_out, "error": None}, 200
 
 
-def download_file_remission(id_report: int, iva_rate: float, data_token, full: bool = False):
+def download_file_remission(id_report: int, iva_rate: float, data_token, full: bool = False, layout: str | None = None):
+    """PDF de la remisión. layout: "contract" (FO-CXC-01) u "ocd" (FO-CXC-05);
+    sin layout explícito se decide por la fila: sin contract_id -> ocd
+    (docs/remission_pdf_ocd.md). Con ?full=1 se arma el combinado."""
     flag, error, result = get_remission_by_id(id_report, data_token)
     if not flag:
         return {
@@ -1587,15 +1755,34 @@ def download_file_remission(id_report: int, iva_rate: float, data_token, full: b
     folio = result[2]
     contract_id = result[18]
     extra_info = _coerce_extra_info(result[19])
-    project = extra_info.get("project", "")
+    project = extra_info.get("project") or ""
     if isinstance(project, (list, tuple)):
         project = project[0] if project else ""
+    project = str(project or "")
 
     contract_marco = ""
     if contract_id:
         flag_c, error_c, result_c = get_contract(data_token, contract_id)
         if flag_c and isinstance(result_c, tuple) and len(result_c) > 5:
             contract_marco = result_c[5] or ""
+
+    # Layout FO-CXC-05 (OCD): automático sin contrato; ?layout= lo fuerza. El
+    # pedido del cliente y la moneda salen del control de entregas si la
+    # remisión está ligada a uno (fallback: extra_info / MXN).
+    layout = (layout or "").strip().lower()
+    if layout not in ("contract", "ocd"):
+        layout = "contract" if contract_id else "ocd"
+    pedido_exiros = extra_info.get("pedido_exiros", "") or ""
+    currency = "MXN"
+    quotation_code = ""
+    delivery_control_id = result[22] if len(result) > 22 else None
+    if layout == "ocd" and delivery_control_id:
+        flag_d, _error_d, row_d = get_delivery_control_by_id(int(delivery_control_id), data_token)
+        if flag_d and row_d is not None:
+            control_d = {col: val for col, val in zip(DELIVERY_CONTROL_COLUMNS, row_d)}
+            pedido_exiros = pedido_exiros or (control_d.get("client_po_number") or "")
+            currency = control_d.get("currency") or "MXN"
+            quotation_code = control_d.get("quotation_code") or ""
 
     items_raw = json.loads(result[16]) if result[16] else []
     items_raw = [item for item in items_raw if item.get("qa_item_id") is not None]
@@ -1640,10 +1827,10 @@ def download_file_remission(id_report: int, iva_rate: float, data_token, full: b
             "folio": folio,
             "date": date_str,
             "project": project,
-            "project_description": extra_info.get("project_description", ""),
+            "project_description": str(extra_info.get("project_description") or ""),
             "contract_marco": contract_marco,
             "pedido": extra_info.get("pedido", ""),
-            "pedido_exiros": extra_info.get("pedido_exiros", ""),
+            "pedido_exiros": pedido_exiros,
             "remito": extra_info.get("remito", ""),
             "items": items,
             "subtotal": subtotal,
@@ -1652,6 +1839,9 @@ def download_file_remission(id_report: int, iva_rate: float, data_token, full: b
             "total": total,
             "sign_realizado_path": sign_paths["realizado"],
             "sign_recibido_path": sign_paths["recibido"],
+            "layout": layout,
+            "currency": currency,
+            "quotation_code": quotation_code,
         }
     )
     if not flag_pdf:

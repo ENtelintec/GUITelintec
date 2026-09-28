@@ -569,6 +569,11 @@ basic_control_table_report_model = api.model(
             description="ID de la cotizacion asociada",
             example=501,
         ),
+        "delivery_control_id": fields.Integer(
+            required=False,
+            description="Control de entregas (OCD) al que nace ligada; ausente = se resuelve por los items o queda libre",
+            example=3,
+        ),
         "folio": fields.String(
             required=True,
             description="Folio o referencia interna del reporte",
@@ -880,6 +885,14 @@ remission_balance_update_model = api.model(
     },
 )
 
+
+report_activity_cancel_model = api.model(
+    "ReportActivityCancel",
+    {
+        "id": fields.Integer(required=True, description="ID de la remisión a cancelar (status 3, sin reactivación)", example=1012),
+        "reason": fields.String(required=False, description="Motivo (queda en history)", example="El cliente indica que la remisión no le corresponde"),
+    },
+)
 
 report_activity_delete_model = api.model(
     "ReportActivityDelete",
@@ -1394,6 +1407,10 @@ class MetadataControlTableRemissionForm(Form):
     comments = StringField("comments", [InputRequired()])
     quotation_id = IntegerField("quotation_id", [], default=None)
     contract_id = IntegerField("contract_id", [], default=0)
+    # Control de entregas (OCD) al que nace ligada la remisión; 0/ausente = se
+    # resuelve por los items (item_contract_id) o queda libre. Solo en el POST;
+    # cambiar la membresía después es PUT /deliveryControl/remissions (docs/control_entregas.md).
+    delivery_control_id = IntegerField("delivery_control_id", [], default=None)
     remision = StringField("remision", [], default="")
     remito = StringField("remito", [], default="")
     user = StringField("user", [], default="")
@@ -1510,6 +1527,12 @@ class RemissionBalanceUpdateForm(Form):
 class ReportActivityDeleteForm(Form):
     id = IntegerField("id", [InputRequired()])
     status = IntegerField("status", [number_range(min=-1, message="Invalid status")], default=-1)
+
+
+class ReportActivityCancelForm(Form):
+    # PUT /remission/cancel (docs/remission_cancel.md): status 3, sin reactivación.
+    id = IntegerField("id", [InputRequired()])
+    reason = StringField("reason", [], default="")
 
 
 class ReportActivityDownloadAttForm(Form):

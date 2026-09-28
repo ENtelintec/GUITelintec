@@ -8,6 +8,7 @@ import pandas as pd
 from static.constants import (
     dict_deps,
     filepath_settings,
+    format_date,
     format_timestamps,
     log_file_admin,
 )
@@ -32,6 +33,7 @@ from templates.controllers.contracts.quotations_controller import (
     delete_quotation,
     delete_quotation_items,
     get_quotation,
+    get_quotation_metadata,
     update_item_quotation,
     update_quotation,
 )
@@ -67,6 +69,11 @@ from templates.controllers.supplier.suppliers_controller import (
 )
 from templates.Functions_Utils import create_notification_permission
 from templates.misc.Functions_Files import write_log_file
+from templates.resources.midleware.MD_DeliveryControl import (
+    quotation_change_order_errors,
+    quotation_has_active_delivery_control,
+)
+from templates.resources.midleware.MD_QuotationCosts import costs_totals, get_quotation_costs_map
 from templates.resources.methods.Functions_Aux_Admin import (
     compare_file_quotation,
     read_exel_products_bidding,
@@ -79,13 +86,79 @@ __author__ = "Edisson Naula"
 __date__ = "$ 20/jun./2024  at 15:23 $"
 
 
-def get_quotations(data_token, id_quotation: int | None = None):
+# --- OCD (orden de compra directa) sobre la cotización — docs/quotation_ocd.md ---
+# Llaves de metadata que describen el documento. Viven en quotations.metadata
+# (JSON, sin DDL). "" / None en el payload = "no viene": en el POST aplica el
+# default, en los PUT se conserva lo guardado (el PUT grande reemplaza metadata
+# completa y no debe degradar una OCD a cotización por omisión).
+QUOTATION_DOCUMENT_TYPES = ("quotation", "ocd")
+QUOTATION_CURRENCIES = ("MXN", "USD")
+_OCD_DEFAULTS = {
+    "document_type": "quotation",
+    "client_po_number": "",
+    "currency": "MXN",
+    "delivery_time": "",
+    "approved_date": "",
+}
+
+
+def _merge_ocd_keys(incoming: dict, existing: dict | None) -> tuple[dict, list]:
+    """Devuelve (llaves OCD resueltas, errores). incoming vacío conserva existing o el default."""
+    existing = existing or {}
+    out = {}
+    errors = []
+    for key, default in _OCD_DEFAULTS.items():
+        value = incoming.get(key)
+        value = str(value).strip() if value is not None else ""
+        if value == "":
+            value = existing.get(key)
+            value = str(value).strip() if value is not None else default
+        out[key] = value
+    if out["document_type"] not in QUOTATION_DOCUMENT_TYPES:
+        errors.append("document_type debe ser quotation u ocd")
+    if out["currency"] not in QUOTATION_CURRENCIES:
+        errors.append("currency debe ser MXN o USD")
+    if out["approved_date"]:
+        try:
+            datetime.strptime(out["approved_date"], format_date)
+        except ValueError:
+            errors.append("approved_date: se esperaba una fecha YYYY-MM-DD")
+    return out, errors
+
+
+def _normalize_quotation_metadata_out(metadata: dict) -> dict:
+    """Las cotizaciones viejas no traen las llaves OCD: el GET las expone siempre."""
+    for key, default in _OCD_DEFAULTS.items():
+        if metadata.get(key) in (None, ""):
+            metadata[key] = default
+    return metadata
+
+
+def _attach_costs(data_out: dict, data_token) -> None:
+    """?with_costs=1: cost_analysis por producto (por qa_item_id) + cost_totals.
+    Un error de consulta deja cost_analysis en null y lo anota en cost_error."""
+    costs, _totals, error = get_quotation_costs_map(data_out["id"], data_token)
+    products = data_out.get("products") or []
+    for p in products:
+        if isinstance(p, dict):
+            p["cost_analysis"] = costs.get(int(p.get("qa_item_id") or 0))
+    items = [{"id": p.get("qa_item_id"), "quantity": p.get("quantity")} for p in products if isinstance(p, dict) and p.get("qa_item_id")]
+    data_out["cost_totals"] = costs_totals(items, costs)
+    data_out["exchange_rate"] = data_out["metadata"].get("exchange_rate")
+    if error:
+        data_out["cost_error"] = error
+
+
+def get_quotations(data_token, id_quotation: int | None = None, document_type: str | None = None, with_costs: bool = False):
     try:
         id_quotation = (
             id_quotation if id_quotation is not None and int(id_quotation) != -1 else None
         )
     except ValueError:
         return {"data": [], "msg": "Id de cotización inválido", "error": str(id_quotation)}, 400
+    document_type = (document_type or "").strip().lower() or None
+    if document_type is not None and document_type not in QUOTATION_DOCUMENT_TYPES:
+        return {"data": [], "msg": "document_type debe ser quotation u ocd", "error": document_type}, 400
     # get_quotation(data_token, id_quotation): por nombre, no posicional. Pasarle el id
     # como data_token dejaba id_quotation en None, devolvia TODAS las cotizaciones (el
     # desempaque de 5 variables tronaba) y perdia el cambio de BD del permiso tester.
@@ -109,11 +182,13 @@ def get_quotations(data_token, id_quotation: int | None = None):
         )
         data_out = {
             "id": id_q,
-            "metadata": json.loads(metadata),
+            "metadata": _normalize_quotation_metadata_out(json.loads(metadata)),
             "products": json.loads(products),
             "creation": creation,
             "timestamps": json.loads(timestamps),
         }
+        if with_costs:
+            _attach_costs(data_out, data_token)
         return {"data": [data_out], "msg": None, "error": None}, 200
     else:
         data_out = []
@@ -122,15 +197,20 @@ def get_quotations(data_token, id_quotation: int | None = None):
             creation = (
                 creation.strftime(format_timestamps) if not isinstance(creation, str) else creation
             )
-            data_out.append(
-                {
-                    "id": id_q,
-                    "metadata": json.loads(metadata),
-                    "products": json.loads(products),
-                    "creation": creation,
-                    "timestamps": json.loads(timestamps),
-                }
-            )
+            meta = _normalize_quotation_metadata_out(json.loads(metadata))
+            # Filtro en Python: document_type vive dentro del JSON y las viejas no lo traen.
+            if document_type is not None and meta["document_type"] != document_type:
+                continue
+            entry = {
+                "id": id_q,
+                "metadata": meta,
+                "products": json.loads(products),
+                "creation": creation,
+                "timestamps": json.loads(timestamps),
+            }
+            if with_costs:
+                _attach_costs(entry, data_token)
+            data_out.append(entry)
         return {"data": data_out, "msg": None, "error": None}, 200
 
 
@@ -1165,6 +1245,10 @@ def create_items_from_api(products, id_quotation, data_token, id_contract=None):
 
 
 def create_quotation_from_api(data, data_token):
+    ocd_keys, errors = _merge_ocd_keys(data["metadata"], None)
+    if errors:
+        return {"data": None, "msg": "Datos OCD inválidos", "error": errors}, 400
+    data["metadata"].update(ocd_keys)
     flag, error, id_quotation = create_quotation(data["metadata"], data_token)
     if not flag:
         return {"data": None, "msg": "No se pudo crear la cotización", "error": error}, 400
@@ -1285,6 +1369,24 @@ def _msg_items_counts(counts: dict) -> str:
 
 
 def update_quoation_from_api(data, data_token):
+    # El PUT reemplaza metadata completa: conservar las llaves OCD (y `status`,
+    # que solo escribe el create) cuando el payload no las trae.
+    flag, error, row = get_quotation_metadata(data["id"], data_token)
+    if not flag:
+        return {"data": None, "msg": "No se pudo leer la cotización", "error": error}, 400
+    if not row:
+        return {
+            "data": None,
+            "msg": f"No se encontró la cotización (ID {data['id']})",
+            "error": "Quotation not found",
+        }, 404
+    existing_meta = json.loads(row[0]) if row[0] else {}  # pyrefly: ignore
+    ocd_keys, errors = _merge_ocd_keys(data["metadata"], existing_meta)
+    if errors:
+        return {"data": None, "msg": "Datos OCD inválidos", "error": errors}, 400
+    data["metadata"].update(ocd_keys)
+    if "status" in existing_meta and data["metadata"].get("status") is None:
+        data["metadata"]["status"] = existing_meta["status"]
     flag, error, result = update_quotation(data["id"], data["metadata"], data_token)
     if not flag:
         return {
@@ -1304,6 +1406,11 @@ def update_quoation_from_api(data, data_token):
         }, 400
     dict_products = _dict_products_from_quotation(result[0])
     products = data["products"]
+    # Control de entregas activo (OCD): agregar/subir partidas sí; quitar una
+    # partida entregada o bajarla por debajo de lo entregado -> 400 (docs/control_entregas.md).
+    order_errors, _id_dc = quotation_change_order_errors(data["id"], products, dict_products, data_token)
+    if order_errors:
+        return {"data": None, "msg": "La cotización tiene un control de entregas activo", "error": order_errors}, 400
     # quotations no tiene contract_id; el enlace vive en contracts.quotation_id.
     _, _, contract_id = get_contract_id_by_quotation(data["id"], data_token)
     error_items = None
@@ -1334,7 +1441,67 @@ def update_quoation_from_api(data, data_token):
     return {"data": {"id_quotation": data["id"]}, "msg": msg_out, "error": error_items}, 200
 
 
+def update_quotation_ocd_from_api(data, data_token):
+    """PUT /quotation/ocd: convierte una cotización en OCD (o ajusta sus datos OCD).
+
+    Merge de las llaves OCD sobre la metadata guardada, sin tocar items ni el
+    resto de la cabecera. Revertir a "quotation" queda bloqueado cuando exista
+    un control de entregas activo (guard de la F2 del plan; hoy no hay entidad).
+    """
+    id_quotation = data["id_quotation"]
+    flag, error, row = get_quotation_metadata(id_quotation, data_token)
+    if not flag:
+        return {"data": None, "msg": "No se pudo leer la cotización", "error": error}, 400
+    if not row:
+        return {
+            "data": None,
+            "msg": f"No se encontró la cotización (ID {id_quotation})",
+            "error": "Quotation not found",
+        }, 404
+    metadata = json.loads(row[0]) if row[0] else {}  # pyrefly: ignore
+    timestamps = json.loads(row[1]) if row[1] else None  # pyrefly: ignore
+    if timestamps is not None and not isinstance(timestamps.get("update"), list):
+        timestamps["update"] = []
+    incoming = {k: data.get(k) for k in _OCD_DEFAULTS}
+    incoming["document_type"] = (data.get("document_type") or "ocd").strip().lower()
+    ocd_keys, errors = _merge_ocd_keys(incoming, metadata)
+    if errors:
+        return {"data": None, "msg": "Datos OCD inválidos", "error": errors}, 400
+    before = {k: metadata.get(k) for k in _OCD_DEFAULTS}
+    if ocd_keys["document_type"] != "ocd" and (metadata.get("document_type") == "ocd"):
+        id_dc = quotation_has_active_delivery_control(id_quotation, data_token)
+        if id_dc:
+            return {
+                "data": {"delivery_control_id": id_dc},
+                "msg": f"La cotización {id_quotation} tiene el control de entregas activo {id_dc}; cancélalo antes de revertirla",
+                "error": ["control de entregas activo"],
+            }, 400
+    metadata.update(ocd_keys)
+    flag, error, result = update_quotation(id_quotation, metadata, data_token, timestamps)
+    if not flag:
+        return {"data": None, "msg": "No se pudo actualizar la cotización", "error": error}, 400
+    changed = [k for k in _OCD_DEFAULTS if (before.get(k) or "") != ocd_keys[k]]
+    label = "OCD" if ocd_keys["document_type"] == "ocd" else "cotización"
+    msg = (
+        f"Cotización {id_quotation} marcada como {label} por {data_token.get('name')}"
+        + (f" (cambios: {', '.join(changed)})" if changed else " (sin cambios)")
+    )
+    write_log_file(log_file_admin, msg, data_token)
+    return {
+        "data": {"id_quotation": id_quotation, **ocd_keys, "changed": changed},
+        "msg": msg,
+        "error": None,
+    }, 200
+
+
 def delete_quotation_from_api(data, data_token):
+    id_dc = quotation_has_active_delivery_control(data["id"], data_token)
+    if id_dc:
+        return {
+            "data": {"delivery_control_id": id_dc},
+            "msg": f"La cotización {data['id']} tiene el control de entregas activo {id_dc}; cancélalo antes de eliminarla",
+            "error": ["control de entregas activo"],
+        }, 400
     flag, error, result_items = delete_quotation_items(data["id"], data_token)
     if not flag:
         return {

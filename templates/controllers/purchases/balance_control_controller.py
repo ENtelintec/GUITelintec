@@ -72,7 +72,15 @@ CONTROL_COLUMNS = (
     "client_id",
     "title",
     "client_name",
+    # saldo consumido (2026-09-28, docs/remission_cancel.md): Σ extra_info.remission_amount
+    # de las remisiones del control NO canceladas (status <> 3). Append-only.
+    "consumed_amount",
+    # dias para el fin de vigencia (2026-09-28, docs/control_saldos_vigencia.md):
+    # DATEDIFF(end_date, hoy); negativo = vencido; NULL sin end_date. Append-only.
+    "days_to_end",
 )
+# Remision cancelada: no consume saldo.
+REMISSION_CANCELLED_STATUS = 3
 _SELECT_CONTROL = (
     "SELECT bc.id_control, bc.contract_id, bc.format_id, bc.month_period, bc.currency, "
     "bc.contract_number, bc.pedido_exiros, bc.contracted_amount, bc.start_date, bc.end_date, "
@@ -81,7 +89,12 @@ _SELECT_CONTROL = (
     "f.code, f.revision, f.name, c.code, c.abbreviation, "
     "JSON_UNQUOTE(JSON_EXTRACT(c.metadata, '$.identifier')), "
     f"(SELECT COUNT(*) FROM {_TABLE_AR} ar WHERE ar.balance_control_id = bc.id_control), "
-    "bc.client_id, bc.title, cu.name "
+    "bc.client_id, bc.title, cu.name, "
+    f"(SELECT COALESCE(SUM(CAST(JSON_UNQUOTE(JSON_EXTRACT(arc.extra_info, '$.remission_amount')) AS DECIMAL(15, 2))), 0) "
+    f" FROM {_TABLE_AR} arc WHERE arc.balance_control_id = bc.id_control "
+    f" AND COALESCE(arc.status, 0) <> {REMISSION_CANCELLED_STATUS} "
+    "  AND JSON_UNQUOTE(JSON_EXTRACT(arc.extra_info, '$.remission_amount')) REGEXP '^-?[0-9]+(\\\\.[0-9]+)?$'), "
+    "DATEDIFF(bc.end_date, CURDATE()) "
     f"FROM {_TABLE} bc "
     f"LEFT JOIN {_TABLE_FMT} f ON f.id = bc.format_id "
     f"LEFT JOIN {_TABLE_CONTRACTS} c ON c.id = bc.contract_id "
@@ -119,6 +132,10 @@ MOVEMENT_COLUMNS = (
     "document",
     "timestamp",
     "extra_info",
+    # vigencia (2026-09-28, docs/control_saldos_vigencia.md): NULL cuando el
+    # movimiento no cambio la fecha. Append-only.
+    "previous_end_date",
+    "new_end_date",
 )
 _SELECT_MOV = f"SELECT {', '.join(MOVEMENT_COLUMNS)} FROM {_TABLE_MOV}"
 
@@ -193,9 +210,11 @@ def get_balance_controls(
     data_token,
     client_id: int | None = None,
     has_contract: int | None = None,
+    expiring_days: int | None = None,
 ):
     """Listado con filtros estilo param-or-NULL. has_contract: 1 = solo con
-    contrato, 0 = solo sin contrato. type_sql=2."""
+    contrato, 0 = solo sin contrato. expiring_days: solo controles con end_date
+    a <= N dias de hoy (incluye vencidos). type_sql=2."""
     sql = (
         f"{_SELECT_CONTROL} "
         "WHERE (%s IS NULL OR bc.contract_id = %s) "
@@ -203,6 +222,7 @@ def get_balance_controls(
         "AND (%s IS NULL OR bc.is_active = %s) "
         "AND (%s IS NULL OR bc.client_id = %s) "
         "AND (%s IS NULL OR (%s = 1 AND bc.contract_id IS NOT NULL) OR (%s = 0 AND bc.contract_id IS NULL)) "
+        "AND (%s IS NULL OR (bc.end_date IS NOT NULL AND DATEDIFF(bc.end_date, CURDATE()) <= %s)) "
         "ORDER BY bc.id_control DESC"
     )
     val = (
@@ -211,6 +231,7 @@ def get_balance_controls(
         is_active, is_active,
         client_id, client_id,
         has_contract, has_contract, has_contract,
+        expiring_days, expiring_days,
     )
     flag, e, out = execute_sql(sql, val, 2, data_token)
     if not flag:
@@ -327,8 +348,8 @@ def insert_balance_control_movement(data: dict, data_token):
     sql = (
         f"INSERT INTO {_TABLE_MOV} "
         "(id_control, type, movement_date, amount, previous_balance, resulting_balance, "
-        "user_id, user_name, reason, document, timestamp, extra_info) "
-        "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+        "user_id, user_name, reason, document, timestamp, extra_info, previous_end_date, new_end_date) "
+        "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
     )
     val = (
         data.get("id_control"),
@@ -343,23 +364,35 @@ def insert_balance_control_movement(data: dict, data_token):
         data.get("document"),
         data.get("timestamp"),
         json.dumps(data.get("extra_info", {}), ensure_ascii=False),
+        data.get("previous_end_date"),
+        data.get("new_end_date"),
     )
     flag, e, out = execute_sql(sql, val, 4, data_token)
     return flag, e, out
 
 
 def update_balance_control_amount_optimistic(
-    id_control: int, new_amount, expected_amount, history: list, data_token
+    id_control: int, new_amount, expected_amount, history: list, data_token,
+    set_end_date: bool = False, end_date=None,
 ):
-    """Mueve contracted_amount con bloqueo optimista: solo escribe si el monto
-    en BD sigue siendo `expected_amount` (el leido antes de calcular) y el control
-    esta activo. type_sql=3 -> rowcount (0 = otro movimiento gano la carrera o el
-    control se cancelo entre la lectura y la escritura -> 409 en el midleware)."""
-    sql = (
-        f"UPDATE {_TABLE} SET contracted_amount = %s, history = %s "
-        "WHERE id_control = %s AND contracted_amount = %s AND is_active = 1"
-    )
-    val = (new_amount, json.dumps(history, ensure_ascii=False), id_control, expected_amount)
+    """Mueve contracted_amount (y, si set_end_date, tambien end_date) con bloqueo
+    optimista: solo escribe si el monto en BD sigue siendo `expected_amount` (el
+    leido antes de calcular) y el control esta activo. type_sql=3 -> rowcount
+    (0 = otro movimiento gano la carrera o el control se cancelo entre la lectura
+    y la escritura -> 409 en el midleware). end_date puede ser None para
+    restaurar un NULL en la reversa."""
+    if set_end_date:
+        sql = (
+            f"UPDATE {_TABLE} SET contracted_amount = %s, end_date = %s, history = %s "
+            "WHERE id_control = %s AND contracted_amount = %s AND is_active = 1"
+        )
+        val = (new_amount, end_date, json.dumps(history, ensure_ascii=False), id_control, expected_amount)
+    else:
+        sql = (
+            f"UPDATE {_TABLE} SET contracted_amount = %s, history = %s "
+            "WHERE id_control = %s AND contracted_amount = %s AND is_active = 1"
+        )
+        val = (new_amount, json.dumps(history, ensure_ascii=False), id_control, expected_amount)
     flag, e, out = execute_sql(sql, val, 3, data_token)
     return flag, e, out
 
@@ -377,8 +410,13 @@ def get_balance_control_movements(id_control: int, data_token):
 
 # --- Remisiones del control (membresia por balance_control_id) -------------------
 def get_remissions_summary_by_control(id_control: int, data_token):
-    """Resumen ligero de las remisiones ligadas al control: (id, folio, date, status). type_sql=2."""
-    sql = f"SELECT id, folio, date, status FROM {_TABLE_AR} WHERE balance_control_id = %s ORDER BY id"
+    """Resumen ligero de las remisiones ligadas al control:
+    (id, folio, date, status, remission_amount) — append-only. type_sql=2."""
+    sql = (
+        "SELECT id, folio, date, status, "
+        "JSON_UNQUOTE(JSON_EXTRACT(extra_info, '$.remission_amount')) "
+        f"FROM {_TABLE_AR} WHERE balance_control_id = %s ORDER BY id"
+    )
     flag, e, out = execute_sql(sql, (id_control,), 2, data_token)
     if not flag:
         return False, e, []

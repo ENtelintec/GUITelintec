@@ -13,6 +13,7 @@ from static.Models.api_contracts_models import (
     ContractUpdateForm,
     QuotationDeleteForm,
     QuotationInsertForm,
+    QuotationOcdForm,
     QuotationUpdateForm,
     contract_model_delete,
     contract_model_insert,
@@ -23,9 +24,14 @@ from static.Models.api_contracts_models import (
     expected_files_quotation,
     quotation_model_insert,
     quotation_model_update,
+    quotation_ocd_model,
 )
 from static.Models.api_fichajes_models import expected_files
 from static.Models.api_models import expected_headers_per
+from static.Models.api_quotation_costs_models import (
+    QuotationCostAnalysisForm,
+    quotation_cost_analysis_model,
+)
 from templates.resources.methods.Functions_Aux_Login import token_verification_procedure
 from templates.resources.midleware.Functions_midleware_admin import (
     compare_file_and_quotation,
@@ -46,8 +52,10 @@ from templates.resources.midleware.Functions_midleware_admin import (
     products_quotation_from_file,
     update_contract_from_api,
     update_quoation_from_api,
+    update_quotation_ocd_from_api,
 )
 from templates.resources.midleware.MD_Admin_Collections import fetch_products_contracts
+from templates.resources.midleware.MD_QuotationCosts import update_quotation_cost_analysis_from_api
 
 __author__ = "Edisson Naula"
 __date__ = "$ 20/jun./2024  at 15:03 $"
@@ -59,12 +67,54 @@ ns = Namespace("GUI/api/v1/admin/presales")
 class Quotations(Resource):
     # @ns.marshal_with(answer_quotation_model)
     @ns.expect(expected_headers_per)
+    @ns.doc(params={
+        "document_type": "Solo en listado (id -1): quotation | ocd",
+        "with_costs": "1 -> agrega cost_analysis por producto y cost_totals (Preventa; nunca va al PDF del cliente)",
+    })
     def get(self, id_q):
         flag, data_token, msg = token_verification_procedure(request, department="administracion")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        data, code = get_quotations(data_token, id_q)
+        with_costs = (request.args.get("with_costs") or "").strip().lower() in ("1", "true", "yes")
+        data, code = get_quotations(
+            data_token, id_q, document_type=request.args.get("document_type"), with_costs=with_costs
+        )
         return data, code
+
+
+@ns.route("/quotation/costAnalysis")
+class QuotationCostAnalysis(Resource):
+    @ns.expect(expected_headers_per, quotation_cost_analysis_model)
+    def put(self):
+        """Análisis de costos por partida (upsert + comparativa de proveedores; apply_prices escribe price_unit)."""
+        flag, data_token, msg = token_verification_procedure(request, department="administracion")
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        # noinspection PyUnresolvedReferences
+        validator = QuotationCostAnalysisForm.from_json(ns.payload)  # pyrefly: ignore
+        if not validator.validate():
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
+        data = validator.data
+        # raw_payload -> items[] (cost puede ser null) lo valida el midleware.
+        data_out, code = update_quotation_cost_analysis_from_api(data, ns.payload or {}, data_token)
+        return data_out, code
+
+
+@ns.route("/quotation/ocd")
+class QuotationOcd(Resource):
+    @ns.expect(expected_headers_per, quotation_ocd_model)
+    def put(self):
+        """Marca una cotización como OCD (orden de compra directa) o ajusta sus datos OCD; no toca items."""
+        flag, data_token, msg = token_verification_procedure(request, department="administracion")
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        # noinspection PyUnresolvedReferences
+        validator = QuotationOcdForm.from_json(ns.payload)  # pyrefly: ignore
+        if not validator.validate():
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
+        data = validator.data
+        data_out, code = update_quotation_ocd_from_api(data, data_token)
+        return data_out, code
 
 
 @ns.route("/quotation")

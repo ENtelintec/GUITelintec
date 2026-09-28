@@ -84,3 +84,7 @@ Tras el 201 no hace falta re-`GET`: `data.contracted_amount` es el saldo nuevo d
 - **Adjunto por movimiento**: guardar en `extra_info` del movimiento (ya se acepta un dict `extra_info` en el body, sin validar) o un endpoint multipart aparte; no hace falta DDL.
 - **Tipo nuevo de movimiento**: `MOVEMENT_TYPES` en el midleware, `AnyOf` del form, la validación de signo en `create_balance_movement_from_api` y el catálogo (`/balanceControl/catalogs` ya lo expone desde `MOVEMENT_TYPES`).
 - No agregar `UPDATE`/`DELETE` sobre `balance_control_movements`: una corrección es un `AJUSTE` nuevo.
+
+## Notas posteriores
+
+- **2026-09-28** — El ledger gana la vigencia: tipo `3 = VIGENCIA`, columnas `previous_end_date`/`new_end_date`, `new_end_date` opcional en 1/2, `changed` por fila, `PUT /balanceControl` deja de escribir `end_date`, `days_to_end` + `?expiring_days=`. Ver [`control_saldos_vigencia.md`](control_saldos_vigencia.md). El `amount` pasa a ser opcional en el `api.model` (obligatorio en 1/2 lo valida el midleware).

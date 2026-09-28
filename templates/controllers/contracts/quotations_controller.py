@@ -61,6 +61,17 @@ def create_items_quotation(items: list, data_token):
     return flag_list, error_list, result_list
 
 
+def get_quotation_metadata(id_quotation: int, data_token):
+    """Solo cabecera: (metadata JSON str, timestamps JSON str) o [] si no existe. type_sql=1.
+
+    Lectura ligera para los merges de metadata (OCD, PUT de cabecera): evita
+    agregar los items como hace get_quotation.
+    """
+    sql = "SELECT metadata, timestamps FROM sql_telintec_mod_admin.quotations WHERE id = %s"
+    flag, error, out = execute_sql(sql, (id_quotation,), 1, data_token)
+    return flag, error, out
+
+
 def update_quotation(id_quotation, metadata: dict, data_token, timestamps=None):
     time_zone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
