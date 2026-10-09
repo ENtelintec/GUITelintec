@@ -181,64 +181,99 @@ def update_items_quotation_w_remission(remission_id, id_quotation, data_token):
     return flag, e, out
 
 
-def update_activity_report(
+# --- Escrituras parciales de activity_reports (docs/remission_atomic_writes.md) ------
+# Los modulos (remisiones, control de reportes, control de saldos, controles,
+# anexos) escriben la MISMA fila. Nada reescribe extra_info ni history completos
+# con lo leido antes: extra_info cambia solo en las llaves del modulo (JSON_SET /
+# JSON_MERGE_PATCH) y el history solo crece (JSON_ARRAY_APPEND), en el mismo
+# UPDATE. Asi dos guardados simultaneos de modulos distintos ya no se pisan.
+_REMISSION_CANCELLED_STATUS = 3
+# Un valor no-objeto / no-arreglo (o NULL) se trata como vacio, igual que al leer.
+EXTRA_INFO_OBJECT_SQL = "IF(JSON_TYPE(extra_info) = 'OBJECT', extra_info, JSON_OBJECT())"
+HISTORY_APPEND_SQL = (
+    "history = JSON_ARRAY_APPEND(IF(JSON_TYPE(history) = 'ARRAY', history, JSON_ARRAY()), "
+    "'$', CAST(%s AS JSON))"
+)
+# Columnas base que patch_activity_report acepta (whitelist: van interpoladas).
+_PATCHABLE_COLUMNS = (
+    "date", "folio", "client_id", "plant", "area", "location",
+    "general_description", "comments", "quotation_id", "status", "contract_id",
+)
+
+
+def json_param(value) -> str:
+    """Valor -> texto JSON para CAST(%s AS JSON)."""
+    return json.dumps(value, ensure_ascii=False)
+
+
+def patch_activity_report(
     report_id: int,
-    date: str,
-    folio: str,
-    client_id: int,
-    plant: str,
-    area: str,
-    location: str,
-    general_description: str,
-    comments: str,
-    quotation_id: int | None,
-    status: int,
-    history: list,
     data_token,
-    contract_id: int | None = None,
-    pedido: str = "",
-    pedido_exiros: str = "",
-    extra_info: dict | None = None,
+    columns: dict | None = None,
+    extra_info_set: dict | None = None,
+    custom_fields_patch: dict | None = None,
+    history_entry: dict | None = None,
 ):
-    if extra_info:
-        extra_info.update({"pedido": pedido, "pedido_exiros": pedido_exiros})
-    else:
-        extra_info = {
-            "pedido": pedido,
-            "pedido_exiros": pedido_exiros,
-        }
+    """UPDATE parcial de una remision NO cancelada. type_sql=3 -> filas afectadas;
+    0 = no existe o se cancelo entre la lectura y la escritura (el history siempre
+    crece, asi que una fila que hace match siempre cuenta).
+
+    - columns: columnas base {col: valor} (solo _PATCHABLE_COLUMNS).
+    - extra_info_set: llaves de primer nivel -> JSON_SET (None se guarda como null);
+      las demas llaves de extra_info no se tocan.
+    - custom_fields_patch: {key: valor | None} -> JSON_MERGE_PATCH sobre
+      extra_info.custom_fields (None borra la llave).
+    - history_entry: una entrada -> JSON_ARRAY_APPEND.
+    """
+    sets: list = []
+    values: list = []
+    for col, value in (columns or {}).items():
+        if col not in _PATCHABLE_COLUMNS:
+            raise ValueError(f"columna no editable en activity_reports: {col}")
+        sets.append(f"{col} = %s")
+        values.append(value)
+    extra_expr = EXTRA_INFO_OBJECT_SQL
+    extra_values: list = []
+    if extra_info_set:
+        pairs = []
+        for key, value in extra_info_set.items():
+            pairs.append("%s, CAST(%s AS JSON)")
+            extra_values += [f'$."{key}"', json_param(value)]
+        extra_expr = f"JSON_SET({extra_expr}, {', '.join(pairs)})"
+    if custom_fields_patch:
+        # Base = custom_fields de la fila (no de extra_expr: ninguna llave de modulo
+        # se llama custom_fields). Un no-objeto se mezcla como {} (regla de MERGE_PATCH).
+        extra_expr = (
+            f"JSON_SET({extra_expr}, '$.custom_fields', JSON_MERGE_PATCH("
+            "COALESCE(JSON_EXTRACT(extra_info, '$.custom_fields'), JSON_OBJECT()), CAST(%s AS JSON)))"
+        )
+        extra_values.append(json_param(custom_fields_patch))
+    if extra_values:
+        sets.append(f"extra_info = {extra_expr}")
+        values += extra_values
+    if history_entry is not None:
+        sets.append(HISTORY_APPEND_SQL)
+        values.append(json_param(history_entry))
+    if not sets:
+        return True, None, 0
     sql = (
-        "UPDATE sql_telintec_mod_admin.activity_reports "
-        "SET date=%s, folio=%s, client_id=%s, plant=%s, area=%s, "
-        "    location=%s, general_description=%s, comments=%s, quotation_id=%s, "
-        "    status=%s, history=%s, contract_id=%s, extra_info=%s "
-        "WHERE id=%s"
+        f"UPDATE sql_telintec_mod_admin.activity_reports SET {', '.join(sets)} "
+        f"WHERE id = %s AND COALESCE(status, 0) <> {_REMISSION_CANCELLED_STATUS}"
     )
-    val = (
-        date,
-        folio,
-        client_id,
-        plant,
-        area,
-        location,
-        general_description,
-        comments,
-        quotation_id,
-        status,
-        json.dumps(history),
-        contract_id,
-        json.dumps(extra_info),
-        report_id,
-    )
-    flag, e, out = execute_sql(sql, val, 3, data_token)
+    values.append(report_id)
+    flag, e, out = execute_sql(sql, tuple(values), 3, data_token)
     return flag, e, out
 
 
-def set_remission_status(report_id: int, status: int, history: list, data_token):
-    """Cambia solo status + history de la remision (cancelacion: status 3).
-    type_sql=3 -> filas afectadas (docs/remission_cancel.md)."""
-    sql = "UPDATE sql_telintec_mod_admin.activity_reports SET status=%s, history=%s WHERE id=%s"
-    val = (status, json.dumps(history), report_id)
+def set_remission_status(report_id: int, status: int, history_entry: dict, data_token):
+    """Cambia solo status + agrega una entrada al history (cancelacion: status 3).
+    Guard: solo si NO esta cancelada -> 0 filas = ya estaba cancelada (o no
+    existe). type_sql=3 -> filas afectadas (docs/remission_cancel.md)."""
+    sql = (
+        f"UPDATE sql_telintec_mod_admin.activity_reports SET status = %s, {HISTORY_APPEND_SQL} "
+        f"WHERE id = %s AND COALESCE(status, 0) <> {_REMISSION_CANCELLED_STATUS}"
+    )
+    val = (status, json_param(history_entry), report_id)
     flag, e, out = execute_sql(sql, val, 3, data_token)
     return flag, e, out
 
@@ -497,8 +532,20 @@ def get_remission_by_id(
     return flag, e, out
 
 
-def update_report_activity_files(id_report, history, files, status, data_token):
-    sql = "UPDATE sql_telintec_mod_admin.activity_reports SET history=%s, files=%s, status=%s WHERE id=%s"
-    val = (json.dumps(history), json.dumps(files), status, id_report)
-    flag, e, out = execute_sql(sql, val, 3, data_token)
+def update_report_activity_files(id_report, history_entry: dict, files: list, data_token, status: int | None = None):
+    """Escribe la lista de anexos y agrega una entrada al history. `status` solo
+    se escribe cuando el anexo lo cambia (firmas) y nunca reactiva una cancelada
+    (CASE en SQL: la cancelacion pudo llegar despues de la lectura). La lista
+    `files` sigue siendo lectura-modificacion-escritura (pendiente en
+    docs/remission_atomic_writes.md). type_sql=3."""
+    sets = ["files = %s", HISTORY_APPEND_SQL]
+    val: list = [json.dumps(files), json_param(history_entry)]
+    if status is not None:
+        sets.append(
+            f"status = CASE WHEN COALESCE(status, 0) = {_REMISSION_CANCELLED_STATUS} THEN status ELSE %s END"
+        )
+        val.append(status)
+    sql = f"UPDATE sql_telintec_mod_admin.activity_reports SET {', '.join(sets)} WHERE id = %s"
+    val.append(id_report)
+    flag, e, out = execute_sql(sql, tuple(val), 3, data_token)
     return flag, e, out

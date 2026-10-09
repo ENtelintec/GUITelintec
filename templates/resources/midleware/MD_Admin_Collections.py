@@ -27,8 +27,8 @@ from templates.controllers.presales.remisions_controller import (
     insert_quotation_activity,
     insert_quotation_activity_item,
     insert_remission,
+    patch_activity_report,
     set_remission_status,
-    update_activity_report,
     update_quotation_activity,
     update_quotation_activity_item,
     update_quotation_activity_status,
@@ -274,6 +274,16 @@ def _cancelled_remission_error(result_ra, action: str = "modificar"):
     }
 
 
+def _cancelled_meanwhile_error(id_remission, action: str) -> dict:
+    """Envelope cuando el UPDATE con guard `status <> 3` afecta 0 filas: la remisión
+    se canceló (o se borró) entre la lectura y la escritura; no se guardó nada."""
+    return {
+        "data": {"id_remission": id_remission, "status": REMISSION_CANCELLED_STATUS},
+        "msg": f"La remisión {id_remission} está cancelada o ya no existe; no se puede {action}",
+        "error": "remisión cancelada",
+    }
+
+
 def _int_or_none_status(value):
     try:
         return int(value) if value is not None else None
@@ -298,17 +308,18 @@ def cancel_remission_from_api(data, data_token):
     if already:
         return already, 400
     reason = (data.get("reason") or "").strip()
-    history = json.loads(result_ra[15]) if result_ra[15] else []  # pyrefly: ignore
-    history.append({
+    history_entry = {
         "timestamp": timestamp,
         "user": user,
         "action": "Cancelación",
         "comment": "Cancelación de remisión." + (f" Motivo: {reason}" if reason else ""),
         "changes": {"metadata": [{"field": "status", "before": result_ra[14], "after": REMISSION_CANCELLED_STATUS}], "items": []},
-    })
-    flag, error, rows = set_remission_status(id_remission, REMISSION_CANCELLED_STATUS, history, data_token)
+    }
+    flag, error, rows = set_remission_status(id_remission, REMISSION_CANCELLED_STATUS, history_entry, data_token)
     if not flag:
         return {"data": None, "msg": "No se pudo cancelar la remisión", "error": error}, 400
+    if not rows:
+        return _cancelled_meanwhile_error(id_remission, "cancelar de nuevo"), 400
     delivery_control_status = refresh_delivery_control_status(result_ra[22], data_token)
     msg_out = f"Remisión cancelada (ID {id_remission}, folio {result_ra[2]})" + (f": {reason}" if reason else "")
     create_notification_permission(msg_out, data_token, ["administracion"], "Remisión cancelada", user, 0)
@@ -1296,17 +1307,14 @@ def update_remission_from_api(data, data_token, raw_metadata=None):
             "msg": "Para cancelar una remisión usa PUT /remission/cancel",
             "error": "status 3 no se escribe por el PUT",
         }, 400
-    history = result_ra[15]
-    history = json.loads(history) if history else []
     quotation_id = data["metadata"].get("quotation_id", None)
-    # Update report activity: merge sobre el extra_info previo — solo las llaves
-    # del modulo REMISIONES presentes en el JSON crudo; las de otros modulos
-    # (control de reportes, saldos) se preservan.
+    # Solo las llaves del modulo REMISIONES presentes en el JSON crudo; se escriben
+    # con JSON_SET (patch_activity_report), las de otros modulos ni se leen ni se
+    # reescriben. `extra_info` (merge local) solo alimenta el diff del history.
     old_extra_info = _coerce_extra_info(result_ra[19])
+    extra_updates = _extra_info_updates(data["metadata"], raw_metadata, _REMISSION_EXTRA_KEY_MAP)
     extra_info = dict(old_extra_info)
-    extra_info.update(
-        _extra_info_updates(data["metadata"], raw_metadata, _REMISSION_EXTRA_KEY_MAP)
-    )
+    extra_info.update(extra_updates)
 
     # Historial resumido de cambios (metadata + items) contra el estado previo.
     old_items_map = {
@@ -1335,34 +1343,32 @@ def update_remission_from_api(data, data_token, raw_metadata=None):
         _HISTORY_META_FIELDS,
     )
     items_changes = _diff_remission_items(old_items_map, data["items"])
-    history.append(
-        {
-            "timestamp": timestamp,
-            "user": user,
-            "action": "Actualización",
-            "comment": "Actualización de remision de actividad.",
-            "changes": {"metadata": meta_changes, "items": items_changes},
-        }
-    )
+    history_entry = {
+        "timestamp": timestamp,
+        "user": user,
+        "action": "Actualización",
+        "comment": "Actualización de remision de actividad.",
+        "changes": {"metadata": meta_changes, "items": items_changes},
+    }
 
-    flag, error, result = update_activity_report(
-        report_id=data["metadata"]["id"],
-        date=data["metadata"]["date"],
-        folio=data["metadata"]["folio"],
-        client_id=data["metadata"]["client_id"],
-        plant=data["metadata"]["plant"],
-        area=data["metadata"]["area"],
-        location=data["metadata"]["location"],
-        general_description=data["metadata"]["general_description"],
-        comments=data["metadata"]["comments"],
-        quotation_id=quotation_id if quotation_id and quotation_id > 0 else None,
-        history=history,
-        status=data["metadata"]["status"],
-        contract_id=contract_id,
-        pedido=extra_info.get("pedido", ""),
-        pedido_exiros=extra_info.get("pedido_exiros", ""),
-        data_token=data_token,
-        extra_info=extra_info,
+    flag, error, rows = patch_activity_report(
+        data["metadata"]["id"],
+        data_token,
+        columns={
+            "date": data["metadata"]["date"],
+            "folio": data["metadata"]["folio"],
+            "client_id": data["metadata"]["client_id"],
+            "plant": data["metadata"]["plant"],
+            "area": data["metadata"]["area"],
+            "location": data["metadata"]["location"],
+            "general_description": data["metadata"]["general_description"],
+            "comments": data["metadata"]["comments"],
+            "quotation_id": quotation_id if quotation_id and quotation_id > 0 else None,
+            "status": data["metadata"]["status"],
+            "contract_id": contract_id,
+        },
+        extra_info_set=extra_updates,
+        history_entry=history_entry,
     )
     if not flag:
         return {
@@ -1370,6 +1376,9 @@ def update_remission_from_api(data, data_token, raw_metadata=None):
             "msg": "Error al actualizar registro de remision  de actividad",
             "error": error,
         }, 400
+    if not rows:
+        # Cancelada entre la lectura y el UPDATE: tampoco se tocan los items.
+        return _cancelled_meanwhile_error(data["metadata"]["id"], "actualizar"), 400
     dict_items = old_items_map
     # Update items:
     flag_list = []
@@ -1482,17 +1491,15 @@ def update_remission_control_table_from_api(data, data_token, raw_metadata=None)
     cancelled = _cancelled_remission_error(result_ra, "actualizar")
     if cancelled:
         return cancelled, 400
+    # area/status no los edita este módulo: no se escriben (antes se reescribían
+    # con lo leído y podían revertir un cambio concurrente); solo alimentan el diff.
     area = result_ra[9]
     status = result_ra[14]
 
-    history = result_ra[15]
-    history = json.loads(history) if history else []
-
     old_extra_info = _coerce_extra_info(result_ra[19])
+    extra_updates = _extra_info_updates(data["metadata"], raw_metadata, _CONTROL_EXTRA_KEY_MAP)
     existing_extra_info = dict(old_extra_info)
-    existing_extra_info.update(
-        _extra_info_updates(data["metadata"], raw_metadata, _CONTROL_EXTRA_KEY_MAP)
-    )
+    existing_extra_info.update(extra_updates)
 
     # Historial resumido de cambios (solo metadata; la tabla de control no maneja items).
     # area/status se conservan del registro previo, por eso no deben marcar cambio.
@@ -1512,37 +1519,33 @@ def update_remission_control_table_from_api(data, data_token, raw_metadata=None)
         ),
         _HISTORY_META_FIELDS,
     )
-    history.append(
-        {
-            "timestamp": timestamp,
-            "user": user,
-            "action": "Actualización",
-            "comment": "Actualización de tabla de control de remision.",
-            "changes": {"metadata": meta_changes, "items": []},
-        }
-    )
+    history_entry = {
+        "timestamp": timestamp,
+        "user": user,
+        "action": "Actualización",
+        "comment": "Actualización de tabla de control de remision.",
+        "changes": {"metadata": meta_changes, "items": []},
+    }
 
     quotation_id = data["metadata"].get("quotation_id", None)
     quotation_id = quotation_id if quotation_id and quotation_id > 0 else None
 
-    flag, error, result = update_activity_report(
-        report_id=data["metadata"]["id"],
-        date=data["metadata"]["date"],
-        folio=data["metadata"]["folio"],
-        client_id=data["metadata"]["client_id"],
-        plant=data["metadata"]["plant"],
-        area=area,
-        location=data["metadata"]["location"],
-        general_description=data["metadata"]["general_description"],
-        comments=data["metadata"]["comments"],
-        quotation_id=quotation_id,
-        history=history,
-        status=status,
-        contract_id=contract_id,
-        pedido=existing_extra_info.get("pedido", ""),
-        pedido_exiros=existing_extra_info.get("pedido_exiros", ""),
-        data_token=data_token,
-        extra_info=existing_extra_info,
+    flag, error, rows = patch_activity_report(
+        data["metadata"]["id"],
+        data_token,
+        columns={
+            "date": data["metadata"]["date"],
+            "folio": data["metadata"]["folio"],
+            "client_id": data["metadata"]["client_id"],
+            "plant": data["metadata"]["plant"],
+            "location": data["metadata"]["location"],
+            "general_description": data["metadata"]["general_description"],
+            "comments": data["metadata"]["comments"],
+            "quotation_id": quotation_id,
+            "contract_id": contract_id,
+        },
+        extra_info_set=extra_updates,
+        history_entry=history_entry,
     )
     if not flag:
         return {
@@ -1550,6 +1553,8 @@ def update_remission_control_table_from_api(data, data_token, raw_metadata=None)
             "msg": "Error al actualizar tabla de control de remision de actividad",
             "error": error,
         }, 400
+    if not rows:
+        return _cancelled_meanwhile_error(data["metadata"]["id"], "actualizar"), 400
     msg_out = f"Tabla de control de remisión actualizada correctamente (ID {data['metadata']['id']})"
     create_notification_permission(
         msg_out, data_token, ["administracion"], "Tabla de control actualizada", user, 0
@@ -1592,19 +1597,17 @@ def update_remission_balance_from_api(data, data_token, raw_metadata=None):
     if cancelled:
         return cancelled, 400
 
-    history = result_ra[15]
-    history = json.loads(history) if history else []
-
     old_extra_info = _coerce_extra_info(result_ra[19])
+    extra_updates = _extra_info_updates(data["metadata"], raw_metadata, _BALANCE_EXTRA_KEY_MAP)
     merged_extra_info = dict(old_extra_info)
-    merged_extra_info.update(
-        _extra_info_updates(data["metadata"], raw_metadata, _BALANCE_EXTRA_KEY_MAP)
-    )
+    merged_extra_info.update(extra_updates)
 
     # Valores de columnas dinámicas ({key: value}): merge por llave, null borra,
     # estricto contra las columnas del control de saldos ACTIVO al que está ligada
     # la remisión (result_ra[20] = balance_control_id; ya no se deriva del contrato).
+    # Se escriben como parche (JSON_MERGE_PATCH): solo las llaves enviadas.
     custom_changes = []
+    custom_patch = {}
     if raw_metadata is not None and "custom_fields" in raw_metadata:
         cf_errors, cf_values = validate_remission_custom_fields(
             result_ra[20], raw_metadata.get("custom_fields"), data_token
@@ -1625,7 +1628,7 @@ def update_remission_balance_from_api(data, data_token, raw_metadata=None):
                     "before": old_custom.get(key),
                     "after": new_custom.get(key),
                 })
-        merged_extra_info["custom_fields"] = new_custom
+        custom_patch = cf_values
 
     # Historial resumido: los campos base salen de la fila (no cambian aqui),
     # solo los de extra_info pueden marcar diferencia.
@@ -1635,34 +1638,21 @@ def update_remission_balance_from_api(data, data_token, raw_metadata=None):
         {field: merged_extra_info.get(field, "") for field in _HISTORY_EXTRA_FIELDS}
     )
     meta_changes = _diff_history_fields(old_meta, new_meta, _HISTORY_META_FIELDS) + custom_changes
-    history.append(
-        {
-            "timestamp": timestamp,
-            "user": user,
-            "action": "Actualización",
-            "comment": "Actualización de control de saldos.",
-            "changes": {"metadata": meta_changes, "items": []},
-        }
-    )
+    history_entry = {
+        "timestamp": timestamp,
+        "user": user,
+        "action": "Actualización",
+        "comment": "Actualización de control de saldos.",
+        "changes": {"metadata": meta_changes, "items": []},
+    }
 
-    flag, error, result = update_activity_report(
-        report_id=id_remission,
-        date=result_ra[1],
-        folio=result_ra[2],
-        client_id=result_ra[3],
-        plant=result_ra[8],
-        area=result_ra[9],
-        location=result_ra[10],
-        general_description=result_ra[11],
-        comments=result_ra[12],
-        quotation_id=result_ra[13],
-        history=history,
-        status=result_ra[14],
-        contract_id=result_ra[18],
-        pedido=merged_extra_info.get("pedido", ""),
-        pedido_exiros=merged_extra_info.get("pedido_exiros", ""),
-        data_token=data_token,
-        extra_info=merged_extra_info,
+    # Sin columnas base: este módulo no las edita (antes se reescribían con lo leído).
+    flag, error, rows = patch_activity_report(
+        id_remission,
+        data_token,
+        extra_info_set=extra_updates,
+        custom_fields_patch=custom_patch,
+        history_entry=history_entry,
     )
     if not flag:
         return {
@@ -1670,6 +1660,8 @@ def update_remission_balance_from_api(data, data_token, raw_metadata=None):
             "msg": "Error al actualizar control de saldos de la remisión",
             "error": error,
         }, 400
+    if not rows:
+        return _cancelled_meanwhile_error(id_remission, "capturar saldos"), 400
     msg_out = f"Control de saldos actualizado correctamente (ID {id_remission})"
     create_notification_permission(
         msg_out, data_token, ["administracion"], "Control de saldos actualizado", user, 0
@@ -2146,13 +2138,19 @@ def create_activity_report_attachment_api(data, data_token):
         f"Archivo adjunto agregado ({category}): {filename} al reporte {id_report} "
         f"por el empleado {data_token.get('name')}"
     )
-    status = report_data[14]  # pyrefly: ignore
+    # status solo se escribe si la firma lo cambia; una cancelada no se reactiva
+    # (los anexos siguen permitidos en canceladas, docs/remission_cancel.md).
+    status = None
     if "firma-realizado" in filename.lower():
         status = 1
-        log_msg += " y estado actualizado a (firmado)"
     if "firma-recibido" in filename.lower():
         status = 2
-        log_msg += " y estado actualizado a (aprobado)"
+    if status is not None:
+        if _int_or_none_status(report_data[14]) == REMISSION_CANCELLED_STATUS:  # pyrefly: ignore
+            status = None
+            log_msg += " (remisión cancelada: el estado no cambia)"
+        else:
+            log_msg += " y estado actualizado a (firmado)" if status == 1 else " y estado actualizado a (aprobado)"
     # Re-subir el mismo archivo reemplaza su entrada en vez de duplicarla: en S3
     # ya se sobreescribio el objeto (misma llave), asi que dos entradas
     # apuntarian al mismo archivo. Es ademas la unica forma de corregir una
@@ -2162,14 +2160,12 @@ def create_activity_report_attachment_api(data, data_token):
     if replaced:
         files = [file for file in files if file.get("path") != path_aws]
         log_msg += " (reemplaza el archivo previo con el mismo nombre)"
-    history.append(
-        {
-            "timestamp": timestamp.strftime(format_timestamps),
-            "user": data_token.get("emp_id"),
-            "action": "Adjuntar archivo",
-            "comment": log_msg,
-        }
-    )
+    history_entry = {
+        "timestamp": timestamp.strftime(format_timestamps),
+        "user": data_token.get("emp_id"),
+        "action": "Adjuntar archivo",
+        "comment": log_msg,
+    }
     files.append(
         {
             "filename": filename,
@@ -2180,9 +2176,8 @@ def create_activity_report_attachment_api(data, data_token):
             "timestamp": timestamp.strftime(format_timestamps),
         }
     )
-    # OJO: update_report_activity_files espera (id, history, files, status)
     flag, error, rows_updated = update_report_activity_files(
-        id_report, history, files, status, data_token
+        id_report, history_entry, files, data_token, status=status
     )
     if not flag:
         return {
@@ -2340,22 +2335,19 @@ def delete_activity_report_attachment_api(data, data_token):
         log_msg += f". Motivo: {reason}"
     if force and category == "firma":
         log_msg += " (force: categoria firma inferida del nombre)"
-    history.append(
-        {
-            "timestamp": datetime.now(pytz.utc)
-            .astimezone(pytz.timezone(timezone_software))
-            .strftime(format_timestamps),
-            "user": data_token.get("emp_id"),
-            "action": "Eliminar archivo",
-            "comment": log_msg,
-        }
-    )
+    history_entry = {
+        "timestamp": datetime.now(pytz.utc)
+        .astimezone(pytz.timezone(timezone_software))
+        .strftime(format_timestamps),
+        "user": data_token.get("emp_id"),
+        "action": "Eliminar archivo",
+        "comment": log_msg,
+    }
     # Primero la BD (fuente de verdad) y luego S3: al reves, un fallo del UPDATE
-    # dejaria una entrada apuntando a una llave inexistente.
-    # OJO: update_report_activity_files espera (id, history, files, status)
-    status = report_data[14]  # pyrefly: ignore
+    # dejaria una entrada apuntando a una llave inexistente. Sin status: borrar
+    # un anexo nunca lo cambia.
     flag, error, rows_updated = update_report_activity_files(
-        id_report, history, remaining, status, data_token
+        id_report, history_entry, remaining, data_token
     )
     if not flag:
         return {

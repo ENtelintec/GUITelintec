@@ -14,6 +14,7 @@ relacionar remisiones con un control por contract_id.
 
 import json
 
+from templates.controllers.presales.remisions_controller import HISTORY_APPEND_SQL, json_param
 from templates.database.connection import execute_sql
 
 _TABLE = "sql_telintec_mod_admin.balance_controls"
@@ -111,9 +112,11 @@ REMISSION_LINK_COLUMNS = (
     "client_id",
     "balance_control_id",
     "control_active",
+    # valores de columnas dinámicas a limpiar al retirar (docs/remission_atomic_writes.md). Append-only.
+    "extra_info",
 )
 _SELECT_REMISSION_LINK = (
-    "SELECT ar.id, ar.contract_id, ar.history, ar.client_id, ar.balance_control_id, bcl.is_active "
+    "SELECT ar.id, ar.contract_id, ar.history, ar.client_id, ar.balance_control_id, bcl.is_active, ar.extra_info "
     f"FROM {_TABLE_AR} ar "
     f"LEFT JOIN {_TABLE} bcl ON bcl.id_control = ar.balance_control_id "
 )
@@ -458,32 +461,37 @@ def get_free_remissions_by_contract(contract_id: int, data_token):
 
 
 def attach_remission_to_control(
-    id_report: int, id_control: int, contract_id: int | None, history: list, data_token
+    id_report: int, id_control: int, contract_id: int | None, history_entry: dict, data_token
 ):
     """Liga la remision al control. Con contract_id (control con contrato) tambien
     se lo asigna a la remision que no lo tenia (COALESCE conserva el existente
     cuando se pasa None). Guard en el WHERE: solo si la remision esta libre, ya
     era de este control o apunta a un control NO activo — dos altas concurrentes
-    no pueden dejarla en dos controles. type_sql=3 -> 0 filas = alguien la tomo antes."""
+    no pueden dejarla en dos controles. El history solo crece (JSON_ARRAY_APPEND).
+    type_sql=3 -> 0 filas = alguien la tomo antes."""
     sql = (
         f"UPDATE {_TABLE_AR} SET balance_control_id = %s, "
-        "contract_id = COALESCE(%s, contract_id), history = %s "
+        f"contract_id = COALESCE(%s, contract_id), {HISTORY_APPEND_SQL} "
         "WHERE id = %s AND (balance_control_id IS NULL OR balance_control_id = %s "
         f"OR balance_control_id NOT IN (SELECT id_control FROM {_TABLE} WHERE is_active = 1))"
     )
-    val = (id_control, contract_id, json.dumps(history, ensure_ascii=False), id_report, id_control)
+    val = (id_control, contract_id, json_param(history_entry), id_report, id_control)
     flag, e, out = execute_sql(sql, val, 3, data_token)
     return flag, e, out
 
 
-def detach_remission_from_control(id_report: int, id_control: int, history: list, data_token):
-    """Saca la remision del control (balance_control_id = NULL). NO toca
-    contract_id. type_sql=3 -> 0 filas = ya no estaba en este control."""
+def detach_remission_from_control(id_report: int, id_control: int, history_entry: dict, data_token):
+    """Saca la remision del control (balance_control_id = NULL) y borra sus
+    valores de columnas dinamicas (extra_info.custom_fields: solo tienen sentido
+    con las columnas de ESTE control). NO toca contract_id ni remission_amount.
+    type_sql=3 -> 0 filas = ya no estaba en este control."""
     sql = (
-        f"UPDATE {_TABLE_AR} SET balance_control_id = NULL, history = %s "
+        f"UPDATE {_TABLE_AR} SET balance_control_id = NULL, "
+        "extra_info = IF(JSON_TYPE(extra_info) = 'OBJECT', JSON_REMOVE(extra_info, '$.custom_fields'), extra_info), "
+        f"{HISTORY_APPEND_SQL} "
         "WHERE id = %s AND balance_control_id = %s"
     )
-    val = (json.dumps(history, ensure_ascii=False), id_report, id_control)
+    val = (json_param(history_entry), id_report, id_control)
     flag, e, out = execute_sql(sql, val, 3, data_token)
     return flag, e, out
 

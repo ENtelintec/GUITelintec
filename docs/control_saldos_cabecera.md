@@ -221,3 +221,7 @@ Se revisó toda la documentación de control de saldos (back: `remission_module_
 - ~~**[back] CRUD de formatos ISO para SGI**~~ y ~~**migrar `iso_form` de `PDFGenerator` a `iso_formats`**~~ — hechos (2026-09-17): [`iso_formats_crud.md`](iso_formats_crud.md).
 - ~~**[back] Endpoint de inyección/ajuste de saldo**~~ — hecho (2026-09-17) con defaults: [`control_saldos_movimientos.md`](control_saldos_movimientos.md).
 - **[front] Sección 11 (F1 discrepancia de totales, F2 maqueta del historial)**: sin dependencia del back.
+
+## Notas posteriores
+
+- **2026-10-09** ([`remission_atomic_writes.md`](remission_atomic_writes.md)): `PUT /remissionBalance` ya no reescribe la fila: escribe solo sus llaves de `extra_info` con `JSON_SET`, `custom_fields` como parche (`JSON_MERGE_PATCH`, `null` borra) y agrega su entrada al `history`; deja de reescribir las columnas base con lo leído. Contrato igual. Decisión de esa fecha: las filas del control **siguen** en `activity_reports.extra_info`, sin tabla propia.

@@ -69,3 +69,7 @@ El subquery de `consumed_amount` castea `remission_amount` a `DECIMAL(15,2)` sol
 - **Reactivación** (si algún día se pide): un `PUT /remission/reactivate` que ponga `status = 0` con history; los cálculos se corrigen solos. No relajar los candados de los PUT: son lo que garantiza que una cancelada no se edite "por accidente".
 - **Bloquear anexos en canceladas**: agregar `_cancelled_remission_error` en `create_activity_report_attachment_api` / `delete_activity_report_attachment_api`.
 - Cualquier consulta nueva que sume montos o cantidades de remisiones debe filtrar `COALESCE(status, 0) <> 3`.
+
+## Notas posteriores
+
+- **2026-10-09** ([`remission_atomic_writes.md`](remission_atomic_writes.md)): el candado de cancelada también vive en SQL (`WHERE … status <> 3` en los 3 PUT de módulo y en la cancelación), así que un PUT o una segunda cancelación que leyeron antes de la cancelación reciben el mismo 400 `remisión cancelada`. Y una **firma subida a una cancelada ya no la reactiva** (antes `firma-realizado`/`firma-recibido` la pasaban a 1/2); el anexo se sigue guardando.

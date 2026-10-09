@@ -468,22 +468,21 @@ def _attach_rows(id_control: int, control_contract_id, label: str, rows, timesta
     attached = []
     errors = []
     for row in rows:
-        rid, r_contract, rem_history, _client, r_control = row[:5]
+        rid, r_contract, _history, _client, r_control = row[:5]
         if _int_or_none(r_control) == id_control:
             continue  # ya estaba en este control
         changes = [{"field": "balance_control_id", "before": r_control, "after": id_control}]
         if control_contract_id and r_contract is None:
             changes.append({"field": "contract_id", "before": None, "after": int(control_contract_id)})
-        rem_history = _load_json(rem_history, []) or []
-        rem_history.append({
+        history_entry = {
             "timestamp": timestamp,
             "user": user,
             "action": "Adopción a control de saldos",
             "comment": f"Ligada al control de saldos {id_control} ({label}).",
             "changes": {"metadata": changes, "items": []},
-        })
+        }
         flag, error, rowcount = attach_remission_to_control(
-            rid, id_control, int(control_contract_id) if control_contract_id else None, rem_history, data_token
+            rid, id_control, int(control_contract_id) if control_contract_id else None, history_entry, data_token
         )
         if flag and rowcount:
             attached.append(rid)
@@ -1194,15 +1193,24 @@ def update_balance_control_remissions_from_api(data, data_token):
     )
     removed = []
     for rid in remove_ids:
-        rem_history = _load_json(found[rid][2], []) or []
-        rem_history.append({
+        # Retirar borra los valores de columnas dinámicas (son de ESTE control);
+        # quedan en el history como before -> None para no perder el rastro.
+        rem_extra = _load_json(found[rid][6], {}) if len(found[rid]) > 6 else {}
+        rem_custom = rem_extra.get("custom_fields") if isinstance(rem_extra, dict) else None
+        changes = [{"field": "balance_control_id", "before": id_control, "after": None}]
+        if isinstance(rem_custom, dict):
+            changes += [
+                {"field": f"custom_fields.{key}", "before": rem_custom[key], "after": None}
+                for key in sorted(rem_custom)
+            ]
+        history_entry = {
             "timestamp": timestamp,
             "user": user,
             "action": "Retiro de control de saldos",
             "comment": f"Retirada del control de saldos {id_control} ({label}).",
-            "changes": {"metadata": [{"field": "balance_control_id", "before": id_control, "after": None}], "items": []},
-        })
-        flag, error, rowcount = detach_remission_from_control(rid, id_control, rem_history, data_token)
+            "changes": {"metadata": changes, "items": []},
+        }
+        flag, error, rowcount = detach_remission_from_control(rid, id_control, history_entry, data_token)
         if flag and rowcount:
             removed.append(rid)
         else:

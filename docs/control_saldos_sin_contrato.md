@@ -156,3 +156,7 @@ Orden: dev → test → prod, **después** de que test/prod tengan `control_sald
 
 - **[back] DDL en test y prod** (primero `control_saldos.sql`, después este; **antes** de desplegar el código). En dev quedaron las FKs `fk_bc_contract` y `fk_ar_balance_control`; `fk_bc_client` no está creada (opcional: decidir si se agrega).
 - **[front]** Cruzar por `balance_control_id`, pantalla de alta con la rama "sin contrato" (`client_id` + `title`), selector de remisiones disponibles (`available_for_control=1`), y botón agregar/quitar remisiones (`PUT /balanceControl/remissions`).
+
+## Notas posteriores
+
+- **2026-10-09** ([`remission_atomic_writes.md`](remission_atomic_writes.md)): `PUT /balanceControl/remissions` con `remove` ahora **borra los `custom_fields`** de la remisión (eran valores de las columnas de ese control) y deja cada valor en su `history` (`before` → `null`); `remission_amount` se conserva. Adoptar (`add`, POST, auto-enlace) no limpia nada: una remisión que viene de un control cancelado conserva sus valores (decisión abierta en [`pendientes.md`](pendientes.md)).

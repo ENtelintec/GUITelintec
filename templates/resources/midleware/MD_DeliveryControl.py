@@ -147,10 +147,9 @@ def _history_entry(user, action, timestamp, comment, changes=None) -> dict:
     return entry
 
 
-def _remission_history(row_history, user, action, timestamp, comment, changes) -> list:
-    history = _load_json(row_history, []) or []
-    history.append({"timestamp": timestamp, "user": user, "action": action, "comment": comment, "changes": changes})
-    return history
+def _remission_history_entry(user, action, timestamp, comment, changes) -> dict:
+    """Entrada a AGREGAR al history de la remisión (JSON_ARRAY_APPEND en el controller)."""
+    return {"timestamp": timestamp, "user": user, "action": action, "comment": comment, "changes": changes}
 
 
 def _order_items_dicts(quotation_id: int, data_token) -> list:
@@ -234,8 +233,8 @@ def _attach_rows(control: dict, rows: list, timestamp, user, data_token) -> tupl
     for row in rows:
         if _int_or_none(row.get("delivery_control_id")) == control["id_control"]:
             continue
-        history = _remission_history(
-            row.get("history"), user, "Adopción a control de entregas", timestamp,
+        history = _remission_history_entry(
+            user, "Adopción a control de entregas", timestamp,
             f"Ligada al control de entregas {control['id_control']}.",
             {"metadata": [{"field": "delivery_control_id", "before": row.get("delivery_control_id"), "after": control["id_control"]}], "items": []},
         )
@@ -683,6 +682,7 @@ def update_delivery_control_values_from_api(data, raw_payload, data_token):
     extra = _load_json(row[1], {}) or {}  # pyrefly: ignore
     current = extra.get("delivery_fields") if isinstance(extra.get("delivery_fields"), dict) else {}
     errors = []
+    patch = {}  # solo las llaves enviadas; None borra (JSON_MERGE_PATCH en el controller)
     for key, value in values.items():
         field = declared.get(key)
         if field is None:
@@ -692,13 +692,14 @@ def update_delivery_control_values_from_api(data, raw_payload, data_token):
         if not ok:
             errors.append(f"'{key}': {err}")
             continue
+        patch[key] = coerced
         if coerced is None:
             current.pop(key, None)
         else:
             current[key] = coerced
     if errors:
         return {"data": None, "msg": "Valores inválidos", "error": errors}, 400
-    flag, error, _ = set_remission_delivery_fields(id_remission, current, data_token)
+    flag, error, _ = set_remission_delivery_fields(id_remission, patch, data_token)
     if not flag:
         return {"data": None, "msg": "No se pudieron guardar los valores", "error": error}, 400
     write_log_file(log_file_admin_collecions, f"Control de entregas {id_control}: valores de la remisión {id_remission} actualizados ({sorted(values.keys())}) por {user} el {timestamp}", data_token)
@@ -740,8 +741,8 @@ def update_delivery_control_remissions_from_api(data, data_token):
     added, write_errors = _attach_rows(control, [found[r] for r in add_ids], timestamp, user, data_token)
     removed = []
     for rid in remove_ids:
-        history = _remission_history(
-            found[rid].get("history"), user, "Retiro de control de entregas", timestamp,
+        history = _remission_history_entry(
+            user, "Retiro de control de entregas", timestamp,
             f"Retirada del control de entregas {id_control}.",
             {"metadata": [{"field": "delivery_control_id", "before": id_control, "after": None}], "items": []},
         )

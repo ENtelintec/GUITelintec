@@ -15,6 +15,11 @@ remisión no cancelada (activity_reports.status <> 3); nunca se almacenan.
 
 import json
 
+from templates.controllers.presales.remisions_controller import (
+    EXTRA_INFO_OBJECT_SQL,
+    HISTORY_APPEND_SQL,
+    json_param,
+)
 from templates.database.connection import execute_sql
 
 _TABLE = "sql_telintec_mod_admin.delivery_controls"
@@ -354,25 +359,26 @@ def get_free_remissions_for_quotation(quotation_id: int, client_id: int, data_to
     return _rows(*execute_sql(sql, (client_id, quotation_id), 2, data_token))
 
 
-def attach_remission_to_delivery_control(id_report: int, id_control: int, history: list, data_token):
+def attach_remission_to_delivery_control(id_report: int, id_control: int, history_entry: dict, data_token):
     """Liga la remisión al control. Guard: solo si está libre, ya era de este
-    control o apunta a uno cancelado. type_sql=3 -> 0 filas = alguien la tomó antes."""
+    control o apunta a uno cancelado. El history solo crece (JSON_ARRAY_APPEND).
+    type_sql=3 -> 0 filas = alguien la tomó antes."""
     sql = (
-        f"UPDATE {_TABLE_AR} SET delivery_control_id = %s, history = %s "
+        f"UPDATE {_TABLE_AR} SET delivery_control_id = %s, {HISTORY_APPEND_SQL} "
         "WHERE id = %s AND (delivery_control_id IS NULL OR delivery_control_id = %s "
         f"OR delivery_control_id NOT IN (SELECT id_control FROM {_TABLE} WHERE status <> {CONTROL_CANCELLED_STATUS}))"
     )
-    val = (id_control, json.dumps(history, ensure_ascii=False), id_report, id_control)
+    val = (id_control, json_param(history_entry), id_report, id_control)
     flag, e, out = execute_sql(sql, val, 3, data_token)
     return flag, e, out
 
 
-def detach_remission_from_delivery_control(id_report: int, id_control: int, history: list, data_token):
+def detach_remission_from_delivery_control(id_report: int, id_control: int, history_entry: dict, data_token):
     sql = (
-        f"UPDATE {_TABLE_AR} SET delivery_control_id = NULL, history = %s "
+        f"UPDATE {_TABLE_AR} SET delivery_control_id = NULL, {HISTORY_APPEND_SQL} "
         "WHERE id = %s AND delivery_control_id = %s"
     )
-    val = (json.dumps(history, ensure_ascii=False), id_report, id_control)
+    val = (json_param(history_entry), id_report, id_control)
     flag, e, out = execute_sql(sql, val, 3, data_token)
     return flag, e, out
 
@@ -389,13 +395,16 @@ def get_remission_delivery_fields(id_report: int, data_token):
     return True, None, out
 
 
-def set_remission_delivery_fields(id_report: int, values: dict, data_token):
-    """Escribe extra_info.delivery_fields completo (JSON_SET sobre el extra_info). type_sql=3."""
+def set_remission_delivery_fields(id_report: int, patch: dict, data_token):
+    """Parche sobre extra_info.delivery_fields: {key: valor | None}, None borra la
+    llave (JSON_MERGE_PATCH); las llaves no enviadas no se tocan aunque otro
+    usuario las haya cambiado después de nuestra lectura. type_sql=3."""
     sql = (
-        f"UPDATE {_TABLE_AR} SET extra_info = JSON_SET(COALESCE(extra_info, JSON_OBJECT()), "
-        "'$.delivery_fields', CAST(%s AS JSON)) WHERE id = %s"
+        f"UPDATE {_TABLE_AR} SET extra_info = JSON_SET({EXTRA_INFO_OBJECT_SQL}, '$.delivery_fields', "
+        "JSON_MERGE_PATCH(COALESCE(JSON_EXTRACT(extra_info, '$.delivery_fields'), JSON_OBJECT()), CAST(%s AS JSON))) "
+        "WHERE id = %s"
     )
-    val = (json.dumps(values, ensure_ascii=False), id_report)
+    val = (json_param(patch), id_report)
     flag, e, out = execute_sql(sql, val, 3, data_token)
     return flag, e, out
 
