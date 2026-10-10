@@ -1,6 +1,6 @@
 # Control de saldos sin contrato: membresía explícita remisión → control
 
-Fecha: 2026-09-14 (grill) · 2026-09-17 (código) · **Estado: hecho y verificado contra dev (2026-09-17, 50/50 checks HTTP). DDL corrido en dev por el usuario; test y prod pendientes.**
+Fecha: 2026-09-14 (grill) · 2026-09-17 (código) · **Estado: hecho y verificado contra dev (2026-09-17, 50/50 checks HTTP). DDL corrido por el usuario en dev (2026-09-17), test y prod (2026-09-23).**
 
 > **Orden obligatorio: DDL antes que el código.** `get_remission_by_id` ya selecciona `ar.balance_control_id`: con este código y sin la columna, **todos** los endpoints de remisiones (`GET /remission-<id>`, los PUT, PDF, anexos) responden 400 `Unknown column`. En dev ya está corrido; aplica a test/prod en el deploy.
 
@@ -154,9 +154,11 @@ Orden: dev → test → prod, **después** de que test/prod tengan `control_sald
 
 ## Pendientes
 
-- **[back] DDL en test y prod** (primero `control_saldos.sql`, después este; **antes** de desplegar el código). En dev quedaron las FKs `fk_bc_contract` y `fk_ar_balance_control`; `fk_bc_client` no está creada (opcional: decidir si se agrega).
+- ~~**[back] DDL en test y prod**~~ — corrido (2026-09-23) con las dos FKs opcionales; ver Notas posteriores.
+- ~~**[back] Paridad dev: `fk_bc_client`**~~ — agregada en dev (2026-10-09) con el bloque C de [`fix_2026_10_09_fks_y_costos.sql`](../scripts_db_handle/fix_2026_10_09_fks_y_costos.sql). **No** re-correr este script: no es re-ejecutable (el 2026-10-09 eso borró `fk_bc_contract` en test/prod).
 - **[front]** Cruzar por `balance_control_id`, pantalla de alta con la rama "sin contrato" (`client_id` + `title`), selector de remisiones disponibles (`available_for_control=1`), y botón agregar/quitar remisiones (`PUT /balanceControl/remissions`).
 
 ## Notas posteriores
 
 - **2026-10-09** ([`remission_atomic_writes.md`](remission_atomic_writes.md)): `PUT /balanceControl/remissions` con `remove` ahora **borra los `custom_fields`** de la remisión (eran valores de las columnas de ese control) y deja cada valor en su `history` (`before` → `null`); `remission_amount` se conserva. Adoptar (`add`, POST, auto-enlace) no limpia nada: una remisión que viene de un control cancelado conserva sus valores (decisión abierta en [`pendientes.md`](pendientes.md)).
+- **2026-10-09** (verificación en solo lectura contra las 3 BDs): el DDL está corrido en **test y prod** desde el 2026-09-23, con `contract_id` NULL-able, `client_id` NOT NULL, `title`, `activity_reports.balance_control_id` + `idx_ar_balance_control` y las **dos** FKs opcionales (`fk_bc_client`, `fk_ar_balance_control`). Dev tiene `fk_ar_balance_control` pero **no** `fk_bc_client`. Esa es la única diferencia: un `client_id` inexistente pasa en dev y truena con 1452 en test/prod. **Más tarde el mismo día** se agregó `fk_bc_client` en dev con el fix, y las 3 BDs quedaron con las mismas FKs (`fk_bc_contract`, `fk_bc_client`, `fk_bc_format`, `fk_ar_balance_control`).

@@ -223,3 +223,7 @@ Gotchas:
   razón por la que hoy están bloqueadas.
 - Pendiente: no hay borrado en lote. Si el front agrega selección múltiple,
   itera (cada borrado deja su propia entrada de `history`, que es lo deseable).
+
+## Notas posteriores
+
+- **2026-10-09** ([`remission_anexos_sin_carrera.md`](remission_anexos_sin_carrera.md)): el alta y el borrado escriben `files` de forma condicional y reintentan si otro request la cambió entretanto. Las reglas de este doc (firmas protegidas, `force`, BD primero y S3 después) se reevalúan en cada intento. Nuevo **409** si la lista no se estabiliza en 8 intentos.

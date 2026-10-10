@@ -92,10 +92,18 @@ empleados generado end-to-end con el header intacto.
 
 ## Pendientes
 
-- Apellido omitido en el CSV de employees (decidir con el front si `name` pasa
-  a nombre completo o se agrega columna al final).
-- CSV sin quoting/escaping (comas y saltos de línea dentro de valores rompen
-  filas) — evaluar `csv.writer` con `QUOTE_MINIMAL` en los tres.
-- Rutas relativas hardcodeadas (`files/emp.csv`, `files/medical.csv`,
-  `files/vacations.csv`) y archivo compartido entre requests concurrentes — ya
-  listado en riesgos de [`plan_rh_mes.md`](planes/archivo/plan_rh_mes.md).
+Los tres se cerraron el 2026-10-09 (ver Notas posteriores):
+
+- ~~Apellido omitido en el CSV de employees~~: columna `l_name` al final.
+- ~~CSV sin quoting/escaping~~: `csv.writer` con `QUOTE_MINIMAL`.
+- ~~Rutas relativas hardcodeadas y archivo compartido entre requests~~: CSV en memoria.
+
+## Notas posteriores
+
+- **2026-10-09** ([`rrhh_vacaciones_y_csv.md`](rrhh_vacaciones_y_csv.md)): las 3 descargas se arman en memoria con `csv.writer` (`create_csv_file_{employees,medical,vacations}` en `Functions_DB_midleware.py`). El "byte-idéntico" y los gotchas del contrato de este doc ya no aplican:
+  - valores entrecomillados cuando hace falta, sin reemplazar `,` por `;`;
+  - NULL sale vacío;
+  - `l_name` al final de employees;
+  - header de vacations sin espacios.
+
+  El contrato vigente está en ese doc.

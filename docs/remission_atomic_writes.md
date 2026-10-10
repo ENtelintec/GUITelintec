@@ -93,7 +93,11 @@ Regresión con los testers previos (crean y borran sus propios datos; dev no gua
 
 ## Pendientes
 
-- **[back] Lista `files` de anexos**: sigue siendo lectura-modificación-escritura. Arreglo propuesto: `JSON_ARRAY_APPEND` cuando la subida no reemplaza (el caso de subidas en paralelo) y comparar-y-reintentar para reemplazo/borrado.
+- ~~**[back] Lista `files` de anexos**~~: hecho (2026-10-09) con comparar-y-reintentar en alta **y** borrado → [`remission_anexos_sin_carrera.md`](remission_anexos_sin_carrera.md).
 - **[decisión] `custom_fields` al adoptar una remisión que viene de un control cancelado** (flujo "contrato tardío" de [`control_saldos_sin_contrato.md`](control_saldos_sin_contrato.md)): hoy se **conservan**, así que reaparecen si el control nuevo declara las mismas llaves y quedan como basura si no. Decidir si se limpian también al adoptar.
 - **[decisión] `delivery_fields` al retirar de un control de entregas**: hoy se conservan (equivalente de (b) para entregas, no pedido).
 - **[back, opcional] Columnas base entre `PUT /remission` y `PUT /remissionControlTable`**: si llegara a doler, bloqueo optimista (columna `version` = DDL, o comparar-y-reintentar).
+
+## Notas posteriores
+
+- **2026-10-09** ([`remission_anexos_sin_carrera.md`](remission_anexos_sin_carrera.md)): la lista `files` ya no tiene carrera. El gotcha "subir anexos en serie mientras tanto" ya no aplica: subir en paralelo es seguro.

@@ -352,6 +352,7 @@ class DownloadVehicleVoucherAttachment(Resource):
 
 @ns.route("/voucher/vehicle/download/pdf/<int:id_voucher>")
 class DownloadVehicleChecklistPDF(Resource):
+    @ns.doc(params={"full": "1 -> documento combinado (checklist + anexos PDF + evidencia fotográfica)"})
     @ns.expect(expected_headers_per)
     def get(self, id_voucher):
         flag, data_token, msg = token_verification_procedure(
@@ -359,8 +360,11 @@ class DownloadVehicleChecklistPDF(Resource):
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        # 200 -> blob del PDF (FO-CDA-03 R3); 4xx/5xx -> envelope {data, msg, error}
-        data_out, code = download_voucher_vehicle_pdf_api(id_voucher, data_token)
+        # 200 -> blob del PDF (FO-CDA-03 R3); 4xx/5xx -> envelope {data, msg, error}.
+        # ?full=1 -> checklist + anexos PDF + evidencia fotografica
+        # (docs/checklist_vehicular_full_pdf.md); sin el, solo el checklist.
+        full = request.args.get("full", default="0").strip().lower() in ("1", "true", "yes")
+        data_out, code = download_voucher_vehicle_pdf_api(id_voucher, data_token, full=full)
         if code == 200:
             return send_file(data_out, as_attachment=True)  # pyrefly: ignore
         return data_out, code

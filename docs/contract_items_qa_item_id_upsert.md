@@ -373,3 +373,7 @@ Mismo `products` que `PUT /contract` (comparten el form). `data` es
 
 `products[].qa_item_id` (antes `id`). Con `id_q = -1` devuelve todas. Si el id no
 existe ahora responde **`404`** (antes tiraba `500`).
+
+## Notas posteriores
+
+- **2026-10-09** ([`contract_items_put_resultado.md`](contract_items_put_resultado.md)): los dos `PUT` devuelven `data.items` con el `qa_item_id` y la `action` de cada item, en el orden del request, así que ya no hace falta re-`GET` para no duplicar. `comment` **salió** de los forms y del swagger de items (decisión del usuario). Los gotchas "`comment` se acepta pero no se guarda" y "el `PUT` no devuelve los `qa_item_id` nuevos" de este doc ya no aplican.

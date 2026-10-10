@@ -34,4 +34,8 @@ Dev (2026-09-07): rúbrica aplicada por API; `get_quizz_evaluation` de las 2 tas
 ## Pendientes
 
 - **[front]** Pintar el modo cualitativo en la UI de resultados (hoy la UI ramifica por `data: null`).
-- **[back]** Correr el DML en test/prod.
+- ~~**[back]** Correr el DML en test/prod.~~ — corrido (2026-10-09); ver Notas posteriores.
+
+## Notas posteriores
+
+- **2026-10-09**: el usuario corrió `salida_rubrica_tipo0.sql` en test y prod. Verificado en solo lectura: `rubric.mode = "qualitative"` en las 3 BDs, así que `GET /quizz/<id>/evaluation` del tipo 0 ya no responde `data: null` en ninguna.

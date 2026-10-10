@@ -532,12 +532,21 @@ def get_remission_by_id(
     return flag, e, out
 
 
-def update_report_activity_files(id_report, history_entry: dict, files: list, data_token, status: int | None = None):
+def update_report_activity_files(
+    id_report,
+    history_entry: dict,
+    files: list,
+    data_token,
+    status: int | None = None,
+    expected_files: list | None = None,
+):
     """Escribe la lista de anexos y agrega una entrada al history. `status` solo
     se escribe cuando el anexo lo cambia (firmas) y nunca reactiva una cancelada
-    (CASE en SQL: la cancelacion pudo llegar despues de la lectura). La lista
-    `files` sigue siendo lectura-modificacion-escritura (pendiente en
-    docs/remission_atomic_writes.md). type_sql=3."""
+    (CASE en SQL: la cancelacion pudo llegar despues de la lectura).
+    Con `expected_files` (la lista leida) el UPDATE es condicional: solo aplica si
+    `files` sigue igual en BD. 0 filas = otro request la cambio entretanto y el
+    midleware re-lee y reintenta. Nunca hay 0 filas por "sin cambios": el history
+    siempre crece. type_sql=3."""
     sets = ["files = %s", HISTORY_APPEND_SQL]
     val: list = [json.dumps(files), json_param(history_entry)]
     if status is not None:
@@ -547,5 +556,9 @@ def update_report_activity_files(id_report, history_entry: dict, files: list, da
         val.append(status)
     sql = f"UPDATE sql_telintec_mod_admin.activity_reports SET {', '.join(sets)} WHERE id = %s"
     val.append(id_report)
+    if expected_files is not None:
+        # Comparacion JSON por contenido (no por texto): NULL cuenta como [].
+        sql += " AND COALESCE(files, JSON_ARRAY()) = CAST(%s AS JSON)"
+        val.append(json_param(expected_files))
     flag, e, out = execute_sql(sql, tuple(val), 3, data_token)
     return flag, e, out

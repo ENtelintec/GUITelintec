@@ -2,12 +2,15 @@
 __author__ = "Edisson Naula"
 __date__ = "$ 01/abr./2024  at 11:38 $"
 
+import csv
+import io
 import json
 
 from static.constants import format_date
 from templates.controllers.rrhh.quizz_models_controller import (
     get_quizz_model_template_db,
 )
+from templates.controllers.employees.em_controller import get_all_examenes
 from templates.controllers.employees.employees_controller import (
     get_all_data_employee,
     get_all_data_employees,
@@ -25,8 +28,8 @@ from templates.controllers.misc.tasks_controller import (
 from templates.Functions_Utils import create_notification_permission_notGUI
 
 
-def get_info_employees_with_status(status: str):
-    flag, error, result = get_all_data_employees(status)
+def get_info_employees_with_status(status: str, data_token=None):
+    flag, error, result = get_all_data_employees(status, data_token)
     if not (isinstance(result, list) or isinstance(result, tuple)):
         return {"error": "No se encontraron empleados"}, 400
     data_out = []
@@ -138,46 +141,87 @@ def get_employees_directory_with_status(status: str, data_token):
     return {"data": data_out, "msg": None, "error": None}, 200
 
 
-def create_csv_file_employees(status: str):
-    flag, error, result = get_all_data_employees(status)
+def _csv_buffer(header: list, rows: list) -> io.BytesIO:
+    # CSV en memoria: sin archivo compartido entre requests ni rutas relativas.
+    # csv.writer entrecomilla los valores con coma, comilla o salto de linea;
+    # NULL sale vacio (antes se imprimia "None").
+    text = io.StringIO()
+    writer = csv.writer(text, quoting=csv.QUOTE_MINIMAL, lineterminator="\n")
+    writer.writerow(header)
+    for row in rows:
+        writer.writerow(["" if value is None else value for value in row])
+    return io.BytesIO(text.getvalue().encode("utf-8"))
+
+
+def create_csv_file_employees(status: str, data_token=None):
+    flag, error, result = get_all_data_employees(status, data_token)
     if not (isinstance(result, list) or isinstance(result, tuple)):
         return {"data": None, "msg": "No se encontraron empleados", "error": error}, 400
     result = result if flag else []
-    # create file
-    filepath = "files/emp.csv"
-    with open(filepath, "w") as file:
-        file.write(
-            "id,name,phone,department,modality,email,contract,admission,rfc,curp,nss,emergency,position,status,departure,exam_id,birthday,legajo\n"
+    header = [
+        "id", "name", "phone", "department", "modality", "email", "contract", "admission",
+        "rfc", "curp", "nss", "emergency", "position", "status", "departure", "exam_id",
+        "birthday", "legajo", "l_name",
+    ]
+    rows = []
+    for item in result:
+        (
+            id_emp,
+            name,
+            lastname,
+            phone,
+            department,
+            modality,
+            email,
+            contract,
+            admission,
+            rfc,
+            curp,
+            nss,
+            emergency_contact,
+            position,
+            status,
+            departure,
+            examen,
+            birthday,
+            legajo,
+            extra_info,
+            department_id,
+            usernames,
+        ) = item
+        # `l_name` al final: las 18 columnas de antes no cambian de posicion.
+        rows.append(
+            [
+                id_emp, name, phone, department, modality, email, contract, admission, rfc,
+                curp, nss, emergency_contact, position, status, departure, examen, birthday,
+                legajo, lastname,
+            ]
         )
-        for item in result:
-            (
-                id_emp,
-                name,
-                lastname,
-                phone,
-                department,
-                modality,
-                email,
-                contract,
-                admission,
-                rfc,
-                curp,
-                nss,
-                emergency_contact,
-                position,
-                status,
-                departure,
-                examen,
-                birthday,
-                legajo,
-                extra_info,
-                department_id,
-                usernames,
-            ) = item
-            file.write(
-                f"{id_emp},{name},{phone},{department},{modality},{email},{contract},{admission},{rfc},{curp},{nss},{emergency_contact},{position},{status},{departure},{examen},{birthday},{legajo}\n"
-            )
-    return filepath
+    return _csv_buffer(header, rows)
+
+
+def create_csv_file_medical(data_token):
+    flag, error, result = get_all_examenes(data_token)
+    if not flag or not (isinstance(result, list) or isinstance(result, tuple)):
+        return {"data": None, "msg": "Error al obtener los datos del empleado", "error": error}, 400
+    header = ["id_exam", "nombre", "sangre", "estatus", "aptitudes", "fechas", "apt_actual", "emp_id"]
+    rows = []
+    for item in result:
+        id_exam, nombre, sangre, status, aptitud, fechas, apt_actual, emp_id, _extra = item
+        rows.append([id_exam, nombre, sangre, status, aptitud, fechas, apt_actual, emp_id])
+    return _csv_buffer(header, rows)
+
+
+def create_csv_file_vacations(data_token):
+    flag, error, result = get_vacations_data(data_token)
+    if not flag or not (isinstance(result, list) or isinstance(result, tuple)):
+        return {"data": None, "msg": "Error al obtener los datos del empleado", "error": error}, 400
+    header = ["emp_id", "Nombre", "Apellido", "fecha_inicio", "body"]
+    rows = []
+    for item in result:
+        emp_id, name, l_name, date_admission, seniority, _renovacion = item
+        rows.append([emp_id, name, l_name, date_admission, seniority])
+    return _csv_buffer(header, rows)
 
 
 def get_info_employee_id(id_emp: int, data_token):
@@ -234,6 +278,25 @@ def get_info_employee_id(id_emp: int, data_token):
     return (data_out, 200) if flag else ({}, 400)
 
 
+_PRIMA_DEFAULT = {"status": "No", "fecha_pago": ""}  # defaults de PrimaVacForm
+
+
+def _seniority_list(raw) -> list:
+    # Tolerante a periodos sin `prima`/`dates` (el alta por API no guardaba
+    # `prima` hasta 2026-10-09; un registro asi tumbaba los GET con KeyError).
+    seniority_raw = json.loads(raw) if raw else {}
+    return [
+        {
+            "year": int(k),
+            "status": v.get("status", ""),
+            "comentarios": v.get("comentarios", ""),
+            "prima": v.get("prima") or dict(_PRIMA_DEFAULT),
+            "dates": v.get("dates", []),
+        }
+        for k, v in seniority_raw.items()
+    ]
+
+
 def get_vacations_employee(emp_id: int, data_token):
     flag, error, result = get_vacations_data_emp(emp_id, data_token)
     out = None
@@ -241,16 +304,7 @@ def get_vacations_employee(emp_id: int, data_token):
         return {"error": "No se encontraron vacaciones para el empleado"}, 400
     if not flag or len(result) == 0:
         return out, 400
-    seniority_raw = json.loads(result[4])
-    seniority = [
-        {
-            "year": int(k),
-            "status": v["status"],
-            "comentarios": v["comentarios"],
-            "prima": v["prima"],
-        }
-        for k, v in seniority_raw.items()
-    ]
+    seniority = _seniority_list(result[4])
     out = {
         "emp_id": result[0],
         "name": result[1].upper() + " " + result[2].upper(),
@@ -270,17 +324,7 @@ def get_all_vacations(data_token):
     if not flag or len(result) == 0:
         return [], 400
     for item in result:
-        seniority_raw = json.loads(item[4])
-        seniority = [
-            {
-                "year": int(k),
-                "status": v["status"],
-                "comentarios": v["comentarios"],
-                "prima": v["prima"],
-                "dates": v.get("dates", []),
-            }
-            for k, v in seniority_raw.items()
-        ]
+        seniority = _seniority_list(item[4])
         out.append(
             {
                 "emp_id": item[0],

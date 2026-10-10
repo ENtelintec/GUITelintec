@@ -1,6 +1,8 @@
 import json
 import os
+import random
 import tempfile
+import time
 from datetime import datetime
 
 import boto3
@@ -2041,6 +2043,16 @@ def _classify_remission_file(file_obj: dict) -> str:
     return "otro"
 
 
+# Intentos de la escritura condicional de `files` antes de responder 409.
+_FILES_WRITE_ATTEMPTS = 8
+
+
+def _files_retry_pause(attempt: int):
+    # Espera aleatoria creciente: sin ella, N subidas simultaneas reintentan
+    # al mismo tiempo y vuelven a chocar (peor caso ~1.4 s en total).
+    time.sleep(random.uniform(0, 0.05 * attempt))
+
+
 def _load_remission_for_files(id_report, data_token):
     """
     Carga una remision para operar sobre sus anexos. Devuelve la tupla
@@ -2134,57 +2146,77 @@ def create_activity_report_attachment_api(data, data_token):
         else:
             return {"data": None, "msg": "Error al subir archivo a S3", "error": str(e)}, 400
     category = _classify_remission_file({"category": data.get("category"), "filename": filename})
-    log_msg = (
-        f"Archivo adjunto agregado ({category}): {filename} al reporte {id_report} "
-        f"por el empleado {data_token.get('name')}"
-    )
     # status solo se escribe si la firma lo cambia; una cancelada no se reactiva
     # (los anexos siguen permitidos en canceladas, docs/remission_cancel.md).
-    status = None
+    status_signature = None
     if "firma-realizado" in filename.lower():
-        status = 1
+        status_signature = 1
     if "firma-recibido" in filename.lower():
-        status = 2
-    if status is not None:
-        if _int_or_none_status(report_data[14]) == REMISSION_CANCELLED_STATUS:  # pyrefly: ignore
-            status = None
-            log_msg += " (remisión cancelada: el estado no cambia)"
-        else:
-            log_msg += " y estado actualizado a (firmado)" if status == 1 else " y estado actualizado a (aprobado)"
-    # Re-subir el mismo archivo reemplaza su entrada en vez de duplicarla: en S3
-    # ya se sobreescribio el objeto (misma llave), asi que dos entradas
-    # apuntarian al mismo archivo. Es ademas la unica forma de corregir una
-    # firma equivocada, porque las firmas no se pueden borrar (ver
-    # Docs/remission_attachment_delete.md).
-    replaced = any(file.get("path") == path_aws for file in files)
-    if replaced:
-        files = [file for file in files if file.get("path") != path_aws]
-        log_msg += " (reemplaza el archivo previo con el mismo nombre)"
-    history_entry = {
+        status_signature = 2
+    new_entry = {
+        "filename": filename,
+        "path": path_aws,
+        "category": category,
+        "folio": (data.get("folio") or "").strip(),
+        "title": (data.get("title") or "").strip(),
         "timestamp": timestamp.strftime(format_timestamps),
-        "user": data_token.get("emp_id"),
-        "action": "Adjuntar archivo",
-        "comment": log_msg,
     }
-    files.append(
-        {
-            "filename": filename,
-            "path": path_aws,
-            "category": category,
-            "folio": (data.get("folio") or "").strip(),
-            "title": (data.get("title") or "").strip(),
+    # Escritura condicional sobre `files` (docs/remission_anexos_sin_carrera.md):
+    # si otra subida/borrado cambio la lista despues de leerla, se re-lee y se
+    # recalcula; el objeto en S3 ya quedo arriba (llave determinista).
+    for attempt in range(_FILES_WRITE_ATTEMPTS):
+        if attempt > 0:
+            _files_retry_pause(attempt)
+            payload_error, code, _, report_data, files, _ = _load_remission_for_files(id_report, data_token)
+            if payload_error is not None:
+                return payload_error, code
+        log_msg = (
+            f"Archivo adjunto agregado ({category}): {filename} al reporte {id_report} "
+            f"por el empleado {data_token.get('name')}"
+        )
+        status = status_signature
+        if status is not None:
+            if _int_or_none_status(report_data[14]) == REMISSION_CANCELLED_STATUS:  # pyrefly: ignore
+                status = None
+                log_msg += " (remisión cancelada: el estado no cambia)"
+            else:
+                log_msg += " y estado actualizado a (firmado)" if status == 1 else " y estado actualizado a (aprobado)"
+        # Re-subir el mismo archivo reemplaza su entrada en vez de duplicarla: en S3
+        # ya se sobreescribio el objeto (misma llave), asi que dos entradas
+        # apuntarian al mismo archivo. Es ademas la unica forma de corregir una
+        # firma equivocada, porque las firmas no se pueden borrar (ver
+        # Docs/remission_attachment_delete.md).
+        replaced = any(file.get("path") == path_aws for file in files)
+        new_files = [file for file in files if file.get("path") != path_aws]
+        if replaced:
+            log_msg += " (reemplaza el archivo previo con el mismo nombre)"
+        new_files.append(new_entry)
+        history_entry = {
             "timestamp": timestamp.strftime(format_timestamps),
+            "user": data_token.get("emp_id"),
+            "action": "Adjuntar archivo",
+            "comment": log_msg,
         }
-    )
-    flag, error, rows_updated = update_report_activity_files(
-        id_report, history_entry, files, data_token, status=status
-    )
-    if not flag:
+        flag, error, rows_updated = update_report_activity_files(
+            id_report, history_entry, new_files, data_token, status=status, expected_files=files
+        )
+        if not flag:
+            return {
+                "data": None,
+                "msg": "Error al actualizar el historial del reporte (archivo subido)",
+                "error": error,
+            }, 400
+        if rows_updated:
+            break
+    else:
         return {
             "data": None,
-            "msg": "Error al actualizar el historial del reporte (archivo subido)",
-            "error": error,
-        }, 400
+            "msg": (
+                "La lista de anexos cambió mientras se guardaba (subidas simultáneas). "
+                "El archivo ya está en S3: vuelve a subirlo con el mismo nombre"
+            ),
+            "error": "conflicto de escritura en files",
+        }, 409
     create_notification_permission_notGUI(
         log_msg, data_token, ["administracion", "operaciones", "sgi"], data_token.get("emp_id"), 0
     )
@@ -2280,11 +2312,6 @@ def delete_activity_report_attachment_api(data, data_token):
     if payload_error is not None:
         return payload_error, code
     name_file = data["filename"]
-    matched = [
-        file for file in files if isinstance(file, dict) and file.get("filename") == name_file
-    ]
-    if len(matched) == 0:
-        return {"data": None, "msg": "Archivo no encontrado en el reporte", "error": None}, 400
     # `force` llega crudo del payload (ver rs_Admin_collections): un BooleanField
     # de WTForms convertiria la cadena "false" en True y esto es un guard de
     # borrado.
@@ -2293,68 +2320,91 @@ def delete_activity_report_attachment_api(data, data_token):
         force = force_raw.strip().lower() in ("1", "true", "yes", "si")
     else:
         force = bool(force_raw)
-    target = matched[0]
-    category = _classify_remission_file(target)
-    if category == "firma":
-        if _is_protected_signature(target):
-            return {
-                "data": None,
-                "msg": (
-                    "No se pueden eliminar firmas del reporte. Para corregirla, vuelve a subir "
-                    "el archivo con el mismo nombre y reemplazara a la anterior"
-                ),
-                "error": None,
-            }, 400
-        if not force:
-            return {
-                "data": None,
-                "msg": (
-                    f"El archivo '{name_file}' se clasifica como firma por su nombre. "
-                    "Envia force=true si aun asi quieres eliminarlo"
-                ),
-                "error": None,
-            }, 400
-    # Se van todas las entradas con ese nombre: si el archivo se subio dos veces
-    # comparten llave S3 y apuntan al mismo objeto.
-    remaining = [
-        file
-        for file in files
-        if not (isinstance(file, dict) and file.get("filename") == name_file)
-    ]
-    paths = []
-    for file in matched:
-        path_file = file.get("path") or ""
-        if path_file and path_file not in paths:
-            paths.append(path_file)
     reason = (data.get("reason") or "").strip()
-    log_msg = (
-        f"Anexo eliminado ({category}): {name_file} del reporte {id_report} "
-        f"por el empleado {data_token.get('name')}"
-    )
-    if reason:
-        log_msg += f". Motivo: {reason}"
-    if force and category == "firma":
-        log_msg += " (force: categoria firma inferida del nombre)"
-    history_entry = {
-        "timestamp": datetime.now(pytz.utc)
-        .astimezone(pytz.timezone(timezone_software))
-        .strftime(format_timestamps),
-        "user": data_token.get("emp_id"),
-        "action": "Eliminar archivo",
-        "comment": log_msg,
-    }
-    # Primero la BD (fuente de verdad) y luego S3: al reves, un fallo del UPDATE
-    # dejaria una entrada apuntando a una llave inexistente. Sin status: borrar
-    # un anexo nunca lo cambia.
-    flag, error, rows_updated = update_report_activity_files(
-        id_report, history_entry, remaining, data_token
-    )
-    if not flag:
+    # Escritura condicional sobre `files` (docs/remission_anexos_sin_carrera.md):
+    # si otra subida/borrado cambio la lista despues de leerla, se re-lee y se
+    # vuelven a evaluar las reglas (el anexo pudo desaparecer o ser reemplazado
+    # por una firma).
+    for attempt in range(_FILES_WRITE_ATTEMPTS):
+        if attempt > 0:
+            _files_retry_pause(attempt)
+            payload_error, code, _, report_data, files, history = _load_remission_for_files(id_report, data_token)
+            if payload_error is not None:
+                return payload_error, code
+        matched = [
+            file for file in files if isinstance(file, dict) and file.get("filename") == name_file
+        ]
+        if len(matched) == 0:
+            return {"data": None, "msg": "Archivo no encontrado en el reporte", "error": None}, 400
+        target = matched[0]
+        category = _classify_remission_file(target)
+        if category == "firma":
+            if _is_protected_signature(target):
+                return {
+                    "data": None,
+                    "msg": (
+                        "No se pueden eliminar firmas del reporte. Para corregirla, vuelve a subir "
+                        "el archivo con el mismo nombre y reemplazara a la anterior"
+                    ),
+                    "error": None,
+                }, 400
+            if not force:
+                return {
+                    "data": None,
+                    "msg": (
+                        f"El archivo '{name_file}' se clasifica como firma por su nombre. "
+                        "Envia force=true si aun asi quieres eliminarlo"
+                    ),
+                    "error": None,
+                }, 400
+        # Se van todas las entradas con ese nombre: si el archivo se subio dos veces
+        # comparten llave S3 y apuntan al mismo objeto.
+        remaining = [
+            file
+            for file in files
+            if not (isinstance(file, dict) and file.get("filename") == name_file)
+        ]
+        paths = []
+        for file in matched:
+            path_file = file.get("path") or ""
+            if path_file and path_file not in paths:
+                paths.append(path_file)
+        log_msg = (
+            f"Anexo eliminado ({category}): {name_file} del reporte {id_report} "
+            f"por el empleado {data_token.get('name')}"
+        )
+        if reason:
+            log_msg += f". Motivo: {reason}"
+        if force and category == "firma":
+            log_msg += " (force: categoria firma inferida del nombre)"
+        history_entry = {
+            "timestamp": datetime.now(pytz.utc)
+            .astimezone(pytz.timezone(timezone_software))
+            .strftime(format_timestamps),
+            "user": data_token.get("emp_id"),
+            "action": "Eliminar archivo",
+            "comment": log_msg,
+        }
+        # Primero la BD (fuente de verdad) y luego S3: al reves, un fallo del UPDATE
+        # dejaria una entrada apuntando a una llave inexistente. Sin status: borrar
+        # un anexo nunca lo cambia.
+        flag, error, rows_updated = update_report_activity_files(
+            id_report, history_entry, remaining, data_token, expected_files=files
+        )
+        if not flag:
+            return {
+                "data": None,
+                "msg": "Error al eliminar el anexo del reporte",
+                "error": error,
+            }, 400
+        if rows_updated:
+            break
+    else:
         return {
             "data": None,
-            "msg": "Error al eliminar el anexo del reporte",
-            "error": error,
-        }, 400
+            "msg": "La lista de anexos cambió mientras se eliminaba (cambios simultáneos); vuelve a intentarlo",
+            "error": "conflicto de escritura en files",
+        }, 409
     s3_deleted = False
     s3_detail = "Sin llave en S3 que eliminar"
     error_out = None

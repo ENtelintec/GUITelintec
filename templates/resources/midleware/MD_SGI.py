@@ -41,7 +41,10 @@ from templates.controllers.vouchers.vouchers_controller import (
     update_voucher_vehicle_files,
     update_voucher_vehicle_status,
 )
-from templates.forms.VehicleChecklistPDF import FileVehicleChecklistPDF
+from templates.forms.VehicleChecklistPDF import (
+    FileVehicleChecklistPDF,
+    FileVehicleChecklistPhotosPDF,
+)
 from templates.Functions_Utils import create_notification_permission_notGUI
 from templates.misc.Functions_Files import write_log_file
 
@@ -602,7 +605,8 @@ def get_vouchers_vehicle_api(data, data_token):
     data_out = []
     for item in result:
         extra_info = json.loads(item[20])
-        accesories = json.loads(item[15]) if item[15] else []
+        # Tolera las filas viejas doble-codificadas (string con JSON adentro).
+        accesories = _chv_json_field(item[15], [])
         data_out.append(
             {
                 "id_voucher_general": item[0],
@@ -622,9 +626,7 @@ def get_vouchers_vehicle_api(data, data_token):
                 "registration_card": item[12],
                 "insurance": item[13],
                 "referendo": item[14],
-                "accessories": accesories
-                if isinstance(accesories, list)
-                else json.loads(accesories),
+                "accessories": accesories,
                 "vehicle_type": item[16],
                 "observations": item[17],
                 "items": json.loads(item[18]),
@@ -662,14 +664,9 @@ def create_voucher_vehicle_api(data, data_token):
     )
     if not flag:
         return {"data": None, "msg": "No se pudo crear el voucher general", "error": error}, 400
-    try:
-        accessories = json.dumps(data["accessories"])
-    except Exception as e:
-        return {
-            "data": None,
-            "msg": "Error al procesar los datos de accesorios",
-            "error": str(e),
-        }, 400
+    # Lista tal cual: el controller hace el unico json.dumps. Antes se codificaba
+    # aqui tambien y la columna JSON guardaba un string con JSON adentro.
+    accessories = data["accessories"] or []
 
     flag, error, lastrowid_vehicle = create_voucher_vehicle(
         lastrowid,
@@ -756,14 +753,9 @@ def update_voucher_vehicle_api(data, data_token):
             "comment": "Voucher vehicular actualizado",
         }
     )
-    try:
-        accessories = json.dumps(data["accessories"])
-    except Exception as e:
-        return {
-            "data": None,
-            "msg": "Error al procesar los datos de accesorios",
-            "error": str(e),
-        }, 400
+    # Lista tal cual: el controller hace el unico json.dumps. Antes se codificaba
+    # aqui tambien y la columna JSON guardaba un string con JSON adentro.
+    accessories = data["accessories"] or []
     # Antes que el resto: si la FK rechaza el contrato, no queda nada a medias.
     flag, error, rows_changed = update_voucher_general_contract(
         data["id_voucher_general"], _vehicle_contract_or_none(data.get("contract")), data_token
@@ -1119,9 +1111,10 @@ def download_voucher_vehicle_attachment_api(data, data_token):
 
 
 def _chv_json_field(value, default):
-    """Campo JSON del voucher vehicular: `accessories` llega doble-codificado
-    (un string JSON que contiene otro string JSON, así lo persiste el alta) y
-    `extra_info` simple — decodifica hasta dos veces y valida el tipo final."""
+    """Campo JSON del voucher vehicular. `accessories` de filas anteriores al
+    2026-10-09 puede venir doble-codificado (un string JSON que contiene otro
+    JSON; el alta lo codificaba dos veces) y `extra_info` simple: decodifica
+    hasta dos veces y valida el tipo final."""
     result = value
     for _ in range(2):
         if not isinstance(result, str):
@@ -1190,12 +1183,113 @@ def _chv_signature_from_files(files, marker, tmp_dir, data_token):
         return None
 
 
-def download_voucher_vehicle_pdf_api(id_voucher, data_token):
+_CHV_DRAWABLE_EXT = {"jpg", "jpeg", "png", "webp"}
+
+
+def _chv_build_attachments(files, tmp_dir, data_token):
+    """
+    Baja de S3 los anexos del checklist para la variante combinada (?full=1).
+    Los attachments vehiculares solo traen ``{filename, path}`` (sin categoria),
+    asi que se clasifican por nombre/extension:
+
+    - nombre con ``firma`` -> se omite (ya va incrustada en la pagina 1)
+    - ``pdf`` -> anexo (se concatena tal cual)
+    - ``jpg/jpeg/png/webp`` -> foto (hoja de EVIDENCIA FOTOGRAFICA)
+    - otra cosa (zip, ...) -> se omite
+
+    No fatal por archivo: una descarga fallida se omite + log.
+    :return: ``(anexos, photos)``, listas de ``{"path", "filename"}`` en orden de subida.
+    """
+    anexos, photos = [], []
+    s3_client = None
+    for idx, file in enumerate(files, start=1):
+        if not isinstance(file, dict) or not file.get("path"):
+            continue
+        filename = str(file.get("filename") or "")
+        ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
+        if "firma" in filename.lower():
+            continue
+        if ext == "pdf":
+            target = anexos
+        elif ext in _CHV_DRAWABLE_EXT:
+            target = photos
+        else:
+            continue
+        local_path = os.path.join(tmp_dir, f"att_{idx}_{os.path.basename(file['path'])}")
+        try:
+            if s3_client is None:
+                s3_client = boto3.client("s3")
+            s3_client.download_file(
+                Bucket=str(secrets.get("S3_CH_BUCKET")), Key=file["path"], Filename=local_path
+            )
+        except Exception as e:
+            write_log_file(
+                log_file_sgi_chv,
+                f"No se pudo descargar el anexo '{filename}' del checklist: {str(e)}",
+                data_token,
+            )
+            continue
+        target.append({"path": local_path, "filename": filename})
+    return anexos, photos
+
+
+def _chv_pdf_pages(path) -> int:
+    """Paginas de un PDF local (0 si no abre: la fusion tambien lo omitira)."""
+    import fitz
+
+    try:
+        with fitz.open(path) as doc:
+            return doc.page_count
+    except Exception:
+        return 0
+
+
+def _chv_assemble_full_pdf(checklist_path, anexos, photos_pdf_path, out_path, data_token):
+    """
+    Fusiona (PyMuPDF/fitz) la pagina del checklist + los anexos PDF tal cual +
+    la(s) hoja(s) de fotos. Mismo criterio que ``_assemble_remission_full_pdf``
+    (MD_Admin_Collections): no fatal por anexo, y si la fusion falla completa
+    devuelve el checklist solo (mejor un documento parcial que ninguno).
+    """
+    import fitz
+
+    try:
+        doc = fitz.open()
+        with fitz.open(checklist_path) as base:
+            doc.insert_pdf(base)
+        for anexo in anexos:
+            try:
+                with fitz.open(anexo["path"]) as adoc:
+                    doc.insert_pdf(adoc)
+            except Exception as e:
+                write_log_file(
+                    log_file_sgi_chv,
+                    f"No se pudo insertar el anexo '{anexo.get('filename')}' al checklist combinado: {str(e)}",
+                    data_token,
+                )
+        if photos_pdf_path:
+            with fitz.open(photos_pdf_path) as pdoc:
+                doc.insert_pdf(pdoc)
+        doc.save(out_path)
+        doc.close()
+        return out_path
+    except Exception as e:
+        write_log_file(
+            log_file_sgi_chv,
+            f"Error al fusionar el checklist combinado: {str(e)}",
+            data_token,
+        )
+        return checklist_path
+
+
+def download_voucher_vehicle_pdf_api(id_voucher, data_token, full: bool = False):
     """
     Genera el PDF del CHECK LIST VEHICULAR (FO-CDA-03 R3) de un voucher
     vehicular y devuelve la ruta local para `send_file`. Sin ventana de fecha:
     cualquier voucher existente es descargable. Las firmas se incrustan desde
-    S3 cuando existen (no fatal si faltan o fallan).
+    S3 cuando existen (no fatal si faltan o fallan). Con ``full=True`` agrega
+    los anexos PDF y la hoja de EVIDENCIA FOTOGRAFICA
+    (docs/checklist_vehicular_full_pdf.md).
     """
     flag, error, result = get_voucher_vehicle_by_id(id_voucher, data_token)
     if not flag:
@@ -1276,9 +1370,37 @@ def download_voucher_vehicle_pdf_api(id_voucher, data_token):
             "msg": "Error al generar el PDF del checklist vehicular",
             "error": str(e),
         }, 500
+    out_path = dict_data["filename_out"]
+    detail = ""
+    if full:
+        anexos, photos = _chv_build_attachments(files, tmp_dir, data_token)
+        photos_pdf_path = None
+        if photos:
+            photos_pdf_path = os.path.join(tmp_dir, f"checklist_vehicular_{id_voucher}_fotos.pdf")
+            try:
+                # La hoja de fotos numera sus paginas a continuacion del checklist y los anexos.
+                page_start = 1 + _chv_pdf_pages(out_path) + sum(_chv_pdf_pages(a["path"]) for a in anexos)
+                FileVehicleChecklistPhotosPDF(
+                    {**dict_data, "filename_out": photos_pdf_path, "photos": photos, "page_start": page_start}
+                )
+            except Exception as e:
+                write_log_file(
+                    log_file_sgi_chv,
+                    f"No se pudo generar la hoja de fotos del checklist {id_voucher}: {str(e)}",
+                    data_token,
+                )
+                photos_pdf_path = None
+        out_path = _chv_assemble_full_pdf(
+            out_path,
+            anexos,
+            photos_pdf_path,
+            os.path.join(tmp_dir, f"checklist_vehicular_{id_voucher}_completo.pdf"),
+            data_token,
+        )
+        detail = f" (combinado: {len(anexos)} anexo(s), {len(photos)} foto(s))"
     write_log_file(
         log_file_sgi_chv,
-        f"PDF del checklist vehicular {id_voucher} generado por el empleado {data_token.get('name')}",
+        f"PDF del checklist vehicular {id_voucher}{detail} generado por el empleado {data_token.get('name')}",
         data_token,
     )
-    return dict_data["filename_out"], 200
+    return out_path, 200

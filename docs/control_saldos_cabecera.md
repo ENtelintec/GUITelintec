@@ -215,7 +215,7 @@ Se revisó toda la documentación de control de saldos (back: `remission_module_
 
 ## Pendientes
 
-- **[back] DDL en test y prod** (`scripts_db_handle/control_saldos.sql`, con o sin el bloque de FKs según decida el usuario).
+- ~~**[back] DDL en test y prod**~~ — corrido (2026-09-23) con el bloque de FKs; ver Notas posteriores.
 - **[front] Retirar la pantalla vieja** `administracion/control-saldos/ControlSaldos.tsx` (`/dashboard/administracion/control-saldos`, llama a `/logs` inexistente y edita los campos legacy de `contracts.metadata`); usar `contracted_amount`/`start_date`/`end_date` del control en el resumen (en vez de Σ partidas + catálogo); conciliar `CONTRACT_CONFIG` (campos extra por contrato, lado operaciones) con `config.columns` de los formatos.
 - **[front] Enganchar `confirmarCreacion`** al `POST /balanceControl`, leer formatos/columnas de `/catalogs`, cruzar filas por `contract_id`, mandar `custom_fields` (inglés) y pintar/capturar las celdas vía `PUT /remissionBalance`.
 - ~~**[back] CRUD de formatos ISO para SGI**~~ y ~~**migrar `iso_form` de `PDFGenerator` a `iso_formats`**~~ — hechos (2026-09-17): [`iso_formats_crud.md`](iso_formats_crud.md).
@@ -225,3 +225,5 @@ Se revisó toda la documentación de control de saldos (back: `remission_module_
 ## Notas posteriores
 
 - **2026-10-09** ([`remission_atomic_writes.md`](remission_atomic_writes.md)): `PUT /remissionBalance` ya no reescribe la fila: escribe solo sus llaves de `extra_info` con `JSON_SET`, `custom_fields` como parche (`JSON_MERGE_PATCH`, `null` borra) y agrega su entrada al `history`; deja de reescribir las columnas base con lo leído. Contrato igual. Decisión de esa fecha: las filas del control **siguen** en `activity_reports.extra_info`, sin tabla propia.
+- **2026-10-09** (verificación en solo lectura contra las 3 BDs): `control_saldos.sql` está corrido en **test y prod** desde el 2026-09-23, **con** el bloque de FKs (`fk_bc_contract`, `fk_bc_format`, `fk_bcm_control`). Las 3 tablas existen y el seed de `iso_formats` tiene los ids 1..13 (14/15 vienen de `control_entregas_ocd.sql`, que en test/prod todavía no corre).
+- **2026-10-09, más tarde**: test y prod **perdieron `fk_bc_contract`**. Se re-corrió `control_saldos_sin_contrato.sql`: su paso 0 la borra y el `ALTER` del paso 4 falló entero porque `fk_bc_client` ya existía. Se re-crea con el bloque A de [`fix_2026_10_09_fks_y_costos.sql`](../scripts_db_handle/fix_2026_10_09_fks_y_costos.sql). `control_saldos_sin_contrato.sql` ahora avisa en la cabecera que no es re-ejecutable. **Resuelto el mismo día**: el usuario corrió el fix y `fk_bc_contract` está de vuelta en test y prod (verificado en solo lectura).

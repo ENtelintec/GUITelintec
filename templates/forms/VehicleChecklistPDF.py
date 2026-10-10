@@ -540,3 +540,153 @@ def FileVehicleChecklistPDF(dict_data: dict):
     print_footer_page_count(pdf, pages, right_text=right_text, x_max=_CHV_PAGE_X)
     pdf.save()
     return True
+
+
+# --------------------------------------------------------------------------------------
+# Hoja de EVIDENCIA FOTOGRÁFICA del checklist (variante combinada ?full=1).
+# No es parte del FO-CDA-03: va en estilo casa (skill pdf-design, celeste #BDD7EE,
+# A4 vertical), igual que la hoja de fotos de la remisión. El azul del formato
+# (_CHV_AZUL) se queda solo en la página del checklist.
+# --------------------------------------------------------------------------------------
+_CHV_CELESTE = (0.74, 0.84, 0.93)
+
+
+def _chv_house_cell(pdf, x, y_top, w, h, lines, font_size, bold=False, fill=False):
+    """Celda estilo casa: recuadro, padding 4 pt y (opcional) relleno celeste
+    con texto negro bold para labels."""
+    pdf.setLineWidth(0.6)
+    if fill:
+        pdf.setFillColorRGB(*_CHV_CELESTE)
+        pdf.rect(x, y_top - h, w, h, fill=1, stroke=1)
+        pdf.setFillColorRGB(0, 0, 0)  # SIEMPRE restaurar a negro
+    else:
+        pdf.rect(x, y_top - h, w, h, fill=0, stroke=1)
+    pdf.setFont(FONT_BOLD if bold else FONT_REGULAR, font_size)
+    text_y = y_top - font_size - 3
+    for line in lines:
+        pdf.drawString(x + 4, text_y, line)
+        text_y -= font_size * 1.25
+
+
+def _chv_photo_metadata(pdf, rows, y_top, usable_w, font_size):
+    """Cuadrícula de 2 pares label|valor por fila (label celeste bold). La fila
+    crece con el wrap. Devuelve la ``y`` al terminar el bloque."""
+    label_w = 78.0
+    half_w = usable_w / 2
+    value_w = half_w - label_w
+    y = y_top
+    for row in rows:
+        pairs = [(row[0], row[1]), (row[2], row[3])]
+        wrapped = [
+            (
+                wrap_text_width(label, label_w - 8, font_size, font=FONT_BOLD),
+                wrap_text_width(value, value_w - 8, font_size),
+            )
+            for label, value in pairs
+        ]
+        max_lines = max(max(len(lab), len(val)) for lab, val in wrapped)
+        row_h = max_lines * font_size * 1.25 + 6
+        for pi, (l_lines, v_lines) in enumerate(wrapped):
+            x0 = _CHV_MARGIN + pi * half_w
+            _chv_house_cell(pdf, x0, y, label_w, row_h, l_lines, font_size, bold=True, fill=True)
+            _chv_house_cell(pdf, x0 + label_w, y, value_w, row_h, v_lines, font_size)
+        y -= row_h
+    return y
+
+
+def _chv_photo_cell(pdf, img_path, x, y_top, w, h, pad=6.0):
+    """Recuadro de una foto con la imagen centrada preservando aspect ratio.
+    No fatal: si la imagen no se puede leer, el recuadro queda vacío."""
+    pdf.setLineWidth(0.6)
+    pdf.rect(x + 2, y_top - h + 2, w - 4, h - 4, fill=0, stroke=1)
+    try:
+        reader = ImageReader(img_path)
+        iw, ih = reader.getSize()
+        if not iw or not ih or iw <= 0 or ih <= 0:
+            return
+        ratio = min((w - 4 - 2 * pad) / iw, (h - 4 - 2 * pad) / ih)
+        draw_w = iw * ratio
+        draw_h = ih * ratio
+        pdf.drawImage(
+            reader,
+            x + (w - draw_w) / 2,
+            (y_top - h) + (h - draw_h) / 2,
+            width=draw_w,
+            height=draw_h,
+            mask="auto",
+        )
+    except Exception as e:
+        print("erro chv photo cell", str(e))
+
+
+def FileVehicleChecklistPhotosPDF(dict_data: dict):
+    """
+    Genera la(s) página(s) de EVIDENCIA FOTOGRÁFICA del checklist vehicular
+    (A4 vertical, rejilla 2×3 = 6 fotos por página). Cada página repite el
+    header Telintec (FO-CDA-03, iso_form=8) y la metadata del vehículo.
+    Estructura esperada de ``dict_data``::
+
+        {
+            "filename_out": str,
+            "id_voucher": int,
+            "fecha_elaboracion": str,
+            "marca": str, "modelo": str, "placas": str, "kilometraje": str,
+            "vehicle_type": 0 | 1 | 2 | None,
+            "realizado": {"name": str, ...},
+            "recibido": {"name": str, ...},
+            "photos": [{"path": str}, ...],   # rutas locales ya descargadas
+            "page_start": int,                # nº de la 1ª hoja en el combinado (default 1)
+        }
+
+    Todo viene resuelto por el midleware (sin acceso a BD).
+    :return: True (sin fotos genera una hoja vacía).
+    """
+    photos = [p for p in dict_data.get("photos") or [] if isinstance(p, dict) and p.get("path")]
+    pdf = canvas.Canvas(dict_data["filename_out"], pagesize=(a4_x, a4_y))
+    pdf.setTitle("Evidencia fotografica")
+    font_size = 9
+    cols, rows = 2, 3
+    per_page = cols * rows
+    usable_w = a4_x - 2 * _CHV_MARGIN
+    limit_y = 45.0
+    vehicle_type = dict_data.get("vehicle_type")
+    type_label = (
+        _CHV_VEHICLE_TYPES[vehicle_type][1]
+        if isinstance(vehicle_type, int) and 0 <= vehicle_type < len(_CHV_VEHICLE_TYPES)
+        else ""
+    )
+    right_text = f"Checklist: {dict_data.get('id_voucher', '')}"
+    page_start = int(dict_data.get("page_start") or 1)
+    meta_rows = [
+        ("Fecha", dict_data.get("fecha_elaboracion") or "", "Checklist", dict_data.get("id_voucher") or ""),
+        ("Marca", dict_data.get("marca") or "", "Modelo", dict_data.get("modelo") or ""),
+        ("Placas", dict_data.get("placas") or "", "Tipo", type_label),
+        ("Kilometraje", dict_data.get("kilometraje") or "", "", ""),
+        (
+            "Realizado por",
+            (dict_data.get("realizado") or {}).get("name") or "",
+            "Recibido por",
+            (dict_data.get("recibido") or {}).get("name") or "",
+        ),
+    ]
+    chunks = [photos[i : i + per_page] for i in range(0, len(photos), per_page)] or [[]]
+    for page_idx, chunk in enumerate(chunks, start=1):
+        create_header_telintec(
+            pdf,
+            title="EVIDENCIA FOTOGRÁFICA",
+            page_x=a4_x,
+            iso_form=8,
+            orientation="vertical",
+        )
+        y = _chv_photo_metadata(pdf, meta_rows, 740.0, usable_w, font_size)
+        y_grid_top = y - 10
+        row_h = (y_grid_top - limit_y) / rows
+        col_w = usable_w / cols
+        for idx, p in enumerate(chunk):
+            r, c = divmod(idx, cols)
+            _chv_photo_cell(pdf, p["path"], _CHV_MARGIN + c * col_w, y_grid_top - r * row_h, col_w, row_h)
+        print_footer_page_count(pdf, page_start + page_idx - 1, right_text=right_text, x_max=a4_x)
+        if page_idx < len(chunks):
+            pdf.showPage()
+    pdf.save()
+    return True

@@ -134,14 +134,16 @@ Gotchas:
 
 ## Pendientes
 
-- **[back] Variante combinada `?full=1`** (checklist + anexos + evidencia
-  fotográfica, como remisiones) — la maquinaria de fusión con PyMuPDF ya existe
-  en `MD_Admin_Collections`.
+- ~~**[back] Variante combinada `?full=1`**~~ — hecho (2026-10-09) →
+  [`checklist_vehicular_full_pdf.md`](checklist_vehicular_full_pdf.md).
 - **[back+front] Captura de archivo de foto del vehículo en CDA** (Control de
   Activos, namespace `/cda`) — pedido al acordar este PDF: hoy las siluetas son
   genéricas; la idea es poder adjuntar fotos reales del vehículo en su
   expediente de CDA.
-- **[back] Doble-codificación de `accessories`**: el alta persiste el JSON de
-  los accesorios como string dentro de la columna JSON (`json.dumps` dos
-  veces); el lector ya lo tolera (`_chv_json_field`), pero valdría corregir el
-  alta y normalizar los datos existentes.
+- ~~**[back] Doble-codificación de `accessories`**~~ — alta y edición
+  corregidas (2026-10-09); DML de normalización entregado →
+  [`checklist_vehicular_accessories.md`](checklist_vehicular_accessories.md).
+
+## Notas posteriores
+
+- **2026-10-09**: `accessories` ya se guarda una sola vez, como arreglo JSON ([`checklist_vehicular_accessories.md`](checklist_vehicular_accessories.md)); el "doble-codificado" del punto 2 de Capas tocadas solo aplica a filas viejas hasta que corra el DML. `?full=1` agrega anexos PDF y hoja de evidencia fotográfica ([`checklist_vehicular_full_pdf.md`](checklist_vehicular_full_pdf.md)); sin `full`, este endpoint no cambia.

@@ -1244,6 +1244,25 @@ def create_items_from_api(products, id_quotation, data_token, id_contract=None):
     return flag_list, error_list, result_list
 
 
+def _item_result(index: int, product: dict, qa_item_id, action: str) -> dict:
+    """Una entrada de `data.items` de los PUT de contrato/cotizacion: el front
+    mapea por `index` (posicion en `products` del request) para refrescar los
+    `qa_item_id` sin otro GET. `action` ∈ created|updated|deleted|skipped|error."""
+    return {
+        "index": index,
+        "partida": product.get("partida"),
+        "qa_item_id": qa_item_id if isinstance(qa_item_id, int) and qa_item_id > 0 else None,
+        "action": action,
+    }
+
+
+def _items_created_out(products: list, flag_list: list, result_list: list) -> list:
+    return [
+        _item_result(i, product, result if flag else None, "created" if flag else "error")
+        for i, (product, flag, result) in enumerate(zip(products, flag_list, result_list))
+    ]
+
+
 def create_quotation_from_api(data, data_token):
     ocd_keys, errors = _merge_ocd_keys(data["metadata"], None)
     if errors:
@@ -1306,12 +1325,16 @@ def update_items_quotation_from_api(products, id_quotation, id_contract, dict_pr
     escribir nada. El rowcount solo se revisa en el DELETE: en un UPDATE de MySQL
     rowcount son las filas *cambiadas*, asi que guardar un item sin editarlo da 0 y
     tomarlo como fallo seria una falsa alarma.
+
+    El quinto valor (`items_out`) es una entrada por item del request, en orden
+    (`_item_result`): con el `qa_item_id` resultante el front no necesita re-GET.
     """
     flag_list: list = []
     error_list: list = []
     result_list: list = []
+    items_out: list = []
     counts = {"created": 0, "updated": 0, "deleted": 0, "recreated": 0}
-    for new_product in products:
+    for index, new_product in enumerate(products):
         id_item = _resolve_positive_int(new_product.get("qa_item_id"))
         is_erased = new_product.get("is_erased") == 1
         if is_erased and id_item == 0:
@@ -1320,6 +1343,7 @@ def update_items_quotation_from_api(products, id_quotation, id_contract, dict_pr
             flag_list.append(True)
             error_list.append(None)
             result_list.append(0)
+            items_out.append(_item_result(index, new_product, None, "skipped"))
             continue
         values = _item_quotation_values(new_product)
         if id_item > 0 and id_item not in dict_products:
@@ -1337,6 +1361,9 @@ def update_items_quotation_from_api(products, id_quotation, id_contract, dict_pr
             )
             if flag:
                 counts["created"] += 1
+            items_out.append(
+                _item_result(index, new_product, result if flag else None, "created" if flag else "error")
+            )
         elif is_erased:
             flag, error, result = delete_item_quotation(id_item, id_quotation, data_token)
             if flag and result == 0:
@@ -1344,16 +1371,18 @@ def update_items_quotation_from_api(products, id_quotation, id_contract, dict_pr
                 error = f"El item {id_item} no se elimino (0 filas afectadas)"
             elif flag:
                 counts["deleted"] += 1
+            items_out.append(_item_result(index, new_product, id_item, "deleted" if flag else "error"))
         else:
             flag, error, result = update_item_quotation(
                 id_item, id_quotation, values, data_token
             )
             if flag:
                 counts["updated"] += 1
+            items_out.append(_item_result(index, new_product, id_item, "updated" if flag else "error"))
         flag_list.append(flag)
         error_list.append(error)
         result_list.append(result)
-    return flag_list, error_list, result_list, counts
+    return flag_list, error_list, result_list, counts, items_out
 
 
 def _msg_items_counts(counts: dict) -> str:
@@ -1414,7 +1443,7 @@ def update_quoation_from_api(data, data_token):
     # quotations no tiene contract_id; el enlace vive en contracts.quotation_id.
     _, _, contract_id = get_contract_id_by_quotation(data["id"], data_token)
     error_items = None
-    flag_list, error_list, result_list, counts = update_items_quotation_from_api(
+    flag_list, error_list, result_list, counts, items_out = update_items_quotation_from_api(
         products, data["id"], contract_id, dict_products, data_token
     )
     if flag_list.count(True) == len(flag_list):
@@ -1438,7 +1467,7 @@ def update_quoation_from_api(data, data_token):
     )
     if error_items is not None:
         msg_out += f". {len(error_items)} items no se pudieron actualizar."
-    return {"data": {"id_quotation": data["id"]}, "msg": msg_out, "error": error_items}, 200
+    return {"data": {"id_quotation": data["id"], "items": items_out}, "msg": msg_out, "error": error_items}, 200
 
 
 def update_quotation_ocd_from_api(data, data_token):
@@ -1649,6 +1678,7 @@ def update_contract_from_api(data, data_token):
             data["products"], id_quotation, data_token, data["id"]
         )
         counts["created"] = flag_list.count(True)
+        items_out = _items_created_out(data["products"], flag_list, result_list)
     else:
         flag, error, result = get_quotation(id_quotation=id_quotation, data_token=data_token)
         if not flag or len(result) == 0:
@@ -1660,7 +1690,7 @@ def update_contract_from_api(data, data_token):
         dict_products = _dict_products_from_quotation(result[0])
         products = data["products"]
         contract_id = data["id"]
-        flag_list, error_list, result_list, counts = update_items_quotation_from_api(
+        flag_list, error_list, result_list, counts, items_out = update_items_quotation_from_api(
             products, id_quotation, contract_id, dict_products, data_token
         )
     if new_quotation_created and len(data.get("products", [])) == 0:
@@ -1717,7 +1747,7 @@ def update_contract_from_api(data, data_token):
     if error_items is not None:
         msg_out += f". {len(error_items)} items no se pudieron crear/actualizar."
     return {
-        "data": {"id_contract": data["id"], "id_quotation": id_quotation},
+        "data": {"id_contract": data["id"], "id_quotation": id_quotation, "items": items_out},
         "msg": msg_out,
         "error": error_items,
     }, 200

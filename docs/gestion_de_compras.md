@@ -213,3 +213,7 @@ Todos opcionales, como query params: `status` (int), `classification` (int),
 - **PUT parcial** depende de `raw_payload` (= `ns.payload`): el midleware compara
   `col in raw_payload` para saber qué mandó el front. No lo cambies por `validator.data`
   o perderás la distinción "no enviado" vs "enviado en null".
+
+## Notas posteriores
+
+- **2026-10-09** (verificación en solo lectura contra las 3 BDs): `purchase_management` existe en **prod** (creada el 2026-07-24) y **test** (2026-07-30), pero **no en dev** (`1146 Table doesn't exist`), así que `/admin/collections/purchaseManagement` truena contra dev. Resuelto el mismo día: el usuario corrió [`gestion_de_compras.sql`](../scripts_db_handle/gestion_de_compras.sql) con el bloque de FKs en dev, y también en test y prod. Verificado: tabla + `fk_pm_supplier`/`fk_pm_client`/`fk_pm_contract`/`fk_pm_po` en las 3 BDs, 0 filas en todas.

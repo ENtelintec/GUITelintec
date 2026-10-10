@@ -1,6 +1,6 @@
 # Control de Entregas por OCD: `POST /deliveryControl`, partidas pedido / entregado / pendiente y sobre-entrega
 
-Fecha: 2026-09-28 · **Estado: hecho y verificado contra dev (71/71 checks HTTP, `Tests/tester_delivery_control.py`). DDL [`control_entregas_ocd_membresia.sql`](../scripts_db_handle/control_entregas_ocd_membresia.sql) corrido en dev por el usuario; test y prod pendientes.**
+Fecha: 2026-09-28 · **Estado: hecho y verificado contra dev (71/71 checks HTTP, `Tests/tester_delivery_control.py`). DDL [`control_entregas_ocd_membresia.sql`](../scripts_db_handle/control_entregas_ocd_membresia.sql) corrido por el usuario en dev (2026-09-28), test y prod (2026-10-09); esquema idéntico en las 3 BDs — ver Notas posteriores.**
 
 Fase **F2** del plan [`planes/control_entregas_ocd_plan.md`](planes/control_entregas_ocd_plan.md). Se apoya en la F1 ([`quotation_ocd.md`](quotation_ocd.md): la cotización marcada `document_type: "ocd"`) y en las tablas de [`control_entregas_ocd.sql`](../scripts_db_handle/control_entregas_ocd.sql) (F0, corrido en dev el 2026-09-28 con FKs).
 
@@ -125,3 +125,9 @@ Detalle: lo anterior más
 - **Llaves nuevas en el detalle** → agregarlas a `_RESERVED_KEYS` para que ninguna columna dinámica choque.
 - `get_remission_by_id`: cualquier columna nueva va **al final** (índice 24+) y se documenta en el comentario de índices.
 - Membresía nunca por `activity_reports.quotation_id` (es la QA); siempre `delivery_control_id`.
+
+## Notas posteriores
+
+- **2026-10-09** (verificación en solo lectura contra las 3 BDs): **test** quedó a medias. `control_entregas_ocd_membresia.sql` se corrió el 2026-09-28 **sin** haber corrido antes `control_entregas_ocd.sql`: entró la columna `activity_reports.delivery_control_id` + `idx_ar_delivery_control`, pero la FK `fk_ar_delivery_control` no, porque `delivery_controls` no existe. Para completar test: correr `control_entregas_ocd.sql` completo y después **solo** el bloque FK de la membresía (el `ADD COLUMN` daría 1060 Duplicate column). **Prod** no tiene nada de los dos: correrlos completos y en orden **antes** de desplegar el código actual.
+- **2026-10-09, más tarde** (re-verificado tras la corrida del usuario): **test completo**, con todas las FKs y la membresía con `fk_ar_delivery_control`. En **prod** entró todo menos `quotation_item_costs` y sus FKs `fk_qic_item`/`fk_qic_quotation` (F6, [`quotation_cost_analysis.md`](quotation_cost_analysis.md)). Falta el bloque B de [`fix_2026_10_09_fks_y_costos.sql`](../scripts_db_handle/fix_2026_10_09_fks_y_costos.sql). `delivery_control_id` ya existe en prod, así que remisiones ya no da 400.
+- **2026-10-09, cierre**: el usuario corrió el fix (bloque B en prod). Verificado en solo lectura: `quotation_item_costs` + `fk_qic_item`/`fk_qic_quotation` en prod, y todo `control_entregas_ocd.sql` + membresía iguales en dev, test y prod. Ya no hay DDL pendiente para desplegar F0–F6.

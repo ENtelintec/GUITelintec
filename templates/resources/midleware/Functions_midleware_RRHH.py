@@ -20,10 +20,8 @@ from botocore.exceptions import BotoCoreError, ClientError, NoCredentialsError
 from static.constants import (
     cache_file_emp_fichaje,
     cache_file_resume_fichaje_path,
-    conversion_quizzes_path,
     file_temp_zip,
     filepath_fichaje_temp,
-    filepath_recommendations,
     filepath_settings,
     format_date,
     format_date_fichaje_file,
@@ -54,6 +52,7 @@ from templates.controllers.notifications.Notifications_controller import (
     insert_notification,
 )
 from templates.controllers.employees.vacations_controller import (
+    get_vacations_data_emp,
     insert_vacation,
     update_registry_vac,
 )
@@ -687,33 +686,69 @@ def update_medical_db(data, data_token):
         return {"data": None, "msg": "No se pudo actualizar el registro médico", "error": error}, 400
 
 
-def insert_new_vacation(data, data_token):
+def _seniority_from_form(items: list) -> dict:
+    # Mismo shape para alta y edicion: los GET de vacaciones leen `prima` de
+    # cada periodo (antes el alta la descartaba).
     seniority_dict = {}
-    for item in data["seniority"]:
-        seniority_dict[str(item["year"])] = {
-            "status": item["status"],
-            "comentarios": item["comentarios"],
-            "dates": item.get("dates", []),
-        }
-    if not len(seniority_dict) > 0:
-        return False, "No hay informacion que insertar", None
-    flag, error, result = insert_vacation(data["emp_id"], seniority_dict, data_token=data_token)
-    return flag, error, result
-
-
-def update_vacation(data, data_token):
-    seniority_dict = {}
-    for item in data["seniority"]:
+    for item in items:
         seniority_dict[str(item["year"])] = {
             "status": item["status"],
             "comentarios": item["comentarios"],
             "prima": item["prima"],
-            "dates": item["dates"],
+            "dates": item.get("dates", []),
         }
+    return seniority_dict
+
+
+def insert_new_vacation(data, data_token):
+    seniority_dict = _seniority_from_form(data["seniority"])
     if not len(seniority_dict) > 0:
-        return False, "No hay informacion que actualizar o corrupcion de info.", None
-    flag, error, result = update_registry_vac(data["emp_id"], seniority_dict, data_token)
-    return flag, error, result
+        return {"data": None, "msg": "No hay informacion que insertar", "error": None}, 400
+    emp_id = data["emp_id"]
+    flag, error, result = insert_vacation(emp_id, seniority_dict, data_token=data_token)
+    if not flag:
+        if "Duplicate entry" in error:
+            return {
+                "data": None,
+                "msg": "El empleado ya tiene registro de vacaciones; usa PUT para actualizarlo",
+                "error": error,
+            }, 409
+        return {"data": None, "msg": "No se pudieron registrar las vacaciones", "error": error}, 400
+    # `vacations` no tiene autoincremental (PK = emp_id): lastrowid siempre es 0.
+    return {
+        "data": {"id_vacation": emp_id},
+        "msg": f"Vacaciones registradas correctamente (ID {emp_id})",
+        "error": None,
+    }, 201
+
+
+def update_vacation(data, data_token):
+    seniority_dict = _seniority_from_form(data["seniority"])
+    if not len(seniority_dict) > 0:
+        return {
+            "data": None,
+            "msg": "No hay informacion que actualizar o corrupcion de info.",
+            "error": None,
+        }, 400
+    emp_id = data["emp_id"]
+    # rowcount 0 no distingue "no existe" de "sin cambios": se consulta antes.
+    flag, error, current = get_vacations_data_emp(emp_id, data_token)
+    if not flag:
+        return {"data": None, "msg": "No se pudieron actualizar las vacaciones", "error": error}, 400
+    if not current:
+        return {
+            "data": None,
+            "msg": f"No existe registro de vacaciones para el empleado {emp_id}",
+            "error": None,
+        }, 404
+    flag, error, result = update_registry_vac(emp_id, seniority_dict, data_token)
+    if not flag:
+        return {"data": None, "msg": "No se pudieron actualizar las vacaciones", "error": error}, 400
+    return {
+        "data": {"id_vacation": emp_id},
+        "msg": f"Vacaciones actualizadas correctamente (ID {emp_id})",
+        "error": None,
+    }, 200
 
 
 def get_all_quizzes(data_token):
@@ -863,136 +898,6 @@ def get_quizz_group_evaluation(type_q, data_token, date_from=None, date_to=None)
     if evaluation is not None and evaluation.get("respondents") == 0:
         msg = f"Sin encuestas contestadas del tipo {type_q} en el rango solicitado"
     return {"data": evaluation, "msg": msg, "error": None}, 200
-
-
-# DEPRECADO: `recommendations_results_quizzes` y `calculate_results_quizzes`
-# fueron reemplazadas por el motor config-driven en
-# `templates/resources/midleware/quizz_eval_engine.py`. Ya no se llaman desde
-# ningun lado (grep confirma). Removibles en un follow-up de limpieza.
-def recommendations_results_quizzes(dict_results: dict, tipo_q: int):
-    # Asumiendo que tienes la ruta correcta en filepath_recommendations
-    dict_conversions_recomen = json.load(open(filepath_recommendations, encoding="utf-8"))
-    dict_recommendations = {
-        "c_final_r": "",
-        "c_dom_r": "",
-        "c_cat_r": "",
-    }
-
-    # Asumiendo que dict_results contiene las claves 'c_final', 'c_dom', 'c_cat'
-    # y que pueden tener valores como 'MUY ALTO', 'ALTO', 'MEDIO', 'BAJO', 'NULO'.
-
-    # Acceder a las recomendaciones basadas en el resultado final, dominio, y categoría
-    final_score = dict_results.get(
-        "c_final", "NULO"
-    )  # Usar NULO como valor por defecto si no se encuentra
-    dom_score = dict_results.get("c_dom", "default_dom")  # Usar un valor por defecto
-    cat_score = dict_results.get("c_cat", "default_cat")  # Usar un valor por defecto
-
-    # Acceder a las recomendaciones finales
-    dict_recommendations["c_final_r"] = dict_conversions_recomen["c_final_r"].get(
-        final_score, ["No hay recomendaciones específicas."]
-    )
-    print(dict_results)
-    # Aquí necesitas modificar el código según cómo desees manejar las recomendaciones de dominio y categoría
-    # dado que en tu JSON 'c_dom_r' es solo una cadena, puedes necesitar un enfoque diferente o más información
-    # Si 'c_dom_r' debería ser una estructura similar a 'c_final_r', ajusta tu JSON y tu código en consecuencia
-    print(cat_score)
-    # check max score cat
-    max_cat_score = ""
-    maxv = 0
-    for k, v in cat_score.items():
-        if maxv < v:
-            maxv = v
-            max_cat_score = k
-    # Acceder a las recomendaciones de categoría
-    if max_cat_score in dict_conversions_recomen["c_cat_r"]:
-        dict_recommendations["c_cat_r"] = dict_conversions_recomen["c_cat_r"][max_cat_score]
-    else:
-        dict_recommendations["c_cat_r"] = [
-            "No hay recomendaciones específicas para esta categoría."
-        ]
-
-    return dict_recommendations
-
-
-def calculate_results_quizzes(dict_quizz: dict, tipo_q: int):
-    dict_results = {"c_final": 0, "c_dom": 0, "c_cat": 0, "detail": {}}
-    dict_conversions = json.load(open(conversion_quizzes_path, encoding="utf-8"))
-    match tipo_q:
-        case 1:
-            dict_values = dict_conversions["norm035"]["v1"]["conversion"]
-            c_final = 0
-            for question in dict_quizz.values():
-                if question["items"] != "":
-                    upper_limit = question["items"][1]
-                    lower_limit = question["items"][0]
-                    answers = question["answer"]
-                    for q in range(lower_limit, upper_limit + 1):
-                        for group in dict_values.values():
-                            items = group["items"]
-                            values = group["values"]
-                            if q in items:
-                                res = values[answers[q - lower_limit][1]]
-                                dict_results["detail"][str(q)] = res
-                                c_final += res
-                                break
-            dict_results["c_final"] = c_final
-            dict_cat_doms = dict_conversions["norm035"]["v1"]["categorias"]
-            dict_results["c_dom"] = {}
-            dict_results["c_cat"] = {}
-
-            for cat_dic in dict_cat_doms.values():
-                cat_name = cat_dic["categoria"]
-                dict_results["c_cat"][cat_name] = 0
-                for dom_name, dom_dic in cat_dic["dominio"].items():
-                    dict_results["c_dom"][dom_name] = 0
-                    for dim_dic in dom_dic["dimensiones"]:
-                        dim_name = dim_dic["dimension"]
-                        items = dim_dic["item"]
-                        for q, val in dict_results["detail"].items():
-                            if int(q) in items:
-                                dict_results["c_dom"][dom_name] += val
-                                dict_results["c_cat"][cat_name] += val
-        case 2:
-            dict_values = dict_conversions["norm035"]["v2"]["conversion"]
-            c_final = 0
-            for question in dict_quizz.values():
-                if question["items"] != "":
-                    upper_limit = question["items"][1]
-                    lower_limit = question["items"][0]
-                    answers = question["answer"]
-                    for q in range(lower_limit, upper_limit + 1):
-                        for group in dict_values.values():
-                            items = group["items"]
-                            values = group["values"]
-                            if q in items:
-                                res = values[answers[q - lower_limit][1]]
-                                dict_results["detail"][str(q)] = res
-                                c_final += res
-                                break
-            dict_results["c_final"] = c_final
-            dict_cat_doms = dict_conversions["norm035"]["v2"]["categorias"]
-            dict_results["c_dom"] = {}
-            dict_results["c_cat"] = {}
-            dict_results["c_dim"] = {}
-            for cat_dic in dict_cat_doms.values():
-                cat_name = cat_dic["categoria"]
-                dict_results["c_cat"][cat_name] = 0
-                for dom_name, dom_dic in cat_dic["dominio"].items():
-                    dict_results["c_dom"][dom_name] = 0
-                    for dim_dic in dom_dic["dimensiones"]:
-                        dim_name = dim_dic["dimension"]
-                        items = dim_dic["item"]
-                        dict_results["c_dim"][dim_name] = 0
-                        for q, val in dict_results["detail"].items():
-                            if int(q) in items:
-                                # print("calculate: ", q, items)
-                                dict_results["c_dom"][dom_name] += val
-                                dict_results["c_cat"][cat_name] += val
-                                dict_results["c_dim"][dim_name] += val
-        case _:
-            pass
-    return dict_results
 
 
 def _legacy_shape_from_evaluation(evaluation):

@@ -105,9 +105,6 @@ products_quotation_model = api.model(
         "price_unit": fields.Float(
             required=True, description="The quotation price unit"
         ),
-        "comment": fields.String(
-            required=False, description="Ignorado: no se persiste en quotation_items"
-        ),
         "section_index": fields.Integer(
             required=False,
             description=(
@@ -158,9 +155,6 @@ products_quotation_put_model = api.model(
         "udm": fields.String(required=True, description="The product udm"),
         "price_unit": fields.Float(
             required=True, description="The quotation price unit"
-        ),
-        "comment": fields.String(
-            required=False, description="Ignorado: no se persiste en quotation_items"
         ),
         "section_index": fields.Integer(
             required=False,
@@ -489,7 +483,6 @@ class ProductsPostQuotationForm(Form):
     udm = StringField("udm", validators=[InputRequired()])
     price_unit = FloatField("price_unit", validators=[], default=0.0)
     id_inventory = IntegerField("id_inventory", validators=[], default=None)
-    comment = StringField("comment", validators=[], default="")
 
 
 class ProductsPutQuotationForm(Form):
@@ -511,7 +504,6 @@ class ProductsPutQuotationForm(Form):
     udm = StringField("udm", validators=[InputRequired()])
     price_unit = FloatField("price_unit", validators=[], default=0.0)
     id_inventory = IntegerField("id_inventory", validators=[], default=None)
-    comment = StringField("comment", validators=[], default="")
     is_erased = IntegerField("is_erased", validators=[], default=0)
 
 

@@ -123,4 +123,4 @@ Modo cualitativo (salida): `{ "type": 0, "mode": "qualitative", "qualitative": [
 - ~~**Rúbrica de salida (0)** — `mode:"qualitative"`, captura + reporte sin score.~~ Hecha (2026-09-07) → [`encuesta_salida_cualitativa.md`](encuesta_salida_cualitativa.md).
 - **Normalizar el shape de respuestas** (`data_raw`) — hoy heterogéneo (`answer` a veces `""`, `0`, `[label,idx]`); `flatten_responses` es el puente. Fijar el contrato de la UI de captura lo simplifica.
 - **Rediseño del PDF** para leer `evaluation` directo y quitar el shim `_legacy_shape_from_evaluation` (aplicar skill `pdf-design`).
-- **Borrar** `calculate_results_quizzes`/`recommendations_results_quizzes` (deprecadas, sin callers).
+- ~~**Borrar** `calculate_results_quizzes`/`recommendations_results_quizzes` (deprecadas, sin callers).~~ Hecho (2026-10-09) → [`rrhh_vacaciones_y_csv.md`](rrhh_vacaciones_y_csv.md).

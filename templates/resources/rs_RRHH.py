@@ -71,18 +71,18 @@ from static.Models.api_payroll_models import (
 )
 from templates.controllers.employees.em_controller import (
     delete_exam_med,
-    get_all_examenes,
 )
 from templates.controllers.employees.employees_controller import (
     delete_employee,
 )
 from templates.controllers.employees.vacations_controller import (
     delete_vacation,
-    get_vacations_data,
 )
 from templates.resources.methods.Functions_Aux_Login import token_verification_procedure
 from templates.resources.midleware.Functions_DB_midleware import (
     create_csv_file_employees,
+    create_csv_file_medical,
+    create_csv_file_vacations,
     create_task_from_api,
     delete_task_from_api,
     get_all_vacations,
@@ -247,7 +247,7 @@ class EmployeesInfo(Resource):
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        data_out, code = get_info_employees_with_status(status)
+        data_out, code = get_info_employees_with_status(status, data_token)
         if code != 200:
             return {"data": [], "msg": "No se encontraron empleados", "error": None}, code
         return {"data": data_out, "msg": None, "error": None}, code
@@ -399,19 +399,8 @@ class VacationRegistry(Resource):
                 "error": validator.errors,
             }, 400
         data = validator.data
-        flag, error, result = insert_new_vacation(data, data_token)
-        if flag:
-            return {
-                "data": {"id_vacation": result},
-                "msg": f"Vacaciones registradas correctamente (ID {result})",
-                "error": None,
-            }, 201
-        else:
-            return {
-                "data": None,
-                "msg": "No se pudieron registrar las vacaciones",
-                "error": error,
-            }, 400
+        data_out, code = insert_new_vacation(data, data_token)
+        return data_out, code
 
     @ns.expect(expected_headers_per, employee_vacation_model_insert)
     def put(self):
@@ -427,19 +416,8 @@ class VacationRegistry(Resource):
                 "error": validator.errors,
             }, 400
         data = validator.data
-        flag, error, result = update_vacation(data, data_token)
-        if flag:
-            return {
-                "data": {"id_vacation": result},
-                "msg": f"Vacaciones actualizadas correctamente (ID {result})",
-                "error": None,
-            }, 200
-        else:
-            return {
-                "data": None,
-                "msg": "No se pudieron actualizar las vacaciones",
-                "error": error,
-            }, 400
+        data_out, code = update_vacation(data, data_token)
+        return data_out, code
 
     @ns.expect(expected_headers_per, employee_vacation_model_delete)
     def delete(self):
@@ -1013,10 +991,10 @@ class DownloadFileEMPs(Resource):
         flag, data_token, msg = token_verification_procedure(request, department="rrhh")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        result = create_csv_file_employees(status)
+        result = create_csv_file_employees(status, data_token)
         if isinstance(result, tuple):
             return result
-        return send_file(str(result), as_attachment=True)
+        return send_file(result, as_attachment=True, download_name="emp.csv", mimetype="text/csv")
 
 
 @ns.route("/download/employees/medical")
@@ -1026,24 +1004,10 @@ class DownloadFileMedical(Resource):
         flag, data_token, msg = token_verification_procedure(request, department="rrhh")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        flag, e, result = get_all_examenes(data_token)
-        if not (isinstance(result, list) or isinstance(result, tuple)):
-            return {
-                "data": None,
-                "msg": "Error al obtener los datos del empleado",
-                "error": None,
-            }, 400
-        filepath = "files/medical.csv"
-        with open(filepath, "w") as file:
-            file.write("id_exam,nombre,sangre,estatus,aptitudes,fechas,apt_actual,emp_id\n")
-            for item in result:
-                id_exam, nombre, sangre, status, aptitud, fechas, apt_actual, emp_id, _extra = item
-                fechas = (fechas or "").replace(",", ";")
-                aptitud = (aptitud or "").replace(",", ";")
-                file.write(
-                    f"{id_exam},{nombre},{sangre},{status},{aptitud},{fechas},{apt_actual},{emp_id}\n"
-                )
-        return send_file(filepath, as_attachment=True)
+        result = create_csv_file_medical(data_token)
+        if isinstance(result, tuple):
+            return result
+        return send_file(result, as_attachment=True, download_name="medical.csv", mimetype="text/csv")
 
 
 @ns.route("/download/employees/vacations")
@@ -1053,21 +1017,10 @@ class DownloadFileVacations(Resource):
         flag, data_token, msg = token_verification_procedure(request, department="rrhh")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        flag, error, data = get_vacations_data(data_token)
-        filepath = "files/vacations.csv"
-        if not (isinstance(data, list) or isinstance(data, tuple)):
-            return {
-                "data": None,
-                "msg": "Error al obtener los datos del empleado",
-                "error": None,
-            }, 400
-        with open(filepath, "w") as file:
-            file.write("emp_id, Nombre, Apellido, fecha_inicio, body\n")
-            for item in data:
-                emp_id, name, l_name, date_admission, seniority, _renovacion = item
-                seniority = (seniority or "").replace(",", ";")
-                file.write(f"{emp_id}, {name}, {l_name}, {date_admission}, {seniority}\n")
-        return send_file(filepath, as_attachment=True)
+        result = create_csv_file_vacations(data_token)
+        if isinstance(result, tuple):
+            return result
+        return send_file(result, as_attachment=True, download_name="vacations.csv", mimetype="text/csv")
 
 
 @ns.route("/download/quizz/report")
