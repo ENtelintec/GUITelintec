@@ -1,6 +1,6 @@
 # Plan de acción — pendientes abiertos (octubre 2026)
 
-> **Estado: acordado** (grill del 2026-10-12: orden del front confirmado, SES tras nómina en test, custom_fields se conservan, defaults a 2 semanas, backlog se lee del repo). **Avance 2026-10-12**: Bloque A del back cerrado — anexos del checklist vehicular sin carrera + rollback del alta ([`checklist_vehicular_anexos_sin_carrera.md`](../checklist_vehicular_anexos_sin_carrera.md), 31/31) y los dos DML de RH entregados ([`rh_calidad_datos_dml.md`](../rh_calidad_datos_dml.md), pendientes de correr por el usuario). Sigue el Bloque B (punto 5, sugerencias de costos) y después los anexos de EPP/herramientas. Sustituye a los planes de mes ([`plan_rh_mes.md`](archivo/plan_rh_mes.md), [`plan_mes_2.md`](archivo/plan_mes_2.md), ambos archivados): ya no hay un tercero de front con calendario por semanas; el **equipo de front principal** absorbe el backlog y lo toma en el orden de la sección 4. Nace de la revisión de [`pendientes.md`](../pendientes.md) (55 ítems abiertos). El back (usuario + agente) trabaja en el orden de la sección 3. Las decisiones y datos que faltan están en la sección 2, cada una con un *default* para no quedarse esperando. Sin fechas duras: el orden es la decisión; el ritmo lo marca el front.
+> **Estado: acordado** (grill del 2026-10-12: orden del front Cobranza → nómina → RH → multisede, SES tras nómina en test, custom_fields se conservan, defaults a 2 semanas, backlog se lee del repo). **Avance 2026-10-12**: Bloque A del back cerrado — anexos del checklist vehicular sin carrera + rollback del alta ([`checklist_vehicular_anexos_sin_carrera.md`](../checklist_vehicular_anexos_sin_carrera.md), 31/31) y los dos DML de RH entregados ([`rh_calidad_datos_dml.md`](../rh_calidad_datos_dml.md), pendientes de correr por el usuario). `P-121` sugerencias de costos hecho el mismo día (22/22, [`quotation_cost_suggest.md`](../quotation_cost_suggest.md)). `P-103` anexos EPP/herramientas hecho el mismo día (29/29 + regresión del vehicular, helper compartido, [`vales_anexos_sin_carrera.md`](../vales_anexos_sin_carrera.md)). Sigue el Bloque B: `P-017` PDF del agregado eva 360. Sustituye a los planes de mes ([`plan_rh_mes.md`](archivo/plan_rh_mes.md), [`plan_mes_2.md`](archivo/plan_mes_2.md), ambos archivados): ya no hay un tercero de front con calendario por semanas; el **equipo de front principal** absorbe el backlog y lo toma en el orden de la sección 4. Nace de la revisión de [`pendientes.md`](../pendientes.md) (55 ítems abiertos). El back (usuario + agente) trabaja en el orden de la sección 3. Las decisiones y datos que faltan están en la sección 2, cada una con un *default* para no quedarse esperando. Sin fechas duras: el orden es la decisión; el ritmo lo marca el front.
 
 ## 1. Diagnóstico
 
@@ -31,7 +31,7 @@ Lo que se ve al leer el tracker completo:
 | 7 | `P-053` **Modelo de datos del reporte Ternium** ([`remission_combined_pdf.md`](../remission_combined_pdf.md)) | administración | back del reporte generado | sigue fuera; el escaneo como anexo cubre hoy |
 | 8 | `P-123` **Control de licitaciones FO-PRE-04** (formato recibido, sin tarea) | administración / usuario | ¿entra o no? | no entra hasta que exista una tarea con alcance |
 | 9 | `P-098` **DML `voucher_vehicle_accessories_normalize.sql`** en dev/test/prod ([`checklist_vehicular_accessories.md`](../checklist_vehicular_accessories.md)) | usuario | nada (los lectores toleran ambas formas) | correrlo con el siguiente tren de deploy |
-| 10 | **Orden del front** (sección 4): Cobranza antes que constructor y multisede | usuario + front principal | todo el front | **Decidido 2026-10-12**: el propuesto (nómina → Cobranza → RH → multisede) |
+| 10 | **Orden del front** (sección 4): Cobranza antes que constructor y multisede | usuario + front principal | todo el front | **Decidido 2026-10-12** (ajustado el mismo día): **Cobranza → nómina → RH → multisede**; la prioridad de negocio es Cobranza |
 
 ## 3. Back — orden de trabajo
 
@@ -46,8 +46,8 @@ Lo que se ve al leer el tracker completo:
 
 ### Bloque B — sin dependencia del front (después, en este orden)
 
-5. `P-121` **Sugerencias de análisis de costos**: `GET /quotation/costAnalysis/suggest?n_part=` desde análisis anteriores e items cotizados (el índice `quotation_items(n_part)` ya existe) → [`quotation_cost_analysis.md`](../quotation_cost_analysis.md). Es la única pieza nueva con contrato pendiente que el front consumirá en el lote 3. **Diseño acordado (2026-10-12)**: `?n_part=` exacto (valores genéricos → lista vacía con aviso) y `?description=` por texto (mín. 3 caracteres, sin FULLTEXT: ~2,000 filas), dos fuentes: `analyses` (últimos análisis con su comparativa) y `quoted` (últimos items cotizados con precio, moneda, fecha y cliente); permiso `administracion`.
-5b. `P-103` **Anexos de vales EPP y herramientas sin carrera**: misma receta que el vehicular ([`checklist_vehicular_anexos_sin_carrera.md`](../checklist_vehicular_anexos_sin_carrera.md)), tester reutilizado. Va justo después del punto 5 (decisión 2026-10-12).
+5. `P-121` **Sugerencias de análisis de costos**: `GET /quotation/costAnalysis/suggest?n_part=` desde análisis anteriores e items cotizados (el índice `quotation_items(n_part)` ya existe) → [`quotation_cost_analysis.md`](../quotation_cost_analysis.md). Es la única pieza nueva con contrato pendiente que el front consumirá en el lote 2. **Diseño acordado (2026-10-12)**: `?n_part=` exacto (valores genéricos → lista vacía con aviso) y `?description=` por texto (mín. 3 caracteres, sin FULLTEXT: ~2,000 filas), dos fuentes: `analyses` (últimos análisis con su comparativa) y `quoted` (últimos items cotizados con precio, moneda, fecha y cliente); permiso `administracion`. **Grill 2026-10-12**: `quoted` sale de **todas** las cotizaciones con `quotation.{status, document_type}` por fila y `?exclude_quotation_id=`; n_part genérico (GENERICO, S/N, N/A, NA, -, ., < 3 caracteres) → 200 con listas vacías y `generic: true`.
+5b. `P-103` **Anexos de vales EPP y herramientas sin carrera**: misma receta que el vehicular ([`checklist_vehicular_anexos_sin_carrera.md`](../checklist_vehicular_anexos_sin_carrera.md)), tester reutilizado. Va justo después del punto 5 (decisión 2026-10-12). **Grill 2026-10-12**: receta completa (carrera + nombre real + sin ventana de 365 días en alta/descarga) para EPP y herramientas, más el fix de `delete_voucher_safety_api` (borra `voucher_tools` en vez de `voucher_safety`); el ciclo CAS y el lookup pasan a un helper compartido en `templates/resources/methods/Functions_Aux_Vouchers.py` que usan los 3 tipos de vale (el vehicular se refactoriza sobre él y se re-verifica).
 6. `P-017` **PDF del agregado eva 360** (radar/tabla comparativa del proceso; skill `pdf-design`) → [`eva360_evaluation.md`](../eva360_evaluation.md).
 7. `P-016` **Rediseño del PDF de Norma 035** leyendo `evaluation` directo (quita `_legacy_shape_from_evaluation`) → [`encuestas_refactor.md`](../encuestas_refactor.md).
 8. `P-115` **Conciliación por cantidades** OC ↔ entradas, producto a producto → [`po_movements_inbound_match.md`](../po_movements_inbound_match.md).
@@ -85,11 +85,7 @@ Cada ítem lleva su id `P-NNN` de [`pendientes.md`](../pendientes.md) (estable; 
 | 10 | `P-037` | Link de WhatsApp de nómina (`wa.me/<tel>?text=…`, sin endpoint) | [`plan_mes_2.md`](archivo/plan_mes_2.md) (Anexo A) |
 | 11 | `P-102` | Anexos del checklist vehicular: reintentar el **409** tal cual y manejar el **404** de voucher inexistente | [`checklist_vehicular_anexos_sin_carrera.md`](../checklist_vehicular_anexos_sin_carrera.md) |
 
-### Lote 2 — Nómina (`P-032`; arrastre del mes 2; prioridad 1 de negocio)
-
-Pantallas de RH (carga por periodo simulada, reemplazar, eliminar, notificar con `channels`) y del empleado (sus recibos, zip, bandeja) → [`nomina_gestion_archivos_y_notificacion.md`](../nomina_gestion_archivos_y_notificacion.md) · [`nomina_correo_ses.md`](../nomina_correo_ses.md) · Anexo A de [`plan_mes_2.md`](archivo/plan_mes_2.md). El canal `email` se enciende solo con la decisión 1.
-
-### Lote 3 — Cobranza / Administración (back completo; junta del 2026-09-23)
+### Lote 2 — Cobranza / Administración (**prioridad 1 de negocio**; back completo; junta del 2026-09-23)
 
 | Orden | Id | Pantalla | Doc |
 |---|---|---|---|
@@ -104,7 +100,11 @@ Pantallas de RH (carga por periodo simulada, reemplazar, eliminar, notificar con
 | i | `P-122` | Análisis de costos por item + "aplicar precios" (y sugerencias cuando el back cierre el punto 5) | [`quotation_cost_analysis.md`](../quotation_cost_analysis.md) |
 | j | `P-070` | Catálogo SGI de formatos ISO (lista/alta/revisión/retirar) | [`iso_formats_crud.md`](../iso_formats_crud.md) |
 
-Al arrancar este lote se crean los usuarios de test de Cobranza (`P-094`, decisión 6).
+Al arrancar este lote (es el siguiente tras el lote 1) se crean los usuarios de test de Cobranza (`P-094`, decisión 6).
+
+### Lote 3 — Nómina (`P-032`; arrastre del mes 2; después de Cobranza por decisión del 2026-10-12)
+
+Pantallas de RH (carga por periodo simulada, reemplazar, eliminar, notificar con `channels`) y del empleado (sus recibos, zip, bandeja) → [`nomina_gestion_archivos_y_notificacion.md`](../nomina_gestion_archivos_y_notificacion.md) · [`nomina_correo_ses.md`](../nomina_correo_ses.md) · Anexo A de [`plan_mes_2.md`](archivo/plan_mes_2.md). El canal `email` se enciende solo con la decisión 1.
 
 ### Lote 4 — RH (`P-030` constructor · `P-043` dashboard; arrastre del mes 2)
 
@@ -122,7 +122,7 @@ Galería de fotos + tile de alertas ([`cda_alertas_y_fotos.md`](../cda_alertas_y
 
 Firma de "quien entrega" en SM (`P-045`) y remisión (`P-054`) · borrado de anexos en lote (`P-056`, solo si hay selección múltiple) · normalizar el shape de respuestas de captura.
 
-> **Por qué Cobranza antes que constructor y multisede** (decisión 10): la junta del 2026-09-23 pidió ambiente de prueba y responsive, y el bloque tiene 10 docs de back esperando pantalla; constructor y multisede no tienen fecha de negocio detrás (acordado en el mes 2). Si el usuario prefiere el orden del mes 2 (nómina → constructor → multisede → dashboard), se intercambian los lotes 3 y 4 sin tocar nada más.
+> **Por qué Cobranza primero** (decisión 10, ajustada el 2026-10-12 por el usuario: la prioridad de negocio es Cobranza): la junta del 2026-09-23 pidió ambiente de prueba y responsive, y el bloque tiene 10 docs de back esperando pantalla. Nómina sigue inmediatamente después (su back está completo y el canal SES se pide cuando esté en test); constructor y multisede no tienen fecha de negocio detrás.
 
 ## 5. Riesgos
 

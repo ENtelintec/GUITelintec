@@ -167,3 +167,82 @@ def get_supplier_names(ids: list, data_token):
     if not flag:
         return False, e, {}
     return True, None, {int(r[0]): r[1] for r in out}
+
+
+# --- Sugerencias (P-121, docs/quotation_cost_suggest.md) ----------------------------------
+_TABLE_Q = "sql_telintec_mod_admin.quotations"
+
+# Columnas del item cotizado que acompañan a cada sugerencia (append-only).
+QUOTED_ITEM_COLUMNS = (
+    "item_id",
+    "quotation_id",
+    "partida",
+    "n_part",
+    "description",
+    "description_small",
+    "udm",
+    "quantity",
+    "price_unit",
+    "creation",
+    "metadata",
+    "id_cost",
+)
+_SELECT_QUOTED = (
+    "qi.id, qi.quotation_id, qi.partida, qi.n_part, qi.description, qi.description_small, qi.udm, "
+    "qi.quantity, qi.price_unit, q.creation, q.metadata, c.id_cost"
+)
+
+
+def _suggest_match(n_part, description):
+    """Condición SQL del match: n_part exacto y/o descripción por texto (LIKE sin
+    distinguir mayúsculas: las columnas son utf8mb4_bin). Al menos uno viene."""
+    conds, params = [], []
+    if n_part:
+        conds.append("qi.n_part = %s")
+        params.append(n_part)
+    if description:
+        like = f"%{description.lower()}%"
+        conds.append("(LOWER(qi.description) LIKE %s OR LOWER(qi.description_small) LIKE %s)")
+        params += [like, like]
+    return "(" + " OR ".join(conds) + ")", params
+
+
+def search_quoted_items(n_part, description, exclude_quotation_id, limit, data_token):
+    """Items cotizados antes que coinciden (QUOTED_ITEM_COLUMNS), los más recientes
+    primero; `id_cost` dice si ya tienen análisis. type_sql=2."""
+    cond, params = _suggest_match(n_part, description)
+    sql = (
+        f"SELECT {_SELECT_QUOTED} FROM {_TABLE_QI} qi "
+        f"JOIN {_TABLE_Q} q ON q.id = qi.quotation_id "
+        f"LEFT JOIN {_TABLE_COST} c ON c.quotation_item_id = qi.id "
+        f"WHERE {cond} AND (%s IS NULL OR qi.quotation_id <> %s) "
+        "ORDER BY q.creation DESC, qi.id DESC LIMIT %s"
+    )
+    params += [exclude_quotation_id, exclude_quotation_id, int(limit)]
+    return _rows(*execute_sql(sql, tuple(params), 2, data_token))
+
+
+def search_cost_analyses(n_part, description, exclude_quotation_id, limit, data_token):
+    """Análisis previos de items que coinciden: COST_COLUMNS + QUOTED_ITEM_COLUMNS
+    (en ese orden), los más recientes primero. type_sql=2."""
+    cond, params = _suggest_match(n_part, description)
+    cols = ", ".join(f"c.{col}" for col in COST_COLUMNS)
+    sql = (
+        f"SELECT {cols}, {_SELECT_QUOTED} FROM {_TABLE_COST} c "
+        f"JOIN {_TABLE_QI} qi ON qi.id = c.quotation_item_id "
+        f"JOIN {_TABLE_Q} q ON q.id = qi.quotation_id "
+        f"WHERE {cond} AND (%s IS NULL OR qi.quotation_id <> %s) "
+        "ORDER BY c.timestamp DESC, c.id_cost DESC LIMIT %s"
+    )
+    params += [exclude_quotation_id, exclude_quotation_id, int(limit)]
+    return _rows(*execute_sql(sql, tuple(params), 2, data_token))
+
+
+def get_supplier_quotes_by_items(item_ids, data_token):
+    """Comparativa de proveedores de varios items (SUPPLIER_QUOTE_COLUMNS). type_sql=2."""
+    ids = [int(i) for i in item_ids]
+    if not ids:
+        return True, None, []
+    placeholders = ", ".join(["%s"] * len(ids))
+    sql = f"{_SELECT_SQ} WHERE sq.quotation_item_id IN ({placeholders}) ORDER BY sq.quotation_item_id, sq.position"
+    return _rows(*execute_sql(sql, tuple(ids), 2, data_token))

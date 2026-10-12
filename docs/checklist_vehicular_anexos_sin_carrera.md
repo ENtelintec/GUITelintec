@@ -108,5 +108,9 @@ Regresión: `tester_voucher_vehicle_accessories.py` 7/7 y `tester_checklist_full
 ## Pendientes
 
 - **[front]** Manejar el **409** (repetir el request tal cual) y el **404** nuevo; nombrar siempre `<id>-<archivo>` (ya lo hace).
-- **[back]** Anexos de vales **EPP y herramientas**: misma lectura-modificación-escritura de `extra_info.files` (`update_voucher_epp_files`, `update_voucher_tools_files`); corregir con la misma receta cuando se toquen.
+- ~~**[back]** Anexos de vales **EPP y herramientas**~~ — hecho el 2026-10-12 en [`vales_anexos_sin_carrera.md`](vales_anexos_sin_carrera.md).
 - **[back]** `category`/`title` en el alta de anexos vehiculares, si el PDF completo necesita clasificar sin inferir por extensión (sigue abierto en [`checklist_vehicular_full_pdf.md`](checklist_vehicular_full_pdf.md)).
+
+## Notas posteriores
+
+- **2026-10-12** (`P-103`): la receta se movió al helper compartido `templates/resources/methods/Functions_Aux_Vouchers.py` (`load_voucher`, `attach_voucher_file`) y el controller quedó genérico por tipo (`update_voucher_files(kind, …)`; `update_voucher_vehicle_files` es un wrapper). `_load_vehicle_voucher`, `_chv_files_from_row` y las constantes de reintento ya no existen en `MD_SGI.py`. Comportamiento y contrato del vehicular sin cambios (31/31). → [`vales_anexos_sin_carrera.md`](vales_anexos_sin_carrera.md)

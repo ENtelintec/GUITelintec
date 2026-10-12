@@ -28,14 +28,18 @@ from decimal import Decimal, InvalidOperation
 from static.constants import format_timestamps, log_file_admin
 from templates.controllers.contracts.quotation_costs_controller import (
     COST_COLUMNS,
+    QUOTED_ITEM_COLUMNS,
     SUPPLIER_QUOTE_COLUMNS,
     delete_cost_by_item,
     delete_supplier_quotes_by_item,
     get_costs_by_quotation,
     get_supplier_names,
+    get_supplier_quotes_by_items,
     get_supplier_quotes_by_quotation,
     insert_cost,
     insert_supplier_quote,
+    search_cost_analyses,
+    search_quoted_items,
     update_cost,
     update_quotation_item_price,
 )
@@ -394,3 +398,119 @@ def update_quotation_cost_analysis_from_api(data, raw_payload, data_token):
         "msg": msg,
         "error": write_errors or None,
     }, 200
+
+
+# --- GET /quotation/costAnalysis/suggest (P-121) ------------------------------------------
+# n_part que no identifican un producto: con ellos no se busca por n_part (solo por
+# `description`, si viene). Lista fija; docs/quotation_cost_suggest.md.
+GENERIC_N_PARTS = {"GENERICO", "GENÉRICO", "S/N", "SN", "N/A", "NA", "-", ".", "NINGUNO"}
+SUGGEST_MIN_CHARS = 3
+SUGGEST_LIMIT_DEFAULT = 5
+SUGGEST_LIMIT_MAX = 20
+
+
+def _is_generic_n_part(n_part: str) -> bool:
+    return len(n_part) < SUGGEST_MIN_CHARS or n_part.upper() in GENERIC_N_PARTS
+
+
+def _quotation_header(quotation_id, creation, metadata_raw) -> dict:
+    meta = _load_json(metadata_raw, {}) or {}
+    return {
+        "id": _int_or_none(quotation_id),
+        "code": meta.get("quotation_code") or "",
+        "company": meta.get("company") or "",
+        "client_id": _int_or_none(meta.get("client_id")),
+        "creation": _json_safe(creation),
+        "status": meta.get("status"),
+        "document_type": meta.get("document_type") or "quotation",
+    }
+
+
+def _quoted_cols_to_dict(cols: tuple) -> dict:
+    """Tupla QUOTED_ITEM_COLUMNS -> {item, quotation, has_analysis, id_cost}."""
+    d = dict(zip(QUOTED_ITEM_COLUMNS, cols))
+    return {
+        "item": {
+            "id": _int_or_none(d["item_id"]),
+            "partida": _int_or_none(d["partida"]),
+            "n_part": d.get("n_part") or "",
+            "description": d.get("description") or "",
+            "description_small": d.get("description_small") or "",
+            "udm": d.get("udm") or "",
+            "quantity": _f(d.get("quantity")),
+            "price_unit": _f(d.get("price_unit")),
+        },
+        "quotation": _quotation_header(d["quotation_id"], d["creation"], d["metadata"]),
+        "has_analysis": d.get("id_cost") is not None,
+        "id_cost": _int_or_none(d.get("id_cost")),
+    }
+
+
+def suggest_cost_analysis_api(args, data_token):
+    """GET /quotation/costAnalysis/suggest?n_part=&description=&exclude_quotation_id=&limit=
+    Dos fuentes: `analyses` (análisis previos con su comparativa) y `quoted` (items
+    cotizados antes con su price_unit). Solo lectura."""
+    n_part = (args.get("n_part") or "").strip()
+    description = (args.get("description") or "").strip()
+    if not n_part and not description:
+        return {"data": None, "msg": "Falta n_part o description", "error": None}, 400
+    if description and len(description) < SUGGEST_MIN_CHARS:
+        return {
+            "data": None,
+            "msg": f"description debe tener al menos {SUGGEST_MIN_CHARS} caracteres",
+            "error": None,
+        }, 400
+    limit_raw = args.get("limit")
+    limit = SUGGEST_LIMIT_DEFAULT if limit_raw in (None, "") else _int_or_none(limit_raw)
+    if limit is None or limit < 1:
+        return {"data": None, "msg": "limit debe ser un entero >= 1", "error": None}, 400
+    limit = min(limit, SUGGEST_LIMIT_MAX)
+    exclude_raw = args.get("exclude_quotation_id")
+    exclude = _int_or_none(exclude_raw)
+    if exclude_raw not in (None, "") and exclude is None:
+        return {"data": None, "msg": "exclude_quotation_id debe ser entero", "error": None}, 400
+    generic = bool(n_part) and _is_generic_n_part(n_part)
+    n_part_match = "" if generic else n_part
+    out = {
+        "n_part": n_part,
+        "description": description,
+        "generic": generic,
+        "limit": limit,
+        "analyses": [],
+        "quoted": [],
+    }
+    if not n_part_match and not description:
+        return {
+            "data": out,
+            "msg": f"n_part genérico ({n_part}): sin sugerencias; manda description para buscar por texto",
+            "error": None,
+        }, 200
+    n_cost = len(COST_COLUMNS)
+    flag, error, rows = search_cost_analyses(n_part_match, description, exclude, limit, data_token)
+    if not flag:
+        return {"data": None, "msg": "Error al buscar análisis previos", "error": error}, 400
+    analyses = []
+    for row in rows:
+        cost = _cost_row_to_dict(row[:n_cost])
+        cost["suppliers"] = []
+        cost.update(_quoted_cols_to_dict(tuple(row[n_cost:])))
+        cost.pop("has_analysis", None)
+        analyses.append(cost)
+    flag, error, q_rows = get_supplier_quotes_by_items([a["quotation_item_id"] for a in analyses], data_token)
+    if not flag:
+        return {"data": None, "msg": "Error al leer la comparativa de proveedores", "error": error}, 400
+    by_item = {int(a["quotation_item_id"]): a for a in analyses}
+    for r in q_rows:
+        quote = _quote_row_to_dict(r)
+        target = by_item.get(int(quote["quotation_item_id"]))
+        if target is not None:
+            target["suppliers"].append(quote)
+    flag, error, rows = search_quoted_items(n_part_match, description, exclude, limit, data_token)
+    if not flag:
+        return {"data": None, "msg": "Error al buscar items cotizados", "error": error}, 400
+    out["analyses"] = analyses
+    out["quoted"] = [_quoted_cols_to_dict(tuple(r)) for r in rows]
+    msg = f"{len(analyses)} análisis previos y {len(out['quoted'])} items cotizados"
+    if generic:
+        msg += f" (n_part genérico {n_part}: solo por description)"
+    return {"data": out, "msg": msg, "error": None}, 200

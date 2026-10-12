@@ -55,7 +55,10 @@ from templates.resources.midleware.Functions_midleware_admin import (
     update_quotation_ocd_from_api,
 )
 from templates.resources.midleware.MD_Admin_Collections import fetch_products_contracts
-from templates.resources.midleware.MD_QuotationCosts import update_quotation_cost_analysis_from_api
+from templates.resources.midleware.MD_QuotationCosts import (
+    suggest_cost_analysis_api,
+    update_quotation_cost_analysis_from_api,
+)
 
 __author__ = "Edisson Naula"
 __date__ = "$ 20/jun./2024  at 15:03 $"
@@ -97,6 +100,24 @@ class QuotationCostAnalysis(Resource):
         data = validator.data
         # raw_payload -> items[] (cost puede ser null) lo valida el midleware.
         data_out, code = update_quotation_cost_analysis_from_api(data, ns.payload or {}, data_token)
+        return data_out, code
+
+
+@ns.route("/quotation/costAnalysis/suggest")
+class QuotationCostAnalysisSuggest(Resource):
+    @ns.doc(params={
+        "n_part": "Número de parte exacto (genéricos como GENERICO/S/N no se buscan: generic=true)",
+        "description": "Texto a buscar en la descripción (mín. 3 caracteres); con n_part genérico es la única llave",
+        "exclude_quotation_id": "Cotización que se está analizando (no se sugiere a sí misma)",
+        "limit": "Máximo por fuente, default 5, tope 20",
+    })
+    @ns.expect(expected_headers_per)
+    def get(self):
+        """Sugerencias para el análisis de costos: análisis previos (con comparativa) e items cotizados antes."""
+        flag, data_token, msg = token_verification_procedure(request, department="administracion")
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        data_out, code = suggest_cost_analysis_api(request.args, data_token)
         return data_out, code
 
 

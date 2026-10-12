@@ -1,9 +1,7 @@
 # -*- coding: utf-8 -*-
 import json
 import os
-import random
 import tempfile
-import time
 from datetime import datetime
 
 import boto3
@@ -17,7 +15,6 @@ from static.constants import (
     timezone_software,
 )
 from templates.controllers.vouchers.vouchers_controller import (
-    VEHICLE_VOUCHER_CANCELLED_STATUS,
     append_history_voucher,
     create_voucher_general,
     create_voucher_item,
@@ -27,6 +24,7 @@ from templates.controllers.vouchers.vouchers_controller import (
     delete_items_voucher,
     delete_voucher_general,
     delete_voucher_item,
+    delete_voucher_safety,
     delete_voucher_tools,
     delete_voucher_vehicle,
     get_voucher_vehicle_by_id,
@@ -42,7 +40,6 @@ from templates.controllers.vouchers.vouchers_controller import (
     update_voucher_safety,
     update_voucher_tools,
     update_voucher_vehicle,
-    update_voucher_vehicle_files,
     update_voucher_vehicle_status,
 )
 from templates.forms.VehicleChecklistPDF import (
@@ -50,6 +47,7 @@ from templates.forms.VehicleChecklistPDF import (
     FileVehicleChecklistPhotosPDF,
 )
 from templates.Functions_Utils import create_notification_permission_notGUI
+from templates.resources.methods.Functions_Aux_Vouchers import attach_voucher_file, load_voucher
 from templates.misc.Functions_Files import write_log_file
 
 __author__ = "Edisson Naula"
@@ -215,19 +213,21 @@ def delete_voucher_tools_api(data, data_token):
             "msg": "No se pudo eliminar el voucher de herramientas",
             "error": error,
         }, 400
-    history = data["history"]
+    # Append en BD (el `history` del body se ignora: reescribirlo pisaba entradas
+    # agregadas entretanto, p. ej. un anexo).
     time_zone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
-    history.append(
+    flag, error, result = append_history_voucher(
+        data["id"],
         {
             "id_voucher": data["id"],
             "type": 0,
             "timestamp": timestamp,
             "user": data_token.get("emp_id"),
             "comment": "Voucher eliminado",
-        }
+        },
+        data_token,
     )
-    flag, error, result = update_voucher_general_from_delete(data["id"], history, data_token)
     if not flag:
         return {
             "data": None,
@@ -390,26 +390,29 @@ def delete_voucher_safety_api(data, data_token):
             "msg": "No se pudieron eliminar los items del voucher",
             "error": error,
         }, 400
-    flag, error, rows_updated = delete_voucher_tools(data["id"], data_token)
+    # Antes borraba voucher_tools (tabla equivocada): la fila de voucher_safety quedaba.
+    flag, error, rows_updated = delete_voucher_safety(data["id"], data_token)
     if not flag:
         return {
             "data": None,
             "msg": "No se pudo eliminar el voucher de seguridad",
             "error": error,
         }, 400
-    history = data["history"]
+    # Append en BD (el `history` del body se ignora: reescribirlo pisaba entradas
+    # agregadas entretanto, p. ej. un anexo).
     time_zone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
-    history.append(
+    flag, error, result = append_history_voucher(
+        data["id"],
         {
             "id_voucher": data["id"],
             "type": 1,
             "timestamp": timestamp,
             "user": data_token.get("emp_id"),
             "comment": "Voucher eliminado",
-        }
+        },
+        data_token,
     )
-    flag, error, result = update_voucher_general_from_delete(data["id"], history, data_token)
     if not flag:
         return {
             "data": None,
@@ -869,10 +872,10 @@ def update_voucher_vehicle_api(data, data_token):
 def delete_voucher_vehicle_api(data, data_token):
     # Sin ventana de fecha: un checklist de mas de un año tambien se puede
     # eliminar/cancelar (antes get_vouchers_vehicle_with_items con 365 dias).
-    payload_error, code, voucher_data = _load_vehicle_voucher(data["id"], data_token)
+    payload_error, code, head = load_voucher("vehicle", data["id"], data_token)
     if payload_error is not None:
         return payload_error, code
-    status = voucher_data[18]  # pyrefly: ignore
+    status = head["status"]  # pyrefly: ignore
     if status == 0:
         # Todos los items del voucher (antes delete_voucher_item borraba por
         # id_item con el id del voucher: los items quedaban huerfanos).
@@ -943,182 +946,18 @@ def delete_voucher_vehicle_api(data, data_token):
     }, 200
 
 
-# Intentos de la escritura condicional de `files` antes de responder 409
-# (mismo criterio que los anexos de remision, docs/remission_anexos_sin_carrera.md).
-_CHV_FILES_WRITE_ATTEMPTS = 8
-
-
-def _chv_files_retry_pause(attempt: int):
-    # Espera aleatoria creciente: sin ella, N subidas simultaneas reintentan al
-    # mismo tiempo y vuelven a chocar (peor caso ~1.4 s en total).
-    time.sleep(random.uniform(0, 0.05 * attempt))
-
-
-def _load_vehicle_voucher(id_voucher, data_token):
-    """
-    Carga un checklist vehicular por id, **sin ventana de fecha** (antes el alta
-    de anexos y el borrado lo buscaban entre los de los ultimos 365 dias: uno
-    mas viejo ya no aceptaba anexos ni se podia cancelar). Devuelve
-    ``(payload_error, code, row)``: si ``payload_error`` no es ``None`` el
-    llamador responde ``(payload_error, code)`` tal cual. ``row`` es la tupla
-    de get_voucher_vehicle_by_id (``[1]`` fecha, ``[17]`` extra_info,
-    ``[18]`` status).
-    """
-    try:
-        id_voucher = int(id_voucher)
-    except (TypeError, ValueError) as e:
-        return {"data": None, "msg": "ID de voucher inválido", "error": str(e)}, 400, None
-    if id_voucher <= 0:
-        return {"data": None, "msg": "ID de voucher inválido", "error": None}, 400, None
-    flag, error, row = get_voucher_vehicle_by_id(id_voucher, data_token)
-    if not flag:
-        return {"data": None, "msg": "No se pudo obtener el checklist vehicular", "error": error}, 400, None
-    if not isinstance(row, (tuple, list)) or len(row) == 0 or row[0] is None:
-        return {"data": None, "msg": f"Voucher vehicular no encontrado (ID {id_voucher})", "error": None}, 404, None
-    return None, 200, row
-
-
-def _chv_files_from_row(row):
-    """Lista de anexos de la tupla de get_voucher_vehicle_by_id (tolera NULL y
-    el extra_info doble-codificado de filas viejas)."""
-    extra_info = _chv_json_field(row[17], {})
-    files = extra_info.get("files")
-    return files if isinstance(files, list) else []
-
-
 def create_voucher_vehicle_attachment_api(data, data_token):
-    """{"filepath": filepath_download, "filename": filename, "id_voucher": id}, data_token"""
-    filename = data["filename"]
-    payload_error, code, voucher_data = _load_vehicle_voucher(data.get("id_voucher"), data_token)
-    if payload_error is not None:
-        return payload_error, code
-    id_voucher = int(voucher_data[0])  # pyrefly: ignore
-    # Los anexos se nombran "<id del voucher>-<archivo>" (asi los sube el front
-    # y asi estan en BD). Antes la condicion llevaba `and` y nunca rechazaba.
-    try:
-        id_in_name = int(filename.split("-")[0])
-    except ValueError as e:
-        return {
-            "data": None,
-            "msg": "Error al procesar el nombre del archivo (debe empezar con el id del voucher: <id>-<archivo>)",
-            "error": str(e),
-        }, 400
-    if id_in_name != id_voucher:
-        return {
-            "data": None,
-            "msg": f"El nombre del archivo no corresponde al voucher (empieza con {id_in_name}, el voucher es {id_voucher})",
-            "error": None,
-        }, 400
-    time_zone = pytz.timezone(timezone_software)
-    timestamp = datetime.now(pytz.utc).astimezone(time_zone)
-    date_voucher = voucher_data[1]  # pyrefly: ignore
-    filepath_down = data["filepath"]
-    file_extension = filepath_down.split(".")[-1].lower()
-    valid_extension = ["pdf", "jpg", "jpeg", "png", "zip", "webp"]
-    if file_extension not in valid_extension:
-        return {"data": None, "msg": "Formato de archivo no válido", "error": None}, 400
-    path_aws = f"checklistV/{date_voucher.strftime('%Y/%m/%d/')}{filename}"
-    s3_client = boto3.client("s3")
-    bucket_name = secrets.get("S3_CH_BUCKET")
-    try:
-        s3_client.upload_file(Filename=filepath_down, Bucket=str(bucket_name), Key=path_aws)
-    except FileNotFoundError:
-        return {"data": None, "msg": "Archivo local no encontrado", "error": None}, 400
-    except NoCredentialsError:
-        return {"data": None, "msg": "Credenciales AWS no encontradas", "error": None}, 400
-    except ClientError as e:
-        error_code = e.response["Error"]["Code"]
-        if error_code == "NoSuchBucket":
-            return {"data": None, "msg": f"Bucket no existe: {bucket_name}", "error": str(e)}, 400
-        elif error_code == "AccessDenied":
-            return {
-                "data": None,
-                "msg": f"Acceso denegado al bucket: {bucket_name}",
-                "error": str(e),
-            }, 400
-        else:
-            return {"data": None, "msg": f"Error AWS: {str(e)}", "error": str(e)}, 400
-    # status solo se escribe si la firma lo cambia; un cancelado no se reactiva
-    # (el CASE esta en el controller: la cancelacion pudo llegar despues de leer).
-    status_signature = None
-    if "firma-aprobado" in filename.lower():
-        status_signature = 1
-    if "firma-recibido" in filename.lower():
-        status_signature = 2
-    new_entry = {
-        "filename": filename,
-        "path": path_aws,
-        "timestamp": timestamp.strftime(format_timestamps),
-    }
-    # Escritura condicional sobre `files` (docs/checklist_vehicular_anexos_sin_carrera.md):
-    # si otra subida cambio la lista despues de leerla, se re-lee y se recalcula;
-    # el objeto en S3 ya quedo arriba (llave determinista: re-subir no duplica).
-    for attempt in range(_CHV_FILES_WRITE_ATTEMPTS):
-        if attempt > 0:
-            _chv_files_retry_pause(attempt)
-            payload_error, code, voucher_data = _load_vehicle_voucher(id_voucher, data_token)
-            if payload_error is not None:
-                return payload_error, code
-        files = _chv_files_from_row(voucher_data)
-        msg = f"Archivo adjunto agregado: {filename} al voucher {id_voucher} por el empleado {data_token.get('name')}"
-        status = status_signature
-        if status is not None:
-            if voucher_data[18] == VEHICLE_VOUCHER_CANCELLED_STATUS:  # pyrefly: ignore
-                status = None
-                msg += " (voucher cancelado: el estado no cambia)"
-            else:
-                msg += " y estado actualizado a (aprobado)" if status == 1 else " y estado actualizado a (recibido)"
-        # Re-subir el mismo archivo reemplaza su entrada en vez de duplicarla: en
-        # S3 ya se sobreescribio el objeto (misma llave).
-        replaced = any(file.get("path") == path_aws for file in files)
-        new_files = [file for file in files if file.get("path") != path_aws]
-        if replaced:
-            msg += " (reemplaza el archivo previo con el mismo nombre)"
-        new_files.append(new_entry)
-        history_entry = {
-            "id_voucher": id_voucher,
-            "type": 2,
-            "timestamp": timestamp.strftime(format_timestamps),
-            "user": data_token.get("emp_id"),
-            "comment": f"Archivo adjunto agregado: {path_aws}",
-        }
-        flag, error, rows_updated = update_voucher_vehicle_files(
-            id_voucher, history_entry, new_files, data_token, status=status, expected_files=files
-        )
-        if not flag:
-            return {
-                "data": None,
-                "msg": "Error al actualizar el historial del voucher (archivo ya subido)",
-                "error": error,
-            }, 400
-        if rows_updated:
-            break
-    else:
-        return {
-            "data": None,
-            "msg": (
-                "La lista de anexos cambió mientras se guardaba (subidas simultáneas). "
-                "El archivo ya está en S3: vuelve a subirlo con el mismo nombre"
-            ),
-            "error": "conflicto de escritura en files",
-        }, 409
-    create_notification_permission_notGUI(
-        msg,
-        data_token,
-        ["administracion", "operaciones", "sgi"],
-        data_token.get("emp_id"),
-        0,
-    )
-    write_log_file(log_file_sgi_chv, msg, data_token)
-    return {"data": path_aws, "msg": msg, "error": None}, 201
+    """{"filepath": filepath_download, "filename": filename, "id_voucher": id}, data_token.
+    Receta compartida de los 3 tipos de vale (Functions_Aux_Vouchers, P-103)."""
+    return attach_voucher_file("vehicle", data, data_token)
 
 
 def download_voucher_vehicle_attachment_api(data, data_token):
     # Sin ventana de fecha (antes solo encontraba vouchers de los ultimos 365 dias).
-    payload_error, code, voucher_data = _load_vehicle_voucher(data.get("id_voucher"), data_token)
+    payload_error, code, head = load_voucher("vehicle", data.get("id_voucher"), data_token)
     if payload_error is not None:
         return payload_error, code
-    files = _chv_files_from_row(voucher_data)
+    files = head["files"]  # pyrefly: ignore
     name_file = data["filename"]
     flag_found = False
     path_aws = ""
