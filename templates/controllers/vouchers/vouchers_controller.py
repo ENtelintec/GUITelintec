@@ -6,6 +6,18 @@ import json
 
 from templates.database.connection import execute_sql
 
+# Agrega una entrada al history (JSON) sin reescribir lo leido; un history
+# NULL o que no sea arreglo arranca en []. Mismo criterio que activity_reports.
+_HISTORY_APPEND_SQL = (
+    "history = JSON_ARRAY_APPEND(IF(JSON_TYPE(history) = 'ARRAY', history, JSON_ARRAY()), "
+    "'$', CAST(%s AS JSON))"
+)
+
+
+def _json_param(value) -> str:
+    """Valor -> texto JSON para CAST(%s AS JSON)."""
+    return json.dumps(value, ensure_ascii=False)
+
 
 def create_voucher_general(voucher_type, date, user, contract, data_token):
     """
@@ -27,6 +39,37 @@ def create_voucher_general(voucher_type, date, user, contract, data_token):
         sql, val, 4, data_token
     )  # Ejecuta la inserción
     return flag, error, lastrowid
+
+
+def delete_voucher_general(id_voucher, data_token):
+    """
+    Borra fisicamente una fila de vouchers_general. Solo para revertir un alta
+    a medias (la fila acaba de nacer y no tiene hijos); el borrado de negocio
+    deja la fila como rastro (ver delete_voucher_vehicle_api).
+
+    :param id_voucher: ID del voucher general
+    :return: (flag, error, filas borradas)
+    """
+    sql = "DELETE FROM sql_telintec_mod_admin.vouchers_general WHERE id_voucher = %s"
+    flag, error, rows_changed = execute_sql(sql, (id_voucher,), 3, data_token)
+    return flag, error, rows_changed
+
+
+def append_history_voucher(id_voucher, entry: dict, data_token):
+    """
+    Agrega una entrada al history de vouchers_general en BD (JSON_ARRAY_APPEND),
+    sin leer ni reescribir la lista: dos escritores simultaneos no se pisan.
+
+    :param id_voucher: ID del voucher general
+    :param entry: dict con la entrada (id_voucher, type, timestamp, user, comment)
+    :return: (flag, error, filas afectadas)
+    """
+    sql = (
+        f"UPDATE sql_telintec_mod_admin.vouchers_general SET {_HISTORY_APPEND_SQL} "
+        "WHERE id_voucher = %s"
+    )
+    flag, error, rows_changed = execute_sql(sql, (_json_param(entry), id_voucher), 3, data_token)
+    return flag, error, rows_changed
 
 
 def create_voucher_tools(
@@ -319,37 +362,63 @@ def update_voucher_general_from_delete(id_voucher, history, data_token):
     return flag, error, rows_changed
 
 
-def update_voucher_vehicle_files(id_voucher, history, extra_info, status, data_token):
-    """
-    Actualiza el historial y la información extra de un voucher vehicular en la tabla voucher_vehicle.
+# Status "cancelado" del checklist vehicular (delete_voucher_vehicle_api); una
+# firma subida despues no lo reactiva.
+VEHICLE_VOUCHER_CANCELLED_STATUS = 3
 
-    :param id_voucher: ID del voucher a actualizar
-    :param history: Nuevo historial en formato JSON
-    :param extra_info: Nueva información extra en formato JSON
-    :return: Estado de la operación (éxito/error)
+
+def update_voucher_vehicle_files(
+    id_voucher,
+    history_entry: dict,
+    files: list,
+    data_token,
+    status: int | None = None,
+    expected_files: list | None = None,
+):
     """
+    Escribe la lista de anexos (`voucher_vehicle.extra_info.$.files`) y agrega
+    una entrada al history de vouchers_general en **una sola sentencia**
+    (UPDATE multi-tabla): solo se toca la llave `files` de extra_info, nunca el
+    resto, y el history crece con JSON_ARRAY_APPEND sin reescribir lo leido.
+    `status` solo se escribe cuando el anexo lo cambia (firmas) y nunca
+    reactiva un voucher cancelado.
+    Con `expected_files` (la lista leida) el UPDATE es condicional: solo aplica
+    si `files` sigue igual en BD. 0 filas = otro request la cambio entretanto y
+    el midleware re-lee y reintenta (docs/checklist_vehicular_anexos_sin_carrera.md).
+    Nunca hay 0 filas por "sin cambios": el history siempre crece. type_sql=3.
+
+    :param id_voucher: ID del voucher (vouchers_general.id_voucher)
+    :param history_entry: entrada nueva del history
+    :param files: lista completa de anexos a guardar
+    :param status: status nuevo o None para no tocarlo
+    :param expected_files: lista leida antes de calcular `files`, o None para
+        escribir sin condicion (regresa la carrera; solo para scripts)
+    :return: (flag, error, filas afectadas)
+    """
+    sets = [
+        "vv.extra_info = JSON_SET(IF(JSON_TYPE(vv.extra_info) = 'OBJECT', vv.extra_info, JSON_OBJECT()), "
+        "'$.files', CAST(%s AS JSON))",
+        "vg." + _HISTORY_APPEND_SQL,
+    ]
+    val: list = [_json_param(files), _json_param(history_entry)]
+    if status is not None:
+        sets.append(
+            f"vv.status = CASE WHEN COALESCE(vv.status, 0) = {VEHICLE_VOUCHER_CANCELLED_STATUS} "
+            "THEN vv.status ELSE %s END"
+        )
+        val.append(status)
     sql = (
-        "UPDATE sql_telintec_mod_admin.voucher_vehicle "
-        "SET extra_info = %s, status = %s "
-        "WHERE id_voucher_general = %s"
+        "UPDATE sql_telintec_mod_admin.voucher_vehicle AS vv "
+        "JOIN sql_telintec_mod_admin.vouchers_general AS vg ON vg.id_voucher = vv.id_voucher_general "
+        f"SET {', '.join(sets)} WHERE vv.id_voucher_general = %s"
     )
-    val = (json.dumps(extra_info), status, id_voucher)
-    flag, error, rows_changed = execute_sql(sql, val, 3, data_token)
-    if not flag:
-        return flag, error, rows_changed
-    else:
-        sql_history = (
-            "UPDATE sql_telintec_mod_admin.vouchers_general "
-            "SET history = %s  "
-            "WHERE id_voucher = %s"
-        )
-        val_history = (json.dumps(history), id_voucher)
-        flag_history, error_history, rows_changed_history = execute_sql(
-            sql_history, val_history, 3, data_token
-        )
-        if not flag_history:
-            return flag_history, error_history, rows_changed_history
-        return True, None, rows_changed_history
+    val.append(id_voucher)
+    if expected_files is not None:
+        # Comparacion JSON por contenido (no por texto): sin llave cuenta como [].
+        sql += " AND COALESCE(JSON_EXTRACT(vv.extra_info, '$.files'), JSON_ARRAY()) = CAST(%s AS JSON)"
+        val.append(_json_param(expected_files))
+    flag, error, rows_changed = execute_sql(sql, tuple(val), 3, data_token)
+    return flag, error, rows_changed
 
 
 def update_voucher_epp_files(id_voucher, history, extra_info, status, data_token):

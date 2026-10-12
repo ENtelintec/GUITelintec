@@ -57,4 +57,4 @@ Dev (2026-09-10; la notificación de prueba se borró y `files/flags_daemons.jso
 ## Pendientes
 
 - **[front]** Pintar `alert`/`due_date` en la pantalla de exámenes médicos y dejar de tratar `error` lista como fallo.
-- **[back]** Corregir el doble nombre `alergies`/`allergies` en BD (migrar la llave vieja) cuando se toque el CRUD de exámenes.
+- **[back]** Corregir el doble nombre `alergies`/`allergies` en BD — script entregado el 2026-10-12 (`examenes_med_allergies_key.sql`, también corrige el `DEFAULT` de la columna) → [`rh_calidad_datos_dml.md`](rh_calidad_datos_dml.md); falta correrlo en las 3 BDs y quitar el fallback del lector.

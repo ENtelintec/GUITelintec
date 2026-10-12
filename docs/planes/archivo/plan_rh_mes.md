@@ -1,6 +1,6 @@
 # Plan de trabajo — Módulo RH (1 mes)
 
-> **ARCHIVADO — mes 1 cerrado con éxito el 2026-09-07.** Este plan ya no se actualiza. El único arrastre abierto (deploy de prod del tren S2+Fase 2 y el `DROP` de las 7 vistas puente, DDL del usuario) vive en [`plan_mes_2.md`](../plan_mes_2.md) y en [`pendientes.md`](../../pendientes.md); los checkboxes sin marcar de abajo son históricos.
+> **ARCHIVADO — mes 1 cerrado con éxito el 2026-09-07.** Este plan ya no se actualiza. El único arrastre abierto (deploy de prod del tren S2+Fase 2 y el `DROP` de las 7 vistas puente, DDL del usuario) vive en [`plan_mes_2.md`](plan_mes_2.md) y en [`pendientes.md`](../../pendientes.md); los checkboxes sin marcar de abajo son históricos.
 
 > Plan de sprint de ~4 semanas para el módulo de RH. Dos frentes: (1) comprobación de endpoints y (2) refactor del módulo de encuestas centrado en la evaluación/interpretación. El front es un tercero a medio tiempo en evaluación.
 

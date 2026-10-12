@@ -79,9 +79,6 @@ Páginas renderizadas a PNG (`Tests/out/checklist_full/`) y revisadas: cuadrícu
 
 ## Pendientes
 
-Hallazgos en el alta de anexos vehiculares (`create_voucher_vehicle_attachment_api`), sin tocar en este cambio:
+Hallazgos en el alta de anexos vehiculares (`create_voucher_vehicle_attachment_api`) — **cerrados el 2026-10-12** en [`checklist_vehicular_anexos_sin_carrera.md`](checklist_vehicular_anexos_sin_carrera.md): la lectura-modificación-escritura de `extra_info.files`, la validación de nombre con `and` y la ventana de 365 días. Sigue abierto:
 
-- `extra_info.files` sigue en **lectura-modificación-escritura**: dos subidas simultáneas pueden perder una entrada. Es la misma carrera que se corrigió en remisiones ([`remission_anexos_sin_carrera.md`](remission_anexos_sin_carrera.md)).
-- La validación "el nombre del archivo corresponde al voucher" usa `and` en vez de `or`, así que **nunca rechaza**.
-- El voucher se busca con ventana de 365 días: uno más viejo responde 400 "Voucher vehicular no encontrado" y ya no acepta anexos.
 - Si se quiere controlar qué va a la hoja de fotos vs. anexos (en vez de inferirlo por extensión), el alta puede aceptar `category`/`title` como remisiones.

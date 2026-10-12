@@ -1,22 +1,24 @@
 # Plan de trabajo — Mes 2: RH (nómina, constructor de encuestas, dashboard) + Almacén multisede
 
-> Plan de sprint de 4 semanas (**2026-09-07 → 2026-10-02**). Continúa al [`plan_rh_mes.md`](archivo/plan_rh_mes.md), que cerró con las 6 UIs de encuestas entregadas. Cuatro tareas, decididas y ordenadas en la sesión de grill del 2026-09-07. Back y front a **tiempo completo** (~160 h cada uno). Cada pieza de back produce su doc en `docs/` con "Contrato mínimo para el front"; este plan solo fija alcance, orden y contratos **preliminares** (anexos al final).
+> **ARCHIVADO — 2026-10-12.** El mes 2 cerró con todo el back servido y verificado (nómina, constructor, multisede F0–F3, dashboard RH) y las pantallas sin entregar. Este plan ya no se actualiza: sus tareas abiertas viven solo en [`pendientes.md`](../../pendientes.md) y las de front las absorbe el **equipo de front principal** (ya no hay un tercero con calendario por semanas). Orden de trabajo vigente → [`plan_accion_2026_10.md`](../plan_accion_2026_10.md). Los checkboxes sin marcar de abajo son históricos.
+
+> Plan de sprint de 4 semanas (**2026-09-07 → 2026-10-02**). Continúa al [`plan_rh_mes.md`](plan_rh_mes.md), que cerró con las 6 UIs de encuestas entregadas. Cuatro tareas, decididas y ordenadas en la sesión de grill del 2026-09-07. Back y front a **tiempo completo** (~160 h cada uno). Cada pieza de back produce su doc en `docs/` con "Contrato mínimo para el front"; este plan solo fija alcance, orden y contratos **preliminares** (anexos al final).
 
 ## Estado — actualizado 2026-09-10 (S1)
 
-**2026-09-23**: **Arrastre de la migración RH cerrado**: el tren S2+Fase2 corre en prod, el tester re-corrió la regresión de las secciones afectadas y el usuario corrió el `DROP` de las 7 vistas puente en dev/test/prod (verificado: cero vistas viejas, FKs intactas, smoke verde) → [`migracion_esquemas_rrhh.md`](../migracion_esquemas_rrhh.md). Del arrastre solo queda el DML de salida tipo 0 en test/prod.
+**2026-09-23**: **Arrastre de la migración RH cerrado**: el tren S2+Fase2 corre en prod, el tester re-corrió la regresión de las secciones afectadas y el usuario corrió el `DROP` de las 7 vistas puente en dev/test/prod (verificado: cero vistas viejas, FKs intactas, smoke verde) → [`migracion_esquemas_rrhh.md`](../../migracion_esquemas_rrhh.md). Del arrastre solo queda el DML de salida tipo 0 en test/prod.
 
-**2026-09-10 (tarde)**: **Dashboard RH adelantado de S3 a S1** y verificado (98 checks + 10 por HTTP): `GET /dashboard/rrhh/summary` + `POST /dashboard/rrhh/series` → [`dashboard_rrhh.md`](../dashboard_rrhh.md). **Fichajes fuera** del dashboard por decisión del usuario (`series` queda con `altas_bajas` y `headcount`, `metric` extensible). Con esto **las 4 tareas del mes tienen el back servido con contrato** en la S1. **Siguiente para el back**: soporte a la integración del front (nómina, constructor, sede, dashboard); si sobra, en este orden: correo SES · F4 de multisede · arreglos de calidad de datos que ensucian el dashboard (ver pendientes). Arrastre pendiente (usuario): `DROP` de vistas y DML de salida en test/prod. De paso, corregido el bug por el que los avisos de exámenes médicos vencidos nunca se emitían → [`notificaciones_medicas_fix.md`](../notificaciones_medicas_fix.md).
+**2026-09-10 (tarde)**: **Dashboard RH adelantado de S3 a S1** y verificado (98 checks + 10 por HTTP): `GET /dashboard/rrhh/summary` + `POST /dashboard/rrhh/series` → [`dashboard_rrhh.md`](../../dashboard_rrhh.md). **Fichajes fuera** del dashboard por decisión del usuario (`series` queda con `altas_bajas` y `headcount`, `metric` extensible). Con esto **las 4 tareas del mes tienen el back servido con contrato** en la S1. **Siguiente para el back**: soporte a la integración del front (nómina, constructor, sede, dashboard); si sobra, en este orden: correo SES · F4 de multisede · arreglos de calidad de datos que ensucian el dashboard (ver pendientes). Arrastre pendiente (usuario): `DROP` de vistas y DML de salida en test/prod. De paso, corregido el bug por el que los avisos de exámenes médicos vencidos nunca se emitían → [`notificaciones_medicas_fix.md`](../../notificaciones_medicas_fix.md).
 
-**2026-09-10**: **Multisede F3 (traslados) adelantada de S3 a S1** y verificada (50 checks): crear/cancelar/listar/detalle en el principal y listar/detalle/recibir en la sede, con enviado-vs-recibido y protección de las entradas de traslado → [`almacen_multisede_f3.md`](../almacen_multisede_f3.md). Con esto **todo el back de multisede del mes está servido con contrato** (F0–F3); F4 solo si sobra. El front tiene contrato para todas sus pantallas del mes (nómina, constructor, sede: inventario/movimientos/recepción, crear traslado). **Siguiente para el back**: dashboard RH (`summary` + `series`), adelantado de S3; después soporte a integración y, si sobra, `extract`/SES/F4. Arrastre pendiente (usuario): `DROP` de vistas y DML de salida en test/prod.
+**2026-09-10**: **Multisede F3 (traslados) adelantada de S3 a S1** y verificada (50 checks): crear/cancelar/listar/detalle en el principal y listar/detalle/recibir en la sede, con enviado-vs-recibido y protección de las entradas de traslado → [`almacen_multisede_f3.md`](../../almacen_multisede_f3.md). Con esto **todo el back de multisede del mes está servido con contrato** (F0–F3); F4 solo si sobra. El front tiene contrato para todas sus pantallas del mes (nómina, constructor, sede: inventario/movimientos/recepción, crear traslado). **Siguiente para el back**: dashboard RH (`summary` + `series`), adelantado de S3; después soporte a integración y, si sobra, `extract`/SES/F4. Arrastre pendiente (usuario): `DROP` de vistas y DML de salida en test/prod.
 
 ### Estado previo — 2026-09-08 (día 2 de S1)
 
-**2026-09-08**: DDL de versiones y de multisede corridos por el usuario en **dev, test y prod**. Constructor verificado en ciclo completo (32 checks). **Multisede F2 adelantada de S2 a S1** y verificada (46 checks): namespace `sucursal` con inventario, stock del principal y movimientos con stock por sede → [`almacen_multisede_f2.md`](../almacen_multisede_f2.md). Quedan del arrastre (decisión del usuario, más tarde): `DROP` de vistas y DML de salida en test/prod. **Siguiente para el back**: contrato + código de F3 (traslados). El front ya tiene contrato para **todas** sus pantallas de multisede del mes salvo recepción.
+**2026-09-08**: DDL de versiones y de multisede corridos por el usuario en **dev, test y prod**. Constructor verificado en ciclo completo (32 checks). **Multisede F2 adelantada de S2 a S1** y verificada (46 checks): namespace `sucursal` con inventario, stock del principal y movimientos con stock por sede → [`almacen_multisede_f2.md`](../../almacen_multisede_f2.md). Quedan del arrastre (decisión del usuario, más tarde): `DROP` de vistas y DML de salida en test/prod. **Siguiente para el back**: contrato + código de F3 (traslados). El front ya tiene contrato para **todas** sus pantallas de multisede del mes salvo recepción.
 
 ### Estado previo — 2026-09-07 (cierre del día 1 de S1)
 
-**El back cerró en un día lo planeado para toda la S1** y adelantó el `extract` de nómina (era S4) y la F1 de multisede. Hecho y verificado contra dev: salida tipo 0 ([`encuesta_salida_cualitativa.md`](../encuesta_salida_cualitativa.md)), nómina completa ([`nomina_gestion_archivos_y_notificacion.md`](../nomina_gestion_archivos_y_notificacion.md), 21 checks), constructor ([`quizz_models_versionado.md`](../quizz_models_versionado.md), 32 checks tras el DDL), multisede F0+F1 ([`almacen_multisede_f1.md`](../almacen_multisede_f1.md), 27 checks). DDL de versiones y de multisede **corridos en dev** por el usuario. Queda del arrastre: `DROP` de las 7 vistas y DML de salida en test/prod (decisión del usuario: más tarde). **Siguiente para el back**: contrato de F2 (namespace `sucursal`) y su código; para el front: las pantallas de nómina contra el Anexo A (el contrato definitivo ya está en su doc).
+**El back cerró en un día lo planeado para toda la S1** y adelantó el `extract` de nómina (era S4) y la F1 de multisede. Hecho y verificado contra dev: salida tipo 0 ([`encuesta_salida_cualitativa.md`](../../encuesta_salida_cualitativa.md)), nómina completa ([`nomina_gestion_archivos_y_notificacion.md`](../../nomina_gestion_archivos_y_notificacion.md), 21 checks), constructor ([`quizz_models_versionado.md`](../../quizz_models_versionado.md), 32 checks tras el DDL), multisede F0+F1 ([`almacen_multisede_f1.md`](../../almacen_multisede_f1.md), 27 checks). DDL de versiones y de multisede **corridos en dev** por el usuario. Queda del arrastre: `DROP` de las 7 vistas y DML de salida en test/prod (decisión del usuario: más tarde). **Siguiente para el back**: contrato de F2 (namespace `sucursal`) y su código; para el front: las pantallas de nómina contra el Anexo A (el contrato definitivo ya está en su doc).
 
 | Frente | Hecho ✅ | Falta |
 |---|---|---|
@@ -46,7 +48,7 @@
 | **Constructor — versiones** | `POST /quizz/models/<id>/clone` (template + rúbrica + name con sufijo, nace borrador, `replaces: <id>`). **Publicar la nueva archiva la vieja automáticamente**; la vieja se queda en BD evaluando su historial |
 | **Constructor — migrar pendientes** | `PUT /quizz/models/<new>/migrate-tasks` reapunta las tasks **sin contestar** del tipo viejo al nuevo; las contestadas **nunca** se mueven; eva 360 fuera. `PUT /status` con `migrate_pending: true` lo hace al publicar en un paso |
 | **Constructor — alcance visual** | El editor visual edita **solo el template** (preguntas, opciones, widget del catálogo actual `1/2/3/5`, subpreguntas, rango `items`). La rúbrica se hereda al clonar y vive en pestaña "Avanzado" con el JSON de hoy + `warnings`. Desde cero sin rúbrica = cualitativa. **Sin widgets nuevos** |
-| **Multisede — back** | Fases según [`almacen_multisede_plan.md`](almacen_multisede_plan.md): F0+F1 en S1 (dev con placeholders "Sucursal 2" + permiso `Sucursal-2`), F2 en S2, F3 en S3, F4 solo si sobra. **Prod de multisede fuera del mes** salvo que lleguen los datos de administración |
+| **Multisede — back** | Fases según [`almacen_multisede_plan.md`](../almacen_multisede_plan.md): F0+F1 en S1 (dev con placeholders "Sucursal 2" + permiso `Sucursal-2`), F2 en S2, F3 en S3, F4 solo si sobra. **Prod de multisede fuera del mes** salvo que lleguen los datos de administración |
 | **Multisede — front** | Lo principal y más sencillo primero: **inventario y movimientos de sede**; después **recepción de traslados** (+ formulario mínimo de "crear traslado" en el principal para probar punta a punta). Fuera: consolidado, catálogo de sedes, cancelar, exports y dashboard de sede. Misma app, menú por permiso |
 | **Dashboard RH** | Lista v1 cerrada (tiles + 2 series). Back: `GET /dashboard/rrhh/summary` + `POST /dashboard/rrhh/series` (`metric` extensible). Sin caché. Front: una pantalla, tiles clicables a la lista filtrada |
 | **Contratos antes que código** | El back publica el contrato de cada fase/pieza **al inicio de su semana** (doc con bloque del front); el front arma la pantalla con mocks y conecta cuando el endpoint aterriza |
@@ -102,7 +104,7 @@ El cuello de botella ya no son horas: son **dependencias**. Tres de las cuatro t
 |---|---|
 | Cierre de integración (multisede, dashboard) · regresión del tester sobre nómina/encuestas | **Recepción de traslados** + formulario mínimo de "crear traslado" en el principal |
 | **Si sobra** (en este orden): `POST /payroll/files/extract` · correo por SES · F4 de multisede | **Dashboard RH** |
-| Docs cerrados + [`pendientes.md`](../pendientes.md) al día | Pulido |
+| Docs cerrados + [`pendientes.md`](../../pendientes.md) al día | Pulido |
 
 **Checkpoint vie 02 oct**: veredicto del mes contra "Entregables".
 
@@ -123,7 +125,7 @@ Lo primero que se cae, en orden: **extract de XML y correo SES** → **dashboard
 | **Reemplazo/borrado en S3** falla a medias | BD primero, S3 best-effort con `s3_deleted` en la respuesta: nunca queda un `path` muerto en el índice |
 | **Dashboard abre un yak** de KPIs | Lista v1 cerrada; KPI nuevo = `metric` nuevo en `series`, sin tocar el front |
 
-> **Seguimiento vivo:** estado por ítem en [`pendientes.md`](../pendientes.md) (secciones RH / Encuestas, RH / Nómina, RH / Dashboard, Almacén / Multisede).
+> **Seguimiento vivo:** estado por ítem en [`pendientes.md`](../../pendientes.md) (secciones RH / Encuestas, RH / Nómina, RH / Dashboard, Almacén / Multisede).
 
 ## Entregables del mes
 
@@ -133,7 +135,7 @@ Lo primero que se cae, en orden: **extract de XML y correo SES** → **dashboard
 - [ ] **Multisede**: DDL F0 en dev/test (`almacen_multisede.sql`) · F1 candado + catálogo · F2 namespace `sucursal` · F3 traslados · docs por fase · front con inventario, movimientos y recepción de sede.
 - [ ] **Dashboard RH**: ~~doc con contrato · `summary` + `series`~~ ✅ (10-sep) · pantalla.
 - [ ] Si sobra: `extract` de XML · correo SES · F4.
-- [ ] [`pendientes.md`](../pendientes.md) actualizado al cierre.
+- [ ] [`pendientes.md`](../../pendientes.md) actualizado al cierre.
 
 ---
 
@@ -166,7 +168,7 @@ Lo primero que se cae, en orden: **extract de XML y correo SES** → **dashboard
 
 ## Anexo B — Constructor de encuestas: API para el front (contrato preliminar)
 
-> Base `/GUI/api/v1/rrhh`, permiso `rrhh`. El CRUD completo y el catálogo de widgets están en [`quizz_models_crud.md`](../quizz_models_crud.md); aquí solo lo que **cambia o se agrega**.
+> Base `/GUI/api/v1/rrhh`, permiso `rrhh`. El CRUD completo y el catálogo de widgets están en [`quizz_models_crud.md`](../../quizz_models_crud.md); aquí solo lo que **cambia o se agrega**.
 
 | Método y ruta | Cambio / contrato |
 |---|---|
@@ -180,7 +182,7 @@ Lo primero que se cae, en orden: **extract de XML y correo SES** → **dashboard
 
 ## Anexo C — Multisede: qué consume el front este mes
 
-> Contratos por fase en sus docs (`almacen_multisede_f*.md`, uno por fase). Rutas y reglas de negocio en [`almacen_multisede_plan.md`](almacen_multisede_plan.md). Permiso de sede `Sucursal-<id>`; el `id_warehouse` va implícito en el permiso, un id ajeno → 403.
+> Contratos por fase en sus docs (`almacen_multisede_f*.md`, uno por fase). Rutas y reglas de negocio en [`almacen_multisede_plan.md`](../almacen_multisede_plan.md). Permiso de sede `Sucursal-<id>`; el `id_warehouse` va implícito en el permiso, un id ajeno → 403.
 
 | Pantalla (front) | Endpoints (back) | Fase |
 |---|---|---|
@@ -202,4 +204,4 @@ Fuera del mes en front: `/almacen/warehouses` (catálogo), `/almacen/transfer/ca
 
 **Gotchas:** sin caché (agregados chicos); los tiles "por vencer" traen ids para que el click lleve a la lista filtrada sin otra llamada.
 
-> **Contrato definitivo (2026-09-10)** en [`dashboard_rrhh.md`](../dashboard_rrhh.md): `faltas`/`retardos` se cayeron (fichajes fuera) y entró `headcount`; `medical_expiring` gana `vencidos`/`al_dia`/`no_apto`/`sin_periodo`/`sin_examen`; `vacations` pasa a `employees_with_pending` + `pending_days_total` + `next_30_days` (no hay flujo de aprobación en BD); `data_quality` nuevo.
+> **Contrato definitivo (2026-09-10)** en [`dashboard_rrhh.md`](../../dashboard_rrhh.md): `faltas`/`retardos` se cayeron (fichajes fuera) y entró `headcount`; `medical_expiring` gana `vencidos`/`al_dia`/`no_apto`/`sin_periodo`/`sin_examen`; `vacations` pasa a `employees_with_pending` + `pending_days_total` + `next_30_days` (no hay flujo de aprobación en BD); `data_quality` nuevo.

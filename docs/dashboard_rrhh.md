@@ -1,6 +1,6 @@
 # Dashboard de RH — `GET /dashboard/rrhh/summary` + `POST /dashboard/rrhh/series`
 
-> Punto 4 del [`plan_mes_2.md`](planes/plan_mes_2.md) (Anexo D), adelantado de S3 a S1 (2026-09-10). Back completo con contrato; la pantalla del front va en S4. **Fichajes quedan fuera** del dashboard por decisión del usuario (las series `faltas`/`retardos` del anexo se caen; `metric` sigue extensible).
+> Punto 4 del [`plan_mes_2.md`](planes/archivo/plan_mes_2.md) (Anexo D), adelantado de S3 a S1 (2026-09-10). Back completo con contrato; la pantalla del front va en S4. **Fichajes quedan fuera** del dashboard por decisión del usuario (las series `faltas`/`retardos` del anexo se caen; `metric` sigue extensible).
 
 ## Qué cambió (4 capas)
 
@@ -99,5 +99,5 @@ Dev (2026-09-10, **98 checks** de midleware + **10 por HTTP** con el test client
 ## Pendientes
 
 - **[front]** Pantalla del dashboard (S4 del plan): tiles clicables a la lista filtrada + 2 gráficas de `series`.
-- **[admin/RH]** Limpiar los 11 activos con fecha de baja arrastrada y los inactivos sin fecha de baja (`data_quality`); capturar `dates` en vacaciones para que `next_30_days` tenga datos.
+- **[admin/RH]** Limpiar los 11 activos con fecha de baja arrastrada y los inactivos sin fecha de baja (`data_quality`); capturar `dates` en vacaciones para que `next_30_days` tenga datos. La parte mecánica (`status` NULL, `puesto` `'None'`) y el listado para RH están en [`rh_calidad_datos_dml.md`](rh_calidad_datos_dml.md) (2026-10-12).
 - ~~**[back]** `fetch_medicals` nunca emitía avisos de vencimiento (aptitud entera vs `"APTO 1"`), ni el daemon~~ — corregido el mismo día → [`notificaciones_medicas_fix.md`](notificaciones_medicas_fix.md).

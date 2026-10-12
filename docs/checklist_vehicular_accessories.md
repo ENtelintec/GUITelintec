@@ -45,4 +45,4 @@ Contra BD dev (2026-10-09), [`Tests/tester_voucher_vehicle_accessories.py`](../T
 ## Pendientes
 
 - **[back] DML** [`voucher_vehicle_accessories_normalize.sql`](../scripts_db_handle/voucher_vehicle_accessories_normalize.sql) en dev, test y prod (usuario). No bloquea el deploy: los lectores toleran ambas formas.
-- **[back] Alta sin rollback** (hallazgo de la prueba): `create_voucher_vehicle_api` inserta `vouchers_general` y después `voucher_vehicle`. Si el segundo falla (p. ej. `model` > 100 caracteres → 1406 `Data too long`), el primero queda **huérfano**. El huérfano de la prueba se borró a mano.
+- ~~**[back] Alta sin rollback**~~ — hecho el 2026-10-12 en [`checklist_vehicular_anexos_sin_carrera.md`](checklist_vehicular_anexos_sin_carrera.md). Era: `create_voucher_vehicle_api` inserta `vouchers_general` y después `voucher_vehicle`. Si el segundo falla (p. ej. `model` > 100 caracteres → 1406 `Data too long`), el primero queda **huérfano**. El huérfano de la prueba se borró a mano.

@@ -3,7 +3,7 @@
 Notas de diseño por cambio del API de Telintec (una `.md` por cambio, en español). Este archivo es **solo el mapa**: una línea por doc, agrupadas por área de negocio y en **orden cronológico ascendente** dentro de cada sección (los docs se encadenan: "extiende…", "cierra el pendiente de…" — leídos de arriba a abajo cuentan la historia del módulo).
 
 - **Pendientes abiertos de todas las áreas** → [`pendientes.md`](pendientes.md) (fuente de verdad; la marca `⏳` de este índice es solo un puntero).
-- **Planes con calendario / por fases** → [`planes/`](planes/): [`plan_mes_2.md`](planes/plan_mes_2.md) (vivo), [`almacen_multisede_plan.md`](planes/almacen_multisede_plan.md) (vivo), [`control_entregas_ocd_plan.md`](planes/control_entregas_ocd_plan.md) (vivo: OCD, Control de Entregas, cancelar remisión, vigencia, análisis de costos — grill 2026-09-28). Cerrados → [`planes/archivo/`](planes/archivo/): [`plan_rh_mes.md`](planes/archivo/plan_rh_mes.md) (mes 1 RH, cerrado 2026-09-07).
+- **Planes con calendario / por fases** → [`planes/`](planes/): [`plan_accion_2026_10.md`](planes/plan_accion_2026_10.md) (vivo: orden de trabajo del back + backlog priorizado para el equipo de front principal + decisiones que faltan, 2026-10-12), [`almacen_multisede_plan.md`](planes/almacen_multisede_plan.md) (vivo), [`control_entregas_ocd_plan.md`](planes/control_entregas_ocd_plan.md) (vivo: OCD, Control de Entregas, cancelar remisión, vigencia, análisis de costos — grill 2026-09-28). Cerrados → [`planes/archivo/`](planes/archivo/): [`plan_rh_mes.md`](planes/archivo/plan_rh_mes.md) (mes 1 RH, cerrado 2026-09-07), [`plan_mes_2.md`](planes/archivo/plan_mes_2.md) (mes 2 RH + multisede, archivado 2026-10-12: back servido, front absorbido por `pendientes.md`).
 - **Reglas para escribir un doc nuevo** (bloque "Contrato mínimo para el front", formato de la línea de este índice, ciclo de vida) → [`../CLAUDE.md`](../CLAUDE.md), sección *Change docs*. Doc nuevo = línea nueva **al final** de su sección.
 
 Formato de cada línea: `doc — endpoint principal: qué hace · fecha · ⏳ pendiente abierto (si lo hay)`. Un doc que cruza áreas vive donde está su endpoint principal y aparece en el `Ver también` de la otra.
@@ -92,7 +92,7 @@ Ver también: [`planes/almacen_multisede_plan.md`](planes/almacen_multisede_plan
 - [`encuesta_salida_cualitativa.md`](encuesta_salida_cualitativa.md) — `GET /rrhh/quizz/<id_task>/evaluation`: encuesta de salida (tipo 0) con rúbrica `mode:"qualitative"` y respuestas resueltas a texto (`answer`, `answer_raw`, `details`). · 2026-09-08
 - [`quizz_models_versionado.md`](quizz_models_versionado.md) — `POST /rrhh/quizz/models/<id>/clone`: versionado de modelos: candado del template por tasks, clonar, publicar archiva la versión anterior y migración de encuestas pendientes (`PUT /migrate-tasks`). · 2026-09-08 · ⏳ constructor visual del front
 
-Ver también: [`migracion_esquemas_rrhh.md`](migracion_esquemas_rrhh.md) (`quizz_tasks`, vistas puente) · [`dashboard_rrhh.md`](dashboard_rrhh.md) (tile de encuestas) · [`planes/plan_mes_2.md`](planes/plan_mes_2.md)
+Ver también: [`migracion_esquemas_rrhh.md`](migracion_esquemas_rrhh.md) (`quizz_tasks`, vistas puente) · [`dashboard_rrhh.md`](dashboard_rrhh.md) (tile de encuestas) · [`planes/archivo/plan_mes_2.md`](planes/archivo/plan_mes_2.md)
 
 ## RRHH — Nómina, médicos, dashboard, esquema y cargos
 
@@ -106,8 +106,9 @@ Ver también: [`migracion_esquemas_rrhh.md`](migracion_esquemas_rrhh.md) (`quizz
 - [`nomina_correo_ses.md`](nomina_correo_ses.md) — `POST /rrhh/payroll/notify` (`channels: ["email"]`): correo al empleado por AWS SES con el pdf/xml del recibo adjuntos desde S3 (`Functions_Mail.py` genérico); `channels_failed`/`email_to` nuevos; `POST /payroll/mail` retirado. · 2026-09-17 · ⏳ SES production access; front
 - [`common_employees_directory.md`](common_employees_directory.md) — `GET /common/employees/<status>`: directorio de empleados de uso general (permiso `Common`) solo con datos no confidenciales (nombre, contacto, departamento, contrato, puesto, líder, usuario). · 2026-09-23
 - [`rrhh_vacaciones_y_csv.md`](rrhh_vacaciones_y_csv.md) — `POST·PUT /rrhh/employee/vacation` (+ las 3 descargas CSV): el alta guarda `prima`, `id_vacation` = `emp_id`, 409/404; CSV en memoria con `csv.writer` y `l_name`. · 2026-10-09
+- [`rh_calidad_datos_dml.md`](rh_calidad_datos_dml.md) — DML `rh_calidad_datos_empleados.sql` + `examenes_med_allergies_key.sql`: `status` NULL y `puesto` `'None'` en `employees`, una sola llave `allergies` en exámenes (DML + DEFAULT), listado para RH. · 2026-10-12 · ⏳ correr en las 3 BDs; limpieza de RH
 
-Ver también: [`consolidacion_namespaces_encuestas.md`](consolidacion_namespaces_encuestas.md) y [`quizz_models_crud.md`](quizz_models_crud.md) (mismo tren de deploy que la migración) · [`planes/plan_mes_2.md`](planes/plan_mes_2.md) (Anexo A nómina, Anexo D dashboard)
+Ver también: [`consolidacion_namespaces_encuestas.md`](consolidacion_namespaces_encuestas.md) y [`quizz_models_crud.md`](quizz_models_crud.md) (mismo tren de deploy que la migración) · [`planes/archivo/plan_mes_2.md`](planes/archivo/plan_mes_2.md) (Anexo A nómina, Anexo D dashboard)
 
 ## SGI / CDA
 
@@ -118,6 +119,7 @@ Ver también: [`consolidacion_namespaces_encuestas.md`](consolidacion_namespaces
 - [`checklist_vehicular_contrato.md`](checklist_vehicular_contrato.md) — `POST·PUT /sgi/voucher/vehicle`: `contract` editable en el `PUT` y opcional en el checklist vehicular (`null`/`0` = sin contrato; `vouchers_general.contract` NULL-able). · 2026-09-23 · ⏳ selector del front
 - [`checklist_vehicular_accessories.md`](checklist_vehicular_accessories.md) — `POST·PUT /sgi/voucher/vehicle`: `accessories` se guarda una sola vez como arreglo JSON (antes string doble-codificado); DML de normalización. · 2026-10-09 · ⏳ DML en dev/test/prod
 - [`checklist_vehicular_full_pdf.md`](checklist_vehicular_full_pdf.md) — `GET /sgi/voucher/vehicle/download/pdf/<id>?full=1`: checklist + anexos PDF + hoja de EVIDENCIA FOTOGRÁFICA estilo casa, con numeración continua. · 2026-10-09
+- [`checklist_vehicular_anexos_sin_carrera.md`](checklist_vehicular_anexos_sin_carrera.md) — `POST /sgi/voucher/vehicle/attachment-<id>`: anexos sin carrera (escritura condicional de `extra_info.files` + history por `JSON_ARRAY_APPEND`), sin ventana de 365 días (alta/descarga/borrado), validación de nombre real, rollback del alta y DELETE que borra todos los items. · 2026-10-12 · ⏳ 409/404 en el front; EPP/herramientas
 
 Ver también: [`common_contracts_catalog.md`](common_contracts_catalog.md) (lista para el selector de contrato del checklist) · [`control_saldos_cabecera.md`](control_saldos_cabecera.md) (catálogo `iso_formats` de SGI) · [`remission_combined_pdf.md`](remission_combined_pdf.md) (la fusión que reusaría `?full=1`) · [`contracts_products_sort_memory_fix.md`](contracts_products_sort_memory_fix.md) (`status` de `voucher_tools`/`voucher_safety` que le faltaba a dev)
 
