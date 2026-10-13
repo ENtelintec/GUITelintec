@@ -88,4 +88,10 @@ Smoke contra BD dev (2026-09-07) con S3 simulado (sin tocar el bucket) y el índ
 ## Pendientes
 
 - ~~**[back]** Correo por SES (2ª etapa)~~ — hecho (2026-09-17): [`nomina_correo_ses.md`](nomina_correo_ses.md); `/payroll/mail` y `create_mail_draft_with_attachment` retirados.
-- **[front]** Pantallas de carga por periodo, reemplazar/eliminar, notificar (+ mostrar `notified: false` por empleado) y lado empleado; link de WhatsApp (3ª etapa) armado en el front.
+- ~~**[front]** Pantallas de carga por periodo, reemplazar/eliminar, notificar (+ mostrar `notified: false` por empleado) y lado empleado; link de WhatsApp (3ª etapa) armado en el front.~~ — hecho (`P-032`/`P-037`, front, 2026-10-12; ver Notas posteriores).
+- **[RH]** Formato en que llegan los archivos del proveedor (`P-136`).
+
+## Notas posteriores
+
+- **2026-10-12** (front, `P-032`/`P-037`): pantallas hechas. RH tiene la pantalla **Nómina** (`/dashboard/rrhh/nomina`) con carga masiva: cada XML pasa por `POST /payroll/files/extract` para sugerir el empleado, el PDF se empareja con su XML por nombre y se sube un archivo por request. También reemplazar, eliminar, notificar, "Notificar a todos" y el link de WhatsApp. El empleado tiene **Mi nómina** con la bandeja de avisos. El canal `email` está oculto hasta `P-036`. **Pregunta abierta para RH** (`P-136`): la carga supone un PDF y un XML por empleado; si el proveedor manda un solo PDF con todos los recibos, no lo cubre.
+- **2026-10-13**: la descarga del empleado (`POST /common/payroll/employee/file`) ahora valida que las llaves sean del índice del `emp_id`, acepta solo `pdf` o solo `xml` y arma el zip por request → [`nomina_descarga_recibo.md`](nomina_descarga_recibo.md).

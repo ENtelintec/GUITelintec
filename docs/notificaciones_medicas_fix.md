@@ -56,5 +56,10 @@ Dev (2026-09-10; la notificación de prueba se borró y `files/flags_daemons.jso
 
 ## Pendientes
 
-- **[front]** Pintar `alert`/`due_date` en la pantalla de exámenes médicos y dejar de tratar `error` lista como fallo.
+- ~~**[front]** Pintar `alert`/`due_date` en la pantalla de exámenes médicos y dejar de tratar `error` lista como fallo.~~ — hecho (`P-041`, front, 2026-10-12).
+- **[RH]** Revisar los empleados con aptitud `3` capturados como "NO APTO" con el front viejo (`P-135`, ver Notas posteriores).
 - **[back]** Corregir el doble nombre `alergies`/`allergies` en BD — script entregado el 2026-10-12 (`examenes_med_allergies_key.sql`, también corrige el `DEFAULT` de la columna) → [`rh_calidad_datos_dml.md`](rh_calidad_datos_dml.md); falta correrlo en las 3 BDs y quitar el fallback del lector.
+
+## Notas posteriores
+
+- **2026-10-12** (front, `P-041`): la pantalla de exámenes ya pinta `alert`/`due_date` con contadores y orden por urgencia. De paso, el front **alineó su catálogo de aptitud al del back**: `0` no determinado · `1`/`2`/`3` apto con examen cada 12/6/3 meses · `4` no apto (`MEDICAL_NO_APTO` en `Functions_Aux_RH.py`). Antes el front usaba `1 APTO · 2 APTO CON RESTRICCIONES · 3 NO APTO`, así que **lo capturado con el front viejo como "NO APTO" quedó guardado en `3`** y hoy el back lo lee como apto con examen cada 3 meses, sin alerta. RH debe revisar los empleados con aptitud `3` y cambiar a `4` los que de verdad no son aptos (`P-135`). No hay forma de separar en BD los `3` legítimos de los mal capturados.

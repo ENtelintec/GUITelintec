@@ -606,9 +606,9 @@ def download_nomina_docs(data, data_token):
     if not requested:
         return {"data": None, "msg": "Indica el pdf o el xml del recibo", "error": "pdf y xml vacíos"}, 400
     files_data, error = _load_payroll_index(data["emp_id"], data_token)
-    if files_data is None and error:
-        return {"data": None, "msg": "No se pudo leer el índice de nómina", "error": error}, 400
-    owned = _payroll_index_keys(files_data or {})
+    if files_data is None:
+        return {"data": None, "msg": f"El empleado {data['emp_id']} no tiene registro de nómina", "error": error}, 404
+    owned = _payroll_index_keys(files_data)
     foreign = [key for key in requested if key not in owned]
     if foreign:
         return {

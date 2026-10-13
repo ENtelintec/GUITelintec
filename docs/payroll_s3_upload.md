@@ -44,6 +44,8 @@ Body JSON (`RequestFileForm`): `emp_id`, `pdf`, `xml`, donde `pdf`/`xml` son los
 **keys S3** que devuelve el endpoint de listado (`files_data[year][month][key]`).
 Descarga ambos desde `S3_RH_BUCKET`, los empaqueta en zip y responde `send_file`.
 Si un key viene vacío o falla la descarga, se omite; si no baja ninguno → 400.
+**Contrato vigente desde el 2026-10-13** → [`nomina_descarga_recibo.md`](nomina_descarga_recibo.md)
+(llaves validadas contra el índice del empleado, basta pdf o xml, zip en memoria).
 
 ## Capas tocadas
 

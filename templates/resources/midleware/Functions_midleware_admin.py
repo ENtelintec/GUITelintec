@@ -1268,7 +1268,6 @@ def create_quotation_from_api(data, data_token):
     if errors:
         return {"data": None, "msg": "Datos OCD inválidos", "error": errors}, 400
     data["metadata"].update(ocd_keys)
-    data["metadata"]["codigo"] = (data["metadata"].get("codigo") or "").strip()
     flag, error, id_quotation = create_quotation(data["metadata"], data_token)
     if not flag:
         return {"data": None, "msg": "No se pudo crear la cotización", "error": error}, 400
@@ -1400,8 +1399,8 @@ def _msg_items_counts(counts: dict) -> str:
 
 def update_quoation_from_api(data, data_token):
     # El PUT solo reemplaza las llaves del form: conserva las OCD cuando el payload
-    # no las trae, `codigo` vacío, y las que el form no declara (`status` del create,
-    # `exchange_rate` del análisis de costos). Ver docs/quotation_put_conserva_metadata.md.
+    # no las trae y las que el form no declara (`status` del create, `exchange_rate`
+    # del análisis de costos). Ver docs/quotation_put_conserva_metadata.md.
     flag, error, row = get_quotation_metadata(data["id"], data_token)
     if not flag:
         return {"data": None, "msg": "No se pudo leer la cotización", "error": error}, 400
@@ -1416,7 +1415,6 @@ def update_quoation_from_api(data, data_token):
     if errors:
         return {"data": None, "msg": "Datos OCD inválidos", "error": errors}, 400
     data["metadata"].update(ocd_keys)
-    data["metadata"]["codigo"] = (data["metadata"].get("codigo") or "").strip() or existing_meta.get("codigo") or ""
     for key, value in existing_meta.items():
         data["metadata"].setdefault(key, value)
     flag, error, result = update_quotation(data["id"], data["metadata"], data_token)

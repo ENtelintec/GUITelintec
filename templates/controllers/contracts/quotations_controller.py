@@ -279,7 +279,6 @@ def get_quotation_data_display(data_token, id_quotation=None):
             "SELECT id, "
             "metadata->'$.company', "
             "metadata->'$.quotation_code', "
-            "metadata->'$.codigo', "
             "creation "
             "FROM sql_telintec_mod_admin.quotations"
         )
@@ -291,7 +290,6 @@ def get_quotation_data_display(data_token, id_quotation=None):
         "SELECT id, "
         "metadata->'$.company', "
         "metadata->'$.quotation_code', "
-        "metadata->'$.codigo', "
         "creation "
         "FROM sql_telintec_mod_admin.quotations "
         "WHERE id = %s"
