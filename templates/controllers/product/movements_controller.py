@@ -185,7 +185,10 @@ def get_outs_db_detail(data_token):
     return flag, error, result
 
 
-def get_all_movements_db_detail(data_token, type_m="all"):
+def get_all_movements_db_detail(data_token, type_m="all", date_from=None, date_to=None):
+    """Detalle para PDF/Excel del principal. `date_from`/`date_to` (datetime,
+    inclusivos) acotan en SQL con predicados sobre la columna, no sobre
+    DATE(): así usan `idx_movement_date` (docs/almacen_kardex_ventana.md)."""
     type_m = type_m if type_m in ["entrada", "salida"] else "%"
     sql = (
         "SELECT "
@@ -205,11 +208,27 @@ def get_all_movements_db_detail(data_token, type_m="all"):
         "INNER JOIN sql_telintec.products_amc ON sql_telintec.product_movements_amc.id_product = sql_telintec.products_amc.id_product "
         "LEFT JOIN sql_telintec.suppliers_amc ON sql_telintec.products_amc.id_supplier = sql_telintec.suppliers_amc.id_supplier "
         "WHERE sql_telintec.product_movements_amc.movement_type like %s "
-        "AND sql_telintec.product_movements_amc.id_warehouse IS NULL ORDER BY movement_date DESC;"
+        "AND sql_telintec.product_movements_amc.id_warehouse IS NULL "
+        + _date_range_sql("sql_telintec.product_movements_amc.movement_date", date_from, date_to)
+        + "ORDER BY movement_date DESC;"
     )
-    vals = (type_m,)
+    vals = (type_m, *_date_range_vals(date_from, date_to))
     flag, error, result = execute_sql(sql, vals, 2, data_token)
     return flag, error, result
+
+
+def _date_range_sql(column: str, date_from, date_to) -> str:
+    """Fragmento `AND col >= %s AND col <= %s` solo con las cotas que vengan."""
+    sql = ""
+    if date_from is not None:
+        sql += f"AND {column} >= %s "
+    if date_to is not None:
+        sql += f"AND {column} <= %s "
+    return sql
+
+
+def _date_range_vals(date_from, date_to) -> tuple:
+    return tuple(v for v in (date_from, date_to) if v is not None)
 
 
 def get_movements_type_db(type_m: str, data_token):
@@ -291,7 +310,8 @@ def get_epp_movements_db(type_m, data_token):
     return flag, error, result
 
 
-def get_epp_movements_db_detail(type_m, data_token):
+def get_epp_movements_db_detail(type_m, data_token, date_from=None, date_to=None):
+    """Igual que `get_all_movements_db_detail` pero solo productos EPP."""
     type_m = type_m if type_m in ["entrada", "salida"] else "%"
     sql = (
         "SELECT "
@@ -312,10 +332,40 @@ def get_epp_movements_db_detail(type_m, data_token):
         "LEFT JOIN sql_telintec.suppliers_amc ON sql_telintec.products_amc.id_supplier = sql_telintec.suppliers_amc.id_supplier "
         "WHERE sql_telintec.product_movements_amc.movement_type like %s AND sql_telintec.products_amc.extra_info->>'$.epp' = 1 "
         "AND sql_telintec.product_movements_amc.id_warehouse IS NULL "
-        "ORDER BY movement_date DESC;"
+        + _date_range_sql("sql_telintec.product_movements_amc.movement_date", date_from, date_to)
+        + "ORDER BY movement_date DESC;"
     )
-    vals = (type_m,)
+    vals = (type_m, *_date_range_vals(date_from, date_to))
     flag, error, result = execute_sql(sql, vals, 2, data_token)
+    return flag, error, result
+
+
+def get_kardex_main_db(type_like, date_from, date_to_exclusive, limit, data_token, epp=False):
+    """Kardex del principal (`id_warehouse IS NULL`) acotado por fecha y
+    tope de filas, más recientes primero (docs/almacen_kardex_ventana.md).
+    `type_like`: 'entrada' | 'salida' | '%'. `date_from` datetime inclusivo
+    (siempre viene: el midleware resuelve la ventana por defecto),
+    `date_to_exclusive` datetime o None. Los predicados van sobre la columna
+    (nunca DATE()) para usar el índice (id_warehouse, movement_date).
+    `epp`: solo productos con `extra_info.epp = 1`. type_sql=2."""
+    sql = (
+        "SELECT m.id_movement, m.id_product, m.movement_type, m.quantity, m.movement_date, m.sm_id, "
+        "m.extra_info->'$.reference', p.sku, s.name, p.codes, p.name "
+        "FROM sql_telintec.product_movements_amc m "
+        "LEFT JOIN sql_telintec.products_amc p ON p.id_product = m.id_product "
+        "LEFT JOIN sql_telintec.suppliers_amc s ON s.id_supplier = p.id_supplier "
+        "WHERE m.id_warehouse IS NULL AND m.movement_type LIKE %s "
+        "AND m.movement_date >= %s "
+    )
+    vals: list = [type_like, date_from]
+    if date_to_exclusive is not None:
+        sql += "AND m.movement_date < %s "
+        vals.append(date_to_exclusive)
+    if epp:
+        sql += "AND p.extra_info->>'$.epp' = 1 "
+    sql += "ORDER BY m.movement_date DESC, m.id_movement DESC LIMIT %s"
+    vals.append(int(limit))
+    flag, error, result = execute_sql(sql, tuple(vals), 2, data_token)
     return flag, error, result
 
 

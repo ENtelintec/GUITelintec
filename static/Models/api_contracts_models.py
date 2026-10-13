@@ -35,7 +35,10 @@ metadata_quotation_model = api.model(
         "quotation_code": fields.String(
             required=True, description="The quotation code"
         ),
-        "codigo": fields.String(required=True, description="The quotation codigo"),
+        "codigo": fields.String(
+            required=False,
+            description="Código interno opcional (el back no lo lee). Ausente o vacío en un PUT conserva el valor guardado",
+        ),
         "company": fields.String(required=True, description="The quotation company"),
         "user": fields.String(required=True, description="The quotation user"),
         "phone": fields.String(required=True, description="The quotation phone number"),
@@ -422,7 +425,8 @@ class MetadataQuotationForm(Form):
         "limit_date", validators=[InputRequired()], filters=[date_filter]
     )
     quotation_code = StringField("quotation_code", validators=[InputRequired()])
-    codigo = StringField("codigo", validators=[InputRequired()])
+    # Opcional (docs/quotation_put_conserva_metadata.md): ninguna lógica ni PDF lo lee.
+    codigo = StringField("codigo", validators=[], default="")
     company = StringField("company", validators=[InputRequired()])
     user = StringField("user", validators=[InputRequired()])
     phone = StringField("phone", validators=[InputRequired()])

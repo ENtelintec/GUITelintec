@@ -56,7 +56,7 @@ class DownloadFilesPayroll(Resource):
         data_out, code = download_nomina_docs(data, data_token)
         if code != 200:
             return data_out, code
-        return send_file(data_out, as_attachment=True) # pyrefly: ignore
+        return send_file(data_out, mimetype="application/zip", as_attachment=True, download_name="docs.zip") # pyrefly: ignore
 
 
 @ns.route("/vacations/events")

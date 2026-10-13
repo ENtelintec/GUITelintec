@@ -4,10 +4,10 @@ from datetime import timedelta
 __author__ = "Edisson Naula"
 __date__ = "$ 28/jun./2024  at 16:28 $"
 
+import io
 import json
 import os
 import re
-import tempfile
 import uuid
 import zipfile
 from datetime import datetime
@@ -20,7 +20,6 @@ from botocore.exceptions import BotoCoreError, ClientError, NoCredentialsError
 from static.constants import (
     cache_file_emp_fichaje,
     cache_file_resume_fichaje_path,
-    file_temp_zip,
     filepath_fichaje_temp,
     filepath_settings,
     format_date,
@@ -581,32 +580,58 @@ def update_data_docs_nomina(data_token, patterns=None, use_index=False):
     return results
 
 
+def _payroll_index_keys(files_data) -> set:
+    """Todas las keys S3 (hojas str) del indice files_data de un empleado."""
+    keys, stack = set(), [files_data]
+    while stack:
+        node = stack.pop()
+        if isinstance(node, dict):
+            stack.extend(node.values())
+        elif isinstance(node, str) and node:
+            keys.add(node)
+    return keys
+
+
 def download_nomina_docs(data, data_token):
-    """Descarga el pdf y xml de nomina desde el bucket S3 de RH (data['pdf'] y
-    data['xml'] son keys S3, ej. payroll/<year>/<month>/<emp_id>/<filename>) y
-    los empaqueta en un zip. Migrado desde SharePoint."""
+    """POST /common/payroll/employee/file: zip en memoria con el pdf y/o el xml
+    de un recibo (keys S3, ej. payroll/<year>/<month>/<emp_id>/<filename>).
+    Basta uno de los dos. Cada key debe estar en el indice del `emp_id` pedido:
+    el token solo prueba que quien pide es ese empleado o RH, no que la key sea
+    suya. -> (BytesIO, 200) | (envelope, 4xx). Ver docs/nomina_descarga_recibo.md."""
+    requested = []
+    for key in (data.get("pdf"), data.get("xml")):
+        key = (key or "").strip()
+        if key and key not in requested:
+            requested.append(key)
+    if not requested:
+        return {"data": None, "msg": "Indica el pdf o el xml del recibo", "error": "pdf y xml vacíos"}, 400
+    files_data, error = _load_payroll_index(data["emp_id"], data_token)
+    if files_data is None and error:
+        return {"data": None, "msg": "No se pudo leer el índice de nómina", "error": error}, 400
+    owned = _payroll_index_keys(files_data or {})
+    foreign = [key for key in requested if key not in owned]
+    if foreign:
+        return {
+            "data": None,
+            "msg": "El archivo no está entre los recibos del empleado (pudo haberse reemplazado o eliminado)",
+            "error": foreign,
+        }, 404
     bucket_name = secrets.get("S3_RH_BUCKET")
     s3_client = boto3.client("s3")
-    tmp_dir = tempfile.mkdtemp()
-    downloaded = []
-    for key in [data.get("pdf"), data.get("xml")]:
-        if not key:
-            continue
-        local_path = os.path.join(tmp_dir, os.path.basename(key))
-        try:
-            s3_client.download_file(Bucket=str(bucket_name), Key=key, Filename=local_path)
-            downloaded.append(local_path)
-        except (NoCredentialsError, ClientError, FileNotFoundError) as e:
-            print(f"Error al descargar nomina desde S3 (key {key}): {e}")
-            continue
-    if len(downloaded) == 0:
+    buffer = io.BytesIO()
+    written = 0
+    with zipfile.ZipFile(buffer, "w") as zipf:
+        for key in requested:
+            try:
+                obj = s3_client.get_object(Bucket=str(bucket_name), Key=key)
+                zipf.writestr(os.path.basename(key), obj["Body"].read())
+                written += 1
+            except (NoCredentialsError, ClientError, BotoCoreError) as e:
+                print(f"Error al descargar nomina desde S3 (key {key}): {e}")
+    if written == 0:
         return {"data": None, "msg": "No se pudieron descargar los archivos de nómina", "error": "Ningún archivo descargado desde S3"}, 400
-    with zipfile.ZipFile(file_temp_zip, "w") as zipf:
-        for path in downloaded:
-            zipf.write(path, arcname=os.path.basename(path))
-    if not os.path.exists(file_temp_zip):
-        return {"data": None, "msg": "Error al generar el archivo ZIP de nómina", "error": "El archivo ZIP no fue creado"}, 400
-    return file_temp_zip, 200
+    buffer.seek(0)
+    return buffer, 200
 
 
 def get_files_list_nomina_RH(emp_id, data_token):

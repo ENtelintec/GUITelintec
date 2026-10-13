@@ -63,6 +63,7 @@ from templates.resources.midleware.MD_Multisede import (
     get_warehouse_api,
     update_warehouse_api,
 )
+from templates.resources.midleware.MD_Kardex import get_kardex_api
 from templates.resources.midleware.Functions_midleware_almacen import (
     create_file_inventory_excel,
     create_file_inventory_pdf,
@@ -102,8 +103,56 @@ def _invalid_structure(errors):
     return {"data": None, "msg": "Estructura de datos invalida", "error": errors}, 400
 
 
+_KARDEX_PARAMS = {
+    "type_m": "entrada | salida | all (default all)",
+    "date_from": "YYYY-MM-DD inclusivo; sin él: últimos 3 meses (desde date_to o desde hoy)",
+    "date_to": "YYYY-MM-DD inclusivo; sin él: sin cota superior",
+    "limit": "Tope de filas (máx y default 5000, más recientes primero); meta.truncated avisa el recorte",
+}
+
+
+def _kardex_params():
+    return {
+        "type_m": request.args.get("type_m"),
+        "date_from": request.args.get("date_from"),
+        "date_to": request.args.get("date_to"),
+        "limit": request.args.get("limit"),
+    }
+
+
+# Kardex acotado por fecha (docs/almacen_kardex_ventana.md). Sustituye a
+# GET /movements/<type_m> y /movements/epp/<type_m>, que traen todo el
+# histórico y quedan deprecados hasta que el front migre (P-126).
+@ns.route("/kardex")
+class KardexMain(Resource):
+    @ns.doc(params=_KARDEX_PARAMS)
+    @ns.expect(expected_headers_per)
+    def get(self):
+        flag, data_token, msg = token_verification_procedure(request, department="almacen")
+        if not flag:
+            return {"data": None, "msg": None, "error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        params = _kardex_params()
+        data_out, code = get_kardex_api(params["type_m"], params, data_token)
+        return data_out, code
+
+
+@ns.route("/kardex/epp")
+class KardexEpp(Resource):
+    @ns.doc(params=_KARDEX_PARAMS)
+    @ns.expect(expected_headers_per)
+    def get(self):
+        flag, data_token, msg = token_verification_procedure(request, department="epp")
+        if not flag:
+            return {"data": None, "msg": None, "error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        params = _kardex_params()
+        data_out, code = get_kardex_api(params["type_m"], params, data_token, epp=True)
+        return data_out, code
+
+
 @ns.route("/movements/<string:type_m>")
 class GetMovements(Resource):
+    @ns.deprecated
+    @ns.doc(description="Deprecado: trae todo el histórico. Usar GET /kardex (ventana por fecha).")
     @ns.expect(expected_headers_per)
     def get(self, type_m):
         flag, data_token, msg = token_verification_procedure(request, department="almacen")
@@ -598,6 +647,8 @@ class InventoryEpp(Resource):
 
 @ns.route("/movements/epp/<string:type_m>")
 class GetMovementsEpp(Resource):
+    @ns.deprecated
+    @ns.doc(description="Deprecado: trae todo el histórico. Usar GET /kardex/epp (ventana por fecha).")
     @ns.expect(expected_headers_per)
     def get(self, type_m):
         flag, data_token, msg = token_verification_procedure(request, department="epp")

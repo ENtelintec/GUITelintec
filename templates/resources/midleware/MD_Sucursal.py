@@ -47,6 +47,7 @@ from templates.controllers.product.warehouses_controller import (
 )
 from templates.Functions_Utils import create_notification_permission
 from templates.misc.Functions_Files import write_log_file
+from templates.resources.midleware.MD_Kardex import kardex_meta, resolve_kardex_window
 from templates.resources.midleware.MD_Multisede import (
     WH_TRANSFER_STATUS,
     _append_history,
@@ -60,8 +61,7 @@ from templates.resources.midleware.MD_Multisede import (
 )
 
 _MOVEMENT_TYPES = ("entrada", "salida")
-_MOVEMENTS_DEFAULT_LIMIT = 500
-_MOVEMENTS_MAX_LIMIT = 5000
+_SEDE_PRODUCT_FIELDS = ("sku", "name", "udm")
 
 
 # --- Helpers -----------------------------------------------------------------
@@ -258,28 +258,39 @@ def get_main_inventory_api(params, data_token):
 
 # --- Kardex de la sede ---------------------------------------------------------
 def get_sede_movements_api(type_m, params, data_token):
-    """GET /sucursal/movements/<type_m>?id_warehouse=&date_from=&date_to=&limit=."""
+    """GET /sucursal/movements/<type_m>?id_warehouse=&date_from=&date_to=&limit=.
+    Ventana por defecto y `meta` compartidas con el kardex del principal
+    (MD_Kardex, docs/almacen_kardex_ventana.md); el producto va una sola vez
+    por id en `data.products` y no en cada movimiento."""
     sede, err, code = _resolve_warehouse(data_token, params.get("id_warehouse"), read_only=True)
     if sede is None:
         return err, code
     type_like = type_m if type_m in _MOVEMENT_TYPES else "%"
-    date_from = (params.get("date_from") or "").strip() or None
-    date_to = (params.get("date_to") or "").strip() or None
-    try:
-        limit = int(params.get("limit") or _MOVEMENTS_DEFAULT_LIMIT)
-    except (TypeError, ValueError):
-        return {"data": None, "msg": f"limit inválido: {params.get('limit')}", "error": None}, 400
-    limit = max(1, min(limit, _MOVEMENTS_MAX_LIMIT))
+    window, err = resolve_kardex_window(params)
+    if window is None:
+        return {"data": None, "msg": err, "error": None}, 400
     flag, error, rows = get_warehouse_movements_db(
-        sede["id_warehouse"], type_like, date_from, date_to, limit, data_token
+        sede["id_warehouse"], type_like, window.sql_from, window.sql_to_exclusive, window.limit + 1, data_token
     )
     if not flag:
         return {"data": None, "msg": "Error al consultar los movimientos de la sede", "error": error}, 400
-    rows = rows if isinstance(rows, list) else []
-    data_out = [_row_to_movement(r) for r in rows]
+    rows, meta = kardex_meta(window, rows if isinstance(rows, list) else [])
+    movements = []
+    products: dict = {}
+    for r in rows:
+        movement = _row_to_movement(r)
+        product = {field: movement.pop(field) for field in _SEDE_PRODUCT_FIELDS}
+        products.setdefault(movement["id_product"], product)
+        movements.append(movement)
     return {
-        "data": {"warehouse": {"id_warehouse": sede["id_warehouse"], "name": sede["name"]}, "movements": data_out},
-        "msg": f"{len(data_out)} movimientos",
+        "data": {
+            "warehouse": {"id_warehouse": sede["id_warehouse"], "name": sede["name"]},
+            "movements": movements,
+            "products": products,
+        },
+        "meta": meta,
+        "msg": f"{len(movements)} movimientos del {meta['date_from']} al {meta['date_to'] or 'hoy'}"
+        + (" (recortado al tope)" if meta["truncated"] else ""),
         "error": None,
     }, 200
 

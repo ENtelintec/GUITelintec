@@ -102,3 +102,7 @@ Dev (2026-09-08, 46 checks, datos de la sede 2 borrados al final; stock y kardex
 
 - **[front]** Pantallas de la sede (S3): inventario (`only_with_stock` + buscador, columna del principal) y movimientos (kardex + alta/edición/borrado con `stock_before/after`).
 - ~~**[back]** F3 traslados~~ — hecha (2026-09-10) → [`almacen_multisede_f3.md`](almacen_multisede_f3.md). F4 exports y dashboard de sede solo si sobra.
+
+## Notas posteriores
+
+- **2026-10-12** — `GET /movements/<type_m>` cambió de forma y de default ([`almacen_kardex_ventana.md`](almacen_kardex_ventana.md)): sin `date_from` devuelve los **últimos 3 meses** (antes: todo con tope 500), `limit` máx y default 5,000 con `meta.truncated`, y cada movimiento **ya no trae** `sku`/`name`/`udm`: van una vez por producto en `data.products[id_product]`. Se agrega la llave `meta` al envelope. El ejemplo de arriba queda superado por el de ese doc. Sin front de sede todavía, no rompe a nadie.

@@ -99,9 +99,9 @@ class SedeMovements(Resource):
         params={
             "type_m": "entrada | salida | all",
             "id_warehouse": "Sede (opcional si el permiso es de una sola sede)",
-            "date_from": "YYYY-MM-DD inclusivo",
-            "date_to": "YYYY-MM-DD inclusivo",
-            "limit": "Tope de filas (default 500, máx 5000)",
+            "date_from": "YYYY-MM-DD inclusivo; sin él: últimos 3 meses (desde date_to o desde hoy)",
+            "date_to": "YYYY-MM-DD inclusivo; sin él: sin cota superior",
+            "limit": "Tope de filas (máx y default 5000, más recientes primero); meta.truncated avisa el recorte",
         }
     )
     @ns.expect(expected_headers_per)
