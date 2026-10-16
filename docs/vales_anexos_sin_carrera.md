@@ -66,3 +66,7 @@ Contra BD dev (2026-10-12), [`Tests/tester_voucher_files_epp_tools.py`](../Tests
 
 - **[front]** Manejar **409** (repetir) y **404** en los anexos de EPP/herramientas; nombrar `<id>-<archivo>` (ya lo hace).
 - **[back]** Descarga de anexos de EPP/herramientas: hoy solo existe `POST /voucher/vehicle/attachment/download`; si el front la pide, es `load_voucher(kind)` + S3 (10 líneas).
+
+## Notas posteriores
+
+- **2026-10-16** ([`vales_anexos_descarga_borrado.md`](vales_anexos_descarga_borrado.md)): el `PUT` de vales EPP/herramientas reescribía `extra_info` con `{}` y borraba los anexos (reporte del front); corregido, y el history del `PUT` también pasa a `JSON_ARRAY_APPEND`. Descarga y borrado individual de anexos para los 3 tipos sobre este mismo helper (`download_voucher_file`, `delete_voucher_file`). El pendiente **[back]** de descarga de arriba queda cerrado.

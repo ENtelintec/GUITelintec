@@ -426,16 +426,18 @@ def get_rrhh_summary_api(month_raw, data_token):
     if employees is None:
         return {"data": None, "msg": "No se pudieron leer los empleados", "error": error}, 400
 
+    # `error` = lista de {key, msg}: `key` es la llave de `data` que viene null
+    # (el front la traduce a su nombre de tile); `msg` es el texto del fallo.
     errors = []
     medical, err = _medical_block(today, data_token)
     if err:
-        errors.append(err)
+        errors.append({"key": "medical_expiring", "msg": err})
     vacations, err = _vacations_block(today, data_token)
     if err:
-        errors.append(err)
+        errors.append({"key": "vacations", "msg": err})
     quizzes, err = _quizzes_block(date_from, date_to, data_token)
     if err:
-        errors.append(err)
+        errors.append({"key": "quizzes", "msg": err})
 
     headcount = _headcount_block(employees)
     movements = _movements_block(employees, date_from, date_to)

@@ -47,7 +47,12 @@ from templates.forms.VehicleChecklistPDF import (
     FileVehicleChecklistPhotosPDF,
 )
 from templates.Functions_Utils import create_notification_permission_notGUI
-from templates.resources.methods.Functions_Aux_Vouchers import attach_voucher_file, load_voucher
+from templates.resources.methods.Functions_Aux_Vouchers import (
+    attach_voucher_file,
+    delete_voucher_file,
+    download_voucher_file,
+    load_voucher,
+)
 from templates.misc.Functions_Files import write_log_file
 
 __author__ = "Edisson Naula"
@@ -126,18 +131,18 @@ def create_voucher_tools_api(data, data_token):
 
 
 def update_voucher_tools_api(data, data_token):
+    """PUT /voucher/tools. La cabecera no toca `extra_info` (los anexos
+    sobreviven) y el history crece en BD con JSON_ARRAY_APPEND: el `history`
+    del body se ignora (reescribirlo pisaba entradas; docs/vales_anexos_descarga_borrado.md)."""
     time_zone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
-    history = data["history"]
-    history.append(
-        {
-            "id_voucher": data["id_voucher_general"],
-            "type": 0,
-            "timestamp": timestamp,
-            "user": data_token.get("emp_id"),
-            "comment": "Voucher tools actualizado",
-        }
-    )
+    history_entry = {
+        "id_voucher": data["id_voucher_general"],
+        "type": 0,
+        "timestamp": timestamp,
+        "user": data_token.get("emp_id"),
+        "comment": "Voucher tools actualizado",
+    }
     flag, error, rows_updated = update_voucher_tools(
         data["id_voucher_general"],
         data["position"],
@@ -156,8 +161,8 @@ def update_voucher_tools_api(data, data_token):
             "msg": "No se pudo actualizar el voucher de herramientas",
             "error": error,
         }, 400
-    flag, error, rows_updated = update_history_voucher(
-        history, data["id_voucher_general"], data_token
+    flag, error, rows_updated = append_history_voucher(
+        data["id_voucher_general"], history_entry, data_token
     )
     if not flag:
         return {
@@ -312,18 +317,17 @@ def create_voucher_safety_api(data, data_token):
 
 
 def update_voucher_safety_api(data, data_token):
+    """PUT /voucher/safety. Misma regla que update_voucher_tools_api: la
+    cabecera no toca `extra_info` y el history crece en BD (el del body se ignora)."""
     time_zone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
-    history = data["history"]
-    history.append(
-        {
-            "id_voucher": data["id_voucher_general"],
-            "type": 1,
-            "timestamp": timestamp,
-            "user": data_token.get("emp_id"),
-            "comment": "Voucher safety actualizado",
-        }
-    )
+    history_entry = {
+        "id_voucher": data["id_voucher_general"],
+        "type": 1,
+        "timestamp": timestamp,
+        "user": data_token.get("emp_id"),
+        "comment": "Voucher safety actualizado",
+    }
     flag, error, rows_changed = update_voucher_safety(
         data["id_voucher_general"],
         data["epp_emp"],
@@ -340,8 +344,8 @@ def update_voucher_safety_api(data, data_token):
             "msg": "No se pudo actualizar el voucher de seguridad",
             "error": error,
         }, 400
-    flag, error, rows_updated = update_history_voucher(
-        history, data["id_voucher_general"], data_token
+    flag, error, rows_updated = append_history_voucher(
+        data["id_voucher_general"], history_entry, data_token
     )
     if not flag:
         return {
@@ -953,52 +957,14 @@ def create_voucher_vehicle_attachment_api(data, data_token):
 
 
 def download_voucher_vehicle_attachment_api(data, data_token):
-    # Sin ventana de fecha (antes solo encontraba vouchers de los ultimos 365 dias).
-    payload_error, code, head = load_voucher("vehicle", data.get("id_voucher"), data_token)
-    if payload_error is not None:
-        return payload_error, code
-    files = head["files"]  # pyrefly: ignore
-    name_file = data["filename"]
-    flag_found = False
-    path_aws = ""
-    for file in files:
-        if file["filename"] == name_file:
-            flag_found = True
-            path_aws = file["path"]
-            break
-    if not flag_found:
-        return {"data": None, "msg": "Archivo no encontrado en el voucher", "error": None}, 400
-    s3_client = boto3.client("s3")
-    bucket_name = secrets.get("S3_CH_BUCKET")
-    try:
-        s3_client.download_file(Bucket=str(bucket_name), Key=path_aws, Filename=data["filepath"])
-    except FileNotFoundError:
-        return {"data": None, "msg": "Archivo local no encontrado", "error": None}, 400
-    except NoCredentialsError:
-        return {"data": None, "msg": "Credenciales AWS no encontradas", "error": None}, 400
-    except ClientError as e:
-        error_code = e.response["Error"]["Code"]
-        if error_code == "NoSuchBucket":
-            return {"data": None, "msg": f"Bucket no existe: {bucket_name}", "error": str(e)}, 400
-        elif error_code == "AccessDenied":
-            return {
-                "data": None,
-                "msg": f"Acceso denegado al bucket: {bucket_name}",
-                "error": str(e),
-            }, 400
-        elif error_code == "NoSuchKey":
-            return {
-                "data": None,
-                "msg": f"Archivo no encontrado en S3: {path_aws}",
-                "error": str(e),
-            }, 400
-        else:
-            return {
-                "data": None,
-                "msg": f"Error al descargar archivo: {str(e)}",
-                "error": str(e),
-            }, 400
-    return {"path": data["filepath"]}, 200
+    """{"id_voucher", "filename", "filepath"} -> ({"path"}, 200) | (envelope, 4xx).
+    Receta compartida (docs/vales_anexos_descarga_borrado.md)."""
+    return download_voucher_file("vehicle", data, data_token)
+
+
+def delete_voucher_vehicle_attachment_api(data, data_token):
+    """DELETE /voucher/vehicle/attachment-<id>: {"id_voucher", "filename", "reason"?}."""
+    return delete_voucher_file("vehicle", data, data_token)
 
 
 def _chv_json_field(value, default):

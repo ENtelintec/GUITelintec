@@ -23,7 +23,7 @@
 
 ## Contrato mínimo para el front
 
-- **Auth**: header `Authorization` con el **JWT crudo** (sin `Bearer`). Permiso `rrhh` (o `administrator`). Base `/GUI/api/v1/dashboard`. Envelope `{data, msg, error}`; `401` token/permiso, `400` validación. En `summary`, `error` es `null` o una **lista** de tiles que no se pudieron calcular (el resto de `data` llega igual y ese tile viene `null`).
+- **Auth**: header `Authorization` con el **JWT crudo** (sin `Bearer`). Permiso `rrhh` (o `administrator`). Base `/GUI/api/v1/dashboard`. Envelope `{data, msg, error}`; `401` token/permiso, `400` validación. En `summary`, `error` es `null` o una **lista de `{key, msg}`** (desde 2026-10-16): `key` es la llave de `data` que no se pudo calcular (`medical_expiring` | `vacations` | `quizzes`, viene `null`) y `msg` el texto del fallo; el resto de `data` llega igual.
 - Todo agregado trae **ids** (y `items` con nombre) para que el click del tile lleve a la lista filtrada sin otra llamada. Los `items` van ordenados como conviene pintarlos (urgencia, día, días pendientes).
 
 ### `GET /rrhh/summary[?month=YYYY-MM]`
@@ -101,3 +101,7 @@ Dev (2026-09-10, **98 checks** de midleware + **10 por HTTP** con el test client
 - **[front]** Pantalla del dashboard (S4 del plan): tiles clicables a la lista filtrada + 2 gráficas de `series`.
 - **[admin/RH]** Limpiar los 11 activos con fecha de baja arrastrada y los inactivos sin fecha de baja (`data_quality`); capturar `dates` en vacaciones para que `next_30_days` tenga datos. La parte mecánica (`status` NULL, `puesto` `'None'`) y el listado para RH están en [`rh_calidad_datos_dml.md`](rh_calidad_datos_dml.md) (2026-10-12).
 - ~~**[back]** `fetch_medicals` nunca emitía avisos de vencimiento (aptitud entera vs `"APTO 1"`), ni el daemon~~ — corregido el mismo día → [`notificaciones_medicas_fix.md`](notificaciones_medicas_fix.md).
+
+## Notas posteriores
+
+- **2026-10-16** (dudas del front tras `P-043`): `error` del summary pasa de lista de textos a lista de `{"key": "<llave de data>", "msg": "<texto>"}` (`medical_expiring`, `vacations`, `quizzes`) para que el front traduzca la llave al nombre del tile. Las series se piden con el rango que arma el navegador y el summary usa `America/Mexico_City`: solo pueden diferir el día del cambio de mes, se acepta así. Verificado vs dev (`Tests/tester_front_fixes_2026_10_16.py`).

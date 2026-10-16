@@ -35,10 +35,12 @@ from static.Models.api_models import expected_headers_per
 from static.Models.api_multisede_models import (
     TransferCancelForm,
     TransferPostForm,
+    TransferResolveForm,
     WarehousePostForm,
     WarehousePutForm,
     transfer_cancel_model,
     transfer_post_model,
+    transfer_resolve_model,
     warehouse_post_model,
     warehouse_put_model,
 )
@@ -61,6 +63,7 @@ from templates.resources.midleware.MD_Multisede import (
     get_multisede_catalogs_api,
     get_transfer_api,
     get_warehouse_api,
+    resolve_transfer_api,
     update_warehouse_api,
 )
 from templates.resources.midleware.MD_Kardex import get_kardex_api
@@ -401,11 +404,11 @@ class TransferCancel(Resource):
 class Transfers(Resource):
     @ns.doc(
         params={
-            "status": "0 en tránsito · 1 recibido · 2 con diferencias · 3 cancelado",
+            "status": "0 en tránsito · 1 recibido · 2 con diferencias · 3 cancelado · 4 diferencia resuelta",
             "id_warehouse_dest": "Sede destino",
             "date_from": "YYYY-MM-DD inclusivo (creación)",
             "date_to": "YYYY-MM-DD inclusivo (creación)",
-            "limit": "Tope de filas (default 200, máx 2000)",
+            "limit": "Tope de filas (default 200, máx 2000); meta.truncated avisa el recorte",
         }
     )
     @ns.expect(expected_headers_per)
@@ -427,6 +430,23 @@ class TransferDetail(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data_out, code = get_transfer_api(id_transfer, data_token)
+        return data_out, code
+
+
+@ns.route("/transfer/<int:id_transfer>/resolve")
+class TransferResolve(Resource):
+    @ns.expect(expected_headers_per, transfer_resolve_model)
+    def put(self, id_transfer):
+        """Resuelve los faltantes de un traslado RECIBIDO CON DIFERENCIAS (reingreso al
+        principal | merma) y lo deja en DIFERENCIA RESUELTA (docs/almacen_multisede_resolve.md)."""
+        flag, data_token, msg = token_verification_procedure(request, department="almacen")
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        # noinspection PyUnresolvedReferences
+        validator = TransferResolveForm.from_json(ns.payload)  # pyrefly: ignore
+        if not validator.validate():
+            return _invalid_structure(validator.errors)
+        data_out, code = resolve_transfer_api(id_transfer, validator.data, ns.payload, data_token)
         return data_out, code
 
 

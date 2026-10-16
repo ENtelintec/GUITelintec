@@ -94,3 +94,7 @@ Contra BD dev (2026-09-07), lo que no depende del DDL: forms (`migrate_pending` 
 - **[back]** Correr el DDL en test/prod antes del deploy del mes 2 (dev ya, 2026-09-07).
 - **[front]** Constructor visual (S2–S3): listado por versiones, clonar, editor de template, pestaña avanzada de rúbrica, publicar con checkbox de migrar.
 - **[back]** Actualizar la tabla de ciclo de vida de [`quizz_models_crud.md`](quizz_models_crud.md) apunta aquí (hecho: nota al inicio de ese doc).
+
+## Notas posteriores
+
+- **2026-10-16** (reporte del front, `P-143`): `GET /rrhh/task/<emp_id>` enriquece **en lectura** `body.metadata.quizz_name` con `quizz_models.name` del `type_quizz` de cada tarea (cualquier status del modelo; `null` si el modelo ya no existe o la tarea no trae `type_quizz`). Motivo: el empleado no tiene permiso para `GET /rrhh/quizz/models` y el front solo conocía de memoria los tipos 0–4, así que un modelo nuevo del constructor salía como "Quizz-no definido". Nada se guarda en la tarea (`get_quizz_model_names_db` + `_quizz_names_by_type` en `Functions_midleware_RRHH.py`); el resto del body no cambia. Verificado vs dev (`Tests/tester_front_fixes_2026_10_16.py`: 8 tareas reales con el nombre correcto, modelo inexistente → `null`, otro empleado con `common` → 401).

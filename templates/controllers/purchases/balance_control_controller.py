@@ -345,7 +345,8 @@ def delete_balance_control(id_control: int, data_token):
     return flag, e, out
 
 
-# --- Movimientos de saldo (inmutables: solo INSERT / SELECT) --------------------
+# --- Movimientos de saldo (ledger: INSERT / SELECT; el unico UPDATE permitido ---
+# --- corrige movement_date / reason, nunca montos ni fechas de vigencia) --------
 def insert_balance_control_movement(data: dict, data_token):
     """type_sql=4 -> lastrowid."""
     sql = (
@@ -409,6 +410,27 @@ def get_balance_control_movements(id_control: int, data_token):
     if not isinstance(out, (list, tuple)):
         return False, e, []
     return True, None, out
+
+
+def get_balance_control_movement_by_id(id_movement: int, data_token):
+    """Un movimiento por id (tupla en el orden de MOVEMENT_COLUMNS) o None. type_sql=1."""
+    sql = f"{_SELECT_MOV} WHERE id_movement = %s"
+    flag, e, out = execute_sql(sql, (id_movement,), 1, data_token)
+    if not flag:
+        return False, e, None
+    if not isinstance(out, (list, tuple)) or len(out) == 0:
+        return True, None, None
+    return True, None, out
+
+
+def update_balance_control_movement_fields(id_movement: int, movement_date, reason, data_token):
+    """Correccion de captura (PUT /balanceControl/movement): SOLO movement_date y
+    reason. amount / previous_balance / resulting_balance / type / *_end_date son
+    inmutables (una correccion de saldo o vigencia es un movimiento nuevo).
+    type_sql=3 -> rowcount."""
+    sql = f"UPDATE {_TABLE_MOV} SET movement_date = %s, reason = %s WHERE id_movement = %s"
+    flag, e, out = execute_sql(sql, (movement_date, reason, id_movement), 3, data_token)
+    return flag, e, out
 
 
 # --- Remisiones del control (membresia por balance_control_id) -------------------

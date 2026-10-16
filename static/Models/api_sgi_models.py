@@ -347,8 +347,20 @@ vehicle_voucher_download_att_model = api.model(
     {
         "id_voucher": fields.Integer(required=True, description="ID del voucher"),
         "filename": fields.String(
-            required=True, description="Nombre del archivo a descargar (direccion aws)"
+            required=True, description="Nombre del archivo a descargar (files[].filename)"
         ),
+    },
+)
+# Mismo body para los 3 tipos de vale (POST /voucher/<vehicle|epp|tools>/attachment/download).
+voucher_download_att_model = vehicle_voucher_download_att_model
+
+# DELETE /voucher/<vehicle|epp|tools>/attachment-<id>: un anexo por request
+# (docs/vales_anexos_descarga_borrado.md). Las firmas no se borran.
+voucher_attachment_delete_model = api.model(
+    "VoucherAttachmentDelete",
+    {
+        "filename": fields.String(required=True, description="files[].filename del anexo a eliminar"),
+        "reason": fields.String(required=False, description="Motivo; va al history del vale"),
     },
 )
 
@@ -583,6 +595,14 @@ class VehicleVoucherUploadAttachmentForm(Form):
 class VehicleVoucherDownloadAttachmentForm(Form):
     id_voucher = IntegerField("id_voucher", [InputRequired()])
     filename = StringField("filename", [InputRequired()])
+
+
+VoucherDownloadAttachmentForm = VehicleVoucherDownloadAttachmentForm
+
+
+class VoucherAttachmentDeleteForm(Form):
+    filename = StringField("filename", [InputRequired()])
+    reason = StringField("reason", [validators.Optional()], default=None)
 
 
 # =====================================================================

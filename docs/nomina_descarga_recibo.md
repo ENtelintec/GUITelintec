@@ -64,3 +64,7 @@ Contra BD dev (2026-10-13) con S3 simulado (`boto3.client` parcheado; no toca el
 - Dos descargas seguidas: cada zip trae su propio contenido, y `files/docs.zip` ya no se escribe.
 
 `pyrefly`: sin errores nuevos en los archivos tocados.
+
+## Notas posteriores
+
+- **2026-10-16** (prueba del front, recibos históricos): los recibos de la época de SharePoint siguen en `payroll.files_data` pero no están en S3, así que esta descarga responde 400 "No se pudieron descargar los archivos de nómina". **Decisión del usuario: nómina arranca limpia, no se migra nada.** DML `scripts_db_handle/nomina_limpieza_inicio.sql` (`P-141`, lo corre el usuario en dev/test/prod): `files_data = '{}'` para todos los empleados (las filas se conservan para `GET /payroll/update/employees`) y borra los avisos in-app con `payload.kind = 'payroll'`. S3 no se toca. Mientras no corra, el front muestra el aviso ámbar "No encontramos tu recibo… pídeselo a RH".

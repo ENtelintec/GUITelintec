@@ -123,6 +123,15 @@ balance_control_movement_model = api.model(
     },
 )
 
+balance_control_movement_put_model = api.model(
+    "BalanceControlMovementPut",
+    {
+        "id_movement": fields.Integer(required=True, description="ID del movimiento a corregir (su control debe estar activo)", example=12),
+        "movement_date": fields.String(required=False, description="Fecha de autorización corregida YYYY-MM-DD. Al menos uno de movement_date / reason debe venir", example="2026-09-16"),
+        "reason": fields.String(required=False, description="Motivo corregido; \"\" o null lo vacía. amount, type, new_end_date y cualquier otro campo se ignoran (inmutables)", example="Adenda 2 al contrato (corregido)"),
+    },
+)
+
 
 # --- WTForms ------------------------------------------------------------------
 class BalanceControlCustomFieldForm(Form):
@@ -195,3 +204,11 @@ class BalanceControlMovementForm(Form):
     reason = StringField("reason", [], default="")
     document = StringField("document", [], default="")
     expected_balance = FloatField("expected_balance", [], default=None)
+
+
+class BalanceControlMovementPutForm(Form):
+    """Solo movement_date / reason; el midleware decide con el JSON crudo qué llaves
+    vinieron (una llave ausente no cambia nada). Cualquier otra llave se ignora."""
+    id_movement = IntegerField("id_movement", [InputRequired(message="id_movement requerido")])
+    movement_date = StringField("movement_date", [], default="")
+    reason = StringField("reason", [], default="")

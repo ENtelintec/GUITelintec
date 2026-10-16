@@ -151,6 +151,148 @@ def _upload_to_s3(filepath, key):
     return None, 201
 
 
+def _find_file(files: list, filename: str):
+    """Entrada de `files` con ese `filename` (None si no esta)."""
+    for file in files:
+        if isinstance(file, dict) and file.get("filename") == filename:
+            return file
+    return None
+
+
+def is_signature_file(kind: str, filename: str) -> bool:
+    """True si el nombre lleva un marcador de firma del tipo (`firma-aprobado`,
+    `firma-despachado`, `firma-recibido`): esos archivos mueven el status del
+    vale al subirse y no se borran por el endpoint de anexos."""
+    name = (filename or "").lower()
+    return any(marker in name for marker, _status, _label in VOUCHER_FILE_KINDS[kind]["signatures"])
+
+
+def download_voucher_file(kind: str, data: dict, data_token):
+    """
+    Descarga de un anexo a disco: ``data = {"id_voucher", "filename", "filepath"}``.
+    Devuelve ``({"path": filepath}, 200)``; 400 id invalido / S3; 404 vale o
+    archivo inexistente. Sin ventana de fecha (el vehicular antes solo
+    encontraba vouchers de los ultimos 365 dias).
+    """
+    payload_error, code, head = load_voucher(kind, data.get("id_voucher"), data_token)
+    if payload_error is not None:
+        return payload_error, code
+    entry = _find_file(head["files"], data["filename"])  # pyrefly: ignore
+    if entry is None:
+        return {"data": None, "msg": "Archivo no encontrado en el voucher", "error": None}, 404
+    path_aws = entry.get("path")
+    bucket_name = secrets.get("S3_CH_BUCKET")
+    try:
+        boto3.client("s3").download_file(Bucket=str(bucket_name), Key=path_aws, Filename=data["filepath"])
+    except FileNotFoundError:
+        return {"data": None, "msg": "Archivo local no encontrado", "error": None}, 400
+    except NoCredentialsError:
+        return {"data": None, "msg": "Credenciales AWS no encontradas", "error": None}, 400
+    except ClientError as e:
+        error_code = e.response["Error"]["Code"]
+        if error_code == "NoSuchBucket":
+            return {"data": None, "msg": f"Bucket no existe: {bucket_name}", "error": str(e)}, 400
+        if error_code == "AccessDenied":
+            return {"data": None, "msg": f"Acceso denegado al bucket: {bucket_name}", "error": str(e)}, 400
+        if error_code == "NoSuchKey":
+            return {"data": None, "msg": f"Archivo no encontrado en S3: {path_aws}", "error": str(e)}, 400
+        return {"data": None, "msg": f"Error al descargar archivo: {str(e)}", "error": str(e)}, 400
+    return {"path": data["filepath"]}, 200
+
+
+def delete_voucher_file(kind: str, data: dict, data_token):
+    """
+    Borrado de UN anexo: ``data = {"id_voucher", "filename", "reason"?}``.
+    Misma escritura condicional que el alta (`files` + history en una
+    sentencia, hasta FILES_WRITE_ATTEMPTS intentos, 409 si no se logra);
+    MySQL primero y S3 despues (best-effort: la llave lleva el id del vale,
+    asi que no la comparte otro vale). Las firmas no se borran (400): mueven
+    el status al subirse y borrarlas dejaria el vale firmado sin respaldo;
+    para corregir una firma se vuelve a subir con el mismo nombre.
+    200 ``{"data": {"id_voucher", "filename", "path", "s3_deleted", "files"}}``;
+    404 vale o archivo inexistente.
+    """
+    cfg = VOUCHER_FILE_KINDS[kind]
+    filename = data["filename"]
+    payload_error, code, head = load_voucher(kind, data.get("id_voucher"), data_token)
+    if payload_error is not None:
+        return payload_error, code
+    id_voucher = head["id"]  # pyrefly: ignore
+    if is_signature_file(kind, filename):
+        return {
+            "data": None,
+            "msg": (
+                f"El archivo {filename} es una firma y no se puede eliminar "
+                "(para corregirla vuelve a subirla con el mismo nombre)"
+            ),
+            "error": "firma protegida",
+        }, 400
+    reason = (data.get("reason") or "").strip()
+    time_zone = pytz.timezone(timezone_software)
+    timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
+    path_aws = None
+    new_files: list = []
+    for attempt in range(FILES_WRITE_ATTEMPTS):
+        if attempt > 0:
+            files_retry_pause(attempt)
+            payload_error, code, head = load_voucher(kind, id_voucher, data_token)
+            if payload_error is not None:
+                return payload_error, code
+        files = head["files"]  # pyrefly: ignore
+        entry = _find_file(files, filename)
+        if entry is None:
+            return {"data": None, "msg": "Archivo no encontrado en el voucher", "error": None}, 404
+        path_aws = entry.get("path")
+        new_files = [file for file in files if file.get("filename") != filename]
+        history_entry = {
+            "id_voucher": id_voucher,
+            "type": cfg["history_type"],
+            "timestamp": timestamp,
+            "user": data_token.get("emp_id"),
+            "comment": f"Archivo adjunto eliminado: {path_aws}" + (f" ({reason})" if reason else ""),
+        }
+        flag, error, rows_updated = update_voucher_files(
+            kind,
+            id_voucher,
+            history_entry,
+            new_files,
+            data_token,
+            expected_files=files,
+            cancelled_status=cfg["cancelled_status"],
+        )
+        if not flag:
+            return {"data": None, "msg": "No se pudo eliminar el anexo del voucher", "error": error}, 400
+        if rows_updated:
+            break
+    else:
+        return {
+            "data": None,
+            "msg": "La lista de anexos cambió mientras se guardaba (escrituras simultáneas). Vuelve a intentar",
+            "error": "conflicto de escritura en files",
+        }, 409
+    s3_deleted = True
+    bucket_name = secrets.get("S3_CH_BUCKET")
+    try:
+        boto3.client("s3").delete_object(Bucket=str(bucket_name), Key=path_aws)
+    except (NoCredentialsError, ClientError) as e:
+        # El anexo ya no esta en el vale; el objeto huerfano solo ocupa espacio.
+        s3_deleted = False
+        write_log_file(cfg["log_file"], f"No se pudo borrar de S3 {path_aws}: {str(e)}", data_token)
+    msg = f"Archivo adjunto eliminado: {filename} del voucher {id_voucher} por el empleado {data_token.get('name')}"
+    write_log_file(cfg["log_file"], msg, data_token)
+    return {
+        "data": {
+            "id_voucher": id_voucher,
+            "filename": filename,
+            "path": path_aws,
+            "s3_deleted": s3_deleted,
+            "files": new_files,
+        },
+        "msg": msg,
+        "error": None,
+    }, 200
+
+
 def attach_voucher_file(kind: str, data: dict, data_token):
     """
     Alta de un anexo: ``data = {"id_voucher", "filename", "filepath"}``.

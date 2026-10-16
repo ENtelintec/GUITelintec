@@ -91,3 +91,36 @@ class TransferPostForm(Form):
 class TransferCancelForm(Form):
     id_transfer = IntegerField("id_transfer", validators=[InputRequired()])
     reason = StringField("reason", validators=[Optional()], default=None)
+
+
+# --- Resolver diferencias de un traslado (P-047, docs/almacen_multisede_resolve.md).
+# El id va en la ruta (PUT /transfer/<id>/resolve); `items` por ns.payload crudo.
+transfer_resolve_item_model = api.model(
+    "TransferResolveItem",
+    {
+        "id_product": fields.Integer(required=True, description="Producto con faltante (enviado > recibido)", example=1),
+        "action": fields.String(
+            required=True,
+            description="reingreso = entrada al principal por la diferencia · merma = solo registro",
+            example="reingreso",
+        ),
+        "comment": fields.String(required=False, description="Nota del renglón (opcional)"),
+    },
+)
+
+transfer_resolve_model = api.model(
+    "TransferResolve",
+    {
+        "items": fields.List(
+            fields.Nested(transfer_resolve_item_model),
+            required=True,
+            description="Exactamente los productos con diferencia > 0 del traslado (todos, sin extras)",
+        ),
+        "comment": fields.String(required=False, description="Comentario general (va al history)"),
+    },
+)
+
+
+class TransferResolveForm(Form):
+    comment = StringField("comment", validators=[Optional()], default=None)
+    # items: lista cruda validada en resolve_transfer_api

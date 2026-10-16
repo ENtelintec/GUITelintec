@@ -129,10 +129,12 @@ def update_voucher_tools(
     user_state=0,
     superior_state=0,
     storage_state=0,
-    extra_info=None,
 ):
     """
-    Actualiza un registro existente en la tabla voucher_tools.
+    Actualiza la cabecera de un registro existente en la tabla voucher_tools.
+    **No toca `extra_info`**: ahí viven los anexos (`$.files`, los escribe
+    update_voucher_files) y antes este UPDATE la reescribia con '{}' y los
+    borraba (docs/vales_anexos_descarga_borrado.md).
 
     :param id_voucher_general: ID del voucher general.
     :param position: Puesto del usuario que solicita el vale.
@@ -143,16 +145,13 @@ def update_voucher_tools(
     :param user_state: Estado del usuario (default=0).
     :param superior_state: Estado del superior (default=0).
     :param storage_state: Estado del almacenamiento (default=0).
-    :param extra_info: Información extra en formato JSON.
     :return: Estado de la operación (éxito/error)
     """
-    if extra_info is None:
-        extra_info = {}
     sql = (
         "UPDATE sql_telintec_mod_admin.voucher_tools "
         "SET position = %s, type_transaction = %s, "
         "superior = %s, storage_emp = %s, designated_emp = %s, "
-        "user_state = %s, superior_state = %s, storage_state = %s, extra_info = %s "
+        "user_state = %s, superior_state = %s, storage_state = %s "
         "WHERE id_voucher_general = %s"
     )
     val = (
@@ -164,7 +163,6 @@ def update_voucher_tools(
         user_state,
         superior_state,
         storage_state,
-        json.dumps(extra_info),
         id_voucher_general,
     )
     flag, error, rows_changed = execute_sql(sql, val, 3, data_token)
@@ -223,10 +221,10 @@ def update_voucher_safety(
     epp_state=0,
     storage_state=0,
     motive=0,
-    extra_info=None,
 ):
     """
-    Actualiza un registro existente en la tabla voucher_safety.
+    Actualiza la cabecera de un registro existente en la tabla voucher_safety.
+    **No toca `extra_info`** (anexos en `$.files`; ver update_voucher_tools).
 
     :param id_voucher_general: ID del voucher general.
     :param epp_emp: ID del empleado que recibe los elementos de seguridad.
@@ -236,16 +234,13 @@ def update_voucher_safety(
     :param epp_state: Estado de los elementos de seguridad (default=0).
     :param storage_state: Estado del almacenamiento (default=0).
     :param motive: Motivo del vale (default=0).
-    :param extra_info: Información extra en formato JSON.
     :return: Estado de la operación (éxito/error)
     """
-    if extra_info is None:
-        extra_info = {}
     sql = (
         "UPDATE sql_telintec_mod_admin.voucher_safety "
         "SET epp_emp = %s, storage_emp = %s, designated_emp = %s, "
         "user_state = %s, epp_state = %s, storage_state = %s, "
-        "motive = %s, extra_info = %s "
+        "motive = %s "
         "WHERE id_voucher_general = %s"
     )
     val = (
@@ -256,7 +251,6 @@ def update_voucher_safety(
         epp_state,
         storage_state,
         motive,
-        json.dumps(extra_info),
         id_voucher_general,
     )
     flag, error, rows_changed = execute_sql(sql, val, 3, data_token)

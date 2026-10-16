@@ -60,6 +60,7 @@ from templates.controllers.misc.tasks_controller import (
     get_task_by_id_emp,
     update_task,
 )
+from templates.controllers.rrhh.quizz_models_controller import get_quizz_model_names_db
 from templates.controllers.payroll.payroll_controller import (
     get_payrolls,
     update_payroll,
@@ -795,18 +796,49 @@ def get_all_quizzes(data_token):
     return True, "", data_out
 
 
+def _quizz_names_by_type(data_token) -> dict:
+    """{type_q: name} de quizz_models (cualquier status). Vacio si falla la lectura."""
+    flag, _error, rows = get_quizz_model_names_db(data_token)
+    if not flag or not isinstance(rows, list):
+        return {}
+    names = {}
+    for row in rows:
+        try:
+            names[int(row[0])] = row[1]
+        except (TypeError, ValueError):
+            continue
+    return names
+
+
 def get_task_by_id_employee(id_emp: int, data_token):
+    """GET /rrhh/task/<emp_id>. Enriquece `body.metadata.quizz_name` en lectura
+    con el nombre del modelo (`quizz_models.name` por `type_quizz`): el empleado
+    no tiene permiso para el catalogo de modelos y el front solo conocia de
+    memoria los tipos 0-4 (docs/quizz_models_versionado.md, Notas posteriores).
+    `null` si el modelo ya no existe o la tarea no trae type_quizz."""
     flag, error, result = get_task_by_id_emp(id_emp, data_token)
     if not flag:
         return {"data": None, "msg": "Error al obtener las tareas", "error": error}, 400
     if not (isinstance(result, list) or isinstance(result, tuple)):
         return {"data": None, "msg": "Formato de datos inválido", "error": f"no tasks {result}"}, 400
+    names = _quizz_names_by_type(data_token) if result else {}
     data_out = []
     for item in result:
+        body = json.loads(item[1])
+        if isinstance(body, dict):
+            metadata = body.get("metadata")
+            if not isinstance(metadata, dict):
+                metadata = {}
+                body["metadata"] = metadata
+            try:
+                type_q = int(metadata.get("type_quizz"))  # pyrefly: ignore
+            except (TypeError, ValueError):
+                type_q = None
+            metadata["quizz_name"] = names.get(type_q) if type_q is not None else None
         data_out.append(
             {
                 "id": item[0],
-                "body": json.loads(item[1]),
+                "body": body,
                 "data_raw": json.loads(item[2]),
                 "timestamp": item[3].strftime(format_timestamps)
                 if isinstance(item[3], datetime)

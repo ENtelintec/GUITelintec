@@ -24,6 +24,8 @@ Reglas:
     rechaza. Despues solo se mueve con POST /balanceControl/movement (tipo 1
     INYECCION > 0 o 2 AJUSTE != 0, saldo resultante nunca < 0), con bloqueo
     optimista sobre el monto leido (409 si otro movimiento gano la carrera).
+    PUT /balanceControl/movement solo corrige movement_date / reason de un
+    movimiento (captura); monto, tipo y vigencia del ledger son inmutables.
   * custom_fields: [{key, label, value_type, comment}], orden = orden de columnas;
     key unica y sin chocar con columnas/campos del formato. Los VALORES por
     remision viven en activity_reports.extra_info.custom_fields (PUT /remissionBalance).
@@ -53,6 +55,7 @@ from templates.controllers.purchases.balance_control_controller import (
     detach_remission_from_control,
     get_active_balance_control_by_contract,
     get_balance_control_by_id,
+    get_balance_control_movement_by_id,
     get_balance_control_movements,
     get_balance_controls,
     get_customer_name,
@@ -69,6 +72,7 @@ from templates.controllers.purchases.balance_control_controller import (
     update_balance_control_header,
     update_balance_control_amount_optimistic,
     update_balance_control_history,
+    update_balance_control_movement_fields,
 )
 from templates.Functions_Utils import create_notification_permission
 from templates.misc.Functions_Files import write_log_file
@@ -1139,6 +1143,108 @@ def create_balance_movement_from_api(data, data_token):
         "msg": msg,
         "error": None,
     }, 201
+
+
+# --- Correccion de captura: PUT /balanceControl/movement ------------------------------
+_MOVEMENT_EDITABLE = ("movement_date", "reason")
+
+
+@_api_guard
+def update_balance_movement_from_api(data, raw_payload, data_token):
+    """Corrige SOLO movement_date (fecha de autorizacion) y/o reason de un
+    movimiento existente. Nada del saldo ni de la vigencia se toca: amount, type,
+    previous/resulting_balance, *_end_date y cualquier otra llave del body se
+    ignoran. Deja una entrada en history del control con los cambios reales; si
+    nada cambio, responde 200 sin escribir."""
+    now = _now()
+    timestamp = now.strftime(format_timestamps)
+    user = data_token.get("emp_id")
+    raw_payload = raw_payload if isinstance(raw_payload, dict) else {}
+    id_movement = _int_or_none(data.get("id_movement"))
+    if not id_movement:
+        return {"data": None, "msg": "Falta el id del movimiento", "error": "id_movement requerido"}, 400
+    sent = [k for k in _MOVEMENT_EDITABLE if k in raw_payload]
+    if not sent:
+        return {
+            "data": None,
+            "msg": "Nada que corregir: manda movement_date y/o reason",
+            "error": ["se requiere al menos uno de movement_date / reason"],
+        }, 400
+
+    flag, error, row = get_balance_control_movement_by_id(id_movement, data_token)
+    if not flag:
+        return {"data": None, "msg": "Error al consultar el movimiento", "error": error}, 400
+    if row is None:
+        return {"data": None, "msg": f"No existe el movimiento (ID {id_movement})", "error": "Movimiento no encontrado"}, 404
+    current = _movement_to_dict(row)
+    id_control = int(current["id_control"])
+    control, _fmt = _load_control(id_control, data_token)
+    if int(control.get("is_active") or 0) == 0:
+        return {
+            "data": None,
+            "msg": f"El control está cancelado (ID {id_control}); no admite correcciones de movimientos",
+            "error": "Control cancelado",
+        }, 400
+
+    errors = []
+    new_values = {"movement_date": current.get("movement_date"), "reason": current.get("reason")}
+    if "movement_date" in sent:
+        ok, movement_date, err = coerce_value(raw_payload.get("movement_date"), "date")
+        if not ok:
+            errors.append(f"movement_date: {err}")
+        elif not movement_date:
+            errors.append("movement_date no puede quedar vacía (omítela para no cambiarla)")
+        else:
+            new_values["movement_date"] = movement_date
+    if "reason" in sent:
+        raw_reason = raw_payload.get("reason")
+        new_values["reason"] = (str(raw_reason).strip() or None) if raw_reason is not None else None
+    if errors:
+        return {"data": None, "msg": "Corrección inválida", "error": errors}, 400
+
+    changes = _diff(current, new_values, _MOVEMENT_EDITABLE)
+    label = current.get("type_label") or MOVEMENT_TYPES.get(int(current.get("type") or 0), "")
+    if not changes:
+        data_out = dict(current)
+        data_out["control_id"] = id_control
+        return {
+            "data": data_out,
+            "msg": f"Sin cambios en el movimiento (ID {id_movement}); nada que guardar",
+            "error": None,
+        }, 200
+
+    # 1) history de la cabecera; 2) UPDATE del movimiento (si falla, se quita la entrada).
+    history = control.get("history") or []
+    history.append({
+        "user": user,
+        "action": f"Corrección de movimiento ({label} ID {id_movement})",
+        "date": timestamp,
+        "comment": "; ".join(f"{c['field']} {c['before'] or 'vacío'} -> {c['after'] or 'vacío'}" for c in changes),
+        "id_movement": id_movement,
+        "changes": changes,
+    })
+    flag, error, _ = update_balance_control_history(id_control, history, data_token)
+    if not flag:
+        return {"data": None, "msg": "No se pudo registrar el historial del control", "error": error}, 400
+    flag, error, _rows = update_balance_control_movement_fields(
+        id_movement, new_values["movement_date"], new_values["reason"], data_token,
+    )
+    if not flag:
+        history.pop()
+        flag_r, error_r, _ = update_balance_control_history(id_control, history, data_token)
+        detail = error if flag_r else f"{error}; y no se pudo revertir el historial ({error_r})"
+        write_log_file(log_file_admin_collecions, f"Corrección de movimiento {id_movement} fallida en control {id_control}: {detail}", data_token)
+        return {"data": None, "msg": "No se pudo corregir el movimiento; nada cambió", "error": detail}, 400
+
+    flag, error, row = get_balance_control_movement_by_id(id_movement, data_token)
+    updated = _movement_to_dict(row) if flag and row is not None else {**current, **new_values}
+    updated["control_id"] = id_control
+    msg = f"Movimiento corregido (ID {id_movement}, control ID {id_control}): " + "; ".join(
+        f"{c['field']} {c['before'] or 'vacío'} -> {c['after'] or 'vacío'}" for c in changes
+    )
+    create_notification_permission(msg, data_token, _PERM_NOTIFY, "Control de saldos", user or 0, 0)
+    write_log_file(log_file_admin_collecions, msg, data_token)
+    return {"data": updated, "msg": msg, "error": None}, 200
 
 
 # --- Membresia: PUT /balanceControl/remissions (add / remove) ------------------------

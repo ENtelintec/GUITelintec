@@ -1,6 +1,7 @@
 import json
 import math
 import os
+import re
 import tempfile
 from datetime import datetime
 
@@ -779,49 +780,126 @@ def _downscale_signature_image(local_path, max_width=600):
         return local_path
 
 
+# Firmas de una entrega de SM: el front sube dos archivos con la misma marca
+# (epoch en ms) al final del nombre, "<sm>-firma-recibido-<marca>.png" (la
+# entrega: una fila del PDF, mueve el status) y "<sm>-firma-entrega-<marca>.png"
+# (opcional: solo la imagen de la 3a columna de esa fila). La marca es lo que
+# sigue a "firma-recibido-"/"firma-entrega-" hasta la extensión; un archivo
+# viejo sin marca sigue siendo una fila sin pareja.
+_SM_SIGN_RE = re.compile(r"firma-(recibido|entrega)(?:-([^./\\]*))?", re.IGNORECASE)
+_SM_SIGN_ENTREGA = "entrega"
+_SM_SIGN_RECIBIDO = "recibido"
+_SM_DRAWABLE_EXT = {"jpg", "jpeg", "png", "webp"}
+
+
+def _sm_sign_kind_and_mark(filename):
+    """``("recibido" | "entrega" | None, marca)`` a partir del nombre del anexo.
+    La marca es ``""`` cuando el nombre no la trae (anexos viejos)."""
+    match = _SM_SIGN_RE.search(filename or "")
+    if match is None:
+        return None, ""
+    return match.group(1).lower(), (match.group(2) or "").strip()
+
+
+def _download_sm_signature(get_s3_client, bucket_name, path_aws, tmp_dir, tag, filename, data_token):
+    """Baja de S3 una firma (raster) y la redimensiona; ``None`` si el anexo no
+    es dibujable (pdf/zip) o si falla la descarga (no fatal, deja log).
+    ``get_s3_client`` es perezoso: el cliente solo se crea si hay algo que bajar."""
+    ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
+    if not path_aws or ext not in _SM_DRAWABLE_EXT:
+        return None
+    try:
+        local_path = os.path.join(tmp_dir, f"{tag}_{os.path.basename(path_aws)}")
+        get_s3_client().download_file(Bucket=str(bucket_name), Key=path_aws, Filename=local_path)
+        return _downscale_signature_image(local_path)
+    except Exception as e:
+        write_log_file(
+            log_file_sm_path,
+            f"No se pudo cargar la firma '{filename}' para el PDF de la SM: {str(e)}",
+            data_token,
+        )
+        return None
+
+
 def _build_sm_delivery_files(files_sm, data_token):
     """
     Arma las filas de la tabla de entregas/firmas del PDF de la SM a partir de
-    los attachments (``extra_info["files"]``): pre-llena No./fecha/título y
-    descarga de S3 la firma de quien recibe para incrustarla. No fatal por
-    archivo: si el attachment no es una imagen dibujable (pdf/zip) o falla la
-    descarga, la fila queda con ``image_path=None`` (celda en blanco para firmar
-    a mano). Siempre devuelve al menos una fila.
+    los attachments (``extra_info["files"]``): una fila por anexo que NO sea
+    ``firma-entrega`` (pre-llena No./fecha/título y descarga de S3 la firma de
+    quien recibe). Un anexo ``firma-entrega`` no es fila: si comparte marca con
+    una fila, su imagen va en la columna "Firma de Quien Entrega" de esa fila
+    (``delivery_image_path``); sin pareja se ignora (log). No fatal por
+    archivo: si el anexo no es una imagen dibujable (pdf/zip) o falla la
+    descarga, la celda queda en blanco (``None``). Siempre devuelve al menos
+    una fila.
     """
-    drawable = {"jpg", "jpeg", "png", "webp"}
     bucket_name = secrets.get("S3_ADMIN_BUCKET")
     tmp_dir = tempfile.mkdtemp()
-    s3_client = None
-    delivery_files = []
-    for idx, f in enumerate(files_sm[:20], start=1):
+    s3_cache = {}
+
+    def get_s3_client():
+        if "client" not in s3_cache:
+            s3_cache["client"] = boto3.client("s3")
+        return s3_cache["client"]
+
+    entrega_by_mark = {}
+    rows = []
+    for f in files_sm:
         if not isinstance(f, dict):
             continue
+        kind, mark = _sm_sign_kind_and_mark(f.get("filename") or "")
+        if kind == _SM_SIGN_ENTREGA:
+            if mark:
+                entrega_by_mark[mark] = f  # la última gana: una re-subida corrige la firma
+            else:
+                write_log_file(
+                    log_file_sm_path,
+                    f"Firma de entrega '{f.get('filename')}' sin marca: se ignora en el PDF de la SM",
+                    data_token,
+                )
+            continue
+        rows.append((mark if kind == _SM_SIGN_RECIBIDO else "", f))
+    delivery_files = []
+    paired_marks = set()
+    for idx, (mark, f) in enumerate(rows[:20], start=1):
         timestamp = f.get("timestamp") or ""
         date_str = timestamp.split(" ")[0] if timestamp else ""
         title = f.get("title") or f"Entrega {idx}"
-        path_aws = f.get("path")
         filename = f.get("filename") or ""
-        ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
-        image_path = None
-        if path_aws and ext in drawable:
-            try:
-                if s3_client is None:
-                    s3_client = boto3.client("s3")
-                local_path = os.path.join(tmp_dir, f"sign_{idx}_{os.path.basename(path_aws)}")
-                s3_client.download_file(Bucket=str(bucket_name), Key=path_aws, Filename=local_path)
-                image_path = _downscale_signature_image(local_path)
-            except Exception as e:
-                write_log_file(
-                    log_file_sm_path,
-                    f"No se pudo cargar la firma '{filename}' para el PDF de la SM: {str(e)}",
-                    data_token,
-                )
-                image_path = None
-        delivery_files.append(
-            {"no": idx, "date": date_str, "title": title, "image_path": image_path}
+        entrega = entrega_by_mark.get(mark) if mark else None
+        image_path = _download_sm_signature(
+            get_s3_client, bucket_name, f.get("path"), tmp_dir, f"sign_{idx}", filename, data_token
         )
+        delivery_image_path = None
+        if entrega is not None:
+            paired_marks.add(mark)
+            delivery_image_path = _download_sm_signature(
+                get_s3_client,
+                bucket_name,
+                entrega.get("path"),
+                tmp_dir,
+                f"entrega_{idx}",
+                entrega.get("filename") or "",
+                data_token,
+            )
+        delivery_files.append(
+            {
+                "no": idx,
+                "date": date_str,
+                "title": title,
+                "image_path": image_path,
+                "delivery_image_path": delivery_image_path,
+            }
+        )
+    for mark, f in entrega_by_mark.items():
+        if mark not in paired_marks:
+            write_log_file(
+                log_file_sm_path,
+                f"Firma de entrega '{f.get('filename')}' sin firma-recibido con la misma marca ({mark}): se ignora en el PDF de la SM",
+                data_token,
+            )
     if not delivery_files:
-        delivery_files = [{"no": 1, "date": "", "title": "", "image_path": None}]
+        delivery_files = [{"no": 1, "date": "", "title": "", "image_path": None, "delivery_image_path": None}]
     return delivery_files
 
 
@@ -1686,7 +1764,11 @@ def update_items_bulk_sm_from_api(data, data_token):
 
 def create_sm_attachment_api(data, data_token):
     filename = data["filename"]
-    if "firma" not in filename.lower():
+    # Solo dos anexos válidos: "firma-recibido" (la entrega: fila del PDF y
+    # status 5) y "firma-entrega" (firma de quien entrega: anexo normal, sin
+    # cambio de status; se empareja con la recibido por la marca del nombre).
+    sign_kind, _ = _sm_sign_kind_and_mark(filename)
+    if sign_kind is None:
         return {"data": None, "msg": "Nombre de archivo incorrecto", "error": "filename"}, 400
     id_report_name = filename.split("-")[0]
     try:
@@ -1744,11 +1826,9 @@ def create_sm_attachment_api(data, data_token):
     bucket_name = secrets.get("S3_ADMIN_BUCKET")
     msg = f"Archivo adjunto agregado: {filename} al sm {data['id_sm']} por el empleado {data_token.get('name')}"
     status = sm_data[11]
-    if "firma-recibido" in filename.lower():  # if is sign file change status to 1
+    if sign_kind == _SM_SIGN_RECIBIDO:  # solo la firma de quien recibe mueve el status
         status = 5
         msg += " y estado actualizado a (firmado)"
-    else:
-        return {"data": None, "msg": "Nombre de archivo incorrecto", "error": "filename"}, 400
 
     try:
         s3_client.upload_file(Filename=filepath_down, Bucket=str(bucket_name), Key=path_aws)
@@ -1793,13 +1873,15 @@ def create_sm_attachment_api(data, data_token):
     comments = json.loads(sm_data[13]) if sm_data[13] else []
     files = extra_info.get("files", [])
     # timestamp y title alimentan la tabla de entregas/firmas del PDF de la SM:
-    # title lleva el número de entrega ("Entrega N") y timestamp la fecha
+    # title lleva el número de entrega ("Entrega N") y timestamp la fecha. El
+    # autonumerado cuenta solo las entregas (las firma-entrega no son fila).
+    deliveries = sum(1 for f in files if _sm_sign_kind_and_mark((f or {}).get("filename") or "")[0] != _SM_SIGN_ENTREGA)
     files.append(
         {
             "filename": data["filename"],
             "path": path_aws,
             "timestamp": timestamp.strftime(format_timestamps),
-            "title": data.get("title") or f"Entrega {len(files) + 1}",
+            "title": data.get("title") or f"Entrega {deliveries + 1}",
         }
     )
     extra_info["files"] = files

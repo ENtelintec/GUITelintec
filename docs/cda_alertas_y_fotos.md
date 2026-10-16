@@ -108,3 +108,12 @@ Errores del POST: `400` "Formato no válido (pdf); se aceptan jpg, jpeg, png, we
 
 - **[front]** Tile de alertas en el dashboard de CDA (`/alerts` + llamar `/notifications` al abrir) y galería de fotos en el expediente del vehículo.
 - **[back]** Foto real en el PDF del checklist (`?photo=1`), si CDA lo pide.
+
+## Notas posteriores
+
+- **2026-10-16** (dudas del front tras `P-109`):
+  - `mantenimiento_pendiente` vencido **por kilometraje** (o sin registro) ahora trae `days_left: null`; solo el vencido por fecha lleva `days_left` (negativo). Antes llegaba el `days_remaining` de la fecha programada aunque el vencimiento fuera por km, y un "vencido" con días positivos confundía al front.
+  - **Permisos**: todo el namespace `/cda` (no solo `/alerts` y `/notifications`) exige `administracion` o `sgi` (`_DEPARTMENTS` en `rs_CDA.py`); el administrador pasa siempre. Sin esos permisos el tablero de alertas muestra error y no bloquea.
+  - **Nombre de archivo de la foto**: el back aplica `secure_filename` (`mi foto.jpg` → `mi_foto.jpg`); el front imita la limpieza para avisar qué foto reemplaza y toma `replaced` de la respuesta como fuente de verdad.
+  - **Sin endpoint para cambiar el título** de una foto: se queda el "Foto N" del back salvo que CDA lo pida.
+  - **Miniaturas**: cada miniatura de la galería baja la imagen completa por Flask → pendiente `P-144` (`?thumb=1` o URL prefirmada), no entra ahora.
