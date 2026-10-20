@@ -32,6 +32,14 @@ from static.Models.api_quotation_costs_models import (
     QuotationCostAnalysisForm,
     quotation_cost_analysis_model,
 )
+from static.Models.api_tenders_models import (
+    TenderItemsForm,
+    TenderPostForm,
+    TenderPutForm,
+    tender_items_model,
+    tender_post_model,
+    tender_put_model,
+)
 from templates.resources.methods.Functions_Aux_Login import token_verification_procedure
 from templates.resources.midleware.Functions_midleware_admin import (
     compare_file_and_quotation,
@@ -59,6 +67,13 @@ from templates.resources.midleware.MD_QuotationCosts import (
     suggest_cost_analysis_api,
     update_quotation_cost_analysis_from_api,
 )
+from templates.resources.midleware.MD_Tenders import (
+    create_tender_from_api,
+    get_tender_from_api,
+    get_tenders_from_api,
+    update_tender_from_api,
+    update_tender_items_from_api,
+)
 
 __author__ = "Edisson Naula"
 __date__ = "$ 20/jun./2024  at 15:03 $"
@@ -73,6 +88,7 @@ class Quotations(Resource):
     @ns.doc(params={
         "document_type": "Solo en listado (id -1): quotation | ocd",
         "with_costs": "1 -> agrega cost_analysis por producto y cost_totals (Preventa; nunca va al PDF del cliente)",
+        "status": "Solo en listado (id -1): metadata.status, uno o lista (0 o 0,3). 0 preventa, 1/2 catálogo de contrato, 3 licitación",
     })
     def get(self, id_q):
         flag, data_token, msg = token_verification_procedure(request, department="administracion")
@@ -80,9 +96,88 @@ class Quotations(Resource):
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         with_costs = (request.args.get("with_costs") or "").strip().lower() in ("1", "true", "yes")
         data, code = get_quotations(
-            data_token, id_q, document_type=request.args.get("document_type"), with_costs=with_costs
+            data_token,
+            id_q,
+            document_type=request.args.get("document_type"),
+            with_costs=with_costs,
+            status=request.args.get("status"),
         )
         return data, code
+
+
+@ns.route("/tenders")
+class Tenders(Resource):
+    @ns.expect(expected_headers_per)
+    @ns.doc(params={
+        "status": "Uno o lista (1 o 0,1): 0 en espera, 1 asignada, 2 no asignada, 3 cancelada",
+        "client_id": "customers_amc.id_customer",
+        "date_from": "YYYY-MM-DD sobre closing_date",
+        "date_to": "YYYY-MM-DD sobre closing_date",
+        "has_contract": "1 con contrato, 0 sin contrato; ausente = no filtra",
+    })
+    def get(self):
+        flag, data_token, msg = token_verification_procedure(request, department="administracion")
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        data_out, code = get_tenders_from_api(request.args, data_token)
+        return data_out, code
+
+
+@ns.route("/tender/<int:id_tender>")
+class TenderById(Resource):
+    @ns.expect(expected_headers_per)
+    @ns.doc(params={"with_costs": "1 -> cost_analysis por partida (cost_totals viaja siempre)"})
+    def get(self, id_tender):
+        flag, data_token, msg = token_verification_procedure(request, department="administracion")
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        with_costs = (request.args.get("with_costs") or "").strip().lower() in ("1", "true", "yes")
+        data_out, code = get_tender_from_api(id_tender, with_costs, data_token)
+        return data_out, code
+
+
+@ns.route("/tender")
+class TenderActions(Resource):
+    @ns.expect(expected_headers_per, tender_post_model)
+    def post(self):
+        flag, data_token, msg = token_verification_procedure(request, department="administracion")
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        # noinspection PyUnresolvedReferences
+        validator = TenderPostForm.from_json(ns.payload)  # pyrefly: ignore
+        if not validator.validate():
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
+        # JSON crudo: el midleware necesita null vs ausente y 0 como valor válido.
+        data_out, code = create_tender_from_api(ns.payload or {}, data_token)
+        return data_out, code
+
+    @ns.expect(expected_headers_per, tender_put_model)
+    def put(self):
+        flag, data_token, msg = token_verification_procedure(request, department="administracion")
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        # noinspection PyUnresolvedReferences
+        validator = TenderPutForm.from_json(ns.payload)  # pyrefly: ignore
+        if not validator.validate():
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
+        # PUT parcial: solo las llaves presentes en el JSON crudo.
+        data_out, code = update_tender_from_api(ns.payload or {}, data_token)
+        return data_out, code
+
+
+@ns.route("/tender/items")
+class TenderItems(Resource):
+    @ns.expect(expected_headers_per, tender_items_model)
+    def put(self):
+        flag, data_token, msg = token_verification_procedure(request, department="administracion")
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        # noinspection PyUnresolvedReferences
+        validator = TenderItemsForm.from_json(ns.payload)  # pyrefly: ignore
+        if not validator.validate():
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
+        data_out, code = update_tender_items_from_api(validator.data, data_token)
+        return data_out, code
 
 
 @ns.route("/quotation/costAnalysis")

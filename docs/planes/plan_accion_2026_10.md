@@ -29,7 +29,7 @@ Lo que se ve al leer el tracker completo:
 | 5 | **`custom_fields` / `delivery_fields` al re-adoptar o retirar** ([`remission_atomic_writes.md`](../remission_atomic_writes.md)) | usuario | nada hoy | **Decidido 2026-10-12: se conservan.** Ítem cerrado en `pendientes.md` |
 | 6 | `P-094` **Cobranza en el ambiente de test** + lista de usuarios de test (líderes incluidos) | usuario / ops | que Cobranza pruebe saldos y entregas antes de que el front cierre | crear los usuarios al arrancar el lote 3 del front; el esquema ya está completo en test |
 | 7 | `P-053` **Modelo de datos del reporte Ternium** ([`remission_combined_pdf.md`](../remission_combined_pdf.md)) | administración | back del reporte generado | sigue fuera; el escaneo como anexo cubre hoy |
-| 8 | `P-123` **Control de licitaciones FO-PRE-04** (formato recibido, sin tarea) | administración / usuario | ¿entra o no? | no entra hasta que exista una tarea con alcance |
+| 8 | `P-123` **Control de licitaciones FO-PRE-04** (formato recibido, sin tarea) | administración / usuario | ¿entra o no? | **Decidido 2026-10-19: entra.** Preventa lo pidió y el front ya tiene pantallas; back hecho y verificado en dev el mismo día ([`tenders_control.md`](../tenders_control.md)); DDL en las 3 BDs (`P-146`); falta el front (`P-147`) |
 | 9 | `P-098` **DML `voucher_vehicle_accessories_normalize.sql`** en dev/test/prod ([`checklist_vehicular_accessories.md`](../checklist_vehicular_accessories.md)) | usuario | nada (los lectores toleran ambas formas) | correrlo con el siguiente tren de deploy |
 | 10 | **Orden del front** (sección 4): Cobranza antes que constructor y multisede | usuario + front principal | todo el front | **Decidido 2026-10-12** (ajustado el mismo día): **Cobranza → nómina → RH → multisede**; la prioridad de negocio es Cobranza |
 
@@ -63,7 +63,7 @@ Lo que se ve al leer el tracker completo:
 
 ### Bloque D — congelados (se quedan en `pendientes.md` con su razón; no se trabajan)
 
-`P-044` Bug KPI de SM (KPIs configurables a futuro) · `P-091` `operaciones` en lectura de `deliveryControl` (fuera, 2026-09-28) · `P-092` saldo comprometido FO-PRE-03 (posibilidad) · `P-113` otros activos CDA (sin definición) · `P-022` PDFs dedicados por encuesta y editor de rúbricas (según pida RH) · `P-053` reporte Ternium (sin modelo) · `P-095` notificación in-app de correos (sin alcance) · `P-123` control de licitaciones (sin tarea) · import de vehículos CDA en prod (con el deploy del módulo).
+`P-044` Bug KPI de SM (KPIs configurables a futuro) · `P-091` `operaciones` en lectura de `deliveryControl` (fuera, 2026-09-28) · `P-092` saldo comprometido FO-PRE-03 (posibilidad) · `P-113` otros activos CDA (sin definición) · `P-022` PDFs dedicados por encuesta y editor de rúbricas (según pida RH) · `P-053` reporte Ternium (sin modelo) · `P-095` notificación in-app de correos (sin alcance) · ~~`P-123` control de licitaciones~~ (entró el 2026-10-19 → [`tenders_control.md`](../tenders_control.md)) · import de vehículos CDA en prod (con el deploy del módulo).
 
 ## 4. Front — backlog priorizado para el equipo de front principal
 

@@ -25,6 +25,7 @@ from templates.controllers.contracts.contracts_controller import (
     update_contract,
 )
 from templates.controllers.contracts.quotations_controller import (
+    assign_contract_to_quotation_items,
     create_item_quotation,
     create_items_quotation,
     create_quotation,
@@ -36,6 +37,13 @@ from templates.controllers.contracts.quotations_controller import (
     get_quotation_metadata,
     update_item_quotation,
     update_quotation,
+)
+from templates.controllers.contracts.tenders_controller import (
+    QUOTATION_STATUS_TENDER,
+    TENDER_COLUMNS,
+    TENDER_STATUS_ASSIGNED,
+    get_tender_by_quotation,
+    link_tender_contract,
 )
 from templates.controllers.customer.customers_controller import (
     create_customer_db,
@@ -69,6 +77,7 @@ from templates.controllers.supplier.suppliers_controller import (
 )
 from templates.Functions_Utils import create_notification_permission
 from templates.misc.Functions_Files import write_log_file
+from templates.resources.midleware.MD_BalanceControl import _now
 from templates.resources.midleware.MD_DeliveryControl import (
     quotation_change_order_errors,
     quotation_has_active_delivery_control,
@@ -149,7 +158,22 @@ def _attach_costs(data_out: dict, data_token) -> None:
         data_out["cost_error"] = error
 
 
-def get_quotations(data_token, id_quotation: int | None = None, document_type: str | None = None, with_costs: bool = False):
+def _quotation_status(metadata: dict) -> int:
+    """metadata.status de la cotización (0 preventa, 1/2 catálogo de contrato,
+    3 licitación — docs/tenders_control.md). Sin la llave = 0."""
+    try:
+        return int(metadata.get("status") or 0)
+    except (TypeError, ValueError):
+        return 0
+
+
+def get_quotations(
+    data_token,
+    id_quotation: int | None = None,
+    document_type: str | None = None,
+    with_costs: bool = False,
+    status: str | None = None,
+):
     try:
         id_quotation = (
             id_quotation if id_quotation is not None and int(id_quotation) != -1 else None
@@ -159,6 +183,12 @@ def get_quotations(data_token, id_quotation: int | None = None, document_type: s
     document_type = (document_type or "").strip().lower() or None
     if document_type is not None and document_type not in QUOTATION_DOCUMENT_TYPES:
         return {"data": [], "msg": "document_type debe ser quotation u ocd", "error": document_type}, 400
+    # ?status=0 o 0,3 (solo en listado): Preventa pide status 0 y deja fuera
+    # licitaciones y catálogos de contrato.
+    try:
+        statuses = {int(s) for s in (status or "").split(",") if s.strip() != ""} or None
+    except ValueError:
+        return {"data": [], "msg": "status debe ser un entero o una lista separada por comas", "error": status}, 400
     # get_quotation(data_token, id_quotation): por nombre, no posicional. Pasarle el id
     # como data_token dejaba id_quotation en None, devolvia TODAS las cotizaciones (el
     # desempaque de 5 variables tronaba) y perdia el cambio de BD del permiso tester.
@@ -200,6 +230,8 @@ def get_quotations(data_token, id_quotation: int | None = None, document_type: s
             meta = _normalize_quotation_metadata_out(json.loads(metadata))
             # Filtro en Python: document_type vive dentro del JSON y las viejas no lo traen.
             if document_type is not None and meta["document_type"] != document_type:
+                continue
+            if statuses is not None and _quotation_status(meta) not in statuses:
                 continue
             entry = {
                 "id": id_q,
@@ -1411,6 +1443,12 @@ def update_quoation_from_api(data, data_token):
             "error": "Quotation not found",
         }, 404
     existing_meta = json.loads(row[0]) if row[0] else {}  # pyrefly: ignore
+    if _quotation_status(existing_meta) == QUOTATION_STATUS_TENDER:
+        return {
+            "data": None,
+            "msg": "Las partidas de una licitación se editan con PUT /tender/items",
+            "error": [f"la cotización {data['id']} es de una licitación"],
+        }, 400
     ocd_keys, errors = _merge_ocd_keys(data["metadata"], existing_meta)
     if errors:
         return {"data": None, "msg": "Datos OCD inválidos", "error": errors}, 400
@@ -1489,6 +1527,13 @@ def update_quotation_ocd_from_api(data, data_token):
             "error": "Quotation not found",
         }, 404
     metadata = json.loads(row[0]) if row[0] else {}  # pyrefly: ignore
+    if _quotation_status(metadata) != 0:
+        # Licitaciones (3) y catálogos de contrato (1/2) no son OCD (docs/tenders_control.md).
+        return {
+            "data": None,
+            "msg": "Solo una cotización de preventa se convierte en OCD",
+            "error": [f"la cotización {id_quotation} tiene status {_quotation_status(metadata)}"],
+        }, 400
     timestamps = json.loads(row[1]) if row[1] else None  # pyrefly: ignore
     if timestamps is not None and not isinstance(timestamps.get("update"), list):
         timestamps["update"] = []
@@ -1525,6 +1570,15 @@ def update_quotation_ocd_from_api(data, data_token):
 
 
 def delete_quotation_from_api(data, data_token):
+    # Licitación: 400 ANTES de borrar partidas (la FK de tenders haría fallar el
+    # DELETE de la cotización con las partidas ya perdidas).
+    flag, error, row = get_quotation_metadata(data["id"], data_token)
+    if flag and row and _quotation_status(json.loads(row[0]) if row[0] else {}) == QUOTATION_STATUS_TENDER:  # pyrefly: ignore
+        return {
+            "data": None,
+            "msg": "La cotización es de una licitación; no se elimina",
+            "error": [f"la cotización {data['id']} es de una licitación"],
+        }, 400
     id_dc = quotation_has_active_delivery_control(data["id"], data_token)
     if id_dc:
         return {
@@ -1554,6 +1608,49 @@ def delete_quotation_from_api(data, data_token):
     }, 200
 
 
+def _tender_for_contract(id_quotation, client_id, data_token) -> tuple[dict | None, list]:
+    """Licitación dueña de la cotización (None si no es de licitación) y los
+    errores de la regla de POST /contract: asignada, sin contrato y mismo
+    cliente (docs/tenders_control.md). Se evalúa ANTES de crear nada."""
+    flag, error, row = get_tender_by_quotation(id_quotation, data_token)
+    if not flag:
+        return None, [f"No se pudo validar la licitación de la cotización {id_quotation}: {error}"]
+    if row is None:
+        return None, []
+    tender = dict(zip(TENDER_COLUMNS, row))
+    errors = []
+    if tender["status"] != TENDER_STATUS_ASSIGNED:
+        errors.append(f"la licitación {tender['tender_number']} no está asignada (status 1)")
+    if tender["contract_id"]:
+        errors.append(f"la licitación {tender['tender_number']} ya tiene el contrato {tender['contract_id']}")
+    try:
+        same_client = int(client_id) == int(tender["client_id"])
+    except (TypeError, ValueError):
+        same_client = False
+    if not same_client:
+        errors.append(f"el cliente del contrato ({client_id}) no es el de la licitación ({tender['client_id']})")
+    return tender, errors
+
+
+def _link_tender_to_contract(tender: dict, id_quotation, id_contract, data_token) -> str | None:
+    """Liga la licitación (UPDATE condicional) y pone contract_id a sus partidas.
+    Devuelve el error o None."""
+    timestamp = _now().strftime(format_timestamps)
+    entry = {
+        "user": data_token.get("emp_id"),
+        "action": "Contrato",
+        "date": timestamp,
+        "comment": f"Contrato {id_contract} creado desde la licitación (POST /contract).",
+    }
+    flag, error, rows = link_tender_contract(tender["id_tender"], id_contract, entry, timestamp, data_token)
+    if not flag:
+        return error
+    if rows == 0:
+        return f"la licitación {tender['tender_number']} cambió o ya se ligó a otro contrato"
+    flag, error, _ = assign_contract_to_quotation_items(id_quotation, id_contract, data_token)
+    return None if flag else error
+
+
 def create_contract_from_api(data, data_token):
     # Extraer y eliminar claves específicas del metadata
     contract_number = data["metadata"].pop("contract_number", "")
@@ -1561,7 +1658,11 @@ def create_contract_from_api(data, data_token):
     emission = data["metadata"].pop("emission", "")
     abbreviation = data["metadata"].pop("abbreviation", "")
     msg = ""
-    if data.get("quotation_id", 0) == 0:
+    tender = None
+    # Solo se revierte (borra) la cotización si la creó este request: una que ya
+    # existía no se toca aunque el contrato falle.
+    quotation_created = data.get("quotation_id", 0) == 0
+    if quotation_created:
         flag, error, id_quotation = create_quotation(
             data["metadata"], status=2, data_token=data_token
         )
@@ -1572,32 +1673,47 @@ def create_contract_from_api(data, data_token):
                 "error": error,
             }, 400
         msg += f"Cotizacion creada con ID-{id_quotation} por el empleado {data_token.get('name')}"
-        flag, error, id_contract = create_contract(
-            id_quotation,
-            data["metadata"],
-            contract_number,
-            client_id,
-            emission,
-            abbreviation,
-        )
-
     else:
-        flag, error, id_contract = create_contract(
-            data["quotation_id"],
-            data["metadata"],
-            contract_number,
-            client_id,
-            emission,
-            abbreviation,
-        )
         id_quotation = data["quotation_id"]
+        # Licitación ganada -> contrato sobre su cotización interna (docs/tenders_control.md).
+        if id_quotation:
+            tender, tender_errors = _tender_for_contract(id_quotation, client_id, data_token)
+            if tender_errors:
+                return {
+                    "data": None,
+                    "msg": "La licitación no puede pasar a contrato",
+                    "error": tender_errors,
+                }, 400
+    # data_token y abbreviation por nombre: posicionales, abbreviation caía en el
+    # slot de data_token (no se guardaba y se perdía el cambio a la BD de tester).
+    flag, error, id_contract = create_contract(
+        id_quotation,
+        data["metadata"],
+        contract_number,
+        client_id,
+        emission,
+        data_token=data_token,
+        abbreviation=abbreviation,
+    )
     if not flag:
-        delete_quotation(id_quotation, data_token)
+        if quotation_created:
+            delete_quotation(id_quotation, data_token)
         return {
             "data": None,
-            "msg": "No se pudo crear el contrato; cotización revertida",
+            "msg": "No se pudo crear el contrato" + ("; cotización revertida" if quotation_created else ""),
             "error": error,
         }, 400
+    if tender is not None:
+        link_error = _link_tender_to_contract(tender, id_quotation, id_contract, data_token)
+        if link_error:
+            delete_contract_from_item_quotation(id_contract, data_token)
+            delete_contract(id_contract, data_token)
+            return {
+                "data": None,
+                "msg": "No se pudo ligar la licitación al contrato; contrato revertido",
+                "error": [link_error],
+            }, 400
+        msg += f"\nLicitación {tender['tender_number']} ligada al contrato; partidas existentes con contract_id"
     error_items = None
     # create_items_from_api(products, id_quotation, data_token, id_contract): con
     # id_contract en el slot de data_token los items nacian con contract_id NULL, lo que
@@ -1608,11 +1724,17 @@ def create_contract_from_api(data, data_token):
     if flag_list.count(True) == len(flag_list):
         msg += "\nItems de cotizacion creados correctamente"
     elif flag_list.count(False) == len(flag_list):
-        delete_quotation(id_quotation, data_token)
+        # Primero el contrato (la cotización está referenciada por él) y luego la
+        # cotización, solo si la creó este request. delete_contract desliga la
+        # licitación (fk_tender_contract ON DELETE SET NULL).
+        delete_contract_from_item_quotation(id_contract, data_token)
         delete_contract(id_contract, data_token)
+        if quotation_created:
+            delete_quotation(id_quotation, data_token)
         return {
             "data": None,
-            "msg": "No se pudo crear ningún item; contrato y cotización revertidos",
+            "msg": "No se pudo crear ningún item; contrato revertido"
+            + (" y cotización revertida" if quotation_created else ""),
             "error": error_list,
         }, 400
     else:

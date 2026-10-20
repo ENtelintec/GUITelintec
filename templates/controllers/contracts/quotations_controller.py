@@ -186,6 +186,32 @@ def delete_contract_from_item_quotation(contract_id, data_token):
     return flag, error, out
 
 
+def assign_contract_to_quotation_items(id_quotation, contract_id, data_token):
+    """Pone contract_id a las partidas de la cotizacion que aun no tienen contrato
+    (licitacion ganada -> contrato, docs/tenders_control.md). type_sql=3."""
+    sql = (
+        "UPDATE sql_telintec_mod_admin.quotation_items "
+        "SET contract_id = %s "
+        "WHERE quotation_id = %s AND contract_id IS NULL"
+    )
+    val = (contract_id, id_quotation)
+    flag, error, out = execute_sql(sql, val, 3, data_token)
+    return flag, error, out
+
+
+def set_quotation_metadata_keys(id_quotation, keys: dict, data_token):
+    """JSON_SET de llaves sueltas en metadata, sin reescribir el resto (sincronia
+    licitacion -> cotizacion interna). Las llaves las pone el codigo, nunca el
+    payload: van interpoladas en la ruta JSON. type_sql=3."""
+    if not keys:
+        return True, None, 0
+    paths = ", ".join(f"'$.{key}', %s" for key in keys)
+    sql = f"UPDATE sql_telintec_mod_admin.quotations SET metadata = JSON_SET(metadata, {paths}) WHERE id = %s"
+    val = tuple(keys.values()) + (id_quotation,)
+    flag, error, out = execute_sql(sql, val, 3, data_token)
+    return flag, error, out
+
+
 def delete_quotation(id_quotation, data_token):
     sql = "DELETE FROM sql_telintec_mod_admin.quotations WHERE id = %s"
     val = (id_quotation,)
