@@ -22,7 +22,7 @@ Lo que se ve al leer el tracker completo:
 
 | # | Qué falta | Quién | Qué desbloquea | Default si no hay respuesta |
 |---|---|---|---|---|
-| 1 | `P-036` **SES a producción**: *production access*, `SES_SENDER`/`SES_REGION` en `.env` de test/prod, MAIL FROM corregido ([`nomina_correo_ses.md`](../nomina_correo_ses.md)) | usuario (AWS) | correo real de nómina; correos internos | **Decidido 2026-10-12**: se pide *production access* cuando nómina esté integrada en test; mientras, test/prod sin canal `email` (el `notify` lo reporta en `channels_failed`) |
+| 1 | ✅ **Cerrado 2026-10-21.** `P-036` **SES a producción**: *production access*, `SES_SENDER`/`SES_REGION` en `.env` de test/prod, MAIL FROM corregido ([`nomina_correo_ses.md`](../nomina_correo_ses.md)) | usuario (AWS) | correo real de nómina; correos internos | **Decidido 2026-10-12**: se pide *production access* cuando nómina esté integrada en test; mientras, test/prod sin canal `email` (el `notify` lo reporta en `channels_failed`) |
 | 2 | `P-048` **Datos de la sede**: nombre/encargado, usuarios con `Sucursal-2`, **fecha del cambio del DELETE** ([`almacen_multisede_plan.md`](almacen_multisede_plan.md)) | administración | prod de multisede; F4 (fix DELETE) | **Decidido 2026-10-12**: se piden 2 semanas antes de que el front arranque el lote 5; hasta entonces F4 no se toca y prod de multisede sigue bloqueado |
 | 3 | `P-047` **Procedimiento de discrepancias de traslados** (`RECIBIDO CON DIFERENCIAS`: quién resuelve y con qué movimiento) ([`almacen_multisede_f3.md`](../almacen_multisede_f3.md)) | administración / operación | nada de código | documentar la respuesta en el doc de F3 y cerrar |
 | 4 | `P-039` **Calidad de datos RH**: 11 activos con `departure` arrastrada, inactivos sin baja, activos sin cumpleaños, vacaciones sin `dates` ([`dashboard_rrhh.md`](../dashboard_rrhh.md)) | RH | dashboard limpio | DML entregado ([`rh_calidad_datos_dml.md`](../rh_calidad_datos_dml.md)). **Decidido 2026-10-12**: el bloque A (`status` NULL del 123) espera la respuesta de RH; el bloque B (`puesto` `'None'`) corre ya en dev; el resto lo corrige RH desde la pantalla |
@@ -56,7 +56,7 @@ Lo que se ve al leer el tracker completo:
 ### Bloque C — condicionados (entran cuando llegue el dato o el front dé el paso)
 
 10. `P-046` **Multisede F4**: fix "DELETE revierte stock" en ambas sedes con la fecha de administración y aviso a operación (decisión 2); exports/dashboard de sede solo cuando el front los pida.
-11. `P-036` · `P-095` **SES**: variables a test/prod cuando haya *production access* (decisión 1); después revisar qué correos internos saldrán por SES.
+11. ~~`P-036`~~ (cerrado 2026-10-21) · `P-095` **SES**: ya en producción con variables en test/prod; falta revisar qué correos internos saldrán por SES. El front habilita el canal `email` de nómina con `P-151`.
 12. `P-045` · `P-054` **Firma de "quien entrega"** en SM y remisión: el back incrusta cuando el front la capture (mismo mecanismo que la de quien recibe) → [`sm_pdf_delivery_signatures.md`](../sm_pdf_delivery_signatures.md) · [`remission_combined_pdf.md`](../remission_combined_pdf.md).
 13. `P-015` **Normalizar el shape de respuestas de captura** (quita `flatten_responses`): coordinado con el front cuando toque la UI de captura.
 14. `P-056` **Borrado de anexos en lote**: solo si el front agrega selección múltiple.

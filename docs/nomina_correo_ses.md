@@ -1,6 +1,6 @@
 # Nómina: correo al empleado por AWS SES (canal `email` de `POST /rrhh/payroll/notify`)
 
-Fecha: 2026-09-17 · **Estado: hecho y verificado contra dev con SES y S3 simulados (18/18 checks, `Tests/tester_nomina_ses.py`). SES levantado el 2026-09-18 (dominio `nominas.telintec.mx` verificado en `us-east-2`, `.env` de dev con `SES_SENDER`/`SES_REGION`, correo real con adjunto entregado a `Software@telintec.com.mx`). En **sandbox**: falta pedir *production access*.**
+Fecha: 2026-09-17 · **Estado: hecho y verificado contra dev con SES y S3 simulados (18/18 checks, `Tests/tester_nomina_ses.py`). SES levantado el 2026-09-18 (dominio `nominas.telintec.mx` verificado en `us-east-2`, `.env` de dev con `SES_SENDER`/`SES_REGION`, correo real con adjunto entregado a `Software@telintec.com.mx`). *Production access* desde el 2026-10-21 (ver [Notas posteriores](#notas-posteriores)).**
 
 Segunda etapa de [`nomina_gestion_archivos_y_notificacion.md`](nomina_gestion_archivos_y_notificacion.md): el mismo `POST /payroll/notify` con `channels: ["email"]` ahora **envía el correo** con el pdf/xml del recibo adjuntos (leídos de `S3_RH_BUCKET`). `POST /payroll/mail` (borrador Outlook + SharePoint, deprecado desde 2026-09-07) **queda retirado** junto con `create_mail_payroll`, `CreateMailForm`/`create_mail_model` y `create_mail_draft_with_attachment` de `Functions_Sharepoint.py`.
 
@@ -69,7 +69,22 @@ sharepoint  Functions_Sharepoint.py                create_mail_draft_with_attach
 
 ## Pendientes
 
-- ~~**[back] Levantar SES en AWS**~~ — hecho 2026-09-18 en sandbox: identidad `nominas.telintec.mx` + `Software@telintec.com.mx` verificadas (`us-east-2`), IAM ok (el envío real pasó), `.env` de dev con las 2 llaves. **Queda**: pedir *production access* (hoy solo destinatarios verificados, 200/día) y poner las mismas llaves en `.env` de test/prod. Listado en [`pendientes.md`](pendientes.md).
-- **[admin]** El *custom MAIL FROM domain* quedó como `mail.nominas.telintec.mx.nominas.telintec.mx` (la consola anexa el dominio al nombre que se teclea); funciona (`Success`), pero conviene reconfigurarlo como `mail.nominas.telintec.mx` para que el `Return-Path` salga limpio.
-- **[front]** Mostrar `channels_failed`/`email_to` en la pantalla de nómina; checkbox "enviar por correo".
+- ~~**[back] Levantar SES en AWS**~~ — hecho 2026-09-18 en sandbox: identidad `nominas.telintec.mx` + `Software@telintec.com.mx` verificadas (`us-east-2`), IAM ok (el envío real pasó), `.env` de dev con las 2 llaves. ~~**Queda**: pedir *production access* y poner las mismas llaves en `.env` de test/prod~~ — hecho 2026-10-21 (`P-036`).
+- ~~**[admin]** El *custom MAIL FROM domain* quedó como `mail.nominas.telintec.mx.nominas.telintec.mx` (la consola anexa el dominio al nombre que se teclea)~~ — corregido 2026-10-21 a `mail.nominas.telintec.mx` (`P-036`).
+- **[front]** `P-151`: mostrar `channels_failed`/`email_to` en la pantalla de nómina; checkbox "enviar por correo".
 - **[back]** Correo también en los recordatorios de CDA y avisos médicos (helper listo, falta decidir destinatarios).
+
+## Notas posteriores
+
+**2026-10-21 — SES en producción** (verificado por API `sesv2`/`sns` en `us-east-2`, solo lectura):
+
+- *Production access* activo, envío habilitado, estado `HEALTHY`. Cuota: **50 000 correos/24 h, 14/s**.
+- Suppression list de cuenta con `BOUNCE` y `COMPLAINT`: SES deja de enviar solo a las direcciones que ya rebotaron o se quejaron.
+- La identidad `nominas.telintec.mx` tiene como **configuration set default** `my-first-configuration-set`, con el destino de eventos `CorreoInstitucional` (bounce, complaint, delivery delay, reject, rendering failure) que publica al topic SNS `ses-feedback`. Como es el default de la identidad, el código **no** manda `ConfigurationSetName`. **No borrar ese set**: mientras sea el default, todos los envíos de la identidad fallan con *bad request*.
+- Suscriptor del topic `ses-feedback`: `Software@telintec.com.mx` (Email, confirmado el 2026-10-21; al principio el topic no tenía suscriptores y los eventos no le llegaban a nadie). Para agregar o quitar destinatarios de los avisos: consola **SNS** (no SES) → *Topics* → `ses-feedback` → *Subscriptions*.
+- Tareas opcionales de la consola **no aplicadas**: Virtual Deliverability Manager (tiene costo por correo; el volumen de nómina no lo justifica), IP dedicadas (requieren mucho volumen diario para calentarlas; con poco volumen la IP compartida tiene mejor reputación), aumento de límite (la cuota sobra) y administración de inquilinos (es para plataformas que envían a nombre de varios clientes; Telintec envía solo por sí misma).
+- Gotcha de **"Notificar a todos"**: cada `notify` manda 1 correo y el código no reintenta. Si el front dispara más de 14 `notify` por segundo en paralelo, SES responde `Throttling` y ese empleado queda en `channels_failed` como `Error SES (Throttling): …`. Si pasa, mandarlos en serie o con un tope de concurrencia.
+- **Prueba de rebote**: desde la consola (*Send test email*, escenario *Bounce*). SNS publicó y entregó los avisos a Software@ (2 publicados, 2 entregados, 0 fallidos en CloudWatch).
+- **MAIL FROM corregido** a `mail.nominas.telintec.mx` (estado `Success`, *behavior on MX failure* = usar el default de Amazon). Los registros MX `10 feedback-smtp.us-east-2.amazonses.com` y TXT `v=spf1 include:amazonses.com ~all` viven en la zona `telintec.mx` de **Route 53, en esta misma cuenta**: la consola de SES los publica sola con la casilla *Publish DNS records to Route53*. Los del nombre duplicado se borraron, y ni la zona ni el DNS autoritativo los devuelven. Al editar el MAIL FROM, en el campo se escribe **solo `mail`**: la consola agrega `.nominas.telintec.mx` por su cuenta.
+- `SES_SENDER`/`SES_REGION` copiados al `.env` de test y prod (lo reportó el usuario; no se cotejó desde aquí). La app lee `.env` una sola vez al arrancar: **reiniciarla** en cada ambiente para que el canal `email` deje de salir en `channels_pending`.
+- Con esto **`P-036` queda cerrado**. Abiertos que dependían de él: `P-151` (front: habilitar el canal `email`) y `P-095` (revisar los correos internos que saldrán por SES).
