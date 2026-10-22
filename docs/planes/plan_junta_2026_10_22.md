@@ -4,7 +4,9 @@
 
 ## Estado
 
-**2026-10-22**: grill cerrado, plan escrito. Siguiente: F1.
+**2026-10-22 (tarde)**: **F1 hecha y verificada contra dev (33/33, `Tests/tester_balance_vencido.py`; regresión de saldos, cancelación y entregas en verde)** → [`control_saldos_vencido_y_monto.md`](../control_saldos_vencido_y_monto.md). Siguiente: F2 (barrido de avisos; la parte de OCD espera a F5) o F6 (remisión de OCD).
+
+**2026-10-22**: grill cerrado, plan escrito.
 
 ## Punto de partida (lo que el código ya resuelve)
 

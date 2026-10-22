@@ -778,6 +778,7 @@ class BalanceControlOps(Resource):
             "is_active": "1=activos (default), 0=cancelados",
             "all": "1 -> activos y cancelados (ignora is_active)",
             "expiring_days": "Entero N: solo controles con end_date a <= N días de hoy (incluye vencidos, days_to_end negativo)",
+            "validity_status": "0 vigente · 1 por vencer (end_date a <= 60 días) · 2 vencido; un valor o lista '1,2'. Derivado de end_date, nunca almacenado",
         }
     )
     @ns.expect(expected_headers_per)
@@ -793,6 +794,7 @@ class BalanceControlOps(Resource):
             "is_active": request.args.get("is_active"),
             "all": request.args.get("all"),
             "expiring_days": request.args.get("expiring_days"),
+            "validity_status": request.args.get("validity_status"),
         }
         data_out, code = get_balance_controls_from_api(params, data_token)
         return data_out, code

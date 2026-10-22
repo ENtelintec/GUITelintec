@@ -82,6 +82,17 @@ CONTROL_COLUMNS = (
 )
 # Remision cancelada: no consume saldo.
 REMISSION_CANCELLED_STATUS = 3
+# Vigencia derivada (docs/control_saldos_vencido_y_monto.md): "por vencer" = end_date
+# a <= VALIDITY_EXPIRING_DAYS dias; "vencido" = end_date < hoy. Nunca se almacena.
+# El mismo umbral usa el barrido de avisos (60 dias = primer aviso).
+VALIDITY_EXPIRING_DAYS = 60
+# Clausulas SQL por valor de validity_status (0 vigente, 1 por vencer, 2 vencido);
+# constantes, sin parametros: el midleware valida que el valor sea 0..2.
+_VALIDITY_SQL = {
+    0: f"(bc.end_date IS NULL OR DATEDIFF(bc.end_date, CURDATE()) > {VALIDITY_EXPIRING_DAYS})",
+    1: f"(bc.end_date IS NOT NULL AND DATEDIFF(bc.end_date, CURDATE()) BETWEEN 0 AND {VALIDITY_EXPIRING_DAYS})",
+    2: "(bc.end_date IS NOT NULL AND DATEDIFF(bc.end_date, CURDATE()) < 0)",
+}
 _SELECT_CONTROL = (
     "SELECT bc.id_control, bc.contract_id, bc.format_id, bc.month_period, bc.currency, "
     "bc.contract_number, bc.pedido_exiros, bc.contracted_amount, bc.start_date, bc.end_date, "
@@ -214,10 +225,18 @@ def get_balance_controls(
     client_id: int | None = None,
     has_contract: int | None = None,
     expiring_days: int | None = None,
+    validity_statuses: list[int] | None = None,
 ):
     """Listado con filtros estilo param-or-NULL. has_contract: 1 = solo con
     contrato, 0 = solo sin contrato. expiring_days: solo controles con end_date
-    a <= N dias de hoy (incluye vencidos). type_sql=2."""
+    a <= N dias de hoy (incluye vencidos). validity_statuses: subconjunto de
+    {0 vigente, 1 por vencer, 2 vencido} (OR entre ellos; vacio/None = todos).
+    type_sql=2."""
+    validity_clause = ""
+    if validity_statuses:
+        parts = [_VALIDITY_SQL[int(v)] for v in validity_statuses if int(v) in _VALIDITY_SQL]
+        if parts:
+            validity_clause = "AND (" + " OR ".join(parts) + ") "
     sql = (
         f"{_SELECT_CONTROL} "
         "WHERE (%s IS NULL OR bc.contract_id = %s) "
@@ -226,6 +245,7 @@ def get_balance_controls(
         "AND (%s IS NULL OR bc.client_id = %s) "
         "AND (%s IS NULL OR (%s = 1 AND bc.contract_id IS NOT NULL) OR (%s = 0 AND bc.contract_id IS NULL)) "
         "AND (%s IS NULL OR (bc.end_date IS NOT NULL AND DATEDIFF(bc.end_date, CURDATE()) <= %s)) "
+        f"{validity_clause}"
         "ORDER BY bc.id_control DESC"
     )
     val = (

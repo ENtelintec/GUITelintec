@@ -43,6 +43,7 @@ from templates.Functions_Utils import (
 )
 from templates.misc.Functions_Files import write_log_file
 from templates.resources.midleware.MD_BalanceControl import (
+    balance_snapshot,
     resolve_balance_control_for_remission,
     validate_remission_custom_fields,
 )
@@ -390,7 +391,7 @@ def _normalize_history_value(field, value):
 
 
 def _diff_history_fields(old: dict, new: dict, fields: list) -> list:
-    """Devuelve [{field, before, after}] para los campos curados que cambiaron."""
+    """Devuelve una lista de dicts (field, before, after) para los campos curados que cambiaron."""
     changes = []
     for field in fields:
         before = _normalize_history_value(field, old.get(field))
@@ -445,7 +446,7 @@ def _remission_meta_from_payload(
 
 
 def _diff_remission_items(old_items_map: dict, payload_items: list) -> list:
-    """Resume altas/bajas/cambios de items: [{qa_item_id, description, action, fields:[...]}]."""
+    """Resume altas/bajas/cambios de items: lista de dicts (qa_item_id, description, action, fields)."""
     items_changes = []
     for item in payload_items:
         item_id = item.get("id")
@@ -1601,6 +1602,21 @@ def update_remission_balance_from_api(data, data_token, raw_metadata=None):
 
     old_extra_info = _coerce_extra_info(result_ra[19])
     extra_updates = _extra_info_updates(data["metadata"], raw_metadata, _BALANCE_EXTRA_KEY_MAP)
+    # Monto que consume saldo (junta 2026-10-22, docs/control_saldos_vencido_y_monto.md):
+    # un monto capturado debe ser > 0. `null` sigue permitido (= remisión sin monto
+    # cerrado: no consume). El saldo del control sigue al cambio por exclusión en
+    # lectura; aquí no hay candado contra el contratado.
+    if extra_updates.get("remission_amount") is not None:
+        try:
+            amount_value = float(extra_updates["remission_amount"])
+        except (TypeError, ValueError):
+            amount_value = None
+        if amount_value is None or amount_value <= 0:
+            return {
+                "data": None,
+                "msg": "Monto de remisión inválido",
+                "error": [f"remission_amount debe ser mayor a 0 (recibido: {extra_updates['remission_amount']})"],
+            }, 400
     merged_extra_info = dict(old_extra_info)
     merged_extra_info.update(extra_updates)
 
@@ -1669,7 +1685,15 @@ def update_remission_balance_from_api(data, data_token, raw_metadata=None):
         msg_out, data_token, ["administracion"], "Control de saldos actualizado", user, 0
     )
     write_log_file(log_file_admin_collecions, msg_out, data_token)
-    return {"data": {"id_remission": id_remission}, "msg": msg_out, "error": None}, 200
+    # Saldo resultante del control al que pertenece la remisión (result_ra[20]),
+    # ya con el remission_amount escrito, para repintar sin re-GET. None si la
+    # remisión no está en ningún control.
+    data_out = {
+        "id_remission": id_remission,
+        "remission_amount": merged_extra_info.get("remission_amount"),
+        "balance_control": balance_snapshot(result_ra[20] if len(result_ra) > 20 else None, data_token),
+    }
+    return {"data": data_out, "msg": msg_out, "error": None}, 200
 
 
 def delete_remission_from_api(data, data_token):

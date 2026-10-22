@@ -50,6 +50,7 @@ from templates.controllers.purchases.balance_control_controller import (
     CONTROL_COLUMNS,
     FORMAT_COLUMNS,
     MOVEMENT_COLUMNS,
+    VALIDITY_EXPIRING_DAYS,
     attach_remission_to_control,
     delete_balance_control,
     detach_remission_from_control,
@@ -83,6 +84,22 @@ CURRENCIES = ("MXN", "USD")
 # 3 = VIGENCIA: solo cambia end_date (amount 0, saldo intacto). Una INYECCION /
 # AJUSTE puede traer ademas new_end_date (monto y fecha en una sola fila).
 MOVEMENT_TYPES = {0: "INICIAL", 1: "INYECCION", 2: "AJUSTE", 3: "VIGENCIA"}
+# Vigencia derivada de end_date (docs/control_saldos_vencido_y_monto.md). Nunca se
+# almacena y NO bloquea nada: un control vencido sigue aceptando remisiones y
+# movimientos; una VIGENCIA (tipo 3) lo regresa a vigente. El front mapea etiquetas.
+VALIDITY_STATUSES = {0: "VIGENTE", 1: "POR VENCER", 2: "VENCIDO"}
+
+
+def validity_status_from_days(days_to_end) -> int:
+    """0 vigente (sin fecha o a mas de VALIDITY_EXPIRING_DAYS), 1 por vencer, 2 vencido."""
+    days = _int_or_none(days_to_end)
+    if days is None:
+        return 0
+    if days < 0:
+        return 2
+    if days <= VALIDITY_EXPIRING_DAYS:
+        return 1
+    return 0
 # La fecha de fin SOLO cambia por movimiento (un unico escritor con historial).
 _MOVEMENT_ONLY_KEYS = ("end_date",)
 FORMAT_KIND = "balance_control"
@@ -120,7 +137,7 @@ _PERM_NOTIFY = ["administracion"]
 
 # --- Helpers genericos -----------------------------------------------------------
 class _ApiError(Exception):
-    """Corta el flujo del midleware con un envelope {data, msg, error} + codigo listo."""
+    """Corta el flujo del midleware con un envelope (data, msg, error) + codigo listo."""
 
     def __init__(self, envelope: dict, code: int):
         super().__init__(envelope.get("msg"))
@@ -208,6 +225,8 @@ def _control_to_dict(row, header_keys=None) -> dict:
     data["available_amount"] = round(contracted - consumed, 2)
     # Aviso "por vencer": dias para end_date (negativo = vencido; None sin fecha).
     data["days_to_end"] = _int_or_none(data.get("days_to_end"))
+    data["validity_status"] = validity_status_from_days(data["days_to_end"])
+    data["validity_label"] = VALIDITY_STATUSES[data["validity_status"]]
     for key in header_keys or []:
         data[key] = data["extra_info"].get(key)
     return data
@@ -512,6 +531,28 @@ def resolve_balance_control_for_remission(contract_id, client_id, data_token):
 
 
 # --- Catalogos ------------------------------------------------------------------
+def balance_snapshot(id_control, data_token) -> dict | None:
+    """Saldo vigente de un control, para devolverlo en el 200 de PUT /remissionBalance
+    sin que el front re-GET el control (docs/control_saldos_vencido_y_monto.md).
+    None si no hay control, no existe o falla la lectura: nunca truena."""
+    id_control = _int_or_none(id_control)
+    if not id_control:
+        return None
+    flag, _e, row = get_balance_control_by_id(id_control, data_token)
+    if not flag or not row:
+        return None
+    control = _control_to_dict(row)
+    return {
+        "id_control": control["id_control"],
+        "is_active": bool(control.get("is_active")),
+        "contracted_amount": control["contracted_amount"],
+        "consumed_amount": control["consumed_amount"],
+        "available_amount": control["available_amount"],
+        "days_to_end": control["days_to_end"],
+        "validity_status": control["validity_status"],
+    }
+
+
 def get_balance_control_catalogs_from_api(data_token):
     flag, error, rows = get_iso_formats(data_token, only_active=True)
     if not flag:
@@ -524,6 +565,8 @@ def get_balance_control_catalogs_from_api(data_token):
             "value_types": list(VALUE_TYPES),
             "currencies": list(CURRENCIES),
             "movement_types": [{"code": k, "label": v} for k, v in MOVEMENT_TYPES.items()],
+            "validity_statuses": [{"code": k, "label": v} for k, v in VALIDITY_STATUSES.items()],
+            "expiring_days": VALIDITY_EXPIRING_DAYS,
         },
         "msg": None,
         "error": None,
@@ -758,9 +801,24 @@ def get_balance_controls_from_api(params: dict, data_token):
     if has_contract is not None:
         has_contract = 1 if has_contract else 0
     expiring_days = _to_int_or_none(params.get("expiring_days"))
+    # validity_status: un valor o lista "1,2"; cualquier valor fuera de 0..2 -> 400.
+    validity_statuses = None
+    raw_validity = str(params.get("validity_status") or "").strip()
+    if raw_validity:
+        validity_statuses = []
+        for token in raw_validity.split(","):
+            value = _to_int_or_none(token)
+            if value is None or value not in VALIDITY_STATUSES:
+                return {
+                    "data": None,
+                    "msg": "validity_status inválido",
+                    "error": [f"validity_status debe ser 0 (VIGENTE), 1 (POR VENCER) o 2 (VENCIDO), uno o lista; recibido '{raw_validity}'"],
+                }, 400
+            if value not in validity_statuses:
+                validity_statuses.append(value)
     flag, error, rows = get_balance_controls(
         contract_id, format_id, is_active, data_token, client_id=client_id, has_contract=has_contract,
-        expiring_days=expiring_days,
+        expiring_days=expiring_days, validity_statuses=validity_statuses,
     )
     if not flag:
         return {"data": None, "msg": "Error al consultar los controles de saldos", "error": error}, 400
@@ -1138,6 +1196,7 @@ def create_balance_movement_from_api(data, data_token):
             "new_end_date": new_end_date,
             "end_date": end_date_now,
             "days_to_end": days_to_end,
+            "validity_status": validity_status_from_days(days_to_end),
             "changed": changed,
         },
         "msg": msg,
