@@ -96,3 +96,7 @@ Si el Excel trae una columna `FECHA ENTREGA` / `FECHA DE ENTREGA` / `ENTREGA`, c
 - **Bloquear la reversión de una licitación convertida**: en `update_quotation_ocd_from_api`, junto al guard del control de entregas, rechazar `document_type: quotation` cuando `tender` no sea `None`.
 - **Fechas de partidas en el control de entregas** (F5): leerlas con `get_quotation_items_delivery_dates` o agregar `extra_info->>'$.delivery_date'` a la query de `_compute_items`; no duplicar la validación de formato (ya está en `items_delivery_date_errors`).
 - Si `delivery_date` dejara de ser overwrite (merge por llave), cambiar `_item_quotation_values` y `update_item_quotation` juntos: hoy `extra_info` se reescribe completo en cada `PUT`.
+
+## Notas posteriores
+
+- **2026-10-22** (F3 del [`plan_junta_2026_10_22.md`](planes/plan_junta_2026_10_22.md)): `GET /quotation/folio` (folio sugerido, patrón provisional) y **409 del `quotation_code`** al marcar una OCD (`POST /quotation`, `PUT /quotation/ocd`, `PUT /quotation` al marcar o renombrar). Detalle → [`folio_sugerido_cotizaciones.md`](folio_sugerido_cotizaciones.md).

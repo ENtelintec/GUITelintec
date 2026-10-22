@@ -12,7 +12,7 @@ sql_telintec_mod_rrhh.checkins   (scripts_db_handle/checkins.sql)
   timestamp DATETIME (hora del SERVIDOR, America/Mexico_City; en manuales la que captura RH)
   lat / lon DECIMAL(10,7) NULL · accuracy DECIMAL(8,2) NULL
   photo_key VARCHAR(255) NULL   (S3_RH_BUCKET: checkins/<emp_id>/<YYYY-MM-DD>/<epoch_ms>-<type>.<ext>; NULL solo en manuales)
-  manual TINYINT(1) · status TINYINT (0 VALIDO · 1 ANULADO) · created_by · device_info · history JSON · extra_info JSON · created_at
+  is_manual TINYINT (`manual` es palabra reservada en MySQL 8.4+/9; el JSON del API sigue diciendo `manual`) · status TINYINT (0 VALIDO · 1 ANULADO) · created_by · device_info · history JSON · extra_info JSON · created_at
 ```
 
 Catálogos en Python (`CHECKIN_TYPES`, `CHECKIN_STATUSES`), expuestos en `GET /common/checkin/catalogs`. Nada agregado se persiste: las horas por día salen de los eventos válidos en cada lectura.

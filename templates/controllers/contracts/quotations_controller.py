@@ -91,6 +91,39 @@ def find_ocd_by_client_po_number(client_po_number: str, exclude_id, data_token):
     return True, None, out[0]
 
 
+def get_quotation_codes_by_prefix(prefix: str, data_token):
+    """Folios (metadata.quotation_code) que empiezan con prefix, comparados sin
+    mayúsculas: receta max + 1 del folio sugerido (docs/folio_sugerido_cotizaciones.md),
+    como get_folios_by_pattern de SM. type_sql=2 -> lista de strings."""
+    sql = (
+        "SELECT JSON_UNQUOTE(JSON_EXTRACT(metadata, '$.quotation_code')) "
+        "FROM sql_telintec_mod_admin.quotations "
+        "WHERE UPPER(JSON_UNQUOTE(JSON_EXTRACT(metadata, '$.quotation_code'))) LIKE UPPER(%s)"
+    )
+    flag, error, out = execute_sql(sql, (prefix + "%",), 2, data_token)
+    if not flag or not isinstance(out, list):
+        return False, error, []
+    return True, None, [str(row[0]) for row in out if row and row[0]]
+
+
+def find_quotation_by_code(quotation_code: str, exclude_id, data_token):
+    """id de OTRA cotización (cualquier document_type) con el mismo quotation_code,
+    comparado sin mayúsculas ni espacios al borde, o None. Candado del folio al
+    marcar una OCD (docs/folio_sugerido_cotizaciones.md); preventa y CISCO no lo
+    usan. type_sql=1."""
+    sql = (
+        "SELECT id FROM sql_telintec_mod_admin.quotations "
+        "WHERE UPPER(TRIM(JSON_UNQUOTE(JSON_EXTRACT(metadata, '$.quotation_code')))) = UPPER(TRIM(%s)) "
+        "AND id <> %s LIMIT 1"
+    )
+    flag, error, out = execute_sql(sql, (quotation_code, exclude_id or 0), 1, data_token)
+    if not flag:
+        return False, error, None
+    if not isinstance(out, (list, tuple)) or len(out) == 0:
+        return True, None, None
+    return True, None, out[0]
+
+
 def get_quotation_items_delivery_dates(id_quotation: int, data_token):
     """[(id, partida, delivery_date | None)] de las partidas de la cotización, para
     validar un due_date nuevo contra las fechas ya capturadas. type_sql=2."""
@@ -260,6 +293,8 @@ def get_quotation(data_token, id_quotation: int | None = None):
     reordenes ni insertes llaves entre 'qa_item_id' y 'id_inventory'. Las 3
     llaves de seccion (section_index/section_title/section_type) van al FINAL
     (indices 12..14): el compare solo lee 0..11, asi que son inertes para el.
+    Despues van delivery_date (OCD) y las llaves CISCO item / smart_account /
+    service_months / delivery_time (docs/cotizaciones_cisco.md), null fuera de CISCO.
     """
     if id_quotation is not None:
         sql = (
@@ -282,7 +317,11 @@ def get_quotation(data_token, id_quotation: int | None = None):
             "  'section_index', qi.section_index, "
             "  'section_title', COALESCE(qi.extra_info->>'$.section_title', 'General'), "
             "  'section_type', COALESCE(qi.extra_info->>'$.section_type', 'general'), "
-            "  'delivery_date', NULLIF(qi.extra_info->>'$.delivery_date', '') "
+            "  'delivery_date', NULLIF(qi.extra_info->>'$.delivery_date', ''), "
+            "  'item', qi.extra_info->>'$.item', "
+            "  'smart_account', qi.extra_info->'$.smart_account', "
+            "  'service_months', qi.extra_info->'$.service_months', "
+            "  'delivery_time', qi.extra_info->>'$.delivery_time' "
             ")) AS products, "
             "q.creation, "
             "q.timestamps "
@@ -313,7 +352,11 @@ def get_quotation(data_token, id_quotation: int | None = None):
             "  'section_index', qi.section_index, "
             "  'section_title', COALESCE(qi.extra_info->>'$.section_title', 'General'), "
             "  'section_type', COALESCE(qi.extra_info->>'$.section_type', 'general'), "
-            "  'delivery_date', NULLIF(qi.extra_info->>'$.delivery_date', '') "
+            "  'delivery_date', NULLIF(qi.extra_info->>'$.delivery_date', ''), "
+            "  'item', qi.extra_info->>'$.item', "
+            "  'smart_account', qi.extra_info->'$.smart_account', "
+            "  'service_months', qi.extra_info->'$.service_months', "
+            "  'delivery_time', qi.extra_info->>'$.delivery_time' "
             ")) AS products, "
             "q.creation, "
             "q.timestamps "

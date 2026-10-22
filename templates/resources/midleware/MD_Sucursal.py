@@ -681,6 +681,26 @@ def receive_transfer_api(data, raw_payload, data_token):
     received, err_msg = _parse_received_items(raw_payload.get("items"), expected_ids)
     if received is None:
         return {"data": None, "msg": err_msg, "error": None}, 400
+    # Junta 2026-10-22 (F9, P-167): recibir MÁS de lo enviado no es una diferencia del
+    # traslado (nada que resolver en el principal) -> 400 listando productos; el sobrante
+    # se registra aparte como una entrada normal de la sede con referencia al traslado.
+    over = []
+    for item in transfer["items"]:
+        pid = int(item["id_product"])
+        sent = float(item.get("quantity_sent") or 0)
+        got = received[pid]["quantity_received"]
+        if got > sent:
+            over.append({"id_product": pid, "quantity_sent": sent, "quantity_received": got, "excess": round(got - sent, 4)})
+    if over:
+        detail = "; ".join(f"producto {o['id_product']}: enviado {o['quantity_sent']:g}, recibido {o['quantity_received']:g}" for o in over)
+        return {
+            "data": {"id_transfer": transfer["id_transfer"], "folio": transfer["folio"], "over_received": over},
+            "msg": (
+                f"Se recibió más de lo enviado en {len(over)} producto(s) del traslado {transfer['folio']} ({detail}). "
+                "Captura a lo más lo enviado; lo que llegó de más regístralo como una entrada normal de la sede con referencia al traslado"
+            ),
+            "error": [f"producto {o['id_product']}: quantity_received {o['quantity_received']:g} > quantity_sent {o['quantity_sent']:g}" for o in over],
+        }, 400
 
     now = _now_ts()
     id_warehouse = sede["id_warehouse"]

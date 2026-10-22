@@ -34,7 +34,9 @@ from templates.controllers.contracts.quotations_controller import (
     delete_quotation,
     delete_quotation_items,
     find_ocd_by_client_po_number,
+    find_quotation_by_code,
     get_quotation,
+    get_quotation_codes_by_prefix,
     get_quotation_items_delivery_dates,
     get_quotation_metadata,
     update_item_quotation,
@@ -104,6 +106,13 @@ __date__ = "$ 20/jun./2024  at 15:23 $"
 # completa y no debe degradar una OCD a cotización por omisión).
 QUOTATION_DOCUMENT_TYPES = ("quotation", "ocd")
 QUOTATION_CURRENCIES = ("MXN", "USD")
+# Folio sugerido (F3 de la junta 2026-10-22, docs/folio_sugerido_cotizaciones.md):
+# patrón PROVISIONAL "PREFIJO-AAAA-NNN" en esta sola constante; el definitivo lo
+# manda administración (P-157). format = cisco (FO-PRE-02, F10) solo cambia el
+# prefijo de una cotización; una OCD siempre sugiere OCD.
+QUOTATION_FORMATS = ("cisco",)
+QUOTATION_FOLIO_PREFIXES = {"quotation": "COT", "ocd": "OCD", "cisco": "COT-CISCO"}
+QUOTATION_FOLIO_DIGITS = 3
 _OCD_DEFAULTS = {
     "document_type": "quotation",
     "client_po_number": "",
@@ -170,6 +179,29 @@ def _ocd_conflict_envelope(po: str, other_id: int, id_quotation=None) -> dict:
     }
 
 
+def _ocd_folio_conflict(document_type: str, quotation_code, id_quotation, data_token) -> tuple[list, int | None]:
+    """Candado del folio solo al marcar una OCD (F3): devuelve (errores 400, id de
+    la OTRA cotización que ya usa el quotation_code -> 409). Preventa y CISCO
+    siguen sin candado para no romper lo histórico; un folio vacío no se valida."""
+    if document_type != "ocd":
+        return [], None
+    code = (quotation_code or "").strip()
+    if not code:
+        return [], None
+    flag, error, other_id = find_quotation_by_code(code, id_quotation, data_token)
+    if not flag:
+        return [f"no se pudo validar quotation_code: {error}"], None
+    return [], (int(other_id) if other_id else None)
+
+
+def _folio_conflict_envelope(code: str, other_id: int, id_quotation=None) -> dict:
+    return {
+        "data": {"id_quotation": id_quotation, "quotation_code": code, "conflict_quotation_id": other_id},
+        "msg": f"Ya existe la cotización {other_id} con el folio '{code}'",
+        "error": ["quotation_code repetido: el folio de una OCD no se repite"],
+    }
+
+
 def items_delivery_date_errors(products, due_date) -> list:
     """delivery_date por partida (opcional): YYYY-MM-DD y nunca después del
     due_date de la OCD. Ignora items con is_erased == 1. Lista de errores (vacía = ok)."""
@@ -225,6 +257,9 @@ def _normalize_quotation_metadata_out(metadata: dict) -> dict:
     for key, default in _OCD_DEFAULTS.items():
         if metadata.get(key) in (None, ""):
             metadata[key] = default
+    # CISCO (docs/cotizaciones_cisco.md): format "" = FO-PRE-01, "cisco" = FO-PRE-02.
+    metadata["format"] = str(metadata.get("format") or "").strip().lower()
+    metadata.setdefault("concept", "")
     return metadata
 
 
@@ -258,7 +293,13 @@ def get_quotations(
     document_type: str | None = None,
     with_costs: bool = False,
     status: str | None = None,
+    fmt: str | None = None,
 ):
+    # fmt (?format=): None -> sin CISCO salvo que se pidan OCD; "cisco" -> solo CISCO
+    # (404 en el GET por id si no lo es); "all" -> todas (docs/cotizaciones_cisco.md).
+    fmt = (fmt or "").strip().lower() or None
+    if fmt is not None and fmt not in QUOTATION_FORMATS + ("all",):
+        return {"data": [], "msg": "format debe ser cisco o all", "error": fmt}, 400
     try:
         id_quotation = (
             id_quotation if id_quotation is not None and int(id_quotation) != -1 else None
@@ -295,13 +336,20 @@ def get_quotations(
         creation = (
             creation.strftime(format_timestamps) if not isinstance(creation, str) else creation
         )
+        meta_out = _normalize_quotation_metadata_out(json.loads(metadata))
         data_out = {
             "id": id_q,
-            "metadata": _normalize_quotation_metadata_out(json.loads(metadata)),
+            "metadata": meta_out,
             "products": json.loads(products),
             "creation": creation,
             "timestamps": json.loads(timestamps),
         }
+        if fmt == "cisco" and meta_out["format"] != "cisco":
+            return {
+                "data": [],
+                "msg": f"No se encontró la cotización CISCO (ID {id_quotation})",
+                "error": "Quotation not found",
+            }, 404
         if with_costs:
             _attach_costs(data_out, data_token)
         return {"data": [data_out], "msg": None, "error": None}, 200
@@ -317,6 +365,11 @@ def get_quotations(
             if document_type is not None and meta["document_type"] != document_type:
                 continue
             if statuses is not None and _quotation_status(meta) not in statuses:
+                continue
+            if fmt == "cisco" and meta["format"] != "cisco":
+                continue
+            if fmt is None and meta["format"] == "cisco" and document_type != "ocd":
+                # Preventa (FO-PRE-01) no mezcla las CISCO; Cobranza sí ve las OCD de cualquier formato.
                 continue
             entry = {
                 "id": id_q,
@@ -637,6 +690,50 @@ def folio_from_department(data_token):
         folios_out.append(folio)
     data = {"folios": folios_out}
     return {"data": data, "msg": None, "error": None}, 200
+
+
+def suggest_quotation_folio(args, data_token):
+    """GET /quotation/folio?document_type=quotation|ocd&format=cisco -> siguiente
+    folio libre del año: prefijo provisional + AAAA + max + 1 (solo cuenta los
+    folios que siguen el patrón exacto). El front pre-llena y el usuario puede
+    editar; el candado 409 va aparte y solo en OCD."""
+    document_type = (args.get("document_type") or "quotation").strip().lower()
+    fmt = (args.get("format") or "").strip().lower()
+    errors = []
+    if document_type not in QUOTATION_DOCUMENT_TYPES:
+        errors.append("document_type debe ser quotation u ocd")
+    if fmt and fmt not in QUOTATION_FORMATS:
+        errors.append("format debe ser cisco o vacío")
+    if errors:
+        return {"data": None, "msg": "Parámetros inválidos", "error": errors}, 400
+    kind = "ocd" if document_type == "ocd" else (fmt or "quotation")
+    year = datetime.now().year
+    prefix = QUOTATION_FOLIO_PREFIXES[kind] + "-" + str(year) + "-"
+    flag, error, codes = get_quotation_codes_by_prefix(prefix, data_token)
+    if not flag:
+        return {"data": None, "msg": "No se pudieron leer los folios de las cotizaciones", "error": error}, 400
+    last, last_folio = 0, None
+    for code in codes:
+        tail = code[len(prefix):].strip()
+        if tail.isdigit() and int(tail) > last:
+            last, last_folio = int(tail), code
+    number = last + 1
+    folio = prefix + str(number).zfill(QUOTATION_FOLIO_DIGITS)
+    pattern = QUOTATION_FOLIO_PREFIXES[kind] + "-AAAA-" + "N" * QUOTATION_FOLIO_DIGITS
+    return {
+        "data": {
+            "folio": folio,
+            "pattern": pattern,
+            "document_type": document_type,
+            "format": fmt,
+            "year": year,
+            "number": number,
+            "last_folio": last_folio,
+            "provisional": True,
+        },
+        "msg": f"Folio sugerido {folio}",
+        "error": None,
+    }, 200
 
 
 def products_quotation_from_file(path: str):
@@ -1337,6 +1434,14 @@ def _item_quotation_values(product: dict) -> dict:
     delivery_date = str(product.get("delivery_date") or "").strip()
     if delivery_date:
         extra_info["delivery_date"] = delivery_date
+    if "item" in product:
+        # CISCO (docs/cotizaciones_cisco.md): solo las formas de /quotation/cisco traen
+        # `item`; las de preventa no, así que su extra_info no cambia.
+        months = product.get("service_months")
+        extra_info["item"] = str(product.get("item") or "").strip()
+        extra_info["smart_account"] = bool(product.get("smart_account"))
+        extra_info["service_months"] = int(months) if months not in (None, "") else None
+        extra_info["delivery_time"] = str(product.get("delivery_time") or "").strip()
     return {
         "partida": _num_item_field(product.get("partida"), 0),
         "section_index": _num_item_field(product.get("section_index"), 0),
@@ -1396,6 +1501,13 @@ def create_quotation_from_api(data, data_token):
         return {"data": None, "msg": "Datos OCD inválidos", "error": rule_errors}, 400
     if conflict_id:
         return _ocd_conflict_envelope(ocd_keys["client_po_number"], conflict_id), 409
+    folio_errors, folio_conflict = _ocd_folio_conflict(
+        ocd_keys["document_type"], data["metadata"].get("quotation_code"), None, data_token
+    )
+    if folio_errors:
+        return {"data": None, "msg": "Datos OCD inválidos", "error": folio_errors}, 400
+    if folio_conflict:
+        return _folio_conflict_envelope(str(data["metadata"].get("quotation_code") or ""), folio_conflict), 409
     date_errors = items_delivery_date_errors(data["products"], ocd_keys["due_date"])
     if date_errors:
         return {"data": None, "msg": "Fechas de entrega de partidas inválidas", "error": date_errors}, 400
@@ -1529,7 +1641,7 @@ def _msg_items_counts(counts: dict) -> str:
     return resumen
 
 
-def update_quoation_from_api(data, data_token):
+def update_quoation_from_api(data, data_token, fmt=None):
     # El PUT solo reemplaza las llaves del form: conserva las OCD cuando el payload
     # no las trae y las que el form no declara (`status` del create, `exchange_rate`
     # del análisis de costos). Ver docs/quotation_put_conserva_metadata.md.
@@ -1549,6 +1661,21 @@ def update_quoation_from_api(data, data_token):
             "msg": "Las partidas de una licitación se editan con PUT /tender/items",
             "error": [f"la cotización {data['id']} es de una licitación"],
         }, 400
+    # fmt: None = PUT /quotation (no toca CISCO: su form perdería concept e item),
+    # "cisco" = PUT /quotation/cisco (solo CISCO) — docs/cotizaciones_cisco.md.
+    existing_format = str(existing_meta.get("format") or "").strip().lower()
+    if fmt is None and existing_format == "cisco":
+        return {
+            "data": None,
+            "msg": "Las cotizaciones CISCO se editan con PUT /quotation/cisco",
+            "error": [f"la cotización {data['id']} tiene format cisco"],
+        }, 400
+    if fmt == "cisco" and existing_format != "cisco":
+        return {
+            "data": None,
+            "msg": f"No se encontró la cotización CISCO (ID {data['id']})",
+            "error": "Quotation not found",
+        }, 404
     ocd_keys, errors = _merge_ocd_keys(data["metadata"], existing_meta)
     if errors:
         return {"data": None, "msg": "Datos OCD inválidos", "error": errors}, 400
@@ -1562,6 +1689,17 @@ def update_quoation_from_api(data, data_token):
             return {"data": None, "msg": "Datos OCD inválidos", "error": rule_errors}, 400
         if conflict_id:
             return _ocd_conflict_envelope(ocd_keys["client_po_number"], conflict_id, data["id"]), 409
+    new_code = (data["metadata"].get("quotation_code") or "").strip()
+    if ocd_keys["document_type"] == "ocd" and (
+        (existing_meta.get("document_type") or "quotation") != "ocd"
+        or new_code.upper() != (existing_meta.get("quotation_code") or "").strip().upper()
+    ):
+        # Candado del folio (F3): al marcar OCD desde el PUT grande o al renombrar el folio de una OCD.
+        folio_errors, folio_conflict = _ocd_folio_conflict("ocd", new_code, data["id"], data_token)
+        if folio_errors:
+            return {"data": None, "msg": "Datos OCD inválidos", "error": folio_errors}, 400
+        if folio_conflict:
+            return _folio_conflict_envelope(new_code, folio_conflict, data["id"]), 409
     date_errors = items_delivery_date_errors(data["products"], ocd_keys["due_date"])
     if date_errors:
         return {"data": None, "msg": "Fechas de entrega de partidas inválidas", "error": date_errors}, 400
@@ -1692,6 +1830,15 @@ def update_quotation_ocd_from_api(data, data_token):
         return {"data": None, "msg": "Datos OCD inválidos", "error": rule_errors}, 400
     if conflict_id:
         return _ocd_conflict_envelope(ocd_keys["client_po_number"], conflict_id, id_quotation), 409
+    if (metadata.get("document_type") or "quotation") != "ocd":
+        # Candado del folio solo al MARCAR (F3): una OCD ya marcada ajusta sus datos sin re-chequear.
+        folio_errors, folio_conflict = _ocd_folio_conflict(
+            ocd_keys["document_type"], metadata.get("quotation_code"), id_quotation, data_token
+        )
+        if folio_errors:
+            return {"data": None, "msg": "Datos OCD inválidos", "error": folio_errors}, 400
+        if folio_conflict:
+            return _folio_conflict_envelope(str(metadata.get("quotation_code") or ""), folio_conflict, id_quotation), 409
     before = {k: metadata.get(k) for k in _OCD_DEFAULTS}
     if ocd_keys["document_type"] != "ocd" and (metadata.get("document_type") == "ocd"):
         id_dc = quotation_has_active_delivery_control(id_quotation, data_token)

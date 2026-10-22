@@ -35,12 +35,12 @@ CHECKIN_COLUMNS = (
 DETAIL_COLUMNS = CHECKIN_COLUMNS + ("history", "extra_info")
 _SELECT = (
     "SELECT c.id, c.emp_id, e.name, e.l_name, c.type, c.timestamp, c.lat, c.lon, c.accuracy, "
-    "c.photo_key, c.manual, c.status, c.created_by, c.device_info, c.created_at "
+    "c.photo_key, c.is_manual, c.status, c.created_by, c.device_info, c.created_at "
     f"FROM {_TABLE} c LEFT JOIN {_TABLE_EMP} e ON e.employee_id = c.emp_id "
 )
 _SELECT_DETAIL = (
     "SELECT c.id, c.emp_id, e.name, e.l_name, c.type, c.timestamp, c.lat, c.lon, c.accuracy, "
-    "c.photo_key, c.manual, c.status, c.created_by, c.device_info, c.created_at, c.history, c.extra_info "
+    "c.photo_key, c.is_manual, c.status, c.created_by, c.device_info, c.created_at, c.history, c.extra_info "
     f"FROM {_TABLE} c LEFT JOIN {_TABLE_EMP} e ON e.employee_id = c.emp_id "
 )
 
@@ -48,7 +48,7 @@ _SELECT_DETAIL = (
 def insert_checkin(data: dict, data_token):
     """Un evento. type_sql=4 -> id."""
     sql = (
-        f"INSERT INTO {_TABLE} (emp_id, type, timestamp, lat, lon, accuracy, photo_key, manual, status, "
+        f"INSERT INTO {_TABLE} (emp_id, type, timestamp, lat, lon, accuracy, photo_key, is_manual, status, "
         "created_by, device_info, history, extra_info) "
         "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 0, %s, %s, %s, %s)"
     )

@@ -48,6 +48,8 @@ DML         scripts_db_handle/employees_emails_normalize.sql   (usuario, dev →
 
 El dominio se guarda en minúsculas; la parte local tal cual (SES compara la parte local contra las identidades).
 
+**Pantalla (revisión 2026-10-22)**: nunca hubo columna aparte para el correo institucional y el personal, y en dev ningún empleado tiene dos correos reales (las comas sueltas vienen de una pantalla vieja con dos cajas). El formulario pinta **dos inputs fijos**, institucional (`@telintec.com.mx`) y personal, y manda `emails` con los que estén llenos (`P-171`); al leer, el institucional es el del dominio `telintec.com.mx`. La lista admite más por si hiciera falta, sin cambio de back.
+
 ### GET de empleados — cambio
 
 Cada empleado gana `emails` (lista, `[]` si no hay) junto a `email` (string). `GET /common/employees/<status>`, `GET /rrhh/employees/info/<status>`, `GET /rrhh/employee/info/<id>`. Para pintar o mandar correo usar `emails`; `email` se queda por compatibilidad.
