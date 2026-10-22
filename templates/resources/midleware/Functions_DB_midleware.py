@@ -7,6 +7,7 @@ import io
 import json
 
 from static.constants import format_date
+from templates.resources.methods.Functions_Aux_RH import split_emails
 from templates.controllers.rrhh.quizz_models_controller import (
     get_quizz_model_template_db,
 )
@@ -68,6 +69,7 @@ def get_info_employees_with_status(status: str, data_token=None):
                 "dep": department,
                 "modality": modality,
                 "email": email,
+                "emails": split_emails(email),
                 "contract": contract,
                 "admission": admission
                 if admission is None or isinstance(admission, str)
@@ -126,6 +128,7 @@ def get_employees_directory_with_status(status: str, data_token):
                 "lastname": lastname.strip().upper() if lastname else lastname,
                 "phone": phone,
                 "email": email,
+                "emails": split_emails(email),
                 "dep": department,
                 "dep_id": dep_id,
                 "contract": contract,
@@ -257,6 +260,7 @@ def get_info_employee_id(id_emp: int, data_token):
         "dep": department,
         "modality": modality,
         "email": email,
+        "emails": split_emails(email),
         "contract": contract,
         "admission": admission
         if admission is None or isinstance(admission, str)

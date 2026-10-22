@@ -78,7 +78,19 @@ from templates.controllers.employees.employees_controller import (
 from templates.controllers.employees.vacations_controller import (
     delete_vacation,
 )
+from static.Models.api_checkin_models import (
+    CheckinCancelForm,
+    CheckinManualForm,
+    checkin_cancel_model,
+    checkin_manual_model,
+)
 from templates.resources.methods.Functions_Aux_Login import token_verification_procedure
+from templates.resources.midleware.MD_Checkin import (
+    cancel_checkin_api,
+    create_manual_checkin_api,
+    download_checkin_photo_api,
+    get_checkins_api,
+)
 from templates.resources.midleware.Functions_DB_midleware import (
     create_csv_file_employees,
     create_csv_file_medical,
@@ -1044,3 +1056,63 @@ class DownloadFileQuizzReport(Resource):
             return {"data": None, "msg": data_out, "error": None}, code
         else:
             return send_file(data_out, as_attachment=True)
+
+
+# --- Check-in con foto (docs/checkin_foto.md): consulta y correcciones de RH -----------------
+@ns.route("/checkins")
+class CheckinsList(Resource):
+    @ns.doc(params={"emp_id": "Filtra por empleado", "date_from": "YYYY-MM-DD (default: 30 dias atras)", "date_to": "YYYY-MM-DD (default hoy)", "all": "1 -> incluye anulados"})
+    @ns.expect(expected_headers_per)
+    def get(self):
+        """Eventos de check-in en el rango + resumen por empleado y dia (calculado en lectura)."""
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        params = {"emp_id": request.args.get("emp_id"), "date_from": request.args.get("date_from"),
+                  "date_to": request.args.get("date_to"), "all": request.args.get("all")}
+        data_out, code = get_checkins_api(params, data_token)
+        return data_out, code
+
+
+@ns.route("/checkin")
+class CheckinManual(Resource):
+    @ns.expect(expected_headers_per, checkin_manual_model)
+    def post(self):
+        """RH registra un evento por el empleado (olvido fichar): sin foto, hora capturada no futura, motivo obligatorio."""
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        validator = CheckinManualForm.from_json(ns.payload)  # pyrefly: ignore
+        if not validator.validate():
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
+        data_out, code = create_manual_checkin_api(validator.data, data_token)
+        return data_out, code
+
+
+@ns.route("/checkin/cancel")
+class CheckinCancel(Resource):
+    @ns.expect(expected_headers_per, checkin_cancel_model)
+    def put(self):
+        """Anula un evento (status 1, motivo en history). No se borra."""
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        validator = CheckinCancelForm.from_json(ns.payload)  # pyrefly: ignore
+        if not validator.validate():
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
+        data_out, code = cancel_checkin_api(validator.data, data_token)
+        return data_out, code
+
+
+@ns.route("/checkin/<int:id_checkin>/photo")
+class CheckinPhoto(Resource):
+    @ns.expect(expected_headers_per)
+    def get(self, id_checkin):
+        """Foto del registro (blob en 200; envelope en 4xx; 404 en manuales sin foto)."""
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        envelope, local_path, code = download_checkin_photo_api(id_checkin, data_token)
+        if envelope is not None or not local_path:
+            return envelope, code
+        return send_file(local_path, as_attachment=True, download_name=os.path.basename(local_path))

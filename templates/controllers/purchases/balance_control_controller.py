@@ -339,6 +339,30 @@ def set_active_balance_control(id_control: int, is_active: int, history: list, d
     return flag, e, out
 
 
+def get_last_amount_movement_ids(data_token):
+    """{id_control: id del ultimo movimiento de dinero (INYECCION 1 / AJUSTE 2)}.
+    Referencia de las marcas de porcentaje del barrido de avisos: cualquier
+    inyeccion o ajuste re-arma los umbrales aunque el contratado vuelva al mismo
+    numero. type_sql=2."""
+    sql = f"SELECT id_control, MAX(id_movement) FROM {_TABLE_MOV} WHERE type IN (1, 2) GROUP BY id_control"
+    flag, e, out = execute_sql(sql, None, 5, data_token)
+    if not flag or not isinstance(out, list):
+        return False, e, {}
+    return True, None, {int(r[0]): int(r[1]) for r in out if r[0] is not None}
+
+
+def set_balance_control_notified(id_control: int, notified: dict, data_token):
+    """Marcas del barrido diario de avisos (docs/avisos_saldos_entregas_traslados.md)
+    en extra_info.notified. JSON_SET sobre la llave: no toca el resto de extra_info
+    ni el history. type_sql=3."""
+    sql = (
+        f"UPDATE {_TABLE} SET extra_info = JSON_SET(COALESCE(extra_info, JSON_OBJECT()), "
+        "'$.notified', CAST(%s AS JSON)) WHERE id_control = %s"
+    )
+    flag, e, out = execute_sql(sql, (json.dumps(notified, ensure_ascii=False), id_control), 3, data_token)
+    return flag, e, out
+
+
 def update_balance_control_history(id_control: int, history: list, data_token):
     """Solo history (p.ej. cambios de membresia de remisiones). type_sql=3."""
     sql = f"UPDATE {_TABLE} SET history = %s WHERE id_control = %s"

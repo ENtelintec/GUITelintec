@@ -4,7 +4,17 @@
 
 ## Estado
 
-**2026-10-22 (tarde)**: **F1 hecha y verificada contra dev (33/33, `Tests/tester_balance_vencido.py`; regresión de saldos, cancelación y entregas en verde)** → [`control_saldos_vencido_y_monto.md`](../control_saldos_vencido_y_monto.md). Siguiente: F2 (barrido de avisos; la parte de OCD espera a F5) o F6 (remisión de OCD).
+**2026-10-22 (noche, 5)**: **F7 hecha y verificada contra dev (23/23, `Tests/tester_employee_emails.py`; nómina SES/descarga/vacaciones en verde)** → [`empleados_correos_y_nomina_activos.md`](../empleados_correos_y_nomina_activos.md); DML `employees_emails_normalize.sql` para el usuario (`P-163`). **F8 back hecho** → [`checkin_foto.md`](../checkin_foto.md): validaciones verificadas (15/15, `Tests/tester_checkin.py`); las pruebas sobre la tabla esperan el DDL `checkins.sql` en dev (`P-165`), el tester las corre solo al existir. Siguiente: F3 (folio) → F10 (CISCO) → F9 (traslados).
+
+**2026-10-22 (noche, 4)**: **F2 hecha y verificada contra dev (35/35, `Tests/tester_balance_alerts.py`; regresión de saldos y entregas en verde)** → [`avisos_saldos_entregas_traslados.md`](../avisos_saldos_entregas_traslados.md). Con esto el bloque de Cobranza/OCD de la junta (F1, F2, F4, F5, F6) está completo en el back.
+
+**2026-10-22 (noche, 3)**: **F5 hecha y verificada contra dev (26/26, `Tests/tester_delivery_vencimiento.py`; regresión de entregas, OCD, PDF, saldos y cancelación en verde)** → [`control_entregas_vencimiento.md`](../control_entregas_vencimiento.md).
+
+**2026-10-22 (noche, 2)**: **F4 hecha y verificada contra dev (40/40, `Tests/tester_ocd_rules.py`; regresión de cotizaciones, OCD, licitaciones, costos y entregas en verde)** → [`ocd_reglas_po_vencimiento.md`](../ocd_reglas_po_vencimiento.md).
+
+**2026-10-22 (noche)**: **F6 hecha y verificada contra dev (25/25, `Tests/tester_remission_no_attachments.py`; regresión de remisiones, saldos, anexos y entregas en verde)** → [`remision_ocd_campos_y_sin_anexos.md`](../remision_ocd_campos_y_sin_anexos.md).
+
+**2026-10-22 (tarde)**: **F1 hecha y verificada contra dev (33/33, `Tests/tester_balance_vencido.py`; regresión de saldos, cancelación y entregas en verde)** → [`control_saldos_vencido_y_monto.md`](../control_saldos_vencido_y_monto.md).
 
 **2026-10-22**: grill cerrado, plan escrito.
 

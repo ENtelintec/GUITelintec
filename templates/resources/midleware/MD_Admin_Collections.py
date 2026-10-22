@@ -340,6 +340,71 @@ def cancel_remission_from_api(data, data_token):
     }, 200
 
 
+def set_remission_no_attachments_from_api(data, raw_payload, data_token):
+    """PUT /remission/noAttachments (docs/remision_ocd_campos_y_sin_anexos.md): marca
+    o desmarca `extra_info.no_attachments` (bool) para que la pantalla deje de pedir
+    anexos en una remisión que no los lleva. Solo administracion (permiso en la ruta).
+    Marcar con anexos reales (lo que no sea firma) -> 400; subir un anexo la quita sola
+    (create_activity_report_attachment_api). Idempotente: repetir el mismo valor es 200
+    sin escribir. Sin efecto en el PDF ni en saldos/entregas."""
+    timezone = pytz.timezone(timezone_software)
+    timestamp = datetime.now(pytz.utc).astimezone(timezone).strftime(format_timestamps)
+    user = data_token.get("emp_id", "desconocido")
+    id_remission = data["id"]
+    if not isinstance(raw_payload, dict) or "no_attachments" not in raw_payload:
+        return {"data": None, "msg": "Falta no_attachments", "error": ["no_attachments (true|false) es obligatorio"]}, 400
+    target = bool(data.get("no_attachments"))
+    flag, error, result_ra = get_remission_by_id(id_remission, data_token)
+    if not flag:
+        return {"data": None, "msg": "Error al obtener la remisión", "error": error}, 400
+    if not isinstance(result_ra, (list, tuple)) or len(result_ra) == 0 or result_ra[0] is None:
+        return {"data": None, "msg": f"No se encontró la remisión (ID {id_remission})", "error": "remisión no encontrada"}, 404
+    cancelled = _cancelled_remission_error(result_ra, "marcar sin anexos")
+    if cancelled:
+        return cancelled, 400
+    extra_info = _coerce_extra_info(result_ra[19])
+    current = bool(extra_info.get("no_attachments"))
+    files = json.loads(result_ra[17]) if result_ra[17] else []  # pyrefly: ignore
+    real_attachments = [f.get("filename") for f in files if _classify_remission_file(f) != "firma"]
+    if target and real_attachments:
+        return {
+            "data": {"id_remission": id_remission, "no_attachments": current, "attachments": real_attachments},
+            "msg": f"La remisión {id_remission} ya tiene {len(real_attachments)} anexo(s); no se puede marcar sin anexos",
+            "error": [f"anexo: {name}" for name in real_attachments],
+        }, 400
+    if target == current:
+        return {
+            "data": {"id_remission": id_remission, "no_attachments": current, "attachments_count": len(real_attachments)},
+            "msg": f"La remisión {id_remission} ya estaba {'marcada' if current else 'sin marcar'} como sin anexos",
+            "error": None,
+        }, 200
+    history_entry = {
+        "timestamp": timestamp,
+        "user": user,
+        "action": "Actualización",
+        "comment": "Marcada como remisión sin anexos." if target else "Marca 'sin anexos' retirada.",
+        "changes": {"metadata": [{"field": "no_attachments", "before": current, "after": target}], "items": []},
+    }
+    flag, error, rows = patch_activity_report(
+        id_remission, data_token, extra_info_set={"no_attachments": target}, history_entry=history_entry
+    )
+    if not flag:
+        return {"data": None, "msg": "No se pudo actualizar la marca de anexos", "error": error}, 400
+    if not rows:
+        return _cancelled_meanwhile_error(id_remission, "marcar sin anexos"), 400
+    msg_out = (
+        f"Remisión {id_remission} (folio {result_ra[2]}) marcada como sin anexos"
+        if target else f"Remisión {id_remission} (folio {result_ra[2]}): marca 'sin anexos' retirada"
+    )
+    create_notification_permission(msg_out, data_token, ["administracion"], "Remisión sin anexos", user, 0)
+    write_log_file(log_file_admin_collecions, msg_out, data_token)
+    return {
+        "data": {"id_remission": id_remission, "no_attachments": target, "attachments_count": len(real_attachments)},
+        "msg": msg_out,
+        "error": None,
+    }, 200
+
+
 def _balance_control_lock_error(result_ra, contract_id, metadata: dict):
     """Una remisión ligada a un control de saldos ACTIVO no cambia de contrato ni
     de cliente por los PUT de remisión: mover remisiones entre controles es acción
@@ -1270,6 +1335,8 @@ def get_remission_from_api(
                 **{f: extra_info.get(f) for f in _GET_EXTRA_NUMERIC_FIELDS},
                 # Valores de las columnas dinámicas del control de saldos ({key: value}).
                 "custom_fields": _custom_fields_of(extra_info),
+                # Marca "sin anexos" de administración (docs/remision_ocd_campos_y_sin_anexos.md).
+                "no_attachments": bool(extra_info.get("no_attachments")),
             }
         # Con include_items=0 la llave items no viene (listados ligeros, p.ej.
         # control de saldos); con items se mantiene el shape historico.
@@ -2241,12 +2308,38 @@ def create_activity_report_attachment_api(data, data_token):
             ),
             "error": "conflicto de escritura en files",
         }, 409
+    # Un anexo real (no firma) contradice la marca "sin anexos": se quita sola, con
+    # history, en vez de rechazar la subida (decisión 2026-10-22). Best-effort: el
+    # anexo ya quedó guardado; si el UPDATE falla solo se registra en el log.
+    no_attachments_cleared = False
+    if category != "firma" and bool(_coerce_extra_info(report_data[19]).get("no_attachments")):  # pyrefly: ignore
+        flag_na, error_na, rows_na = patch_activity_report(
+            id_report,
+            data_token,
+            extra_info_set={"no_attachments": False},
+            history_entry={
+                "timestamp": timestamp.strftime(format_timestamps),
+                "user": data_token.get("emp_id"),
+                "action": "Actualización",
+                "comment": f"Marca 'sin anexos' retirada automáticamente al adjuntar {filename}.",
+                "changes": {"metadata": [{"field": "no_attachments", "before": True, "after": False}], "items": []},
+            },
+        )
+        no_attachments_cleared = bool(flag_na and rows_na)
+        if no_attachments_cleared:
+            log_msg += " (marca 'sin anexos' retirada)"
+        else:
+            write_log_file(
+                log_file_admin_collecions,
+                f"No se pudo retirar la marca 'sin anexos' del reporte {id_report} tras adjuntar {filename}: {error_na}",
+                data_token,
+            )
     create_notification_permission_notGUI(
         log_msg, data_token, ["administracion", "operaciones", "sgi"], data_token.get("emp_id"), 0
     )
     write_log_file(log_file_admin_collecions, log_msg, data_token)
     return {
-        "data": {"path": path_aws, "category": category, "replaced": replaced},
+        "data": {"path": path_aws, "category": category, "replaced": replaced, "no_attachments_cleared": no_attachments_cleared},
         "msg": f"Archivo adjuntado correctamente al reporte (ID {id_report})",
         "error": None,
     }, 201

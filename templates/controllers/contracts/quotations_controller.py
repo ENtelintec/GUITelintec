@@ -72,6 +72,38 @@ def get_quotation_metadata(id_quotation: int, data_token):
     return flag, error, out
 
 
+def find_ocd_by_client_po_number(client_po_number: str, exclude_id, data_token):
+    """id de OTRA cotización OCD con el mismo client_po_number (comparado sin
+    mayúsculas ni espacios al borde, como la collation general_ci de tender_number)
+    o None. Candado en código porque la llave vive en metadata JSON
+    (docs/ocd_reglas_po_vencimiento.md). type_sql=1."""
+    sql = (
+        "SELECT id FROM sql_telintec_mod_admin.quotations "
+        "WHERE JSON_UNQUOTE(JSON_EXTRACT(metadata, '$.document_type')) = 'ocd' "
+        "AND UPPER(TRIM(JSON_UNQUOTE(JSON_EXTRACT(metadata, '$.client_po_number')))) = UPPER(TRIM(%s)) "
+        "AND id <> %s LIMIT 1"
+    )
+    flag, error, out = execute_sql(sql, (client_po_number, exclude_id or 0), 1, data_token)
+    if not flag:
+        return False, error, None
+    if not isinstance(out, (list, tuple)) or len(out) == 0:
+        return True, None, None
+    return True, None, out[0]
+
+
+def get_quotation_items_delivery_dates(id_quotation: int, data_token):
+    """[(id, partida, delivery_date | None)] de las partidas de la cotización, para
+    validar un due_date nuevo contra las fechas ya capturadas. type_sql=2."""
+    sql = (
+        "SELECT id, partida, NULLIF(extra_info->>'$.delivery_date', '') "
+        "FROM sql_telintec_mod_admin.quotation_items WHERE quotation_id = %s ORDER BY partida"
+    )
+    flag, error, out = execute_sql(sql, (id_quotation,), 2, data_token)
+    if not flag or not isinstance(out, list):
+        return False, error, []
+    return True, None, out
+
+
 def update_quotation(id_quotation, metadata: dict, data_token, timestamps=None):
     time_zone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
@@ -249,7 +281,8 @@ def get_quotation(data_token, id_quotation: int | None = None):
             "  'id_inventory', qi.id_inventory, "
             "  'section_index', qi.section_index, "
             "  'section_title', COALESCE(qi.extra_info->>'$.section_title', 'General'), "
-            "  'section_type', COALESCE(qi.extra_info->>'$.section_type', 'general') "
+            "  'section_type', COALESCE(qi.extra_info->>'$.section_type', 'general'), "
+            "  'delivery_date', NULLIF(qi.extra_info->>'$.delivery_date', '') "
             ")) AS products, "
             "q.creation, "
             "q.timestamps "
@@ -279,7 +312,8 @@ def get_quotation(data_token, id_quotation: int | None = None):
             "  'id_inventory', qi.id_inventory, "
             "  'section_index', qi.section_index, "
             "  'section_title', COALESCE(qi.extra_info->>'$.section_title', 'General'), "
-            "  'section_type', COALESCE(qi.extra_info->>'$.section_type', 'general') "
+            "  'section_type', COALESCE(qi.extra_info->>'$.section_type', 'general'), "
+            "  'delivery_date', NULLIF(qi.extra_info->>'$.delivery_date', '') "
             ")) AS products, "
             "q.creation, "
             "q.timestamps "

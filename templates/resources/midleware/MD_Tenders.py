@@ -52,6 +52,7 @@ from templates.resources.midleware.Functions_midleware_admin import (
     _dict_products_from_quotation,
     _msg_items_counts,
     get_quotations,
+    items_delivery_date_errors,
     update_items_quotation_from_api,
 )
 from templates.resources.midleware.MD_BalanceControl import (
@@ -116,6 +117,9 @@ def _tender_to_dict(row, with_history: bool = False) -> dict:
     data["currency"] = data.get("currency") or "MXN"
     data["items_count"] = int(data.get("items_count") or 0)
     data["items_total"] = round(float(data.get("items_total") or 0), 2)
+    # Licitación ganada convertida a OCD (PUT /quotation/ocd sobre su cotización interna).
+    data["document_type"] = data.get("document_type") or "quotation"
+    data["client_po_number"] = data.get("client_po_number") or ""
     if with_history:
         data["history"] = _load_json(data.get("history"), []) or []
     else:
@@ -471,6 +475,12 @@ def update_tender_items_from_api(data: dict, data_token):
     # Con contrato ya creado sobre esta cotización, las partidas nuevas nacen con su contract_id.
     _, _, contract_id = get_contract_id_by_quotation(id_quotation, data_token)
     products = data.get("products") or []
+    # delivery_date por partida: formato y nunca después del due_date de la OCD
+    # (docs/ocd_reglas_po_vencimiento.md).
+    quotation_meta = _load_json(result[0][1], {}) or {}
+    date_errors = items_delivery_date_errors(products, quotation_meta.get("due_date"))
+    if date_errors:
+        _bad("Fechas de entrega de partidas inválidas", date_errors)
     flag_list, error_list, _result_list, counts, items_out = update_items_quotation_from_api(
         products, id_quotation, contract_id, dict_products, data_token
     )

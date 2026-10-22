@@ -54,13 +54,17 @@ CONTROL_COLUMNS = (
     "quotation_approved_date",
     "client_name",
     "remissions_count",
+    # Vencimiento de la OCD (junta 2026-10-22, docs/control_entregas_vencimiento.md):
+    # metadata.due_date de la cotizacion; el midleware deriva days_to_due / validity_status. Append-only.
+    "quotation_due_date",
 )
 _SELECT_CONTROL = (
     "SELECT dc.id_control, dc.quotation_id, dc.client_id, dc.title, dc.client_po_number, "
     "dc.currency, dc.status, dc.custom_fields, dc.created_by, dc.timestamp, dc.history, dc.extra_info, "
     "q.metadata->>'$.quotation_code', q.metadata->>'$.document_type', q.metadata->>'$.approved_date', "
     "cu.name, "
-    f"(SELECT COUNT(*) FROM {_TABLE_AR} ar WHERE ar.delivery_control_id = dc.id_control) "
+    f"(SELECT COUNT(*) FROM {_TABLE_AR} ar WHERE ar.delivery_control_id = dc.id_control), "
+    "NULLIF(q.metadata->>'$.due_date', '') "
     f"FROM {_TABLE} dc "
     f"LEFT JOIN {_TABLE_Q} q ON q.id = dc.quotation_id "
     f"LEFT JOIN {_TABLE_CUSTOMERS} cu ON cu.id_customer = dc.client_id "
@@ -77,7 +81,12 @@ ORDER_ITEM_COLUMNS = (
     "description",
     "n_part",
     "brand",
+    # Fecha de entrega comprometida por partida (extra_info, docs/ocd_reglas_po_vencimiento.md). Append-only.
+    "delivery_date",
 )
+# Expresion SQL por columna de ORDER_ITEM_COLUMNS (las que no son columna fisica).
+_ORDER_ITEM_EXPRS = {"delivery_date": "NULLIF(extra_info->>'$.delivery_date', '')"}
+_ORDER_ITEM_SELECT = ", ".join(_ORDER_ITEM_EXPRS.get(c, c) for c in ORDER_ITEM_COLUMNS)
 
 # Remisiones vistas desde el control (append-only).
 REMISSION_LINK_COLUMNS = (
@@ -225,6 +234,19 @@ def set_delivery_control_status(id_control: int, status: int, history: list | No
     return flag, e, out
 
 
+def set_delivery_control_notified(id_control: int, notified: dict, data_token):
+    """Marcas del barrido diario de avisos (docs/avisos_saldos_entregas_traslados.md)
+    en extra_info.notified. JSON_SET sobre la llave: no toca el resto. type_sql=3."""
+    import json as _json
+
+    sql = (
+        f"UPDATE {_TABLE} SET extra_info = JSON_SET(COALESCE(extra_info, JSON_OBJECT()), "
+        "'$.notified', CAST(%s AS JSON)) WHERE id_control = %s"
+    )
+    flag, e, out = execute_sql(sql, (_json.dumps(notified, ensure_ascii=False), id_control), 3, data_token)
+    return flag, e, out
+
+
 def update_delivery_control_history(id_control: int, history: list, data_token):
     sql = f"UPDATE {_TABLE} SET history = %s WHERE id_control = %s"
     val = (json.dumps(history, ensure_ascii=False), id_control)
@@ -244,7 +266,7 @@ def delete_delivery_control(id_control: int, data_token):
 def get_quotation_order_items(quotation_id: int, data_token):
     """Partidas de la cotización (ORDER_ITEM_COLUMNS). type_sql=2."""
     sql = (
-        f"SELECT {', '.join(ORDER_ITEM_COLUMNS)} FROM {_TABLE_QI} "
+        f"SELECT {_ORDER_ITEM_SELECT} FROM {_TABLE_QI} "
         "WHERE quotation_id = %s ORDER BY section_index, partida, id"
     )
     return _rows(*execute_sql(sql, (quotation_id,), 2, data_token))
@@ -283,14 +305,18 @@ def get_delivered_by_item(quotation_id: int, exclude_report_id: int | None, data
 
 def get_delivery_totals_by_quotations(quotation_ids: list, data_token):
     """Para el listado: por cotización (quotation_id, ordered_qty, ordered_amount,
-    delivered_qty, delivered_amount, last_date). type_sql=2."""
+    delivered_qty, delivered_amount, last_date, items_count, items_complete).
+    items_complete = partidas con entregado >= pedido (misma tolerancia que el
+    detalle). Append-only. type_sql=2."""
     if not quotation_ids:
         return True, None, []
     ph = _placeholders(quotation_ids)
     sql = (
         "SELECT qi.quotation_id, "
         "COALESCE(SUM(qi.quantity), 0), COALESCE(SUM(qi.quantity * qi.price_unit), 0), "
-        "COALESCE(SUM(d.delivered_qty), 0), COALESCE(SUM(d.delivered_amount), 0), MAX(d.last_date) "
+        "COALESCE(SUM(d.delivered_qty), 0), COALESCE(SUM(d.delivered_amount), 0), MAX(d.last_date), "
+        "COUNT(*), "
+        "COALESCE(SUM(CASE WHEN COALESCE(d.delivered_qty, 0) >= COALESCE(qi.quantity, 0) - 0.000001 THEN 1 ELSE 0 END), 0) "
         f"FROM {_TABLE_QI} qi "
         "LEFT JOIN ("
         "  SELECT qai.item_c_id, SUM(qai.quantity) AS delivered_qty, SUM(qai.line_total) AS delivered_amount, "

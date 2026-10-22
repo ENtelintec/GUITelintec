@@ -80,3 +80,7 @@ Dentro de `metadata` se aceptan las mismas cinco llaves (mismos tipos). Ausentes
 - **Bloquear la reversión con control activo** (F2): en `update_quotation_ocd_from_api`, antes del `update_quotation`, consultar `delivery_controls` por `quotation_id` con `status != 2` cuando `ocd_keys["document_type"] == "quotation"` → 400.
 - `get_quotation_metadata` es la lectura ligera para cualquier merge de cabecera; no usar `get_quotation` (agrega items) solo para leer metadata.
 - Ojo con el nombre del archivo de rutas: git lo rastrea como `rs_Admin_presales.py` (A mayúscula); un rename a minúsculas rompe `from templates.resources.rs_Admin_presales import …` en `app.py`.
+
+## Notas posteriores
+
+- **2026-10-22** (junta con Administración, F4 del [`plan_junta_2026_10_22.md`](planes/plan_junta_2026_10_22.md)): `client_po_number` pasa a **obligatorio y único global** entre OCD (409), `metadata` gana **`due_date`** (vencimiento capturado), las partidas ganan **`delivery_date`** opcional (≤ `due_date`) y `PUT /quotation/ocd` también convierte la **cotización interna de una licitación ganada** (`status 3`). Detalle y contrato → [`ocd_reglas_po_vencimiento.md`](ocd_reglas_po_vencimiento.md). La tabla de este doc que dice "vacío conserva (una cotización aprobada sin OC del cliente puede quedar sin número)" ya no aplica.

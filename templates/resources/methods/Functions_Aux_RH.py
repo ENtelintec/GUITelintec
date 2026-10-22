@@ -3,6 +3,7 @@ __author__ = "Edisson Naula"
 __date__ = "$ 28/jun./2024  at 17:07 $"
 
 import json
+import re
 from datetime import date, datetime, timedelta
 
 from static.constants import cache_file_nominas
@@ -110,3 +111,63 @@ def medical_due(aptitude, last_date, today) -> dict:
     else:
         out["alert"] = "al_dia"
     return out
+
+
+# --- Correos de empleados (junta 2026-10-22, docs/empleados_correos_y_nomina_activos.md) -----------
+# employees.email guarda uno o varios correos en la misma columna VARCHAR(255),
+# separados por coma ("a@x,b@y"). Historicamente llego sucio (',', 'X@GMAIL.COM,',
+# 'a@x; b@y'); estas funciones son la unica forma de leerlo y escribirlo.
+_EMAIL_SEPARATORS = re.compile(r"[,;\s]+")
+
+
+def _email_token(token: str) -> str | None:
+    """Correo normalizado (parte local tal cual, dominio en minusculas) o None si el
+    token no tiene forma de correo. SES compara la parte local contra las
+    identidades verificadas, por eso no se baja a minusculas completa."""
+    token = token.strip().strip(",;")
+    if "@" not in token:
+        return None
+    local, domain = token.rsplit("@", 1)
+    if not local or "." not in domain:
+        return None
+    return f"{local}@{domain.lower()}"
+
+
+def split_emails(raw) -> list:
+    """Lectura tolerante para los GET: lista de correos validos (sin duplicados,
+    en orden); los tokens que no son correo se ignoran."""
+    out = []
+    for token in _EMAIL_SEPARATORS.split(str(raw or "")):
+        email = _email_token(token)
+        if email and email.lower() not in {e.lower() for e in out}:
+            out.append(email)
+    return out
+
+
+def normalize_emails(values) -> tuple[list, list]:
+    """Escritura estricta para POST/PUT: `values` es una lista (emails[]) o un
+    string (email, puede traer comas). Devuelve (validos sin duplicados, tokens
+    invalidos). Un token vacio o solo separadores no es error."""
+    tokens: list = []
+    if isinstance(values, (list, tuple)):
+        for value in values:
+            tokens += _EMAIL_SEPARATORS.split(str(value or ""))
+    else:
+        tokens = _EMAIL_SEPARATORS.split(str(values or ""))
+    valid: list = []
+    invalid: list = []
+    for token in tokens:
+        cleaned = token.strip().strip(",;")
+        if not cleaned:
+            continue
+        email = _email_token(cleaned)
+        if email is None:
+            invalid.append(cleaned)
+        elif email.lower() not in {e.lower() for e in valid}:
+            valid.append(email)
+    return valid, invalid
+
+
+def join_emails(emails) -> str:
+    """Lo que se guarda en employees.email: 'a@x,b@y' ('' sin correos)."""
+    return ",".join(emails or [])

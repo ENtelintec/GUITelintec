@@ -33,7 +33,9 @@ from templates.controllers.contracts.quotations_controller import (
     delete_item_quotation,
     delete_quotation,
     delete_quotation_items,
+    find_ocd_by_client_po_number,
     get_quotation,
+    get_quotation_items_delivery_dates,
     get_quotation_metadata,
     update_item_quotation,
     update_quotation,
@@ -108,6 +110,9 @@ _OCD_DEFAULTS = {
     "currency": "MXN",
     "delivery_time": "",
     "approved_date": "",
+    # Vencimiento de la OCD = tiempo de entrega comprometido (junta 2026-10-22,
+    # docs/ocd_reglas_po_vencimiento.md). delivery_time (texto) queda para el PDF.
+    "due_date": "",
 }
 
 
@@ -132,7 +137,87 @@ def _merge_ocd_keys(incoming: dict, existing: dict | None) -> tuple[dict, list]:
             datetime.strptime(out["approved_date"], format_date)
         except ValueError:
             errors.append("approved_date: se esperaba una fecha YYYY-MM-DD")
+    if out["due_date"]:
+        try:
+            datetime.strptime(out["due_date"], format_date)
+        except ValueError:
+            errors.append("due_date: se esperaba una fecha YYYY-MM-DD")
     return out, errors
+
+
+def _ocd_rule_errors(ocd_keys: dict, id_quotation, data_token) -> tuple[list, int | None]:
+    """Reglas de una OCD (junta 2026-10-22): client_po_number obligatorio y único
+    global entre OCD, como un número de contrato marco. Devuelve (errores 400, id
+    de la OTRA OCD que ya usa el número -> 409). Solo aplica con document_type ocd."""
+    if ocd_keys.get("document_type") != "ocd":
+        return [], None
+    po = (ocd_keys.get("client_po_number") or "").strip()
+    if not po:
+        return ["client_po_number es obligatorio en una OCD (identificador de la orden de compra del cliente)"], None
+    flag, error, other_id = find_ocd_by_client_po_number(po, id_quotation, data_token)
+    if not flag:
+        return [f"no se pudo validar client_po_number: {error}"], None
+    if other_id:
+        return [], int(other_id)
+    return [], None
+
+
+def _ocd_conflict_envelope(po: str, other_id: int, id_quotation=None) -> dict:
+    return {
+        "data": {"id_quotation": id_quotation, "client_po_number": po, "conflict_quotation_id": other_id},
+        "msg": f"Ya existe la OCD {other_id} con el identificador de orden de compra '{po}'",
+        "error": ["client_po_number repetido: los identificadores de orden de compra no se repiten"],
+    }
+
+
+def items_delivery_date_errors(products, due_date) -> list:
+    """delivery_date por partida (opcional): YYYY-MM-DD y nunca después del
+    due_date de la OCD. Ignora items con is_erased == 1. Lista de errores (vacía = ok)."""
+    errors = []
+    due = None
+    if due_date:
+        try:
+            due = datetime.strptime(str(due_date)[:10], format_date).date()
+        except ValueError:
+            due = None
+    for index, product in enumerate(products or []):
+        if not isinstance(product, dict) or product.get("is_erased") == 1:
+            continue
+        raw = str(product.get("delivery_date") or "").strip()
+        if not raw:
+            continue
+        partida = product.get("partida")
+        label = f"partida {partida if partida is not None else index + 1}"
+        try:
+            value = datetime.strptime(raw, format_date).date()
+        except ValueError:
+            errors.append(f"{label}: delivery_date '{raw}' no es una fecha YYYY-MM-DD")
+            continue
+        if due and value > due:
+            errors.append(f"{label}: delivery_date {raw} es posterior al vencimiento de la OCD (due_date {due.isoformat()})")
+    return errors
+
+
+def _stored_delivery_dates_after(id_quotation, due_date, data_token) -> list:
+    """Partidas ya guardadas cuya delivery_date queda después de un due_date nuevo."""
+    try:
+        due = datetime.strptime(str(due_date)[:10], format_date).date()
+    except (ValueError, TypeError):
+        return []
+    flag, _error, rows = get_quotation_items_delivery_dates(id_quotation, data_token)
+    if not flag:
+        return []
+    errors = []
+    for _id, partida, raw in rows:
+        if not raw:
+            continue
+        try:
+            value = datetime.strptime(str(raw)[:10], format_date).date()
+        except ValueError:
+            continue
+        if value > due:
+            errors.append(f"partida {partida}: delivery_date {str(raw)[:10]} es posterior al nuevo due_date {due.isoformat()}")
+    return errors
 
 
 def _normalize_quotation_metadata_out(metadata: dict) -> dict:
@@ -1243,6 +1328,15 @@ def _item_quotation_values(product: dict) -> dict:
     description = product.get("description") or ""
     description_small = product.get("description_small") or ""
     id_inventory = _num_item_field(product.get("id_inventory"), 0)
+    # delivery_date (YYYY-MM-DD, opcional) vive en extra_info como las secciones:
+    # overwrite completo, omitirla en un PUT la borra (docs/ocd_reglas_po_vencimiento.md).
+    extra_info = {
+        "section_title": product.get("section_title") or "General",
+        "section_type": product.get("section_type") or "general",
+    }
+    delivery_date = str(product.get("delivery_date") or "").strip()
+    if delivery_date:
+        extra_info["delivery_date"] = delivery_date
     return {
         "partida": _num_item_field(product.get("partida"), 0),
         "section_index": _num_item_field(product.get("section_index"), 0),
@@ -1256,10 +1350,7 @@ def _item_quotation_values(product: dict) -> dict:
         "description": description[:1024],
         "description_small": description_small[:255],
         "id_inventory": id_inventory if id_inventory > 0 else None,
-        "extra_info": {
-            "section_title": product.get("section_title") or "General",
-            "section_type": product.get("section_type") or "general",
-        },
+        "extra_info": extra_info,
     }
 
 
@@ -1299,6 +1390,15 @@ def create_quotation_from_api(data, data_token):
     ocd_keys, errors = _merge_ocd_keys(data["metadata"], None)
     if errors:
         return {"data": None, "msg": "Datos OCD inválidos", "error": errors}, 400
+    # OCD nacida directo (OC del cliente por algo nunca cotizado): mismas reglas que /ocd.
+    rule_errors, conflict_id = _ocd_rule_errors(ocd_keys, None, data_token)
+    if rule_errors:
+        return {"data": None, "msg": "Datos OCD inválidos", "error": rule_errors}, 400
+    if conflict_id:
+        return _ocd_conflict_envelope(ocd_keys["client_po_number"], conflict_id), 409
+    date_errors = items_delivery_date_errors(data["products"], ocd_keys["due_date"])
+    if date_errors:
+        return {"data": None, "msg": "Fechas de entrega de partidas inválidas", "error": date_errors}, 400
     data["metadata"].update(ocd_keys)
     flag, error, id_quotation = create_quotation(data["metadata"], data_token)
     if not flag:
@@ -1452,6 +1552,19 @@ def update_quoation_from_api(data, data_token):
     ocd_keys, errors = _merge_ocd_keys(data["metadata"], existing_meta)
     if errors:
         return {"data": None, "msg": "Datos OCD inválidos", "error": errors}, 400
+    # Reglas OCD solo si el PUT cambia la marca o el número (una OCD vieja sin
+    # client_po_number sigue editando partidas; el número se exige al tocarlo o en /ocd).
+    if (ocd_keys["document_type"], ocd_keys["client_po_number"]) != (
+        existing_meta.get("document_type") or "quotation", (existing_meta.get("client_po_number") or "").strip()
+    ):
+        rule_errors, conflict_id = _ocd_rule_errors(ocd_keys, data["id"], data_token)
+        if rule_errors:
+            return {"data": None, "msg": "Datos OCD inválidos", "error": rule_errors}, 400
+        if conflict_id:
+            return _ocd_conflict_envelope(ocd_keys["client_po_number"], conflict_id, data["id"]), 409
+    date_errors = items_delivery_date_errors(data["products"], ocd_keys["due_date"])
+    if date_errors:
+        return {"data": None, "msg": "Fechas de entrega de partidas inválidas", "error": date_errors}, 400
     data["metadata"].update(ocd_keys)
     for key, value in existing_meta.items():
         data["metadata"].setdefault(key, value)
@@ -1527,21 +1640,58 @@ def update_quotation_ocd_from_api(data, data_token):
             "error": "Quotation not found",
         }, 404
     metadata = json.loads(row[0]) if row[0] else {}  # pyrefly: ignore
-    if _quotation_status(metadata) != 0:
-        # Licitaciones (3) y catálogos de contrato (1/2) no son OCD (docs/tenders_control.md).
+    status = _quotation_status(metadata)
+    tender = None
+    if status == QUOTATION_STATUS_TENDER:
+        # Licitación ganada -> OCD sobre su MISMA cotización interna (junta 2026-10-22,
+        # docs/ocd_reglas_po_vencimiento.md): asignada (status 1) y sin contrato;
+        # la cotización conserva status 3 y tender_number como folio.
+        flag_t, error_t, trow = get_tender_by_quotation(id_quotation, data_token)
+        if not flag_t:
+            return {"data": None, "msg": "No se pudo leer la licitación de la cotización", "error": error_t}, 400
+        tender = dict(zip(TENDER_COLUMNS, trow)) if trow else None
+        tender_errors = []
+        if tender is None:
+            tender_errors.append(f"la cotización {id_quotation} tiene status 3 pero ninguna licitación la referencia")
+        else:
+            if tender["status"] != TENDER_STATUS_ASSIGNED:
+                tender_errors.append(
+                    f"la licitación {tender['tender_number']} no está asignada (status {tender['status']}); "
+                    "solo una licitación ganada se convierte en OCD"
+                )
+            if tender["contract_id"]:
+                tender_errors.append(
+                    f"la licitación {tender['tender_number']} ya tiene el contrato {tender['contract_id']}; no puede ser también OCD"
+                )
+        if tender_errors:
+            return {
+                "data": {"id_quotation": id_quotation, "id_tender": tender["id_tender"] if tender else None},
+                "msg": "La licitación no puede convertirse en OCD",
+                "error": tender_errors,
+            }, 400
+    elif status != 0:
+        # Catálogos de contrato (1/2) no son OCD (docs/tenders_control.md).
         return {
             "data": None,
-            "msg": "Solo una cotización de preventa se convierte en OCD",
-            "error": [f"la cotización {id_quotation} tiene status {_quotation_status(metadata)}"],
+            "msg": "Solo una cotización de preventa o una licitación ganada se convierte en OCD",
+            "error": [f"la cotización {id_quotation} tiene status {status}"],
         }, 400
     timestamps = json.loads(row[1]) if row[1] else None  # pyrefly: ignore
     if timestamps is not None and not isinstance(timestamps.get("update"), list):
         timestamps["update"] = []
     incoming = {k: data.get(k) for k in _OCD_DEFAULTS}
     incoming["document_type"] = (data.get("document_type") or "ocd").strip().lower()
+    if tender and not (incoming.get("client_po_number") or "").strip() and not (metadata.get("client_po_number") or "").strip():
+        # El número de OC de la licitación ganada es el identificador por default.
+        incoming["client_po_number"] = tender.get("po_number") or ""
     ocd_keys, errors = _merge_ocd_keys(incoming, metadata)
     if errors:
         return {"data": None, "msg": "Datos OCD inválidos", "error": errors}, 400
+    rule_errors, conflict_id = _ocd_rule_errors(ocd_keys, id_quotation, data_token)
+    if rule_errors:
+        return {"data": None, "msg": "Datos OCD inválidos", "error": rule_errors}, 400
+    if conflict_id:
+        return _ocd_conflict_envelope(ocd_keys["client_po_number"], conflict_id, id_quotation), 409
     before = {k: metadata.get(k) for k in _OCD_DEFAULTS}
     if ocd_keys["document_type"] != "ocd" and (metadata.get("document_type") == "ocd"):
         id_dc = quotation_has_active_delivery_control(id_quotation, data_token)
@@ -1551,6 +1701,14 @@ def update_quotation_ocd_from_api(data, data_token):
                 "msg": f"La cotización {id_quotation} tiene el control de entregas activo {id_dc}; cancélalo antes de revertirla",
                 "error": ["control de entregas activo"],
             }, 400
+    if ocd_keys["due_date"] and ocd_keys["due_date"] != (metadata.get("due_date") or ""):
+        late = _stored_delivery_dates_after(id_quotation, ocd_keys["due_date"], data_token)
+        if late:
+            return {
+                "data": {"id_quotation": id_quotation, "due_date": ocd_keys["due_date"]},
+                "msg": "El vencimiento es anterior a fechas de entrega ya capturadas en las partidas",
+                "error": late,
+            }, 400
     metadata.update(ocd_keys)
     flag, error, result = update_quotation(id_quotation, metadata, data_token, timestamps)
     if not flag:
@@ -1559,11 +1717,18 @@ def update_quotation_ocd_from_api(data, data_token):
     label = "OCD" if ocd_keys["document_type"] == "ocd" else "cotización"
     msg = (
         f"Cotización {id_quotation} marcada como {label} por {data_token.get('name')}"
+        + (f" (licitación {tender['tender_number']})" if tender else "")
         + (f" (cambios: {', '.join(changed)})" if changed else " (sin cambios)")
     )
     write_log_file(log_file_admin, msg, data_token)
     return {
-        "data": {"id_quotation": id_quotation, **ocd_keys, "changed": changed},
+        "data": {
+            "id_quotation": id_quotation,
+            **ocd_keys,
+            "changed": changed,
+            "status": status,
+            "id_tender": tender["id_tender"] if tender else None,
+        },
         "msg": msg,
         "error": None,
     }, 200
@@ -1619,6 +1784,13 @@ def _tender_for_contract(id_quotation, client_id, data_token) -> tuple[dict | No
         return None, []
     tender = dict(zip(TENDER_COLUMNS, row))
     errors = []
+    # Exclusión con OCD (junta 2026-10-22): la licitación ganada va a contrato O a OCD.
+    flag_q, _error_q, qrow = get_quotation_metadata(id_quotation, data_token)
+    qmeta = json.loads(qrow[0]) if flag_q and qrow and qrow[0] else {}  # pyrefly: ignore
+    if (qmeta.get("document_type") or "") == "ocd":
+        errors.append(
+            f"la licitación {tender['tender_number']} ya es una OCD (cotización {id_quotation}); no se crea contrato"
+        )
     if tender["status"] != TENDER_STATUS_ASSIGNED:
         errors.append(f"la licitación {tender['tender_number']} no está asignada (status 1)")
     if tender["contract_id"]:

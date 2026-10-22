@@ -53,7 +53,7 @@ metadata_quotation_model = api.model(
             example="ocd",
         ),
         "client_po_number": fields.String(
-            required=False, description="Pedido EXIROS / nº de OC del cliente (texto libre)", example="3716578048"
+            required=False, description="Identificador de la OC del cliente (pedido EXIROS o nº de OC): obligatorio y único global cuando document_type = ocd (409 si se repite)", example="3716578048"
         ),
         "currency": fields.String(required=False, description="MXN (default) | USD", example="MXN"),
         "delivery_time": fields.String(
@@ -61,6 +61,11 @@ metadata_quotation_model = api.model(
         ),
         "approved_date": fields.String(
             required=False, description="Fecha en que el cliente aprobó la cotización (YYYY-MM-DD)", example="2026-09-20"
+        ),
+        "due_date": fields.String(
+            required=False,
+            description="Vencimiento de la OCD = fecha de entrega comprometida (YYYY-MM-DD); las delivery_date de las partidas no pueden superarla. Vacío conserva",
+            example="2026-12-15",
         ),
     },
 )
@@ -72,10 +77,11 @@ quotation_ocd_model = api.model(
         "document_type": fields.String(
             required=False, description="ocd (default) | quotation (revertir; bloqueado con control de entregas activo)", example="ocd"
         ),
-        "client_po_number": fields.String(required=False, description="Pedido EXIROS / nº de OC del cliente", example="3716578048"),
+        "client_po_number": fields.String(required=False, description="Identificador de la OC del cliente: obligatorio en una OCD (vacío conserva el guardado; nunca puede quedar sin él) y único global (409). En la cotización interna de una licitación ganada toma po_number por default", example="3716578048"),
         "currency": fields.String(required=False, description="MXN | USD (vacío conserva)", example="MXN"),
         "delivery_time": fields.String(required=False, description="Tiempo de entrega (vacío conserva)", example="2 semanas"),
         "approved_date": fields.String(required=False, description="YYYY-MM-DD (vacío conserva)", example="2026-09-20"),
+        "due_date": fields.String(required=False, description="Vencimiento de la OCD = tiempo de entrega comprometido (YYYY-MM-DD; vacío conserva; 400 si hay partidas con delivery_date posterior)", example="2026-12-15"),
     },
 )
 
@@ -119,6 +125,11 @@ products_quotation_model = api.model(
         "section_type": fields.String(
             required=False,
             description="Tipo de seccion: general | planta | reajuste. Default 'general'.",
+        ),
+        "delivery_date": fields.String(
+            required=False,
+            description="Fecha de entrega de la partida (YYYY-MM-DD, opcional; <= due_date de la OCD). Vive en extra_info: omitirla en un PUT la borra",
+            example="2026-12-01",
         ),
         "qa_item_id": fields.Integer(
             required=False,
@@ -173,6 +184,11 @@ products_quotation_put_model = api.model(
         "section_type": fields.String(
             required=False,
             description="Tipo de seccion: general | planta | reajuste. Default 'general'.",
+        ),
+        "delivery_date": fields.String(
+            required=False,
+            description="Fecha de entrega de la partida (YYYY-MM-DD, opcional; <= due_date de la OCD). Vive en extra_info: omitirla en un PUT la borra",
+            example="2026-12-01",
         ),
         "qa_item_id": fields.Integer(
             required=False,
@@ -447,6 +463,7 @@ class MetadataQuotationForm(Form):
     )
     delivery_time = StringField("delivery_time", [], default="")
     approved_date = StringField("approved_date", [], default="")
+    due_date = StringField("due_date", [], default="")
 
 
 class QuotationOcdForm(Form):
@@ -464,6 +481,7 @@ class QuotationOcdForm(Form):
     )
     delivery_time = StringField("delivery_time", [], default="")
     approved_date = StringField("approved_date", [], default="")
+    due_date = StringField("due_date", [], default="")
 
 
 class ProductsPostQuotationForm(Form):
@@ -481,6 +499,8 @@ class ProductsPostQuotationForm(Form):
     udm = StringField("udm", validators=[InputRequired()])
     price_unit = FloatField("price_unit", validators=[], default=0.0)
     id_inventory = IntegerField("id_inventory", validators=[], default=None)
+    # Fecha de entrega de la partida (OCD): opcional, YYYY-MM-DD, la valida el midleware.
+    delivery_date = StringField("delivery_date", validators=[], default="")
 
 
 class ProductsPutQuotationForm(Form):
@@ -502,6 +522,7 @@ class ProductsPutQuotationForm(Form):
     udm = StringField("udm", validators=[InputRequired()])
     price_unit = FloatField("price_unit", validators=[], default=0.0)
     id_inventory = IntegerField("id_inventory", validators=[], default=None)
+    delivery_date = StringField("delivery_date", validators=[], default="")
     is_erased = IntegerField("is_erased", validators=[], default=0)
 
 

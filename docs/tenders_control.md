@@ -236,3 +236,7 @@ Regresión de los testers existentes, sin cambios: `tester_quotation_costs` 37/3
 ## Pendientes
 
 `P-123` (back: hecho 2026-10-19), `P-146` (DDL en las 3 BDs: hecho 2026-10-19), `P-147` (front: adaptar las pantallas a este contrato), `P-148` (front: rehacer el análisis de costos según el concepto), `P-150` (back: copias huérfanas de catálogo en `quotations`) → [`pendientes.md`](pendientes.md).
+
+## Notas posteriores
+
+- **2026-10-22** (junta con Administración, F4 del [`plan_junta_2026_10_22.md`](planes/plan_junta_2026_10_22.md)): una licitación **ganada** (`status 1`, sin contrato) también puede convertirse en **OCD** con `PUT /quotation/ocd` sobre su cotización interna (conserva `status 3`, `tender_number` como folio, `po_number` como `client_po_number`); es **exclusivo** con `POST /contract` (400 en ambos sentidos). `GET /tender(s)` gana `document_type` y `client_po_number`; `PUT /tender/items` acepta `delivery_date` por partida. La guarda "`PUT /quotation/ocd` sobre `status ≠ 0` → 400" de este doc queda solo para los catálogos de contrato (1/2). Detalle → [`ocd_reglas_po_vencimiento.md`](ocd_reglas_po_vencimiento.md).

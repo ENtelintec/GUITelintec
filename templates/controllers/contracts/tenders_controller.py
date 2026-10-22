@@ -56,6 +56,10 @@ TENDER_COLUMNS = (
     "currency",
     "items_count",
     "items_total",
+    # OCD (junta 2026-10-22, docs/ocd_reglas_po_vencimiento.md): la cotizacion interna
+    # de una licitacion ganada puede marcarse OCD. Append-only.
+    "document_type",
+    "client_po_number",
 )
 _TABLE_COLUMNS = TENDER_COLUMNS[:22]
 # Columnas que el POST/PUT pueden escribir (whitelist: van interpoladas en el SQL).
@@ -84,7 +88,9 @@ _SELECT = (
     "NULLIF(JSON_UNQUOTE(JSON_EXTRACT(q.metadata, '$.currency')), 'null'), "
     f"(SELECT COUNT(*) FROM {_TABLE_QI} qi WHERE qi.quotation_id = t.quotation_id), "
     f"(SELECT COALESCE(SUM(COALESCE(qi.quantity, 0) * COALESCE(qi.price_unit, 0)), 0) "
-    f" FROM {_TABLE_QI} qi WHERE qi.quotation_id = t.quotation_id) "
+    f" FROM {_TABLE_QI} qi WHERE qi.quotation_id = t.quotation_id), "
+    "NULLIF(JSON_UNQUOTE(JSON_EXTRACT(q.metadata, '$.document_type')), 'null'), "
+    "NULLIF(JSON_UNQUOTE(JSON_EXTRACT(q.metadata, '$.client_po_number')), 'null') "
     f"FROM {_TABLE} t "
     f"LEFT JOIN {_TABLE_CUSTOMERS} cu ON cu.id_customer = t.client_id "
     f"LEFT JOIN {_TABLE_CONTRACTS} c ON c.id = t.contract_id "

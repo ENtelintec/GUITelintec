@@ -29,6 +29,7 @@ Reglas:
     (PUT /deliveryControl/values), coercionados por value_type.
 """
 
+from datetime import datetime
 from decimal import Decimal
 
 from static.constants import (
@@ -67,6 +68,7 @@ from templates.controllers.purchases.delivery_control_controller import (
 from templates.Functions_Utils import create_notification_permission
 from templates.misc.Functions_Files import write_log_file
 from templates.resources.midleware.MD_BalanceControl import (
+    VALIDITY_STATUSES,
     VALUE_TYPES,
     _api_guard,
     _ApiError,
@@ -75,7 +77,9 @@ from templates.resources.midleware.MD_BalanceControl import (
     _now,
     coerce_value,
     validate_custom_fields,
+    validity_status_from_days,
 )
+from templates.controllers.purchases.balance_control_controller import VALIDITY_EXPIRING_DAYS
 
 # --- Catálogos ------------------------------------------------------------------
 CURRENCIES = ("MXN", "USD")
@@ -117,6 +121,18 @@ def _int_or_none(value):
         return None
 
 
+def _days_to(date_text) -> int | None:
+    """Días desde hoy (fecha del servidor del API, America/Mexico_City) hasta una
+    fecha YYYY-MM-DD; negativo = pasada; None sin fecha o mal formada."""
+    text = str(date_text or "").strip()[:10]
+    if not text:
+        return None
+    try:
+        return (datetime.strptime(text, "%Y-%m-%d").date() - _now().date()).days
+    except ValueError:
+        return None
+
+
 def _control_to_dict(row) -> dict:
     data = {col: _json_safe(val) for col, val in zip(CONTROL_COLUMNS, row)}
     data["custom_fields"] = _load_json(data.get("custom_fields"), []) or []
@@ -128,6 +144,12 @@ def _control_to_dict(row) -> dict:
     data["status_label"] = CONTROL_STATUSES.get(data["status"], "")
     data["is_active"] = data["status"] != CONTROL_CANCELLED_STATUS
     data["quotation_document_type"] = data.get("quotation_document_type") or "quotation"
+    # Vencimiento de la OCD (docs/control_entregas_vencimiento.md): mismo patrón que
+    # saldos (0 vigente · 1 por vencer ≤ 60 días · 2 vencido), derivado, sin bloqueo.
+    data["due_date"] = str(data.pop("quotation_due_date", None) or "")[:10] or None
+    data["days_to_due"] = _days_to(data["due_date"])
+    data["validity_status"] = validity_status_from_days(data["days_to_due"])
+    data["validity_label"] = VALIDITY_STATUSES[data["validity_status"]]
     return data
 
 
@@ -183,17 +205,24 @@ def _compute_items(quotation_id: int, data_token) -> tuple[list, dict]:
         ordered_amount = ordered_qty * unit_price
         delivered_amount = _f(d.get("amount"))
         row = dict(it)
+        pending_qty = ordered_qty - delivered_qty
+        delivery_date = str(it.get("delivery_date") or "")[:10] or None
+        days_to_delivery = _days_to(delivery_date)
         row.update({
             "ordered_qty": _r2(ordered_qty),
             "delivered_qty": _r2(delivered_qty),
-            "pending_qty": _r2(ordered_qty - delivered_qty),
+            "pending_qty": _r2(pending_qty),
             "unit_price": _r2(unit_price),
             "ordered_amount": _r2(ordered_amount),
             "delivered_amount": _r2(delivered_amount),
             "pending_amount": _r2(ordered_amount - delivered_amount),
             "remissions_count": int(d.get("remissions_count") or 0),
             "last_delivery_date": d.get("last_date"),
-            "complete": (ordered_qty - delivered_qty) <= _EPS,
+            "complete": pending_qty <= _EPS,
+            # Fecha comprometida por partida: atrasada = con pendiente y fecha pasada.
+            "delivery_date": delivery_date,
+            "days_to_delivery": days_to_delivery,
+            "overdue": pending_qty > _EPS and days_to_delivery is not None and days_to_delivery < 0,
         })
         out.append(row)
         totals["ordered_qty"] += ordered_qty
@@ -205,6 +234,8 @@ def _compute_items(quotation_id: int, data_token) -> tuple[list, dict]:
     totals["pending_amount"] = _r2(totals["ordered_amount"] - totals["delivered_amount"])
     totals["items_count"] = len(out)
     totals["items_complete"] = sum(1 for r in out if r["complete"])
+    totals["items_pending"] = totals["items_count"] - totals["items_complete"]
+    totals["items_overdue"] = sum(1 for r in out if r["overdue"])
     base = totals["ordered_amount"] if totals["ordered_amount"] > 0 else totals["ordered_qty"]
     done = totals["delivered_amount"] if totals["ordered_amount"] > 0 else totals["delivered_qty"]
     totals["progress_pct"] = _r2(min(100.0, done / base * 100)) if base > 0 else 0.0
@@ -396,6 +427,8 @@ def get_delivery_control_catalogs_from_api(data_token):
             "statuses": [{"code": k, "label": v} for k, v in CONTROL_STATUSES.items()],
             "value_types": list(VALUE_TYPES),
             "currencies": list(CURRENCIES),
+            "validity_statuses": [{"code": k, "label": v} for k, v in VALIDITY_STATUSES.items()],
+            "expiring_days": VALIDITY_EXPIRING_DAYS,
         },
         "msg": None,
         "error": None,
@@ -509,10 +542,27 @@ def get_delivery_controls_from_api(params: dict, data_token):
     client_id = _int_or_none(params.get("client_id"))
     status = _int_or_none(params.get("status"))
     active_only = None if (status is not None or str(params.get("all") or "").lower() in ("1", "true", "yes")) else 1
+    # ?validity_status=: un valor o lista "1,2" (0 vigente · 1 por vencer · 2 vencido);
+    # se filtra en Python porque due_date vive en el JSON de la cotización.
+    validity_filter = None
+    raw_validity = str(params.get("validity_status") or "").strip()
+    if raw_validity:
+        validity_filter = set()
+        for token in raw_validity.split(","):
+            value = _int_or_none(token)
+            if value is None or value not in VALIDITY_STATUSES:
+                return {
+                    "data": None,
+                    "msg": "validity_status inválido",
+                    "error": [f"validity_status debe ser 0 (VIGENTE), 1 (POR VENCER) o 2 (VENCIDO), uno o lista; recibido '{raw_validity}'"],
+                }, 400
+            validity_filter.add(value)
     flag, error, rows = get_delivery_controls(quotation_id, client_id, status, active_only, data_token)
     if not flag:
         return {"data": None, "msg": "Error al consultar los controles de entregas", "error": error}, 400
     controls = [_control_to_dict(r) for r in rows]
+    if validity_filter is not None:
+        controls = [c for c in controls if c["validity_status"] in validity_filter]
     qids = sorted({c["quotation_id"] for c in controls if c.get("quotation_id")})
     flag, error, totals_rows = get_delivery_totals_by_quotations(qids, data_token)
     totals = {}
@@ -522,17 +572,25 @@ def get_delivery_controls_from_api(params: dict, data_token):
             delivered_qty, delivered_amount = _f(r[3]), _f(r[4])
             base = ordered_amount if ordered_amount > 0 else ordered_qty
             done = delivered_amount if ordered_amount > 0 else delivered_qty
+            items_count = int(r[6] or 0) if len(r) > 6 else 0
+            items_complete = int(r[7] or 0) if len(r) > 7 else 0
             totals[int(r[0])] = {
                 "ordered_qty": _r2(ordered_qty), "ordered_amount": _r2(ordered_amount),
                 "delivered_qty": _r2(delivered_qty), "delivered_amount": _r2(delivered_amount),
                 "pending_qty": _r2(ordered_qty - delivered_qty), "pending_amount": _r2(ordered_amount - delivered_amount),
                 "progress_pct": _r2(min(100.0, done / base * 100)) if base > 0 else 0.0,
                 "last_delivery_date": _json_safe(r[5]),
+                # Conteos de partidas (junta 2026-10-22): el icono junto al avance los
+                # muestra y carga el detalle al hacer clic para listar las partidas.
+                "items_count": items_count,
+                "items_complete": items_complete,
+                "items_pending": items_count - items_complete,
             }
     for c in controls:
         c["totals"] = totals.get(c["quotation_id"]) or {
             "ordered_qty": 0.0, "ordered_amount": 0.0, "delivered_qty": 0.0, "delivered_amount": 0.0,
             "pending_qty": 0.0, "pending_amount": 0.0, "progress_pct": 0.0, "last_delivery_date": None,
+            "items_count": 0, "items_complete": 0, "items_pending": 0,
         }
     return {"data": controls, "msg": None, "error": error if not flag else None}, 200
 

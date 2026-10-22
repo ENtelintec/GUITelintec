@@ -3,12 +3,18 @@ __author__ = "Edisson Naula"
 __date__ = "$ 13/mar/2025  at 13:15 $"
 
 import threading
+from datetime import datetime
 
+import pytz
+
+from static.constants import format_date, timezone_software
 from templates.Functions_Utils import (
     create_notification_permission_notGUI,
+    read_flag_daemons,
     update_flag_daemons,
 )
 from templates.resources.midleware.Functions_midleware_RRHH import fetch_medicals
+from templates.resources.midleware.MD_BalanceAlerts import run_balance_sweep
 from templates.resources.midleware.MD_CDA import build_cda_alerts, build_cda_notification_lines
 
 
@@ -64,6 +70,33 @@ def CDANotifications(data_token):
     )
 
 
+def start_daily_sweep(type_n: str, data_token, starter=None) -> str:
+    """Lanza el barrido `type_n` si hoy no ha corrido: bandera `flag_<type_n>`
+    (False mientras corre) y fecha `last_date_<type_n>` en files/flags_daemons.json,
+    misma receta que médicos y CDA. Devuelve "started" | "running" | "done_today".
+    `starter` (pruebas) sustituye al hilo real."""
+    flags = read_flag_daemons()
+    if not flags.get(f"flag_{type_n}", True):
+        return "running"
+    tz = pytz.timezone(timezone_software)
+    now = datetime.now(pytz.utc).astimezone(tz)
+    last_date = None
+    last = flags.get(f"last_date_{type_n}")
+    if last:
+        try:
+            last_date = datetime.strptime(str(last), format_date).date()
+        except ValueError:
+            last_date = None
+    if last_date is not None and last_date >= now.date():
+        return "done_today"
+    update_flag_daemons(**{f"last_date_{type_n}": now.strftime(format_date), f"flag_{type_n}": False})
+    if starter is not None:
+        starter()
+    else:
+        NotificationsSearch(data_token, type_n=type_n).start()
+    return "started"
+
+
 class NotificationsSearch(threading.Thread):
     def __init__(self, data_token, type_n="medical"):
         super().__init__()
@@ -84,6 +117,12 @@ class NotificationsSearch(threading.Thread):
                     CDANotifications(self.data_token)
                 finally:
                     update_flag_daemons(flag_cda=True)
+            case "balance":
+                # Saldos / entregas / traslados (docs/avisos_saldos_entregas_traslados.md).
+                try:
+                    run_balance_sweep(self.data_token)
+                finally:
+                    update_flag_daemons(flag_balance=True)
             case "payroll":
                 print("searching for payroll notifications")
             case _:

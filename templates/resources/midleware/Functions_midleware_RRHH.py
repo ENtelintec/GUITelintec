@@ -7,7 +7,6 @@ __date__ = "$ 28/jun./2024  at 16:28 $"
 import io
 import json
 import os
-import re
 import uuid
 import zipfile
 from datetime import datetime
@@ -44,9 +43,10 @@ from templates.controllers.employees.employees_controller import (
     new_employee,
     terminate_employee_db,
     update_employee,
+    test_id_employee,
 )
 from templates.controllers.employees.us_controller import get_user_by_emp_id
-from templates.resources.methods.Functions_Aux_RH import last_medical_date, medical_due
+from templates.resources.methods.Functions_Aux_RH import join_emails, last_medical_date, medical_due, normalize_emails, split_emails
 from templates.controllers.notifications.Notifications_controller import (
     insert_notification,
 )
@@ -116,7 +116,21 @@ class GraceMinutes:
         return self.minutes
 
 
+def _employee_email_column(info: dict):
+    """Correos del alta/edicion -> (string para employees.email, envelope 400 | None).
+    Toma `emails` (lista) si viene con algo; si no, `email` (string, puede traer comas).
+    Sin correos es valido (cadena vacia); un token que no es correo -> 400 listandolo."""
+    raw = info.get("emails") or info.get("email") or ""
+    valid, invalid = normalize_emails(raw)
+    if invalid:
+        return None, {"data": None, "msg": "Correo inválido", "error": [f"emails: {tok} no es un correo válido" for tok in invalid]}
+    return join_emails(valid), None
+
+
 def create_new_employee_db(data, data_token):
+    email_column, err = _employee_email_column(data["info"])
+    if err:
+        return err, 400
     flag, error, result = new_employee(
         data["info"]["name"],
         data["info"]["lastname"],
@@ -133,7 +147,7 @@ def create_new_employee_db(data, data_token):
         data["info"]["departure"],
         data["info"]["birthday"],
         data["info"]["legajo"],
-        data["info"]["email"],
+        email_column,
         data["info"]["emergency"],
         data_token,
         data["info"]["id_leader"],
@@ -145,6 +159,9 @@ def create_new_employee_db(data, data_token):
 
 
 def update_employee_db(data, data_token):
+    email_column, err = _employee_email_column(data["info"])
+    if err:
+        return err, 400
     flag, error, result = update_employee(
         data["id"],
         data["info"]["name"],
@@ -162,7 +179,7 @@ def update_employee_db(data, data_token):
         data["info"]["departure"],
         data["info"]["birthday"],
         data["info"]["legajo"],
-        data["info"]["email"],
+        email_column,
         data["info"]["emergency"],
         data_token,
         data["info"]["id_leader"],
@@ -1303,6 +1320,18 @@ def notify_payroll_file_api(data, data_token):
     if period is None:
         return {"data": None, "msg": err, "error": None}, 400
     emp_id, year, month, key = period
+    # Solo empleados activos (junta 2026-10-22): un inactivo o con status NULL no se notifica
+    # por ningun canal; la subida de archivos si sigue aceptandolos.
+    flag_e, _err_e, emp_row = test_id_employee(int(emp_id), data_token)
+    if not flag_e or not isinstance(emp_row, (list, tuple)) or len(emp_row) == 0:
+        return {"data": None, "msg": f"No existe el empleado {emp_id}", "error": "empleado no encontrado"}, 404
+    emp_status = str(emp_row[1]).strip().lower() if emp_row[1] is not None else ""
+    if emp_status != "activo":
+        return {
+            "data": {"emp_id": emp_id, "status": emp_row[1]},
+            "msg": f"El empleado {emp_id} está inactivo (status {emp_row[1]!r}); la nómina solo se notifica a activos",
+            "error": ["empleado inactivo"],
+        }, 400
     channels = data.get("channels") or ["app"]
     channels = [str(c).strip().lower() for c in channels if str(c).strip()]
     invalid = [c for c in channels if c not in _PAYROLL_NOTIFY_CHANNELS]
@@ -1404,26 +1433,14 @@ def notify_payroll_file_api(data, data_token):
     }, 201
 
 
-def _first_email(raw) -> str | None:
-    """employees.email viene sucio en la BD ('X@GMAIL.COM,', ',', 'a@x; b@y'):
-    primer token con '@'; None si no hay ninguno. Solo se baja a minusculas el
-    DOMINIO: SES compara la parte local tal cual contra las identidades
-    verificadas (en sandbox 'Software@x' != 'software@x' -> MessageRejected)."""
-    for token in re.split(r"[,;\s]+", str(raw or "")):
-        token = token.strip().strip(",;")
-        if "@" in token and "." in token.split("@")[-1]:
-            local, domain = token.rsplit("@", 1)
-            return f"{local}@{domain.lower()}"
-    return None
-
-
 def _send_payroll_email(emp_id, key, month, year, entry: dict, message: str, data_token):
     """Correo SES al empleado con el pdf/xml del recibo adjuntos (leidos de
-    S3_RH_BUCKET). -> (email_to, error | None). Nunca truena."""
+    S3_RH_BUCKET), a TODOS sus correos. -> (email_to: list | None, error | None). Nunca truena."""
     flag, error, row, _cols = get_employee_info(emp_id, data_token)
     if not flag:
         return None, f"no se pudo consultar el empleado ({error})"
-    email_to = _first_email(row[7] if isinstance(row, (list, tuple)) and len(row) > 7 else None)  # pyrefly: ignore
+    # Todos los correos del empleado (lista en employees.email; junta 2026-10-22).
+    email_to = split_emails(row[7] if isinstance(row, (list, tuple)) and len(row) > 7 else None)  # pyrefly: ignore
     if not email_to:
         return None, f"el empleado {emp_id} no tiene correo registrado"
     attachments = []
@@ -1445,7 +1462,7 @@ def _send_payroll_email(emp_id, key, month, year, entry: dict, message: str, dat
         f"{message}\n\nSe adjuntan los archivos de tu recibo de nómina {key} ({month}/{year}).\n"
         "Este correo se genera automáticamente desde el sistema de Telintec; no respondas a este mensaje."
     )
-    ok, error, _message_id = send_email_ses([email_to], subject, body, attachments)
+    ok, error, _message_id = send_email_ses(email_to, subject, body, attachments)
     return email_to, (None if ok else error)
 
 
