@@ -124,6 +124,7 @@ Ver también: [`migracion_esquemas_rrhh.md`](migracion_esquemas_rrhh.md) (`quizz
 - [`nomina_descarga_recibo.md`](nomina_descarga_recibo.md) — `POST /common/payroll/employee/file`: solo entrega llaves del índice del empleado (404 si no), basta pdf o xml, zip en memoria por request. · 2026-10-13 · ⏳ DML de arranque limpio (`P-141`)
 - [`empleados_correos_y_nomina_activos.md`](empleados_correos_y_nomina_activos.md) — `POST·PUT /rrhh/employee` (+ `POST /rrhh/payroll/notify`): `emails[]` guardados en la misma columna y expuestos en todos los GET de empleados; nómina por correo a todos; notificar solo a activos (400 inactivo). · 2026-10-22 · ⏳ re-correr DML `P-163` (1 fila); front `P-171`
 - [`checkin_foto.md`](checkin_foto.md) — `POST /common/checkin` (+ `GET /rrhh/checkins`, manual y anulación de RH): check-in tipo Wellhub con foto en S3, hora del servidor, resumen por día en lectura; tabla nueva `checkins`. · 2026-10-22 · ⏳ front `P-166`
+- [`nomina_s3_huerfanos.md`](nomina_s3_huerfanos.md) — `POST /rrhh/payroll/files/update` (+ `DELETE /payroll/files`): subida sin huérfanos (índice antes de S3, el anterior se borra tras guardar, 404 sin fila) y conciliación de S3 contra el índice de las 3 BDs. · 2026-10-23 · ⏳ huérfanos existentes `P-176`, llave compartida `P-177`
 
 Ver también: [`consolidacion_namespaces_encuestas.md`](consolidacion_namespaces_encuestas.md) y [`quizz_models_crud.md`](quizz_models_crud.md) (mismo tren de deploy que la migración) · [`planes/archivo/plan_mes_2.md`](planes/archivo/plan_mes_2.md) (Anexo A nómina, Anexo D dashboard)
 

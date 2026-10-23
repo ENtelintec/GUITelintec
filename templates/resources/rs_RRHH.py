@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import os
+import shutil
 import tempfile
 
 from flask import request, send_file
@@ -801,19 +802,24 @@ class FilesPayroll(Resource):
         if not (file and file.filename):
             return {"data": None, "msg": "No se subió el archivo", "error": None}, 400
         filename = secure_filename(file.filename)
-        filepath_download = os.path.join(tempfile.mkdtemp(), filename)
+        temp_dir = tempfile.mkdtemp()
+        filepath_download = os.path.join(temp_dir, filename)
         file.save(filepath_download)
-        data_out, code = create_payroll_file_attachment_api(
-            {
-                "filepath": filepath_download,
-                "filename": filename,
-                "year": year,
-                "month": month,
-                "emp_id": emp_id,
-                "key": key,
-            },
-            data_token,
-        )
+        try:
+            data_out, code = create_payroll_file_attachment_api(
+                {
+                    "filepath": filepath_download,
+                    "filename": filename,
+                    "year": year,
+                    "month": month,
+                    "emp_id": emp_id,
+                    "key": key,
+                },
+                data_token,
+            )
+        finally:
+            # el recibo (dato personal) no se queda en el temp del servidor
+            shutil.rmtree(temp_dir, ignore_errors=True)
         return data_out, code
 
 
@@ -854,17 +860,15 @@ class PayrollFilesExtract(Resource):
         if not (file and file.filename):
             return {"data": None, "msg": "No se subió el archivo", "error": None}, 400
         filename = secure_filename(file.filename)
-        filepath_download = os.path.join(tempfile.mkdtemp(), filename)
+        temp_dir = tempfile.mkdtemp()
+        filepath_download = os.path.join(temp_dir, filename)
         file.save(filepath_download)
         try:
             data_out, code = extract_payroll_xml_api(
                 {"filepath": filepath_download, "filename": filename}, data_token
             )
         finally:
-            try:
-                os.remove(filepath_download)
-            except OSError:
-                pass
+            shutil.rmtree(temp_dir, ignore_errors=True)
         return data_out, code
 
 
