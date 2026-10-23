@@ -53,3 +53,7 @@ Reusa `_control_to_dict` de `MD_BalanceControl` y `MD_DeliveryControl` (los mism
 - **Correo además de la notificación in-app** (`P-095`): en `run_balance_sweep`, junto a `notify`, mandar el mismo `msg` por SES (`send_email_ses`) a la lista que decida administración; no mover las marcas antes de que al menos un canal se guarde.
 - **Otro disparo** (cron del contenedor, `P-139`): llamar `run_balance_sweep(data_token_de_sistema)` directo o `start_daily_sweep("balance", …)`; las banderas evitan duplicados aunque también lo dispare la lista.
 - Migrar médicos/CDA a `start_daily_sweep` solo cambia nombres de banderas (`flag_medical` / `last_date_medicals` no siguen el patrón `<type_n>`); no es obligatorio.
+
+## Notas posteriores
+
+- **2026-10-22 — Correo (`P-095`)**: la notificación "Control de saldos y entregas" sale también por SES a gerentes y jefes de Administración, solo en prod y sin token tester; las marcas se escriben si sale **al menos un canal** (antes solo la notificación) → [`avisos_saldos_correo.md`](avisos_saldos_correo.md). `run_balance_sweep` gana `send_email=` (stub en pruebas) y la llave `email` en su resultado. Traslados sin correo.

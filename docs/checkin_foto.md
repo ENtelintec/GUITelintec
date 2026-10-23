@@ -1,6 +1,6 @@
 # Check-in con foto (tipo Wellhub): `POST /common/checkin`, `GET /common/checkin/me`, `GET /rrhh/checkins`, manuales y anulación de RH
 
-Fecha: 2026-10-22 · **Estado: back hecho; verificado contra dev en las validaciones (15/15, `Tests/tester_checkin.py`, S3 simulado). Las pruebas que tocan la tabla esperan el DDL [`checkins.sql`](../scripts_db_handle/checkins.sql) en dev (`P-165`): el tester lo detecta y las corre solas al existir la tabla.**
+Fecha: 2026-10-22 · **Estado: hecho y verificado contra dev (37/37, `Tests/tester_checkin.py`, S3 simulado). DDL [`checkins.sql`](../scripts_db_handle/checkins.sql) corrido en dev, test y prod (`P-165`, ver [Notas posteriores](#notas-posteriores)).**
 
 Fase **F8** del plan [`planes/plan_junta_2026_10_22.md`](planes/plan_junta_2026_10_22.md) (junta con Administración del 2026-10-22: "hacer check-in tipo Wellhub con foto"). Decisiones del grill: entra ya, para **todo el personal**, como **respaldo cuando el biométrico no esté**; **simple**: sin alternancia forzada, sin geocerca ni validación facial; **RH hace todas las correcciones**; **resumen por día calculado en lectura**; lo que hay de `fichajes` (Excel del biométrico de Ternium) se ignora. Fotos con la receta de [`cda_alertas_y_fotos.md`](cda_alertas_y_fotos.md) (S3 + blob), ahora en el bucket de RH.
 
@@ -111,3 +111,7 @@ Mismo shape que `/me` para todos los empleados (o uno con `emp_id`), más `meta:
 - **Retardos / tolerancias**: `build_daily_summary` es el único lugar; agregar el horario del empleado (hoy no existe en `employees`) y una llave `late_minutes`.
 - **Horas persistidas / exportar a nómina**: hoy nada se guarda agregado; si hace falta, una tabla `checkin_days` alimentada por un barrido (receta de `MD_BalanceAlerts`), no en lectura.
 - **Reemplazar `fichajes`**: fuera de alcance; si algún día se unifica, el Excel de Ternium entraría como eventos `manual = 1` con `extra_info.source = "ternium"`.
+
+## Notas posteriores
+
+- **2026-10-22 — DDL y verificación completa**: `checkins.sql` corrido en dev, test y prod. En solo lectura, las 3 tablas son idénticas al script: 15 columnas, índices `idx_checkins_emp_ts` / `_ts` / `_status`, `fk_checkins_employee` (RESTRICT al borrar, CASCADE al actualizar) y 0 filas. `Tests/tester_checkin.py` contra dev, ya con la tabla: **37/37**, incluidas altas con foto, manual de RH, anulación, `history`, fotos propias/ajenas y resumen por día. Cierra `P-164` y `P-165`; queda el front (`P-166`).

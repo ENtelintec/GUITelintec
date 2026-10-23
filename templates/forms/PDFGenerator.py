@@ -30,7 +30,7 @@ FONT_BOLD = "Helvetica-Bold"
 # (12 call sites), asi que se lee sin token (BD del environment) con cache de
 # modulo; el CRUD la invalida al escribir. ISO_FORM_IDS_IN_CODE = ids que los PDFs
 # piden por literal (iso_form=N): no se pueden borrar del catalogo, solo retirar.
-ISO_FORM_IDS_IN_CODE = frozenset({1, 2, 3, 4, 5, 6, 7, 8})
+ISO_FORM_IDS_IN_CODE = frozenset({1, 2, 3, 4, 5, 6, 7, 8, 14, 15})  # 14 remision OCD, 15 cotizacion CISCO
 _ISO_CACHE_TTL = 300  # segundos
 _iso_cache: dict = {"at": 0.0, "rows": {}}
 

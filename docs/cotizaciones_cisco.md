@@ -128,3 +128,7 @@ models      api_quotation_cisco_models.py (nuevo) MetadataQuotationCiscoForm (he
 - **Otro formato** (p. ej. `format = "servicios"`): agregar el valor a `QUOTATION_FORMATS` (`Functions_midleware_admin`), su prefijo a `QUOTATION_FOLIO_PREFIXES` y, si sus partidas difieren, un módulo `MD_Quotation<Formato>.py` gemelo de `MD_QuotationCisco`; `get_quotations(fmt=)` y el guard de `update_quoation_from_api` ya son genéricos.
 - **Permitir el `PUT /quotation` grande sobre CISCO**: quitar el guard en `update_quoation_from_api` y hacer que `ProductsPutQuotationForm` declare `item`/`smart_account`/`service_months`/`delivery_time` (si no, el overwrite las borra).
 - **Validar `item` en el form** (400 por campo en vez de lista): `Regexp(r"^\d+(\.\d+)?$")` en `ProductsQuotationCiscoForm.item`; la unicidad sigue en `cisco_items_errors`.
+
+## Notas posteriores
+
+- **2026-10-22 — PDF FO-PRE-02 (`P-169`)**: `GET /quotation/cisco/download/pdf/<id>` → [`cotizacion_cisco_pdf.md`](cotizacion_cisco_pdf.md). **Corrección**: la respuesta 3 y el "Al modificar" de este doc suponían un `GET /quotation/download/pdf/<id>` que imprimía el FO-PRE-01; **esa ruta nunca existió** y el back no genera PDF de cotización de preventa. De paso, `GET /quotation/cisco/<id>` (y `GET /quotation/<id>`) con un id inexistente respondía **400**; ahora **404**, como dice la tabla de arriba.

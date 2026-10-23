@@ -19,11 +19,19 @@ Reglas:
     sugerido COT-CISCO-AAAA-NNN (GET /quotation/folio?format=cisco).
   * GET /quotation/-1 no las devuelve por default (?format=cisco las pide;
     ?document_type=ocd si las trae cuando ya son OCD).
+  * PDF FO-PRE-02 (GET /quotation/cisco/download/pdf/<id>): docs/cotizacion_cisco_pdf.md.
 """
+import os
 import re
+import tempfile
 from datetime import date, datetime
 
+from werkzeug.utils import secure_filename
+
 from static.constants import format_date
+from templates.controllers.employees.employees_controller import get_employee_info
+from templates.forms.QuotationCiscoForms import FileQuotationCiscoPDF
+from templates.resources.methods.Functions_Aux_RH import split_emails
 from templates.resources.midleware.Functions_midleware_admin import (
     create_quotation_from_api,
     get_quotations,
@@ -165,3 +173,67 @@ def update_quotation_cisco_api(data, data_token):
     data["metadata"]["format"] = QUOTATION_FORMAT_CISCO
     data["products"] = _cisco_to_standard(data["products"])
     return update_quoation_from_api(data, data_token, fmt=QUOTATION_FORMAT_CISCO)
+
+
+def _telintec_contact(emp_id, data_token) -> tuple[str, str, str]:
+    """(nombre, teléfono, correo) del empleado que capturó la cotización; vacíos
+    si no hay emp_id o no existe. Correo: el institucional si tiene varios."""
+    try:
+        emp_id = int(emp_id or 0)
+    except (TypeError, ValueError):
+        return "", "", ""
+    if emp_id <= 0:
+        return "", "", ""
+    flag, _error, row, _cols = get_employee_info(emp_id, data_token)
+    if not flag or not isinstance(row, tuple) or len(row) < 8:
+        return "", "", ""
+    name = " ".join(str(part).strip() for part in (row[1], row[2]) if part)
+    emails = split_emails(row[7])
+    institutional = [e for e in emails if e.lower().endswith("@telintec.com.mx")]
+    email = (institutional or emails or [""])[0]
+    return name.title(), str(row[6] or "").strip(), email
+
+
+def download_quotation_cisco_pdf(id_q: int, data_token):
+    """PDF FO-PRE-02 de una cotización CISCO: (ruta, 200) o (envelope, 4xx).
+    404 si no existe o no es CISCO (mismo criterio que GET /quotation/cisco/<id>)."""
+    data_out, code = get_quotations_cisco_api(id_q, data_token)
+    if code != 200:
+        return data_out, code
+    entries = data_out.get("data")
+    entry = entries[0] if isinstance(entries, list) and entries and isinstance(entries[0], dict) else None
+    if entry is None:
+        return {"data": None, "msg": f"No se encontró la cotización CISCO (ID {id_q})", "error": "Quotation not found"}, 404
+    metadata = entry.get("metadata")
+    metadata = metadata if isinstance(metadata, dict) else {}
+    products = entry.get("products")
+    contact_name, contact_phone, contact_email = _telintec_contact(metadata.get("emp_id"), data_token)
+    code_q = str(metadata.get("quotation_code") or "")
+    file_name = secure_filename(f"cotizacion_cisco_{code_q}_{id_q}.pdf") or f"cotizacion_cisco_{id_q}.pdf"
+    download_path = os.path.join(tempfile.mkdtemp(), file_name)
+    flag_pdf = FileQuotationCiscoPDF(
+        {
+            "filename_out": download_path,
+            "quotation_code": code_q,
+            "emission": str(metadata.get("emission") or "")[:10],
+            "limit_date": str(metadata.get("limit_date") or "")[:10],
+            "contact_name": contact_name,
+            "contact_phone": contact_phone,
+            "contact_email": contact_email,
+            "company": metadata.get("company") or "",
+            "user": metadata.get("user") or "",
+            "phone": metadata.get("phone") or "",
+            "email": metadata.get("email") or "",
+            "planta": metadata.get("planta") or "",
+            "area": metadata.get("area") or "",
+            "location": metadata.get("location") or "",
+            "concept": metadata.get("concept") or "",
+            "currency": metadata.get("currency") or "MXN",
+            "delivery_time": metadata.get("delivery_time") or "",
+            "products": products if isinstance(products, list) else [],
+            "total": entry.get("total") or 0.0,
+        }
+    )
+    if not flag_pdf:
+        return {"data": None, "msg": "Error al generar el PDF de la cotización CISCO", "error": None}, 400
+    return download_path, 200

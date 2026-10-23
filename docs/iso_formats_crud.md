@@ -88,3 +88,7 @@ Ejemplos de error: `400` `error: ["config.columns[0].value_type debe ser uno de 
 
 - **[front]** Pantalla de SGI para el catálogo (lista con filtro `all`, alta, edición/revisión, retirar/reactivar, borrar solo si `usage` lo permite).
 - **[back]** Al subir revisión de un formato de saldos, versionar el `config` (hoy el `history` guarda el diff escalar y "config actualizado", no el `config` anterior completo).
+
+## Notas posteriores
+
+- **2026-10-22**: `ISO_FORM_IDS_IN_CODE` pasa de 1..8 a **1..8 + 14, 15**. 15 es el PDF FO-PRE-02 de cotización CISCO ([`cotizacion_cisco_pdf.md`](cotizacion_cisco_pdf.md)). 14 (remisión OCD, FO-CXC-05) ya lo pedía `RemissionForms` por literal sin estar protegido, así que el `DELETE` lo dejaba borrar. `GET /formats/catalogs` devuelve `ids_bound_to_pdf: [1, 2, 3, 4, 5, 6, 7, 8, 14, 15]`. La fila 15 tiene `emission_date` `NULL` en las 3 BDs: el encabezado imprime `I. Vigencia:` vacío hasta que SGI la llene.

@@ -76,3 +76,7 @@ Cada empleado gana `emails` (lista, `[]` si no hay) junto a `email` (string). `G
 - **Correo "principal"**: hoy es el primero de la lista (`email` string lo expone así); si RH quiere marcarlo aparte, `extra_info.primary_email` sin DDL.
 - **Pasar a tabla propia** (si llegan a necesitar por correo tipo/verificado): sustituir `split_emails`/`join_emails` por el controller nuevo; los tres builders y `_send_payroll_email` son los únicos lectores.
 - **Permitir notificar a inactivos** en un caso puntual: `force: true` en `NotifyPayrollForm` y saltar el guard; hoy no (decisión 2026-10-22).
+
+## Notas posteriores
+
+- **2026-10-22 — DML corrido y corrección por PAD SPACE** (`P-163`): `employees_emails_normalize.sql` ya corrió en las 3 BDs; no queda ninguna coma suelta. Queda el empleado 32 (`'jess31438@gmail.com '`, espacio final) en las 3: `employees.email` es `utf8mb4_bin`, que es **PAD SPACE**, así que el `<>` del WHERE ignoraba el espacio final. El script compara ahora con `CAST(... AS BINARY)`; basta volver a correr los bloques 1–3. No afecta al API: `split_emails` ya recorta al leer.

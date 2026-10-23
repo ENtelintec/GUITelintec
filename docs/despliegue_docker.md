@@ -67,3 +67,7 @@ Opcional en la misma tanda: `docker-compose.dev.yml` que monte el repo y use `.e
 - Nueva ruta escribible bajo `files/` en `constants.py` → agregar su mount en `docker-compose.yml`, o se pierde al recrear el contenedor.
 - Nuevo archivo que lea el código fuera del repo (otro `.pem`, etc.) → mount `:ro` nuevo; nunca `COPY`.
 - `.env` cambia → `docker compose restart api` (se lee una vez al importar, igual que antes).
+
+## Notas posteriores
+
+- **2026-10-22 — `P-139` en pausa** por decisión del usuario ("todavía no"); `P-140` (flags de gunicorn) igual. Al retomarlo, revisar la decisión 4: para desplegar, `static/constants.py` se commitea con `environment = "prod"` y luego se regresa a `"dev"` (commits `0d553b6` "prod update" y `5a7e4b0` "update dev mode" del 2026-10-22). Si el `os.getenv("API_ENVIRONMENT", "dev")` llega a prod antes que el contenedor, el systemd arrancaría en `dev`, salvo que defina `API_ENVIRONMENT=prod`. Se resuelve junto con la forma de desplegar; de paso se acaba el ir y venir de commits.

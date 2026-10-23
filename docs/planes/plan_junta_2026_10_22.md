@@ -4,6 +4,8 @@
 
 ## Estado
 
+**2026-10-22 (noche, 9)**: **F8 cerrada**: DDL `checkins.sql` verificado en las 3 BDs (`P-165`) y `Tests/tester_checkin.py` 37/37 con la tabla (`P-164`) → [`checkin_foto.md`](../checkin_foto.md). El DML de correos (`P-163`) ya corrió en las 3 BDs; falta re-correrlo por una fila con espacio final (PAD SPACE, script corregido). **Back del plan completo.**
+
 **2026-10-22 (noche, 8)**: **F9 hecha y verificada contra dev (10/10, `Tests/tester_transfer_over_receive.py`; resolve 64/64)** → nota del 2026-10-22 en [`almacen_multisede_f3.md`](../almacen_multisede_f3.md): `PUT /sucursal/transfer/receive` 400 con `data.over_received` cuando se recibe más de lo enviado. **Back del plan completo** salvo F8, que espera el DDL `checkins.sql` en dev (`P-165`) para cerrar `P-164` con el tester. Quedan del usuario los dos SQL (`P-163`, `P-165`), de administración el patrón de folios (`P-157`) y el permiso de Cobranza (`P-155`), el PDF FO-PRE-02 (`P-169`) y el front (`P-152`, `P-161`, `P-166`, `P-170`, `P-171`).
 
 **2026-10-22 (noche, 7)**: **F10 hecha y verificada contra dev (46/46, `Tests/tester_quotation_cisco.py`; folio, OCD, licitaciones, PUT metadata y costos en verde)** → [`cotizaciones_cisco.md`](../cotizaciones_cisco.md): rutas `/quotation/cisco/*` sobre el mismo midleware, `metadata.format = cisco` + `concept`, partidas en `extra_info`, `GET /quotation/-1` sin CISCO por default (`?format=cisco|all`; con `document_type=ocd` sí salen), `PUT /quotation` grande bloqueado para CISCO; PDF FO-PRE-02 `P-169` después. Siguiente: F9 (traslados).

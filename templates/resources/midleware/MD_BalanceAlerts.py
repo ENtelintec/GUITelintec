@@ -17,13 +17,18 @@ Una vez por umbral y por control: la marca en extra_info.notified guarda la
 referencia que la hizo valida (end_date, contracted_amount o due_date). Si la
 referencia cambia (VIGENCIA, INYECCION/AJUSTE, due_date nuevo) el umbral vuelve
 a avisar; no hace falta limpiar marcas desde los endpoints de movimiento.
+
+El aviso de saldos y entregas sale ademas por correo SES a gerentes y jefes de
+Administracion (P-095, docs/avisos_saldos_correo.md); solo en prod y sin token
+tester, para no mandarles datos de dev/test.
 """
 
 from datetime import date, datetime
 
 import pytz
 
-from static.constants import log_file_admin_collecions, timezone_software
+from static.constants import environment, log_file_admin_collecions, timezone_software
+from templates.controllers.employees.employees_controller import get_active_employees_by_puesto
 from templates.controllers.product.warehouses_controller import TRANSFER_COLUMNS, get_transfers_db
 from templates.controllers.purchases.balance_control_controller import (
     get_balance_controls,
@@ -36,6 +41,8 @@ from templates.controllers.purchases.delivery_control_controller import (
 )
 from templates.Functions_Utils import create_notification_permission_notGUI
 from templates.misc.Functions_Files import write_log_file
+from templates.misc.Functions_Mail import is_ses_configured, send_email_ses
+from templates.resources.methods.Functions_Aux_RH import split_emails
 from templates.resources.midleware import MD_BalanceControl, MD_DeliveryControl
 
 # Umbrales fijos (decision 2026-10-22). El de 60 dias coincide con VALIDITY_EXPIRING_DAYS.
@@ -46,6 +53,13 @@ TRANSFER_MIN_DAYS = 1
 PERM_BALANCE = ["administracion"]
 PERM_TRANSFERS = ["almacen", "administracion"]
 TITLE = "Notificaciones de sistema"
+# Correo del aviso de saldos y entregas (P-095, decision 2026-10-22): gerentes y
+# jefes de Administracion (departments.id 3, puesto GERENTE... / JEFE...), solo a
+# sus correos institucionales. Los traslados no van por correo.
+EMAIL_DEPARTMENT_ID = 3
+EMAIL_PUESTO_PREFIXES = ("GERENTE", "JEFE")
+EMAIL_DOMAIN = "@telintec.com.mx"
+EMAIL_SUBJECT = "Avisos de control de saldos y entregas"
 
 
 def _today() -> date:
@@ -197,12 +211,47 @@ def build_transfer_alerts(data_token) -> tuple[list, str | None]:
     return transfer_alert_lines(rows), None
 
 
-def run_balance_sweep(data_token, notify=create_notification_permission_notGUI) -> dict:
+def balance_alert_recipients(data_token) -> tuple[list, str | None]:
+    """Correos institucionales (sin duplicados) de los gerentes y jefes de Administracion activos."""
+    flag, error, rows = get_active_employees_by_puesto(EMAIL_DEPARTMENT_ID, EMAIL_PUESTO_PREFIXES, data_token)
+    if not flag or not isinstance(rows, list):
+        return [], error or "no se pudieron leer los destinatarios"
+    out: list = []
+    for row in rows:
+        for email in split_emails(row[4]):
+            if email.lower().endswith(EMAIL_DOMAIN) and email.lower() not in {e.lower() for e in out}:
+                out.append(email)
+    return out, None
+
+
+def email_balance_alert(msg: str, data_token, send=None) -> dict:
+    """Manda el aviso de saldos y entregas por SES. status: sent | failed |
+    pending (SES sin configurar) | skipped (fuera de prod o token tester: los
+    destinatarios son personas reales). `send` (o el send_email_ses del modulo,
+    que se resuelve al llamar) se sustituye en pruebas."""
+    send = send or send_email_ses
+    if environment != "prod" or (data_token or {}).get("is_tester"):
+        return {"status": "skipped", "to": [], "error": None}
+    if not is_ses_configured():
+        return {"status": "pending", "to": [], "error": None}
+    recipients, error = balance_alert_recipients(data_token)
+    if error or not recipients:
+        reason = error or "sin destinatarios (gerentes y jefes de Administración con correo institucional)"
+        return {"status": "failed", "to": [], "error": reason}
+    body = msg + "\n\nCorreo automático del sistema Telintec; las mismas líneas están en Notificaciones de sistema."
+    ok, error, _message_id = send(recipients, f"{EMAIL_SUBJECT} — {_today().isoformat()}", body)
+    return {"status": "sent" if ok else "failed", "to": recipients, "error": None if ok else error}
+
+
+def run_balance_sweep(data_token, notify=create_notification_permission_notGUI, send_email=None) -> dict:
     """Corre el barrido completo: arma las lineas, inserta las notificaciones de
-    sistema y, SOLO si la notificacion se guardo, escribe las marcas (si no, el
-    umbral vuelve a intentarse al dia siguiente). `notify` se sustituye en pruebas."""
+    sistema, manda el correo de saldos y entregas y, SOLO si al menos un canal
+    (notificacion o correo) salio, escribe las marcas (si no, el umbral vuelve a
+    intentarse al dia siguiente). `notify` y `send_email` se sustituyen en pruebas."""
+    send_email = send_email or email_balance_alert
     errors: list = []
     marks_written = 0
+    mail: dict = {"status": None, "to": [], "error": None}
     b_lines, b_updates, error = build_balance_alerts(data_token)
     if error:
         errors.append(f"saldos: {error}")
@@ -215,7 +264,11 @@ def run_balance_sweep(data_token, notify=create_notification_permission_notGUI) 
 
     if b_lines or d_lines:
         msg = "Notificaciones de sistema — Control de saldos y entregas\n" + "\n".join(b_lines + d_lines)
-        if notify(msg, data_token, PERM_BALANCE, TITLE, 0, 0):
+        saved = notify(msg, data_token, PERM_BALANCE, TITLE, 0, 0)
+        mail = send_email(msg, data_token)
+        if mail.get("error"):
+            errors.append(f"correo de saldos y entregas: {mail['error']}")
+        if saved or mail.get("status") == "sent":
             for id_control, notified in b_updates:
                 flag, err, _ = set_balance_control_notified(id_control, notified, data_token)
                 marks_written += 1 if flag else 0
@@ -227,7 +280,9 @@ def run_balance_sweep(data_token, notify=create_notification_permission_notGUI) 
                 if not flag:
                     errors.append(f"marca entregas {id_control}: {err}")
         else:
-            errors.append("no se pudo guardar la notificación de saldos y entregas; las marcas no se escribieron")
+            errors.append(
+                "no se pudo guardar la notificación ni enviar el correo de saldos y entregas; las marcas no se escribieron"
+            )
     if t_lines:
         msg = "Notificaciones de sistema — Traslados con diferencias sin resolver\n" + "\n".join(t_lines)
         if not notify(msg, data_token, PERM_TRANSFERS, TITLE, 0, 0):
@@ -235,7 +290,8 @@ def run_balance_sweep(data_token, notify=create_notification_permission_notGUI) 
     write_log_file(
         log_file_admin_collecions,
         f"Barrido de avisos: {len(b_lines)} de saldos, {len(d_lines)} de entregas, {len(t_lines)} de traslados, "
-        f"{marks_written} marcas" + (f"; errores: {errors}" if errors else ""),
+        f"{marks_written} marcas, correo {mail.get('status')} a {mail.get('to')}"
+        + (f"; errores: {errors}" if errors else ""),
         data_token,
     )
     return {
@@ -243,5 +299,6 @@ def run_balance_sweep(data_token, notify=create_notification_permission_notGUI) 
         "delivery_lines": d_lines,
         "transfer_lines": t_lines,
         "marks_written": marks_written,
+        "email": mail,
         "errors": errors,
     }
