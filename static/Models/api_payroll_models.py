@@ -54,8 +54,16 @@ request_file_model = api.model(
     "RequestFile",
     {
         "emp_id":  fields.Integer(required=True, description="The employee id"),
-        "pdf": fields.String(required=True, description="The file pdf url"),
-        "xml": fields.String(required=True, description="The file xml url"),
+        "pdf": fields.String(
+            required=False,
+            description="Key S3 del pdf (del indice del empleado). Basta pdf o xml",
+            example="payroll/2026/10/77/recibo.pdf",
+        ),
+        "xml": fields.String(
+            required=False,
+            description="Key S3 del xml (del indice del empleado). Basta pdf o xml",
+            example="payroll/2026/10/77/recibo.xml",
+        ),
     },
 )
 
@@ -117,8 +125,9 @@ class UpdateDataPayrollForm(Form):
 
 class RequestFileForm(Form):
     emp_id = IntegerField("emp_id", validators=[InputRequired()])
-    pdf = StringField("pdf", validators=[InputRequired()])
-    xml = StringField("xml", validators=[InputRequired()])
+    # Basta uno de los dos (el midleware responde 400 si ambos vienen vacios).
+    pdf = StringField("pdf", validators=[], default="")
+    xml = StringField("xml", validators=[], default="")
 
 
 class DeletePayrollFileForm(Form):

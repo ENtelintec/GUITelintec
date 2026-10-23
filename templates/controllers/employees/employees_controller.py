@@ -367,7 +367,7 @@ def get_all_employees_active():
     return flag, error, result
 
 
-def get_all_data_employees(status: str):
+def get_all_data_employees(status: str, data_token=None):
     if "all" in status.lower():
         status = "%"
     elif "inactivo" in status.lower():
@@ -414,7 +414,7 @@ def get_all_data_employees(status: str):
 
     """
     val = (status,)
-    flag, error, result = execute_sql(sql, val, type_sql=2)
+    flag, error, result = execute_sql(sql, val, type_sql=2, data_token=data_token)
     return flag, error, result
 
 

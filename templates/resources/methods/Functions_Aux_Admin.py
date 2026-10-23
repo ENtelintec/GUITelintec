@@ -283,6 +283,8 @@ def read_exel_products_partidas(path: str, data_token):
     # partidas lo trae; en la de remision "UM" es unidad de medida (SRV), no un
     # SKU, asi que no se dispara el lookup a BD.
     col_sku = resolve("UDM", "NRO. PARTE", "NRO PARTE", "N. PARTE", "NO. PARTE")
+    # Fecha de entrega por partida (OCD, docs/ocd_reglas_po_vencimiento.md): opcional.
+    col_entrega = resolve("FECHA ENTREGA", "FECHA DE ENTREGA", "ENTREGA", "FECHA ENTREGA PARTIDA")
 
     diagnostics["columns_found"] = [str(c) for c in df.columns]  # pyrefly: ignore
     diagnostics["columns_mapped"] = {
@@ -293,7 +295,30 @@ def read_exel_products_partidas(path: str, data_token):
         "quantity": col_cantidad,
         "udm": col_udm,
         "sku": col_sku,
+        "delivery_date": col_entrega,
     }
+
+    def delivery_date_str(value) -> str:
+        """Celda de fecha -> 'YYYY-MM-DD' o '' (datetime/Timestamp, o texto
+        YYYY-MM-DD / DD/MM/YYYY / DD-MM-YYYY). Lo que no se entiende se deja vacío."""
+        from datetime import datetime as _dt
+
+        if value is None:
+            return ""
+        if hasattr(value, "strftime"):
+            try:
+                return value.strftime("%Y-%m-%d")
+            except (ValueError, TypeError):
+                return ""
+        text = str(value).strip()
+        if not text or text.lower() in ("nan", "nat", "none"):
+            return ""
+        for fmt in ("%Y-%m-%d", "%d/%m/%Y", "%d-%m-%Y"):
+            try:
+                return _dt.strptime(text[:10], fmt).strftime("%Y-%m-%d")
+            except ValueError:
+                continue
+        return ""
 
     def cell(item, col, default=""):
         return item.get(col, default) if col is not None else default
@@ -371,6 +396,7 @@ def read_exel_products_partidas(path: str, data_token):
             "description_small": cell(item, col_desc_small, ""),
             "id": id_p,
             "comment": "",
+            "delivery_date": delivery_date_str(cell(item, col_entrega, "")),
         }
         current_items.append(product)
 

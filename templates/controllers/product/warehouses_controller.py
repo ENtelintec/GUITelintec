@@ -251,20 +251,24 @@ _SEDE_MOVEMENT_SELECT = (
 )
 
 
-def get_warehouse_movements_db(id_warehouse, type_m, date_from, date_to, limit, data_token):
+def get_warehouse_movements_db(id_warehouse, type_m, date_from, date_to_exclusive, limit, data_token):
     """Kardex de UNA sede (id_warehouse = %s, nunca NULL). `type_m` LIKE
-    ('%' = todos), fechas inclusivas sobre DATE(movement_date), `limit`
-    tope de filas (más recientes primero). type_sql=2."""
+    ('%' = todos), `date_from` datetime inclusivo (siempre viene: ventana por
+    defecto del midleware), `date_to_exclusive` datetime o None, `limit` tope
+    de filas (más recientes primero). Predicados sobre la columna, nunca
+    DATE(), para usar el índice (docs/almacen_kardex_ventana.md). type_sql=2."""
     sql = (
         _SEDE_MOVEMENT_SELECT
         + "WHERE m.id_warehouse = %s AND m.movement_type LIKE %s "
-        "AND (%s IS NULL OR DATE(m.movement_date) >= %s) "
-        "AND (%s IS NULL OR DATE(m.movement_date) <= %s) "
-        "ORDER BY m.movement_date DESC, m.id_movement DESC "
-        "LIMIT %s"
+        "AND m.movement_date >= %s "
     )
-    val = (id_warehouse, type_m, date_from, date_from, date_to, date_to, int(limit))
-    flag, error, result = execute_sql(sql, val, 2, data_token)
+    val: list = [id_warehouse, type_m, date_from]
+    if date_to_exclusive is not None:
+        sql += "AND m.movement_date < %s "
+        val.append(date_to_exclusive)
+    sql += "ORDER BY m.movement_date DESC, m.id_movement DESC LIMIT %s"
+    val.append(int(limit))
+    flag, error, result = execute_sql(sql, tuple(val), 2, data_token)
     return flag, error, result
 
 

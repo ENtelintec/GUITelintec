@@ -495,7 +495,7 @@ def _sm_delivery_row_height(entry, font_size=8):
     if entry.get("title"):
         lines += len(_grid_wrap_cell(entry["title"], date_w, font_size))
     text_h = max(1, lines) * font_size * 1.25 + 6
-    img_h = _SM_SIGN_ROW_H if entry.get("image_path") else 0.0
+    img_h = _SM_SIGN_ROW_H if (entry.get("image_path") or entry.get("delivery_image_path")) else 0.0
     return max(_SM_PLAIN_ROW_H, text_h, img_h)
 
 
@@ -521,8 +521,8 @@ def _sm_draw_signature_image(pdf, img_path, cell_x, cell_y_top, cell_w, cell_h, 
 
 
 def _sm_draw_delivery_row(pdf, y_top, entry, row_h, font_size=8):
-    """Una fila de la tabla de entregas: No. | Fecha+Título | (firma entrega en
-    blanco) | firma de quien recibe (imagen si existe)."""
+    """Una fila de la tabla de entregas: No. | Fecha+Título | firma de quien
+    entrega (imagen si existe) | firma de quien recibe (imagen si existe)."""
     date_lines = []
     if entry.get("date"):
         date_lines += _grid_wrap_cell(entry["date"], _SM_DELIVERY_COLS[1][1], font_size)
@@ -535,7 +535,12 @@ def _sm_draw_delivery_row(pdf, y_top, entry, row_h, font_size=8):
     for (_, w), lines in zip(_SM_DELIVERY_COLS, cells):
         _grid_draw_cell(pdf, x, y_top, w, row_h, lines, font_size)
         x += w
-    # firma de quien recibe: última columna, imagen sobre la celda ya dibujada
+    # firmas: imagen sobre la celda ya dibujada (3a col. quien entrega, 4a quien recibe)
+    entrega_path = entry.get("delivery_image_path")
+    if entrega_path:
+        entrega_x = _SM_MARGIN + sum(w for _, w in _SM_DELIVERY_COLS[:2])
+        entrega_w = _SM_DELIVERY_COLS[2][1]
+        _sm_draw_signature_image(pdf, entrega_path, entrega_x, y_top, entrega_w, row_h)
     img_path = entry.get("image_path")
     if img_path:
         recibe_x = _SM_MARGIN + sum(w for _, w in _SM_DELIVERY_COLS[:3])
@@ -546,14 +551,15 @@ def _sm_draw_delivery_row(pdf, y_top, entry, row_h, font_size=8):
 def print_deliveries_sign_table_sm(pdf, y_init, delivery_files, font_size=8, new_page_cb=None, limit_y=40):
     """
     Tabla de entregas: encabezados en celeste y una fila por entrega
-    (``delivery_files``). Cada fila pre-llena No./Fecha+Título; la firma de quien
-    recibe se incrusta como imagen cuando el attachment es un raster dibujable
-    (si no, la celda queda en blanco para firmar a mano). Al final el campo
-    "Fecha de Entrega Completa". Con muchas entregas la tabla pagina por fila
-    (``new_page_cb``) repitiendo el encabezado de columnas.
+    (``delivery_files``). Cada fila pre-llena No./Fecha+Título; las firmas de
+    quien entrega (``delivery_image_path``) y de quien recibe (``image_path``)
+    se incrustan como imagen cuando hay un raster dibujable (si no, la celda
+    queda en blanco para firmar a mano). Al final el campo "Fecha de Entrega
+    Completa". Con muchas entregas la tabla pagina por fila (``new_page_cb``)
+    repitiendo el encabezado de columnas.
 
     ``delivery_files``: [{"no": int, "date": str, "title": str,
-    "image_path": str|None}, ...] (mínimo 1).
+    "image_path": str|None, "delivery_image_path": str|None}, ...] (mínimo 1).
     """
     head_h = font_size * 1.25 + 6
     y = print_grid_header_row(pdf, _SM_DELIVERY_COLS, y_init, font_size)
@@ -585,13 +591,17 @@ def FileSmPDF(dict_data: dict):
             "metadata": {label: valor, ...},
             "products": [(no, nombre, cantidad, udm, suministrado, estatus), ...],
             "delivery_files": [                    # una entrega por attachment (>= 1)
-                {"no": int, "date": str, "title": str, "image_path": str|None}, ...
+                {"no": int, "date": str, "title": str,
+                 "image_path": str|None,           # firma de quien recibe
+                 "delivery_image_path": str|None}, # firma de quien entrega (opcional)
+                ...
             ],
         }
 
     Cada entrega pre-llena No./Fecha+Título y, si el attachment es una imagen
-    dibujable, incrusta la firma de quien recibe (``image_path``); si no, la
-    celda queda en blanco para firmar a mano. Multipágina: el header Telintec y
+    dibujable, incrusta la firma de quien recibe (``image_path``) y la de quien
+    entrega (``delivery_image_path``, clave opcional); si no, la celda queda en
+    blanco para firmar a mano. Multipágina: el header Telintec y
     los encabezados de columna se repiten en cada página; la metadata solo va en
     la página 1; la tabla de entregas pagina por fila.
     """

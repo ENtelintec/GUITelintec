@@ -569,6 +569,11 @@ basic_control_table_report_model = api.model(
             description="ID de la cotizacion asociada",
             example=501,
         ),
+        "delivery_control_id": fields.Integer(
+            required=False,
+            description="Control de entregas (OCD) al que nace ligada; ausente = se resuelve por los items o queda libre",
+            example=3,
+        ),
         "folio": fields.String(
             required=True,
             description="Folio o referencia interna del reporte",
@@ -580,27 +585,27 @@ basic_control_table_report_model = api.model(
             example=120,
         ),
         "plant": fields.String(
-            required=True,
+            required=False,
             description="Planta del cliente",
             example="Planta Monterrey",
         ),
         "location": fields.String(
-            required=True,
+            required=False,
             description="Ubicación específica",
             example="Línea 3 - Nodo PZ-34",
         ),
         "activity": fields.String(
-            required=True,
+            required=False,
             description="Área dentro de la planta",
             example="Producción",
         ),
         "general_description": fields.String(
-            required=True,
+            required=False,
             description="Descripción general del reporte",
             example="Suministro e instalación de soportería",
         ),
         "comments": fields.String(
-            required=True,
+            required=False,
             description="Comentarios del reporte",
             example="Sin observaciones",
         ),
@@ -714,7 +719,7 @@ basic_metadata_activity_model = api.inherit(
     basic_control_table_report_model,
     {
         "area": fields.String(
-            required=True,
+            required=False,
             description="Área dentro de la planta",
             example="Producción",
         ),
@@ -880,6 +885,26 @@ remission_balance_update_model = api.model(
     },
 )
 
+
+report_activity_cancel_model = api.model(
+    "ReportActivityCancel",
+    {
+        "id": fields.Integer(required=True, description="ID de la remisión a cancelar (status 3, sin reactivación)", example=1012),
+        "reason": fields.String(required=False, description="Motivo (queda en history)", example="El cliente indica que la remisión no le corresponde"),
+    },
+)
+
+report_activity_no_attachments_model = api.model(
+    "ReportActivityNoAttachments",
+    {
+        "id": fields.Integer(required=True, description="ID de la remisión", example=1012),
+        "no_attachments": fields.Boolean(
+            required=True,
+            description="true = administración decidió que la remisión no lleva anexos (400 si ya tiene anexos que no sean firmas); false = quitar la marca. Subir un anexo la quita sola.",
+            example=True,
+        ),
+    },
+)
 
 report_activity_delete_model = api.model(
     "ReportActivityDelete",
@@ -1384,16 +1409,23 @@ class QuotationActivityStatusUpdateForm(Form):
 
 
 class MetadataControlTableRemissionForm(Form):
+    # Junta 2026-10-22 (docs/remision_ocd_campos_y_sin_anexos.md): plant, activity,
+    # location, general_description, comments y area son OPCIONALES en el back;
+    # el front los exige con contrato (flujo Ternium) y los oculta en remisiones de OCD.
     date = StringField("date", [InputRequired()])
     folio = StringField("folio", [InputRequired()])
     client_id = IntegerField("client_id", [InputRequired()])
-    plant = StringField("plant", [InputRequired()])
-    activity = StringField("activity", [InputRequired()])
-    location = StringField("location", [InputRequired()])
-    general_description = StringField("general_description", [InputRequired()])
-    comments = StringField("comments", [InputRequired()])
+    plant = StringField("plant", [], default="")
+    activity = StringField("activity", [], default="")
+    location = StringField("location", [], default="")
+    general_description = StringField("general_description", [], default="")
+    comments = StringField("comments", [], default="")
     quotation_id = IntegerField("quotation_id", [], default=None)
     contract_id = IntegerField("contract_id", [], default=0)
+    # Control de entregas (OCD) al que nace ligada la remisión; 0/ausente = se
+    # resuelve por los items (item_contract_id) o queda libre. Solo en el POST;
+    # cambiar la membresía después es PUT /deliveryControl/remissions (docs/control_entregas.md).
+    delivery_control_id = IntegerField("delivery_control_id", [], default=None)
     remision = StringField("remision", [], default="")
     remito = StringField("remito", [], default="")
     user = StringField("user", [], default="")
@@ -1429,7 +1461,7 @@ class ReportActivityUpdateControlTableForm(Form):
 class MetadataActivityReportForm(MetadataControlTableRemissionForm):
     pedido = StringField("pedido", [], default="")
     pedido_exiros = StringField("pedido_exiros", [], default="")
-    area = StringField("area", [InputRequired()])
+    area = StringField("area", [], default="")
     # Campos del módulo REMISIONES (opcionales).
     date_delivery = StringField("date_delivery", [], default="")
     request_date = StringField("request_date", [], default="")
@@ -1510,6 +1542,19 @@ class RemissionBalanceUpdateForm(Form):
 class ReportActivityDeleteForm(Form):
     id = IntegerField("id", [InputRequired()])
     status = IntegerField("status", [number_range(min=-1, message="Invalid status")], default=-1)
+
+
+class ReportActivityCancelForm(Form):
+    # PUT /remission/cancel (docs/remission_cancel.md): status 3, sin reactivación.
+    id = IntegerField("id", [InputRequired()])
+    reason = StringField("reason", [], default="")
+
+
+class ReportActivityNoAttachmentsForm(Form):
+    # PUT /remission/noAttachments (docs/remision_ocd_campos_y_sin_anexos.md): solo administracion.
+    # La presencia de no_attachments en el JSON la exige el midleware (BooleanField no distingue ausente de false).
+    id = IntegerField("id", [InputRequired()])
+    no_attachments = BooleanField("no_attachments", [], default=False)
 
 
 class ReportActivityDownloadAttForm(Form):

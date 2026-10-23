@@ -24,6 +24,8 @@ Reglas:
     rechaza. Despues solo se mueve con POST /balanceControl/movement (tipo 1
     INYECCION > 0 o 2 AJUSTE != 0, saldo resultante nunca < 0), con bloqueo
     optimista sobre el monto leido (409 si otro movimiento gano la carrera).
+    PUT /balanceControl/movement solo corrige movement_date / reason de un
+    movimiento (captura); monto, tipo y vigencia del ledger son inmutables.
   * custom_fields: [{key, label, value_type, comment}], orden = orden de columnas;
     key unica y sin chocar con columnas/campos del formato. Los VALORES por
     remision viven en activity_reports.extra_info.custom_fields (PUT /remissionBalance).
@@ -48,11 +50,13 @@ from templates.controllers.purchases.balance_control_controller import (
     CONTROL_COLUMNS,
     FORMAT_COLUMNS,
     MOVEMENT_COLUMNS,
+    VALIDITY_EXPIRING_DAYS,
     attach_remission_to_control,
     delete_balance_control,
     detach_remission_from_control,
     get_active_balance_control_by_contract,
     get_balance_control_by_id,
+    get_balance_control_movement_by_id,
     get_balance_control_movements,
     get_balance_controls,
     get_customer_name,
@@ -69,6 +73,7 @@ from templates.controllers.purchases.balance_control_controller import (
     update_balance_control_header,
     update_balance_control_amount_optimistic,
     update_balance_control_history,
+    update_balance_control_movement_fields,
 )
 from templates.Functions_Utils import create_notification_permission
 from templates.misc.Functions_Files import write_log_file
@@ -76,7 +81,27 @@ from templates.misc.Functions_Files import write_log_file
 # --- Catalogos ------------------------------------------------------------------
 VALUE_TYPES = ("text", "number", "date", "boolean")
 CURRENCIES = ("MXN", "USD")
-MOVEMENT_TYPES = {0: "INICIAL", 1: "INYECCION", 2: "AJUSTE"}
+# 3 = VIGENCIA: solo cambia end_date (amount 0, saldo intacto). Una INYECCION /
+# AJUSTE puede traer ademas new_end_date (monto y fecha en una sola fila).
+MOVEMENT_TYPES = {0: "INICIAL", 1: "INYECCION", 2: "AJUSTE", 3: "VIGENCIA"}
+# Vigencia derivada de end_date (docs/control_saldos_vencido_y_monto.md). Nunca se
+# almacena y NO bloquea nada: un control vencido sigue aceptando remisiones y
+# movimientos; una VIGENCIA (tipo 3) lo regresa a vigente. El front mapea etiquetas.
+VALIDITY_STATUSES = {0: "VIGENTE", 1: "POR VENCER", 2: "VENCIDO"}
+
+
+def validity_status_from_days(days_to_end) -> int:
+    """0 vigente (sin fecha o a mas de VALIDITY_EXPIRING_DAYS), 1 por vencer, 2 vencido."""
+    days = _int_or_none(days_to_end)
+    if days is None:
+        return 0
+    if days < 0:
+        return 2
+    if days <= VALIDITY_EXPIRING_DAYS:
+        return 1
+    return 0
+# La fecha de fin SOLO cambia por movimiento (un unico escritor con historial).
+_MOVEMENT_ONLY_KEYS = ("end_date",)
 FORMAT_KIND = "balance_control"
 
 _KEY_RE = re.compile(r"^[a-z][a-z0-9_]{0,49}$")
@@ -104,7 +129,7 @@ _PUT_ID_KEYS = ("id_control", "id")
 # real del control ni de una llave aplanada de la remision.
 _RESERVED_BASE_KEYS = set(CONTROL_COLUMNS) | {
     "id", "custom_fields", "remissions", "items", "history", "files",
-    "balance_control_id", "balance_control_active",
+    "balance_control_id", "balance_control_active", "available_amount",
 }
 
 _PERM_NOTIFY = ["administracion"]
@@ -112,7 +137,7 @@ _PERM_NOTIFY = ["administracion"]
 
 # --- Helpers genericos -----------------------------------------------------------
 class _ApiError(Exception):
-    """Corta el flujo del midleware con un envelope {data, msg, error} + codigo listo."""
+    """Corta el flujo del midleware con un envelope (data, msg, error) + codigo listo."""
 
     def __init__(self, envelope: dict, code: int):
         super().__init__(envelope.get("msg"))
@@ -171,6 +196,13 @@ def _movement_to_dict(row) -> dict:
     data["extra_info"] = _load_json(data.get("extra_info"), {})
     mov_type = data.get("type")
     data["type_label"] = MOVEMENT_TYPES.get(int(mov_type), "") if mov_type is not None else ""
+    # Que cambio en esta fila: monto, fecha o ambos (docs/control_saldos_vigencia.md).
+    changed = []
+    if float(data.get("amount") or 0) != 0:
+        changed.append("amount")
+    if data.get("new_end_date"):
+        changed.append("end_date")
+    data["changed"] = changed
     return data
 
 
@@ -183,6 +215,18 @@ def _control_to_dict(row, header_keys=None) -> dict:
     extra = _load_json(data.get("extra_info"), {})
     data["extra_info"] = extra if isinstance(extra, dict) else {}
     data["format_label"] = f"{data.get('format_code') or ''} {data.get('format_revision') or ''}".strip()
+    # Saldo consumido / disponible (docs/remission_cancel.md): consumido = Σ
+    # remission_amount de las remisiones no canceladas (viene calculado en el
+    # SELECT); disponible = contratado - consumido. Cancelar una remisión la saca
+    # de la suma: el saldo "regresa" por exclusión, sin movimiento.
+    consumed = float(data.get("consumed_amount") or 0)
+    contracted = float(data.get("contracted_amount") or 0)
+    data["consumed_amount"] = round(consumed, 2)
+    data["available_amount"] = round(contracted - consumed, 2)
+    # Aviso "por vencer": dias para end_date (negativo = vencido; None sin fecha).
+    data["days_to_end"] = _int_or_none(data.get("days_to_end"))
+    data["validity_status"] = validity_status_from_days(data["days_to_end"])
+    data["validity_label"] = VALIDITY_STATUSES[data["validity_status"]]
     for key in header_keys or []:
         data[key] = data["extra_info"].get(key)
     return data
@@ -414,6 +458,13 @@ def _int_or_none(value):
         return None
 
 
+def _float_or_none(value):
+    try:
+        return float(value) if value not in (None, "") else None
+    except (ValueError, TypeError):
+        return None
+
+
 def _check_adoptable(control_contract_id, control_client_id, id_control, row):
     """Motivo (str) por el que la remision NO puede entrar al control, o None si
     puede. `row` = fila REMISSION_LINK_COLUMNS. `id_control` = None en el POST
@@ -440,22 +491,21 @@ def _attach_rows(id_control: int, control_contract_id, label: str, rows, timesta
     attached = []
     errors = []
     for row in rows:
-        rid, r_contract, rem_history, _client, r_control = row[:5]
+        rid, r_contract, _history, _client, r_control = row[:5]
         if _int_or_none(r_control) == id_control:
             continue  # ya estaba en este control
         changes = [{"field": "balance_control_id", "before": r_control, "after": id_control}]
         if control_contract_id and r_contract is None:
             changes.append({"field": "contract_id", "before": None, "after": int(control_contract_id)})
-        rem_history = _load_json(rem_history, []) or []
-        rem_history.append({
+        history_entry = {
             "timestamp": timestamp,
             "user": user,
             "action": "Adopción a control de saldos",
             "comment": f"Ligada al control de saldos {id_control} ({label}).",
             "changes": {"metadata": changes, "items": []},
-        })
+        }
         flag, error, rowcount = attach_remission_to_control(
-            rid, id_control, int(control_contract_id) if control_contract_id else None, rem_history, data_token
+            rid, id_control, int(control_contract_id) if control_contract_id else None, history_entry, data_token
         )
         if flag and rowcount:
             attached.append(rid)
@@ -481,6 +531,28 @@ def resolve_balance_control_for_remission(contract_id, client_id, data_token):
 
 
 # --- Catalogos ------------------------------------------------------------------
+def balance_snapshot(id_control, data_token) -> dict | None:
+    """Saldo vigente de un control, para devolverlo en el 200 de PUT /remissionBalance
+    sin que el front re-GET el control (docs/control_saldos_vencido_y_monto.md).
+    None si no hay control, no existe o falla la lectura: nunca truena."""
+    id_control = _int_or_none(id_control)
+    if not id_control:
+        return None
+    flag, _e, row = get_balance_control_by_id(id_control, data_token)
+    if not flag or not row:
+        return None
+    control = _control_to_dict(row)
+    return {
+        "id_control": control["id_control"],
+        "is_active": bool(control.get("is_active")),
+        "contracted_amount": control["contracted_amount"],
+        "consumed_amount": control["consumed_amount"],
+        "available_amount": control["available_amount"],
+        "days_to_end": control["days_to_end"],
+        "validity_status": control["validity_status"],
+    }
+
+
 def get_balance_control_catalogs_from_api(data_token):
     flag, error, rows = get_iso_formats(data_token, only_active=True)
     if not flag:
@@ -493,6 +565,8 @@ def get_balance_control_catalogs_from_api(data_token):
             "value_types": list(VALUE_TYPES),
             "currencies": list(CURRENCIES),
             "movement_types": [{"code": k, "label": v} for k, v in MOVEMENT_TYPES.items()],
+            "validity_statuses": [{"code": k, "label": v} for k, v in VALIDITY_STATUSES.items()],
+            "expiring_days": VALIDITY_EXPIRING_DAYS,
         },
         "msg": None,
         "error": None,
@@ -726,8 +800,25 @@ def get_balance_controls_from_api(params: dict, data_token):
     has_contract = _to_int_or_none(params.get("has_contract"))
     if has_contract is not None:
         has_contract = 1 if has_contract else 0
+    expiring_days = _to_int_or_none(params.get("expiring_days"))
+    # validity_status: un valor o lista "1,2"; cualquier valor fuera de 0..2 -> 400.
+    validity_statuses = None
+    raw_validity = str(params.get("validity_status") or "").strip()
+    if raw_validity:
+        validity_statuses = []
+        for token in raw_validity.split(","):
+            value = _to_int_or_none(token)
+            if value is None or value not in VALIDITY_STATUSES:
+                return {
+                    "data": None,
+                    "msg": "validity_status inválido",
+                    "error": [f"validity_status debe ser 0 (VIGENTE), 1 (POR VENCER) o 2 (VENCIDO), uno o lista; recibido '{raw_validity}'"],
+                }, 400
+            if value not in validity_statuses:
+                validity_statuses.append(value)
     flag, error, rows = get_balance_controls(
-        contract_id, format_id, is_active, data_token, client_id=client_id, has_contract=has_contract
+        contract_id, format_id, is_active, data_token, client_id=client_id, has_contract=has_contract,
+        expiring_days=expiring_days, validity_statuses=validity_statuses,
     )
     if not flag:
         return {"data": None, "msg": "Error al consultar los controles de saldos", "error": error}, 400
@@ -749,7 +840,12 @@ def get_balance_control_from_api(id_control: int, data_token):
     movements = [_movement_to_dict(r) for r in mov_rows] if flag else []
     flag_r, error_r, rem_rows = get_remissions_summary_by_control(id_control, data_token)
     remissions = [
-        {"id": r[0], "folio": r[1], "date": _json_safe(r[2]), "status": r[3]} for r in rem_rows
+        {
+            "id": r[0], "folio": r[1], "date": _json_safe(r[2]), "status": r[3],
+            "cancelled": _int_or_none(r[3]) == 3,
+            "remission_amount": _float_or_none(r[4]) if len(r) > 4 else None,
+        }
+        for r in rem_rows
     ] if flag_r else []
     control["format"] = {
         "id": fmt.get("id"),
@@ -783,15 +879,16 @@ def update_balance_control_from_api(data, raw_payload, data_token):
     if int(control.get("is_active") or 0) != 1:
         return {"data": None, "msg": f"El control está cancelado (ID {id_control})", "error": "Control inactivo"}, 400
 
-    # Inmutables: monto (solo con movimientos), contrato, cliente y formato.
-    locked = [k for k in _POST_ONLY_KEYS if k in raw_metadata]
+    # Inmutables: monto y fecha de fin (solo con movimientos), contrato, cliente y formato.
+    locked = [k for k in _POST_ONLY_KEYS + _MOVEMENT_ONLY_KEYS if k in raw_metadata]
     if locked:
         return {
             "data": None,
-            "msg": "contracted_amount, contract_id, client_id y format_id no se editan por este PUT",
+            "msg": "contracted_amount, end_date, contract_id, client_id y format_id no se editan por este PUT",
             "error": [
                 f"{k} es inmutable"
                 + (" (el monto solo cambia con movimientos de saldo)" if k == "contracted_amount" else "")
+                + (" (la fecha de fin solo cambia con POST /balanceControl/movement, tipo 3 VIGENCIA)" if k == "end_date" else "")
                 for k in locked
             ],
         }, 400
@@ -955,10 +1052,14 @@ def create_balance_movement_from_api(data, data_token):
         mov_type = int(mov_type)
     except (ValueError, TypeError):
         mov_type = -1
-    if mov_type not in (1, 2):
-        errors.append("type debe ser 1 (INYECCION) o 2 (AJUSTE)")
+    if mov_type not in (1, 2, 3):
+        errors.append("type debe ser 1 (INYECCION), 2 (AJUSTE) o 3 (VIGENCIA)")
     amount = Decimal("0")
-    if data.get("amount") is None:
+    if mov_type == 3:
+        # Solo fecha: el monto no viaja (o viaja en 0).
+        if data.get("amount") not in (None, "", 0, 0.0):
+            errors.append("una VIGENCIA no lleva amount (usa INYECCION/AJUSTE con new_end_date para mover ambos)")
+    elif data.get("amount") is None:
         errors.append("amount requerido")
     else:
         try:
@@ -973,6 +1074,21 @@ def create_balance_movement_from_api(data, data_token):
     if not ok:
         errors.append(f"movement_date: {err}")
     movement_date = movement_date or now.strftime("%Y-%m-%d")
+    # Vigencia: new_end_date obligatoria en tipo 3, opcional en 1/2. Debe ser una
+    # fecha distinta a la actual y no anterior a start_date.
+    previous_end_date = control.get("end_date") or None
+    ok, new_end_date, err = coerce_value(data.get("new_end_date"), "date")
+    if not ok:
+        errors.append(f"new_end_date: {err}")
+        new_end_date = None
+    if mov_type == 3 and not new_end_date:
+        errors.append("una VIGENCIA requiere new_end_date (YYYY-MM-DD)")
+    if new_end_date:
+        if previous_end_date and str(new_end_date) == str(previous_end_date):
+            errors.append(f"new_end_date {new_end_date} es la fecha de fin actual; nada que cambiar")
+        start_date = control.get("start_date")
+        if start_date and str(new_end_date) < str(start_date):
+            errors.append(f"new_end_date {new_end_date} no puede ser anterior a start_date {start_date}")
     previous = _money(control.get("contracted_amount") or 0)
     expected = data.get("expected_balance")
     if expected is not None and expected != "":
@@ -994,16 +1110,31 @@ def create_balance_movement_from_api(data, data_token):
     label = MOVEMENT_TYPES[mov_type]
     reason = (data.get("reason") or "").strip() or None
     document = (data.get("document") or "").strip() or None
+    changed = []
+    if amount != 0:
+        changed.append("amount")
+    if new_end_date:
+        changed.append("end_date")
+    comment_parts = []
+    if amount != 0:
+        comment_parts.append(f"saldo {previous} -> {resulting} (monto {amount})")
+    if new_end_date:
+        comment_parts.append(f"fin de vigencia {previous_end_date or 'sin fecha'} -> {new_end_date}")
     history = control.get("history") or []
     history.append({
         "user": user,
         "action": f"Movimiento de saldo ({label})",
         "date": timestamp,
-        "comment": f"{previous} -> {resulting} (monto {amount})" + (f"; {reason}" if reason else ""),
+        "comment": "; ".join(comment_parts) + (f"; {reason}" if reason else ""),
+        "changes": [
+            *([{"field": "contracted_amount", "before": float(previous), "after": float(resulting)}] if amount != 0 else []),
+            *([{"field": "end_date", "before": previous_end_date, "after": new_end_date}] if new_end_date else []),
+        ],
     })
     # 1) Cabecera con bloqueo optimista (0 filas = carrera perdida o cancelado en medio)
     flag, error, rows = update_balance_control_amount_optimistic(
-        id_control, str(resulting), str(previous), history, data_token
+        id_control, str(resulting), str(previous), history, data_token,
+        set_end_date=bool(new_end_date), end_date=new_end_date,
     )
     if not flag:
         return {"data": None, "msg": "No se pudo actualizar el saldo del control", "error": error}, 400
@@ -1027,19 +1158,29 @@ def create_balance_movement_from_api(data, data_token):
         "document": document,
         "timestamp": timestamp,
         "extra_info": data.get("extra_info") if isinstance(data.get("extra_info"), dict) else {},
+        "previous_end_date": previous_end_date if new_end_date else None,
+        "new_end_date": new_end_date,
     }, data_token)
     if not flag:
         history.pop()
         flag_r, error_r, _ = update_balance_control_amount_optimistic(
-            id_control, str(previous), str(resulting), history, data_token
+            id_control, str(previous), str(resulting), history, data_token,
+            set_end_date=bool(new_end_date), end_date=previous_end_date,
         )
-        detail = error if flag_r else f"{error}; y no se pudo revertir el monto ({error_r})"
+        detail = error if flag_r else f"{error}; y no se pudo revertir la cabecera ({error_r})"
         write_log_file(log_file_admin_collecions, f"Movimiento de saldo fallido en control {id_control}: {detail}", data_token)
-        return {"data": None, "msg": "No se pudo registrar el movimiento; el saldo no cambió", "error": detail}, 400
+        return {"data": None, "msg": "No se pudo registrar el movimiento; el control no cambió", "error": detail}, 400
 
-    msg = f"{label} registrada en el control (ID {id_control}): saldo {previous} -> {resulting} (movimiento ID {id_movement})"
+    msg = f"{label} registrada en el control (ID {id_control}): " + "; ".join(comment_parts) + f" (movimiento ID {id_movement})"
     create_notification_permission(msg, data_token, _PERM_NOTIFY, "Control de saldos", user or 0, 0)
     write_log_file(log_file_admin_collecions, msg, data_token)
+    end_date_now = new_end_date or previous_end_date
+    days_to_end = None
+    if end_date_now:
+        try:
+            days_to_end = (datetime.strptime(str(end_date_now)[:10], "%Y-%m-%d").date() - now.date()).days
+        except ValueError:
+            days_to_end = None
     return {
         "data": {
             "id_control": id_control,
@@ -1051,10 +1192,118 @@ def create_balance_movement_from_api(data, data_token):
             "previous_balance": float(previous),
             "resulting_balance": float(resulting),
             "contracted_amount": float(resulting),
+            "previous_end_date": previous_end_date if new_end_date else None,
+            "new_end_date": new_end_date,
+            "end_date": end_date_now,
+            "days_to_end": days_to_end,
+            "validity_status": validity_status_from_days(days_to_end),
+            "changed": changed,
         },
         "msg": msg,
         "error": None,
     }, 201
+
+
+# --- Correccion de captura: PUT /balanceControl/movement ------------------------------
+_MOVEMENT_EDITABLE = ("movement_date", "reason")
+
+
+@_api_guard
+def update_balance_movement_from_api(data, raw_payload, data_token):
+    """Corrige SOLO movement_date (fecha de autorizacion) y/o reason de un
+    movimiento existente. Nada del saldo ni de la vigencia se toca: amount, type,
+    previous/resulting_balance, *_end_date y cualquier otra llave del body se
+    ignoran. Deja una entrada en history del control con los cambios reales; si
+    nada cambio, responde 200 sin escribir."""
+    now = _now()
+    timestamp = now.strftime(format_timestamps)
+    user = data_token.get("emp_id")
+    raw_payload = raw_payload if isinstance(raw_payload, dict) else {}
+    id_movement = _int_or_none(data.get("id_movement"))
+    if not id_movement:
+        return {"data": None, "msg": "Falta el id del movimiento", "error": "id_movement requerido"}, 400
+    sent = [k for k in _MOVEMENT_EDITABLE if k in raw_payload]
+    if not sent:
+        return {
+            "data": None,
+            "msg": "Nada que corregir: manda movement_date y/o reason",
+            "error": ["se requiere al menos uno de movement_date / reason"],
+        }, 400
+
+    flag, error, row = get_balance_control_movement_by_id(id_movement, data_token)
+    if not flag:
+        return {"data": None, "msg": "Error al consultar el movimiento", "error": error}, 400
+    if row is None:
+        return {"data": None, "msg": f"No existe el movimiento (ID {id_movement})", "error": "Movimiento no encontrado"}, 404
+    current = _movement_to_dict(row)
+    id_control = int(current["id_control"])
+    control, _fmt = _load_control(id_control, data_token)
+    if int(control.get("is_active") or 0) == 0:
+        return {
+            "data": None,
+            "msg": f"El control está cancelado (ID {id_control}); no admite correcciones de movimientos",
+            "error": "Control cancelado",
+        }, 400
+
+    errors = []
+    new_values = {"movement_date": current.get("movement_date"), "reason": current.get("reason")}
+    if "movement_date" in sent:
+        ok, movement_date, err = coerce_value(raw_payload.get("movement_date"), "date")
+        if not ok:
+            errors.append(f"movement_date: {err}")
+        elif not movement_date:
+            errors.append("movement_date no puede quedar vacía (omítela para no cambiarla)")
+        else:
+            new_values["movement_date"] = movement_date
+    if "reason" in sent:
+        raw_reason = raw_payload.get("reason")
+        new_values["reason"] = (str(raw_reason).strip() or None) if raw_reason is not None else None
+    if errors:
+        return {"data": None, "msg": "Corrección inválida", "error": errors}, 400
+
+    changes = _diff(current, new_values, _MOVEMENT_EDITABLE)
+    label = current.get("type_label") or MOVEMENT_TYPES.get(int(current.get("type") or 0), "")
+    if not changes:
+        data_out = dict(current)
+        data_out["control_id"] = id_control
+        return {
+            "data": data_out,
+            "msg": f"Sin cambios en el movimiento (ID {id_movement}); nada que guardar",
+            "error": None,
+        }, 200
+
+    # 1) history de la cabecera; 2) UPDATE del movimiento (si falla, se quita la entrada).
+    history = control.get("history") or []
+    history.append({
+        "user": user,
+        "action": f"Corrección de movimiento ({label} ID {id_movement})",
+        "date": timestamp,
+        "comment": "; ".join(f"{c['field']} {c['before'] or 'vacío'} -> {c['after'] or 'vacío'}" for c in changes),
+        "id_movement": id_movement,
+        "changes": changes,
+    })
+    flag, error, _ = update_balance_control_history(id_control, history, data_token)
+    if not flag:
+        return {"data": None, "msg": "No se pudo registrar el historial del control", "error": error}, 400
+    flag, error, _rows = update_balance_control_movement_fields(
+        id_movement, new_values["movement_date"], new_values["reason"], data_token,
+    )
+    if not flag:
+        history.pop()
+        flag_r, error_r, _ = update_balance_control_history(id_control, history, data_token)
+        detail = error if flag_r else f"{error}; y no se pudo revertir el historial ({error_r})"
+        write_log_file(log_file_admin_collecions, f"Corrección de movimiento {id_movement} fallida en control {id_control}: {detail}", data_token)
+        return {"data": None, "msg": "No se pudo corregir el movimiento; nada cambió", "error": detail}, 400
+
+    flag, error, row = get_balance_control_movement_by_id(id_movement, data_token)
+    updated = _movement_to_dict(row) if flag and row is not None else {**current, **new_values}
+    updated["control_id"] = id_control
+    msg = f"Movimiento corregido (ID {id_movement}, control ID {id_control}): " + "; ".join(
+        f"{c['field']} {c['before'] or 'vacío'} -> {c['after'] or 'vacío'}" for c in changes
+    )
+    create_notification_permission(msg, data_token, _PERM_NOTIFY, "Control de saldos", user or 0, 0)
+    write_log_file(log_file_admin_collecions, msg, data_token)
+    return {"data": updated, "msg": msg, "error": None}, 200
 
 
 # --- Membresia: PUT /balanceControl/remissions (add / remove) ------------------------
@@ -1109,15 +1358,24 @@ def update_balance_control_remissions_from_api(data, data_token):
     )
     removed = []
     for rid in remove_ids:
-        rem_history = _load_json(found[rid][2], []) or []
-        rem_history.append({
+        # Retirar borra los valores de columnas dinámicas (son de ESTE control);
+        # quedan en el history como before -> None para no perder el rastro.
+        rem_extra = _load_json(found[rid][6], {}) if len(found[rid]) > 6 else {}
+        rem_custom = rem_extra.get("custom_fields") if isinstance(rem_extra, dict) else None
+        changes = [{"field": "balance_control_id", "before": id_control, "after": None}]
+        if isinstance(rem_custom, dict):
+            changes += [
+                {"field": f"custom_fields.{key}", "before": rem_custom[key], "after": None}
+                for key in sorted(rem_custom)
+            ]
+        history_entry = {
             "timestamp": timestamp,
             "user": user,
             "action": "Retiro de control de saldos",
             "comment": f"Retirada del control de saldos {id_control} ({label}).",
-            "changes": {"metadata": [{"field": "balance_control_id", "before": id_control, "after": None}], "items": []},
-        })
-        flag, error, rowcount = detach_remission_from_control(rid, id_control, rem_history, data_token)
+            "changes": {"metadata": changes, "items": []},
+        }
+        flag, error, rowcount = detach_remission_from_control(rid, id_control, history_entry, data_token)
         if flag and rowcount:
             removed.append(rid)
         else:

@@ -8,6 +8,7 @@ import pandas as pd
 from static.constants import (
     dict_deps,
     filepath_settings,
+    format_date,
     format_timestamps,
     log_file_admin,
 )
@@ -24,6 +25,7 @@ from templates.controllers.contracts.contracts_controller import (
     update_contract,
 )
 from templates.controllers.contracts.quotations_controller import (
+    assign_contract_to_quotation_items,
     create_item_quotation,
     create_items_quotation,
     create_quotation,
@@ -31,9 +33,21 @@ from templates.controllers.contracts.quotations_controller import (
     delete_item_quotation,
     delete_quotation,
     delete_quotation_items,
+    find_ocd_by_client_po_number,
+    find_quotation_by_code,
     get_quotation,
+    get_quotation_codes_by_prefix,
+    get_quotation_items_delivery_dates,
+    get_quotation_metadata,
     update_item_quotation,
     update_quotation,
+)
+from templates.controllers.contracts.tenders_controller import (
+    QUOTATION_STATUS_TENDER,
+    TENDER_COLUMNS,
+    TENDER_STATUS_ASSIGNED,
+    get_tender_by_quotation,
+    link_tender_contract,
 )
 from templates.controllers.customer.customers_controller import (
     create_customer_db,
@@ -67,6 +81,12 @@ from templates.controllers.supplier.suppliers_controller import (
 )
 from templates.Functions_Utils import create_notification_permission
 from templates.misc.Functions_Files import write_log_file
+from templates.resources.midleware.MD_BalanceControl import _now
+from templates.resources.midleware.MD_DeliveryControl import (
+    quotation_change_order_errors,
+    quotation_has_active_delivery_control,
+)
+from templates.resources.midleware.MD_QuotationCosts import costs_totals, get_quotation_costs_map
 from templates.resources.methods.Functions_Aux_Admin import (
     compare_file_quotation,
     read_exel_products_bidding,
@@ -79,13 +99,222 @@ __author__ = "Edisson Naula"
 __date__ = "$ 20/jun./2024  at 15:23 $"
 
 
-def get_quotations(data_token, id_quotation: int | None = None):
+# --- OCD (orden de compra directa) sobre la cotización — docs/quotation_ocd.md ---
+# Llaves de metadata que describen el documento. Viven en quotations.metadata
+# (JSON, sin DDL). "" / None en el payload = "no viene": en el POST aplica el
+# default, en los PUT se conserva lo guardado (el PUT grande reemplaza metadata
+# completa y no debe degradar una OCD a cotización por omisión).
+QUOTATION_DOCUMENT_TYPES = ("quotation", "ocd")
+QUOTATION_CURRENCIES = ("MXN", "USD")
+# Folio sugerido (F3 de la junta 2026-10-22, docs/folio_sugerido_cotizaciones.md):
+# patrón PROVISIONAL "PREFIJO-AAAA-NNN" en esta sola constante; el definitivo lo
+# manda administración (P-157). format = cisco (FO-PRE-02, F10) solo cambia el
+# prefijo de una cotización; una OCD siempre sugiere OCD.
+QUOTATION_FORMATS = ("cisco",)
+QUOTATION_FOLIO_PREFIXES = {"quotation": "COT", "ocd": "OCD", "cisco": "COT-CISCO"}
+QUOTATION_FOLIO_DIGITS = 3
+_OCD_DEFAULTS = {
+    "document_type": "quotation",
+    "client_po_number": "",
+    "currency": "MXN",
+    "delivery_time": "",
+    "approved_date": "",
+    # Vencimiento de la OCD = tiempo de entrega comprometido (junta 2026-10-22,
+    # docs/ocd_reglas_po_vencimiento.md). delivery_time (texto) queda para el PDF.
+    "due_date": "",
+}
+
+
+def _merge_ocd_keys(incoming: dict, existing: dict | None) -> tuple[dict, list]:
+    """Devuelve (llaves OCD resueltas, errores). incoming vacío conserva existing o el default."""
+    existing = existing or {}
+    out = {}
+    errors = []
+    for key, default in _OCD_DEFAULTS.items():
+        value = incoming.get(key)
+        value = str(value).strip() if value is not None else ""
+        if value == "":
+            value = existing.get(key)
+            value = str(value).strip() if value is not None else default
+        out[key] = value
+    if out["document_type"] not in QUOTATION_DOCUMENT_TYPES:
+        errors.append("document_type debe ser quotation u ocd")
+    if out["currency"] not in QUOTATION_CURRENCIES:
+        errors.append("currency debe ser MXN o USD")
+    if out["approved_date"]:
+        try:
+            datetime.strptime(out["approved_date"], format_date)
+        except ValueError:
+            errors.append("approved_date: se esperaba una fecha YYYY-MM-DD")
+    if out["due_date"]:
+        try:
+            datetime.strptime(out["due_date"], format_date)
+        except ValueError:
+            errors.append("due_date: se esperaba una fecha YYYY-MM-DD")
+    return out, errors
+
+
+def _ocd_rule_errors(ocd_keys: dict, id_quotation, data_token) -> tuple[list, int | None]:
+    """Reglas de una OCD (junta 2026-10-22): client_po_number obligatorio y único
+    global entre OCD, como un número de contrato marco. Devuelve (errores 400, id
+    de la OTRA OCD que ya usa el número -> 409). Solo aplica con document_type ocd."""
+    if ocd_keys.get("document_type") != "ocd":
+        return [], None
+    po = (ocd_keys.get("client_po_number") or "").strip()
+    if not po:
+        return ["client_po_number es obligatorio en una OCD (identificador de la orden de compra del cliente)"], None
+    flag, error, other_id = find_ocd_by_client_po_number(po, id_quotation, data_token)
+    if not flag:
+        return [f"no se pudo validar client_po_number: {error}"], None
+    if other_id:
+        return [], int(other_id)
+    return [], None
+
+
+def _ocd_conflict_envelope(po: str, other_id: int, id_quotation=None) -> dict:
+    return {
+        "data": {"id_quotation": id_quotation, "client_po_number": po, "conflict_quotation_id": other_id},
+        "msg": f"Ya existe la OCD {other_id} con el identificador de orden de compra '{po}'",
+        "error": ["client_po_number repetido: los identificadores de orden de compra no se repiten"],
+    }
+
+
+def _ocd_folio_conflict(document_type: str, quotation_code, id_quotation, data_token) -> tuple[list, int | None]:
+    """Candado del folio solo al marcar una OCD (F3): devuelve (errores 400, id de
+    la OTRA cotización que ya usa el quotation_code -> 409). Preventa y CISCO
+    siguen sin candado para no romper lo histórico; un folio vacío no se valida."""
+    if document_type != "ocd":
+        return [], None
+    code = (quotation_code or "").strip()
+    if not code:
+        return [], None
+    flag, error, other_id = find_quotation_by_code(code, id_quotation, data_token)
+    if not flag:
+        return [f"no se pudo validar quotation_code: {error}"], None
+    return [], (int(other_id) if other_id else None)
+
+
+def _folio_conflict_envelope(code: str, other_id: int, id_quotation=None) -> dict:
+    return {
+        "data": {"id_quotation": id_quotation, "quotation_code": code, "conflict_quotation_id": other_id},
+        "msg": f"Ya existe la cotización {other_id} con el folio '{code}'",
+        "error": ["quotation_code repetido: el folio de una OCD no se repite"],
+    }
+
+
+def items_delivery_date_errors(products, due_date) -> list:
+    """delivery_date por partida (opcional): YYYY-MM-DD y nunca después del
+    due_date de la OCD. Ignora items con is_erased == 1. Lista de errores (vacía = ok)."""
+    errors = []
+    due = None
+    if due_date:
+        try:
+            due = datetime.strptime(str(due_date)[:10], format_date).date()
+        except ValueError:
+            due = None
+    for index, product in enumerate(products or []):
+        if not isinstance(product, dict) or product.get("is_erased") == 1:
+            continue
+        raw = str(product.get("delivery_date") or "").strip()
+        if not raw:
+            continue
+        partida = product.get("partida")
+        label = f"partida {partida if partida is not None else index + 1}"
+        try:
+            value = datetime.strptime(raw, format_date).date()
+        except ValueError:
+            errors.append(f"{label}: delivery_date '{raw}' no es una fecha YYYY-MM-DD")
+            continue
+        if due and value > due:
+            errors.append(f"{label}: delivery_date {raw} es posterior al vencimiento de la OCD (due_date {due.isoformat()})")
+    return errors
+
+
+def _stored_delivery_dates_after(id_quotation, due_date, data_token) -> list:
+    """Partidas ya guardadas cuya delivery_date queda después de un due_date nuevo."""
+    try:
+        due = datetime.strptime(str(due_date)[:10], format_date).date()
+    except (ValueError, TypeError):
+        return []
+    flag, _error, rows = get_quotation_items_delivery_dates(id_quotation, data_token)
+    if not flag:
+        return []
+    errors = []
+    for _id, partida, raw in rows:
+        if not raw:
+            continue
+        try:
+            value = datetime.strptime(str(raw)[:10], format_date).date()
+        except ValueError:
+            continue
+        if value > due:
+            errors.append(f"partida {partida}: delivery_date {str(raw)[:10]} es posterior al nuevo due_date {due.isoformat()}")
+    return errors
+
+
+def _normalize_quotation_metadata_out(metadata: dict) -> dict:
+    """Las cotizaciones viejas no traen las llaves OCD: el GET las expone siempre."""
+    for key, default in _OCD_DEFAULTS.items():
+        if metadata.get(key) in (None, ""):
+            metadata[key] = default
+    # CISCO (docs/cotizaciones_cisco.md): format "" = FO-PRE-01, "cisco" = FO-PRE-02.
+    metadata["format"] = str(metadata.get("format") or "").strip().lower()
+    metadata.setdefault("concept", "")
+    return metadata
+
+
+def _attach_costs(data_out: dict, data_token) -> None:
+    """?with_costs=1: cost_analysis por producto (por qa_item_id) + cost_totals.
+    Un error de consulta deja cost_analysis en null y lo anota en cost_error."""
+    costs, _totals, error = get_quotation_costs_map(data_out["id"], data_token)
+    products = data_out.get("products") or []
+    for p in products:
+        if isinstance(p, dict):
+            p["cost_analysis"] = costs.get(int(p.get("qa_item_id") or 0))
+    items = [{"id": p.get("qa_item_id"), "quantity": p.get("quantity")} for p in products if isinstance(p, dict) and p.get("qa_item_id")]
+    data_out["cost_totals"] = costs_totals(items, costs)
+    data_out["exchange_rate"] = data_out["metadata"].get("exchange_rate")
+    if error:
+        data_out["cost_error"] = error
+
+
+def _quotation_status(metadata: dict) -> int:
+    """metadata.status de la cotización (0 preventa, 1/2 catálogo de contrato,
+    3 licitación — docs/tenders_control.md). Sin la llave = 0."""
+    try:
+        return int(metadata.get("status") or 0)
+    except (TypeError, ValueError):
+        return 0
+
+
+def get_quotations(
+    data_token,
+    id_quotation: int | None = None,
+    document_type: str | None = None,
+    with_costs: bool = False,
+    status: str | None = None,
+    fmt: str | None = None,
+):
+    # fmt (?format=): None -> sin CISCO salvo que se pidan OCD; "cisco" -> solo CISCO
+    # (404 en el GET por id si no lo es); "all" -> todas (docs/cotizaciones_cisco.md).
+    fmt = (fmt or "").strip().lower() or None
+    if fmt is not None and fmt not in QUOTATION_FORMATS + ("all",):
+        return {"data": [], "msg": "format debe ser cisco o all", "error": fmt}, 400
     try:
         id_quotation = (
             id_quotation if id_quotation is not None and int(id_quotation) != -1 else None
         )
     except ValueError:
         return {"data": [], "msg": "Id de cotización inválido", "error": str(id_quotation)}, 400
+    document_type = (document_type or "").strip().lower() or None
+    if document_type is not None and document_type not in QUOTATION_DOCUMENT_TYPES:
+        return {"data": [], "msg": "document_type debe ser quotation u ocd", "error": document_type}, 400
+    # ?status=0 o 0,3 (solo en listado): Preventa pide status 0 y deja fuera
+    # licitaciones y catálogos de contrato.
+    try:
+        statuses = {int(s) for s in (status or "").split(",") if s.strip() != ""} or None
+    except ValueError:
+        return {"data": [], "msg": "status debe ser un entero o una lista separada por comas", "error": status}, 400
     # get_quotation(data_token, id_quotation): por nombre, no posicional. Pasarle el id
     # como data_token dejaba id_quotation en None, devolvia TODAS las cotizaciones (el
     # desempaque de 5 variables tronaba) y perdia el cambio de BD del permiso tester.
@@ -107,13 +336,22 @@ def get_quotations(data_token, id_quotation: int | None = None):
         creation = (
             creation.strftime(format_timestamps) if not isinstance(creation, str) else creation
         )
+        meta_out = _normalize_quotation_metadata_out(json.loads(metadata))
         data_out = {
             "id": id_q,
-            "metadata": json.loads(metadata),
+            "metadata": meta_out,
             "products": json.loads(products),
             "creation": creation,
             "timestamps": json.loads(timestamps),
         }
+        if fmt == "cisco" and meta_out["format"] != "cisco":
+            return {
+                "data": [],
+                "msg": f"No se encontró la cotización CISCO (ID {id_quotation})",
+                "error": "Quotation not found",
+            }, 404
+        if with_costs:
+            _attach_costs(data_out, data_token)
         return {"data": [data_out], "msg": None, "error": None}, 200
     else:
         data_out = []
@@ -122,15 +360,27 @@ def get_quotations(data_token, id_quotation: int | None = None):
             creation = (
                 creation.strftime(format_timestamps) if not isinstance(creation, str) else creation
             )
-            data_out.append(
-                {
-                    "id": id_q,
-                    "metadata": json.loads(metadata),
-                    "products": json.loads(products),
-                    "creation": creation,
-                    "timestamps": json.loads(timestamps),
-                }
-            )
+            meta = _normalize_quotation_metadata_out(json.loads(metadata))
+            # Filtro en Python: document_type vive dentro del JSON y las viejas no lo traen.
+            if document_type is not None and meta["document_type"] != document_type:
+                continue
+            if statuses is not None and _quotation_status(meta) not in statuses:
+                continue
+            if fmt == "cisco" and meta["format"] != "cisco":
+                continue
+            if fmt is None and meta["format"] == "cisco" and document_type != "ocd":
+                # Preventa (FO-PRE-01) no mezcla las CISCO; Cobranza sí ve las OCD de cualquier formato.
+                continue
+            entry = {
+                "id": id_q,
+                "metadata": meta,
+                "products": json.loads(products),
+                "creation": creation,
+                "timestamps": json.loads(timestamps),
+            }
+            if with_costs:
+                _attach_costs(entry, data_token)
+            data_out.append(entry)
         return {"data": data_out, "msg": None, "error": None}, 200
 
 
@@ -440,6 +690,50 @@ def folio_from_department(data_token):
         folios_out.append(folio)
     data = {"folios": folios_out}
     return {"data": data, "msg": None, "error": None}, 200
+
+
+def suggest_quotation_folio(args, data_token):
+    """GET /quotation/folio?document_type=quotation|ocd&format=cisco -> siguiente
+    folio libre del año: prefijo provisional + AAAA + max + 1 (solo cuenta los
+    folios que siguen el patrón exacto). El front pre-llena y el usuario puede
+    editar; el candado 409 va aparte y solo en OCD."""
+    document_type = (args.get("document_type") or "quotation").strip().lower()
+    fmt = (args.get("format") or "").strip().lower()
+    errors = []
+    if document_type not in QUOTATION_DOCUMENT_TYPES:
+        errors.append("document_type debe ser quotation u ocd")
+    if fmt and fmt not in QUOTATION_FORMATS:
+        errors.append("format debe ser cisco o vacío")
+    if errors:
+        return {"data": None, "msg": "Parámetros inválidos", "error": errors}, 400
+    kind = "ocd" if document_type == "ocd" else (fmt or "quotation")
+    year = datetime.now().year
+    prefix = QUOTATION_FOLIO_PREFIXES[kind] + "-" + str(year) + "-"
+    flag, error, codes = get_quotation_codes_by_prefix(prefix, data_token)
+    if not flag:
+        return {"data": None, "msg": "No se pudieron leer los folios de las cotizaciones", "error": error}, 400
+    last, last_folio = 0, None
+    for code in codes:
+        tail = code[len(prefix):].strip()
+        if tail.isdigit() and int(tail) > last:
+            last, last_folio = int(tail), code
+    number = last + 1
+    folio = prefix + str(number).zfill(QUOTATION_FOLIO_DIGITS)
+    pattern = QUOTATION_FOLIO_PREFIXES[kind] + "-AAAA-" + "N" * QUOTATION_FOLIO_DIGITS
+    return {
+        "data": {
+            "folio": folio,
+            "pattern": pattern,
+            "document_type": document_type,
+            "format": fmt,
+            "year": year,
+            "number": number,
+            "last_folio": last_folio,
+            "provisional": True,
+        },
+        "msg": f"Folio sugerido {folio}",
+        "error": None,
+    }, 200
 
 
 def products_quotation_from_file(path: str):
@@ -1131,6 +1425,23 @@ def _item_quotation_values(product: dict) -> dict:
     description = product.get("description") or ""
     description_small = product.get("description_small") or ""
     id_inventory = _num_item_field(product.get("id_inventory"), 0)
+    # delivery_date (YYYY-MM-DD, opcional) vive en extra_info como las secciones:
+    # overwrite completo, omitirla en un PUT la borra (docs/ocd_reglas_po_vencimiento.md).
+    extra_info = {
+        "section_title": product.get("section_title") or "General",
+        "section_type": product.get("section_type") or "general",
+    }
+    delivery_date = str(product.get("delivery_date") or "").strip()
+    if delivery_date:
+        extra_info["delivery_date"] = delivery_date
+    if "item" in product:
+        # CISCO (docs/cotizaciones_cisco.md): solo las formas de /quotation/cisco traen
+        # `item`; las de preventa no, así que su extra_info no cambia.
+        months = product.get("service_months")
+        extra_info["item"] = str(product.get("item") or "").strip()
+        extra_info["smart_account"] = bool(product.get("smart_account"))
+        extra_info["service_months"] = int(months) if months not in (None, "") else None
+        extra_info["delivery_time"] = str(product.get("delivery_time") or "").strip()
     return {
         "partida": _num_item_field(product.get("partida"), 0),
         "section_index": _num_item_field(product.get("section_index"), 0),
@@ -1144,10 +1455,7 @@ def _item_quotation_values(product: dict) -> dict:
         "description": description[:1024],
         "description_small": description_small[:255],
         "id_inventory": id_inventory if id_inventory > 0 else None,
-        "extra_info": {
-            "section_title": product.get("section_title") or "General",
-            "section_type": product.get("section_type") or "general",
-        },
+        "extra_info": extra_info,
     }
 
 
@@ -1164,7 +1472,46 @@ def create_items_from_api(products, id_quotation, data_token, id_contract=None):
     return flag_list, error_list, result_list
 
 
+def _item_result(index: int, product: dict, qa_item_id, action: str) -> dict:
+    """Una entrada de `data.items` de los PUT de contrato/cotizacion: el front
+    mapea por `index` (posicion en `products` del request) para refrescar los
+    `qa_item_id` sin otro GET. `action` ∈ created|updated|deleted|skipped|error."""
+    return {
+        "index": index,
+        "partida": product.get("partida"),
+        "qa_item_id": qa_item_id if isinstance(qa_item_id, int) and qa_item_id > 0 else None,
+        "action": action,
+    }
+
+
+def _items_created_out(products: list, flag_list: list, result_list: list) -> list:
+    return [
+        _item_result(i, product, result if flag else None, "created" if flag else "error")
+        for i, (product, flag, result) in enumerate(zip(products, flag_list, result_list))
+    ]
+
+
 def create_quotation_from_api(data, data_token):
+    ocd_keys, errors = _merge_ocd_keys(data["metadata"], None)
+    if errors:
+        return {"data": None, "msg": "Datos OCD inválidos", "error": errors}, 400
+    # OCD nacida directo (OC del cliente por algo nunca cotizado): mismas reglas que /ocd.
+    rule_errors, conflict_id = _ocd_rule_errors(ocd_keys, None, data_token)
+    if rule_errors:
+        return {"data": None, "msg": "Datos OCD inválidos", "error": rule_errors}, 400
+    if conflict_id:
+        return _ocd_conflict_envelope(ocd_keys["client_po_number"], conflict_id), 409
+    folio_errors, folio_conflict = _ocd_folio_conflict(
+        ocd_keys["document_type"], data["metadata"].get("quotation_code"), None, data_token
+    )
+    if folio_errors:
+        return {"data": None, "msg": "Datos OCD inválidos", "error": folio_errors}, 400
+    if folio_conflict:
+        return _folio_conflict_envelope(str(data["metadata"].get("quotation_code") or ""), folio_conflict), 409
+    date_errors = items_delivery_date_errors(data["products"], ocd_keys["due_date"])
+    if date_errors:
+        return {"data": None, "msg": "Fechas de entrega de partidas inválidas", "error": date_errors}, 400
+    data["metadata"].update(ocd_keys)
     flag, error, id_quotation = create_quotation(data["metadata"], data_token)
     if not flag:
         return {"data": None, "msg": "No se pudo crear la cotización", "error": error}, 400
@@ -1222,12 +1569,16 @@ def update_items_quotation_from_api(products, id_quotation, id_contract, dict_pr
     escribir nada. El rowcount solo se revisa en el DELETE: en un UPDATE de MySQL
     rowcount son las filas *cambiadas*, asi que guardar un item sin editarlo da 0 y
     tomarlo como fallo seria una falsa alarma.
+
+    El quinto valor (`items_out`) es una entrada por item del request, en orden
+    (`_item_result`): con el `qa_item_id` resultante el front no necesita re-GET.
     """
     flag_list: list = []
     error_list: list = []
     result_list: list = []
+    items_out: list = []
     counts = {"created": 0, "updated": 0, "deleted": 0, "recreated": 0}
-    for new_product in products:
+    for index, new_product in enumerate(products):
         id_item = _resolve_positive_int(new_product.get("qa_item_id"))
         is_erased = new_product.get("is_erased") == 1
         if is_erased and id_item == 0:
@@ -1236,6 +1587,7 @@ def update_items_quotation_from_api(products, id_quotation, id_contract, dict_pr
             flag_list.append(True)
             error_list.append(None)
             result_list.append(0)
+            items_out.append(_item_result(index, new_product, None, "skipped"))
             continue
         values = _item_quotation_values(new_product)
         if id_item > 0 and id_item not in dict_products:
@@ -1253,6 +1605,9 @@ def update_items_quotation_from_api(products, id_quotation, id_contract, dict_pr
             )
             if flag:
                 counts["created"] += 1
+            items_out.append(
+                _item_result(index, new_product, result if flag else None, "created" if flag else "error")
+            )
         elif is_erased:
             flag, error, result = delete_item_quotation(id_item, id_quotation, data_token)
             if flag and result == 0:
@@ -1260,16 +1615,18 @@ def update_items_quotation_from_api(products, id_quotation, id_contract, dict_pr
                 error = f"El item {id_item} no se elimino (0 filas afectadas)"
             elif flag:
                 counts["deleted"] += 1
+            items_out.append(_item_result(index, new_product, id_item, "deleted" if flag else "error"))
         else:
             flag, error, result = update_item_quotation(
                 id_item, id_quotation, values, data_token
             )
             if flag:
                 counts["updated"] += 1
+            items_out.append(_item_result(index, new_product, id_item, "updated" if flag else "error"))
         flag_list.append(flag)
         error_list.append(error)
         result_list.append(result)
-    return flag_list, error_list, result_list, counts
+    return flag_list, error_list, result_list, counts, items_out
 
 
 def _msg_items_counts(counts: dict) -> str:
@@ -1284,7 +1641,71 @@ def _msg_items_counts(counts: dict) -> str:
     return resumen
 
 
-def update_quoation_from_api(data, data_token):
+def update_quoation_from_api(data, data_token, fmt=None):
+    # El PUT solo reemplaza las llaves del form: conserva las OCD cuando el payload
+    # no las trae y las que el form no declara (`status` del create, `exchange_rate`
+    # del análisis de costos). Ver docs/quotation_put_conserva_metadata.md.
+    flag, error, row = get_quotation_metadata(data["id"], data_token)
+    if not flag:
+        return {"data": None, "msg": "No se pudo leer la cotización", "error": error}, 400
+    if not row:
+        return {
+            "data": None,
+            "msg": f"No se encontró la cotización (ID {data['id']})",
+            "error": "Quotation not found",
+        }, 404
+    existing_meta = json.loads(row[0]) if row[0] else {}  # pyrefly: ignore
+    if _quotation_status(existing_meta) == QUOTATION_STATUS_TENDER:
+        return {
+            "data": None,
+            "msg": "Las partidas de una licitación se editan con PUT /tender/items",
+            "error": [f"la cotización {data['id']} es de una licitación"],
+        }, 400
+    # fmt: None = PUT /quotation (no toca CISCO: su form perdería concept e item),
+    # "cisco" = PUT /quotation/cisco (solo CISCO) — docs/cotizaciones_cisco.md.
+    existing_format = str(existing_meta.get("format") or "").strip().lower()
+    if fmt is None and existing_format == "cisco":
+        return {
+            "data": None,
+            "msg": "Las cotizaciones CISCO se editan con PUT /quotation/cisco",
+            "error": [f"la cotización {data['id']} tiene format cisco"],
+        }, 400
+    if fmt == "cisco" and existing_format != "cisco":
+        return {
+            "data": None,
+            "msg": f"No se encontró la cotización CISCO (ID {data['id']})",
+            "error": "Quotation not found",
+        }, 404
+    ocd_keys, errors = _merge_ocd_keys(data["metadata"], existing_meta)
+    if errors:
+        return {"data": None, "msg": "Datos OCD inválidos", "error": errors}, 400
+    # Reglas OCD solo si el PUT cambia la marca o el número (una OCD vieja sin
+    # client_po_number sigue editando partidas; el número se exige al tocarlo o en /ocd).
+    if (ocd_keys["document_type"], ocd_keys["client_po_number"]) != (
+        existing_meta.get("document_type") or "quotation", (existing_meta.get("client_po_number") or "").strip()
+    ):
+        rule_errors, conflict_id = _ocd_rule_errors(ocd_keys, data["id"], data_token)
+        if rule_errors:
+            return {"data": None, "msg": "Datos OCD inválidos", "error": rule_errors}, 400
+        if conflict_id:
+            return _ocd_conflict_envelope(ocd_keys["client_po_number"], conflict_id, data["id"]), 409
+    new_code = (data["metadata"].get("quotation_code") or "").strip()
+    if ocd_keys["document_type"] == "ocd" and (
+        (existing_meta.get("document_type") or "quotation") != "ocd"
+        or new_code.upper() != (existing_meta.get("quotation_code") or "").strip().upper()
+    ):
+        # Candado del folio (F3): al marcar OCD desde el PUT grande o al renombrar el folio de una OCD.
+        folio_errors, folio_conflict = _ocd_folio_conflict("ocd", new_code, data["id"], data_token)
+        if folio_errors:
+            return {"data": None, "msg": "Datos OCD inválidos", "error": folio_errors}, 400
+        if folio_conflict:
+            return _folio_conflict_envelope(new_code, folio_conflict, data["id"]), 409
+    date_errors = items_delivery_date_errors(data["products"], ocd_keys["due_date"])
+    if date_errors:
+        return {"data": None, "msg": "Fechas de entrega de partidas inválidas", "error": date_errors}, 400
+    data["metadata"].update(ocd_keys)
+    for key, value in existing_meta.items():
+        data["metadata"].setdefault(key, value)
     flag, error, result = update_quotation(data["id"], data["metadata"], data_token)
     if not flag:
         return {
@@ -1304,10 +1725,15 @@ def update_quoation_from_api(data, data_token):
         }, 400
     dict_products = _dict_products_from_quotation(result[0])
     products = data["products"]
+    # Control de entregas activo (OCD): agregar/subir partidas sí; quitar una
+    # partida entregada o bajarla por debajo de lo entregado -> 400 (docs/control_entregas.md).
+    order_errors, _id_dc = quotation_change_order_errors(data["id"], products, dict_products, data_token)
+    if order_errors:
+        return {"data": None, "msg": "La cotización tiene un control de entregas activo", "error": order_errors}, 400
     # quotations no tiene contract_id; el enlace vive en contracts.quotation_id.
     _, _, contract_id = get_contract_id_by_quotation(data["id"], data_token)
     error_items = None
-    flag_list, error_list, result_list, counts = update_items_quotation_from_api(
+    flag_list, error_list, result_list, counts, items_out = update_items_quotation_from_api(
         products, data["id"], contract_id, dict_products, data_token
     )
     if flag_list.count(True) == len(flag_list):
@@ -1331,10 +1757,147 @@ def update_quoation_from_api(data, data_token):
     )
     if error_items is not None:
         msg_out += f". {len(error_items)} items no se pudieron actualizar."
-    return {"data": {"id_quotation": data["id"]}, "msg": msg_out, "error": error_items}, 200
+    return {"data": {"id_quotation": data["id"], "items": items_out}, "msg": msg_out, "error": error_items}, 200
+
+
+def update_quotation_ocd_from_api(data, data_token):
+    """PUT /quotation/ocd: convierte una cotización en OCD (o ajusta sus datos OCD).
+
+    Merge de las llaves OCD sobre la metadata guardada, sin tocar items ni el
+    resto de la cabecera. Revertir a "quotation" queda bloqueado cuando exista
+    un control de entregas activo (guard de la F2 del plan; hoy no hay entidad).
+    """
+    id_quotation = data["id_quotation"]
+    flag, error, row = get_quotation_metadata(id_quotation, data_token)
+    if not flag:
+        return {"data": None, "msg": "No se pudo leer la cotización", "error": error}, 400
+    if not row:
+        return {
+            "data": None,
+            "msg": f"No se encontró la cotización (ID {id_quotation})",
+            "error": "Quotation not found",
+        }, 404
+    metadata = json.loads(row[0]) if row[0] else {}  # pyrefly: ignore
+    status = _quotation_status(metadata)
+    tender = None
+    if status == QUOTATION_STATUS_TENDER:
+        # Licitación ganada -> OCD sobre su MISMA cotización interna (junta 2026-10-22,
+        # docs/ocd_reglas_po_vencimiento.md): asignada (status 1) y sin contrato;
+        # la cotización conserva status 3 y tender_number como folio.
+        flag_t, error_t, trow = get_tender_by_quotation(id_quotation, data_token)
+        if not flag_t:
+            return {"data": None, "msg": "No se pudo leer la licitación de la cotización", "error": error_t}, 400
+        tender = dict(zip(TENDER_COLUMNS, trow)) if trow else None
+        tender_errors = []
+        if tender is None:
+            tender_errors.append(f"la cotización {id_quotation} tiene status 3 pero ninguna licitación la referencia")
+        else:
+            if tender["status"] != TENDER_STATUS_ASSIGNED:
+                tender_errors.append(
+                    f"la licitación {tender['tender_number']} no está asignada (status {tender['status']}); "
+                    "solo una licitación ganada se convierte en OCD"
+                )
+            if tender["contract_id"]:
+                tender_errors.append(
+                    f"la licitación {tender['tender_number']} ya tiene el contrato {tender['contract_id']}; no puede ser también OCD"
+                )
+        if tender_errors:
+            return {
+                "data": {"id_quotation": id_quotation, "id_tender": tender["id_tender"] if tender else None},
+                "msg": "La licitación no puede convertirse en OCD",
+                "error": tender_errors,
+            }, 400
+    elif status != 0:
+        # Catálogos de contrato (1/2) no son OCD (docs/tenders_control.md).
+        return {
+            "data": None,
+            "msg": "Solo una cotización de preventa o una licitación ganada se convierte en OCD",
+            "error": [f"la cotización {id_quotation} tiene status {status}"],
+        }, 400
+    timestamps = json.loads(row[1]) if row[1] else None  # pyrefly: ignore
+    if timestamps is not None and not isinstance(timestamps.get("update"), list):
+        timestamps["update"] = []
+    incoming = {k: data.get(k) for k in _OCD_DEFAULTS}
+    incoming["document_type"] = (data.get("document_type") or "ocd").strip().lower()
+    if tender and not (incoming.get("client_po_number") or "").strip() and not (metadata.get("client_po_number") or "").strip():
+        # El número de OC de la licitación ganada es el identificador por default.
+        incoming["client_po_number"] = tender.get("po_number") or ""
+    ocd_keys, errors = _merge_ocd_keys(incoming, metadata)
+    if errors:
+        return {"data": None, "msg": "Datos OCD inválidos", "error": errors}, 400
+    rule_errors, conflict_id = _ocd_rule_errors(ocd_keys, id_quotation, data_token)
+    if rule_errors:
+        return {"data": None, "msg": "Datos OCD inválidos", "error": rule_errors}, 400
+    if conflict_id:
+        return _ocd_conflict_envelope(ocd_keys["client_po_number"], conflict_id, id_quotation), 409
+    if (metadata.get("document_type") or "quotation") != "ocd":
+        # Candado del folio solo al MARCAR (F3): una OCD ya marcada ajusta sus datos sin re-chequear.
+        folio_errors, folio_conflict = _ocd_folio_conflict(
+            ocd_keys["document_type"], metadata.get("quotation_code"), id_quotation, data_token
+        )
+        if folio_errors:
+            return {"data": None, "msg": "Datos OCD inválidos", "error": folio_errors}, 400
+        if folio_conflict:
+            return _folio_conflict_envelope(str(metadata.get("quotation_code") or ""), folio_conflict, id_quotation), 409
+    before = {k: metadata.get(k) for k in _OCD_DEFAULTS}
+    if ocd_keys["document_type"] != "ocd" and (metadata.get("document_type") == "ocd"):
+        id_dc = quotation_has_active_delivery_control(id_quotation, data_token)
+        if id_dc:
+            return {
+                "data": {"delivery_control_id": id_dc},
+                "msg": f"La cotización {id_quotation} tiene el control de entregas activo {id_dc}; cancélalo antes de revertirla",
+                "error": ["control de entregas activo"],
+            }, 400
+    if ocd_keys["due_date"] and ocd_keys["due_date"] != (metadata.get("due_date") or ""):
+        late = _stored_delivery_dates_after(id_quotation, ocd_keys["due_date"], data_token)
+        if late:
+            return {
+                "data": {"id_quotation": id_quotation, "due_date": ocd_keys["due_date"]},
+                "msg": "El vencimiento es anterior a fechas de entrega ya capturadas en las partidas",
+                "error": late,
+            }, 400
+    metadata.update(ocd_keys)
+    flag, error, result = update_quotation(id_quotation, metadata, data_token, timestamps)
+    if not flag:
+        return {"data": None, "msg": "No se pudo actualizar la cotización", "error": error}, 400
+    changed = [k for k in _OCD_DEFAULTS if (before.get(k) or "") != ocd_keys[k]]
+    label = "OCD" if ocd_keys["document_type"] == "ocd" else "cotización"
+    msg = (
+        f"Cotización {id_quotation} marcada como {label} por {data_token.get('name')}"
+        + (f" (licitación {tender['tender_number']})" if tender else "")
+        + (f" (cambios: {', '.join(changed)})" if changed else " (sin cambios)")
+    )
+    write_log_file(log_file_admin, msg, data_token)
+    return {
+        "data": {
+            "id_quotation": id_quotation,
+            **ocd_keys,
+            "changed": changed,
+            "status": status,
+            "id_tender": tender["id_tender"] if tender else None,
+        },
+        "msg": msg,
+        "error": None,
+    }, 200
 
 
 def delete_quotation_from_api(data, data_token):
+    # Licitación: 400 ANTES de borrar partidas (la FK de tenders haría fallar el
+    # DELETE de la cotización con las partidas ya perdidas).
+    flag, error, row = get_quotation_metadata(data["id"], data_token)
+    if flag and row and _quotation_status(json.loads(row[0]) if row[0] else {}) == QUOTATION_STATUS_TENDER:  # pyrefly: ignore
+        return {
+            "data": None,
+            "msg": "La cotización es de una licitación; no se elimina",
+            "error": [f"la cotización {data['id']} es de una licitación"],
+        }, 400
+    id_dc = quotation_has_active_delivery_control(data["id"], data_token)
+    if id_dc:
+        return {
+            "data": {"delivery_control_id": id_dc},
+            "msg": f"La cotización {data['id']} tiene el control de entregas activo {id_dc}; cancélalo antes de eliminarla",
+            "error": ["control de entregas activo"],
+        }, 400
     flag, error, result_items = delete_quotation_items(data["id"], data_token)
     if not flag:
         return {
@@ -1357,6 +1920,56 @@ def delete_quotation_from_api(data, data_token):
     }, 200
 
 
+def _tender_for_contract(id_quotation, client_id, data_token) -> tuple[dict | None, list]:
+    """Licitación dueña de la cotización (None si no es de licitación) y los
+    errores de la regla de POST /contract: asignada, sin contrato y mismo
+    cliente (docs/tenders_control.md). Se evalúa ANTES de crear nada."""
+    flag, error, row = get_tender_by_quotation(id_quotation, data_token)
+    if not flag:
+        return None, [f"No se pudo validar la licitación de la cotización {id_quotation}: {error}"]
+    if row is None:
+        return None, []
+    tender = dict(zip(TENDER_COLUMNS, row))
+    errors = []
+    # Exclusión con OCD (junta 2026-10-22): la licitación ganada va a contrato O a OCD.
+    flag_q, _error_q, qrow = get_quotation_metadata(id_quotation, data_token)
+    qmeta = json.loads(qrow[0]) if flag_q and qrow and qrow[0] else {}  # pyrefly: ignore
+    if (qmeta.get("document_type") or "") == "ocd":
+        errors.append(
+            f"la licitación {tender['tender_number']} ya es una OCD (cotización {id_quotation}); no se crea contrato"
+        )
+    if tender["status"] != TENDER_STATUS_ASSIGNED:
+        errors.append(f"la licitación {tender['tender_number']} no está asignada (status 1)")
+    if tender["contract_id"]:
+        errors.append(f"la licitación {tender['tender_number']} ya tiene el contrato {tender['contract_id']}")
+    try:
+        same_client = int(client_id) == int(tender["client_id"])
+    except (TypeError, ValueError):
+        same_client = False
+    if not same_client:
+        errors.append(f"el cliente del contrato ({client_id}) no es el de la licitación ({tender['client_id']})")
+    return tender, errors
+
+
+def _link_tender_to_contract(tender: dict, id_quotation, id_contract, data_token) -> str | None:
+    """Liga la licitación (UPDATE condicional) y pone contract_id a sus partidas.
+    Devuelve el error o None."""
+    timestamp = _now().strftime(format_timestamps)
+    entry = {
+        "user": data_token.get("emp_id"),
+        "action": "Contrato",
+        "date": timestamp,
+        "comment": f"Contrato {id_contract} creado desde la licitación (POST /contract).",
+    }
+    flag, error, rows = link_tender_contract(tender["id_tender"], id_contract, entry, timestamp, data_token)
+    if not flag:
+        return error
+    if rows == 0:
+        return f"la licitación {tender['tender_number']} cambió o ya se ligó a otro contrato"
+    flag, error, _ = assign_contract_to_quotation_items(id_quotation, id_contract, data_token)
+    return None if flag else error
+
+
 def create_contract_from_api(data, data_token):
     # Extraer y eliminar claves específicas del metadata
     contract_number = data["metadata"].pop("contract_number", "")
@@ -1364,7 +1977,11 @@ def create_contract_from_api(data, data_token):
     emission = data["metadata"].pop("emission", "")
     abbreviation = data["metadata"].pop("abbreviation", "")
     msg = ""
-    if data.get("quotation_id", 0) == 0:
+    tender = None
+    # Solo se revierte (borra) la cotización si la creó este request: una que ya
+    # existía no se toca aunque el contrato falle.
+    quotation_created = data.get("quotation_id", 0) == 0
+    if quotation_created:
         flag, error, id_quotation = create_quotation(
             data["metadata"], status=2, data_token=data_token
         )
@@ -1375,32 +1992,47 @@ def create_contract_from_api(data, data_token):
                 "error": error,
             }, 400
         msg += f"Cotizacion creada con ID-{id_quotation} por el empleado {data_token.get('name')}"
-        flag, error, id_contract = create_contract(
-            id_quotation,
-            data["metadata"],
-            contract_number,
-            client_id,
-            emission,
-            abbreviation,
-        )
-
     else:
-        flag, error, id_contract = create_contract(
-            data["quotation_id"],
-            data["metadata"],
-            contract_number,
-            client_id,
-            emission,
-            abbreviation,
-        )
         id_quotation = data["quotation_id"]
+        # Licitación ganada -> contrato sobre su cotización interna (docs/tenders_control.md).
+        if id_quotation:
+            tender, tender_errors = _tender_for_contract(id_quotation, client_id, data_token)
+            if tender_errors:
+                return {
+                    "data": None,
+                    "msg": "La licitación no puede pasar a contrato",
+                    "error": tender_errors,
+                }, 400
+    # data_token y abbreviation por nombre: posicionales, abbreviation caía en el
+    # slot de data_token (no se guardaba y se perdía el cambio a la BD de tester).
+    flag, error, id_contract = create_contract(
+        id_quotation,
+        data["metadata"],
+        contract_number,
+        client_id,
+        emission,
+        data_token=data_token,
+        abbreviation=abbreviation,
+    )
     if not flag:
-        delete_quotation(id_quotation, data_token)
+        if quotation_created:
+            delete_quotation(id_quotation, data_token)
         return {
             "data": None,
-            "msg": "No se pudo crear el contrato; cotización revertida",
+            "msg": "No se pudo crear el contrato" + ("; cotización revertida" if quotation_created else ""),
             "error": error,
         }, 400
+    if tender is not None:
+        link_error = _link_tender_to_contract(tender, id_quotation, id_contract, data_token)
+        if link_error:
+            delete_contract_from_item_quotation(id_contract, data_token)
+            delete_contract(id_contract, data_token)
+            return {
+                "data": None,
+                "msg": "No se pudo ligar la licitación al contrato; contrato revertido",
+                "error": [link_error],
+            }, 400
+        msg += f"\nLicitación {tender['tender_number']} ligada al contrato; partidas existentes con contract_id"
     error_items = None
     # create_items_from_api(products, id_quotation, data_token, id_contract): con
     # id_contract en el slot de data_token los items nacian con contract_id NULL, lo que
@@ -1411,11 +2043,17 @@ def create_contract_from_api(data, data_token):
     if flag_list.count(True) == len(flag_list):
         msg += "\nItems de cotizacion creados correctamente"
     elif flag_list.count(False) == len(flag_list):
-        delete_quotation(id_quotation, data_token)
+        # Primero el contrato (la cotización está referenciada por él) y luego la
+        # cotización, solo si la creó este request. delete_contract desliga la
+        # licitación (fk_tender_contract ON DELETE SET NULL).
+        delete_contract_from_item_quotation(id_contract, data_token)
         delete_contract(id_contract, data_token)
+        if quotation_created:
+            delete_quotation(id_quotation, data_token)
         return {
             "data": None,
-            "msg": "No se pudo crear ningún item; contrato y cotización revertidos",
+            "msg": "No se pudo crear ningún item; contrato revertido"
+            + (" y cotización revertida" if quotation_created else ""),
             "error": error_list,
         }, 400
     else:
@@ -1482,6 +2120,7 @@ def update_contract_from_api(data, data_token):
             data["products"], id_quotation, data_token, data["id"]
         )
         counts["created"] = flag_list.count(True)
+        items_out = _items_created_out(data["products"], flag_list, result_list)
     else:
         flag, error, result = get_quotation(id_quotation=id_quotation, data_token=data_token)
         if not flag or len(result) == 0:
@@ -1493,7 +2132,7 @@ def update_contract_from_api(data, data_token):
         dict_products = _dict_products_from_quotation(result[0])
         products = data["products"]
         contract_id = data["id"]
-        flag_list, error_list, result_list, counts = update_items_quotation_from_api(
+        flag_list, error_list, result_list, counts, items_out = update_items_quotation_from_api(
             products, id_quotation, contract_id, dict_products, data_token
         )
     if new_quotation_created and len(data.get("products", [])) == 0:
@@ -1550,7 +2189,7 @@ def update_contract_from_api(data, data_token):
     if error_items is not None:
         msg_out += f". {len(error_items)} items no se pudieron crear/actualizar."
     return {
-        "data": {"id_contract": data["id"], "id_quotation": id_quotation},
+        "data": {"id_contract": data["id"], "id_quotation": id_quotation, "items": items_out},
         "msg": msg_out,
         "error": error_items,
     }, 200

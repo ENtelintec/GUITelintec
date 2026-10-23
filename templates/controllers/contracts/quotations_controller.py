@@ -61,6 +61,82 @@ def create_items_quotation(items: list, data_token):
     return flag_list, error_list, result_list
 
 
+def get_quotation_metadata(id_quotation: int, data_token):
+    """Solo cabecera: (metadata JSON str, timestamps JSON str) o [] si no existe. type_sql=1.
+
+    Lectura ligera para los merges de metadata (OCD, PUT de cabecera): evita
+    agregar los items como hace get_quotation.
+    """
+    sql = "SELECT metadata, timestamps FROM sql_telintec_mod_admin.quotations WHERE id = %s"
+    flag, error, out = execute_sql(sql, (id_quotation,), 1, data_token)
+    return flag, error, out
+
+
+def find_ocd_by_client_po_number(client_po_number: str, exclude_id, data_token):
+    """id de OTRA cotización OCD con el mismo client_po_number (comparado sin
+    mayúsculas ni espacios al borde, como la collation general_ci de tender_number)
+    o None. Candado en código porque la llave vive en metadata JSON
+    (docs/ocd_reglas_po_vencimiento.md). type_sql=1."""
+    sql = (
+        "SELECT id FROM sql_telintec_mod_admin.quotations "
+        "WHERE JSON_UNQUOTE(JSON_EXTRACT(metadata, '$.document_type')) = 'ocd' "
+        "AND UPPER(TRIM(JSON_UNQUOTE(JSON_EXTRACT(metadata, '$.client_po_number')))) = UPPER(TRIM(%s)) "
+        "AND id <> %s LIMIT 1"
+    )
+    flag, error, out = execute_sql(sql, (client_po_number, exclude_id or 0), 1, data_token)
+    if not flag:
+        return False, error, None
+    if not isinstance(out, (list, tuple)) or len(out) == 0:
+        return True, None, None
+    return True, None, out[0]
+
+
+def get_quotation_codes_by_prefix(prefix: str, data_token):
+    """Folios (metadata.quotation_code) que empiezan con prefix, comparados sin
+    mayúsculas: receta max + 1 del folio sugerido (docs/folio_sugerido_cotizaciones.md),
+    como get_folios_by_pattern de SM. type_sql=2 -> lista de strings."""
+    sql = (
+        "SELECT JSON_UNQUOTE(JSON_EXTRACT(metadata, '$.quotation_code')) "
+        "FROM sql_telintec_mod_admin.quotations "
+        "WHERE UPPER(JSON_UNQUOTE(JSON_EXTRACT(metadata, '$.quotation_code'))) LIKE UPPER(%s)"
+    )
+    flag, error, out = execute_sql(sql, (prefix + "%",), 2, data_token)
+    if not flag or not isinstance(out, list):
+        return False, error, []
+    return True, None, [str(row[0]) for row in out if row and row[0]]
+
+
+def find_quotation_by_code(quotation_code: str, exclude_id, data_token):
+    """id de OTRA cotización (cualquier document_type) con el mismo quotation_code,
+    comparado sin mayúsculas ni espacios al borde, o None. Candado del folio al
+    marcar una OCD (docs/folio_sugerido_cotizaciones.md); preventa y CISCO no lo
+    usan. type_sql=1."""
+    sql = (
+        "SELECT id FROM sql_telintec_mod_admin.quotations "
+        "WHERE UPPER(TRIM(JSON_UNQUOTE(JSON_EXTRACT(metadata, '$.quotation_code')))) = UPPER(TRIM(%s)) "
+        "AND id <> %s LIMIT 1"
+    )
+    flag, error, out = execute_sql(sql, (quotation_code, exclude_id or 0), 1, data_token)
+    if not flag:
+        return False, error, None
+    if not isinstance(out, (list, tuple)) or len(out) == 0:
+        return True, None, None
+    return True, None, out[0]
+
+
+def get_quotation_items_delivery_dates(id_quotation: int, data_token):
+    """[(id, partida, delivery_date | None)] de las partidas de la cotización, para
+    validar un due_date nuevo contra las fechas ya capturadas. type_sql=2."""
+    sql = (
+        "SELECT id, partida, NULLIF(extra_info->>'$.delivery_date', '') "
+        "FROM sql_telintec_mod_admin.quotation_items WHERE quotation_id = %s ORDER BY partida"
+    )
+    flag, error, out = execute_sql(sql, (id_quotation,), 2, data_token)
+    if not flag or not isinstance(out, list):
+        return False, error, []
+    return True, None, out
+
+
 def update_quotation(id_quotation, metadata: dict, data_token, timestamps=None):
     time_zone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
@@ -175,6 +251,32 @@ def delete_contract_from_item_quotation(contract_id, data_token):
     return flag, error, out
 
 
+def assign_contract_to_quotation_items(id_quotation, contract_id, data_token):
+    """Pone contract_id a las partidas de la cotizacion que aun no tienen contrato
+    (licitacion ganada -> contrato, docs/tenders_control.md). type_sql=3."""
+    sql = (
+        "UPDATE sql_telintec_mod_admin.quotation_items "
+        "SET contract_id = %s "
+        "WHERE quotation_id = %s AND contract_id IS NULL"
+    )
+    val = (contract_id, id_quotation)
+    flag, error, out = execute_sql(sql, val, 3, data_token)
+    return flag, error, out
+
+
+def set_quotation_metadata_keys(id_quotation, keys: dict, data_token):
+    """JSON_SET de llaves sueltas en metadata, sin reescribir el resto (sincronia
+    licitacion -> cotizacion interna). Las llaves las pone el codigo, nunca el
+    payload: van interpoladas en la ruta JSON. type_sql=3."""
+    if not keys:
+        return True, None, 0
+    paths = ", ".join(f"'$.{key}', %s" for key in keys)
+    sql = f"UPDATE sql_telintec_mod_admin.quotations SET metadata = JSON_SET(metadata, {paths}) WHERE id = %s"
+    val = tuple(keys.values()) + (id_quotation,)
+    flag, error, out = execute_sql(sql, val, 3, data_token)
+    return flag, error, out
+
+
 def delete_quotation(id_quotation, data_token):
     sql = "DELETE FROM sql_telintec_mod_admin.quotations WHERE id = %s"
     val = (id_quotation,)
@@ -191,6 +293,8 @@ def get_quotation(data_token, id_quotation: int | None = None):
     reordenes ni insertes llaves entre 'qa_item_id' y 'id_inventory'. Las 3
     llaves de seccion (section_index/section_title/section_type) van al FINAL
     (indices 12..14): el compare solo lee 0..11, asi que son inertes para el.
+    Despues van delivery_date (OCD) y las llaves CISCO item / smart_account /
+    service_months / delivery_time (docs/cotizaciones_cisco.md), null fuera de CISCO.
     """
     if id_quotation is not None:
         sql = (
@@ -212,7 +316,12 @@ def get_quotation(data_token, id_quotation: int | None = None):
             "  'id_inventory', qi.id_inventory, "
             "  'section_index', qi.section_index, "
             "  'section_title', COALESCE(qi.extra_info->>'$.section_title', 'General'), "
-            "  'section_type', COALESCE(qi.extra_info->>'$.section_type', 'general') "
+            "  'section_type', COALESCE(qi.extra_info->>'$.section_type', 'general'), "
+            "  'delivery_date', NULLIF(qi.extra_info->>'$.delivery_date', ''), "
+            "  'item', qi.extra_info->>'$.item', "
+            "  'smart_account', qi.extra_info->'$.smart_account', "
+            "  'service_months', qi.extra_info->'$.service_months', "
+            "  'delivery_time', qi.extra_info->>'$.delivery_time' "
             ")) AS products, "
             "q.creation, "
             "q.timestamps "
@@ -242,7 +351,12 @@ def get_quotation(data_token, id_quotation: int | None = None):
             "  'id_inventory', qi.id_inventory, "
             "  'section_index', qi.section_index, "
             "  'section_title', COALESCE(qi.extra_info->>'$.section_title', 'General'), "
-            "  'section_type', COALESCE(qi.extra_info->>'$.section_type', 'general') "
+            "  'section_type', COALESCE(qi.extra_info->>'$.section_type', 'general'), "
+            "  'delivery_date', NULLIF(qi.extra_info->>'$.delivery_date', ''), "
+            "  'item', qi.extra_info->>'$.item', "
+            "  'smart_account', qi.extra_info->'$.smart_account', "
+            "  'service_months', qi.extra_info->'$.service_months', "
+            "  'delivery_time', qi.extra_info->>'$.delivery_time' "
             ")) AS products, "
             "q.creation, "
             "q.timestamps "
@@ -268,7 +382,6 @@ def get_quotation_data_display(data_token, id_quotation=None):
             "SELECT id, "
             "metadata->'$.company', "
             "metadata->'$.quotation_code', "
-            "metadata->'$.codigo', "
             "creation "
             "FROM sql_telintec_mod_admin.quotations"
         )
@@ -280,7 +393,6 @@ def get_quotation_data_display(data_token, id_quotation=None):
         "SELECT id, "
         "metadata->'$.company', "
         "metadata->'$.quotation_code', "
-        "metadata->'$.codigo', "
         "creation "
         "FROM sql_telintec_mod_admin.quotations "
         "WHERE id = %s"

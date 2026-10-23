@@ -41,6 +41,12 @@ _COMPANY_INFO_LINES = [
 _RM_META_X = 330.0
 _RM_META_W = a4_x - _RM_META_X - _RM_MARGIN
 
+# Layouts de la remisión (docs/remission_pdf_ocd.md): "contract" = FO-CXC-01
+# (remisión bajo contrato marco, la histórica) y "ocd" = FO-CXC-05 (orden de
+# compra directa / fuera de contrato: sin contrato marco, pedido EXIROS y moneda
+# prominentes, referencia a la cotización OCD). Mismo cuerpo de items y firmas.
+_RM_LAYOUTS = {"contract": 7, "ocd": 14}  # iso_formats.id
+
 # Columnas de la tabla de items: (encabezado, ancho pt, alineación). Los anchos
 # suman el ancho útil (a4_x - 2 * _RM_MARGIN); DESCRIPCIÓN absorbe el resto.
 # El orden sigue las llaves del dict de cada item (ver FileRemissionPDF).
@@ -134,6 +140,11 @@ def FileRemissionPDF(dict_data: dict):
             # opcionales: rutas locales a firmas ya descargadas de S3
             "sign_realizado_path": str | None,   # -> "Firma Autorizacion 1"
             "sign_recibido_path": str | None,    # -> "Firma Autorizacion 2"
+            # layout (docs/remission_pdf_ocd.md): "contract" (default, FO-CXC-01)
+            # u "ocd" (FO-CXC-05). Solo el ocd usa:
+            "layout": str,
+            "currency": str,            # "MXN" | "USD" (TIPO DE MONEDA)
+            "quotation_code": str,      # cotización OCD de la que salen las partidas
         }
 
     Más detalle del formato en ``docs/remission_pdf.md`` y del documento
@@ -151,13 +162,15 @@ def FileRemissionPDF(dict_data: dict):
     pages = 1
     font_size = 9
     limit_y = 60
+    layout = dict_data.get("layout") if dict_data.get("layout") in _RM_LAYOUTS else "contract"
+    iso_form = _RM_LAYOUTS[layout]
 
     def draw_header_and_metadata():
         create_header_telintec(
             pdf,
-            title="REMISIÓN",
+            title="REMISIÓN" if layout == "contract" else "REMISIÓN OC DIRECTA",
             page_x=a4_x,
-            iso_form=7,
+            iso_form=iso_form,
             orientation="vertical",
             offset_title=(0, 0),
         )
@@ -167,21 +180,33 @@ def FileRemissionPDF(dict_data: dict):
             pdf.drawString(30, text_y, line)
             text_y -= 8 * 1.4
 
-        metadata_rows = [
-            ("Fecha", dict_data.get("date", "")),
-            ("Remision Telintec", dict_data.get("folio", "")),
-            (
-                "Proyecto",
-                [
-                    dict_data.get("project", ""),
-                    *wrap_text_width(dict_data.get("project_description", "") or "", _RM_META_W - 10, font_size),
-                ],
-            ),
-            ("No. Contrato Marco", dict_data.get("contract_marco", "")),
-            ("No. Pedido Exiros", dict_data.get("pedido_exiros", "")),
-            ("No. Pedido", dict_data.get("pedido", "")),
-            ("Remito", dict_data.get("remito", "")),
+        project_lines = [
+            dict_data.get("project", ""),
+            *wrap_text_width(dict_data.get("project_description", "") or "", _RM_META_W - 10, font_size),
         ]
+        if layout == "ocd":
+            # FO-CXC-05: sin contrato marco; el pedido del cliente y la moneda
+            # mandan, más la cotización OCD de la que salen las partidas.
+            metadata_rows = [
+                ("Fecha", dict_data.get("date", "")),
+                ("Remision Telintec", dict_data.get("folio", "")),
+                ("No. Pedido Exiros", dict_data.get("pedido_exiros", "")),
+                ("Tipo de moneda", dict_data.get("currency", "") or "MXN"),
+                ("Cotizacion / OCD", dict_data.get("quotation_code", "")),
+                ("No. Pedido", dict_data.get("pedido", "")),
+                ("Proyecto", project_lines),
+                ("Remito", dict_data.get("remito", "")),
+            ]
+        else:
+            metadata_rows = [
+                ("Fecha", dict_data.get("date", "")),
+                ("Remision Telintec", dict_data.get("folio", "")),
+                ("Proyecto", project_lines),
+                ("No. Contrato Marco", dict_data.get("contract_marco", "")),
+                ("No. Pedido Exiros", dict_data.get("pedido_exiros", "")),
+                ("No. Pedido", dict_data.get("pedido", "")),
+                ("Remito", dict_data.get("remito", "")),
+            ]
         y_after_metadata = _draw_metadata_box(pdf, metadata_rows, _RM_META_X, 700, _RM_META_W)
         return min(text_y, y_after_metadata) - 20
 

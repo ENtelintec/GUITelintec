@@ -12,7 +12,8 @@ from static.Models.api_sgi_models import (
     IsoFormatPostForm,
     IsoFormatPutForm,
     IsoFormatStatusForm,
-    VehicleVoucherDownloadAttachmentForm,
+    VoucherAttachmentDeleteForm,
+    VoucherDownloadAttachmentForm,
     VoucherSafetyFormDelete,
     VoucherSafetyFormPost,
     VoucherSafetyFormPut,
@@ -30,7 +31,8 @@ from static.Models.api_sgi_models import (
     iso_format_put_model,
     iso_format_status_model,
     vehicle_voucher_delete_model,
-    vehicle_voucher_download_att_model,
+    voucher_attachment_delete_model,
+    voucher_download_att_model,
     voucher_safety_delete_model,
     voucher_safety_post_model,
     voucher_safety_put_model,
@@ -60,6 +62,7 @@ from templates.resources.midleware.MD_SGI import (
     delete_voucher_safety_api,
     delete_voucher_tools_api,
     delete_voucher_vehicle_api,
+    delete_voucher_vehicle_attachment_api,
     download_voucher_vehicle_attachment_api,
     download_voucher_vehicle_pdf_api,
     get_vouchers_safety_api,
@@ -74,6 +77,10 @@ from templates.resources.midleware.MD_SGI import (
 from templates.resources.midleware.MD_SGI_Vouchers import (
     create_voucher_epp_attachment_api,
     create_voucher_tools_attachment_api,
+    delete_voucher_epp_attachment_api,
+    delete_voucher_tools_attachment_api,
+    download_voucher_epp_attachment_api,
+    download_voucher_tools_attachment_api,
 )
 
 __author__ = "Edisson Naula"
@@ -296,62 +303,80 @@ class VoucerVehicleActions(Resource):
         return data_out, code
 
 
+def _voucher_attachment_upload(id_voucher, create_api):
+    """POST multipart (un archivo por request, campo `file`) de los 3 tipos de vale."""
+    flag, data_token, msg = token_verification_procedure(request, department=["sgi", "voucher"])
+    if not flag:
+        return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+    if "file" not in request.files:
+        return {"data": None, "msg": "No se detectó un archivo", "error": None}, 400
+    file = request.files["file"]
+    if not (file and file.filename):
+        return {"data": None, "msg": "No se subió el archivo", "error": None}, 400
+    filename = secure_filename(file.filename)
+    filepath_download = os.path.join(tempfile.mkdtemp(), filename)
+    file.save(filepath_download)
+    data_out, code = create_api(
+        {"filepath": filepath_download, "filename": filename, "id_voucher": id_voucher},
+        data_token,
+    )
+    return data_out, code
+
+
+def _voucher_attachment_delete(id_voucher, delete_api):
+    """DELETE {filename, reason?} de un anexo de los 3 tipos de vale
+    (docs/vales_anexos_descarga_borrado.md): 200 envelope con `files` restantes,
+    400 firma, 404 vale/archivo, 409 contención (repetir)."""
+    flag, data_token, msg = token_verification_procedure(request, department=["sgi", "voucher"])
+    if not flag:
+        return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+    validator = VoucherAttachmentDeleteForm.from_json(ns.payload)  # pyrefly: ignore
+    if not validator.validate():
+        return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
+    data = validator.data
+    data["id_voucher"] = id_voucher
+    return delete_api(data, data_token)
+
+
+def _voucher_attachment_download(download_api):
+    """POST {id_voucher, filename} -> blob en 200; envelope JSON en 4xx (el front
+    decide por el status)."""
+    flag, data_token, msg = token_verification_procedure(request, department=["sgi", "voucher"])
+    if not flag:
+        return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+    validator = VoucherDownloadAttachmentForm.from_json(ns.payload)  # pyrefly: ignore
+    if not validator.validate():
+        return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
+    data = validator.data
+    filename = data["filename"].split("/")[-1]
+    data["filepath"] = os.path.join(tempfile.mkdtemp(), filename)
+    data_out, code = download_api(data, data_token)
+    if code == 200 and isinstance(data_out.get("path"), str):
+        return send_file(data_out["path"], as_attachment=True)
+    return data_out, code
+
+
 @ns.route("/voucher/vehicle/attachment-<string:id_voucher>")
 class UploadVehicleVoucherAttachment(Resource):
     @ns.expect(expected_headers_per, expected_files_attachment)
     def post(self, id_voucher):
-        flag, data_token, msg = token_verification_procedure(
-            request, department=["sgi", "voucher"]
-        )
-        if not flag:
-            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        if "file" not in request.files:
-            return {"data": None, "msg": "No se detectó un archivo", "error": None}, 400
-        file = request.files["file"]
-        if file and file.filename:
-            filename = secure_filename(file.filename)
-            filepath_download = os.path.join(tempfile.mkdtemp(), filename)
-            file.save(filepath_download)
-            data_out, code = create_voucher_vehicle_attachment_api(
-                {
-                    "filepath": filepath_download,
-                    "filename": filename,
-                    "id_voucher": id_voucher,
-                },
-                data_token,
-            )
-            return data_out, code
-        else:
-            return {"data": None, "msg": "No se subió el archivo", "error": None}, 400
+        return _voucher_attachment_upload(id_voucher, create_voucher_vehicle_attachment_api)
+
+    @ns.expect(expected_headers_per, voucher_attachment_delete_model)
+    def delete(self, id_voucher):
+        return _voucher_attachment_delete(id_voucher, delete_voucher_vehicle_attachment_api)
 
 
 @ns.route("/voucher/vehicle/attachment/download")
 class DownloadVehicleVoucherAttachment(Resource):
-    @ns.expect(expected_headers_per, vehicle_voucher_download_att_model)
+    @ns.expect(expected_headers_per, voucher_download_att_model)
     def post(self):
-        flag, data_token, msg = token_verification_procedure(
-            request, department=["sgi", "voucher"]
-        )
-        if not flag:
-            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        validator = VehicleVoucherDownloadAttachmentForm.from_json(  # pyrefly: ignore
-            ns.payload
-        )
-        if not validator.validate():
-            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
-        data = validator.data
-        filename = data["filename"].split("/")[-1]
-        temp_filepath = os.path.join(tempfile.mkdtemp(), filename)
-        data["filepath"] = temp_filepath
-        data_out, code = download_voucher_vehicle_attachment_api(data, data_token)
-        if isinstance(data_out.get("path"), str):
-            return send_file(data_out["path"], as_attachment=True)
-        else:
-            return {"data": None, "msg": "Error al descargar el archivo", "error": str(data_out)}, 400
+        return _voucher_attachment_download(download_voucher_vehicle_attachment_api)
 
 
 @ns.route("/voucher/vehicle/download/pdf/<int:id_voucher>")
 class DownloadVehicleChecklistPDF(Resource):
+    @ns.doc(params={"full": "1 -> documento combinado (checklist + anexos PDF + evidencia fotográfica)"})
     @ns.expect(expected_headers_per)
     def get(self, id_voucher):
         flag, data_token, msg = token_verification_procedure(
@@ -359,8 +384,11 @@ class DownloadVehicleChecklistPDF(Resource):
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        # 200 -> blob del PDF (FO-CDA-03 R3); 4xx/5xx -> envelope {data, msg, error}
-        data_out, code = download_voucher_vehicle_pdf_api(id_voucher, data_token)
+        # 200 -> blob del PDF (FO-CDA-03 R3); 4xx/5xx -> envelope {data, msg, error}.
+        # ?full=1 -> checklist + anexos PDF + evidencia fotografica
+        # (docs/checklist_vehicular_full_pdf.md); sin el, solo el checklist.
+        full = request.args.get("full", default="0").strip().lower() in ("1", "true", "yes")
+        data_out, code = download_voucher_vehicle_pdf_api(id_voucher, data_token, full=full)
         if code == 200:
             return send_file(data_out, as_attachment=True)  # pyrefly: ignore
         return data_out, code
@@ -370,57 +398,36 @@ class DownloadVehicleChecklistPDF(Resource):
 class UploadEppVoucherAttachment(Resource):
     @ns.expect(expected_headers_per, expected_files_attachment)
     def post(self, id_voucher):
-        flag, data_token, msg = token_verification_procedure(
-            request, department=["sgi", "voucher"]
-        )
-        if not flag:
-            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        if "file" not in request.files:
-            return {"data": None, "msg": "No se detectó un archivo", "error": None}, 400
-        file = request.files["file"]
-        if file and file.filename:
-            filename = secure_filename(file.filename)
-            filepath_download = os.path.join(tempfile.mkdtemp(), filename)
-            file.save(filepath_download)
-            data_out, code = create_voucher_epp_attachment_api(
-                {
-                    "filepath": filepath_download,
-                    "filename": filename,
-                    "id_voucher": id_voucher,
-                },
-                data_token,
-            )
-            return data_out, code
-        else:
-            return {"data": None, "msg": "No se subió el archivo", "error": None}, 400
+        return _voucher_attachment_upload(id_voucher, create_voucher_epp_attachment_api)
+
+    @ns.expect(expected_headers_per, voucher_attachment_delete_model)
+    def delete(self, id_voucher):
+        return _voucher_attachment_delete(id_voucher, delete_voucher_epp_attachment_api)
+
+
+@ns.route("/voucher/epp/attachment/download")
+class DownloadEppVoucherAttachment(Resource):
+    @ns.expect(expected_headers_per, voucher_download_att_model)
+    def post(self):
+        return _voucher_attachment_download(download_voucher_epp_attachment_api)
+
 
 @ns.route("/voucher/tools/attachment-<string:id_voucher>")
 class UploadToolsVoucherAttachment(Resource):
     @ns.expect(expected_headers_per, expected_files_attachment)
     def post(self, id_voucher):
-        flag, data_token, msg = token_verification_procedure(
-            request, department=["sgi", "voucher"]
-        )
-        if not flag:
-            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        if "file" not in request.files:
-            return {"data": None, "msg": "No se detectó un archivo", "error": None}, 400
-        file = request.files["file"]
-        if file and file.filename:
-            filename = secure_filename(file.filename)
-            filepath_download = os.path.join(tempfile.mkdtemp(), filename)
-            file.save(filepath_download)
-            data_out, code = create_voucher_tools_attachment_api(
-                {
-                    "filepath": filepath_download,
-                    "filename": filename,
-                    "id_voucher": id_voucher,
-                },
-                data_token,
-            )
-            return data_out, code
-        else:
-            return {"data": None, "msg": "No se subió el archivo", "error": None}, 400
+        return _voucher_attachment_upload(id_voucher, create_voucher_tools_attachment_api)
+
+    @ns.expect(expected_headers_per, voucher_attachment_delete_model)
+    def delete(self, id_voucher):
+        return _voucher_attachment_delete(id_voucher, delete_voucher_tools_attachment_api)
+
+
+@ns.route("/voucher/tools/attachment/download")
+class DownloadToolsVoucherAttachment(Resource):
+    @ns.expect(expected_headers_per, voucher_download_att_model)
+    def post(self):
+        return _voucher_attachment_download(download_voucher_tools_attachment_api)
 
 
 

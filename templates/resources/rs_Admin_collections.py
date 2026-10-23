@@ -22,6 +22,8 @@ from static.Models.api_purchases_models import (
     QuotationActivityStatusUpdateForm,
     QuotationActivityUpdateForm,
     RemissionBalanceUpdateForm,
+    ReportActivityCancelForm,
+    ReportActivityNoAttachmentsForm,
     ReportActivityCreateControlTableForm,
     ReportActivityCreateForm,
     ReportActivityDeleteAttForm,
@@ -46,6 +48,8 @@ from static.Models.api_purchases_models import (
     remission_activity_update_control_table_model,
     remission_activity_update_model,
     remission_balance_update_model,
+    report_activity_cancel_model,
+    report_activity_no_attachments_model,
     report_activity_delete_att_model,
     report_activity_delete_model,
     report_activity_download_att_model,
@@ -54,15 +58,31 @@ from static.Models.api_balance_control_models import (
     BalanceControlCancelForm,
     BalanceControlFieldsForm,
     BalanceControlMovementForm,
+    BalanceControlMovementPutForm,
     BalanceControlPostForm,
     BalanceControlPutForm,
     BalanceControlRemissionsForm,
     balance_control_cancel_model,
     balance_control_fields_model,
     balance_control_movement_model,
+    balance_control_movement_put_model,
     balance_control_post_model,
     balance_control_put_model,
     balance_control_remissions_model,
+)
+from static.Models.api_delivery_control_models import (
+    DeliveryControlCancelForm,
+    DeliveryControlFieldsForm,
+    DeliveryControlPostForm,
+    DeliveryControlPutForm,
+    DeliveryControlRemissionsForm,
+    DeliveryControlValuesForm,
+    delivery_control_cancel_model,
+    delivery_control_fields_model,
+    delivery_control_post_model,
+    delivery_control_put_model,
+    delivery_control_remissions_model,
+    delivery_control_values_model,
 )
 from static.Models.api_purchase_management_models import (
     PurchaseManagementCancelForm,
@@ -74,8 +94,13 @@ from static.Models.api_purchase_management_models import (
     purchase_management_post_model,
     purchase_management_put_model,
 )
+from static.constants import log_file_admin_collecions
+from templates.daemons.NotificationsSearch import start_daily_sweep
+from templates.misc.Functions_Files import write_log_file
 from templates.resources.methods.Functions_Aux_Login import token_verification_procedure
 from templates.resources.midleware.MD_Admin_Collections import (
+    cancel_remission_from_api,
+    set_remission_no_attachments_from_api,
     create_activity_report_attachment_api,
     create_quotation_activity_from_api,
     create_remission_control_table_from_api,
@@ -103,6 +128,18 @@ from templates.resources.midleware.MD_BalanceControl import (
     update_balance_control_fields_from_api,
     update_balance_control_from_api,
     update_balance_control_remissions_from_api,
+    update_balance_movement_from_api,
+)
+from templates.resources.midleware.MD_DeliveryControl import (
+    cancel_delivery_control_from_api,
+    create_delivery_control_from_api,
+    get_delivery_control_catalogs_from_api,
+    get_delivery_control_from_api,
+    get_delivery_controls_from_api,
+    update_delivery_control_fields_from_api,
+    update_delivery_control_from_api,
+    update_delivery_control_remissions_from_api,
+    update_delivery_control_values_from_api,
 )
 from templates.resources.midleware.MD_Purchases import (
     cancel_po_application_api,
@@ -525,6 +562,40 @@ class ActivityRemissionAction(Resource):
         return data_out, code
 
 
+@ns.route("/remission/cancel")
+class ActivityRemissionCancel(Resource):
+    @ns.expect(expected_headers_per, report_activity_cancel_model)
+    def put(self):
+        """Cancela una remisión (status 3, con motivo en history). Solo administracion; sin reactivación.
+        La cancelada deja de consumir saldo y de contar como entregada (docs/remission_cancel.md)."""
+        flag, data_token, msg = token_verification_procedure(request, department="administracion")
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        validator = ReportActivityCancelForm.from_json(ns.payload)  # pyrefly: ignore
+        if not validator.validate():
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
+        data = validator.data
+        data_out, code = cancel_remission_from_api(data, data_token)
+        return data_out, code
+
+
+@ns.route("/remission/noAttachments")
+class ActivityRemissionNoAttachments(Resource):
+    @ns.expect(expected_headers_per, report_activity_no_attachments_model)
+    def put(self):
+        """Marca (true) o desmarca (false) la remisión como "sin anexos" para que la pantalla no insista.
+        Solo administracion. 400 si ya tiene anexos que no sean firmas; subir un anexo la desmarca sola
+        (docs/remision_ocd_campos_y_sin_anexos.md)."""
+        flag, data_token, msg = token_verification_procedure(request, department="administracion")
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        validator = ReportActivityNoAttachmentsForm.from_json(ns.payload)  # pyrefly: ignore
+        if not validator.validate():
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
+        data_out, code = set_remission_no_attachments_from_api(validator.data, ns.payload or {}, data_token)
+        return data_out, code
+
+
 @ns.route("/remissionControlTable")
 class ActivityRemissionTableAction(Resource):
     @ns.expect(expected_headers_per, remission_activity_create_control_table_model)
@@ -589,6 +660,7 @@ class FetchActivitieReportById(Resource):
             "client_id": "Entero; filtra por cliente",
             "balance_control_id": "Entero; remisiones ligadas a ese control de saldos",
             "available_for_control": "1/true/yes -> solo remisiones disponibles (sin control o en un control cancelado)",
+            "delivery_control_id": "Entero; remisiones ligadas a ese control de entregas (OCD)",
         }
     )
     @ns.expect(expected_headers_per)
@@ -622,12 +694,20 @@ class FetchActivitieReportById(Resource):
             balance_control_id=request.args.get("balance_control_id", type=int),
             available_for_control=(request.args.get("available_for_control") or "").strip().lower()
             in ("1", "true", "yes"),
+            delivery_control_id=request.args.get("delivery_control_id", type=int),
         )
         return data_out, code
 
 
 @ns.route("/remission/download/pdf/<int:id_report>")
 class DownloadPDFRemission(Resource):
+    @ns.doc(
+        params={
+            "iva_rate": "Tasa de IVA (default 0.16)",
+            "full": "1 -> documento combinado (remisión + anexos + fotos)",
+            "layout": "ocd | contract; sin él: sin contrato = FO-CXC-05 (ocd), con contrato = FO-CXC-01",
+        }
+    )
     @ns.expect(expected_headers_per)
     def get(self, id_report):
         flag, data_token, msg = token_verification_procedure(
@@ -640,7 +720,10 @@ class DownloadPDFRemission(Resource):
         # solo la pagina de la remision (comportamiento historico). Ver
         # Docs/remission_combined_pdf.md.
         full = request.args.get("full", default="0").strip().lower() in ("1", "true", "yes")
-        data, code = download_file_remission(id_report, iva_rate, data_token, full=full)
+        # ?layout=ocd|contract fuerza el formato; sin él, sin contrato = FO-CXC-05
+        # (docs/remission_pdf_ocd.md).
+        layout = request.args.get("layout") or None
+        data, code = download_file_remission(id_report, iva_rate, data_token, full=full, layout=layout)
         if code == 200:
             return send_file(data, as_attachment=True)  # pyrefly: ignore
         return data, code
@@ -717,6 +800,8 @@ class BalanceControlOps(Resource):
             "format_id": "Filtra por formato (iso_formats.id)",
             "is_active": "1=activos (default), 0=cancelados",
             "all": "1 -> activos y cancelados (ignora is_active)",
+            "expiring_days": "Entero N: solo controles con end_date a <= N días de hoy (incluye vencidos, days_to_end negativo)",
+            "validity_status": "0 vigente · 1 por vencer (end_date a <= 60 días) · 2 vencido; un valor o lista '1,2'. Derivado de end_date, nunca almacenado",
         }
     )
     @ns.expect(expected_headers_per)
@@ -724,6 +809,13 @@ class BalanceControlOps(Resource):
         flag, data_token, msg = token_verification_procedure(request, department=_BC_READ)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        # Barrido diario de avisos de saldos / entregas / traslados: la primera lista
+        # del día lo lanza en un hilo (docs/avisos_saldos_entregas_traslados.md). Nunca
+        # tumba la lista.
+        try:
+            start_daily_sweep("balance", data_token)
+        except Exception as e:
+            write_log_file(log_file_admin_collecions, f"No se pudo lanzar el barrido de avisos: {str(e)}", data_token)
         params = {
             "contract_id": request.args.get("contract_id"),
             "client_id": request.args.get("client_id"),
@@ -731,6 +823,8 @@ class BalanceControlOps(Resource):
             "format_id": request.args.get("format_id"),
             "is_active": request.args.get("is_active"),
             "all": request.args.get("all"),
+            "expiring_days": request.args.get("expiring_days"),
+            "validity_status": request.args.get("validity_status"),
         }
         data_out, code = get_balance_controls_from_api(params, data_token)
         return data_out, code
@@ -839,6 +933,20 @@ class BalanceControlMovement(Resource):
         data_out, code = create_balance_movement_from_api(data, data_token)
         return data_out, code
 
+    @ns.expect(expected_headers_per, balance_control_movement_put_model)
+    def put(self):
+        """Corrige movement_date / reason de un movimiento; monto, tipo y vigencia son inmutables."""
+        flag, data_token, msg = token_verification_procedure(request, department=_BC_WRITE)
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        # noinspection PyUnresolvedReferences
+        validator = BalanceControlMovementPutForm.from_json(ns.payload)  # pyrefly: ignore
+        if not validator.validate():
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
+        data = validator.data
+        data_out, code = update_balance_movement_from_api(data, ns.payload or {}, data_token)
+        return data_out, code
+
 
 @ns.route("/balanceControl/<int:id_control>")
 class BalanceControlDetail(Resource):
@@ -848,6 +956,154 @@ class BalanceControlDetail(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data_out, code = get_balance_control_from_api(id_control, data_token)
+        return data_out, code
+
+
+# =====================================================================
+# Control de Entregas (OCD) — ver docs/control_entregas.md.
+# Lecturas: administracion/purchases; escrituras: solo administracion.
+# =====================================================================
+_DC_READ = ["administracion", "purchases"]
+_DC_WRITE = ["administracion"]
+
+
+@ns.route("/deliveryControl")
+class DeliveryControlOps(Resource):
+    @ns.doc(
+        params={
+            "quotation_id": "Filtra por cotización OCD",
+            "client_id": "Filtra por cliente (customers_amc.id_customer)",
+            "status": "0 abierto · 1 completo · 2 cancelado (sin status: solo no cancelados)",
+            "all": "1 -> incluye cancelados",
+            "validity_status": "0 vigente · 1 por vencer (due_date de la OCD a <= 60 días) · 2 vencido; un valor o lista '1,2'. Derivado, nunca almacenado",
+        }
+    )
+    @ns.expect(expected_headers_per)
+    def get(self):
+        flag, data_token, msg = token_verification_procedure(request, department=_DC_READ)
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        params = {
+            "quotation_id": request.args.get("quotation_id"),
+            "client_id": request.args.get("client_id"),
+            "status": request.args.get("status"),
+            "all": request.args.get("all"),
+            "validity_status": request.args.get("validity_status"),
+        }
+        data_out, code = get_delivery_controls_from_api(params, data_token)
+        return data_out, code
+
+    @ns.expect(expected_headers_per, delivery_control_post_model)
+    def post(self):
+        flag, data_token, msg = token_verification_procedure(request, department=_DC_WRITE)
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        # noinspection PyUnresolvedReferences
+        validator = DeliveryControlPostForm.from_json(ns.payload)  # pyrefly: ignore
+        if not validator.validate():
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
+        data = validator.data
+        data_out, code = create_delivery_control_from_api(data, data_token)
+        return data_out, code
+
+    @ns.expect(expected_headers_per, delivery_control_put_model)
+    def put(self):
+        flag, data_token, msg = token_verification_procedure(request, department=_DC_WRITE)
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        # noinspection PyUnresolvedReferences
+        validator = DeliveryControlPutForm.from_json(ns.payload)  # pyrefly: ignore
+        if not validator.validate():
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
+        data = validator.data
+        data_out, code = update_delivery_control_from_api(data, data_token)
+        return data_out, code
+
+
+@ns.route("/deliveryControl/catalogs")
+class DeliveryControlCatalogs(Resource):
+    @ns.expect(expected_headers_per)
+    def get(self):
+        flag, data_token, msg = token_verification_procedure(request, department=_DC_READ)
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        data_out, code = get_delivery_control_catalogs_from_api(data_token)
+        return data_out, code
+
+
+@ns.route("/deliveryControl/fields")
+class DeliveryControlFields(Resource):
+    @ns.expect(expected_headers_per, delivery_control_fields_model)
+    def put(self):
+        flag, data_token, msg = token_verification_procedure(request, department=_DC_WRITE)
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        # noinspection PyUnresolvedReferences
+        validator = DeliveryControlFieldsForm.from_json(ns.payload)  # pyrefly: ignore
+        if not validator.validate():
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
+        data = validator.data
+        data_out, code = update_delivery_control_fields_from_api(data, data_token)
+        return data_out, code
+
+
+@ns.route("/deliveryControl/values")
+class DeliveryControlValues(Resource):
+    @ns.expect(expected_headers_per, delivery_control_values_model)
+    def put(self):
+        flag, data_token, msg = token_verification_procedure(request, department=_DC_WRITE)
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        # noinspection PyUnresolvedReferences
+        validator = DeliveryControlValuesForm.from_json(ns.payload)  # pyrefly: ignore
+        if not validator.validate():
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
+        data = validator.data
+        # raw_payload -> `values` es un dict libre validado contra custom_fields del control.
+        data_out, code = update_delivery_control_values_from_api(data, ns.payload or {}, data_token)
+        return data_out, code
+
+
+@ns.route("/deliveryControl/remissions")
+class DeliveryControlRemissions(Resource):
+    @ns.expect(expected_headers_per, delivery_control_remissions_model)
+    def put(self):
+        flag, data_token, msg = token_verification_procedure(request, department=_DC_WRITE)
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        # noinspection PyUnresolvedReferences
+        validator = DeliveryControlRemissionsForm.from_json(ns.payload)  # pyrefly: ignore
+        if not validator.validate():
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
+        data = validator.data
+        data_out, code = update_delivery_control_remissions_from_api(data, data_token)
+        return data_out, code
+
+
+@ns.route("/deliveryControl/cancel")
+class DeliveryControlCancel(Resource):
+    @ns.expect(expected_headers_per, delivery_control_cancel_model)
+    def put(self):
+        flag, data_token, msg = token_verification_procedure(request, department=_DC_WRITE)
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        # noinspection PyUnresolvedReferences
+        validator = DeliveryControlCancelForm.from_json(ns.payload)  # pyrefly: ignore
+        if not validator.validate():
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
+        data = validator.data
+        data_out, code = cancel_delivery_control_from_api(data, data_token)
+        return data_out, code
+
+
+@ns.route("/deliveryControl/<int:id_control>")
+class DeliveryControlDetail(Resource):
+    @ns.expect(expected_headers_per)
+    def get(self, id_control):
+        flag, data_token, msg = token_verification_procedure(request, department=_DC_READ)
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        data_out, code = get_delivery_control_from_api(id_control, data_token)
         return data_out, code
 
 

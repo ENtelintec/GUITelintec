@@ -26,9 +26,15 @@ employee_model = api.model(
         ),
         "modality": fields.String(required=True, description="The employee modality"),
         "email": fields.String(
-            required=True,
-            description="The employee email",
+            required=False,
+            description="The employee email (compatibilidad: primer correo; preferir emails[])",
             example="example@example.com",
+        ),
+        "emails": fields.List(
+            fields.String,
+            required=False,
+            description="Correos del empleado (lista; sustituye a email). Se guardan en la misma columna como a@x,b@y; correo inválido -> 400",
+            example=["ana@telintec.com.mx", "ana.p@gmail.com"],
         ),
         "contract": fields.String(required=True, description="The employee contract"),
         "admission": fields.String(
@@ -70,7 +76,13 @@ employee_model_input = api.model(
         "phone": fields.String(required=True, description="The employee phone number"),
         "dep": fields.Integer(required=True, description="The employee department id"),
         "modality": fields.String(required=True, description="The employee modality"),
-        "email": fields.String(required=True, description="The employee email"),
+        "email": fields.String(required=False, description="The employee email (compatibilidad; preferir emails[])"),
+        "emails": fields.List(
+            fields.String,
+            required=False,
+            description="Correos del empleado (lista; sustituye a email). Se guardan en la misma columna como a@x,b@y; correo inválido -> 400",
+            example=["ana@telintec.com.mx", "ana.p@gmail.com"],
+        ),
         "contract": fields.String(required=True, description="The employee contract"),
         "admission": fields.String(
             required=True,
@@ -343,7 +355,10 @@ class EmployeeInputForm(Form):
     phone = StringField("phone", validators=[InputRequired()])
     dep = IntegerField("dep", validators=[InputRequired()])
     modality = StringField("modality", validators=[InputRequired()])
-    email = StringField("email", validators=[InputRequired()])
+    # Correos (junta 2026-10-22, docs/empleados_correos_y_nomina_activos.md): `emails` es la
+    # lista; `email` (string, puede traer comas) se conserva por compatibilidad. Ninguno obligatorio.
+    email = StringField("email", validators=[], default="")
+    emails = FieldList(StringField("emails", validators=[]), "emails", default=[])
     contract = StringField("contract", validators=[InputRequired()])
     admission = DateField(
         "admission", validators=[InputRequired()], filters=[date_filter]

@@ -2,27 +2,29 @@
 import json
 import os
 import tempfile
-from datetime import datetime, timedelta
+from datetime import datetime
 
 import boto3
 import pytz
 from botocore.exceptions import ClientError, NoCredentialsError
 
 from static.constants import (
-    format_date,
     format_timestamps,
     log_file_sgi_chv,
     secrets,
     timezone_software,
 )
 from templates.controllers.vouchers.vouchers_controller import (
+    append_history_voucher,
     create_voucher_general,
     create_voucher_item,
     create_voucher_safety,
     create_voucher_tools,
     create_voucher_vehicle,
     delete_items_voucher,
+    delete_voucher_general,
     delete_voucher_item,
+    delete_voucher_safety,
     delete_voucher_tools,
     delete_voucher_vehicle,
     get_voucher_vehicle_by_id,
@@ -38,11 +40,19 @@ from templates.controllers.vouchers.vouchers_controller import (
     update_voucher_safety,
     update_voucher_tools,
     update_voucher_vehicle,
-    update_voucher_vehicle_files,
     update_voucher_vehicle_status,
 )
-from templates.forms.VehicleChecklistPDF import FileVehicleChecklistPDF
+from templates.forms.VehicleChecklistPDF import (
+    FileVehicleChecklistPDF,
+    FileVehicleChecklistPhotosPDF,
+)
 from templates.Functions_Utils import create_notification_permission_notGUI
+from templates.resources.methods.Functions_Aux_Vouchers import (
+    attach_voucher_file,
+    delete_voucher_file,
+    download_voucher_file,
+    load_voucher,
+)
 from templates.misc.Functions_Files import write_log_file
 
 __author__ = "Edisson Naula"
@@ -121,18 +131,18 @@ def create_voucher_tools_api(data, data_token):
 
 
 def update_voucher_tools_api(data, data_token):
+    """PUT /voucher/tools. La cabecera no toca `extra_info` (los anexos
+    sobreviven) y el history crece en BD con JSON_ARRAY_APPEND: el `history`
+    del body se ignora (reescribirlo pisaba entradas; docs/vales_anexos_descarga_borrado.md)."""
     time_zone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
-    history = data["history"]
-    history.append(
-        {
-            "id_voucher": data["id_voucher_general"],
-            "type": 0,
-            "timestamp": timestamp,
-            "user": data_token.get("emp_id"),
-            "comment": "Voucher tools actualizado",
-        }
-    )
+    history_entry = {
+        "id_voucher": data["id_voucher_general"],
+        "type": 0,
+        "timestamp": timestamp,
+        "user": data_token.get("emp_id"),
+        "comment": "Voucher tools actualizado",
+    }
     flag, error, rows_updated = update_voucher_tools(
         data["id_voucher_general"],
         data["position"],
@@ -151,8 +161,8 @@ def update_voucher_tools_api(data, data_token):
             "msg": "No se pudo actualizar el voucher de herramientas",
             "error": error,
         }, 400
-    flag, error, rows_updated = update_history_voucher(
-        history, data["id_voucher_general"], data_token
+    flag, error, rows_updated = append_history_voucher(
+        data["id_voucher_general"], history_entry, data_token
     )
     if not flag:
         return {
@@ -208,19 +218,21 @@ def delete_voucher_tools_api(data, data_token):
             "msg": "No se pudo eliminar el voucher de herramientas",
             "error": error,
         }, 400
-    history = data["history"]
+    # Append en BD (el `history` del body se ignora: reescribirlo pisaba entradas
+    # agregadas entretanto, p. ej. un anexo).
     time_zone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
-    history.append(
+    flag, error, result = append_history_voucher(
+        data["id"],
         {
             "id_voucher": data["id"],
             "type": 0,
             "timestamp": timestamp,
             "user": data_token.get("emp_id"),
             "comment": "Voucher eliminado",
-        }
+        },
+        data_token,
     )
-    flag, error, result = update_voucher_general_from_delete(data["id"], history, data_token)
     if not flag:
         return {
             "data": None,
@@ -305,18 +317,17 @@ def create_voucher_safety_api(data, data_token):
 
 
 def update_voucher_safety_api(data, data_token):
+    """PUT /voucher/safety. Misma regla que update_voucher_tools_api: la
+    cabecera no toca `extra_info` y el history crece en BD (el del body se ignora)."""
     time_zone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
-    history = data["history"]
-    history.append(
-        {
-            "id_voucher": data["id_voucher_general"],
-            "type": 1,
-            "timestamp": timestamp,
-            "user": data_token.get("emp_id"),
-            "comment": "Voucher safety actualizado",
-        }
-    )
+    history_entry = {
+        "id_voucher": data["id_voucher_general"],
+        "type": 1,
+        "timestamp": timestamp,
+        "user": data_token.get("emp_id"),
+        "comment": "Voucher safety actualizado",
+    }
     flag, error, rows_changed = update_voucher_safety(
         data["id_voucher_general"],
         data["epp_emp"],
@@ -333,8 +344,8 @@ def update_voucher_safety_api(data, data_token):
             "msg": "No se pudo actualizar el voucher de seguridad",
             "error": error,
         }, 400
-    flag, error, rows_updated = update_history_voucher(
-        history, data["id_voucher_general"], data_token
+    flag, error, rows_updated = append_history_voucher(
+        data["id_voucher_general"], history_entry, data_token
     )
     if not flag:
         return {
@@ -383,26 +394,29 @@ def delete_voucher_safety_api(data, data_token):
             "msg": "No se pudieron eliminar los items del voucher",
             "error": error,
         }, 400
-    flag, error, rows_updated = delete_voucher_tools(data["id"], data_token)
+    # Antes borraba voucher_tools (tabla equivocada): la fila de voucher_safety quedaba.
+    flag, error, rows_updated = delete_voucher_safety(data["id"], data_token)
     if not flag:
         return {
             "data": None,
             "msg": "No se pudo eliminar el voucher de seguridad",
             "error": error,
         }, 400
-    history = data["history"]
+    # Append en BD (el `history` del body se ignora: reescribirlo pisaba entradas
+    # agregadas entretanto, p. ej. un anexo).
     time_zone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
-    history.append(
+    flag, error, result = append_history_voucher(
+        data["id"],
         {
             "id_voucher": data["id"],
             "type": 1,
             "timestamp": timestamp,
             "user": data_token.get("emp_id"),
             "comment": "Voucher eliminado",
-        }
+        },
+        data_token,
     )
-    flag, error, result = update_voucher_general_from_delete(data["id"], history, data_token)
     if not flag:
         return {
             "data": None,
@@ -602,7 +616,8 @@ def get_vouchers_vehicle_api(data, data_token):
     data_out = []
     for item in result:
         extra_info = json.loads(item[20])
-        accesories = json.loads(item[15]) if item[15] else []
+        # Tolera las filas viejas doble-codificadas (string con JSON adentro).
+        accesories = _chv_json_field(item[15], [])
         data_out.append(
             {
                 "id_voucher_general": item[0],
@@ -622,9 +637,7 @@ def get_vouchers_vehicle_api(data, data_token):
                 "registration_card": item[12],
                 "insurance": item[13],
                 "referendo": item[14],
-                "accessories": accesories
-                if isinstance(accesories, list)
-                else json.loads(accesories),
+                "accessories": accesories,
                 "vehicle_type": item[16],
                 "observations": item[17],
                 "items": json.loads(item[18]),
@@ -649,6 +662,27 @@ def _vehicle_contract_or_none(value):
     return contract if contract > 0 else None
 
 
+def _rollback_vehicle_voucher_create(id_voucher, data_token, vehicle_row=True):
+    """Deshace un alta de checklist vehicular a medias: items, fila de
+    voucher_vehicle (si llego a crearse) y la fila de vouchers_general, que sin
+    hijo queda huerfana e invisible para los GET. Best-effort: lo que falle se
+    anota en el log y el 400 del alta se responde igual."""
+    steps = [("items", lambda: delete_items_voucher(id_voucher, data_token))]
+    if vehicle_row:
+        steps.append(("voucher_vehicle", lambda: delete_voucher_vehicle(id_voucher, data_token)))
+    steps.append(("vouchers_general", lambda: delete_voucher_general(id_voucher, data_token)))
+    for name, step in steps:
+        flag, error, _ = step()
+        if not flag:
+            write_log_file(
+                log_file_sgi_chv,
+                f"Rollback del alta del voucher vehicular {id_voucher}: no se pudo borrar {name} ({error})",
+                data_token,
+            )
+            return False
+    return True
+
+
 def create_voucher_vehicle_api(data, data_token):
     time_zone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
@@ -662,14 +696,9 @@ def create_voucher_vehicle_api(data, data_token):
     )
     if not flag:
         return {"data": None, "msg": "No se pudo crear el voucher general", "error": error}, 400
-    try:
-        accessories = json.dumps(data["accessories"])
-    except Exception as e:
-        return {
-            "data": None,
-            "msg": "Error al procesar los datos de accesorios",
-            "error": str(e),
-        }, 400
+    # Lista tal cual: el controller hace el unico json.dumps. Antes se codificaba
+    # aqui tambien y la columna JSON guardaba un string con JSON adentro.
+    accessories = data["accessories"] or []
 
     flag, error, lastrowid_vehicle = create_voucher_vehicle(
         lastrowid,
@@ -689,7 +718,14 @@ def create_voucher_vehicle_api(data, data_token):
         data.get("observations"),
     )
     if not flag:
-        return {"data": None, "msg": "No se pudo crear el voucher vehicular", "error": error}, 400
+        # Rollback: sin la fila de voucher_vehicle, el vouchers_general recien
+        # creado seria un huerfano invisible para todos los GET (JOIN).
+        _rollback_vehicle_voucher_create(lastrowid, data_token, vehicle_row=False)
+        return {
+            "data": None,
+            "msg": "No se pudo crear el voucher vehicular; operación revertida",
+            "error": error,
+        }, 400
 
     history = [
         {
@@ -702,9 +738,10 @@ def create_voucher_vehicle_api(data, data_token):
     ]
     flag, error, rows_updated = update_history_voucher(history, lastrowid, data_token)
     if not flag:
+        _rollback_vehicle_voucher_create(lastrowid, data_token)
         return {
             "data": None,
-            "msg": "No se pudo actualizar el historial del voucher",
+            "msg": "No se pudo actualizar el historial del voucher; operación revertida",
             "error": error,
         }, 400
 
@@ -723,9 +760,7 @@ def create_voucher_vehicle_api(data, data_token):
             errors.append({"id_item": lastrowid_item, "error": error})
 
     if data["items"] and len(errors) == len(data["items"]):
-        delete_items_voucher(lastrowid, data_token)
-        delete_voucher_vehicle(lastrowid, data_token)
-        update_voucher_general_from_delete(lastrowid, json.dumps([]), data_token)
+        _rollback_vehicle_voucher_create(lastrowid, data_token)
         return {
             "data": None,
             "msg": "No se pudo crear ningún item del voucher vehicular; operación revertida",
@@ -756,14 +791,9 @@ def update_voucher_vehicle_api(data, data_token):
             "comment": "Voucher vehicular actualizado",
         }
     )
-    try:
-        accessories = json.dumps(data["accessories"])
-    except Exception as e:
-        return {
-            "data": None,
-            "msg": "Error al procesar los datos de accesorios",
-            "error": str(e),
-        }, 400
+    # Lista tal cual: el controller hace el unico json.dumps. Antes se codificaba
+    # aqui tambien y la columna JSON guardaba un string con JSON adentro.
+    accessories = data["accessories"] or []
     # Antes que el resto: si la FK rechaza el contrato, no queda nada a medias.
     flag, error, rows_changed = update_voucher_general_contract(
         data["id_voucher_general"], _vehicle_contract_or_none(data.get("contract")), data_token
@@ -844,23 +874,16 @@ def update_voucher_vehicle_api(data, data_token):
 
 
 def delete_voucher_vehicle_api(data, data_token):
-    time_zone = pytz.timezone(timezone_software)
-    time_older = datetime.now(pytz.utc).astimezone(time_zone) - timedelta(days=365)
-    timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
-    flag, error, voucher_data = get_vouchers_vehicle_with_items(
-        time_older, data_token, id_voucher=data["id"]
-    )
-    if not flag:
-        return {"data": None, "msg": "No se pudo obtener el voucher vehicular", "error": error}, 400
-    if not (isinstance(voucher_data, list) or isinstance(voucher_data, tuple)):
-        return {
-            "data": None,
-            "msg": "Error al obtener el voucher vehicular: resultado inesperado",
-            "error": str(voucher_data),
-        }, 400
-    status = voucher_data[0][21]
+    # Sin ventana de fecha: un checklist de mas de un año tambien se puede
+    # eliminar/cancelar (antes get_vouchers_vehicle_with_items con 365 dias).
+    payload_error, code, head = load_voucher("vehicle", data["id"], data_token)
+    if payload_error is not None:
+        return payload_error, code
+    status = head["status"]  # pyrefly: ignore
     if status == 0:
-        flag, error, result = delete_voucher_item(data["id"], data_token)
+        # Todos los items del voucher (antes delete_voucher_item borraba por
+        # id_item con el id del voucher: los items quedaban huerfanos).
+        flag, error, result = delete_items_voucher(data["id"], data_token)
         if not flag:
             return {
                 "data": None,
@@ -886,8 +909,10 @@ def delete_voucher_vehicle_api(data, data_token):
     time_zone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
 
-    history = json.loads(voucher_data[0][19])
-    history.append(
+    # Append en BD: no se lee ni se reescribe el history (sin carrera con una
+    # subida de anexo simultanea).
+    flag, error, rows_changed = append_history_voucher(
+        data["id"],
         {
             "id_voucher": data["id"],
             "type": 2,
@@ -896,11 +921,8 @@ def delete_voucher_vehicle_api(data, data_token):
             "comment": "Voucher vehicular eliminado"
             if status == 0
             else "Voucher vehicular cancelado",
-        }
-    )
-
-    flag, error, rows_changed = update_voucher_general_from_delete(
-        data["id"], json.dumps(history), data_token
+        },
+        data_token,
     )
     if not flag:
         return {
@@ -929,199 +951,27 @@ def delete_voucher_vehicle_api(data, data_token):
 
 
 def create_voucher_vehicle_attachment_api(data, data_token):
-    """{"filepath": filepath_download, "filename": filename}, data_token"""
-    filename = data["filename"]
-    id_voucher_name = filename.split("-")[0]
-    try:
-        if int(id_voucher_name) != int(data["id_voucher"]) and int(data["id_voucher"]) <= 0:
-            return {
-                "data": None,
-                "msg": "El nombre del archivo no corresponde al voucher",
-                "error": None,
-            }, 400
-    except Exception as e:
-        return {
-            "data": None,
-            "msg": "Error al procesar el nombre del archivo",
-            "error": str(e),
-        }, 400
-    time_zone = pytz.timezone(timezone_software)
-    timestamp = datetime.now(pytz.utc).astimezone(time_zone)
-    timestamp_year_ago = timestamp - timedelta(days=365)
-    flag, error, result = get_vouchers_vehicle_with_items(
-        timestamp_year_ago.strftime(format_date), data_token, data_token.get("emp_id")
-    )
-    if not flag:
-        return {
-            "data": None,
-            "msg": "No se pudo obtener el checklist vehicular",
-            "error": error,
-        }, 400
-    if not isinstance(result, list):
-        return {
-            "data": None,
-            "msg": "Error al obtener el checklist vehicular: resultado inesperado",
-            "error": str(result),
-        }, 400
-    voucher_data = []
-    for item in result:
-        if int(item[0]) == int(data["id_voucher"]):
-            voucher_data = item
-            break
-    if len(voucher_data) <= 0:
-        return {
-            "data": None,
-            "msg": "Voucher vehicular no encontrado",
-            "error": str(voucher_data),
-        }, 400
-    date_voucher = voucher_data[2]
-    history = json.loads(voucher_data[19])
-    filepath_down = data["filepath"]
-    file_extension = filepath_down.split(".")[-1].lower()
-    valid_extension = ["pdf", "jpg", "jpeg", "png", "zip", "webp"]
-    if file_extension not in valid_extension:
-        return {"data": None, "msg": "Formato de archivo no válido", "error": None}, 400
-    path_aws = f"checklistV/{date_voucher.strftime('%Y/%m/%d/')}{data['filename']}"
-    s3_client = boto3.client("s3")
-    bucket_name = secrets.get("S3_CH_BUCKET")
-    try:
-        s3_client.upload_file(Filename=filepath_down, Bucket=str(bucket_name), Key=path_aws)
-    except FileNotFoundError:
-        return {"data": None, "msg": "Archivo local no encontrado", "error": None}, 400
-    except NoCredentialsError:
-        return {"data": None, "msg": "Credenciales AWS no encontradas", "error": None}, 400
-    except ClientError as e:
-        error_code = e.response["Error"]["Code"]
-        if error_code == "NoSuchBucket":
-            return {"data": None, "msg": f"Bucket no existe: {bucket_name}", "error": str(e)}, 400
-        elif error_code == "AccessDenied":
-            return {
-                "data": None,
-                "msg": f"Acceso denegado al bucket: {bucket_name}",
-                "error": str(e),
-            }, 400
-        else:
-            return {"data": None, "msg": f"Error AWS: {str(e)}", "error": str(e)}, 400
-    msg = f"Archivo adjunto agregado: {filename} al voucher {data['id_voucher']} por el empleado {data_token.get('name')}"
-    status = voucher_data[21]
-    if "firma-aprobado" in filename.lower():
-        status = 1
-        msg += " y estado actualizado a (aprobado)"
-    if "firma-recibido" in filename.lower():
-        status = 2
-        msg += " y estado actualizado a (recibido)"
-    history.append(
-        {
-            "id_voucher": data["id_voucher"],
-            "type": 2,
-            "timestamp": timestamp.strftime(format_timestamps),
-            "user": data_token.get("emp_id"),
-            "comment": f"Archivo adjunto agregado: {path_aws}",
-        }
-    )
-    extra_info = json.loads(voucher_data[20])
-    files = extra_info.get("files", [])
-    files.append({"filename": data["filename"], "path": path_aws})
-    extra_info["files"] = files
-    flag, error, rows_updated = update_voucher_vehicle_files(
-        data["id_voucher"], history, extra_info, status, data_token
-    )
-    if not flag:
-        return {
-            "data": None,
-            "msg": "Error al actualizar el historial del voucher (archivo ya subido)",
-            "error": error,
-        }, 400
-    create_notification_permission_notGUI(
-        msg,
-        data_token,
-        ["administracion", "operaciones", "sgi"],
-        data_token.get("emp_id"),
-        0,
-    )
-    write_log_file(log_file_sgi_chv, msg, data_token)
-    return {"data": path_aws, "msg": msg, "error": None}, 201
+    """{"filepath": filepath_download, "filename": filename, "id_voucher": id}, data_token.
+    Receta compartida de los 3 tipos de vale (Functions_Aux_Vouchers, P-103)."""
+    return attach_voucher_file("vehicle", data, data_token)
 
 
 def download_voucher_vehicle_attachment_api(data, data_token):
-    time_zone = pytz.timezone(timezone_software)
-    timestamp = datetime.now(pytz.utc).astimezone(time_zone)
-    timestamp_year_ago = timestamp - timedelta(days=365)
-    flag, error, result = get_vouchers_vehicle_with_items(
-        timestamp_year_ago.strftime(format_date), data_token, data_token.get("emp_id")
-    )
-    if not flag:
-        return {
-            "data": None,
-            "msg": "No se pudo obtener el checklist vehicular",
-            "error": error,
-        }, 400
-    if not isinstance(result, list):
-        return {
-            "data": None,
-            "msg": "Error al obtener el checklist vehicular: resultado inesperado",
-            "error": str(result),
-        }, 400
-    voucher_data = []
-    for item in result:
-        if item[0] == data["id_voucher"]:
-            voucher_data = item
-            break
-    if len(voucher_data) <= 0:
-        return {
-            "data": None,
-            "msg": f"Voucher vehicular no encontrado (ID {data['id_voucher']})",
-            "error": str(voucher_data),
-        }, 400
-    extra_info = json.loads(voucher_data[20])
-    files = extra_info.get("files", [])
-    name_file = data["filename"]
-    flag_found = False
-    path_aws = ""
-    for file in files:
-        if file["filename"] == name_file:
-            flag_found = True
-            path_aws = file["path"]
-            break
-    if not flag_found:
-        return {"data": None, "msg": "Archivo no encontrado en el voucher", "error": None}, 400
-    s3_client = boto3.client("s3")
-    bucket_name = secrets.get("S3_CH_BUCKET")
-    try:
-        s3_client.download_file(Bucket=str(bucket_name), Key=path_aws, Filename=data["filepath"])
-    except FileNotFoundError:
-        return {"data": None, "msg": "Archivo local no encontrado", "error": None}, 400
-    except NoCredentialsError:
-        return {"data": None, "msg": "Credenciales AWS no encontradas", "error": None}, 400
-    except ClientError as e:
-        error_code = e.response["Error"]["Code"]
-        if error_code == "NoSuchBucket":
-            return {"data": None, "msg": f"Bucket no existe: {bucket_name}", "error": str(e)}, 400
-        elif error_code == "AccessDenied":
-            return {
-                "data": None,
-                "msg": f"Acceso denegado al bucket: {bucket_name}",
-                "error": str(e),
-            }, 400
-        elif error_code == "NoSuchKey":
-            return {
-                "data": None,
-                "msg": f"Archivo no encontrado en S3: {path_aws}",
-                "error": str(e),
-            }, 400
-        else:
-            return {
-                "data": None,
-                "msg": f"Error al descargar archivo: {str(e)}",
-                "error": str(e),
-            }, 400
-    return {"path": data["filepath"]}, 200
+    """{"id_voucher", "filename", "filepath"} -> ({"path"}, 200) | (envelope, 4xx).
+    Receta compartida (docs/vales_anexos_descarga_borrado.md)."""
+    return download_voucher_file("vehicle", data, data_token)
+
+
+def delete_voucher_vehicle_attachment_api(data, data_token):
+    """DELETE /voucher/vehicle/attachment-<id>: {"id_voucher", "filename", "reason"?}."""
+    return delete_voucher_file("vehicle", data, data_token)
 
 
 def _chv_json_field(value, default):
-    """Campo JSON del voucher vehicular: `accessories` llega doble-codificado
-    (un string JSON que contiene otro string JSON, así lo persiste el alta) y
-    `extra_info` simple — decodifica hasta dos veces y valida el tipo final."""
+    """Campo JSON del voucher vehicular. `accessories` de filas anteriores al
+    2026-10-09 puede venir doble-codificado (un string JSON que contiene otro
+    JSON; el alta lo codificaba dos veces) y `extra_info` simple: decodifica
+    hasta dos veces y valida el tipo final."""
     result = value
     for _ in range(2):
         if not isinstance(result, str):
@@ -1190,12 +1040,113 @@ def _chv_signature_from_files(files, marker, tmp_dir, data_token):
         return None
 
 
-def download_voucher_vehicle_pdf_api(id_voucher, data_token):
+_CHV_DRAWABLE_EXT = {"jpg", "jpeg", "png", "webp"}
+
+
+def _chv_build_attachments(files, tmp_dir, data_token):
+    """
+    Baja de S3 los anexos del checklist para la variante combinada (?full=1).
+    Los attachments vehiculares solo traen ``{filename, path}`` (sin categoria),
+    asi que se clasifican por nombre/extension:
+
+    - nombre con ``firma`` -> se omite (ya va incrustada en la pagina 1)
+    - ``pdf`` -> anexo (se concatena tal cual)
+    - ``jpg/jpeg/png/webp`` -> foto (hoja de EVIDENCIA FOTOGRAFICA)
+    - otra cosa (zip, ...) -> se omite
+
+    No fatal por archivo: una descarga fallida se omite + log.
+    :return: ``(anexos, photos)``, listas de ``{"path", "filename"}`` en orden de subida.
+    """
+    anexos, photos = [], []
+    s3_client = None
+    for idx, file in enumerate(files, start=1):
+        if not isinstance(file, dict) or not file.get("path"):
+            continue
+        filename = str(file.get("filename") or "")
+        ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
+        if "firma" in filename.lower():
+            continue
+        if ext == "pdf":
+            target = anexos
+        elif ext in _CHV_DRAWABLE_EXT:
+            target = photos
+        else:
+            continue
+        local_path = os.path.join(tmp_dir, f"att_{idx}_{os.path.basename(file['path'])}")
+        try:
+            if s3_client is None:
+                s3_client = boto3.client("s3")
+            s3_client.download_file(
+                Bucket=str(secrets.get("S3_CH_BUCKET")), Key=file["path"], Filename=local_path
+            )
+        except Exception as e:
+            write_log_file(
+                log_file_sgi_chv,
+                f"No se pudo descargar el anexo '{filename}' del checklist: {str(e)}",
+                data_token,
+            )
+            continue
+        target.append({"path": local_path, "filename": filename})
+    return anexos, photos
+
+
+def _chv_pdf_pages(path) -> int:
+    """Paginas de un PDF local (0 si no abre: la fusion tambien lo omitira)."""
+    import fitz
+
+    try:
+        with fitz.open(path) as doc:
+            return doc.page_count
+    except Exception:
+        return 0
+
+
+def _chv_assemble_full_pdf(checklist_path, anexos, photos_pdf_path, out_path, data_token):
+    """
+    Fusiona (PyMuPDF/fitz) la pagina del checklist + los anexos PDF tal cual +
+    la(s) hoja(s) de fotos. Mismo criterio que ``_assemble_remission_full_pdf``
+    (MD_Admin_Collections): no fatal por anexo, y si la fusion falla completa
+    devuelve el checklist solo (mejor un documento parcial que ninguno).
+    """
+    import fitz
+
+    try:
+        doc = fitz.open()
+        with fitz.open(checklist_path) as base:
+            doc.insert_pdf(base)
+        for anexo in anexos:
+            try:
+                with fitz.open(anexo["path"]) as adoc:
+                    doc.insert_pdf(adoc)
+            except Exception as e:
+                write_log_file(
+                    log_file_sgi_chv,
+                    f"No se pudo insertar el anexo '{anexo.get('filename')}' al checklist combinado: {str(e)}",
+                    data_token,
+                )
+        if photos_pdf_path:
+            with fitz.open(photos_pdf_path) as pdoc:
+                doc.insert_pdf(pdoc)
+        doc.save(out_path)
+        doc.close()
+        return out_path
+    except Exception as e:
+        write_log_file(
+            log_file_sgi_chv,
+            f"Error al fusionar el checklist combinado: {str(e)}",
+            data_token,
+        )
+        return checklist_path
+
+
+def download_voucher_vehicle_pdf_api(id_voucher, data_token, full: bool = False):
     """
     Genera el PDF del CHECK LIST VEHICULAR (FO-CDA-03 R3) de un voucher
     vehicular y devuelve la ruta local para `send_file`. Sin ventana de fecha:
     cualquier voucher existente es descargable. Las firmas se incrustan desde
-    S3 cuando existen (no fatal si faltan o fallan).
+    S3 cuando existen (no fatal si faltan o fallan). Con ``full=True`` agrega
+    los anexos PDF y la hoja de EVIDENCIA FOTOGRAFICA
+    (docs/checklist_vehicular_full_pdf.md).
     """
     flag, error, result = get_voucher_vehicle_by_id(id_voucher, data_token)
     if not flag:
@@ -1276,9 +1227,37 @@ def download_voucher_vehicle_pdf_api(id_voucher, data_token):
             "msg": "Error al generar el PDF del checklist vehicular",
             "error": str(e),
         }, 500
+    out_path = dict_data["filename_out"]
+    detail = ""
+    if full:
+        anexos, photos = _chv_build_attachments(files, tmp_dir, data_token)
+        photos_pdf_path = None
+        if photos:
+            photos_pdf_path = os.path.join(tmp_dir, f"checklist_vehicular_{id_voucher}_fotos.pdf")
+            try:
+                # La hoja de fotos numera sus paginas a continuacion del checklist y los anexos.
+                page_start = 1 + _chv_pdf_pages(out_path) + sum(_chv_pdf_pages(a["path"]) for a in anexos)
+                FileVehicleChecklistPhotosPDF(
+                    {**dict_data, "filename_out": photos_pdf_path, "photos": photos, "page_start": page_start}
+                )
+            except Exception as e:
+                write_log_file(
+                    log_file_sgi_chv,
+                    f"No se pudo generar la hoja de fotos del checklist {id_voucher}: {str(e)}",
+                    data_token,
+                )
+                photos_pdf_path = None
+        out_path = _chv_assemble_full_pdf(
+            out_path,
+            anexos,
+            photos_pdf_path,
+            os.path.join(tmp_dir, f"checklist_vehicular_{id_voucher}_completo.pdf"),
+            data_token,
+        )
+        detail = f" (combinado: {len(anexos)} anexo(s), {len(photos)} foto(s))"
     write_log_file(
         log_file_sgi_chv,
-        f"PDF del checklist vehicular {id_voucher} generado por el empleado {data_token.get('name')}",
+        f"PDF del checklist vehicular {id_voucher}{detail} generado por el empleado {data_token.get('name')}",
         data_token,
     )
-    return dict_data["filename_out"], 200
+    return out_path, 200

@@ -42,7 +42,7 @@ _bc_base_fields = {
     "contract_number": fields.String(required=False, description="Nº de contrato marco (default: contracts.code)", example="6700373484"),
     "pedido_exiros": fields.String(required=False, description="Pedido EXIROS", example="3716578048"),
     "start_date": fields.String(required=False, description="Inicio de vigencia YYYY-MM-DD", example="2026-03-09"),
-    "end_date": fields.String(required=False, description="Fin de vigencia YYYY-MM-DD", example="2027-03-08"),
+    "end_date": fields.String(required=False, description="Fin de vigencia YYYY-MM-DD. Solo en el POST; después cambia únicamente con POST /balanceControl/movement (new_end_date)", example="2027-03-08"),
     "plant": fields.String(required=False, description="Planta", example="San Nico"),
     "coordinator": fields.String(required=False, description="Coordinador responsable", example="Nombre del coordinador"),
     "contract_object": fields.String(required=False, description="Objeto del contrato", example="Cableado estructurado y accesorios"),
@@ -113,12 +113,22 @@ balance_control_movement_model = api.model(
     "BalanceControlMovement",
     {
         "id_control": fields.Integer(required=True, description="ID del control (activo)", example=6),
-        "type": fields.Integer(required=True, description="1 = INYECCION (amount > 0) · 2 = AJUSTE (amount != 0, negativo resta)", example=1),
-        "amount": fields.Float(required=True, description="Monto del movimiento; el saldo resultante nunca puede quedar < 0", example=250000.0),
-        "movement_date": fields.String(required=False, description="Fecha de la transacción YYYY-MM-DD (default hoy)", example="2026-09-17"),
+        "type": fields.Integer(required=True, description="1 = INYECCION (amount > 0) · 2 = AJUSTE (amount != 0, negativo resta) · 3 = VIGENCIA (solo new_end_date, sin amount)", example=1),
+        "amount": fields.Float(required=False, description="Monto del movimiento (obligatorio en 1/2, no va en 3); el saldo resultante nunca puede quedar < 0", example=250000.0),
+        "new_end_date": fields.String(required=False, description="Nueva fecha de fin de vigencia YYYY-MM-DD (obligatoria en 3, opcional en 1/2 = monto y fecha en una fila). Debe diferir de la actual y no ser anterior a start_date", example="2026-11-30"),
+        "movement_date": fields.String(required=False, description="Fecha en que el cliente hizo el cambio YYYY-MM-DD (default hoy); timestamp = cuándo se capturó", example="2026-09-17"),
         "reason": fields.String(required=False, description="Motivo", example="Adenda 2 al contrato"),
         "document": fields.String(required=False, description="Folio de pedido / adenda de respaldo", example="4500123456"),
         "expected_balance": fields.Float(required=False, description="Saldo que el front tenía en pantalla; si ya no coincide -> 409 (bloqueo optimista)", example=1250000.0),
+    },
+)
+
+balance_control_movement_put_model = api.model(
+    "BalanceControlMovementPut",
+    {
+        "id_movement": fields.Integer(required=True, description="ID del movimiento a corregir (su control debe estar activo)", example=12),
+        "movement_date": fields.String(required=False, description="Fecha de autorización corregida YYYY-MM-DD. Al menos uno de movement_date / reason debe venir", example="2026-09-16"),
+        "reason": fields.String(required=False, description="Motivo corregido; \"\" o null lo vacía. amount, type, new_end_date y cualquier otro campo se ignoran (inmutables)", example="Adenda 2 al contrato (corregido)"),
     },
 )
 
@@ -186,10 +196,19 @@ class BalanceControlCancelForm(Form):
 
 class BalanceControlMovementForm(Form):
     id_control = IntegerField("id_control", [InputRequired(message="id_control requerido")])
-    type = IntegerField("type", [InputRequired(message="type requerido"), AnyOf([1, 2], message="type debe ser 1 (INYECCION) o 2 (AJUSTE)")])
+    type = IntegerField("type", [InputRequired(message="type requerido"), AnyOf([1, 2, 3], message="type debe ser 1 (INYECCION), 2 (AJUSTE) o 3 (VIGENCIA)")])
     # Sin InputRequired: trata 0 como vacío; el midleware valida None / 0 con el mensaje correcto.
     amount = FloatField("amount", [], default=None)
+    new_end_date = StringField("new_end_date", [], default="")
     movement_date = StringField("movement_date", [], default="")
     reason = StringField("reason", [], default="")
     document = StringField("document", [], default="")
     expected_balance = FloatField("expected_balance", [], default=None)
+
+
+class BalanceControlMovementPutForm(Form):
+    """Solo movement_date / reason; el midleware decide con el JSON crudo qué llaves
+    vinieron (una llave ausente no cambia nada). Cualquier otra llave se ignora."""
+    id_movement = IntegerField("id_movement", [InputRequired(message="id_movement requerido")])
+    movement_date = StringField("movement_date", [], default="")
+    reason = StringField("reason", [], default="")

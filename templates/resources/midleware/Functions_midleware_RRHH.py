@@ -4,10 +4,9 @@ from datetime import timedelta
 __author__ = "Edisson Naula"
 __date__ = "$ 28/jun./2024  at 16:28 $"
 
+import io
 import json
 import os
-import re
-import tempfile
 import uuid
 import zipfile
 from datetime import datetime
@@ -20,10 +19,7 @@ from botocore.exceptions import BotoCoreError, ClientError, NoCredentialsError
 from static.constants import (
     cache_file_emp_fichaje,
     cache_file_resume_fichaje_path,
-    conversion_quizzes_path,
-    file_temp_zip,
     filepath_fichaje_temp,
-    filepath_recommendations,
     filepath_settings,
     format_date,
     format_date_fichaje_file,
@@ -47,13 +43,15 @@ from templates.controllers.employees.employees_controller import (
     new_employee,
     terminate_employee_db,
     update_employee,
+    test_id_employee,
 )
 from templates.controllers.employees.us_controller import get_user_by_emp_id
-from templates.resources.methods.Functions_Aux_RH import last_medical_date, medical_due
+from templates.resources.methods.Functions_Aux_RH import join_emails, last_medical_date, medical_due, normalize_emails, split_emails
 from templates.controllers.notifications.Notifications_controller import (
     insert_notification,
 )
 from templates.controllers.employees.vacations_controller import (
+    get_vacations_data_emp,
     insert_vacation,
     update_registry_vac,
 )
@@ -62,6 +60,7 @@ from templates.controllers.misc.tasks_controller import (
     get_task_by_id_emp,
     update_task,
 )
+from templates.controllers.rrhh.quizz_models_controller import get_quizz_model_names_db
 from templates.controllers.payroll.payroll_controller import (
     get_payrolls,
     update_payroll,
@@ -117,7 +116,21 @@ class GraceMinutes:
         return self.minutes
 
 
+def _employee_email_column(info: dict):
+    """Correos del alta/edicion -> (string para employees.email, envelope 400 | None).
+    Toma `emails` (lista) si viene con algo; si no, `email` (string, puede traer comas).
+    Sin correos es valido (cadena vacia); un token que no es correo -> 400 listandolo."""
+    raw = info.get("emails") or info.get("email") or ""
+    valid, invalid = normalize_emails(raw)
+    if invalid:
+        return None, {"data": None, "msg": "Correo inválido", "error": [f"emails: {tok} no es un correo válido" for tok in invalid]}
+    return join_emails(valid), None
+
+
 def create_new_employee_db(data, data_token):
+    email_column, err = _employee_email_column(data["info"])
+    if err:
+        return err, 400
     flag, error, result = new_employee(
         data["info"]["name"],
         data["info"]["lastname"],
@@ -134,7 +147,7 @@ def create_new_employee_db(data, data_token):
         data["info"]["departure"],
         data["info"]["birthday"],
         data["info"]["legajo"],
-        data["info"]["email"],
+        email_column,
         data["info"]["emergency"],
         data_token,
         data["info"]["id_leader"],
@@ -146,6 +159,9 @@ def create_new_employee_db(data, data_token):
 
 
 def update_employee_db(data, data_token):
+    email_column, err = _employee_email_column(data["info"])
+    if err:
+        return err, 400
     flag, error, result = update_employee(
         data["id"],
         data["info"]["name"],
@@ -163,7 +179,7 @@ def update_employee_db(data, data_token):
         data["info"]["departure"],
         data["info"]["birthday"],
         data["info"]["legajo"],
-        data["info"]["email"],
+        email_column,
         data["info"]["emergency"],
         data_token,
         data["info"]["id_leader"],
@@ -582,32 +598,58 @@ def update_data_docs_nomina(data_token, patterns=None, use_index=False):
     return results
 
 
+def _payroll_index_keys(files_data) -> set:
+    """Todas las keys S3 (hojas str) del indice files_data de un empleado."""
+    keys, stack = set(), [files_data]
+    while stack:
+        node = stack.pop()
+        if isinstance(node, dict):
+            stack.extend(node.values())
+        elif isinstance(node, str) and node:
+            keys.add(node)
+    return keys
+
+
 def download_nomina_docs(data, data_token):
-    """Descarga el pdf y xml de nomina desde el bucket S3 de RH (data['pdf'] y
-    data['xml'] son keys S3, ej. payroll/<year>/<month>/<emp_id>/<filename>) y
-    los empaqueta en un zip. Migrado desde SharePoint."""
+    """POST /common/payroll/employee/file: zip en memoria con el pdf y/o el xml
+    de un recibo (keys S3, ej. payroll/<year>/<month>/<emp_id>/<filename>).
+    Basta uno de los dos. Cada key debe estar en el indice del `emp_id` pedido:
+    el token solo prueba que quien pide es ese empleado o RH, no que la key sea
+    suya. -> (BytesIO, 200) | (envelope, 4xx). Ver docs/nomina_descarga_recibo.md."""
+    requested = []
+    for key in (data.get("pdf"), data.get("xml")):
+        key = (key or "").strip()
+        if key and key not in requested:
+            requested.append(key)
+    if not requested:
+        return {"data": None, "msg": "Indica el pdf o el xml del recibo", "error": "pdf y xml vacíos"}, 400
+    files_data, error = _load_payroll_index(data["emp_id"], data_token)
+    if files_data is None:
+        return {"data": None, "msg": f"El empleado {data['emp_id']} no tiene registro de nómina", "error": error}, 404
+    owned = _payroll_index_keys(files_data)
+    foreign = [key for key in requested if key not in owned]
+    if foreign:
+        return {
+            "data": None,
+            "msg": "El archivo no está entre los recibos del empleado (pudo haberse reemplazado o eliminado)",
+            "error": foreign,
+        }, 404
     bucket_name = secrets.get("S3_RH_BUCKET")
     s3_client = boto3.client("s3")
-    tmp_dir = tempfile.mkdtemp()
-    downloaded = []
-    for key in [data.get("pdf"), data.get("xml")]:
-        if not key:
-            continue
-        local_path = os.path.join(tmp_dir, os.path.basename(key))
-        try:
-            s3_client.download_file(Bucket=str(bucket_name), Key=key, Filename=local_path)
-            downloaded.append(local_path)
-        except (NoCredentialsError, ClientError, FileNotFoundError) as e:
-            print(f"Error al descargar nomina desde S3 (key {key}): {e}")
-            continue
-    if len(downloaded) == 0:
+    buffer = io.BytesIO()
+    written = 0
+    with zipfile.ZipFile(buffer, "w") as zipf:
+        for key in requested:
+            try:
+                obj = s3_client.get_object(Bucket=str(bucket_name), Key=key)
+                zipf.writestr(os.path.basename(key), obj["Body"].read())
+                written += 1
+            except (NoCredentialsError, ClientError, BotoCoreError) as e:
+                print(f"Error al descargar nomina desde S3 (key {key}): {e}")
+    if written == 0:
         return {"data": None, "msg": "No se pudieron descargar los archivos de nómina", "error": "Ningún archivo descargado desde S3"}, 400
-    with zipfile.ZipFile(file_temp_zip, "w") as zipf:
-        for path in downloaded:
-            zipf.write(path, arcname=os.path.basename(path))
-    if not os.path.exists(file_temp_zip):
-        return {"data": None, "msg": "Error al generar el archivo ZIP de nómina", "error": "El archivo ZIP no fue creado"}, 400
-    return file_temp_zip, 200
+    buffer.seek(0)
+    return buffer, 200
 
 
 def get_files_list_nomina_RH(emp_id, data_token):
@@ -687,33 +729,69 @@ def update_medical_db(data, data_token):
         return {"data": None, "msg": "No se pudo actualizar el registro médico", "error": error}, 400
 
 
-def insert_new_vacation(data, data_token):
+def _seniority_from_form(items: list) -> dict:
+    # Mismo shape para alta y edicion: los GET de vacaciones leen `prima` de
+    # cada periodo (antes el alta la descartaba).
     seniority_dict = {}
-    for item in data["seniority"]:
-        seniority_dict[str(item["year"])] = {
-            "status": item["status"],
-            "comentarios": item["comentarios"],
-            "dates": item.get("dates", []),
-        }
-    if not len(seniority_dict) > 0:
-        return False, "No hay informacion que insertar", None
-    flag, error, result = insert_vacation(data["emp_id"], seniority_dict, data_token=data_token)
-    return flag, error, result
-
-
-def update_vacation(data, data_token):
-    seniority_dict = {}
-    for item in data["seniority"]:
+    for item in items:
         seniority_dict[str(item["year"])] = {
             "status": item["status"],
             "comentarios": item["comentarios"],
             "prima": item["prima"],
-            "dates": item["dates"],
+            "dates": item.get("dates", []),
         }
+    return seniority_dict
+
+
+def insert_new_vacation(data, data_token):
+    seniority_dict = _seniority_from_form(data["seniority"])
     if not len(seniority_dict) > 0:
-        return False, "No hay informacion que actualizar o corrupcion de info.", None
-    flag, error, result = update_registry_vac(data["emp_id"], seniority_dict, data_token)
-    return flag, error, result
+        return {"data": None, "msg": "No hay informacion que insertar", "error": None}, 400
+    emp_id = data["emp_id"]
+    flag, error, result = insert_vacation(emp_id, seniority_dict, data_token=data_token)
+    if not flag:
+        if "Duplicate entry" in error:
+            return {
+                "data": None,
+                "msg": "El empleado ya tiene registro de vacaciones; usa PUT para actualizarlo",
+                "error": error,
+            }, 409
+        return {"data": None, "msg": "No se pudieron registrar las vacaciones", "error": error}, 400
+    # `vacations` no tiene autoincremental (PK = emp_id): lastrowid siempre es 0.
+    return {
+        "data": {"id_vacation": emp_id},
+        "msg": f"Vacaciones registradas correctamente (ID {emp_id})",
+        "error": None,
+    }, 201
+
+
+def update_vacation(data, data_token):
+    seniority_dict = _seniority_from_form(data["seniority"])
+    if not len(seniority_dict) > 0:
+        return {
+            "data": None,
+            "msg": "No hay informacion que actualizar o corrupcion de info.",
+            "error": None,
+        }, 400
+    emp_id = data["emp_id"]
+    # rowcount 0 no distingue "no existe" de "sin cambios": se consulta antes.
+    flag, error, current = get_vacations_data_emp(emp_id, data_token)
+    if not flag:
+        return {"data": None, "msg": "No se pudieron actualizar las vacaciones", "error": error}, 400
+    if not current:
+        return {
+            "data": None,
+            "msg": f"No existe registro de vacaciones para el empleado {emp_id}",
+            "error": None,
+        }, 404
+    flag, error, result = update_registry_vac(emp_id, seniority_dict, data_token)
+    if not flag:
+        return {"data": None, "msg": "No se pudieron actualizar las vacaciones", "error": error}, 400
+    return {
+        "data": {"id_vacation": emp_id},
+        "msg": f"Vacaciones actualizadas correctamente (ID {emp_id})",
+        "error": None,
+    }, 200
 
 
 def get_all_quizzes(data_token):
@@ -735,18 +813,49 @@ def get_all_quizzes(data_token):
     return True, "", data_out
 
 
+def _quizz_names_by_type(data_token) -> dict:
+    """{type_q: name} de quizz_models (cualquier status). Vacio si falla la lectura."""
+    flag, _error, rows = get_quizz_model_names_db(data_token)
+    if not flag or not isinstance(rows, list):
+        return {}
+    names = {}
+    for row in rows:
+        try:
+            names[int(row[0])] = row[1]
+        except (TypeError, ValueError):
+            continue
+    return names
+
+
 def get_task_by_id_employee(id_emp: int, data_token):
+    """GET /rrhh/task/<emp_id>. Enriquece `body.metadata.quizz_name` en lectura
+    con el nombre del modelo (`quizz_models.name` por `type_quizz`): el empleado
+    no tiene permiso para el catalogo de modelos y el front solo conocia de
+    memoria los tipos 0-4 (docs/quizz_models_versionado.md, Notas posteriores).
+    `null` si el modelo ya no existe o la tarea no trae type_quizz."""
     flag, error, result = get_task_by_id_emp(id_emp, data_token)
     if not flag:
         return {"data": None, "msg": "Error al obtener las tareas", "error": error}, 400
     if not (isinstance(result, list) or isinstance(result, tuple)):
         return {"data": None, "msg": "Formato de datos inválido", "error": f"no tasks {result}"}, 400
+    names = _quizz_names_by_type(data_token) if result else {}
     data_out = []
     for item in result:
+        body = json.loads(item[1])
+        if isinstance(body, dict):
+            metadata = body.get("metadata")
+            if not isinstance(metadata, dict):
+                metadata = {}
+                body["metadata"] = metadata
+            try:
+                type_q = int(metadata.get("type_quizz"))  # pyrefly: ignore
+            except (TypeError, ValueError):
+                type_q = None
+            metadata["quizz_name"] = names.get(type_q) if type_q is not None else None
         data_out.append(
             {
                 "id": item[0],
-                "body": json.loads(item[1]),
+                "body": body,
                 "data_raw": json.loads(item[2]),
                 "timestamp": item[3].strftime(format_timestamps)
                 if isinstance(item[3], datetime)
@@ -863,136 +972,6 @@ def get_quizz_group_evaluation(type_q, data_token, date_from=None, date_to=None)
     if evaluation is not None and evaluation.get("respondents") == 0:
         msg = f"Sin encuestas contestadas del tipo {type_q} en el rango solicitado"
     return {"data": evaluation, "msg": msg, "error": None}, 200
-
-
-# DEPRECADO: `recommendations_results_quizzes` y `calculate_results_quizzes`
-# fueron reemplazadas por el motor config-driven en
-# `templates/resources/midleware/quizz_eval_engine.py`. Ya no se llaman desde
-# ningun lado (grep confirma). Removibles en un follow-up de limpieza.
-def recommendations_results_quizzes(dict_results: dict, tipo_q: int):
-    # Asumiendo que tienes la ruta correcta en filepath_recommendations
-    dict_conversions_recomen = json.load(open(filepath_recommendations, encoding="utf-8"))
-    dict_recommendations = {
-        "c_final_r": "",
-        "c_dom_r": "",
-        "c_cat_r": "",
-    }
-
-    # Asumiendo que dict_results contiene las claves 'c_final', 'c_dom', 'c_cat'
-    # y que pueden tener valores como 'MUY ALTO', 'ALTO', 'MEDIO', 'BAJO', 'NULO'.
-
-    # Acceder a las recomendaciones basadas en el resultado final, dominio, y categoría
-    final_score = dict_results.get(
-        "c_final", "NULO"
-    )  # Usar NULO como valor por defecto si no se encuentra
-    dom_score = dict_results.get("c_dom", "default_dom")  # Usar un valor por defecto
-    cat_score = dict_results.get("c_cat", "default_cat")  # Usar un valor por defecto
-
-    # Acceder a las recomendaciones finales
-    dict_recommendations["c_final_r"] = dict_conversions_recomen["c_final_r"].get(
-        final_score, ["No hay recomendaciones específicas."]
-    )
-    print(dict_results)
-    # Aquí necesitas modificar el código según cómo desees manejar las recomendaciones de dominio y categoría
-    # dado que en tu JSON 'c_dom_r' es solo una cadena, puedes necesitar un enfoque diferente o más información
-    # Si 'c_dom_r' debería ser una estructura similar a 'c_final_r', ajusta tu JSON y tu código en consecuencia
-    print(cat_score)
-    # check max score cat
-    max_cat_score = ""
-    maxv = 0
-    for k, v in cat_score.items():
-        if maxv < v:
-            maxv = v
-            max_cat_score = k
-    # Acceder a las recomendaciones de categoría
-    if max_cat_score in dict_conversions_recomen["c_cat_r"]:
-        dict_recommendations["c_cat_r"] = dict_conversions_recomen["c_cat_r"][max_cat_score]
-    else:
-        dict_recommendations["c_cat_r"] = [
-            "No hay recomendaciones específicas para esta categoría."
-        ]
-
-    return dict_recommendations
-
-
-def calculate_results_quizzes(dict_quizz: dict, tipo_q: int):
-    dict_results = {"c_final": 0, "c_dom": 0, "c_cat": 0, "detail": {}}
-    dict_conversions = json.load(open(conversion_quizzes_path, encoding="utf-8"))
-    match tipo_q:
-        case 1:
-            dict_values = dict_conversions["norm035"]["v1"]["conversion"]
-            c_final = 0
-            for question in dict_quizz.values():
-                if question["items"] != "":
-                    upper_limit = question["items"][1]
-                    lower_limit = question["items"][0]
-                    answers = question["answer"]
-                    for q in range(lower_limit, upper_limit + 1):
-                        for group in dict_values.values():
-                            items = group["items"]
-                            values = group["values"]
-                            if q in items:
-                                res = values[answers[q - lower_limit][1]]
-                                dict_results["detail"][str(q)] = res
-                                c_final += res
-                                break
-            dict_results["c_final"] = c_final
-            dict_cat_doms = dict_conversions["norm035"]["v1"]["categorias"]
-            dict_results["c_dom"] = {}
-            dict_results["c_cat"] = {}
-
-            for cat_dic in dict_cat_doms.values():
-                cat_name = cat_dic["categoria"]
-                dict_results["c_cat"][cat_name] = 0
-                for dom_name, dom_dic in cat_dic["dominio"].items():
-                    dict_results["c_dom"][dom_name] = 0
-                    for dim_dic in dom_dic["dimensiones"]:
-                        dim_name = dim_dic["dimension"]
-                        items = dim_dic["item"]
-                        for q, val in dict_results["detail"].items():
-                            if int(q) in items:
-                                dict_results["c_dom"][dom_name] += val
-                                dict_results["c_cat"][cat_name] += val
-        case 2:
-            dict_values = dict_conversions["norm035"]["v2"]["conversion"]
-            c_final = 0
-            for question in dict_quizz.values():
-                if question["items"] != "":
-                    upper_limit = question["items"][1]
-                    lower_limit = question["items"][0]
-                    answers = question["answer"]
-                    for q in range(lower_limit, upper_limit + 1):
-                        for group in dict_values.values():
-                            items = group["items"]
-                            values = group["values"]
-                            if q in items:
-                                res = values[answers[q - lower_limit][1]]
-                                dict_results["detail"][str(q)] = res
-                                c_final += res
-                                break
-            dict_results["c_final"] = c_final
-            dict_cat_doms = dict_conversions["norm035"]["v2"]["categorias"]
-            dict_results["c_dom"] = {}
-            dict_results["c_cat"] = {}
-            dict_results["c_dim"] = {}
-            for cat_dic in dict_cat_doms.values():
-                cat_name = cat_dic["categoria"]
-                dict_results["c_cat"][cat_name] = 0
-                for dom_name, dom_dic in cat_dic["dominio"].items():
-                    dict_results["c_dom"][dom_name] = 0
-                    for dim_dic in dom_dic["dimensiones"]:
-                        dim_name = dim_dic["dimension"]
-                        items = dim_dic["item"]
-                        dict_results["c_dim"][dim_name] = 0
-                        for q, val in dict_results["detail"].items():
-                            if int(q) in items:
-                                # print("calculate: ", q, items)
-                                dict_results["c_dom"][dom_name] += val
-                                dict_results["c_cat"][cat_name] += val
-                                dict_results["c_dim"][dim_name] += val
-        case _:
-            pass
-    return dict_results
 
 
 def _legacy_shape_from_evaluation(evaluation):
@@ -1341,6 +1320,18 @@ def notify_payroll_file_api(data, data_token):
     if period is None:
         return {"data": None, "msg": err, "error": None}, 400
     emp_id, year, month, key = period
+    # Solo empleados activos (junta 2026-10-22): un inactivo o con status NULL no se notifica
+    # por ningun canal; la subida de archivos si sigue aceptandolos.
+    flag_e, _err_e, emp_row = test_id_employee(int(emp_id), data_token)
+    if not flag_e or not isinstance(emp_row, (list, tuple)) or len(emp_row) == 0:
+        return {"data": None, "msg": f"No existe el empleado {emp_id}", "error": "empleado no encontrado"}, 404
+    emp_status = str(emp_row[1]).strip().lower() if emp_row[1] is not None else ""
+    if emp_status != "activo":
+        return {
+            "data": {"emp_id": emp_id, "status": emp_row[1]},
+            "msg": f"El empleado {emp_id} está inactivo (status {emp_row[1]!r}); la nómina solo se notifica a activos",
+            "error": ["empleado inactivo"],
+        }, 400
     channels = data.get("channels") or ["app"]
     channels = [str(c).strip().lower() for c in channels if str(c).strip()]
     invalid = [c for c in channels if c not in _PAYROLL_NOTIFY_CHANNELS]
@@ -1442,26 +1433,14 @@ def notify_payroll_file_api(data, data_token):
     }, 201
 
 
-def _first_email(raw) -> str | None:
-    """employees.email viene sucio en la BD ('X@GMAIL.COM,', ',', 'a@x; b@y'):
-    primer token con '@'; None si no hay ninguno. Solo se baja a minusculas el
-    DOMINIO: SES compara la parte local tal cual contra las identidades
-    verificadas (en sandbox 'Software@x' != 'software@x' -> MessageRejected)."""
-    for token in re.split(r"[,;\s]+", str(raw or "")):
-        token = token.strip().strip(",;")
-        if "@" in token and "." in token.split("@")[-1]:
-            local, domain = token.rsplit("@", 1)
-            return f"{local}@{domain.lower()}"
-    return None
-
-
 def _send_payroll_email(emp_id, key, month, year, entry: dict, message: str, data_token):
     """Correo SES al empleado con el pdf/xml del recibo adjuntos (leidos de
-    S3_RH_BUCKET). -> (email_to, error | None). Nunca truena."""
+    S3_RH_BUCKET), a TODOS sus correos. -> (email_to: list | None, error | None). Nunca truena."""
     flag, error, row, _cols = get_employee_info(emp_id, data_token)
     if not flag:
         return None, f"no se pudo consultar el empleado ({error})"
-    email_to = _first_email(row[7] if isinstance(row, (list, tuple)) and len(row) > 7 else None)  # pyrefly: ignore
+    # Todos los correos del empleado (lista en employees.email; junta 2026-10-22).
+    email_to = split_emails(row[7] if isinstance(row, (list, tuple)) and len(row) > 7 else None)  # pyrefly: ignore
     if not email_to:
         return None, f"el empleado {emp_id} no tiene correo registrado"
     attachments = []
@@ -1483,7 +1462,7 @@ def _send_payroll_email(emp_id, key, month, year, entry: dict, message: str, dat
         f"{message}\n\nSe adjuntan los archivos de tu recibo de nómina {key} ({month}/{year}).\n"
         "Este correo se genera automáticamente desde el sistema de Telintec; no respondas a este mensaje."
     )
-    ok, error, _message_id = send_email_ses([email_to], subject, body, attachments)
+    ok, error, _message_id = send_email_ses(email_to, subject, body, attachments)
     return email_to, (None if ok else error)
 
 

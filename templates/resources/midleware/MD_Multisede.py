@@ -2,8 +2,9 @@
 """
 Multisede de almacén — orquestación del lado PRINCIPAL (rutas en rs_Almacen.py):
 catálogo de sedes (F1), inventario consolidado (F1), traslados (F3: crear,
-cancelar, listar, detalle). El lado sede vive en MD_Sucursal.py (F2 movimientos,
-F3 recepción). Plan: docs/almacen_multisede_plan.md.
+cancelar, listar, detalle; resolver diferencias: docs/almacen_multisede_resolve.md).
+El lado sede vive en MD_Sucursal.py (F2 movimientos, F3 recepción).
+Plan: docs/almacen_multisede_plan.md.
 
 Reglas:
   * Exactamente una sede con is_main=1 (nace del seed); la API no crea ni
@@ -51,7 +52,14 @@ WH_TRANSFER_STATUS = {
     1: "RECIBIDO",
     2: "RECIBIDO CON DIFERENCIAS",
     3: "CANCELADO",
+    4: "DIFERENCIA RESUELTA",  # el principal ya resolvió cada faltante (reingreso | merma)
 }
+# Status en los que la sede ya confirmó: items.quantity_received tiene valor.
+_RECEIVED_STATUSES = (1, 2, 4)
+# Acciones para resolver un faltante (PUT /almacen/transfer/<id>/resolve).
+RESOLVE_ACTIONS = ("reingreso", "merma")
+TRANSFERS_DEFAULT_LIMIT = 200
+TRANSFERS_MAX_LIMIT = 2000
 
 _PERMISSIONS = ["almacen"]
 
@@ -63,9 +71,18 @@ def _now_ts():
 
 
 def _json_safe(value):
-    if isinstance(value, (datetime, date)):
+    """datetime -> format_timestamps (con espacio, nunca la 'T' de isoformat);
+    date -> YYYY-MM-DD. Lo comparten sedes, traslados y movimientos de sede."""
+    if isinstance(value, datetime):
+        return value.strftime(format_timestamps)
+    if isinstance(value, date):
         return value.isoformat()
     return value
+
+
+def _clean_udm(value):
+    """products_amc.udm trae espacios al final ('PIEZA '): se entrega sin ellos."""
+    return value.strip() if isinstance(value, str) else value
 
 
 def _load_json(value, default):
@@ -338,9 +355,9 @@ def _enrich_transfer_items(transfer: dict, data_token) -> dict:
     brief = {}
     if flag and isinstance(rows, list):
         for row in rows:
-            brief[int(row[0])] = {"sku": row[1], "name": row[2], "udm": row[3]}
+            brief[int(row[0])] = {"sku": row[1], "name": row[2], "udm": _clean_udm(row[3])}
     total_sent = total_received = 0.0
-    with_diff = 0
+    with_diff = resolved = 0
     enriched = []
     for item in items:
         pid = item.get("id_product")
@@ -351,6 +368,9 @@ def _enrich_transfer_items(transfer: dict, data_token) -> dict:
         difference = (received_f - sent) if received_f is not None else None
         if difference:
             with_diff += 1
+        resolution = item.get("resolution") if isinstance(item.get("resolution"), dict) else None
+        if resolution is not None:
+            resolved += 1
         total_sent += sent
         total_received += received_f or 0
         enriched.append(
@@ -364,14 +384,17 @@ def _enrich_transfer_items(transfer: dict, data_token) -> dict:
                 "difference": difference,
                 "comment": item.get("comment") or "",
                 "receive_comment": item.get("receive_comment") or "",
+                # {action, quantity, comment, movement_id, user, timestamp} al resolver; None si no aplica
+                "resolution": resolution,
             }
         )
     transfer["items"] = enriched
     transfer["totals"] = {
         "items": len(enriched),
         "quantity_sent": total_sent,
-        "quantity_received": total_received if transfer.get("status") in (1, 2) else None,
+        "quantity_received": total_received if transfer.get("status") in _RECEIVED_STATUSES else None,
         "items_with_difference": with_diff,
+        "items_resolved": resolved,
     }
     return transfer
 
@@ -659,7 +682,7 @@ def _parse_transfer_filters(params):
         except (TypeError, ValueError):
             return None, f"status inválido: {status}"
         if filters["status"] not in WH_TRANSFER_STATUS:
-            return None, f"status inválido: {status} (0..3)"
+            return None, f"status inválido: {status} (0..{max(WH_TRANSFER_STATUS)})"
     for key in ("id_warehouse_dest", "id_warehouse_origin"):
         value = params.get(key)
         if value not in (None, ""):
@@ -672,25 +695,47 @@ def _parse_transfer_filters(params):
         if value:
             filters[key] = value
     limit = params.get("limit")
+    filters["limit"] = TRANSFERS_DEFAULT_LIMIT
     if limit not in (None, ""):
         try:
-            filters["limit"] = max(1, min(int(limit), 2000))
+            filters["limit"] = max(1, min(int(limit), TRANSFERS_MAX_LIMIT))
         except (TypeError, ValueError):
             return None, f"limit inválido: {limit}"
     return filters, None
 
 
+def query_transfers(filters: dict, data_token):
+    """Listado con aviso de recorte (mismo patrón que el kardex,
+    docs/almacen_kardex_ventana.md): se pide `limit + 1` a la BD y si vuelve
+    la fila de más, `meta.truncated`. -> (transfers enriquecidos, meta, None)
+    o (None, None, error)."""
+    limit = int(filters.get("limit") or TRANSFERS_DEFAULT_LIMIT)
+    flag, error, rows = get_transfers_db({**filters, "limit": limit + 1}, data_token)
+    if not flag:
+        return None, None, error
+    rows = rows if isinstance(rows, list) else []
+    truncated = len(rows) > limit
+    rows = rows[:limit]
+    data_out = [_enrich_transfer_items(_row_to_transfer(r), data_token) for r in rows]
+    meta = {"limit": limit, "returned": len(data_out), "truncated": truncated}
+    return data_out, meta, None
+
+
 def fetch_transfers_api(params, data_token):
-    """GET /almacen/transfers?status=&id_warehouse_dest=&date_from=&date_to=&limit=."""
+    """GET /almacen/transfers?status=&id_warehouse_dest=&date_from=&date_to=&limit=.
+    `meta: {limit, returned, truncated}` avisa si el tope recortó."""
     filters, err = _parse_transfer_filters(params)
     if filters is None:
         return {"data": None, "msg": err, "error": None}, 400
-    flag, error, rows = get_transfers_db(filters, data_token)
-    if not flag:
+    data_out, meta, error = query_transfers(filters, data_token)
+    if data_out is None or meta is None:
         return {"data": None, "msg": "Error al consultar los traslados", "error": error}, 400
-    rows = rows if isinstance(rows, list) else []
-    data_out = [_enrich_transfer_items(_row_to_transfer(r), data_token) for r in rows]
-    return {"data": data_out, "msg": f"{len(data_out)} traslados", "error": None}, 200
+    return {
+        "data": data_out,
+        "meta": meta,
+        "msg": f"{len(data_out)} traslados" + (" (recortado al tope)" if meta["truncated"] else ""),
+        "error": None,
+    }, 200
 
 
 def get_transfer_api(id_transfer, data_token):
@@ -699,3 +744,172 @@ def get_transfer_api(id_transfer, data_token):
     if transfer is None:
         return err, code
     return {"data": _enrich_transfer_items(transfer, data_token), "msg": None, "error": None}, 200
+
+
+# --- Resolver diferencias (P-047, docs/almacen_multisede_resolve.md) ----------
+def _parse_resolve_items(raw_items, pending: dict):
+    """Valida items del resolve: [{id_product, action, comment?}]. Debe venir
+    exactamente el conjunto de productos con faltante (`pending`: id ->
+    cantidad faltante), sin extras ni repetidos, con action en RESOLVE_ACTIONS.
+    -> ({id_product: {action, comment}}, None) | (None, msg)."""
+    if not isinstance(raw_items, list) or not raw_items:
+        return None, "items debe ser una lista con la acción por producto faltante"
+    parsed = {}
+    for idx, raw in enumerate(raw_items):
+        if not isinstance(raw, dict):
+            return None, f"items[{idx}] debe ser un objeto {{id_product, action, comment?}}"
+        pid_raw = raw.get("id_product")
+        action = str(raw.get("action") or "").strip().lower()
+        if pid_raw is None or not action:
+            return None, f"items[{idx}]: id_product y action son obligatorios"
+        try:
+            pid = int(pid_raw)
+        except (TypeError, ValueError):
+            return None, f"items[{idx}]: id_product debe ser numérico"
+        if action not in RESOLVE_ACTIONS:
+            return None, f"items[{idx}] (producto {pid}): action inválida '{action}' ({' | '.join(RESOLVE_ACTIONS)})"
+        if pid in parsed:
+            return None, f"El producto {pid} viene repetido en items"
+        parsed[pid] = {"action": action, "comment": str(raw.get("comment") or "").strip()}
+    missing = sorted(set(pending) - set(parsed))
+    extra = sorted(set(parsed) - set(pending))
+    if missing or extra:
+        parts = []
+        if missing:
+            parts.append(f"faltan los productos con diferencia {missing}")
+        if extra:
+            parts.append(f"los productos {extra} no tienen diferencia en este traslado")
+        return None, "; ".join(parts)
+    return parsed, None
+
+
+def resolve_transfer_api(id_transfer, data, raw_payload, data_token):
+    """PUT /almacen/transfer/<id>/resolve {items:[{id_product, action, comment?}],
+    comment?}: cierra un RECIBIDO CON DIFERENCIAS (status 2) decidiendo por
+    cada faltante (quantity_sent - quantity_received > 0):
+      * reingreso: ENTRADA en el kardex del principal (id_warehouse NULL,
+        extra_info {reference: folio, id_transfer, resolution}) por la
+        diferencia + products_amc.stock += diferencia (misma pareja de
+        llamadas que la reversa de cancel_transfer_api).
+      * merma: sin movimiento (el stock ya salió al enviar); solo registro.
+    Guarda `resolution` por renglón en items, history y status 4. Reversa
+    best-effort si una entrada falla a la mitad. 200 con el traslado completo
+    (mismo shape que GET /almacen/transfer/<id>)."""
+    user = data_token.get("emp_id")
+    transfer, err, code = _load_transfer(id_transfer, data_token)
+    if transfer is None:
+        return err, code
+    if transfer["status"] != 2:
+        return {
+            "data": None,
+            "msg": (
+                f"El traslado {transfer['folio']} está en {transfer['status_label']}: "
+                f"solo se resuelve en {WH_TRANSFER_STATUS[2]}"
+            ),
+            "error": None,
+        }, 400
+    pending = {}
+    for item in transfer["items"]:
+        if item.get("resolution"):
+            continue  # defensivo: status 2 no debería traer renglones resueltos
+        sent = float(item.get("quantity_sent") or 0)
+        received = float(item.get("quantity_received") or 0)
+        if sent - received > 0:
+            pending[int(item["id_product"])] = sent - received
+    if not pending:
+        return {
+            "data": None,
+            "msg": f"El traslado {transfer['folio']} no tiene faltantes por resolver",
+            "error": None,
+        }, 400
+    actions, err_msg = _parse_resolve_items(raw_payload.get("items"), pending)
+    if actions is None:
+        return {"data": None, "msg": err_msg, "error": None}, 400
+
+    now = _now_ts()
+    comment = str(data.get("comment") or "").strip()
+    done = []  # (id_movement, id_product, qty, stock_sumado)
+    failure = None
+    new_items = []
+    summary = []
+    for item in transfer["items"]:
+        pid = int(item["id_product"])
+        new_item = dict(item)
+        new_items.append(new_item)
+        if pid not in pending:
+            continue
+        qty = pending[pid]
+        action = actions[pid]["action"]
+        item_comment = actions[pid]["comment"]
+        resolution = {
+            "action": action,
+            "quantity": qty,
+            "comment": item_comment,
+            "movement_id": None,
+            "user": user,
+            "timestamp": now,
+        }
+        if action == "reingreso":
+            extra_info = {
+                "reference": transfer["folio"],
+                "id_transfer": transfer["id_transfer"],
+                "resolution": "reingreso",
+                "comment": f"Reingreso por diferencia del traslado {transfer['folio']}"
+                + (f": {item_comment}" if item_comment else ""),
+                "user": user,
+            }
+            flag, error, id_movement = insert_warehouse_movement_db(
+                None, pid, "entrada", qty, now, extra_info, data_token
+            )
+            if not flag:
+                failure = f"reingreso del producto {pid}: {error}"
+                break
+            flag, error, _ = update_stock_db(pid, qty, data_token, just_add=True)
+            if not flag:
+                done.append((id_movement, pid, qty, False))
+                failure = f"reintegro de stock del producto {pid}: {error}"
+                break
+            done.append((id_movement, pid, qty, True))
+            resolution["movement_id"] = id_movement
+        new_item["resolution"] = resolution
+        summary.append(f"producto {pid}: {action} x{qty:g}")
+    if failure:
+        for id_movement, pid, qty, added in done:
+            delete_movement_db(id_movement, data_token)
+            if added:
+                update_stock_db(pid, -qty, data_token, just_add=True)
+        msg = f"La resolución del traslado {transfer['folio']} falló y se revirtió ({failure}); sigue con diferencias"
+        write_log_file(log_file_almacen, msg, data_token)
+        return {"data": None, "msg": msg, "error": failure}, 400
+
+    history = _append_history(
+        transfer.get("history"), user, "Resolución de diferencias",
+        f"Faltantes resueltos ({'; '.join(summary)})" + (f". {comment}" if comment else "") + ".",
+    )
+    flag, error, _ = update_transfer_fields_db(
+        transfer["id_transfer"], {"status": 4, "items": new_items, "history": history}, data_token
+    )
+    if not flag:
+        # Los reingresos ya están en el principal: se revierten para que el
+        # traslado quede consistente (sigue en status 2, reintentable).
+        for id_movement, pid, qty, added in done:
+            delete_movement_db(id_movement, data_token)
+            if added:
+                update_stock_db(pid, -qty, data_token, just_add=True)
+        msg = f"No se pudo cerrar el traslado {transfer['folio']}; reingresos revertidos, sigue con diferencias"
+        write_log_file(log_file_almacen, msg + f" | {error}", data_token)
+        return {"data": None, "msg": msg, "error": error}, 400
+
+    msg = (
+        f"Traslado {transfer['folio']} ({WH_TRANSFER_STATUS[4]}): {'; '.join(summary)}; "
+        f"{len(done)} reingreso(s) al principal [emp {user}]"
+    )
+    create_notification_permission(
+        f"Diferencias del traslado {transfer['folio']} resueltas por el principal: {'; '.join(summary)}.",
+        data_token, [f"sucursal-{transfer['id_warehouse_dest']}"], "Traslados", user or 0, 0,
+    )
+    write_log_file(log_file_almacen, msg, data_token)
+    transfer, err, code = _load_transfer(transfer["id_transfer"], data_token)
+    if transfer is None:
+        return err, code
+    return {"data": _enrich_transfer_items(transfer, data_token), "msg": msg, "error": None}, 200

@@ -1329,13 +1329,18 @@ def build_cda_alerts(data_token, days_ahead: int = ALERT_DAYS_AHEAD, only_active
             nxt = v.get("next_maintenance") or {}
             due = _to_date(nxt.get("date"))
             if v.get("requires_maintenance"):
+                # days_left solo cuando el vencimiento es por fecha: si venció por
+                # kilometraje (o no hay registro) la fecha programada puede seguir
+                # en el futuro y un days_left positivo en un "vencido" confundía al front.
+                days_left = None
                 if not v.get("last_maintenance"):
                     msg = f"{v['code']}: sin mantenimiento registrado"
                 elif nxt.get("km") is not None and int(v.get("current_km") or 0) >= int(nxt.get("km")):
                     msg = f"{v['code']}: mantenimiento pendiente por kilometraje ({v.get('current_km')} km ≥ {nxt.get('km')} km)"
                 else:
                     msg = f"{v['code']}: mantenimiento pendiente desde el {nxt.get('date')}"
-                alerts.append(_alert(v, "mantenimiento_pendiente", "vencido", msg, due, v.get("days_remaining"), next_km=nxt.get("km")))
+                    days_left = v.get("days_remaining")
+                alerts.append(_alert(v, "mantenimiento_pendiente", "vencido", msg, due, days_left, next_km=nxt.get("km")))
             elif v.get("days_remaining") is not None and 0 <= v["days_remaining"] <= days_ahead:
                 alerts.append(_alert(v, "mantenimiento_proximo", "proximo",
                                      f"{v['code']}: mantenimiento programado para el {nxt.get('date')} (faltan {v['days_remaining']} días)",

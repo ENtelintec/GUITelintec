@@ -34,6 +34,7 @@ from templates.resources.midleware.MD_Sucursal import (
     fetch_sede_transfers_api,
     get_main_inventory_api,
     get_sede_inventory_api,
+    get_sede_movement_api,
     get_sede_movements_api,
     get_sede_transfer_api,
     receive_transfer_api,
@@ -99,9 +100,9 @@ class SedeMovements(Resource):
         params={
             "type_m": "entrada | salida | all",
             "id_warehouse": "Sede (opcional si el permiso es de una sola sede)",
-            "date_from": "YYYY-MM-DD inclusivo",
-            "date_to": "YYYY-MM-DD inclusivo",
-            "limit": "Tope de filas (default 500, máx 5000)",
+            "date_from": "YYYY-MM-DD inclusivo; sin él: últimos 3 meses (desde date_to o desde hoy)",
+            "date_to": "YYYY-MM-DD inclusivo; sin él: sin cota superior",
+            "limit": "Tope de filas (máx y default 5000, más recientes primero); meta.truncated avisa el recorte",
         }
     )
     @ns.expect(expected_headers_per)
@@ -116,6 +117,19 @@ class SedeMovements(Resource):
             "limit": request.args.get("limit"),
         }
         data_out, code = get_sede_movements_api(type_m, params, data_token)
+        return data_out, code
+
+
+@ns.route("/movement/<int:id_movement>")
+class SedeMovementDetail(Resource):
+    @ns.expect(expected_headers_per)
+    def get(self, id_movement):
+        """Un movimiento de sede (misma forma que una fila de /movements + `product`);
+        403 si es de otra sede, 404 si no existe."""
+        flag, data_token, msg = token_verification_procedure(request, department=_READERS)
+        if not flag:
+            return _unauthorized(msg)
+        data_out, code = get_sede_movement_api(id_movement, data_token)
         return data_out, code
 
 
@@ -164,10 +178,10 @@ class SedeTransfers(Resource):
     @ns.doc(
         params={
             "id_warehouse": "Sede (opcional si el permiso es de una sola sede)",
-            "status": "0 en tránsito · 1 recibido · 2 con diferencias · 3 cancelado",
+            "status": "0 en tránsito · 1 recibido · 2 con diferencias · 3 cancelado · 4 diferencia resuelta",
             "date_from": "YYYY-MM-DD inclusivo (creación)",
             "date_to": "YYYY-MM-DD inclusivo (creación)",
-            "limit": "Tope de filas (default 200, máx 2000)",
+            "limit": "Tope de filas (default 200, máx 2000); meta.truncated avisa el recorte",
         }
     )
     @ns.expect(expected_headers_per)

@@ -4,7 +4,9 @@ Multisede de almacén — orquestación del lado SEDE (namespace GUI/api/v1/sucu
 rutas en rs_Sucursal.py). Fase 2 del plan docs/almacen_multisede_plan.md:
 inventario de la sede, stock del principal en solo lectura y movimientos
 libres (entrada/salida) con stock por sede en warehouse_stock_amc. Fase 3:
-traslados hacia la sede (listar, detalle, confirmar recepción).
+traslados hacia la sede (listar, detalle, confirmar recepción). Lectura
+directa de un movimiento (GET /movement/<id>) y `meta` del listado de
+traslados: docs/almacen_multisede_resolve.md.
 
 Reglas:
   * La sede que opera sale del permiso `App.Department.Sucursal-<id>`: si el
@@ -35,7 +37,6 @@ from templates.controllers.product.warehouses_controller import (
     add_warehouse_stock_db,
     delete_warehouse_movement_db,
     get_main_inventory_db,
-    get_transfers_db,
     get_warehouse_db,
     get_warehouse_inventory_db,
     get_warehouse_movement_db,
@@ -47,21 +48,22 @@ from templates.controllers.product.warehouses_controller import (
 )
 from templates.Functions_Utils import create_notification_permission
 from templates.misc.Functions_Files import write_log_file
+from templates.resources.midleware.MD_Kardex import kardex_meta, resolve_kardex_window
 from templates.resources.midleware.MD_Multisede import (
     WH_TRANSFER_STATUS,
     _append_history,
+    _clean_udm,
     _enrich_transfer_items,
     _load_json,
     _load_transfer,
     _parse_transfer_filters,
-    _row_to_transfer,
     _row_to_warehouse,
+    query_transfers,
     verify_warehouse_permission,
 )
 
 _MOVEMENT_TYPES = ("entrada", "salida")
-_MOVEMENTS_DEFAULT_LIMIT = 500
-_MOVEMENTS_MAX_LIMIT = 5000
+_SEDE_PRODUCT_FIELDS = ("sku", "name", "udm")
 
 
 # --- Helpers -----------------------------------------------------------------
@@ -155,6 +157,7 @@ def _resolve_warehouse(data_token, requested, read_only=False):
 
 def _row_to_inventory(row) -> dict:
     data = dict(zip(SEDE_INVENTORY_COLUMNS, row))
+    data["udm"] = _clean_udm(data.get("udm"))
     data["stock"] = float(data.get("stock") or 0)
     data["stock_main"] = float(data.get("stock_main") or 0)
     data["is_tool"] = int(data.get("is_tool") or 0)
@@ -166,6 +169,7 @@ def _row_to_movement(row) -> dict:
     data = {col: _json_safe(val) for col, val in zip(SEDE_MOVEMENT_COLUMNS, row)}
     extra_raw = _load_json(data.get("extra_info"), {})
     extra: dict = extra_raw if isinstance(extra_raw, dict) else {}
+    data["udm"] = _clean_udm(data.get("udm"))
     data["quantity"] = float(data.get("quantity") or 0)
     data["reference"] = extra.get("reference") or ""
     data["comment"] = extra.get("comment") or ""
@@ -258,28 +262,63 @@ def get_main_inventory_api(params, data_token):
 
 # --- Kardex de la sede ---------------------------------------------------------
 def get_sede_movements_api(type_m, params, data_token):
-    """GET /sucursal/movements/<type_m>?id_warehouse=&date_from=&date_to=&limit=."""
+    """GET /sucursal/movements/<type_m>?id_warehouse=&date_from=&date_to=&limit=.
+    Ventana por defecto y `meta` compartidas con el kardex del principal
+    (MD_Kardex, docs/almacen_kardex_ventana.md); el producto va una sola vez
+    por id en `data.products` y no en cada movimiento."""
     sede, err, code = _resolve_warehouse(data_token, params.get("id_warehouse"), read_only=True)
     if sede is None:
         return err, code
     type_like = type_m if type_m in _MOVEMENT_TYPES else "%"
-    date_from = (params.get("date_from") or "").strip() or None
-    date_to = (params.get("date_to") or "").strip() or None
-    try:
-        limit = int(params.get("limit") or _MOVEMENTS_DEFAULT_LIMIT)
-    except (TypeError, ValueError):
-        return {"data": None, "msg": f"limit inválido: {params.get('limit')}", "error": None}, 400
-    limit = max(1, min(limit, _MOVEMENTS_MAX_LIMIT))
+    window, err = resolve_kardex_window(params)
+    if window is None:
+        return {"data": None, "msg": err, "error": None}, 400
     flag, error, rows = get_warehouse_movements_db(
-        sede["id_warehouse"], type_like, date_from, date_to, limit, data_token
+        sede["id_warehouse"], type_like, window.sql_from, window.sql_to_exclusive, window.limit + 1, data_token
     )
     if not flag:
         return {"data": None, "msg": "Error al consultar los movimientos de la sede", "error": error}, 400
-    rows = rows if isinstance(rows, list) else []
-    data_out = [_row_to_movement(r) for r in rows]
+    rows, meta = kardex_meta(window, rows if isinstance(rows, list) else [])
+    movements = []
+    products: dict = {}
+    for r in rows:
+        movement = _row_to_movement(r)
+        product = {field: movement.pop(field) for field in _SEDE_PRODUCT_FIELDS}
+        products.setdefault(movement["id_product"], product)
+        movements.append(movement)
     return {
-        "data": {"warehouse": {"id_warehouse": sede["id_warehouse"], "name": sede["name"]}, "movements": data_out},
-        "msg": f"{len(data_out)} movimientos",
+        "data": {
+            "warehouse": {"id_warehouse": sede["id_warehouse"], "name": sede["name"]},
+            "movements": movements,
+            "products": products,
+        },
+        "meta": meta,
+        "msg": f"{len(movements)} movimientos del {meta['date_from']} al {meta['date_to'] or 'hoy'}"
+        + (" (recortado al tope)" if meta["truncated"] else ""),
+        "error": None,
+    }, 200
+
+
+def get_sede_movement_api(id_movement, data_token):
+    """GET /sucursal/movement/<id>: un movimiento de sede, con el mismo shape
+    que una fila del kardex (`movement` sin sku/name/udm + `product` aparte).
+    Mismas reglas de lectura que /movements: permiso de la sede del
+    movimiento, o almacen/administracion; sede ajena -> 403; inexistente -> 404;
+    movimiento del principal -> 400 (se consulta por /almacen)."""
+    movement, err, code = _load_sede_movement(id_movement, data_token)
+    if movement is None:
+        return err, code
+    sede, err, code = _resolve_warehouse(data_token, movement["id_warehouse"], read_only=True)
+    if sede is None:
+        return err, code
+    product = {field: movement.pop(field) for field in _SEDE_PRODUCT_FIELDS}
+    return {
+        "data": {
+            "warehouse": {"id_warehouse": sede["id_warehouse"], "name": sede["name"]},
+            "movement": movement,
+            "product": product,
+        },
+        "msg": None,
         "error": None,
     }, 200
 
@@ -553,15 +592,15 @@ def fetch_sede_transfers_api(params, data_token):
     if filters is None:
         return {"data": None, "msg": err_msg, "error": None}, 400
     filters["id_warehouse_dest"] = sede["id_warehouse"]
-    flag, error, rows = get_transfers_db(filters, data_token)
-    if not flag:
+    data_out, meta, error = query_transfers(filters, data_token)
+    if data_out is None or meta is None:
         return {"data": None, "msg": "Error al consultar los traslados de la sede", "error": error}, 400
-    rows = rows if isinstance(rows, list) else []
-    data_out = [_enrich_transfer_items(_row_to_transfer(r), data_token) for r in rows]
     pending = sum(1 for t in data_out if t["status"] == 0)
     return {
         "data": {"warehouse": {"id_warehouse": sede["id_warehouse"], "name": sede["name"]}, "transfers": data_out},
-        "msg": f"{len(data_out)} traslados ({pending} en tránsito)",
+        "meta": meta,
+        "msg": f"{len(data_out)} traslados ({pending} en tránsito)"
+        + (" (recortado al tope)" if meta["truncated"] else ""),
         "error": None,
     }, 200
 
@@ -642,6 +681,26 @@ def receive_transfer_api(data, raw_payload, data_token):
     received, err_msg = _parse_received_items(raw_payload.get("items"), expected_ids)
     if received is None:
         return {"data": None, "msg": err_msg, "error": None}, 400
+    # Junta 2026-10-22 (F9, P-167): recibir MÁS de lo enviado no es una diferencia del
+    # traslado (nada que resolver en el principal) -> 400 listando productos; el sobrante
+    # se registra aparte como una entrada normal de la sede con referencia al traslado.
+    over = []
+    for item in transfer["items"]:
+        pid = int(item["id_product"])
+        sent = float(item.get("quantity_sent") or 0)
+        got = received[pid]["quantity_received"]
+        if got > sent:
+            over.append({"id_product": pid, "quantity_sent": sent, "quantity_received": got, "excess": round(got - sent, 4)})
+    if over:
+        detail = "; ".join(f"producto {o['id_product']}: enviado {o['quantity_sent']:g}, recibido {o['quantity_received']:g}" for o in over)
+        return {
+            "data": {"id_transfer": transfer["id_transfer"], "folio": transfer["folio"], "over_received": over},
+            "msg": (
+                f"Se recibió más de lo enviado en {len(over)} producto(s) del traslado {transfer['folio']} ({detail}). "
+                "Captura a lo más lo enviado; lo que llegó de más regístralo como una entrada normal de la sede con referencia al traslado"
+            ),
+            "error": [f"producto {o['id_product']}: quantity_received {o['quantity_received']:g} > quantity_sent {o['quantity_sent']:g}" for o in over],
+        }, 400
 
     now = _now_ts()
     id_warehouse = sede["id_warehouse"]

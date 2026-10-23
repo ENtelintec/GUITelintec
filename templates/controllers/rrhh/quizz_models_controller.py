@@ -47,6 +47,14 @@ LIST_COLUMNS = (
 _UPDATABLE_COLS = ("name", "template", "rubric", "status", "history", "replaces", "replaced_by")
 
 
+def get_quizz_model_names_db(data_token):
+    """Solo (type_q, name) de todos los modelos, cualquier status: para
+    enriquecer tareas del empleado sin exponer el catalogo. type_sql=2."""
+    sql = f"SELECT type_q, name FROM {_TABLE}"
+    flag, e, result = execute_sql(sql, None, 2, data_token)
+    return flag, e, result
+
+
 def get_quizz_models_db(status, data_token):
     """Listado ligero con filtro opcional por status (param-or-NULL).
     type_sql=2 -> fetchall."""

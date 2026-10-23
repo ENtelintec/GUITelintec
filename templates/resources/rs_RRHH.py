@@ -71,18 +71,30 @@ from static.Models.api_payroll_models import (
 )
 from templates.controllers.employees.em_controller import (
     delete_exam_med,
-    get_all_examenes,
 )
 from templates.controllers.employees.employees_controller import (
     delete_employee,
 )
 from templates.controllers.employees.vacations_controller import (
     delete_vacation,
-    get_vacations_data,
+)
+from static.Models.api_checkin_models import (
+    CheckinCancelForm,
+    CheckinManualForm,
+    checkin_cancel_model,
+    checkin_manual_model,
 )
 from templates.resources.methods.Functions_Aux_Login import token_verification_procedure
+from templates.resources.midleware.MD_Checkin import (
+    cancel_checkin_api,
+    create_manual_checkin_api,
+    download_checkin_photo_api,
+    get_checkins_api,
+)
 from templates.resources.midleware.Functions_DB_midleware import (
     create_csv_file_employees,
+    create_csv_file_medical,
+    create_csv_file_vacations,
     create_task_from_api,
     delete_task_from_api,
     get_all_vacations,
@@ -247,7 +259,7 @@ class EmployeesInfo(Resource):
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        data_out, code = get_info_employees_with_status(status)
+        data_out, code = get_info_employees_with_status(status, data_token)
         if code != 200:
             return {"data": [], "msg": "No se encontraron empleados", "error": None}, code
         return {"data": data_out, "msg": None, "error": None}, code
@@ -399,19 +411,8 @@ class VacationRegistry(Resource):
                 "error": validator.errors,
             }, 400
         data = validator.data
-        flag, error, result = insert_new_vacation(data, data_token)
-        if flag:
-            return {
-                "data": {"id_vacation": result},
-                "msg": f"Vacaciones registradas correctamente (ID {result})",
-                "error": None,
-            }, 201
-        else:
-            return {
-                "data": None,
-                "msg": "No se pudieron registrar las vacaciones",
-                "error": error,
-            }, 400
+        data_out, code = insert_new_vacation(data, data_token)
+        return data_out, code
 
     @ns.expect(expected_headers_per, employee_vacation_model_insert)
     def put(self):
@@ -427,19 +428,8 @@ class VacationRegistry(Resource):
                 "error": validator.errors,
             }, 400
         data = validator.data
-        flag, error, result = update_vacation(data, data_token)
-        if flag:
-            return {
-                "data": {"id_vacation": result},
-                "msg": f"Vacaciones actualizadas correctamente (ID {result})",
-                "error": None,
-            }, 200
-        else:
-            return {
-                "data": None,
-                "msg": "No se pudieron actualizar las vacaciones",
-                "error": error,
-            }, 400
+        data_out, code = update_vacation(data, data_token)
+        return data_out, code
 
     @ns.expect(expected_headers_per, employee_vacation_model_delete)
     def delete(self):
@@ -1013,10 +1003,10 @@ class DownloadFileEMPs(Resource):
         flag, data_token, msg = token_verification_procedure(request, department="rrhh")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        result = create_csv_file_employees(status)
+        result = create_csv_file_employees(status, data_token)
         if isinstance(result, tuple):
             return result
-        return send_file(str(result), as_attachment=True)
+        return send_file(result, as_attachment=True, download_name="emp.csv", mimetype="text/csv")
 
 
 @ns.route("/download/employees/medical")
@@ -1026,24 +1016,10 @@ class DownloadFileMedical(Resource):
         flag, data_token, msg = token_verification_procedure(request, department="rrhh")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        flag, e, result = get_all_examenes(data_token)
-        if not (isinstance(result, list) or isinstance(result, tuple)):
-            return {
-                "data": None,
-                "msg": "Error al obtener los datos del empleado",
-                "error": None,
-            }, 400
-        filepath = "files/medical.csv"
-        with open(filepath, "w") as file:
-            file.write("id_exam,nombre,sangre,estatus,aptitudes,fechas,apt_actual,emp_id\n")
-            for item in result:
-                id_exam, nombre, sangre, status, aptitud, fechas, apt_actual, emp_id, _extra = item
-                fechas = (fechas or "").replace(",", ";")
-                aptitud = (aptitud or "").replace(",", ";")
-                file.write(
-                    f"{id_exam},{nombre},{sangre},{status},{aptitud},{fechas},{apt_actual},{emp_id}\n"
-                )
-        return send_file(filepath, as_attachment=True)
+        result = create_csv_file_medical(data_token)
+        if isinstance(result, tuple):
+            return result
+        return send_file(result, as_attachment=True, download_name="medical.csv", mimetype="text/csv")
 
 
 @ns.route("/download/employees/vacations")
@@ -1053,21 +1029,10 @@ class DownloadFileVacations(Resource):
         flag, data_token, msg = token_verification_procedure(request, department="rrhh")
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        flag, error, data = get_vacations_data(data_token)
-        filepath = "files/vacations.csv"
-        if not (isinstance(data, list) or isinstance(data, tuple)):
-            return {
-                "data": None,
-                "msg": "Error al obtener los datos del empleado",
-                "error": None,
-            }, 400
-        with open(filepath, "w") as file:
-            file.write("emp_id, Nombre, Apellido, fecha_inicio, body\n")
-            for item in data:
-                emp_id, name, l_name, date_admission, seniority, _renovacion = item
-                seniority = (seniority or "").replace(",", ";")
-                file.write(f"{emp_id}, {name}, {l_name}, {date_admission}, {seniority}\n")
-        return send_file(filepath, as_attachment=True)
+        result = create_csv_file_vacations(data_token)
+        if isinstance(result, tuple):
+            return result
+        return send_file(result, as_attachment=True, download_name="vacations.csv", mimetype="text/csv")
 
 
 @ns.route("/download/quizz/report")
@@ -1091,3 +1056,63 @@ class DownloadFileQuizzReport(Resource):
             return {"data": None, "msg": data_out, "error": None}, code
         else:
             return send_file(data_out, as_attachment=True)
+
+
+# --- Check-in con foto (docs/checkin_foto.md): consulta y correcciones de RH -----------------
+@ns.route("/checkins")
+class CheckinsList(Resource):
+    @ns.doc(params={"emp_id": "Filtra por empleado", "date_from": "YYYY-MM-DD (default: 30 dias atras)", "date_to": "YYYY-MM-DD (default hoy)", "all": "1 -> incluye anulados"})
+    @ns.expect(expected_headers_per)
+    def get(self):
+        """Eventos de check-in en el rango + resumen por empleado y dia (calculado en lectura)."""
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        params = {"emp_id": request.args.get("emp_id"), "date_from": request.args.get("date_from"),
+                  "date_to": request.args.get("date_to"), "all": request.args.get("all")}
+        data_out, code = get_checkins_api(params, data_token)
+        return data_out, code
+
+
+@ns.route("/checkin")
+class CheckinManual(Resource):
+    @ns.expect(expected_headers_per, checkin_manual_model)
+    def post(self):
+        """RH registra un evento por el empleado (olvido fichar): sin foto, hora capturada no futura, motivo obligatorio."""
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        validator = CheckinManualForm.from_json(ns.payload)  # pyrefly: ignore
+        if not validator.validate():
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
+        data_out, code = create_manual_checkin_api(validator.data, data_token)
+        return data_out, code
+
+
+@ns.route("/checkin/cancel")
+class CheckinCancel(Resource):
+    @ns.expect(expected_headers_per, checkin_cancel_model)
+    def put(self):
+        """Anula un evento (status 1, motivo en history). No se borra."""
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        validator = CheckinCancelForm.from_json(ns.payload)  # pyrefly: ignore
+        if not validator.validate():
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
+        data_out, code = cancel_checkin_api(validator.data, data_token)
+        return data_out, code
+
+
+@ns.route("/checkin/<int:id_checkin>/photo")
+class CheckinPhoto(Resource):
+    @ns.expect(expected_headers_per)
+    def get(self, id_checkin):
+        """Foto del registro (blob en 200; envelope en 4xx; 404 en manuales sin foto)."""
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        envelope, local_path, code = download_checkin_photo_api(id_checkin, data_token)
+        if envelope is not None or not local_path:
+            return envelope, code
+        return send_file(local_path, as_attachment=True, download_name=os.path.basename(local_path))

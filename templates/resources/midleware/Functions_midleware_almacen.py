@@ -1154,17 +1154,18 @@ def create_file_inventory_excel(data_token):
 
 def retrieve_data_movement_file(data, data_token, complete=False, epp=0):
     type_m = data["type"] if data["type"] in ["entrada", "salida"] else "all"
-    if epp == 0:
-        flag, error, _movements = get_all_movements_db_detail(data_token, type_m)
-    else:
-        flag, error, _movements = get_epp_movements_db_detail(data_token, type_m)
-    if not (isinstance(_movements, list) or isinstance(_movements, tuple)):
-        return {"data": [_movements], "error": error}, 400
     date_init = pd.to_datetime(data["date_init"])
     date_end = pd.to_datetime(data["date_end"])
     # set hour init 0:00:00 and hour end 23:59:59
     date_init = date_init.replace(hour=0, minute=0, second=0)
     date_end = date_end.replace(hour=23, minute=59, second=59)
+    # el rango va a SQL (antes se traía toda la tabla y se filtraba aquí)
+    if epp == 0:
+        flag, error, _movements = get_all_movements_db_detail(data_token, type_m, date_init, date_end)
+    else:
+        flag, error, _movements = get_epp_movements_db_detail(type_m, data_token, date_init, date_end)
+    if not (isinstance(_movements, list) or isinstance(_movements, tuple)):
+        return {"data": [_movements], "error": error}, 400
     try:
         movements = []
         for item in _movements:
