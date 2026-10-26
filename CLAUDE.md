@@ -21,9 +21,10 @@ Doc lifecycle: a grill/proposal that will end in code is born in the `docs/` roo
 ## Run / lint
 
 - **Run dev server**: `python wsgi.py` — binds 127.0.0.1:5000 with `debug=True`. `app.py` is the Flask app factory; `wsgi.py` is the entry point.
+- **Python version**: prod runs **3.11** (3.11.4 in its own venv on Amazon Linux 2023, whose `/usr/bin/python3` is the system 3.9 — never repoint it; `dnf` and `aws-cli` depend on it); the dev `.venv` is 3.12.10. Code and every dependency must stay 3.11-compatible — no f-strings reusing the outer quote (`f"{d["k"]}"`), no `type X = ...` / PEP 695 generics, no 3.12-only stdlib (`itertools.batched`, `typing.override`). `pyrefly check --python-version 3.11` flags these (the local [pyrefly.toml](pyrefly.toml) pins `python-version = "3.11"`, but that file is gitignored — a fresh clone needs the flag). Upgrading prod is `P-178` ([docs/dependencias_python.md](docs/dependencias_python.md)); don't raise the pin before prod moves.
 - **Type check**: `pyrefly check` — config in [pyrefly.toml](pyrefly.toml). Uses `.venv/Scripts/python.exe`. Note: many DB call sites carry `# pyrefly: ignore` because `execute_sql`'s return type is union-typed (see below).
 - **Tests**: there is no test framework wired up. `Tests/`, `tester*.py`, `*test.py`, and `*_test.json` are all gitignored — treat any file matching those patterns as scratch.
-- **Dependencies**: `pip install -r requirements.txt`. Heavy ML/data deps (tensorflow, keras, sklearn, matplotlib, pandas) are present because some endpoints generate reports/PDFs and run model inference; don't drop them when trimming.
+- **Dependencies**: `pip install -r requirements.txt`. The list holds only what the API actually imports, pinned `==` to the versions of prod's venv (`envg`); every transitive dependency is pinned in [constraints.txt](constraints.txt), which `requirements.txt` pulls in with `-c` (without it a clean install breaks — e.g. `httpx` 0.28 vs `openai` 1.22). Changing or adding a package means editing its `==` and regenerating `constraints.txt` (recipe in [docs/dependencias_python.md](docs/dependencias_python.md)). There is no ML stack (tensorflow, keras, scikit-learn, matplotlib) and no Dropbox — both dropped by the user's call; only orphan modules (`templates/Functions_Pmodels.py`) needed them.
 
 ## Environment & secrets
 
@@ -112,7 +113,7 @@ Several caches, logs, and config live as files (paths centralized in [static/con
 - `files/logs/<area>/...` — per-area log files (bitacora, sm, sgi_chv, sgi_vouchers, db, admin, almacen, po, rh, users)
 - `files/*_cache.pkl` and `files/*_cache.json` — endpoint-level caches; gitignored
 - `files/contracts/`, `files/files_fichaje/`, `files/quizz_out/` — generated artifacts
-- `files/Pmodels/` — pickled / Keras models (for ML-backed endpoints)
+- `files/Pmodels/` — pickled / Keras models, read only by the orphan `templates/Functions_Pmodels.py` (no endpoint loads them; their deps are out of `requirements.txt`)
 - `files/settings.json`, `files/flags_daemons.json` — runtime config
 
 Don't read or write under `files/` from new code without using the constants — paths are referenced from many places.

@@ -12,7 +12,6 @@ from calendar import monthrange
 from datetime import datetime
 from typing import Any
 
-import dropbox
 import pandas as pd
 import pytz
 
@@ -22,7 +21,6 @@ from static.constants import (
     conversion_quizzes_path,
     format_date,
     format_timestamps,
-    secrets,
     timezone_software,
 )
 from templates.controllers.employees.employees_controller import get_employee_id_name
@@ -32,95 +30,6 @@ from templates.controllers.fichajes.fichajes_controller import (
     update_fichaje_DB,
 )
 from templates.Functions_Text import clean_accents, compare_employee_name
-
-
-def check_only_read_conflict(name: str) -> bool:
-    """
-    Check if the file is read-only
-    :param name: name of the file
-    :return: True if the file is read only, False otherwise
-    """
-    ignore_patterns = [".*conflictos de solo lectura.*", ".*cache.*", ".*desktop.ini"]
-    pattern = "|".join(ignore_patterns)
-    if re.match(pattern, name):
-        return True
-    return False
-
-
-def get_files_foldes_dropbox(fname: str, online=False):
-    """
-    Gets the files and folders from dropbox
-    :param online:
-    :param fname: Name of the folder
-    :return: files and folders
-    """
-    folders = []
-    files = []
-    if online:
-        try:
-            dbx = dropbox.Dropbox(secrets["APP_DROPBOX_TOKEN"])
-            print("Exploring: ", fname)
-            data = dbx.files_list_folder(path=fname)
-            if data is None:
-                raise Exception
-            for entry in data.entries:
-                if hasattr(entry, "shared_folder_id"):
-                    folders.append(str(entry.name)) if not check_only_read_conflict(entry.name) else None
-                else:
-                    files.append(str(entry.name)) if not check_only_read_conflict(entry.name) else None
-        except Exception as e:
-            print(e)
-            print("Error dropbox")
-    else:
-        try:
-            files_and_folders = os.listdir(fname)
-            for item in files_and_folders:
-                if os.path.isdir(fname + "/" + item):
-                    folders.append(item) if not check_only_read_conflict(item) else None
-                else:
-                    files.append(item) if not check_only_read_conflict(item) else None
-        except Exception as e:
-            print(e)
-            print("Error local")
-    return files, folders
-
-
-def map_dropbox_folders(fname: str, father=None, online=False):
-    """
-    Maps the dropbox folders and subfolders
-    :param online:
-    :param father:
-    :param fname: Name of the folder-mapped
-    :return: mapped folder
-    """
-    if father is None:
-        father = ""
-    files, folders = get_files_foldes_dropbox(fname, online)
-    root_dir = DirectoryDbp(fname, father, files)
-    for folder in folders:
-        folder_name = fname + "/" + folder
-        root_dir.add_child(map_dropbox_folders(folder_name, fname, online))
-    return root_dir
-
-
-def save_directory_index(rpaths: dict, exclude: list | None = None, online=False, father=""):
-    """
-    Saves the directory to a file
-    :param father:
-    :param online: Read in online dropbox or local files
-    :param rpaths: directory to save
-    :param exclude: a list of folders to exclude
-    :return:
-    """
-    local_name = "_local" if not online else ""
-    exclude = exclude if exclude is not None else []
-    for item in rpaths:
-        if item not in exclude:
-            local_file = "files/folders_" + item + local_name + ".pkl"
-            fdir = father + "/" + rpaths[item]
-            directory = map_dropbox_folders(fdir, online=online)
-            with open(local_file, "wb") as f:
-                pickle.dump(directory, f)
 
 
 def load_directory_file(paths: dict, exclude: list | None = None, local=False) -> list:
