@@ -38,23 +38,46 @@ Código muerto que **no** se tocó (importarlo hoy daría `ModuleNotFoundError`,
 
 - **SO: Amazon Linux 2023** (`aws --version` → `aws-cli/2.32.1 Python/3.9.25 Linux/6.1.41-63.114.amzn2023.x86_64 source/x86_64.amzn.2023`). AL2023 tiene soporte hasta el **2029-06-30**: estándar hasta 2027-06-30 y después solo seguridad y fallos críticos ([release cadence](https://docs.aws.amazon.com/linux/al2023/ug/release-cadence.html)) → `P-180`.
 - **Python del sistema: `/usr/bin/python3` = 3.9** toda la vida de AL2023. Lo usan `dnf` y el `aws-cli` del repo, que reporta 3.9.25, el paquete vigente. AWS: *"Do not change what the `/usr/bin/python3` symlink points to because this might break the core functionality of AL2023."* ([Python in AL2023](https://docs.aws.amazon.com/linux/al2023/ug/python.html)). Un Python nuevo se instala **al lado** (`/usr/bin/python3.X`) y el API lo usa desde su venv.
-- **Python del API: 3.11.4.** El paquete `python3.11` de AL2023 va en **3.11.16** (lista de paquetes de la release 2023.12.20261021) y el `python3.9` del servidor sí está al día. El 3.11.4, entonces, probablemente **no** viene de `dnf` (compilado o pyenv) y no recibe parches: le faltan 12 versiones de corrección. Por confirmar en `P-179`.
+- **Python del API: 3.11.4, instalado fuera de `dnf`** (confirmado: `rpm -q python3.11` → `package python3.11 is not installed`). Es **`/usr/local/bin/python3.11`**, compilado desde fuente (`make altinstall`; el `pyvenv.cfg` de `envg` dice `home = /usr/local/bin`), y **no recibe parches**: el paquete `python3.11` de AL2023 va en **3.11.16** (lista de paquetes de la release 2023.12.20261021), así que le faltan 12 versiones de corrección. Se arregla en `P-182`.
 - **Kernel: falta reiniciar.** `rpm -q kernel` da 6.1.41 (en ejecución) y 6.1.158 (instalado). `sudo dnf needs-restarting -r` reporta `glibc`, `kernel`, `microcode_ctl` y `systemd` actualizados desde el arranque → `P-181`.
 
-### Los dos venvs del checkout
+### Los dos venvs de prod
 
-- **`envg` es el del API** (confirmado por el usuario). Tiene los 23 paquetes con las versiones que ahora fija `requirements.txt`, más 21 que el API no usa: `bardapi`, `Flask-SQLAlchemy`, `SQLAlchemy`, `greenlet`, `Flask-WTF`, `matplotlib`, `contourpy`, `cycler`, `fonttools`, `kiwisolver`, `pyparsing`, `pyserial`, `ttkbootstrap`, `Unidecode`, `pypdf`, `dropbox`, `stone`, `ply`, `h2`, `hpack` y `hyperframe`.
+- **`envg` es el del API** (confirmado por el usuario) y vive en **`/home/ec2-user/opt/envg`**, fuera del checkout. Se creó con `/usr/local/bin/python3.11 -m venv /home/ec2-user/opt/envg`. Tiene los 23 paquetes con las versiones que ahora fija `requirements.txt`, más 21 que el API no usa: `bardapi`, `Flask-SQLAlchemy`, `SQLAlchemy`, `greenlet`, `Flask-WTF`, `matplotlib`, `contourpy`, `cycler`, `fonttools`, `kiwisolver`, `pyparsing`, `pyserial`, `ttkbootstrap`, `Unidecode`, `pypdf`, `dropbox`, `stone`, `ply`, `h2`, `hpack` y `hyperframe`.
 - **`env` es viejo** (época GUI/chatbot: `customtkinter`, `bardapi`, `python-gemini-api`, `heyoo`, `pymessenger`) y **no puede** importar el código actual. Le faltan `WTForms`, `WTForms-JSON`, `reportlab`, `PyMuPDF`, `PyPDF2`, `openpyxl`, `xlsxwriter` y `Office365-REST-Python-Client`, y trae `openai` 0.28 (el código usa `from openai import OpenAI`, que existe desde 1.0). Se borra en `P-182`.
 
 ### Depurar `envg` (`P-182`)
 
-Venv nuevo junto al actual, nunca `pip uninstall` en caliente (no deja rollback y deja huérfanas las dependencias):
+Venv nuevo junto al actual, nunca `pip uninstall` en caliente (no deja rollback y deja huérfanas las dependencias). **Base recomendada: el `python3.11` de `dnf`**. Es el mismo minor que el 3.11.4 de hoy (mismas ruedas cp311, mismas versiones, cero cambio de código), pero lo parchea AWS hasta 2027-10-01. Así se cierra ya el hueco de parches, sin esperar a `P-178`.
 
-1. Desplegar primero el código sin Dropbox (este cambio). Corre igual en el `envg` actual y es requisito del venv nuevo, que ya no trae `dropbox`.
-2. En el checkout: `$(grep '^home' envg/pyvenv.cfg | cut -d' ' -f3)/python3.11 -m venv envg2` (mismo Python base que `envg`) y `envg2/bin/pip install -r requirements.txt`.
-3. `envg2/bin/python -c "import app"` desde el checkout y `diff <(envg/bin/pip freeze) <(envg2/bin/pip freeze)`: solo deben faltar los 21 de arriba, sin versiones distintas.
-4. Cambiar en el `ExecStart` del systemd la ruta de `envg` por `envg2`, luego `sudo systemctl daemon-reload` y `restart`. Comprobar `curl 127.0.0.1:<puerto>/GUI/health` y un PDF/Excel. Rollback: regresar el `ExecStart` a `envg`.
-5. Tras unos días estables: borrar `envg` y `env`. Se puede hacer en la misma ventana que el reinicio de `P-181`.
+1. ~~Desplegar primero el código sin Dropbox~~ — hecho (2026-10-26). Era requisito del venv nuevo, que ya no trae `dropbox`.
+2. `sudo dnf install python3.11` y `/usr/bin/python3.11 --version` (3.11.16, o la de la release a la que apunte el servidor). No toca `/usr/bin/python3` (sigue en 3.9) ni el compilado de `/usr/local/bin/python3.11`.
+3. Crear el venv e instalar, desde el checkout:
+   ```bash
+   /usr/bin/python3.11 -m venv /home/ec2-user/opt/envg2
+   /home/ec2-user/opt/envg2/bin/pip install -r requirements.txt
+   ```
+4. Validar desde el checkout. El `diff` solo debe mostrar líneas `<`, sin versiones distintas: los 21 de arriba más `colorama`, que `click` solo instala en Windows.
+   ```bash
+   /home/ec2-user/opt/envg2/bin/python -c "import app"
+   diff <(/home/ec2-user/opt/envg/bin/pip freeze) <(/home/ec2-user/opt/envg2/bin/pip freeze)
+   ```
+5. En `/etc/systemd/system/guitelintec.service`, cambiar `/home/ec2-user/opt/envg/` por `/home/ec2-user/opt/envg2/` en **`Environment="PATH=..."` y en `ExecStart`**. Después:
+   ```bash
+   sudo systemctl daemon-reload && sudo systemctl restart guitelintec
+   systemctl status guitelintec --no-pager          # active (running)
+   ps -eo pid,args | grep [e]nvg2/bin/gunicorn      # master + 3 workers sobre envg2
+   curl --unix-socket /home/ec2-user/opt/GUITelintec/guitelintec.sock http://localhost/GUI/health   # OK
+   journalctl -u guitelintec -n 50 --no-pager       # sin trazas
+   ```
+   gunicorn escucha en el **socket unix** `guitelintec.sock`, no en un puerto (`curl 127.0.0.1:5000` falla aunque todo esté bien). Luego, un PDF y un Excel desde el front. Rollback: regresar `PATH` y `ExecStart` a `envg`, `daemon-reload` y `restart`.
+6. Tras unos días estables: borrar `envg`. **Antes de borrar `env` o el compilado de `/usr/local/bin/python3.11`**, revisar qué usan los otros servicios del host (`authapi`, `chatbot`, `products`): `grep -H -E 'ExecStart|PATH' /etc/systemd/system/{authapi,chatbot,products}.service`. `chatbot` probablemente usa `env` (bardapi, heyoo, gemini). Todo esto puede ir en la misma ventana que el reinicio de `P-181`.
+
+**Avance (2026-10-26):** pasos 2–5 hechos. `import app` funciona en `envg2` y el `diff` dio exactamente esos 22 paquetes, sin versiones distintas. `guitelintec.service` apunta a `envg2` y se reinició a las 18:34:11 UTC: master + 3 workers sobre `/home/ec2-user/opt/envg2/bin/python3.11`, health `OK` por el socket y journal sin trazas. Los `Worker ... was sent SIGTERM!` son normales en cada `restart`. Falta el PDF/Excel desde el front y la limpieza (paso 6).
+
+**Desde ahora**, cuando `dnf upgrade` actualice `python3.11`, el parche aplica hasta reiniciar el servicio: `sudo dnf needs-restarting -s` lo lista y `sudo systemctl restart guitelintec` lo toma.
+
+Si no se quiere instalar el paquete, la alternativa es usar en el paso 3 `/usr/local/bin/python3.11` (el base de `envg`): limpia los 21 paquetes, pero sigue sin parches.
 
 Mientras siga vivo `envg`: **no** correr `pip install -U` sueltos ahí. Por ejemplo, `setuptools` ≥ 81 rompía `import dropbox` mientras el código lo importaba.
 
@@ -91,7 +114,7 @@ Lectura (la decisión es de `P-178`):
 
 ## `P-178` — elegir versión destino y subir prod de Python 3.11
 
-1. Confirmar los datos del servidor (`P-179`) y **elegir destino**; recomendado `python3.14` de AL2023. Decisión del usuario.
+1. ~~Datos del servidor (`P-179`)~~ — hecho (2026-10-26). **Elegir destino**; recomendado `python3.14` de AL2023. Decisión del usuario.
 2. ~~`pip freeze` de prod y fijar versiones~~ — hecho (2026-10-26): `requirements.txt` + `constraints.txt` = `envg`.
 3. Subir para la versión nueva los paquetes sin rueda (lista de arriba), decidir pandas 3 / PyMuPDF 2 y regenerar `constraints.txt` (receta abajo).
 4. Prod: `sudo dnf install python3.14`, venv nuevo **junto** al actual (mismo procedimiento que `P-182`, sin tocar `/usr/bin/python3`) y apuntar el systemd de gunicorn al venv nuevo. Rollback = regresar al venv viejo.
