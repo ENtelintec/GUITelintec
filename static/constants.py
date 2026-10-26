@@ -8,7 +8,7 @@ from pathlib import Path
 from dotenv import dotenv_values
 from flask_restx import Api
 
-environment = "prod"
+environment = "dev"
 secrets = dotenv_values(".env") if environment != "prod" else dotenv_values("../.env")
 domain_path = "domain.pem" if environment != "prod" else "../domain.pem"
 api = Api()
