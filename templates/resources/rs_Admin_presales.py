@@ -2,7 +2,7 @@
 import os
 import tempfile
 
-from flask import request
+from flask import request, send_file
 from flask_restx import Namespace, Resource
 from werkzeug.utils import secure_filename
 
@@ -72,6 +72,7 @@ from templates.resources.midleware.Functions_midleware_admin import (
 from templates.resources.midleware.MD_Admin_Collections import fetch_products_contracts
 from templates.resources.midleware.MD_QuotationCisco import (
     create_quotation_cisco_api,
+    download_quotation_cisco_pdf,
     get_quotations_cisco_api,
     update_quotation_cisco_api,
 )
@@ -271,6 +272,20 @@ class QuotationCiscoAction(Resource):
         data = validator.data
         data_out, code = update_quotation_cisco_api(data, data_token)
         return data_out, code
+
+
+@ns.route("/quotation/cisco/download/pdf/<int:id_q>")
+class DownloadPDFQuotationCisco(Resource):
+    @ns.expect(expected_headers_per)
+    def get(self, id_q):
+        """PDF FO-PRE-02 R2 de una cotización CISCO (blob en 200; envelope JSON en 404 si no existe o no es CISCO)."""
+        flag, data_token, msg = token_verification_procedure(request, department="administracion")
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        data, code = download_quotation_cisco_pdf(id_q, data_token)
+        if code == 200:
+            return send_file(data, as_attachment=True)  # pyrefly: ignore
+        return data, code
 
 
 @ns.route("/quotation/folio")

@@ -519,6 +519,19 @@ def get_emp_mail(emp_id, data_token):
     return flag, error, result
 
 
+def get_active_employees_by_puesto(department_id: int, puesto_prefixes: tuple, data_token):
+    """Empleados activos del departamento cuyo puesto empieza con alguno de los
+    prefijos (sin distinguir mayusculas): (employee_id, name, l_name, puesto, email)."""
+    conditions = " OR ".join(["UPPER(TRIM(puesto)) LIKE %s"] * len(puesto_prefixes))
+    sql = (
+        "SELECT employee_id, name, l_name, puesto, email FROM sql_telintec.employees "
+        f"WHERE status = 'activo' AND department_id = %s AND ({conditions}) ORDER BY employee_id"
+    )
+    val = (department_id, *[f"{prefix.upper()}%" for prefix in puesto_prefixes])
+    flag, error, result = execute_sql(sql, val, 2, data_token)
+    return flag, error, result
+
+
 def get_contracts_operaciones(data_token):
     sql = "SELECT contrato FROM sql_telintec.employees WHERE department_id = 2"
     flag, error, result = execute_sql(sql, type_sql=5, data_token=data_token)

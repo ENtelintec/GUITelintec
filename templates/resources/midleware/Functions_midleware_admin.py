@@ -319,6 +319,13 @@ def get_quotations(
     # como data_token dejaba id_quotation en None, devolvia TODAS las cotizaciones (el
     # desempaque de 5 variables tronaba) y perdia el cambio de BD del permiso tester.
     flag, error, result = get_quotation(data_token=data_token, id_quotation=id_quotation)
+    if not flag and id_quotation is not None and error == "Quotation not found":
+        # El controller marca el id inexistente como fallo: es 404, no 400.
+        return {
+            "data": [],
+            "msg": f"No se encontró la cotización (ID {id_quotation})",
+            "error": "Quotation not found",
+        }, 404
     if not flag:
         return {
             "data": [],

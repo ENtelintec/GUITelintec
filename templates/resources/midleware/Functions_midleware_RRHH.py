@@ -1122,7 +1122,10 @@ def download_fichaje_file(data):
 def create_payroll_file_attachment_api(data, data_token):
     """Sube un archivo de nomina (pdf o xml) al bucket S3 de RH bajo
     payroll/<year>/<month>/<emp_id>/<filename> y registra la ruta en el
-    indice files_data del empleado (files_data[year][month][key][pdf|xml])."""
+    indice files_data del empleado (files_data[year][month][key][pdf|xml]).
+    Orden para no dejar huerfanos ni llaves rotas: indice leido antes de subir,
+    indice guardado antes de borrar el anterior y, si el indice no se guarda,
+    se retira el objeto que subio este request (docs/nomina_s3_huerfanos.md)."""
     filename = data["filename"]
     filepath_down = data["filepath"]
     key = data["key"]
@@ -1138,10 +1141,23 @@ def create_payroll_file_attachment_api(data, data_token):
     valid_extension = ["pdf", "xml"]
     if file_extension not in valid_extension:
         return {"data": None, "msg": "Formato de archivo no válido (solo pdf o xml)", "error": None}, 400
+    # Indice ANTES de subir: sin fila de nomina o con la BD caida no se sube
+    # nada (antes se tomaba como indice vacio y el UPDATE pisaba todo el
+    # files_data del empleado, o tocaba 0 filas y respondia 201 sin indexar).
+    files_data, error = _load_payroll_index(emp_id, data_token)
+    if files_data is None:
+        return {
+            "data": None,
+            "msg": f"El empleado {emp_id} no tiene registro de nómina",
+            "error": error,
+        }, 404
     # subir a S3: payroll/<year>/<month>/<emp_id>/<filename>
     path_aws = f"payroll/{year}/{month}/{emp_id}/{filename}"
     s3_client = boto3.client("s3")
     bucket_name = secrets.get("S3_RH_BUCKET")
+    # Si la llave ya existia (mismo nombre: S3 la pisa) no la creo este
+    # request y no se retira aunque falle el indice.
+    existed = _payroll_s3_exists(s3_client, str(bucket_name), path_aws)
     try:
         s3_client.upload_file(Filename=filepath_down, Bucket=str(bucket_name), Key=path_aws)
     except FileNotFoundError:
@@ -1157,27 +1173,34 @@ def create_payroll_file_attachment_api(data, data_token):
         else:
             return {"data": None, "msg": f"AWS error: {str(e)}"}, 400
     # registrar la ruta en el indice del empleado, agrupando pdf y xml por 'key'
-    index, _ = _load_payroll_index(emp_id, data_token)
-    files_data: dict = index if isinstance(index, dict) else {}
-    files_data.setdefault(year, {}).setdefault(month, {}).setdefault(key, {})
-    # Reemplazo: el mismo key+kind con otro nombre de archivo deja el objeto
-    # anterior huerfano en S3 -> se borra best-effort (ya subio el nuevo). Con
-    # el mismo nombre, S3 ya lo piso en el upload (misma llave).
-    previous = files_data[year][month][key].get(file_extension)
+    entry = files_data.setdefault(year, {}).setdefault(month, {}).setdefault(key, {})
+    previous = entry.get(file_extension)
+    entry[file_extension] = path_aws
+    flag, error, _ = update_payroll(files_data, emp_id, data_token)
+    if not flag:
+        # El indice no cambio (el anterior sigue vigente): se retira lo que
+        # subio este request para no dejarlo huerfano.
+        detail = "la llave ya existía en S3, se conserva"
+        if not existed:
+            _, detail, _ = _payroll_s3_delete([path_aws], data_token)
+        msg = (
+            f"No se pudo guardar el índice de nómina del empleado {emp_id}; "
+            f"{filename} no quedó registrado ({detail})"
+        )
+        write_log_file(log_file_rh, f"{msg}: {error}", data_token)
+        return {"data": None, "msg": msg, "error": error}, 400
+    # Reemplazo (mismo key+kind, otro nombre): el anterior se borra de S3 ya
+    # con el indice guardado, y solo si ninguna otra nomina del indice lo usa
+    # (mismo nombre de archivo en otro key del mes = misma llave S3). Con el
+    # mismo nombre, S3 ya lo piso en el upload.
     replaced_detail = ""
     error_out = None
     if previous and previous != path_aws:
-        deleted, detail, s3_error = _payroll_s3_delete([previous], data_token)
+        if previous in _payroll_index_keys(files_data):
+            detail = "se conserva en S3: otra nómina del índice lo usa"
+        else:
+            _, detail, error_out = _payroll_s3_delete([previous], data_token)
         replaced_detail = f"; reemplaza a {previous} ({detail})"
-        error_out = s3_error
-    files_data[year][month][key][file_extension] = path_aws
-    flag, error, rows = update_payroll(files_data, emp_id, data_token)
-    if not flag:
-        return {
-            "data": path_aws,
-            "msg": "Archivo subido a S3 pero error al actualizar el indice",
-            "error": error,
-        }, 400
     msg = (
         f"Archivo de nomina {filename} ({file_extension}) subido para el empleado "
         f"{emp_id} en {year}/{month} (key {key}){replaced_detail}"
@@ -1201,6 +1224,18 @@ def _load_payroll_index(emp_id, data_token):
     except (ValueError, TypeError):
         files_data = {}
     return files_data if isinstance(files_data, dict) else {}, None
+
+
+def _payroll_s3_exists(s3_client, bucket_name: str, key: str) -> bool:
+    """True si el objeto ya esta en S3. Ante un error que no sea 404 responde
+    True: quien pregunta solo borra lo que sabe que creo."""
+    try:
+        s3_client.head_object(Bucket=bucket_name, Key=key)
+        return True
+    except ClientError as e:
+        return e.response.get("Error", {}).get("Code") not in ("404", "NoSuchKey", "NotFound")
+    except (NoCredentialsError, BotoCoreError):
+        return True
 
 
 def _payroll_s3_delete(keys, data_token):
@@ -1282,7 +1317,14 @@ def delete_payroll_file_api(data, data_token):
     flag, error, _ = update_payroll(files_data, emp_id, data_token)
     if not flag:
         return {"data": None, "msg": "No se pudo actualizar el índice de nómina", "error": error}, 400
-    s3_deleted, detail, s3_error = _payroll_s3_delete(to_delete, data_token)
+    # Una llave que otra nomina del indice sigue usando (mismo nombre de
+    # archivo en otro key del mes = misma llave S3) no se borra.
+    still_used = _payroll_index_keys(files_data)
+    to_purge = [k for k in to_delete if k not in still_used]
+    if to_purge:
+        s3_deleted, detail, s3_error = _payroll_s3_delete(to_purge, data_token)
+    else:
+        s3_deleted, detail, s3_error = False, "se conserva en S3: otra nómina del índice lo usa", None
     msg = (
         f"Nómina {key} de {month}/{year} del empleado {emp_id}: "
         f"{kind} eliminado del índice ({detail})"
