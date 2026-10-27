@@ -122,5 +122,9 @@ Modo cualitativo (salida): `{ "type": 0, "mode": "qualitative", "qualitative": [
 - ~~**Rúbricas de clima laboral (3) y eva 360 (4)**~~ — hechas: eva 360 en [`eva360_evaluation.md`](eva360_evaluation.md); clima (% positivo, agregado organizacional `GET /quizzes/summary/<type_q>`, ítem invertido y neutral excluido) en [`clima_laboral_rubrica.md`](clima_laboral_rubrica.md).
 - ~~**Rúbrica de salida (0)** — `mode:"qualitative"`, captura + reporte sin score.~~ Hecha (2026-09-07) → [`encuesta_salida_cualitativa.md`](encuesta_salida_cualitativa.md).
 - **Normalizar el shape de respuestas** (`data_raw`) — hoy heterogéneo (`answer` a veces `""`, `0`, `[label,idx]`); `flatten_responses` es el puente. Fijar el contrato de la UI de captura lo simplifica.
-- **Rediseño del PDF** para leer `evaluation` directo y quitar el shim `_legacy_shape_from_evaluation` (aplicar skill `pdf-design`).
+- ~~**Rediseño del PDF** para leer `evaluation` directo y quitar el shim `_legacy_shape_from_evaluation`~~ — hecho (2026-10-27, `P-016`) → [`norma035_pdf.md`](norma035_pdf.md).
 - ~~**Borrar** `calculate_results_quizzes`/`recommendations_results_quizzes` (deprecadas, sin callers).~~ Hecho (2026-10-09) → [`rrhh_vacaciones_y_csv.md`](rrhh_vacaciones_y_csv.md).
+
+## Notas posteriores
+
+- **2026-10-27 — PDF sin shim (`P-016`).** `POST /rrhh/download/quizz/report` ya no escribe `results`/`recommendations` (solo `evaluation`). Norma 035 tiene PDF dedicado que lee `evaluation`; salida, clima y eva 360 individual usan el genérico. El shim y los generadores viejos se borraron. La ruta responde **200** con el blob (este doc decía 201) → [`norma035_pdf.md`](norma035_pdf.md).

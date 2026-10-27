@@ -18,7 +18,6 @@ import pytz
 from static.constants import (
     cache_oct_fichaje_path,
     cache_oct_file_temp_path,
-    conversion_quizzes_path,
     format_date,
     format_timestamps,
     timezone_software,
@@ -1888,89 +1887,3 @@ def get_data_encuesta(file_path: str):
     return data, df
 
 
-class Norm35Formatter:
-    def __init__(self, type_q):
-        dict_conversions = json.load(open(conversion_quizzes_path, encoding="utf-8"))
-        match type_q:
-            case 1:
-                self.dict_categories = dict_conversions["norm035"]["v1"]["categorias"]
-            case 2:
-                self.dict_categories = dict_conversions["norm035"]["v2"]["categorias"]
-
-    def get_categories(self):
-        categories = []
-        for k, v in self.dict_categories.items():
-            categories.append((k, v["categoria"], v["dominio"]))
-        return categories
-
-    def get_category_data(self, category_name):
-        for k, v in self.dict_categories.items():
-            if v["categoria"] == category_name:
-                return k, v["categoria"], list(v["dominio"].keys())
-        return None, None, None
-
-    def get_category_data_by_key(self, keyword):
-        if keyword in self.dict_categories.keys():
-            return (
-                keyword,
-                self.dict_categories[keyword]["categoria"],
-                list(self.dict_categories[keyword]["dominio"].keys()),
-            )
-        return None, None, None
-
-    def get_dominio_data(self, cat_key, dominio):
-        if cat_key in self.dict_categories.keys():
-            if dominio in self.dict_categories[cat_key]["dominio"].keys():
-                return self.dict_categories[cat_key]["dominio"][dominio]["dimensiones"]
-        return None
-
-
-def create_report_encuesta(metadata_list: dict, type_q: int, dict_results_list) -> str:
-    norm35 = Norm35Formatter(type_q)
-
-    columns = [
-        "Total",
-        "Categoria",
-        "Puntos",
-        "Dominio",
-        "Puntos",
-        "Dimension",
-        "Puntos",
-    ]
-    path_out = "files/quizz_out/report_norm35.xlsx"
-    nips = []
-    dfs = []
-    for index, dict_results in enumerate(dict_results_list):
-        data_page = []
-        row = [0, "", 0, "", 0, "", 0]
-        c_final = dict_results["c_final"]
-        c_categoria = dict_results["c_cat"]
-        c_dominio_dict = dict_results["c_dom"]
-        c_dimension_dict = dict_results["c_dim"]
-        row[0] = c_final
-        for category, v in c_categoria.items():
-            row[1] = category
-            row[2] = v
-            key_cat = norm35.get_category_data(category)[0]
-            for dominio, v1 in c_dominio_dict.items():
-                row[3] = dominio
-                row[4] = v1
-                dom_data = norm35.get_dominio_data(key_cat, dominio)
-                if dom_data is None:
-                    continue
-                for dimension, v2 in c_dimension_dict.items():
-                    row[5] = dimension
-                    row[6] = v2
-                    dimensions = [dim_dic["dimension"] for dim_dic in dom_data]
-                    if dimension in dimensions:
-                        data_page.append(row.copy())
-        df = pd.DataFrame(data_page, columns=columns)
-        nip_encuesta = metadata_list[index]["NIP Encuesta:"]
-        nip_encuesta = nip_encuesta.replace("*", "")
-        dfs.append(df)
-        nips.append(nip_encuesta)
-    # save as excel
-    with pd.ExcelWriter(path_out, engine="xlsxwriter", mode="w") as writer:
-        for index, df in enumerate(dfs):
-            df.to_excel(writer, sheet_name=f"{nips[index]}", index=False)
-    return path_out

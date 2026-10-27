@@ -39,3 +39,4 @@ Dev (2026-09-07): rúbrica aplicada por API; `get_quizz_evaluation` de las 2 tas
 ## Notas posteriores
 
 - **2026-10-09**: el usuario corrió `salida_rubrica_tipo0.sql` en test y prod. Verificado en solo lectura: `rubric.mode = "qualitative"` en las 3 BDs, así que `GET /quizz/<id>/evaluation` del tipo 0 ya no responde `data: null` en ninguna.
+- **2026-10-27 — PDF de salida (`P-016`).** El tipo 0 ya no tiene generador dedicado (`QuizzSalidaPDF` se borró): `POST /rrhh/download/quizz/report` usa el PDF genérico con la tabla Pregunta | Respuesta de `answered_sections` (la misma lista que devuelve el modo cualitativo) → [`norma035_pdf.md`](norma035_pdf.md).

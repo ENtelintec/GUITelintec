@@ -98,7 +98,7 @@ Ver también: [`planes/almacen_multisede_plan.md`](planes/almacen_multisede_plan
 
 ## RRHH — Encuestas
 
-- [`encuestas_refactor.md`](encuestas_refactor.md) — `GET /rrhh/quizz/<id_task>/evaluation`: motor de evaluación config-driven (`quizz_eval_engine.py`) con rúbrica en datos y salida uniforme `total`/`breakdown` recursiva (contrato de la UI de resultados); Norma 035 migrada. · 2026-07-28 · ⏳ rediseño PDF Norma 035; normalizar respuestas
+- [`encuestas_refactor.md`](encuestas_refactor.md) — `GET /rrhh/quizz/<id_task>/evaluation`: motor de evaluación config-driven (`quizz_eval_engine.py`) con rúbrica en datos y salida uniforme `total`/`breakdown` recursiva (contrato de la UI de resultados); Norma 035 migrada. · 2026-07-28 · ⏳ normalizar respuestas
 - [`eva360_evaluation.md`](eva360_evaluation.md) — `POST /rrhh/eva360`: Eva 360 como proceso multi-evaluador (task de control + 2-4 tasks por rol ligadas por `evaluation_id`), con detalle, resultado agregado 0-100 por perspectiva/competencia y cierre. · 2026-08-05
 - [`clima_laboral_rubrica.md`](clima_laboral_rubrica.md) — `GET /rrhh/quizzes/summary/<type_q>`: clima laboral (tipo 3) en el motor con % de percepción positiva (neutral excluido, ítem 34 invertido, 9 categorías) y tabla organizacional. · 2026-08-06 · ⏳ PDF individual y export de la tabla
 - [`quizz_models_crud.md`](quizz_models_crud.md) — `/rrhh/quizz/models`: CRUD de modelos de encuesta (template + rúbrica) en `sql_telintec_mod_rrhh.quizz_models`, ciclo de vida borrador/activa/archivada, validación con dry-run y PDF genérico de resumen. · 2026-08-06 · ⏳ PDFs dedicados y editor de rúbricas
@@ -106,6 +106,7 @@ Ver también: [`planes/almacen_multisede_plan.md`](planes/almacen_multisede_plan
 - [`encuesta_salida_cualitativa.md`](encuesta_salida_cualitativa.md) — `GET /rrhh/quizz/<id_task>/evaluation`: encuesta de salida (tipo 0) con rúbrica `mode:"qualitative"` y respuestas resueltas a texto (`answer`, `answer_raw`, `details`). · 2026-09-08
 - [`quizz_models_versionado.md`](quizz_models_versionado.md) — `POST /rrhh/quizz/models/<id>/clone`: versionado de modelos: candado del template por tasks, clonar, publicar archiva la versión anterior y migración de encuestas pendientes (`PUT /migrate-tasks`); `quizz_name` en las tareas del empleado. · 2026-09-08 · ⏳ front pinta `quizz_name`
 - [`eva360_pdf.md`](eva360_pdf.md) — `GET /rrhh/eva360/<evaluation_id>/pdf`: PDF del proceso para RH con evaluadores, resultado por perspectiva, radar 1–5 y tabla competencia × rol; PRELIMINAR mientras esté abierto. · 2026-10-27
+- [`norma035_pdf.md`](norma035_pdf.md) — `POST /rrhh/download/quizz/report`: PDF de Norma 035 leído de `evaluation` (resultado, desglose, acciones por categoría según nivel, anexo de respuestas); salida, clima y eva 360 individual al genérico; sin shim. · 2026-10-27
 
 Ver también: [`migracion_esquemas_rrhh.md`](migracion_esquemas_rrhh.md) (`quizz_tasks`, vistas puente) · [`dashboard_rrhh.md`](dashboard_rrhh.md) (tile de encuestas) · [`planes/archivo/plan_mes_2.md`](planes/archivo/plan_mes_2.md)
 

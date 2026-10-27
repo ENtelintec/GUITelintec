@@ -61,7 +61,6 @@ def iso_format_header(iso_form) -> tuple[str, str]:
         return "", ""
 
 
-
 def wrap_text_width(value, width_pt, font_size, font=FONT_REGULAR):
     """
     Word-wrap por ancho real en puntos (``pdfmetrics.stringWidth``), apto para
@@ -97,37 +96,6 @@ def wrap_text_width(value, width_pt, font_size, font=FONT_REGULAR):
     return lines or [""]
 
 
-def create_datos_personales(
-    master: canvas.Canvas,
-    emp,
-    puesto,
-    term,
-    start,
-    end,
-    interview,
-    interviewer,
-    dim_x,
-    dim_y,
-):
-    pady = 0
-    master.setFont(FONT_BOLD, 10)
-    master.drawString(dim_x + 10, dim_y - 25 - pady, "Nombre y firma del empleado:")
-    master.drawString(dim_x + 10, dim_y - 40 - pady, "Puesto:")
-    master.drawString(dim_x + 10, dim_y - 55 - pady, "Terminal:")
-    master.drawString(dim_x + 10, dim_y - 70 - pady, "Fecha de inicio:")
-    master.drawString(dim_x + 10, dim_y - 85 - pady, "Fecha de fin:")
-    master.drawString(dim_x + 10, dim_y - 100 - pady, "De entrevista:")
-    master.drawString(dim_x + 10, dim_y - 115 - pady, "Nombre y firma del entrevistador:")
-    master.setFont(FONT_REGULAR, 10)
-    master.drawString(dim_x + 180, dim_y - 25 - pady, emp)
-    master.drawString(dim_x + 60, dim_y - 40 - pady, puesto)
-    master.drawString(dim_x + 70, dim_y - 55 - pady, term)
-    master.drawString(dim_x + 110, dim_y - 70 - pady, start)
-    master.drawString(dim_x + 95, dim_y - 85 - pady, end)
-    master.drawString(dim_x + 105, dim_y - 100 - pady, f"{interview}")
-    master.drawString(dim_x + 215, dim_y - 115 - pady, f"{interview}")
-
-
 def print_footer_page_count(pdf, page, font_size=6, right_text="", x_max=a4_x):
     """
     :param x_max:
@@ -143,53 +111,8 @@ def print_footer_page_count(pdf, page, font_size=6, right_text="", x_max=a4_x):
         pdf.drawRightString(x_max - 5, 5, right_text)
 
 
-def display_result(master: canvas.Canvas, dict_quizz, dim_x, dim_y):
-    dict_results = dict_quizz["results"]
-    # Posición inicial de la primera línea
-    pady = 0
-    master.setFont("Helvetica", 10)
-    master.drawString(dim_x + 10, dim_y - 140 - pady, "Your final result is:")
-    master.drawString(
-        dim_x + 10,
-        dim_y - 155 - pady,
-        f"Calificación final: {wrap_text(str(dict_results['c_final']))}",
-    )
-    master.drawString(
-        dim_x + 10,
-        dim_y - 170 - pady,
-        f"Calificación de dominio:{wrap_text(str(dict_results['c_dom']))}",
-    )
-    master.drawString(
-        dim_x + 10,
-        dim_y - 185 - pady,
-        f"Calificacion de categoria: {wrap_text(str(dict_results['c_cat']))}",
-    )
-
-
 def wrap_text(text, width=30):
     return "\n".join(textwrap.wrap(text, width=width))
-
-
-def display_recommendations(master: canvas.Canvas, dict_quizz, dim_x, dim_y):
-    dict_recommendations = dict_quizz["recommendations"]
-    pady = 0
-    master.setFont("Helvetica", 10)
-    master.drawString(dim_x + 10, dim_y - 200 - pady, "Recomendaciones:")
-    master.drawString(
-        dim_x + 10,
-        dim_y - 215 - pady,
-        f"Recomendacion para calificación final:{dict_recommendations['c_final_r']}",
-    )
-    master.drawString(
-        dim_x + 10,
-        dim_y - 230 - pady,
-        f"Recomendacion para calificación de dominio:{dict_recommendations['c_dom_r']}",
-    )
-    master.drawString(
-        dim_x + 10,
-        dim_y - 245 - pady,
-        f"Recomendacion para calificación de categoria:{dict_recommendations['c_cat_r']}",
-    )
 
 
 def create_header_telintec(
@@ -495,19 +418,6 @@ def create_info_materials_request(
             f"{info_dict[key]}",
         )
         position_header_y -= font_size * 1.5
-
-
-def draw_option(x, y, k, options, answers, pdf):
-    if not isinstance(answers, (list, set)):
-        answers = [answers]  # Convertir a lista si es un entero
-
-    for j, option in enumerate(options):
-        if (k, j) in answers:
-            pdf.setFillColorRGB(0, 255, 0)
-            pdf.drawCentredString(x + j * 55, y, "X")
-        else:
-            pdf.setFillColorRGB(0, 0, 0)
-            pdf.drawCentredString(x + j * 55, y, "O")
 
 
 def create_footer_sign(pdf, position_x, position_y, text="Firma"):

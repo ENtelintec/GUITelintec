@@ -240,6 +240,17 @@ def _evaluate_qualitative(data_raw, rubric):
     preguntas con la respuesta ya resuelta a texto (`answer`), el crudo
     (`answer_raw`) y, en matrices, el detalle por subpregunta (`details`),
     en el orden numerico de las secciones."""
+    return {
+        "type": rubric.get("type"),
+        "mode": "qualitative",
+        "qualitative": answered_sections(data_raw),
+    }
+
+
+def answered_sections(data_raw):
+    """Preguntas del `data_raw` con su respuesta en texto, en el orden numerico
+    de las secciones: [{key, question, type, answer, answer_raw, details?}].
+    Lo usan el modo cualitativo y el anexo de respuestas del PDF de Norma 035."""
     collected = []
     if isinstance(data_raw, dict):
 
@@ -263,11 +274,7 @@ def _evaluate_qualitative(data_raw, rubric):
             if details is not None:
                 entry["details"] = details
             collected.append(entry)
-    return {
-        "type": rubric.get("type"),
-        "mode": "qualitative",
-        "qualitative": collected,
-    }
+    return collected
 
 
 def _flatten_for(rubric, data_raw):

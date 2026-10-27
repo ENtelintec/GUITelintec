@@ -976,51 +976,38 @@ def get_quizz_group_evaluation(type_q, data_token, date_from=None, date_to=None)
     return {"data": evaluation, "msg": msg, "error": None}, 200
 
 
-def _legacy_shape_from_evaluation(evaluation):
-    """Deriva el shape viejo (results/recommendations) desde el resultado
-    uniforme del motor, para que el generador de PDF actual siga leyendo
-    `results`/`recommendations` sin tocar el layout de reportlab. Shim de
-    transicion: se elimina cuando el PDF se redisene para leer `evaluation`.
-    """
-    total = evaluation.get("total", {})
-    c_dom, c_cat = {}, {}
-    cat_actions = []
-    for cat in evaluation.get("breakdown", []):
-        c_cat[cat.get("label")] = cat.get("score")
-        if cat.get("actions") and not cat_actions:
-            cat_actions = cat["actions"]
-        for dom in cat.get("children", []):
-            c_dom[dom.get("label")] = dom.get("score")
-    results = {"c_final": total.get("score"), "c_dom": c_dom, "c_cat": c_cat}
-    recommendations = {
-        "c_final_r": total.get("actions", []),
-        "c_dom_r": "",
-        "c_cat_r": cat_actions,
-    }
-    return results, recommendations
+NORMA035_TYPES = (1, 2)
+
+
+def _report_value(value):
+    """Valor de metadata para el PDF; vacio si viene "None" (asi lo guarda el front)."""
+    return None if value in (None, "", "None") else value
 
 
 def generate_pdf_from_json(data, data_token):
-    from static.FramesClasses import dict_typer_quizz_generator
-    from templates.resources.midleware.quizz_eval_engine import evaluate_task
+    """PDF de una encuesta contestada (POST /rrhh/download/quizz/report).
+    Norma 035 (tipos 1 y 2) tiene PDF dedicado; el resto usa el generico de
+    resumen. Los dos leen el resultado del motor (`evaluation`), que se guarda
+    en el data_raw del task; ya no se escriben results/recommendations (P-016,
+    docs/norma035_pdf.md). -> (201, ruta) o (400, mensaje)."""
+    from templates.controllers.rrhh.quizz_models_controller import get_quizz_model_template_db
+    from templates.forms.QuizzGenericReport import create_generic_quizz_report
+    from templates.forms.QuizzNorm35 import FileNorma035PDF
+    from templates.resources.midleware.quizz_eval_engine import answered_sections, evaluate, load_rubric
 
     json_dict = data["body"]
-    tipo_op = json_dict["metadata"]["type_quizz"]
-    # Sin generador dedicado (modelos nuevos creados por API) se usa el PDF
-    # generico de resumen mas abajo — necesita la evaluacion, no el generador.
-    generator = dict_typer_quizz_generator.get(tipo_op)
-
+    metadata = json_dict.get("metadata") or {}
+    tipo_op = metadata["type_quizz"]
     data_raw = (
         json.loads(data["data_raw"]) if isinstance(data["data_raw"], str) else data["data_raw"]
     )
-
+    rubric = load_rubric(tipo_op, data_token)
+    if rubric is None:
+        return 400, f"No hay rubrica para el tipo de encuesta {tipo_op}"
     # Evaluacion via el motor config-driven (fuente de verdad, shape uniforme).
-    evaluation = evaluate_task(data_raw, tipo_op, data_token)
-    if evaluation is not None and evaluation.get("mode") == "scored":
+    evaluation = evaluate(data_raw, rubric)
+    if evaluation.get("mode") == "scored":
         data_raw["evaluation"] = evaluation
-        results, recommendations = _legacy_shape_from_evaluation(evaluation)
-        data_raw["results"] = results
-        data_raw["recommendations"] = recommendations
         # Persistir solo con un id valido (evita pisar la fila 0 por el default del form).
         if data.get("id"):
             flag, error, _ = update_task(
@@ -1030,72 +1017,58 @@ def generate_pdf_from_json(data, data_token):
                 write_log_file(
                     log_file_rh, f"No se pudo actualizar el task de quizz: {error}", data_token
                 )
-    else:
-        # Tipo aun sin rubrica (o cualitativo): expone la evaluacion si existe y
-        # deja defaults seguros para no romper el generador de PDF.
-        if evaluation is not None:
-            data_raw["evaluation"] = evaluation
-        data_raw.setdefault("results", {"c_final": 0, "c_dom": {}, "c_cat": {}})
-        data_raw.setdefault("recommendations", {"c_final_r": [], "c_dom_r": "", "c_cat_r": []})
 
     # Archivo temporal unico por request (evita el clobber del temp compartido).
     file_out = os.path.join(quizz_out_path, f"quiz_report_{uuid.uuid4().hex}.pdf")
-
-    if generator is None:
-        # Fallback: PDF generico de resumen (renderiza el shape uniforme del
-        # motor; sirve para cualquier modelo creado via /rrhh/quizz/models).
-        if evaluation is None:
-            return 400, (
-                f"No hay generador de PDF ni rubrica para el tipo de encuesta {tipo_op}"
+    flag_model, _, model_row = get_quizz_model_template_db(tipo_op, data_token)
+    model_name = (
+        model_row[0]  # pyrefly: ignore
+        if flag_model and model_row
+        else f"Tipo {tipo_op}"
+    )
+    folio = f"Encuesta {data.get('id') or 's/n'} / tipo {tipo_op}"
+    try:
+        is_norma035 = int(tipo_op) in NORMA035_TYPES
+    except (TypeError, ValueError):
+        is_norma035 = False
+    try:
+        if is_norma035 and evaluation.get("mode") == "scored":
+            FileNorma035PDF(
+                {
+                    "path_file": file_out,
+                    "title": model_name,
+                    "folio": folio,
+                    "metadata": [
+                        ("Trabajador", _report_value(metadata.get("name_emp"))),
+                        ("Puesto", _report_value(metadata.get("position"))),
+                        ("Fecha de aplicación", _report_value(metadata.get("date"))),
+                        ("Entrevistador", _report_value(metadata.get("interviewer"))),
+                        ("Fecha de ingreso", _report_value(metadata.get("admision"))),
+                        ("Encuesta", folio),
+                    ],
+                    "evaluation": evaluation,
+                    "levels": rubric.get("levels") or {},
+                    "answers": answered_sections(data_raw),
+                }
             )
-        try:
-            from templates.controllers.rrhh.quizz_models_controller import (
-                get_quizz_model_template_db,
-            )
-            from templates.forms.QuizzGenericReport import create_generic_quizz_report
-
-            flag_model, _, model_row = get_quizz_model_template_db(tipo_op, data_token)
-            model_name = (
-                model_row[0]  # pyrefly: ignore
-                if flag_model and model_row
-                else f"Tipo {tipo_op}"
-            )
-            metadata = json_dict.get("metadata", {})
+        else:
             create_generic_quizz_report(
                 {
                     "path_file": file_out,
                     "title": model_name,
-                    "folio": f"Encuesta {data.get('id') or 's/n'} / tipo {tipo_op}",
+                    "folio": folio,
                     "metadata": {
-                        "Empleado": metadata.get("name_emp"),
-                        "Puesto": metadata.get("position"),
-                        "Fecha": metadata.get("date"),
-                        "Entrevistador": metadata.get("interviewer"),
+                        "Empleado": _report_value(metadata.get("name_emp")),
+                        "Puesto": _report_value(metadata.get("position")),
+                        "Fecha": _report_value(metadata.get("date")),
+                        "Entrevistador": _report_value(metadata.get("interviewer")),
+                        "Fecha de ingreso": _report_value(metadata.get("admision")),
+                        "Fecha de baja": _report_value(metadata.get("departure")),
                         "Modelo": f"{model_name} (tipo {tipo_op})",
                     },
                     "evaluation": evaluation,
                 }
             )
-            return 201, file_out
-        except Exception as e:
-            write_log_file(
-                log_file_rh, f"Error al generar el pdf generico de quizz: {e}", data_token
-            )
-            return 400, "Error al generar el pdf"
-
-    try:
-        generator(
-            data_raw,
-            None,
-            file_out,
-            json_dict["metadata"]["name_emp"],
-            json_dict["metadata"]["position"],
-            "terminal",
-            json_dict["metadata"]["admision"],
-            json_dict["metadata"]["departure"],
-            json_dict["metadata"]["date"],
-            json_dict["metadata"]["interviewer"],
-        )
         return 201, file_out
     except Exception as e:
         write_log_file(log_file_rh, f"Error al generar el pdf de quizz: {e}", data_token)

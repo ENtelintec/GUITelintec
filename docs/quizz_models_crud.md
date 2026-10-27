@@ -134,3 +134,4 @@ Entrada del template: `{ "question": str, "subquestions": [str], "options": [str
 
 - **Alcance**: los modelos nuevos creados por este CRUD son de **respondente único** (una task = una persona); el flujo multi-evaluador queda exclusivo de eva 360 ([`eva360_evaluation.md`](eva360_evaluation.md)).
 - El índice viejo listaba como pendiente "correr DDL + seed en test/prod": cerrado el 2026-08-07 (test con `--test`, prod adelantado al deploy; ver [`pendientes.md`](pendientes.md)).
+- **2026-10-27 — el genérico pasa a ser el PDF por defecto (`P-016`).** Ya no hay mapa `dict_typer_quizz_generator`: todo tipo que no sea Norma 035 (1 y 2) usa `QuizzGenericReport`, también salida, clima y eva 360 individual. Un tipo sin rúbrica responde 400 → [`norma035_pdf.md`](norma035_pdf.md).

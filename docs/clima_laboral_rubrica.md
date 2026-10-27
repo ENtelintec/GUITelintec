@@ -110,6 +110,6 @@ Para clima: `type_q = 3`. Query opcional `date_from` / `date_to` (`YYYY-MM-DD`, 
 
 ## Pendientes
 
-- **PDF individual de clima**: sigue imprimiendo el shape legacy vía el shim (`c_final`/`c_cat` en texto plano). Entra en el rediseño general de PDFs de encuestas (skill `pdf-design`).
+- ~~**PDF individual de clima**~~ — resuelto (2026-10-27, `P-016`): el tipo 3 usa el PDF genérico sobre `evaluation` → [`norma035_pdf.md`](norma035_pdf.md). Antes: sigue imprimiendo el shape legacy vía el shim (`c_final`/`c_cat` en texto plano). Entra en el rediseño general de PDFs de encuestas (skill `pdf-design`).
 - **PDF/export de la tabla organizacional** — hoy solo JSON; el front la pinta.
 - ~~Rúbrica de **salida (0)** cualitativa~~ — hecho en [`encuesta_salida_cualitativa.md`](encuesta_salida_cualitativa.md).

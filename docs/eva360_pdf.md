@@ -33,7 +33,7 @@ Etiquetas de rol: Autoevaluación, Jefe Inmediato, Colega, Subordinado (las del 
 | Controller | [`employees_controller.py`](../templates/controllers/employees/employees_controller.py) | `get_employees_name_puesto(ids)`: nombre, apellidos y puesto por lista de ids |
 | PDF (nuevo) | [`Eva360ProcessReport.py`](../templates/forms/Eva360ProcessReport.py) | `FileEva360ProcessPDF(dict_data)`: helpers `_e3_*`, radar dibujado a mano (el `SpiderChart` de reportlab escala contra el máximo, no 1–5) |
 
-El generador viejo [`Eva360.py`](../templates/forms/Eva360.py) (cuestionario de una perspectiva) sigue en `POST /rrhh/download/quizz/report` hasta `P-016`, que lo pasa al PDF genérico.
+El PDF de una sola perspectiva (`POST /rrhh/download/quizz/report`, tipo 4) usa el genérico desde `P-016` ([`norma035_pdf.md`](norma035_pdf.md)); el generador viejo `Eva360.py` se borró.
 
 ## Contrato mínimo para el front
 
