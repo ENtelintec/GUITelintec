@@ -249,3 +249,21 @@ viejos, leer con defaults): `id_order`, `folio`, `folio_supplier`, `quantity`,
 - Pendiente (2.ª iteración): conciliación por cantidades cruzando
   `movement.id_product` vs `purchase_order_items.extra_info.id_inventory`
   (status `parcial`/`completo` por item).
+
+## Notas posteriores
+
+### 2026-10-27: conciliación por cantidades (`P-115`)
+
+Hecha en [`po_match_cantidades.md`](po_match_cantidades.md). La respuesta solo
+agrega campos (`items[]` y `quantity_status` por OC; `counted` y
+`not_counted_reason` por movimiento), y `reception_status` no cambia. Cambian
+tres cosas de este doc:
+
+- El exacto y el fallback `parcial` se deciden contra los folios de **todas**
+  las OCs no canceladas, no solo las de la respuesta.
+- El filtro de fechas pasó al SQL.
+- Los movimientos se leen desde la fecha de la OC más vieja de la respuesta,
+  así que los capturados antes de que existiera la OC ya no aparecen.
+
+El ejemplo de arriba ya no existe en dev: los movimientos 6871 y 6873 se
+borraron.

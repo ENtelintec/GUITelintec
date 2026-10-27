@@ -155,6 +155,7 @@
 ## Compras / PO
 
 - [x] `P-116` ~~**[back] DDL `gestion_de_compras.sql` en dev**~~ — corrido por el usuario (2026-10-09) con el bloque de FKs, también en test y prod. Verificado en solo lectura: tabla + `fk_pm_supplier`/`fk_pm_client`/`fk_pm_contract`/`fk_pm_po` en las 3 BDs, 0 filas en todas (sin pérdida de datos). → [`gestion_de_compras.md`](gestion_de_compras.md)
+- [x] `P-115` ~~**[back] Conciliación por cantidades**~~ — hecho (2026-10-27): `GET /purchase/movements/match` agrega `items[]` con recibido y estado por partida ligada, `quantity_status` por OC y `counted`/`not_counted_reason` por entrada. Solo suman las exactas, y cada una en una sola OC. Las entradas se acotan por fecha y el filtro de fechas pasó al SQL. De paso se arregló la partida nueva de una solicitud de OC, que ahora va con `order_id`. 41/41 contra dev. Front en `P-183`. → [`po_match_cantidades.md`](po_match_cantidades.md)
 
 ## Contratos / Presales
 

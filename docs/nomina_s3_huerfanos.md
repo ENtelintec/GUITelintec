@@ -43,7 +43,7 @@ script scripts_db_handle/nomina_s3_conciliacion.py (gitignored): reporte de solo
 - Lee las 3 BDs porque **dev, test y prod comparten el bucket `S3_RH_BUCKET` y la misma llave** `payroll/<año>/<mes>/<emp_id>/<archivo>`. Está confirmado: los 2 objetos indexados hoy los referencia prod. Un objeto es huérfano solo si ninguna BD lo tiene, y si una BD no responde el script aborta.
 - Credenciales del `.env` de la raíz, sin pasar por `static/constants.py`, así que no depende de `environment`.
 - Secciones del reporte JSON: `huerfanos` (más de 24 h; los recientes van aparte), `faltantes` por BD (`legacy: true` = llave de SharePoint, las quita `P-141`), `compartidos` (2+ referencias) e `indices_ilegibles`.
-- Uso: `.venv/Scripts/python.exe scripts_db_handle/nomina_s3_conciliacion.py [--out reporte.json]`.
+- Uso: `.venv/Scripts/python.exe scripts_db_handle/nomina_s3_conciliacion.py [--out <ruta>]`. Sin `--out` escribe `scripts_db_handle/nomina_s3_conciliacion_<fecha>.json`, que git ignora. No mandar el reporte a la raíz del repo: ahí git sí lo sigue.
 
 **Primera corrida (2026-10-23):** 9 objetos bajo `payroll/`. Dos los indexa prod: emp 21, `2026-10-Q2`, pdf y xml, subidos el 2026-10-23. Los **7 restantes son huérfanos** (1.44 MB): 5 del emp 21 (meses 01, 09 y 10) y uno del 85 y otro del 87 con el mismo nombre de archivo, subidos entre el 15 y el 22 de octubre. Los 3 empleados tienen fila en las 3 BDs y no hay rastro en los logs locales, así que pasaron por el servidor. La causa probable es un reemplazo o borrado cuyo borrado en S3 falló (`P-176`). Además hay 238 llaves *legacy* por BD sin objeto en S3. 0 compartidos y 0 índices ilegibles.
 
@@ -93,6 +93,24 @@ Mismo contrato. Caso nuevo: si la llave borrada del índice la sigue usando otro
 ## Pendientes
 
 - ~~`P-175` **[back]** Subida/borrado sin huérfanos + conciliación (solo reporte)~~ — hecho (2026-10-23).
-- `P-176` **[usuario → back]** Revisar en el servidor por qué quedaron los 7 huérfanos (`files/logs/rh/*`, buscar `Error al borrar de S3`; si es falta del permiso `s3:DeleteObject`, cada reemplazo y borrado deja uno) y decidir el borrado.
+- `P-176` **[usuario → back]** Borrar los 7 huérfanos cuando RH use nómina al 100 %. Son subidas de pruebas del desarrollo, así que ya no hace falta revisar los logs (decisión del 2026-10-27, ver Notas posteriores). Borrar por la lista del reporte, no por prefijo.
 - ~~`P-177` **[back, decisión]** La llave S3 no lleva entorno ni `key`~~ — hecho (2026-10-27): `payroll/<entorno>/<año>/<mes>/<emp_id>/<quincena>/<archivo>`, y dev/test ya no borran llaves viejas ni ajenas; la conciliación cruza cada prefijo con su BD → [`s3_rutas_por_entorno.md`](s3_rutas_por_entorno.md).
 - `P-141`: ver la nota del 2026-10-23 en [`nomina_descarga_recibo.md`](nomina_descarga_recibo.md). El DML vacía también los recibos reales que prod ya tiene en S3.
+
+## Notas posteriores
+
+### 2026-10-27: segunda conciliación y decisión sobre `P-176`
+
+Se corrió con la versión del script que agrega el campo `entorno` (`P-177`). Hay 9 objetos bajo `payroll/`, los mismos que en la primera corrida:
+
+- Prod sigue indexando solo 2: el recibo del emp 21, `2026-10-Q2` (pdf y xml).
+- Los **7 huérfanos son los mismos de la primera corrida**. No apareció ninguno nuevo, y hay 0 recientes, 0 compartidos y 0 índices ilegibles.
+- Los 7 tienen la ruta vieja, sin entorno (`entorno: sin_entorno`).
+- Los de los emp 85 y 87 son el mismo PDF (296 203 bytes, el mismo tamaño que el del emp 21 en `2026/09`).
+
+**Decisión del usuario**: los 7 son subidas de pruebas hechas durante el desarrollo, antes de `P-177`, cuando dev, test y prod compartían la llave. No hace falta buscar la causa en los logs del servidor. Se quedan en el bucket (1.44 MB) y se borran cuando RH use nómina al 100 %. Al borrarlos:
+
+- **Borrar por la lista del reporte, no por prefijo.** Los 2 recibos reales de prod también tienen la ruta vieja, porque se subieron el 2026-10-23, antes de `P-177`.
+- Si más adelante aparece un huérfano bajo `payroll/prod/...`, ese sí obliga a revisar el permiso `s3:DeleteObject` y los logs (`Error al borrar de S3`).
+
+**Índices**: cada BD (dev, test y prod) tiene 238 llaves de SharePoint sin objeto en S3. Prod tiene 240 en total, contando las 2 reales. Esto confirma que el DML de `P-141` no se ha corrido en ninguna BD, y que tal como está también sacaría del índice los 2 recibos reales de prod.

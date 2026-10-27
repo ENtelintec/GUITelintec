@@ -36,7 +36,7 @@ def get_ins_db(data_token):
     return flag, error, my_result
 
 
-def get_ins_db_detail(data_token):
+def get_ins_db_detail(data_token, date_from=None):
     sql = (
         "SELECT "
         "sql_telintec.product_movements_amc.id_movement, "
@@ -55,9 +55,11 @@ def get_ins_db_detail(data_token):
         "INNER JOIN sql_telintec.products_amc ON sql_telintec.product_movements_amc.id_product = sql_telintec.products_amc.id_product "
         "LEFT JOIN sql_telintec.suppliers_amc ON sql_telintec.products_amc.id_supplier = sql_telintec.suppliers_amc.id_supplier "
         "WHERE sql_telintec.product_movements_amc.movement_type = 'entrada' "
-        "AND sql_telintec.product_movements_amc.id_warehouse IS NULL ORDER BY movement_date DESC;"
+        "AND sql_telintec.product_movements_amc.id_warehouse IS NULL "
+        "AND (sql_telintec.product_movements_amc.movement_date >= %s OR %s IS NULL) "
+        "ORDER BY movement_date DESC;"
     )
-    flag, error, my_result = execute_sql(sql, None, 5, data_token)
+    flag, error, my_result = execute_sql(sql, (date_from, date_from), 2, data_token)
     return flag, error, my_result
 
 

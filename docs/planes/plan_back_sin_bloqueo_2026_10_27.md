@@ -6,7 +6,8 @@
 
 - **2026-10-27 — `P-177` hecho** (44/44 nómina contra dev, 24/24 lógica de rutas y borrado, regresión en verde) → [`s3_rutas_por_entorno.md`](../s3_rutas_por_entorno.md).
 - **2026-10-27 — `P-017` hecho** (13/13 contra dev, páginas revisadas) → [`eva360_pdf.md`](../eva360_pdf.md).
-- **2026-10-27 — `P-016` hecho** (16/16 contra dev, páginas revisadas) → [`norma035_pdf.md`](../norma035_pdf.md). Sigue `P-115`.
+- **2026-10-27 — `P-016` hecho** (16/16 contra dev, páginas revisadas) → [`norma035_pdf.md`](../norma035_pdf.md).
+- **2026-10-27 — `P-115` hecho** (41/41 contra dev) → [`po_match_cantidades.md`](../po_match_cantidades.md). La revisión de `insert_purchase_order_item_from_applications` encontró el error en `update_po_application_api`, que guardaba la partida nueva de una solicitud con `purchase_id`; quedó arreglado. Front en `P-183`. Sigue `P-114`.
 
 ## Orden
 
