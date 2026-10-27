@@ -100,3 +100,7 @@ Contra BD dev (2026-10-16), `Tests/tester_vales_put_anexos.py` (gitignored), **4
 ## Pendientes
 
 - **[front]** `P-125`: botones Descargar y Eliminar (con confirmación) en la lista de anexos de Editar vale, consumiendo estas rutas; retirar el aviso "guarda primero el formulario".
+
+## Notas posteriores
+
+- **2026-10-27 — rutas S3 con entorno (`P-177`).** Las subidas nuevas van a `eppVoucher|toolsVoucher/<entorno>/<Y/m/d>/<id>-<archivo>`; las rutas guardadas antes siguen funcionando. El borrado responde `s3_deleted: false` con una ruta vieja en dev/test. En dev y test, una entrada con ruta vieja se quita de la lista sin borrar el objeto (puede ser de prod; solo prod la borra) → [`s3_rutas_por_entorno.md`](s3_rutas_por_entorno.md).

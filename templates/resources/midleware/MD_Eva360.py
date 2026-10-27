@@ -17,13 +17,22 @@ __author__ = "Edisson Naula"
 __date__ = "$ 05/ago./2026 $"
 
 import json
+import os
+import tempfile
 import uuid
+from datetime import datetime
 
+import pytz
+from werkzeug.utils import secure_filename
+
+from static.constants import timezone_software
+from templates.controllers.employees.employees_controller import get_employees_name_puesto
 from templates.controllers.misc.tasks_controller import (
     create_task,
     get_tasks_by_eva360_group,
     update_task,
 )
+from templates.forms.Eva360ProcessReport import FileEva360ProcessPDF
 from templates.Functions_Utils import create_notification_permission_notGUI
 from templates.resources.midleware.quizz_eval_engine import (
     evaluate,
@@ -216,19 +225,15 @@ def get_eva360_process(evaluation_id, data_token):
     return {"data": data_out, "msg": None, "error": None}, 200
 
 
-def get_eva360_result(evaluation_id, data_token):
-    """Resultado agregado del proceso (evaluate_eva360): general, por
-    perspectiva y por competencia. Promedia solo las respondidas."""
-    err, code, control, raters = _load_process(evaluation_id, data_token)
-    if err is not None:
-        return err, code
+def _build_result(evaluation_id, control, raters, data_token):
+    """Agregado del proceso ya cargado. -> (envelope_error | None, code, result)."""
     rubric = load_rubric(EVA360_TYPE, data_token)
     if rubric is None:
         return {
             "data": None,
             "msg": "No hay rubrica para eva 360 (files/rubrics/4.json)",
             "error": None,
-        }, 400
+        }, 400, None
     rubric_items = _rubric_items(rubric)
     perspectives = []
     for r in raters:
@@ -246,7 +251,97 @@ def get_eva360_result(evaluation_id, data_token):
     )
     result["status_eval"] = ctrl_meta.get("status_eval", "open")
     result["evaluated_name"] = ctrl_meta.get("name_emp")
+    return None, 200, result
+
+
+def get_eva360_result(evaluation_id, data_token):
+    """Resultado agregado del proceso (evaluate_eva360): general, por
+    perspectiva y por competencia. Promedia solo las respondidas."""
+    err, code, control, raters = _load_process(evaluation_id, data_token)
+    if err is not None:
+        return err, code
+    err, code, result = _build_result(evaluation_id, control, raters, data_token)
+    if err is not None:
+        return err, code
     return {"data": result, "msg": None, "error": None}, 200
+
+
+def _as_int(value):
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _employees_brief(emp_ids, data_token):
+    """emp_id -> (nombre, puesto) del catalogo de empleados; vacio si falla."""
+    flag, error, rows = get_employees_name_puesto(emp_ids, data_token)
+    if not flag or not isinstance(rows, list):
+        return {}
+    out = {}
+    for row in rows:
+        name = " ".join(str(part).strip() for part in (row[1], row[2]) if part)
+        puesto = str(row[3]).strip() if row[3] not in (None, "", "None") else ""
+        out[int(row[0])] = (name, puesto)
+    return out
+
+
+def download_eva360_pdf(evaluation_id, data_token):
+    """PDF del proceso para RH (P-017): (ruta, 200) o (envelope, 4xx).
+    404 proceso inexistente; 400 sin rubrica o con 0 perspectivas respondidas."""
+    err, code, control, raters = _load_process(evaluation_id, data_token)
+    if err is not None:
+        return err, code
+    err, code, result = _build_result(evaluation_id, control, raters, data_token)
+    if err is not None:
+        return err, code
+    if not result.get("answered"):  # pyrefly: ignore
+        return {
+            "data": None,
+            "msg": f"El proceso eva 360 {evaluation_id} no tiene perspectivas respondidas; no hay nada que reportar",
+            "error": None,
+        }, 400
+    ctrl_meta = control["meta"] if control else {}
+    ctrl_body = control["body"] if control else {}
+    evaluated_emp = ctrl_meta.get("evaluated_emp_id")
+    emp_ids = [evaluated_emp] + [r["body"].get("emp_destiny") for r in raters]
+    brief = _employees_brief([i for i in map(_as_int, emp_ids) if i], data_token)
+    by_perspective = result.get("by_perspective") or {}  # pyrefly: ignore
+    raters_out = []
+    for r in raters:
+        role = r["meta"].get("eva360_role")
+        emp_destiny = r["body"].get("emp_destiny")
+        name, position = brief.get(_as_int(emp_destiny) or 0, ("", ""))
+        perspective = by_perspective.get(role) or {}
+        raters_out.append({
+            "role": role,
+            "name": name or f"Empleado {emp_destiny}",
+            "position": position,
+            "answered": role in by_perspective,
+            "score_100": perspective.get("score_100"),
+            "raw_total": perspective.get("raw_total"),
+        })
+    evaluated_name, evaluated_position = brief.get(_as_int(evaluated_emp) or 0, ("", ""))
+    now = datetime.now(pytz.utc).astimezone(pytz.timezone(timezone_software))
+    name_for_file = ctrl_meta.get("name_emp") or evaluated_name or str(evaluated_emp or "")
+    file_name = secure_filename(f"eva360_{name_for_file}_{now:%Y%m%d}.pdf") or f"eva360_{evaluation_id[:8]}.pdf"
+    path_file = os.path.join(tempfile.mkdtemp(), file_name)
+    FileEva360ProcessPDF({
+        "path_file": path_file,
+        "evaluation_id": evaluation_id,
+        "evaluated_name": ctrl_meta.get("name_emp") or evaluated_name or f"Empleado {evaluated_emp}",
+        "evaluated_position": evaluated_position,
+        "date_limit": str(ctrl_body.get("date_limit") or "")[:10],
+        "status_eval": result.get("status_eval"),  # pyrefly: ignore
+        "assigned": result.get("assigned"),  # pyrefly: ignore
+        "answered": result.get("answered"),  # pyrefly: ignore
+        "general": (result.get("general") or {}).get("score_100"),  # pyrefly: ignore
+        "expected_roles": ctrl_meta.get("expected_roles") or [r["role"] for r in raters_out],
+        "raters": raters_out,
+        "competencies": result.get("competencies") or [],  # pyrefly: ignore
+        "issued": now.strftime("%Y-%m-%d %H:%M"),
+    })
+    return path_file, 200
 
 
 def complete_eva360_process(evaluation_id, data_token):

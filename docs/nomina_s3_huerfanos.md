@@ -94,5 +94,5 @@ Mismo contrato. Caso nuevo: si la llave borrada del índice la sigue usando otro
 
 - ~~`P-175` **[back]** Subida/borrado sin huérfanos + conciliación (solo reporte)~~ — hecho (2026-10-23).
 - `P-176` **[usuario → back]** Revisar en el servidor por qué quedaron los 7 huérfanos (`files/logs/rh/*`, buscar `Error al borrar de S3`; si es falta del permiso `s3:DeleteObject`, cada reemplazo y borrado deja uno) y decidir el borrado.
-- `P-177` **[back, decisión]** La llave S3 no lleva entorno ni `key`: una prueba en dev/test con `emp_id` y nombre reales **pisa el recibo de prod**, y el mismo nombre en Q1 y Q2 comparte objeto. Propuesta: `payroll/<entorno>/<año>/<mes>/<emp_id>/<key>/<archivo>`. Solo para subidas nuevas; las llaves viejas se siguen leyendo del índice.
+- ~~`P-177` **[back, decisión]** La llave S3 no lleva entorno ni `key`~~ — hecho (2026-10-27): `payroll/<entorno>/<año>/<mes>/<emp_id>/<quincena>/<archivo>`, y dev/test ya no borran llaves viejas ni ajenas; la conciliación cruza cada prefijo con su BD → [`s3_rutas_por_entorno.md`](s3_rutas_por_entorno.md).
 - `P-141`: ver la nota del 2026-10-23 en [`nomina_descarga_recibo.md`](nomina_descarga_recibo.md). El DML vacía también los recibos reales que prod ya tiene en S3.

@@ -135,6 +135,7 @@ from templates.resources.midleware.Functions_midleware_RRHH import (
 from templates.resources.midleware.MD_Eva360 import (
     complete_eva360_process,
     create_eva360_process,
+    download_eva360_pdf,
     get_eva360_process,
     get_eva360_result,
 )
@@ -743,6 +744,20 @@ class Eva360Result(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         out, code = get_eva360_result(evaluation_id, data_token)
+        return out, code
+
+
+@ns.route("/eva360/<string:evaluation_id>/pdf")
+class Eva360Pdf(Resource):
+    @ns.expect(expected_headers_per)
+    def get(self, evaluation_id):
+        """PDF del proceso eva 360 para RH (blob en 200; envelope JSON en 404 inexistente / 400 sin rúbrica o sin respuestas)."""
+        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        out, code = download_eva360_pdf(evaluation_id, data_token)
+        if code == 200:
+            return send_file(out, as_attachment=True, download_name=os.path.basename(out))  # pyrefly: ignore
         return out, code
 
 

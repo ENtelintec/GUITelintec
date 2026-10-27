@@ -71,6 +71,7 @@ from templates.Functions_Utils import (
     create_notification_permission_notGUI,
 )
 from templates.misc.Functions_Files import write_log_file
+from templates.resources.methods.Functions_Aux_S3 import s3_env_key
 from templates.resources.midleware.Functions_midleware_admin import get_iddentifiers
 
 __author__ = "Edisson Naula"
@@ -1820,8 +1821,11 @@ def create_sm_attachment_api(data, data_token):
             {"data": None, "msg": "Formato de archivo no valido", "error": file_extension},
             400,
         )
-    # create name sm/year/month/day/filename
-    path_aws = f"smData/{date_sm.strftime('%Y/%m/%d/')}{data['filename']}"
+    # smData/<entorno>/<año/mes/día>/<id_sm>/<archivo> (P-177): sin el id, dos
+    # SMs del mismo día con un anexo del mismo nombre compartían objeto.
+    path_aws = s3_env_key(
+        "smData", f"{date_sm.strftime('%Y/%m/%d/')}{data['id_sm']}/{data['filename']}", data_token
+    )
     s3_client = boto3.client("s3")
     bucket_name = secrets.get("S3_ADMIN_BUCKET")
     msg = f"Archivo adjunto agregado: {filename} al sm {data['id_sm']} por el empleado {data_token.get('name')}"

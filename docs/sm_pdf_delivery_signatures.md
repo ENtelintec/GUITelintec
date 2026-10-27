@@ -186,3 +186,5 @@ Respuestas (`{data, msg, error}`):
 Pendiente front (P-045): segundo pad "Firma de quien entrega" en
 `/dashboard/almacen/procesamiento/firmas/<id>` que suba
 `<id>-firma-entrega-<marca>.png` con la marca compartida.
+
+- **2026-10-27 — rutas S3 con entorno (`P-177`).** Las subidas nuevas van a `smData/<entorno>/<Y/m/d>/<id_sm>/<archivo>`; las rutas guardadas antes siguen funcionando. Las firmas se siguen bajando de la ruta guardada. → [`s3_rutas_por_entorno.md`](s3_rutas_por_entorno.md).

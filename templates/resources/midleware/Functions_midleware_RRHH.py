@@ -15,6 +15,7 @@ import boto3
 import pandas as pd
 import pytz
 from botocore.exceptions import BotoCoreError, ClientError, NoCredentialsError
+from werkzeug.utils import secure_filename
 
 from static.constants import (
     cache_file_emp_fichaje,
@@ -47,6 +48,7 @@ from templates.controllers.employees.employees_controller import (
 )
 from templates.controllers.employees.us_controller import get_user_by_emp_id
 from templates.resources.methods.Functions_Aux_RH import join_emails, last_medical_date, medical_due, normalize_emails, split_emails
+from templates.resources.methods.Functions_Aux_S3 import s3_can_delete, s3_env_key
 from templates.controllers.notifications.Notifications_controller import (
     insert_notification,
 )
@@ -1121,7 +1123,7 @@ def download_fichaje_file(data):
 
 def create_payroll_file_attachment_api(data, data_token):
     """Sube un archivo de nomina (pdf o xml) al bucket S3 de RH bajo
-    payroll/<year>/<month>/<emp_id>/<filename> y registra la ruta en el
+    payroll/<entorno>/<year>/<month>/<emp_id>/<quincena>/<filename> y registra la ruta en el
     indice files_data del empleado (files_data[year][month][key][pdf|xml]).
     Orden para no dejar huerfanos ni llaves rotas: indice leido antes de subir,
     indice guardado antes de borrar el anterior y, si el indice no se guarda,
@@ -1151,8 +1153,10 @@ def create_payroll_file_attachment_api(data, data_token):
             "msg": f"El empleado {emp_id} no tiene registro de nómina",
             "error": error,
         }, 404
-    # subir a S3: payroll/<year>/<month>/<emp_id>/<filename>
-    path_aws = f"payroll/{year}/{month}/{emp_id}/{filename}"
+    # subir a S3: payroll/<entorno>/<year>/<month>/<emp_id>/<quincena>/<filename>
+    # (P-177): con la quincena, el mismo nombre en Q1 y Q2 ya no comparte objeto.
+    key_segment = secure_filename(key) or "sin_quincena"
+    path_aws = s3_env_key("payroll", f"{year}/{month}/{emp_id}/{key_segment}/{filename}", data_token)
     s3_client = boto3.client("s3")
     bucket_name = secrets.get("S3_RH_BUCKET")
     # Si la llave ya existia (mismo nombre: S3 la pisa) no la creo este
@@ -1240,10 +1244,18 @@ def _payroll_s3_exists(s3_client, bucket_name: str, key: str) -> bool:
 
 def _payroll_s3_delete(keys, data_token):
     """Borra objetos del bucket de RH best-effort (nunca fatal: la BD ya
-    quedo consistente). -> (deleted: bool, detail: str, error: str | None)."""
+    quedo consistente). -> (deleted: bool, detail: str, error: str | None).
+    Solo borra las llaves que este entorno puede borrar (s3_can_delete, P-177):
+    una llave vieja compartida con prod se queda en S3."""
     keys = [k for k in keys if k]
     if not keys:
         return False, "Sin llave en S3 que eliminar", None
+    kept = [k for k in keys if not s3_can_delete(k, data_token)]
+    keys = [k for k in keys if k not in kept]
+    if kept:
+        write_log_file(log_file_rh, f"S3 sin borrar (llave de otro entorno o sin entorno): {kept}", data_token)
+    if not keys:
+        return False, "se conserva en S3: la ruta es de otro entorno o anterior a P-177 (solo prod la borra)", None
     s3_client = boto3.client("s3")
     bucket_name = secrets.get("S3_RH_BUCKET")
     try:

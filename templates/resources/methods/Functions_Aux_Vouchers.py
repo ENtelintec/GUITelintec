@@ -38,6 +38,7 @@ from templates.controllers.vouchers.vouchers_controller import (
     update_voucher_files,
 )
 from templates.Functions_Utils import create_notification_permission_notGUI
+from templates.resources.methods.Functions_Aux_S3 import s3_can_delete, s3_env_key
 from templates.misc.Functions_Files import write_log_file
 
 # Por tipo de vale: tabla (la resuelve el controller por `kind`), prefijo S3,
@@ -132,6 +133,29 @@ def load_voucher(kind: str, id_voucher, data_token):
     return None, 200, head
 
 
+def _delete_voucher_objects(kind: str, keys: list, data_token) -> bool:
+    """Borra de S3 best-effort las llaves que este entorno puede borrar
+    (s3_can_delete, P-177: una llave sin entorno puede ser de otra BD con el
+    mismo id de vale; solo prod la borra). True si se borraron todas."""
+    cfg = VOUCHER_FILE_KINDS[kind]
+    bucket_name = secrets.get("S3_CH_BUCKET")
+    deleted_all = True
+    for key in keys:
+        if not key:
+            continue
+        if not s3_can_delete(key, data_token):
+            deleted_all = False
+            write_log_file(cfg["log_file"], f"S3 sin borrar (llave de otro entorno o sin entorno): {key}", data_token)
+            continue
+        try:
+            boto3.client("s3").delete_object(Bucket=str(bucket_name), Key=key)
+        except (NoCredentialsError, ClientError) as e:
+            # El anexo ya no esta en el vale; el objeto huerfano solo ocupa espacio.
+            deleted_all = False
+            write_log_file(cfg["log_file"], f"No se pudo borrar de S3 {key}: {str(e)}", data_token)
+    return deleted_all
+
+
 def _upload_to_s3(filepath, key):
     """Sube el archivo; devuelve (payload_error, code) o (None, 201)."""
     bucket_name = secrets.get("S3_CH_BUCKET")
@@ -206,7 +230,8 @@ def delete_voucher_file(kind: str, data: dict, data_token):
     Misma escritura condicional que el alta (`files` + history en una
     sentencia, hasta FILES_WRITE_ATTEMPTS intentos, 409 si no se logra);
     MySQL primero y S3 despues (best-effort: la llave lleva el id del vale,
-    asi que no la comparte otro vale). Las firmas no se borran (400): mueven
+    asi que no la comparte otro vale; una llave sin entorno puede ser de otra
+    BD con el mismo id y solo la borra prod, P-177). Las firmas no se borran (400): mueven
     el status al subirse y borrarlas dejaria el vale firmado sin respaldo;
     para corregir una firma se vuelve a subir con el mismo nombre.
     200 ``{"data": {"id_voucher", "filename", "path", "s3_deleted", "files"}}``;
@@ -270,14 +295,7 @@ def delete_voucher_file(kind: str, data: dict, data_token):
             "msg": "La lista de anexos cambió mientras se guardaba (escrituras simultáneas). Vuelve a intentar",
             "error": "conflicto de escritura en files",
         }, 409
-    s3_deleted = True
-    bucket_name = secrets.get("S3_CH_BUCKET")
-    try:
-        boto3.client("s3").delete_object(Bucket=str(bucket_name), Key=path_aws)
-    except (NoCredentialsError, ClientError) as e:
-        # El anexo ya no esta en el vale; el objeto huerfano solo ocupa espacio.
-        s3_deleted = False
-        write_log_file(cfg["log_file"], f"No se pudo borrar de S3 {path_aws}: {str(e)}", data_token)
+    s3_deleted = _delete_voucher_objects(kind, [path_aws], data_token)
     msg = f"Archivo adjunto eliminado: {filename} del voucher {id_voucher} por el empleado {data_token.get('name')}"
     write_log_file(cfg["log_file"], msg, data_token)
     return {
@@ -327,7 +345,8 @@ def attach_voucher_file(kind: str, data: dict, data_token):
     time_zone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
     date_voucher = head["date"]  # pyrefly: ignore
-    path_aws = f"{cfg['s3_prefix']}/{date_voucher.strftime('%Y/%m/%d/')}{filename}"
+    # <prefijo>/<entorno>/<año/mes/día>/<id>-<archivo> (P-177)
+    path_aws = s3_env_key(cfg["s3_prefix"], f"{date_voucher.strftime('%Y/%m/%d/')}{filename}", data_token)
     payload_error, code = _upload_to_s3(filepath, path_aws)
     if payload_error is not None:
         return payload_error, code
@@ -339,6 +358,7 @@ def attach_voucher_file(kind: str, data: dict, data_token):
             status_signature, status_label = status_value, label
     new_entry = {"filename": filename, "path": path_aws, "timestamp": timestamp}
     msg = ""
+    stale_keys: list = []
     for attempt in range(FILES_WRITE_ATTEMPTS):
         if attempt > 0:
             files_retry_pause(attempt)
@@ -354,10 +374,17 @@ def attach_voucher_file(kind: str, data: dict, data_token):
                 msg += " (voucher cancelado: el estado no cambia)"
             else:
                 msg += f" y estado actualizado a ({status_label})"
-        # Re-subir el mismo archivo reemplaza su entrada en vez de duplicarla
-        # (misma llave S3: el objeto ya se sobreescribio).
-        replaced = any(file.get("path") == path_aws for file in files)
-        new_files = [file for file in files if file.get("path") != path_aws]
+        # Re-subir el mismo archivo reemplaza su entrada en vez de duplicarla.
+        # "Mismo archivo" = mismo filename (P-177): una entrada vieja puede tener
+        # otra llave (sin entorno); se desvincula y su objeto se borra si se puede.
+        replaced = any(file.get("path") == path_aws or file.get("filename") == filename for file in files)
+        stale_keys = sorted({
+            str(file.get("path")) for file in files
+            if file.get("filename") == filename and file.get("path") and file.get("path") != path_aws
+        })
+        new_files = [
+            file for file in files if file.get("path") != path_aws and file.get("filename") != filename
+        ]
         if replaced:
             msg += " (reemplaza el archivo previo con el mismo nombre)"
         new_files.append(new_entry)
@@ -395,6 +422,8 @@ def attach_voucher_file(kind: str, data: dict, data_token):
             ),
             "error": "conflicto de escritura en files",
         }, 409
+    if stale_keys:
+        _delete_voucher_objects(kind, stale_keys, data_token)
     create_notification_permission_notGUI(
         msg, data_token, ["administracion", "operaciones", "sgi"], data_token.get("emp_id"), 0
     )

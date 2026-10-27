@@ -204,6 +204,22 @@ def get_employees_w_status(status: str, quantity: int, date: str, data_token):
     return flag, error, result, columns
 
 
+def get_employees_name_puesto(ids, data_token):
+    """(employee_id, name, l_name, puesto) de una lista de ids; ids vacios ->
+    lista vacia sin ir a la BD."""
+    ids = sorted({int(i) for i in ids if i})
+    if not ids:
+        return True, None, []
+    placeholders = ", ".join(["%s"] * len(ids))
+    sql = (
+        "SELECT employee_id, name, l_name, puesto "
+        "FROM sql_telintec.employees "
+        f"WHERE employee_id IN ({placeholders})"
+    )
+    flag, error, result = execute_sql(sql, tuple(ids), 2, data_token)
+    return flag, error, result
+
+
 def get_employee_info(id_e: int, data_token):
     columns = (
         "employee_id",

@@ -64,3 +64,7 @@ Si un key viene vacío o falla la descarga, se omite; si no baja ninguno → 400
   del `POST /payroll/files/update` (envelope `{data,msg,error}` + reemplazo del
   objeto anterior) y el `DELETE /payroll/files` están en
   [`nomina_gestion_archivos_y_notificacion.md`](nomina_gestion_archivos_y_notificacion.md).
+
+## Notas posteriores
+
+- **2026-10-27 — rutas S3 con entorno (`P-177`).** Las subidas nuevas van a `payroll/<entorno>/<año>/<mes>/<emp_id>/<quincena>/<archivo>`; las rutas guardadas antes siguen funcionando. El mismo nombre en Q1 y Q2 ya no comparte objeto. En dev y test, una entrada con ruta vieja se quita de la lista sin borrar el objeto (puede ser de prod; solo prod la borra) → [`s3_rutas_por_entorno.md`](s3_rutas_por_entorno.md).

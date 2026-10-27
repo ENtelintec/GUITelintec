@@ -115,3 +115,4 @@ Mismo shape que `/me` para todos los empleados (o uno con `emp_id`), más `meta:
 ## Notas posteriores
 
 - **2026-10-22 — DDL y verificación completa**: `checkins.sql` corrido en dev, test y prod. En solo lectura, las 3 tablas son idénticas al script: 15 columnas, índices `idx_checkins_emp_ts` / `_ts` / `_status`, `fk_checkins_employee` (RESTRICT al borrar, CASCADE al actualizar) y 0 filas. `Tests/tester_checkin.py` contra dev, ya con la tabla: **37/37**, incluidas altas con foto, manual de RH, anulación, `history`, fotos propias/ajenas y resumen por día. Cierra `P-164` y `P-165`; queda el front (`P-166`).
+- **2026-10-27 — rutas S3 con entorno (`P-177`).** Las subidas nuevas van a `checkins/<entorno>/<emp_id>/<fecha>/<epoch_ms>-<type>.<ext>`; las rutas guardadas antes siguen funcionando. El ejemplo `photo_key` de este doc es del formato anterior. → [`s3_rutas_por_entorno.md`](s3_rutas_por_entorno.md).

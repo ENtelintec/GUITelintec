@@ -257,3 +257,4 @@ form.append("category", "firma");
 ## Notas posteriores
 
 - **2026-10-16** (`P-054`, cerrado por decisión): la remisión **no** lleva firma de "quien entrega". El reporte anexo ya trae la firma del líder, al capturar en Control de saldos se confirma que entregó la información y administración la confirma de recibida al completar la remisión. Una `firma-entrega` seguiría cayendo en el recuadro 1 por defecto: el front **no la captura**. Se retoma solo con petición explícita de administración en reunión futura. La firma de quien entrega sí existe en la SM ([`sm_pdf_delivery_signatures.md`](sm_pdf_delivery_signatures.md), `P-045`).
+- **2026-10-27 — rutas S3 con entorno (`P-177`).** Las subidas nuevas van a `reportActivity/<entorno>/<Y/m/d>/<id_report>/<archivo>`; las rutas guardadas antes siguen funcionando. La fusión lee la ruta guardada de cada anexo, así que no cambia. → [`s3_rutas_por_entorno.md`](s3_rutas_por_entorno.md).

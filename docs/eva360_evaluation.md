@@ -102,5 +102,5 @@ Sin framework de tests (gitignored): validado offline con el motor real y el mid
 ## Pendientes
 - ~~**Clima laboral (tipo 3)**~~ — hecho: rúbrica % positivo + agregado organizacional en [`clima_laboral_rubrica.md`](clima_laboral_rubrica.md).
 - ~~**Salida (tipo 0)** — rúbrica cualitativa (`mode:"qualitative"`)~~ — hecho en [`encuesta_salida_cualitativa.md`](encuesta_salida_cualitativa.md).
-- **PDF de eva 360** — `Eva360.py` sigue imprimiendo el cuestionario individual; falta un reporte del proceso agregado (radar/tabla comparativa, skill `pdf-design`).
+- ~~**PDF de eva 360**~~ — hecho (2026-10-27, `P-017`): `GET /rrhh/eva360/<evaluation_id>/pdf` → [`eva360_pdf.md`](eva360_pdf.md).
 - El fix de la Q12 duplicada asume corte duro; si apareciera una task eva 360 vieja con 14 preguntas, su `data_raw` tendría la Comunicación en la llave 13 (la rúbrica la leería en 12) — no hay tasks así en dev/prod.

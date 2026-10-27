@@ -92,3 +92,7 @@ llegó a subir un archivo. Ahora usa la tupla directa con guard de
   pre-llena "Fecha de Entrega" con `timestamp`/`title` **e incrusta la firma de
   quien recibe** (imagen bajada de S3) en la celda correspondiente
   (ver [`sm_pdf_delivery_signatures.md`](sm_pdf_delivery_signatures.md)).
+
+## Notas posteriores
+
+- **2026-10-27 — rutas S3 con entorno (`P-177`).** Las subidas nuevas van a `smData/<entorno>/<Y/m/d>/<id_sm>/<archivo>`; las rutas guardadas antes siguen funcionando. La ruta gana el id de la SM: antes dos SMs del mismo día con un anexo del mismo nombre compartían objeto. → [`s3_rutas_por_entorno.md`](s3_rutas_por_entorno.md).

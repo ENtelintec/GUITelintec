@@ -64,3 +64,7 @@ Contra BD dev (2026-10-09), [`Tests/tester_remission_files_cas.py`](../Tests/tes
   - 4 borrados + 4 subidas simultáneos → la lista final es exactamente la esperada y el `status` de la firma queda intacto.
 
 `pyrefly`: 0 errores en los 2 archivos.
+
+## Notas posteriores
+
+- **2026-10-27 — rutas S3 con entorno (`P-177`).** Las subidas nuevas van a `reportActivity/<entorno>/<Y/m/d>/<id_report>/<archivo>`; las rutas guardadas antes siguen funcionando. Re-subir el mismo nombre (p. ej. corregir una firma) reemplaza la entrada aunque la anterior tenga la ruta vieja. En dev y test, una entrada con ruta vieja se quita de la lista sin borrar el objeto (puede ser de prod; solo prod la borra) → [`s3_rutas_por_entorno.md`](s3_rutas_por_entorno.md).

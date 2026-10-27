@@ -227,3 +227,4 @@ Gotchas:
 ## Notas posteriores
 
 - **2026-10-09** ([`remission_anexos_sin_carrera.md`](remission_anexos_sin_carrera.md)): el alta y el borrado escriben `files` de forma condicional y reintentan si otro request la cambió entretanto. Las reglas de este doc (firmas protegidas, `force`, BD primero y S3 después) se reevalúan en cada intento. Nuevo **409** si la lista no se estabiliza en 8 intentos.
+- **2026-10-27 — rutas S3 con entorno (`P-177`).** Las subidas nuevas van a `reportActivity/<entorno>/<Y/m/d>/<id_report>/<archivo>`; las rutas guardadas antes siguen funcionando. `_remission_key_belongs_to_report` reconoce las dos formas con id; `s3_detail` ahora dice "Llave heredada (sin id de reporte) o de otro entorno". En dev y test, una entrada con ruta vieja se quita de la lista sin borrar el objeto (puede ser de prod; solo prod la borra) → [`s3_rutas_por_entorno.md`](s3_rutas_por_entorno.md).
