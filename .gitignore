@@ -63,3 +63,4 @@ Test*.py
 reporte*.json
 .claude/**
 .claude/skills/pdf-design/SKILL.md
+CLAUDE.md

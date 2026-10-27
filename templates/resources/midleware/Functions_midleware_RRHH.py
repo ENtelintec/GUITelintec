@@ -160,10 +160,50 @@ def create_new_employee_db(data, data_token):
         return {"data": None, "msg": "No se pudo crear el empleado", "error": error}, 400
 
 
+def _employee_status(emp_id, data_token) -> str:
+    """status actual del empleado en minúsculas ("" si no existe o falla)."""
+    flag, _error, row = test_id_employee(int(emp_id), data_token)
+    if not flag or not isinstance(row, (list, tuple)) or len(row) < 2 or row[1] is None:
+        return ""
+    return str(row[1]).strip().lower()
+
+
+def _notify_user_offboarding(emp_id, reason, data_token):
+    """
+    El API confía en el token y no revoca accesos (docs/permisos_plan.md, D8):
+    si el empleado que pasó a inactivo tiene usuario en users_system, se avisa
+    a los administradores para que lo borren en la app de usuarios. No fatal:
+    la baja ya quedó guardada.
+    """
+    flag, _error, user_row = get_user_by_emp_id(emp_id, data_token)
+    if not flag or not isinstance(user_row, (list, tuple)) or not user_row:
+        return False
+    msg = (
+        f"Dar de baja del sistema de usuarios a {user_row[0]} (empleado {emp_id}, baja por {reason}). "
+        "Mientras su usuario exista puede seguir iniciando sesión."
+    )
+    return create_notification_permission(
+        msg, data_token, ["administrator"], "Usuario pendiente de baja", data_token.get("emp_id"), 0
+    )
+
+
+def _departure_reason(departure) -> str:
+    """Motivo de baja del campo departure del PUT (dict o JSON {date, reason})."""
+    if isinstance(departure, str):
+        try:
+            departure = json.loads(departure)
+        except ValueError:
+            return departure.strip() or "sin motivo"
+    if isinstance(departure, dict) and departure.get("reason"):
+        return str(departure["reason"])
+    return "sin motivo"
+
+
 def update_employee_db(data, data_token):
     email_column, err = _employee_email_column(data["info"])
     if err:
         return err, 400
+    previous_status = _employee_status(data["id"], data_token)
     flag, error, result = update_employee(
         data["id"],
         data["info"]["name"],
@@ -187,6 +227,9 @@ def update_employee_db(data, data_token):
         data["info"]["id_leader"],
     )
     if flag:
+        new_status = str(data["info"]["status"] or "").strip().lower()
+        if previous_status == "activo" and new_status == "inactivo":
+            _notify_user_offboarding(data["id"], _departure_reason(data["info"]["departure"]), data_token)
         return {"data": {"id_employee": result}, "msg": f"Empleado actualizado correctamente (ID {result})", "error": None}, 200
     else:
         return {"data": None, "msg": "No se pudo actualizar el empleado", "error": error}, 400
@@ -197,6 +240,7 @@ def terminate_employee_from_api(data, data_token):
     timestamp = datetime.now(pytz.utc).astimezone(time_zone)
     date = timestamp.strftime(format_timestamps)
     departure = {"date": date, "reason": data["reason"]}
+    previous_status = _employee_status(data["id"], data_token)
     flag, error, result = terminate_employee_db(data["id"], json.dumps(departure), data_token)
     if not flag:
         return {
@@ -212,6 +256,8 @@ def terminate_employee_from_api(data, data_token):
     create_notification_permission(
         msg, data_token, ["rrhh"], "Empleado dato de baja", data_token.get("emp_id"), 0
     )
+    if previous_status == "activo":
+        _notify_user_offboarding(data["id"], data["reason"], data_token)
     return {"data": {"id_employee": data["id"]}, "msg": f"Empleado dado de baja correctamente (ID {data['id']})", "error": None}, 200
 
 

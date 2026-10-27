@@ -176,12 +176,22 @@ __date__ = "$ 20/jun./2024  at 15:06 $"
 ns = Namespace("GUI/api/v1/admin/collections")
 
 
+# Compras (docs/permisos_plan.md D6/D12): OC, solicitudes de OC, bitácora de
+# compras y lista de compra, con match exacto contra el catálogo de la app de
+# usuarios. App.Department.Administrator pasa siempre (verify_exact_permission).
+_PO_PERMS = ["App.Department.Administracion", "App.Department.adminCompras"]
+# crear/editar solicitudes de OC (y listarlas para editarlas)
+_PO_APPLICATION_PERMS = _PO_PERMS + ["App.Department.comprasCreate"]
+# lista de compra: almacén la usa para surtir; ALMACEN-VISUAL ya entraba por "almacen"
+_PURCHASE_LIST_PERMS = _PO_PERMS + ["App.Department.ALMACEN", "App.Department.ALMACEN-VISUAL"]
+
+
 @ns.route("/orders/<string:status>")
 class FetchPOs(Resource):
     @ns.expect(expected_headers_per)
     def get(self, status):
         flag, data_token, msg = token_verification_procedure(
-            request, department="administracion"
+            request, permissions=_PO_PERMS
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -194,7 +204,7 @@ class FetchPOsApplications(Resource):
     @ns.expect(expected_headers_per)
     def get(self, status):
         flag, data_token, msg = token_verification_procedure(
-            request, department="administracion"
+            request, permissions=_PO_APPLICATION_PERMS
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -207,7 +217,7 @@ class FetchPOsApplicationsToApprove(Resource):
     @ns.expect(expected_headers_per)
     def get(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department="administracion"
+            request, permissions=_PO_PERMS
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -220,7 +230,7 @@ class APOsOperations(Resource):
     @ns.expect(expected_headers_per, pos_application_post_model)
     def post(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["orders", "administracion"]
+            request, permissions=_PO_APPLICATION_PERMS
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -235,7 +245,7 @@ class APOsOperations(Resource):
     @ns.expect(expected_headers_per, pos_application_put_model)
     def put(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["orders", "administracion"]
+            request, permissions=_PO_APPLICATION_PERMS
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -250,7 +260,7 @@ class APOsOperations(Resource):
     @ns.expect(expected_headers_per, po_app_delete_model)
     def delete(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["orders", "administracion"]
+            request, permissions=_PO_PERMS
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -268,7 +278,7 @@ class POsOperations(Resource):
     @ns.expect(expected_headers_per, purchase_order_post_model)
     def post(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["orders", "administracion"]
+            request, permissions=_PO_PERMS
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -283,7 +293,7 @@ class POsOperations(Resource):
     @ns.expect(expected_headers_per, purchase_order_put_model)
     def put(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["orders", "administracion"]
+            request, permissions=_PO_PERMS
         )
         if not flag:
             return {
@@ -301,7 +311,7 @@ class POsOperations(Resource):
     @ns.expect(expected_headers_per, purchase_order_delete_model)
     def delete(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["orders", "administracion"]
+            request, permissions=_PO_PERMS
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -320,7 +330,7 @@ class FetchPoItemForFastDelivery(Resource):
     def get(self):
         # get_all_item_purchase_order_with_id_item_sm
         flag, data_token, msg = token_verification_procedure(
-            request, department="administracion"
+            request, permissions=_PO_PERMS
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -333,7 +343,7 @@ class ChangeStateOrder(Resource):
     @ns.expect(expected_headers_per, purchase_order_update_status_model)
     def put(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["orders", "administracion"]
+            request, permissions=_PO_PERMS
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -351,7 +361,7 @@ class ChangeStatePOApplication(Resource):
     @ns.expect(expected_headers_per, purchase_order_update_status_model)
     def put(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["orders", "administracion"]
+            request, permissions=_PO_PERMS
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -369,7 +379,7 @@ class DownloadPDFPurchase(Resource):
     @ns.expect(expected_headers_per)
     def get(self, po_id):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["administration"]
+            request, permissions=_PO_PERMS
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -384,7 +394,7 @@ class DownloadPDFPurchaseItemsStorage(Resource):
     @ns.expect(expected_headers_per)
     def get(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["almacen", "administracion"]
+            request, permissions=_PURCHASE_LIST_PERMS
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -399,7 +409,7 @@ class FolioPO(Resource):
     @ns.expect(expected_headers_per)
     def get(self, folio):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["administracion", "purchases"]
+            request, permissions=_PO_PERMS
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -420,7 +430,7 @@ class PurchaseMovementsMatch(Resource):
     )
     def get(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["administracion", "purchases"]
+            request, permissions=_PO_PERMS
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -439,7 +449,7 @@ class ActivityQuotatioAction(Resource):
     @ns.expect(expected_headers_per, quotation_activity_create_model)
     def post(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["administracion", "purchases"]
+            request, department=["administracion"]
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -453,7 +463,7 @@ class ActivityQuotatioAction(Resource):
     @ns.expect(expected_headers_per, quotation_activity_update_model)
     def put(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["administracion", "purchases"]
+            request, department=["administracion"]
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -467,7 +477,7 @@ class ActivityQuotatioAction(Resource):
     @ns.expect(expected_headers_per, quotation_activity_delete_model)
     def delete(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["administracion", "purchases"]
+            request, department=["administracion"]
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -484,7 +494,7 @@ class FetchActivitieQuotationById(Resource):
     @ns.expect(expected_headers_per)
     def get(self, id_quotation):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["administracion", "purchases"]
+            request, department=["administracion"]
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -502,7 +512,7 @@ class ChangeStatusActivity(Resource):
     @ns.expect(expected_headers_per, quoatation_activity_status_update_model)
     def put(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["administracion", "purchases"]
+            request, department=["administracion"]
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -521,7 +531,7 @@ class ActivityRemissionAction(Resource):
     @ns.expect(expected_headers_per, remission_activity_create_model)
     def post(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["administracion", "purchases"]
+            request, department=["administracion"]
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -535,7 +545,7 @@ class ActivityRemissionAction(Resource):
     @ns.expect(expected_headers_per, remission_activity_update_model)
     def put(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["administracion", "purchases"]
+            request, department=["administracion"]
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -550,7 +560,7 @@ class ActivityRemissionAction(Resource):
     @ns.expect(expected_headers_per, report_activity_delete_model)
     def delete(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["administracion", "purchases"]
+            request, department=["administracion"]
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -603,7 +613,7 @@ class ActivityRemissionTableAction(Resource):
         # operaciones: los líderes capturan la remisión por primera vez desde
         # control table. Ver Docs/control_table_operaciones_y_campos_admin.md.
         flag, data_token, msg = token_verification_procedure(
-            request, department=["administracion", "purchases", "operaciones"]
+            request, department=["administracion", "operaciones"]
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -617,7 +627,7 @@ class ActivityRemissionTableAction(Resource):
     @ns.expect(expected_headers_per, remission_activity_update_control_table_model)
     def put(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["administracion", "purchases", "operaciones"]
+            request, department=["administracion", "operaciones"]
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -635,7 +645,7 @@ class ActivityRemissionBalanceAction(Resource):
     @ns.expect(expected_headers_per, remission_balance_update_model)
     def put(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["administracion", "purchases"]
+            request, department=["administracion"]
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -666,7 +676,7 @@ class FetchActivitieReportById(Resource):
     @ns.expect(expected_headers_per)
     def get(self, id_report):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["administracion", "purchases", "operaciones"]
+            request, department=["administracion", "operaciones"]
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -711,7 +721,7 @@ class DownloadPDFRemission(Resource):
     @ns.expect(expected_headers_per)
     def get(self, id_report):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["administracion", "purchases"]
+            request, department=["administracion"]
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -783,10 +793,10 @@ class UploadActivityReportAttachment(Resource):
 # =====================================================================
 # Control de saldos (Cobranza) — cabecera por contrato, formatos FO-CXC de
 # SGI (iso_formats), columnas dinámicas y movimientos de saldo.
-# Ver Docs/control_saldos_cabecera.md. Lecturas: administracion/purchases/
-# operaciones; escrituras: solo administracion; catálogo además sgi.
+# Ver docs/control_saldos_cabecera.md. Lecturas: administracion/operaciones;
+# escrituras: solo administracion; catálogo además sgi.
 # =====================================================================
-_BC_READ = ["administracion", "purchases", "operaciones"]
+_BC_READ = ["administracion", "operaciones"]
 _BC_WRITE = ["administracion"]
 
 
@@ -961,9 +971,9 @@ class BalanceControlDetail(Resource):
 
 # =====================================================================
 # Control de Entregas (OCD) — ver docs/control_entregas.md.
-# Lecturas: administracion/purchases; escrituras: solo administracion.
+# Lecturas y escrituras: administracion.
 # =====================================================================
-_DC_READ = ["administracion", "purchases"]
+_DC_READ = ["administracion"]
 _DC_WRITE = ["administracion"]
 
 
@@ -1126,7 +1136,7 @@ class PurchaseManagementOps(Resource):
     @ns.expect(expected_headers_per)
     def get(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["administracion", "purchases"]
+            request, permissions=_PO_PERMS
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -1145,7 +1155,7 @@ class PurchaseManagementOps(Resource):
     @ns.expect(expected_headers_per, purchase_management_post_model)
     def post(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["administracion", "purchases"]
+            request, permissions=_PO_PERMS
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -1160,7 +1170,7 @@ class PurchaseManagementOps(Resource):
     @ns.expect(expected_headers_per, purchase_management_put_model)
     def put(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["administracion", "purchases"]
+            request, permissions=_PO_PERMS
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -1177,7 +1187,7 @@ class PurchaseManagementOps(Resource):
     @ns.expect(expected_headers_per, purchase_management_delete_model)
     def delete(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["administracion", "purchases"]
+            request, permissions=_PO_PERMS
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -1195,7 +1205,7 @@ class PurchaseManagementCancel(Resource):
     @ns.expect(expected_headers_per, purchase_management_cancel_model)
     def put(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["administracion", "purchases"]
+            request, permissions=_PO_PERMS
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -1213,7 +1223,7 @@ class PurchaseManagementCatalogs(Resource):
     @ns.expect(expected_headers_per)
     def get(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["administracion", "purchases"]
+            request, permissions=_PO_PERMS
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -1226,7 +1236,7 @@ class PurchaseManagementDetail(Resource):
     @ns.expect(expected_headers_per)
     def get(self, id_pm):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["administracion", "purchases"]
+            request, permissions=_PO_PERMS
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -1266,7 +1276,7 @@ class FetchAPoItemForFastDelivery(Resource):
     def get(self):
         # get_all_item_purchase_order_with_id_item_sm
         flag, data_token, msg = token_verification_procedure(
-            request, department="administracion"
+            request, permissions=_PO_PERMS
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401

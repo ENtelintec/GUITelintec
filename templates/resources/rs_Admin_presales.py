@@ -591,7 +591,7 @@ class ContractsAbreviations(Resource):
 class ProductsContracts(Resource):
     @ns.expect(expected_headers_per)
     def get(self):
-        flag, data_token, msg = token_verification_procedure(request, department=["administracion", "remission", "operaciones", "sm"])
+        flag, data_token, msg = token_verification_procedure(request, department=["administracion", "operaciones", "sm"])
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data, code = fetch_products_contracts(data_token)

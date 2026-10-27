@@ -8,6 +8,8 @@ import jwt
 
 from static.constants import secrets
 
+ADMINISTRATOR_PERMISSION = "App.Department.Administrator"
+
 
 def unpack_token(token: str) -> dict:
     """
@@ -33,6 +35,23 @@ def verify_department_permission(token_data: dict, department: str) -> bool:
         return False
     except Exception as e:
         print("errort at verifyin permission for department: ", e)
+        return False
+
+
+def verify_exact_permission(token_data: dict, permissions: list) -> bool:
+    """
+    Match exacto contra nombres completos del catálogo de permisos
+    (docs/permisos_plan.md, D6): a diferencia de department, "ALMACEN" no deja
+    pasar a "ALMACEN-VISUAL". App.Department.Administrator pasa siempre.
+    :param token_data: <dict>
+    :param permissions: <list> nombres completos, p. ej. ["App.Department.adminCompras"]
+    :return: <bool>
+    """
+    try:
+        held = set((token_data.get("permissions") or {}).values())
+        return ADMINISTRATOR_PERMISSION in held or any(item in held for item in permissions)
+    except Exception as e:
+        print("errort at verifyin exact permission: ", e)
         return False
 
 
@@ -87,7 +106,8 @@ def token_verification_procedure(request, **kwargs):
             return False, {}, "Token not found"
         department = kwargs.get("department", None)
         emp_id = kwargs.get("emp_id", None)
-        flag, data_token = verify_token(token, department, emp_id)
+        permissions = kwargs.get("permissions", None)
+        flag, data_token = verify_token(token, department, emp_id, permissions)
         return flag, data_token, ""
     except Exception as e:
         msg = "errort at token verification procedure: " + str(e)
@@ -112,13 +132,14 @@ def check_tester_permission(permissions: dict):
 
 
 def verify_token(
-    token: str, department: str | list = None, emp_id: int = None
+    token: str, department: str | list = None, emp_id: int = None, permissions: list | None = None
 ) -> tuple[bool, dict]:
     """
     Verifies the token.
     :param emp_id: <integer>
     :param token: <string>
-    :param department: <string>
+    :param department: <string> o <list>, match por substring (legado)
+    :param permissions: <list> nombres completos, match exacto (endpoints nuevos o migrados)
     :return: <bool>
     """
     try:
@@ -127,6 +148,9 @@ def verify_token(
         data["is_tester"] = is_tester
         if emp_id:
             if verify_employee_id(data, emp_id):
+                return True, data
+        if permissions:
+            if verify_exact_permission(data, permissions):
                 return True, data
         if department:
             if isinstance(department, list):

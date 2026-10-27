@@ -219,8 +219,6 @@ class HeadsDepartmentAuto(Resource):
                 "administracion",
                 "operaciones",
                 "rrhh",
-                "iaotros",
-                "respe",
             ],
         )
         if not flag:

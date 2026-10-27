@@ -1,6 +1,6 @@
 # PDF de la orden de compra en cuadrícula, FO-COM-04 (`GET /purchase/download/pdf/<po_id>`)
 
-Fecha: 2026-10-27 · **Estado: hecho y verificado contra dev (PDFs renderizados y revisados; descarga por HTTP con `test_client`; `tester_iso_formats` 48/48). DML pendiente de revisión: `scripts_db_handle/iso_format_fo_com_04.sql` (`P-184`).** Cierra `P-114`.
+Fecha: 2026-10-27 · **Estado: hecho y verificado contra dev (PDFs renderizados y revisados; descarga por HTTP con `test_client`; `tester_iso_formats` 48/48). SQL `scripts_db_handle/iso_format_fo_com_04.sql` corrido en dev, test y prod (`P-184`, verificado en solo lectura).** Cierra `P-114`, `P-184` y `P-185`.
 
 Decisiones del grill del 2026-10-27, sobre el plan [`planes/plan_back_sin_bloqueo_2026_10_27.md`](planes/plan_back_sin_bloqueo_2026_10_27.md). El ejemplo `OC-GC000-0283` del formato FO-COM-04 R0 sirvió de **base, no de regla**: de él se tomó la estructura (banda con folio y fecha, datos de Telintec, datos del proveedor, lista de componentes, totales); el estilo es el de la casa (skill `pdf-design`: celeste con negro, Helvetica, sin cursivas). Términos en [`GLOSSARY.md`](../GLOSSARY.md): *Partida*, *Formato*, *Fecha de emisión (de una OC)*.
 
@@ -23,6 +23,7 @@ Decisiones del grill del 2026-10-27, sobre el plan [`planes/plan_back_sin_bloque
 - **Pie**: número de página y `Folio: <folio de la OC>`. Antes salía vacío, porque se leía la llave `"Folio"` y la llave es `"folio"`.
 - **OC cancelada** (`status = 4`): marca diagonal gris "CANCELADA" con transparencia en cada página.
 - **Fechas** en `YYYY-MM-DD`.
+- **Permiso de la descarga** (`P-185`): pedía `department=["administration"]`, que no coincide con ningún permiso, así que solo descargaban los administradores. Ahora pide `["administracion", "compras"]` (decisión del usuario).
 - **Limpieza**:
   - Se borran tres módulos sin quién los llame: `templates/forms/VouchersFormsPDF.py` (vale EPP/herramienta), `quotation.py` (cotización FO-PRE-01) y `Materials.py` (devolución y solicitud de materiales).
   - De `StorageMovSM.py` se borran `ReturnMaterials` y sus helpers de texto suelto: `dict_wrappers_headers`, `print_headers_table_inventory`, `print_metadata`, `print_products_list`, `print_footer_signing` y `calculate_last_y`.
@@ -33,7 +34,7 @@ Decisiones del grill del 2026-10-27, sobre el plan [`planes/plan_back_sin_bloque
 ## Capas tocadas
 
 ```
-rs          rs_Admin_collections.py      sin cambios (GET /purchase/download/pdf/<int:po_id>, send_file en 200)
+rs          rs_Admin_collections.py      GET /purchase/download/pdf/<int:po_id>: permiso ["administracion", "compras"] (send_file en 200, sin otro cambio)
 midleware   MD_Purchases.py              dowload_file_purchase arma dict_data nuevo · create_metadata_for_pdf_po(extra_info, time_delivery)
                                          en el orden del formato · _po_emission_date (history "Creación de orden", respaldo timestamp)
 controller  orders_controller.py         get_purchase_order_with_items_by_id: 'udm' por partida (LEFT JOIN products_amc por id_inventory)
@@ -49,7 +50,7 @@ sql         scripts_db_handle/iso_format_fo_com_04.sql (P-184, sin correr)
 
 ## Contrato mínimo para el front
 
-- **Base**: `/GUI/api/v1/admin/collections`. Permiso del código: `department=["administration"]`. Ningún permiso contiene ese texto, así que hoy **solo descargan los administradores** (ver `P-185`).
+- **Base**: `/GUI/api/v1/admin/collections`. Permiso: `administracion` o `compras`, que coinciden por subcadena con `App.Department.Administracion`, `adminCompras` y `comprasCreate`; los administradores siempre pasan. Antes solo descargaban los administradores.
 - **Auth**: header `Authorization` con el **JWT crudo, NO `Bearer <token>`**.
 - **Request**: `GET /purchase/download/pdf/<po_id>`, sin body ni query. **No cambió**.
 - **Respuesta**: **200 = blob binario** `application/pdf` con `Content-Disposition: attachment; filename=oc_<folio>_<fecha de emisión>.pdf`. Antes llevaba la fecha de `po.timestamp`, la última modificación. **4xx = JSON** `{data, msg, error}`. El front decide por el **status**, no por el content-type.
@@ -58,14 +59,14 @@ sql         scripts_db_handle/iso_format_fo_com_04.sql (P-184, sin correr)
 |---|---|---|
 | **200** | la OC existe | blob PDF, p. ej. `oc_OC-DUMMY-1_2026-07-10.pdf` |
 | **401** | sin token | `{"error": "Token not found"}` |
-| **401** | token sin permiso (p. ej. `App.Department.Administracion`) | `{"error": "No autorizado. Token invalido"}` |
+| **401** | token sin permiso (p. ej. `App.Department.Operaciones`, `Almacen`) | `{"error": "No autorizado. Token invalido"}` |
 | **400** | el id no existe | `{"data": null, "msg": "Orden de compra no encontrada (ID 999999)", "error": "None"}` |
 | **400** | falla la lectura en BD o la generación | `{"data": null, "msg": "Error al obtener la orden de compra" o "Error al generar el PDF de la orden de compra", "error": "..."}` |
 
 ### Gotchas
 
 - Descargar con `responseType: "blob"`; si el status no es 200, leer el blob como texto y parsear el JSON para pintar `msg`.
-- Mientras no se corra el SQL de `P-184`, el encabezado sale con `Codigo:` e `I. Vigencia:` vacíos. No es error: el PDF se genera igual.
+- El encabezado lee `Codigo: FO-COM-04 R0` e `I. Vigencia: 2023-05-11` del catálogo (id 16, ya en las 3 BDs). Si la fila faltara, saldría vacío sin tumbar el PDF.
 - Una OC cancelada **sí** se descarga, con la marca "CANCELADA".
 
 ## Al modificar
@@ -82,12 +83,16 @@ sql         scripts_db_handle/iso_format_fo_com_04.sql (P-184, sin correr)
   - monedas mezcladas USD/MXN, con dos bloques de totales;
   - OC sin partidas;
   - las 12 OCs de dev por el midleware, con la UM del producto ligado (`PIEZA`).
-- HTTP con `test_client`: 200 `application/pdf` con el nombre nuevo, 400 con un id inexistente, 401 sin token y 401 con `Administracion`.
+- HTTP con `test_client`: 200 `application/pdf` con el nombre nuevo, 400 con un id inexistente y 401 sin token. Por permiso: 200 con `Administrator`, `Administracion`, `adminCompras` y `comprasCreate`; 401 con `Operaciones` y `Almacen`.
 - `tester_iso_formats` 48/48 (esperado de `ids_bound_to_pdf` actualizado).
 - Smoke de `FileSmPDF` e `InventoryStoragePDF` tras la limpieza de `StorageMovSM.py`.
 - `import app` sin errores; `pyrefly check --python-version 3.11` sin errores en los archivos tocados.
 
 ## Pendientes
 
-- `P-184` **[usuario]** correr `scripts_db_handle/iso_format_fo_com_04.sql` en dev → test → prod antes del deploy. Es re-ejecutable; si `FO-COM-04 R0` aparece con otro id, avisar.
-- `P-185` **[back]** el permiso del endpoint de descarga (`"administration"`) no coincide con ningún permiso. Decidir quién descarga, p. ej. `["administracion", "compras"]`.
+- ~~`P-184`~~ cerrado el mismo día: el usuario corrió el SQL en las 3 BDs; verificado en solo lectura (id 16 y nombre del id 4).
+- ~~`P-185`~~ cerrado el mismo día: la descarga pide `["administracion", "compras"]`.
+
+## Notas posteriores
+
+- **2026-10-27 — permiso exacto** ([`permisos_compras_y_baja.md`](permisos_compras_y_baja.md)): la descarga pasó a `permissions=_PO_PERMS`, es decir, exacto `App.Department.Administracion` o `App.Department.adminCompras` (Administrator siempre). `comprasCreate` ya no descarga; lo había ganado con la subcadena `compras` de `P-185`. El contrato de arriba queda con esa corrección.
