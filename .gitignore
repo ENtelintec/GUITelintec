@@ -61,3 +61,5 @@ pyrefly.toml
 Test*.py
 /template/modules/*
 reporte*.json
+.claude/**
+.claude/skills/pdf-design/SKILL.md

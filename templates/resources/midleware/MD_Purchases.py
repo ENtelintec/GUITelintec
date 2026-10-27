@@ -1045,7 +1045,8 @@ def change_state_po_application_api(data, data_token):
     return {"data": {"id_po_app": data["id"]}, "msg": msg, "error": None}, 200
 
 
-def create_metadata_for_pdf_po(extra_info: dict):
+def create_metadata_for_pdf_po(extra_info: dict, time_delivery=None):
+    """Bloques de datos del PDF de la OC, en el orden del formato FO-COM-04."""
     extra_info_telintec = extra_info.get("metadata_telintec", {})
     extra_info_supplier = extra_info.get("metadata_supplier", {})
     metadata_telintec = {
@@ -1054,8 +1055,8 @@ def create_metadata_for_pdf_po(extra_info: dict):
         "Domicilio de facturación": extra_info_telintec.get("address_invoice", ""),
         "Domicilio comercial": extra_info_telintec.get("address_comercial", ""),
         "Responsable en compras": extra_info_telintec.get("responsable", ""),
-        "Teléfono comercial": extra_info_telintec.get("phone", ""),
         "Correo de facturación": extra_info_telintec.get("email", ""),
+        "Teléfono comercial": extra_info_telintec.get("phone", ""),
     }
     metadata_supplier = {
         "Nombre del proveedor": extra_info_supplier.get("name", ""),
@@ -1063,13 +1064,23 @@ def create_metadata_for_pdf_po(extra_info: dict):
         "RFC del proveedor": extra_info_supplier.get("rfc", ""),
         "Vendedor": extra_info_supplier.get("salesman", "NA"),
         "Forma de pago": extra_info_supplier.get("payment_method", ""),
+        "Plazo de entrega / ejecución": time_delivery or "",
         "Condiciones de entrega": extra_info_supplier.get("delivery_conditions", ""),
         "Dirección de entrega": extra_info_supplier.get("delivery_address", ""),
         "Transporte": extra_info_supplier.get("transport", ""),
         "Seguro": extra_info_supplier.get("insurance", ""),
-        "Garantias": extra_info_supplier.get("guarantee", ""),
+        "Garantías": extra_info_supplier.get("guarantee", ""),
     }
     return metadata_telintec, metadata_supplier
+
+
+def _po_emission_date(history, timestamp) -> str:
+    """Fecha de emisión de la OC (YYYY-MM-DD): la del evento "Creación de orden"
+    del history; po.timestamp se reescribe en cada PUT, solo sirve de respaldo."""
+    for event in history if isinstance(history, list) else []:
+        if isinstance(event, dict) and event.get("event") == "Creación de orden" and event.get("date"):
+            return str(event["date"])[:10]
+    return timestamp.date().isoformat() if isinstance(timestamp, datetime) else ""
 
 
 def dowload_file_purchase(order_id: int, data_token):
@@ -1086,49 +1097,52 @@ def dowload_file_purchase(order_id: int, data_token):
             "msg": f"Orden de compra no encontrada (ID {order_id})",
             "error": error,
         }, 400
-    date = result[0]
+    timestamp, status, folio = result[0], result[1], result[5] or ""
+    history = json.loads(result[6]) if result[6] else []
+    emission = _po_emission_date(history, timestamp)
+    # po.timestamp = última escritura; solo se imprime si cae en un día posterior a la emisión
+    modified = timestamp.date().isoformat() if isinstance(timestamp, datetime) else ""
     download_path = os.path.join(
-        tempfile.mkdtemp(), os.path.basename(f"oc_{result[5]}_{date.date()}.pdf")
+        tempfile.mkdtemp(), os.path.basename(f"oc_{folio}_{emission}.pdf")
     )
     products = []
+    totals: dict[str, float] = {}
     items = json.loads(result[8]) or []
-    total_amount = 0.0
     # El LEFT JOIN + JSON_ARRAYAGG produce un placeholder de puros NULL cuando la OC no tiene items
     items = [item for item in items if item.get("id") is not None]
     for index, item in enumerate(items):
         extra_info_item = item["extra_info"] or {}
-        quantity = item["quantity"] or 0
-        unit_price = item["unit_price"] or 0
+        quantity = float(item["quantity"] or 0)
+        unit_price = float(item["unit_price"] or 0)
         subtotal = quantity * unit_price
+        currency = str(item.get("currency") or "MXN").upper()
         products.append(
-            [
-                index + 1,
-                item["description"],
-                extra_info_item.get("n_parte"),
-                item["duration_services"],
-                "NA",
-                quantity,
-                unit_price,
-                subtotal,
-            ]
+            {
+                "no": index + 1,
+                "description": item["description"] or "",
+                "n_parte": extra_info_item.get("n_parte") or "",
+                "udm": item.get("udm") or "",
+                "duration": item["duration_services"],
+                "quantity": quantity,
+                "currency": currency,
+                "unit_price": unit_price,
+                "subtotal": subtotal,
+            }
         )
-        total_amount += subtotal
-    extra_info = json.loads(result[7])
-    metadata_telintec, metadata_supplier = create_metadata_for_pdf_po(extra_info)
+        totals[currency] = totals.get(currency, 0.0) + subtotal
+    extra_info = json.loads(result[7]) if result[7] else {}
+    metadata_telintec, metadata_supplier = create_metadata_for_pdf_po(extra_info, result[9])
     flag = FilePoPDF(
         {
             "filename_out": download_path,
-            "products": products,
-            "folio": result[5],
-            "status": result[1],
-            "total_amount": total_amount,
-            "created_by": f"{result[2]} {result[3]}",
-            "supplier": result[4],
-            "timestamp": result[0],
-            "history": json.loads(result[6]),
-            "time_delivery": result[9],
+            "folio": folio,
+            "cancelled": status == 4,
+            "emission": emission,
+            "modified": modified if modified > emission else "",
             "metadata_telintec": metadata_telintec,
             "metadata_supplier": metadata_supplier,
+            "products": products,
+            "totals": totals,
         },
     )
     if not flag:

@@ -104,3 +104,4 @@ Los helpers viejos (`print_metadata`, `print_headers_table_inventory`,
 - El formato de diseño de este PDF (canvas + cuadrícula celeste) quedó capturado
   como skill en [`.claude/skills/pdf-design/`](../.claude/skills/pdf-design/);
   usarla para cualquier PDF nuevo o cambio de layout.
+- **2026-10-27**: los helpers viejos de la sección "Helpers nuevos" (`print_metadata`, `print_headers_table_inventory`, `print_products_list`, `print_footer_signing`, `dict_wrappers_headers`) ya no existen: `InventoryStoragePDF` estaba en cuadrícula y `ReturnMaterials` no tenía quién lo llamara, así que se borraron con `P-114` → [`po_pdf_cuadricula.md`](po_pdf_cuadricula.md).

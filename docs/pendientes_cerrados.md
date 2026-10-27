@@ -152,6 +152,10 @@
 - [x] `P-111` ~~**[back] Import inicial desde el Excel real**~~ — hecho en dev (2026-08-05) con `scripts_db_handle/import_vehiculos_excel.py` (idempotente, `--dry`); 16 vehículos + 16 pólizas. Falta correrlo en prod cuando el módulo salga. → [`control_vehiculos_cda.md`](control_vehiculos_cda.md)
 - [x] `P-112` ~~**[back] Recordatorios programados**~~ — hecho (2026-09-17): `GET /cda/alerts` (10 tipos calculados on-read: pólizas/pagos/mantenimiento/refrendo/llantas, `?days=`) + barrido diario `GET /cda/notifications` (mismo patrón que médicos; notificación de sistema a `sgi`/`administracion`). → [`cda_alertas_y_fotos.md`](cda_alertas_y_fotos.md)
 
+## PDFs (transversal)
+
+- [x] `P-114` ~~**[back] Migrar los PDFs legacy de texto suelto a cuadrícula**~~ — hecho (2026-10-27): solo la OC tenía endpoint y pasó a cuadrícula con el formato FO-COM-04 (id 16): banda con folio y fecha de emisión, bloques de Telintec y proveedor, columna UM del producto ligado, duración y moneda condicionales, totales por moneda y marca de cancelada. Vale, cotización y devoluciones se borraron por no tener quién los llamara. `ISO_FORM_IDS_IN_CODE` + 16, − 3, 5, 6. SQL del formato en `P-184`. → [`po_pdf_cuadricula.md`](po_pdf_cuadricula.md)
+
 ## Compras / PO
 
 - [x] `P-116` ~~**[back] DDL `gestion_de_compras.sql` en dev**~~ — corrido por el usuario (2026-10-09) con el bloque de FKs, también en test y prod. Verificado en solo lectura: tabla + `fk_pm_supplier`/`fk_pm_client`/`fk_pm_contract`/`fk_pm_po` en las 3 BDs, 0 filas en todas (sin pérdida de datos). → [`gestion_de_compras.md`](gestion_de_compras.md)

@@ -66,7 +66,6 @@ filepath_inventory_form_movements_excel = "files/movements_temp.xlsx"
 filepath_sm_pdf = "files/sm_temp.pdf"
 filepath_po_pdf = "files/po_temp.pdf"
 filepath_remission_pdf = "files/remission_temp.pdf"
-filepath_v_pdf = "files/voucher_temp.pdf"
 filepath_fichaje_temp = "files/files_fichaje/fichaje_temp.xlsx"
 filepath_ternium_temp = "files/files_fichaje/ternium_temp.xls"
 patterns_files_fichaje = ["Fichaje", "Ternium"]

@@ -51,7 +51,7 @@ Lo que se ve al leer el tracker completo:
 6. ~~`P-017`~~ (hecho 2026-10-27 → [`eva360_pdf.md`](../eva360_pdf.md)) **PDF del agregado eva 360** (radar/tabla comparativa del proceso; skill `pdf-design`) → [`eva360_evaluation.md`](../eva360_evaluation.md).
 7. ~~`P-016`~~ (hecho 2026-10-27 → [`norma035_pdf.md`](../norma035_pdf.md)) **Rediseño del PDF de Norma 035** leyendo `evaluation` directo (quita `_legacy_shape_from_evaluation`) → [`encuestas_refactor.md`](../encuestas_refactor.md).
 8. ~~`P-115`~~ (hecho 2026-10-27 → [`po_match_cantidades.md`](../po_match_cantidades.md); front en `P-183`) **Conciliación por cantidades** OC ↔ entradas, producto a producto → [`po_movements_inbound_match.md`](../po_movements_inbound_match.md).
-9. `P-114` **PDFs legacy a cuadrícula**: PO y cotización primero, vale EPP/herramienta y devolución después → [`pdf_tipografia_helvetica_y_cuadricula_remision.md`](../pdf_tipografia_helvetica_y_cuadricula_remision.md).
+9. ~~`P-114`~~ (hecho 2026-10-27 → [`po_pdf_cuadricula.md`](../po_pdf_cuadricula.md): solo la OC tenía endpoint; los demás generadores se borraron) **PDFs legacy a cuadrícula**: PO y cotización primero, vale EPP/herramienta y devolución después → [`pdf_tipografia_helvetica_y_cuadricula_remision.md`](../pdf_tipografia_helvetica_y_cuadricula_remision.md).
 
 ### Bloque C — condicionados (entran cuando llegue el dato o el front dé el paso)
 

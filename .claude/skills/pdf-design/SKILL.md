@@ -9,7 +9,10 @@ Guía para generar o rediseñar PDFs en este repo. La implementación canónica 
 el PDF de SM: helpers `_sm_*` en [templates/forms/StorageMovSM.py](../../../templates/forms/StorageMovSM.py)
 (ver `FileSmPDF`, `print_metadata_grid_sm`, `_sm_draw_cell`). Antecedente:
 [templates/forms/RemissionForms.py](../../../templates/forms/RemissionForms.py).
-Diseño documentado en [Docs/sm_pdf_grid_redesign.md](../../../Docs/sm_pdf_grid_redesign.md).
+Diseño documentado en [docs/sm_pdf_grid_redesign.md](../../../docs/sm_pdf_grid_redesign.md).
+Con dinero, columnas condicionales y totales por moneda: la orden de compra,
+helpers `_po_*` en [templates/forms/PurchaseForms.py](../../../templates/forms/PurchaseForms.py)
+([docs/po_pdf_cuadricula.md](../../../docs/po_pdf_cuadricula.md)).
 
 ## Stack y reglas base
 
@@ -95,9 +98,12 @@ def _draw_cell(pdf, x, y_top, w, h, lines, font_size, bold=False, fill=False, al
 
 ## Convenciones de código
 
-- Helpers **por documento**, con prefijo (p. ej. `_sm_*`): no modificar helpers
-  compartidos por otros PDFs (`print_metadata`, `print_products_list`, etc. de
-  StorageMovSM.py los usan `InventoryStoragePDF` y `ReturnMaterials`).
+- Helpers **por documento**, con prefijo (p. ej. `_sm_*`, `_po_*`): no
+  modificar helpers compartidos por otros PDFs (los `_grid_*`/`print_grid_*`
+  de StorageMovSM.py los usan `FileSmPDF` e `InventoryStoragePDF`).
+- Formato ISO: `iso_form=N` es el id de `iso_formats`; un id nuevo pedido por
+  literal entra a `ISO_FORM_IDS_IN_CODE` (PDFGenerator.py) y su fila se da de
+  alta con id explícito en un `.sql` para las 3 BDs.
 - La función pública `File*PDF(dict_data)` recibe todo resuelto por el
   midleware (sin acceso a BD) y devuelve `True`; documentar la estructura de
   `dict_data` en su docstring.

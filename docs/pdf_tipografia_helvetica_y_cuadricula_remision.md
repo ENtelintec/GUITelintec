@@ -68,10 +68,10 @@ y controllers intactos.
   [`QuizzGenericReport.py`](../templates/forms/QuizzGenericReport.py) — fuente
   + wrap por `stringWidth` (helpers `_grid_/_chv_/_qz_`); layout intacto
   (semáforo de SM y azul `#00AFEF` del checklist incluidos).
-- [`Materials.py`](../templates/forms/Materials.py),
+- `Materials.py`,
   [`PurchaseForms.py`](../templates/forms/PurchaseForms.py),
-  [`quotation.py`](../templates/forms/quotation.py),
-  [`VouchersFormsPDF.py`](../templates/forms/VouchersFormsPDF.py),
+  `quotation.py`,
+  `VouchersFormsPDF.py` (los tres sin enlace: se borraron con `P-114`),
   [`BarCodeGenerator.py`](../templates/forms/BarCodeGenerator.py) — solo
   fuente (y offsets label→valor con `stringWidth` donde aplicaba; en
   `quotation.py` se corrigió de paso el offset del valor de `Cliente:` que
@@ -108,3 +108,7 @@ legacy).
 
 - Migrar los PDFs legacy de texto suelto (PO, vale EPP/herramienta,
   cotización, devolución de materiales) a la cuadrícula de la casa.
+
+## Notas posteriores
+
+- **2026-10-27 — pendiente cerrado (`P-114`)**: de los PDFs legacy solo la orden de compra tenía endpoint, y pasó a la cuadrícula con el formato FO-COM-04 → [`po_pdf_cuadricula.md`](po_pdf_cuadricula.md). Vale EPP/herramienta (`VouchersFormsPDF.py`), cotización (`quotation.py`) y devoluciones (`Materials.py`, `ReturnMaterials`) no tenían quién los llamara y se borraron con sus helpers de texto suelto.
