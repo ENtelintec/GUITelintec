@@ -48,6 +48,7 @@ from templates.controllers.product.warehouses_controller import (
 )
 from templates.Functions_Utils import create_notification_permission
 from templates.misc.Functions_Files import write_log_file
+from templates.resources.methods.Functions_Aux_Login import verify_exact_permission
 from templates.resources.midleware.MD_Kardex import kardex_meta, resolve_kardex_window
 from templates.resources.midleware.MD_Multisede import (
     WH_TRANSFER_STATUS,
@@ -89,13 +90,14 @@ def _sede_ids_from_token(data_token):
     return ids
 
 
+# Lectores del principal que pueden LEER cualquier sede (P-198, docs/permisos_almacen.md):
+# match exacto; rs_Sucursal usa la misma lista para abrir las lecturas.
+SEDE_MAIN_READERS = ["App.Department.ALMACEN", "App.Department.ALMACEN-VISUAL", "App.Department.Administracion"]
+
+
 def _is_main_reader(data_token):
-    """Permisos del lado principal que pueden LEER cualquier sede."""
-    for item in ((data_token or {}).get("permissions", {}) or {}).values():
-        name = str(item).lower()
-        if "almacen" in name or "administracion" in name or "administrator" in name:
-            return True
-    return False
+    """Permisos del lado principal que pueden LEER cualquier sede (Administrator siempre)."""
+    return verify_exact_permission(data_token or {}, SEDE_MAIN_READERS)
 
 
 def _resolve_warehouse(data_token, requested, read_only=False):

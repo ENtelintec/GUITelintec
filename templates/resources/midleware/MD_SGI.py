@@ -58,6 +58,18 @@ from templates.misc.Functions_Files import write_log_file
 __author__ = "Edisson Naula"
 __date__ = "$ 06/jun/2025  at 14:54 $"
 
+# Checklist vehicular (P-198, docs/permisos_sgi.md): quién lista, crea, edita (y aprueba),
+# descarga el PDF y maneja anexos; lo usan rs_SGI y la descarga duplicada de rs_Admin_collections.
+VEHICLE_CHECKLIST_PERMS = [
+    "App.Department.SGI",
+    "App.Department.Voucher",
+    "App.Department.checkvehicular",
+    "App.Department.checkvApprove",
+    "App.Department.Operaciones",
+    "App.Department.Administracion",
+    "App.Department.RRHH",
+]
+
 
 def create_voucher_tools_api(data, data_token):
     time_zone = pytz.timezone(timezone_software)

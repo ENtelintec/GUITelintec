@@ -120,3 +120,23 @@ Inventario completo: 354 endpoints; 313 llaman a `token_verification_procedure` 
   - `adminRem` a remisiones; `adminDB` a clientes, proveedores y contratos; `checkvehicular` y `checkvApprove` al checklist vehicular;
   - `Director` se define con los dashboards.
 - **D15 — Los permisos fuera del catálogo se quitan en prod** desde la app de usuarios (T4, `P-196`). La tabla no los incluye.
+
+## Notas posteriores
+
+- **2026-10-27 — `P-198`, Almacén** (grill del mismo día; hecho: [`permisos_almacen.md`](permisos_almacen.md)):
+  - `ALMACEN-VISUAL` solo lee, y las descargas y los códigos de barras cuentan como lectura;
+  - EPP: lecturas para `Epp`, `eppVisual` y `eppApprove`; `POST`/`PUT /movement` para `ALMACEN` y `Epp`;
+  - sedes y reservas: lectura `Administracion`, `ALMACEN` y `ALMACEN-VISUAL`; escritura `Administracion` y `ALMACEN`;
+  - `/sucursal` conserva `department="sucursal"` como puerta de la sede, una excepción a D6 porque el permiso lleva el id; lecturas del principal exactas;
+  - dashboards de inventario: `ALMACEN` y `ALMACEN-VISUAL`.
+- **2026-10-27 — `P-198`, SM** (grill del mismo día; hecho: [`permisos_sm.md`](permisos_sm.md)):
+  - `SM` y `SM-URGENT` son el grupo base; las urgentes son solo de `SM-URGENT`;
+  - `smControl`, `smCreate`, `smDespachar` y `smEntregasAdmin` no abren nada y quedan **pendientes de asignación**: se usarán más adelante y no se retiran (usuario, mismo día; `P-199`);
+  - `ALMACEN` conserva sus 10 endpoints de SM y `ALMACEN-VISUAL` solo las 4 lecturas;
+  - Administración y Operaciones sin cambios.
+- **2026-10-27 — `P-198`, SGI** (grill del mismo día; hecho: [`permisos_sgi.md`](permisos_sgi.md)):
+  - formatos ISO sin cambios;
+  - vales de herramienta: `SGI`, `Voucher` y `voucherTool`; el listado y el estado también para `voucherApprove` y `ALMACEN`;
+  - vales de EPP: `SGI`, `Voucher` y `voucherSafe`; el listado y la aprobación también para `voucherApprove`, `Epp`, `eppApprove` y `ALMACEN`;
+  - checklist vehicular: `SGI`, `Voucher`, `checkvehicular`, `checkvApprove`, `Operaciones`, `Administracion` y `RRHH` (borrar: `SGI`, `Voucher` y `checkvApprove`), lo que liga `checkvehicular` y `checkvApprove` (D14);
+  - el catálogo del control de saldos espera a Administración.

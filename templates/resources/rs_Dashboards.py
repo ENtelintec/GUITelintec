@@ -38,12 +38,16 @@ __date__ = "$ 18/sept/2024  at 17:15 $"
 ns = Namespace("GUI/api/v1/dashboard")
 
 
+# Dashboards de inventario (P-198, docs/permisos_almacen.md): match exacto.
+_INVENTORY_DASH = ["App.Department.ALMACEN", "App.Department.ALMACEN-VISUAL"]
+
+
 @ns.route("/inventory/movements")
 class MovementenInventoryChart(Resource):
     @ns.expect(expected_headers_per, movements_charts_model)
     def post(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department="almacen"
+            request, permissions=_INVENTORY_DASH
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -61,7 +65,7 @@ class SMChart(Resource):
     @ns.expect(expected_headers_per)
     def get(self, range_g, type_chart):
         flag, data_token, msg = token_verification_procedure(
-            request, department="almacen"
+            request, permissions=_INVENTORY_DASH
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401

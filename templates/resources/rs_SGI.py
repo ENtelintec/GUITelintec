@@ -55,6 +55,7 @@ from templates.resources.midleware.MD_IsoFormats import (
     update_iso_format_from_api,
 )
 from templates.resources.midleware.MD_SGI import (
+    VEHICLE_CHECKLIST_PERMS,
     create_voucher_safety_api,
     create_voucher_tools_api,
     create_voucher_vehicle_api,
@@ -89,12 +90,29 @@ __date__ = "$ 06/jun/2025  at 14:51 $"
 ns = Namespace("GUI/api/v1/sgi", description="SGI")
 
 
+# Vales y checklist (docs/permisos_plan.md D6, P-198; docs/permisos_sgi.md): match exacto.
+# Cada tipo de vale tiene su permiso (voucherTool, voucherSafe); listar y cambiar el estado
+# también lo usan almacén y quien aprueba (y EPP en los vales de EPP). Administrator pasa siempre.
+_VOUCHER_BASE = ["App.Department.SGI", "App.Department.Voucher"]
+_TOOLS = _VOUCHER_BASE + ["App.Department.voucherTool"]
+_TOOLS_STATE = _TOOLS + ["App.Department.voucherApprove", "App.Department.ALMACEN"]
+_SAFETY = _VOUCHER_BASE + ["App.Department.voucherSafe"]
+_SAFETY_STATE = _SAFETY + [
+    "App.Department.voucherApprove",
+    "App.Department.Epp",
+    "App.Department.eppApprove",
+    "App.Department.ALMACEN",
+]
+_VEHICLE = VEHICLE_CHECKLIST_PERMS
+_VEHICLE_DELETE = _VOUCHER_BASE + ["App.Department.checkvApprove"]
+
+
 @ns.route("/voucher/tools")
 class VoucherToolsActions(Resource):
     @ns.expect(expected_headers_per, voucher_tools_post_model)
     def post(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["sgi", "voucher"]
+            request, permissions=_TOOLS
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -108,7 +126,7 @@ class VoucherToolsActions(Resource):
     @ns.expect(expected_headers_per, voucher_tools_put_model)
     def put(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["sgi", "voucher"]
+            request, permissions=_TOOLS
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -122,7 +140,7 @@ class VoucherToolsActions(Resource):
     @ns.expect(expected_headers_per, voucher_tools_delete_model)
     def delete(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["sgi", "voucher"]
+            request, permissions=_TOOLS
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -139,7 +157,7 @@ class VoucherToolsState(Resource):
     @ns.expect(expected_headers_per, voucher_tools_status_put_model)
     def put(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["sgi", "voucher"]
+            request, permissions=_TOOLS_STATE
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -156,7 +174,7 @@ class VoucerSafetyActions(Resource):
     @ns.expect(expected_headers_per, voucher_safety_post_model)
     def post(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["sgi", "voucher"]
+            request, permissions=_SAFETY
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -170,7 +188,7 @@ class VoucerSafetyActions(Resource):
     @ns.expect(expected_headers_per, voucher_safety_put_model)
     def put(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["sgi", "voucher"]
+            request, permissions=_SAFETY
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -184,7 +202,7 @@ class VoucerSafetyActions(Resource):
     @ns.expect(expected_headers_per, voucher_safety_delete_model)
     def delete(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["sgi", "voucher"]
+            request, permissions=_SAFETY
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -201,7 +219,7 @@ class FetchVoucherTools(Resource):
     @ns.expect(expected_headers_per)
     def get(self, year, month, day):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["sgi", "voucher"]
+            request, permissions=_TOOLS_STATE
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -216,7 +234,7 @@ class FetchVoucherSafety(Resource):
     @ns.expect(expected_headers_per)
     def get(self, year, month, day):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["sgi", "voucher"]
+            request, permissions=_SAFETY_STATE
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -231,7 +249,7 @@ class VoucherSafetyState(Resource):
     @ns.expect(expected_headers_per, voucher_safety_status_put_model)
     def put(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["sgi", "voucher"]
+            request, permissions=_SAFETY_STATE
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -248,7 +266,7 @@ class FetchVoucherVehicle(Resource):
     @ns.expect(expected_headers_per)
     def get(self, year, month, day):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["sgi", "voucher"]
+            request, permissions=_VEHICLE
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -263,7 +281,7 @@ class VoucerVehicleActions(Resource):
     @ns.expect(expected_headers_per, voucher_vehicle_post_model)
     def post(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["sgi", "voucher"]
+            request, permissions=_VEHICLE
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -277,7 +295,7 @@ class VoucerVehicleActions(Resource):
     @ns.expect(expected_headers_per, voucher_vehicle_put_model)
     def put(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["sgi", "voucher"]
+            request, permissions=_VEHICLE
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -291,7 +309,7 @@ class VoucerVehicleActions(Resource):
     @ns.expect(expected_headers_per, vehicle_voucher_delete_model)
     def delete(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["sgi", "voucher"]
+            request, permissions=_VEHICLE_DELETE
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -303,9 +321,9 @@ class VoucerVehicleActions(Resource):
         return data_out, code
 
 
-def _voucher_attachment_upload(id_voucher, create_api):
+def _voucher_attachment_upload(id_voucher, create_api, permissions):
     """POST multipart (un archivo por request, campo `file`) de los 3 tipos de vale."""
-    flag, data_token, msg = token_verification_procedure(request, department=["sgi", "voucher"])
+    flag, data_token, msg = token_verification_procedure(request, permissions=permissions)
     if not flag:
         return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
     if "file" not in request.files:
@@ -323,11 +341,11 @@ def _voucher_attachment_upload(id_voucher, create_api):
     return data_out, code
 
 
-def _voucher_attachment_delete(id_voucher, delete_api):
+def _voucher_attachment_delete(id_voucher, delete_api, permissions):
     """DELETE {filename, reason?} de un anexo de los 3 tipos de vale
     (docs/vales_anexos_descarga_borrado.md): 200 envelope con `files` restantes,
     400 firma, 404 vale/archivo, 409 contención (repetir)."""
-    flag, data_token, msg = token_verification_procedure(request, department=["sgi", "voucher"])
+    flag, data_token, msg = token_verification_procedure(request, permissions=permissions)
     if not flag:
         return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
     validator = VoucherAttachmentDeleteForm.from_json(ns.payload)  # pyrefly: ignore
@@ -338,10 +356,10 @@ def _voucher_attachment_delete(id_voucher, delete_api):
     return delete_api(data, data_token)
 
 
-def _voucher_attachment_download(download_api):
+def _voucher_attachment_download(download_api, permissions):
     """POST {id_voucher, filename} -> blob en 200; envelope JSON en 4xx (el front
     decide por el status)."""
-    flag, data_token, msg = token_verification_procedure(request, department=["sgi", "voucher"])
+    flag, data_token, msg = token_verification_procedure(request, permissions=permissions)
     if not flag:
         return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
     validator = VoucherDownloadAttachmentForm.from_json(ns.payload)  # pyrefly: ignore
@@ -360,18 +378,18 @@ def _voucher_attachment_download(download_api):
 class UploadVehicleVoucherAttachment(Resource):
     @ns.expect(expected_headers_per, expected_files_attachment)
     def post(self, id_voucher):
-        return _voucher_attachment_upload(id_voucher, create_voucher_vehicle_attachment_api)
+        return _voucher_attachment_upload(id_voucher, create_voucher_vehicle_attachment_api, _VEHICLE)
 
     @ns.expect(expected_headers_per, voucher_attachment_delete_model)
     def delete(self, id_voucher):
-        return _voucher_attachment_delete(id_voucher, delete_voucher_vehicle_attachment_api)
+        return _voucher_attachment_delete(id_voucher, delete_voucher_vehicle_attachment_api, _VEHICLE)
 
 
 @ns.route("/voucher/vehicle/attachment/download")
 class DownloadVehicleVoucherAttachment(Resource):
     @ns.expect(expected_headers_per, voucher_download_att_model)
     def post(self):
-        return _voucher_attachment_download(download_voucher_vehicle_attachment_api)
+        return _voucher_attachment_download(download_voucher_vehicle_attachment_api, _VEHICLE)
 
 
 @ns.route("/voucher/vehicle/download/pdf/<int:id_voucher>")
@@ -380,7 +398,7 @@ class DownloadVehicleChecklistPDF(Resource):
     @ns.expect(expected_headers_per)
     def get(self, id_voucher):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["sgi", "voucher"]
+            request, permissions=_VEHICLE
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -398,36 +416,36 @@ class DownloadVehicleChecklistPDF(Resource):
 class UploadEppVoucherAttachment(Resource):
     @ns.expect(expected_headers_per, expected_files_attachment)
     def post(self, id_voucher):
-        return _voucher_attachment_upload(id_voucher, create_voucher_epp_attachment_api)
+        return _voucher_attachment_upload(id_voucher, create_voucher_epp_attachment_api, _SAFETY)
 
     @ns.expect(expected_headers_per, voucher_attachment_delete_model)
     def delete(self, id_voucher):
-        return _voucher_attachment_delete(id_voucher, delete_voucher_epp_attachment_api)
+        return _voucher_attachment_delete(id_voucher, delete_voucher_epp_attachment_api, _SAFETY)
 
 
 @ns.route("/voucher/epp/attachment/download")
 class DownloadEppVoucherAttachment(Resource):
     @ns.expect(expected_headers_per, voucher_download_att_model)
     def post(self):
-        return _voucher_attachment_download(download_voucher_epp_attachment_api)
+        return _voucher_attachment_download(download_voucher_epp_attachment_api, _SAFETY)
 
 
 @ns.route("/voucher/tools/attachment-<string:id_voucher>")
 class UploadToolsVoucherAttachment(Resource):
     @ns.expect(expected_headers_per, expected_files_attachment)
     def post(self, id_voucher):
-        return _voucher_attachment_upload(id_voucher, create_voucher_tools_attachment_api)
+        return _voucher_attachment_upload(id_voucher, create_voucher_tools_attachment_api, _TOOLS)
 
     @ns.expect(expected_headers_per, voucher_attachment_delete_model)
     def delete(self, id_voucher):
-        return _voucher_attachment_delete(id_voucher, delete_voucher_tools_attachment_api)
+        return _voucher_attachment_delete(id_voucher, delete_voucher_tools_attachment_api, _TOOLS)
 
 
 @ns.route("/voucher/tools/attachment/download")
 class DownloadToolsVoucherAttachment(Resource):
     @ns.expect(expected_headers_per, voucher_download_att_model)
     def post(self):
-        return _voucher_attachment_download(download_voucher_tools_attachment_api)
+        return _voucher_attachment_download(download_voucher_tools_attachment_api, _TOOLS)
 
 
 
@@ -436,8 +454,8 @@ class DownloadToolsVoucherAttachment(Resource):
 # Lecturas: sgi + administracion (el catálogo lo consumen saldos y los PDFs);
 # escrituras: solo sgi (dueño del catálogo).
 # =====================================================================
-_FMT_READ = ["sgi", "administracion"]
-_FMT_WRITE = ["sgi"]
+_FMT_READ = ["App.Department.SGI", "App.Department.Administracion"]
+_FMT_WRITE = ["App.Department.SGI"]
 
 
 @ns.route("/formats")
@@ -449,7 +467,7 @@ class IsoFormatsList(Resource):
     })
     @ns.expect(expected_headers_per)
     def get(self):
-        flag, data_token, msg = token_verification_procedure(request, department=_FMT_READ)
+        flag, data_token, msg = token_verification_procedure(request, permissions=_FMT_READ)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         params = {
@@ -465,7 +483,7 @@ class IsoFormatsList(Resource):
 class IsoFormatsCatalogs(Resource):
     @ns.expect(expected_headers_per)
     def get(self):
-        flag, data_token, msg = token_verification_procedure(request, department=_FMT_READ)
+        flag, data_token, msg = token_verification_procedure(request, permissions=_FMT_READ)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data_out, code = get_iso_formats_catalogs_from_api(data_token)
@@ -476,7 +494,7 @@ class IsoFormatsCatalogs(Resource):
 class IsoFormatOps(Resource):
     @ns.expect(expected_headers_per, iso_format_post_model)
     def post(self):
-        flag, data_token, msg = token_verification_procedure(request, department=_FMT_WRITE)
+        flag, data_token, msg = token_verification_procedure(request, permissions=_FMT_WRITE)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
@@ -488,7 +506,7 @@ class IsoFormatOps(Resource):
 
     @ns.expect(expected_headers_per, iso_format_put_model)
     def put(self):
-        flag, data_token, msg = token_verification_procedure(request, department=_FMT_WRITE)
+        flag, data_token, msg = token_verification_procedure(request, permissions=_FMT_WRITE)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
@@ -500,7 +518,7 @@ class IsoFormatOps(Resource):
 
     @ns.expect(expected_headers_per, iso_format_delete_model)
     def delete(self):
-        flag, data_token, msg = token_verification_procedure(request, department=_FMT_WRITE)
+        flag, data_token, msg = token_verification_procedure(request, permissions=_FMT_WRITE)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
@@ -515,7 +533,7 @@ class IsoFormatOps(Resource):
 class IsoFormatStatus(Resource):
     @ns.expect(expected_headers_per, iso_format_status_model)
     def put(self):
-        flag, data_token, msg = token_verification_procedure(request, department=_FMT_WRITE)
+        flag, data_token, msg = token_verification_procedure(request, permissions=_FMT_WRITE)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
@@ -530,7 +548,7 @@ class IsoFormatStatus(Resource):
 class IsoFormatDetail(Resource):
     @ns.expect(expected_headers_per)
     def get(self, id_format):
-        flag, data_token, msg = token_verification_procedure(request, department=_FMT_READ)
+        flag, data_token, msg = token_verification_procedure(request, permissions=_FMT_READ)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data_out, code = get_iso_format_from_api(id_format, data_token)

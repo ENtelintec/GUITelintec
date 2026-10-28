@@ -98,6 +98,7 @@ from static.constants import log_file_admin_collecions
 from templates.daemons.NotificationsSearch import start_daily_sweep
 from templates.misc.Functions_Files import write_log_file
 from templates.resources.methods.Functions_Aux_Login import token_verification_procedure
+from templates.resources.midleware.MD_SGI import VEHICLE_CHECKLIST_PERMS
 from templates.resources.midleware.MD_Admin_Collections import (
     cancel_remission_from_api,
     set_remission_no_attachments_from_api,
@@ -1249,7 +1250,7 @@ class DownloadVehicleVoucherAttachment(Resource):
     @ns.expect(expected_headers_per, report_activity_download_att_model)
     def post(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["sgi", "voucher"]
+            request, permissions=VEHICLE_CHECKLIST_PERMS
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401

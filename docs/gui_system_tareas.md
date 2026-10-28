@@ -4,6 +4,8 @@
 
 ## T1 — Agregar `App.Department.Sucursal-2` al catálogo (`P-189`)
 
+> **Hecha (2026-10-27).** `Sucursal-2` está en la tabla `sql_telintec.permissions` (id 32) desde el SQL de `P-193`, que es la fuente desde T3.
+
 - **Por qué**:
   - Los 4 endpoints de escritura de `/sucursal` (`POST/PUT/DELETE /movement`, `PUT /transfer/receive`) piden la subcadena `sucursal`.
   - La sede se valida con el sufijo exacto del permiso (`Sucursal-<id_warehouse>`, [`almacen_multisede_f2.md`](almacen_multisede_f2.md)).
@@ -19,6 +21,8 @@
 - **Verificar**: dar el permiso a un usuario `.tester` y, con su token nuevo, un endpoint de escritura de `/sucursal` deja de responder 401.
 
 ## T2 — Lista de usuarios pendientes de baja (`P-190`)
+
+> **Hecha (2026-10-27, revisado en solo lectura).** Columnas `Employee status` / `Departure`, botón "Pending removal", borrado de todas las filas del empleado inactivo (normal y `.tester`) con confirmación y de sus `files/{user}.json`; la recarga masiva salta a los inactivos.
 
 - **Por qué**:
   - El API confía en el token y no revisa si el empleado sigue activo ([`permisos_plan.md`](permisos_plan.md), D7 y D10).
@@ -38,6 +42,8 @@
 - **Verificar**: dar de baja en dev o test un empleado de prueba que tenga usuario; aparece en la lista; al borrarlo desaparece, junto con su `.tester`.
 
 ## T3 — Leer y escribir el catálogo en la tabla `sql_telintec.permissions` (`P-195`)
+
+> **Hecha (2026-10-27, revisado en solo lectura).** Los checkboxes salen de la tabla (activos, por `id`); "Add Permission" inserta con área y avisa el duplicado 1062 aunque esté retirado; `static/permissions.json` se borró. El botón opcional de retirar no se hizo.
 
 - **Depende de** `P-193`: correr `scripts_db_handle/permissions_catalog.sql` al menos en prod, porque la app solo se conecta a la BD de AWS.
 - **Por qué** (D1/D11 de [`permisos_plan.md`](permisos_plan.md)):
@@ -77,3 +83,24 @@
   - Por cada usuario listado: abrirlo en la app, guardar sus permisos con los checkboxes (el nombre fuera de catálogo se cae al guardar) y dejar que la app re-firme el token. Si algún permiso sí se necesita, darlo de alta antes con "Add Permission".
 - **Verificar**: la consulta devuelve 0 filas.
 
+## T5 — Usuarios con permisos granulares de SM (`P-199`)
+
+- **Por qué** ([`permisos_sm.md`](permisos_sm.md)):
+  - `smControl`, `smCreate`, `smDespachar` y `smEntregasAdmin` se usarán más adelante, así que **no se retiran**: quedan activos en el catálogo como pendientes de asignación;
+  - mientras no se defina qué abre cada uno, con la comparación exacta de SM **no abren nada**: antes pasaban por la subcadena `sm`;
+  - si alguien en prod los tiene **sin** `SM`, perdió el acceso a SM.
+- **Qué**:
+  1. En prod, ver quién los tiene:
+
+     ```sql
+     SELECT us.U_id, us.usernames, jt.perm
+     FROM sql_telintec.users_system us,
+          JSON_TABLE(JSON_EXTRACT(us.permissions, '$.*'), '$[*]' COLUMNS (perm VARCHAR(100) PATH '$')) jt
+     WHERE jt.perm IN ('App.Department.smControl', 'App.Department.smCreate',
+                       'App.Department.smDespachar', 'App.Department.smEntregasAdmin')
+     ORDER BY us.usernames;
+     ```
+
+  2. A cada usuario listado que no tenga `SM` ni `SM-URGENT`, marcarle `SM` (o `SM-URGENT` si crea urgentes) y guardar; la app re-firma el token. El permiso granular puede quedarse marcado.
+  3. **No retirarlos** del catálogo.
+- **Verificar**: ningún usuario de la consulta se queda sin `SM` ni `SM-URGENT`.
