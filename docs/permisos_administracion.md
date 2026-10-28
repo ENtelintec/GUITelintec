@@ -40,8 +40,8 @@
 
 | Endpoints | Permisos |
 |---|---|
-| `POST·PUT·DELETE /remission`, `PUT /remission/cancel`, `PUT /remission/noAttachments`, `GET /remission/download/pdf/<id>`, `POST·PUT·DELETE /activity/quotation`, `GET /activity/quotations-<id>`, `PUT /activity/ChangeStatus` | Adm, `adminCobranza`, `adminRem` |
-| `GET /remission-<id>`, `POST·PUT /remissionControlTable`, `POST·DELETE /remission/attachment-<id>` | Adm, `adminCobranza`, `adminRem`, `Operaciones` |
+| `POST·PUT·DELETE /remission`, `PUT /remission/cancel`, `PUT /remission/noAttachments`, `GET /remission/download/pdf/<id>`, `PUT /activity/ChangeStatus` | Adm, `adminCobranza`, `adminRem` |
+| `GET /remission-<id>`, `POST·PUT /remissionControlTable`, `POST·DELETE /remission/attachment-<id>`, `POST·PUT·DELETE /activity/quotation`, `GET /activity/quotations-<id>` | Adm, `adminCobranza`, `adminRem`, `Operaciones` |
 | `POST·PUT /balanceControl`, `PUT /balanceControl/{fields,remissions,cancel}`, `POST·PUT /balanceControl/movement`, `PUT /remissionBalance` | Adm, `adminCobranza` |
 | `GET /balanceControl`, `GET /balanceControl/<id>` | Adm, `adminCobranza`, `Operaciones` |
 | `GET /balanceControl/catalogs` | Adm, `adminCobranza`, `Operaciones`, `SGI` |
@@ -64,7 +64,8 @@
 | Endpoints | Permisos |
 |---|---|
 | `POST·PUT·DELETE /client`, `POST·PUT·DELETE /supplier`, `POST /extraInfoSupplier`, `POST /suppliers/items/file` | Adm, `adminDB` |
-| `GET /suppliers/allSuppliers`, `GET /suppliers/items-<id>` | Catálogos |
+| `GET /suppliers/allSuppliers` | Catálogos, `ALMACEN`, `ALMACEN-VISUAL` |
+| `GET /suppliers/items-<id>` | Catálogos |
 | `GET /clients/allClients` | Catálogos, `SM`, `SM-URGENT` |
 | `GET /heads` | Catálogos, `Operaciones`, `RRHH` |
 | `POST·PUT·DELETE /head` | Adm, `adminDB`, `Operaciones`, `RRHH` |
@@ -77,15 +78,16 @@
 
 **Gotchas**:
 
-- **Mientras `P-207` no esté hecho, `adminCobranza` y `adminPreventa` no existen en el catálogo** y nadie los tiene. Todo sigue funcionando con `Administracion`.
+- **`adminCobranza` y `adminPreventa` ya están en el catálogo** (`P-207`, ids 33 y 34). Quien no los tenga asignados sigue entrando con `Administracion`.
 - **El front cierra hoy todo Administración, Cobranza y Preventa** a `Administrator` y `Administracion` en `route-permissions.ts`. Un usuario solo con `adminCobranza`, `adminPreventa`, `adminRem` o `adminDB` no verá sus pantallas hasta `P-208`.
 - **Los avisos diarios** llegan a quien tenga `adminCobranza`: el lector de notificaciones cruza la etiqueta `admincobranza` con el nombre del permiso en minúsculas.
 
-## Hallazgos (sin cambio en este paso, `P-209`)
+## Hallazgos (`P-209`)
 
-- **Cotización de actividad desde Líderes.** Las pantallas `/dashboard/lideres/cotizacion-actividad` y `reporte-actividad` llaman a `/admin/collections/activity/quotation*`, que nunca abrió a `Operaciones`. Un líder que solo tenga `Operaciones` recibe 401 hoy, igual que antes del cambio.
-- **Lista de proveedores desde Almacén, SM y Compras.** Esas pantallas llaman a `GET /admin/db/suppliers/allSuppliers`, que solo abre a Administración. Almacén tiene su propia ruta (`GET /almacen/inventory/suppliers/allSuppliers`).
-- **Rutas que el front llama y el API no tiene.** `/activity/report*` no existe en el API.
+- **Cotización de actividad desde Líderes.** Resuelto el 2026-10-28 (ver Notas posteriores): `Operaciones` ya abre `/admin/collections/activity/quotation*`.
+- **Lista de proveedores desde Almacén.** Resuelto el 2026-10-28: el catálogo de proveedores de almacén (`almacen/proveedores`) llama a `GET /admin/db/suppliers/allSuppliers`, que ya abre a `ALMACEN` y `ALMACEN-VISUAL`. El alta de proveedor sigue cerrada a Administración.
+- **Lista de proveedores desde SM, Compras y EPP (abierto).** Esas pantallas (`sm/PurchaseOrderMultiForm`, `purchases/CreatePOApplicationForm`, `almacen_epp/inventario_epp`) llaman a la ruta de almacén, `GET /almacen/inventory/suppliers/allSuppliers`, que solo abre a `ALMACEN` y `ALMACEN-VISUAL`. Sin uno de esos dos, reciben 401.
+- **Rutas que el front llama y el API no tiene (abierto).** `/activity/report*` no existe en el API.
 
 ## Verificación
 
@@ -115,3 +117,15 @@ Dev (2026-10-28):
 - Un endpoint nuevo de Administración usa la constante de su grupo. Una lectura que sirva a varias pantallas va con `ADMIN_CATALOG_READERS`.
 - Un permiso nuevo se da de alta primero en el catálogo, desde la app de usuarios.
 - Si un aviso nuevo es de Cobranza, se manda a `PERM_BALANCE`. Las etiquetas van en minúsculas y el lector las busca por `REGEXP`, así que no conviene usar una que sea subcadena de otra.
+
+## Notas posteriores
+
+- **2026-10-28 — `P-209`, decisión del usuario.** Cambios:
+  - `Operaciones` abre la cotización de actividad, que usan las pantallas de Líderes: `POST·PUT·DELETE /activity/quotation` y `GET /activity/quotations-<id>`, con `_REM_OPS`. `PUT /activity/ChangeStatus` sigue sin abrirle, porque el front no lo llama desde Líderes.
+  - `ALMACEN` y `ALMACEN-VISUAL` leen `GET /admin/db/suppliers/allSuppliers` (`_SUPPLIERS_LIST_READ` en [`rs_Admin_DB.py`](../templates/resources/rs_Admin_DB.py)). No reciben escrituras de proveedores ni `GET /suppliers/items-<id>`.
+  - `P-207` está hecho: los dos permisos están en el catálogo de dev y test (ids 33 y 34), y el usuario los dio de alta.
+  - **Verificación:** `Tests/tester_permisos_administracion.py` da 69/69.
+    - Contra el commit anterior a `P-198`, ganan los cuatro de Administración más los de `P-209`, solo en sus endpoints.
+    - Contra `HEAD` ganan exactamente `Operaciones` (4 endpoints), `ALMACEN` (1) y `ALMACEN-VISUAL` (1), y nadie pierde.
+    - Hay 6 casos nuevos: `ChangeStatus`, el alta de proveedor, `items-<id>` y `Epp` siguen con 401.
+  - pyrefly: 166 errores, sin cambio.

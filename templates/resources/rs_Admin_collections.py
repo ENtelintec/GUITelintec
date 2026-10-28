@@ -187,7 +187,8 @@ _PO_APPLICATION_PERMS = _PO_PERMS + ["App.Department.comprasCreate"]
 # lista de compra: almacén la usa para surtir; ALMACEN-VISUAL ya entraba por "almacen"
 _PURCHASE_LIST_PERMS = _PO_PERMS + ["App.Department.ALMACEN", "App.Department.ALMACEN-VISUAL"]
 # Cobranza (P-198, docs/permisos_administracion.md): adminCobranza abre remisiones, saldos y
-# entregas; adminRem, solo remisiones. Operaciones conserva lo que ya usaba.
+# entregas; adminRem, solo remisiones. Operaciones conserva lo que ya usaba y
+# lleva las cotizaciones de actividad desde Líderes (P-209).
 _COBRANZA = ["App.Department.Administracion", "App.Department.adminCobranza"]
 _REM = _COBRANZA + ["App.Department.adminRem"]
 _REM_OPS = _REM + ["App.Department.Operaciones"]
@@ -462,7 +463,7 @@ class ActivityQuotatioAction(Resource):
     @ns.expect(expected_headers_per, quotation_activity_create_model)
     def post(self):
         flag, data_token, msg = token_verification_procedure(
-            request, permissions=_REM
+            request, permissions=_REM_OPS
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -476,7 +477,7 @@ class ActivityQuotatioAction(Resource):
     @ns.expect(expected_headers_per, quotation_activity_update_model)
     def put(self):
         flag, data_token, msg = token_verification_procedure(
-            request, permissions=_REM
+            request, permissions=_REM_OPS
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -490,7 +491,7 @@ class ActivityQuotatioAction(Resource):
     @ns.expect(expected_headers_per, quotation_activity_delete_model)
     def delete(self):
         flag, data_token, msg = token_verification_procedure(
-            request, permissions=_REM
+            request, permissions=_REM_OPS
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -507,7 +508,7 @@ class FetchActivitieQuotationById(Resource):
     @ns.expect(expected_headers_per)
     def get(self, id_quotation):
         flag, data_token, msg = token_verification_procedure(
-            request, permissions=_REM
+            request, permissions=_REM_OPS
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401

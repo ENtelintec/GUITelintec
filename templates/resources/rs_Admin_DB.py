@@ -61,6 +61,8 @@ ns = Namespace("GUI/api/v1/admin/db")
 _DB = ["App.Department.Administracion", "App.Department.adminDB"]
 _SM_READ = ["App.Department.SM", "App.Department.SM-URGENT"]
 _CLIENTS_READ = ADMIN_CATALOG_READERS + _SM_READ
+# lista general de proveedores: el inventario de almacén la usa (P-209); el alta sigue en _DB
+_SUPPLIERS_LIST_READ = ADMIN_CATALOG_READERS + ["App.Department.ALMACEN", "App.Department.ALMACEN-VISUAL"]
 _HEADS_WRITE = _DB + ["App.Department.Operaciones", "App.Department.RRHH"]
 _HEADS_LIST_READ = ADMIN_CATALOG_READERS + ["App.Department.Operaciones", "App.Department.RRHH"]
 _HEADS_READ = _HEADS_LIST_READ + [
@@ -137,7 +139,7 @@ class SuppliersAll(Resource):
     @ns.expect(expected_headers_per)
     def get(self):
         flag, data_token, msg = token_verification_procedure(
-            request, permissions=ADMIN_CATALOG_READERS
+            request, permissions=_SUPPLIERS_LIST_READ
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
