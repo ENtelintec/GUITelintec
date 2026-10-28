@@ -5,9 +5,6 @@ __date__ = "$ 26/nov/2024  at 14:35 $"
 from reportlab.lib.units import mm
 
 from static.constants import file_codebar
-from templates.controllers.product.movements_controller import (
-    get_all_movements_db_detail,
-)
 
 coldata_inventory = [
     {"text": "ID Producto", "stretch": False, "width": 80},
@@ -192,14 +189,6 @@ def divide_movements(movements_data):
         else:
             outs.append(movement)
     return ins, outs
-
-
-def fetch_all_movements(data_token):
-    flag, error, movements = get_all_movements_db_detail(data_token)
-    if not flag:
-        print("Error al obtener los movimientos:", error)
-        return []
-    return movements
 
 
 def create_excel_file(data, filepath):

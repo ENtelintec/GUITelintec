@@ -17,25 +17,6 @@ from templates.database.connection import execute_sql
 # warehouses_controller.py. Una query nueva aqui debe decidir que sede lee.
 
 
-def get_ins_db(data_token):
-    sql = (
-        "SELECT "
-        "sql_telintec.product_movements_amc.id_movement, "
-        "sql_telintec.product_movements_amc.id_product, "
-        "sql_telintec.product_movements_amc.movement_type, "
-        "sql_telintec.product_movements_amc.quantity, "
-        "sql_telintec.product_movements_amc.movement_date, "
-        "sql_telintec.product_movements_amc.sm_id, "
-        "sql_telintec.products_amc.name as product_name "
-        "FROM sql_telintec.product_movements_amc "
-        "JOIN sql_telintec.products_amc ON sql_telintec.product_movements_amc.id_product = sql_telintec.products_amc.id_product "
-        "WHERE sql_telintec.product_movements_amc.movement_type = 'entrada' "
-        "AND sql_telintec.product_movements_amc.id_warehouse IS NULL"
-    )
-    flag, error, my_result = execute_sql(sql, None, 5, data_token)
-    return flag, error, my_result
-
-
 def get_ins_db_detail(data_token, date_from=None):
     sql = (
         "SELECT "
@@ -143,50 +124,6 @@ def delete_movement_db(id_movement, data_token):
     return flag, error, result
 
 
-def get_outs_db(data_token):
-    sql = (
-        "SELECT "
-        "sql_telintec.product_movements_amc.id_movement, "
-        "sql_telintec.product_movements_amc.id_product, "
-        "sql_telintec.product_movements_amc.movement_type, "
-        "sql_telintec.product_movements_amc.quantity, "
-        "sql_telintec.product_movements_amc.movement_date, "
-        "sql_telintec.product_movements_amc.sm_id, "
-        "sql_telintec.products_amc.name as product_name "
-        "FROM sql_telintec.product_movements_amc "
-        "JOIN sql_telintec.products_amc ON sql_telintec.product_movements_amc.id_product = sql_telintec.products_amc.id_product "
-        "WHERE sql_telintec.product_movements_amc.movement_type = 'salida' "
-        "AND sql_telintec.product_movements_amc.id_warehouse IS NULL"
-    )
-    flag, error, result = execute_sql(sql, None, 5, data_token)
-    return flag, error, result
-
-
-def get_outs_db_detail(data_token):
-    sql = (
-        "SELECT "
-        "sql_telintec.product_movements_amc.id_movement, "
-        "sql_telintec.product_movements_amc.id_product,"
-        "sql_telintec.products_amc.sku, "
-        "sql_telintec.product_movements_amc.movement_type, "
-        "sql_telintec.product_movements_amc.quantity, "
-        "sql_telintec.product_movements_amc.movement_date, "
-        "sql_telintec.product_movements_amc.sm_id, "
-        "sql_telintec.products_amc.name as product_name, "
-        "sql_telintec.products_amc.udm, "
-        "sql_telintec.suppliers_amc.name AS supplier_name,"
-        "sql_telintec.products_amc.locations, "
-        "sql_telintec.product_movements_amc.extra_info->'$.reference' "
-        "FROM sql_telintec.product_movements_amc "
-        "INNER JOIN sql_telintec.products_amc ON sql_telintec.product_movements_amc.id_product = sql_telintec.products_amc.id_product "
-        "LEFT JOIN sql_telintec.suppliers_amc ON sql_telintec.products_amc.id_supplier = sql_telintec.suppliers_amc.id_supplier "
-        "WHERE sql_telintec.product_movements_amc.movement_type = 'salida' "
-        "AND sql_telintec.product_movements_amc.id_warehouse IS NULL ORDER BY movement_date DESC;"
-    )
-    flag, error, result = execute_sql(sql, None, 5, data_token)
-    return flag, error, result
-
-
 def get_all_movements_db_detail(data_token, type_m="all", date_from=None, date_to=None):
     """Detalle para PDF/Excel del principal. `date_from`/`date_to` (datetime,
     inclusivos) acotan en SQL con predicados sobre la columna, no sobre
@@ -231,30 +168,6 @@ def _date_range_sql(column: str, date_from, date_to) -> str:
 
 def _date_range_vals(date_from, date_to) -> tuple:
     return tuple(v for v in (date_from, date_to) if v is not None)
-
-
-def get_movements_type_db(type_m: str, data_token):
-    sql = (
-        "SELECT "
-        "id_movement, "
-        "products_amc.id_product, "
-        "movement_type, "
-        "quantity, "
-        "movement_date, "
-        "sm_id, "
-        "product_movements_amc.extra_info->'$.reference', "
-        "sku, "
-        "suppliers_amc.name, "
-        "products_amc.codes "
-        "FROM sql_telintec.product_movements_amc "
-        "INNER JOIN sql_telintec.products_amc ON (sql_telintec.products_amc.id_product = sql_telintec.product_movements_amc.id_product)"
-        "INNER JOIN sql_telintec.suppliers_amc ON (sql_telintec.products_amc.id_supplier = sql_telintec.suppliers_amc.id_supplier)"
-        "WHERE movement_type LIKE %s AND sql_telintec.product_movements_amc.id_warehouse IS NULL "
-        "ORDER BY movement_date DESC"
-    )
-    vals = (type_m,)
-    flag, error, result = execute_sql(sql, vals, 2, data_token)
-    return flag, error, result
 
 
 def get_movements_type_db_all(data_token, type_m="all"):

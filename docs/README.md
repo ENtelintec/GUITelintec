@@ -87,7 +87,7 @@ Ver también: [`sm_response_envelope.md`](sm_response_envelope.md) · [`almacen_
 - [`sm_pdf_item_status_colors.md`](sm_pdf_item_status_colors.md) — `GET /sm/download/pdf/<sm_id>`: semáforo de surtido en los items (verde fila completa, amarillo/rojo en `No.`, sin color si `quantity <= 0`); estatus "Semidespachado" corregido. · 2026-07-23
 - [`permisos_sm.md`](permisos_sm.md) — `/sm/*`: permisos exactos; `SM` y `SM-URGENT` como base, urgentes solo `SM-URGENT`, los 4 granulares pendientes de asignación no abren nada, `ALMACEN-VISUAL` solo lee. · 2026-10-27 · ⏳ granulares pendientes de asignación (`P-199`)
 
-Ver también: [`po_sm_deliveries_tracking.md`](po_sm_deliveries_tracking.md) (la OC escribe los `deliveries` de la SM) · [`po_movements_inbound_match.md`](po_movements_inbound_match.md) · [`purchase_list_pdf.md`](purchase_list_pdf.md) · [`contract_items_file_import_sections.md`](contract_items_file_import_sections.md) (Fase 3: enlace SM ↔ partida por sección) · [`pdf_tipografia_helvetica_y_cuadricula_remision.md`](pdf_tipografia_helvetica_y_cuadricula_remision.md) (los PDFs de SM ya son Helvetica)
+Ver también: [`po_sm_deliveries_tracking.md`](po_sm_deliveries_tracking.md) (la OC escribe los `deliveries` de la SM) · [`po_movements_inbound_match.md`](po_movements_inbound_match.md) · [`purchase_list_pdf.md`](purchase_list_pdf.md) · [`contract_items_file_import_sections.md`](contract_items_file_import_sections.md) (Fase 3: enlace SM ↔ partida por sección) · [`pdf_tipografia_helvetica_y_cuadricula_remision.md`](pdf_tipografia_helvetica_y_cuadricula_remision.md) (los PDFs de SM ya son Helvetica) · [`almacen_lecturas_completas.md`](almacen_lecturas_completas.md) (`GET /sm/products/<contract>` manda el catálogo entero: `P-204`)
 
 ## Almacén
 
@@ -99,6 +99,7 @@ Ver también: [`po_sm_deliveries_tracking.md`](po_sm_deliveries_tracking.md) (la
 - [`almacen_multisede_resolve.md`](almacen_multisede_resolve.md) — `PUT /almacen/transfer/<id>/resolve` · `GET /sucursal/movement/<id>`: resuelve faltantes de un traslado (reingreso | merma, status 4), lectura de un movimiento de sede, `meta.truncated` y formatos normalizados. · 2026-10-16 · ⏳ botón del front; quién captura
 - [`permisos_almacen.md`](permisos_almacen.md) — `/almacen/*` · `/sucursal/*`: permisos exactos; `ALMACEN-VISUAL` solo lee (descargas incluidas), EPP lee lo suyo y registra movimientos con `ALMACEN`, sede por `Sucursal-<id>`. · 2026-10-27
 - [`almacen_kardex_etag.md`](almacen_kardex_etag.md) — `GET /almacen/kardex` · `GET /sucursal/movements/<type_m>`: ETag débil con la huella del cuerpo y 304 sin cuerpo en los tres GET del kardex; el front no cambia. · 2026-10-28
+- [`almacen_lecturas_completas.md`](almacen_lecturas_completas.md) — `GET /almacen/codes/generate`: auditoría de los SELECT de `controllers/product`; el código de SKU sale de una fila, 8 funciones sin llamadas borradas, 4 listados a pendientes. · 2026-10-28 · ⏳ acotar reservas, inventario, consolidado y productos de SM
 
 Ver también: [`planes/almacen_multisede_plan.md`](planes/almacen_multisede_plan.md) (plan de la iniciativa) · [`po_movements_inbound_match.md`](po_movements_inbound_match.md) (OC ↔ entradas de almacén) · [`purchase_list_pdf.md`](purchase_list_pdf.md) · [`contracts_products_sort_memory_fix.md`](contracts_products_sort_memory_fix.md) (listado de proveedores sin sort sobre el JSON)
 

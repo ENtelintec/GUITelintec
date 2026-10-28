@@ -44,7 +44,7 @@ from templates.controllers.product.products_controller import (
     get_all_epp_inventory,
     get_all_products_db_old,
     get_all_products_db_tool_internal,
-    get_last_sku,
+    get_max_sku_number,
     get_product_barcode_data,
     get_skus,
     get_stock_db,
@@ -1342,19 +1342,12 @@ def get_new_code_products(data_token):
     # code = "1001xxxxxxx"
     code_length = 11
     prefix = "1001"
-    flag, error, result = get_last_sku(data_token)
-    if not (isinstance(result, list) or isinstance(result, tuple)):
+    # El máximo de la parte numérica (sku sin sus primeros 4 caracteres) lo
+    # calcula la BD; antes se traía la tabla completa (P-129).
+    flag, error, result = get_max_sku_number(len(prefix), data_token)
+    if not flag or not isinstance(result, tuple):
         return {"data": None, "msg": "No se pudo generar el codigo", "error": error}, 400
-    out = 0
-    for item in result:
-        number = item[0][len(prefix) :]
-        try:
-            int(number)
-        except ValueError:
-            print(f"Error, not a number: {number}")
-            continue
-        if number.isdigit():
-            out = max(out, int(number))
+    out = int(result[0]) if result[0] is not None else 0
     out_text = prefix + str(out + 1).zfill(code_length - len(prefix))
     return {"data": out_text, "msg": None, "error": None}, 200
 

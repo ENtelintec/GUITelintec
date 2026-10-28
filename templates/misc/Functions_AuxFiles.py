@@ -31,9 +31,6 @@ from templates.controllers.fichajes.fichajes_controller import (
     update_fichaje_DB,
 )
 from templates.controllers.material_request.sm_controller import get_sm_entries
-from templates.controllers.product.products_controller import (
-    get_products_w_reservations,
-)
 from templates.misc.Functions_Files import (
     get_fichajes_resume_cache,
     update_fichajes_resume_cache,
@@ -745,20 +742,6 @@ def get_all_sm_entries( data_token, filter_status=False, is_supper=False, emp_id
                 extra_info,
             )
             result[index] = new_row
-        return result, columns
-    else:
-        return None, None
-
-
-def get_all_sm_products( data_token):
-    flag, error, result = get_products_w_reservations(data_token)
-    if flag:
-        columns = ("ID", "udm", "Stock", "Nombre")
-        # change second column to last position column
-        for i, row in enumerate(result):
-            id_emp, name, udm, stock = row
-            new_row = (id_emp, udm, stock, name)
-            result[i] = new_row
         return result, columns
     else:
         return None, None
