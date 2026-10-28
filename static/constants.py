@@ -9,9 +9,6 @@ from pathlib import Path
 from dotenv import dotenv_values
 from flask_restx import Api
 
-# .env del checkout (dev) o, si no hay, el de la carpeta padre (prod:
-# /home/ec2-user/opt/.env). API_ENVIRONMENT del sistema gana sobre la del .env;
-# sin un valor valido el API no arranca (docs/entorno_desde_env.md).
 _root_path = Path(__file__).resolve().parent.parent
 _env_dir = _root_path if (_root_path / ".env").is_file() else _root_path.parent
 _env_file = _env_dir / ".env"
