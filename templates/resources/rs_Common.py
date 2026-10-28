@@ -36,13 +36,19 @@ __date__ = "$ 20/sept/2024  at 17:06 $"
 
 ns = Namespace("GUI/api/v1/common")
 
+# Common (P-198, docs/permisos_rrhh_bitacoras_cda_comun.md): match exacto contra el catálogo. Los recibos de
+# nómina abren a RRHH o al propio empleado (emp_id=). Administrator pasa siempre.
+_COMMON = ["App.Department.Common"]
+_COMMON_BASIC = _COMMON + ["App.Department.Basic"]
+_RRHH = ["App.Department.RRHH"]
+
 
 @ns.route("/payroll/employee/<int:emp_id>")
 class ListFilesPayroll(Resource):
     @ns.expect(expected_headers_per)
     def get(self, emp_id):
         flag, data_token, msg = token_verification_procedure(
-            request, department="rrhh", emp_id=emp_id
+            request, permissions=_RRHH, emp_id=emp_id
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -60,7 +66,7 @@ class DownloadFilesPayroll(Resource):
             return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
         data = validator.data
         flag, data_token, msg = token_verification_procedure(
-            request, emp_id=data["emp_id"], department="rrhh"
+            request, emp_id=data["emp_id"], permissions=_RRHH
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -74,7 +80,7 @@ class DownloadFilesPayroll(Resource):
 class VacationsEvents(Resource):
     @ns.expect(expected_headers_per)
     def get(self):
-        flag, data_token, msg = token_verification_procedure(request, department=["common", "basic"])
+        flag, data_token, msg = token_verification_procedure(request, permissions=_COMMON_BASIC)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
 
@@ -86,7 +92,7 @@ class VacationsEvents(Resource):
 class EmployeesDirectory(Resource):
     @ns.expect(expected_headers_per)
     def get(self, status):
-        flag, data_token, msg = token_verification_procedure(request, department="common")
+        flag, data_token, msg = token_verification_procedure(request, permissions=_COMMON)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data_out, code = get_employees_directory_with_status(status, data_token)
@@ -97,7 +103,7 @@ class EmployeesDirectory(Resource):
 class ContractsCatalog(Resource):
     @ns.expect(expected_headers_per)
     def get(self):
-        flag, data_token, msg = token_verification_procedure(request, department="common")
+        flag, data_token, msg = token_verification_procedure(request, permissions=_COMMON)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data_out, code = get_contracts_catalog(data_token)
@@ -105,7 +111,7 @@ class ContractsCatalog(Resource):
 
 
 # --- Check-in con foto (docs/checkin_foto.md): el empleado sobre si mismo -----------------
-_CK_EMP = ["common", "basic"]
+_CK_EMP = _COMMON_BASIC
 
 
 @ns.route("/checkin")
@@ -113,7 +119,7 @@ class CheckinSelf(Resource):
     @ns.expect(expected_headers_per, expected_files_checkin)
     def post(self):
         """Registra ENTRADA (0) o SALIDA (1) del empleado del token con foto obligatoria; la hora la pone el servidor."""
-        flag, data_token, msg = token_verification_procedure(request, department=_CK_EMP)
+        flag, data_token, msg = token_verification_procedure(request, permissions=_CK_EMP)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         file = request.files.get("file")
@@ -140,7 +146,7 @@ class CheckinMine(Resource):
     @ns.doc(params={"date_from": "YYYY-MM-DD (default: 30 dias atras)", "date_to": "YYYY-MM-DD (default hoy)", "all": "1 -> incluye anulados"})
     @ns.expect(expected_headers_per)
     def get(self):
-        flag, data_token, msg = token_verification_procedure(request, department=_CK_EMP)
+        flag, data_token, msg = token_verification_procedure(request, permissions=_CK_EMP)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         params = {"date_from": request.args.get("date_from"), "date_to": request.args.get("date_to"), "all": request.args.get("all")}
@@ -152,7 +158,7 @@ class CheckinMine(Resource):
 class CheckinCatalogs(Resource):
     @ns.expect(expected_headers_per)
     def get(self):
-        flag, data_token, msg = token_verification_procedure(request, department=_CK_EMP)
+        flag, data_token, msg = token_verification_procedure(request, permissions=_CK_EMP)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data_out, code = get_checkin_catalogs_api()
@@ -164,7 +170,7 @@ class CheckinPhotoSelf(Resource):
     @ns.expect(expected_headers_per)
     def get(self, id_checkin):
         """Foto de un registro PROPIO (blob en 200; envelope en 4xx)."""
-        flag, data_token, msg = token_verification_procedure(request, department=_CK_EMP)
+        flag, data_token, msg = token_verification_procedure(request, permissions=_CK_EMP)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         envelope, local_path, code = download_checkin_photo_api(id_checkin, data_token, only_own=True)

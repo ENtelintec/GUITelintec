@@ -104,3 +104,19 @@
   2. A cada usuario listado que no tenga `SM` ni `SM-URGENT`, marcarle `SM` (o `SM-URGENT` si crea urgentes) y guardar; la app re-firma el token. El permiso granular puede quedarse marcado.
   3. **No retirarlos** del catálogo.
 - **Verificar**: ningún usuario de la consulta se queda sin `SM` ni `SM-URGENT`.
+
+## T6 — Alta de `adminCobranza` y `adminPreventa` (`P-207`)
+
+- **Por qué** ([`permisos_administracion.md`](permisos_administracion.md)):
+  - el usuario pidió separar Cobranza de Preventa dentro de Administración (2026-10-28);
+  - el API ya compara `App.Department.adminCobranza` y `App.Department.adminPreventa`, pero mientras no estén en el catálogo nadie puede tenerlos;
+  - `Administracion` sigue abriendo todo, así que nadie pierde acceso mientras tanto.
+- **Qué**:
+  1. Darlos de alta en el catálogo: con "Add Permission" (área `administracion`) o con `scripts_db_handle/permissions_admin_cobranza_preventa.sql`, que también deja dev y test iguales.
+  2. Asignarlos:
+     - `adminCobranza` a quien solo lleva cobranza: remisiones, control de saldos y control de entregas. Además recibe los avisos diarios de saldos y entregas.
+     - `adminPreventa` a quien solo lleva cotizaciones, CISCO, OCD y licitaciones.
+     - Quien hoy tiene `Administracion` y debe quedarse solo con una parte: quitarle `Administracion` y marcarle el nuevo. La app re-firma el token.
+- **Verificar**:
+  - los dos aparecen activos en los checkboxes;
+  - un usuario solo con `adminPreventa` recibe 401 en `POST /admin/collections/remission` y 200 en `GET /admin/presales/tenders`.

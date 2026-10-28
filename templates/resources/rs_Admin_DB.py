@@ -31,6 +31,7 @@ from static.Models.api_fichajes_models import expected_files
 from static.Models.api_models import expected_headers_per
 from templates.resources.methods.Functions_Aux_Login import token_verification_procedure
 from templates.resources.midleware.Functions_midleware_admin import (
+    ADMIN_CATALOG_READERS,
     delete_customer,
     delete_head_from_api,
     delete_supplier,
@@ -54,13 +55,27 @@ __date__ = "$ 27/ene/2025  at 16:13 $"
 
 ns = Namespace("GUI/api/v1/admin/db")
 
+# Administración (P-198, docs/permisos_administracion.md): match exacto. Administracion y adminDB
+# escriben clientes, proveedores y jefes; los listados los lee cualquier permiso
+# de Administración, y los de clientes y jefes además las áreas que ya los leían.
+_DB = ["App.Department.Administracion", "App.Department.adminDB"]
+_SM_READ = ["App.Department.SM", "App.Department.SM-URGENT"]
+_CLIENTS_READ = ADMIN_CATALOG_READERS + _SM_READ
+_HEADS_WRITE = _DB + ["App.Department.Operaciones", "App.Department.RRHH"]
+_HEADS_LIST_READ = ADMIN_CATALOG_READERS + ["App.Department.Operaciones", "App.Department.RRHH"]
+_HEADS_READ = _HEADS_LIST_READ + [
+    "App.Department.ALMACEN",
+    "App.Department.ALMACEN-VISUAL",
+    "App.Department.Bitacoras",
+] + _SM_READ
+
 
 @ns.route("/clients/allClients")
 class ClientsAll(Resource):
     @ns.expect(expected_headers_per)
     def get(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["administracion", "sm"]
+            request, permissions=_CLIENTS_READ
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -73,7 +88,7 @@ class ClientDB(Resource):
     @ns.expect(expected_headers_per, client_model)
     def post(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department="administracion"
+            request, permissions=_DB
         )
 
         if not flag:
@@ -89,7 +104,7 @@ class ClientDB(Resource):
     @ns.expect(expected_headers_per, client_model)
     def put(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department="administracion"
+            request, permissions=_DB
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -104,7 +119,7 @@ class ClientDB(Resource):
     @ns.expect(expected_headers_per, client_model)
     def delete(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department="administracion"
+            request, permissions=_DB
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -122,7 +137,7 @@ class SuppliersAll(Resource):
     @ns.expect(expected_headers_per)
     def get(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department="administracion"
+            request, permissions=ADMIN_CATALOG_READERS
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -135,7 +150,7 @@ class FetchSuppliersItems(Resource):
     @ns.expect(expected_headers_per)
     def get(self, id_s):
         flag, data_token, msg = token_verification_procedure(
-            request, department="administracion"
+            request, permissions=ADMIN_CATALOG_READERS
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -148,7 +163,7 @@ class SupplierActions(Resource):
     @ns.expect(expected_headers_per, supplier_model)
     def post(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department="administracion"
+            request, permissions=_DB
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -163,7 +178,7 @@ class SupplierActions(Resource):
     @ns.expect(expected_headers_per, supplier_model)
     def put(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department="administracion"
+            request, permissions=_DB
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -178,7 +193,7 @@ class SupplierActions(Resource):
     @ns.expect(expected_headers_per, supplier_delete_model)
     def delete(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department="administracion"
+            request, permissions=_DB
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -196,7 +211,7 @@ class UpdateEISupplier(Resource):
     @ns.expect(expected_headers_per, update_extra_info_model)
     def post(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department="administracion"
+            request, permissions=_DB
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -215,11 +230,7 @@ class HeadsDepartmentAuto(Resource):
     def get(self):
         flag, data_token, msg = token_verification_procedure(
             request,
-            department=[
-                "administracion",
-                "operaciones",
-                "rrhh",
-            ],
+            permissions=_HEADS_LIST_READ,
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -233,14 +244,7 @@ class HeadsDepartment(Resource):
     def get(self, id_d):
         flag, data_token, msg = token_verification_procedure(
             request,
-            department=[
-                "administracion",
-                "operaciones",
-                "almacen",
-                "sm",
-                "bitacora",
-                "rrhh",
-            ],
+            permissions=_HEADS_READ,
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -253,7 +257,7 @@ class HeadDB(Resource):
     @ns.expect(expected_headers_per, head_insert_model)
     def post(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["administracion", "operaciones", "rrhh"]
+            request, permissions=_HEADS_WRITE
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -268,7 +272,7 @@ class HeadDB(Resource):
     @ns.expect(expected_headers_per, head_update_model)
     def put(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["administracion", "operaciones", "rrhh"]
+            request, permissions=_HEADS_WRITE
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -283,7 +287,7 @@ class HeadDB(Resource):
     @ns.expect(expected_headers_per, head_delete_model)
     def delete(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["administracion", "operaciones", "rrhh"]
+            request, permissions=_HEADS_WRITE
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -311,7 +315,7 @@ class ItemsSupplierFileUpload(Resource):
         - DESCRIPCIÓN CORTA
         """
         flag, data_token, msg = token_verification_procedure(
-            request, department=["administracion"]
+            request, permissions=_DB
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401

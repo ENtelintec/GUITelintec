@@ -50,7 +50,9 @@ DAY_THRESHOLDS = (60, 30, 15)
 PCT_THRESHOLDS = (25, 10, 0)
 TRANSFER_UNRESOLVED_STATUS = 2  # RECIBIDO CON DIFERENCIAS (MD_Multisede.WH_TRANSFER_STATUS)
 TRANSFER_MIN_DAYS = 1
-PERM_BALANCE = ["administracion"]
+# Saldos y entregas también le llegan a adminCobranza (P-155, docs/permisos_administracion.md);
+# el lector cruza estas etiquetas con el nombre del permiso en minúsculas.
+PERM_BALANCE = ["administracion", "admincobranza"]
 PERM_TRANSFERS = ["almacen", "administracion"]
 TITLE = "Notificaciones de sistema"
 # Correo del aviso de saldos y entregas (P-095, decision 2026-10-22): gerentes y

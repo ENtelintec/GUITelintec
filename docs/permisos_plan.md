@@ -140,3 +140,16 @@ Inventario completo: 354 endpoints; 313 llaman a `token_verification_procedure` 
   - vales de EPP: `SGI`, `Voucher` y `voucherSafe`; el listado y la aprobación también para `voucherApprove`, `Epp`, `eppApprove` y `ALMACEN`;
   - checklist vehicular: `SGI`, `Voucher`, `checkvehicular`, `checkvApprove`, `Operaciones`, `Administracion` y `RRHH` (borrar: `SGI`, `Voucher` y `checkvApprove`), lo que liga `checkvehicular` y `checkvApprove` (D14);
   - el catálogo del control de saldos espera a Administración.
+- **2026-10-28 — `P-198`, RRHH, Bitácoras, CDA, Common, Misc y Dashboards** (mini-grill del mismo día; hecho: [`permisos_rrhh_bitacoras_cda_comun.md`](permisos_rrhh_bitacoras_cda_comun.md)):
+  - 129 llamadas pasan a `permissions=`. Cada texto parcial coincidía con un solo permiso del catálogo (`"almacen"` con dos), así que nadie del catálogo pierde acceso. Solo dejan de entrar `DemoRRHH` y `DemoALMACEN`, que se van con `P-196`;
+  - `Director` (D14) ve los 6 dashboards en lectura y nada más; la pantalla del front queda en `P-206`;
+  - CDA sigue con `Administracion` y `SGI`; `checkvehicular` y `checkvApprove` no entran;
+  - el asistente virtual (`/misc/AV/*`) conserva a `ALMACEN-VISUAL`, porque preguntar no escribe datos;
+  - falta Administración (con `adminRem` y `adminDB`, D14); `/UserSystem` va con `P-188`.
+- **2026-10-28 — `P-198` cerrado con Administración** (grill del mismo día; hecho: [`permisos_administracion.md`](permisos_administracion.md)):
+  - el usuario pidió separar Cobranza de Preventa, y hay dos permisos nuevos: `adminCobranza` (remisiones, saldos y entregas) y `adminPreventa` (cotizaciones, CISCO, OCD y licitaciones). Su alta en el catálogo queda en `P-207`;
+  - `adminRem` abre solo remisiones y `adminDB` contratos, clientes, proveedores y jefes (D14 cerrado);
+  - los catálogos compartidos los lee cualquiera de los cinco de Administración (`ADMIN_CATALOG_READERS`);
+  - los avisos de saldos y entregas también le llegan a `admincobranza` (`P-155` cerrado);
+  - `Administracion` sigue abriendo todo. Solo pierden `DemoRRHH`, `DemoALMACEN` y los granulares de SM en 6 lecturas;
+  - ya solo `/sucursal` (puerta de sede) y `/UserSystem` (`credentials`, `P-188`) usan `department=`.

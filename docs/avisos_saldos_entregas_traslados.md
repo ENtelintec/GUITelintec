@@ -57,3 +57,4 @@ Reusa `_control_to_dict` de `MD_BalanceControl` y `MD_DeliveryControl` (los mism
 ## Notas posteriores
 
 - **2026-10-22 — Correo (`P-095`)**: la notificación "Control de saldos y entregas" sale también por SES a gerentes y jefes de Administración, solo en prod y sin token tester; las marcas se escriben si sale **al menos un canal** (antes solo la notificación) → [`avisos_saldos_correo.md`](avisos_saldos_correo.md). `run_balance_sweep` gana `send_email=` (stub en pruebas) y la llave `email` en su resultado. Traslados sin correo.
+- **2026-10-28 — destinatarios (`P-155`)**: la notificación de saldos y entregas se guarda con `app = ["administracion", "admincobranza"]`, así que también la ven los usuarios con `App.Department.adminCobranza` (permiso nuevo, alta en `P-207`). Los traslados y el correo no cambian. → [`permisos_administracion.md`](permisos_administracion.md)
