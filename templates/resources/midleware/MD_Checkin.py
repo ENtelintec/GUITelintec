@@ -16,15 +16,19 @@ Respaldo para cuando el biométrico no esté, simple a propósito:
 `fichajes` (Excel del biométrico) se ignora.
 """
 
+import io
 import os
 import tempfile
 import time
+from concurrent.futures import ThreadPoolExecutor
 from datetime import date, datetime, timedelta
 from decimal import Decimal
 
 import boto3
 import pytz
+import xlsxwriter
 from botocore.exceptions import BotoCoreError, ClientError, NoCredentialsError
+from PIL import Image, ImageOps
 
 from static.constants import format_date, format_timestamps, log_file_rh, secrets, timezone_software
 from templates.controllers.employees.checkins_controller import (
@@ -36,6 +40,7 @@ from templates.controllers.employees.checkins_controller import (
     insert_checkin,
 )
 from templates.controllers.employees.employees_controller import test_id_employee
+from templates.forms.CheckinsPDF import FileCheckinsPDF
 from templates.misc.Functions_Files import write_log_file
 from templates.resources.methods.Functions_Aux_S3 import s3_env_key
 
@@ -45,6 +50,10 @@ PHOTO_EXTENSIONS = ("jpg", "jpeg", "png", "webp")
 DEFAULT_RANGE_DAYS = 30
 MAX_RANGE_DAYS = 366
 LIST_LIMIT = 5000
+EXPORT_PDF_LIMIT = 200  # cada foto se baja de S3: el PDF pide acotar el rango antes
+PHOTO_THUMB_PX = 400  # lado mayor de la foto reducida que va al PDF
+PHOTO_WORKERS = 8
+XLSX_MIMETYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
 
 def _now() -> datetime:
@@ -239,10 +248,42 @@ def get_my_checkins_api(params: dict, data_token):
 
 
 # --- RH ---------------------------------------------------------------------------------------
+def _hhmm(when: datetime | None) -> str | None:
+    return when.strftime("%H:%M") if when else None
+
+
+def _hours(seconds: float) -> float:
+    return round(seconds / 3600, 2)
+
+
+def _pair_segments(day_events: list) -> list:
+    """Tramos (entrada, salida) de un día ya ordenado: cada ENTRADA abre un tramo y
+    la SALIDA siguiente lo cierra. Una ENTRADA con otro tramo abierto deja ese sin
+    salida; una SALIDA sin tramo abierto queda sin entrada (None en el hueco)."""
+    segments = []
+    open_in = None
+    for when, _id, type_code in day_events:
+        if type_code == 0:
+            if open_in is not None:
+                segments.append((open_in, None))
+            open_in = when
+        elif open_in is None:
+            segments.append((None, when))
+        else:
+            segments.append((open_in, when))
+            open_in = None
+    if open_in is not None:
+        segments.append((open_in, None))
+    return segments
+
+
 def build_daily_summary(events: list) -> list:
-    """Por empleado y día (solo eventos válidos): primera ENTRADA, última SALIDA
-    posterior a ella, horas entre ambas (2 decimales) e `incomplete` cuando falta
-    alguna. Calculado en lectura; sin retardos ni tolerancias (v1)."""
+    """Por empleado y día (solo eventos válidos), con los tramos entrada -> salida
+    del día (`segments`, ver _pair_segments). `hours` = suma de los tramos
+    cerrados (descuenta comida y salidas intermedias); `span_hours` = de la
+    primera ENTRADA a la última SALIDA posterior (el `hours` de antes del
+    2026-10-28); `incomplete` = algún tramo sin entrada o sin salida. Calculado en
+    lectura; sin retardos ni tolerancias."""
     buckets: dict = {}
     for ev in events:
         if ev.get("status") != 0 or ev.get("type") not in CHECKIN_TYPES:
@@ -252,36 +293,51 @@ def build_daily_summary(events: list) -> list:
         except (TypeError, ValueError):
             continue
         key = (int(ev["emp_id"]), when.date().isoformat())
-        bucket = buckets.setdefault(key, {"emp_id": key[0], "emp_name": ev.get("emp_name") or "", "date": key[1], "ins": [], "outs": [], "events_count": 0})
-        bucket["events_count"] += 1
-        (bucket["ins"] if ev["type"] == 0 else bucket["outs"]).append(when)
+        bucket = buckets.setdefault(key, {"emp_name": ev.get("emp_name") or "", "events": []})
+        bucket["events"].append((when, _int_or_none(ev.get("id")) or 0, ev["type"]))
     out = []
     for (emp_id, day), b in sorted(buckets.items(), key=lambda kv: (kv[0][1], kv[0][0]), reverse=True):
-        first_in = min(b["ins"]) if b["ins"] else None
-        later_outs = [o for o in b["outs"] if first_in is None or o >= first_in]
-        last_out = max(later_outs) if later_outs else None
-        hours = round((last_out - first_in).total_seconds() / 3600, 2) if first_in and last_out else None
+        day_events = sorted(b["events"])
+        segments = _pair_segments(day_events)
+        closed = [(a, z) for a, z in segments if a and z]
+        ins = [w for w, _id, t in day_events if t == 0]
+        first_in = ins[0] if ins else None
+        later_outs = [w for w, _id, t in day_events if t == 1 and (first_in is None or w >= first_in)]
+        last_out = later_outs[-1] if later_outs else None
         out.append({
             "emp_id": emp_id,
             "emp_name": b["emp_name"],
             "date": day,
-            "first_in": first_in.strftime("%H:%M") if first_in else None,
-            "last_out": last_out.strftime("%H:%M") if last_out else None,
-            "hours": hours,
-            "events_count": b["events_count"],
-            "incomplete": first_in is None or last_out is None,
+            "first_in": _hhmm(first_in),
+            "last_out": _hhmm(last_out),
+            "hours": _hours(sum((z - a).total_seconds() for a, z in closed)) if closed else None,
+            "span_hours": _hours((last_out - first_in).total_seconds()) if first_in and last_out else None,
+            "segments": [
+                {"in": _hhmm(a), "out": _hhmm(z), "hours": _hours((z - a).total_seconds()) if a and z else None}
+                for a, z in segments
+            ],
+            "events_count": len(day_events),
+            "incomplete": len(closed) < len(segments),
         })
     return out
 
 
-def get_checkins_api(params: dict, data_token):
-    """GET /rrhh/checkins?emp_id&date_from&date_to&all=1 -> eventos + resumen por día."""
+def _rh_filters(params: dict):
+    """Filtros de RH (emp_id opcional + rango). (emp_id, date_from, date_to, envelope de error | None)."""
     emp_id = _int_or_none(params.get("emp_id"))
     if params.get("emp_id") not in (None, "") and emp_id is None:
-        return {"data": None, "msg": "emp_id inválido", "error": ["emp_id debe ser entero"]}, 400
+        return None, "", "", {"data": None, "msg": "emp_id inválido", "error": ["emp_id debe ser entero"]}
     date_from, date_to, err = _parse_range(params)
     if err:
-        return {"data": None, "msg": "Rango inválido", "error": [err]}, 400
+        return None, "", "", {"data": None, "msg": "Rango inválido", "error": [err]}
+    return emp_id, date_from, date_to, None
+
+
+def get_checkins_api(params: dict, data_token):
+    """GET /rrhh/checkins?emp_id&date_from&date_to&all=1 -> eventos + resumen por día."""
+    emp_id, date_from, date_to, invalid = _rh_filters(params)
+    if invalid is not None:
+        return invalid, 400
     flag, error, rows = get_checkins(emp_id, date_from, date_to, _status_filter(params), LIST_LIMIT, data_token)
     if not flag:
         return {"data": None, "msg": "No se pudieron consultar los registros", "error": error}, 400
@@ -405,3 +461,151 @@ def get_checkin_catalogs_api():
         "msg": None,
         "error": None,
     }, 200
+
+
+# --- Exportar (RH): Excel solo datos y PDF con foto -----------------------------------------
+def _events_for_export(params: dict, data_token, limit: int):
+    """Mismos filtros que GET /rrhh/checkins. (envelope de error | None, eventos por
+    empleado y en orden cronológico, filtros, code). Más de `limit` -> 400; sin
+    eventos -> 404 (no se entrega un archivo vacío)."""
+    emp_id, date_from, date_to, invalid = _rh_filters(params)
+    if invalid is not None:
+        return invalid, [], {}, 400
+    status = _status_filter(params)
+    flag, error, rows = get_checkins(emp_id, date_from, date_to, status, limit + 1, data_token)
+    if not flag:
+        return {"data": None, "msg": "No se pudieron consultar los registros", "error": error}, [], {}, 400
+    if len(rows) > limit:
+        return {
+            "data": None,
+            "msg": f"Demasiados registros para exportar (más de {limit})",
+            "error": [f"el archivo admite hasta {limit} registros: acota el rango de fechas o elige un empleado"],
+        }, [], {}, 400
+    if not rows:
+        return {"data": None, "msg": "No hay registros en el rango", "error": "sin registros"}, [], {}, 404
+    events = sorted((_row_to_dict(r) for r in rows), key=lambda e: (e["emp_name"], e["emp_id"], e["timestamp"], e["id"]))
+    filters = {"emp_id": emp_id, "date_from": date_from, "date_to": date_to, "all": status is None}
+    return None, events, filters, 200
+
+
+def _export_summary(events: list) -> list:
+    """Resumen por día en el orden de los archivos (empleado, fecha ascendente)."""
+    return sorted(build_daily_summary(events), key=lambda s: (s["emp_name"], s["emp_id"], s["date"]))
+
+
+def _export_filename(filters: dict, ext: str) -> str:
+    emp = f"emp{filters['emp_id']}_" if filters.get("emp_id") else ""
+    return f"checkins_{emp}{filters['date_from']}_{filters['date_to']}.{ext}"
+
+
+def _segments_text(segments: list) -> str:
+    """`08:00–13:00, 14:00–sin salida`."""
+    return ", ".join(f"{s['in'] or 'sin entrada'}–{s['out'] or 'sin salida'}" for s in segments)
+
+
+def _maps_url(ev: dict) -> str | None:
+    return f"https://www.google.com/maps?q={ev['lat']},{ev['lon']}" if ev.get("lat") is not None and ev.get("lon") is not None else None
+
+
+def export_checkins_excel_api(params: dict, data_token):
+    """GET /rrhh/checkins/download/excel: hojas Registros y Resumen (solo datos,
+    sin fotos). (envelope | None, (buffer, nombre) | None, code)."""
+    envelope, events, filters, code = _events_for_export(params, data_token, LIST_LIMIT)
+    if envelope is not None:
+        return envelope, None, code
+    buffer = io.BytesIO()
+    book = xlsxwriter.Workbook(buffer, {"in_memory": True})
+    header = book.add_format({"bold": True, "bg_color": "#BDD7EE", "border": 1})
+    sheet = book.add_worksheet("Registros")
+    columns = ["ID", "Empleado ID", "Empleado", "Fecha", "Hora", "Tipo", "Estado", "Origen", "Latitud", "Longitud",
+               "Precisión (m)", "Mapa", "Foto", "Dispositivo", "Registrado"]
+    widths = [8, 12, 32, 12, 10, 10, 10, 11, 12, 12, 13, 11, 6, 40, 20]
+    for col, (name, width) in enumerate(zip(columns, widths)):
+        sheet.write(0, col, name, header)
+        sheet.set_column(col, col, width)
+    for row, ev in enumerate(events, start=1):
+        stamp = str(ev["timestamp"])
+        values = [ev["id"], ev["emp_id"], ev["emp_name"], stamp[:10], stamp[11:19], ev["type_label"], ev["status_label"],
+                  "Manual RH" if ev["manual"] else "App", ev.get("lat"), ev.get("lon"), ev.get("accuracy"), None,
+                  "Sí" if ev["has_photo"] else "No", ev.get("device_info"), ev.get("created_at")]
+        sheet.write_row(row, 0, values)
+        url = _maps_url(ev)
+        if url:
+            sheet.write_url(row, 11, url, string="Ver mapa")
+    sheet.freeze_panes(1, 0)
+    sheet.autofilter(0, 0, len(events), len(columns) - 1)
+
+    summary = _export_summary(events)
+    sheet = book.add_worksheet("Resumen")
+    columns = ["Empleado ID", "Empleado", "Fecha", "Primera entrada", "Última salida", "Tramos", "Horas trabajadas",
+               "Permanencia (h)", "Registros", "Incompleto"]
+    widths = [12, 32, 12, 15, 14, 40, 16, 15, 10, 11]
+    for col, (name, width) in enumerate(zip(columns, widths)):
+        sheet.write(0, col, name, header)
+        sheet.set_column(col, col, width)
+    for row, s in enumerate(summary, start=1):
+        sheet.write_row(row, 0, [s["emp_id"], s["emp_name"], s["date"], s["first_in"], s["last_out"], _segments_text(s["segments"]),
+                                 s["hours"], s["span_hours"], s["events_count"], "Sí" if s["incomplete"] else "No"])
+    sheet.freeze_panes(1, 0)
+    sheet.autofilter(0, 0, max(len(summary), 1), len(columns) - 1)
+    book.close()
+    buffer.seek(0)
+    return None, (buffer, _export_filename(filters, "xlsx")), 200
+
+
+def _photo_thumbnail(raw: bytes) -> bytes:
+    """JPEG reducido (lado mayor PHOTO_THUMB_PX), con la rotación EXIF aplicada."""
+    with Image.open(io.BytesIO(raw)) as img:
+        small = (ImageOps.exif_transpose(img) or img).convert("RGB")
+    small.thumbnail((PHOTO_THUMB_PX, PHOTO_THUMB_PX))
+    out = io.BytesIO()
+    small.save(out, format="JPEG", quality=75)
+    return out.getvalue()
+
+
+def _load_thumbnails(events: list) -> dict:
+    """{id: jpeg reducido} de los eventos con foto, en paralelo. Una foto que no
+    baja de S3 o no abre se queda fuera (el PDF pone "Foto no disponible")."""
+    with_photo = [ev for ev in events if ev.get("photo_key")]
+    if not with_photo:
+        return {}
+    s3_client = boto3.client("s3")
+    bucket = str(secrets.get("S3_RH_BUCKET"))
+
+    def fetch(ev):
+        try:
+            raw = s3_client.get_object(Bucket=bucket, Key=ev["photo_key"])["Body"].read()
+            return ev["id"], _photo_thumbnail(raw)
+        except (ClientError, BotoCoreError, OSError, ValueError, Image.DecompressionBombError):
+            return ev["id"], None
+
+    with ThreadPoolExecutor(max_workers=PHOTO_WORKERS) as pool:
+        return {id_checkin: thumb for id_checkin, thumb in pool.map(fetch, with_photo) if thumb}
+
+
+def export_checkins_pdf_api(params: dict, data_token):
+    """GET /rrhh/checkins/download/pdf: resumen por día + cada registro con su foto
+    (hasta EXPORT_PDF_LIMIT). (envelope | None, (buffer, nombre) | None, code)."""
+    envelope, events, filters, code = _events_for_export(params, data_token, EXPORT_PDF_LIMIT)
+    if envelope is not None:
+        return envelope, None, code
+    photos = _load_thumbnails(events)
+    summary = _export_summary(events)
+    employee = "Todos"
+    if filters["emp_id"]:
+        employee = f"{events[0]['emp_name'] or 'Empleado'} (ID {filters['emp_id']})"
+    with_photo = sum(1 for ev in events if ev.get("photo_key"))
+    buffer = io.BytesIO()
+    FileCheckinsPDF({
+        "filename_out": buffer,
+        "period": f"{filters['date_from']} a {filters['date_to']}",
+        "employee": employee,
+        "include_cancelled": filters["all"],
+        "generated_at": _now().strftime("%Y-%m-%d %H:%M"),
+        "photos_text": f"{len(photos)} de {with_photo}" + (f" ({with_photo - len(photos)} no disponibles)" if len(photos) < with_photo else ""),
+        "summary": [dict(s, segments_text=_segments_text(s["segments"])) for s in summary],
+        "events": [dict(ev, maps_url=_maps_url(ev)) for ev in events],
+        "photos": photos,
+    })
+    buffer.seek(0)
+    return None, (buffer, _export_filename(filters, "pdf")), 200

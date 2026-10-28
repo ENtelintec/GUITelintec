@@ -89,3 +89,7 @@ Regresión: `Tests/tester_permisos_compras_baja.py` 113/113 y `Tests/tester_po_m
 - **Todo endpoint con form llama `validate()` antes de leer `validator.data`.** Leer `data` sin validar acepta cualquier cosa.
 - Quien escriba en `purchase_orders.history` o `pos_applications.history` debe usar `user` (int), `event` (texto) y `date` con `format_timestamps`. Si no, el siguiente cambio de estatus de esa fila dará 400.
 - Si el formulario del front cambia sus obligatorios (`compraPmSchema`), cambiar también `PurchaseManagementPostForm` y su `api.model`.
+
+## Notas posteriores
+
+- **2026-10-28 (noche) — verificado en prod** (`P-205`, token de prueba con `adminCompras`, sin `testerUser`). Antes se confirmó que el deploy trae `e858160`: los `/movements/*` que retira ese commit ya daban 404. Con `{}`, los tres endpoints responden 400 con el envelope de "Contrato mínimo": `PUT /order/status` → `id` + `status`; `PUT /application/order/status` → `id` + `status` + `approved`; `POST /purchaseManagement` → `request_date` + `description` + `amount_mxn`. La validación corre antes del midleware, así que no se escribió nada ni se creó ningún aviso.

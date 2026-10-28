@@ -126,3 +126,9 @@ Smoke contra BD dev (2026-09-07) con S3 simulado (sin tocar el bucket) y el índ
   - **El API no lee el PDF:** lo guarda tal cual. La sugerencia de empleado y periodo sale solo del XML, así que un grupo que llegue sin XML se asigna a mano.
   - **La fecha del CFDI no es la del periodo.** El recibo de la segunda quincena se timbró el 2024-07-03 con `FechaPago` 2024-06-30. El extract toma año y mes de `FechaPago` y sugiere junio, que es lo correcto.
   - **Firma del empleado.** El recibo trae un renglón para la firma y una leyenda de conformidad. Mi nómina no tiene nada equivalente: `download_nomina_docs` no registra las descargas, y el `status` de la notificación solo dice que se leyó el aviso. **Decisión del usuario (mismo día):** no hace falta saber si el empleado recibió o descargó el archivo, así que nada cambia; `P-211` cerrado.
+- **2026-10-28 — la carga masiva pierde los archivos de la selección anterior (`P-215`, front).** Reportado por el usuario: si RH elige primero los PDF y después, en otra selección, los XML, la lista se queda solo con los XML y los PDF desaparecen. Pasa porque `procesar` en `CargaNominaPeriodo.tsx` agrupa solo los archivos de la selección actual y termina con `setAsignaciones(salida)`, que reemplaza la lista. Lo esperado: **acumular** las selecciones hasta que RH suba o limpie.
+  - Juntar lo nuevo con lo que ya estaba, por nombre base. Un XML que llega para un grupo que solo tenía PDF completa ese grupo, y ahí sí se lee el XML para sugerir al empleado.
+  - Si RH ya eligió al empleado a mano, la sugerencia no lo cambia.
+  - Un archivo repetido (mismo nombre base y tipo) reemplaza al anterior, sin duplicar el grupo.
+  - Los ignorados también se acumulan, y hace falta un botón "Limpiar" para empezar de cero.
+  - No toca al back: cada `POST /payroll/files/extract` es por XML y la subida es un archivo por request.
