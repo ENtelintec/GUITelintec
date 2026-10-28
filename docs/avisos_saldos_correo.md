@@ -41,3 +41,7 @@ No hay endpoint nuevo ni cambia ninguna respuesta: `GET /admin/collections/balan
 - **Traslados por correo**: llamar `send_email` en la rama de `t_lines` con su propia regla de destinatarios (almacén no tiene gerente en el depto 3).
 - **Permiso propio de Cobranza** (`P-155`): no afecta al correo, que va por puesto y no por permiso.
 - **Probar sin mandar correo real**: pasar `send_email=` o parchear `MD_BalanceAlerts.send_email_ses`. **Ojo**: el guard lee el `environment` de `constants.py`, que se commitea en `"prod"` para desplegar. Un tester corrido mientras está en `"prod"`, aunque redirija la BD a dev, **sí** mandaría el correo a los destinatarios reales si no hay stub.
+
+## Notas posteriores
+
+- **2026-10-28 — `environment` sale del `.env`** ([`entorno_desde_env.md`](entorno_desde_env.md)). Ya no se commitea `"prod"` en `constants.py`: el guard lee `API_ENVIRONMENT` del `.env` de la máquina (o de la variable del sistema). Un tester local solo abre el correo si ese `.env` dice `prod`; para forzar dev sin editarlo, `API_ENVIRONMENT=dev`. El consejo del stub sigue en pie.

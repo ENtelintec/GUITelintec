@@ -3,14 +3,27 @@ __author__ = "Edisson Naula"
 __date__ = "$ 02/nov./2023  at 17:32 $"
 
 
+import os
 from pathlib import Path
 
 from dotenv import dotenv_values
 from flask_restx import Api
 
-environment = "dev"
-secrets = dotenv_values(".env") if environment != "prod" else dotenv_values("../.env")
-domain_path = "domain.pem" if environment != "prod" else "../domain.pem"
+# .env del checkout (dev) o, si no hay, el de la carpeta padre (prod:
+# /home/ec2-user/opt/.env). API_ENVIRONMENT del sistema gana sobre la del .env;
+# sin un valor valido el API no arranca (docs/entorno_desde_env.md).
+_root_path = Path(__file__).resolve().parent.parent
+_env_dir = _root_path if (_root_path / ".env").is_file() else _root_path.parent
+_env_file = _env_dir / ".env"
+if not _env_file.is_file():
+    raise RuntimeError(f"No se encontro .env en {_root_path} ni en {_root_path.parent}")
+secrets = dotenv_values(_env_file)
+environment = os.environ.get("API_ENVIRONMENT") or secrets.get("API_ENVIRONMENT") or ""
+if environment not in ("dev", "prod"):
+    raise RuntimeError(
+        f"API_ENVIRONMENT debe ser 'dev' o 'prod' (vale {environment!r}, leido de {_env_file})"
+    )
+domain_path = str(_env_dir / "domain.pem")
 api = Api()
 local_father_path_dpb = "C:/Users/Edisson/Telintec Dropbox/SOFTWARE TELINTEC"
 IMG_PATH_COLLAPSING = Path("./img")
