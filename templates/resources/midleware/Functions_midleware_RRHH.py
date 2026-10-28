@@ -1543,7 +1543,7 @@ def extract_payroll_xml_api(data, data_token):
     """POST /payroll/files/extract: lee un XML de CFDI de nomina y devuelve
     los datos para SUGERIR la asignacion archivo->empleado/periodo en la
     carga por periodo del front (RFC, numero de empleado, nombre, fechas del
-    periodo y un emp_id sugerido por nombre). No sube ni guarda nada."""
+    periodo y un emp_id sugerido por RFC, CURP o nombre). No sube ni guarda nada."""
     filename = str(data.get("filename") or "")
     if not filename.lower().endswith(".xml"):
         return {"data": None, "msg": "Solo se puede extraer de un archivo xml", "error": None}, 400
@@ -1562,7 +1562,7 @@ def extract_payroll_xml_api(data, data_token):
         except ValueError:
             year = month = None
     emp_id, match_by, name_db = find_employee_for_payroll(
-        receptor.get("NumEmpleado"), receptor.get("Nombre"), data_token
+        receptor.get("Rfc"), receptor.get("Curp"), receptor.get("Nombre"), data_token
     )
     out = {
         "filename": filename,

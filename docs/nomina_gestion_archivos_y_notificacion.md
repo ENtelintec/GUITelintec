@@ -64,12 +64,14 @@ Con `"channels": ["app", "email"]` hoy responde `channels_pending: ["email"]` (2
 
 Multipart `file` = XML del CFDI. `200`:
 ```json
-{"data": {"filename": "nomina.xml", "rfc": "XAXX010101000", "curp": "...", "num_empleado": "34", "nombre": "JUAN PEREZ LOPEZ",
+{"data": {"filename": "nomina.xml", "rfc": "XAXX010101000", "curp": "...", "num_empleado": "581", "nombre": "JUAN PEREZ LOPEZ",
           "periodo": {"inicio": "2026-09-01", "fin": "2026-09-15", "pago": "2026-09-15", "dias": "15", "tipo": "O"},
-          "year_sugerido": 2026, "month_sugerido": 9, "emp_id_sugerido": 34, "match_by": "num_empleado", "nombre_sugerido": "Juan Perez Lopez"},
+          "year_sugerido": 2026, "month_sugerido": 9, "emp_id_sugerido": 34, "match_by": "rfc", "nombre_sugerido": "Juan Perez Lopez"},
  "msg": "XML nomina.xml: JUAN PEREZ LOPEZ -> empleado sugerido 34", "error": null}
 ```
 `emp_id_sugerido: null` + `match_by: null` = sin coincidencia (RH asigna a mano). `400` si no es `.xml` o no parsea como CFDI. Es una **sugerencia**: el front debe dejar corregirla antes del `POST` de subida.
+
+`match_by` ∈ `"rfc"` (exacto) · `"curp"` (exacto) · `"nombre"` (aproximado) · `null`. Desde el 2026-10-28 ya no sale `"num_empleado"`: ese campo es el número del proveedor de nómina, no el `employee_id`, y queda solo como dato informativo (ver Notas posteriores).
 
 ### Deprecado
 
@@ -99,6 +101,22 @@ Smoke contra BD dev (2026-09-07) con S3 simulado (sin tocar el bucket) y el índ
 - **2026-10-23** (`P-175`): cambia el orden de la subida. El índice se lee antes de subir: sin fila responde **404** (antes 201 sin indexar) y con la BD caída tampoco sube. El anterior se borra **después** de guardar el índice. Si el `UPDATE` falla, el 400 trae `data: null` y el objeto nuevo se retira de S3. Además, el reemplazo y el `DELETE` ya no borran de S3 una llave que otro `key` del índice sigue usando. La regla "el índice nunca queda apuntando a un objeto que se intentó borrar" ahora también vale para el reemplazo → [`nomina_s3_huerfanos.md`](nomina_s3_huerfanos.md).
 - **2026-10-27 — rutas S3 con entorno (`P-177`).** Las subidas nuevas van a `payroll/<entorno>/<año>/<mes>/<emp_id>/<quincena>/<archivo>`; las rutas guardadas antes siguen funcionando. El mismo nombre en Q1 y Q2 ya no comparte objeto. En dev y test, una entrada con ruta vieja se quita de la lista sin borrar el objeto (puede ser de prod; solo prod la borra) → [`s3_rutas_por_entorno.md`](s3_rutas_por_entorno.md).
 - **2026-10-28 — revisión de la carga masiva con varios empleados (`P-210`).** El flujo es el de la nota del 2026-10-12: el front agrupa por nombre de archivo sin extensión (sin distinguir mayúsculas), manda cada XML, uno por uno, a `POST /payroll/files/extract` y sube un archivo por request, también en secuencia. Puntos encontrados:
-  - **La sugerencia por nombre es aproximada.** `get_employee_id_name` usa `MATCH … AGAINST` en modo natural sobre `name` y `l_name`, sin ordenar por relevancia ni filtrar a los activos, y basta que coincida una palabra. Dos empleados que comparten nombre o apellido pueden dar el equivocado. Si cae en uno dado de baja, el front lo muestra como "Sin coincidencia". Solo `match_by = "num_empleado"` es exacto. Endurecerla (activos, relevancia, aviso de varios candidatos) queda para cuando haya archivos reales con qué probar (`P-136`).
+  - **La sugerencia por nombre era aproximada.** `get_employee_id_name` usa `MATCH … AGAINST` en modo natural sobre `name` y `l_name`, sin ordenar por relevancia ni filtrar a los activos, y basta que coincida una palabra. Dos empleados que comparten nombre o apellido podían dar el equivocado. Se corrigió el mismo día con recibos reales; ver la nota siguiente.
   - **El front no avisa en dos casos.** Cuando dos grupos caen en el mismo empleado, el segundo reemplaza al primero en la quincena. Y tampoco compara el periodo del XML (`periodo`, `year_sugerido`, `month_sugerido`) con la quincena elegida. Los dos avisos quedan en `P-210`.
   - **La subida tiene que seguir en secuencia.** `create_payroll_file_attachment_api` lee el índice `files_data`, lo modifica y lo guarda completo (`update_payroll`). Si se subieran en paralelo el PDF y el XML de un mismo empleado, uno borraría al otro del índice. Si algún día se paraleliza, hay que pasar a `JSON_SET` atómico o agrupar por empleado.
+- **2026-10-28 — emparejamiento por RFC y CURP, probado con recibos reales.** El usuario compartió dos recibos suyos (PDF y XML de la primera y la segunda quincena de junio de 2024; están en `scripts_db_handle/`, que está en `.gitignore`). Encontrado:
+  - **`NumEmpleado` es el número del proveedor de nómina, no nuestro `employee_id`.** En los recibos sale 581 y el empleado es el 16. En dev los ids llegan hasta 123, así que hoy no chocaba con nadie. Pero la regla vieja (`NumEmpleado == employee_id`) habría sugerido a otra persona, marcada como "Por número de empleado", en cuanto un número del proveedor coincidiera con uno nuestro. **Se quitó.**
+  - **El RFC y la CURP del XML coinciden exactamente con `employees.RFC` y `employees.CURP`.** En dev, 59 de 64 activos tienen ambos válidos y ningún RFC se repite entre activos.
+  - **Formato:** un PDF y un XML por recibo, nombrados con el UUID del CFDI. El PDF va en mayúsculas y el XML en minúsculas, y la agrupación del front los empareja porque compara en minúsculas.
+  - **Cambio en el API:** [`find_employee_for_payroll`](../templates/controllers/employees/employees_controller.py) busca así:
+    1. RFC exacto;
+    2. CURP exacta;
+    3. el nombre, solo entre activos, ordenado por relevancia; si los dos primeros empatan, no sugiere a nadie.
+    
+    En RFC y CURP gana el activo: si solo hay un inactivo, lo sugiere y el front lo pinta "Sin coincidencia"; si hay dos activos con el mismo dato, pasa al siguiente criterio. `get_employee_id_name` no cambia, porque también lo usan fichajes y `Functions_Files`.
+  - **Contrato:** `match_by` ahora vale `"rfc"`, `"curp"`, `"nombre"` o `null`. Ya no sale `"num_empleado"`, y el campo `num_empleado` sigue en la respuesta solo como dato informativo. El front tiene que mostrar "Por RFC" y "Por CURP" en la columna Origen: hoy un valor que no conoce lo pinta como "Asignado a mano". Va en `P-210`.
+  - **Verificación:** `Tests/tester_nomina_match.py` da 20/20 contra dev.
+    - Los dos recibos reales salen como empleado 16 por RFC, también por HTTP.
+    - Variantes en memoria (en un directorio temporal que se borra): con RFC desconocido sale por CURP; con RFC y CURP desconocidos, por nombre; un `NumEmpleado` igual a un id existente se ignora; sin nada conocido no sugiere a nadie; el RFC de otro activo, en minúsculas y con espacios, le gana a la CURP y al nombre; con el RFC de un inactivo lo sugiere a él.
+    - Con `execute_sql` en stub: el desempate y la BD caída.
+    - pyrefly: 166 errores, sin cambio.
