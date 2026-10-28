@@ -83,3 +83,7 @@ Regresión: `Tests/tester_permisos_almacen.py` 18/18 y `Tests/tester_multisede_r
 - Otro GET pesado que quiera ETag: devolver `kardex_conditional(data_out, code, request.if_none_match)` desde el Resource. Si se usa fuera del kardex, conviene moverlo a un helper común.
 - **No meter en el cuerpo nada que cambie en cada llamada** (hora de generación, contadores de tiempo, ids aleatorios): el ETag cambiaría siempre y nunca habría 304. Si hace falta un dato así, dejarlo fuera de la huella.
 - Un ETag que se ahorre la consulta necesitaría versión por tabla o sede, actualizada por cada alta, edición y borrado de movimiento. Eso pide DDL y tocar todos los escritores, y se descartó en el grill.
+
+## Notas posteriores
+
+- **2026-10-28 — prod todavía sin `P-128`.** `GET /almacen/kardex` con un token `ALMACEN-VISUAL` responde 200 con `Content-Encoding: gzip` (2,094 movimientos: 462 KB sin comprimir, 51 KB por la red), pero sin `ETag` ni `Cache-Control`. La prueba con `curl` de "Al desplegar" queda para después del deploy; ese token alcanza para hacerla.

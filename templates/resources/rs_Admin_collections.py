@@ -13,6 +13,7 @@ from static.Models.api_purchases_models import (
     POAppDeleteForm,
     POsApplicationPostForm,
     POsApplicationPutForm,
+    POApplicationUpdateStatusForm,
     PurchaseOrderDeleteForm,
     PurchaseOrderPostForm,
     PurchaseOrderPutForm,
@@ -352,6 +353,9 @@ class ChangeStateOrder(Resource):
         validator = PurchaseOrderUpdateStatusForm.from_json(  # pyrefly: ignore
             ns.payload
         )
+        # antes no se validaba: un body sin id respondía 200 (P-197)
+        if not validator.validate():
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
         data = validator.data
         data_out, code = change_state_order_api(data, data_token)
         return data_out, code
@@ -367,9 +371,12 @@ class ChangeStatePOApplication(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
-        validator = PurchaseOrderUpdateStatusForm.from_json(  # pyrefly: ignore
+        validator = POApplicationUpdateStatusForm.from_json(  # pyrefly: ignore
             ns.payload
         )
+        # antes no se validaba: un body sin id respondía 200 (P-197)
+        if not validator.validate():
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
         data = validator.data
         data_out, code = change_state_po_application_api(data, data_token)
         return data_out, code

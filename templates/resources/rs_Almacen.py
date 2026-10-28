@@ -77,11 +77,9 @@ from templates.resources.midleware.Functions_midleware_almacen import (
     delete_movement_amc,
     delete_product_from_api,
     delete_reservation_from_api,
-    get_all_movements,
     get_all_products_DB,
     get_categories_db,
     get_epp_db,
-    get_epp_movements,
     get_new_code_products,
     get_reservations_db,
     get_suppliers_db,
@@ -136,9 +134,9 @@ def _kardex_params():
     }
 
 
-# Kardex acotado por fecha (docs/almacen_kardex_ventana.md). Sustituye a
-# GET /movements/<type_m> y /movements/epp/<type_m>, que traen todo el
-# histórico y quedan deprecados hasta que el front migre (P-126).
+# Kardex acotado por fecha (docs/almacen_kardex_ventana.md). Sustituyó a
+# GET /movements/<type_m> y /movements/epp/<type_m>, que traían todo el
+# histórico y se retiraron con el front en prod (P-126, 2026-10-28).
 # ETag + 304 en los dos (docs/almacen_kardex_etag.md, P-128).
 @ns.route("/kardex")
 class KardexMain(Resource):
@@ -164,22 +162,6 @@ class KardexEpp(Resource):
         params = _kardex_params()
         data_out, code = get_kardex_api(params["type_m"], params, data_token, epp=True)
         return kardex_conditional(data_out, code, request.if_none_match)
-
-
-@ns.route("/movements/<string:type_m>")
-class GetMovements(Resource):
-    @ns.deprecated
-    @ns.doc(description="Deprecado: trae todo el histórico. Usar GET /kardex (ventana por fecha).")
-    @ns.expect(expected_headers_per)
-    def get(self, type_m):
-        flag, data_token, msg = token_verification_procedure(request, permissions=_ALM_READ)
-        if not flag:
-            return {
-                "data": [],
-                "error": msg if msg != "" else "No autorizado. Token invalido",
-            }, 401
-        data_out, code = get_all_movements(type_m, data_token)
-        return data_out, code
 
 
 @ns.route("/movement")
@@ -676,19 +658,6 @@ class InventoryEpp(Resource):
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data_out, code = get_epp_db(data_token)
-        return data_out, code
-
-
-@ns.route("/movements/epp/<string:type_m>")
-class GetMovementsEpp(Resource):
-    @ns.deprecated
-    @ns.doc(description="Deprecado: trae todo el histórico. Usar GET /kardex/epp (ventana por fecha).")
-    @ns.expect(expected_headers_per)
-    def get(self, type_m):
-        flag, data_token, msg = token_verification_procedure(request, permissions=_EPP_READ)
-        if not flag:
-            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        data_out, code = get_epp_movements(type_m, data_token)
         return data_out, code
 
 

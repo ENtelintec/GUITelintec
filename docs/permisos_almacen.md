@@ -68,3 +68,7 @@ midleware   MD_Sucursal.py     SEDE_MAIN_READERS; _is_main_reader -> verify_exac
   - una sede futura (`Sucursal-3`) pasa la puerta.
 - Regresión con flujos reales de sede y traslados: `tester_multisede_resolve` 64/64 y `tester_transfer_over_receive` 10/10.
 - `import app` sin errores; pyrefly sin errores en los archivos tocados.
+
+## Notas posteriores
+
+- **2026-10-28** — `GET /movements/<type_m>` y `GET /movements/epp/<type_m>` de `/almacen` ya no existen: se retiraron con `P-126` y la matriz baja de 43 a 41 endpoints de `/almacen`. `GET /sucursal/movements/<type_m>` sigue igual. → [`almacen_kardex_ventana.md`](almacen_kardex_ventana.md)

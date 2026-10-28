@@ -30,9 +30,7 @@ from templates.controllers.product.movements_controller import (
     create_movement_db_amc,
     delete_movement_db,
     get_all_movements_db_detail,
-    get_epp_movements_db,
     get_epp_movements_db_detail,
-    get_movements_type_db_all,
     insert_multiple_row_movements_amc,
     update_movement_db,
 )
@@ -78,113 +76,6 @@ from templates.resources.methods.Aux_Inventory import (
     generate_default_configuration_barcodes,
 )
 from templates.resources.midleware.MD_SM import update_sm_item_state_and_inventory
-
-
-def get_all_movements(type_m: str, data_token):
-    type_m = type_m if type_m in ["entrada", "salida"] else type_m
-    flag, error, result = get_movements_type_db_all(data_token, type_m)
-    out = []
-    if not flag:
-        return {"data": [], "msg": "No se pudieron obtener los movimientos", "error": error}, 400
-    if not (isinstance(result, list) or isinstance(result, tuple)):
-        return {
-            "data": [],
-            "msg": "No se pudieron obtener los movimientos",
-            "error": str(result),
-        }, 400
-    for item in result:
-        (
-            id_m,
-            id_product,
-            type_m,
-            quantity,
-            movement_date,
-            sm_id,
-            reference,
-            sku,
-            supplier,
-            codes,
-            description,
-        ) = item
-        reference = json.loads(reference) if reference is not None else None
-        codes = json.loads(codes) if codes is not None else []
-        sku_fabricante = ""
-        for code in codes:
-            if code["tag"] == "sku_fabricante":
-                sku_fabricante = code["value"]
-                break
-        out.append(
-            {
-                "id": id_m,
-                "id_product": id_product,
-                "type_m": type_m,
-                "quantity": quantity,
-                "movement_date": movement_date.strftime(format_timestamps)
-                if movement_date is not None
-                else None,
-                "sm_id": sm_id,
-                "reference": reference,
-                "sku": sku,
-                "supplier": supplier,
-                "sku_fabricante": sku_fabricante,
-                "description": description,
-            }
-        )
-    return {"data": out, "msg": None, "error": None}, 200
-
-
-def get_epp_movements(type_m, data_token):
-    flag, error, result = get_epp_movements_db(type_m, data_token)
-    if not flag:
-        return {
-            "data": [],
-            "msg": "No se pudieron obtener los movimientos de EPP",
-            "error": error,
-        }, 400
-    if not (isinstance(result, list) or isinstance(result, tuple)):
-        return {
-            "data": [],
-            "msg": "No se pudieron obtener los movimientos de EPP",
-            "error": str(result),
-        }, 400
-    out = []
-    for item in result:
-        (
-            id_m,
-            id_product,
-            type_m,
-            quantity,
-            movement_date,
-            sm_id,
-            reference,
-            sku,
-            supplier,
-            codes,
-        ) = item
-        reference = json.loads(reference) if reference is not None else None
-        codes = json.loads(codes) if codes is not None else []
-        sku_fabricante = ""
-        for code in codes:
-            if code["tag"] == "sku_fabricante":
-                sku_fabricante = code["value"]
-                break
-        out.append(
-            {
-                "id": id_m,
-                "id_product": id_product,
-                "type_m": type_m,
-                "quantity": quantity,
-                "movement_date": movement_date.strftime(format_timestamps)
-                if movement_date is not None
-                else None,
-                "sm_id": sm_id,
-                "reference": reference,
-                "sku": sku,
-                "supplier": supplier,
-                "sku_fabricante": sku_fabricante,
-            }
-        )
-    return {"data": out, "msg": None, "error": None}, 200
 
 
 def insert_movement(data, data_token):

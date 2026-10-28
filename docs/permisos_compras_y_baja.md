@@ -87,3 +87,7 @@ Controllers reusados: `test_id_employee` (estado previo) y `get_user_by_emp_id`.
 
 - `P-192` **[front]**: `adminCompras` y `comprasCreate` en `route-permissions.ts` para las pantallas de Compras.
 - `P-197` **[back]**: `PUT /order/status` y `PUT /application/order/status` aceptan un body sin `id` y responden 200, con un aviso "ID None". `POST /purchaseManagement` crea un registro vacío.
+
+## Notas posteriores
+
+- **2026-10-28** — `P-197` cerrado. Los dos PUT de estatus validan el form y el alta de gestión de compras exige lo mismo que el formulario del front. → [`compras_forms_validacion.md`](compras_forms_validacion.md)

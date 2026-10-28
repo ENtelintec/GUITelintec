@@ -109,3 +109,18 @@ Regresión:
 - Un listado nuevo sobre una tabla que crece (movimientos, reservas, traslados) nace con ventana, `limit` y `meta.truncated` ([`MD_Kardex.py`](../templates/resources/midleware/MD_Kardex.py)). Un catálogo (productos, categorías, sedes) puede ir completo, pero conviene ETag si se recarga seguido.
 - `WHERE col LIKE '%'` no acota nada: si el filtro es opcional, usar `(%s IS NULL OR col = %s)`.
 - Si cambia el formato del SKU (prefijo o largo), cambiar `prefix`/`code_length` en `get_new_code_products`; `get_max_sku_number` recibe cuántos caracteres saltar.
+
+## Notas posteriores
+
+- **2026-10-28** — Los dos deprecados (`get_movements_type_db_all` y `get_epp_movements_db`) se borraron junto con sus rutas al cerrar `P-126`. Las funciones con SELECT de `controllers/product` bajan de 46 a 44. → [`almacen_kardex_ventana.md`](almacen_kardex_ventana.md)
+- **2026-10-28 — Tamaños en prod.** Medidos por HTTP con un token de solo lectura (`ALMACEN-VISUAL`, que dio el usuario), sin consultar la BD. Prod tiene **1,995 productos**, contra 1,234 de la copia de dev. nginx comprime las respuestas grandes; la de reservas, por chica, viaja sin comprimir.
+
+  | Pendiente | Endpoint | Filas | Sin comprimir | Por la red |
+  |---|---|---|---|---|
+  | `P-201` | `GET /almacen/reservations` | 3 (todas pendientes) | 759 B | 759 B |
+  | `P-202` | `GET /almacen/inventory/products/all` | 1,995 | 835 KB | 84 KB |
+  | `P-203` | `GET /almacen/inventory/consolidated` | 1,995 | 403 KB | 49 KB |
+  | `P-204` | `GET /sm/products/all` | — | — | sin medir: el token no tiene `SM` |
+  | (referencia) | `GET /almacen/kardex`, ventana por defecto | 2,094 movimientos | 462 KB | 51 KB |
+
+  `P-201` hoy no tiene urgencia. `P-202` es el más pesado: 84 KB por la red en cada carga.

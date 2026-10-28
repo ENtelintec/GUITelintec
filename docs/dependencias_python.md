@@ -138,3 +138,7 @@ Probar `import app`, `/GUI/health` y un PDF/Excel con ese venv antes de commitea
 - **Código nuevo** → `pyrefly check` (con el `pyrefly.toml` local, o `--python-version 3.11`) marca lo exclusivo de 3.12+: f-strings que reutilizan la comilla de fuera (`f"{d["k"]}"`), `type X = ...`, genéricos PEP 695 (`def f[T]()`), `itertools.batched`, `typing.override`. No subir `python-version` hasta que prod suba (`P-178`).
 - **Revivir un módulo huérfano** (`Functions_Pmodels`, `Peripherals`, …) → su dependencia regresa a `requirements.txt` (tensorflow/keras/scikit-learn, pyserial). `bardapi` ya no sirve.
 - **Dev local**: un `.venv` instalado con la lista sin pins (como el del 2026-10-26: Flask 3.1, pandas 3.1, PyMuPDF 2.0) no es prod. Recrearlo con `pip install -r requirements.txt` sobre un venv limpio.
+
+## Notas posteriores
+
+- **2026-10-28** — `P-178` queda **postergado, con la menor prioridad del back** (decisión del usuario). Prod sigue en 3.11 sobre `envg2` y la regla de código compatible con 3.11 no cambia. 3.11 recibe parches de seguridad hasta octubre de 2027, así que la migración tiene que entrar antes de esa fecha.

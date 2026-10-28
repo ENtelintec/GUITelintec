@@ -1261,9 +1261,18 @@ class POAppDeleteForm(Form):
 
 
 class PurchaseOrderUpdateStatusForm(Form):
+    """PUT /order/status. `approved` es opcional: el endpoint no lo guarda y el
+    front no lo manda (docs/compras_forms_validacion.md, P-197)."""
     id = IntegerField("id", [InputRequired()])
     history = FieldList(FormField(HistoryPurchaseForm), "history", default=[])
     status = IntegerField("status", [validators.number_range(min=-1, message="Invalid id")])
+    approved = IntegerField(
+        "approved", [validators.Optional(), validators.number_range(min=-1, message="Invalid id")]
+    )
+
+
+class POApplicationUpdateStatusForm(PurchaseOrderUpdateStatusForm):
+    """PUT /application/order/status: aquí `approved` sí se guarda y es obligatorio."""
     approved = IntegerField("approved", [validators.number_range(min=-1, message="Invalid id")])
 
 

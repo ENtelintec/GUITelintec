@@ -170,61 +170,6 @@ def _date_range_vals(date_from, date_to) -> tuple:
     return tuple(v for v in (date_from, date_to) if v is not None)
 
 
-def get_movements_type_db_all(data_token, type_m="all"):
-    type_m = type_m if type_m in ["entrada", "salida"] else "%"
-    sql = (
-        "SELECT "
-        "id_movement, "
-        "products_amc.id_product, "
-        "movement_type, "
-        "quantity, "
-        "movement_date, "
-        "sm_id, "
-        "sql_telintec.product_movements_amc.extra_info->'$.reference', "
-        "sku, "
-        "suppliers_amc.name,"
-        "products_amc.codes, "
-        "products_amc.name as product_name "
-        "FROM sql_telintec.product_movements_amc "
-        "LEFT JOIN sql_telintec.products_amc ON (sql_telintec.products_amc.id_product = sql_telintec.product_movements_amc.id_product)"
-        "LEFT JOIN sql_telintec.suppliers_amc ON (sql_telintec.products_amc.id_supplier = sql_telintec.suppliers_amc.id_supplier)"
-        "WHERE movement_type LIKE %s AND sql_telintec.product_movements_amc.id_warehouse IS NULL "
-        "ORDER BY movement_date DESC"
-    )
-    vals = (type_m,)
-    flag, error, result = execute_sql(sql, vals, 2, data_token)
-    return flag, error, result
-
-
-def get_epp_movements_db(type_m, data_token):
-    if type_m in ["salida", "entrada"]:
-        type_m = type_m
-    else:
-        type_m = "%"
-    sql = (
-        "SELECT "
-        "id_movement, "
-        "products_amc.id_product, "
-        "movement_type, "
-        "quantity, "
-        "movement_date, "
-        "sm_id, "
-        "sql_telintec.product_movements_amc.extra_info->'$.reference', "
-        "sku, "
-        "suppliers_amc.name, "
-        "products_amc.codes "
-        "FROM sql_telintec.product_movements_amc "
-        "LEFT JOIN sql_telintec.products_amc ON (sql_telintec.products_amc.id_product = sql_telintec.product_movements_amc.id_product)"
-        "LEFT JOIN sql_telintec.suppliers_amc ON (sql_telintec.products_amc.id_supplier = sql_telintec.suppliers_amc.id_supplier)"
-        "WHERE movement_type LIKE %s AND sql_telintec.products_amc.extra_info->>'$.epp' = 1 "
-        "AND sql_telintec.product_movements_amc.id_warehouse IS NULL "
-        "ORDER BY movement_date DESC"
-    )
-    vals = (type_m,)
-    flag, error, result = execute_sql(sql, vals, 2, data_token)
-    return flag, error, result
-
-
 def get_epp_movements_db_detail(type_m, data_token, date_from=None, date_to=None):
     """Igual que `get_all_movements_db_detail` pero solo productos EPP."""
     type_m = type_m if type_m in ["entrada", "salida"] else "%"
