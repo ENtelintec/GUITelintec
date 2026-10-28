@@ -13,6 +13,7 @@ from static.Models.api_purchases_models import (
     POAppDeleteForm,
     POsApplicationPostForm,
     POsApplicationPutForm,
+    POApplicationUpdateStatusForm,
     PurchaseOrderDeleteForm,
     PurchaseOrderPostForm,
     PurchaseOrderPutForm,
@@ -98,6 +99,7 @@ from static.constants import log_file_admin_collecions
 from templates.daemons.NotificationsSearch import start_daily_sweep
 from templates.misc.Functions_Files import write_log_file
 from templates.resources.methods.Functions_Aux_Login import token_verification_procedure
+from templates.resources.midleware.MD_SGI import VEHICLE_CHECKLIST_PERMS
 from templates.resources.midleware.MD_Admin_Collections import (
     cancel_remission_from_api,
     set_remission_no_attachments_from_api,
@@ -176,12 +178,28 @@ __date__ = "$ 20/jun./2024  at 15:06 $"
 ns = Namespace("GUI/api/v1/admin/collections")
 
 
+# Compras (docs/permisos_plan.md D6/D12): OC, solicitudes de OC, bitácora de
+# compras y lista de compra, con match exacto contra el catálogo de la app de
+# usuarios. App.Department.Administrator pasa siempre (verify_exact_permission).
+_PO_PERMS = ["App.Department.Administracion", "App.Department.adminCompras"]
+# crear/editar solicitudes de OC (y listarlas para editarlas)
+_PO_APPLICATION_PERMS = _PO_PERMS + ["App.Department.comprasCreate"]
+# lista de compra: almacén la usa para surtir; ALMACEN-VISUAL ya entraba por "almacen"
+_PURCHASE_LIST_PERMS = _PO_PERMS + ["App.Department.ALMACEN", "App.Department.ALMACEN-VISUAL"]
+# Cobranza (P-198, docs/permisos_administracion.md): adminCobranza abre remisiones, saldos y
+# entregas; adminRem, solo remisiones. Operaciones conserva lo que ya usaba y
+# lleva las cotizaciones de actividad desde Líderes (P-209).
+_COBRANZA = ["App.Department.Administracion", "App.Department.adminCobranza"]
+_REM = _COBRANZA + ["App.Department.adminRem"]
+_REM_OPS = _REM + ["App.Department.Operaciones"]
+
+
 @ns.route("/orders/<string:status>")
 class FetchPOs(Resource):
     @ns.expect(expected_headers_per)
     def get(self, status):
         flag, data_token, msg = token_verification_procedure(
-            request, department="administracion"
+            request, permissions=_PO_PERMS
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -194,7 +212,7 @@ class FetchPOsApplications(Resource):
     @ns.expect(expected_headers_per)
     def get(self, status):
         flag, data_token, msg = token_verification_procedure(
-            request, department="administracion"
+            request, permissions=_PO_APPLICATION_PERMS
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -207,7 +225,7 @@ class FetchPOsApplicationsToApprove(Resource):
     @ns.expect(expected_headers_per)
     def get(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department="administracion"
+            request, permissions=_PO_PERMS
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -220,7 +238,7 @@ class APOsOperations(Resource):
     @ns.expect(expected_headers_per, pos_application_post_model)
     def post(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["orders", "administracion"]
+            request, permissions=_PO_APPLICATION_PERMS
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -235,7 +253,7 @@ class APOsOperations(Resource):
     @ns.expect(expected_headers_per, pos_application_put_model)
     def put(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["orders", "administracion"]
+            request, permissions=_PO_APPLICATION_PERMS
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -250,7 +268,7 @@ class APOsOperations(Resource):
     @ns.expect(expected_headers_per, po_app_delete_model)
     def delete(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["orders", "administracion"]
+            request, permissions=_PO_PERMS
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -268,7 +286,7 @@ class POsOperations(Resource):
     @ns.expect(expected_headers_per, purchase_order_post_model)
     def post(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["orders", "administracion"]
+            request, permissions=_PO_PERMS
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -283,7 +301,7 @@ class POsOperations(Resource):
     @ns.expect(expected_headers_per, purchase_order_put_model)
     def put(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["orders", "administracion"]
+            request, permissions=_PO_PERMS
         )
         if not flag:
             return {
@@ -301,7 +319,7 @@ class POsOperations(Resource):
     @ns.expect(expected_headers_per, purchase_order_delete_model)
     def delete(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["orders", "administracion"]
+            request, permissions=_PO_PERMS
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -320,7 +338,7 @@ class FetchPoItemForFastDelivery(Resource):
     def get(self):
         # get_all_item_purchase_order_with_id_item_sm
         flag, data_token, msg = token_verification_procedure(
-            request, department="administracion"
+            request, permissions=_PO_PERMS
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -333,7 +351,7 @@ class ChangeStateOrder(Resource):
     @ns.expect(expected_headers_per, purchase_order_update_status_model)
     def put(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["orders", "administracion"]
+            request, permissions=_PO_PERMS
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -341,6 +359,9 @@ class ChangeStateOrder(Resource):
         validator = PurchaseOrderUpdateStatusForm.from_json(  # pyrefly: ignore
             ns.payload
         )
+        # antes no se validaba: un body sin id respondía 200 (P-197)
+        if not validator.validate():
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
         data = validator.data
         data_out, code = change_state_order_api(data, data_token)
         return data_out, code
@@ -351,14 +372,17 @@ class ChangeStatePOApplication(Resource):
     @ns.expect(expected_headers_per, purchase_order_update_status_model)
     def put(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["orders", "administracion"]
+            request, permissions=_PO_PERMS
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
-        validator = PurchaseOrderUpdateStatusForm.from_json(  # pyrefly: ignore
+        validator = POApplicationUpdateStatusForm.from_json(  # pyrefly: ignore
             ns.payload
         )
+        # antes no se validaba: un body sin id respondía 200 (P-197)
+        if not validator.validate():
+            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
         data = validator.data
         data_out, code = change_state_po_application_api(data, data_token)
         return data_out, code
@@ -369,7 +393,7 @@ class DownloadPDFPurchase(Resource):
     @ns.expect(expected_headers_per)
     def get(self, po_id):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["administration"]
+            request, permissions=_PO_PERMS
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -384,7 +408,7 @@ class DownloadPDFPurchaseItemsStorage(Resource):
     @ns.expect(expected_headers_per)
     def get(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["almacen", "administracion"]
+            request, permissions=_PURCHASE_LIST_PERMS
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -399,7 +423,7 @@ class FolioPO(Resource):
     @ns.expect(expected_headers_per)
     def get(self, folio):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["administracion", "purchases"]
+            request, permissions=_PO_PERMS
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -420,7 +444,7 @@ class PurchaseMovementsMatch(Resource):
     )
     def get(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["administracion", "purchases"]
+            request, permissions=_PO_PERMS
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -439,7 +463,7 @@ class ActivityQuotatioAction(Resource):
     @ns.expect(expected_headers_per, quotation_activity_create_model)
     def post(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["administracion", "purchases"]
+            request, permissions=_REM_OPS
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -453,7 +477,7 @@ class ActivityQuotatioAction(Resource):
     @ns.expect(expected_headers_per, quotation_activity_update_model)
     def put(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["administracion", "purchases"]
+            request, permissions=_REM_OPS
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -467,7 +491,7 @@ class ActivityQuotatioAction(Resource):
     @ns.expect(expected_headers_per, quotation_activity_delete_model)
     def delete(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["administracion", "purchases"]
+            request, permissions=_REM_OPS
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -484,7 +508,7 @@ class FetchActivitieQuotationById(Resource):
     @ns.expect(expected_headers_per)
     def get(self, id_quotation):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["administracion", "purchases"]
+            request, permissions=_REM_OPS
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -502,7 +526,7 @@ class ChangeStatusActivity(Resource):
     @ns.expect(expected_headers_per, quoatation_activity_status_update_model)
     def put(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["administracion", "purchases"]
+            request, permissions=_REM
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -521,7 +545,7 @@ class ActivityRemissionAction(Resource):
     @ns.expect(expected_headers_per, remission_activity_create_model)
     def post(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["administracion", "purchases"]
+            request, permissions=_REM
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -535,7 +559,7 @@ class ActivityRemissionAction(Resource):
     @ns.expect(expected_headers_per, remission_activity_update_model)
     def put(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["administracion", "purchases"]
+            request, permissions=_REM
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -550,7 +574,7 @@ class ActivityRemissionAction(Resource):
     @ns.expect(expected_headers_per, report_activity_delete_model)
     def delete(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["administracion", "purchases"]
+            request, permissions=_REM
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -568,7 +592,7 @@ class ActivityRemissionCancel(Resource):
     def put(self):
         """Cancela una remisión (status 3, con motivo en history). Solo administracion; sin reactivación.
         La cancelada deja de consumir saldo y de contar como entregada (docs/remission_cancel.md)."""
-        flag, data_token, msg = token_verification_procedure(request, department="administracion")
+        flag, data_token, msg = token_verification_procedure(request, permissions=_REM)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         validator = ReportActivityCancelForm.from_json(ns.payload)  # pyrefly: ignore
@@ -586,7 +610,7 @@ class ActivityRemissionNoAttachments(Resource):
         """Marca (true) o desmarca (false) la remisión como "sin anexos" para que la pantalla no insista.
         Solo administracion. 400 si ya tiene anexos que no sean firmas; subir un anexo la desmarca sola
         (docs/remision_ocd_campos_y_sin_anexos.md)."""
-        flag, data_token, msg = token_verification_procedure(request, department="administracion")
+        flag, data_token, msg = token_verification_procedure(request, permissions=_REM)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         validator = ReportActivityNoAttachmentsForm.from_json(ns.payload)  # pyrefly: ignore
@@ -603,7 +627,7 @@ class ActivityRemissionTableAction(Resource):
         # operaciones: los líderes capturan la remisión por primera vez desde
         # control table. Ver Docs/control_table_operaciones_y_campos_admin.md.
         flag, data_token, msg = token_verification_procedure(
-            request, department=["administracion", "purchases", "operaciones"]
+            request, permissions=_REM_OPS
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -617,7 +641,7 @@ class ActivityRemissionTableAction(Resource):
     @ns.expect(expected_headers_per, remission_activity_update_control_table_model)
     def put(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["administracion", "purchases", "operaciones"]
+            request, permissions=_REM_OPS
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -635,7 +659,7 @@ class ActivityRemissionBalanceAction(Resource):
     @ns.expect(expected_headers_per, remission_balance_update_model)
     def put(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["administracion", "purchases"]
+            request, permissions=_COBRANZA
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -666,7 +690,7 @@ class FetchActivitieReportById(Resource):
     @ns.expect(expected_headers_per)
     def get(self, id_report):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["administracion", "purchases", "operaciones"]
+            request, permissions=_REM_OPS
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -711,7 +735,7 @@ class DownloadPDFRemission(Resource):
     @ns.expect(expected_headers_per)
     def get(self, id_report):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["administracion", "purchases"]
+            request, permissions=_REM
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -734,7 +758,7 @@ class UploadActivityReportAttachment(Resource):
     @ns.expect(expected_headers_per, expected_files_attachment_remission)
     def post(self, id_report):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["administracion", "operaciones"]
+            request, permissions=_REM_OPS
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -764,7 +788,7 @@ class UploadActivityReportAttachment(Resource):
     def delete(self, id_report):
         # Elimina un anexo del reporte; ver Docs/remission_attachment_delete.md
         flag, data_token, msg = token_verification_procedure(
-            request, department=["administracion", "operaciones"]
+            request, permissions=_REM_OPS
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -783,11 +807,12 @@ class UploadActivityReportAttachment(Resource):
 # =====================================================================
 # Control de saldos (Cobranza) — cabecera por contrato, formatos FO-CXC de
 # SGI (iso_formats), columnas dinámicas y movimientos de saldo.
-# Ver Docs/control_saldos_cabecera.md. Lecturas: administracion/purchases/
-# operaciones; escrituras: solo administracion; catálogo además sgi.
+# Ver docs/control_saldos_cabecera.md. Lecturas: Cobranza y Operaciones;
+# escrituras: Cobranza; catálogo además SGI (P-198, docs/permisos_administracion.md).
 # =====================================================================
-_BC_READ = ["administracion", "purchases", "operaciones"]
-_BC_WRITE = ["administracion"]
+_BC_READ = _COBRANZA + ["App.Department.Operaciones"]
+_BC_WRITE = _COBRANZA
+_BC_CATALOGS = _BC_READ + ["App.Department.SGI"]
 
 
 @ns.route("/balanceControl")
@@ -806,7 +831,7 @@ class BalanceControlOps(Resource):
     )
     @ns.expect(expected_headers_per)
     def get(self):
-        flag, data_token, msg = token_verification_procedure(request, department=_BC_READ)
+        flag, data_token, msg = token_verification_procedure(request, permissions=_BC_READ)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # Barrido diario de avisos de saldos / entregas / traslados: la primera lista
@@ -831,7 +856,7 @@ class BalanceControlOps(Resource):
 
     @ns.expect(expected_headers_per, balance_control_post_model)
     def post(self):
-        flag, data_token, msg = token_verification_procedure(request, department=_BC_WRITE)
+        flag, data_token, msg = token_verification_procedure(request, permissions=_BC_WRITE)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
@@ -845,7 +870,7 @@ class BalanceControlOps(Resource):
 
     @ns.expect(expected_headers_per, balance_control_put_model)
     def put(self):
-        flag, data_token, msg = token_verification_procedure(request, department=_BC_WRITE)
+        flag, data_token, msg = token_verification_procedure(request, permissions=_BC_WRITE)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
@@ -862,7 +887,7 @@ class BalanceControlOps(Resource):
 class BalanceControlCatalogs(Resource):
     @ns.expect(expected_headers_per)
     def get(self):
-        flag, data_token, msg = token_verification_procedure(request, department=_BC_READ + ["sgi"])
+        flag, data_token, msg = token_verification_procedure(request, permissions=_BC_CATALOGS)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data_out, code = get_balance_control_catalogs_from_api(data_token)
@@ -873,7 +898,7 @@ class BalanceControlCatalogs(Resource):
 class BalanceControlFields(Resource):
     @ns.expect(expected_headers_per, balance_control_fields_model)
     def put(self):
-        flag, data_token, msg = token_verification_procedure(request, department=_BC_WRITE)
+        flag, data_token, msg = token_verification_procedure(request, permissions=_BC_WRITE)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
@@ -890,7 +915,7 @@ class BalanceControlRemissions(Resource):
     @ns.expect(expected_headers_per, balance_control_remissions_model)
     def put(self):
         # Membresía explícita remisión -> control; ver Docs/control_saldos_sin_contrato.md
-        flag, data_token, msg = token_verification_procedure(request, department=_BC_WRITE)
+        flag, data_token, msg = token_verification_procedure(request, permissions=_BC_WRITE)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
@@ -906,7 +931,7 @@ class BalanceControlRemissions(Resource):
 class BalanceControlCancel(Resource):
     @ns.expect(expected_headers_per, balance_control_cancel_model)
     def put(self):
-        flag, data_token, msg = token_verification_procedure(request, department=_BC_WRITE)
+        flag, data_token, msg = token_verification_procedure(request, permissions=_BC_WRITE)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
@@ -922,7 +947,7 @@ class BalanceControlCancel(Resource):
 class BalanceControlMovement(Resource):
     @ns.expect(expected_headers_per, balance_control_movement_model)
     def post(self):
-        flag, data_token, msg = token_verification_procedure(request, department=_BC_WRITE)
+        flag, data_token, msg = token_verification_procedure(request, permissions=_BC_WRITE)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
@@ -936,7 +961,7 @@ class BalanceControlMovement(Resource):
     @ns.expect(expected_headers_per, balance_control_movement_put_model)
     def put(self):
         """Corrige movement_date / reason de un movimiento; monto, tipo y vigencia son inmutables."""
-        flag, data_token, msg = token_verification_procedure(request, department=_BC_WRITE)
+        flag, data_token, msg = token_verification_procedure(request, permissions=_BC_WRITE)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
@@ -952,7 +977,7 @@ class BalanceControlMovement(Resource):
 class BalanceControlDetail(Resource):
     @ns.expect(expected_headers_per)
     def get(self, id_control):
-        flag, data_token, msg = token_verification_procedure(request, department=_BC_READ)
+        flag, data_token, msg = token_verification_procedure(request, permissions=_BC_READ)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data_out, code = get_balance_control_from_api(id_control, data_token)
@@ -961,10 +986,11 @@ class BalanceControlDetail(Resource):
 
 # =====================================================================
 # Control de Entregas (OCD) — ver docs/control_entregas.md.
-# Lecturas: administracion/purchases; escrituras: solo administracion.
+# Lecturas: Cobranza y adminRem (las pantallas de remisiones las consultan);
+# escrituras: Cobranza (P-198, docs/permisos_administracion.md).
 # =====================================================================
-_DC_READ = ["administracion", "purchases"]
-_DC_WRITE = ["administracion"]
+_DC_READ = _REM
+_DC_WRITE = _COBRANZA
 
 
 @ns.route("/deliveryControl")
@@ -980,7 +1006,7 @@ class DeliveryControlOps(Resource):
     )
     @ns.expect(expected_headers_per)
     def get(self):
-        flag, data_token, msg = token_verification_procedure(request, department=_DC_READ)
+        flag, data_token, msg = token_verification_procedure(request, permissions=_DC_READ)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         params = {
@@ -995,7 +1021,7 @@ class DeliveryControlOps(Resource):
 
     @ns.expect(expected_headers_per, delivery_control_post_model)
     def post(self):
-        flag, data_token, msg = token_verification_procedure(request, department=_DC_WRITE)
+        flag, data_token, msg = token_verification_procedure(request, permissions=_DC_WRITE)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
@@ -1008,7 +1034,7 @@ class DeliveryControlOps(Resource):
 
     @ns.expect(expected_headers_per, delivery_control_put_model)
     def put(self):
-        flag, data_token, msg = token_verification_procedure(request, department=_DC_WRITE)
+        flag, data_token, msg = token_verification_procedure(request, permissions=_DC_WRITE)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
@@ -1024,7 +1050,7 @@ class DeliveryControlOps(Resource):
 class DeliveryControlCatalogs(Resource):
     @ns.expect(expected_headers_per)
     def get(self):
-        flag, data_token, msg = token_verification_procedure(request, department=_DC_READ)
+        flag, data_token, msg = token_verification_procedure(request, permissions=_DC_READ)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data_out, code = get_delivery_control_catalogs_from_api(data_token)
@@ -1035,7 +1061,7 @@ class DeliveryControlCatalogs(Resource):
 class DeliveryControlFields(Resource):
     @ns.expect(expected_headers_per, delivery_control_fields_model)
     def put(self):
-        flag, data_token, msg = token_verification_procedure(request, department=_DC_WRITE)
+        flag, data_token, msg = token_verification_procedure(request, permissions=_DC_WRITE)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
@@ -1051,7 +1077,7 @@ class DeliveryControlFields(Resource):
 class DeliveryControlValues(Resource):
     @ns.expect(expected_headers_per, delivery_control_values_model)
     def put(self):
-        flag, data_token, msg = token_verification_procedure(request, department=_DC_WRITE)
+        flag, data_token, msg = token_verification_procedure(request, permissions=_DC_WRITE)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
@@ -1068,7 +1094,7 @@ class DeliveryControlValues(Resource):
 class DeliveryControlRemissions(Resource):
     @ns.expect(expected_headers_per, delivery_control_remissions_model)
     def put(self):
-        flag, data_token, msg = token_verification_procedure(request, department=_DC_WRITE)
+        flag, data_token, msg = token_verification_procedure(request, permissions=_DC_WRITE)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
@@ -1084,7 +1110,7 @@ class DeliveryControlRemissions(Resource):
 class DeliveryControlCancel(Resource):
     @ns.expect(expected_headers_per, delivery_control_cancel_model)
     def put(self):
-        flag, data_token, msg = token_verification_procedure(request, department=_DC_WRITE)
+        flag, data_token, msg = token_verification_procedure(request, permissions=_DC_WRITE)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
@@ -1100,7 +1126,7 @@ class DeliveryControlCancel(Resource):
 class DeliveryControlDetail(Resource):
     @ns.expect(expected_headers_per)
     def get(self, id_control):
-        flag, data_token, msg = token_verification_procedure(request, department=_DC_READ)
+        flag, data_token, msg = token_verification_procedure(request, permissions=_DC_READ)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data_out, code = get_delivery_control_from_api(id_control, data_token)
@@ -1126,7 +1152,7 @@ class PurchaseManagementOps(Resource):
     @ns.expect(expected_headers_per)
     def get(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["administracion", "purchases"]
+            request, permissions=_PO_PERMS
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -1145,7 +1171,7 @@ class PurchaseManagementOps(Resource):
     @ns.expect(expected_headers_per, purchase_management_post_model)
     def post(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["administracion", "purchases"]
+            request, permissions=_PO_PERMS
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -1160,7 +1186,7 @@ class PurchaseManagementOps(Resource):
     @ns.expect(expected_headers_per, purchase_management_put_model)
     def put(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["administracion", "purchases"]
+            request, permissions=_PO_PERMS
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -1177,7 +1203,7 @@ class PurchaseManagementOps(Resource):
     @ns.expect(expected_headers_per, purchase_management_delete_model)
     def delete(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["administracion", "purchases"]
+            request, permissions=_PO_PERMS
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -1195,7 +1221,7 @@ class PurchaseManagementCancel(Resource):
     @ns.expect(expected_headers_per, purchase_management_cancel_model)
     def put(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["administracion", "purchases"]
+            request, permissions=_PO_PERMS
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -1213,7 +1239,7 @@ class PurchaseManagementCatalogs(Resource):
     @ns.expect(expected_headers_per)
     def get(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["administracion", "purchases"]
+            request, permissions=_PO_PERMS
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -1226,7 +1252,7 @@ class PurchaseManagementDetail(Resource):
     @ns.expect(expected_headers_per)
     def get(self, id_pm):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["administracion", "purchases"]
+            request, permissions=_PO_PERMS
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -1239,7 +1265,7 @@ class DownloadVehicleVoucherAttachment(Resource):
     @ns.expect(expected_headers_per, report_activity_download_att_model)
     def post(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["sgi", "voucher"]
+            request, permissions=VEHICLE_CHECKLIST_PERMS
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -1266,7 +1292,7 @@ class FetchAPoItemForFastDelivery(Resource):
     def get(self):
         # get_all_item_purchase_order_with_id_item_sm
         flag, data_token, msg = token_verification_procedure(
-            request, department="administracion"
+            request, permissions=_PO_PERMS
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401

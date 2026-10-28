@@ -42,6 +42,7 @@ from templates.Functions_Utils import (
     create_notification_permission_notGUI,
 )
 from templates.misc.Functions_Files import write_log_file
+from templates.resources.methods.Functions_Aux_S3 import s3_can_delete, s3_env_key, s3_key_environment
 from templates.resources.midleware.MD_BalanceControl import (
     balance_snapshot,
     resolve_balance_control_for_remission,
@@ -2187,16 +2188,18 @@ def _load_remission_for_files(id_report, data_token):
     return None, 200, id_report, result, files, history
 
 
-def _remission_attachment_key(date_report, id_report, filename):
+def _remission_attachment_key(date_report, id_report, filename, data_token):
     """
-    Llave S3 de un anexo: ``reportActivity/<fecha del reporte>/<id>/<archivo>``.
+    Llave S3 de un anexo:
+    ``reportActivity/<entorno>/<fecha del reporte>/<id>/<archivo>`` (P-177).
     El ``id_report`` en la ruta es lo que evita que dos remisiones de la misma
     fecha con un archivo del mismo nombre compartan objeto (antes se pisaban al
-    subir y el borrado fisico de una le habria borrado el archivo a la otra).
-    Las llaves viejas (sin el id) siguen siendo validas: cada archivo guarda su
-    propio ``path``.
+    subir y el borrado fisico de una le habria borrado el archivo a la otra);
+    el entorno evita lo mismo entre dev, test y prod, que comparten bucket e ids.
+    Las llaves viejas (sin el id o sin el entorno) siguen siendo validas: cada
+    archivo guarda su propio ``path``.
     """
-    return f"reportActivity/{date_report.strftime('%Y/%m/%d/')}{id_report}/{filename}"
+    return s3_env_key("reportActivity", f"{date_report.strftime('%Y/%m/%d/')}{id_report}/{filename}", data_token)
 
 
 def create_activity_report_attachment_api(data, data_token):
@@ -2218,7 +2221,7 @@ def create_activity_report_attachment_api(data, data_token):
             "msg": "Formato de archivo no válido",
             "error": None,
         }, 400
-    path_aws = _remission_attachment_key(date_report, id_report, filename)
+    path_aws = _remission_attachment_key(date_report, id_report, filename, data_token)
     s3_client = boto3.client("s3")
     bucket_name = secrets.get("S3_ADMIN_BUCKET")
 
@@ -2255,6 +2258,7 @@ def create_activity_report_attachment_api(data, data_token):
     # Escritura condicional sobre `files` (docs/remission_anexos_sin_carrera.md):
     # si otra subida/borrado cambio la lista despues de leerla, se re-lee y se
     # recalcula; el objeto en S3 ya quedo arriba (llave determinista).
+    stale_keys: list = []
     for attempt in range(_FILES_WRITE_ATTEMPTS):
         if attempt > 0:
             _files_retry_pause(attempt)
@@ -2272,13 +2276,20 @@ def create_activity_report_attachment_api(data, data_token):
                 log_msg += " (remisión cancelada: el estado no cambia)"
             else:
                 log_msg += " y estado actualizado a (firmado)" if status == 1 else " y estado actualizado a (aprobado)"
-        # Re-subir el mismo archivo reemplaza su entrada en vez de duplicarla: en S3
-        # ya se sobreescribio el objeto (misma llave), asi que dos entradas
-        # apuntarian al mismo archivo. Es ademas la unica forma de corregir una
-        # firma equivocada, porque las firmas no se pueden borrar (ver
-        # Docs/remission_attachment_delete.md).
-        replaced = any(file.get("path") == path_aws for file in files)
-        new_files = [file for file in files if file.get("path") != path_aws]
+        # Re-subir el mismo archivo reemplaza su entrada en vez de duplicarla. Es
+        # ademas la unica forma de corregir una firma equivocada, porque las
+        # firmas no se pueden borrar (ver Docs/remission_attachment_delete.md).
+        # "Mismo archivo" = mismo filename (P-177): una entrada vieja puede tener
+        # otra llave (sin entorno o sin id); se desvincula y su objeto se borra
+        # solo si se podria borrar por el endpoint de borrado.
+        replaced = any(file.get("path") == path_aws or file.get("filename") == filename for file in files)
+        stale_keys = sorted({
+            str(file.get("path")) for file in files
+            if file.get("filename") == filename and file.get("path") and file.get("path") != path_aws
+        })
+        new_files = [
+            file for file in files if file.get("path") != path_aws and file.get("filename") != filename
+        ]
         if replaced:
             log_msg += " (reemplaza el archivo previo con el mismo nombre)"
         new_files.append(new_entry)
@@ -2308,6 +2319,7 @@ def create_activity_report_attachment_api(data, data_token):
             ),
             "error": "conflicto de escritura en files",
         }, 409
+    _delete_stale_remission_keys(stale_keys, id_report, data_token)
     # Un anexo real (no firma) contradice la marca "sin anexos": se quita sola, con
     # history, en vez de rechazar la subida (decisión 2026-10-22). Best-effort: el
     # anexo ya quedó guardado; si el UPDATE falla solo se registra en el log.
@@ -2406,14 +2418,43 @@ def _is_protected_signature(file_obj: dict) -> bool:
 
 def _remission_key_belongs_to_report(path_aws: str, id_report: int) -> bool:
     """
-    ``True`` solo para las llaves del formato nuevo
-    ``reportActivity/<Y>/<m>/<d>/<id_report>/<archivo>``. Las llaves heredadas
-    (sin el id) pueden estar compartidas con otra remision de la misma fecha
-    que subio un archivo con el mismo nombre, asi que esas nunca se borran de
-    S3: el anexo solo se desvincula del reporte.
+    ``True`` solo para las llaves con el id del reporte:
+    ``reportActivity/<entorno>/<Y>/<m>/<d>/<id_report>/<archivo>`` (P-177) o la
+    anterior sin entorno ``reportActivity/<Y>/<m>/<d>/<id_report>/<archivo>``.
+    Las llaves heredadas sin el id pueden estar compartidas con otra remision de
+    la misma fecha que subio un archivo con el mismo nombre, asi que esas nunca
+    se borran de S3: el anexo solo se desvincula del reporte.
     """
     parts = (path_aws or "").split("/")
-    return len(parts) >= 6 and parts[0] == "reportActivity" and parts[4] == str(id_report)
+    if not parts or parts[0] != "reportActivity":
+        return False
+    id_index = 5 if s3_key_environment(path_aws) else 4
+    return len(parts) > id_index + 1 and parts[id_index] == str(id_report)
+
+
+def _remission_key_deletable(path_aws: str, id_report: int, data_token) -> bool:
+    """La llave es de este reporte y este entorno puede borrarla (P-177: una
+    llave sin entorno puede ser de otra BD con el mismo id; solo prod la borra)."""
+    return _remission_key_belongs_to_report(path_aws, id_report) and s3_can_delete(path_aws, data_token)
+
+
+def _delete_stale_remission_keys(keys, id_report: int, data_token) -> None:
+    """Best-effort: borra de S3 las llaves que un reemplazo desvinculo, solo las
+    que el borrado de anexos tambien borraria; el resto queda para la
+    conciliacion. Nunca falla la subida (el indice ya quedo guardado)."""
+    deletable = [key for key in keys if _remission_key_deletable(key, id_report, data_token)]
+    if not deletable:
+        return
+    try:
+        s3_client = boto3.client("s3")
+        for key in deletable:
+            s3_client.delete_object(Bucket=str(secrets.get("S3_ADMIN_BUCKET")), Key=key)
+    except (ClientError, NoCredentialsError, BotoCoreError) as e:
+        write_log_file(
+            log_file_admin_collecions,
+            f"Error al borrar de S3 {deletable} reemplazados en el reporte {id_report}: {e}",
+            data_token,
+        )
 
 
 def delete_activity_report_attachment_api(data, data_token):
@@ -2525,9 +2566,11 @@ def delete_activity_report_attachment_api(data, data_token):
     s3_deleted = False
     s3_detail = "Sin llave en S3 que eliminar"
     error_out = None
-    deletable = [path_file for path_file in paths if _remission_key_belongs_to_report(path_file, id_report)]
+    deletable = [path_file for path_file in paths if _remission_key_deletable(path_file, id_report, data_token)]
     if len(deletable) < len(paths):
-        s3_detail = "Llave heredada (sin id de reporte): el objeto se conserva en S3"
+        s3_detail = (
+            "Llave heredada (sin id de reporte) o de otro entorno: el objeto se conserva en S3"
+        )
     if len(deletable) > 0:
         s3_client = boto3.client("s3")
         bucket_name = secrets.get("S3_ADMIN_BUCKET")

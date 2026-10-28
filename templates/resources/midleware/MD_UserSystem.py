@@ -1,12 +1,10 @@
 # -*- coding: utf-8 -*-
-import json
 from datetime import date, datetime
 
 import jwt
 import pytz
 
 from static.constants import (
-    filepath_permission,
     format_date,
     format_timestamps,
     log_file_users,
@@ -16,6 +14,7 @@ from static.constants import (
 from templates.controllers.employees.us_controller import (
     create_user_system_with_token,
     fetch_employess_user_data,
+    get_permissions_catalog,
     update_biocredentials_DB,
 )
 from templates.Functions_Utils import create_notification_permission
@@ -24,21 +23,16 @@ from templates.misc.Functions_Files import write_log_file
 __author__ = "Edisson Naula"
 __date__ = "$ 09/12/2025 at 11:04 $"
 
-def read_permissions_file(path: str = filepath_permission):
-    """
-    read permission json file
-    :return:
-    """
-    with open(path, "r") as f:
-        data = json.load(f)
-    return data
-
-
-def fetch_permissions_from_api():
-    try:
-        permissions = read_permissions_file()
-    except Exception as e:
-        return {"data": None, "msg": "Error al obtener los permisos", "error": str(e)}, 400
+def fetch_permissions_from_api(data_token):
+    """Catálogo de permisos desde sql_telintec.permissions (antes un JSON del API
+    que ya había divergido del de la app de usuarios)."""
+    flag, error, result = get_permissions_catalog(data_token)
+    if not flag or not isinstance(result, list):
+        return {"data": None, "msg": "Error al obtener los permisos", "error": error}, 400
+    permissions = [
+        {"id": row[0], "name": row[1], "description": row[2], "area": row[3]}
+        for row in result
+    ]
     return {"data": permissions, "msg": None, "error": None}, 200
 
 

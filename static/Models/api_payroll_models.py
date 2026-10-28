@@ -57,12 +57,12 @@ request_file_model = api.model(
         "pdf": fields.String(
             required=False,
             description="Key S3 del pdf (del indice del empleado). Basta pdf o xml",
-            example="payroll/2026/10/77/recibo.pdf",
+            example="payroll/prod/2026/10/77/2026-10-Q1/recibo.pdf",
         ),
         "xml": fields.String(
             required=False,
             description="Key S3 del xml (del indice del empleado). Basta pdf o xml",
-            example="payroll/2026/10/77/recibo.xml",
+            example="payroll/prod/2026/10/77/2026-10-Q1/recibo.xml",
         ),
     },
 )

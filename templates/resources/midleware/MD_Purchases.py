@@ -38,6 +38,7 @@ from templates.controllers.order.orders_controller import (
     get_pos_application_with_items,
     get_pos_application_with_items_to_approve,
     get_purchase_order_with_items_by_id,
+    get_purchase_orders_folios,
     get_purchase_orders_with_items,
     insert_po_application,
     insert_purchase_order,
@@ -930,7 +931,8 @@ def update_po_application_api(data, data_token):
     for item in data["items"]:
         extra_info = create_extra_info_product_from_data(item)
         if item["id"] == -1:
-            flag, error, result = insert_purchase_order_item(
+            # partida de la solicitud: order_id, no purchase_id (esa es la OC con el mismo id)
+            flag, error, result = insert_purchase_order_item_from_applications(
                 data["id"],
                 item["quantity"],
                 item["unit_price"],
@@ -938,6 +940,7 @@ def update_po_application_api(data, data_token):
                 "0",
                 extra_info,
                 data_token,
+                item["tool"],
             )
         else:
             flag, error, result = update_po_application_item(
@@ -1042,7 +1045,8 @@ def change_state_po_application_api(data, data_token):
     return {"data": {"id_po_app": data["id"]}, "msg": msg, "error": None}, 200
 
 
-def create_metadata_for_pdf_po(extra_info: dict):
+def create_metadata_for_pdf_po(extra_info: dict, time_delivery=None):
+    """Bloques de datos del PDF de la OC, en el orden del formato FO-COM-04."""
     extra_info_telintec = extra_info.get("metadata_telintec", {})
     extra_info_supplier = extra_info.get("metadata_supplier", {})
     metadata_telintec = {
@@ -1051,8 +1055,8 @@ def create_metadata_for_pdf_po(extra_info: dict):
         "Domicilio de facturación": extra_info_telintec.get("address_invoice", ""),
         "Domicilio comercial": extra_info_telintec.get("address_comercial", ""),
         "Responsable en compras": extra_info_telintec.get("responsable", ""),
-        "Teléfono comercial": extra_info_telintec.get("phone", ""),
         "Correo de facturación": extra_info_telintec.get("email", ""),
+        "Teléfono comercial": extra_info_telintec.get("phone", ""),
     }
     metadata_supplier = {
         "Nombre del proveedor": extra_info_supplier.get("name", ""),
@@ -1060,13 +1064,23 @@ def create_metadata_for_pdf_po(extra_info: dict):
         "RFC del proveedor": extra_info_supplier.get("rfc", ""),
         "Vendedor": extra_info_supplier.get("salesman", "NA"),
         "Forma de pago": extra_info_supplier.get("payment_method", ""),
+        "Plazo de entrega / ejecución": time_delivery or "",
         "Condiciones de entrega": extra_info_supplier.get("delivery_conditions", ""),
         "Dirección de entrega": extra_info_supplier.get("delivery_address", ""),
         "Transporte": extra_info_supplier.get("transport", ""),
         "Seguro": extra_info_supplier.get("insurance", ""),
-        "Garantias": extra_info_supplier.get("guarantee", ""),
+        "Garantías": extra_info_supplier.get("guarantee", ""),
     }
     return metadata_telintec, metadata_supplier
+
+
+def _po_emission_date(history, timestamp) -> str:
+    """Fecha de emisión de la OC (YYYY-MM-DD): la del evento "Creación de orden"
+    del history; po.timestamp se reescribe en cada PUT, solo sirve de respaldo."""
+    for event in history if isinstance(history, list) else []:
+        if isinstance(event, dict) and event.get("event") == "Creación de orden" and event.get("date"):
+            return str(event["date"])[:10]
+    return timestamp.date().isoformat() if isinstance(timestamp, datetime) else ""
 
 
 def dowload_file_purchase(order_id: int, data_token):
@@ -1083,49 +1097,52 @@ def dowload_file_purchase(order_id: int, data_token):
             "msg": f"Orden de compra no encontrada (ID {order_id})",
             "error": error,
         }, 400
-    date = result[0]
+    timestamp, status, folio = result[0], result[1], result[5] or ""
+    history = json.loads(result[6]) if result[6] else []
+    emission = _po_emission_date(history, timestamp)
+    # po.timestamp = última escritura; solo se imprime si cae en un día posterior a la emisión
+    modified = timestamp.date().isoformat() if isinstance(timestamp, datetime) else ""
     download_path = os.path.join(
-        tempfile.mkdtemp(), os.path.basename(f"oc_{result[5]}_{date.date()}.pdf")
+        tempfile.mkdtemp(), os.path.basename(f"oc_{folio}_{emission}.pdf")
     )
     products = []
+    totals: dict[str, float] = {}
     items = json.loads(result[8]) or []
-    total_amount = 0.0
     # El LEFT JOIN + JSON_ARRAYAGG produce un placeholder de puros NULL cuando la OC no tiene items
     items = [item for item in items if item.get("id") is not None]
     for index, item in enumerate(items):
         extra_info_item = item["extra_info"] or {}
-        quantity = item["quantity"] or 0
-        unit_price = item["unit_price"] or 0
+        quantity = float(item["quantity"] or 0)
+        unit_price = float(item["unit_price"] or 0)
         subtotal = quantity * unit_price
+        currency = str(item.get("currency") or "MXN").upper()
         products.append(
-            [
-                index + 1,
-                item["description"],
-                extra_info_item.get("n_parte"),
-                item["duration_services"],
-                "NA",
-                quantity,
-                unit_price,
-                subtotal,
-            ]
+            {
+                "no": index + 1,
+                "description": item["description"] or "",
+                "n_parte": extra_info_item.get("n_parte") or "",
+                "udm": item.get("udm") or "",
+                "duration": item["duration_services"],
+                "quantity": quantity,
+                "currency": currency,
+                "unit_price": unit_price,
+                "subtotal": subtotal,
+            }
         )
-        total_amount += subtotal
-    extra_info = json.loads(result[7])
-    metadata_telintec, metadata_supplier = create_metadata_for_pdf_po(extra_info)
+        totals[currency] = totals.get(currency, 0.0) + subtotal
+    extra_info = json.loads(result[7]) if result[7] else {}
+    metadata_telintec, metadata_supplier = create_metadata_for_pdf_po(extra_info, result[9])
     flag = FilePoPDF(
         {
             "filename_out": download_path,
-            "products": products,
-            "folio": result[5],
-            "status": result[1],
-            "total_amount": total_amount,
-            "created_by": f"{result[2]} {result[3]}",
-            "supplier": result[4],
-            "timestamp": result[0],
-            "history": json.loads(result[6]),
-            "time_delivery": result[9],
+            "folio": folio,
+            "cancelled": status == 4,
+            "emission": emission,
+            "modified": modified if modified > emission else "",
             "metadata_telintec": metadata_telintec,
             "metadata_supplier": metadata_supplier,
+            "products": products,
+            "totals": totals,
         },
     )
     if not flag:
@@ -1341,17 +1358,100 @@ def _safe_number(value):
         return 0
 
 
+def _movement_owner(exact_matches: list):
+    """OC donde suma una entrada que caso exacto: la unica, o la que caso por folio propio.
+
+    None si sigue empatada (ambigua): entonces no suma en ninguna.
+    """
+    if len(exact_matches) == 1:
+        return exact_matches[0][0]
+    by_own_folio = [id_po for id_po, matched_by in exact_matches if matched_by == "folio"]
+    return by_own_folio[0] if len(by_own_folio) == 1 else None
+
+
+def _quantity_status(received: float, quantity: float) -> str:
+    if received <= 0:
+        return "pendiente"
+    diff = round(received - quantity, 4)
+    if diff < 0:
+        return "parcial"
+    return "completa" if diff == 0 else "excedente"
+
+
+def _allocate_received(items: list, owned: list) -> list:
+    """Partidas de la OC con lo recibido por las entradas que suman a ella.
+
+    Solo suman a partidas ligadas (id_inventory > 0) del mismo producto que la
+    entrada. Lo recibido de un producto se reparte en orden de id de partida y
+    el sobrante final queda en la ultima. Marca cada entrada de owned como
+    contada, o con not_counted_reason 'sin_partida' si su producto no esta.
+    """
+    linked = {}
+    for item in sorted(items, key=lambda i: i["id"]):
+        if item["id_inventory"] > 0:
+            linked.setdefault(item["id_inventory"], []).append(item)
+    received = {}
+    for movement in owned:
+        id_product = movement["id_product"]
+        if id_product in linked:
+            movement["counted"] = True
+            received[id_product] = received.get(id_product, 0) + movement["quantity"]
+        else:
+            movement["not_counted_reason"] = "sin_partida"
+    allocated = {}
+    for id_product, group in linked.items():
+        remaining = received.get(id_product, 0)
+        for item in group:
+            take = max(0.0, min(remaining, _safe_number(item["quantity"])))
+            allocated[item["id"]] = take
+            remaining -= take
+        allocated[group[-1]["id"]] += remaining
+    items_out = []
+    for item in sorted(items, key=lambda i: i["id"]):
+        quantity = _safe_number(item["quantity"])
+        if item["id_inventory"] > 0:
+            got = round(allocated[item["id"]], 4)
+            status = _quantity_status(got, quantity)
+        else:
+            got, status = None, "sin_ligar"
+        items_out.append(
+            {
+                "id_item": item["id"],
+                "description": item["description"],
+                "quantity": quantity,
+                "id_inventory": item["id_inventory"],
+                "received": got,
+                "quantity_status": status,
+            }
+        )
+    return items_out
+
+
+def _po_quantity_status(items_out: list, has_owned: bool) -> str:
+    """sin_entradas | parcial | completa | excedente. Completa solo si todas las
+    partidas estan ligadas y cubiertas; una sin ligar deja la OC en parcial."""
+    if not has_owned:
+        return "sin_entradas"
+    statuses = [item["quantity_status"] for item in items_out]
+    if statuses and all(s in ("completa", "excedente") for s in statuses):
+        return "excedente" if "excedente" in statuses else "completa"
+    return "parcial"
+
+
 def match_po_movements_and_sms(params, data_token):
     """Concilia las OCs con los movimientos de entrada de almacen y sus SMs.
 
     Match OC<->movimiento: el reference del movimiento (extra_info.$.reference,
     guardado en mayusculas) contra folio y folio_supplier de la OC; primero
-    exacto (case-insensitive, con trim) y, solo para movimientos que no pegaron
-    exacto con ninguna OC, fallback contains (folio dentro del reference)
-    marcado como match_type 'parcial'. Un movimiento puede aparecer bajo todas
-    las OCs con las que pega. SMs relacionadas: primario por deliveries
-    (id_order == id de la OC), fallback por extra_info.id_item_sm de los items
-    de la OC. Ver Docs/po_movements_inbound_match.md.
+    exacto (case-insensitive, con trim) contra TODAS las OCs no canceladas y,
+    solo para movimientos que no pegaron exacto con ninguna, fallback contains
+    (folio dentro del reference) marcado como match_type 'parcial'. Un
+    movimiento puede aparecer bajo todas las OCs con las que pega, pero solo
+    suma cantidades en una (_movement_owner) y solo si caso exacto. Por partida
+    ligada: pendiente/parcial/completa/excedente (_allocate_received). SMs
+    relacionadas: primario por deliveries (id_order == id de la OC), fallback
+    por extra_info.id_item_sm de los items de la OC. Ver
+    docs/po_movements_inbound_match.md.
     """
     params = params if isinstance(params, dict) else {}
     status = None
@@ -1392,7 +1492,9 @@ def match_po_movements_and_sms(params, data_token):
     else:
         flag, error, result = check_if_gerente(data_token.get("emp_id"), data_token)
         emp_id = data_token.get("emp_id") if not flag and len(result) <= 0 else None
-    flag, error, result = get_purchase_orders_with_items(status, emp_id, data_token)
+    flag, error, result = get_purchase_orders_with_items(
+        status, emp_id, data_token, date_from, date_to
+    )
     if not flag:
         return {"data": [], "msg": "Error al obtener órdenes de compra", "error": error}, 400
     if not isinstance(result, Iterable):
@@ -1401,9 +1503,11 @@ def match_po_movements_and_sms(params, data_token):
             "msg": "Error al obtener órdenes de compra: respuesta inesperada de la DB",
             "error": None,
         }, 400
-    # pos: tuplas (id_order, base_out, folio_norm, folio_supplier_norm, ids_item_sm)
+    # pos: tuplas (id_order, base_out, folio_norm, folio_supplier_norm, ids_item_sm, products)
     pos = []
     ids_item_sm_all = set()
+    oldest = None  # fecha de la OC mas vieja de la respuesta: cota de las entradas
+    unbounded = False
     for row in result:
         (
             id_order,
@@ -1417,25 +1521,22 @@ def match_po_movements_and_sms(params, data_token):
             products,
             time_delivery,
         ) = row
-        if date_from or date_to:
-            ts = timestamp
-            if isinstance(ts, str):
-                try:
-                    ts = datetime.strptime(ts, format_timestamps)
-                except ValueError:
-                    ts = None
-            # timestamp no parseable -> la OC se incluye (no se filtra a ciegas)
-            if ts is not None:
-                if date_from and ts.date() < date_from:
-                    continue
-                if date_to and ts.date() > date_to:
-                    continue
         extra_info = json.loads(extra_info) if extra_info else {}
         folio_supplier = extra_info.get("folio_supplier", "")
         folio_norm = _normalize_folio_match(folio)
         folio_supplier_norm = _normalize_folio_match(folio_supplier)
         if folio_filter and folio_filter not in (folio_norm, folio_supplier_norm):
             continue
+        ts = timestamp
+        if isinstance(ts, str):
+            try:
+                ts = datetime.strptime(ts, format_timestamps)
+            except ValueError:
+                ts = None
+        if isinstance(ts, datetime):
+            oldest = ts.date() if oldest is None else min(oldest, ts.date())
+        else:
+            unbounded = True
         products = json.loads(products) if products else []
         products, _total = map_products_po(products)
         ids_item_sm = []
@@ -1460,15 +1561,36 @@ def match_po_movements_and_sms(params, data_token):
             else timestamp,
             "time_delivery": time_delivery,
         }
-        pos.append((id_order, base_out, folio_norm, folio_supplier_norm, ids_item_sm))
+        pos.append((id_order, base_out, folio_norm, folio_supplier_norm, ids_item_sm, products))
     if not pos:
         return {
             "data": [],
             "msg": "Se conciliaron 0 ordenes de compra: 0 con entradas y 0 sin entradas",
             "error": None,
         }, 200
-    # movimientos de entrada con reference
-    flag, error, result = get_ins_db_detail(data_token)
+    # folios de todas las OCs no canceladas (sin filtros): deciden en que OC suma cada entrada
+    flag, error, result = get_purchase_orders_folios(data_token)
+    if not flag:
+        return {
+            "data": [],
+            "msg": "Error al obtener los folios de las órdenes de compra",
+            "error": error,
+        }, 400
+    by_folio = {}
+    by_folio_supplier = {}
+    for id_po, folio, folio_supplier_raw in result:  # pyrefly: ignore
+        try:
+            folio_supplier = json.loads(folio_supplier_raw) if folio_supplier_raw else ""
+        except (TypeError, ValueError):
+            folio_supplier = str(folio_supplier_raw)
+        folio_norm = _normalize_folio_match(folio)
+        folio_supplier_norm = _normalize_folio_match(folio_supplier)
+        if folio_norm:
+            by_folio.setdefault(folio_norm, []).append(id_po)
+        if folio_supplier_norm:
+            by_folio_supplier.setdefault(folio_supplier_norm, []).append(id_po)
+    # movimientos de entrada con reference, desde la fecha de la OC mas vieja
+    flag, error, result = get_ins_db_detail(data_token, None if unbounded else oldest)
     if not flag:
         return {"data": [], "msg": "Error al obtener movimientos de entrada", "error": error}, 400
     movements = []  # tuplas (ref_norm, movimiento mapeado a dict de salida)
@@ -1500,14 +1622,9 @@ def match_po_movements_and_sms(params, data_token):
                 },
             )
         )
-    by_folio = {}
-    by_folio_supplier = {}
-    for id_po, _base, folio_norm, folio_supplier_norm, _ids in pos:
-        if folio_norm:
-            by_folio.setdefault(folio_norm, []).append(id_po)
-        if folio_supplier_norm:
-            by_folio_supplier.setdefault(folio_supplier_norm, []).append(id_po)
+    pos_ids = {p[0] for p in pos}
     movements_by_po = {}
+    owned_by_po = {}  # id de OC -> entradas (dict de salida) que suman en ella
     for ref_norm, mov_data in movements:
         exact_matches = []
         seen_ids = set()
@@ -1518,20 +1635,41 @@ def match_po_movements_and_sms(params, data_token):
             if id_po not in seen_ids:
                 exact_matches.append((id_po, "folio_supplier"))
         if exact_matches:
+            owner = _movement_owner(exact_matches)
             for id_po, matched_by in exact_matches:
-                movements_by_po.setdefault(id_po, []).append(
-                    {**mov_data, "matched_by": matched_by, "match_type": "exacto"}
-                )
+                if id_po not in pos_ids:
+                    continue
+                if owner is None:
+                    reason = "ambigua"
+                else:
+                    reason = None if owner == id_po else "otra_oc"
+                entry = {
+                    **mov_data,
+                    "matched_by": matched_by,
+                    "match_type": "exacto",
+                    "counted": False,
+                    "not_counted_reason": reason,
+                }
+                movements_by_po.setdefault(id_po, []).append(entry)
+                if owner == id_po:
+                    owned_by_po.setdefault(id_po, []).append(entry)
             continue
-        for id_po, _base, folio_norm, folio_supplier_norm, _ids in pos:
+        for id_po, _base, folio_norm, folio_supplier_norm, _ids, _products in pos:
             if folio_norm and folio_norm in ref_norm:
-                movements_by_po.setdefault(id_po, []).append(
-                    {**mov_data, "matched_by": "folio", "match_type": "parcial"}
-                )
+                matched_by = "folio"
             elif folio_supplier_norm and folio_supplier_norm in ref_norm:
-                movements_by_po.setdefault(id_po, []).append(
-                    {**mov_data, "matched_by": "folio_supplier", "match_type": "parcial"}
-                )
+                matched_by = "folio_supplier"
+            else:
+                continue
+            movements_by_po.setdefault(id_po, []).append(
+                {
+                    **mov_data,
+                    "matched_by": matched_by,
+                    "match_type": "parcial",
+                    "counted": False,
+                    "not_counted_reason": "parcial",
+                }
+            )
     # SMs relacionadas: por deliveries (primario) y por id_item_sm (fallback)
     flag, error, result = get_sm_items_deliveries_for_match_db(
         sorted(ids_item_sm_all), data_token
@@ -1572,7 +1710,7 @@ def match_po_movements_and_sms(params, data_token):
             if id_order_dv > 0:
                 deliveries_by_po.setdefault(id_order_dv, []).append((item_info, delivery))
     data_out = []
-    for id_po, base_out, _folio_norm, _folio_supplier_norm, ids_item_sm in sorted(
+    for id_po, base_out, _folio_norm, _folio_supplier_norm, ids_item_sm, products in sorted(
         pos, key=lambda p: p[0], reverse=True
     ):
         entries = deliveries_by_po.get(id_po, [])
@@ -1607,10 +1745,13 @@ def match_po_movements_and_sms(params, data_token):
                 }
             )
         po_movements = movements_by_po.get(id_po, [])
+        items_out = _allocate_received(products, owned_by_po.get(id_po, []))
         data_out.append(
             {
                 **base_out,
                 "reception_status": "con_entradas" if po_movements else "sin_entradas",
+                "quantity_status": _po_quantity_status(items_out, id_po in owned_by_po),
+                "items": items_out,
                 "movements": po_movements,
                 "sms": [
                     {**sms_meta[id_sm], "items": sms_items[id_sm]} for id_sm in sms_meta
@@ -1618,8 +1759,14 @@ def match_po_movements_and_sms(params, data_token):
             }
         )
     n_con = sum(1 for po in data_out if po["reception_status"] == "con_entradas")
+    n_qty = {
+        status_qty: sum(1 for po in data_out if po["quantity_status"] == status_qty)
+        for status_qty in ("completa", "parcial", "excedente")
+    }
     msg = (
         f"Se conciliaron {len(data_out)} ordenes de compra: "
-        f"{n_con} con entradas y {len(data_out) - n_con} sin entradas"
+        f"{n_con} con entradas y {len(data_out) - n_con} sin entradas; por cantidades "
+        f"{n_qty['completa']} completas, {n_qty['parcial']} parciales y "
+        f"{n_qty['excedente']} con excedente"
     )
     return {"data": data_out, "msg": msg, "error": None}, 200

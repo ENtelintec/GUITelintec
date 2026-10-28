@@ -2,10 +2,13 @@
 __author__ = "Edisson Naula"
 __date__ = "$ 24/jul./2026  at 12:00 $"
 
+from datetime import datetime
+
 from flask_restx import fields
 from wtforms import FloatField, StringField
 from wtforms.fields.numeric import IntegerField
 from wtforms.form import Form
+from wtforms.validators import ValidationError
 
 from static.constants import api
 
@@ -14,7 +17,9 @@ from static.constants import api
 # Ruta base: /GUI/api/v1/admin/collections/purchaseManagement
 # Doble capa: api.model (swagger/docs) + WTForms Form (validación runtime).
 # Al agregar un campo, actualizar AMBOS. Casi todo es opcional: el
-# seguimiento es flojo (ver Docs/gestion_de_compras.md).
+# seguimiento es flojo (ver Docs/gestion_de_compras.md). El alta (POST) exige
+# lo mismo que el formulario del front: descripción, fecha de solicitud y al
+# menos un monto (docs/compras_forms_validacion.md, P-197).
 # =====================================================================
 
 # --- Campos compartidos (api.model) ------------------------------------------
@@ -48,7 +53,16 @@ _pm_common_fields = {
     "bank_deposit": fields.String(required=False, description="DEPOSITO BANCO BASE (texto)"),
 }
 
-purchase_management_post_model = api.model("PurchaseManagementPost", dict(_pm_common_fields))
+purchase_management_post_model = api.model(
+    "PurchaseManagementPost",
+    {
+        **_pm_common_fields,
+        "request_date": fields.String(required=True, description="FECHA DE SOLICITUD (YYYY-MM-DD)", example="2026-07-20"),
+        "description": fields.String(required=True, description="DESCRIPCION (no vacía)", example="Compra de taladro"),
+        "amount_usd": fields.Float(required=False, description="MONTO USD (al menos uno de los dos montos)", example=120.5),
+        "amount_mxn": fields.Float(required=False, description="MONTO MXN (al menos uno de los dos montos)", example=2100.0),
+    },
+)
 
 purchase_management_put_model = api.model(
     "PurchaseManagementPut",
@@ -101,7 +115,22 @@ class _PurchaseManagementBaseForm(Form):
 
 
 class PurchaseManagementPostForm(_PurchaseManagementBaseForm):
-    pass
+    """Alta: las mismas reglas que el formulario del front. Antes un `{}` creaba
+    un registro vacío (P-197). El PUT sigue siendo parcial y no las aplica."""
+
+    def validate_description(self, field):
+        if not (field.data or "").strip():
+            raise ValidationError("La descripción es obligatoria")
+
+    def validate_request_date(self, field):
+        try:
+            datetime.strptime(field.data or "", "%Y-%m-%d")
+        except ValueError:
+            raise ValidationError("La fecha de solicitud es obligatoria (YYYY-MM-DD)")
+
+    def validate_amount_mxn(self, field):
+        if field.data is None and self.amount_usd.data is None:
+            raise ValidationError("Captura al menos un monto, en USD o en MXN")
 
 
 class PurchaseManagementPutForm(_PurchaseManagementBaseForm):

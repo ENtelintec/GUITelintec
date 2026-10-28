@@ -63,3 +63,14 @@ def get_user_by_emp_id(emp_id, data_token):
     val = (emp_id,)
     flag, error, result = execute_sql(sql, val, 1, data_token)
     return flag, error, result
+
+
+def get_permissions_catalog(data_token):
+    """Catálogo de permisos asignables (docs/permisos_plan.md, D11): fuente única
+    que también lee la app de usuarios. Solo activos, en orden de id."""
+    sql = (
+        "SELECT id, name, description, area "
+        "FROM sql_telintec.permissions WHERE is_active = 1 ORDER BY id"
+    )
+    flag, error, result = execute_sql(sql, None, 5, data_token)
+    return flag, error, result

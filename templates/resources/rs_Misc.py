@@ -28,13 +28,26 @@ __date__ = "$ 08/may./2024  at 10:00 $"
 
 ns = Namespace("GUI/api/v1/misc")
 
+# Misc (P-198, docs/permisos_rrhh_bitacoras_cda_comun.md): match exacto contra el catálogo. El asistente virtual
+# (/AV/*) conserva a quienes entraban por subcadena, ALMACEN-VISUAL incluido (solo
+# pregunta, no escribe datos). Administrator pasa siempre.
+_BASIC = ["App.Department.Basic"]
+_BASIC_COMMON = _BASIC + ["App.Department.Common"]
+_AV = [
+    "App.Department.ALMACEN",
+    "App.Department.ALMACEN-VISUAL",
+    "App.Department.Operaciones",
+    "App.Department.RRHH",
+    "App.Department.Administracion",
+]
+
 
 @ns.route("/notifications/employee/<int:id_emp>&<int:status>")
 class Notifications(Resource):
     @ns.expect(expected_headers_per)
     def get(self, id_emp, status):
         flag, data_token, msg = token_verification_procedure(
-            request, department="basic"
+            request, permissions=_BASIC
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -48,7 +61,7 @@ class NotificationsAll(Resource):
     @ns.expect(expected_headers_per)
     def get(self, status):
         flag, data_token, msg = token_verification_procedure(
-            request, department="basic"
+            request, permissions=_BASIC
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -62,7 +75,7 @@ class Notification(Resource):
     @ns.expect(expected_headers_per, notification_insert_model)
     def post(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department="basic"
+            request, permissions=_BASIC
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -77,7 +90,7 @@ class Notification(Resource):
     @ns.expect(expected_headers_per, notification_insert_model)
     def put(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department="basic"
+            request, permissions=_BASIC
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -95,7 +108,7 @@ class DownloadFileVacations(Resource):
     @ns.expect(expected_headers_per)
     def get(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department="basic"
+            request, permissions=_BASIC
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -110,7 +123,7 @@ class ResponseAV(Resource):
     @ns.expect(expected_headers_per, request_av_response_model)
     def post(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["almacen", "operaciones", "rrhh", "administracion"]
+            request, permissions=_AV
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -137,7 +150,7 @@ class FilesAV(Resource):
     @ns.expect(expected_headers_per)
     def get(self, department):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["almacen", "operaciones", "rrhh", "administracion"]
+            request, permissions=_AV
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -155,7 +168,7 @@ class Dashboard(Resource):
     @ns.expect(expected_headers_per)
     def get(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["Basic", "Common"]
+            request, permissions=_BASIC_COMMON
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401

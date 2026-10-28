@@ -60,6 +60,13 @@ tester*.py
 pyrefly.toml
 Test*.py
 /template/modules/*
+<<<<<<< HEAD
 docs/
 .claude/
 CLAUDE.MD
+=======
+reporte*.json
+.claude/**
+.claude/skills/pdf-design/SKILL.md
+CLAUDE.md
+>>>>>>> development

@@ -204,6 +204,22 @@ def get_employees_w_status(status: str, quantity: int, date: str, data_token):
     return flag, error, result, columns
 
 
+def get_employees_name_puesto(ids, data_token):
+    """(employee_id, name, l_name, puesto) de una lista de ids; ids vacios ->
+    lista vacia sin ir a la BD."""
+    ids = sorted({int(i) for i in ids if i})
+    if not ids:
+        return True, None, []
+    placeholders = ", ".join(["%s"] * len(ids))
+    sql = (
+        "SELECT employee_id, name, l_name, puesto "
+        "FROM sql_telintec.employees "
+        f"WHERE employee_id IN ({placeholders})"
+    )
+    flag, error, result = execute_sql(sql, tuple(ids), 2, data_token)
+    return flag, error, result
+
+
 def get_employee_info(id_e: int, data_token):
     columns = (
         "employee_id",
@@ -226,25 +242,55 @@ def get_employee_info(id_e: int, data_token):
     return flag, error, result, columns
 
 
-def find_employee_for_payroll(num_empleado, full_name, data_token):
+_PAYROLL_MATCH_SQL = {
+    "rfc": (
+        "SELECT employee_id, name, l_name, status = 'activo' FROM sql_telintec.employees "
+        "WHERE UPPER(TRIM(RFC)) = %s ORDER BY (status = 'activo') DESC, employee_id DESC"
+    ),
+    "curp": (
+        "SELECT employee_id, name, l_name, status = 'activo' FROM sql_telintec.employees "
+        "WHERE UPPER(TRIM(CURP)) = %s ORDER BY (status = 'activo') DESC, employee_id DESC"
+    ),
+}
+
+
+def find_employee_for_payroll(rfc, curp, full_name, data_token):
     """Resuelve el empleado de un CFDI de nomina para SUGERIRLO en la carga
-    por periodo: 1) NumEmpleado numerico == employee_id (exacto);
-    2) nombre del receptor via get_employee_id_name (fulltext, aproximado).
+    por periodo (docs/nomina_gestion_archivos_y_notificacion.md, 2026-10-28):
+    1) RFC exacto; 2) CURP exacta (en ambos gana el activo; dos activos con el
+    mismo dato no deciden); 3) nombre del receptor, fulltext solo entre
+    activos, el de mayor relevancia y sin empate. El NumEmpleado del CFDI es
+    el numero del proveedor de nomina, no el employee_id: no se usa.
     -> (emp_id | None, match_by | None, nombre_en_bd | None). Nunca truena."""
-    try:
-        num = int(str(num_empleado).strip()) if num_empleado not in (None, "") else None
-    except (TypeError, ValueError):
-        num = None
-    if num is not None:
-        sql = "SELECT employee_id, name, l_name FROM sql_telintec.employees WHERE employee_id = %s"
-        flag, _, out = execute_sql(sql, (num,), 1, data_token)
-        if flag and isinstance(out, tuple) and len(out) > 0:
-            return int(out[0]), "num_empleado", f"{str(out[1]).title()} {str(out[2]).title()}"
-    if full_name:
-        emp_id, name_db = get_employee_id_name(str(full_name), data_token)
-        if emp_id is not None:
-            return int(emp_id), "nombre", name_db
-    return None, None, None
+    for match_by, value in (("rfc", rfc), ("curp", curp)):
+        value = str(value or "").strip().upper()
+        if not value:
+            continue
+        flag, _, out = execute_sql(_PAYROLL_MATCH_SQL[match_by], (value,), 2, data_token)
+        if not (flag and isinstance(out, list) and out):
+            continue
+        if len([row for row in out if row[3]]) > 1:
+            continue
+        return int(out[0][0]), match_by, f"{str(out[0][1]).title()} {str(out[0][2]).title()}"
+    name = str(full_name or "").strip().upper()
+    if not name:
+        return None, None, None
+    sql = (
+        "SELECT employee_id, name, l_name, "
+        "MATCH(l_name) AGAINST (%s IN NATURAL LANGUAGE MODE) "
+        "+ MATCH(name) AGAINST (%s IN NATURAL LANGUAGE MODE) AS score "
+        "FROM sql_telintec.employees "
+        "WHERE MATCH(l_name) AGAINST (%s IN NATURAL LANGUAGE MODE) "
+        "AND MATCH(name) AGAINST (%s IN NATURAL LANGUAGE MODE) "
+        "AND status = 'activo' "
+        "ORDER BY score DESC, employee_id DESC LIMIT 2"
+    )
+    flag, _, out = execute_sql(sql, (name, name, name, name), 2, data_token)
+    if not (flag and isinstance(out, list) and out):
+        return None, None, None
+    if len(out) > 1 and float(out[0][3]) == float(out[1][3]):
+        return None, None, None
+    return int(out[0][0]), "nombre", f"{str(out[0][1]).title()} {str(out[0][2]).title()}"
 
 
 def get_id_employee(name: str) -> None | int:

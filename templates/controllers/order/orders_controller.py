@@ -51,7 +51,9 @@ def delete_vorder_db(id_vorder: int, data_token):
     return flag, e, out
 
 
-def get_purchase_orders_with_items(status: int | None, created_by: int | None, data_token):
+def get_purchase_orders_with_items(
+    status: int | None, created_by: int | None, data_token, date_from=None, date_to=None
+):
     sql = (
         "SELECT "
         "po.id_order, "
@@ -80,10 +82,23 @@ def get_purchase_orders_with_items(status: int | None, created_by: int | None, d
         "WHERE (po.status = %s or %s IS NULL ) "
         "AND (po.status != 4) "
         "AND (po.created_by = %s OR %s IS NULL) "
+        "AND (po.timestamp >= %s OR %s IS NULL OR po.timestamp IS NULL) "
+        "AND (po.timestamp < DATE_ADD(%s, INTERVAL 1 DAY) OR %s IS NULL OR po.timestamp IS NULL) "
         "GROUP BY po.id_order"
     )
-    val = (status, status, created_by, created_by)
+    val = (status, status, created_by, created_by, date_from, date_from, date_to, date_to)
     flag, e, my_result = execute_sql(sql, val, 2, data_token)
+    return flag, e, my_result
+
+
+def get_purchase_orders_folios(data_token):
+    """(id_order, folio, folio_supplier) de todas las OCs no canceladas, sin filtro de usuario."""
+    sql = (
+        "SELECT id_order, folio, extra_info->'$.folio_supplier' "
+        "FROM sql_telintec_mod_admin.purchase_orders "
+        "WHERE status != 4"
+    )
+    flag, e, my_result = execute_sql(sql, None, 5, data_token)
     return flag, e, my_result
 
 
@@ -131,10 +146,13 @@ def get_purchase_order_with_items_by_id(order_id: int, data_token):
         " 'duration_services', poi.duration_services, "
         " 'tool', poi.tool "
         ",'currency', poi.currency "
+        ",'udm', pr.udm "
         ")) AS items, "
         "po.time_delivery "
         "FROM sql_telintec_mod_admin.purchase_orders AS po "
         "LEFT JOIN sql_telintec_mod_admin.purchase_order_items AS poi ON po.id_order = poi.purchase_id "
+        "LEFT JOIN sql_telintec.products_amc pr "
+        "ON pr.id_product = CAST(JSON_EXTRACT(poi.extra_info, '$.id_inventory') AS UNSIGNED) "
         "LEFT JOIN sql_telintec.employees emps on emps.employee_id = po.created_by "
         "LEFT JOIN sql_telintec.suppliers_amc sa on po.supplier_id = sa.id_supplier "
         "WHERE po.id_order = %s GROUP BY po.id_order"

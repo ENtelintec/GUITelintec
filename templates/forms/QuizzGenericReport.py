@@ -3,9 +3,10 @@
 PDF generico de resumen de una encuesta evaluada con el motor config-driven.
 
 Renderiza el shape uniforme `evaluation` ({total, breakdown recursivo} o
-{qualitative}) para CUALQUIER tipo de encuesta — es el fallback de
-`generate_pdf_from_json` cuando el tipo no tiene generador dedicado en
-`dict_typer_quizz_generator` (modelos nuevos creados via /rrhh/quizz/models).
+{qualitative}) para CUALQUIER tipo de encuesta. `generate_pdf_from_json` lo usa
+para todo menos Norma 035 (tipos 1 y 2, PDF dedicado en QuizzNorm35.py): salida,
+clima, la perspectiva individual de eva 360 y los modelos nuevos creados via
+/rrhh/quizz/models (P-016, docs/norma035_pdf.md).
 Formato de la casa (skill pdf-design): cuadricula celeste, tipografia
 Helvetica, header Telintec en cada pagina.
 """

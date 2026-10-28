@@ -106,6 +106,16 @@ __date__ = "$ 20/jun./2024  at 15:23 $"
 # completa y no debe degradar una OCD a cotización por omisión).
 QUOTATION_DOCUMENT_TYPES = ("quotation", "ocd")
 QUOTATION_CURRENCIES = ("MXN", "USD")
+# Permisos de Administración (P-198, docs/permisos_administracion.md): los catálogos
+# compartidos (clientes, proveedores, contratos y sus productos, cotizaciones/OCD) los
+# lee cualquiera de estos; cada uno escribe solo lo suyo. Administracion abre todo.
+ADMIN_CATALOG_READERS = [
+    "App.Department.Administracion",
+    "App.Department.adminCobranza",
+    "App.Department.adminPreventa",
+    "App.Department.adminRem",
+    "App.Department.adminDB",
+]
 # Folio sugerido (F3 de la junta 2026-10-22, docs/folio_sugerido_cotizaciones.md):
 # patrón PROVISIONAL "PREFIJO-AAAA-NNN" en esta sola constante; el definitivo lo
 # manda administración (P-157). format = cisco (FO-PRE-02, F10) solo cambia el

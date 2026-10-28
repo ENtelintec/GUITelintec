@@ -72,6 +72,7 @@ from templates.controllers.vehicles.vehicles_controller import (
 )
 from templates.Functions_Utils import create_notification_permission
 from templates.misc.Functions_Files import write_log_file
+from templates.resources.methods.Functions_Aux_S3 import s3_can_delete, s3_env_key
 
 # --- Catalogos (codigo -> etiqueta). GET /cda/catalogs los expone al front. ---
 # Anotados como dict plano: las llaves llegan de datos (int | None) y pyrefly
@@ -1410,15 +1411,34 @@ def build_cda_notification_lines(alerts: list) -> list:
 
 
 # =============================================================================
-# Fotos del vehiculo (expediente): S3_ADMIN_BUCKET, key cda/vehicles/<id>/<filename>,
-# indice en vehicles.extra_info.photos = [{filename, path, title, timestamp, user}]
+# Fotos del vehiculo (expediente): S3_ADMIN_BUCKET, key cda/<entorno>/vehicles/<id>/<filename>
+# (P-177; las de antes van sin <entorno>), indice en vehicles.extra_info.photos =
+# [{filename, path, title, timestamp, user}]. "Misma foto" = mismo filename.
 # =============================================================================
 PHOTO_EXTENSIONS = ("jpg", "jpeg", "png", "webp")
 PHOTO_MAX = 20
 
 
-def _photo_key(id_vehicle: int, filename: str) -> str:
-    return f"cda/vehicles/{id_vehicle}/{filename}"
+def _photo_key(id_vehicle: int, filename: str, data_token) -> str:
+    return s3_env_key("cda", f"vehicles/{id_vehicle}/{filename}", data_token)
+
+
+def _delete_photo_objects(keys: list, data_token) -> tuple[bool, str | None]:
+    """Borra de S3 best-effort las llaves que este entorno puede borrar
+    (s3_can_delete, P-177). -> (todas borradas, error)."""
+    deleted_all, error_out = True, None
+    for key in keys:
+        if not s3_can_delete(key, data_token):
+            deleted_all = False
+            write_log_file(log_file_cda, f"S3 sin borrar (llave de otro entorno o sin entorno): {key}", data_token)
+            continue
+        try:
+            boto3.client("s3").delete_object(Bucket=str(secrets.get("S3_ADMIN_BUCKET")), Key=key)
+        except (ClientError, NoCredentialsError, BotoCoreError) as e:
+            deleted_all = False
+            error_out = f"La foto se quitó del vehículo pero no se pudo borrar de S3: {e}"
+            write_log_file(log_file_cda, f"Error al borrar de S3 {key}: {e}", data_token)
+    return deleted_all, error_out
 
 
 def _vehicle_photos(vehicle: dict) -> list:
@@ -1447,8 +1467,11 @@ def upload_vehicle_photo_api(data: dict, data_token):
     if ext not in PHOTO_EXTENSIONS:
         return {"data": None, "msg": f"Formato no válido ({ext or 'sin extensión'}); se aceptan {', '.join(PHOTO_EXTENSIONS)}", "error": "Extensión inválida"}, 400
     photos = _vehicle_photos(vehicle)
-    key = _photo_key(int(vehicle["id"]), filename)
-    replaced = any(p.get("path") == key for p in photos)
+    key = _photo_key(int(vehicle["id"]), filename, data_token)
+    # Misma foto = mismo filename (P-177): una entrada vieja puede tener otra
+    # llave (sin entorno); sale del indice y su objeto se borra si se puede.
+    previous = [p for p in photos if p.get("filename") == filename or p.get("path") == key]
+    replaced = bool(previous)
     if not replaced and len(photos) >= PHOTO_MAX:
         return {"data": None, "msg": f"El vehículo ya tiene {PHOTO_MAX} fotos; borra alguna antes de subir otra", "error": "Límite de fotos"}, 400
     bucket = secrets.get("S3_ADMIN_BUCKET")
@@ -1467,7 +1490,7 @@ def upload_vehicle_photo_api(data: dict, data_token):
         "timestamp": timestamp,
         "user": user,
     }
-    photos = [p for p in photos if p.get("path") != key] + [entry]
+    photos = [p for p in photos if not any(p is prev for prev in previous)] + [entry]
     flag, error, _ = _save_vehicle_photos(
         vehicle, photos,
         _history_entry(user, "Foto", f"{'Reemplazo de' if replaced else 'Alta de'} foto {filename}"),
@@ -1475,6 +1498,9 @@ def upload_vehicle_photo_api(data: dict, data_token):
     )
     if not flag:
         return {"data": None, "msg": "La foto se subió a S3 pero no se pudo indexar en el vehículo", "error": error}, 400
+    stale_keys = sorted({str(p["path"]) for p in previous if p.get("path") != key})
+    if stale_keys:
+        _delete_photo_objects(stale_keys, data_token)
     msg = f"Foto {'reemplazada' if replaced else 'agregada'} al vehículo {vehicle['code']} (ID {vehicle['id']}): {filename}"
     write_log_file(log_file_cda, msg, data_token)
     return {"data": {"id_vehicle": vehicle["id"], "photo": entry, "replaced": replaced, "photos": photos}, "msg": msg, "error": None}, 201
@@ -1516,13 +1542,7 @@ def delete_vehicle_photo_api(data: dict, data_token):
     )
     if not flag:
         return {"data": None, "msg": "No se pudo quitar la foto del vehículo", "error": error}, 400
-    s3_deleted, error_out = False, None
-    try:
-        boto3.client("s3").delete_object(Bucket=str(secrets.get("S3_ADMIN_BUCKET")), Key=photo["path"])
-        s3_deleted = True
-    except (ClientError, NoCredentialsError, BotoCoreError) as e:
-        error_out = f"La foto se quitó del vehículo pero no se pudo borrar de S3: {e}"
-        write_log_file(log_file_cda, f"Error al borrar de S3 {photo['path']}: {e}", data_token)
+    s3_deleted, error_out = _delete_photo_objects([photo["path"]], data_token)
     msg = f"Foto {photo.get('filename')} eliminada del vehículo {vehicle['code']} (ID {vehicle['id']})"
     write_log_file(log_file_cda, msg, data_token)
     return {"data": {"id_vehicle": vehicle["id"], "s3_deleted": s3_deleted, "photos": remaining}, "msg": msg, "error": error_out}, 200

@@ -97,11 +97,12 @@ from templates.resources.midleware.MD_CDA import (
 
 ns = Namespace("GUI/api/v1/cda")
 
-_DEPARTMENTS = ["administracion", "sgi"]
+# CDA (P-198, docs/permisos_rrhh_bitacoras_cda_comun.md): match exacto; Administración y SGI leen y escriben.
+_PERMISSIONS = ["App.Department.Administracion", "App.Department.SGI"]
 
 
 def _auth():
-    flag, data_token, msg = token_verification_procedure(request, department=_DEPARTMENTS)
+    flag, data_token, msg = token_verification_procedure(request, permissions=_PERMISSIONS)
     if not flag:
         return None, ({"error": msg if msg != "" else "No autorizado. Token invalido"}, 401)
     return data_token, None

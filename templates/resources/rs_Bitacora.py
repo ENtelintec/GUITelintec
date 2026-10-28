@@ -55,6 +55,12 @@ __date__ = "$ 02/abr./2024  at 9:53 $"
 
 ns = Namespace("GUI/api/v1/bitacora")
 
+# Bitácoras (P-198, docs/permisos_rrhh_bitacoras_cda_comun.md): match exacto contra el catálogo; los eventos de RH
+# (/rh/event) siguen siendo solo de RRHH. Administrator pasa siempre.
+_BITACORAS = ["App.Department.Bitacoras"]
+_RRHH = ["App.Department.RRHH"]
+_BITACORAS_RRHH = _BITACORAS + _RRHH
+
 
 @ns.route("/employees")
 class Employees(Resource):
@@ -62,7 +68,7 @@ class Employees(Resource):
     @ns.expect(expected_headers_per)
     def get(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department="bitacoras"
+            request, permissions=_BITACORAS
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -78,7 +84,7 @@ class FichajeTable(Resource):
     @ns.expect(expected_headers_per, fichaje_request_model)
     def post(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department="bitacoras"
+            request, permissions=_BITACORAS
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -96,7 +102,7 @@ class FichajeEvent(Resource):
     @ns.expect(expected_headers_per, fichaje_add_update_request_model)
     def post(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department="bitacoras"
+            request, permissions=_BITACORAS
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -111,7 +117,7 @@ class FichajeEvent(Resource):
     @ns.expect(expected_headers_per, fichaje_add_update_request_model)
     def put(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department="bitacoras"
+            request, permissions=_BITACORAS
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -126,7 +132,7 @@ class FichajeEvent(Resource):
     @ns.expect(expected_headers_per, fichaje_delete_request_model)
     def delete(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department="bitacoras"
+            request, permissions=_BITACORAS
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -144,7 +150,7 @@ class BitacoraDownloadReport(Resource):
     @ns.expect(expected_headers_per, bitacora_dowmload_report_model)
     def post(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department="bitacoras"
+            request, permissions=_BITACORAS
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -166,7 +172,7 @@ class BitacoraEmployeesList(Resource):
     @ns.expect(expected_headers_per)
     def get(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["bitacoras", "rrhh"]
+            request, permissions=_BITACORAS_RRHH
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -187,7 +193,7 @@ class FichajeMultipleEvent(Resource):
     @ns.expect(expected_headers_per, FichajeRequestMultipleEvents_model)
     def post(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department="bitacoras"
+            request, permissions=_BITACORAS
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -205,7 +211,7 @@ class FichajesGetExtra(Resource):
     @ns.expect(expected_headers_per, FichajeRequestExtras_model)
     def post(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department="bitacoras"
+            request, permissions=_BITACORAS
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -223,7 +229,7 @@ class FichajesAproveExtra(Resource):
     @ns.expect(expected_headers_per, FichajeAproveExtras_model)
     def post(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department="bitacoras"
+            request, permissions=_BITACORAS
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -241,7 +247,7 @@ class BitacoraRHAll(Resource):
     @ns.expect(expected_headers_per)
     def get(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department="bitacoras"
+            request, permissions=_BITACORAS
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -253,7 +259,7 @@ class BitacoraRHAll(Resource):
 class BitacoraRHEvent(Resource):
     @ns.expect(expected_headers_per, bitacora_insert_rh_model)
     def post(self):
-        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
+        flag, data_token, msg = token_verification_procedure(request, permissions=_RRHH)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
@@ -266,7 +272,7 @@ class BitacoraRHEvent(Resource):
 
     @ns.expect(expected_headers_per, bitacora_update_rh_model)
     def put(self):
-        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
+        flag, data_token, msg = token_verification_procedure(request, permissions=_RRHH)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
@@ -279,7 +285,7 @@ class BitacoraRHEvent(Resource):
 
     @ns.expect(expected_headers_per, bitacora_delete_rh_model)
     def delete(self):
-        flag, data_token, msg = token_verification_procedure(request, department="rrhh")
+        flag, data_token, msg = token_verification_procedure(request, permissions=_RRHH)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
@@ -296,7 +302,7 @@ class BitacoraRHDate(Resource):
     @ns.expect(expected_headers_per, bitacora_fetch_by_date_model)
     def post(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department="bitacoras"
+            request, permissions=_BITACORAS
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401

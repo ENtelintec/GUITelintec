@@ -15,6 +15,7 @@ import boto3
 import pandas as pd
 import pytz
 from botocore.exceptions import BotoCoreError, ClientError, NoCredentialsError
+from werkzeug.utils import secure_filename
 
 from static.constants import (
     cache_file_emp_fichaje,
@@ -47,6 +48,7 @@ from templates.controllers.employees.employees_controller import (
 )
 from templates.controllers.employees.us_controller import get_user_by_emp_id
 from templates.resources.methods.Functions_Aux_RH import join_emails, last_medical_date, medical_due, normalize_emails, split_emails
+from templates.resources.methods.Functions_Aux_S3 import s3_can_delete, s3_env_key
 from templates.controllers.notifications.Notifications_controller import (
     insert_notification,
 )
@@ -158,10 +160,50 @@ def create_new_employee_db(data, data_token):
         return {"data": None, "msg": "No se pudo crear el empleado", "error": error}, 400
 
 
+def _employee_status(emp_id, data_token) -> str:
+    """status actual del empleado en minúsculas ("" si no existe o falla)."""
+    flag, _error, row = test_id_employee(int(emp_id), data_token)
+    if not flag or not isinstance(row, (list, tuple)) or len(row) < 2 or row[1] is None:
+        return ""
+    return str(row[1]).strip().lower()
+
+
+def _notify_user_offboarding(emp_id, reason, data_token):
+    """
+    El API confía en el token y no revoca accesos (docs/permisos_plan.md, D8):
+    si el empleado que pasó a inactivo tiene usuario en users_system, se avisa
+    a los administradores para que lo borren en la app de usuarios. No fatal:
+    la baja ya quedó guardada.
+    """
+    flag, _error, user_row = get_user_by_emp_id(emp_id, data_token)
+    if not flag or not isinstance(user_row, (list, tuple)) or not user_row:
+        return False
+    msg = (
+        f"Dar de baja del sistema de usuarios a {user_row[0]} (empleado {emp_id}, baja por {reason}). "
+        "Mientras su usuario exista puede seguir iniciando sesión."
+    )
+    return create_notification_permission(
+        msg, data_token, ["administrator"], "Usuario pendiente de baja", data_token.get("emp_id"), 0
+    )
+
+
+def _departure_reason(departure) -> str:
+    """Motivo de baja del campo departure del PUT (dict o JSON {date, reason})."""
+    if isinstance(departure, str):
+        try:
+            departure = json.loads(departure)
+        except ValueError:
+            return departure.strip() or "sin motivo"
+    if isinstance(departure, dict) and departure.get("reason"):
+        return str(departure["reason"])
+    return "sin motivo"
+
+
 def update_employee_db(data, data_token):
     email_column, err = _employee_email_column(data["info"])
     if err:
         return err, 400
+    previous_status = _employee_status(data["id"], data_token)
     flag, error, result = update_employee(
         data["id"],
         data["info"]["name"],
@@ -185,6 +227,9 @@ def update_employee_db(data, data_token):
         data["info"]["id_leader"],
     )
     if flag:
+        new_status = str(data["info"]["status"] or "").strip().lower()
+        if previous_status == "activo" and new_status == "inactivo":
+            _notify_user_offboarding(data["id"], _departure_reason(data["info"]["departure"]), data_token)
         return {"data": {"id_employee": result}, "msg": f"Empleado actualizado correctamente (ID {result})", "error": None}, 200
     else:
         return {"data": None, "msg": "No se pudo actualizar el empleado", "error": error}, 400
@@ -195,6 +240,7 @@ def terminate_employee_from_api(data, data_token):
     timestamp = datetime.now(pytz.utc).astimezone(time_zone)
     date = timestamp.strftime(format_timestamps)
     departure = {"date": date, "reason": data["reason"]}
+    previous_status = _employee_status(data["id"], data_token)
     flag, error, result = terminate_employee_db(data["id"], json.dumps(departure), data_token)
     if not flag:
         return {
@@ -210,6 +256,8 @@ def terminate_employee_from_api(data, data_token):
     create_notification_permission(
         msg, data_token, ["rrhh"], "Empleado dato de baja", data_token.get("emp_id"), 0
     )
+    if previous_status == "activo":
+        _notify_user_offboarding(data["id"], data["reason"], data_token)
     return {"data": {"id_employee": data["id"]}, "msg": f"Empleado dado de baja correctamente (ID {data['id']})", "error": None}, 200
 
 
@@ -974,51 +1022,38 @@ def get_quizz_group_evaluation(type_q, data_token, date_from=None, date_to=None)
     return {"data": evaluation, "msg": msg, "error": None}, 200
 
 
-def _legacy_shape_from_evaluation(evaluation):
-    """Deriva el shape viejo (results/recommendations) desde el resultado
-    uniforme del motor, para que el generador de PDF actual siga leyendo
-    `results`/`recommendations` sin tocar el layout de reportlab. Shim de
-    transicion: se elimina cuando el PDF se redisene para leer `evaluation`.
-    """
-    total = evaluation.get("total", {})
-    c_dom, c_cat = {}, {}
-    cat_actions = []
-    for cat in evaluation.get("breakdown", []):
-        c_cat[cat.get("label")] = cat.get("score")
-        if cat.get("actions") and not cat_actions:
-            cat_actions = cat["actions"]
-        for dom in cat.get("children", []):
-            c_dom[dom.get("label")] = dom.get("score")
-    results = {"c_final": total.get("score"), "c_dom": c_dom, "c_cat": c_cat}
-    recommendations = {
-        "c_final_r": total.get("actions", []),
-        "c_dom_r": "",
-        "c_cat_r": cat_actions,
-    }
-    return results, recommendations
+NORMA035_TYPES = (1, 2)
+
+
+def _report_value(value):
+    """Valor de metadata para el PDF; vacio si viene "None" (asi lo guarda el front)."""
+    return None if value in (None, "", "None") else value
 
 
 def generate_pdf_from_json(data, data_token):
-    from static.FramesClasses import dict_typer_quizz_generator
-    from templates.resources.midleware.quizz_eval_engine import evaluate_task
+    """PDF de una encuesta contestada (POST /rrhh/download/quizz/report).
+    Norma 035 (tipos 1 y 2) tiene PDF dedicado; el resto usa el generico de
+    resumen. Los dos leen el resultado del motor (`evaluation`), que se guarda
+    en el data_raw del task; ya no se escriben results/recommendations (P-016,
+    docs/norma035_pdf.md). -> (201, ruta) o (400, mensaje)."""
+    from templates.controllers.rrhh.quizz_models_controller import get_quizz_model_template_db
+    from templates.forms.QuizzGenericReport import create_generic_quizz_report
+    from templates.forms.QuizzNorm35 import FileNorma035PDF
+    from templates.resources.midleware.quizz_eval_engine import answered_sections, evaluate, load_rubric
 
     json_dict = data["body"]
-    tipo_op = json_dict["metadata"]["type_quizz"]
-    # Sin generador dedicado (modelos nuevos creados por API) se usa el PDF
-    # generico de resumen mas abajo — necesita la evaluacion, no el generador.
-    generator = dict_typer_quizz_generator.get(tipo_op)
-
+    metadata = json_dict.get("metadata") or {}
+    tipo_op = metadata["type_quizz"]
     data_raw = (
         json.loads(data["data_raw"]) if isinstance(data["data_raw"], str) else data["data_raw"]
     )
-
+    rubric = load_rubric(tipo_op, data_token)
+    if rubric is None:
+        return 400, f"No hay rubrica para el tipo de encuesta {tipo_op}"
     # Evaluacion via el motor config-driven (fuente de verdad, shape uniforme).
-    evaluation = evaluate_task(data_raw, tipo_op, data_token)
-    if evaluation is not None and evaluation.get("mode") == "scored":
+    evaluation = evaluate(data_raw, rubric)
+    if evaluation.get("mode") == "scored":
         data_raw["evaluation"] = evaluation
-        results, recommendations = _legacy_shape_from_evaluation(evaluation)
-        data_raw["results"] = results
-        data_raw["recommendations"] = recommendations
         # Persistir solo con un id valido (evita pisar la fila 0 por el default del form).
         if data.get("id"):
             flag, error, _ = update_task(
@@ -1028,72 +1063,58 @@ def generate_pdf_from_json(data, data_token):
                 write_log_file(
                     log_file_rh, f"No se pudo actualizar el task de quizz: {error}", data_token
                 )
-    else:
-        # Tipo aun sin rubrica (o cualitativo): expone la evaluacion si existe y
-        # deja defaults seguros para no romper el generador de PDF.
-        if evaluation is not None:
-            data_raw["evaluation"] = evaluation
-        data_raw.setdefault("results", {"c_final": 0, "c_dom": {}, "c_cat": {}})
-        data_raw.setdefault("recommendations", {"c_final_r": [], "c_dom_r": "", "c_cat_r": []})
 
     # Archivo temporal unico por request (evita el clobber del temp compartido).
     file_out = os.path.join(quizz_out_path, f"quiz_report_{uuid.uuid4().hex}.pdf")
-
-    if generator is None:
-        # Fallback: PDF generico de resumen (renderiza el shape uniforme del
-        # motor; sirve para cualquier modelo creado via /rrhh/quizz/models).
-        if evaluation is None:
-            return 400, (
-                f"No hay generador de PDF ni rubrica para el tipo de encuesta {tipo_op}"
+    flag_model, _, model_row = get_quizz_model_template_db(tipo_op, data_token)
+    model_name = (
+        model_row[0]  # pyrefly: ignore
+        if flag_model and model_row
+        else f"Tipo {tipo_op}"
+    )
+    folio = f"Encuesta {data.get('id') or 's/n'} / tipo {tipo_op}"
+    try:
+        is_norma035 = int(tipo_op) in NORMA035_TYPES
+    except (TypeError, ValueError):
+        is_norma035 = False
+    try:
+        if is_norma035 and evaluation.get("mode") == "scored":
+            FileNorma035PDF(
+                {
+                    "path_file": file_out,
+                    "title": model_name,
+                    "folio": folio,
+                    "metadata": [
+                        ("Trabajador", _report_value(metadata.get("name_emp"))),
+                        ("Puesto", _report_value(metadata.get("position"))),
+                        ("Fecha de aplicación", _report_value(metadata.get("date"))),
+                        ("Entrevistador", _report_value(metadata.get("interviewer"))),
+                        ("Fecha de ingreso", _report_value(metadata.get("admision"))),
+                        ("Encuesta", folio),
+                    ],
+                    "evaluation": evaluation,
+                    "levels": rubric.get("levels") or {},
+                    "answers": answered_sections(data_raw),
+                }
             )
-        try:
-            from templates.controllers.rrhh.quizz_models_controller import (
-                get_quizz_model_template_db,
-            )
-            from templates.forms.QuizzGenericReport import create_generic_quizz_report
-
-            flag_model, _, model_row = get_quizz_model_template_db(tipo_op, data_token)
-            model_name = (
-                model_row[0]  # pyrefly: ignore
-                if flag_model and model_row
-                else f"Tipo {tipo_op}"
-            )
-            metadata = json_dict.get("metadata", {})
+        else:
             create_generic_quizz_report(
                 {
                     "path_file": file_out,
                     "title": model_name,
-                    "folio": f"Encuesta {data.get('id') or 's/n'} / tipo {tipo_op}",
+                    "folio": folio,
                     "metadata": {
-                        "Empleado": metadata.get("name_emp"),
-                        "Puesto": metadata.get("position"),
-                        "Fecha": metadata.get("date"),
-                        "Entrevistador": metadata.get("interviewer"),
+                        "Empleado": _report_value(metadata.get("name_emp")),
+                        "Puesto": _report_value(metadata.get("position")),
+                        "Fecha": _report_value(metadata.get("date")),
+                        "Entrevistador": _report_value(metadata.get("interviewer")),
+                        "Fecha de ingreso": _report_value(metadata.get("admision")),
+                        "Fecha de baja": _report_value(metadata.get("departure")),
                         "Modelo": f"{model_name} (tipo {tipo_op})",
                     },
                     "evaluation": evaluation,
                 }
             )
-            return 201, file_out
-        except Exception as e:
-            write_log_file(
-                log_file_rh, f"Error al generar el pdf generico de quizz: {e}", data_token
-            )
-            return 400, "Error al generar el pdf"
-
-    try:
-        generator(
-            data_raw,
-            None,
-            file_out,
-            json_dict["metadata"]["name_emp"],
-            json_dict["metadata"]["position"],
-            "terminal",
-            json_dict["metadata"]["admision"],
-            json_dict["metadata"]["departure"],
-            json_dict["metadata"]["date"],
-            json_dict["metadata"]["interviewer"],
-        )
         return 201, file_out
     except Exception as e:
         write_log_file(log_file_rh, f"Error al generar el pdf de quizz: {e}", data_token)
@@ -1121,7 +1142,7 @@ def download_fichaje_file(data):
 
 def create_payroll_file_attachment_api(data, data_token):
     """Sube un archivo de nomina (pdf o xml) al bucket S3 de RH bajo
-    payroll/<year>/<month>/<emp_id>/<filename> y registra la ruta en el
+    payroll/<entorno>/<year>/<month>/<emp_id>/<quincena>/<filename> y registra la ruta en el
     indice files_data del empleado (files_data[year][month][key][pdf|xml]).
     Orden para no dejar huerfanos ni llaves rotas: indice leido antes de subir,
     indice guardado antes de borrar el anterior y, si el indice no se guarda,
@@ -1151,8 +1172,10 @@ def create_payroll_file_attachment_api(data, data_token):
             "msg": f"El empleado {emp_id} no tiene registro de nómina",
             "error": error,
         }, 404
-    # subir a S3: payroll/<year>/<month>/<emp_id>/<filename>
-    path_aws = f"payroll/{year}/{month}/{emp_id}/{filename}"
+    # subir a S3: payroll/<entorno>/<year>/<month>/<emp_id>/<quincena>/<filename>
+    # (P-177): con la quincena, el mismo nombre en Q1 y Q2 ya no comparte objeto.
+    key_segment = secure_filename(key) or "sin_quincena"
+    path_aws = s3_env_key("payroll", f"{year}/{month}/{emp_id}/{key_segment}/{filename}", data_token)
     s3_client = boto3.client("s3")
     bucket_name = secrets.get("S3_RH_BUCKET")
     # Si la llave ya existia (mismo nombre: S3 la pisa) no la creo este
@@ -1240,10 +1263,18 @@ def _payroll_s3_exists(s3_client, bucket_name: str, key: str) -> bool:
 
 def _payroll_s3_delete(keys, data_token):
     """Borra objetos del bucket de RH best-effort (nunca fatal: la BD ya
-    quedo consistente). -> (deleted: bool, detail: str, error: str | None)."""
+    quedo consistente). -> (deleted: bool, detail: str, error: str | None).
+    Solo borra las llaves que este entorno puede borrar (s3_can_delete, P-177):
+    una llave vieja compartida con prod se queda en S3."""
     keys = [k for k in keys if k]
     if not keys:
         return False, "Sin llave en S3 que eliminar", None
+    kept = [k for k in keys if not s3_can_delete(k, data_token)]
+    keys = [k for k in keys if k not in kept]
+    if kept:
+        write_log_file(log_file_rh, f"S3 sin borrar (llave de otro entorno o sin entorno): {kept}", data_token)
+    if not keys:
+        return False, "se conserva en S3: la ruta es de otro entorno o anterior a P-177 (solo prod la borra)", None
     s3_client = boto3.client("s3")
     bucket_name = secrets.get("S3_RH_BUCKET")
     try:
@@ -1512,7 +1543,7 @@ def extract_payroll_xml_api(data, data_token):
     """POST /payroll/files/extract: lee un XML de CFDI de nomina y devuelve
     los datos para SUGERIR la asignacion archivo->empleado/periodo en la
     carga por periodo del front (RFC, numero de empleado, nombre, fechas del
-    periodo y un emp_id sugerido por nombre). No sube ni guarda nada."""
+    periodo y un emp_id sugerido por RFC, CURP o nombre). No sube ni guarda nada."""
     filename = str(data.get("filename") or "")
     if not filename.lower().endswith(".xml"):
         return {"data": None, "msg": "Solo se puede extraer de un archivo xml", "error": None}, 400
@@ -1531,7 +1562,7 @@ def extract_payroll_xml_api(data, data_token):
         except ValueError:
             year = month = None
     emp_id, match_by, name_db = find_employee_for_payroll(
-        receptor.get("NumEmpleado"), receptor.get("Nombre"), data_token
+        receptor.get("Rfc"), receptor.get("Curp"), receptor.get("Nombre"), data_token
     )
     out = {
         "filename": filename,

@@ -24,13 +24,13 @@ FONT_REGULAR = "Helvetica"
 FONT_BOLD = "Helvetica-Bold"
 
 # --- Codigo / vigencia del formato ISO en el encabezado -------------------------
-# Antes venia de files/settings.json["formats"]; desde Docs/iso_formats_crud.md se
+# Antes venia de files/settings.json["formats"]; desde docs/iso_formats_crud.md se
 # lee del catalogo sql_telintec_mod_admin.iso_formats (el CRUD de SGI lo edita).
-# Excepcion deliberada a "forms no tocan BD": create_header_* no recibe data_token
-# (12 call sites), asi que se lee sin token (BD del environment) con cache de
+# Excepcion deliberada a "forms no tocan BD": create_header_telintec no recibe
+# data_token, asi que se lee sin token (BD del environment) con cache de
 # modulo; el CRUD la invalida al escribir. ISO_FORM_IDS_IN_CODE = ids que los PDFs
 # piden por literal (iso_form=N): no se pueden borrar del catalogo, solo retirar.
-ISO_FORM_IDS_IN_CODE = frozenset({1, 2, 3, 4, 5, 6, 7, 8, 14, 15})  # 14 remision OCD, 15 cotizacion CISCO
+ISO_FORM_IDS_IN_CODE = frozenset({1, 2, 4, 7, 8, 14, 15, 16})  # 14 remision OCD, 15 cotizacion CISCO, 16 OC
 _ISO_CACHE_TTL = 300  # segundos
 _iso_cache: dict = {"at": 0.0, "rows": {}}
 
@@ -59,7 +59,6 @@ def iso_format_header(iso_form) -> tuple[str, str]:
         return _iso_cache["rows"].get(int(iso_form), ("", ""))
     except (ValueError, TypeError):
         return "", ""
-
 
 
 def wrap_text_width(value, width_pt, font_size, font=FONT_REGULAR):
@@ -97,37 +96,6 @@ def wrap_text_width(value, width_pt, font_size, font=FONT_REGULAR):
     return lines or [""]
 
 
-def create_datos_personales(
-    master: canvas.Canvas,
-    emp,
-    puesto,
-    term,
-    start,
-    end,
-    interview,
-    interviewer,
-    dim_x,
-    dim_y,
-):
-    pady = 0
-    master.setFont(FONT_BOLD, 10)
-    master.drawString(dim_x + 10, dim_y - 25 - pady, "Nombre y firma del empleado:")
-    master.drawString(dim_x + 10, dim_y - 40 - pady, "Puesto:")
-    master.drawString(dim_x + 10, dim_y - 55 - pady, "Terminal:")
-    master.drawString(dim_x + 10, dim_y - 70 - pady, "Fecha de inicio:")
-    master.drawString(dim_x + 10, dim_y - 85 - pady, "Fecha de fin:")
-    master.drawString(dim_x + 10, dim_y - 100 - pady, "De entrevista:")
-    master.drawString(dim_x + 10, dim_y - 115 - pady, "Nombre y firma del entrevistador:")
-    master.setFont(FONT_REGULAR, 10)
-    master.drawString(dim_x + 180, dim_y - 25 - pady, emp)
-    master.drawString(dim_x + 60, dim_y - 40 - pady, puesto)
-    master.drawString(dim_x + 70, dim_y - 55 - pady, term)
-    master.drawString(dim_x + 110, dim_y - 70 - pady, start)
-    master.drawString(dim_x + 95, dim_y - 85 - pady, end)
-    master.drawString(dim_x + 105, dim_y - 100 - pady, f"{interview}")
-    master.drawString(dim_x + 215, dim_y - 115 - pady, f"{interview}")
-
-
 def print_footer_page_count(pdf, page, font_size=6, right_text="", x_max=a4_x):
     """
     :param x_max:
@@ -143,53 +111,8 @@ def print_footer_page_count(pdf, page, font_size=6, right_text="", x_max=a4_x):
         pdf.drawRightString(x_max - 5, 5, right_text)
 
 
-def display_result(master: canvas.Canvas, dict_quizz, dim_x, dim_y):
-    dict_results = dict_quizz["results"]
-    # Posición inicial de la primera línea
-    pady = 0
-    master.setFont("Helvetica", 10)
-    master.drawString(dim_x + 10, dim_y - 140 - pady, "Your final result is:")
-    master.drawString(
-        dim_x + 10,
-        dim_y - 155 - pady,
-        f"Calificación final: {wrap_text(str(dict_results['c_final']))}",
-    )
-    master.drawString(
-        dim_x + 10,
-        dim_y - 170 - pady,
-        f"Calificación de dominio:{wrap_text(str(dict_results['c_dom']))}",
-    )
-    master.drawString(
-        dim_x + 10,
-        dim_y - 185 - pady,
-        f"Calificacion de categoria: {wrap_text(str(dict_results['c_cat']))}",
-    )
-
-
 def wrap_text(text, width=30):
     return "\n".join(textwrap.wrap(text, width=width))
-
-
-def display_recommendations(master: canvas.Canvas, dict_quizz, dim_x, dim_y):
-    dict_recommendations = dict_quizz["recommendations"]
-    pady = 0
-    master.setFont("Helvetica", 10)
-    master.drawString(dim_x + 10, dim_y - 200 - pady, "Recomendaciones:")
-    master.drawString(
-        dim_x + 10,
-        dim_y - 215 - pady,
-        f"Recomendacion para calificación final:{dict_recommendations['c_final_r']}",
-    )
-    master.drawString(
-        dim_x + 10,
-        dim_y - 230 - pady,
-        f"Recomendacion para calificación de dominio:{dict_recommendations['c_dom_r']}",
-    )
-    master.drawString(
-        dim_x + 10,
-        dim_y - 245 - pady,
-        f"Recomendacion para calificación de categoria:{dict_recommendations['c_cat_r']}",
-    )
 
 
 def create_header_telintec(
@@ -298,216 +221,6 @@ def create_header_telintec(
         position_header_y,
         f"I. Vigencia: {emission_date}",
     )
-
-
-def create_header_materials(
-    master: canvas.Canvas,
-    img=None,
-    title=None,
-    page_x=0.0,
-    date_int=None,
-    type_form=1,
-    orientation="vertical",
-    title_font=None,
-    info_dict=None,
-):
-    if info_dict is None:
-        info_dict = {
-            "emp_name": "",
-            "contrato": "",
-            "date": "",
-            "lugar": "",
-            "emp_storage_name": "",
-            "puesto": "",
-            "type_return": "",
-        }
-    position_header_y = 770 if orientation == "vertical" else 535
-    position_header_x = 25 if orientation == "vertical" else 25
-    height_logo = 30
-    title_height = 16 if title_font is None else title_font
-    codes_h_height = 10
-    codes_width = 140
-    start_box_x = 10 if orientation == "vertical" else 10
-    height_box = 50
-    pady = 10
-    padx = 15
-    width_logo = 106.6
-    img = img if img is not None else image_logo
-    # header
-    # bottom line
-    master.line(
-        start_box_x,
-        position_header_y + height_box - pady,
-        page_x - start_box_x,
-        position_header_y + height_box - pady,
-    )
-    # first vertical line
-    master.line(
-        start_box_x,
-        position_header_y + height_box - pady,
-        start_box_x,
-        position_header_y - pady,
-    )
-    # last vertical line
-    master.line(
-        page_x - start_box_x,
-        position_header_y + height_box - pady,
-        page_x - start_box_x,
-        position_header_y - pady,
-    )
-    # top line
-    master.line(
-        start_box_x,
-        position_header_y - pady,
-        page_x - start_box_x,
-        position_header_y - pady,
-    )
-    # first separator
-    master.line(
-        start_box_x + (position_header_x - start_box_x) + width_logo + padx,
-        position_header_y + height_box - pady,
-        start_box_x + (position_header_x - start_box_x) + width_logo + padx,
-        position_header_y - pady,
-    )
-    # second separator
-    master.line(
-        page_x - start_box_x - codes_width - padx,
-        position_header_y + height_box - pady,
-        page_x - start_box_x - codes_width - padx,
-        position_header_y - pady,
-    )
-    # logo
-    master.drawInlineImage(
-        img,
-        position_header_x,
-        position_header_y,
-        height=30,
-        width=106.6,
-        preserveAspectRatio=False,
-        showBoundary=False,
-    )
-    if isinstance(title, str):
-        title = title.upper()
-        master.setFont(FONT_BOLD, title_height)
-        master.drawCentredString(
-            page_x / 2,
-            position_header_y + height_logo / 2 - title_height / 2,
-            title.upper(),
-        )
-    else:
-        # pyrefly: ignore [bad-argument-type]
-        nlines = len(title)
-        x_title = page_x / 2
-        y_title = position_header_y + height_logo / 2 + ((nlines - 1) * title_height) / 2
-        # pyrefly: ignore [bad-argument-type]
-        for index, line in enumerate(title):
-            master.setFont(FONT_BOLD, title_height - 2 * index)
-            master.drawCentredString(x_title, y_title, line)
-            y_title -= title_height
-    master.setFont(FONT_REGULAR, codes_h_height)
-    code_label, emission_date = iso_format_header(type_form)
-    master.drawString(
-        page_x - codes_width - padx,
-        position_header_y + height_logo - codes_h_height,
-        f"Codigo: {code_label}",
-    )
-    master.setFont(FONT_REGULAR, 8)
-    master.drawString(
-        page_x - codes_width - padx * 1.2,
-        position_header_y,
-        f"Inicio de Vigencia: {emission_date}",
-    )
-    # --------------------------------datos quien devuelve------------------------------------
-    font_size = 10
-    position_header_y -= font_size * 1.5
-    master.setFont(FONT_BOLD, font_size)
-    master.drawString(
-        position_header_x,
-        position_header_y - 10,
-        "Datos del empleado que realiza la devolución",
-    )
-    position_header_y -= font_size * 2.5
-    master.setFont(FONT_REGULAR, font_size)
-    master.drawString(position_header_x, position_header_y, f"Nombre:  {info_dict['emp_name']}")
-    master.drawString(
-        position_header_x,
-        position_header_y - font_size * 1.5,
-        f"Contrato:  {info_dict['contrato']}",
-    )
-    master.drawString(page_x - codes_width - padx, position_header_y, f"Fecha:  {info_dict['date']}")
-    master.drawString(
-        page_x - codes_width - padx,
-        position_header_y - font_size * 1.5,
-        f"Lugar:  {info_dict['lugar']}",
-    )
-    position_header_y -= font_size * 3.5
-    master.setFont(FONT_BOLD, font_size)
-    master.drawString(position_header_x, position_header_y, "Datos del quien recibe la devolucion")
-    position_header_y -= font_size * 2.5
-    master.setFont(FONT_REGULAR, font_size)
-    master.drawString(
-        position_header_x,
-        position_header_y,
-        f"Nombre:  {info_dict['emp_storage_name']}",
-    )
-    master.drawString(
-        position_header_x,
-        position_header_y - font_size * 1.5,
-        f"Puesto:  {info_dict['puesto']}",
-    )
-    master.drawString(page_x - codes_width - padx, position_header_y, "Tipo de devolición:")
-    master.drawString(
-        page_x - codes_width - padx,
-        position_header_y - font_size * 1.5,
-        f"{info_dict['type_return']}",
-    )
-
-
-def create_info_materials_request(
-    master: canvas.Canvas,
-    info_dict,
-    position_header_x,
-    position_header_y,
-    orientation="vertical",
-    font_size=10,
-    keys_inf=None,
-):
-    page_x = a4_x if orientation == "vertical" else a4_y
-    keys_info = keys_inf if keys_inf is not None else list(info_dict.keys())
-    columns = 2
-    nrows = len(keys_info) // columns + (len(keys_info) % columns > 0)
-    y_init = position_header_y
-    for index, key in enumerate(keys_info):
-        column = 0 if index < nrows else 1
-        position_header_y = y_init if index % nrows == 0 else position_header_y
-        index_y = index % nrows
-        master.setFont(FONT_BOLD, font_size)
-        master.drawString(
-            position_header_x + (page_x / 2 - 20) * column,
-            position_header_y,
-            f"{key.upper()}:",
-        )
-
-        master.setFont(FONT_REGULAR, font_size)
-        master.drawString(
-            position_header_x + stringWidth(f"{key.upper()}:", FONT_BOLD, font_size) + 5 + (page_x / 2 - 20) * column,
-            position_header_y,
-            f"{info_dict[key]}",
-        )
-        position_header_y -= font_size * 1.5
-
-
-def draw_option(x, y, k, options, answers, pdf):
-    if not isinstance(answers, (list, set)):
-        answers = [answers]  # Convertir a lista si es un entero
-
-    for j, option in enumerate(options):
-        if (k, j) in answers:
-            pdf.setFillColorRGB(0, 255, 0)
-            pdf.drawCentredString(x + j * 55, y, "X")
-        else:
-            pdf.setFillColorRGB(0, 0, 0)
-            pdf.drawCentredString(x + j * 55, y, "O")
 
 
 def create_footer_sign(pdf, position_x, position_y, text="Firma"):

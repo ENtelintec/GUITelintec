@@ -28,7 +28,9 @@ from static.Models.api_sucursal_models import (
     transfer_receive_model,
 )
 from templates.resources.methods.Functions_Aux_Login import token_verification_procedure
+from templates.resources.midleware.MD_Kardex import kardex_conditional
 from templates.resources.midleware.MD_Sucursal import (
+    SEDE_MAIN_READERS,
     create_sede_movement_api,
     delete_sede_movement_api,
     fetch_sede_transfers_api,
@@ -43,8 +45,10 @@ from templates.resources.midleware.MD_Sucursal import (
 
 ns = Namespace("GUI/api/v1/sucursal")
 
-_READERS = ["sucursal", "almacen", "administracion"]
-_WRITERS = "sucursal"
+# La sede es App.Department.Sucursal-<id>: department="sucursal" solo abre la puerta y
+# el id lo valida _resolve_warehouse (excepción al match exacto, docs/permisos_almacen.md).
+# Las lecturas del principal van exactas (SEDE_MAIN_READERS); las escrituras, solo la sede.
+_SEDE = "sucursal"
 
 
 def _unauthorized(msg):
@@ -66,7 +70,7 @@ class SedeInventory(Resource):
     )
     @ns.expect(expected_headers_per)
     def get(self):
-        flag, data_token, msg = token_verification_procedure(request, department=_READERS)
+        flag, data_token, msg = token_verification_procedure(request, department=_SEDE, permissions=SEDE_MAIN_READERS)
         if not flag:
             return _unauthorized(msg)
         params = {
@@ -83,7 +87,7 @@ class MainInventoryReadOnly(Resource):
     @ns.doc(params={"search": "Filtra por sku o nombre", "only_with_stock": "1 -> solo con stock > 0"})
     @ns.expect(expected_headers_per)
     def get(self):
-        flag, data_token, msg = token_verification_procedure(request, department=_READERS)
+        flag, data_token, msg = token_verification_procedure(request, department=_SEDE, permissions=SEDE_MAIN_READERS)
         if not flag:
             return _unauthorized(msg)
         params = {
@@ -103,11 +107,12 @@ class SedeMovements(Resource):
             "date_from": "YYYY-MM-DD inclusivo; sin él: últimos 3 meses (desde date_to o desde hoy)",
             "date_to": "YYYY-MM-DD inclusivo; sin él: sin cota superior",
             "limit": "Tope de filas (máx y default 5000, más recientes primero); meta.truncated avisa el recorte",
-        }
+        },
+        responses={304: "Sin cambios respecto al ETag de If-None-Match (sin cuerpo)"},
     )
     @ns.expect(expected_headers_per)
     def get(self, type_m):
-        flag, data_token, msg = token_verification_procedure(request, department=_READERS)
+        flag, data_token, msg = token_verification_procedure(request, department=_SEDE, permissions=SEDE_MAIN_READERS)
         if not flag:
             return _unauthorized(msg)
         params = {
@@ -117,7 +122,8 @@ class SedeMovements(Resource):
             "limit": request.args.get("limit"),
         }
         data_out, code = get_sede_movements_api(type_m, params, data_token)
-        return data_out, code
+        # ETag + 304, igual que el kardex del principal (docs/almacen_kardex_etag.md, P-128)
+        return kardex_conditional(data_out, code, request.if_none_match)
 
 
 @ns.route("/movement/<int:id_movement>")
@@ -126,7 +132,7 @@ class SedeMovementDetail(Resource):
     def get(self, id_movement):
         """Un movimiento de sede (misma forma que una fila de /movements + `product`);
         403 si es de otra sede, 404 si no existe."""
-        flag, data_token, msg = token_verification_procedure(request, department=_READERS)
+        flag, data_token, msg = token_verification_procedure(request, department=_SEDE, permissions=SEDE_MAIN_READERS)
         if not flag:
             return _unauthorized(msg)
         data_out, code = get_sede_movement_api(id_movement, data_token)
@@ -137,7 +143,7 @@ class SedeMovementDetail(Resource):
 class SedeMovement(Resource):
     @ns.expect(expected_headers_per, sucursal_movement_post_model)
     def post(self):
-        flag, data_token, msg = token_verification_procedure(request, department=_WRITERS)
+        flag, data_token, msg = token_verification_procedure(request, department=_SEDE)
         if not flag:
             return _unauthorized(msg)
         # noinspection PyUnresolvedReferences
@@ -149,7 +155,7 @@ class SedeMovement(Resource):
 
     @ns.expect(expected_headers_per, sucursal_movement_put_model)
     def put(self):
-        flag, data_token, msg = token_verification_procedure(request, department=_WRITERS)
+        flag, data_token, msg = token_verification_procedure(request, department=_SEDE)
         if not flag:
             return _unauthorized(msg)
         # noinspection PyUnresolvedReferences
@@ -161,7 +167,7 @@ class SedeMovement(Resource):
 
     @ns.expect(expected_headers_per, sucursal_movement_delete_model)
     def delete(self):
-        flag, data_token, msg = token_verification_procedure(request, department=_WRITERS)
+        flag, data_token, msg = token_verification_procedure(request, department=_SEDE)
         if not flag:
             return _unauthorized(msg)
         # noinspection PyUnresolvedReferences
@@ -186,7 +192,7 @@ class SedeTransfers(Resource):
     )
     @ns.expect(expected_headers_per)
     def get(self):
-        flag, data_token, msg = token_verification_procedure(request, department=_READERS)
+        flag, data_token, msg = token_verification_procedure(request, department=_SEDE, permissions=SEDE_MAIN_READERS)
         if not flag:
             return _unauthorized(msg)
         params = {k: request.args.get(k) for k in ("id_warehouse", "status", "date_from", "date_to", "limit")}
@@ -198,7 +204,7 @@ class SedeTransfers(Resource):
 class SedeTransferDetail(Resource):
     @ns.expect(expected_headers_per)
     def get(self, id_transfer):
-        flag, data_token, msg = token_verification_procedure(request, department=_READERS)
+        flag, data_token, msg = token_verification_procedure(request, department=_SEDE, permissions=SEDE_MAIN_READERS)
         if not flag:
             return _unauthorized(msg)
         data_out, code = get_sede_transfer_api(id_transfer, data_token)
@@ -210,7 +216,7 @@ class SedeTransferReceive(Resource):
     @ns.expect(expected_headers_per, transfer_receive_model)
     def put(self):
         """Confirma la recepción (una sola vez) capturando lo realmente recibido por item."""
-        flag, data_token, msg = token_verification_procedure(request, department=_WRITERS)
+        flag, data_token, msg = token_verification_procedure(request, department=_SEDE)
         if not flag:
             return _unauthorized(msg)
         # noinspection PyUnresolvedReferences

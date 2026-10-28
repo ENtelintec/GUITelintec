@@ -184,9 +184,19 @@ def create_product_db_admin(sku, name, udm, stock, id_category, data_token, code
     return flag, error, result
 
 
-def get_last_sku(data_token):
-    sql = "SELECT sku FROM sql_telintec.products_amc ORDER BY sku DESC"
-    flag, error, result = execute_sql(sql, None, 5, data_token)
+def get_max_sku_number(skip_chars: int, data_token):
+    """Mayor número que queda al quitarle a cada sku sus primeros `skip_chars`
+    caracteres, solo entre los que quedan en puros dígitos. Es la misma cuenta
+    que antes hacía get_new_code_products en Python sobre la tabla completa
+    (docs/almacen_lecturas_completas.md, P-129); ahora la BD devuelve una fila.
+    type_sql=1 -> (max,), con max None si ningún sku califica."""
+    sql = (
+        "SELECT MAX(CAST(SUBSTRING(sku, %s) AS UNSIGNED)) "
+        "FROM sql_telintec.products_amc "
+        "WHERE SUBSTRING(sku, %s) REGEXP '^[0-9]+$'"
+    )
+    vals = (skip_chars + 1, skip_chars + 1)
+    flag, error, result = execute_sql(sql, vals, 1, data_token)
     return flag, error, result
 
 
@@ -529,31 +539,10 @@ def get_products_w_reservations(data_token):
     return flag, error, result
 
 
-def get_all_suppliers(data_token):
-    sql = (
-        "SELECT id_supplier, name, seller_name, seller_email, phone, address, web_url, type "
-        "FROM sql_telintec.suppliers_amc "
-    )
-    flag, error, result = execute_sql(sql, None, 5, data_token)
-    return flag, error, result
-
-
 def get_product_barcode_data(id_product, data_token):
     sql = "SELECT name, sku, codes FROM sql_telintec.products_amc WHERE id_product = %s"
     val = (id_product,)
     flag, error, result = execute_sql(sql, val, 1, data_token)
-    return flag, error, result
-
-
-def get_stock_db_products(data_token) -> tuple[bool, str, list]:
-    sql = (
-        "SELECT id_product,stock "
-        "FROM sql_telintec.products_amc "
-        "WHERE products_amc.id_product like '%' "
-    )
-    flag, error, result = execute_sql(sql, None, 5, data_token)
-    if not isinstance(result, list):
-        return False, "No products in the DB", []
     return flag, error, result
 
 

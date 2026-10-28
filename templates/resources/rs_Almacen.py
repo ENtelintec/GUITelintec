@@ -66,7 +66,7 @@ from templates.resources.midleware.MD_Multisede import (
     resolve_transfer_api,
     update_warehouse_api,
 )
-from templates.resources.midleware.MD_Kardex import get_kardex_api
+from templates.resources.midleware.MD_Kardex import get_kardex_api, kardex_conditional
 from templates.resources.midleware.Functions_midleware_almacen import (
     create_file_inventory_excel,
     create_file_inventory_pdf,
@@ -77,11 +77,9 @@ from templates.resources.midleware.Functions_midleware_almacen import (
     delete_movement_amc,
     delete_product_from_api,
     delete_reservation_from_api,
-    get_all_movements,
     get_all_products_DB,
     get_categories_db,
     get_epp_db,
-    get_epp_movements,
     get_new_code_products,
     get_reservations_db,
     get_suppliers_db,
@@ -100,6 +98,18 @@ __date__ = "$ 03/may./2024  at 15:22 $"
 
 ns = Namespace("GUI/api/v1/almacen")
 
+# Almacén (docs/permisos_plan.md D6, P-198; docs/permisos_almacen.md): match exacto
+# contra el catálogo. ALMACEN-VISUAL solo lee (las descargas cuentan como lectura);
+# EPP lee lo suyo y registra movimientos junto con ALMACEN. Administrator pasa siempre.
+_ALM_READ = ["App.Department.ALMACEN", "App.Department.ALMACEN-VISUAL"]
+_ALM_WRITE = ["App.Department.ALMACEN"]
+# sedes y reservas: también Administración
+_ALM_ADMIN_READ = _ALM_READ + ["App.Department.Administracion"]
+_ALM_ADMIN_WRITE = _ALM_WRITE + ["App.Department.Administracion"]
+_EPP_READ = ["App.Department.Epp", "App.Department.eppVisual", "App.Department.eppApprove"]
+# POST/PUT /movement: almacén y EPP (eppVisual/eppApprove ya no escriben)
+_MOVEMENT_WRITE = ["App.Department.ALMACEN", "App.Department.Epp"]
+
 # Envelope de respuesta unificado: {data, msg, error}. Ver
 # docs/almacen_response_envelope.md y docs/sm_response_envelope.md.
 def _invalid_structure(errors):
@@ -112,6 +122,7 @@ _KARDEX_PARAMS = {
     "date_to": "YYYY-MM-DD inclusivo; sin él: sin cota superior",
     "limit": "Tope de filas (máx y default 5000, más recientes primero); meta.truncated avisa el recorte",
 }
+_KARDEX_RESPONSES = {304: "Sin cambios respecto al ETag de If-None-Match (sin cuerpo)"}
 
 
 def _kardex_params():
@@ -123,56 +134,41 @@ def _kardex_params():
     }
 
 
-# Kardex acotado por fecha (docs/almacen_kardex_ventana.md). Sustituye a
-# GET /movements/<type_m> y /movements/epp/<type_m>, que traen todo el
-# histórico y quedan deprecados hasta que el front migre (P-126).
+# Kardex acotado por fecha (docs/almacen_kardex_ventana.md). Sustituyó a
+# GET /movements/<type_m> y /movements/epp/<type_m>, que traían todo el
+# histórico y se retiraron con el front en prod (P-126, 2026-10-28).
+# ETag + 304 en los dos (docs/almacen_kardex_etag.md, P-128).
 @ns.route("/kardex")
 class KardexMain(Resource):
-    @ns.doc(params=_KARDEX_PARAMS)
+    @ns.doc(params=_KARDEX_PARAMS, responses=_KARDEX_RESPONSES)
     @ns.expect(expected_headers_per)
     def get(self):
-        flag, data_token, msg = token_verification_procedure(request, department="almacen")
+        flag, data_token, msg = token_verification_procedure(request, permissions=_ALM_READ)
         if not flag:
             return {"data": None, "msg": None, "error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         params = _kardex_params()
         data_out, code = get_kardex_api(params["type_m"], params, data_token)
-        return data_out, code
+        return kardex_conditional(data_out, code, request.if_none_match)
 
 
 @ns.route("/kardex/epp")
 class KardexEpp(Resource):
-    @ns.doc(params=_KARDEX_PARAMS)
+    @ns.doc(params=_KARDEX_PARAMS, responses=_KARDEX_RESPONSES)
     @ns.expect(expected_headers_per)
     def get(self):
-        flag, data_token, msg = token_verification_procedure(request, department="epp")
+        flag, data_token, msg = token_verification_procedure(request, permissions=_EPP_READ)
         if not flag:
             return {"data": None, "msg": None, "error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         params = _kardex_params()
         data_out, code = get_kardex_api(params["type_m"], params, data_token, epp=True)
-        return data_out, code
-
-
-@ns.route("/movements/<string:type_m>")
-class GetMovements(Resource):
-    @ns.deprecated
-    @ns.doc(description="Deprecado: trae todo el histórico. Usar GET /kardex (ventana por fecha).")
-    @ns.expect(expected_headers_per)
-    def get(self, type_m):
-        flag, data_token, msg = token_verification_procedure(request, department="almacen")
-        if not flag:
-            return {
-                "data": [],
-                "error": msg if msg != "" else "No autorizado. Token invalido",
-            }, 401
-        data_out, code = get_all_movements(type_m, data_token)
-        return data_out, code
+        return kardex_conditional(data_out, code, request.if_none_match)
 
 
 @ns.route("/movement")
 class MovementDB(Resource):
     @ns.expect(expected_headers_per, movement_insert_model)
     def post(self):
-        flag, data_token, msg = token_verification_procedure(request, department=["almacen", "epp"])
+        flag, data_token, msg = token_verification_procedure(request, permissions=_MOVEMENT_WRITE)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
@@ -185,7 +181,7 @@ class MovementDB(Resource):
 
     @ns.expect(expected_headers_per, movement_update_model)
     def put(self):
-        flag, data_token, msg = token_verification_procedure(request, department=["almacen", "epp"])
+        flag, data_token, msg = token_verification_procedure(request, permissions=_MOVEMENT_WRITE)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
@@ -198,7 +194,7 @@ class MovementDB(Resource):
 
     @ns.expect(expected_headers_per, movement_delete_model)
     def delete(self):
-        flag, data_token, msg = token_verification_procedure(request, department="almacen")
+        flag, data_token, msg = token_verification_procedure(request, permissions=_ALM_WRITE)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
@@ -214,7 +210,7 @@ class MovementDB(Resource):
 class MultipleMovementDB(Resource):
     @ns.expect(expected_headers_per, movements_list_post_model)
     def post(self):
-        flag, data_token, msg = token_verification_procedure(request, department="almacen")
+        flag, data_token, msg = token_verification_procedure(request, permissions=_ALM_WRITE)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
@@ -230,7 +226,7 @@ class MultipleMovementDB(Resource):
 class FetchProducts(Resource):
     @ns.expect(expected_headers_per)
     def get(self, type_p):
-        flag, data_token, msg = token_verification_procedure(request, department="almacen")
+        flag, data_token, msg = token_verification_procedure(request, permissions=_ALM_READ)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data_out, code = get_all_products_DB(type_p, data_token)
@@ -241,7 +237,7 @@ class FetchProducts(Resource):
 class ProductActions(Resource):
     @ns.expect(expected_headers_per, product_insert_model)
     def post(self):
-        flag, data_token, msg = token_verification_procedure(request, department="almacen")
+        flag, data_token, msg = token_verification_procedure(request, permissions=_ALM_WRITE)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
@@ -254,7 +250,7 @@ class ProductActions(Resource):
 
     @ns.expect(expected_headers_per, product_model_update)
     def put(self):
-        flag, data_token, msg = token_verification_procedure(request, department="almacen")
+        flag, data_token, msg = token_verification_procedure(request, permissions=_ALM_WRITE)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
@@ -267,7 +263,7 @@ class ProductActions(Resource):
 
     @ns.expect(expected_headers_per, product_delete_model)
     def delete(self):
-        flag, data_token, msg = token_verification_procedure(request, department="almacen")
+        flag, data_token, msg = token_verification_procedure(request, permissions=_ALM_WRITE)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
@@ -283,7 +279,7 @@ class ProductActions(Resource):
 class InventoryMultipleProducts(Resource):
     @ns.expect(expected_headers_per, products_list_post_model)
     def post(self):
-        flag, data_token, msg = token_verification_procedure(request, department="almacen")
+        flag, data_token, msg = token_verification_procedure(request, permissions=_ALM_WRITE)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
@@ -302,7 +298,7 @@ class Warehouses(Resource):
     @ns.expect(expected_headers_per)
     def get(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["administracion", "almacen"]
+            request, permissions=_ALM_ADMIN_READ
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -315,7 +311,7 @@ class WarehousesCatalogs(Resource):
     @ns.expect(expected_headers_per)
     def get(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["administracion", "almacen"]
+            request, permissions=_ALM_ADMIN_READ
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -328,7 +324,7 @@ class WarehouseDetail(Resource):
     @ns.expect(expected_headers_per)
     def get(self, id_warehouse):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["administracion", "almacen"]
+            request, permissions=_ALM_ADMIN_READ
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -341,7 +337,7 @@ class WarehouseActions(Resource):
     @ns.expect(expected_headers_per, warehouse_post_model)
     def post(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["administracion", "almacen"]
+            request, permissions=_ALM_ADMIN_WRITE
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -355,7 +351,7 @@ class WarehouseActions(Resource):
     @ns.expect(expected_headers_per, warehouse_put_model)
     def put(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["administracion", "almacen"]
+            request, permissions=_ALM_ADMIN_WRITE
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -373,7 +369,7 @@ class TransferCreate(Resource):
     def post(self):
         """Crea un traslado principal -> sede: salidas del principal + descuento
         de stock; queda EN TRÁNSITO hasta que la sede confirme (docs/almacen_multisede_f3.md)."""
-        flag, data_token, msg = token_verification_procedure(request, department="almacen")
+        flag, data_token, msg = token_verification_procedure(request, permissions=_ALM_WRITE)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
@@ -389,7 +385,7 @@ class TransferCancel(Resource):
     @ns.expect(expected_headers_per, transfer_cancel_model)
     def put(self):
         """Cancela un traslado EN TRÁNSITO: reversa automática al principal."""
-        flag, data_token, msg = token_verification_procedure(request, department="almacen")
+        flag, data_token, msg = token_verification_procedure(request, permissions=_ALM_WRITE)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
@@ -413,7 +409,7 @@ class Transfers(Resource):
     )
     @ns.expect(expected_headers_per)
     def get(self):
-        flag, data_token, msg = token_verification_procedure(request, department="almacen")
+        flag, data_token, msg = token_verification_procedure(request, permissions=_ALM_READ)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         params = {k: request.args.get(k) for k in ("status", "id_warehouse_dest", "date_from", "date_to", "limit")}
@@ -426,7 +422,7 @@ class TransferDetail(Resource):
     @ns.expect(expected_headers_per)
     def get(self, id_transfer):
         """Detalle enviado vs recibido."""
-        flag, data_token, msg = token_verification_procedure(request, department="almacen")
+        flag, data_token, msg = token_verification_procedure(request, permissions=_ALM_READ)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data_out, code = get_transfer_api(id_transfer, data_token)
@@ -439,7 +435,7 @@ class TransferResolve(Resource):
     def put(self, id_transfer):
         """Resuelve los faltantes de un traslado RECIBIDO CON DIFERENCIAS (reingreso al
         principal | merma) y lo deja en DIFERENCIA RESUELTA (docs/almacen_multisede_resolve.md)."""
-        flag, data_token, msg = token_verification_procedure(request, department="almacen")
+        flag, data_token, msg = token_verification_procedure(request, permissions=_ALM_WRITE)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
@@ -460,7 +456,7 @@ class InventoryConsolidated(Resource):
     )
     @ns.expect(expected_headers_per)
     def get(self):
-        flag, data_token, msg = token_verification_procedure(request, department="almacen")
+        flag, data_token, msg = token_verification_procedure(request, permissions=_ALM_READ)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         params = {
@@ -475,7 +471,7 @@ class InventoryConsolidated(Resource):
 class InventoryCategories(Resource):
     @ns.expect(expected_headers_per)
     def get(self):
-        flag, data_token, msg = token_verification_procedure(request, department="almacen")
+        flag, data_token, msg = token_verification_procedure(request, permissions=_ALM_READ)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data_out, code = get_categories_db(data_token)
@@ -486,7 +482,7 @@ class InventoryCategories(Resource):
 class InventorySuppliers(Resource):
     @ns.expect(expected_headers_per)
     def get(self):
-        flag, data_token, msg = token_verification_procedure(request, department="almacen")
+        flag, data_token, msg = token_verification_procedure(request, permissions=_ALM_READ)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data_out, code = get_suppliers_db(data_token)
@@ -497,7 +493,7 @@ class InventorySuppliers(Resource):
 class GenerateCode(Resource):
     @ns.expect(expected_headers_per)
     def get(self):
-        flag, data_token, msg = token_verification_procedure(request, department="almacen")
+        flag, data_token, msg = token_verification_procedure(request, permissions=_ALM_READ)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data_out, code = get_new_code_products(data_token)
@@ -530,7 +526,7 @@ def _save_and_upload_inventory_file(data_token, **upload_kwargs):
 class UploadInventoryeFile(Resource):
     @ns.expect(expected_headers_per, expected_files_almacen)
     def post(self):
-        flag, data_token, msg = token_verification_procedure(request, department="almacen")
+        flag, data_token, msg = token_verification_procedure(request, permissions=_ALM_WRITE)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         return _save_and_upload_inventory_file(data_token)
@@ -540,7 +536,7 @@ class UploadInventoryeFile(Resource):
 class UploadInventoryeFileTool(Resource):
     @ns.expect(expected_headers_per, expected_files_almacen)
     def post(self):
-        flag, data_token, msg = token_verification_procedure(request, department="almacen")
+        flag, data_token, msg = token_verification_procedure(request, permissions=_ALM_WRITE)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         return _save_and_upload_inventory_file(data_token, is_tool=True)
@@ -550,7 +546,7 @@ class UploadInventoryeFileTool(Resource):
 class UploadInventoryeFileInternal(Resource):
     @ns.expect(expected_headers_per, expected_files_almacen)
     def post(self):
-        flag, data_token, msg = token_verification_procedure(request, department="almacen")
+        flag, data_token, msg = token_verification_procedure(request, permissions=_ALM_WRITE)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         return _save_and_upload_inventory_file(data_token, is_internal=1)
@@ -560,7 +556,7 @@ class UploadInventoryeFileInternal(Resource):
 class DownloadInventoryFilePDF(Resource):
     @ns.expect(expected_headers_per)
     def get(self):
-        flag, data_token, msg = token_verification_procedure(request, department="almacen")
+        flag, data_token, msg = token_verification_procedure(request, permissions=_ALM_READ)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         filepath, code = create_file_inventory_pdf(data_token)
@@ -573,7 +569,7 @@ class DownloadInventoryFilePDF(Resource):
 class DownloadInventoryFileExcel(Resource):
     @ns.expect(expected_headers_per)
     def get(self):
-        flag, data_token, msg = token_verification_procedure(request, department="almacen")
+        flag, data_token, msg = token_verification_procedure(request, permissions=_ALM_READ)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         filepath, code = create_file_inventory_excel(data_token)
@@ -586,7 +582,7 @@ class DownloadInventoryFileExcel(Resource):
 class DownloadMovementsFilePDF(Resource):
     @ns.expect(expected_headers_per, file_movements_request_model)
     def post(self):
-        flag, data_token, msg = token_verification_procedure(request, department="almacen")
+        flag, data_token, msg = token_verification_procedure(request, permissions=_ALM_READ)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
@@ -604,7 +600,7 @@ class DownloadMovementsFilePDF(Resource):
 class DownloadMovementsFileExcel(Resource):
     @ns.expect(expected_headers_per, file_movements_request_model)
     def post(self):
-        flag, data_token, msg = token_verification_procedure(request, department="almacen")
+        flag, data_token, msg = token_verification_procedure(request, permissions=_ALM_READ)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
@@ -622,7 +618,7 @@ class DownloadMovementsFileExcel(Resource):
 class DownloadBarcodeFile(Resource):
     @ns.expect(expected_headers_per, file_barcode_request_model)
     def post(self):
-        flag, data_token, msg = token_verification_procedure(request, department="almacen")
+        flag, data_token, msg = token_verification_procedure(request, permissions=_ALM_READ)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
@@ -640,7 +636,7 @@ class DownloadBarcodeFile(Resource):
 class DownloadMultipleBarcodeFile(Resource):
     @ns.expect(expected_headers_per, file_barcode_multiple_request_model)
     def post(self):
-        flag, data_token, msg = token_verification_procedure(request, department="almacen")
+        flag, data_token, msg = token_verification_procedure(request, permissions=_ALM_READ)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
@@ -658,23 +654,10 @@ class DownloadMultipleBarcodeFile(Resource):
 class InventoryEpp(Resource):
     @ns.expect(expected_headers_per)
     def get(self):
-        flag, data_token, msg = token_verification_procedure(request, department="epp")
+        flag, data_token, msg = token_verification_procedure(request, permissions=_EPP_READ)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data_out, code = get_epp_db(data_token)
-        return data_out, code
-
-
-@ns.route("/movements/epp/<string:type_m>")
-class GetMovementsEpp(Resource):
-    @ns.deprecated
-    @ns.doc(description="Deprecado: trae todo el histórico. Usar GET /kardex/epp (ventana por fecha).")
-    @ns.expect(expected_headers_per)
-    def get(self, type_m):
-        flag, data_token, msg = token_verification_procedure(request, department="epp")
-        if not flag:
-            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        data_out, code = get_epp_movements(type_m, data_token)
         return data_out, code
 
 
@@ -682,7 +665,7 @@ class GetMovementsEpp(Resource):
 class DownloadEppMovementsFilePDF(Resource):
     @ns.expect(expected_headers_per, file_movements_request_model)
     def post(self):
-        flag, data_token, msg = token_verification_procedure(request, department="epp")
+        flag, data_token, msg = token_verification_procedure(request, permissions=_EPP_READ)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
@@ -700,7 +683,7 @@ class DownloadEppMovementsFilePDF(Resource):
 class DownloadEppMovementsFileExcel(Resource):
     @ns.expect(expected_headers_per, file_movements_request_model)
     def post(self):
-        flag, data_token, msg = token_verification_procedure(request, department="epp")
+        flag, data_token, msg = token_verification_procedure(request, permissions=_EPP_READ)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
@@ -719,7 +702,7 @@ class ReservationActions(Resource):
     @ns.expect(expected_headers_per, reservation_post_model)
     def post(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["administracion", "almacen"]
+            request, permissions=_ALM_ADMIN_WRITE
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -733,7 +716,7 @@ class ReservationActions(Resource):
     @ns.expect(expected_headers_per, reservation_put_model)
     def put(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["administracion", "almacen"]
+            request, permissions=_ALM_ADMIN_WRITE
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -747,7 +730,7 @@ class ReservationActions(Resource):
     @ns.expect(expected_headers_per, reservation_delete_model)
     def delete(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["administracion", "almacen"]
+            request, permissions=_ALM_ADMIN_WRITE
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
@@ -764,7 +747,7 @@ class GetReservations(Resource):
     @ns.expect(expected_headers_per)
     def get(self):
         flag, data_token, msg = token_verification_procedure(
-            request, department=["administracion", "almacen"]
+            request, permissions=_ALM_ADMIN_READ
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401

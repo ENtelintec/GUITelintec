@@ -11,7 +11,8 @@ Respaldo para cuando el biométrico no esté, simple a propósito:
 - RH ve todo, anula eventos (baja suave con motivo) y registra manuales sin foto;
 - el resumen por empleado y día (primera entrada, última salida, horas) se
   calcula en lectura; nada se persiste agregado;
-- fotos en S3_RH_BUCKET bajo checkins/<emp_id>/<fecha>/<epoch_ms>-<type>.<ext>.
+- fotos en S3_RH_BUCKET bajo checkins/<entorno>/<emp_id>/<fecha>/<epoch_ms>-<type>.<ext>
+  (P-177; las de antes, sin <entorno>, siguen en photo_key).
 `fichajes` (Excel del biométrico) se ignora.
 """
 
@@ -36,6 +37,7 @@ from templates.controllers.employees.checkins_controller import (
 )
 from templates.controllers.employees.employees_controller import test_id_employee
 from templates.misc.Functions_Files import write_log_file
+from templates.resources.methods.Functions_Aux_S3 import s3_env_key
 
 CHECKIN_TYPES = {0: "ENTRADA", 1: "SALIDA"}
 CHECKIN_STATUSES = {0: "VALIDO", 1: "ANULADO"}
@@ -132,8 +134,9 @@ def _employee_status(emp_id, data_token) -> tuple[str | None, bool]:
     return (str(row[1]).strip().lower() if row[1] is not None else None), True
 
 
-def _photo_key(emp_id: int, when: datetime, type_code: int, ext: str) -> str:
-    return f"checkins/{emp_id}/{when.strftime('%Y-%m-%d')}/{int(time.time() * 1000)}-{type_code}.{ext}"
+def _photo_key(emp_id: int, when: datetime, type_code: int, ext: str, data_token) -> str:
+    rest = f"{emp_id}/{when.strftime('%Y-%m-%d')}/{int(time.time() * 1000)}-{type_code}.{ext}"
+    return s3_env_key("checkins", rest, data_token)
 
 
 # --- Empleado ------------------------------------------------------------------------------
@@ -169,7 +172,7 @@ def create_checkin_api(data: dict, data_token):
     if not exists:
         return {"data": None, "msg": f"El empleado {emp_id} del token no existe", "error": "empleado no encontrado"}, 404
     now = _now()
-    key = _photo_key(emp_id, now, type_code, ext)
+    key = _photo_key(emp_id, now, type_code, ext, data_token)
     bucket = str(secrets.get("S3_RH_BUCKET"))
     try:
         boto3.client("s3").upload_file(Filename=data["filepath"], Bucket=bucket, Key=key)
