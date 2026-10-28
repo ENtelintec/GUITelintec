@@ -8,16 +8,22 @@ no en hoy); histórico más antiguo solo con `date_from` explícito; nunca más
 de `KARDEX_MAX_LIMIT` filas por llamada. La respuesta normaliza el producto
 fuera de cada movimiento (`data.movements` + `data.products`) y agrega
 `meta` con la ventana aplicada y si el tope recortó.
+
+Los tres GET responden con ETag débil + 304 (`kardex_conditional`,
+docs/almacen_kardex_etag.md).
 """
 __author__ = "Edisson Naula"
 __date__ = "$ 12/oct/2026  at 12:30 $"
 
+import hashlib
 import json
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 
 import pytz
 from dateutil.relativedelta import relativedelta
+from werkzeug.datastructures import ETags
+from werkzeug.http import quote_etag
 
 from static.constants import format_date, format_timestamps, timezone_software
 from templates.controllers.product.movements_controller import get_kardex_main_db
@@ -97,6 +103,23 @@ def kardex_meta(window: KardexWindow, rows: list) -> tuple[list, dict]:
         "truncated": truncated,
     }
     return rows, meta
+
+
+def kardex_conditional(data_out: dict, code: int, if_none_match: ETags) -> tuple:
+    """P-128: ETag débil (`W/`) con la huella del cuerpo + `Cache-Control:
+    private, no-cache`. Sin DDL y siempre exacto; la consulta se sigue
+    haciendo, pero un refresco sin cambios responde 304 sin cuerpo (werkzeug
+    quita el cuerpo y los Content-* de los 304). `if_none_match` =
+    `request.if_none_match`. Solo los 200 llevan ETag.
+    -> (body, code, headers) listo para devolver desde el Resource."""
+    if code != 200:
+        return data_out, code, {}
+    body = json.dumps(data_out, separators=(",", ":"), default=str).encode()
+    digest = hashlib.blake2b(body, digest_size=16).hexdigest()
+    headers = {"ETag": quote_etag(digest, weak=True), "Cache-Control": "private, no-cache"}
+    if if_none_match.contains_weak(digest):
+        return None, 304, headers
+    return data_out, code, headers
 
 
 def _sku_fabricante(codes_raw) -> str:

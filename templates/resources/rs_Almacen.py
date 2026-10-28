@@ -66,7 +66,7 @@ from templates.resources.midleware.MD_Multisede import (
     resolve_transfer_api,
     update_warehouse_api,
 )
-from templates.resources.midleware.MD_Kardex import get_kardex_api
+from templates.resources.midleware.MD_Kardex import get_kardex_api, kardex_conditional
 from templates.resources.midleware.Functions_midleware_almacen import (
     create_file_inventory_excel,
     create_file_inventory_pdf,
@@ -124,6 +124,7 @@ _KARDEX_PARAMS = {
     "date_to": "YYYY-MM-DD inclusivo; sin él: sin cota superior",
     "limit": "Tope de filas (máx y default 5000, más recientes primero); meta.truncated avisa el recorte",
 }
+_KARDEX_RESPONSES = {304: "Sin cambios respecto al ETag de If-None-Match (sin cuerpo)"}
 
 
 def _kardex_params():
@@ -138,9 +139,10 @@ def _kardex_params():
 # Kardex acotado por fecha (docs/almacen_kardex_ventana.md). Sustituye a
 # GET /movements/<type_m> y /movements/epp/<type_m>, que traen todo el
 # histórico y quedan deprecados hasta que el front migre (P-126).
+# ETag + 304 en los dos (docs/almacen_kardex_etag.md, P-128).
 @ns.route("/kardex")
 class KardexMain(Resource):
-    @ns.doc(params=_KARDEX_PARAMS)
+    @ns.doc(params=_KARDEX_PARAMS, responses=_KARDEX_RESPONSES)
     @ns.expect(expected_headers_per)
     def get(self):
         flag, data_token, msg = token_verification_procedure(request, permissions=_ALM_READ)
@@ -148,12 +150,12 @@ class KardexMain(Resource):
             return {"data": None, "msg": None, "error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         params = _kardex_params()
         data_out, code = get_kardex_api(params["type_m"], params, data_token)
-        return data_out, code
+        return kardex_conditional(data_out, code, request.if_none_match)
 
 
 @ns.route("/kardex/epp")
 class KardexEpp(Resource):
-    @ns.doc(params=_KARDEX_PARAMS)
+    @ns.doc(params=_KARDEX_PARAMS, responses=_KARDEX_RESPONSES)
     @ns.expect(expected_headers_per)
     def get(self):
         flag, data_token, msg = token_verification_procedure(request, permissions=_EPP_READ)
@@ -161,7 +163,7 @@ class KardexEpp(Resource):
             return {"data": None, "msg": None, "error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         params = _kardex_params()
         data_out, code = get_kardex_api(params["type_m"], params, data_token, epp=True)
-        return data_out, code
+        return kardex_conditional(data_out, code, request.if_none_match)
 
 
 @ns.route("/movements/<string:type_m>")

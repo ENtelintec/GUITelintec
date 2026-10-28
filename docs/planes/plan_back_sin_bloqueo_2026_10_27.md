@@ -9,6 +9,7 @@
 - **2026-10-27 — `P-016` hecho** (16/16 contra dev, páginas revisadas) → [`norma035_pdf.md`](../norma035_pdf.md).
 - **2026-10-27 — `P-115` hecho** (41/41 contra dev) → [`po_match_cantidades.md`](../po_match_cantidades.md). La revisión de `insert_purchase_order_item_from_applications` encontró el error en `update_po_application_api`, que guardaba la partida nueva de una solicitud con `purchase_id`; quedó arreglado. Front en `P-183`. Sigue `P-114`.
 - **2026-10-27 — `P-114` hecho** (PDFs renderizados y revisados; descarga por HTTP; `tester_iso_formats` 48/48) → [`po_pdf_cuadricula.md`](../po_pdf_cuadricula.md). Un segundo grill amplió la decisión de abajo: encabezado con el formato propio **FO-COM-04** (id 16, SQL en `P-184`), columna UM del producto ligado, duración y moneda condicionales, totales por moneda, marca de cancelada y fecha de emisión desde el `history`. De paso, la descarga pide `administracion` o `compras` (`P-185`; antes solo descargaban los administradores). Sigue `P-128`.
+- **2026-10-28 — `P-128` hecho** (54/54 contra dev; la huella de la ventana por defecto cuesta ~5 ms) → [`almacen_kardex_etag.md`](../almacen_kardex_etag.md). Sigue `P-129`.
 
 ## Orden
 
