@@ -91,8 +91,9 @@ Smoke contra BD dev (2026-09-07) con S3 simulado (sin tocar el bucket) y el índ
 
 - ~~**[back]** Correo por SES (2ª etapa)~~ — hecho (2026-09-17): [`nomina_correo_ses.md`](nomina_correo_ses.md); `/payroll/mail` y `create_mail_draft_with_attachment` retirados.
 - ~~**[front]** Pantallas de carga por periodo, reemplazar/eliminar, notificar (+ mostrar `notified: false` por empleado) y lado empleado; link de WhatsApp (3ª etapa) armado en el front.~~ — hecho (`P-032`/`P-037`, front, 2026-10-12; ver Notas posteriores).
-- **[RH]** Formato en que llegan los archivos del proveedor (`P-136`).
-- **[front]** Avisos en la carga masiva: dos grupos asignados al mismo empleado y XML de otro periodo (`P-210`).
+- ~~**[RH]** Formato en que llegan los archivos del proveedor (`P-136`).~~ — cerrado por decisión (2026-10-28): un PDF y un XML por empleado, nunca todos juntos.
+- **[front]** Avisos en la carga masiva (dos grupos asignados al mismo empleado, XML de otro periodo, origen por RFC o CURP) y prueba con un lote real de varios empleados (`P-210`).
+- ~~**[RH]** ¿Acuse de recibo del empleado en Mi nómina? (`P-211`).~~ — cerrado por decisión (2026-10-28): no hace falta.
 
 ## Notas posteriores
 
@@ -120,3 +121,8 @@ Smoke contra BD dev (2026-09-07) con S3 simulado (sin tocar el bucket) y el índ
     - Variantes en memoria (en un directorio temporal que se borra): con RFC desconocido sale por CURP; con RFC y CURP desconocidos, por nombre; un `NumEmpleado` igual a un id existente se ignora; sin nada conocido no sugiere a nadie; el RFC de otro activo, en minúsculas y con espacios, le gana a la CURP y al nombre; con el RFC de un inactivo lo sugiere a él.
     - Con `execute_sql` en stub: el desempate y la BD caída.
     - pyrefly: 166 errores, sin cambio.
+- **2026-10-28 — el PDF del recibo.** Se revisó el PDF de la primera quincena de junio de 2024 (`91F042D3-E911-471F-A624-11C821798101.pdf`, en `scripts_db_handle/`). Encontrado:
+  - **Es la representación impresa del CFDI**, generada en **CONTPAQi Nóminas** (lo dice el pie). Tiene una sola hoja. RFC, CURP, `NumEmpleado` 581, periodo y neto coinciden con su XML. El "proveedor" de `P-136` es, entonces, el lote que RH exporta de CONTPAQi. **Decisión del usuario (mismo día):** llega un PDF y un XML por empleado, nunca todos juntos; `P-136` cerrado. La prueba con un lote real de varios empleados pasa a `P-210`.
+  - **El API no lee el PDF:** lo guarda tal cual. La sugerencia de empleado y periodo sale solo del XML, así que un grupo que llegue sin XML se asigna a mano.
+  - **La fecha del CFDI no es la del periodo.** El recibo de la segunda quincena se timbró el 2024-07-03 con `FechaPago` 2024-06-30. El extract toma año y mes de `FechaPago` y sugiere junio, que es lo correcto.
+  - **Firma del empleado.** El recibo trae un renglón para la firma y una leyenda de conformidad. Mi nómina no tiene nada equivalente: `download_nomina_docs` no registra las descargas, y el `status` de la notificación solo dice que se leyó el aviso. **Decisión del usuario (mismo día):** no hace falta saber si el empleado recibió o descargó el archivo, así que nada cambia; `P-211` cerrado.
