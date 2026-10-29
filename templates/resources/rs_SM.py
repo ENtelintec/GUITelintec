@@ -40,6 +40,7 @@ from static.Models.api_sm_models import (
 from templates.controllers.customer.customers_controller import get_sm_clients
 from templates.controllers.employees.employees_controller import get_sm_employees
 from templates.Functions_AuxPlots import get_data_sm_per_range
+from templates.resources.methods.Functions_Aux_Http import etag_conditional
 from templates.resources.methods.Functions_Aux_Login import token_verification_procedure
 from templates.resources.midleware.MD_SM import (
     cancel_sm,
@@ -124,15 +125,18 @@ class Clients(Resource):
             }, 400
 
 
+# ETag + 304 (P-204, docs/almacen_catalogos_etag_y_reservas.md): el catálogo entero viaja
+# solo si cambió desde la última vez que el navegador lo pidió.
 @ns.route("/products/<string:contract>")
 class Products(Resource):
+    @ns.doc(responses={304: "Sin cambios respecto al ETag de If-None-Match (sin cuerpo)"})
     @ns.expect(expected_headers_per)
     def get(self, contract):
         flag, data_token, msg = token_verification_procedure(request, permissions=_SM)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data_out, code = get_products_sm(contract, data_token)
-        return data_out, code
+        return etag_conditional(data_out, code, request.if_none_match)
 
 
 @ns.route("/all")

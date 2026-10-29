@@ -87,9 +87,12 @@ from static.Models.api_checkin_models import (
 )
 from templates.resources.methods.Functions_Aux_Login import token_verification_procedure
 from templates.resources.midleware.MD_Checkin import (
+    XLSX_MIMETYPE,
     cancel_checkin_api,
     create_manual_checkin_api,
     download_checkin_photo_api,
+    export_checkins_excel_api,
+    export_checkins_pdf_api,
     get_checkins_api,
 )
 from templates.resources.midleware.Functions_DB_midleware import (
@@ -1096,6 +1099,44 @@ class CheckinsList(Resource):
                   "date_to": request.args.get("date_to"), "all": request.args.get("all")}
         data_out, code = get_checkins_api(params, data_token)
         return data_out, code
+
+
+_CHECKIN_EXPORT_PARAMS = {"emp_id": "Filtra por empleado", "date_from": "YYYY-MM-DD (default: 30 dias atras)",
+                          "date_to": "YYYY-MM-DD (default hoy)", "all": "1 -> incluye anulados"}
+
+
+@ns.route("/checkins/download/excel")
+class CheckinsDownloadExcel(Resource):
+    @ns.doc(params=_CHECKIN_EXPORT_PARAMS)
+    @ns.expect(expected_headers_per)
+    def get(self):
+        """Excel (hojas Registros y Resumen, sin fotos) con los filtros de GET /checkins. Blob en 200; envelope en 4xx."""
+        flag, data_token, msg = token_verification_procedure(request, permissions=_RRHH)
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        params = {k: request.args.get(k) for k in _CHECKIN_EXPORT_PARAMS}
+        envelope, out, code = export_checkins_excel_api(params, data_token)
+        if envelope is not None or out is None:
+            return envelope, code
+        buffer, filename = out
+        return send_file(buffer, mimetype=XLSX_MIMETYPE, as_attachment=True, download_name=filename)
+
+
+@ns.route("/checkins/download/pdf")
+class CheckinsDownloadPDF(Resource):
+    @ns.doc(params=_CHECKIN_EXPORT_PARAMS)
+    @ns.expect(expected_headers_per)
+    def get(self):
+        """PDF con resumen por dia y cada registro con su foto (hasta 200 registros). Blob en 200; envelope en 4xx."""
+        flag, data_token, msg = token_verification_procedure(request, permissions=_RRHH)
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        params = {k: request.args.get(k) for k in _CHECKIN_EXPORT_PARAMS}
+        envelope, out, code = export_checkins_pdf_api(params, data_token)
+        if envelope is not None or out is None:
+            return envelope, code
+        buffer, filename = out
+        return send_file(buffer, mimetype="application/pdf", as_attachment=True, download_name=filename)
 
 
 @ns.route("/checkin")

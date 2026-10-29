@@ -28,7 +28,7 @@ from static.Models.api_sucursal_models import (
     transfer_receive_model,
 )
 from templates.resources.methods.Functions_Aux_Login import token_verification_procedure
-from templates.resources.midleware.MD_Kardex import kardex_conditional
+from templates.resources.methods.Functions_Aux_Http import etag_conditional
 from templates.resources.midleware.MD_Sucursal import (
     SEDE_MAIN_READERS,
     create_sede_movement_api,
@@ -59,6 +59,7 @@ def _invalid_structure(errors):
     return {"data": None, "msg": "Estructura de datos invalida", "error": errors}, 400
 
 
+# ETag + 304 en las dos lecturas de inventario (P-202, docs/almacen_catalogos_etag_y_reservas.md).
 @ns.route("/inventory")
 class SedeInventory(Resource):
     @ns.doc(
@@ -66,7 +67,8 @@ class SedeInventory(Resource):
             "id_warehouse": "Sede (opcional si el permiso es de una sola sede)",
             "search": "Filtra por sku o nombre (LIKE)",
             "only_with_stock": "1 -> solo productos con stock > 0 en la sede",
-        }
+        },
+        responses={304: "Sin cambios respecto al ETag de If-None-Match (sin cuerpo)"},
     )
     @ns.expect(expected_headers_per)
     def get(self):
@@ -79,12 +81,13 @@ class SedeInventory(Resource):
             "only_with_stock": request.args.get("only_with_stock"),
         }
         data_out, code = get_sede_inventory_api(params, data_token)
-        return data_out, code
+        return etag_conditional(data_out, code, request.if_none_match)
 
 
 @ns.route("/inventory/main")
 class MainInventoryReadOnly(Resource):
-    @ns.doc(params={"search": "Filtra por sku o nombre", "only_with_stock": "1 -> solo con stock > 0"})
+    @ns.doc(params={"search": "Filtra por sku o nombre", "only_with_stock": "1 -> solo con stock > 0"},
+            responses={304: "Sin cambios respecto al ETag de If-None-Match (sin cuerpo)"})
     @ns.expect(expected_headers_per)
     def get(self):
         flag, data_token, msg = token_verification_procedure(request, department=_SEDE, permissions=SEDE_MAIN_READERS)
@@ -95,7 +98,7 @@ class MainInventoryReadOnly(Resource):
             "only_with_stock": request.args.get("only_with_stock"),
         }
         data_out, code = get_main_inventory_api(params, data_token)
-        return data_out, code
+        return etag_conditional(data_out, code, request.if_none_match)
 
 
 @ns.route("/movements/<string:type_m>")
@@ -123,7 +126,7 @@ class SedeMovements(Resource):
         }
         data_out, code = get_sede_movements_api(type_m, params, data_token)
         # ETag + 304, igual que el kardex del principal (docs/almacen_kardex_etag.md, P-128)
-        return kardex_conditional(data_out, code, request.if_none_match)
+        return etag_conditional(data_out, code, request.if_none_match)
 
 
 @ns.route("/movement/<int:id_movement>")
