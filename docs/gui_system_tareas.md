@@ -85,6 +85,8 @@
 
 ## T5 — Usuarios con permisos granulares de SM (`P-199`)
 
+> **Actualizado el 2026-10-29:** los granulares ya abren su parte (tabla en [`permisos_sm.md`](permisos_sm.md), Notas posteriores). Por ejemplo, `smCreate` crea y edita SM, y `smDespachar` despacha. La consulta del paso 1 sigue sirviendo. En el paso 2, por cada usuario listado, decidir si le basta su granular o necesita `SM` completo; marcarle `SM` ya no es necesario para que entre.
+
 - **Por qué** ([`permisos_sm.md`](permisos_sm.md)):
   - `smControl`, `smCreate`, `smDespachar` y `smEntregasAdmin` se usarán más adelante, así que **no se retiran**: quedan activos en el catálogo como pendientes de asignación;
   - mientras no se defina qué abre cada uno, con la comparación exacta de SM **no abren nada**: antes pasaban por la subcadena `sm`;

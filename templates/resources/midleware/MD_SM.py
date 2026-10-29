@@ -325,6 +325,16 @@ def get_all_sm(limit, data_token, page=0, emp_id=-1, with_items=True):
     return data_out, 200
 
 
+# Granulares de SM que trabajan sobre todos los contratos y ven todas las SM, como almacén
+# (P-199, docs/permisos_sm.md, Notas posteriores 2026-10-29). smCreate no está: ve solo
+# las de sus contratos, como un líder o un auxiliar.
+SM_ALL_CONTRACTS_PERMS = (
+    "App.Department.smControl",
+    "App.Department.smDespachar",
+    "App.Department.smEntregasAdmin",
+)
+
+
 def get_iddentifiers_creation_contracts(data_token):
     permissions = data_token.get("permissions", {}).values()
     contracts = []
@@ -368,7 +378,9 @@ def get_iddentifiers_ternium(data_token):
     contracts = []
     dict_tabs = {}
     last_part_perm = [item.lower().split(".")[-1] for item in permissions]
-    if any(perm in word for perm in last_part_perm for word in ["administrator", "almacen"]):
+    if any(perm in word for perm in last_part_perm for word in ["administrator", "almacen"]) or any(
+        item in SM_ALL_CONTRACTS_PERMS for item in permissions
+    ):
         flag, error, contracts = get_contract_by_client(40, data_token)
     else:
         for check_func in (check_if_leader, check_if_auxiliar_with_contract):
