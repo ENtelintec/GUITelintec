@@ -1593,18 +1593,14 @@ def extract_payroll_xml_api(data, data_token):
 def update_payroll_list_employees(data_token):
     # (2026-09-07) Sin el guard de flags_daemons["update_files_nomina"]: el
     # daemon de SharePoint ya no existe y el flag bloqueaba la sincronizacion.
-    flag, error, result = update_payroll_employees(data_token)
-    msg = "Se han agregado correctamente:\n"
-    counter = 0
-    for item in result:
-        if item[0]:
-            counter += 1
-    msg += f"{counter} empleados"
-    msg += "\nLos siguientes no se han agregado:\n"
-    for item in result:
-        if not item[0] and "Duplicate entry" not in str(item[1]):
-            msg += f"{item[2]}\n"
-    return 200 if flag else 400, msg
+    # (2026-10-28) Un SELECT + un INSERT de varias filas (antes, un INSERT por empleado).
+    flag, error, added = update_payroll_employees(data_token)
+    if not flag:
+        return 400, f"No se pudo sincronizar la lista de nómina: {error}"
+    msg = f"Se han agregado correctamente:\n{len(added)} empleados"
+    if added:
+        msg += "\n" + ", ".join(str(emp_id) for emp_id in added)
+    return 200, msg
 
 
 def update_data_employee(data, data_token):

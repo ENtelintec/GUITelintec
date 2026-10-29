@@ -73,17 +73,27 @@ def get_payrolls_with_info(employee_id, data_token):
 
 
 def update_payroll_employees(data_token):
-    sql = "SELECT employee_id from sql_telintec.employees"
-    flag, error, result = execute_sql(sql, None, 5)
+    """Fila de nómina para los empleados que no la tienen (la pantalla de Nómina
+    lo llama en cada carga). Antes era un INSERT por empleado: 1 + N consultas,
+    casi todas "Duplicate entry", y en prod el worker llegó al timeout de
+    gunicorn (2026-10-28). Ahora: SELECT de los que faltan y, si falta alguno,
+    un solo INSERT de varias filas; las dos con el mismo data_token (antes el
+    SELECT iba sin token). -> (flag, error, ids agregados)."""
+    sql = (
+        "SELECT e.employee_id FROM sql_telintec.employees e "
+        "LEFT JOIN sql_telintec_mod_rrhh.payroll p ON p.id = e.employee_id "
+        "WHERE p.id IS NULL"
+    )
+    flag, error, result = execute_sql(sql, None, 5, data_token)
     if not flag:
-        return flag, error, []
-    if not (isinstance(result, tuple) or isinstance(result, list)):
-        return False, "bad type in db"
-    data_out = []
-    for employee in result:
-        emp_id = employee[0]
-        sql = "INSERT INTO sql_telintec_mod_rrhh.payroll (id) VALUES (%s)"
-        vals = (emp_id,)
-        flag, error, result = execute_sql(sql, vals, 4, data_token)
-        data_out.append([flag, error, emp_id])
-    return True, None, data_out
+        return False, error, []
+    missing = [row[0] for row in result] if isinstance(result, (list, tuple)) else []
+    if not missing:
+        return True, None, []
+    # ON DUPLICATE KEY: si otra carga los dio de alta entre el SELECT y el INSERT, no falla.
+    placeholders = ", ".join(["(%s)"] * len(missing))
+    sql = f"INSERT INTO sql_telintec_mod_rrhh.payroll (id) VALUES {placeholders} ON DUPLICATE KEY UPDATE id = id"
+    flag, error, _rows = execute_sql(sql, tuple(missing), 3, data_token)
+    if not flag:
+        return False, error, []
+    return True, None, missing
