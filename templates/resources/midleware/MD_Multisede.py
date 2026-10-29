@@ -290,12 +290,15 @@ def get_multisede_catalogs_api():
 
 # --- Inventario consolidado --------------------------------------------------
 def get_consolidated_inventory_api(params, data_token):
-    """GET /almacen/inventory/consolidated?search=&only_multisede=1. Por
-    producto: stock del principal, por sede secundaria, en tránsito y total."""
+    """GET /almacen/inventory/consolidated?search=&only_multisede=1&all=1. Por
+    producto: stock del principal, por sede secundaria, en tránsito y total.
+    Sin `search` ni `all=1` aplica only_multisede (P-203, 2026-10-28): el
+    catálogo completo con sus dos subconsultas por producto solo a pedido."""
+    truthy = ("1", "true", "yes")
     search = (params.get("search") or "").strip() or None
-    only_multisede = (
-        1 if str(params.get("only_multisede") or "").strip().lower() in ("1", "true", "yes") else None
-    )
+    explicit = str(params.get("only_multisede") or "").strip().lower() in truthy
+    full = str(params.get("all") or "").strip().lower() in truthy
+    only_multisede = 1 if explicit or (search is None and not full) else None
     flag, error, rows = get_consolidated_stock_db(search, only_multisede, data_token)
     if not flag:
         return {"data": None, "msg": "Error al consultar el inventario consolidado", "error": error}, 400
@@ -322,7 +325,8 @@ def get_consolidated_inventory_api(params, data_token):
                 "stock_total": stock_main + stock_sedes + in_transit,
             }
         )
-    return {"data": data_out, "msg": f"{len(data_out)} productos", "error": None}, 200
+    scope = " (solo con stock en sedes o en tránsito)" if only_multisede else ""
+    return {"data": data_out, "msg": f"{len(data_out)} productos{scope}", "error": None}, 200
 
 
 # =============================================================================

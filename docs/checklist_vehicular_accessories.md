@@ -46,3 +46,7 @@ Contra BD dev (2026-10-09), [`Tests/tester_voucher_vehicle_accessories.py`](../T
 
 - **[back] DML** [`voucher_vehicle_accessories_normalize.sql`](../scripts_db_handle/voucher_vehicle_accessories_normalize.sql) en dev, test y prod (usuario). No bloquea el deploy: los lectores toleran ambas formas.
 - ~~**[back] Alta sin rollback**~~ — hecho el 2026-10-12 en [`checklist_vehicular_anexos_sin_carrera.md`](checklist_vehicular_anexos_sin_carrera.md). Era: `create_voucher_vehicle_api` inserta `vouchers_general` y después `voucher_vehicle`. Si el segundo falla (p. ej. `model` > 100 caracteres → 1406 `Data too long`), el primero queda **huérfano**. El huérfano de la prueba se borró a mano.
+
+## Notas posteriores
+
+- **2026-10-28 — `P-098` cerrado.** El usuario corrió el DML en las 3 BDs. verificado en solo lectura en dev y test el 2026-10-28; prod, según el usuario (el modo automático no deja leer su BD): todas las filas son `ARRAY` (dev 1, test 2).

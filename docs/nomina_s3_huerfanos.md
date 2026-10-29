@@ -93,9 +93,9 @@ Mismo contrato. Caso nuevo: si la llave borrada del índice la sigue usando otro
 ## Pendientes
 
 - ~~`P-175` **[back]** Subida/borrado sin huérfanos + conciliación (solo reporte)~~ — hecho (2026-10-23).
-- `P-176` **[usuario → back]** Borrar los 7 huérfanos cuando RH use nómina al 100 %. Son subidas de pruebas del desarrollo, así que ya no hace falta revisar los logs (decisión del 2026-10-27, ver Notas posteriores). Borrar por la lista del reporte, no por prefijo.
+- ~~`P-176` **[usuario → back]** Borrar los 7 huérfanos cuando RH use nómina al 100 %~~ — hecho (2026-10-28): borrados por llave exacta (ver Notas posteriores).
 - ~~`P-177` **[back, decisión]** La llave S3 no lleva entorno ni `key`~~ — hecho (2026-10-27): `payroll/<entorno>/<año>/<mes>/<emp_id>/<quincena>/<archivo>`, y dev/test ya no borran llaves viejas ni ajenas; la conciliación cruza cada prefijo con su BD → [`s3_rutas_por_entorno.md`](s3_rutas_por_entorno.md).
-- `P-141`: ver la nota del 2026-10-23 en [`nomina_descarga_recibo.md`](nomina_descarga_recibo.md). El DML vacía también los recibos reales que prod ya tiene en S3.
+- `P-141`: criterio nuevo del 2026-10-28 (solo lo anterior a agosto de 2026 y lo que no está en S3); ya no toca los recibos reales. Ver la nota de ese día en [`nomina_descarga_recibo.md`](nomina_descarga_recibo.md).
 
 ## Notas posteriores
 
@@ -114,3 +114,10 @@ Se corrió con la versión del script que agrega el campo `entorno` (`P-177`). H
 - Si más adelante aparece un huérfano bajo `payroll/prod/...`, ese sí obliga a revisar el permiso `s3:DeleteObject` y los logs (`Error al borrar de S3`).
 
 **Índices**: cada BD (dev, test y prod) tiene 238 llaves de SharePoint sin objeto en S3. Prod tiene 240 en total, contando las 2 reales. Esto confirma que el DML de `P-141` no se ha corrido en ninguna BD, y que tal como está también sacaría del índice los 2 recibos reales de prod.
+
+### 2026-10-28: tercera conciliación y borrado de los 7 huérfanos (`P-176`)
+
+- La conciliación (bucket + índices de las 3 BDs en transacciones `READ ONLY`) da 94 objetos bajo `payroll/`. Los **7 huérfanos son los mismos** de las dos corridas anteriores: ruta vieja sin entorno, ninguno referenciado. Además, 1 objeto reciente de dev, y prod ya indexa **86 recibos en S3**: 84 de `payroll/prod/2026/08` y los 2 del emp 21 de octubre. RH ya usa nómina.
+- **Decisión del usuario:** borrar los 7. El bucket no tiene versionado (`get-bucket-versioning` vacío), así que el borrado es definitivo. Se borraron uno por uno, por llave exacta, con `aws s3api delete-object`: `payroll/2026/01/21/` (xml y pdf), `payroll/2026/09/21/FF8D85D2-…2121.pdf`, `payroll/2026/10/21/` (xml y pdf de pruebas), `payroll/2026/10/85/…2130.pdf` y `payroll/2026/10/87/…2130.pdf`.
+- Después quedan **87** objetos: los 84 de agosto, los 2 reales del emp 21 de octubre y el de dev. `P-176` cerrado.
+

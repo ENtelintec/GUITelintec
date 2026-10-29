@@ -98,7 +98,9 @@ def complete_reservation_db(id_reservation, data_token):
     return flag, error, lastrowid
 
 
-def get_all_reservations(data_token):
+def get_all_reservations(status, limit: int, data_token):
+    """Reservas más recientes primero; `status` None = todas (param-or-NULL).
+    `limit` lo arma el midleware (P-201: tope + 1 para saber si recortó)."""
     sql = (
         "SELECT "
         "sql_telintec.product_reservations.reservation_id, "
@@ -113,7 +115,9 @@ def get_all_reservations(data_token):
         "FROM sql_telintec.product_reservations "
         "LEFT JOIN sql_telintec.products_amc ON (sql_telintec.product_reservations.id_product = sql_telintec.products_amc.id_product) "
         "LEFT JOIN sql_telintec.materials_request ON (sql_telintec.product_reservations.sm_id = sql_telintec.materials_request.sm_id) "
+        "WHERE (%s IS NULL OR sql_telintec.product_reservations.status = %s) "
         "ORDER BY reservation_id DESC "
+        "LIMIT %s"
     )
-    flag, error, result = execute_sql(sql, None, 5, data_token)
+    flag, error, result = execute_sql(sql, (status, status, limit), 2, data_token)
     return flag, error, result

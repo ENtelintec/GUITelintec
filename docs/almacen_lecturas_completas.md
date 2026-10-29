@@ -125,3 +125,4 @@ Regresión:
 
   `P-201` hoy no tiene urgencia. `P-202` es el más pesado: 84 KB por la red en cada carga.
 - **2026-10-28 (noche) — `codes/generate` verificado en prod** (`P-205`, token `ALMACEN-VISUAL`). Responde 200 con `10010001998`: el máximo de la parte numérica del SKU (1997) más uno, ya calculado por la BD. No se cotejó contra la cuenta vieja en Python porque no hay lectura directa de la BD de prod; con 1,995 productos el valor es coherente.
+- **2026-10-28 — `P-201` a `P-204` resueltos** (decisiones del usuario): ETag + 304 en los catálogos de SM, inventario y sucursal; reservas con `status`/`limit` y `meta`; consolidado con `only_multisede` por defecto. → [`almacen_catalogos_etag_y_reservas.md`](almacen_catalogos_etag_y_reservas.md). En `P-201` queda la parte del front (pedir solo pendientes).

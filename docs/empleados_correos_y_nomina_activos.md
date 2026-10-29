@@ -80,3 +80,4 @@ Cada empleado gana `emails` (lista, `[]` si no hay) junto a `email` (string). `G
 ## Notas posteriores
 
 - **2026-10-22 — DML corrido y corrección por PAD SPACE** (`P-163`): `employees_emails_normalize.sql` ya corrió en las 3 BDs; no queda ninguna coma suelta. Queda el empleado 32 (`'jess31438@gmail.com '`, espacio final) en las 3: `employees.email` es `utf8mb4_bin`, que es **PAD SPACE**, así que el `<>` del WHERE ignoraba el espacio final. El script compara ahora con `CAST(... AS BINARY)`; basta volver a correr los bloques 1–3. No afecta al API: `split_emails` ya recorta al leer.
+- **2026-10-28 — `P-163` cerrado.** El usuario volvió a correr los bloques 1–3 de `employees_emails_normalize.sql` en las 3 BDs. Verificado en solo lectura en dev y test: 0 correos por normalizar y el emp 32 sin el espacio final; prod, según el usuario.

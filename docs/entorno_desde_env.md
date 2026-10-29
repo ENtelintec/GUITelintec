@@ -56,3 +56,7 @@ Cada máquina de dev necesita `API_ENVIRONMENT=dev` en su `.env`.
 - **Nuevo archivo de secretos fuera del repo** (otro `.pem`): leerlo de `_env_dir`, como `domain_path`, no con un `../` fijo.
 - **No** volver a escribir `environment` en el código para desplegar ni para probar: el valor vive en el `.env` de cada máquina.
 - Cambiar el `.env` requiere reiniciar el API (se lee una vez al importar).
+
+## Notas posteriores
+
+- **2026-10-28 — `P-212` cerrado.** El usuario puso `API_ENVIRONMENT=prod` en el `.env` de prod; `GET /GUI/health` responde `OK` el mismo día.

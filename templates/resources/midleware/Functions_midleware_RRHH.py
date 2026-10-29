@@ -1705,7 +1705,7 @@ def fetch_medicals(data_token) -> tuple[dict, int]:
             "dates": dates,
             "apt_last": apt_actual,
             "emp_id": emp_id,
-            "allergies": extra_info.get("allergies", extra_info.get("alergies", "")),
+            "allergies": extra_info.get("allergies", ""),
             "observations": extra_info.get("observations", ""),
             "alert": due["alert"],
             "last_date": last_date.isoformat() if last_date else None,

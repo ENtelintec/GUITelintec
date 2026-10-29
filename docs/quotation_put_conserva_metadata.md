@@ -55,3 +55,7 @@ Contra BD dev (2026-10-13), [`Tests/tester_quotation_put_metadata.py`](../Tests/
 - `GET ?with_costs=1` expone el 18.25 y un `costAnalysis` en USD sin `exchange_rate` vuelve a usar el de cabecera (antes del fix daba 400).
 
 `pyrefly`: sin errores nuevos en los archivos tocados.
+
+## Notas posteriores
+
+- **2026-10-28 — `P-138` cerrado.** El usuario corrió el DML en las 3 BDs. verificado en solo lectura en dev y test el 2026-10-28; prod, según el usuario (el modo automático no deja leer su BD): 0 cotizaciones con `metadata.codigo` (dev 16, test 15).

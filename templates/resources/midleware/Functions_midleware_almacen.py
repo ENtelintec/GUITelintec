@@ -1400,8 +1400,21 @@ def delete_reservation_from_api(data, data_token):
     }, 200
 
 
-def get_reservations_db(data_token):
-    flag, error, result = get_all_reservations(data_token)
+RESERVATIONS_MAX_LIMIT = 1000
+
+
+def get_reservations_db(params: dict, data_token):
+    """GET /almacen/reservations?status=&limit= (P-201). Sin `status`, todas;
+    `limit` 1..RESERVATIONS_MAX_LIMIT (default el tope), más recientes primero.
+    Se pide una fila de más para saber si el tope recortó (`meta.truncated`)."""
+    raw_status, raw_limit = params.get("status"), params.get("limit")
+    try:
+        status = int(raw_status) if raw_status not in (None, "") else None
+        limit = int(raw_limit) if raw_limit not in (None, "") else RESERVATIONS_MAX_LIMIT
+    except (TypeError, ValueError):
+        return {"data": [], "msg": "Filtro inválido", "error": ["status y limit deben ser enteros"]}, 400
+    limit = max(1, min(limit, RESERVATIONS_MAX_LIMIT))
+    flag, error, result = get_all_reservations(status, limit + 1, data_token)
     if not flag:
         return {"data": [], "msg": "No se pudieron obtener las reservaciones", "error": error}, 400
     if not (isinstance(result, list) or isinstance(result, tuple)):
@@ -1410,8 +1423,9 @@ def get_reservations_db(data_token):
             "msg": "No se pudieron obtener las reservaciones",
             "error": str(result),
         }, 400
+    truncated = len(result) > limit
     data = []
-    for item in result:
+    for item in result[:limit]:
         history = json.loads(item[5])
         data.append(
             {
@@ -1424,5 +1438,5 @@ def get_reservations_db(data_token):
                 "folio": item[6],
             }
         )
-
-    return {"data": data, "msg": None, "error": None}, 200
+    meta = {"status": status, "returned": len(data), "limit": limit, "truncated": truncated}
+    return {"data": data, "msg": None, "error": None, "meta": meta}, 200

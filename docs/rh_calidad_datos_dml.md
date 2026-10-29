@@ -39,3 +39,8 @@ Es lo mismo que `data_quality` del `summary`; en prod sale con las 3 consultas d
 - **[usuario]** Correr `rh_calidad_datos_empleados.sql` y `examenes_med_allergies_key.sql` (Bloque 1 DML + Bloque 2 DDL) en dev, test y prod; pegar aquí el "antes/después".
 - **[admin/RH]** Corregir desde la pantalla de empleados los 11 + 9 + 21 del listado y capturar `dates` de vacaciones.
 - **[back]** Quitar el fallback `alergies` del lector cuando el DML esté en las 3 BDs.
+
+## Notas posteriores
+
+- **2026-10-28 — bloque 2 de `examenes_med_allergies_key.sql` corregido (`P-042`).** En test el bloque 1 corrió (0 llaves viejas, 50 nuevas) y el bloque 2 falló con el error 1101 ("BLOB, TEXT, GEOMETRY or JSON column 'extra_info' can't have a default value"): en MySQL 8.4, `ALTER COLUMN ... SET DEFAULT` no acepta una columna JSON aunque el valor vaya entre paréntesis. El script ahora redefine la columna con `MODIFY COLUMN extra_info JSON NULL DEFAULT ('{"allergies": "", "observations": ""}')`, la misma definición que muestra `SHOW CREATE TABLE` en dev y test (json, nullable, sin comentario) con la llave cambiada. Dev sigue con 49 llaves viejas y el DEFAULT viejo en las dos BDs.
+- **2026-10-28 — `P-042` cerrado y fallback quitado.** El usuario corrió los dos bloques en las 3 BDs. verificado en solo lectura en dev y test el 2026-10-28; prod, según el usuario (el modo automático no deja leer su BD): 0 llaves `alergies` (dev 49 `allergies`, test 50) y el DEFAULT de `extra_info` ya trae `allergies`. `fetch_medicals` ([`Functions_midleware_RRHH.py`](../templates/resources/midleware/Functions_midleware_RRHH.py)) lee solo `allergies`; en dev la API coincide con la BD (15 registros). `rh_calidad_datos_empleados.sql` (`P-039`) sigue sin correr: dev 3 filas, test 2.

@@ -66,7 +66,8 @@ from templates.resources.midleware.MD_Multisede import (
     resolve_transfer_api,
     update_warehouse_api,
 )
-from templates.resources.midleware.MD_Kardex import get_kardex_api, kardex_conditional
+from templates.resources.methods.Functions_Aux_Http import etag_conditional
+from templates.resources.midleware.MD_Kardex import get_kardex_api
 from templates.resources.midleware.Functions_midleware_almacen import (
     create_file_inventory_excel,
     create_file_inventory_pdf,
@@ -107,6 +108,10 @@ _ALM_WRITE = ["App.Department.ALMACEN"]
 _ALM_ADMIN_READ = _ALM_READ + ["App.Department.Administracion"]
 _ALM_ADMIN_WRITE = _ALM_WRITE + ["App.Department.Administracion"]
 _EPP_READ = ["App.Department.Epp", "App.Department.eppVisual", "App.Department.eppApprove"]
+# GET /inventory/suppliers/allSuppliers (P-209, 2026-10-28): también lo leen los formularios
+# de SM, Compras (solicitud de OC) y EPP. Solo lectura; las escrituras de proveedores siguen igual.
+_SUPPLIERS_READ = (_ALM_READ + ["App.Department.SM", "App.Department.SM-URGENT", "App.Department.Administracion",
+                                "App.Department.adminCompras", "App.Department.comprasCreate"] + _EPP_READ)
 # POST/PUT /movement: almacén y EPP (eppVisual/eppApprove ya no escriben)
 _MOVEMENT_WRITE = ["App.Department.ALMACEN", "App.Department.Epp"]
 
@@ -148,7 +153,7 @@ class KardexMain(Resource):
             return {"data": None, "msg": None, "error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         params = _kardex_params()
         data_out, code = get_kardex_api(params["type_m"], params, data_token)
-        return kardex_conditional(data_out, code, request.if_none_match)
+        return etag_conditional(data_out, code, request.if_none_match)
 
 
 @ns.route("/kardex/epp")
@@ -161,7 +166,7 @@ class KardexEpp(Resource):
             return {"data": None, "msg": None, "error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         params = _kardex_params()
         data_out, code = get_kardex_api(params["type_m"], params, data_token, epp=True)
-        return kardex_conditional(data_out, code, request.if_none_match)
+        return etag_conditional(data_out, code, request.if_none_match)
 
 
 @ns.route("/movement")
@@ -222,15 +227,17 @@ class MultipleMovementDB(Resource):
         return data_out, code
 
 
+# ETag + 304 (P-202, docs/almacen_catalogos_etag_y_reservas.md).
 @ns.route("/inventory/products/<string:type_p>")
 class FetchProducts(Resource):
+    @ns.doc(responses=_KARDEX_RESPONSES)
     @ns.expect(expected_headers_per)
     def get(self, type_p):
         flag, data_token, msg = token_verification_procedure(request, permissions=_ALM_READ)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data_out, code = get_all_products_DB(type_p, data_token)
-        return data_out, code
+        return etag_conditional(data_out, code, request.if_none_match)
 
 
 @ns.route("/inventory/product")
@@ -451,7 +458,8 @@ class InventoryConsolidated(Resource):
     @ns.doc(
         params={
             "search": "Filtra por sku o nombre (LIKE)",
-            "only_multisede": "1 -> solo productos con stock en alguna sede o en tránsito",
+            "only_multisede": "1 -> solo productos con stock en alguna sede o en tránsito (default sin search)",
+            "all": "1 -> catálogo completo cuando no hay search (P-203)",
         }
     )
     @ns.expect(expected_headers_per)
@@ -462,6 +470,7 @@ class InventoryConsolidated(Resource):
         params = {
             "search": request.args.get("search"),
             "only_multisede": request.args.get("only_multisede"),
+            "all": request.args.get("all"),
         }
         data_out, code = get_consolidated_inventory_api(params, data_token)
         return data_out, code
@@ -482,7 +491,7 @@ class InventoryCategories(Resource):
 class InventorySuppliers(Resource):
     @ns.expect(expected_headers_per)
     def get(self):
-        flag, data_token, msg = token_verification_procedure(request, permissions=_ALM_READ)
+        flag, data_token, msg = token_verification_procedure(request, permissions=_SUPPLIERS_READ)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data_out, code = get_suppliers_db(data_token)
@@ -744,6 +753,8 @@ class ReservationActions(Resource):
 
 @ns.route("/reservations")
 class GetReservations(Resource):
+    @ns.doc(params={"status": "Filtra por status (0 = pendiente); sin él, todas",
+                    "limit": "Tope de filas, 1..1000 (default 1000); más recientes primero (P-201)"})
     @ns.expect(expected_headers_per)
     def get(self):
         flag, data_token, msg = token_verification_procedure(
@@ -751,5 +762,6 @@ class GetReservations(Resource):
         )
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        data_out, code = get_reservations_db(data_token)
+        params = {"status": request.args.get("status"), "limit": request.args.get("limit")}
+        data_out, code = get_reservations_db(params, data_token)
         return data_out, code

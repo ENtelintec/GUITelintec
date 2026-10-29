@@ -73,3 +73,4 @@ midleware   MD_Sucursal.py     SEDE_MAIN_READERS; _is_main_reader -> verify_exac
 
 - **2026-10-28** — `GET /movements/<type_m>` y `GET /movements/epp/<type_m>` de `/almacen` ya no existen: se retiraron con `P-126` y la matriz baja de 43 a 41 endpoints de `/almacen`. `GET /sucursal/movements/<type_m>` sigue igual. → [`almacen_kardex_ventana.md`](almacen_kardex_ventana.md)
 - **2026-10-28** — Los dos dashboards de inventario también dejan pasar a `App.Department.Director` (D14: `Director` ve todos los dashboards en lectura). → [`permisos_rrhh_bitacoras_cda_comun.md`](permisos_rrhh_bitacoras_cda_comun.md)
+- **2026-10-28 — `P-209`.** `GET /inventory/suppliers/allSuppliers` abre también a SM, Compras y EPP en lectura (`_SUPPLIERS_READ`). Detalle → [`permisos_administracion.md`](permisos_administracion.md) (Notas posteriores 2026-10-28).
