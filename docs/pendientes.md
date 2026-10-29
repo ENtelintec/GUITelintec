@@ -1,6 +1,6 @@
 # Pendientes — backend y front (todas las áreas)
 
-> Tracker general: solo listado con estado y link al doc que tiene la documentación completa. Cada ítem lleva un **id estable `P-NNN`** (global, secuencial, nunca se renumera ni se reutiliza; un ítem nuevo toma el siguiente número aunque vaya a otra sección; **siguiente libre: `P-216`**) y marca **[back]** / **[front]** (o ambos). Para referirse a un pendiente basta el id (p. ej. el front reporta "P-034 hecho"). **🧪 listo para probar** = el front lo entregó y espera la prueba de Cobranza en test; se marca `[x]` solo con su visto bueno (proceso acordado con el front el 2026-10-13). Actualizado: 2026-10-28 (el usuario corrió los DML/DDL: cerrados `P-141`, `P-042` —y quitado el fallback `alergies`—, `P-098`, `P-138` y `P-163` → [`pendientes_cerrados.md`](pendientes_cerrados.md); `P-039` queda pendiente por decisión del usuario. Antes, el mismo día: cerrados `P-212`, `P-150`, `P-176`, `P-202`, `P-203` y `P-204`). Cada actualización **reemplaza** esta línea, no se acumula; el historial está en git. Los planes de mes ([`plan_rh_mes.md`](planes/archivo/plan_rh_mes.md), [`plan_mes_2.md`](planes/archivo/plan_mes_2.md)) quedaron **archivados**: sus tareas abiertas viven solo aquí y las de front las absorbe el **equipo de front principal** (sin calendario por semanas). Orden de trabajo del back y backlog priorizado del front → [`planes/plan_accion_2026_10.md`](planes/plan_accion_2026_10.md); bloque de Administración → [`planes/control_entregas_ocd_plan.md`](planes/control_entregas_ocd_plan.md).
+> Tracker general: solo listado con estado y link al doc que tiene la documentación completa. Cada ítem lleva un **id estable `P-NNN`** (global, secuencial, nunca se renumera ni se reutiliza; un ítem nuevo toma el siguiente número aunque vaya a otra sección; **siguiente libre: `P-225`**) y marca **[back]** / **[front]** (o ambos). Para referirse a un pendiente basta el id (p. ej. el front reporta "P-034 hecho"). **🧪 listo para probar** = el front lo entregó y espera la prueba de Cobranza en test; se marca `[x]` solo con su visto bueno (proceso acordado con el front el 2026-10-13). Actualizado: 2026-10-29 (cerrado `P-219`: la Lambda v2 de login está en vivo y probada con un usuario real en v1 y v2 → [`pendientes_cerrados.md`](pendientes_cerrados.md). Antes, el mismo día: cerrados `P-220` y `P-218`, y el grill de `P-188`, `P-199` y `P-209` → [`planes/login_y_usuarios_plan.md`](planes/login_y_usuarios_plan.md)). Cada actualización **reemplaza** esta línea, no se acumula; el historial está en git. Los planes de mes ([`plan_rh_mes.md`](planes/archivo/plan_rh_mes.md), [`plan_mes_2.md`](planes/archivo/plan_mes_2.md)) quedaron **archivados**: sus tareas abiertas viven solo aquí y las de front las absorbe el **equipo de front principal** (sin calendario por semanas). Orden de trabajo del back y backlog priorizado del front → [`planes/plan_accion_2026_10.md`](planes/plan_accion_2026_10.md); bloque de Administración → [`planes/control_entregas_ocd_plan.md`](planes/control_entregas_ocd_plan.md).
 
 > **Cerrados** (`[x]`) → [`pendientes_cerrados.md`](pendientes_cerrados.md), misma estructura por área. Al cerrar un ítem se marca `[x]` y se mueve al final de su sección en ese archivo; el id no cambia. Aquí solo queda lo abierto (incluidos los `🧪`, que no están cerrados).
 
@@ -57,6 +57,16 @@
 - [ ] `P-053` **[back] Reporte de materiales formato Ternium generado** (hoy solo se concatena el escaneo subido como `anexo`; falta modelo de datos — el modelo de datos del reporte está por definir con administración). → [`remission_combined_pdf.md`](remission_combined_pdf.md)
 - [ ] `P-056` **[front+back] Borrado de anexos en lote** — solo si el front agrega selección múltiple. → [`remission_attachment_delete.md`](remission_attachment_delete.md)
 - [ ] `P-057` **[front] Pantalla de control de saldos** — consumir `GET /remission-0?include_items=0` + filtros (`date_from`/`date_to`/`month_period`/`general_status`) y mandar los 4 campos nuevos del `PUT /remissionBalance` (`ot_ticket`, `centro_costos`, `responsable_centro_costos`, `personal_infra`). · 🧪 **listo para probar** (front, 2026-10-13): listado sobre `GET /remission-0` (equivale a `remission--1`) y saldos con `include_items=0`. → [`remission_balance_get_filters_campos_nuevos.md`](remission_balance_get_filters_campos_nuevos.md) · Prueba local de la usuaria con cuenta Administrador ✅ (2026-10-15); sigue 🧪 hasta el visto bueno de Cobranza en test (`P-094`).
+- [ ] `P-216` **[back] Remisión limitada de los líderes** (grill 2026-10-29). Aplica a un token cuyo único permiso de remisiones sea `Operaciones`:
+  - `POST·PUT /remissionControlTable` aceptan solo las llaves del bloque de operaciones (400 con las de administración);
+  - el `PUT` se rechaza si la remisión ya tiene partidas;
+  - `GET /remission-<id>` (incluido `-1`) devuelve solo las de sus contratos (`heads`, misma regla que SM).
+  - Doc propio con contrato al implementarlo. → [`permisos_administracion.md`](permisos_administracion.md) (Notas posteriores 2026-10-29)
+- [ ] `P-217` **[front] Líderes: remisión limitada y retiro de Reporte de actividad**:
+  - Tabla de remitos → nueva crea con `POST /remissionControlTable` (`{metadata}`, sin `items`) en lugar de `POST /remission`, que da 401 a un líder con solo `Operaciones`;
+  - retirar Reporte de actividad (menú, 4 páginas, `api-activity-report.ts`, su hook y sus tipos);
+  - el botón "Crear reporte" de Cotización de actividad lleva a `tabla-remitos/nueva?quotationId=<id>`;
+  - después de `P-216`, manejar el 400 de llaves y el bloqueo por partidas. → [`permisos_administracion.md`](permisos_administracion.md) (Notas posteriores 2026-10-29, con contrato)
 
 **Control de saldos (Cobranza)** — *contexto: entidad nueva `balance_controls` (1 control activo por contrato; membresía por `activity_reports.balance_control_id` desde el 2026-09-17, ver [`control_saldos_sin_contrato.md`](control_saldos_sin_contrato.md)), catálogo de formatos ISO de SGI en BD (`iso_formats`, ids 1..8 = `settings.json`, 9..13 = FO-CXC-07..11 con `config`), columnas dinámicas y movimientos de saldo inmutables; grill 2026-09-11 → [`control_saldos_cabecera.md`](control_saldos_cabecera.md).*
 
@@ -105,19 +115,37 @@
 
 - [ ] `P-187` **[front] `EppVisual` / `EppApprove` no coinciden con el catálogo**: `src/constants/route-permissions.ts` escribe `App.Department.EppVisual` y `EppApprove`, pero el catálogo dice `eppVisual` y `eppApprove`, y el front compara el nombre exacto. Los usuarios con esos permisos no ven sus pantallas, aunque el API sí los deja pasar. Corregir las constantes. → [`permisos_plan.md`](permisos_plan.md)
 - [ ] `P-200` **[front] Pantallas de vales para `voucherTool`, `voucherSafe` y `voucherApprove`**: el API ya les responde (herramienta, EPP y listado/estado de ambos), pero las rutas de `voucher_general` piden solo `Voucher`. Agregarlos donde corresponda. → [`permisos_sgi.md`](permisos_sgi.md)
-- [ ] `P-188` **[back + front + usuario] Plan de migración de la gestión de usuarios y permisos a la webapp**: hoy se dan de alta a mano en la app de usuarios. El plan decide el destino de `POST /UserSystem/user` (pide `credentials`, que no corresponde a ningún permiso), las rutas que la pantalla del front llama y el API no tiene (`/UserSystem/create-user`, `/usernames-<status>/<id>`), quién firma el token, cómo entra el catálogo en BD (D1) y la baja automática del usuario cuando RH da de baja al empleado (D7). → [`permisos_plan.md`](permisos_plan.md)
 - [ ] `P-192` **[front] Pantallas de Compras para `adminCompras` y `comprasCreate`**: el API ya los deja pasar con comparación exacta (OC, solicitudes, bitácora de compras, lista de compra; `comprasCreate` solo lista, crea y edita solicitudes), pero `route-permissions.ts` no los tiene y esos usuarios no ven las pantallas. Agregarlos a las rutas correspondientes. → [`permisos_compras_y_baja.md`](permisos_compras_y_baja.md)
 - [ ] `P-196` **[usuario] Quitar en prod los permisos fuera del catálogo** (T4; la tabla ya existe): consulta lista en el doc; en dev salen `DemoRRHH` y `DemoALMACEN` (por subcadena, `DemoRRHH` entra a los 77 endpoints de RRHH). → [`gui_system_tareas.md`](gui_system_tareas.md)
-- [ ] `P-199` **[back + usuario] Permisos granulares de SM pendientes de asignación** (`smControl`, `smCreate`, `smDespachar`, `smEntregasAdmin`): se usarán más adelante y no se retiran del catálogo. Falta definir qué abre cada uno; mientras, con la comparación exacta de SM, no abren nada. Revisar en prod que nadie que los tenga se haya quedado sin `SM` (consulta en T5). → [`gui_system_tareas.md`](gui_system_tareas.md)
+- [ ] `P-199` **[back + usuario] Permisos granulares de SM** (`smControl`, `smCreate`, `smDespachar`, `smEntregasAdmin`). **Definidos el 2026-10-29**: roles acotados para quien no tiene `SM`.
+  - Qué abre cada uno, y que `smCreate` ve solo las SM de sus contratos mientras los otros tres ven todas → [`permisos_sm.md`](permisos_sm.md) (Notas posteriores 2026-10-29).
+  - **Falta (back):** implementarlo en `rs_SM.py` y en el alcance de `MD_SM`.
+  - **Falta (usuario):** revisar en prod que nadie se haya quedado sin `SM` (consulta en T5). → [`gui_system_tareas.md`](gui_system_tareas.md)
 - [ ] `P-206` **[front] `Director` en la pantalla del dashboard de RRHH**: el API ya deja a `App.Department.Director` leer los 6 dashboards (`GET /dashboard/rrhh/summary`, `POST /dashboard/rrhh/series`, etc.), pero en `route-permissions.ts` `/dashboard/rrhh` solo admite `RRHH` y `Administrator`, así que `/dashboard/rrhh/dashboard` le queda cerrada. Agregar `/dashboard/rrhh/dashboard` con `RRHH`, `Director` y `Administrator`, y mostrarle la entrada en el menú. → [`permisos_rrhh_bitacoras_cda_comun.md`](permisos_rrhh_bitacoras_cda_comun.md)
 - [ ] `P-208` **[front] Pantallas de Administración para `adminCobranza`, `adminPreventa`, `adminRem` y `adminDB`**: hoy `route-permissions.ts` cierra `/dashboard/administracion`, `/dashboard/cobranza` y `/dashboard/preventa` a `Administrator` y `Administracion`. Se agregan las constantes y las rutas:
   - Cobranza (`cobranza-remision`, `control-saldos`, `control-entregas`, `control-reportes`): `adminCobranza`; las de remisiones, también `adminRem`.
   - Preventa (`/dashboard/preventa/*`, cotizaciones): `adminPreventa`.
   - BD (`contratos`, `estado-contratos`, `db-management`, `catalogo-proveedores`): `adminDB`.
   - Qué abre cada uno en el API → [`permisos_administracion.md`](permisos_administracion.md)
-- [ ] `P-209` **[decisión, back + front] Lecturas que el front pide sin permiso** (hallazgos del 2026-10-28). Ya resuelto el 2026-10-28: `Operaciones` abre la cotización de actividad (Líderes); `ALMACEN` y `ALMACEN-VISUAL` leen `GET /admin/db/suppliers/allSuppliers`; y, por decisión del usuario, SM (`SM`, `SM-URGENT`), Compras (`Administracion`, `adminCompras`, `comprasCreate`) y EPP (`Epp`, `eppVisual`, `eppApprove`) leen `GET /almacen/inventory/suppliers/allSuppliers`, sin escrituras. Falta:
-  - **Ruta inexistente:** el front llama a `/activity/report*`, que no existe en el API.
-  - → [`permisos_administracion.md`](permisos_administracion.md)
+
+**Login y gestión de usuarios** — *plan aprobado en el grill del 2026-10-29 (cierra `P-188`) → [`planes/login_y_usuarios_plan.md`](planes/login_y_usuarios_plan.md). El login pasa a la Lambda (repo `telintec_login_lambda`) con tokens ES256 de 24 h; `GUI_System` se queda y firma con su propia llave; el API solo guarda llaves públicas.*
+
+- [ ] `P-221` **[front] Login v2**. La Lambda v2 ya está en vivo (`P-219`). **Antes, el usuario despliega el API con `P-218` a prod**; la pública `token_public_lambda.pem` ya está junto al `.env` de prod. → [`planes/login_y_usuarios_plan.md`](planes/login_y_usuarios_plan.md) (contrato)
+  - mandar `version: 2`, verificar el token con la pública `lambda` (ES256) y quitar `NEXT_PUBLIC_TOKEN_MASTER_KEY`;
+  - la llave del login pasa a una variable sin `NEXT_PUBLIC_`.
+- [ ] `P-222` **[usuario] `GUI_System` firma ES256 con su par** (`kid: gui_system`, sin `exp`) y re-firma los tokens guardados; la pública va como `token_public_gui_system.pem` junto al `.env` del API. Al cambiar una contraseña vacía `password_hash`, y "Pending removal" deshabilita en vez de borrar (T7). → [`gui_system_tareas.md`](gui_system_tareas.md)
+- [ ] `P-223` **[back + front] F2: gestión de usuarios en la webapp**:
+  - alta por `Administrator` (cualquier permiso) y por `RRHH` (solo `Basic` y `Common`, validado en el API);
+  - edición de permisos, deshabilitar y reactivar, y catálogo;
+  - deshabilitar en automático en la baja de RH;
+  - rehacer `POST /UserSystem/user` (bug de `StringField`; ya no firma) y retirar `credentials`;
+  - pantallas del front, quitando `create-user` y `/usernames-<status>/<id>`.
+  - Doc propio antes de implementarla. → [`planes/login_y_usuarios_plan.md`](planes/login_y_usuarios_plan.md)
+- [ ] `P-224` **[back + usuario] F3: retiro de HS256**:
+  - revisar que `authapi`, `chatbot` y `products` de prod no validen tokens HS256;
+  - el API deja de aceptarlos y se cambia `TOKEN_MASTER_KEY`;
+  - la Lambda pierde el modo legado y se borra la columna `password`.
+  - Después de `P-222`. → [`planes/login_y_usuarios_plan.md`](planes/login_y_usuarios_plan.md)
 
 ## Infraestructura / BD (transversal)
 

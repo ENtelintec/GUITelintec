@@ -42,7 +42,7 @@ Comparación de lo pedido en cada partida de una OC contra las entradas que lleg
 _Avoid_: match, cruce
 
 **Partida**:
-Renglón de una OC con un producto o servicio, su cantidad y su precio unitario; está *ligada* cuando apunta a un producto del inventario.
+Renglón de un documento (OC, cotización, licitación o remisión) con un producto o servicio, su cantidad y su precio unitario; en una OC está *ligada* cuando apunta a un producto del inventario.
 _Avoid_: ítem, item, renglón
 
 **Solicitud de OC**:
@@ -60,3 +60,39 @@ _Avoid_: folio (a secas) para el código del formato, fecha de emisión para la 
 **Quincena**:
 Periodo de pago de nómina: primera (Q1) o segunda (Q2) mitad de un mes, escrito como `2026-10-Q1`.
 _Avoid_: periodo, key
+
+## Usuarios y permisos
+
+**Empleado**:
+La persona que RH tiene registrada; puede tener un usuario, también uno de prueba, o ninguno.
+_Avoid_: usuario (para la persona)
+
+**Usuario**:
+Cuenta con la que un empleado entra al sistema: nombre de usuario, contraseña y permisos.
+_Avoid_: cuenta (a secas), credenciales, login
+
+**Usuario de prueba**:
+Segundo usuario de un mismo empleado, que trabaja contra el ambiente de prueba en lugar del real.
+_Avoid_: tester (a secas)
+
+**Permiso**:
+Nombre del catálogo que abre un conjunto de pantallas y operaciones; un usuario tiene varios.
+_Avoid_: rol, departamento, credencial
+
+**Baja**:
+Salida de un empleado de la empresa, que registra RH; se dice del empleado, nunca del usuario.
+_Avoid_: baja de usuario
+
+**Deshabilitar / reactivar (un usuario)**:
+Quitarle o devolverle a un usuario la posibilidad de entrar, sin borrarlo; la baja del empleado deshabilita sus usuarios y un reingreso los reactiva a mano.
+_Avoid_: dar de baja al usuario, borrar usuario
+
+## Administración / Cobranza
+
+**Líder**:
+Responsable de operaciones de uno o más contratos; solo ve y captura lo de sus contratos.
+_Avoid_: encargado, jefe de contrato
+
+**Remisión limitada**:
+Remisión que un líder captura desde la tabla de control antes que Administración, solo con los datos de operaciones; Administración la completa con lo que se cobra y desde entonces el líder ya no la edita.
+_Avoid_: reporte de actividad, remito

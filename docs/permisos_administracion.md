@@ -130,3 +130,23 @@ Dev (2026-10-28):
     - Hay 6 casos nuevos: `ChangeStatus`, el alta de proveedor, `items-<id>` y `Epp` siguen con 401.
   - pyrefly: 166 errores, sin cambio.
 - **2026-10-28 — `P-209`, proveedores para SM, Compras y EPP (decisión del usuario: sí pueden leer).** `GET /almacen/inventory/suppliers/allSuppliers` pasa de `_ALM_READ` a `_SUPPLIERS_READ` en [`rs_Almacen.py`](../templates/resources/rs_Almacen.py): `ALMACEN`, `ALMACEN-VISUAL`, `SM`, `SM-URGENT`, `Administracion`, `adminCompras`, `comprasCreate`, `Epp`, `eppVisual` y `eppApprove` (más `Administrator`). Solo lectura; las escrituras de proveedores y `GET /admin/db/suppliers/items-<id>` no cambian. El front no cambia: ya llamaba a esa ruta (`fetchSuppliers`). **Verificación:** `Tests/tester_permisos_almacen.py` 18/18 con la constante nueva en su mapa; HTTP con la midleware en stub: los 10 permisos → 200, `Operaciones`, `RRHH` y `sm` (minúsculas) → 401; pyrefly sin errores en el archivo. En `P-209` queda abierto solo `/activity/report*`.
+- **2026-10-29 — `P-209` cerrado: la remisión limitada de los líderes** (grill del mismo día, decisión del usuario):
+  - **De dónde salía `/activity/report*`.** Lo llamaba la pantalla Líderes → Reporte de actividad, un prototipo de febrero a mayo de 2026. Quedó apuntando a rutas que se renombraron a `/remission*` el 2026-04-07 (`b73f472`), y además manda un cuerpo distinto al de `{metadata, items}`. **Se retira.**
+  - **Cómo capturan los líderes.** Los líderes capturan la **remisión limitada** (ver `GLOSSARY.md`) antes que Administración, y solo desde Líderes → Tabla de remitos, con `POST /remissionControlTable`. Administración la completa después, con partidas, desde Cobranza.
+  - **Bug del front.** La alta de Tabla de remitos (`CrearRemitoOperacionesPage` → `createActivityRemission`) llama a `POST /remission`, que es solo de Cobranza. Un líder con solo `Operaciones` recibe 401 al crear; editar sí le funciona.
+  - **Back pendiente (`P-216`).** Aplica a un token cuyo único permiso de remisiones sea `Operaciones`. Cobranza y `Administracion` no cambian:
+    - `POST·PUT /remissionControlTable` aceptan solo las llaves del bloque de operaciones y responden 400 si llegan llaves de administración;
+    - el `PUT` se rechaza si la remisión ya tiene partidas, es decir, si Administración ya la completó;
+    - sin `DELETE`, que ya hoy es solo de `_REM`;
+    - `GET /remission-<id>`, incluido `-1`, devuelve solo las remisiones de sus contratos: `contracts` y `contracts_temp` de `heads`, la misma regla que SM.
+    - Esto reemplaza el "sin filtrado de llaves por departamento" que se aceptó el 2026-08-26 ([`control_table_operaciones_y_campos_admin.md`](control_table_operaciones_y_campos_admin.md)).
+
+  **Contrato mínimo para el front (`P-217`):**
+  - **Base** `/GUI/api/v1/admin/collections` · **Auth**: header `Authorization` con el **JWT crudo, NO `Bearer <token>`**.
+  - **Crear la remisión limitada**: `POST /remissionControlTable` con `{"metadata": {...}}`, sin `items`. Los campos son los mismos del `PUT` de hoy (`MetadataControlTableRemissionForm`): obligatorios `date`, `folio` y `client_id`; opcionales `quotation_id`, `contract_id`, `activity`, `area` y los demás del bloque de operaciones.
+    - Permisos exactos: `App.Department.Operaciones`, `Administracion`, `adminCobranza` o `adminRem` (`Administrator` pasa siempre).
+    - Éxito: `201 {"data": {"id_remission": 42, "balance_control_id": null, "delivery_control_id": null}, "msg": "Ítem de tabla de control creado correctamente (ID 42)", "error": null}`.
+    - Error de datos: `400 {"data": null, "msg": "Estructura de datos inválida", "error": {...}}`.
+    - Sin permiso: `401 {"error": "No autorizado. Token invalido"}`.
+  - **Cuando entre `P-216`**: un líder recibe 400 si manda llaves de administración y no puede editar una remisión que ya tiene partidas. La lista exacta de llaves y los mensajes quedarán en el doc de `P-216`.
+  - **Retirar** Líderes → Reporte de actividad: la entrada del menú, las 4 páginas de `/dashboard/lideres/reporte-actividad`, `lib/api-activity-report.ts`, `hooks/useActivityReport.ts` y `types/activity-report.ts`. El botón "Crear reporte" de Cotización de actividad debe llevar a `/dashboard/lideres/tabla-remitos/nueva?quotationId=<id>`.

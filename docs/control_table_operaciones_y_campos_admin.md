@@ -131,3 +131,8 @@ el fix del guard de items vacíos, también contra la fila huérfana real del pr
   payload/map de Control de Reportes a las llaves nuevas (`total_sin_iva_admi`,
   `remission_sent_date_client`) y decidir qué fecha muestra la columna del bloque Administración
   (`remission_sent_date` vs `remission_sent_date_client`). Del lado del back no queda nada abierto.
+- **2026-10-29 — Se revierte el "sin filtrado de llaves por departamento"** (grill de `P-209`): con un
+  token cuyo único permiso de remisiones sea `Operaciones`, el endpoint acepta solo las llaves del
+  bloque de operaciones, no edita una remisión que ya tiene partidas, y el GET solo muestra las de
+  sus contratos (`P-216`). La alta de los líderes es la **remisión limitada** por `POST` de este
+  endpoint. Detalle y contrato en [`permisos_administracion.md`](permisos_administracion.md) (Notas posteriores).

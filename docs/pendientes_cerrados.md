@@ -212,6 +212,33 @@
 - [x] `P-195` ~~**[usuario] La app de usuarios lee y escribe el catálogo en la tabla**~~ (T3; la tabla ya existe): checkboxes desde la tabla, "Add Permission" hace `INSERT` con área, y se borra su `permissions.json`. — hecho (2026-10-27, revisado en solo lectura): checkboxes desde la tabla, "Add Permission" con área, `permissions.json` borrado. → [`gui_system_tareas.md`](gui_system_tareas.md)
 - [x] `P-198` ~~**[back] Migrar las demás áreas a `permissions=`**~~ — hecho (2026-10-27/28): Compras, Almacén, SM y SGI el 2026-10-27; RRHH, Bitácoras, CDA, Common, Misc y Dashboards ([`permisos_rrhh_bitacoras_cda_comun.md`](permisos_rrhh_bitacoras_cda_comun.md)) y Administración ([`permisos_administracion.md`](permisos_administracion.md)) el 2026-10-28. Se ligaron `adminRem`, `adminDB` y `Director` (D14), y se separó Cobranza de Preventa con `adminCobranza` y `adminPreventa`, cuya alta queda en `P-207`. Ya solo usan `department=` `/sucursal` (puerta de sede) y `/UserSystem` (`credentials`, `P-188`). Nadie del catálogo perdió acceso. → [`permisos_plan.md`](permisos_plan.md)
 - [x] `P-207` ~~**[usuario] Alta de `App.Department.adminCobranza` y `App.Department.adminPreventa` en el catálogo y asignación**~~ (T6) — hecho por el usuario (2026-10-28). Verificado en solo lectura: dev y test tienen los ids 33 (`adminCobranza`) y 34 (`adminPreventa`), área `administracion`. → [`gui_system_tareas.md`](gui_system_tareas.md) · [`permisos_administracion.md`](permisos_administracion.md)
+- [x] `P-209` ~~**[decisión, back + front] Lecturas que el front pide sin permiso**~~ (hallazgos del 2026-10-28) — cerrado (grill 2026-10-29). Lo de Líderes, proveedores y SM, Compras y EPP se resolvió el 2026-10-28.
+  - `/activity/report*` lo llamaba Líderes → Reporte de actividad, un prototipo con las rutas de antes del cambio a `/remission*`. Se retira.
+  - Los líderes capturan la remisión limitada solo desde Tabla de remitos, con `POST /remissionControlTable`. La implementación sigue en `P-216` (back) y `P-217` (front). → [`permisos_administracion.md`](permisos_administracion.md)
+- [x] `P-188` ~~**[back + front + usuario] Plan de migración de la gestión de usuarios y permisos a la webapp**~~ — plan aprobado (grill 2026-10-29).
+  - El login pasa a la Lambda (repo propio), con tokens ES256 de 24 h y argon2id sobre el md5 del front.
+  - `GUI_System` se queda y firma con su propia llave; el API solo guarda llaves públicas.
+  - La baja deshabilita al usuario, y la gestión pasa a la webapp para `Administrator` y `RRHH`.
+  - Fases en `P-218` a `P-224`. → [`planes/login_y_usuarios_plan.md`](planes/login_y_usuarios_plan.md)
+- [x] `P-220` ~~**[usuario] DDL `scripts_db_handle/users_system_login_v2.sql`** en dev → test → prod~~ — corrido por el usuario (2026-10-29). Columnas `password_hash`, `is_active`, `failed_attempts` y `locked_until`; `password` NULL-able.
+  - Dev y test revisados en solo lectura: las 5 columnas y 92 usuarios activos.
+  - Prod, por confirmación del usuario (desde aquí no se puede leer prod).
+  - En dev, la Lambda v2 local migró al usuario `tester` a argon2id y firmó ES256. → [`planes/login_y_usuarios_plan.md`](planes/login_y_usuarios_plan.md)
+- [x] `P-218` ~~**[back] El API acepta ES256 por `kid`**~~ — hecho (2026-10-29): `lambda` y `gui_system`, y `dev` solo con `API_ENVIRONMENT=dev`. Llaves públicas `token_public_<kid>.pem` junto al `.env`; HS256 sigue hasta `P-224`.
+  - `Tests/tester_token_es256.py` 23/23.
+  - Falta desplegarlo en prod y poner las públicas, que quedó dentro de `P-219` y `P-222`. → [`token_es256_por_kid.md`](token_es256_por_kid.md)
+- [x] `P-219` ~~**[usuario] Desplegar la Lambda v2**~~ — hecho por el usuario (2026-10-29). El repo es `telintec_login_lambda`.
+  - **AWS:**
+    - la privada `lambda` está en Secrets Manager, y el rol tiene `GetSecretValue`;
+    - la Lambda está en la VPC por defecto, y se le creó un VPC endpoint de Secrets Manager;
+    - python3.13 y x86_64, sin layers;
+    - la versión original quedó publicada como respaldo de emergencia, y el alias `live` apunta a la v2;
+    - la integración `qbmkg14` del HTTP API apunta a `live`, con throttling.
+  - **La pública** `token_public_lambda.pem` está junto al `.env` en dev y en prod.
+  - **Verificación:**
+    - una sonda con llave incorrecta responde `401 {"error": "Unauthorized"}`, que es la forma de la v2;
+    - `scripts/check_deployed.py` con un usuario real: en v2, 200 con ES256, `kid: lambda`, la firma verificada y 86400 s de vigencia; en v1, 200 con el HS256 guardado.
+  - El despliegue del API con `P-218` a prod pasó a `P-221`. → [`planes/login_y_usuarios_plan.md`](planes/login_y_usuarios_plan.md)
 
 ## Infraestructura / BD (transversal)
 

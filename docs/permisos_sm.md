@@ -61,3 +61,14 @@ rs   rs_SM.py   _SM / _SM_URGENT / _SM_READ_ALMACEN / _SM_WRITE_ALMACEN / _SM_IT
 ## Notas posteriores
 
 - **2026-10-27 — granulares pendientes de asignación** (decisión del usuario): `smControl`, `smCreate`, `smDespachar` y `smEntregasAdmin` se usarán más adelante, así que **no se retiran** del catálogo. Hasta que se defina qué abre cada uno, siguen sin abrir nada. T5 queda solo como revisión de quién los tiene en prod sin `SM` (`P-199`).
+- **2026-10-29 — Qué abre cada permiso granular** (grill del mismo día, decisión del usuario; **falta implementarlo**, `P-199`). Son roles acotados para quien **no** tiene `SM`; `SM` y `SM-URGENT` siguen abriendo todo lo que abren hoy, así que nadie pierde acceso. "Lecturas comunes" son `GET /all`, `/permission`, `/folioSmAll`, `/items/state-<n>` y `/download/{pdf,excel}/<id>`.
+
+  | Permiso | Abre, además de las lecturas comunes |
+  |---|---|
+  | `smCreate` | `POST·PUT /add`, `POST /cancel` y los catálogos del formulario (`/employees`, `/clients`, `/products/<contract>`, `/employee`, `/almacen/employees`). No abre: borrar SM, alta de cliente o producto, tabla de control ni ítems. |
+  | `smControl` | `PUT /control/table`, `GET /control/table/all` y `GET /plot/<range>` |
+  | `smDespachar` | `POST /manage/dispatch` (hoy solo `ALMACEN`) y `POST /item/stateUpdate` |
+  | `smEntregasAdmin` | `POST /attachment-<id_sm>`, la entrega con firma (hoy `Administracion`, `Operaciones` y `ALMACEN`) |
+
+  - **Qué SM ve cada uno** (el alcance de `MD_SM`): `smControl`, `smDespachar` y `smEntregasAdmin` trabajan sobre todos los contratos y ven **todas**, como almacén; `smCreate` ve **solo las de sus contratos**, como un líder o un auxiliar.
+  - T5 se mantiene: revisar en prod quién tiene un granular sin `SM`.

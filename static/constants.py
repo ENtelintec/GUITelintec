@@ -21,6 +21,11 @@ if environment not in ("dev", "prod"):
         f"API_ENVIRONMENT debe ser 'dev' o 'prod' (vale {environment!r}, leido de {_env_file})"
     )
 domain_path = str(_env_dir / "domain.pem")
+# Tokens ES256: una llave pública por kid (firmante), junto al .env (docs/token_es256_por_kid.md).
+# "dev" firma los testers y solo se acepta en dev.
+TOKEN_PUBLIC_KIDS = ("lambda", "gui_system", "dev") if environment == "dev" else ("lambda", "gui_system")
+token_public_key_paths = {kid: str(_env_dir / f"token_public_{kid}.pem") for kid in TOKEN_PUBLIC_KIDS}
+TOKEN_LEEWAY_SECONDS = 30  # desfase de reloj tolerado en exp/iat entre el firmante y el API
 api = Api()
 local_father_path_dpb = "C:/Users/Edisson/Telintec Dropbox/SOFTWARE TELINTEC"
 IMG_PATH_COLLAPSING = Path("./img")

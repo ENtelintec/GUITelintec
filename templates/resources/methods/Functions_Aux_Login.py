@@ -6,17 +6,48 @@ import json
 
 import jwt
 
-from static.constants import secrets
+from static.constants import TOKEN_LEEWAY_SECONDS, secrets, token_public_key_paths
 
 ADMINISTRATOR_PERMISSION = "App.Department.Administrator"
+
+_public_keys: dict = {}
+
+
+def _public_key(kid) -> str | None:
+    """
+    Llave pública PEM del kid, leída una vez por proceso. None si el kid no se
+    acepta en este entorno o si su archivo no está junto al .env.
+    :param kid: <string>
+    :return: <string> | None
+    """
+    if kid not in token_public_key_paths:
+        return None
+    if kid not in _public_keys:
+        try:
+            with open(token_public_key_paths[kid], encoding="utf-8") as f:
+                _public_keys[kid] = f.read()
+        except OSError as e:
+            print(f"errort at token public key {kid}: {e}")
+            return None
+    return _public_keys[kid]
 
 
 def unpack_token(token: str) -> dict:
     """
-    Unpacks the token.
+    Unpacks the token. ES256 se verifica con la llave pública de su kid (Lambda de
+    login, GUI_System; dev solo en dev) y valida exp si viene. Sin ES256 cae al
+    HS256 legado con TOKEN_MASTER_KEY, que se retira en la F3 (P-224).
+    Ver docs/token_es256_por_kid.md.
     :param token: <string>
     :return: <dict>
     """
+    header = jwt.get_unverified_header(token)
+    if header.get("alg") == "ES256":
+        kid = header.get("kid")
+        key = _public_key(kid)
+        if key is None:
+            raise jwt.InvalidTokenError(f"kid no aceptado: {kid}")
+        return jwt.decode(token, key, algorithms=["ES256"], leeway=TOKEN_LEEWAY_SECONDS)
     return jwt.decode(token, secrets.get("TOKEN_MASTER_KEY"), algorithms="HS256")
 
 

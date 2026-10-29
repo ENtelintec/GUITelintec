@@ -120,3 +120,21 @@
 - **Verificar**:
   - los dos aparecen activos en los checkboxes;
   - un usuario solo con `adminPreventa` recibe 401 en `POST /admin/collections/remission` y 200 en `GET /admin/presales/tenders`.
+
+## T7 — Firmar con ES256 y respetar las columnas nuevas de `users_system` (`P-222`)
+
+- **Por qué** ([`planes/login_y_usuarios_plan.md`](planes/login_y_usuarios_plan.md), U1, U3, U5, U6 y U7):
+  - la app se queda como herramienta del lead dev de back y sigue firmando tokens;
+  - con HS256, el API tendría que conservar `TOKEN_MASTER_KEY` y podría fabricar tokens de `Administrator`. La app pasa a **ES256 con su propio par** (`kid: "gui_system"`), y el API solo guarda la pública;
+  - la Lambda v2 migra las contraseñas a `password_hash` y deja `password` en `NULL`.
+- **Depende de**: `P-220` (DDL) y `P-218` (el API acepta ES256), antes de usar tokens nuevos contra el API.
+- **Qué**:
+  1. Generar el par con `scripts/generate_keys.py gui_system` del repo `telintec_login_lambda`. La privada va junto al `.env` de la app, nunca a un repo; la pública va al API (`P-218`).
+  2. En `Frame_UsersSystem`, los 4 `jwt.encode(..., TOKEN_MASTER_KEY, algorithm="HS256")` pasan a `jwt.encode(data_user, <privada>, algorithm="ES256", headers={"kid": "gui_system"})`. Los datos no cambian y siguen **sin `exp`**. PyJWT necesita `cryptography` en el entorno de la app.
+  3. Al cambiar una contraseña: escribir el MD5 nuevo en `password` **y** poner `password_hash = NULL`. Si no, la Lambda sigue validando contra el hash viejo.
+  4. "Pending removal" (T2): en lugar de borrar las filas del empleado inactivo, ponerles `is_active = 0`.
+  5. Volver a firmar los tokens HS256 que ya están guardados, con la recarga masiva que ya existe, antes de la F3 (`P-224`).
+- **Verificar**:
+  - un token nuevo de la app decodifica con la pública `gui_system` y pasa en un endpoint del API (después de `P-218`);
+  - una contraseña cambiada desde la app entra por la Lambda v2;
+  - un usuario deshabilitado desde la app recibe 401 en el login.

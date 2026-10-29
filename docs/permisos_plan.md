@@ -153,3 +153,8 @@ Inventario completo: 354 endpoints; 313 llaman a `token_verification_procedure` 
   - los avisos de saldos y entregas también le llegan a `admincobranza` (`P-155` cerrado);
   - `Administracion` sigue abriendo todo. Solo pierden `DemoRRHH`, `DemoALMACEN` y los granulares de SM en 6 lecturas;
   - ya solo `/sucursal` (puerta de sede) y `/UserSystem` (`credentials`, `P-188`) usan `department=`.
+- **2026-10-29 — Login y gestión de usuarios (`P-188`)** (grill del mismo día; plan: [`planes/login_y_usuarios_plan.md`](planes/login_y_usuarios_plan.md), pendientes `P-218` a `P-224`):
+  - **D2**: el alta sigue a mano hasta la F2, cuando la webapp la abre a `Administrator` (cualquier permiso) y a `RRHH` (solo `Basic` y `Common`). `GUI_System` **no se retira**: queda como herramienta del lead dev de back y sigue firmando tokens.
+  - **D7 y D9**: la baja ya no solo se avisa. En la F2 el API deshabilita los usuarios del empleado (`is_active = 0`, sin borrar la fila) y la Lambda los rechaza.
+  - **D10**: el login pasa a la Lambda en un repo propio, que firma tokens **ES256** con `exp` de 24 h. Los de `GUI_System` siguen sin `exp`, con su propia llave. El API solo guarda llaves públicas y deja de aceptar HS256 en la F3.
+  - Mismo grill: `P-199` definido ([`permisos_sm.md`](permisos_sm.md)) y `P-209` cerrado ([`permisos_administracion.md`](permisos_administracion.md)).
