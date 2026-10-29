@@ -125,6 +125,23 @@
 
 ## T7 — Firmar con ES256 y respetar las columnas nuevas de `users_system` (`P-222`)
 
+> **En dev (2026-10-29)**, verificado contra la copia local; falta lo de prod. Doc:
+> `GUI_System/docs/tareas/2026-10-29_firma_es256_y_deshabilitar_usuarios.md`. Cambios respecto a lo
+> de abajo (grill del 2026-10-29):
+> - **Prod sigue firmando HS256** hasta que el front v2 (`P-221`) esté en prod y la revisión de
+>   clientes de `P-224` lo permita. La Lambda v1 devuelve el token guardado, y el front v1 lo
+>   verifica con HS256 (`src/lib/auth.ts`): un token guardado ES256 en prod deja a ese usuario fuera
+>   de la webapp.
+> - La app tiene un **selector de ambiente**. Arranca en prod, que firma HS256 hasta que su `.env`
+>   diga `TOKEN_SIGNING_ALG_PROD=ES256`. Dev (`localhost`) firma siempre ES256.
+> - **Deshabilitar** también pone `token = NULL`, y ya no se borra ninguna fila. "Enable" reactiva y
+>   vuelve a firmar solo al usuario seleccionado.
+> - **Cambiar una contraseña** también quita el bloqueo (`failed_attempts = 0`,
+>   `locked_until = NULL`). Al abrir un usuario, el campo Password queda vacío, y vacío significa
+>   que no se toca.
+> - **El par ya está generado**, y la pública está junto al `.env` de dev del API. Falta copiarla a
+>   `/home/ec2-user/opt/` de prod.
+
 - **Por qué** ([`planes/login_y_usuarios_plan.md`](planes/login_y_usuarios_plan.md), U1, U3, U5, U6 y U7):
   - la app se queda como herramienta del lead dev de back y sigue firmando tokens;
   - con HS256, el API tendría que conservar `TOKEN_MASTER_KEY` y podría fabricar tokens de `Administrator`. La app pasa a **ES256 con su propio par** (`kid: "gui_system"`), y el API solo guarda la pública;

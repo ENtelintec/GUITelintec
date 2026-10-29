@@ -42,9 +42,9 @@
 2. `P-218` [back] el API acepta ES256 por `kid`, además de HS256. Diseño abajo.
 3. `P-219` [usuario] desplegar la Lambda v2 (pasos en el README del repo). Desde aquí las contraseñas se migran solas.
 4. `P-221` [front] login v2 (contrato abajo).
-5. `P-222` [usuario] `GUI_System` firma ES256 con su par (T7 de [`gui_system_tareas.md`](../gui_system_tareas.md)). Puede ir en paralelo desde el paso 2.
+5. `P-222` [usuario] `GUI_System` firma ES256 con su par (T7 de [`gui_system_tareas.md`](../gui_system_tareas.md)). En dev puede ir desde el paso 2. En prod, el token guardado sigue en HS256 hasta el paso 4 y la revisión de clientes de `P-224`, porque el front v1 verifica con HS256 el token guardado que le devuelve la Lambda v1. Hecho en dev el 2026-10-29.
 
-**F2 — Gestión en la webapp** (`P-223`): endpoints del API para alta (U2), edición de permisos, deshabilitar/reactivar y catálogo; deshabilitar en automático en la baja (U3, junto al aviso de `P-191`); rehacer `POST /UserSystem/user` (bug de `StringField`, sin firma); retirar `credentials`; pantallas del front y quitar `create-user` y la variante `/<id>`. Se diseña en un doc propio con su contrato.
+**F2 — Gestión en la webapp** (`P-223`): endpoints del API para alta (U2), edición de permisos, deshabilitar/reactivar y catálogo; deshabilitar en automático en la baja (U3, junto al aviso de `P-191`; también pone `token = NULL`, como `GUI_System`, para que no quede un token guardado vivo de un usuario deshabilitado); rehacer `POST /UserSystem/user` (bug de `StringField`, sin firma); retirar `credentials`; pantallas del front y quitar `create-user` y la variante `/<id>`. Se diseña en un doc propio con su contrato.
 
 **F3 — Retiro de HS256** (`P-224`): cuando ningún cliente use tokens HS256 (antes revisar `authapi`, `chatbot` y `products` de prod) y `GUI_System` haya re-firmado los suyos: el API deja de aceptar HS256, se cambia `TOKEN_MASTER_KEY` (mueren los tokens viejos copiados), la Lambda pierde el modo legado y se borra la columna `password`.
 
