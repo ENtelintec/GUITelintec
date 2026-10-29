@@ -135,4 +135,5 @@ el fix del guard de items vacíos, también contra la fila huérfana real del pr
   token cuyo único permiso de remisiones sea `Operaciones`, el endpoint acepta solo las llaves del
   bloque de operaciones, no edita una remisión que ya tiene partidas, y el GET solo muestra las de
   sus contratos (`P-216`). La alta de los líderes es la **remisión limitada** por `POST` de este
-  endpoint. Detalle y contrato en [`permisos_administracion.md`](permisos_administracion.md) (Notas posteriores).
+  endpoint. Hecho el mismo día: [`remision_limitada_lideres.md`](remision_limitada_lideres.md), con el
+  contrato y la lista de llaves de administración.

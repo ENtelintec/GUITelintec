@@ -98,7 +98,10 @@ from static.Models.api_purchase_management_models import (
 from static.constants import log_file_admin_collecions
 from templates.daemons.NotificationsSearch import start_daily_sweep
 from templates.misc.Functions_Files import write_log_file
-from templates.resources.methods.Functions_Aux_Login import token_verification_procedure
+from templates.resources.methods.Functions_Aux_Login import (
+    token_verification_procedure,
+    verify_exact_permission,
+)
 from templates.resources.midleware.MD_SGI import VEHICLE_CHECKLIST_PERMS
 from templates.resources.midleware.MD_Admin_Collections import (
     cancel_remission_from_api,
@@ -192,6 +195,12 @@ _PURCHASE_LIST_PERMS = _PO_PERMS + ["App.Department.ALMACEN", "App.Department.AL
 _COBRANZA = ["App.Department.Administracion", "App.Department.adminCobranza"]
 _REM = _COBRANZA + ["App.Department.adminRem"]
 _REM_OPS = _REM + ["App.Department.Operaciones"]
+
+
+def _is_limited_remission(data_token) -> bool:
+    """P-216 (docs/remision_limitada_lideres.md): un token que entró a un endpoint _REM_OPS
+    sin ningún permiso de _REM llegó solo por Operaciones (líderes): remisión limitada."""
+    return not verify_exact_permission(data_token, _REM)
 
 
 @ns.route("/orders/<string:status>")
@@ -635,7 +644,12 @@ class ActivityRemissionTableAction(Resource):
         if not validator.validate():
             return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
         data = validator.data
-        data_out, code = create_remission_control_table_from_api(data, data_token)
+        data_out, code = create_remission_control_table_from_api(
+            data,
+            data_token,
+            limited=_is_limited_remission(data_token),
+            payload_keys=tuple((ns.payload or {}).get("metadata") or {}),
+        )
         return data_out, code
 
     @ns.expect(expected_headers_per, remission_activity_update_control_table_model)
@@ -650,7 +664,9 @@ class ActivityRemissionTableAction(Resource):
             return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
         data = validator.data
         raw_metadata = ns.payload.get("metadata") or {}
-        data_out, code = update_remission_control_table_from_api(data, data_token, raw_metadata)
+        data_out, code = update_remission_control_table_from_api(
+            data, data_token, raw_metadata, limited=_is_limited_remission(data_token)
+        )
         return data_out, code
 
 
@@ -719,6 +735,7 @@ class FetchActivitieReportById(Resource):
             available_for_control=(request.args.get("available_for_control") or "").strip().lower()
             in ("1", "true", "yes"),
             delivery_control_id=request.args.get("delivery_control_id", type=int),
+            limited=_is_limited_remission(data_token),
         )
         return data_out, code
 

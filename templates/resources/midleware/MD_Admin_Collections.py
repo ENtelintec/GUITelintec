@@ -19,6 +19,10 @@ from templates.controllers.contracts.contracts_controller import (
     get_contract,
     get_contract_and_items_from_number,
 )
+from templates.controllers.heads.heads_controller import (
+    check_if_auxiliar_with_contract,
+    check_if_leader,
+)
 from templates.controllers.presales.remisions_controller import (
     delete_quotation_activity,
     delete_quotation_activity_item,
@@ -260,6 +264,72 @@ def _resolve_contract_id(metadata: dict, raw_metadata: dict | None, current=None
     except (ValueError, TypeError):
         value = 0
     return value if value > 0 else current
+
+
+# --- Remisión limitada de los líderes (P-216, docs/remision_limitada_lideres.md) ----
+# Un token cuyo único permiso de remisiones es Operaciones (lo decide rs_Admin_collections)
+# captura la remisión desde la tabla de control antes que Administración: no manda las
+# llaves del bloque administración, no edita una remisión que ya tiene partidas y solo
+# ve y captura las de sus contratos.
+_CONTROL_ADMIN_ONLY_KEYS = (
+    "received_date",
+    "status_rep_admi",
+    "remission_sent_date_client",
+    "remission_sent_by",
+    "total_sin_iva_admi",
+    "remission_total",
+)
+
+
+def _leader_contract_ids(data_token) -> set:
+    """Contratos del líder (o, si no es líder, del auxiliar) del token: contracts y
+    contracts_temp de heads, la misma regla que SM (get_iddentifiers_ternium)."""
+    emp_id = data_token.get("emp_id")
+    for check_func in (check_if_leader, check_if_auxiliar_with_contract):
+        flag, error, result = check_func(emp_id, data_token)
+        if flag and result:
+            ids = set()
+            for row in result:
+                extra_info = _coerce_extra_info(row[7])
+                for value in (extra_info.get("contracts") or []) + (extra_info.get("contracts_temp") or []):
+                    try:
+                        ids.add(int(value))
+                    except (TypeError, ValueError):
+                        continue
+            return ids
+    return set()
+
+
+def _limited_admin_keys_error(payload_keys) -> dict | None:
+    keys = [k for k in _CONTROL_ADMIN_ONLY_KEYS if k in payload_keys]
+    if not keys:
+        return None
+    return {
+        "data": {"keys": keys},
+        "msg": "Los campos de administración solo los captura Administración: " + ", ".join(keys),
+        "error": "campos de administración",
+    }
+
+
+def _limited_contract_error(contract_id, leader_contracts: set) -> dict | None:
+    try:
+        if contract_id is not None and int(contract_id) in leader_contracts:
+            return None
+    except (TypeError, ValueError):
+        pass
+    return {
+        "data": {"contract_id": contract_id},
+        "msg": "La remisión debe ser de uno de tus contratos",
+        "error": "contrato fuera de alcance",
+    }
+
+
+def _remission_has_items(result_ra) -> bool:
+    try:
+        items = json.loads(result_ra[16]) if result_ra[16] else []
+    except (TypeError, ValueError):
+        return False
+    return isinstance(items, list) and len(items) > 0
 
 
 # Remisión cancelada (activity_reports.status = 3): inmutable, no consume saldo
@@ -979,7 +1049,9 @@ def delete_quotation_activity_from_api(data, data_token):
     return {"data": {"id_quotation": id_quotation}, "msg": msg, "error": None}, 200
 
 
-def create_remission_control_table_from_api(data, data_token):
+def create_remission_control_table_from_api(data, data_token, limited: bool = False, payload_keys=()):
+    """POST /remissionControlTable. limited (P-216): remisión limitada de un líder;
+    payload_keys = llaves del metadata crudo, para rechazar las de administración."""
     timezone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(timezone).strftime(format_timestamps)
     user = data_token.get("emp_id", "desconocido")
@@ -996,6 +1068,12 @@ def create_remission_control_table_from_api(data, data_token):
     extra_info = _extra_info_updates(data["metadata"], None, _CONTROL_EXTRA_KEY_MAP)
     # Auto-enlace: si el contrato tiene control de saldos activo, la remisión nace ligada.
     contract_id = _resolve_contract_id(data["metadata"], None)
+    if limited:
+        limited_error = _limited_admin_keys_error(payload_keys) or _limited_contract_error(
+            contract_id, _leader_contract_ids(data_token)
+        )
+        if limited_error:
+            return limited_error, 400
     balance_control_id = resolve_balance_control_for_remission(
         contract_id, data["metadata"]["client_id"], data_token
     )
@@ -1259,7 +1337,10 @@ def get_remission_from_api(
     balance_control_id: int | None = None,
     available_for_control: bool = False,
     delivery_control_id: int | None = None,
+    limited: bool = False,
 ):
+    """GET /remission-<id>. limited (P-216): un líder solo ve las remisiones de sus
+    contratos; una fuera de su alcance responde como si no existiera (lista vacía)."""
     if id_report is not None and id_report <= 0:
         id_report = None
     flag, error, result = get_remission_by_id(
@@ -1284,6 +1365,9 @@ def get_remission_from_api(
         }, 400
     if isinstance(result, tuple):
         result = [result]
+    if limited:
+        leader_contracts = _leader_contract_ids(data_token)
+        result = [item for item in result if item[18] in leader_contracts]
     data_out = []
     for item in result:
         extra_info = _coerce_extra_info(item[19])
@@ -1540,7 +1624,8 @@ def update_remission_from_api(data, data_token, raw_metadata=None):
     }, 200
 
 
-def update_remission_control_table_from_api(data, data_token, raw_metadata=None):
+def update_remission_control_table_from_api(data, data_token, raw_metadata=None, limited: bool = False):
+    """PUT /remissionControlTable. limited (P-216): remisión limitada de un líder."""
     timezone = pytz.timezone(timezone_software)
     timestamp = datetime.now(pytz.utc).astimezone(timezone).strftime(format_timestamps)
     user = data_token.get("emp_id", "desconocido")
@@ -1575,6 +1660,21 @@ def update_remission_control_table_from_api(data, data_token, raw_metadata=None)
     # Historial resumido de cambios (solo metadata; la tabla de control no maneja items).
     # area/status se conservan del registro previo, por eso no deben marcar cambio.
     contract_id = _resolve_contract_id(data["metadata"], raw_metadata, result_ra[18])
+    if limited:
+        leader_contracts = _leader_contract_ids(data_token)
+        limited_error = (
+            _limited_admin_keys_error(raw_metadata or {})
+            or _limited_contract_error(result_ra[18], leader_contracts)
+            or _limited_contract_error(contract_id, leader_contracts)
+        )
+        if limited_error:
+            return limited_error, 400
+        if _remission_has_items(result_ra):
+            return {
+                "data": {"id_remission": result_ra[0]},
+                "msg": f"La remisión {result_ra[0]} ya tiene partidas: Administración la completó y ya no se edita desde la tabla de control de líderes",
+                "error": "remisión completada",
+            }, 400
     lock_error = _balance_control_lock_error(result_ra, contract_id, data["metadata"])
     if lock_error:
         return lock_error, 400

@@ -108,6 +108,15 @@
 - [x] `P-063` ~~**[front] Anexos de remisión: 409**~~ — hecho (front, 2026-10-12): `fetchWithConflictRetry` repite el request tal cual hasta 3 veces (~300/600/900 ms); agotado, avisa "El servidor está ocupado guardando otros anexos". → [`remission_anexos_sin_carrera.md`](remission_anexos_sin_carrera.md)
 - [x] `P-064` ~~**[decisión] `custom_fields` / `delivery_fields` al re-adoptar o retirar**~~ — decidido (2026-10-12): **se conservan** en ambos casos (comportamiento actual); sin código. → [`remission_atomic_writes.md`](remission_atomic_writes.md)
 - [x] `P-160` ~~**[back] F6 Remisión de OCD**~~ — hecho (2026-10-22, 25/25 con S3 simulado + regresión de remisiones, saldos, anexos y entregas en verde): `plant`, `activity`, `location`, `general_description`, `comments` y `area` **opcionales** en `POST`/`PUT /remission` y `/remissionControlTable` (el front los exige con contrato y los oculta en OCD); **`PUT /remission/noAttachments {id, no_attachments}`** (solo `administracion`, 400 con anexos que no sean firmas, idempotente, history con `changes`), subir un anexo real quita la marca sola (`no_attachments_cleared` en el 201) y `no_attachments` aplanado en `GET /remission-<id>`. Sin DDL. → [`remision_ocd_campos_y_sin_anexos.md`](remision_ocd_campos_y_sin_anexos.md)
+- [x] `P-216` ~~**[back] Remisión limitada de los líderes**~~ — hecho (2026-10-29). Aplica a un token cuyo único permiso de remisiones es `Operaciones`:
+  - `POST·PUT /remissionControlTable` rechazan las 6 llaves del bloque de administración;
+  - el `PUT` se rechaza si la remisión ya tiene partidas;
+  - el `GET /remission-<id>` y las escrituras quedan acotados a los contratos del líder en `heads`. El `POST` exige un `contract_id` de sus contratos.
+  - `Tests/tester_remision_limitada.py` 21/21 contra dev. → [`remision_limitada_lideres.md`](remision_limitada_lideres.md)
+- [x] `P-225` ~~**[decisión] Anexos de remisión con un token de líder**~~ — decidido por el usuario (2026-10-29). `POST·DELETE /remission/attachment-<id>` siguen filtrando solo por permiso (`Operaciones`), sin alcance por contrato:
+  - hoy ese permiso equivale a los líderes;
+  - el front ya filtra el acceso a los archivos de los demás.
+  - Filtrar por contrato se considerará a largo plazo. Sin cambio de código. → [`remision_limitada_lideres.md`](remision_limitada_lideres.md)
 
 **Control de saldos (Cobranza)**
 
