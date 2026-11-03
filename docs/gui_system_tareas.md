@@ -125,6 +125,13 @@
 
 ## T7 — Firmar con ES256 y respetar las columnas nuevas de `users_system` (`P-222`)
 
+> **Cambio del 2026-11-03: `GUI_System` deja de firmar** (grill; [`tokens_solo_24h.md`](tokens_solo_24h.md)). La Lambda es el único firmante en prod.
+> - **Cuándo**: cuando `P-221` esté en prod. Antes no, porque el front v1 usa el token guardado: un usuario sin él no puede entrar.
+> - **Qué**: alta, "Enable" y recarga masiva dejan `token`, `exp` y `timestamp_token` en `NULL`. Se retiran la privada `gui_system` y `TOKEN_SIGNING_ALG_PROD`.
+> - **Ya no aplica**: los pasos 1, 2 y 5 de abajo, y copiar la pública a prod. Con el API en `TOKEN_LEGACY_ENABLED=0`, un token con `kid: gui_system` da 401.
+> - **Sigue**: los pasos 3 y 4, el selector de ambiente y deshabilitar con `token = NULL`. Lo mismo hace ya el API en cada baja ([`baja_deshabilita_usuarios.md`](baja_deshabilita_usuarios.md)).
+> - **"Pending removal" (`P-233`)**: usarlo para quienes ya estaban inactivos; revisar antes la lista, que en dev incluye `demo_rrhh` y `demo_almacen`.
+
 > **En dev (2026-10-29)**, verificado contra la copia local; falta lo de prod. Doc:
 > `GUI_System/docs/tareas/2026-10-29_firma_es256_y_deshabilitar_usuarios.md`. Cambios respecto a lo
 > de abajo (grill del 2026-10-29):

@@ -93,6 +93,10 @@ _Avoid_: dar de baja al usuario, borrar usuario
 Responsable de operaciones de uno o más contratos; solo ve y captura lo de sus contratos.
 _Avoid_: encargado, jefe de contrato
 
+**Auxiliar**:
+Empleado que apoya a un líder en contratos asignados y captura en ellos como líder; quien es líder de algún contrato trabaja solo con los suyos, aunque también sea auxiliar en otro.
+_Avoid_: ayudante, asistente, suplente
+
 **Remisión limitada**:
 Remisión que un líder captura desde la tabla de control antes que Administración, solo con los datos de operaciones; Administración la completa con lo que se cobra y desde entonces el líder ya no la edita.
 _Avoid_: reporte de actividad, remito

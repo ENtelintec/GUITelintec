@@ -142,3 +142,4 @@ Probar `import app`, `/GUI/health` y un PDF/Excel con ese venv antes de commitea
 ## Notas posteriores
 
 - **2026-10-28** — `P-178` queda **postergado, con la menor prioridad del back** (decisión del usuario). Prod sigue en 3.11 sobre `envg2` y la regla de código compatible con 3.11 no cambia. 3.11 recibe parches de seguridad hasta octubre de 2027, así que la migración tiene que entrar antes de esa fecha.
+- **2026-10-29 — sale `Office365-REST-Python-Client`** ([`fichajes_y_sharepoint_retiro.md`](fichajes_y_sharepoint_retiro.md)). Con ella salen de `constraints.txt` `msal`, `requests` y `charset-normalizer`: 61 → 57 paquetes en la resolución para Linux y 3.11, sin cambios de versión. La fila de `requests` de arriba ya no aplica (solo la importa `Functions_Observer.py`, huérfano). `xlrd` se queda por `get_data_encuesta`; los fichajes que también lo usaban salieron del API. En `envg2` los 4 paquetes siguen instalados hasta que se recree el venv (`P-229`).

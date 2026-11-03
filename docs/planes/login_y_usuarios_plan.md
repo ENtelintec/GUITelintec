@@ -1,6 +1,6 @@
 # Login y gestión de usuarios — plan (`P-188`)
 
-> Estado: aprobado (grill del 2026-10-29, que también cerró `P-209` y definió `P-199`). Reemplaza en parte a D2, D7, D9 y D10 de [`permisos_plan.md`](../permisos_plan.md). Fases y pendientes: `P-218` a `P-224` en [`pendientes.md`](../pendientes.md). Repo nuevo de la Lambda: `C:\Users\L03508427\PycharmProjects\telintec_login_lambda`.
+> Estado: aprobado (grill del 2026-10-29, que también cerró `P-209` y definió `P-199`). Reemplaza en parte a D2, D7, D9 y D10 de [`permisos_plan.md`](../permisos_plan.md). **El grill del 2026-11-03 cambió U1, U5, U6, F2 y F3: ver U14 a U19.** Fases y pendientes: `P-218` a `P-224` en [`pendientes.md`](../pendientes.md). Repo nuevo de la Lambda: `C:\Users\L03508427\PycharmProjects\telintec_login_lambda`.
 
 ## Cómo funciona hoy
 
@@ -34,6 +34,15 @@
 - **U12 — Despliegue**: la misma Lambda y el mismo API Gateway de la consola; el repo arma el zip y se publica como versión con alias `live`. python3.13, sin SAM/CDK por ahora.
 - **U13 — El API deja de firmar tokens.** `POST /UserSystem/user` y las altas de F2 solo escriben la fila; el token de sesión nace en el login.
 
+## Decisiones del grill del 2026-11-03
+
+- **U14 — Solo tokens de 24 h** (reemplaza lo de `GUI_System` en U6). El API solo acepta ES256 con `exp` e `iat` y vigencia de hasta 24 h. HS256 y los tokens sin `exp` dejan de servir, y los tokens guardados se vacían. → [`tokens_solo_24h.md`](../tokens_solo_24h.md)
+- **U15 — La Lambda es el único firmante en prod** (reemplaza "firma tokens" de U1 y el `kid` `gui_system` de U5). `GUI_System` sigue gestionando usuarios sin firmar; `dev` queda solo en dev para los testers.
+- **U16 — Corte con interruptor, después de `P-221`.** `TOKEN_LEGACY_ENABLED=0` aplica la regla y quitar la llave la revierte, así que el código se despliega en cualquier momento. Antes de `P-221` en prod, ni la regla ni la limpia: el front v1 usa el token guardado y nadie podría entrar. `P-221` también cierra la sesión si el token no trae `exp`. `password` se borra al final, cuando no queden usuarios activos sin migrar.
+- **U17 — F2 se parte.** La F2a no necesita pantalla y va ya; la F2b espera a `P-221` en prod y a que el front tome las pantallas, porque alta, reactivación y edición de permisos sin firma no funcionan con el front v1.
+- **U18 — La baja corta los inicios de sesión nuevos, no las sesiones abiertas.** Revisar `is_active` en cada petición contradice D8. El riesgo queda acotado a 24 h con U14.
+- **U19 — Baja y reingreso.** Se deshabilita con cualquier status anterior que no sea `inactivo`. Si falla, la baja queda guardada y el aviso a los administradores pide hacerlo a mano. Al reingresar se les avisa que hay que reactivar. Quienes ya estaban inactivos se deshabilitan con "Pending removal" (`P-233`), sin DML.
+
 ## Fases
 
 **F1 — Login** (en este orden):
@@ -42,11 +51,13 @@
 2. `P-218` [back] el API acepta ES256 por `kid`, además de HS256. Diseño abajo.
 3. `P-219` [usuario] desplegar la Lambda v2 (pasos en el README del repo). Desde aquí las contraseñas se migran solas.
 4. `P-221` [front] login v2 (contrato abajo).
-5. `P-222` [usuario] `GUI_System` firma ES256 con su par (T7 de [`gui_system_tareas.md`](../gui_system_tareas.md)). En dev puede ir desde el paso 2. En prod, el token guardado sigue en HS256 hasta el paso 4 y la revisión de clientes de `P-224`, porque el front v1 verifica con HS256 el token guardado que le devuelve la Lambda v1. Hecho en dev el 2026-10-29.
+5. `P-222` [usuario] `GUI_System` deja de firmar (U15; T7 de [`gui_system_tareas.md`](../gui_system_tareas.md)). En prod sigue firmando HS256 hasta el paso 4, porque el front v1 verifica con HS256 el token guardado que le devuelve la Lambda v1.
 
-**F2 — Gestión en la webapp** (`P-223`): endpoints del API para alta (U2), edición de permisos, deshabilitar/reactivar y catálogo; deshabilitar en automático en la baja (U3, junto al aviso de `P-191`; también pone `token = NULL`, como `GUI_System`, para que no quede un token guardado vivo de un usuario deshabilitado); rehacer `POST /UserSystem/user` (bug de `StringField`, sin firma); retirar `credentials`; pantallas del front y quitar `create-user` y la variante `/<id>`. Se diseña en un doc propio con su contrato.
+**F2 — Gestión en la webapp** (`P-223`), partida por U17:
+- **F2a, hecha el 2026-11-03** → [`baja_deshabilita_usuarios.md`](../baja_deshabilita_usuarios.md): deshabilitar en automático en la baja (U3 y U19; también pone `token = NULL`), aviso al reingresar, retirar `credentials` y bug de `StringField` en `POST /UserSystem/user`.
+- **F2b, después de `P-221` en prod**: endpoints del API para alta (U2), edición de permisos, deshabilitar/reactivar y catálogo; pantallas del front y quitar `create-user` y la variante `/<id>`. Se diseña en un doc propio con su contrato.
 
-**F3 — Retiro de HS256** (`P-224`): cuando ningún cliente use tokens HS256 (antes revisar `authapi`, `chatbot` y `products` de prod) y `GUI_System` haya re-firmado los suyos: el API deja de aceptar HS256, se cambia `TOKEN_MASTER_KEY` (mueren los tokens viejos copiados), la Lambda pierde el modo legado y se borra la columna `password`.
+**F3 — Corte a solo tokens de 24 h** (`P-224`): código listo detrás del interruptor. Orden y limpia en [`tokens_solo_24h.md`](../tokens_solo_24h.md).
 
 ## `P-218` — el API acepta ES256
 
@@ -78,6 +89,7 @@ Lo consume el servidor de NextAuth (`authorize()` en `src/lib/auth.ts`), no el n
   - `429 {"error": "Usuario bloqueado temporalmente por intentos fallidos", "retry_after": 812}` — segundos
   - `500 {"error": "Error interno"}`
 - **Al API**: sin cambio. `Authorization` lleva el **JWT crudo, NO `Bearer <token>`**; los permisos de cada endpoint no cambian.
+- **Sesiones viejas** (pedido del 2026-11-03): si el token de la sesión no trae `exp`, cerrar la sesión. Hoy `useSessionCheck` lo ignora y el front no maneja el 401 de forma global; sin esto, en el corte quien siga con un token HS256 vería errores en todas las pantallas hasta salir a mano.
 - **Gotchas**: el token vence a las 24 h y `useSessionCheck` ya cierra la sesión con su `exp`; sin `version: 2` la Lambda responde como hoy (token HS256 guardado), así que el front puede regresar a la versión anterior sin dejar fuera a nadie.
 
 ## Al modificar

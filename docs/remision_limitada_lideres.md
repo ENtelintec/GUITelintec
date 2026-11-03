@@ -88,3 +88,7 @@ pyrefly (`--python-version 3.11`): sin errores en las líneas cambiadas.
 - **Llave nueva de la tabla de control**: decidir de qué bloque es. Si es de administración, agregarla a `_CONTROL_ADMIN_ONLY_KEYS`, además de la receta de 5 lugares de [`control_table_operaciones_y_campos_admin.md`](control_table_operaciones_y_campos_admin.md).
 - **Permiso nuevo de Cobranza que deba editar todo**: agregarlo a `_REM`. `_is_limited_remission` lo toma de ahí.
 - **Endpoint nuevo abierto a `Operaciones` sobre remisiones**: pasar `limited=_is_limited_remission(data_token)` y aplicar el mismo alcance por contrato.
+
+## Notas posteriores
+
+- **2026-11-03 — front y catálogo de contratos (`P-217`, `P-230`).** El front ya crea con `POST /remissionControlTable` (🧪, falta probar con un líder). No tiene de dónde sacar "mis contratos": con solo `Operaciones`, `GET /admin/presales/contracts/products` da 401 (`ADMIN_CATALOG_READERS`) y `GET /admin/db/clients/allClients` también (`_CLIENTS_READ`). El front cae a `GET /admin/presales/contracts/abreviations`, que trae todos los contratos, toma el cliente del contrato elegido y traduce el 400 `contrato fuera de alcance`. Funcionaba, pero el líder veía contratos que no podía usar. Resuelto el mismo día con `GET /admin/collections/remission/contracts` → [`remision_contratos_lider.md`](remision_contratos_lider.md); falta que el selector del front lo use (`P-232`).

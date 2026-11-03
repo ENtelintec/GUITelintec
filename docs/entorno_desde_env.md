@@ -60,3 +60,4 @@ Cada máquina de dev necesita `API_ENVIRONMENT=dev` en su `.env`.
 ## Notas posteriores
 
 - **2026-10-28 — `P-212` cerrado.** El usuario puso `API_ENVIRONMENT=prod` en el `.env` de prod; `GET /GUI/health` responde `OK` el mismo día.
+- **2026-10-29 — sin `domain.pem`** ([`fichajes_y_sharepoint_retiro.md`](fichajes_y_sharepoint_retiro.md)). `domain_path` salió de `constants.py` junto con SharePoint. De la carpeta del `.env` ahora solo se leen las llaves públicas de los tokens (`token_public_<kid>.pem`). La regla de *Al modificar* sigue igual, con `token_public_key_paths` como ejemplo.

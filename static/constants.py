@@ -20,10 +20,18 @@ if environment not in ("dev", "prod"):
     raise RuntimeError(
         f"API_ENVIRONMENT debe ser 'dev' o 'prod' (vale {environment!r}, leido de {_env_file})"
     )
-domain_path = str(_env_dir / "domain.pem")
+# Interruptor del corte a tokens de 24 h (docs/tokens_solo_24h.md): sin la llave todo sigue como
+# hasta hoy; TOKEN_LEGACY_ENABLED=0 solo acepta ES256 con exp e iat, hasta 24 h, y gui_system deja
+# de ser firmante. Se borra junto con el código HS256 cuando el corte esté estable (P-224).
+TOKEN_LEGACY_ENABLED = (os.environ.get("TOKEN_LEGACY_ENABLED") or secrets.get("TOKEN_LEGACY_ENABLED") or "1") != "0"
+TOKEN_MAX_LIFETIME_SECONDS = 24 * 60 * 60
 # Tokens ES256: una llave pública por kid (firmante), junto al .env (docs/token_es256_por_kid.md).
 # "dev" firma los testers y solo se acepta en dev.
-TOKEN_PUBLIC_KIDS = ("lambda", "gui_system", "dev") if environment == "dev" else ("lambda", "gui_system")
+TOKEN_PUBLIC_KIDS = (
+    ("lambda",)
+    + (("gui_system",) if TOKEN_LEGACY_ENABLED else ())
+    + (("dev",) if environment == "dev" else ())
+)
 token_public_key_paths = {kid: str(_env_dir / f"token_public_{kid}.pem") for kid in TOKEN_PUBLIC_KIDS}
 TOKEN_LEEWAY_SECONDS = 30  # desfase de reloj tolerado en exp/iat entre el firmante y el API
 api = Api()
@@ -31,18 +39,12 @@ local_father_path_dpb = "C:/Users/Edisson/Telintec Dropbox/SOFTWARE TELINTEC"
 IMG_PATH_COLLAPSING = Path("./img")
 ventanasApp_path = "static/ventanasAppGUI.json"
 cache_file_EM_path = "files/EM_cache.pkl"
-cache_file_Fichajes_path = "files/Fichajes_cache.pkl"
 cache_file_Tickets_path = "files/Tickets_cache.pkl"
 cache_file_Chats_path = "files/Chats_cache.pkl"
 cache_file_nominas = "files/nominas_cache.json"
-index_file_nominas = "files/nominas_index.json"
 cache_file_Notificaciones_path = "files/Notificaciones_cache.pkl"
 cache_file_resume_fichaje_path = "files/fichajes_resume_cache.pkl"
-cache_file_emp_fichaje = "files/emp_name_ids_fichajes_cache.pkl"
-files_fichaje_path = "files/files_fichaje/"
 file_temp_zip = "files/docs.zip"
-cache_oct_file_temp_path = "files/OCT_cache.csv"
-cache_oct_fichaje_path = "files/contracts_cache.pkl"
 filepath_settings = "files/settings.json"
 filepath_daemons = "files/flags_daemons.json"
 filepath_recomendations = "files/recomendations.json"
@@ -71,7 +73,6 @@ log_file_users = "files/logs/users"
 log_file_cda = "files/logs/cda"
 log_file_sucursal = "files/logs/sucursal"
 log_file_sgi_formats = "files/logs/sgi_formats"
-path_contract_files = "files/contracts"
 filepath_bitacora_download = "files/quizz_out/temp_bitacora.csv"
 filepath_inventory_form = "files/inventory_temp.pdf"
 filepath_inventory_form_excel = "files/inventory_temp.xlsx"
@@ -80,9 +81,6 @@ filepath_inventory_form_movements_excel = "files/movements_temp.xlsx"
 filepath_sm_pdf = "files/sm_temp.pdf"
 filepath_po_pdf = "files/po_temp.pdf"
 filepath_remission_pdf = "files/remission_temp.pdf"
-filepath_fichaje_temp = "files/files_fichaje/fichaje_temp.xlsx"
-filepath_ternium_temp = "files/files_fichaje/ternium_temp.xls"
-patterns_files_fichaje = ["Fichaje", "Ternium"]
 department_tools_openAI = {
     "director": "files/tools_AV_default.json",
     "rrhh": "files/tools_AV_rrhh.json",
@@ -166,7 +164,6 @@ format_timestamps = "%Y-%m-%d %H:%M:%S"
 format_timestamps_tz = "%Y-%m-%d %H:%M:%S"
 timezone_software = "America/Mexico_City"
 format_date = "%Y-%m-%d"
-format_date_fichaje_file = "%d-%m-%Y"
 dict_deps = {
     "Direccion": 1,
     "Operaciones": 2,

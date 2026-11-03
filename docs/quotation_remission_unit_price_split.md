@@ -66,3 +66,7 @@ desde la BD.
 [`remission_history_changes.md`](remission_history_changes.md): el `history` de la remisión ahora
 registra un `changes` resumido (metadata + items con prev/actual), incluyendo cambios de
 `unit_price`/`unit_price_quotation`.
+
+## Notas posteriores
+
+- **2026-11-03 — el front manda `0.01` al editar una remisión sin precio (`P-231`).** `EditarRemisionPage.tsx` y `merge-remision-contracts-catalog.ts` usan `|| 0.01` cuando la partida no tiene precio: no da error, pero `unit_price` queda con un precio inventado. Nueva remisión y Cotización de actividad ya bloquean esa partida antes de enviar. Decisión del usuario (2026-11-03): Editar bloquea igual; lo hace el front.

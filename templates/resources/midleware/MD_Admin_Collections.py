@@ -18,6 +18,7 @@ from static.constants import (
 from templates.controllers.contracts.contracts_controller import (
     get_contract,
     get_contract_and_items_from_number,
+    get_contracts_catalog_db,
 )
 from templates.controllers.heads.heads_controller import (
     check_if_auxiliar_with_contract,
@@ -298,6 +299,35 @@ def _leader_contract_ids(data_token) -> set:
                         continue
             return ids
     return set()
+
+
+def get_remission_contracts_from_api(limited: bool, data_token):
+    """P-230 (docs/remision_contratos_lider.md): contratos del selector de remisiones.
+    Limitado (líder o auxiliar): solo los suyos, justo lo que acepta el POST de la tabla de
+    control. Cualquier otro token: todos. Nunca lleva saldos, ni siquiera para Administración:
+    es un selector, y usa la misma consulta sin montos de GET /common/contracts."""
+    contract_ids = sorted(_leader_contract_ids(data_token)) if limited else None
+    flag, error, result = get_contracts_catalog_db(data_token, contract_ids)
+    if not flag:
+        return {"data": None, "msg": "No se pudieron obtener los contratos", "error": error}, 400
+    data_out = [
+        {
+            "id": row[0],
+            "metadata": {
+                "contract_number": row[1],
+                "abbreviation": row[2],
+                "abbreviation_sm": row[3],
+                "identifier": row[4],
+                "planta": row[5],
+                "area": row[6],
+                "location": row[7],
+                "client_id": row[8],
+                "client_name": row[9],
+            },
+        }
+        for row in result
+    ]
+    return {"data": data_out, "msg": None, "error": None}, 200
 
 
 def _limited_admin_keys_error(payload_keys) -> dict | None:

@@ -100,13 +100,22 @@ def get_contract(data_token, id_contract=None):
         return True, None, result
 
 
-def get_contracts_catalog_db(data_token):
+def get_contracts_catalog_db(data_token, contract_ids=None):
     """Catalogo de contratos de uso general (GET /common/contracts).
 
     SELECT propio con solo campos no sensibles: nunca lee los saldos ni el resto
     de la metadata. NULLIF(..., 'null') porque JSON_UNQUOTE de un null JSON
     devuelve la cadena 'null'.
+
+    contract_ids acota a esos ids (selector de remisiones de un lider, P-230):
+    None = todos; lista vacia = ninguno, sin consultar la BD.
     """
+    if contract_ids is not None and len(contract_ids) == 0:
+        return True, None, []
+    where, values = "", None
+    if contract_ids is not None:
+        where = "WHERE c.id IN (" + ", ".join(["%s"] * len(contract_ids)) + ") "
+        values = tuple(contract_ids)
     sql = (
         "SELECT "
         "c.id, "
@@ -121,9 +130,10 @@ def get_contracts_catalog_db(data_token):
         "cu.name "
         "FROM sql_telintec_mod_admin.contracts c "
         "LEFT JOIN sql_telintec.customers_amc cu ON cu.id_customer = c.client_id "
+        + where +
         "ORDER BY identifier, c.id"
     )
-    flag, error, result = execute_sql(sql, None, 2, data_token)
+    flag, error, result = execute_sql(sql, values, 2, data_token)
     if not flag:
         return False, error, []
     if not isinstance(result, list):

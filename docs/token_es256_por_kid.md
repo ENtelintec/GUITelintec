@@ -68,3 +68,4 @@ pyrefly (`--python-version 3.11`): los 7 errores de `Functions_Aux_Login.py` ya 
 ## Notas posteriores
 
 - **2026-10-29 — Pública `lambda` en prod; la Lambda v2 está en vivo** (`P-219`). `token_public_lambda.pem` ya está en `/home/ec2-user/opt/` (usuario). Un token real de la Lambda (`kid: lambda`) verifica con esa pública. Falta desplegar este código del API en prod antes de que el front mande `version: 2` (`P-221`).
+- **2026-11-03 — Solo tokens de 24 h (`P-224`).** Cambia lo de `gui_system` de este doc: con `TOKEN_LEGACY_ENABLED=0` ese `kid` deja de aceptarse, y solo pasa ES256 con `exp` e `iat`, hasta 24 h. Sin la llave todo sigue como aquí. Ya no hace falta copiar `token_public_gui_system.pem` a prod. → [`tokens_solo_24h.md`](tokens_solo_24h.md)

@@ -116,6 +116,7 @@ from templates.resources.midleware.MD_Admin_Collections import (
     download_file_remission,
     download_report_activity_attachment_api,
     get_quotations_from_api,
+    get_remission_contracts_from_api,
     get_remission_from_api,
     update_quotation_activity_from_api,
     update_quotation_activity_status_from_api,
@@ -626,6 +627,17 @@ class ActivityRemissionNoAttachments(Resource):
         if not validator.validate():
             return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
         data_out, code = set_remission_no_attachments_from_api(validator.data, ns.payload or {}, data_token)
+        return data_out, code
+
+
+@ns.route("/remission/contracts")
+class RemissionContracts(Resource):
+    @ns.expect(expected_headers_per)
+    def get(self):
+        flag, data_token, msg = token_verification_procedure(request, permissions=_REM_OPS)
+        if not flag:
+            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
+        data_out, code = get_remission_contracts_from_api(_is_limited_remission(data_token), data_token)
         return data_out, code
 
 

@@ -158,3 +158,7 @@ Inventario completo: 354 endpoints; 313 llaman a `token_verification_procedure` 
   - **D7 y D9**: la baja ya no solo se avisa. En la F2 el API deshabilita los usuarios del empleado (`is_active = 0`, sin borrar la fila) y la Lambda los rechaza.
   - **D10**: el login pasa a la Lambda en un repo propio, que firma tokens **ES256** con `exp` de 24 h. Los de `GUI_System` siguen sin `exp`, con su propia llave. El API solo guarda llaves públicas y deja de aceptar HS256 en la F3.
   - Mismo grill: `P-199` definido ([`permisos_sm.md`](permisos_sm.md)) y `P-209` cerrado ([`permisos_administracion.md`](permisos_administracion.md)).
+- **2026-11-03 — Baja y tokens** (grill del mismo día; plan: [`planes/login_y_usuarios_plan.md`](planes/login_y_usuarios_plan.md), U14 a U19):
+  - **D7, D9 y D2**: la baja ya deshabilita a los usuarios ([`baja_deshabilita_usuarios.md`](baja_deshabilita_usuarios.md)). `GUI_System` se queda para gestionar, pero **deja de firmar** con el corte.
+  - **D8 sigue**: el API no consulta la BD, así que la baja no corta una sesión abierta.
+  - **D10**: solo tokens de 24 h, también en `GUI_System`, que era la excepción ([`tokens_solo_24h.md`](tokens_solo_24h.md)).

@@ -68,3 +68,4 @@ Si un key viene vacío o falla la descarga, se omite; si no baja ninguno → 400
 ## Notas posteriores
 
 - **2026-10-27 — rutas S3 con entorno (`P-177`).** Las subidas nuevas van a `payroll/<entorno>/<año>/<mes>/<emp_id>/<quincena>/<archivo>`; las rutas guardadas antes siguen funcionando. El mismo nombre en Q1 y Q2 ya no comparte objeto. En dev y test, una entrada con ruta vieja se quita de la lista sin borrar el objeto (puede ser de prod; solo prod la borra) → [`s3_rutas_por_entorno.md`](s3_rutas_por_entorno.md).
+- **2026-10-29 — SharePoint fuera del repo** ([`fichajes_y_sharepoint_retiro.md`](fichajes_y_sharepoint_retiro.md)). Se borró el daemon `UpdaterSharepointNomina` (`templates/daemons/Files_handling.py`) junto con `update_data_docs_nomina`, `update_files_data_nominas`, `get_pairs_nomina_docs` y `Functions_Sharepoint.py`. El flujo de S3 de este doc no cambia.

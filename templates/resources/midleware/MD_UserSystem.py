@@ -10,6 +10,7 @@ from static.constants import (
     log_file_users,
     secrets,
     timezone_software,
+    TOKEN_LEGACY_ENABLED,
 )
 from templates.controllers.employees.us_controller import (
     create_user_system_with_token,
@@ -71,8 +72,22 @@ def update_biocredentials_from_api(data, data_token):
     return {"data": None, "msg": "Credenciales biométricas actualizadas correctamente", "error": None}, 200
 
 
+def _legacy_stored_token(data_user):
+    """
+    Token HS256 guardado que entrega la Lambda v1 al front v1. Tras el corte a tokens de 24 h
+    (docs/tokens_solo_24h.md) el token nace en el login y aquí no se firma nada.
+    :return: <tuple> (token, expires, timestamp), los tres None tras el corte
+    """
+    if not TOKEN_LEGACY_ENABLED:
+        return None, None, None
+    token = jwt.encode(data_user, str(secrets.get("TOKEN_MASTER_KEY")), algorithm="HS256")
+    time_zone = pytz.timezone(timezone_software)
+    timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
+    return token, 31536000, timestamp
+
+
 def create_employee_user_from_api(data, data_token):
-    dic_perm = {i: item for i, item in enumerate(data["permissions"])}
+    dic_perm = {str(i): item["permission"] for i, item in enumerate(data["permissions"])}
     data_user = {
         "permissions": dic_perm,
         "emp_id": data["emp_id"],
@@ -81,10 +96,7 @@ def create_employee_user_from_api(data, data_token):
         "user": data["user"],
         "dep_id": data["dep_id"],
     }
-    token = jwt.encode(data_user, str(secrets.get("TOKEN_MASTER_KEY")), algorithm="HS256")
-    time_zone = pytz.timezone(timezone_software)
-    timestamp = datetime.now(pytz.utc).astimezone(time_zone).strftime(format_timestamps)
-    expires = 31536000
+    token, expires, timestamp = _legacy_stored_token(data_user)
     flag, error, id_user = create_user_system_with_token(
         data["user"],
         data["hashpass"],

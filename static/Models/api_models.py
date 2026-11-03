@@ -16,7 +16,6 @@ from wtforms.validators import InputRequired, ValidationError
 from static.constants import (
     api,
     format_date,
-    format_date_fichaje_file,
     format_timestamps,
 )
 
@@ -466,19 +465,6 @@ def date_filter(date):
         return date
     else:
         return date.strftime(format_date)
-
-
-def date_filter_fichaje(date):
-    # Example filter function to format the date
-    date = date if date is not None else ""
-    if date == "":
-        return ""
-    if isinstance(date, str):
-        date = datetime.strptime(date, format_date_fichaje_file)
-        # date = date.strftime(format_date_fichaje_file)
-        return date
-    else:
-        return date.strftime(format_date_fichaje_file)
 
 
 def datetime_filter(date):

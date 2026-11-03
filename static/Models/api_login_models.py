@@ -3,9 +3,12 @@ __author__ = "Edisson Naula"
 __date__ = "$ 29/ago/2024  at 18:01 $"
 
 from flask_restx import fields
+from wtforms.fields.form import FormField
+from wtforms.fields.list import FieldList
+from wtforms.fields.numeric import IntegerField
 from wtforms.fields.simple import PasswordField, StringField
 from wtforms.form import Form
-from wtforms.validators import InputRequired
+from wtforms.validators import DataRequired, InputRequired
 
 from static.constants import api
 
@@ -63,11 +66,16 @@ class BiocredentialsPutModelForm(Form):
     user = StringField("user", validators=[InputRequired()])
 
 
+class PermissionModelForm(Form):
+    permission = StringField("permission", validators=[InputRequired()])
+    description = StringField("description", validators=[])
+
+
 class PostUserModelForm(Form):
-    permissions = StringField("permissions", validators=[InputRequired()])
-    emp_id = StringField("emp_id", validators=[InputRequired()])
+    permissions = FieldList(FormField(PermissionModelForm), validators=[DataRequired()])
+    emp_id = IntegerField("emp_id", validators=[InputRequired()])
     name = StringField("name", validators=[InputRequired()])
     contract = StringField("contract", validators=[InputRequired()])
     user = StringField("user", validators=[InputRequired()])
-    dep_id = StringField("dep_id", validators=[InputRequired()])
+    dep_id = IntegerField("dep_id", validators=[InputRequired()])
     hashpass = StringField("hashpass", validators=[InputRequired()])
