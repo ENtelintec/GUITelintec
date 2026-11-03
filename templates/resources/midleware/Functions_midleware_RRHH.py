@@ -12,22 +12,15 @@ import zipfile
 from datetime import datetime
 
 import boto3
-import pandas as pd
 import pytz
 from botocore.exceptions import BotoCoreError, ClientError, NoCredentialsError
 from werkzeug.utils import secure_filename
 
 from static.constants import (
-    cache_file_emp_fichaje,
-    cache_file_resume_fichaje_path,
-    filepath_fichaje_temp,
-    filepath_settings,
     format_date,
-    format_date_fichaje_file,
     format_timestamps,
-    index_file_nominas,
     log_file_rh,
-    patterns_files_fichaje,
+    log_file_users,
     quizz_out_path,
     secrets,
     timezone_software,
@@ -46,7 +39,11 @@ from templates.controllers.employees.employees_controller import (
     update_employee,
     test_id_employee,
 )
-from templates.controllers.employees.us_controller import get_user_by_emp_id
+from templates.controllers.employees.us_controller import (
+    disable_users_by_emp_id,
+    get_user_by_emp_id,
+    get_users_by_emp_id,
+)
 from templates.resources.methods.Functions_Aux_RH import join_emails, last_medical_date, medical_due, normalize_emails, split_emails
 from templates.resources.methods.Functions_Aux_S3 import s3_can_delete, s3_env_key
 from templates.controllers.notifications.Notifications_controller import (
@@ -68,54 +65,10 @@ from templates.controllers.payroll.payroll_controller import (
     update_payroll,
     update_payroll_employees,
 )
-from templates.Functions_Sharepoint import (
-    download_files_site,
-    get_files_site,
-)
 from templates.Functions_Utils import create_notification_permission
 from templates.misc.Functions_Mail import is_ses_configured, send_email_ses
-from templates.misc.Functions_AuxFiles import (
-    get_data_xml_file_nomina,
-    get_events_op_date,
-    get_pairs_nomina_docs,
-)
-from templates.misc.Functions_Files import (
-    check_names_employees_in_cache,
-    extract_fichajes_file,
-    get_fichajes_resume_cache,
-    get_info_bitacora,
-    get_info_f_file_name,
-    get_info_t_file_name,
-    unify_data_employee,
-    write_log_file,
-)
-from templates.misc.Functions_Files_RH import check_fichajes_files_in_directory
-
-
-class ClockFichajeHours:
-    def __init__(self, time: str):
-        self.time_in = time.split(":")
-        self.hours = int(self.time_in[0])
-
-    def get(self):
-        return self.hours
-
-
-class ClockFichajeMinutes:
-    def __init__(self, time: str):
-        self.time_in = time.split(":")
-        self.minutes = int(self.time_in[1])
-
-    def get(self):
-        return self.minutes
-
-
-class GraceMinutes:
-    def __init__(self, grace: int):
-        self.minutes = grace
-
-    def get(self):
-        return self.minutes
+from templates.misc.Functions_AuxFiles import get_data_xml_file_nomina
+from templates.misc.Functions_Files import write_log_file
 
 
 def _employee_email_column(info: dict):
@@ -168,22 +121,58 @@ def _employee_status(emp_id, data_token) -> str:
     return str(row[1]).strip().lower()
 
 
-def _notify_user_offboarding(emp_id, reason, data_token):
+def _usernames_with_state(rows, is_active: int) -> list:
+    """usernames de las filas (usernames, is_active) con ese estado."""
+    return [str(row[0]) for row in rows if int(row[1]) == is_active]
+
+
+def _disable_employee_users(emp_id, reason, data_token):
     """
-    El API confía en el token y no revoca accesos (docs/permisos_plan.md, D8):
-    si el empleado que pasó a inactivo tiene usuario en users_system, se avisa
-    a los administradores para que lo borren en la app de usuarios. No fatal:
-    la baja ya quedó guardada.
+    La baja del empleado deshabilita todos sus usuarios y avisa a los administradores
+    (docs/baja_deshabilita_usuarios.md). No fatal: la baja ya quedó guardada; si esto falla,
+    el aviso pide hacerlo a mano. Solo corta los inicios de sesión nuevos: una sesión abierta
+    sigue hasta que venza su token, porque el API no consulta la BD (docs/permisos_plan.md, D8).
     """
-    flag, _error, user_row = get_user_by_emp_id(emp_id, data_token)
-    if not flag or not isinstance(user_row, (list, tuple)) or not user_row:
-        return False
-    msg = (
-        f"Dar de baja del sistema de usuarios a {user_row[0]} (empleado {emp_id}, baja por {reason}). "
-        "Mientras su usuario exista puede seguir iniciando sesión."
-    )
+    flag, error, rows = get_users_by_emp_id(emp_id, data_token)
+    if flag and isinstance(rows, list):
+        names = _usernames_with_state(rows, 1)
+        if not names:
+            return False
+        users = ", ".join(names)
+        flag, error, _count = disable_users_by_emp_id(emp_id, data_token)
+    else:
+        flag, users = False, f"los usuarios del empleado {emp_id}"
+    if flag:
+        title = "Usuario deshabilitado"
+        msg = f"{users}: deshabilitado por la baja del empleado {emp_id} (motivo: {reason}). Si reingresa, se reactiva a mano."
+    else:
+        title = "Usuario sin deshabilitar"
+        msg = (
+            f"No se pudo deshabilitar a {users} tras la baja del empleado {emp_id} (motivo: {reason}): {error}. "
+            "Hay que deshabilitarlo a mano en la app de usuarios; mientras tanto puede iniciar sesión."
+        )
+    write_log_file(log_file_users, msg, data_token)
     return create_notification_permission(
-        msg, data_token, ["administrator"], "Usuario pendiente de baja", data_token.get("emp_id"), 0
+        msg, data_token, ["administrator"], title, data_token.get("emp_id"), 0
+    )
+
+
+def _notify_user_rehire(emp_id, data_token):
+    """
+    Un reingreso no reactiva solo (docs/planes/login_y_usuarios_plan.md, U3): si el empleado
+    tiene usuarios deshabilitados, se avisa a los administradores para que los revisen.
+    """
+    flag, _error, rows = get_users_by_emp_id(emp_id, data_token)
+    if not flag or not isinstance(rows, list):
+        return False
+    names = _usernames_with_state(rows, 0)
+    if not names:
+        return False
+    users = ", ".join(names)
+    msg = f"{users}: sigue deshabilitado y el empleado {emp_id} reingresó. Reactívalo a mano y revisa sus permisos."
+    write_log_file(log_file_users, msg, data_token)
+    return create_notification_permission(
+        msg, data_token, ["administrator"], "Usuario por reactivar", data_token.get("emp_id"), 0
     )
 
 
@@ -228,8 +217,10 @@ def update_employee_db(data, data_token):
     )
     if flag:
         new_status = str(data["info"]["status"] or "").strip().lower()
-        if previous_status == "activo" and new_status == "inactivo":
-            _notify_user_offboarding(data["id"], _departure_reason(data["info"]["departure"]), data_token)
+        if previous_status != "inactivo" and new_status == "inactivo":
+            _disable_employee_users(data["id"], _departure_reason(data["info"]["departure"]), data_token)
+        elif previous_status == "inactivo" and new_status == "activo":
+            _notify_user_rehire(data["id"], data_token)
         return {"data": {"id_employee": result}, "msg": f"Empleado actualizado correctamente (ID {result})", "error": None}, 200
     else:
         return {"data": None, "msg": "No se pudo actualizar el empleado", "error": error}, 400
@@ -256,394 +247,9 @@ def terminate_employee_from_api(data, data_token):
     create_notification_permission(
         msg, data_token, ["rrhh"], "Empleado dato de baja", data_token.get("emp_id"), 0
     )
-    if previous_status == "activo":
-        _notify_user_offboarding(data["id"], data["reason"], data_token)
+    if previous_status != "inactivo":
+        _disable_employee_users(data["id"], data["reason"], data_token)
     return {"data": {"id_employee": data["id"]}, "msg": f"Empleado dado de baja correctamente (ID {data['id']})", "error": None}, 200
-
-
-def get_files_fichaje(data_token):
-    flag, files = check_fichajes_files_in_directory(patterns_files_fichaje)
-    if not flag:
-        return False, files
-    files_list = [v for k, v in files.items()]
-    return True, files_list
-
-
-def fetch_fichajes_all_employees(data_token):
-    fichajes_resume, flag = get_fichajes_resume_cache(
-        cache_file_resume_fichaje_path, is_hard_update=True
-    )
-    if not flag:
-        return {"data": [], "msg": "No se pudieron obtener los fichajes", "error": None}, 400
-    out_aux = []
-    for item in fichajes_resume:
-        out_aux.append(
-            {
-                "id": item[0],
-                "name": item[1],
-                "contract": item[2],
-                "absences": item[3],
-                "late": item[4],
-                "total_late": item[5],
-                "extra": item[6],
-                "total_h_extra": item[7],
-                "primes": item[8],
-                "absences_details": item[9],
-                "late_details": item[10],
-                "extra_details": item[11],
-                "primes_details": item[12],
-                "normals_details": item[13],
-                "earlies_details": item[14],
-                "pasiva_details": item[15],
-            }
-        )
-    return {"data": out_aux, "msg": None, "error": None}, 200
-
-
-def fetch_fichaje_employee(id_emp):
-    fichajes_resume, flag = get_fichajes_resume_cache(
-        cache_file_resume_fichaje_path, is_hard_update=True
-    )
-    if not flag:
-        return {"data": None, "msg": "No se pudieron obtener los fichajes", "error": None}, 400
-    for item in fichajes_resume:
-        if str(item[0]) == id_emp:
-            return {
-                "data": {
-                    "id": item[0],
-                    "name": item[1],
-                    "contract": item[2],
-                    "absences": item[3],
-                    "late": item[4],
-                    "total_late": item[5],
-                    "extra": item[6],
-                    "total_h_extra": item[7],
-                    "primes": item[8],
-                    "absences_details": item[9],
-                    "late_details": item[10],
-                    "extra_details": item[11],
-                    "primes_details": item[12],
-                    "normals_details": item[13],
-                    "earlies_details": item[14],
-                    "pasiva_details": item[15],
-                },
-                "msg": None,
-                "error": None,
-            }, 200
-    return {"data": None, "msg": "No se encontró el fichaje del empleado", "error": None}, 400
-
-
-def get_data_file(filename: str, type_f: str):
-    if type_f.lower() == "fichaje":
-        if ".xls" in filename or ".xlsx" in filename or ".csv" in filename:
-            dff = extract_fichajes_file(filename)
-            coldata = []
-            names_list = []
-            if dff is None:
-                return False, ["No aceptable extension detected"]
-            if len(dff) != 0:
-                coldata = []
-                for i, col in enumerate(dff.columns.tolist()):
-                    coldata.append({"text": col, "stretch": True})
-                names_list = dff["name"].unique().tolist()
-                names_and_ids = check_names_employees_in_cache(names_list, cache_file_emp_fichaje)
-                for name in names_and_ids.keys():
-                    name_db = names_and_ids[name]["name_db"]
-                    id_db = names_and_ids[name]["id"]
-                    dff.loc[dff["name"] == name, "name"] = name_db
-                    dff.loc[dff["name"] == name_db, "ID"] = id_db
-                # enables scales
-                names_list = dff["name"].unique().tolist()
-            return True, {"columns": coldata, "df": dff, "names": names_list}
-        return False, ["No aceptable extension detected"]
-    else:
-        if ".xls" in filename or ".xlsx" in filename or ".csv" in filename:
-            dft = extract_fichajes_file(filename)
-            if dft is None:
-                return False, ["No aceptable extension detected"]
-            coldata = []
-            for i, col in enumerate(dft.columns.tolist()):
-                coldata.append({"text": col, "stretch": True})
-            names_list = dft["name"].unique().tolist()
-            names_and_ids = check_names_employees_in_cache(names_list, cache_file_emp_fichaje)
-            for name in names_and_ids.keys():
-                name_db = names_and_ids[name]["name_db"]
-                id_db = names_and_ids[name]["id"]
-                dft.loc[dft["name"] == name, "name"] = name_db
-                dft.loc[dft["name"] == name, "ID"] = id_db
-            return True, {"columns": coldata, "df": dft}
-        return False, ["No aceptable extension detected"]
-
-
-def get_bitacora_data(date_file):
-    data_bitacora, columns = get_events_op_date(date_file, True)
-    # create dataframe pandas
-    data_f = {}
-    for i, column in enumerate(columns):
-        data_f[column] = []
-        for row in data_bitacora:
-            if column == "Nombre":
-                data_f[column].append(row[i].upper())
-            else:
-                data_f[column].append(row[i])
-    dfb = pd.DataFrame.from_dict(data_f)
-    return True, {"df": dfb, "columns": columns}
-
-
-def get_data_name_fichaje(name: str, dff, dfb, clocks, window_time_in, window_time_out, dft=None):
-    df_name = dff[dff["name"] == name]
-    id_emp = df_name["ID"].values[0]
-    date_max = dff["Fecha"].max()  # most recent date
-    # -----------file fichaje------------
-    (
-        worked_days_f,
-        days_absence,
-        count_l_f,
-        count_e_f,
-        days_late_dic_f,
-        days_extra_dic_f,
-        days_early_dic_f,
-    ) = get_info_f_file_name(
-        dff,
-        name,
-        clocks,
-        window_time_in,
-        window_time_out,
-        True if dff is not None else False,
-        date_max=date_max,
-    )
-    time_zone = pytz.timezone(timezone_software)
-    date = datetime.now(pytz.utc).astimezone(time_zone)
-    date_example = pd.to_datetime(worked_days_f[0][0]) if len(worked_days_f) > 0 else date
-    # ------------file ternium-----------
-    (
-        worked_days_t,
-        worked_intime_t,
-        count_l_t,
-        count_e_t,
-        days_late_t,
-        days_extra_t,
-        days_worked_t,
-        days_not_worked_t,
-        days_early_t,
-    ) = get_info_t_file_name(
-        dft,
-        name,
-        clocks,
-        window_time_in,
-        window_time_out,
-        True if dft is not None else False,
-        month=date_example.month,
-        date_max=date_max,
-    )
-    # ------------info bitacora-----------
-    (
-        days_absence_bit,
-        days_extra_bit,
-        days_primes_bit,
-        days_lates_bit,
-        absences_bit,
-        extras_bit,
-        primes_bit,
-        lates_bit,
-        normals_bit,
-        early_bit,
-        pasive_bit,
-        contract,
-    ) = get_info_bitacora(dfb, name=name, id_emp=id_emp, flag=True, date_limit=date_max)
-    (
-        normal_data_emp,
-        absence_data_emp,
-        prime_data_emp,
-        late_data_emp,
-        extra_data_emp,
-        early_data_emp,
-        pasive_data_emp,
-    ) = unify_data_employee(
-        [worked_days_f, days_worked_t, normals_bit],
-        [days_absence, None, absences_bit],
-        [None, None, primes_bit],
-        [days_late_dic_f, days_late_t, lates_bit],
-        [days_extra_dic_f, days_extra_t, extras_bit],
-        [days_early_dic_f, days_early_t, early_bit],
-        [None, None, pasive_bit],
-    )
-    def _fmt_ts(k):
-        if isinstance(k, str):
-            return k
-        if isinstance(k, datetime):
-            return k.strftime(format_timestamps)
-        return str(k)
-
-    list_normal_data = [
-        {"timestamp": _fmt_ts(k), "value": v[0], "comment": v[1], "timestamps_extra": v[2]}
-        for k, v in normal_data_emp.items()
-    ]
-    list_absence_data = [
-        {"timestamp": _fmt_ts(k), "value": v[0], "comment": v[1], "timestamps_extra": v[2]}
-        for k, v in absence_data_emp.items()
-    ]
-    list_primer_data = [
-        {"timestamp": _fmt_ts(k), "value": v[0], "comment": v[1], "timestamps_extra": v[2]}
-        for k, v in prime_data_emp.items()
-    ]
-    list_late_data = [
-        {"timestamp": _fmt_ts(k), "value": v[0], "comment": v[1], "timestamps_extra": v[2]}
-        for k, v in late_data_emp.items()
-    ]
-    list_extra_data = [
-        {"timestamp": _fmt_ts(k), "value": v[0], "comment": v[1], "timestamps_extra": v[2]}
-        for k, v in extra_data_emp.items()
-    ]
-    list_early_data = [
-        {"timestamp": _fmt_ts(k), "value": v[0], "comment": v[1], "timestamps_extra": v[2]}
-        for k, v in early_data_emp.items()
-    ]
-    list_pasive_data = [
-        {"timestamp": _fmt_ts(k), "value": v[0], "comment": v[1], "timestamps_extra": v[2]}
-        for k, v in pasive_data_emp.items()
-    ]
-    return {
-        "name": name,
-        "ID": id_emp,
-        "contract": contract,
-        "normal_data": list_normal_data,
-        "absence_data": list_absence_data,
-        "prime_data": list_primer_data,
-        "late_data": list_late_data,
-        "extra_data": list_extra_data,
-        "early_data": list_early_data,
-        "pasive_data": list_pasive_data,
-    }
-
-
-def get_fichaje_data(data: dict):
-    files = data.get("files", [])
-    clock_h = ClockFichajeHours(data.get("time_in", ""))
-    clock_m = ClockFichajeMinutes(data.get("time_in", ""))
-    clock_h_out = ClockFichajeHours(data.get("time_out", ""))
-    clock_m_out = ClockFichajeMinutes(data.get("time_out", ""))
-    grace_in = GraceMinutes(data.get("grace_init", ""))
-    grace_out = GraceMinutes(data.get("grace_end", ""))
-    clocks = [{"entrada": [clock_m, clock_h]}, {"salida": [clock_m_out, clock_h_out]}]
-    data_files = []
-    name_list = []
-    date_file = ""
-    dff = None
-    for file in files:
-        path, code = download_fichaje_file(
-            {
-                "file_url": file["path"],
-                "temp": filepath_fichaje_temp,
-            }
-        )
-        if code != 200:
-            return {"data": None, "msg": "No se pudo descargar el archivo de fichaje", "error": str(path)}, 400
-        flag, data_file = get_data_file(filepath_fichaje_temp, file["report"])
-        if not flag:
-            return {"data": None, "msg": "Error al leer el archivo de fichaje", "error": str(data_file)}, 400
-        if not (isinstance(data_file, list) or isinstance(data_file, tuple)):
-            return {"data": None, "msg": "Error al procesar el archivo de fichaje", "error": None}, 400
-        data_files.append(data_file) if flag else data_files.append([])
-        name_list.extend(data_file["names"]) if "names" in data_file.keys() else None
-        if file["report"].lower() == "fichaje":
-            date_file = file["date"]
-            dff = data_file["df"]
-    date_file = datetime.strptime(date_file, format_date_fichaje_file)
-    flag, data_bitacora = get_bitacora_data(date_file)
-    data_out = []
-    for name in name_list:
-        data_emp = get_data_name_fichaje(
-            name, dff, data_bitacora["df"], clocks, grace_in, grace_out, dft=None
-        )
-        data_out.append(data_emp)
-    return {"data": data_out, "msg": None, "error": None}, 200
-
-
-def upload_nomina_doc(data):
-    pass
-    return 200, None
-
-
-def update_files_data_nominas(key: str, paths_pdf_xml: dict, data_xml: dict, data_token):
-    flag, error, result = get_payrolls(data_xml["emp_id"], data_token)
-    data_emp = {} if not flag or len(result) == 0 else json.loads(result[1])
-    try:
-        date = pd.to_datetime(data_xml["date"])
-    except Exception as e:
-        print("Error, date not found in file xml. DB not updated", e)
-        return data_emp, False
-    year = str(date.year)
-    month = str(date.month)
-    if year in data_emp.keys():
-        if month in data_emp[year].keys():
-            data_emp[year][month][key] = paths_pdf_xml
-        else:
-            data_emp[year][month] = {key: paths_pdf_xml}
-        return data_emp, True
-    if month in data_emp.keys():
-        data_emp[year][month][key] = paths_pdf_xml
-    else:
-        data_emp[year] = {month: {key: paths_pdf_xml}}
-    return data_emp, True
-
-
-def update_data_docs_nomina(data_token, patterns=None, use_index=False):
-    print("Updating data docs nomina ", patterns)
-    settings = json.load(open(filepath_settings, "r"))
-    url_shrpt = settings["gui"]["RRHH"]["url_shrpt"]
-    folder_rrhh = settings["gui"]["RRHH"]["folder_rrhh"]
-    folder_nominas = settings["gui"]["RRHH"]["folder_nominas"]
-    patterns = patterns if patterns is not None else []
-    folder_patterns = [folder_nominas] + patterns
-    flag_quincena = False if len(patterns) <= 2 else True
-    if len(patterns) == 3:
-        flag_quincena = True if patterns[2] is not None else False
-    if not use_index:
-        code, data = get_files_site(url_shrpt + folder_rrhh, folder_patterns)
-        data_dict = get_pairs_nomina_docs(data)
-        data_dict_old = json.load(open(index_file_nominas, "r"))
-        data_dict_old.update(data_dict)
-        json.dump(data_dict_old, open(index_file_nominas, "w"))
-    else:
-        data_dict = json.load(open(index_file_nominas, "r"))
-    data_emps = {}
-    results = []
-    for k, v in data_dict.items():
-        if "xml" not in v.keys() or "pdf" not in v.keys():
-            results.append((False, "No se encontraron los archivos necesarios", None))
-            continue
-        if folder_patterns[1].lower() in v["xml"].lower():
-            if flag_quincena:
-                if folder_patterns[2].lower() in v["xml"].lower():
-                    download_path, code = download_files_site(url_shrpt + folder_rrhh, v["xml"])
-                else:
-                    print(f"Not pass the filter {folder_patterns}", v["xml"])
-                    continue
-            else:
-                download_path, code = download_files_site(url_shrpt + folder_rrhh, v["xml"])
-        else:
-            print(f"Not pass the filter {folder_patterns}", v["xml"])
-            continue
-        if code != 200:
-            results.append((False, f"Error al descargar el archivo XML: {download_path}", None))
-            continue
-        data_file = get_data_xml_file_nomina(download_path)
-        if data_file["emp_id"] is None:
-            print(f"No se encontro el empleado con datos {data_file['emp_name']}")
-            results.append((False, f"No se encontro el empleado: {data_file['emp_name']}", None))
-            continue
-        data_emps[data_file["emp_id"]], flag = update_files_data_nominas(
-            k, v, data_file, data_token
-        )
-        if flag:
-            flag, error, result = update_payroll(
-                data_emps[data_file["emp_id"]], data_file["emp_id"], data_token
-            )
-            results.append((flag, error, result))
-        else:
-            results.append((False, "Error al generar dict de empleado", None))
-    return results
 
 
 def _payroll_index_keys(files_data) -> set:
@@ -1119,25 +725,6 @@ def generate_pdf_from_json(data, data_token):
     except Exception as e:
         write_log_file(log_file_rh, f"Error al generar el pdf de quizz: {e}", data_token)
         return 400, "Error al generar el pdf"
-
-
-def get_files_fichaje_shrpt():
-    settings = json.load(open(filepath_settings, "r"))
-    url_shrpt = settings["gui"]["RRHH"]["url_shrpt"]
-    folder_rrhh = settings["gui"]["RRHH"]["folder_rrhh"]
-    folder_fichaje = settings["gui"]["RRHH"]["folder_checador"]
-    code, files_fichaje = get_files_site(url_shrpt + folder_rrhh, folder_url=folder_fichaje)
-    return code, files_fichaje
-
-
-def download_fichaje_file(data):
-    settings = json.load(open(filepath_settings, "r"))
-    url_shrpt = settings["gui"]["RRHH"]["url_shrpt"]
-    folder_rrhh = settings["gui"]["RRHH"]["folder_rrhh"]
-    download_path, code = download_files_site(
-        url_shrpt + folder_rrhh, data["file_url"], data["temp"]
-    )
-    return download_path, code
 
 
 def create_payroll_file_attachment_api(data, data_token):

@@ -844,15 +844,3 @@ def get_data_xml_file_nomina(path_file: str):
         data["date"] = date
         data["date_pay"] = date_pago
     return data
-
-
-def get_pairs_nomina_docs(files: list):
-    files_out = {}
-    for file in files:
-        filename = file.split("/")[-1].lower()
-        if filename.endswith(".pdf") or filename.endswith(".xml"):
-            name, ext = filename.split(".")
-            if name not in files_out.keys():
-                files_out[name] = {}
-            files_out[name][ext] = file
-    return files_out

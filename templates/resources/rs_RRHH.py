@@ -7,9 +7,6 @@ from flask import request, send_file
 from flask_restx import Namespace, Resource
 from werkzeug.utils import secure_filename
 
-from static.constants import (
-    path_contract_files,
-)
 from static.Models.api_employee_models import (
     DeleteVacationForm,
     EmployeeDeleteForm,
@@ -29,11 +26,6 @@ from static.Models.api_employee_models import (
     employee_model_update,
     employee_vacation_model_delete,
     employee_vacation_model_insert,
-)
-from static.Models.api_fichajes_models import (
-    DataFichajesFileForm,
-    expected_files,
-    request_data_fichaje_files_model,
 )
 from static.Models.api_models import (
     Eva360CreateForm,
@@ -114,15 +106,11 @@ from templates.resources.midleware.Functions_midleware_RRHH import (
     extract_payroll_xml_api,
     notify_payroll_file_api,
     fetch_employees_without_records,
-    fetch_fichaje_employee,
-    fetch_fichajes_all_employees,
     fetch_medical_employee,
     fetch_medicals,
     generate_pdf_from_json,
     get_all_quizzes,
-    get_fichaje_data,
     get_task_by_id_employee,
-    get_files_fichaje,
     get_files_list_nomina_RH,
     get_quizz_evaluation,
     get_quizz_group_evaluation,
@@ -780,28 +768,6 @@ class Eva360Complete(Resource):
         return out, code
 
 
-@ns.route("/employees/fichaje/all")
-class EmployeesResume(Resource):
-    @ns.expect(expected_headers_per)
-    def get(self):
-        flag, data_token, msg = token_verification_procedure(request, permissions=_RRHH)
-        if not flag:
-            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        out, code = fetch_fichajes_all_employees(data_token)
-        return out, code
-
-
-@ns.route("/employee/fichaje/<string:id_emp>")
-class FichajeResume(Resource):  # noqa: F811
-    @ns.expect(expected_headers_per)
-    def get(self, id_emp):
-        flag, data_token, msg = token_verification_procedure(request, permissions=_RRHH)
-        if not flag:
-            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        out, code = fetch_fichaje_employee(id_emp)
-        return out, code
-
-
 @ns.route("/payroll/files/update")
 class FilesPayroll(Resource):
     @ns.expect(expected_headers_per, update_files_parser)
@@ -961,66 +927,6 @@ class UpdateEmployees(Resource):
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         code, msg_out = update_payroll_list_employees(data_token)
         return {"data": None, "msg": msg_out, "error": None}, code
-
-
-@ns.route("/fichajes/files")
-class FilesFichaje(Resource):
-    @ns.expect(expected_headers_per)
-    def get(self):
-        flag, data_token, msg = token_verification_procedure(request, permissions=_RRHH)
-        if not flag:
-            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        flag, files = get_files_fichaje(data_token)
-        if flag:
-            return {"data": files, "msg": None, "error": None}, 200
-        else:
-            return {
-                "data": [],
-                "msg": "No se pudieron obtener los archivos de fichaje",
-                "error": None,
-            }, 400
-
-
-@ns.route("/fichajes/data/fromfiles")
-class DataFichajeFiles(Resource):
-    @ns.expect(expected_headers_per, request_data_fichaje_files_model)
-    def post(self):
-        flag, data_token, msg = token_verification_procedure(request, permissions=_RRHH)
-        if not flag:
-            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        # noinspection PyUnresolvedReferences
-        validator = DataFichajesFileForm.from_json(ns.payload)  # pyrefly: ignore
-        if not validator.validate():
-            return {
-                "data": None,
-                "msg": "Estructura de datos inválida",
-                "error": validator.errors,
-            }, 400
-        data = validator.data
-        data_out, code = get_fichaje_data(data)
-        return data_out, code
-
-
-@ns.route("/upload/fichaje/file")
-class UploadFicahjeFile(Resource):
-    @ns.expect(expected_headers_per, expected_files)
-    def post(self):
-        flag, data_token, msg = token_verification_procedure(request, permissions=_RRHH)
-        if not flag:
-            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        if "file" not in request.files:
-            return {"data": None, "msg": "No se detectó un archivo", "error": None}, 400
-        file = request.files["file"]
-        if file and file.filename:
-            filename = secure_filename(file.filename)
-            file.save(os.path.join(path_contract_files, filename))
-            return {
-                "data": {"filename": filename},
-                "msg": "Archivo subido correctamente",
-                "error": None,
-            }, 200
-        else:
-            return {"data": None, "msg": "No se subió el archivo", "error": None}, 400
 
 
 @ns.route("/download/employees/<string:status>")

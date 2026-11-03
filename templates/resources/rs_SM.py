@@ -75,9 +75,7 @@ ns = Namespace("GUI/api/v1/sm")
 
 
 # SM (docs/permisos_plan.md D6, P-198; docs/permisos_sm.md): match exacto contra el
-# catálogo. SM-URGENT ve todo lo de SM y además crea urgentes; smControl, smCreate,
-# smDespachar y smEntregasAdmin están pendientes de asignación (P-199): no abren nada
-# hasta que se defina su uso.
+# catálogo. SM-URGENT ve todo lo de SM y además crea urgentes.
 # ALMACEN-VISUAL solo lee. Administrator pasa siempre.
 _SM = ["App.Department.SM", "App.Department.SM-URGENT"]
 _SM_URGENT = ["App.Department.SM-URGENT"]
@@ -85,15 +83,38 @@ _SM_READ_ALMACEN = _SM + ["App.Department.ALMACEN", "App.Department.ALMACEN-VISU
 _SM_WRITE_ALMACEN = _SM + ["App.Department.ALMACEN"]
 # PUT /item y /items/bulk: también Administración
 _SM_ITEMS = _SM_WRITE_ALMACEN + ["App.Department.Administracion"]
-_SM_DISPATCH = ["App.Department.ALMACEN"]
-_SM_ATTACHMENT = ["App.Department.Administracion", "App.Department.Operaciones", "App.Department.ALMACEN"]
+# Granulares (P-199, docs/permisos_sm.md, Notas posteriores 2026-10-29): roles acotados
+# para quien no tiene SM; SM y SM-URGENT siguen abriendo todo lo de antes.
+_SM_GRANULAR = [
+    "App.Department.smCreate",
+    "App.Department.smControl",
+    "App.Department.smDespachar",
+    "App.Department.smEntregasAdmin",
+]
+# lecturas comunes (listados, folios, ítems por estado y descargas): los cuatro granulares
+_SM_READ = _SM_READ_ALMACEN + _SM_GRANULAR
+_SM_DOWNLOAD = _SM + _SM_GRANULAR
+# smCreate: crear, editar y cancelar SM y los catálogos del formulario
+_SM_CREATE = _SM + ["App.Department.smCreate"]
+# smControl: tabla de control y gráficas
+_SM_CONTROL = _SM + ["App.Department.smControl"]
+# smDespachar: despacho (antes solo almacén) y cambio de estado de ítems
+_SM_DISPATCH = ["App.Department.ALMACEN", "App.Department.smDespachar"]
+_SM_STATE_UPDATE = _SM_WRITE_ALMACEN + ["App.Department.smDespachar"]
+# smEntregasAdmin: entrega con firma
+_SM_ATTACHMENT = [
+    "App.Department.Administracion",
+    "App.Department.Operaciones",
+    "App.Department.ALMACEN",
+    "App.Department.smEntregasAdmin",
+]
 
 
 @ns.route("/employees")
 class Employees(Resource):
     @ns.expect(expected_headers_per)
     def get(self):
-        flag, data_token, msg = token_verification_procedure(request, permissions=_SM)
+        flag, data_token, msg = token_verification_procedure(request, permissions=_SM_CREATE)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         flag, error, result = get_sm_employees()
@@ -111,7 +132,7 @@ class Employees(Resource):
 class Clients(Resource):
     @ns.expect(expected_headers_per)
     def get(self):
-        flag, data_token, msg = token_verification_procedure(request, permissions=_SM)
+        flag, data_token, msg = token_verification_procedure(request, permissions=_SM_CREATE)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         flag, error, result = get_sm_clients(data_token)
@@ -132,7 +153,7 @@ class Products(Resource):
     @ns.doc(responses={304: "Sin cambios respecto al ETag de If-None-Match (sin cuerpo)"})
     @ns.expect(expected_headers_per)
     def get(self, contract):
-        flag, data_token, msg = token_verification_procedure(request, permissions=_SM)
+        flag, data_token, msg = token_verification_procedure(request, permissions=_SM_CREATE)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data_out, code = get_products_sm(contract, data_token)
@@ -143,7 +164,7 @@ class Products(Resource):
 class FetchAllSm(Resource):
     @ns.expect(expected_headers_per)
     def get(self):
-        flag, data_token, msg = token_verification_procedure(request, permissions=_SM_READ_ALMACEN)
+        flag, data_token, msg = token_verification_procedure(request, permissions=_SM_READ)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data_out, code = get_all_sm(-1, data_token, 0, -1)
@@ -154,7 +175,7 @@ class FetchAllSm(Resource):
 class AllSmPerPermission(Resource):
     @ns.expect(expected_headers_per)
     def get(self):
-        flag, data_token, msg = token_verification_procedure(request, permissions=_SM_READ_ALMACEN)
+        flag, data_token, msg = token_verification_procedure(request, permissions=_SM_READ)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data_out, code = fetch_all_sm_with_permissions(data_token)
@@ -165,7 +186,7 @@ class AllSmPerPermission(Resource):
 class AllSmEmployee(Resource):
     @ns.expect(expected_headers_per)
     def get(self):
-        flag, data_token, msg = token_verification_procedure(request, permissions=_SM)
+        flag, data_token, msg = token_verification_procedure(request, permissions=_SM_CREATE)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data_out, code = get_all_sm(-1, data_token, 0, data_token.get("emp_id"))
@@ -176,7 +197,7 @@ class AllSmEmployee(Resource):
 class ActionsSM(Resource):
     @ns.expect(expected_headers_per, sm_post_model)
     def post(self):
-        flag, data_token, msg = token_verification_procedure(request, permissions=_SM)
+        flag, data_token, msg = token_verification_procedure(request, permissions=_SM_CREATE)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
@@ -210,7 +231,7 @@ class ActionsSM(Resource):
 
     @ns.expect(expected_headers_per, sm_put_model)
     def put(self):
-        flag, data_token, msg = token_verification_procedure(request, permissions=_SM)
+        flag, data_token, msg = token_verification_procedure(request, permissions=_SM_CREATE)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
@@ -250,7 +271,7 @@ class ActionsUrgentSM(Resource):
 class CancelSM(Resource):
     @ns.expect(expected_headers_per, delete_request_sm_model)
     def post(self):
-        flag, data_token, msg = token_verification_procedure(request, permissions=_SM)
+        flag, data_token, msg = token_verification_procedure(request, permissions=_SM_CREATE)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         # noinspection PyUnresolvedReferences
@@ -320,7 +341,7 @@ class Product(Resource):
 class PlotSMData(Resource):
     @ns.expect(expected_headers_per)
     def get(self, typerange):
-        flag, data_token, msg = token_verification_procedure(request, permissions=_SM)
+        flag, data_token, msg = token_verification_procedure(request, permissions=_SM_CONTROL)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data_out = get_data_sm_per_range(typerange, "normal", data_token)
@@ -331,7 +352,7 @@ class PlotSMData(Resource):
 class AlmacenEmployees(Resource):
     @ns.expect(expected_headers_per)
     def get(self):
-        flag, data_token, msg = token_verification_procedure(request, permissions=_SM)
+        flag, data_token, msg = token_verification_procedure(request, permissions=_SM_CREATE)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data_out, code = get_employees_almacen(data_token)
@@ -380,7 +401,7 @@ class DispatchSM(Resource):
 class DownloadPDFSM(Resource):
     @ns.expect(expected_headers_per)
     def get(self, sm_id):
-        flag, data_token, msg = token_verification_procedure(request, permissions=_SM)
+        flag, data_token, msg = token_verification_procedure(request, permissions=_SM_DOWNLOAD)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data, code = dowload_file_sm(sm_id, data_token)
@@ -399,7 +420,7 @@ class DownloadPDFSM(Resource):
 class DownloadExcelSM(Resource):
     @ns.expect(expected_headers_per)
     def get(self, sm_id):
-        flag, data_token, msg = token_verification_procedure(request, permissions=_SM)
+        flag, data_token, msg = token_verification_procedure(request, permissions=_SM_DOWNLOAD)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data, code = dowload_file_sm(sm_id, data_token, type_file="excel")
@@ -418,7 +439,7 @@ class DownloadExcelSM(Resource):
 class ControlTableSM(Resource):
     @ns.expect(expected_headers_per, control_table_sm_put_model)
     def put(self):
-        flag, data_token, msg = token_verification_procedure(request, permissions=_SM)
+        flag, data_token, msg = token_verification_procedure(request, permissions=_SM_CONTROL)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         validator = SMInfoControlTablePutForm.from_json(ns.payload)  # pyrefly: ignore
@@ -437,7 +458,7 @@ class ControlTableSM(Resource):
 class AllControlTableSm(Resource):
     @ns.expect(expected_headers_per)
     def get(self):
-        flag, data_token, msg = token_verification_procedure(request, permissions=_SM)
+        flag, data_token, msg = token_verification_procedure(request, permissions=_SM_CONTROL)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data_out, code = get_all_sm_control_table(data_token)
@@ -469,7 +490,7 @@ class SmItemsActions(Resource):
 class FetchSMFolios(Resource):
     @ns.expect(expected_headers_per)
     def get(self):
-        flag, data_token, msg = token_verification_procedure(request, permissions=_SM_READ_ALMACEN)
+        flag, data_token, msg = token_verification_procedure(request, permissions=_SM_READ)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data_out, code = get_sm_folios_from_api(data_token)
@@ -480,7 +501,7 @@ class FetchSMFolios(Resource):
 class FetchSMItemsByState(Resource):
     @ns.expect(expected_headers_per)
     def get(self, state):
-        flag, data_token, msg = token_verification_procedure(request, permissions=_SM_READ_ALMACEN)
+        flag, data_token, msg = token_verification_procedure(request, permissions=_SM_READ)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data_out, code = get_sm_items_from_api({"state": state}, data_token)
@@ -511,7 +532,7 @@ class UpdateItemInventoryID(Resource):
 class UpdateItemSMState(Resource):
     @ns.expect(expected_headers_per, item_state_model)
     def post(self):
-        flag, data_token, msg = token_verification_procedure(request, permissions=_SM_WRITE_ALMACEN)
+        flag, data_token, msg = token_verification_procedure(request, permissions=_SM_STATE_UPDATE)
         if not flag:
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         validator = ItemStateSMForm.from_json(ns.payload)  # pyrefly: ignore

@@ -65,6 +65,28 @@ def get_user_by_emp_id(emp_id, data_token):
     return flag, error, result
 
 
+def get_users_by_emp_id(emp_id, data_token):
+    """Todos los usuarios del empleado (puede tener uno de prueba, o dos reales) con su
+    estado. type_sql=2 -> lista de (usernames, is_active)."""
+    sql = "SELECT usernames, is_active FROM sql_telintec.users_system WHERE emp_id = %s ORDER BY U_id"
+    val = (emp_id,)
+    flag, error, result = execute_sql(sql, val, 2, data_token)
+    return flag, error, result
+
+
+def disable_users_by_emp_id(emp_id, data_token):
+    """La baja del empleado deshabilita todos sus usuarios (docs/baja_deshabilita_usuarios.md).
+    token = NULL para que no quede un token guardado vivo, igual que GUI_System; la fila
+    nunca se borra. type_sql=3 -> filas cambiadas."""
+    sql = (
+        "UPDATE sql_telintec.users_system SET is_active = 0, token = NULL "
+        "WHERE emp_id = %s AND is_active = 1"
+    )
+    val = (emp_id,)
+    flag, error, result = execute_sql(sql, val, 3, data_token)
+    return flag, error, result
+
+
 def get_permissions_catalog(data_token):
     """Catálogo de permisos asignables (docs/permisos_plan.md, D11): fuente única
     que también lee la app de usuarios. Solo activos, en orden de id."""

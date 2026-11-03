@@ -36,5 +36,4 @@ Pillow==10.3.0
 
 # Servicios externos
 boto3==1.42.55
-Office365-REST-Python-Client==2.5.11
 openai==1.22.0

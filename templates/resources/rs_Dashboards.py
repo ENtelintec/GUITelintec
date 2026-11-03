@@ -11,10 +11,8 @@ from static.constants import (
     timezone_software,
 )
 from static.Models.api_dashboards_models import (
-    FichajeEmpForm,
     MovementsChartsForm,
     RRHHSeriesForm,
-    fichaje_emp_model,
     movements_charts_model,
     rrhh_series_model,
 )
@@ -23,7 +21,6 @@ from templates.daemons.NotificationsSearch import NotificationsSearch
 from templates.Functions_Utils import read_flag_daemons, update_flag_daemons
 from templates.resources.methods.Functions_Aux_Login import token_verification_procedure
 from templates.resources.midleware.Functions_midleware_dashboard import (
-    get_data_chart_fichaje_emp,
     get_data_chart_movements,
     get_data_chart_sm,
 )
@@ -73,22 +70,6 @@ class SMChart(Resource):
             return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
         data = {"range": range_g, "type_chart": type_chart}
         data_out, code = get_data_chart_sm(data, data_token)
-        return data_out, code
-
-
-@ns.route("/fichaje/emp")
-class FichajeEmpChart(Resource):
-    @ns.expect(expected_headers_per, fichaje_emp_model)
-    def post(self):
-        flag, data_token, msg = token_verification_procedure(request, permissions=_RRHH_DASH)
-        if not flag:
-            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        # noinspection PyUnresolvedReferences
-        validator = FichajeEmpForm.from_json(ns.payload) # pyrefly: ignore
-        if not validator.validate():
-            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
-        data = validator.data
-        data_out, code = get_data_chart_fichaje_emp(data)
         return data_out, code
 
 

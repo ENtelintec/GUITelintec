@@ -6,7 +6,13 @@ import json
 
 import jwt
 
-from static.constants import TOKEN_LEEWAY_SECONDS, secrets, token_public_key_paths
+from static.constants import (
+    TOKEN_LEEWAY_SECONDS,
+    TOKEN_LEGACY_ENABLED,
+    TOKEN_MAX_LIFETIME_SECONDS,
+    secrets,
+    token_public_key_paths,
+)
 
 ADMINISTRATOR_PERMISSION = "App.Department.Administrator"
 
@@ -35,9 +41,9 @@ def _public_key(kid) -> str | None:
 def unpack_token(token: str) -> dict:
     """
     Unpacks the token. ES256 se verifica con la llave pública de su kid (Lambda de
-    login, GUI_System; dev solo en dev) y valida exp si viene. Sin ES256 cae al
-    HS256 legado con TOKEN_MASTER_KEY, que se retira en la F3 (P-224).
-    Ver docs/token_es256_por_kid.md.
+    login, GUI_System; dev solo en dev). Mientras TOKEN_LEGACY_ENABLED esté activo, valida
+    exp si viene y cae al HS256 legado con TOKEN_MASTER_KEY. Tras el corte solo pasa ES256
+    con exp e iat y de hasta 24 h. Ver docs/token_es256_por_kid.md y docs/tokens_solo_24h.md.
     :param token: <string>
     :return: <dict>
     """
@@ -47,7 +53,16 @@ def unpack_token(token: str) -> dict:
         key = _public_key(kid)
         if key is None:
             raise jwt.InvalidTokenError(f"kid no aceptado: {kid}")
-        return jwt.decode(token, key, algorithms=["ES256"], leeway=TOKEN_LEEWAY_SECONDS)
+        if TOKEN_LEGACY_ENABLED:
+            return jwt.decode(token, key, algorithms=["ES256"], leeway=TOKEN_LEEWAY_SECONDS)
+        data = jwt.decode(
+            token, key, algorithms=["ES256"], leeway=TOKEN_LEEWAY_SECONDS, options={"require": ["exp", "iat"]}
+        )
+        if data["exp"] - data["iat"] > TOKEN_MAX_LIFETIME_SECONDS:
+            raise jwt.InvalidTokenError("token con vigencia de mas de 24 h")
+        return data
+    if not TOKEN_LEGACY_ENABLED:
+        raise jwt.InvalidTokenError("HS256 ya no se acepta")
     return jwt.decode(token, secrets.get("TOKEN_MASTER_KEY"), algorithms="HS256")
 
 
