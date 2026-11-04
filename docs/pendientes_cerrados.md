@@ -250,6 +250,7 @@
     - una sonda con llave incorrecta responde `401 {"error": "Unauthorized"}`, que es la forma de la v2;
     - `scripts/check_deployed.py` con un usuario real: en v2, 200 con ES256, `kid: lambda`, la firma verificada y 86400 s de vigencia; en v1, 200 con el HS256 guardado.
   - El despliegue del API con `P-218` a prod pasó a `P-221`. → [`planes/login_y_usuarios_plan.md`](planes/login_y_usuarios_plan.md)
+- [x] `P-234` ~~**[usuario] La Lambda de login no escribe en CloudWatch**~~ — hecho por el usuario (2026-11-04): política `TelintecLambdaLoginLogs` en el rol y retención de 90 días. Verificado: la política y la retención están aplicadas, y el primer registro es `login aceptado: … v2` a las 09:27. → [`tokens_solo_24h.md`](tokens_solo_24h.md) (Notas posteriores)
 
 ## Infraestructura / BD (transversal)
 

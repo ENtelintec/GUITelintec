@@ -80,3 +80,22 @@ Sin la llave, `tester_token_es256` sigue 23/23: el comportamiento actual no camb
 
 - **Otro firmante**: `kid` nuevo en `TOKEN_PUBLIC_KIDS`, con `exp` e `iat`. El tope de 24 h aplica igual.
 - **Cambiar la vigencia**: `TOKEN_MAX_LIFETIME_SECONDS` en el API y `token_ttl_seconds` en la Lambda. Primero se sube el tope del API; si no, sus tokens darían 401.
+
+## Notas posteriores
+
+- **2026-11-04 — `P-221` en prod (paso 2 del corte).** El front v2 salió en el build 42 de Amplify (`3d336a0`) y hoy corre el 43 (`fdc2669`); "Por qué no se puede limpiar hoy" ya no describe prod. Revisado sin iniciar sesión:
+  - `authorize()` es la única ruta de login, manda siempre `version: 2` y solo acepta ES256, sin caída a HS256; el JS desplegado de `/login` ya trae el formulario nuevo;
+  - `NEXT_PUBLIC_LOGIN_HOST` apunta al HTTP API `9jsqjxcuye`, y `POST /LoginUP` va a `myLoginTelintec:live` (versión 2);
+  - la pública del front es igual a `keys/lambda_public.pem` de la Lambda y a `token_public_lambda.pem`;
+  - `LOGIN_LAMBDA_KEY` está en Amplify con el mismo valor que `NEXT_PUBLIC_AUTHORIZATION`, y el buildSpec trae `-e LOGIN_`;
+  - el API de prod ya trae `P-218`: `/admin/collections/remission/contracts`, posterior a `P-218`, da 401 sin token y una ruta inexistente da 404.
+
+  **Confirmado el mismo día con un login real** (usuario, desde la consola del navegador en la webapp de prod): token `ES256` de `kid: lambda`, vigencia de 24 h, y `GET /UserSystem/permissions` responde 200 tanto por el rewrite del front como directo al API de prod. El interruptor no se tocó.
+- **2026-11-04 — la Lambda no tenía logs (`P-234`, resuelto el mismo día).** El paso 3 pide revisar en el log de la Lambda que no queden inicios de sesión `v1`, pero `/aws/lambda/myLoginTelintec` no recibía nada: el rol solo podía escribir en los grupos de otras dos Lambdas. Las métricas cuentan invocaciones y no distinguen la versión. Con el permiso, cada login aceptado deja `login aceptado: U_id=… v<versión>`. El simulador de IAM da `implicitDeny` hoy y `allowed` con esta política, sin abrir los grupos de otras Lambdas:
+
+  ```json
+  {"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["logs:CreateLogStream","logs:PutLogEvents"],"Resource":"arn:aws:logs:us-east-2:061452724205:log-group:/aws/lambda/myLoginTelintec:*"}]}
+  ```
+
+  El usuario la aplicó como `TelintecLambdaLoginLogs`, con retención de 90 días. El primer registro es de las 09:27 del 2026-11-04 (`login aceptado: … v2`): la revisión del paso 3 solo cubre de ahí en adelante, así que conviene dejar pasar días con uso normal antes de darla por buena.
+- **2026-11-04 — el rol de la Lambda es compartido (`P-235`).** `productsGetTelintec-role-6nr8jcgi` también lo usan `productsGetTelintec`, `categoriesProducts` y `productSearch`, y su política `TelintecLambdaLoginSecret` da `secretsmanager:GetSecretValue` sobre la llave privada de firma. Esas tres Lambdas tienen rutas sin autorizador en el mismo API Gateway. Quien comprometa una podría leer la llave y firmar tokens que el API acepta, Administrator incluido, lo que rompe la idea de un solo firmante (U15). Falta darle a la Lambda de login un rol propio.
