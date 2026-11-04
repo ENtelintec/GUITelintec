@@ -81,7 +81,7 @@ Lo consume el servidor de NextAuth (`authorize()` en `src/lib/auth.ts`), no el n
   ```
 
   El token lleva `{"alg": "ES256", "kid": "lambda"}` y los mismos datos de hoy (`permissions`, `emp_id`, `name`, `contrato`, `user`, `dep_id`) más `iat` y `exp`.
-- **Verificar**: `jwt.verify(user.token, LOGIN_TOKEN_PUBLIC_KEY, { algorithms: ['ES256'] })` con la pública `lambda` (PEM, no es secreta). Se borra `NEXT_PUBLIC_TOKEN_MASTER_KEY` del `.env` del front.
+- **Verificar**: `jwt.verify(user.token, LOGIN_TOKEN_PUBLIC_KEY, { algorithms: ['ES256'] })` con la pública `lambda` (PEM, no es secreta), guardada como constante en el código. Pasos en "Llaves y despliegue en Amplify", abajo.
 - **Errores** (el front hoy solo mira `res.ok`; basta con mostrar el mensaje):
   - `400 {"error": "Estructura de datos inválida"}`
   - `401 {"error": "Unauthorized"}` — llave compartida incorrecta
@@ -91,6 +91,50 @@ Lo consume el servidor de NextAuth (`authorize()` en `src/lib/auth.ts`), no el n
 - **Al API**: sin cambio. `Authorization` lleva el **JWT crudo, NO `Bearer <token>`**; los permisos de cada endpoint no cambian.
 - **Sesiones viejas** (pedido del 2026-11-03): si el token de la sesión no trae `exp`, cerrar la sesión. Hoy `useSessionCheck` lo ignora y el front no maneja el 401 de forma global; sin esto, en el corte quien siga con un token HS256 vería errores en todas las pantallas hasta salir a mano.
 - **Gotchas**: el token vence a las 24 h y `useSessionCheck` ya cierra la sesión con su `exp`; sin `version: 2` la Lambda responde como hoy (token HS256 guardado), así que el front puede regresar a la versión anterior sin dejar fuera a nadie.
+
+### Llaves y despliegue en Amplify
+
+El front no guarda ninguna llave privada. Solo necesita la pública de la Lambda y la llave compartida que ya usa.
+
+**1. Pública de la Lambda: constante en el código.** El usuario entrega su contenido. No va en una variable de Amplify ni en un archivo `.pem`:
+
+- el `.gitignore` del front ignora `*.pem`, así que el archivo no llegaría a GitHub ni a Amplify; esa regla se queda, para que nadie suba una privada por accidente;
+- el PEM tiene varias líneas y `env | grep` solo conserva la primera, así que como variable llegaría cortado.
+
+Crear `src/lib/login-public-key.ts`, sin sangrar las líneas de la llave:
+
+```ts
+export const LOGIN_TOKEN_PUBLIC_KEY = `-----BEGIN PUBLIC KEY-----
+<contenido de la pública>
+-----END PUBLIC KEY-----`;
+```
+
+Usarla en `authorize()` (`src/lib/auth.ts`), en lugar del `jwt.verify` actual:
+
+```ts
+import { LOGIN_TOKEN_PUBLIC_KEY } from './login-public-key';
+
+const decodedData = jwt.verify(user.token, LOGIN_TOKEN_PUBLIC_KEY, {
+	algorithms: ['ES256'],
+}) as {
+	// los mismos campos de hoy
+};
+```
+
+**2. Antes del merge, en la consola de Amplify:**
+
+- En Environment variables, agregar `LOGIN_LAMBDA_KEY` con el mismo valor de `NEXT_PUBLIC_AUTHORIZATION`.
+- En Build settings, agregar `-e LOGIN_` al `grep` que escribe `.env.production`. Amplify solo inyecta variables durante el build y `authorize()` la lee al iniciar sesión; sin este paso llega vacía y la Lambda responde 401 a todos. Esa configuración vive en la consola, no en el repo, así que hay que revisar la línea real. Por ejemplo:
+
+  ```yaml
+  - env | grep -e NEXT_PUBLIC_ -e NEXTAUTH_ -e LOGIN_ >> .env.production
+  ```
+
+**3. Merge a `main`, que dispara el build.** La constante va en el mismo merge que el resto de `P-221` (`version: 2`, `LOGIN_LAMBDA_KEY` en `Authorization` y cerrar la sesión si el token no trae `exp`). Por separado, el front seguiría recibiendo tokens HS256, la verificación ES256 los rechazaría y nadie podría entrar.
+
+**4. Probar.** Al desplegar, todos vuelven a iniciar sesión una vez.
+
+**5. Quitar `NEXT_PUBLIC_TOKEN_MASTER_KEY` y `NEXT_PUBLIC_AUTHORIZATION`** de Amplify y del `.env` local cuando v2 esté estable: regresar a la versión anterior las necesita.
 
 ## Al modificar
 
