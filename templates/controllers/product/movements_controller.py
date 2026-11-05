@@ -249,23 +249,6 @@ def create_movement_db_amc(
     return flag, error, result
 
 
-def get_product_movement_amc(type_m: str, id_m: int, id_p: int, date: str, data_token):
-    columns = ("id_movement", "id_product", "type", "quantity", "date")
-    sql = (
-        "SELECT id_movement, id_product, movement_type, quantity, movement_date "
-        "FROM sql_telintec.product_movements_amc "
-        "WHERE (id_movement = %s OR "
-        "id_product = %s) AND movement_type LIKE %s AND id_warehouse IS NULL "
-    )
-    val = (id_m, id_p, type_m)
-    if date is not None:
-        sql = sql + " AND movement_date = %s"
-        val = val + (date,)  # (2026-09-07) antes mandaba 4 valores para 3 marcadores sin fecha
-    sql = sql + " LIMIT 10"
-    flag, error, result = execute_sql(sql, val, 2, data_token)
-    return flag, error, result, columns
-
-
 def get_movements_type(type_m: str, data_token, limit=10):
     sql = (
         "SELECT sql_telintec.product_movements_amc.id_product, "

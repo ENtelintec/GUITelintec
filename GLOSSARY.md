@@ -100,3 +100,33 @@ _Avoid_: ayudante, asistente, suplente
 **Remisión limitada**:
 Remisión que un líder captura desde la tabla de control antes que Administración, solo con los datos de operaciones; Administración la completa con lo que se cobra y desde entonces el líder ya no la edita.
 _Avoid_: reporte de actividad, remito
+
+## Agentes de chat (ventas y webapp)
+
+**Agente virtual de ventas**:
+Agente de IA que atiende a visitantes en el sitio público y en los canales de mensajería para orientarlos sobre productos y servicios y levantar solicitudes de cotización.
+_Avoid_: chatbot, OrderBot, bot de ventas, agente (a secas)
+
+**Asistente de la webapp**:
+Agente de IA que orienta a un usuario con sesión sobre cómo usar la webapp; "asistente" a secas sigue reservado (ver Auxiliar).
+_Avoid_: asistente virtual, AV, chatbot
+
+**Visitante**:
+Persona que conversa con el agente virtual de ventas sin tener cuenta; no es cliente hasta que ventas lo da de alta.
+_Avoid_: cliente (antes del alta), usuario
+
+**Conversación**:
+Secuencia de mensajes entre una persona y un agente, con principio y fin; una persona puede tener varias.
+_Avoid_: chat, hilo, thread
+
+**Solicitud de cotización**:
+Lo que el agente virtual de ventas levanta cuando un visitante quiere que un asesor lo atienda: sus datos de contacto y los productos o servicios de interés; no es un pedido ni una cotización hasta que ventas la atiende.
+_Avoid_: lead, pedido, orden
+
+**Canal**:
+Medio por el que una persona conversa con un agente: el chat del sitio web, el de la webapp, Telegram, WhatsApp u otra red; la misma conversación no cambia de canal.
+_Avoid_: plataforma, red (a secas)
+
+**Base de conocimiento**:
+Textos sobre el uso de la webapp, organizados por módulo, de los que el asistente de la webapp toma sus respuestas.
+_Avoid_: documentación, manual, docs

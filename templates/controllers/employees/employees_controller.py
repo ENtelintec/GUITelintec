@@ -189,21 +189,6 @@ def get_employee_id_name(name: str, data_token) -> tuple[None, str] | tuple[int,
         return out[0], f"{str(out[1]).title()} {str(out[2]).title()}"
 
 
-def get_employees_w_status(status: str, quantity: int, date: str, data_token):
-    columns = ("employee_id", "name", "l_name", "date_admission", "status")
-    sql = (
-        "SELECT employee_id, name, l_name, date_admission, status "
-        "FROM sql_telintec.employees "
-        "WHERE status LIKE %s "
-    )
-    if date is not None:
-        sql = sql + " AND date_admission >= %s "
-    sql = sql + " ORDER BY date_admission  LIMIT %s "
-    val = (status, date, quantity)
-    flag, error, result = execute_sql(sql, val, 2, data_token)
-    return flag, error, result, columns
-
-
 def get_employees_name_puesto(ids, data_token):
     """(employee_id, name, l_name, puesto) de una lista de ids; ids vacios ->
     lista vacia sin ir a la BD."""

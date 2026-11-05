@@ -88,3 +88,7 @@ Dev (2026-10-28):
 - Un endpoint nuevo en estos namespaces usa la constante de su grupo. Si necesita otra combinación, se crea una constante con nombres del catálogo, nunca `department=`.
 - Un permiso nuevo para estas áreas se da de alta primero en el catálogo, desde la app de usuarios ([`gui_system_tareas.md`](gui_system_tareas.md)).
 - Si `Director` debe ver algo más que dashboards, se agrega por endpoint de lectura en su área y se anota aquí.
+
+## Notas posteriores
+
+- **2026-11-05 — `/misc/AV/*` retirado** (`P-238`, [`agentes_openai.md`](agentes_openai.md)). La Assistants API de OpenAI se apagó el 2026-08-26 y el front no llamaba a `POST /misc/AV/response` ni a `GET /misc/AV/files/<department>`: las filas de arriba que los mencionan ya no aplican y la constante `_AV` salió de `rs_Misc.py`. El asistente nuevo de la webapp vive en el servicio `telintec_agents`.

@@ -81,65 +81,6 @@ filepath_inventory_form_movements_excel = "files/movements_temp.xlsx"
 filepath_sm_pdf = "files/sm_temp.pdf"
 filepath_po_pdf = "files/po_temp.pdf"
 filepath_remission_pdf = "files/remission_temp.pdf"
-department_tools_openAI = {
-    "director": "files/tools_AV_default.json",
-    "rrhh": "files/tools_AV_rrhh.json",
-    "administrator": "files/tools_AV_default.json",
-    "almacen": "files/tools_AV_almacen.json",
-    "default": "files/tools_AV_default.json",
-}
-tools_AV_avaliable = {
-    "default": [{"type": "code_interpreter"}, {"type": "retrieval"}],
-    "rrhh": [
-        {"type": "code_interpreter"},
-        {"type": "retrieval"},
-        {
-            "type": "function",
-            "name": "getTotalFichajeEmployee",
-            "args": ["id", "name", "date"],
-        },
-        {
-            "type": "function",
-            "name": "getActiveEmployees",
-            "args": ["status", "quantity", "date"],
-        },
-        {"type": "function", "name": "getEmployeeInfo", "args": ["id"]},
-    ],
-    "almacen": [
-        {"type": "code_interpreter"},
-        {"type": "retrieval"},
-        {"type": "function", "name": "getProductCategories", "args": ["name"]},
-        {
-            "type": "function",
-            "name": "getProductsAlmacen",
-            "args": ["name", "id", "category"],
-        },
-        {
-            "type": "function",
-            "name": "getHighStockProducts",
-            "args": ["category", "quantity"],
-        },
-        {
-            "type": "function",
-            "name": "getLowStockProducts",
-            "args": ["category", "quantity"],
-        },
-        {"type": "function", "name": "getCostumer", "args": ["name", "id"]},
-        {"type": "function", "name": "getSupplier", "args": ["name", "id"]},
-        {
-            "type": "function",
-            "name": "getOrder",
-            "args": ["id", "customer", "status", "id_customer", "date"],
-        },
-        {
-            "type": "function",
-            "name": "getProductMovement",
-            "args": ["type", "id", "id_p", "date"],
-        },
-        {"type": "function", "name": "getSupplyInventory", "args": ["name", "id"]},
-        {"type": "function", "name": "getNoStockProducts", "args": ["category"]},
-    ],
-}
 windows_names_db_frame = [
     "Empleados",
     "Clientes",

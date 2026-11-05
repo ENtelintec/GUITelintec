@@ -7,10 +7,8 @@ from static.constants import filepath_settings
 from static.Models.api_models import (
     NotificationInsertForm,
     NotificationUpdateForm,
-    RequestAVResponseForm,
     expected_headers_per,
     notification_insert_model,
-    request_av_response_model,
 )
 from templates.resources.methods.Functions_Aux_Login import token_verification_procedure
 from templates.resources.midleware.Functions_midleware_misc import (
@@ -18,8 +16,6 @@ from templates.resources.midleware.Functions_midleware_misc import (
     get_all_dashboard_data,
     get_all_notification_db_permission,
     get_all_notification_db_user_status,
-    get_files_openai,
-    get_response_AV,
     update_notification_status_from_api,
 )
 
@@ -28,18 +24,11 @@ __date__ = "$ 08/may./2024  at 10:00 $"
 
 ns = Namespace("GUI/api/v1/misc")
 
-# Misc (P-198, docs/permisos_rrhh_bitacoras_cda_comun.md): match exacto contra el catálogo. El asistente virtual
-# (/AV/*) conserva a quienes entraban por subcadena, ALMACEN-VISUAL incluido (solo
-# pregunta, no escribe datos). Administrator pasa siempre.
+# Misc (P-198, docs/permisos_rrhh_bitacoras_cda_comun.md): match exacto contra el catálogo.
+# Administrator pasa siempre. El asistente virtual (/AV/*) se retiró el 2026-11-05 (P-238,
+# docs/agentes_openai.md).
 _BASIC = ["App.Department.Basic"]
 _BASIC_COMMON = _BASIC + ["App.Department.Common"]
-_AV = [
-    "App.Department.ALMACEN",
-    "App.Department.ALMACEN-VISUAL",
-    "App.Department.Operaciones",
-    "App.Department.RRHH",
-    "App.Department.Administracion",
-]
 
 
 @ns.route("/notifications/employee/<int:id_emp>&<int:status>")
@@ -116,51 +105,6 @@ class DownloadFileVacations(Resource):
             return send_file(filepath_settings, as_attachment=True)
         except Exception as e:
             return {"data": None, "msg": "Error al descargar el archivo de configuración", "error": str(e)}, 400
-
-
-@ns.route("/AV/response")
-class ResponseAV(Resource):
-    @ns.expect(expected_headers_per, request_av_response_model)
-    def post(self):
-        flag, data_token, msg = token_verification_procedure(
-            request, permissions=_AV
-        )
-        if not flag:
-            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        # noinspection PyUnresolvedReferences
-        validator = RequestAVResponseForm.from_json(ns.payload)  # pyrefly:ignore
-        if not validator.validate():
-            return {"data": None, "msg": "Estructura de datos inválida", "error": validator.errors}, 400
-        data = validator.data
-        try:
-            files, res, id_chat = get_response_AV(
-                data["department"],
-                data["msg"],
-                data["files"],
-                data["filename"],
-                data["id"],
-            )
-            return {"answer": res, "files": files, "id": id_chat}, 200
-        except Exception as e:
-            return {"data": None, "msg": "Error al obtener respuesta del asistente virtual", "error": str(e)}, 400
-
-
-@ns.route("/AV/files/<string:department>")
-class FilesAV(Resource):
-    @ns.expect(expected_headers_per)
-    def get(self, department):
-        flag, data_token, msg = token_verification_procedure(
-            request, permissions=_AV
-        )
-        if not flag:
-            return {"error": msg if msg != "" else "No autorizado. Token invalido"}, 401
-        try:
-            files = get_files_openai(department)
-            if len(files) == 0:
-                files = []
-            return {"files": files}, 200
-        except Exception as e:
-            return {"data": None, "msg": "Error al obtener archivos del asistente virtual", "error": str(e)}, 400
 
 
 @ns.route("/dashboard")

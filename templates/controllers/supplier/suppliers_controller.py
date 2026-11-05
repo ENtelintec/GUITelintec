@@ -64,20 +64,6 @@ def delete_supplier_DB(supplier_id: int) -> tuple[bool, str | None, int | None]:
     return flag, e, out
 
 
-def get_supplier_amc(name: str, id_s: int):
-    columns = ("id_supplier", "name", "phone", "type", "address")
-    sql = (
-        "SELECT id_supplier, name, phone, type, address "
-        "FROM sql_telintec.suppliers_amc "
-        "WHERE id_supplier = %s OR "
-        "match(name) against (%s IN NATURAL LANGUAGE MODE ) "
-        "LIMIT 10"
-    )
-    val = (id_s, name)
-    flag, error, result = execute_sql(sql, val, 2)
-    return flag, error, result, columns
-
-
 # def get_all_suppliers_amc():
 #     sql = (
 #         "SELECT id_supplier, name, seller_name, seller_email, phone, address, web_url, type, extra_info "

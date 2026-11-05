@@ -208,22 +208,6 @@ response_av_model = api.model(
     },
 )
 
-request_av_response_model = api.model(
-    "RequestAVResponse",
-    {
-        "msg": fields.String(required=True, description="The message to the server"),
-        "department": fields.String(required=True, description="The department"),
-        "filename": fields.String(
-            required=True, description="The name of the file to use with the av"
-        ),
-        "files": fields.List(
-            fields.String(
-                required=True, description="The files the av use including <filename>"
-            )
-        ),
-        "id": fields.Integer(required=False, description="The id of the av chat"),
-    },
-)
 
 files_av_model = api.model(
     "ResponseFilesAV",
@@ -590,14 +574,6 @@ class NotificationDeleteForm(Form):
     id = IntegerField(
         "id", validators=[InputRequired(message="id required or value 0 not accepted")]
     )
-
-
-class RequestAVResponseForm(Form):
-    msg = StringField("msg", validators=[InputRequired()])
-    department = StringField("department", validators=[InputRequired()])
-    filename = StringField("filename", validators=[InputRequired()])
-    files = FieldList(StringField(), validators=[], default=[])
-    id = IntegerField("id", validators=[], default=0)
 
 
 class RequestFileReportQuizzForm(Form):

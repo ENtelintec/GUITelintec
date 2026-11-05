@@ -115,19 +115,6 @@ def delete_customer_DB(
     return flag, str(e), out
 
 
-def get_costumers_amc(name: str, id_c: int, data_token):
-    columns = ("id_customer", "name", "phone", "email", "address")
-    sql = (
-        "SELECT id_customer, name, phone, email, address "
-        "FROM sql_telintec.customers_amc "
-        "WHERE id_customer = %s OR match(name) against (%s IN NATURAL LANGUAGE MODE ) "
-        "LIMIT 10"
-    )
-    val = (id_c, name)
-    flag, error, result = execute_sql(sql, val, 2, data_token)
-    return flag, error, result, columns
-
-
 def get_sm_clients(data_token):
     sql = "SELECT id_customer, name FROM sql_telintec.customers_amc  "
     flag, error, result = execute_sql(sql, None, 5, data_token)

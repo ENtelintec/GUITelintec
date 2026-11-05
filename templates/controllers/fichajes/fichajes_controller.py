@@ -129,23 +129,3 @@ def get_all_fichajes_op():
     )
     flag, error, result = execute_sql(sql, type_sql=2)
     return flag, error, result
-
-
-def get_fichaje_emp_AV(name: str, id_e: int | None):
-    columns = (
-        "id_employee",
-        "absences",
-        "lates",
-        "lates_value[h]",
-        "extras",
-        "extras_value[h]",
-        "primes",
-    )
-    sql = "SELECT emp_id, absences, lates, extras, primes FROM sql_telintec_mod_rrhh.fichajes WHERE emp_id = %s"
-    if id_e is None:
-        id_e, name_db = get_employee_id_name(name, data_token=None)
-        if id_e is None:
-            return False, "No employee in the DB", [], columns
-    val = (id_e,)
-    flag, error, result = execute_sql(sql, val, 1)
-    return flag, error, result, columns
