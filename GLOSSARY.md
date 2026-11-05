@@ -130,3 +130,25 @@ _Avoid_: plataforma, red (a secas)
 **Base de conocimiento**:
 Textos sobre el uso de la webapp, organizados por módulo, de los que el asistente de la webapp toma sus respuestas.
 _Avoid_: documentación, manual, docs
+
+## Catálogo público (sitio y agente virtual de ventas)
+
+**Catálogo público**:
+Los productos que Telintec ofrece en el sitio y por el agente virtual de ventas, tomados del distribuidor SYSCOM; no es el inventario del almacén.
+_Avoid_: inventario, almacén, productos (a secas)
+
+**Costo (de un producto del catálogo)**:
+Precio al que SYSCOM le vende el producto a Telintec, en pesos, convertido con el tipo de cambio del día en que se sincronizó.
+_Avoid_: precio de proveedor, precio especial
+
+**Precio de lista**:
+Precio que ve el visitante: el costo más el margen, con IVA; un asesor lo confirma al cotizar.
+_Avoid_: precio final, precio de venta (a secas)
+
+**Regla de precio**:
+Margen e IVA con los que se calcula el precio de lista; hay una global y puede haber excepciones por marca o por categoría, y gana la más específica.
+_Avoid_: markup, configuración de precios
+
+**Sincronización del catálogo**:
+Corrida programada que trae de SYSCOM todos los productos, sus existencias y costos, y recalcula los precios de lista; deja los productos que ya no vienen con existencia cero.
+_Avoid_: carga, importación, actualización (a secas)
