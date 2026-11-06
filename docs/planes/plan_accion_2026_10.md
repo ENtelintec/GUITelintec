@@ -126,7 +126,7 @@ Firma de "quien entrega" en SM (`P-045`) y remisión (`P-054`) · borrado de ane
 
 ### Lote 7 — Guías del asistente de la webapp (`P-256`, `P-257`; 2026-11-06)
 
-Proceso permanente: cada pendiente que cree o modifique una pantalla actualiza la sección de esa pantalla en la guía de su módulo (`telintec_agents/knowledge/help/`), sin detalles técnicos (`P-256`); barrido inicial en pantalla de las guías en borrador, **un grupo por sesión, nunca todas a la vez** (`P-257`). Grupos, orden e inventario de pantallas de `main` en [`guias_webapp_plan.md`](guias_webapp_plan.md). No desplaza a los lotes anteriores: va dentro de cada pendiente de pantalla y en sesiones cortas aparte.
+Proceso permanente: cada pendiente que cree o modifique una pantalla actualiza la sección de esa pantalla en la guía de su módulo (`telintec_agents/knowledge/help/`), sin detalles técnicos (`P-256`); barrido inicial en pantalla de las guías en borrador, **un grupo por sesión, nunca todas a la vez** (`P-257`); el front escribe en una carpeta dedicada de su propio repo y no toca otros repos, el usuario sube los archivos a producción (`P-258`). Grupos, orden e inventario de pantallas de `main` en [`guias_webapp_plan.md`](guias_webapp_plan.md). No desplaza a los lotes anteriores: va dentro de cada pendiente de pantalla y en sesiones cortas aparte.
 
 ## 5. Riesgos
 
