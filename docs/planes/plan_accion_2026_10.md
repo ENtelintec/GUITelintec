@@ -124,6 +124,10 @@ Firma de "quien entrega" en SM (`P-045`) y remisión (`P-054`) · borrado de ane
 
 > **Por qué Cobranza primero** (decisión 10, ajustada el 2026-10-12 por el usuario: la prioridad de negocio es Cobranza): la junta del 2026-09-23 pidió ambiente de prueba y responsive, y el bloque tiene 10 docs de back esperando pantalla. Nómina sigue inmediatamente después (su back está completo y el canal SES se pide cuando esté en test); constructor y multisede no tienen fecha de negocio detrás.
 
+### Lote 7 — Guías del asistente de la webapp (`P-256`, `P-257`; 2026-11-06)
+
+Proceso permanente: cada pendiente que cree o modifique una pantalla actualiza la sección de esa pantalla en la guía de su módulo (`telintec_agents/knowledge/help/`), sin detalles técnicos (`P-256`); barrido inicial en pantalla de las guías en borrador, **un grupo por sesión, nunca todas a la vez** (`P-257`). Grupos, orden e inventario de pantallas de `main` en [`guias_webapp_plan.md`](guias_webapp_plan.md). No desplaza a los lotes anteriores: va dentro de cada pendiente de pantalla y en sesiones cortas aparte.
+
 ## 5. Riesgos
 
 | Riesgo | Mitigación |
