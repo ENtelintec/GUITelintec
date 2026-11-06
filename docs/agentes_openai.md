@@ -57,7 +57,7 @@
              ▼                                              ▼
    RDS: products_simple + products_services          API GUITelintec (`/GUI/api/v1/*`)
              ▲
-   OpenAI: Responses API (gpt-5.4-mini / gpt-5.4-nano) · File Search (vector store de la webapp) · Traces
+   OpenAI: Responses API (gpt-5.4-mini / gpt-6-luna) · File Search (vector store de la webapp) · Traces
 ```
 
 | Pieza | Qué es | Por qué así |
@@ -81,7 +81,7 @@
 | D6 | Servicios | `servicios.md` escrito por ventas (qué vende Telintec, para quién, qué preguntar), inyectado en el prompt (≈ 1–2 k tokens, cacheados). Si no llega para F1, arranca con las páginas de servicios de telintec.mx y ventas corrige. | Tabla `services`; scrapear el sitio a un vector store (cuando crezca). |
 | D7 | Qué es "vender" | **Solicitud de cotización**: nombre, teléfono o correo (uno obligatorio), empresa y mensaje opcionales, productos de interés (también fuera de catálogo: lo que escribió el visitante). Estados 0 nueva, 1 contactada, 2 cotizada, 3 descartada. En F1 ventas la recibe solo por **correo SES**; la pantalla en la webapp va al backlog del front. | Pedido en firme con carrito; crear la cotización en Preventa (posterior, cuando ventas defina el flujo). |
 | D8 | Estado | Conversaciones, mensajes y solicitudes en **MySQL** (`sql_telintec_mod_agents`, Store de ChatKit); `chats` vieja sin escribir. Ventas revisa solicitudes y las conversaciones de las que salieron. **Retención:** solicitudes sin caducidad; conversaciones sin solicitud y las del asistente, 90 días. | `OpenAIConversationsSession` (estado en OpenAI); SQLite en disco. |
-| D9 | Modelos | **`gpt-5.4-mini`** para ambos agentes, **`gpt-5.4-nano`** para guardrails y clasificación, `gpt-5-nano` como opción más barata. Son los permitidos en la cuenta. | Modelo grande. |
+| D9 | Modelos | **`gpt-5.4-mini`** para ambos agentes, **`gpt-5.4-nano`** para guardrails y clasificación, `gpt-5-nano` como opción más barata. Son los permitidos en la cuenta. **2026-11-06:** el guardrail pasa a `gpt-6-luna` (razonamiento `none`), porque OpenAI retira `gpt-5.4-nano` el 2027-04-01; cada modelo debe estar permitido en los dos proyectos. | Modelo grande. |
 | D10 | Auth y abuso | **Ventas:** anónimo; CORS solo `telintec.mx`/`telintec.com.mx`; `domainKey`; `limit_req` por IP en nginx; topes (tabla abajo). **Asistente:** `Authorization: <JWT crudo>` ES256 verificado con las llaves públicas `token_public_<kid>.pem`; **no acepta HS256** (consistente con `P-224`); cualquier token válido entra, sin permiso nuevo. | Validar el JWT llamando al API; Turnstile desde el inicio (F5 si hay abuso). |
 | D11 | Conocimiento del asistente | Carpeta `help/` en el repo de agentes, un `.md` por módulo, redactada por el back desde `docs/pruebas/` del front y revisada por el usuario; `sync_kb.py` la sube al vector store de OpenAI (File Search) con metadatos; el widget manda `X-Page-Context`. Solo español. Si después el front la mantiene, se mueve a su repo. | Las 80 docs del front en el prompt; RAG propio. |
 | D12 | Despliegue | **Servidor de prod actual**: unidad systemd `telintec-agents` (uvicorn en `127.0.0.1:8100`), nginx `location /agents/` en `appinterna.telintec.mx` (`proxy_buffering off`, `proxy_read_timeout 120`, `limit_req`), reemplaza a `chatbot`. Código 12-factor para mover sin tocarlo. | Lambda Web Adapter + Function URL (si el tráfico del sitio crece); Docker (al retomar `P-139`); subdominio `agentes.telintec.mx` (si el tráfico lo justifica). |
@@ -99,7 +99,7 @@
 | Mensajes por conversación | 30 |
 | Conversaciones nuevas por IP y día | 20 |
 | Tokens por día del agente virtual de ventas | 3 millones (≈ 3 USD con `gpt-5.4-mini`) |
-| Tokens de salida por turno | 600 |
+| Tokens de salida por turno | 1000 (con 600 se cortaba la lista de 5 productos con foto, que llega a ~800) |
 
 Al pasar cualquiera, el agente responde con el enlace de WhatsApp y el formulario de solicitud, sin llamar al modelo.
 
@@ -149,16 +149,18 @@ Usuario `agents_svc`: `SELECT` en `sql_telintec.products_simple` y `products_ser
 ## Seguridad y límites (agente público)
 
 - Solo tools de lectura más `registrar_solicitud`; sin acceso a `sql_telintec` fuera de las dos tablas de catálogo (usuario `agents_svc`).
-- Guardrail de entrada (`gpt-5.4-nano`): fuera de tema, abuso, inyección ("ignora tus instrucciones", pedir precios de proveedor, datos de otros clientes) → respuesta fija. Guardrail de salida: sin `price_provider`, sin promesas de fecha de entrega ni de precio final.
+- Guardrail de entrada (`gpt-6-luna`, corre antes del agente para que este no conteste lo fuera de tema): fuera de tema, abuso, inyección ("ignora tus instrucciones", pedir precios de proveedor, datos de otros clientes) → respuesta fija. Guardrail de salida: sin `price_provider`, sin promesas de fecha de entrega ni de precio final.
 - Topes de la tabla de arriba; `limit_req` en nginx; `max_output_tokens` por turno; timeout de OpenAI 60 s.
 - Datos personales solo en `agent_quote_requests` y en el correo a ventas.
 
 ## Costos (precios de agregadores al 2026-11; verificar en la página oficial al implementar)
 
+Precios oficiales y consumo medido (2026-11-06), para Administración: [`costos_agentes_openai.md`](costos_agentes_openai.md).
+
 | Concepto | Dato |
 |---|---|
 | `gpt-5.4-mini` | ≈ USD 0.75 / 1 M tokens de entrada · 4.50 / 1 M de salida (cacheada ≈ 10 %) |
-| `gpt-5.4-nano` | ≈ USD 0.20 / 1 M entrada · 1.25 / 1 M salida |
+| `gpt-6-luna` (guardrail desde 2026-11-06) | USD 0.10 / 1 M entrada · 0.50 / 1 M salida |
 | Turno típico de ventas (prompt + servicios + 1 búsqueda) | ≈ 3 000 entrada + 300 salida ≈ USD 0.004 |
 | 1 000 turnos al mes | ≈ USD 4 (+ guardrails con nano, centavos) |
 | File Search (asistente) | USD 2.50 / 1 000 llamadas; almacenamiento gratis hasta 1 GB |
